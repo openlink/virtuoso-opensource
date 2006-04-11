@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_mts_status">
+  <refmeta>
+    <refentrytitle>mts_status</refentrytitle>
+    <refmiscinfo>txn</refmiscinfo>
+    <refmiscinfo>2pc</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>mts_status</refname>
+    <refpurpose> checks status of current transaction or server. </refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_mts_status"> 
+      <funcprototype id="fproto_mts_status">
+        <funcdef><function>mts_status</function></funcdef>
+        <paramdef>in <parameter>subject</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_mts_status"><title>Description</title>
+	<para> Checks status of subject. Subject can be  either 'MTS' or 
+	'TRANSACTION'. In the first case this checks if  the server is 
+	connected to MTS. In the second case, checks if  2pc control is 
+	enabled for the current transaction. This function returns status 
+	string. For 'MTS' it could be either 'connected' or 'disconnected'. 
+	For 'TRANSACTION' - either '2pc enabled' or '2pc disabled'. </para>
+  </refsect1>
+</refentry>
+

@@ -1,0 +1,40 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VX-S-8">
+  <refmeta>
+    <refentrytitle>Advanced VSPX programming</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>VSPX macros</refname>
+    <refpurpose>Using macro expansion</refpurpose>
+  </refnamediv>
+  <refsect1 id="VS-S-8a">
+    <title>Example</title>
+    <para>In the first example of this section <ulink url="../vx_s_1/vx_s_1.vsp">VX-S-1</ulink> we mentioned that except vspx:include there is more powerful feature for macro expansion. This feature is explained here. The idea is to have two more source files named style and decoration. They are assigned to the target page via vspx:page attributes "decor" and "style" respectively.</para>
+    <para>The way these are working is the following: before any compilation phase the decor file will be expanded with page itself (see placeholder element). After that the style will be applied and result will be saved in an intermediary file named as original with .vspx-m. As a last step of process would be the page compilation of the intermediary file. This step will generate also a SQL script for page class and it's member functions definitions. The last step of page compilation is execution of the .vspx-sql script and hence creation of objects into the server memory.
+    </para>
+    <para>The example extends the formsty.vspx page with expansion of formdecor.vspx file and make rendition before compilation with formsty.xsl. In that way we can make similar pages with very simple structure, which are with same style and appearance. Also we can divide VSPX page design from functionality.</para>
+  </refsect1>
+</refentry>

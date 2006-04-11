@@ -1,0 +1,117 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare ses any;
+  declare mindt, maxdt datetime;
+  declare err varchar;
+  err := '';
+
+  if ('Execute' = {?'exec'})
+    {
+      declare pid integer;
+      declare cid, qry varchar;
+
+      pid := atoi ({?'prodid'});
+      cid := {?'custid'};
+      whenever sqlstate '22007' goto set_err;
+      err := {?'mindt'}; if (length (err) <> 10) signal ('22007', '');
+      mindt := stringdate ({?'mindt'});
+      err := {?'maxdt'}; if (length (err) <> 10) signal ('22007', '');
+      maxdt := stringdate ({?'maxdt'});
+
+      qry := 'select "Order".OrderID, "Order".EmployeeID, "Order".OrderDate,
+		     "Order".ShippedDate,
+	             Product.ProductName, Details.UnitPrice, Details.Quantity,
+		     Details.Discount
+			from Demo.demo.Orders "Order", Demo.demo.Order_details Details, Demo.demo.Products Product
+			where "Order".OrderDate >= ? and  "Order".OrderDate <= ? and "Order".CustomerID = ?
+			and Product.CategoryID = ? and Product.ProductID = Details.ProductID and
+			"Order".OrderID = Details.OrderID';
+      ses := string_output ();
+      http (sprintf ('<?xml version="1.0" encoding="%s" ?>\n', current_charset()), ses);
+      http ('<document>\n', ses);
+      xml_auto (qry, vector (mindt, maxdt, cid, pid), ses);
+      http ('</document>\n', ses);
+      http (string_output_string (ses));
+      http_xslt (TUTORIAL_XSL_DIR () || '/tutorial/web/vs_xr_1/vs_xr_1.xsl');
+      return (0);
+    }
+if (0)
+  {
+set_err:
+    err := err || ': wrong date format';
+  }
+?>
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../demo.css">
+    <meta name="DESCRIPTION" content="">
+  </head>
+  <body>
+    <div class="error"> <?= err ?> </div>
+    <form action="vs_xr_1_qry.vsp" method="post">
+      <table class="tableentry">
+      <tr>
+         <td>1. Select Customer</td>
+	 <td>
+	 <select name="custid">
+<?vsp for select CompanyName, CustomerID from Demo.demo.Customers do { ?>
+          <option value="<?=CustomerID?>"><?=CompanyName?></option>
+<?vsp } ?>
+	 </select>
+	 </td>
+      </tr>
+      <tr>
+         <td>2. Select Product Category</td>
+	 <td>
+	 <select name="prodid">
+<?vsp for select CategoryID, CategoryName from Demo.demo.Categories do { ?>
+          <option value="<?=CategoryID?>"><?=CategoryName?></option>
+<?vsp } ?>
+	 </select>
+	 </td>
+      </tr>
+      <tr>
+         <td>3. Enter 'from' date</td>
+	 <td>
+<?vsp
+	 select subseq (cast (max(OrderDate) as varchar), 0, 10) into maxdt from Demo.demo.Orders;
+	 select subseq (cast (min(OrderDate) as varchar), 0, 10) into mindt from Demo.demo.Orders;
+?>
+         <input type="text" name="mindt" value="<?=mindt?>" size="26">
+	 </td>
+      </tr>
+      <tr>
+         <td>4. Enter 'to' date</td>
+	 <td><input type="text" name="maxdt" value="<?=maxdt?>" size="26"></td>
+      </tr>
+
+      <tr>
+         <td>5. Execute</td>
+	 <td><input type="submit" name="exec" value="Execute">&nbsp;&nbsp;&nbsp;<input type="reset" name="clear" value="Clear"></td>
+      </tr>
+      </table>
+    </form>
+  </body>
+</html>

@@ -1,0 +1,173 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:template name="redifine_process" type="simple" xmlns:v="http://www.openlinksw.com/vspx/" title="Update process">
+ <tr>
+   <td align="left">&nbsp;</td>
+   <td><font style="color: red">*</font> This page allows you to individually upload or provide external URI's for the bpel and wsdl files defining the process. When these are all provided the process is ready to be compiled.</td>
+ </tr>
+ <tr>
+   <td align="left">&nbsp;</td>
+   <td>
+     <table width="100%"  border="2" id="subcontent" cellpadding="0" cellspacing="0">
+       <v:text name="hbpel" type="hidden" value="''"/>
+       <v:text name="bop" type="hidden" value="'role=bpel&id='"/>
+       <v:text name="wop" type="hidden" value="'role=wsdl&id='"/>
+       <v:text name="boo" type="hidden" value="'op=bpel&id='"/>
+       <v:text name="woo" type="hidden" value="'op=wsdl&id='"/>
+       <tr>
+         <td align="left"><b><v:url name="rdBPEL" xhtml_class="m_e" value="BPEL" url="--sprintf('help.vspx?id=process_redefine&name=pu_fields_bpel')" xhtml_target="_blank"/></b></td>
+         <td>
+           <v:button action="browse" selector="view.vspx" child-window-options="scrollbars=yes, menubar=no" value="i/sinfo_16.png" xhtml_title="View" style="image" xhtml_alt="View" text="&#160;View"
+             browser-options="--concat(self.bop.ufl_value,cast(self.id as varchar))">
+          <v:field name="hbpel" />
+           </v:button>
+           <v:button action="browse" selector="browser.vspx" child-window-options="scrollbars=yes, menubar=no, width=640, height=400" value="i/edit_record_16.png" xhtml_title="Update" style="image" xhtml_alt="Update" text="&#160;Update"
+             browser-options="--concat(self.boo.ufl_value,cast(self.id as varchar))">
+          <v:field name="hbpel" />
+           </v:button>
+         </td>
+       </tr>
+       <tr>
+         <td align="left"><b><v:url name="rdWSDL" xhtml_class="m_e" value="WSDL" url="--sprintf('help.vspx?id=process_redefine&name=pu_fields_wsdl')" xhtml_target="_blank"/></b></td>
+         <td>
+           <v:button action="browse" selector="view.vspx" child-window-options="scrollbars=yes, menubar=no" value="i/sinfo_16.png" xhtml_title="View" style="image" xhtml_alt="View" text="&#160;View"
+             browser-options="--concat(self.wop.ufl_value,cast(self.id as varchar))">
+          <v:field name="hbpel" />
+           </v:button>
+           <v:button action="browse" selector="browser.vspx" child-window-options="scrollbars=yes, menubar=no, width=640, height=400" value="i/edit_record_16.png" xhtml_title="Update" style="image" xhtml_alt="Update" text="&#160;Update"
+             browser-options="--concat(self.woo.ufl_value,cast(self.id as varchar))">
+          <v:field name="hbpel" />
+           </v:button>
+         </td>
+       </tr>
+       <tr>
+         <td width="10%" align="left" valign="top"><b><v:url name="rdPLINK" xhtml_class="m_e" value="Partner Links" url="--sprintf('help.vspx?id=process_redefine&name=pu_fields_plinks')" xhtml_target="_blank"/></b></td>
+         <td>
+           <table width="60%" border="1" cellspacing="0" cellpadding="0" id="contentlist">
+             <v:text name="pop" type="hidden" value="'&id='"/>
+             <v:text name="por" type="hidden" value="'&role='"/>
+             <v:text name="poo" type="hidden" value="'op=plink'"/>
+             <v:data-set name="ds" data="--xpath_eval('/partnerLinks/partnerLink',self.xml_data,0)" meta="--get_xml_meta()" nrows="10" scrollable="1" edit="1" cursor-type="keyset">
+               <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                 <tr>
+                   <th align="center">No</th>
+                   <th align="center">Name</th>
+                   <th align="center">Role</th>
+                   <th align="center">WSDL</th>
+                 </tr>
+               </v:template>
+               <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+                 <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                   <tr>
+                     <td align="center" colspan="4">
+                       <b>The partnerlist list is empty</b>
+                     </td>
+                   </tr>
+                 </v:template>
+                 <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                     <?vsp
+                       self.r_count := self.r_count + 1;
+                       http (sprintf ('<tr bgcolor="%s">', case when mod (self.r_count, 2) then '#fefefe' else '#efefef' end));
+                     ?>
+                     <td align="center" nowrap="1">
+                       <v:label name="label5ctr" value="--(control.vc_parent as vspx_row_template).te_ctr + (control.vc_parent.vc_parent as vspx_data_set).ds_rows_offs + 1" format="%d" width="80"/>
+                     </td>
+                     <td align="right" nowrap="1">
+                       <v:label name="label5" value="--xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset)" width="80"/>
+                     </td>
+                     <td align="right" nowrap="1">
+                       <v:label name="label6" element-value="--case when xpath_eval('@partnerRole',(control.vc_parent as vspx_row_template).te_rowset)
+                                                                           then xpath_eval('@partnerRole',(control.vc_parent as vspx_row_template).te_rowset) else '&nbsp;' end" element-place="@partnerRole" format="%s" width="80"/>
+                       <v:text type="hidden" name="label67" value="--cast(xpath_eval(sprintf('/partnerLinks/partnerLink[@name = ''%s'']/@name',xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset)), self.xml_data) as varchar)"/>
+                     </td>
+                     <td align="center" nowrap="1">
+                      <v:button name="now" active="--0" action="simple" value="i/sinfo_16.png" style="image" xhtml_title="View" xhtml_alt="View" text="&#160;View" enabled="--case when (BPEL.BPEL.check_file(self.id,(control.vc_parent.vc_find_control ('label67') as vspx_field).ufl_value)) then 0 else 1 end"/>
+                      <v:button action="browse" selector="view.vspx" enabled="--case when (BPEL.BPEL.check_file(self.id,(control.vc_parent.vc_find_control ('label67') as vspx_field).ufl_value)) then 1 else 0 end"
+                                 child-window-options="scrollbars=yes, menubar=no" value="i/sinfo_16.png" xhtml_title="View" style="image" xhtml_alt="View" text="&#160;View">
+                        <v:after-data-bind>
+                           control.vcb_browser_options := concat(self.por.ufl_value , (control.vc_parent.vc_find_control ('label67') as vspx_field).ufl_value,self.pop.ufl_value,cast(self.id as varchar));
+                        </v:after-data-bind>
+                     <v:field name="hbpel" />
+                      </v:button>
+                      <v:button action="browse" selector="browser.vspx" child-window-options="scrollbars=yes, menubar=no, width=640, height=400" value="i/edit_record_16.png" style="image" xhtml_title="Update" xhtml_alt="Update" text="&#160;Update">
+                        <v:after-data-bind>
+                           control.vcb_browser_options := concat(self.poo.ufl_value,self.por.ufl_value , (control.vc_parent.vc_find_control ('label67') as vspx_field).ufl_value,self.pop.ufl_value,cast(self.id as varchar));
+                        </v:after-data-bind>
+                        <v:field name="hbpel" />
+                      </v:button>
+                    </td>
+                    <?vsp
+                      http('</tr>');
+                    ?>
+                 </v:template>
+               </v:template>
+             </v:data-set>
+           </table>
+         </td>
+       </tr>
+       <tr>
+         <td align="left" colspan="2"><font color="Red">*</font>
+           <!--<v:url name="u1" value="Refresh page" url="--sprintf('%s?id=%d','upload_new.vspx',self.id)" />-->Refresh page to see possible changes.
+         </td>
+       </tr>
+       <tr>
+         <td width="8%" align="left" valign="top"><b><v:url name="rdVDIR" xhtml_class="m_e" value="Virtual Directory" url="--sprintf('help.vspx?id=process_redefine&name=pu_fields_vdir')" xhtml_target="_blank"/></b></td>
+         <td>
+            <v:text name="bpel_vdir"
+               element-value="--self.xml_data"
+	       element-path="/page/bpel_vdir"
+	       element-place="text()"
+               xhtml_size="50"/>
+         </td>
+       </tr>
+       <tr>
+         <td align="left"><v:url name="rdAct" xhtml_class="m_e" value="Action" url="--sprintf('help.vspx?id=process_redefine&name=pu_fields_action')" xhtml_target="_blank"/></td>
+         <td>
+           <v:button action="simple" value="Compile Process" xhtml_class="m_e" name="Compile" xhtml_disabled="--case when self.id = 0 then 'true' else '@@hidden@@' end">
+             <v:on-post>
+               if (not self.vc_is_valid)
+                 return;
+                 BPEL..compile_script(self.id,self.bpel_vdir.ufl_value);
+                 self.do_redirect ('process.vspx');
+             </v:on-post>
+           </v:button>
+           <v:button value="Delete Process" xhtml_class="m_e" action="simple" name="Delete" xhtml_disabled="--case when self.id = 0 then 'true' else '@@hidden@@' end">
+             <v:on-post><![CDATA[
+                 if (self.id > 0)
+                   self.do_redirect (sprintf ('bpel_confirm.vspx?op=del&id=%d&nam=%s&r=u',self.id,self.bpel_name.ufl_value));
+             ]]></v:on-post>
+           </v:button>
+           <!--<v:button action="simple" value="Revert Process" xhtml_class="m_e" name="Revert" xhtml_disabled="--case when self.id = 0 then 'true' else '@@hidden@@' end">
+             <v:on-post>
+               if (not self.vc_is_valid) return;
+                 self.id := BPEL..script_revert(self.id);
+                 self.do_redirect (sprintf('upload_new.vspx?id=%d',self.id));
+             </v:on-post>
+           </v:button>-->
+           <v:label name="compileP" value="''"/>
+         </td>
+       </tr>
+     </table>
+   </td>
+  </tr>
+</v:template>

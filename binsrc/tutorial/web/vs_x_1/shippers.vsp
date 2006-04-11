@@ -1,0 +1,32 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+http_xslt (TUTORIAL_XSL_DIR () || '/tutorial/web/vs_x_1/shippers.xsl');
+?>
+<list><Shippers>
+<ShipperID>1</ShipperID> <CompanyName>Speedy Express</CompanyName> <Phone>(503) 555-9831</Phone></Shippers>
+<Shippers>
+<ShipperID>2</ShipperID> <CompanyName>United Package</CompanyName> <Phone>(503) 555-3199</Phone></Shippers>
+<Shippers>
+<ShipperID>3</ShipperID> <CompanyName>Federal Shipping</CompanyName> <Phone>(503) 555-9931</Phone></Shippers>
+</list>

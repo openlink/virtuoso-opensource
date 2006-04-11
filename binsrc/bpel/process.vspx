@@ -1,0 +1,248 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="processes_page" decor="bpel_decor.vspx" style="bpel_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:on-init>
+    set isolation='committed';
+  </v:on-init>
+  <vm:pagetitle>OpenLink BPEL Process Manager Processes List</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:pagebody>
+      <?vsp
+
+      if ({?'nxt'} is not null){
+	        if ({?'prcs'} is not null)
+                  BPEL.BPEl.do_redirect(sprintf('process.vspx?base=%d&sort=%s&id=%s',(cast({?'base'} as integer) + 10),{?'sort'},{?'id'}),{?'sid'},{?'realm'});
+	        else
+                  BPEL.BPEl.do_redirect(sprintf('process.vspx?base=%d&sort=%s',(cast({?'base'} as integer) + 10),{?'sort'}),{?'sid'},{?'realm'});
+      };
+
+      if ({?'prf'} is not null){
+		if ({?'prcs'} is not null)
+	          BPEL.BPEl.do_redirect(sprintf('process.vspx?base=%d&sort=%s&id=%s',(cast({?'base'} as integer) - 10),{?'sort'},{?'id'}),{?'sid'},{?'realm'});
+	        else
+	          BPEL.BPEl.do_redirect(sprintf('process.vspx?base=%d&sort=%s',(cast({?'base'} as integer) - 10),{?'sort'}),{?'sid'},{?'realm'});
+      };
+
+      if ({?'frs'} is not null){
+         	if ({?'prcs'} is not null)
+	          BPEL.BPEl.do_redirect(sprintf('process.vspx?base=%d&sort=%s&id=%s',0,{?'sort'},{?'id'}),{?'sid'},{?'realm'});
+	        else
+	          BPEL.BPEl.do_redirect(sprintf('process.vspx?base=%d&sort=%s',0,{?'sort'}),{?'sid'},{?'realm'});
+
+      };
+
+      if ({?'lst'} is not null){
+         	if ({?'prcs'} is not null)
+	          BPEL.BPEl.do_redirect(sprintf('process.vspx?base=%d&sort=%s&id=%s',cast({?'lstp'} as integer),{?'sort'},{?'id'}),{?'sid'},{?'realm'});
+	        else
+	          BPEL.BPEl.do_redirect(sprintf('process.vspx?base=%d&sort=%s',cast({?'lstp'} as integer),{?'sort'}),{?'sid'},{?'realm'});
+
+      };
+
+        declare _id int;
+        _id:=null;
+
+        declare base varchar;
+        if ({?'base'} is null)
+        	base := '0';
+        else {
+        	base := {?'base'};
+        	if (atoi (base) < 0)
+        		base := '0';
+        }
+
+        if ({?'id'} is not null) {
+        	_id := atoi ({?'id'});
+        }
+
+        --for select bs_uri from BPEL.BPEL.script
+        --     where bs_id = _id do
+        --{
+        --	connection_set ('BPELGUI/ScriptURI', concat ('http://localhost:',
+        --		server_http_port(), '/BPELGUI/bpel.vsp?script=', bs_uri));
+        --}
+
+        if ({?'mark'} is not null) {
+        	if ({?'state'} = '0') {
+        		BPEL.BPEL.stop_process (_id);
+
+        	update BPEL.BPEL.script
+                   set bs_state = 1
+                 where bs_id = _id;
+                }
+        }
+
+        if ({?'id'} is not null and {?'dlt'} = 'Delall') {
+                for select bi_id from BPEL.BPEL.instance where bi_script = _id do
+                {
+	          BPEL..instance_delete (bi_id);
+                }
+
+        };
+
+	if ({?'id'} is not null and {?'upd'} = 'Commit') {
+        	update BPEL.BPEL.script
+        	   set bs_audit = coalesce({?'audit'},0),
+        	       bs_debug = coalesce({?'debug'},0)
+        	 where bs_id = _id;
+        	_id := null;
+        }
+
+        if ({?'i'} = 'delete') {
+        	BPEL..script_delete (_id, 1);
+        	_id := null;
+        }
+
+        if ({?'delinst'} is not null) {
+          declare aArr any;
+          aArr := BPEL.BPEL.str_param(params,'cid');
+          BPEL.BPEL.delete_instances(aArr);
+        }
+        if ({?'restinst'} is not null) {
+          declare aArr any;
+          aArr := BPEL.BPEL.str_param(params,'cid');
+          BPEL.BPEL.restart_instances(aArr);
+        }
+        declare messargs varchar;
+        	if (connection_get ('BPELGUI/ScriptURI') is null)
+        		messargs := '';
+        	else
+        		messargs := concat ('uri=', connection_get ('BPELGUI/ScriptURI') );
+
+
+        declare s1,s2,s3,s4,s5,sort,action varchar;
+
+        sort := {?'sort'};
+        if (sort is null) sort := 'a';
+        s1 := 'a';
+        s2 := 'b';
+        s3 := 'c';
+        s4 := 'd';
+        s5 := 'e';
+        BPEL.BPEL.instances_vsp_reverse (s1, {?'sort'});
+        BPEL.BPEL.instances_vsp_reverse (s2, {?'sort'});
+        BPEL.BPEL.instances_vsp_reverse (s3, {?'sort'});
+        BPEL.BPEL.instances_vsp_reverse (s4, {?'sort'});
+        BPEL.BPEL.instances_vsp_reverse (s5, {?'sort'});
+
+
+        declare i,bname,ch varchar;
+
+        i := {?'i'};
+        if (i is null) i := '';
+
+        bname := {?'bname'};
+        if (bname is null) bname := '';
+
+        ch := {?'ch'};
+        if (ch is null) ch := '';
+
+
+        if (_id is not null)
+        {
+          if ({?'i'} = 'audit')
+          {
+            for select bs_name, bs_id from BPEL.BPEL.script,BPEL.BPEL.instance
+                 where bs_id = bi_script and bi_id = _id
+            do {
+                 action := 'audit';
+            	http_value (xslt (BPEL.BPEL.res_base_uri () || 'bpel4ws/1.0/process.xsl', xtree_doc (BPEL..make_audit_report (_id)),
+                                 vector ('sid',{?'sid'},
+                                         'realm',{?'realm'},
+                                          'action',action,
+                                          'script_name', bs_name,
+                                          'script_id', cast(bs_id as varchar))));
+            }
+          }
+          else
+          {
+            action := 'process';
+            http_value ( xslt (BPEL.BPEL.res_base_uri () || 'bpel4ws/1.0/process.xsl', xtree_doc (DB.DBA.http_bpel_1_inst_Script_S (_id,1)) ,
+                               vector (
+                                       'sid',{?'sid'},
+                                       'realm',{?'realm'},
+                                       'action',action,
+                                       'Params', messargs,
+                                       'base', base,
+                                       'inst_id', {?'id'},
+                                       's1', s1,
+          		               's2', s2,
+          		               's3', s3,
+                    	               'sort', sort
+                                     )));
+          }
+        }
+        else
+        {
+          declare _Xml any;
+          declare sEndPoint varchar;
+          action := 'processes';
+
+          sEndPoint := concat('http://',http_request_header(lines, 'Host', null, '*** NO HOST IN REQUEST ***'));
+
+          if (i = 'filter' and bname <> '' and bname is not null)
+          {
+            _Xml := XMLELEMENT('page','');
+            for( select bs_id, bs_name, bs_state, bs_date, bs_audit, bs_debug
+                   from BPEL.BPEL.script
+                  where ucase(bs_name) = ucase(bname) and (bs_state = 0 or ch = '') ) do
+            {
+              _Xml := XMLCONCAT(_Xml,XMLELEMENT("Script",
+                                     XMLATTRIBUTES(bs_id as "Id",
+                                     bs_name as "Name",
+                                     bs_state as "State",
+                                     bs_date as "UploadDate",
+                                     bs_audit as "Audit",
+                                     bs_debug as "Debug",
+                                     sEndPoint as "EPoint")
+                                      ));
+
+            };
+          }
+          else
+            _Xml := xml_tree_doc (DB.DBA.xte_view_bpel_1_inst());
+
+          http_value (xslt (BPEL.BPEL.res_base_uri () || 'bpel4ws/1.0/process.xsl', _Xml,
+          	      vector (
+                        'sid',{?'sid'},
+                        'realm',{?'realm'},
+                        'action',action,
+          		's1', s1,
+          		's2', s2,
+          		's3', s3,
+          		's4', s4,
+          		's5', s5,
+          		'sort', sort,
+          		'base', base,
+                        'i', i,
+                        'bname',bname,
+                        'ch',ch,
+                        'EPoint',sEndPoint)
+          	     ));
+
+        }
+      ?>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

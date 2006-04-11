@@ -1,0 +1,90 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare host varchar;
+  host := http_request_header (lines, 'Host', NULL, 'demo.openlinksw.com:8890');
+  http_header ('Content-Type: text/xml\r\n');
+?><definitions
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+ xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+ xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+ xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+ xmlns:ns0="http://soapinterop.org/xsd"
+ targetNamespace="services.wsdl"
+ xmlns:tns="services.wsdl"
+ xmlns:ext="http://soapinterop.org/ext"
+ xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+ name="VirtuosoWSDLInteropTestDocLit" xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+    	<ext:types/>
+	<types>
+	<ext:schema targetNamespace="http://soapinterop.org/xsd"/>
+	<schema targetNamespace="http://soapinterop.org/xsd"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+          <element name="echoStringReturn"  type="string"/>
+          <element name="echoStringParam"  type="string"/>
+	</schema>
+	</types>
+	<ext:message name="echoString"/>
+	<message name="echoStringRequest">
+		<part element="ns0:echoStringParam" name="echoStringParam" />
+	</message>
+	<message name="echoStringResponse">
+		<part element="ns0:echoStringReturn" name="CallReturn" />
+	</message>
+	<ext:portType name="WSDLInteropTestDocLitPortType"/>
+	<portType name="WSDLInteropTestDocLitPortType">
+		<operation name="echoString" parameterOrder="echoStringParam">
+			<input message="tns:echoStringRequest" name="echoStringRequest" />
+			<output message="tns:echoStringResponse" name="echoStringResponse" />
+		</operation>
+	</portType>
+	<ext:binding name="WSDLInteropTestDocLitPortBinding"/>
+	<binding name="WSDLInteropTestDocLitDocLiteralBinding" type="tns:WSDLInteropTestDocLitPortType">
+	        <ext:binding style="chunked"  wsdl:required="true"/>
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<operation name="echoString">
+	                <ext:operation style ="chunked"/>
+			<soap:operation soapAction="http://soapinterop.org/" style="document" />
+			<input name="echoStringRequest">
+		                <ext:body use ="direct"/>
+				<soap:body use="literal" namespace="http://soapinterop.org/" />
+			</input>
+			<output name="echoStringResponse">
+		                <ext:body use ="direct"/>
+				<soap:body use="literal" namespace="http://soapinterop.org/" />
+			</output>
+		</operation>
+	</binding>
+        <ext:service name="WSDLInteropTestDocLitService"/>
+	<service name="VirtuosoWSDLInteropTestDocLit">
+		<documentation>Virtuoso SOAP services</documentation>
+		<ext:port binding="tns:WSDLInteropTestDocLitPortBinding" name="WSDLInteropTestDocLitPort"/>
+		<port name="WSDLInteropTestDocLitDocLiteralPort" binding="tns:WSDLInteropTestDocLitDocLiteralBinding">
+	        	<ext:address location=""/>
+			<soap:address location="http://<?=host?>/r3/DocLit" />
+		</port>
+	</service>
+</definitions>

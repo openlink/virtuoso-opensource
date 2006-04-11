@@ -1,0 +1,39 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<HTML>
+  <HEAD>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Virtuoso News</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Newsgroup Articles List">
+  </HEAD>
+
+<BODY CLASS="ctrlmain">
+<?include ../adm_js_check.vsp ?>
+<TABLE WIDTH="100%" CLASS="ctrlmain" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+<TR><TD CLASS="admpagestitle"><INPUT TYPE="BUTTON" NAME="Back" VALUE="< Back" onClick="parent.document.location='news_server_list.vsp';"></TD><TD CLASS="admpagestitle"><H3><?=get_keyword('Group', params, '')?></H3></TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+</TABLE>
+</BODY>
+</HTML>

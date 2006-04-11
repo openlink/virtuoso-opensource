@@ -1,0 +1,105 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?vsp declare err, sid varchar;
+  self.err := '';
+
+  if ({?'pwd1'} <> {?'pwd'})
+    self.err := 'Passwords do not matches';
+  else if ({?'accept'} is not null and {?'uid'} <> '' and {?'pwd'} <> '')
+    {
+      declare uid int;
+      declare sid any;
+      declare exit handler for sqlstate '*' { self.err := concat (__SQL_STATE,' ',__SQL_MESSAGE); goto again; };
+      if (exists (select 1 from SYS_USERS where U_NAME = {?'uid'}))
+	signal ('42000', 'User already exists');
+      uid := USER_CREATE ({?'uid'}, {?'pwd'},
+	       vector ('E-MAIL', {?'mail'}, 'FULL_NAME', {?'name'}, 'HOME', '/DAV/' || {?'uid'} || '/',
+		 'DAV_ENABLE' , 1, 'SQL_ENABLE', 0,
+		 'maxBytesPerUser', 41943040, 'maxFileSize', 1048576));
+      BLOG_HOME_CREATE (uid);
+      sid := md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
+      insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
+	  	values ('blog', sid, {?'uid'}, serialize (vector ('vspx_user', {?'uid'})), now());
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header (sprintf ('Location: blog_home.vspx?sid=%s&realm=blog\r\n', {?'uid'}, sid));
+      return 0;
+    }
+again:
+?>
+<html>
+  <head>
+    <title>Weblog</title>
+    <link rel="stylesheet" type="text/css" href="../demo.css"/>
+  </head>
+  <body>
+    <v:page name="reg1" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+      <v:variable name="err" type="varchar" default="''"/>
+      <v:form name="form1" action="register.vspx" method="POST" type="simple">
+        <table class="tableentry">
+          <tr>
+            <td colspan="2" style="color: red">
+              <b>
+                <?V self.err ?>
+              </b>
+            </td>
+          </tr>
+          <tr>
+            <td>Full Name</td>
+            <td>
+              <v:text name="name" value="--{?'name'}"/>
+            </td>
+          </tr>
+          <tr>
+            <td>Login Name</td>
+            <td>
+              <v:text name="uid" value="--{?'uid'}"/>
+            </td>
+          </tr>
+          <tr>
+            <td>E-mail</td>
+            <td>
+              <v:text name="mail" value="--{?'mail'}"/>
+            </td>
+          </tr>
+          <tr>
+            <td>Password</td>
+            <td>
+              <v:text type="password" name="pwd" value=""/>
+            </td>
+          </tr>
+          <tr>
+            <td>Password (verify)</td>
+            <td>
+              <v:text type="password" name="pwd1" value=""/>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <v:button action="simple" name="accept" value="Accept"/>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+    </v:page>
+  </body>
+</html>

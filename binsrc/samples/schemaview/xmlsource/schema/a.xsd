@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!DOCTYPE schema SYSTEM "XMLSchema.dtd" [
+<!ENTITY % schemaAttrs "
+	xmlns:tbl	CDATA	#IMPLIED
+">
+]>
+<!-- Copyright 2000, Norman Walsh, Sun Microsystems.  Schema
+     derived from DocBook DTD Copyright 1992-2000 HaL Computer....  -->
+<schema xmlns='http://www.w3.org/2000/10/XMLSchema'
+        xmlns:tbl='http://www.oasis-open.org/tables/exchange/1.0'>
+</schema>

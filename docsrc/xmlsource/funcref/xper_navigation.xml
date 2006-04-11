@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_xper_right_sibling">
+  <refmeta>
+    <refentrytitle>XPER navigation</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xper_right_sibling</refname>
+    <refname>xper_left_sibling</refname>
+    <refname>xper_parent</refname>
+    <refname>xper_root_entity</refname>
+    <refname>xper_tell</refname>
+    <refname>xper_length</refname>
+    <refpurpose>low-level navigation functions for persistent XMLs, useful for import of huge amounts of XML data</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_xper_right_sibling">
+      <funcprototype id="fproto_xper_right_sibling">
+        <funcdef><function>xper_right_sibling</function></funcdef>
+        <paramdef>in <parameter>xper_entity</parameter>XML_entity</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_xper_left_sibling">
+      <funcprototype id="fproto_xper_left_sibling">
+        <funcdef><function>xper_left_sibling</function></funcdef>
+        <paramdef>in <parameter>xper_entity</parameter>XML_entity</paramdef>
+       </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_xper_parent">
+      <funcprototype id="fproto_xper_parent">
+        <funcdef><function>xper_parent</function></funcdef>
+        <paramdef>in <parameter>xper_entity</parameter>XML_entity</paramdef>
+       </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_xper_root_entity">
+      <funcprototype id="fproto_xper_root_entity">
+        <funcdef><function>xper_root_entity</function></funcdef>
+        <paramdef>in <parameter>xper_entity</parameter>XML_entity</paramdef>
+       </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_xper_tell">
+      <funcprototype id="fproto_xper_tell">
+        <funcdef><function>xper_tell</function></funcdef>
+        <paramdef>in <parameter>xper_entity</parameter>XML_entity</paramdef>
+       </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_xper_length">
+      <funcprototype id="fproto_xper_length">
+        <funcdef><function>xper_length</function></funcdef>
+        <paramdef>in <parameter>xper_entity</parameter>XML_entity</paramdef>
+       </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>
+All these functions work with &quot;persistent XML&quot; (XPER) entities only, signalling errors if
+given entity points to &quot;XML tree&quot;.  They are useful when applications need to read a
+huge XML document, especially something like a datasheet dump or event log with a large number
+of uniform records, and is required to process all records of the document, e.g. import them into
+the database.
+</para>
+  <para>
+Consider a real sample of import all data from ODP's content.xml dump which contains more than
+2,000,000 descriptions of various Web-sites, and the length of the file is more than 600Mb.  The
+file has root element named 'RDF' and all descriptions are their children named either 'Topic' or
+'ExternalPage'. This code looks suitable for importing these children:</para>
+  <programlisting>
+create procedure
+  import_content_xml ()
+  {
+    for select _frag, xpath_eval('local_name()', _frag) as _tag from SOURCE_XML
+      where NAME='content.xml' and xpath_contains(XPER,'/RDF/*',_frag)
+    do
+    {
+      if (_tag='Topic') import_topic (_frag);
+      else
+      {
+        if (_tag='ExternalPage') import_external (_frag);
+        else log_import_error (_frag, &quot;Unknown type of record&quot;);
+      }
+    }
+  };
+  -- This should load files like content.xml, and place XPERs into SOURCE_XML table
+
+read_source_xmls();
+  -- Now SOURCE_XML is filled and data should be imported.
+
+import_content_xml();
+import_structure_xml();
+import_profiles_xml();
+ ...
+</programlisting>
+
+  <para>
+It looks fine and it passes small tests but it will not work on real data!</para>
+  <para>
+First problem is regular checkpoints (every 1 hour by default),
+so import_content_xml has no chance to be completed if it takes 1.5 hours of CPU time;
+the function checkpoint_interval should be used to temporarily disable these checkpoints.
+Then, the length of transaction log become extremely large after switching checkpoints off,
+and it is better to insert explicit checkpoints between calls of these functions.
+Finally, import_content_xml will change more than 4 gigabytes of data in one transaction.
+This would be impossible on any 32-bit platform, because both memory available and address space
+become insufficient.  Adding intermediate 'commit work' statements inside the loop's body
+will not help because both 'commit work' and 'rollback work' statements will close all opened cursors.
+Loop 'for select ... from ... do' uses an implicit cursor to iterate the resultset, but the
+'commit work' operator will close this cursor and abort the loop.</para>
+  <para>
+Function xper_right_sibling is designed specially to solve the last problem.  It allows you
+to iterate children of some element without using any cursor at all.
+It returns the right child of the entity passed as its argument.  If the given entity
+is the last child of its parent, the function will return NULL.  Similarly, xper_left_sibling will
+return the previous child or NULL for the first child, xper_parent will return parent of
+entity or NULL for the document's root and xper_root_entity will return the root for any
+entity.  Using these functions, it is possible to scan the document forward (from left
+to right), backward and to &quot;climb up&quot; toward the root of the elements' tree.  These
+functions are called <emphasis>XML Navigation Functions</emphasis> because they are like
+the statements &quot;next record&quot;, &quot;prev record&quot; etc., used in cursor
+like navigation of databases.</para>
+  <para>
+There are no special functions to &quot;go down&quot;, e.g. to find first children of
+given element, because xpath_eval can do any such movement very quickly.</para>
+  <para>
+Sometimes data import is controlled from some client application.  If one operation takes
+hours, some sort of &quot;progress bar&quot; becomes very useful, at least to see whether
+application works or hangs. xper_length takes an XPER entity and returns whole length of
+XPER disk image in bytes. xper_tell takes an XPER entity and returns something like entity's offset
+inside the document.  Their results may be used by the client application to monitor the progress
+and estimate the time until completion.  They may be especially useful for debugging purposes,
+e.g. to report position of error.  Unfortunately &quot;xper_seek&quot; is not possible for
+XPERs, unlike typical random access to files.</para>
+  <para>
+Ultimately, the working version of the procedure described above will look like this:</para>
+
+  <programlisting>
+create procedure
+  import_content_xml ()
+  {
+    declare _frag any;
+    declare _tag any;
+    declare _nodeid any;
+    declare _r_id varchar;
+    declare _about, _title, _description varchar;
+    declare CurTime varchar;
+    declare Frags, Inserts, Pos, Length integer;
+
+    select _frag1 into _frag from SOURCE_XML
+      where NAME = 'content.xml' and xpath_contains (XPER, '/RDF/*', _frag1);
+
+    if (not isentity(_frag)) signal('42ODP', 'XML source "Content" is empty');
+
+    Frags := 0;
+    Inserts := 0;
+    Length := xper_length(_frag);
+    result_names (CurTime, Frags, Pos, Length);
+    -- It's not the best way to process deadlocks, but it may be better than nothing.
+
+    whenever sqlstate '40001' goto next_frag;
+
+    next_frag:
+
+    -- Server will inform client application about progress after every 10000 records.
+    if (mod(Frags,10000) = 0)
+    {
+      -- Note that if it needs to estimate the time to completion, time should be measured
+      -- on server side, because results may be returned on batches to reduce network
+      -- traffic, and it may be a significant delay between call of result function on
+      -- server and fetch on client side.
+      CurTime := cast(now() as varchar);
+      Pos := xper_tell(_frag);
+      result (CurTime, Frags, Inserts, Pos, Length);
+    }
+    _tag := xpath_eval('local-name()', _frag);
+    if (_tag = 'Topic')
+    {
+      import_topic(_frag);
+      goto advance;
+    }
+    if (_tag = 'ExternalPage')
+    {
+      import_external(_frag);
+      goto advance;
+    }
+    log_import_error (_frag, &quot;Unknown type of record&quot;);
+    goto nocommit_advance;
+
+    advance:
+    Inserts := Inserts + 1;
+    -- Note that it may be faster to have 1 commit per 100 or 1000 records in some cases.
+
+    commit work;
+
+    nocommit_advance:
+    Frags := Frags + 1;
+
+    _frag := xper_right_sibling(_frag);
+    if (isentity(_frag)) goto next_frag; -- If _frag is NULL, we've completed the import.
+
+    CurTime := cast(now() as varchar);
+    result (CurTime, Frags, Inserts, Length, Length);
+  };
+
+  checkpoint_interval(0);
+  checkpoint;
+
+  read_source_xmls();
+  checkpoint;
+
+  import_content_xml();
+  checkpoint;
+
+  import_structure_xml();
+  checkpoint;
+
+  import_profiles_xml();
+  checkpoint;
+  ...
+
+  checkpoint_interval(60);
+  </programlisting>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>xper_entity</title>
+      <para>Persistent XML entity to operate on.</para></refsect2>
+  </refsect1>
+<!--
+  <refsect1 id="ret"><title>Return Types</title><para></para></refsect1>
+  <refsect1 id="errors"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_"><title></title>
+      <para></para>
+      <screen></screen>
+    </example>
+  </refsect1>
+-->
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_xper_doc">xper_doc</link></para>
+    <para><link linkend="fn_xper_cut">xper_cut</link></para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,166 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<?vsp
+set isolation='uncommitted';
+
+adm_pre_page(lines);
+
+declare _count, upd, i, l, in_proc integer;
+declare stime, cnt, wait integer;
+declare host, root, url, sid, reqs varchar;
+declare refr, elap int;
+
+_count := 0; refr := 0; upd := 1;
+if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+  {
+    adm_tell_unauth_dav (lines);
+    return (0);
+  }
+
+reqs := http_pending_req ();
+in_proc := 0;
+host := get_keyword ('host', params, '');
+root := get_keyword ('root', params, '');
+url := get_keyword ('url', params, '');
+sid := get_keyword ('sid', params, '');
+stime := atoi(get_keyword ('start', params, '0'));
+
+elap := msec_time () - stime;
+
+i := 0; l := length (reqs);
+while (i < l)
+{
+  declare rec any;
+  rec := reqs [i];
+  if (rec[1] = '/admin/admin_dav/admin_vfs_queue.vsp')
+    {
+      i := l;
+      in_proc := 1;
+    }
+  i := i + 1;
+}
+
+if (in_proc or (
+     exists (
+      select 1 from WS.WS.VFS_QUEUE where VQ_ROOT = root and VQ_HOST = host and
+      (
+       (VQ_URL <> url and VQ_STAT in ('waiting', 'pending'))
+       or
+       (VQ_URL = url and VQ_STAT = 'pending')
+      )
+      )
+      )
+    )
+  refr := 1;
+
+?>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Web robot downloaded sites list">
+<?vsp if (refr) { ?>
+    <META HTTP-EQUIV="REFRESH" CONTENT="5">
+<?vsp } ?>
+<title>Web sites list</title>
+</head>
+<?vsp adm_page_header('Site Download Status', 'webdataimportsexports'); ?>
+
+<?vsp
+   if (refr)
+     select count(*) into cnt from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT = 'retrieved';
+   else
+     select count(*) into cnt from WS.WS.VFS_URL where VU_HOST = host and VU_ROOT = root;
+   select count(*) into wait from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT = 'waiting';
+   if (refr)
+     {
+?>
+<H4><?=host?></H4>
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="6">Top <?= case when wait > 20 then 20 else wait end ?> pending URLs (Total waiting <?=wait?>)</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="6"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<tr>
+<th class="genlistheadt">URL</th>
+<th class="genlistheadt">Registered on</th>
+<th class="genlistheadt">State</th>
+</tr>
+
+<?vsp
+  for select top 20 VQ_URL, VQ_TS, VQ_STAT from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT in ('waiting', 'pending', 'error') order by VQ_HOST, VQ_ROOT, VQ_TS do
+  {
+?>
+    <tr><td class="gendata"><?=VQ_URL?></td><td class="gendata"><?=adm_date_fmt(VQ_TS)?></td><td class="gendata">
+    <font
+    <?vsp if (VQ_STAT = 'pending') { ?>
+    style="color:red"
+    <?vsp } ?>
+    >
+    <?=VQ_STAT?>
+    </font>
+    </td></tr>
+<?vsp
+  }
+?>
+</table>
+<?vsp
+     }
+   else
+    {
+      declare _err_cnt, updated_l, sttime int;
+      _err_cnt := coalesce ((select count(*) from WS.WS.VFS_QUEUE where VQ_HOST = host and
+		VQ_ROOT = root and VQ_STAT = 'error'), 0);
+      if (_err_cnt > 1)
+	  http (concat ('<p>Errors while retrieving target. Wrong entries : ',
+		cast (_err_cnt as varchar) ,'. Select "Stop" and "Reset" to return initial state</p>'));
+     {
+       declare continue handler for sqlstate '*' { upd := 0; sttime := now (); };
+       sttime := cast (get_keyword ('stime', params, cast (now() as varchar)) as datetime);
+     }
+     if (upd)
+       {
+	 declare continue handler for not found { updated_l := 0; };
+	   {
+	       select count(*) into updated_l from WS.WS.VFS_URL
+		    where VU_ROOT = root and VU_HOST = host and VU_CPTIME > sttime and VU_URL not like '%/';
+	   }
+	if (updated_l > 0)
+	  http (sprintf ('<p><small><strong>Total updated : %d</strong></small></p>', updated_l));
+	else
+	  http (sprintf ('<p><small><strong>No updates</strong></small></p>', updated_l));
+       }
+?>
+    <P><B>Download finished</B></P>
+<?vsp
+    }
+?>
+
+ <P>Total download: <B><?=cnt?></B> pages</P>
+ <?vsp if (refr) { ?>
+ <P>Elapsed time: <B><?=elap?></B> msec.</P>
+ <?vsp } ?>
+
+ <P><A href="admin_vfs_queue.vsp?sid=<?=sid?>">Return to queue shedule</A></P>
+
+<?vsp adm_page_footer(); ?>
+</html>

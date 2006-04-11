@@ -1,0 +1,130 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<body>
+<p>
+<v:page name="data_set_page" xmlns:v="http://www.openlinksw.com/vspx/">
+<v:variable name="offset" default="0" type="int"/>
+<v:variable name="r" default="0" type="int"/>
+<v:variable name="c" default="0" type="int"/>
+
+
+   <v:form name="f1" method="POST" type="simple">
+   <p>There is a hidden data-source doing "<?V self.datasource1.ds_sql ?>"</p>
+   <v:data-source name="datasource1" expression-type="sql" nrows="10" initial-offset="--self.offset">
+     <v:expression>
+       <![CDATA[ select * from Demo.demo.Customers where CustomerID like ? order by CompanyName desc
+       ]]>
+     </v:expression>
+     <v:param name="mask" value="--('L%')"/>
+
+     <v:column name="CompanyName" label="Company Name" input-format="%s" output-format="%s">
+       <!--v:add-style>
+         ...
+         <v:validator>
+           ...
+         </v:validator>
+       </v:add-style>
+       <v:edit-style>
+         ...
+         <v:validator>
+           ...
+         </v:validator>
+       </v:edit-style>
+       <v:browse-style>
+         ...
+       </v:browse-style-->
+     </v:column>
+     <v:column name="Phone" label="Telephone" input-format="%s" output-format="%s" />
+     <!--v:column name="..." label="..." input_format="..." output_format="...">
+       <v:add-style>
+         <v:validator>
+           ...
+         </v:validator>
+         ...
+       </v:add-style>
+       <v:edit-style>
+         <v:validator>
+           ...
+         </v:validator>
+         ...
+       </v:edit-style>
+       <v:browse-style>
+         ...
+       </v:browse-style>
+     </v:column>
+     ...
+     <v:on-error>
+       <![CDATA[ ; ]]>
+     </v:on-error>
+     <v:before-insert>
+       <![CDATA[ ; ]]>
+     </v:before-insert>
+     <v:after-insert>
+       <![CDATA[ ; ]]>
+     </v:after-insert>
+     <v:before-update>
+       <![CDATA[ ; ]]>
+     </v:before-update>
+     <v:after-update>
+       <![CDATA[ ; ]]>
+     </v:after-update>
+     <v:before-delete>
+       <![CDATA[ ; ]]>
+     </v:before-delete>
+     <v:after-delete>
+       <![CDATA[ ; ]]>
+     </v:after-delete-->
+     <v:after-data-bind>
+      control.set_column_label (0, 'Name of Company');
+      --control.set_item_value (0,1,'*none*');
+      --dbg_obj_print (control);
+     </v:after-data-bind>
+     <v:on-init>
+      dbg_obj_print (control);
+     </v:on-init>
+   </v:data-source>
+
+   <p>
+   Enter the: <br />
+   row: <v:text name="r1" value="0" /> <br />
+   col: <v:text name="c1" value="0" />
+    <br />
+   And press : <v:button action="simple" name="b1" value="OK" >
+   </v:button>
+   </p>
+
+   <p>
+   <i>"<v:label name="l1" value="--self.datasource1.get_column_label (atoi(self.c1.ufl_value))" />"</i> =
+   <b><v:text name="l2" value="--self.datasource1.get_item_value (atoi(self.r1.ufl_value),atoi(self.c1.ufl_value))" xhtml_size="--30"/></b>
+   </p>
+    <v:on-post>
+      self.l1.vc_data_bind (e);
+      self.l2.vc_data_bind (e);
+    </v:on-post>
+   </v:form>
+
+</v:page>
+</p>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+  <head>
+  <meta name="DESCRIPTION" content="Virtuoso Developer Tutorial" />
+  <title>Virtuoso Tutorial - User Defined Types</title>
+  <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
+  <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
+  <link rel="alternate" type="application/rss+xml" title="Virtuoso Product Blog (RSS 2.0)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
+  <link rel="alternate" type="application/atom+xml" title="Virtuoso Product Blog (Atom)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
+  <link href="./tutorial3.css" rel="stylesheet" type="text/css" />
+  <link href="./syntax/SyntaxHighlighter.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+  <table border="0" cellpadding="0" cellspacing="0" id="top">
+	  <tr>
+    <td id="topnav"><img src="./images/vtutorials_thin550.gif" alt="Virtuoso Developer Tutorial" width="550" height="75" />
+      </td>
+    </tr>
+  </table>
+  <table border="0" cellpadding="0" cellspacing="0" id="main">
+   <tr>
+    <td id="left">
+          <ul class="lftmenu">
+        <li class="lftmenu_title">Tutorial Quick Links</li>
+      <li class="lftmenu1">
+          <img src="./images/vglobe_16.png" alt="Virtuoso Start Menu" title="Virtuoso Start Menu" />&nbsp;<a target="_blank" href="/">Virtuoso Start Menu</a>
+      </li>
+      <li class="lftmenu1">
+          <img src="./images/nav_arrow1.gif" alt="Virtuoso Conductor" title="Virtuoso Conductor" />&nbsp;<a target="_blank" href="/conductor/">Virtuoso Conductor</a>
+      </li>
+          </ul>
+          <ul class="lftmenu">
+        <li class="lftmenu_title">Reference</li>
+        <li class="lftmenu_info">For a quick look up of any feature, function, or review of language syntax</li>
+      <li class="lftmenu1">
+          <img src="./images/docs_16.png" alt="Documentation" title="Documentation" hspace="2" />&nbsp;<a href="/doc/docs.vsp" target="_empty">Documentation</a>
+      </li>
+      <li class="lftmenu1">
+          <img src="./images/nav_arrow1.gif" alt="Tutorial Quick Start Guide" title="Tutorial Quick Start Guide" hspace="2" />&nbsp;<a href="./guide.vsp">Tutorial Quick Start Guide</a>
+      </li>
+      <li class="lftmenu1">
+          <img src="./images/docs_16.png" alt="Functions Index" title="Functions Index" hspace="2" />&nbsp;<a href="/doc/html/functions.html" target="_empty">Functions Index</a>
+      </li>
+          </ul>
+     <div class="lftmenu">
+        <div class="lftmenu_title">search</div>
+      <div class="lftmenu1">
+       <form method="get" action="./search.vsp" style="display:inline;"><input type="text" name="q" id="q" value="" size="17" /><input name="post" value="Go" title="Search" alt="Search" type="submit" />
+       </form>
+      </div>
+     </div>
+          <ul class="lftmenu">
+      <li class="lftmenu_title">
+          <a href="http://www.openlinksw.com/weblogs/virtuoso/" target="_blank">Virtuoso Blog</a>
+      </li>
+        <li class="lftmenu_info">Check out the latest technology buzz on the Virtuoso Blog</li>
+      <li class="lftmenu1">
+       <a target="_blank" href="./atom.vsp"><img src="./images/atom10.gif" border="0" alt="ATOM" title="ATOM" />
+       </a>
+      </li>
+      <li class="lftmenu1">
+       <a target="_blank" href="./rss.vsp"><img src="./images/rss20.gif" border="0" alt="RSS" title="RSS" />
+       </a>
+      </li>
+      <li class="lftmenu1">
+       <a target="_blank" href="./rdf.vsp"><img src="./images/rdf.gif" border="0" alt="RDF" title="RDF" />
+       </a>
+      </li>
+      <li class="lftmenu1">
+       <a target="_blank" href="./ocs.vsp"><img src="./images/ocs0.5.gif" border="0" alt="OCS" title="OCS" />
+       </a>
+      </li>
+      <li class="lftmenu1">
+       <a target="_blank" href="./opml.vsp"><img src="./images/opml.gif" border="0" alt="OPML" title="OPML" />
+       </a>
+      </li>
+      <li class="lftmenu1">
+       <a target="_blank" href="./xbel.vsp"><img src="./images/xbel01.gif" border="0" alt="XBEL" title="XBEL" />
+       </a>
+      </li>
+          </ul>
+     <div class="lftmenu">
+      <div class="lftmenu_info">Version: <?V sys_stat ('st_dbms_ver') ?>
+      </div>
+      <div class="lftmenu_info">Build: <?V sys_stat ('st_build_date') ?>
+      </div>
+     </div>
+     <a target="_blank" href="http://www.openlinksw.com/virtuoso"><img alt="Powered by OpenLink Virtuoso Universal Server" src="./images/PoweredByVirtuoso.gif" border="0" />
+     </a>
+      </td>
+    <td id="right">
+     <div id="navtabs">
+      <table border="0" cellspacing="0" cellpadding="0">
+                   <tr>
+        <td nowrap="nowrap" class="navtab_non_sel"><a href="./hosting/">Data Management &amp; Integration</a>
+                     </td>
+        <td nowrap="nowrap" class="navtab_non_sel"><a href="./services/">Web Services &amp; Web 2.0</a>
+                     </td>
+        <td nowrap="nowrap" class="navtab_non_sel"><a href="./bpeldemo/">Business Process Integration</a>
+                     </td>
+        <td nowrap="nowrap" class="navtab_non_sel"><a href="./web/">Development</a>
+                     </td>
+        <td nowrap="nowrap" class="navtab_non_sel"><a href="./apps/">Demo apps.</a>
+                     </td>
+                   </tr>
+      </table>
+     </div>
+	   <div id="mainarea">
+       <h1>Overview</h1>
+       <p>
+         Welcome to the Virtuoso Tutorials. These are designed to help you get the most out of Virtuoso's extensive functionality.
+         These on-line tutorials provide practical use cases and hands on exercises that demonstrate the capabilities of Virtuoso
+         including handling of Disparate Databases & Data Sources, Web Service Composition and Business Process Integration.
+       </p>
+       <p>
+         Tutorials are grouped by functionality realm, covering the main concepts of each, introducing you to many useful
+         techniques and features. 
+       </p>
+       <h1>Tutorial Layout and Navigation</h1>
+       <p>
+         Each tutorial contains a brief narrative describing the tutorial and a table listing the source files and run operations.
+         The source files contents and execution results can be viewed in the tab "View Source" by selecting the file from the left or
+         by clicking on it in the table with list of files on the "Info" tab.
+       </p>
+       <h1>Running your first tutorial</h1>
+       <p>
+         Each tutorial contains a brief narrative describing the tutorial and a table listing the source files and run operations.
+         The source files contents can be viewed in the tab View Source and execution results can be viewed in the tab Run.
+       </p>
+       <h3>Step1 - Tutorial Selection</h3>
+                       <ol>
+                         <li>
+            Browse your way through the navigation tabs and subtabs. You will see lists of tutorials. Click on the name  to open it.
+                         </li>
+                         <li>
+                            At the foot of the description page there is a list of source files associated with the tutorial.
+                            <i>Note: Information-only tutorials will not contain the table section, source or execution directives</i>.
+                            Some tutorials need to be prepared for execution. This is achieved by clicking the set initial state link
+                            which loads the appropriate SQL script. Whenever there is a link to "Set the Initial state", click that link
+                            before running the tutorials.
+                         </li>
+                         <li>
+                            The source code for the VSP, SQL and XSL can be viewed by clicking on the filename in the source file table.
+                            The file is then displayed in the lower frame.
+                         </li>
+                       </ol>
+       <h3>Step2 - Running your First Tutorial</h3>
+                       <ol>
+                         <li>Navigate to the Web Services Tab and select the SOAP services sub-tab.</li>
+         <li>In the section WSDL Compliant Services click the SO-S-6 tutorial link.</li>
+                         <li>
+                            Set up the database and Initialize the tutorial by clicking on the "Set the intial
+                            state" link in the Action column next to the sq_s_6.sql file.
+                         </li>
+                         <li>
+                            Execute the so_s_6_sample1.vsp program by clicking on the run link. The program execution will
+            be shown in the Run tab.
+                         </li>
+                         <li>
+                            In the Select Service form provided, check the radio set option next to get_order and click
+                            on the Continue button as shown below in Figure 7
+                         </li>
+                         <li>
+                            Enter the "Order ID" in the "Enter the Data" form and click the "Call" button. The order ID can be
+                            any number value from 10248 to a max value of 11079.
+                         </li>
+                         <li>
+            The resulting SOAP response from the SOAP call will be displayed.
+                         </li>
+                       </ol>
+       <h1>Related Links</h1>
+       <p>
+                       For more technical details concerning OpenLinks Virtuoso Universal Server consult:
+                       <ul>
+            <li><a href="http://www.openlinksw.com/weblogs/virtuoso/">The Virtuoso Technology Blog</a></li>
+            <li><a href="http://docs.openlinksw.com/virtuoso/">On-line Documentation</a></li>
+                       </ul>
+       </p>
+              </div>
+	    </td>
+          </tr>
+        </table>
+  <div class="footer">
+   <div id="w3cval">
+    <a href="http://validator.w3.org/check?uri=referer"><img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Transitional" height="31" width="88" />
+    </a>
+   </div>
+    <a target="_blank" href="http://www.openlinksw.com"><img src="./images/web_24.png" border="0" alt="Openlink Home" title="Openlink Home" /> Openlink Home</a> | <a target="_blank" href="http://www.openlinksw.com/virtuoso"><img src="./images/web_24.png" border="0" alt="Virtuoso Home" title="Virtuoso Home" /> Virtuoso Home</a> | <a target="_blank" href="mailto:support@openlinksw.com"><img src="./images/mail_24.png" border="0" alt="Technical Support" title="Technical Support" /> Technical Support</a> | <a target="_blank" href="http://www.openlinksw.com/main/contactu.html"><img src="./images/mail_24.png" border="0" alt="Contact Us" title="Contact Us" /> Contact Us</a>
+    <p class="copyright">Copyright &copy; 1999-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</p>
+  </div>
+  </body>
+</html>

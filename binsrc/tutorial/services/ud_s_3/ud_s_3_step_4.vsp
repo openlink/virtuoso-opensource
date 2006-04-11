@@ -1,0 +1,69 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare res, ent, x any;
+  declare tkey varchar;
+  declare skey, serv, myhost varchar;
+  res := uddi..uddi_str_get ({?'uri'}, {?'service'});
+  ent := xml_tree_doc (res);
+  skey := xpath_eval ('//@serviceKey', ent, 1);
+  res := replace (res, '>', '>\r\n');
+  serv := xml_uri_get (null, TUTORIAL_XSL_DIR () || '/tutorial/services/ud_s_3/bnd.xml');
+  serv := replace (serv, '$SK', cast (skey as varchar));
+  serv := replace (serv, '$BK', {?'bkey'});
+  serv := replace (serv, '$TK', {?'tkey'});
+  myhost := http_request_header (lines, 'Host', NULL, sprintf('localhost:%s', server_http_port()));
+  serv := replace (serv, '$HOST', myhost);
+  x := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/ud_s_3/ud_s_3.xsl', xml_tree_doc (res), vector ('table_name', 'save_service result'));
+?>
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"><head>
+<body>
+    <?vsp http_value (x); ?>
+<form action="ud_s_3_step_5.vsp" method="POST">
+<input type=hidden name="uri" value="<?={?'uri'}?>">
+<input type=hidden name="tkey" value="<?={?'tkey'}?>">
+<input type=hidden name="bkey" value="<?={?'bkey'}?>">
+<input type=hidden name="skey" value="<?=skey?>">
+<table class="tableentry">
+  <tr>
+    <td>
+    Step 4: bind service to the business entry
+    </td>
+    <td>
+    <textarea name="binding" rows=15 cols="60"><?vsp http (serv); ?>
+    </textarea>
+    </td>
+  </tr>
+  <tr>
+    <td>
+    <input type="submit" name="exec" value="save_binding">
+    </td>
+    <td>
+    &nbsp;
+    </td>
+  </tr>
+</table>
+</form>
+</body>
+</html>

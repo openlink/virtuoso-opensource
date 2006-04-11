@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_connection_get">
+  <refmeta>
+    <refentrytitle>connection_get</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>connection_get</refname>
+    <refpurpose>Get connection variable</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_connection_get">
+      <funcprototype id="fproto_connection_get">
+        <funcdef>any <function>connection_get</function></funcdef>
+	<paramdef>in <parameter>name</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params_connection_get"><title>Parameters</title>
+    <refsect2><title>name</title>
+      <para>Name of the connection variable</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret_connection_get"><title>Return Values</title>
+    <para>A value associated to the connection by connection_set in the datatype of the original value. If the variable does not exist, a NULL is returned.</para>
+  </refsect1>
+  <refsect1 id="desc_connection_get"><title>Description</title>
+    <para><function>connection_get</function> is used to retrieve values
+    stored within the current connection context. See
+    <link linkend="fn_connection_set"><function>connection_set</function></link>
+    for a more detailed discussion of connection variables.</para></refsect1>
+<!--
+  <refsect1 id="errors_connection_get"><title>Errors</title>
+    <table><title>Errors signalled by <function>connection_get</function></title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+-->
+  <refsect1 id="examples_connection_get"><title>Examples</title>
+    <example id="ex_connection_var1"><title>Setting and Retrieving Connection Variables</title>
+<programlisting>
+SQL> select connection_get('var_demo');
+callret
+VARCHAR
+__________________________________________________________________
+
+NULL
+
+SQL> connection_set('var_demo', 'some arb data');
+
+SQL> select connection_get('var_demo');
+callret
+VARCHAR
+__________________________________________________________________
+
+some arb data
+</programlisting>
+<para>
+In a VSP page...
+</para>
+<programlisting>
+  &lt;?vsp
+    declare id integer;
+    declare saved_req any;
+    id := connection_get ('ID');
+    saved_req := connection_set ('saved_request');
+  ?&gt;
+</programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_connection_get"><title>See Also</title>
+    <para><link linkend="fn_connection_set">connection_set</link></para>
+  </refsect1>
+</refentry>
+

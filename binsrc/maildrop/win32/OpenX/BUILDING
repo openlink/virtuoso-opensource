@@ -1,0 +1,9 @@
+This is the source code for my installer.
+
+I used it to distribute an internal test release.
+
+For information about Inno Setup, visit http://www.jrsoftware.org/
+It also uses the Inno Setup extensions from http://www.wintax.nl/isx/
+and the script builder (ISTool) from http://www.bhenden.org/istool/
+
+Paul

@@ -1,0 +1,276 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<process name="LoanFlow"
+         targetNamespace="http://samples.openlinksw.com"
+         suppressJoinFailure="yes"
+         xmlns:tns="http://samples.openlinksw.com"
+         xmlns:services="http://services.openlinksw.com"
+         xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+         xmlns:auto="http://www.autoloan.com/ns/autoloan"
+         >
+
+  <!-- *********************************************************************
+         This process invokes a synchronous credit rating service (which
+         throws NegativeCredit exceptions), then  it invokes two asynchronous
+         loan processor services in parallel and finally selects the best loan
+         offer received and returns it (asynchronously) to its caller.
+       *********************************************************************-->
+
+  <partnerLinks>
+    <partnerLink name="client"
+             partnerLinkType="tns:LoanFlow"
+             partnerRole="LoanFlowRequester"
+             myRole="LoanFlowProvider"/>
+
+    <partnerLink name="creditRatingService"
+             partnerLinkType="services:CreditRatingService"
+             partnerRole="CreditRatingServiceProvider"/>
+
+    <partnerLink name="UnitedLoanService"
+             partnerLinkType="services:LoanService"
+             myRole="LoanServiceRequester"
+             partnerRole="LoanServiceProvider"/>
+
+    <partnerLink name="StarLoanService"
+             partnerLinkType="services:LoanService"
+             myRole="LoanServiceRequester"
+             partnerRole="LoanServiceProvider"/>
+  </partnerLinks>
+
+  <variables>
+    <!-- input of this process -->
+    <variable name="input"
+               messageType="tns:LoanFlowRequestMessage"/>
+    <variable name="crInput"
+               messageType="services:CreditRatingServiceRequestMessage"/>
+    <variable name="crOutput"
+               messageType="services:CreditRatingServiceResponseMessage"/>
+    <variable name="crError"
+               messageType="services:CreditRatingServiceFaultMessage"/>
+
+    <!-- input of united loan and star loan-->
+    <variable name="loanApplication"
+               messageType="services:LoanServiceRequestMessage"/>
+    <!-- output of united loan-->
+    <variable name="loanOffer1"
+               messageType="services:LoanServiceResultMessage"/>
+    <!-- output of star loan-->
+    <variable name="loanOffer2"
+               messageType="services:LoanServiceResultMessage"/>
+
+    <!-- output of this process -->
+    <variable name="selectedLoanOffer"
+               messageType="tns:LoanFlowResultMessage"/>
+  </variables>
+
+
+  <sequence>
+
+    <!-- ************************************************************
+         Receive input from requestor - this is what kicks
+         off this flow. We get passed a loan application business doc
+         ************************************************************ -->
+
+    <receive name="receiveInput" partnerLink="client"
+             portType="tns:LoanFlow"
+             operation="initiate" variable="input"
+             createInstance="yes"/>
+
+    <!-- ************************************************************
+         Invoke the synchronous creditRatingService. Define a scope
+         for handling faults from it and set the credit rating in the
+         loan app bus doc if we get a credit rating back. In the case
+         of a NegativeCredit exception, set it to -1000.
+         ************************************************************ -->
+    <scope name="GetCreditRating" variableAccessSerializable="no">
+
+      <!-- Watch for faults (exceptions) being thrown from creditRatingService -->
+      <faultHandlers>
+
+        <catch faultName="services:NegativeCredit"
+            faultVariable="crError">
+
+            <!-- For now, just set creditRating to -1000 for
+                negative credit exceptions -->
+            <assign>
+                <copy>
+                    <from expression="number ('-1000')"/>
+                    <to variable="input" part="payload"
+                        query="/auto:loanApplication/auto:creditRating"/>
+                </copy>
+            </assign>
+
+        </catch>
+
+      </faultHandlers>
+
+      <sequence>
+	    <!-- ************************************************************
+	         Copy the SSN from the input LoanApplication variable
+	         to the creditRating service input variable
+	         ************************************************************ -->
+
+	    <assign>
+	      <copy>
+	          <from variable="input" part="payload" query="/auto:loanApplication/auto:SSN"/>
+	          <to variable="crInput" part="payload" query="/services:ssn"/>
+	      </copy>
+	    </assign>
+
+        <!-- Invoke the CreditRating Service, the URL of this service's
+            WSDL is specified in the deployment descriptor -->
+
+        <invoke name="invokeCR"
+                partnerLink="creditRatingService"
+                portType="services:CreditRatingService"
+                operation="process"
+                inputVariable="crInput"
+                outputVariable="crOutput"/>
+
+        <!-- Add the credit rating we received to the loan application
+            business document -->
+
+        <assign>
+            <copy>
+                <from variable="crOutput" part="payload" query="/services:rating"/>
+                <to variable="input" part="payload" query="/auto:loanApplication/auto:creditRating"/>
+            </copy>
+        </assign>
+
+      </sequence>
+
+    </scope>
+
+    <!-- ************************************************************
+         Now we will invoke the 2 loan providers (async web services)
+         in parallel. We send each a LoanApplication bus doc and wait
+         for a LoanOffer to be returned.
+         ************************************************************ -->
+
+	<scope name="GetLoanOffer" variableAccessSerializable="no">
+	    <sequence>
+		    <!-- initialize the input of UnitedLoan and StarLoan -->
+		    <assign>
+		        <copy>
+		            <from variable="input" part="payload"/>
+		            <to variable="loanApplication" part="payload"/>
+		        </copy>
+		    </assign>
+
+		    <flow>
+
+		    <!-- ************************************************************
+		         Invoke the first loan provider (UnitedLoan)
+		         ************************************************************ -->
+		      <!-- invoke first loan provider -->
+		      <sequence>
+
+		        <!--  initiate the remote service -->
+		        <invoke name="invokeUnitedLoan"
+		                partnerLink="UnitedLoanService"
+		                portType="services:LoanService"
+		                operation="initiate"
+		                inputVariable="loanApplication"/>
+
+		        <!--  receive the result of the remote service -->
+		        <receive name="receive_invokeUnitedLoan"
+		                partnerLink="UnitedLoanService"
+		                portType="services:LoanServiceCallback"
+		                operation="onResult"
+		                variable="loanOffer1"/>
+
+		      </sequence>
+
+		      <!-- ************************************************************
+		           Invoke the second loan provider (StarLoan)
+		           ************************************************************ -->
+		      <sequence>
+
+		        <!--  initiate the remote service -->
+		        <invoke name="invokeStarLoan" partnerLink="StarLoanService"
+		                portType="services:LoanService"
+		                operation="initiate"
+		                inputVariable="loanApplication"/>
+
+		        <!--  receive the result of the remote service -->
+		        <receive name="receive_invokeStarLoan"
+		                partnerLink="StarLoanService"
+		                portType="services:LoanServiceCallback"
+		                operation="onResult"
+		                variable="loanOffer2"/>
+
+		      </sequence>
+
+		    </flow>
+	    </sequence>
+    </scope>
+
+    <!-- ************************************************************
+         Decide which offer has the lower APR. Copy the offer with the
+         lowest APR into the selectedLoanOffer return document.
+         ************************************************************ -->
+    <scope name="SelectOffer" variableAccessSerializable="no">
+	    <switch>
+
+	        <!-- If loanOffer1 is greater (worse) than loanOffer2 -->
+	        <case condition="getVariableData('loanOffer1','payload','/auto:loanOffer/auto:APR') > getVariableData('loanOffer2','payload','/auto:loanOffer/auto:APR') ">
+
+	            <!-- Then take loanOffer2 -->
+	            <assign>
+	                <copy>
+	                <from variable="loanOffer2" part="payload"/>
+	                <to variable="selectedLoanOffer" part="payload"/>
+	                </copy>
+	            </assign>
+
+	        </case>
+
+	        <!-- Otherwise take loanOffer1 -->
+	        <otherwise>
+
+	            <assign>
+	                <copy>
+	                <from variable="loanOffer1" part="payload"/>
+	                <to variable="selectedLoanOffer" part="payload"/>
+	                </copy>
+	            </assign>
+
+	        </otherwise>
+
+	    </switch>
+    </scope>
+
+    <!-- ************************************************************
+         And, finally, send the return offer back to our client who
+         kicked off the whole process.
+         ************************************************************ -->
+    <invoke name="replyOutput"
+            partnerLink="client"
+            portType="tns:LoanFlowCallback"
+            operation="onResult"
+            inputVariable="selectedLoanOffer"/>
+
+  </sequence>
+
+</process>
+

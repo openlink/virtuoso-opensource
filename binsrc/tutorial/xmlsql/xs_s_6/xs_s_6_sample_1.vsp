@@ -1,0 +1,183 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare body varchar;
+  declare res any;
+  declare pro integer;
+  declare err varchar;
+  res := vector ();
+  err := '';
+  if ({?'exec'} = 'Apply xpath_eval')
+    {
+      declare qry varchar;
+
+      declare exit handler for not found { err := 'No file specified'; goto xf; };
+	{
+          select XT_TEXT into body from XML_TEXT2 where XT_FILE = {?'file'};
+	}
+
+      if ({?'qry'} = '1')
+	{
+	  qry := 'count (//title)';
+          pro := 0;
+	}
+      else if ({?'qry'} = '2')
+	{
+	  qry := '//sect2/title';
+          pro := 1;
+	}
+      else if ({?'qry'} = '3')
+	{
+	  qry := '//sect2/title[position() = 1]';
+          pro := 2;
+	}
+
+      res := xpath_eval (qry, xml_tree_doc (body), 0);
+    }
+xf:
+?>
+
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+<p style="color:red"><?=err?></p>
+<form action="xs_s_6_sample_1.vsp" method="post">
+<table class="tableentry">
+<tr>
+   <td>1. Select query</td>
+   <td>
+     <select name="qry">
+       <option value=1>count of all titles ("count (//title)")</option>
+       <option value=2>sum of the length of sect2 titles ("//sect2/title" and iterate over results)</option>
+       <option value=3>all first paragraphs of sect2's ("//sect2/title[position() = 1]")</option>
+     </select>
+   </td>
+</tr>
+<tr><td>2. Select document or go to 3a.</td><td>&nbsp;</td></tr>
+<?vsp
+   for select XT_FILE from XML_TEXT2 do
+    {
+?>
+    <tr>
+    <td>&nbsp;</td>
+    <td><input type="radio" name="file" value="<?=XT_FILE?>">
+    <?=XT_FILE?></td>
+    </tr>
+<?vsp } ?>
+    <tr>
+    <td>3. Apply the xpath_eval()</td>
+    <td><input type="submit" name="exec" value="Apply xpath_eval"></td>
+    </tr>
+    <tr>
+    <td>3a. Apply xpath_contains () over all documents</td>
+    <td><input type="submit" name="xp" value="Apply xpath_contains"></td>
+    </tr>
+</table>
+</form>
+  <table class=tableresult>
+<?vsp
+     declare i, l integer;
+     declare ht any;
+     declare sle integer;
+     i := 0; l := length (res); sle := 0;
+     if (l)
+       {
+?>
+  <th>Result(s)</th>
+  <?vsp
+       }
+
+     while (i < l)
+       {
+	 ht := res[i];
+	 if (pro = 1)
+           {
+	     sle := sle + length (cast (ht as varchar));
+	   }
+	 else if (pro = 2)
+	   {
+	     declare ses any;
+             ses := string_output ();
+             http_value (ht, null, ses);
+             ht := string_output_string(ses);
+	   }
+	if (pro <> 1)
+	  {
+?>
+    <tr><td><?=ht?></td><tr>
+<?vsp
+	  }
+         i := i + 1;
+       }
+     if (pro = 1)
+       {
+         http (sprintf ('<tr><td>Total length</td><tr>'));
+         http (sprintf ('<tr><td>%d</td><tr>', sle));
+       }
+  ?>
+  </table>
+  <table class="tableresult">
+<?vsp
+  if ({?'xp'} = 'Apply xpath_contains')
+    {
+      if ({?'qry'} = '1')
+	{
+	  for select XT_FILE, p from XML_TEXT2 where xpath_contains (XT_TEXT,'count (//title)', p) do
+	    {
+	      ?>
+		  <tr><td><?=XT_FILE?></td><td><?=p?></td></tr>
+	      <?vsp
+	    }
+	}
+      else if ({?'qry'} = '2')
+	{
+	  for select XT_FILE as xf from XML_TEXT2 do
+	    {
+	      for select sum (length (cast (p as varchar))) as d
+		   from XML_TEXT2 where xpath_contains (XT_TEXT,'//sect2/title', p) and XT_FILE = xf do
+		{
+	      ?>
+		  <tr><td><?=xf?></td><td><?=d?></td></tr>
+	      <?vsp
+		}
+	    }
+	}
+      else if ({?'qry'} = '3')
+	{
+	  declare ses any;
+	  for select XT_FILE, p from XML_TEXT2 where xpath_contains (XT_TEXT,'//sect2/title[position() = 1]', p) do
+	    {
+	      ses := string_output ();
+	      http_value (p, null, ses);
+	      ht := string_output_string(ses);
+	      ?>
+		  <tr><td><?=XT_FILE?></td><td><?=ht?></td></tr>
+	      <?vsp
+	    }
+	}
+
+    }
+?>
+  </table>
+</body>
+</html>

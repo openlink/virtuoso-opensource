@@ -1,0 +1,79 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-B-4">
+  <refmeta>
+    <refentrytitle>Basic VSP Programming</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Emitting Output to the User Agent</refname>
+    <refpurpose>How to send data to the user-agents</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-B-4a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+<listitem>The Virtuoso Web server writes the content that is to be sent into the internal string session.</listitem>
+<listitem>The internal string session will be sent to the user-agent after VSP execution (if there is no unhandled SQL errors).</listitem>
+<listitem>There is full control over an internal session. It can be cleared, filled and flushed.
+Note when flushing an internal session the task will be executed in background, and no output will be sent after this action.</listitem>
+<listitem>The character data can be encoded in various ways. A default encoding (CharSet) can be defined in the database INI file</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-B-4b">
+<title>HTTP session control functions</title>
+<itemizedlist mark="bullet">
+  <listitem>http() - writes a string into the internal string session without conversion.</listitem>
+  <listitem>http_value() - writes a string with escapes into the internal string session.</listitem>
+  <listitem>http_rewrite() - clears the internal string session</listitem>
+  <listitem>http_flush() - flushes the internal string to the user-agent and continues processing in background.</listitem>
+  <listitem>&lt;?=var ?&gt; - a shortcut to write a variable (or function) from an HTML section.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-B-4c">
+<title>HTTP formatting and charset functions</title>
+<itemizedlist mark="bullet">
+  <listitem>sprintf() - the special codes %V and %U used for HTML and URL escaping respectively.</listitem>
+  <listitem>http_url() - converts argument to a URL escaping special characters. Result written to internal session.</listitem>
+  <listitem>http_value() - converts argument to HTML escaping special characters. Result written to internal session.</listitem>
+  <listitem>current_charset() - returns name of the current charset.</listitem>
+</itemizedlist>
+
+</refsect1>
+
+<refsect1 id="VS-B-4d">
+<title>Examples</title>
+<orderedlist>
+  <listitem>Use of http().</listitem>
+  <listitem>Use of http_value().</listitem>
+  <listitem>Use of http_rewrite().</listitem>
+  <listitem>Use of http_url().</listitem>
+  <listitem>Use of &lt;?= ?&gt; tags.</listitem>
+  <listitem>Use of sprintf().</listitem>
+</orderedlist>
+
+</refsect1>
+</refentry>

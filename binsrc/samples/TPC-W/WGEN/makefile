@@ -1,0 +1,61 @@
+# @(#) makefile.suite 12.1.1.4@(#)
+################
+## CHANGE NAME OF ANSI COMPILER HERE
+################
+CC      = gcc
+# Current values for DATABASE are: INFORMIX, DB2, TDAT (Teradata)
+#                                  SQLSERVER, SYBASE, VIRTUOSO
+# Current values for MACHINE are:  ATT, DOS, HP, IBM, ICL, MVS, 
+#                                  SGI, SUN, U2200, VMS, LINUX
+# Current values for WORKLOAD are: TPCW
+#
+DATABASE= VIRTUOSO
+MACHINE = LINUX
+#
+# add -EDTERABYTE if orderkey will execeed 32 bits (SF >= 300)
+# and make the appropriate change in gen_schema() of runit.sh
+CFLAGS	= -g -O -D$(MACHINE) -D$(DATABASE) -D$(WORKLOAD)
+LDFLAGS = -g
+# The OBJ,EXE and LIB macros will need to be changed for compilation under
+#  Windows NT
+OBJ     = .o
+EXE     =
+LIBS    = -lm
+#
+# NO CHANGES SHOULD BE NECESSARY BELOW THIS LINE
+###############
+WORKLOAD = TPCW
+TREE_ROOT=/tmp/tree
+#
+PROG1 = tpcw$(EXE)
+PROGS = $(PROG1)
+#
+HDR1 = tpcw.h rnd.h config.h
+HDR  = $(HDR1)
+#
+SRC1 = main.c bm_utils.c rnd.c text.c tpcw.c
+SRC  = $(SRC1)
+#
+OBJ1 = main.o bm_utils.o rnd.o text.o tpcw.o
+OBJS = $(OBJ1)
+#
+SETS = grammar.tpcw
+DOC=README BUGS makefile.suite $(SETS)
+#
+ALLSRC=$(SRC1) $(HDR1) $(DOC)
+#
+all: $(PROGS) 
+$(PROG1): $(OBJ1) $(SETS) 
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ1) $(LIBS)
+clean:
+	rm -f $(PROGS) $(OBJS) $(JUNK)
+lint:
+	lint $(CFLAGS) -u -x -wO -Ma -p $(SRC1)
+
+tar: $(ALLSRC) 
+	tar cvhf $(PROG1).tar $(ALLSRC) 
+zip: $(ALLSRC)
+	zip $(PROG1).zip $(ALLSRC)
+
+rnd$(OBJ): rnd.h
+$(OBJ1): $(HDR1)

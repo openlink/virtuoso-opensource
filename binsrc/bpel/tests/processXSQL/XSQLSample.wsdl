@@ -1,0 +1,64 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions name="XSQLSample"
+        targetNamespace="http://samples.openlinksw.com/bpel"
+        xmlns:virt="http://samples.openlinksw.com/bpel"
+        xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+        xmlns="http://schemas.xmlsoap.org/wsdl/"
+        >
+
+    <types>  
+        <schema attributeFormDefault="qualified" 
+                elementFormDefault="qualified" 
+                targetNamespace="http://samples.openlinksw.com/bpel"
+                xmlns="http://www.w3.org/2001/XMLSchema"
+                >
+	   
+	   <element name="id" type="int"/> 
+	   <element name="rowset" type="anyType"/> 
+	</schema>
+    </types>
+  
+    <message name="XSQLSampleRequestMessage">
+        <part name="payload" element="virt:id"/>
+    </message>
+    
+    <message name="XSQLSampleResultMessage">
+        <part name="payload" element="virt:rowset"/>
+    </message>
+
+
+    <portType name="XSQLSample">
+        <operation name="initiate">
+            <input message="virt:XSQLSampleRequestMessage"/>
+            <output message="virt:XSQLSampleResultMessage"/>
+        </operation>
+    </portType>
+
+    <plnk:partnerLinkType name="XSQLSample">
+        <plnk:role name="XSQLSampleProvider">
+            <plnk:portType name="virt:XSQLSample"/>
+        </plnk:role>
+    </plnk:partnerLinkType>   
+</definitions>

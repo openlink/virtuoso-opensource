@@ -1,0 +1,64 @@
+#  
+#  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+#  project.
+#  
+#  Copyright (C) 1998-2006 OpenLink Software
+#  
+#  This project is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by the
+#  Free Software Foundation; only version 2 of the License, dated June 1991.
+#  
+#  This program is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#  General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+#  
+#  
+SUBDIRS = plugin
+
+
+# ----------------------------------------------------------------------
+#
+#  Additional files to distribute
+#
+# ----------------------------------------------------------------------
+EXTRA_DIST =  \
+	http/*.css \
+	http/images/*.gif \
+	http/images/*.jpg \
+	http/images/*.png \
+	http/*.vsp \
+	http/*.vspx \
+	http/*.xsl \
+	http/*.xslt \
+	initial/Main/*.txt \
+	initial/Wiki/*.txt \
+	*.isql \
+	kupu/common/*.css \
+	kupu/common/*.js \
+	kupu/common/kupudrawers/drawer.xsl.metadata \
+	kupu/common/kupudrawers/logos/*.gif \
+	kupu/common/kupudrawers/logos/*.png \
+	kupu/common/kupudrawers/*.xml \
+	kupu/common/kupudrawers/*.xsl \
+	kupu/common/kupuimages/*.gif \
+	kupu/common/kupuimages/*.png \
+	kupu/common/kupupopups/*.html \
+	kupu/common/kupu.pox \
+	kupu/common/kupu.pox.jspx \
+	make_vad.sh \
+	retry.sh \
+	Skins/Clean/*.css \
+	Skins/Clean/*.xslt \
+	Skins/default/*.css \
+	Skins/default/*.xslt \
+	Skins/OpenLink/*.css \
+	Skins/OpenLink/*.xslt \
+	Skins/white/*.css \
+	Skins/white/*.xslt \
+	*.sql \
+	Template/*.txt

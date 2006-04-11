@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_number">
+  <refmeta>
+    <refentrytitle>number</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>number</refname>
+    <refpurpose>Converts its argument to a number.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_number">
+      <funcprototype id="xpf_proto_number">
+        <funcdef>number <function>number</function></funcdef>
+	<paramdef><optional><parameter>obj</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_number"><title>Description</title>
+<para>
+The number function converts its argument to a number as follows:
+</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem><para>
+A string that consists of decimal number and optional whitespaces is converted to the number recorded.
+Any other string is converted to NaN ("not-a-number" value).
+More precisely,
+a string that consists of
+optional whitespace followed by an optional plus or minus sign
+followed by a Number followed by whitespace is converted to the
+IEEE 754 number that is nearest
+(according to the IEEE 754 round-to-nearest rule)
+to the mathematical value represented by the string.
+Note that it differs from XPATH 1.0 standard where plus sign is not allowed
+before Number part of the string.
+</para></listitem>
+<listitem><para>
+Boolean true is converted to 1; boolean false is converted to 0.
+</para></listitem>
+<listitem><para>
+A node-set is first converted to a string as if by a call to the string function and then converted in the same way as a string argument.
+</para></listitem>
+<listitem><para>
+An object of a type other than the four basic types is converted to a number in a way that is dependent on that type.
+</para></listitem>
+</itemizedlist>
+<para>
+If the argument is omitted, it defaults to a node-set with the context node as its only member.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_number"><title>Parameters</title>
+    <refsect2><title>obj</title>
+      <para>Value to be converted to a number.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_number"><title>Return Types</title><para>Number</para></refsect1>
+  <refsect1 id="xpf_examples_number"><title>Examples</title>
+    <example id="xpf_ex_number"><title></title>
+      <para></para>
+      <screen>number(' 3.1415926 ')</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_number"><title>See Also</title>
+    <para><link linkend="xpf_string">string()</link><link linkend="xpf_boolean">boolean()</link></para>
+  </refsect1>
+</refentry>
+

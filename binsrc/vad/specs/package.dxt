@@ -1,0 +1,34 @@
+/*! \page vad_package Physical structure of VAD package
+
+Vad package is a sequence of uniform records. Every record consists of 2 parts.
+First part is a name - an unique ID of the record, and the second one is
+a data section. Every part has 5-bytes prefix:
+tag byte and the 4 network-ordered bytes of length of the rest of the part.
+<TABLE>
+<TR><TH>Length</TH><TH>Content</TH></TR>
+<TR><TD>1</TD><TD>Byte 182 (DV_LONG_STRING)</TD></TR>
+<TR><TD>4</TD><TD>N1, Network-ordered length of the record's key </TD></TR>
+<TR><TD>N1</TD><TD>The key string, not zero-terminated</TD></TR>
+<TR><TD>1</TD><TD>Byte 223 (DV_LONG_BIN)</TD></TR>
+<TR><TD>4</TD><TD>N2, Network-ordered length of the record's data </TD></TR>
+<TR><TD>N2</TD><TD>Binary data, not zero-terminated</TD></TR>
+</TABLE>
+
+The order of records is very simple.
+<UL>
+<LI>A record titled '<CODE> VAD</CODE>' (whitespace, 'V', 'A', 'D')
+is an ordinary text label,
+usually name of the package and a warning that the file binary and should not be edited, even
+if it looks like text. </LI>
+<LI>A record titled '<CODE> STICKER</CODE>' (with leading whitespace again) should contain
+the \ref vad_sticker XML text. </LI>
+<LI>Resources, as gzipped files;
+records are titled by their identifiers as they are named in the sticker. </LI>
+<LI>A record titled '<CODE> MD5</CODE>' (whitespace again)
+is a MD5 checksums of the whole previous content of the package file.</LI>
+</UL>
+
+Before any operation with resource file, it should be read from the beginning to the end
+to test the structure of records. Any error found at this stage will be absolutely fatal.
+
+*/

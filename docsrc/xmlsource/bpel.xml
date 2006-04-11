@@ -1,0 +1,2350 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="bpel">
+    <title>BPEL Reference</title>
+    <formalpara><title>Introduction</title>
+	<para>
+	    Business Process Execution Language for Web Services (called BPEL4WS or simply BPEL
+	    in the rest of this chapter) provides a means of specifying interactions between web services for accomplishing a potentially long running business task.
+	</para>
+    </formalpara>
+    <formalpara><title>Used terms</title>
+	<itemizedlist>
+	    <listitem><formalpara><title>WSDL</title>
+		    <para>Web Services Description Language as described in the corresponding W3C proposed recommendation.   This is a notation for declaring services and the types of data they accept and produce.
+			Also the term  may be used to refer to the document containing a WSDL description.</para>
+	    </formalpara></listitem>
+	    <listitem><formalpara><title>partner</title>
+		    <para>A service or application which interacts  with a BPEL process.
+		    </para>
+	    </formalpara></listitem>
+	    <listitem><formalpara><title>(BPEL) script</title>
+		    <para>A document containing BPEL compatible XML constructs.
+		    </para>
+	    </formalpara></listitem>
+	    <listitem><formalpara><title>(BPEL process) instance</title>
+		    <para>An instance of a BPEL process, can be running, suspended, aborted or finished.
+		    </para>
+	    </formalpara></listitem>
+	    <listitem><formalpara><title>activity</title>
+		    <para>An activity is a building block of a BPEL script. Receiving data, invoking other web services, programming language like control structures are all examples of activities.
+		    </para>
+	    </formalpara></listitem>
+	    <listitem><formalpara><title>portType</title>
+		    <para>Container for set of abstract operations see below.
+		    </para>
+	    </formalpara></listitem>
+	    <listitem><formalpara><title>operation</title>
+		    <para>An abstract black-box that have an XML input or/and output.
+			Services potentially supports four types of operations:
+			one-way, request-response, notification and solicit-response; this
+			depends of input and/or output allowed and what is their order.
+			The BPEL4WS uses one-way and request-response operations.
+		        Operations are grouped in 'ports' which define what
+			operations a particular service supports.
+		    </para>
+	    </formalpara></listitem>
+	    <listitem><formalpara><title>message</title>
+		    <para>An abstract XML fragment that is used for operation input and output.
+			In particular this is used inside SOAP Envelope and for value of the
+			BPEL variables. Also the WSDL specification specifies
+			how abstract messages will be used as concrete messages using
+			the SOAP protocol and which encoding will be used.
+		    </para>
+	    </formalpara></listitem>
+	</itemizedlist>
+    </formalpara>
+  <sect2 id="bpelact">
+    <title>Activities</title>
+	  <sect3 id="bpelact_common">
+	      <title>Common attributes and elements</title>
+	      <para>
+		  Every BPEL activity accepts the following standart attributes: 'name',
+		  'joinCondition' and 'suppressJoinFailure'. The 'name' attribute is an optional
+		  unique within the script NCName (as defined in the XMLSchema) identifying
+		  the activity.  The 'joinCondition' is a boolean expression which determine how
+		  incoming  links' state will be tested, by default this is  'true()' which means the logical OR
+		  of  the states of incoming links.
+		  The 'suppressJoinFailure' is a flag to raise or not exception if join condition
+		  fails, by default this is  'no'.
+	      </para>
+	      <para>
+		  The common elements for every activity are 'target' and 'source'. These elements
+		  are used together with links and used to designate which link the current activity
+		  depends on or for which one it is a prerequisite. See also section for 'flow' activity below.
+	      </para>
+	  </sect3>
+	  <sect3 id="bpelact_receive">
+	      <title>receive</title>
+	      <para>This allows the business process to do a blocking wait for a particular message to arrive.</para>
+	      <para>A BPEL process instance is created by a receive activity with the createInstance attribute set to true.
+	      </para>
+	      <refsect1 id="attrs_receive">
+		  <refsect2><title>partnerLink</title>
+		      <para>name of a partner declared in the script from which
+			  the process is to receive  a message.</para>
+		  </refsect2>
+		  <refsect2><title>portType</title>
+		      <para>name of the 'port' as declared in corresponding WSDL
+			  file.
+		      </para>
+		  </refsect2>
+		  <refsect2><title>operation</title>
+		      <para>name of the operation</para>
+		  </refsect2>
+		  <refsect2><title>variable</title>
+		      <para>name of the variable to which the received message will be assigned.</para>
+		  </refsect2>
+		  <refsect2><title>createInstance</title>
+		      <para>used to make instance of the BPEL process and start its execution.</para>
+		  </refsect2>
+	      </refsect1>
+	      <programlisting><![CDATA[
+<receive partnerLink="ncname" portType="qname" operation="ncname"
+    variable="ncname"? createInstance="yes|no"?
+    standard-attributes>
+    standard-elements
+    <correlations>?
+        <correlation set="ncname" initiate="yes|no"?/>+
+    </correlations>
+</receive>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_reply">
+	      <title>reply</title>
+	      <para>allows the business process to send a message in reply to a message that was received through a &lt;receive&gt;</para>
+	      <refsect1 id="attrs">
+		  <refsect2><title>partnerLink</title>
+		      <para>name of a partner declared in the script to which
+			  to send a message.</para>
+		  </refsect2>
+		  <refsect2><title>portType</title>
+		      <para>name of the 'port' as declared in corresponding WSDL
+			  file.
+		      </para>
+		  </refsect2>
+		  <refsect2><title>operation</title>
+		      <para>name of the operation</para>
+		  </refsect2>
+		  <refsect2><title>variable</title>
+		      <para>name of the variable whose  value will be used as output message.</para>
+		  </refsect2>
+		  <refsect2><title>faultName</title>
+		      <para></para>
+		  </refsect2>
+	      </refsect1>
+	      <programlisting><![CDATA[
+<reply partnerLink="ncname" portType="qname" operation="ncname"
+    variable="ncname"? faultName="qname"?
+    standard-attributes>
+    standard-elements
+    <correlations>?
+        <correlation set="ncname" initiate="yes|no"?/>+
+    </correlations>
+</reply>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_invoke">
+	      <title>invoke</title>
+	      <para>This allows the business process to invoke a one-way or
+		  request-response operation on a portType offered by a partner.
+		  When both 'inputVariable' and 'outputVariable' are specified this
+		  means request-response operation will be performed. Please note
+		  that the  operation  is defined primarily in the partner's WSDL.
+	      </para>
+	      <refsect1 id="attrs">
+		  <refsect2><title>partnerLink</title>
+		      <para>name of a partner declared in the script
+			  to who send a message and optionally receive a response.</para>
+		  </refsect2>
+		  <refsect2><title>portType</title>
+		      <para>name of the 'port' as declared in corresponding WSDL
+			  file.
+		      </para>
+		  </refsect2>
+		  <refsect2><title>operation</title>
+		      <para>name of the operation to invoke</para>
+		  </refsect2>
+		  <refsect2><title>inputVariable</title>
+		      <para>name of the variable whose  value will be used as  the message to the partner.</para>
+		  </refsect2>
+		  <refsect2><title>outputVariable</title>
+		      <para>name of the variable to which the response will be assigned.</para>
+		  </refsect2>
+	      </refsect1>
+	      <programlisting><![CDATA[
+<invoke partnerLink="ncname" portType="qname" operation="ncname"
+    inputVariable="ncname"? outputVariable="ncname"?
+    standard-attributes>
+    standard-elements
+    <correlations>?
+        <correlation set="ncname" initiate="yes|no"?
+            pattern="in|out|out-in"/>+
+    </correlations>
+    <catch faultName="qname" faultVariable="ncname"?>*
+        activity
+    </catch>
+    <catchAll>?
+        activity
+    </catchAll>
+    <compensationHandler>?
+        activity
+    </compensationHandler>
+</invoke>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_assign">
+	      <title>assign</title>
+	      <para>can be used to update the values of variables with new data. An &lt;assign&gt; construct can contain any number of elementary assignments (copy sub-elements).</para>
+	      <programlisting><![CDATA[
+<assign standard-attributes>
+    standard-elements
+    <copy>+
+        from-spec
+        to-spec
+    </copy>
+</assign>
+]]></programlisting>
+	    <sect4 id="from-spec"><title>from-spec</title>
+		<para>This represents in &lt;copy&gt; the right part of
+		the assignment.</para>
+	    <programlisting><![CDATA[
+<from variable="ncname" part="ncname"? query="xpath-expression"?/>
+<from partnerLink="ncname" endpointReference="myRole|partnerRole"/>
+<from variable="ncname" property="qname"/>
+<from expression="general-expr"/>
+<from>literal value</from>
+]]></programlisting>
+	    </sect4>
+	    <sect4 id="to-spec"><title>to-spec</title>
+		<para>This represents in &lt;copy&gt; the l-value of
+		the assignment.</para>
+	    <programlisting><![CDATA[
+<from variable="ncname" part="ncname"? query="xpath-expression"?/>
+<from partnerLink="ncname" endpointReference="myRole|partnerRole"/>
+<from variable="ncname" property="qname"/>
+]]></programlisting>
+	    </sect4>
+	  </sect3>
+	  <sect3 id="bpelact_throw">
+	      <title>throw</title>
+	      <para>generates a fault from inside the business process</para>
+	      <refsect1 id="attrs">
+		  <refsect2><title>faultName</title>
+		      <para>the fault code to be thrown.</para>
+		  </refsect2>
+		  <refsect2><title>faultVariable</title>
+		      <para></para>
+		  </refsect2>
+	      </refsect1>
+	      <programlisting><![CDATA[
+<throw faultName="qname" faultVariable="ncname"? standard-attributes>
+    standard-elements
+</throw>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_terminate">
+	      <title>terminate</title>
+	      <para>Used to immediately terminate the execution  of a business process instance.</para>
+	      <programlisting><![CDATA[
+<terminate standard-attributes>
+    standard-elements
+</terminate>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_wait">
+	      <title>wait</title>
+	      <para>Wait until a given point in time  or for a specified  duration.</para>
+	      <refsect1 id="attrs_wait">
+		  <refsect2><title>for</title>
+		      <para>an duration expression as defined in XMLSchema (for example PT10S) </para>
+		  </refsect2>
+		  <refsect2><title>until</title>
+		      <para>an date time expression as defined in XMLSchema</para>
+		  </refsect2>
+	      </refsect1>
+	      <programlisting><![CDATA[
+<wait (for="duration-expr" | until="deadline-expr") standard-attributes>
+    standard-elements
+</wait>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_empty">
+	      <title>empty</title>
+	      <para>insert a "no-op" instruction into a business process</para>
+	      <programlisting><![CDATA[
+<empty standard-attributes>
+    standard-elements
+</empty>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_sequence">
+	      <title>sequence</title>
+	      <para>define a collection of activities to be performed sequentially in lexical order</para>
+	      <programlisting><![CDATA[
+<sequence standard-attributes>
+    standard-elementsactivity+
+</sequence>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_switch">
+	      <title>switch</title>
+	      <para>Select exactly one branch of activity from a set of choices</para>
+	      <refsect1 id="attrs">
+		  <refsect2><title>case</title>
+		      <para>the branch which will be executed if 'condition' attribute returns true.</para>
+		  </refsect2>
+		  <refsect2><title>otherwise</title>
+		      <para>will be executed if all 'case' conditions are evaluated to false.</para>
+		  </refsect2>
+	      </refsect1>
+	      <programlisting><![CDATA[
+<switch standard-attributes>
+    standard-elements
+    <case condition="bool-expr">+
+        activity
+    </case>
+    <otherwise>?
+        activity
+    </otherwise>
+</switch>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_while">
+	      <title>while</title>
+	      <para>Repeat activity while a condition is true.</para>
+	      <refsect1 id="attrs">
+		  <refsect2><title>condition</title>
+		      <para>an XPath expression which will be evaluated every time before
+			  contained activities. If this evaluates to false the loop finishes.
+		      </para>
+		  </refsect2>
+	      </refsect1>
+	      <programlisting><![CDATA[
+<while condition="bool-expr" standard-attributes>
+    standard-elementsactivity
+</while>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_pick">
+	      <title>pick</title>
+	      <para>This  blocks and waits for a suitable message to arrive or for a time-out expire. When one of the events specified in the body of the pick occurs the pick completes.  Only one of the activities in the body of the pick will actually take place.</para>
+	      <refsect1 id="attrs">
+		  <refsect2><title>createInstance</title>
+b		      <para>This is an alternative of the 'receive' to make a new process instance.
+			  And can be expressed as: 'pick' plus 'onMessage' equals to 'receive' activity.
+		      </para>
+		  </refsect2>
+	      </refsect1>
+	      <programlisting><![CDATA[
+<pick createInstance="yes|no"? standard-attributes>
+    standard-elements
+    <onMessage partnerLink="ncname" portType="qname"
+        operation="ncname" variable="ncname"?>+
+        <correlations>?
+	    <correlation set="ncname" initiate="yes|no"?/>+
+	</correlations>
+	activity
+    </onMessage>
+    <onAlarm (for="duration-expr" | until="deadline-expr")>*
+	activity
+    </onAlarm>
+</pick>
+]]></programlisting>
+	  <sect4 id="pick"><title>onMessage</title>
+	      <para>This is to wait for an incoming message from given partner.</para>
+	      <para>The attributes are the same as for <ulink url="#bpelact_receive">receive</ulink> activity</para>
+	  </sect4>
+	  <sect4 id="pick"><title>onAlarm</title>
+	      <para>This will register a time-wait object whose  expiration will trigger the pick.
+		  Obviously no more than one can be specified in a given  'pick'
+	      </para>
+	      <para>The attributes are the same as for the <ulink url="#bpelact_wait">wait</ulink> activity</para>
+	  </sect4>
+	  </sect3>
+	  <sect3 id="bpelact_scope">
+	      <title>scope</title>
+	      <para>defines a nested activity with its own associated variables, fault handlers, and compensation handler</para>
+	      <refsect1 id="attrs">
+		  <refsect2><title>variableAccessSerializable</title>
+		      <para></para>
+		  </refsect2>
+	      </refsect1>
+	      <programlisting><![CDATA[
+<scope variableAccessSerializable="yes|no" standard-attributes>
+    standard-elements
+    <variables/>?
+    <correlationSets/>?
+    <faultHandlers/>?
+    <compensationHandler/>?
+    <eventHandlers/>?
+    activity
+</scope>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_flow">
+	      <title>flow</title>
+	      <para>Specifies one or more activities to be performed concurrently.
+	      </para>
+	      <programlisting><![CDATA[
+<flow standard-attributes>
+    standard-elements
+    <links>?
+        <link name="ncname"/>+
+    </links>
+    activity+
+</flow>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_compensate">
+	      <title>compensate</title>
+	      <para>This is used to invoke compensation on an inner scope that has already completed normally. This construct can be invoked only from within a fault handler or another compensation handler</para>
+	      <programlisting><![CDATA[
+<compensate scope="ncname"? standard-attributes>
+    standard-elements
+</compensate>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_compensationHandler">
+	      <title>compensationHandler</title>
+	      <para></para>
+	      <programlisting><![CDATA[
+<compensationHandler>?
+    activity
+</compensationHandler>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_faultHandlers">
+	      <title>faultHandlers</title>
+	      <para></para>
+	      <programlisting><![CDATA[
+<faultHandlers>?
+    <catch faultName="qname"? faultVariable="ncname"?>*
+        activity
+    </catch>
+    <catchAll>?
+        activity
+    </catchAll>
+</faultHandlers>
+	      ]]></programlisting>
+	  <sect4 id="pick"><title>catch</title>
+	      <para>This container will be executed whose 'faultName' attribute
+		  value matches the thrown fault.</para>
+	  </sect4>
+	  <sect4 id="pick"><title>catchAll</title>
+	      <para>This container will be executed if non of the
+		  'catch' containers are matched, so if no 'catchAll'
+is 	           specified, the contained scopes will be compensated and
+		   the fault will be re-thrown to the outer scope.</para>
+	  </sect4>
+	  </sect3>
+	  <sect3 id="bpelact_eventHandlers">
+	      <title>eventHandlers</title>
+	      <para>This is a container for events, thus  it can contain onMessage or/and onAlarm
+		  events. Semantic of the onMessage and onAlarm is same
+		  as defined in <ulink url="#bpelact_pick">pick</ulink> activity, the
+	          difference is that here these can be executed asynchroneously while the events of the defining scope are running.  The events in an event handler section may thus interrupt the execution of the body of the scope.  This feature can be used for supporting asynchroneous cancel messages or timeouts imposed on a whole sequence of operations..</para>
+	      <programlisting><![CDATA[
+<eventHandlers>?
+    <onMessage partnerLink="ncname" portType="qname"
+	operation="ncname"
+	variable="ncname"?>*
+
+	<correlations>?
+	    <correlation set="ncname" initiate="yes|no"/>+
+	</correlations>
+	activity
+    </onMessage>
+    <onAlarm for="duration-expr"? until="deadline-expr"?>*
+	activity
+    </onAlarm>
+</eventHandlers>
+	      ]]></programlisting>
+	  </sect3>
+	  <sect3 id="bpelact_exec">
+	      <title>exec</title>
+	      <para>This is a specific extension of the Virtuoso BPEL implementation.
+		  The exec activity allows executing SQL code from inside a BPEL process without having to define a distinct SOAP service for this.
+	      </para>
+	      <refsect1 id="attrs">
+		  <refsect2><title>binding</title>
+		      <para>only "SQL", "JAVA" and "CLR" are currently permitted.
+		      </para>
+		  </refsect2>
+	      </refsect1>
+	  <programlisting><![CDATA[
+<bpelv:exec binding="SQL">
+    insert into dummy values ('hello world');
+</bpelv:exec>
+	      ]]></programlisting>
+      <sect4 id="bpelact_exec_sql">
+	<title>SQL execution</title>
+	<para>The additional procedures BPEL.BPEL.setVariableData and
+	  BPEL.BPEL.getVariableData allow  manipulating   BPEL
+	  variables. See <ulink url="#bpelapi">SQL API</ulink> for
+	  details. </para>
+	<para>All errors occuring  during the SQL execution are
+	  translated into  BPEL errors.
+	</para>
+      </sect4>
+      <sect4 id="bpelact_exec_java"><title>Java execution</title>
+	<sect5 id="bpelact_exec_java_conf"><title>Configuration</title>
+	  <para>First of all, the java support in BPEL4WS is available
+	    only for java enabled virtuoso servers. In order to enable
+	    java support the following administration steps need to be taken:
+	  </para>
+	  <itemizedlist>
+	    <listitem>
+	      1. Make java compiler (javac) available  for virtuoso
+	      server
+	    </listitem>
+	    <listitem>
+	      2. Enable "system" call by setting the AllowOSCalls?
+	      parameter in virtuoso.ini to 1.
+	    </listitem>
+	    <listitem>
+	      3. Add "classlib" directory to CLASSPATH
+	    </listitem>
+	  </itemizedlist>
+	  <para>After the BPEL4WS package has been installed, the
+	    server needs to be restarted.
+	  </para>
+	  <para>The BPEL4WS package creates the classlib directory in
+	    the server's root with BpelVarsAdaptor?.class.
+	     This directory and this file are necessary for the proper operation of the Java interface.
+	  </para>
+	</sect5>
+	<sect5 id="bpelact_exec_java_using"><title>Using java code in BPEL4WS</title>
+	  <para>There are two elements which support java execution in
+	    BPEL4WS scripts: &lt;bpelv:exec binding="JAVA" import?>
+	      (namespace is "http://www.openlinksw.com/virtuoso/bpel")
+	      and the Oracle compatible form &lt;bpelx:exec import?> (namespace is
+		"http://schemas.oracle.com/bpel/extension"). These
+		tags are equal.
+	  </para>
+	  <para>If the tag contains the "import" attribute the
+	    appropriate package will be imported. Example:
+	  </para>
+	  <programlisting><![CDATA[
+<bpelx:exec import="java.util.*"/>
+	    ]]></programlisting>
+	  <para>Otherwise, the included code will be executed. It
+	    is suggested to use &lt;![CDATA[ statement for representing
+	    the java code. Example:
+	  </para>
+	  <programlisting><![CDATA[
+<bpelx:exec>
+   System.out.println("getVariableData returned: " + getVariableData ("request", "req_payload", "/v:destRequest/v:city"));
+
+   setVariableData ("res",
+         "repl_payload",
+         "/v:destResponse/v:country",
+         "KZ");
+</bpelx:exec>
+	    ]]></programlisting>
+	  <para>The two "functions" are available for accessing  script variables:
+	    setVariableData and getVariableData (analogs of the xpath functions with same names).
+	  </para>
+	  <programlisting><![CDATA[
+void setVariableData (String var_name, String part, String query_path, Object value);
+	    ]]></programlisting>
+	  <para>sets the variable. The value to be set is restricted
+	    to be string or integer in this version.
+	  </para>
+	  <programlisting><![CDATA[
+getVariableData
+	    ]]></programlisting>
+	  <para> is a full analog of xpath function
+	    getVariableData. See details below. </para>
+	  <para> Note, the activity does not commit  changes to
+	    the database until it finishes successfully, so if in a case
+	    of exception the variables are kept untouched. This also
+	    means that deadlocks can occur. </para>
+	  <para> The communication errors must be handled and
+	    processed in the java code itself. </para>
+	  <para> If some unhandled exception occurs in java code,
+	    it will be translated to a  BPEL error. See details in
+	    the next section. </para>
+	</sect5>
+	<sect5 id="bpelact_exec_java_errors"><title>Errors</title>
+	  <para>Two types of errors can be signaled:</para>
+	  <itemizedlist>
+	    <listitem>
+	      1. upload time exceptions
+	    </listitem>
+	    <listitem>
+	      2. runtime exceptions
+	    </listitem>
+	  </itemizedlist>
+	  <para>The first type exceptions are related to configuration
+	    and java syntax errors. These are as follows: </para>
+	  <itemizedlist>
+	    <listitem> 1. [BPELX] The "system" call is disabled, it is
+	      needed for use java code in BPEL4WS scripts. * This
+	      error is signaled when the "AllowOSCalls" is set to 0. So
+	      the engine can not call java compiler. It One must  set this parameter in ini file to 1 and restart the
+	      server to resolve this issue.</listitem>
+	    <listitem> 2. [BPELX] Compilation  of java code for NAME
+	      failed. Try to call "javac NAME.java" for details. * The
+	      compilation of generated class for the activity has
+	      failed. Try to call the suggested operation from command
+	      prompt whith the same PATH and CLASSPATH global
+	      variables to see the javac output. </listitem>
+	  </itemizedlist>
+	  <para>Runtime errors not handled by java method itself are
+	    translated to the BPEL fault in the following form:
+	  </para>
+	  <programlisting><![CDATA[
+<bpws:javaFault sqlState="SQLSTATE">
+ error message
+</bpws:javaFault>
+	    ]]></programlisting>
+	  <para>this error can be handled by BPEL fault handler. Here
+	    is an example: </para>
+	  <programlisting><![CDATA[
+...
+    <receive partnerLink="caller" portType="v:dest" operation="check_dest" variable="request" createInstance="yes"/>
+    <scope>
+      <faultHandlers>
+        <catch faultName="bpws:javaFault" faultVariable="error">
+          <assign>
+            <copy>
+              <from variable="error" query="/javaFault"/>
+              <to variable="res" part="repl_payload" query="/destResponse/country"/>
+            </copy>
+          </assign>
+        </catch>
+      </faultHandlers>
+      <bpelv:exec binding="JAVA" name="invokeSomething"><![CDATA[
+   System.out.println("Executing Java exec in BPEL");
+   System.out.println("getVariableData returned: " + getVariableData ("request", "req_payload", "/v:destRequest/v:city"));
+
+   setVariableData ("res",
+         "repl_payload",
+         "/destResponse/country",
+         "UK");
+   if (true)
+     throw (new Exception("test"));
+   ]] >
+       </bpelv:exec>
+     </scope>
+    <reply partnerLink="caller" portType="v:dest" operation="check_dest" variable="res"/>
+...
+	    ]]></programlisting>
+	  <para>In this code the handler for java exception is set:
+	  </para>
+	  <programlisting><![CDATA[
+...
+        <catch faultName="bpws:javaFault" faultVariable="error">
+          <assign>
+            <copy>
+              <from variable="error" query="/javaFault"/>
+              <to variable="res" part="repl_payload" query="/destResponse/country"/>
+            </copy>
+          </assign>
+        </catch>
+...
+	    ]]></programlisting>
+	  <para>The handler takes the error message from the variable
+	    which holds it ("error") and puts it into the response
+	    variable. </para>
+	</sect5>
+	<sect5 id="bpelact_exec_java_accessors"><title>BPEL variables
+	    accessors</title>
+	  <programlisting><![CDATA[
+void setVariableData (String var_name, String part, String query_path,
+	    Object value)
+	    ]]></programlisting>
+	  <para>- changes BPEL variable named var_name. The "part" is
+	    a part of the message stored in the variable. "query_path"
+	    selects the data in the variable to be changed. The
+	    "value" can be only string or integer, so if several
+	    subdata need to be changed the setVariableData must be
+	    called several times. If the "part" and "query_path" must
+	    be ignored their can be passed as empty strings
+	    ("").</para>
+	  <programlisting><![CDATA[
+String getVariableData (String var_name, String part, String query)
+	    ]]></programlisting>
+	  <para> - returns selected data from the part named by "part"
+	    argument of variable named by "var_name" argument. If the
+	    selection failed the NULL is returned.
+	  </para>
+	</sect5>
+	<sect5 id="bpelact_exec_java_vars"><title>Special
+	    variables</title>
+	  <para>There are two special variables: "variables" and
+	    "xmlnss_pre". They can be changed in the java code, in
+	    this case the behaviour of the engine is
+	    unpredictable. So, it is strongly recommended do not use
+	    these variables. </para>
+	</sect5>
+	<sect5 id="bpelact_exec_java_example"><title>JavaMail usage
+	    example</title>
+	  <programlisting><![CDATA[
+<?xml version="1.0"?>
+<process xmlns:jsm="urn:java:sendMail"
+	xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+	name="javaSendMail"
+	targetNamespace="urn:java:sendMail"
+	xmlns:bpelx="http://schemas.oracle.com/bpel/extension"
+	xmlns:bpelv="http://www.openlinksw.com/virtuoso/bpel">
+
+  <bpelv:exec binding="JAVA" import="java.io.*"/>
+  <bpelv:exec binding="JAVA" import="java.net.InetAddress"/>
+  <bpelv:exec binding="JAVA" import="java.util.Properties"/>
+  <bpelv:exec binding="JAVA" import="java.util.Date"/>
+  <bpelv:exec binding="JAVA" import="javax.mail.*"/>
+  <bpelv:exec binding="JAVA" import="javax.mail.internet.*"/>
+  <bpelv:exec binding="JAVA" import="com.sun.mail.smtp.*"/>
+
+  <partnerLinks>
+    <partnerLink name="caller" partnerLinkType="jsm:dest"/>
+  </partnerLinks>
+
+  <variables>
+    <variable name="request" messageType="jsm:destRequestMessage"/>
+    <variable name="res" messageType="jsm:destResponseMessage"/>
+  </variables>
+  <sequence>
+    <receive partnerLink="caller" portType="jsm:dest" operation="send" variable="request" createInstance="yes"/>
+    <bpelv:exec binding="JAVA" name="sendMail"><![CDATA[
+	String  to, subject = null, from = null;
+	String mailhost = (String) getVariableData ("request", "req_payload", "/jsm:destRequest/jsm:mailhost");
+	String mailer = "Openlink Virtuoso[BPEL script]";
+	try {
+        	to = (String) getVariableData ("request", "req_payload", "/jsm:destRequest/jsm:to");
+	        subject = (String) getVariableData ("request", "req_payload", "/jsm:destRequest/jsm:subject");
+
+		Properties props = System.getProperties();
+		props.put("mail.smtp.host", mailhost);
+		Session session = Session.getInstance(props, null);
+
+		Message msg = new MimeMessage(session);
+		if (from != null)
+			msg.setFrom(new InternetAddress(from));
+		else
+			msg.setFrom();
+		msg.setRecipients(Message.RecipientType.TO,
+					InternetAddress.parse(to, false));
+		msg.setSubject(subject);
+	        msg.setText ((String)getVariableData ("request", "req_payload", "/jsm:destRequest/jsm:text"));
+
+		msg.setHeader("X-Mailer", mailer);
+		msg.setSentDate(new Date());
+		SMTPTransport t = (SMTPTransport)session.getTransport("smtp");
+		try {
+		    t.connect();
+		    t.sendMessage(msg, msg.getAllRecipients());
+		} finally {
+		    System.out.println("Response: " +
+						t.getLastServerResponse());
+		    t.close();
+		}
+
+	    	System.out.println("\nMail was sent successfully.");
+		setVariableData ("res",
+			"repl_payload",
+			"/jsm:destResponse/jsm:status",
+			"OK");
+
+	} catch (Exception e) {
+	    String err_str = "Failed: " + e.toString();
+	    e.printStackTrace();
+	    if (e instanceof SendFailedException) {
+		MessagingException sfe = (MessagingException)e;
+		if (sfe instanceof SMTPSendFailedException) {
+		    SMTPSendFailedException ssfe =
+				    (SMTPSendFailedException)sfe;
+		    System.out.println("SMTP SEND FAILED:");
+		    System.out.println(ssfe.toString());
+		    System.out.println("  Command: " + ssfe.getCommand());
+		    System.out.println("  RetCode: " + ssfe.getReturnCode());
+		    System.out.println("  Response: " + ssfe.getMessage());
+		} else {
+			System.out.println("Send failed: " + sfe.toString());
+		}
+		Exception ne;
+		while ((ne = sfe.getNextException()) != null &&
+			ne instanceof MessagingException) {
+		    sfe = (MessagingException)ne;
+		    if (sfe instanceof SMTPAddressFailedException) {
+			SMTPAddressFailedException ssfe =
+					(SMTPAddressFailedException)sfe;
+			System.out.println("ADDRESS FAILED:");
+			System.out.println(ssfe.toString());
+			System.out.println("  Address: " + ssfe.getAddress());
+			System.out.println("  Command: " + ssfe.getCommand());
+			System.out.println("  RetCode: " + ssfe.getReturnCode());
+			System.out.println("  Response: " + ssfe.getMessage());
+		    } else if (sfe instanceof SMTPAddressSucceededException) {
+			System.out.println("ADDRESS SUCCEEDED:");
+			SMTPAddressSucceededException ssfe =
+					(SMTPAddressSucceededException)sfe;
+			System.out.println(ssfe.toString());
+			System.out.println("  Address: " + ssfe.getAddress());
+			System.out.println("  Command: " + ssfe.getCommand());
+			System.out.println("  RetCode: " + ssfe.getReturnCode());
+			System.out.println("  Response: " + ssfe.getMessage());
+		    }
+		}
+	    }
+	    setVariableData ("res",
+			"repl_payload",
+			"/jsm:destResponse/jsm:status",
+			err_str);
+	}
+
+	]] ></bpelv:exec>
+    <reply partnerLink="caller" portType="jsm:dest" operation="send" variable="res"/>
+  </sequence>
+</process>
+	    ]]></programlisting>
+	  <para> and support WSDL file: </para>
+	  <programlisting><![CDATA[
+<?xml version="1.0"?>
+<definitions name="javaSendMail"
+  targetNamespace="urn:java:sendMail"
+  xmlns:jsm="urn:java:sendMail"
+  xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+  xmlns="http://schemas.xmlsoap.org/wsdl/">
+  <types>
+    <schema attributeFormDefault="qualified" elementFormDefault="qualified"
+      targetNamespace="urn:java:sendMail"
+      xmlns="http://www.w3.org/2001/XMLSchema">
+      <element name="destRequest">
+        <complexType>
+          <sequence>
+            <element name="mailhost" type="string"/>
+            <element name="to" type="string"/>
+            <element name="subject" type="string"/>
+            <element name="text" type="string"/>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="destResponse">
+        <complexType>
+          <sequence>
+	    <element name="status" type="string"/>
+          </sequence>
+        </complexType>
+      </element>
+    </schema>
+  </types>
+  <message name="destRequestMessage">
+    <part name="req_payload" element="jsm:destRequest"/>
+  </message>
+  <message name="destResponseMessage">
+    <part name="repl_payload" element="jsm:destResponse"/>
+  </message>
+  <portType name="dest">
+    <operation name="send">
+      <input  message="jsm:destRequestMessage" />
+      <output message="jsm:destResponseMessage"/>
+    </operation>
+   </portType>
+   <plnk:partnerLinkType name="dest">
+     <plnk:role name="destProvider">
+       <plnk:portType name="jsm:dest"/>
+     </plnk:role>
+   </plnk:partnerLinkType>
+</definitions>
+	    ]]></programlisting>
+	</sect5>
+      </sect4>
+      <sect4 id="bpelact_exec_clr"><title>.NET CLR execution</title>
+	<sect5 id="bpelact_exec_clr_conf"><title>Configuration</title>
+	  <para>The CLR is available only for CLR enabled Virtuoso
+	    servers. In order to configure the server for CLR support
+	    in BPEL4WS engine the following administration steps need
+	    to be taken:
+	  </para>
+	  <itemizedlist>
+	    <listitem>
+	      1. Initiate "CLRAssembliesDir" configuration entry
+	      ("Directory where .NET CLR assemblies must be
+	      stored") by the path where "virt_bpel4ws.dll",
+	      "virtclr.dll" etc are stored.
+	    </listitem>
+	  </itemizedlist>
+	</sect5>
+	<sect5 id="bpelact_exec_clr_using"><title>Using the C# code
+	    in BPEL4WS</title>
+	  <para>The tag for supporting CLR is &lt;exec
+	    binding="CLR" [using | ref ]>.
+	  </para>
+	  <para> &lt;exec> with "using" attribute relates to "using"
+	    directive in C# code.
+	  </para>
+	  <programlisting><![CDATA[
+<bpelv:exec binding="CLR" using="System"/>
+	  ]]></programlisting>
+	  <para> in BPEL file is a substitution of  </para>
+	  <programlisting><![CDATA[
+using System;
+	    ]]></programlisting>
+	  <para> statement in the C# code. </para>
+	  <para> To import assemblies (with a manifest) the &lt;exec> element
+	    with "ref" attribute must be used:
+	  </para>
+	  <programlisting><![CDATA[
+<bpelv:exec binding="CLR" ref="metad1.dll"/>
+<bpelv:exec binding="CLR" ref="d:\\myassemblies\\sms_service.dll"/>
+	    ]]></programlisting>
+	  <para>If the tag does not contain these attributes then the
+	    content of the tag is treated as C# code. It is suggested
+	    to use CDATA sections for the code. Example:
+	  </para>
+	  <programlisting><![CDATA[
+<bpelv:exec binding="CLR" name="invokeSomething"><![CDATA[
+
+	Console.WriteLine("Executing CLR assembly in BPEL");
+	Console.WriteLine("getVariableData returned: " + getVariableData ("request", "req_payload", "/tns:destRequest/tns:city"));
+
+	setVariableData ("res",
+			"repl_payload",
+			"/destResponse/country",
+			"UK");
+]] ></bpelv:exec>
+	    ]]></programlisting>
+	  <para>Two "functions" are available for accessing script variables: setVariableData and
+	    getVariableData (analogs of the xpath functions with same
+	    names).
+	  </para>
+	  <programlisting><![CDATA[
+void setVariableData (String var_name, String part, String query_path, Object value);
+	    ]]></programlisting>
+	  <para>sets the variable. The value to be set is restricted
+	    to be string or integer in this version.
+	  </para>
+	  <programlisting><![CDATA[
+Object getVariableData (String var_name, String part, String query)
+	    ]]></programlisting>
+	  <para> is a full analog of xpath function
+	    getVariableData. See details below. </para>
+	  <para> Note, the activity does not commit  changes to
+	    the database until it finishes successfully, so in a case
+	    of exception the variables are kept untouched. This also
+	    means that deadlocks can not occur during C# code
+	    execution (naturally, this statement is not true if the
+	    code contains direct invokation of SQL through the
+	    "in-process" .NET provider).</para>
+	  <para> If the some unhandled exception occured in C# code,
+	    it will be translated to a BPEL error. See details in
+	    the next section. </para>
+	</sect5>
+	<sect5 id="bpelact_exec_clr_errors"><title>Runtime
+	    Errors</title>
+	    <para> Runtime errors not handled by CLR itself are translated to the BPEL fault in the following form:</para>
+	    <programlisting><![CDATA[
+<bpws:clrFault sqlState="SQLSTATE">
+ error message
+</bpws:javaFault>]]>
+	    </programlisting>
+	    <para>this error can be handled by BPEL fault handler. Here is an example:</para>
+	    <programlisting><![CDATA[
+...
+    <scope>
+      <faultHandlers>
+        <catch faultName="bpws:clrFault" faultVariable="error">
+          <assign>
+            <copy>
+              <from variable="error" query="/clrFault/text()"/>
+              <to variable="res" part="repl_payload" query="/clr:destResponse/clr:status"/>
+            </copy>
+          </assign>
+        </catch>
+      </faultHandlers>
+      <bpelv:exec binding="CLR" name="Hotmail"><![CDATA[
+	     String login, passwd;
+        	login = (String) getVariableData ("request", "req_payload", "/clr:destRequest/clr:login");
+	       	passwd = (String) getVariableData ("request", "req_payload", "/clr:destRequest/clr:password");
+		Console.WriteLine ("user:" + login + " password:" + passwd);
+
+		HotmailUsage usage = new HotmailUsage();
+		Console.WriteLine ("Result: " + usage.Call_Hotmail (login, passwd));
+
+		setVariableData ("res",
+			"repl_payload",
+			"/clr:destResponse/clr:status",
+			"OK");
+	]] ></bpelv:exec>
+	</scope>
+    <reply partnerLink="caller" portType="clr:dest" operation="send" variable="res"/>
+...
+    ]]></programlisting>
+	    <para>In this code the handler for CLR exception is set:</para>
+	    <programlisting><![CDATA[
+...
+        <catch faultName="bpws:clrFault" faultVariable="error">
+          <assign>
+            <copy>
+              <from variable="error" query="/clrFault/text()"/>
+              <to variable="res" part="repl_payload" query="/clr:destResponse/clr:status"/>
+            </copy>
+          </assign>
+        </catch>
+...
+	    ]]></programlisting>
+	    <para>The handler takes the error message from the variable which holds it ("error") and puts it into the response variable.</para>
+	</sect5>
+	<sect5 id="bpelact_exec_clr_accessors"><title>BPEL variable
+	    accessors</title>
+	  The name and the signature of BPEL accessors for CLR are
+	  fully equal to the java accessors. See
+	  <ulink url="#bpelact_exec_java_accessors">java
+	    section</ulink> for details.
+	</sect5>
+	<sect5 id="bpelact_exec_clr_vars"><title>Special
+	    variables</title>
+	  The special variables for CLR are the same as for Java.
+	  See <ulink url="#bpelact_exec_java_vars">java
+	    section</ulink> for details.
+	</sect5>
+	<sect5 id="bpelact_exec_clr_sample"><title>CLR Sample</title>
+	  <programlisting>
+&lt;?xml version="1.0"?&gt;
+&lt;process xmlns:clr="urn:clr:Hotmail"
+        xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+        name="clrHotmail"
+        targetNamespace="urn:clr:Hotmail"
+        xmlns:bpelx="http://schemas.oracle.com/bpel/extension"
+        xmlns:bpelv="http://www.openlinksw.com/virtuoso/bpel"&gt;
+
+  &lt;bpelv:exec binding="CLR" using="HotmailUsageChecker"/&gt;
+  &lt;bpelv:exec binding="CLR" ref="l:\\distrib_3_0\\bin\\Hotmail.dll"/&gt;
+  &lt;bpelv:exec binding="CLR" using="System"/&gt;
+
+  &lt;partnerLinks&gt;
+    &lt;partnerLink name="caller" partnerLinkType="clr:dest"/&gt;
+  &lt;/partnerLinks&gt;
+
+  &lt;variables&gt;
+    &lt;variable name="request" messageType="clr:destRequestMessage"/&gt;
+    &lt;variable name="res" messageType="clr:destResponseMessage"/&gt;
+  &lt;/variables&gt;
+  &lt;sequence&gt;
+    &lt;receive partnerLink="caller" portType="clr:dest" operation="send" variable="request" createInstance="yes"/&gt;
+    &lt;scope&gt;
+      &lt;faultHandlers&gt;
+        &lt;catch faultName="bpws:clrFault" faultVariable="error"&gt;
+          &lt;assign&gt;
+            &lt;copy&gt;
+              &lt;from variable="error" query="/clrFault/text()"/&gt;
+              &lt;to variable="res" part="repl_payload" query="/clr:destResponse/clr:status"/&gt;
+            &lt;/copy&gt;
+          &lt;/assign&gt;
+        &lt;/catch&gt;
+      &lt;/faultHandlers&gt;
+      &lt;bpelv:exec binding="CLR" name="Hotmail"&gt;&lt;![CDATA[
+             String login, passwd;
+                login = (String) getVariableData ("request", "req_payload", "/clr:destRequest/clr:login");
+                passwd = (String) getVariableData ("request", "req_payload", "/clr:destRequest/clr:password");
+                Console.WriteLine ("user:" + login + " password:" + passwd);
+
+                HotmailUsage usage = new HotmailUsage();
+                Console.WriteLine ("Result: " + usage.Call_Hotmail (login, passwd));
+
+                setVariableData ("res",
+                        "repl_payload",
+                        "/clr:destResponse/clr:status",
+                        "OK");
+        ]]&gt;&lt;/bpelv:exec&gt;
+        &lt;/scope&gt;
+    &lt;reply partnerLink="caller" portType="clr:dest" operation="send" variable="res"/&gt;
+  &lt;/sequence&gt;
+&lt;/process&gt;
+	  </programlisting>
+	</sect5>
+      </sect4>
+    </sect3>
+  </sect2>
+  <sect2 id="bpelprot">
+      <title>Protocol Support</title>
+      <para>
+The Virtuoso BPEL implementation supports WS Security and WS Reliable Messaging.  These protocols may be enabled and configured for individual partner links.
+	  The WS-Addressing protocol is automatically used when the partner
+	  has such capabilities.
+      </para>
+      <para>
+	  The Partner link options are stored in XML format in the
+	  'BPEL.BPEL.partner_link_init' table  in 'bpl_opts' column.
+	  See the document format and table description below in this chapter.
+      </para>
+	  <sect3 id="bpelprotwsa">
+	      <title>WS-Addressing (WSA)</title>
+	      <para>WS-Addressing is transparently handled via
+		  WSDL description and request of the partner(s).
+		  If the partner has WSA headers exposed then the corresponding
+		  operation will be invoked with WSA headers. If the partner
+		  uses WSA to call the BPEL service then the service will respond to
+		  the partner with WSA headers included.
+	      </para>
+	      <para>
+		  The benefit of using WSA consists in transparently handled
+		  message correlation via "MessageID" and "RelatesTo" headers. Thus no
+		  explicit message correlation needs to be specified when the partner is WSA capable
+		  (see <ulink url="/tutorial/services/bp_s_1/bp_s_1.vsp">LoanFlow</ulink>
+		  demo in tutorials to see how this works).
+		  Also when the reply is asynchronous the return path can  be handled via
+		  the "ReplyTo" WSA headers.
+	      </para>
+	      <para>
+		 As WSA has different  revisions that are supported by different
+		 implementations (partners), the version of the protocol
+		 is configurable via wsOptions/addressing element (see below).
+	     </para>
+	     <para>
+		 The 'wsa' partner link option can be used in <link linkend="bpelplinkconf">API</link> functions
+		 to set or retrieve the value of the wsOptions/addressing.
+	     </para>
+	  </sect3>
+	  <sect3 id="bpelprotwss">
+	      <title>WS-Security (WSS)</title>
+	      <para>There are several cases where privacy and confidentiality
+		  must be observed , this is especially true when business processes
+		  involve  payment systems, personal information etc.
+		  In those cases a partner may,  depending on Web Service policy,
+		  require secure messages (signed, encrypted or both).
+		  Such partners usually do not expose (for many reasons) in WSDL the WSS headers,
+		  hence this must be configured by  the BPEL administrator per partner.
+	      </para>
+	      <para>In order for the BPEL server to be able to sign and encrypt messages
+		  keys have to be uploaded into the BPEL user repository.
+		  This can be done with the USER_KEY_LOAD() function or using the
+		  BPEL GUI (Partner Link properties).
+	      </para>
+	      <para>
+		  It is important to know the following basics:
+	      </para>
+	      <itemizedlist>
+		  <listitem>
+		  The  private key is needed in order to decrypt or sign messages.
+	      </listitem>
+		  <listitem>
+		  The partner public key is needed to encrypt  messages or verify
+		  signatures.
+	      </listitem>
+	      </itemizedlist>
+	      <para>
+		  These keys have to be described in wsOptions/security/key and wsOptions/security/pubkey
+		  in the 'Partner link options' XML document. Note that in the options document are stored only
+		  the names of the keys, as the keys themselves  are registered in the BPEL user key repository.
+	      </para>
+	     <para>
+		 Note: Use the 'wss-priv-key' and 'wss-pub-key' partner link option in
+		 <link linkend="bpelplinkconf">API</link> functions to set or change the value of them.
+	     </para>
+	      <para>
+		  The encryption and signing is independently configurable for outbound
+		  or inbound messages. This is settable via the following options:
+	      </para>
+	      <itemizedlist>
+		  <listitem>
+		      wsOptions/security/in/encrypt - 'Optional': inbound message MAY be
+		      encrypted, 'Mandatory': inbound message MUST be encrypted
+		      ('wss-in-encrypt' option <link linkend="bpelplinkconf">in API</link>)
+		  </listitem>
+		  <listitem>
+		      wsOptions/security/in/signature - same as encryption but
+		      for XML signature ('wss-in-signature' option <link linkend="bpelplinkconf">in API</link>)
+		  </listitem>
+		  <listitem>
+		      wsOptions/security/in/keys - this is a list of keys (key names)
+		      that are trusted; only SOAP messages signed with one of these
+		      keys will be accepted. If this list is empty, all parties will
+		      be accepted unless signature is invalid or message
+		      can not be decrypted. ('wss-in-signers' option <link linkend="bpelplinkconf">in API</link>)
+		  </listitem>
+		  <listitem>
+		      wsOptions/security/out/encrypt - type of the session key for encryption
+		      3DES, AES128, AES192 or AES256. ('wss-out-encrypt-key' option <link linkend="bpelplinkconf">in API</link>)
+		  </listitem>
+		  <listitem>
+		      wsOptions/security/out/signature -
+		      'Default': the WSS default template (see WS-Security chapter for details),
+		      'Custom': in this case 'function' attribute must refer to a PL procedure
+		      returning XML Signature template. ('wss-out-signature-type' and 'wss-out-signature-function'
+		      options <link linkend="bpelplinkconf">in API</link>)
+		  </listitem>
+	      </itemizedlist>
+	  </sect3>
+	  <sect3 id="bpelprotwsrm">
+	      <title>WS-Reliable Messaging (WSRM)</title>
+	      <para>The WSRM is applicable for those parters which can be invoked asynchronously.
+		  For both inbound or outbound (from the point of view of the process)
+		  WSRM  can be enabled. The options are
+		  settable in wsOptions/delivery/in or wsOptions/delivery/out
+		  ('wsrm-in-type' and 'wsrm-out-type' options <link linkend="bpelplinkconf">in API</link>)
+		  respectively.
+	      </para>
+	      <itemizedlist>
+		  <listitem>
+		      ExactlyOnce - message will be delivered only once to the destination.
+		  </listitem>
+		  <listitem>
+		      InOrder - messages will be delivered in the same order as they are
+		      sent from the script.
+		  </listitem>
+	      </itemizedlist>
+	  </sect3>
+	  <sect3 id="bpelprothttpauth">
+	      <title>HTTP security</title>
+	      <para>
+		  Some partner services may require HTTPS or/and HTTP authentication
+		  instead of using WS-Security protocol to ensure SOAP message privacy.
+	      </para>
+	      <para>
+		  When a partner's endpoint URL contains HTTPS scheme (like https://)
+		  the request and response operations will be made with HTTP over SSL (HTTPS protocol).
+		  In this case no additional options to the partner links are needed.
+	      </para>
+	      <para>
+		  In case when a partner service needs a HTTP authentication, the
+		  user name and password (for that service) needs to be configured for
+		  the given partner link. These are settable via wsOptions/security/http-auth
+		  ('http-auth-uid' and 'http-auth-pwd' options <link linkend="bpelplinkconf">in API</link>)
+		  element in partner link options. Note that only basic HTTP authentication is
+		  supported.
+	      </para>
+	  </sect3>
+	  <para>Partner link options format</para>
+	  <programlisting><![CDATA[
+<wsOptions>
+    <!-- WSA revision namespace -->
+    <addressing version="http://schemas.xmlsoap.org/ws/2003/03/addressing|http://schemas.xmlsoap.org/ws/2004/03/addressing"/|http://schemas.xmlsoap.org/ws/2004/08/addressing>
+  <!-- WSS options -->
+  <security>
+      <!-- basic HTTP Authentication -->
+      <http-auth username="" password=""/>
+      <!-- WSS keys -->
+      <key name="[Private Key]"/>
+      <pubkey name="[Partner public key]"/>
+    <in>
+      <encrypt type="NONE|Optional|Mandatory"/>
+      <signature type="NONE|Optional|Mandatory" />
+      <keys>
+	  <!-- trusties -->
+	  <key name="[Trusted Public Key]"/>
+	  ...
+      </keys>
+    </in>
+    <out>
+	<encrypt type="NONE|3DES|AES128|AES192|AES256"/>
+	<signature type="NONE|Default|Custom" function="[PL procedure name]"/>
+    </out>
+  </security>
+  <!-- WSRM options -->
+  <delivery>
+    <in  type="NONE|ExactlyOnce|InOrder"/>
+    <out type="NONE|ExactlyOnce|InOrder" />
+  </delivery>
+</wsOptions>
+	]]>
+    </programlisting>
+    <sect3 id="bpelplinkconf">
+	<title>Configuring the Partner link options</title>
+	<para>
+	    The partner link options can be configured vi BPEL UI (http://host:port/BPELGUI)
+	    or programatically using <link linkend="fn_plink_get_option"><function>plink_get_option()</function></link> and <link linkend="fn_plink_set_option"><function>plink_set_option()</function></link> functions. It is
+	    possible to update the partner link options with SQL update statement using
+	    the configuration (described above), but use
+	    of the BPEL UI or API functions is recommended.
+	</para>
+    </sect3>
+
+    <sect3 id="bpeldynpl">
+	<title>Dynamic Partner Links</title>
+	<para>
+The 'assign' activity allows
+	    partner links to be assigned values at run time.
+This means that partner links can be dynamic and that a process may call partners that were not known at the time of defining the process.
+Partner links can be defined at run time using the  'EndpointReference' element
+	    from the WS-Addressing specification :
+	</para>
+	<programlisting><![CDATA[
+  <xs:element name="EndpointReference" type="wsa:EndpointReferenceType"/>
+  <xs:complexType name="EndpointReferenceType">
+    <xs:sequence>
+      <xs:element name="Address" type="wsa:AttributedURI"/>
+      <xs:element name="ReferenceProperties" type="wsa:ReferencePropertiesType" minOccurs="0"/>
+      <xs:element name="PortType" type="wsa:AttributedQName" minOccurs="0"/>
+      <xs:element name="ServiceName" type="wsa:ServiceNameType" minOccurs="0"/>
+      <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:anyAttribute namespace="##other" processContents="lax"/>
+  </xs:complexType>
+	]]>
+    </programlisting>
+    <para>
+	Thus it may keep endpoint URL, Port type, Service name and
+	any number of implementation specific options under 'ReferenceProperties'.
+	Also it may keep any other extensible elements and attributes.
+    </para>
+
+    <para>
+	The Virtuoso BPEL implementation extends the EndpointReferenceType
+	with element 'wsOptions' under WSA element 'ReferenceProperties' (see previous section
+	for 'wsOptions' element description).
+	Thus it is possible to decide at  run time to send a secure reply  (WSS)
+	or to use reliable messaging (WSRM). The following excerpt shows BPEL source that
+	assigns  WS Security options to a partner link:
+    </para>
+    <programlisting><![CDATA[
+      ...
+      <assign>
+	  <copy>
+	      <from>
+		  <EndpointReference xmlns="http://schemas.xmlsoap.org/ws/2003/03/addressing">
+		      <Address>http://securehost/myService</Address>
+		      <ReferenceProperties>
+			  <wsOptions xmlns="">
+			      <addressing version="http://schemas.xmlsoap.org/ws/2003/03/addressing"/>
+			      <security>
+				  <http-auth username="" password=""/>
+				  <key name="myKey"/>
+				  <pubkey name="serverKey"/>
+				  <in>
+				      <encrypt type="Optional"/>
+				      <signature type="Optional" />
+				      <keys/>
+				  </in>
+				  <out>
+				      <encrypt type="AES128"/>
+				      <signature type="Default"/>
+				  </out>
+			      </security>
+			  </wsOptions>
+		      </ReferenceProperties>
+		  </EndpointReference>
+	      </from>
+	      <to partnerLink="service"/>
+	  </copy>
+      </assign>
+      ...
+	]]>
+    </programlisting>
+    <para>
+	To manipulate the partner link options and endpoint URL we can also use
+	variables declared as element EndpointReference from WS-Addressing schema.
+    </para>
+    </sect3>
+  </sect2>
+  <sect2 id="bpellifecycle">
+      <title>Process lifecycle</title>
+      <para>A BPEL process may have more than one version during development
+	  or maintenance in production environment. This means the process may have a
+	  more than one copy on the server where one of these copies is current
+	  all others are either obsolete or in the process of being defined . We will call
+	  these states further in this section as 'current', 'obsolete' or 'edit' (versions).
+	  The link  between these versions is the process name which  remains the same during
+	  process life-cycle.
+      </para>
+      <para>
+	  When a process is compiled for the first time it becomes 'current'.
+   The current version of a process is the one that was most recently compiled without errors.
+   Only a current version of a process can make new instances in response to receiving messages.
+   For a single process name only one version can be current at any one time.  The other compiled versions of the process are always obsolote, meaning that new instances cannot be created but that old instances may proceed and complete.
+
+      </para>
+      <para>
+	  The 'obsolete' version
+	  can not crate new process instances, it may only receive messages for its
+	  instances which are still running or suspended. In other words the old
+	  process instances will continue and any new instances  will be   instances
+	  of the current version.
+      </para>
+      <para>
+	  The 'edit' state means that a new copy of the process is created but it
+	  is still not compiled. After successful compilation, a process
+          in the edit state is set into the current state and the formerly current process is set to the the obsolete state.
+      </para>
+      <para>
+	  All process versions may have only one endpoint corresponding to
+	  the process. The BPEL administrator  MUST take care about endpoints to
+          make sure that clients using the process are compatible with
+	  different process versions.
+	  This means that if changes in new versions are for example in the
+	  logic but not in the process' WSDL then new endpoint is not needed in most  cases;
+	  furthermore in this case clients will be compatible with new input and output message structure;
+	  except in the case where the same messages are used  with logically different meaning.
+	  So when a new process version involves significant
+	  change to messages then the new process should have a new endpoint and WSDL description.
+      </para>
+  </sect2>
+  <sect2 id="bpelvdit">
+      <title>Using virtual directories</title>
+      <para>
+	  To allow a process to make new instances or to
+	  receive messages from remote services in asynchronous way
+	  it needs an endpoint. Endpoint means an URL that allows
+	  to accept and process known SOAP messages.
+      </para>
+      <para>
+	  Every process has  a default endpoint which is accessible via the
+	  'http://[host:port]/BPELGUI/bpel.vsp?script=[process_name]' URL.
+	  Also it has  a default WSDL document describing the process
+	  at URL http://[host:port]/BPELGUI/bpel.vsp?script=[process_name]&amp;wsdl.
+	  Upon compilation a different virtual directory can be specified
+	  for the process. For example if '/Service' is specified the
+	  'http://[host:port]/Service' would be the endpoint URL also in this
+	  case the WSDL will be available on 'http://[host:port]/Service?wsdl'.
+      </para>
+      <para>
+	  It is important to note that changing the virtual directory when a process
+	  is redefined will force all clients to update their configuration.
+	  This is the case when a major changes
+	  are made to the process and clients need to be re-linked
+	  against new WSDL.
+	  So when changes are small there will be no  need of a new virtual directory.
+	   (See section 'Process life-cycle' above
+	  for process versions).
+      </para>
+  </sect2>
+  <sect2 id="bpelarx">
+      <title>Process archiving</title>
+      <para>When an instance of a BPEL process is completed
+	  it will be archived and purged from system after
+	  a configurable time interval.
+	  The interval is settable via 'InstanceExpiryDelay'
+	  configuration option (see below how to change).
+	  The default interval for archiving is one day.
+      </para>
+      <para>The archive file contains
+	  status of the instance which is archived,
+	  execution path of the activities when execution is completed,
+          value of the variables and partner links.</para>
+      <para>
+	  The format of the archive file is as follows:
+      </para>
+      <programlisting><![CDATA[
+<instances>
+  <instance id="[instance id]">
+    <status code="[2 - success |3 - error]" error="[error description]"/>
+    <execution>
+	<node id="[activity id]" type="[activity type]"/>
+	... more nodes may follow ...
+    </execution>
+    <variables>
+	<variable name="[name of the variable]">... variable value ...</variable>
+	... more variables may follow ...
+    </variables>
+    <partnerLinks>
+      <partnerLink name="[name of the partner link]">
+        <EndpointReference>
+	    <Address>... partner link endpoint ...</Address>
+        </EndpointReference>
+      </partnerLink>
+      ... more partner links may follow ...
+    </partnerLinks>
+  </instance>
+</instances>
+	  ]]></programlisting>
+  </sect2>
+  <sect2 id="bpelconf">
+      <title>Configuration parameters</title>
+      <para>The BPEL engine has  global configuration parameters settable via the configuration settings page of its web user interface.
+	  These are global and are kept in the BPEL..configuration table as name/value pairs.
+      </para>
+      <itemizedlist>
+	  <listitem>
+	      EngineMailAddress - e-mail address to whom will be sent error alerts and reports.
+	  </listitem>
+	  <listitem>
+	      ErrorAlertSkeleton - e-mail template for error alerts
+	  </listitem>
+	  <listitem>
+	      ErrorReportSkeleton - e-mail template for error reports
+	  </listitem>
+	  <listitem>
+	      AlertSubject - Subject for error alert e-mail
+	  </listitem>
+	  <listitem>
+	      CommonEmailHeader - Header for all BPEL e-mail notifications
+	  </listitem>
+	  <listitem>
+	      ErrorSubject - Subject for error report e-mail
+	  </listitem>
+	  <listitem>
+	      InstanceExpiryDelay - how long (hours a completed instance will be kept in the database before purging.
+	  </listitem>
+	  <listitem>
+	      MailServer - if specified this will be used to send the error alerts and reports.
+	      If this is not specified the default (from INI file) mail server will be used.
+	  </listitem>
+	  <listitem>
+	      Statistics - process statistics flag, if 0 (default) the statistics collection
+	      is disabled. When this is  1 the engine will start collecting statistics for
+	      new process instances .
+	  </listitem>
+      </itemizedlist>
+  </sect2>
+  <sect2 id="bpelstats">
+      <title>Process Statistics</title>
+      <para>
+	  The BPEL process can be set to collect
+	  statistics, this can  be enabled by  turning on the statistics flag
+	  (see Configuration section). If the statistics flag is on the
+	  following data is available:
+      </para>
+
+      <itemizedlist>
+	  <listitem>
+	      count of instance creations per instance creating partner link
+	  </listitem>
+	  <listitem>
+	      count/duration/data volume of invokes per invoked syncronous partner link
+	  </listitem>
+	  <listitem>
+	      count/data volume per asynchronous partner link
+	  </listitem>
+	  <listitem>
+	      waiting time/count/data volume at non-instance creating receives
+	  </listitem>
+	  <listitem>
+	      average time to complete for process
+	  </listitem>
+	  <listitem>
+	      Errors per partner link
+	  </listitem>
+	  <listitem>
+	      count of created instances
+	  </listitem>
+	  <listitem>
+	      count of completed instances
+	  </listitem>
+	  <listitem>
+	      count of instances that could not terminate successfully
+	  </listitem>
+      </itemizedlist>
+  </sect2>
+  <sect2 id="bpelsut">
+      <title>Deployment file suitcase format</title>
+      <para>The relation between a BPEL process and
+	  different partner links can be stored in a deployment file.
+	  This file contains a description for every partner link
+	  mention in the process.
+	  The descriptor  file simplifies deployment.  Entering the URL of this file through the web administration interface
+	   will download and register
+	  all sources needed for the process compilation.
+      </para>
+      <para>The format of the deployment file is as follows:</para>
+      <programlisting><![CDATA[
+    <BPELSuitcase>
+        <BPELProcess id="[process id]" src="[URI of the file containing BPEL script]">
+		<partnerLinkBindings>
+			<partnerLinkBinding name="[name of the partner]">
+			    <property name="wsdlLocation">[URI of the WSDL for the partner]</property>
+			</partnerLinkBinding>
+			... more partnerLinkBinding may follow ...
+		</partnerLinkBindings>
+	</BPELProcess>
+    </BPELSuitcase>]]>
+    </programlisting>
+  </sect2>
+  <sect2 id="bpelapi">
+      <title>SQL API</title>
+      <para>
+	  The following API functions are available:
+      </para>
+&bpel_compile_script;
+&bpel_copy_script;
+&bpel_get_partner_links;
+&bpel_instance_delete;
+&bpel_purge;
+&bpel_script_delete;
+&bpel_script_obsolete;
+&bpel_script_source_update;
+&bpel_script_upload;
+<!--&bpel_script_version_cleanup;-->
+&bpel_wsdl_upload;
+&bpel_plink_get_option;
+&bpel_plink_set_option;
+&bpel_import_script;
+  </sect2>
+  <sect2 id="xpathbpelfunctions">
+      <title>BPEL XPath Functions</title>
+&bpel_get_var;
+&bpel_set_var;
+&xpf_processXQuery;
+&xpf_processXSLT;
+&xpf_processXSQL;
+  </sect2>
+  <sect2 id="bpeltables">
+    <title>Tables</title>
+    <!-- Table create statements and one paragraph per column.  -->
+    <para>BPEL Engine Tables</para>
+    <programlisting>
+	<![CDATA[
+-- Scripts table, keeps one record per version
+create table BPEL.BPEL.script (
+	bs_id integer identity, 	-- unique id identifying the process
+	bs_uri varchar,			-- obsoleted: script source URI
+	bs_name varchar,		-- process name, all versions have same name
+	bs_state int, 			-- 0 on, current version, 1 obsolete, 2 edit mode
+	bs_date	datetime,		-- date of registration
+	bs_audit int default 0, 	-- audit flag : 1 on, 0 off
+	bs_debug int default 0,		-- debug flag
+	bs_version int default 0,	-- process version
+	bs_parent_id int default null,	-- fk to bs_id of previous process version
+	bs_first_node_id int,  		-- the first node id in the graph
+	bs_pickup_bf varbinary default '\x0',	-- bitmask for resume nodes
+	bs_act_num	int, 		-- stores the total number of activities
+	bs_lpath	varchar default null, -- virtual directory
+
+	-- process statistics
+	bs_n_completed int default 0,
+	bs_n_errors int default 0,
+	bs_n_create int default 0,
+	bs_cum_wait int default 0,
+	primary key (bs_id));
+
+
+
+-- BPEL and WSDL sources
+create table BPEL..script_source
+	(
+	 bsrc_script_id int, -- script id, fk to bs_id of scripts table.
+	 bsrc_role varchar,  -- one of bpel, bpel-ext, wsdl, deploy, partner-1... partner-n
+	 bsrc_text long xml, -- source text
+	 bsrc_url varchar,   -- if this comes from an uri
+	 bsrc_temp varchar,  -- contains the namespaces info
+	 primary key (bsrc_script_id, bsrc_role)
+)
+;
+
+
+
+-- Process instances
+create table BPEL.BPEL.instance (
+	bi_id int identity,   		-- global immutable id of instance
+	bi_script int,  		-- fk to bs_id from BPEL.BPEL.script
+	bi_scope_no int default 0,  	-- sequence counter for scope numbers in instance
+	bi_state int default 0,
+		-- 0, started
+		-- 1, suspended (wait for signal)
+		-- 2, finished
+		-- 3, aborted
+	bi_error any,			-- error
+	bi_lerror_handled int,
+	bi_last_act	datetime,	-- last activity execution
+	bi_started	datetime,	-- start time
+	bi_init_oper	varchar,	-- operation that made the instance
+	bi_wsa		long xml,	-- WS-Addressing headers
+	bi_activities_bf varbinary default '\x0\x0', -- bitmask for each activity is completed or not
+	bi_link_status_bf varbinary default '\x0\x0', -- bitmask for link status
+	bi_prefix_info varchar default '', -- xpath prefix string
+	primary key (bi_id));
+
+
+
+-- Initial values (URL etc.) for partner links
+create table BPEL.BPEL.partner_link_init (
+	bpl_script int, 	-- script instance id
+	bpl_name varchar,	-- partner link name
+	bpl_partner any,  	-- url, end point etc serialized
+	bpl_role varchar,
+	bpl_myrole varchar,
+	bpl_type varchar,
+	bpl_endpoint varchar,	-- partner service endpoint URL
+	bpl_backup_endpoint varchar,
+	bpl_wsdl_uri varchar,
+	bpl_debug int default 0,-- debug flag
+	bpl_opts long xml,	-- partner link options (WS-Security, WS-RM etc.)
+	primary key (bpl_script,bpl_name));
+
+
+
+-- Runtime values for partner links (run time copy of partner_link_init table)
+create table BPEL..partner_link (
+	pl_inst int, 		-- instance id
+	pl_name varchar, 	-- partner link name
+	pl_scope_inst int, 	-- scope instance id
+	pl_role int, 		-- flag 0 - myRole, 1 - partnerRole
+	pl_endpoint varchar, 	-- current URL to the partner service
+	pl_backup_endpoint varchar, -- second URL to the service for connection error
+	pl_debug int default 0,	-- debug flag
+	pl_opts long xml,	-- partner link options (WS-Security, WS-RM etc.)
+	primary key (pl_inst, pl_name, pl_scope_inst, pl_role));
+
+
+
+-- Script compilation
+create table BPEL.BPEL.graph (
+	bg_script_id int,  	-- FK to bs_id of BPEL.BPEL.script
+	bg_node_id int , 	-- running id in the script, referenced from BPEL.BPEL.waits etc.
+	bg_activity BPEL.BPEL.activity, -- UDT representing activity
+	bg_childs any,
+	bg_parent int,
+        bg_src_id varchar,	-- internal use
+	primary key (bg_script_id, bg_node_id));
+
+
+
+-- Receive activities waiting for incoming message
+create table BPEL.BPEL.wait (
+	bw_uid varchar,
+	bw_instance integer,  -- instance id
+	bw_script varchar,    -- FK reference to bs_name of script table
+	bw_script_id int,     -- FK reference to bs_id of script table
+	bw_node int,	      -- FK reference to bg_node_id of the graph table
+	bw_scope  int,
+	bw_partner_link varchar, -- the party from which instance waiting a message
+	bw_port varchar,  	 -- the name of the operation which instance wait to receive
+	bw_deadline datetime,
+	bw_message long varchar default null, -- if instance is occupied and message is already arrived
+	bw_state int default 0,		      -- flag that bw_message is not null (0 or 1)
+	bw_correlation_exp varchar, 	      -- XPath expression for computing the correlation value from message
+	bw_expected_value long varbinary,     -- value of the expected correlation
+	bw_message_type int default 0,	      -- where to expect the data : 0 - SOAP:Body 1 - SOAP:Header
+	bw_start_date datetime,
+	primary key (bw_instance, bw_node));
+
+
+
+-- Messages which have been arrived but not correlated yet
+create table BPEL.BPEL.queue (
+	bq_id int identity,	-- unique id
+	bq_script int,		-- FK references bs_id from the script table
+	bq_ts timestamp,
+	bq_state int,		-- state of the Queue item; 0 - not processed
+	bq_endpoint varchar,	-- not used
+	bq_op varchar,		-- Operation name
+	bq_mid varchar,		-- mot used
+	bq_message long varchar, -- The incoming message text
+	bq_header long varchar,  -- SOAP:Header
+	primary key (bq_op, bq_ts)
+	);
+
+
+
+-- Initial values for SOAP Messages and XMLSchema types
+create table BPEL..types_init (
+	vi_script int,	   -- FK reference to bs_id to the script table
+	vi_name   varchar, -- message name, element name etc.
+	vi_type   int, 	   -- 0 - message, 1 - element, 2 - XMLSchema type
+	vi_value  long xml,-- Initial value
+	primary key (vi_script, vi_name, vi_type)
+)
+;
+
+
+
+-- Matching XPath expressions for the SOAP message parts
+create table BPEL.BPEL.message_parts
+	(
+	mp_script int,	    -- FK reference to bs_id to the script table
+	mp_message varchar, -- message name
+	mp_part varchar,    -- part name
+	mp_xp   varchar,    -- location XPath expression
+	primary key (mp_script, mp_message, mp_part)
+	)
+;
+
+
+
+-- Operations which are invoked by process (used in invoke activities)
+create table BPEL.BPEL.remote_operation (
+	ro_script int,		-- FK reference to bs_id to the script table
+	ro_partner_link varchar,-- name of the partner link
+	ro_role varchar,	-- not used
+	ro_operation varchar,	-- operation name
+	ro_port_type varchar,	-- port type
+	ro_input varchar,	-- input message name
+	ro_output varchar,	-- output message name
+	ro_endpoint_uri varchar,-- not used
+	ro_style int,		-- messages encoding style : 1 - literal, 0 - RPC like
+	ro_action varchar default '', -- SOAP Action value
+	ro_target_namespace varchar,  -- for RPC encoding the namespace to be used for wrapper elements
+	ro_use_wsa int default 0, -- WS-Addressing capabilities flag
+	ro_reply_service varchar, -- for one-way operations: reply service name
+	ro_reply_port varchar,    -- for one-way operations: reply port type
+	primary key (ro_script, ro_partner_link, ro_operation)
+)
+;
+
+
+
+-- Operations which process defines (can receive and reply)
+create table BPEL.BPEL.operation (
+	bo_script int,		-- FK reference to bs_id to the script table
+	bo_name	varchar,	-- operation name
+	bo_action varchar,	-- SOAP Action value
+	bo_port_type	varchar,-- port type
+	bo_partner_link varchar,-- name of the partner link
+	bo_input	varchar,-- input message name
+	bo_input_xp	varchar,-- XPath expression to match the input message
+	bo_small_input	varchar,-- not used
+	bo_output	varchar,-- output message name
+	bo_style	int default 0,-- messages encoding style : 1 - literal, 0 - RPC like
+	bo_init		int,	-- process instantiation flag: 1 - can make new instances
+	primary key (bo_script, bo_name, bo_partner_link)
+);
+
+
+
+-- Predefined endpoint URLs for partner links
+create table BPEL.BPEL.partner_link_conf (
+	plc_name	varchar,
+	plc_endpoint	varchar,
+	primary key (plc_name)
+)
+;
+
+
+
+-- Properties
+create table BPEL.BPEL.property
+(
+  bpr_script int, 	-- FK reference to bs_id to the script table
+  bpr_name varchar,	-- property name
+  bpr_type varchar,	-- property type
+  primary key (bpr_script, bpr_name)
+)
+;
+
+
+
+-- Aliases
+create table BPEL.BPEL.property_alias (
+	pa_script	int,		-- FK reference to bs_id to the script table
+	pa_prop_id	int identity,
+	pa_prop_name	varchar,	-- property name
+	pa_message	varchar,	-- message name
+	pa_part		varchar,	-- part name
+	pa_query	varchar,	-- XPath query to set the property value
+	pa_type		varchar,
+	primary key (pa_script, pa_prop_name, pa_message))
+;
+
+
+
+-- Correlation properties
+create table BPEL.BPEL.correlation_props (
+	cpp_id 		int identity (start with 1),
+	cpp_script	int,		-- FK reference to bs_id to the script table
+	cpp_corr	varchar,	-- correlation name
+	cpp_prop_name	varchar,	-- property name
+	primary key (cpp_id, cpp_script, cpp_corr, cpp_prop_name))
+;
+
+
+
+-- Variables
+create table BPEL..variables (
+	v_inst 		int,		-- instance id, FK reference bi_id of the instance table
+	v_scope_inst   	int,		-- scope instance id; different than 0 for compensation scope
+	v_name 		varchar,	-- variable name
+	v_type 		varchar,	-- variable type
+	v_s1_value	any, 		-- string, numeric
+	v_s2_value	varchar, 	-- XML entities
+	v_b1_value	long varchar,	-- long strings
+	v_b2_value	long varchar, 	-- XML entities
+	primary key (v_inst, v_scope_inst, v_name))
+;
+
+
+
+-- Links
+create table BPEL..links
+	(
+	  bl_script int,	-- FK reference to bs_id to the script table
+	  bl_name   varchar,	-- link name
+	  bl_act_id int,	-- corresponding link activity bit number
+	  primary key (bl_act_id, bl_script)
+	)
+;
+
+
+
+-- Compensation scopes
+create table BPEL..compensation_scope
+	(tc_inst int,
+	 tc_seq	 int identity (start with 1),
+	 tc_scopes long varbinary,
+	 tc_head_node int,
+	 tc_head_node_bit int,
+	 tc_compensating_from int default null,
+	 primary key (tc_inst, tc_seq)
+	)
+;
+
+
+
+-- Messages are correlated via WS-Addressing
+create table BPEL..wsa_messages
+	(
+	wa_inst int,
+	wa_pl	varchar,
+	wa_mid  varchar,
+	primary key (wa_inst, wa_pl, wa_mid)
+	)
+;
+
+
+
+create table BPEL..lock
+	(
+	lck int primary key
+	)
+;
+
+
+
+-- Accepted connections which are waiting for reply
+create table BPEL..reply_wait
+	(
+	rw_inst int,
+	rw_id int, -- identity (start with 1),
+	rw_partner varchar,
+	rw_port varchar,
+	rw_operation varchar,
+	rw_query varchar,
+	rw_expect varchar,
+	rw_started datetime,
+	primary key (rw_inst, rw_id)
+	)
+;
+
+
+
+-- Registered alarm events
+create table BPEL..time_wait
+	(
+	  tw_inst 	int,
+	  tw_node 	int,
+	  tw_scope_inst int,
+	  tw_script	varchar,
+	  tw_script_id	int,
+	  tw_sec  	int,
+	  tw_until 	datetime,
+	  primary key (tw_inst, tw_node)
+	)
+;
+
+
+
+-- BPEL message debugging queue
+create table BPEL..dbg_message (
+	bdm_text long varchar,		-- message text
+	bdm_id int identity (start with 1),
+	bdm_ts datetime,
+	bdm_inout int, 			-- 1 for in, 0 for out
+	bdm_sender_inst int, 		-- instance id of sender if outbound message
+	bdm_receiver int, 		-- if inbound, inst id of receiving inst
+	bdm_plink varchar, 		-- name of partner link in the script in question
+	bdm_recipient varchar, 		-- partner link value for outbound message, URL.
+	bdm_activity int, 		-- activity id of activity that either sent the message or would receive the message in the sender/receiver instance.
+	bdm_oper varchar,		-- operation name
+	bdm_script int,			-- process id, FK reference bs_id from script table
+	bdm_action varchar,		-- SOAP Action value
+	bdm_conn int,			-- client connection id
+	primary key (bdm_id)
+)
+;
+
+
+
+-- BPEL engine configuration
+create table BPEL..configuration (
+	conf_name	varchar not null,
+	conf_desc 	varchar,
+	conf_value	any, -- not blob
+	conf_long_value	long varchar,
+	primary key (conf_name)
+)
+;
+
+
+
+create table BPEL.BPEL.op_stat
+	(
+	 bos_process int,
+	 bos_plink varchar,
+	 bos_op varchar,
+	 bos_n_invokes int default 0,
+	 bos_n_receives int default 0,
+	 bos_cum_wait numeric default 0, -- miliseconds total time wait at the partner link/operation
+	 bos_data_in numeric default 0,
+	 bos_data_out numeric default 0,
+	 bos_n_errors int default 0,
+	 primary key (bos_process, bos_plink, bos_op)
+)
+;
+
+
+
+create table BPEL.BPEL.error_log
+	(
+	 bel_ts timestamp,
+	 bel_seq int identity,
+	 bel_level int, -- bel_level is 1. fatal 2. network, 3 instance.
+	 bel_notice_sent datetime,  -- time the email was sent, null if none
+	 bel_text varchar,
+	 primary key (bel_ts, bel_seq)
+)
+;
+
+
+
+create table BPEL.BPEL.hosted_classes
+	(
+	 hc_script	int,
+	 hc_type	varchar default 'java',
+	 hc_name	varchar,
+	 hc_text	long varbinary, -- compiled class
+	 hc_path	varchar, -- path to class if it is stored in file system
+	 hc_load_method	varchar,
+	 primary key (hc_script, hc_type,  hc_name)
+)
+;
+
+
+
+
+	]]>
+    </programlisting>
+  </sect2>
+  <sect2 id="bpelerrors">
+      <title>Errors</title>
+      <para>During the BPEL process execution we may consider
+	  following types of errors:
+      </para>
+	  <itemizedlist>
+	      <listitem>Server failure - This means that the server as a whole
+		  has stopped operations and requires manual intervention.
+		  This is the case for: out of disk or database corruption.
+	      </listitem>
+	      <listitem>Network - This category applies to possibly transient
+		  conditions of not being able to contact partners.
+		  The server remains in operation for unaffected partners.</listitem>
+	      <listitem>Process Instance - This category applies to process
+		  instances getting an unhandled error condition.
+		  The process instance is out of service until the condition
+		  is resolved. This may indicate a bug in the process itself
+		  or a component used by it.</listitem>
+	  </itemizedlist>
+	  <para>These errors will be logged in the file system (bpel_audit/server_log.txt) .
+	      If logging fails, an email is sent to the operator. The errors are also logged
+	      in the 'BPEL.BPEL.error_log' table so as to avoid repeatedly sending the same message.
+	  </para>
+       <para>During uploading the BPEL process we may consider
+	  following types of errors:
+      </para>
+          <itemizedlist>
+	      <listitem>bpel.xml file contains non-absolute paths and must be
+                  changed to absolute in order the uploading to be succesfull.
+                  This is in case user uses import_script api.
+	      </listitem>
+              <listitem>wsdl file contains non-absolute paths at importing other wsdl file or xsd and must be
+                  changed to absolute in order the uploading to be succesfull.
+                  This is in case user uses upload process by choosing url/file for bpel and wsdl.
+	      </listitem>
+              <listitem>process name already exists. This means there is already uploaded a process with the given name.</listitem>
+              <listitem>at least one activity "receive" or "pick" must be declared at script source.
+                 Otherwise will be reported error this condition to be accomplished.
+	      </listitem>
+	  </itemizedlist>
+    <sect3 id="bpelerrors_conn"><title>Connection Errors</title>
+      <para>The communication error can be caught  by explicit fault
+	handler in the script. In this case the &lt;catch> handler must
+	  catch   the fault "bpws:communicationFault": </para>
+      <programlisting><![CDATA[
+  <catch faultName="bpws:communicationFault" faultVariable="error">
+   ...
+  </catch>
+	]]></programlisting>
+      <para>The error variable "error" will contain the following
+	fault structure: </para>
+      <programlisting><![CDATA[
+ <comFault sqlState="xxxxx" message="text-of-message"
+   partnerLink="plinkname" activity="name of activity" partnerURI="uri of
+partner">
+   <message>-- copy of the message being sent when fault occurred -- </message>
+ </comFault>
+	]]></programlisting>
+      <para>which can be used for reporting, recovery etc... The
+	"sqlState" attribute contains SQL error state and the
+	"message" stores the first line of SQL error message. </para>
+      <para>If the script does not handle this fault, the script will
+	be frozen until explicit or implicit restart. </para>
+      <para>Here is an example of explicit communication handling:
+      </para>
+      <programlisting><![CDATA[
+<process xmlns:tns="urn:echo:echoService" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" name="faultHTCLI" targetNamespace="urn:echo:echoService"  xmlns:bpelv="http://www.openlinksw.com/virtuoso/bpel">
+  <partnerLinks>
+    <partnerLink name="caller" partnerLinkType="tns:echoSLT"/>
+    <partnerLink name="test" partnerLinkType="tns:testSLT" partnerRole="service"/>
+  </partnerLinks>
+  <variables>
+    <variable name="request" messageType="tns:StringMessageType"/>
+    <variable name="res" messageType="tns:StringMessageType"/>
+    <variable name="n_tries" messageType="tns:IntMessageType"/>
+  </variables>
+  <sequence name="EchoSequence">
+    <assign>
+      <copy>
+        <from expression="3"/>
+	<to variable="n_tries" part="value" query="/value"/>
+      </copy>
+    </assign>
+    <receive partnerLink="caller" portType="tns:echoPT" operation="echo" variable="request" createInstance="yes" name="EchoReceive"/>
+    <while condition="getVariableData ('n_tries', 'value', '/value')
+	   &gt; 0">
+      <sequence>
+	<scope>
+	  <faultHandlers>
+	    <catch faultName="bpws:communicationFault" faultVariable="error">
+	      <sequence>
+		<bpelv:exec binding="SQL">
+		  dbg_obj_print (BPEL.BPEL.getVariableData ('error'));
+		  dbg_obj_print (BPEL.BPEL.getVariableData ('n_tries'));
+		</bpelv:exec>
+		<assign>
+		  <copy>
+		    <from variable="error" query="/comFault/@sqlState"/>
+		    <to variable="res" part="echoString" query="/echoString"/>
+		  </copy>
+		  <copy>
+		    <from expression="getVariableData ('n_tries',
+			  'value', '/value') - 1"/>
+		    <to variable="n_tries" part="value" query="/value"/>
+		  </copy>
+		</assign>
+		<wait for="PT10S"/>
+	      </sequence>
+	    </catch>
+	    <catchAll>
+	      <empty/>
+	    </catchAll>
+	  </faultHandlers>
+	  <sequence>
+	    <invoke partnerLink="test" portType="tns:SOAPPortType" operation="test" inputVariable="request" outputVariable="res"/>
+	    <assign>
+	      <copy>
+		<from expression="0"/>
+		<to variable="n_tries" part="value" query="/value"/>
+	      </copy>
+	    </assign>
+	  </sequence>
+	</scope>
+      </sequence>
+    </while>
+    <reply partnerLink="caller" portType="tns:echoPT" operation="echo" variable="res" name="EchoReply"/>
+  </sequence>
+</process>
+	]]></programlisting>
+      <para>In this example the process in a case of communication
+	exception makes 3 reconnection  retries to the remote
+	service. Each reconnection is made after waiting 10 seconds.
+      </para>
+    </sect3>
+    <sect3 id="bpelerrors_deadlock"><title>Deadlock Errors</title>
+      <para> During concurrent execution of several BPEL scripts
+	deadlock conditions can be signaled. That is why Virtuoso BPEL
+	engine contains implicit deadlock detection and retry
+	capability. When the deadlock is detected, the engine tries to
+	wait some time, and retry the transaction. If the number of
+	retries exceeds some maximum number the script execution
+	will be aborted and mail will be sent to the operator with
+	an appropriate message.</para>
+      <para>The time to wait  before retry and the maximum number of retries can be configured on
+	the configuration page of the administration UI.</para>
+    </sect3>
+  </sect2>
+  <sect2 id="bpelsampl">
+    <title>Samples</title>
+    <!-- Link to each tutorial.  Add the fib functions, loan flow, later others.  -->
+    <para>Simple echo script</para>
+    <programlisting><![CDATA[
+<process name="echo" targetNamespace="http://temp.uri" xmlns:tns="http://temp.uri"
+    xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/">
+
+    <partnerLinks>
+	<partnerLink name="caller" partnerLinkType="tns:echoService"/>
+    </partnerLinks>
+
+    <variables>
+	<variable name="request" messageType="tns:StringMessageType"/>
+    </variables>
+
+    <sequence name="EchoSequence">
+	<receive partnerLink="caller" portType="tns:echoPort"
+	    operation="echo" variable="request"
+	    createInstance="yes" name="EchoReceive"/>
+	<reply partnerLink="caller" portType="tns:echoPort"
+	    operation="echo" variable="request" name="EchoReply"/>
+    </sequence>
+
+</process>
+	]]></programlisting>
+    <para>... and corresponding WSDL</para>
+    <programlisting><![CDATA[
+<definitions targetNamespace="http://temp.uri" xmlns:tns="http://temp.uri"
+             xmlns:pl="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+	     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	     xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+   <message name="StringMessageType">
+      <part name="echoString" type="xsd:string"/>
+   </message>
+
+   <portType name="echoPort">
+      <operation name="echo">
+         <input message="tns:StringMessageType"/>
+         <output message="tns:StringMessageType"/>
+      </operation>
+   </portType>
+
+   <pl:partnerLinkType name="echoService">
+     <pl:role name="svc">
+       <pl:portType name="tns:echoPort"/>
+     </pl:role>
+   </pl:partnerLinkType>
+
+</definitions>
+	]]></programlisting>
+  <para>Invoking Echo Service</para>
+  <programlisting>
+    SQL&gt;select xpath_eval ('/echoResponse/echoString/text()',
+	xml_tree_doc (
+		DB.DBA.soap_client (
+		url=>sprintf ('http://localhost:%s/BPELGUI/bpel.vsp?script=file://echo/echo.bpel',server_http_port()),
+		operation=>'echo',
+		soap_action=>'echo',
+		parameters=> vector ('par', xtree_doc ('<echoString>hello world</echoString>')))
+		));
+        callret
+        VARCHAR
+         _______________________________________________________________________________
+
+         hello world
+
+         1 Rows. -- 330 msec.
+  </programlisting>
+  <sect3 id="bpelsampl_functions"><title>BPEL Functions</title>
+      <para>getVariableData</para>
+      <programlisting><![CDATA[
+      ...
+      <assign name="assignResult">
+        <copy>
+          <from expression="concat( 'Hello ', bpws:getVariableData('input', 'payload', '/tns:echovirtRequest/tns:name'), ' ', bpws:getVariableData('input', 'payload', '/tns:echovirtRequest/tns:fname'))"/>
+          <to variable="output" part="payload" query="/tns:echovirtResponse/tns:result"/>
+        </copy>
+      </assign>
+      ...
+      ]]></programlisting>
+      <para>count</para>
+      <programlisting><![CDATA[
+      ...
+      <assign name="assignResult">
+        <copy>
+          <from part="payload" variable="input" query="count(//lines/line)"/>
+          <to variable="count"/>
+        </copy>
+      </assign>
+      ...
+      ]]></programlisting>
+    </sect3>
+  <tip>
+  <title>See Also: Reference Material in the Tutorial:</title>
+   <para>
+       <ulink url="/tutorial/services/bp_s_1/bp_s_1.vsp">BP-S-1 Loan Flow demo</ulink>
+   </para>
+  </tip>
+  <tip>
+  <title>See Also: Reference Material in the BPELDemo tutorials:</title>
+   <para>
+      BPEL4WS VAD package must be installed in order to view these tutorials.
+   </para>
+   <para>
+       <ulink url="/BPELDemo/">BPELDemo</ulink>
+   </para>
+  </tip>
+  </sect2>
+  <sect2 id="bpelrefs">
+    <title>References</title>
+   <para>
+       <ulink url="http://www-106.ibm.com/developerworks/library/ws-bpel/">BPEL4WS specification</ulink>
+   </para>
+   <para>
+       <ulink url="http://msdn.microsoft.com/webservices/default.aspx?pull=/library/en-us/dnglobspec/html/ws-addressing.asp">WS-Addressing</ulink>
+   </para>
+   <para>
+       <ulink url="http://www.w3.org/TR/wsdl">WSDL specification</ulink>
+   </para>
+   <para>
+       <ulink url="http://www.w3.org/TR/soap/">SOAP specification</ulink>
+   </para>
+   <para>
+       <ulink url="http://www.w3.org/TR/xpath/">XPath specification</ulink>
+   </para>
+  </sect2>
+  <sect2 id="bpelvadinstall">
+    <title>BPEL4WS VAD Package installation</title>
+      <sect3 id="bpelvadinstall_conductor"><title>Using Conductor</title>
+        <itemizedlist>
+	  <listitem>
+	    Step 1. Download BPEL4WS VAD and copy it to a local directory.
+	  </listitem>
+	  <listitem>
+	    Step 2. Go to Conductor UI: http://host:port/conductor/
+	  </listitem>
+	  <listitem>
+	    Step 3. Login into the Virtuoso Conductor using the admin account.
+	  </listitem>
+          <listitem>
+	    Step 4. Select Systems Admin->Packages Tab.
+	  </listitem>
+          <listitem>
+	    Step 5. Under the Install Packaged, section of the UI is a list of VAD packages.
+            If this is the first time you have installed a VAD package you will only see the Virtuoso Conductor.
+            Directly under this list is the option Install a Package.  You can either enter or browse to the
+            location of the directory of the BPEL4WS package or enter a DAV location.
+	  </listitem>
+          <listitem>
+	    Step 6. Once you have provided the location, select Proceed to upload the package.
+	  </listitem>
+        </itemizedlist>
+    </sect3>
+    <sect3 id="bpelvadinstall_isql"><title>Using ISQL</title>
+      <programlisting>
+       SQL&gt;VAD_INSTALL('bpel4ws.vad',0);
+        SQL_STATE  SQL_MESSAGE
+        VARCHAR  VARCHAR
+        _______________________________________________________________________________
+
+        00000    GUI is accesible via http://host:port/BPELGUI
+        00000    Quick Start is available from http://host:port/BPELGUI/start.vsp
+        00000    No errors detected, installation complete.
+        00000    Now making a final checkpoint.
+        00000    Final checkpoint is made.
+        00000    SUCCESS
+
+        7 Rows. -- 5438 msec.
+       </programlisting>
+    </sect3>
+  </sect2>
+</sect1>
+>

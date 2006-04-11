@@ -1,0 +1,134 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare _u_id integer;
+  declare own varchar;
+
+  _u_id := db.dba.adm_dav_check_auth (lines, 1);
+  if (_u_id < 1)
+    {
+      http_request_status ('HTTP/1.1 401 Unauthorized');
+      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+            '<HTML><HEAD>',
+            '<TITLE>401 Unauthorized</TITLE>',
+            '</HEAD><BODY><H1>Unauthorized</H1>',
+            'Access to page is forbidden.</BODY></HTML>'));
+      return (0);
+    }
+  else
+    select U_NAME into own from WS.WS.SYS_DAV_USER where U_ID = _u_id;
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>NNTP Administration</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Virtuoso News Server Administration pages">
+  </head>
+<?vsp adm_page_header('NNTP Server Configuration', 'nntpsvrconf');
+
+	if ('' <> get_keyword('nsproperties', params, ''))
+	{
+		declare _prop_of varchar;
+
+		_prop_of := get_keyword('nsproperties', params, '');
+
+		if (_prop_of = 'localhost')
+		{
+			http('<TABLE CLASS="genlist" CELLPADDING="0" CELLSPACING="2" BORDER="0"><FORM METHOD="POST" NAME="nothing" action="news_server_list.vsp#localhost">');
+			http('<TR><TD CLASS="genhead" COLSPAN="2">No properties available for localhost</TD></TR>');
+			http('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+			http('<TR><TD COLSPAN="2" ALIGN="right"><INPUT type="submit" name="nothing" value="OK"></TD></TR>');
+			http('</FORM></TABLE>');
+
+		}
+		else
+			for (SELECT NS_ID, NS_SERVER, NS_PORT, NS_USER, NS_PASS FROM DB.DBA.NEWS_SERVERS
+				WHERE NS_ID = atoi(_prop_of)) do
+			{
+				http(sprintf('<TABLE CLASS="genlist" CELLPADDING="0" CELLSPACING="2" BORDER="0"><FORM METHOD="POST" NAME="srvchngapply" action="news_server_list.vsp#%s">', NS_SERVER));
+				http('<TR><TD CLASS="genhead" COLSPAN="2">Properties</TD></TR>');
+				http('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+				http('<TR><TD CLASS="genlisthead">Address</TD>');
+				http(sprintf('<TD><INPUT TYPE="text" NAME="_prop_address" VALUE="%s"></TD></TR>', coalesce(NS_SERVER, '')));
+				http('<TR><TD CLASS="genlisthead">Port</TD>');
+				http(sprintf('<TD><INPUT TYPE="text" NAME="_prop_port" VALUE="%i"></TD></TR>', coalesce(NS_PORT, 119)));
+				http('<TR><TD CLASS="genlisthead">Username</TD>');
+				http(sprintf('<TD><INPUT TYPE="text" NAME="_prop_user" VALUE="%s"></TD></TR>', coalesce(NS_USER, '')));
+				http('<TR><TD CLASS="genlisthead">Password</TD>');
+				http(sprintf('<TD><INPUT TYPE="password" NAME="_prop_pass" VALUE="%s"></TD></TR>', coalesce(NS_PASS, '')));
+				http(sprintf('<TR><TD COLSPAN="2" CLASS="genlisthead"><INPUT TYPE="hidden" NAME="serverid" VALUE="%i"><INPUT type="submit" name="btn_apply" value="Apply"></TD></TR>', NS_ID));
+				http('</FORM></TABLE>');
+			}
+	}
+
+	if ( '' <> get_keyword('btn_addsrv', params, ''))
+	{
+		http('<TABLE CLASS="genlist" CELLPADDING="0" CELLSPACING="2" BORDER="0"><FORM METHOD="POST" NAME="srvchngapply" action="news_server_list.vsp">');
+		http('<TR><TD CLASS="genhead" COLSPAN="2">New Server</TD></TR>');
+		http('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+		http('<TR><TD CLASS="genlisthead">Address</TD><TD><INPUT TYPE="text" NAME="_add_address" VALUE=""></TD></TR>');
+		http('<TR><TD CLASS="genlisthead">Port</TD><TD><INPUT TYPE="text" NAME="_add_port" VALUE="119"></TD></TR>');
+		http('<TR><TD CLASS="genlisthead">Username</TD><TD><INPUT TYPE="text" NAME="_add_user" VALUE=""></TD></TR>');
+		http('<TR><TD CLASS="genlisthead">Password</TD><TD><INPUT TYPE="password" NAME="_add_pass" VALUE=""></TD></TR>');
+		http('<TR><TD COLSPAN="2" CLASS="genlisthead"><INPUT TYPE="hidden" NAME="serverid" VALUE="-1"><INPUT type="submit" name="btn_addapply" value="Add"></TD></TR>');
+		http('</FORM></TABLE>');
+	}
+
+	if ('' <> get_keyword('nsremove', params, ''))
+	{
+		declare server integer;
+
+		server := atoi(get_keyword('nsremove', params, ''));
+
+		for (SELECT NS_ID, NS_SERVER, NS_PORT, NS_USER, NS_PASS FROM DB.DBA.NEWS_SERVERS
+			WHERE NS_ID=server) do
+		{
+			http('<TABLE CLASS="genlist" CELLPADDING="0" CELLSPACING="2" BORDER="0">');
+			http('<FORM METHOD="POST" NAME="srvchngapply" action="news_server_list.vsp">');
+			http('<TR><TD CLASS="genhead" COLSPAN="2">Remove Server?</TD></TR>');
+			http('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+
+			http(sprintf('<TR><TD CLASS="genlisthead">Address</TD><TD CLASS="gendata">%s</TD></TR>', NS_SERVER));
+			http(sprintf('<TR><TD CLASS="genlisthead">Port</TD><TD CLASS="gendata">%i</TD></TR>', NS_PORT));
+
+			http('<TR><TD COLSPAN="2" ALIGN="middle">&nbsp;</TD></TR>');
+			http('<TR><TD COLSPAN="2" ALIGN="middle" CLASS="gendata">Are you sure...</TD></TR>');
+			http('<TR><TD COLSPAN="2" ALIGN="middle">&nbsp;</TD></TR>');
+			http('<TR><TD COLSPAN="2" CLASS="genlisthead">');
+			http(sprintf('<INPUT type="hidden" name="remove_id" value="%i" />', NS_ID));
+			http(sprintf('<INPUT type="hidden" name="_rmv_address" value="%s" />', NS_SERVER));
+			http('<INPUT type="submit" name="btn_remove_confirmed" value="Confirm">');
+			http('<INPUT type="submit" name="btn_nothing" value="Cancel">');
+			http('</TD></TR></FORM></TABLE>');
+		}
+	}
+
+adm_page_footer(); ?>
+</HTML>

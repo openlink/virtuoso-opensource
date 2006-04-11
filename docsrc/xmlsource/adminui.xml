@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<chapter id="adminui" label="adminui.xml">
+<title>Visual Server Administration Interface</title>
+<abstract>
+    <para>This chapter describes how to administer the Virtuoso server from 
+    the VSP based user interface, written completely in VSP (Virtuoso Server 
+    Pages) and runs directly from the Virtuoso HTTP server.
+    These pages primarily allow users to administer the server while giving access
+    to many of the features that Virtuoso has to offer providing many conceptual
+    demonstrations and introductions.</para>
+		<para>Most of the pages from the administration interface are provided to 
+    help administrators quickly and easily tune the Virtuoso server or navigate 
+    the various interfaces and features that Virtuoso has to offer.</para>
+</abstract>
+	<sect1 id="leftmenu">
+		<title>The Menu</title>
+		<para>The menu provides links to pages that allow you to administrate
+your Virtuoso server or use one of the provided samples.
+The menu is organized into tree structures that are separated by domain of use or functionality.
+</para>
+	<figure id="adminui001" float="1">
+		<title>The Menu</title>
+		<graphic fileref="menu-cutout.jpg" width="300px" depth="230px"/>
+	</figure>
+<para>
+Click on the plus and minus icons to expand and contract sections of the menu to find the desired item.
+</para>
+	<figure id="adminuidatabase" float="1">
+		<title>Database Administration</title>
+		<graphic fileref="database.jpg" width="300px" depth="46px"/>
+	</figure>
+		<para>Use this section to manage the Virtuoso Relational Database System.  
+    This module enables the management of database users; view table, view, 
+    stored procedure and trigger definitions. Virtuoso's virtual database 
+    functionality (linking to 3rd Party Database Tables, Views, and Stored 
+    Procedures) is also administered via this module.
+</para>
+	<figure id="adminuiwebdav" float="1">
+		<title>WebDAV Administration</title>
+		<graphic fileref="webdav.jpg" width="300px" depth="46px"/>
+	</figure>
+		<para>Configure Virtuoso's WebDAV, and HTTP Server functionality, 
+    this includes the ability to expose Persistent Stored Modules as Web Services.</para>
+	<figure id="adminuiquerytools" float="1">
+		<title>Query Tools</title>
+		<graphic fileref="querytools.jpg" width="300px" depth="46px"/>
+	</figure>
+		<para>Simple query tools for Querying Relational and XML Data using SQL, 
+    XQUERY, XPATH, and FREE TEXT.</para>
+	<figure id="adminuireplication" float="1">
+		<title>Replication</title>
+		<graphic fileref="replication.jpg" width="300px" depth="46px"/>
+	</figure>
+		<para>You can create Snapshot Replications to copy sections of the Database 
+    to remote locations or use Transactional Replication to keep Virtuoso Servers 
+    in sync over a definable interval.</para>
+	<figure id="adminuimail" float="1">
+		<title>Mail Administration</title>
+		<graphic fileref="mail.jpg" width="300px" depth="46px"/>
+	</figure>
+		<para>Compose e-mail for delivery via your SMTP mail server, and retrieve mail 
+    from your POP3 server.</para>
+	<figure id="adminuinntp" float="1">
+		<title>NNTP Administration</title>
+		<graphic fileref="nntp.jpg" width="300px" depth="46px"/>
+	</figure>
+		<para>Configure Virtuoso's NNTP support which includes linking third-party 
+    NNTP servers into Virtuoso and controlling access to these servers. This 
+    interface also enables the creation of free-text searches on newsgroup 
+    data.</para>
+	</sect1>
+
+&adminui.runtimehosting;
+&adminui.webservices;
+&adminui.webdavadmin;
+&adminui.internetdomains;
+&adminui.xmlservices;
+&adminui.querytools;
+&adminui.replicationandsynchronization;
+&adminui.dbadmin;
+&adminui.mailsrvadm;
+&adminui.newssrvadm;
+
+</chapter>
+
+
+

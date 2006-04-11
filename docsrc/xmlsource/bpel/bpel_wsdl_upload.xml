@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_bpel_wsdl_upload">
+  <refmeta>
+    <refentrytitle>BPEL.BPEL.wsdl_upload</refentrytitle>
+    <refmiscinfo>bpel</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>BPEL.BPEL.wsdl_upload</refname>
+    <refpurpose>Uploads a WSDL description for a given BPEL script</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_wsdl_upload">
+      <funcprototype id="fproto_wsdl_upload">
+        <funcdef><function>BPEL.BPEL.wsdl_upload</function></funcdef>
+        <paramdef>in <parameter>scp_id</parameter> int</paramdef>
+        <paramdef>in <parameter>url</parameter> varchar</paramdef>
+        <paramdef>in <parameter>content</parameter> any</paramdef>
+        <paramdef>in <parameter>pl</parameter> varchar default 'wsdl'</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1 id="params_wsdl_upload"><title>Parameters</title>
+    <refsect2><title>scp_id</title>
+	<para><type>int</type>   the BPEL script identifier</para>
+    </refsect2>
+    <refsect2><title>url</title>
+	<para><type>varchar</type> the URL to the WSDL description file.</para>
+    </refsect2>
+    <refsect2><title>content</title>
+	<para><type>any default null</type>  the source of the WSDL file, this can be ommitted then the
+	    function will try downloading the source from the URL specified</para>
+    </refsect2>
+    <refsect2><title>pl</title>
+	<para><type>varchar default 'wsdl'</type> the partner which is described by given WSDL.
+	    When this is a file describing the process itself the default value MUST be used.</para>
+    </refsect2>
+  </refsect1>
+
+  <refsect1 id="ret_wsdl_upload"><title>Return Types</title>
+      <para>this function has no return value</para></refsect1>
+  <refsect1 id="desc_wsdl_upload">
+    <title>Description</title>
+    <para><function>BPEL.BPEL.wsdl_upload</function> uploads a WSDL description for a given partner link.
+	The function if content is not specified this will download the content via the URL specified
+	and will associate it with the specified partner link.
+	Also after download the WSDL will be expanded to resolve includes in WSDL and XMLSchema
+	namespaces.
+    </para>
+  </refsect1>
+  <refsect1 id="examples_wsdl_upload"><title>Examples</title>
+    <example id="ex_wsdl_upload"><title>Simple example</title>
+      <para></para>
+      <screen>
+	  SQL&gt; BPEL.BPEL.wsdl_upload (1, 'file:/LoanFlow.wsdl', null, 'wsdl');
+          Done. -- 10 msec.
+      </screen>
+    </example>
+  </refsect1>
+</refentry>
+

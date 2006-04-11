@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn___any_grants">
+  <refmeta>
+    <refentrytitle>__any_grants</refentrytitle>
+    <refmiscinfo>sql</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>__any_grants</refname>
+    <refpurpose>Checks a table for grants.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn___any_grants">
+      <funcprototype id="fproto___any_grants">
+        <funcdef>integer <function>__any_grants</function></funcdef>
+	<paramdef>in <parameter>tablename</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc___any_grants">
+    <title>Description</title>
+    <para>The <function>__any_grants()</function> can be used to test whether there
+    are any rights granted (for insert/update/delete) to a table for
+    current SQL account.
+    </para>
+  </refsect1>
+  <refsect1 id="params___any_grants">
+    <title>Parameters</title>
+    <refsect2><title>tablename</title>
+      <para>The table name to be tested.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret___any_grants"><title>Return Types</title>
+    <para>An integer will be returned to indicate whether the
+    table supplied has any privileges granted (1) or
+    not granted (zero 0) for current SQL user.
+    </para>
+  </refsect1>
+  <refsect1 id="errors___any_grants">
+    <title>Errors</title>
+    <table>
+      <title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead>
+         <row>
+           <entry>SQLState</entry>
+           <entry>Error Code</entry>
+           <entry>Error Text</entry>
+           <entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>SR014</errorcode></entry>
+	    <entry><errorname>Function any_grants needs a string as argument 1, not an arg of type [type]</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="examples___any_grants">
+    <title>Examples</title>
+    <example id="ex___any_grants"><title>Using the __any_grants() function</title>
+      <para>This simple example shows testing a grant rights for a table,
+      using the __any_grants() function from ISQL and demo SQL user accout.</para>
+      <screen><![CDATA[
+$isql localhost:1112 demo demo
+-- the demo account owns an Orders table, so it's granted
+SQL> select __any_grants ('Demo.demo.Orders');
+callret
+INTEGER
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 1 msec.
+
+-- but it has no permission to access the table SYS_REPL_ACCOUNTS
+SQL> select __any_grants ('DB.DBA.SYS_REPL_ACCOUNTS');
+callret
+INTEGER
+_______________________________________________________________________________
+
+0
+
+1 Rows. -- 5 msec.
+
+
+]]></screen>
+    </example>
+  </refsect1>
+</refentry>

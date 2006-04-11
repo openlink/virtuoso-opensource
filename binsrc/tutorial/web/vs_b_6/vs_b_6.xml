@@ -1,0 +1,67 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-B-6">
+  <refmeta>
+    <refentrytitle>Basic VSP Programming</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Error Recovery</refname>
+    <refpurpose>Error handling in VSPs</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-B-6a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+<listitem>When processing some form data in VSPs, there may be errors in the PL code (for example due to deadlock condition).</listitem>
+<listitem><para>The most popular way of catching the SQL errors is to declare an exception handler.</para>
+<programlisting>declare error varchar;
+error := null;
+declare exit handler for sqlstate '*', not found result { error := __SQL_MESSAGE; };
+ {
+    -- some operation(s) that may cause a SQL error
+ }
+if (error is not null)
+  -- print the error message</programlisting></listitem>
+<listitem>To simplify VSP production, the error handler can be written in a common file and included in each page.</listitem>
+<listitem><para>The external file can be included using the following markup:</para>
+<programlisting>&lt;?include path_to_the_external_file.extension ?&gt;</programlisting></listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-B-6b">
+<title>Deadlock Example</title>
+<para>The first example demonstrates the creation of a universal deadlock handler.
+If this file is included in any VSP the deadlock condition will cause a retry up to 3 times on an
+operation that follows the handler. The VSP simulates the deadlock situation by signalling the error.
+The error handler is therefore called.</para>
+</refsect1>
+
+<refsect1 id="VS-B-6c">
+<title>Calculator with error handler</title>
+<para>The second example is the vs_b_3 Calculator example. In this example there is an added handler to trap
+errors such as division by zero, and entering characters instead of numbers.</para>
+</refsect1>
+</refentry>

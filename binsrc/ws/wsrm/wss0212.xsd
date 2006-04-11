@@ -1,0 +1,479 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema targetNamespace="http://schemas.xmlsoap.org/ws/2002/12/secext" 
+            xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" 
+            xmlns="http://schemas.xmlsoap.org/ws/2002/12/secext" 
+            xmlns:wsse="http://schemas.xmlsoap.org/ws/2002/12/secext" 
+            xmlns:wsu="http://schemas.xmlsoap.org/ws/2002/07/utility" 
+	    xmlns:wsp="http://schemas.xmlsoap.org/ws/2002/12/policy"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+            xmlns:wsa="http://schemas.xmlsoap.org/ws/2003/03/addressing"
+            xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+            xmlns:ds="http://www.w3.org/2000/09/xmldsig#" 
+            elementFormDefault="qualified" 
+            attributeFormDefault="unqualified" 
+            blockDefault="#all" 
+            version="0.3">
+
+	<xsd:import namespace="http://schemas.xmlsoap.org/ws/2002/07/utility" schemaLocation="http://schemas.xmlsoap.org/ws/2002/07/utility"/>
+    <xsd:import namespace="http://schemas.xmlsoap.org/ws/2002/12/policy" schemaLocation="http://schemas.xmlsoap.org/ws/2002/12/policy" />
+	<xsd:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/xml.xsd"/>
+	<xsd:import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="http://www.w3.org/TR/2002/REC-xmldsig-core-20020212/xmldsig-core-schema.xsd"/>
+
+	<xsd:complexType name="AttributedString">
+		<xsd:simpleContent>
+				<xsd:attribute ref="wsu:Id"/>
+				<xsd:anyAttribute namespace="##other" processContents="lax"/>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:complexType name="PasswordString">
+		<xsd:simpleContent>
+				<xsd:attribute name="Type" type="xsd:QName"/>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:complexType name="EncodedString">
+		<xsd:simpleContent>
+				<xsd:attribute name="EncodingType" type="xsd:QName"/>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:complexType name="UsernameTokenType">
+		<xsd:sequence>
+			<xsd:element name="Username" type="wsse:AttributedString"/>
+			<xsd:any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute ref="wsu:Id"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+
+	<xsd:complexType name="BinarySecurityTokenType">
+		<xsd:attribute name="ValueType" type="xsd:QName"/>
+		<xsd:attribute name="EncodingType" type="xsd:QName"/>
+		<xsd:attribute ref="wsu:Id"/>
+	</xsd:complexType>
+
+	<xsd:complexType name="KeyIdentifierType">
+		<xsd:simpleContent>
+				<xsd:attribute name="ValueType" type="xsd:QName"/>
+		</xsd:simpleContent>
+	</xsd:complexType>
+
+    <xs:attribute name='RefType' type='xs:QName' />
+	<xsd:complexType name="ReferenceType">
+		<xsd:attribute name="URI" type="xsd:anyURI"/>
+		<xsd:attribute ref="wsse:RefType" use="optional" />
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<xsd:complexType name="SecurityTokenReferenceType">
+		<xsd:choice minOccurs="0" maxOccurs="unbounded">
+			<xsd:any processContents="lax"/>
+		</xsd:choice>
+		<xsd:attribute ref="wsu:Id"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<xsd:complexType name="SecurityHeaderType">
+		<xsd:sequence>
+			<xsd:any processContents="lax" minOccurs="0" maxOccurs="unbounded">
+			</xsd:any>
+		</xsd:sequence>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	<xsd:element name="UsernameToken" type="wsse:UsernameTokenType">
+	</xsd:element>
+	<xsd:element name="BinarySecurityToken" type="wsse:BinarySecurityTokenType">
+	</xsd:element>
+	<xsd:element name="Reference" type="wsse:ReferenceType">
+	</xsd:element>
+	<xsd:element name="KeyIdentifier" type="wsse:KeyIdentifierType">
+	</xsd:element>
+	<xsd:element name="SecurityTokenReference" type="wsse:SecurityTokenReferenceType">
+	</xsd:element>
+	<xsd:element name="Security" type="wsse:SecurityHeaderType">
+	</xsd:element>
+	<xsd:element name="Password" type="wsse:PasswordString"/>
+	<xsd:element name="Nonce" type="wsse:EncodedString"/>
+	<xsd:simpleType name="PasswordTypeEnum">
+		<xsd:restriction base="xsd:QName">
+			<xsd:enumeration value="wsse:PasswordText"/>
+			<xsd:enumeration value="wsse:PasswordDigest"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="ValueTypeEnum">
+		<xsd:restriction base="xsd:QName">
+			<xsd:enumeration value="wsse:X509v3"/>
+			<xsd:enumeration value="wsse:Kerberosv5TGT"/>
+			<xsd:enumeration value="wsse:Kerberosv5ST"/>
+			<xsd:enumeration value="wsse:PKCS7"/>
+			<xsd:enumeration value="wsse:PKIPath"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="EncodingTypeEnum">
+		<xsd:restriction base="xsd:QName">
+			<xsd:enumeration value="wsse:Base64Binary"/>
+			<xsd:enumeration value="wsse:HexBinary"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="FaultcodeEnum">
+		<xsd:restriction base="xsd:QName">
+			<xsd:enumeration value="wsse:UnsupportedSecurityToken"/>
+			<xsd:enumeration value="wsse:UnsupportedAlgorithm"/>
+			<xsd:enumeration value="wsse:InvalidSecurity"/>
+			<xsd:enumeration value="wsse:InvalidSecurityToken"/>
+			<xsd:enumeration value="wsse:FailedAuthentication"/>
+			<xsd:enumeration value="wsse:FailedCheck"/>
+			<xsd:enumeration value="wsse:SecurityTokenUnavailable"/>
+			<xsd:enumeration value="wsse:InvalidRequest" />
+			<xsd:enumeration value="wsse:RequestFailed" />
+			<xsd:enumeration value="wsse:AuthenticationBadElements" />
+			<xsd:enumeration value="wsse:BadRequest" />
+			<xsd:enumeration value="wsse:ExpiredData" />
+			<xsd:enumeration value="wsse:InvalidTimeRange" />
+			<xsd:enumeration value="wsse:BadContextToken" />
+			<xsd:enumeration value="wsse:UnknownDerivationSource" />
+		</xsd:restriction>
+	</xsd:simpleType>
+
+  <xsd:complexType name='RequestSecurityTokenType' >
+    <xsd:sequence>
+       <xsd:element name='TokenType' type='xsd:string' minOccurs="0" maxOccurs="1" />
+       <xsd:element name='RequestType' type='xsd:string' minOccurs="0" maxOccurs="1" />
+       <xsd:element ref='wsp:AppliesTo' minOccurs="0" maxOccurs="1" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:element name='RequestSecurityToken' type='wsse:RequestSecurityTokenType' />
+
+  <xsd:complexType name='RequestedSecurityTokenType' >
+    <xsd:sequence>
+       <xsd:element name="BinarySecurityToken" type="wsse:BinarySecurityTokenType"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name='RequestSecurityTokenResponseType' >
+    <xsd:sequence>
+       <xsd:element name='TokenType' type='xsd:string' minOccurs="0" maxOccurs="1" />
+       <xsd:element name='RequestedSecurityToken' type='wsse:RequestedSecurityTokenType' minOccurs="0" maxOccurs="1" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:element name='RequestSecurityTokenResponse' type='wsse:RequestSecurityTokenResponseType' />
+
+  <xs:element name='Challenge' type='wsse:ChallengeOrIntegrity' />
+  <xs:element name='BinaryNegotiation' type='wsse:BinarySecurityTokenType' /> 
+  <xs:element name='RequestedProofToken' type='wsse:RequestedSecurityTokenType' />
+
+
+  <xsd:complexType name='RequestedSecurityTokenType_h' >
+    <xsd:sequence>
+	<xsd:element name="wsa:MessageID" type="wsa:AttributedURI"/>
+	<xsd:element name="wsa:From" type="wsa:EndpointReferenceType"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xs:element name='RequestedProofToken_h' type='wsse:RequestedSecurityTokenType_h' />
+
+
+  <xs:element name='SecurityHeader' type='wsse:SecurityHeaderPolType' />
+  <xs:complexType name='SecurityHeaderPolType' >
+    <xs:sequence>
+	  <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+	</xs:sequence>
+    <xs:attribute ref='wsp:Usage' use='required' />
+	<xs:attribute name='MustPrepend' type='xs:boolean' />
+	<xs:attribute name='MustManifestEncryption' type='xs:boolean' />
+	<xs:anyAttribute namespace='##any' processContents='lax' />
+  </xs:complexType>
+
+
+  <xs:element name='MessageAge' type='wsse:MessageAgeType' />
+  <xs:complexType name='MessageAgeType' >
+    <xs:attribute ref='wsp:Usage' use='required' />
+	<xs:attribute ref='wsp:Preference' use='optional' />
+	<xs:attribute name='Age' type='xs:unsignedInt' use='required' />
+	<xs:anyAttribute namespace='##any' processContents='lax' />
+  </xs:complexType>
+
+  
+  <xs:element name='MessageParts' type='wsse:XPathSoap' />
+  <xs:element name='TokenIssuer' type='xs:string' />
+
+
+  <xs:element name='Confidentiality' type='wsse:Confidentiality' />
+  <xs:complexType name='Confidentiality' >
+	<xs:sequence>
+	  <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+	</xs:sequence>
+    <xs:attribute name='Actor' type='xs:anyURI' use='optional' />
+    <xs:attribute ref='wsp:Preference' use='optional' />
+    <xs:attribute ref='wsp:Usage' use='required' />
+  </xs:complexType>
+
+
+  <xs:element name='Integrity' type='wsse:ChallengeOrIntegrity' />
+  <xs:complexType name='ChallengeOrIntegrity' >
+	<xs:sequence>
+	  <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+	</xs:sequence>
+    <xs:attribute ref='wsp:Preference' use='optional' />
+    <xs:attribute ref='wsp:Usage' use='required' />
+  </xs:complexType>
+
+  <xs:element name='Algorithm' type='wsse:AlgorithmType' />
+
+
+  <xs:complexType name='AlgorithmType' >
+    <xs:sequence>
+      <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+    </xs:sequence>
+    <xs:attribute name='Type' type='wsse:AlgorithmTypeOpenEnum' use='optional' />
+    <xs:attribute name='URI' type='xs:anyURI' use='optional' />
+    <xs:attribute ref='wsp:Preference' use='optional' />
+  </xs:complexType>
+
+  <xs:simpleType name='AlgorithmTypeEnum' >
+    <xs:restriction base='xs:QName' >
+	  <xs:enumeration value='wsse:AlgCanonicalization' />
+	  <xs:enumeration value='wsse:AlgSignature' />
+	  <xs:enumeration value='wsse:AlgTransform' />
+	  <xs:enumeration value='wsse:AlgDigest' />
+	  <xs:enumeration value='wsse:AlgEncryption' />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name='AlgorithmTypeOpenEnum' >
+    <xs:union memberTypes='wsse:AlgorithmTypeEnum xs:QName' />
+  </xs:simpleType>
+
+  <xs:element name='KeyInfo' type='wsse:KeyInfoType' />  
+  <xs:complexType name='KeyInfoType' >
+    <xs:sequence>
+	  <xs:element ref='wsse:SecurityToken' minOccurs='0' />
+	</xs:sequence>
+  </xs:complexType>
+
+
+  <xs:element name='SecurityToken' type='wsse:SecurityTokenType' />
+  <xs:complexType name='SecurityTokenType' >
+	<xs:sequence>
+	  <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />	 
+	</xs:sequence>
+	<xs:attribute ref='wsp:Preference' use='optional' />
+    <xs:attribute ref='wsp:Usage' use='required' />
+	<xs:anyAttribute namespace='##other' processContents='lax' />
+  </xs:complexType>
+
+  <xs:simpleType name='TokenTypeEnum' >
+    <xs:restriction base='xs:QName' >
+      <xs:enumeration value='wsse:X509v3' />
+      <xs:enumeration value='wsse:Kerberosv5TGT' />
+      <xs:enumeration value='wsse:Kerberosv5ST' />
+      <xs:enumeration value='wsse:UserNameToken' />
+      <xs:enumeration value='wsse:SAMLAssertion' />
+      <xs:enumeration value='wsse:XrMLLicense' />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name='TokenTypeOpenEnum' >
+    <xs:union memberTypes='wsse:TokenTypeEnum xs:QName' />
+  </xs:simpleType>
+
+  <xs:element name='Visibility' type='wsse:VisibilityType' />
+  <xs:complexType name='VisibilityType' >
+    <xs:sequence>
+	  <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+	</xs:sequence>
+	<xs:attribute ref='wsp:Usage' use='required' />
+	<xs:anyAttribute namespace='##any' processContents='lax' />
+  </xs:complexType>
+
+  <xs:simpleType name='SignerType'>
+    <xs:list itemType='xs:anyURI' />
+  </xs:simpleType>
+
+  <xs:element name='SubjectName' type='wsse:SubjectNameType' />
+  <xs:complexType name='SubjectNameType' >
+    <xs:sequence>
+	  <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+	</xs:sequence>
+	<xs:attribute name='MatchType' type='wsse:MatchTypeEnum' use='optional' /> 
+  </xs:complexType>
+  <xs:element name='X509Extension' type='wsse:X509ExtensionType' />
+  <xs:complexType name='X509ExtensionType' >
+    <xs:sequence>
+	  <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+	</xs:sequence>
+	<xs:attribute name='MatchType' type='wsse:MatchTypeEnum' use='optional' /> 
+	<xs:attribute name='OID' type='xs:string' use='required' />
+	<xs:attribute name='Critical' type='xs:boolean' use='optional' />
+  </xs:complexType>
+  <xs:element name='UsePassword' type='wsse:UsePasswordType' />
+  <xs:complexType name='UsePasswordType' >
+    <xs:attribute name='Type' type='wsse:PasswordTypeEnum' use='optional' /> 
+	<xs:attribute ref='wsp:Usage' use='required' />
+  </xs:complexType>
+
+  <xs:simpleType name='MatchTypeEnum' >
+    <xs:restriction base='xs:QName' >
+	  <xs:enumeration value='wsse:Exact' />
+	  <xs:enumeration value='wsse:Prefix' />
+	  <xs:enumeration value='wsse:Regexp' />
+	</xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name='ServiceName' type='xs:string' />
+
+  <xs:simpleType name='RequestTypeEnum' >
+    <xs:restriction base='xs:QName' >
+	  <xs:enumeration value='wsse:ReqIssue' />
+	  <xs:enumeration value='wsse:ReqValidate' />
+	  <xs:enumeration value='wsse:ReqExchange' />
+	</xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name='RequestTypeOpenEnum' >
+    <xs:union memberTypes='wsse:RequestTypeEnum xs:QName' />
+  </xs:simpleType>
+  <xs:element name='RequestType' type='wsse:RequestTypeOpenEnum' />
+
+  <xs:element name='Base' type='wsse:SecurityTokenReferenceType' />
+  <xs:element name='Supporting' type='wsse:SecurityTokenReferenceType' />
+  <xs:element name='Claims' />
+
+  <xs:simpleType name='KeyEnum' >
+    <xs:restriction base='xs:QName' >
+	  <xs:enumeration value='wsse:PublicKey' />
+	  <xs:enumeration value='wsse:SymmetricKey' />
+	</xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name='KeyOpenEnum' >
+    <xs:union memberTypes='wsse:KeyEnum xs:QName' />
+  </xs:simpleType>
+  <xs:element name='KeyType' type='wsse:KeyOpenEnum' />
+  <xs:element name='RequestKeyType' type='wsse:KeyOpenEnum' />
+  <xs:element name='KeySize' type='xs:unsignedInt' />
+  <xs:element name='RequestKeySize' type='xs:unsignedInt' />
+  <xs:element name='RequestSignatureAlgorithm' type='xs:anyURI' />
+  <xs:element name='RequestEncryption' type='wsse:SecurityTokenReferenceType' />
+  <xs:element name='RequestProofEncryption' type='wsse:SecurityTokenReferenceType' />
+  <xs:complexType name='SecurityTokenReferences' >
+    <xs:sequence>
+      <xs:element ref='wsse:SecurityTokenReference' maxOccurs='unbounded' />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name='UseBase' >
+  </xs:complexType>
+
+  <xs:element name='UsePublicKey' type='wsse:UsePublicKeyType' />
+  <xs:complexType name='UsePublicKeyType' >
+    <xs:sequence>
+      <xs:element ref='ds:KeyInfo' />
+	</xs:sequence>
+    <xs:attribute name='Sig' type='xs:anyURI' use='optional' />
+  </xs:complexType>
+
+  <xs:element name='OnBehalfOf' type='wsse:TokenOrRef' />
+  <xs:element name='DelegateTo' type='wsse:TokenOrRef' />
+  <xs:complexType name='TokenOrRef' >
+	<xs:sequence>
+	  <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+	</xs:sequence>
+  </xs:complexType>
+
+  <xs:element name='Forwardable' />
+  <xs:element name='Delegatable' />
+  <xs:element name='Proxiable' />
+  <xs:element name='AllowPostdating' />
+  <xs:element name='Renewing' type='wsse:RenewingType' />
+  <xs:complexType name='RenewingType' >
+    <xs:attribute name='Allow' type='xs:boolean' />
+    <xs:attribute name='OK' type='xs:boolean' />
+  </xs:complexType>
+
+  <xs:element name='LifeTime' type='wsse:LifeTimeType' />
+  <xs:complexType name='LifeTimeType' >
+    <xs:sequence>
+      <xs:element ref='wsu:Created' minOccurs='0' /> 
+      <xs:element ref='wsu:Expires' minOccurs='0' />
+    </xs:sequence>
+  </xs:complexType>
+
+
+
+
+  <xs:element name='SignChallenge' type='wsse:SignChallengeType' />
+  <xs:complexType name='SignChallengeType' >
+	<xs:sequence>
+	  <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+	</xs:sequence>
+	<xs:anyAttribute namespace='##any' processContents='lax' />
+  </xs:complexType>
+  <xs:element name='SignChallengeResponse' type='wsse:SignChallengeResponseType' />
+  <xs:complexType name='SignChallengeResponseType' >
+    <xs:sequence>
+	  <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+	</xs:sequence>
+  </xs:complexType>
+
+
+  <xs:element name='SecurityContextToken' type='wsse:SecurityContextTokenType' />
+  <xs:complexType name='SecurityContextTokenType' >
+    <xs:sequence>
+	   <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+    </xs:sequence>
+	<xs:attribute ref='wsu:Id' use='optional' />
+	<xs:anyAttribute namespace='##other' processContents='lax' />
+  </xs:complexType>
+
+  <xs:element name='Keys' type='wsse:KeysType' />
+  <xs:complexType name='KeysType' >
+	<xs:sequence>
+		<xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+	</xs:sequence>  
+  </xs:complexType>
+
+  <xs:element name='DerivedKeyToken' type='wsse:Key' />
+  <xs:complexType name='Key' >
+    <xs:sequence>
+      <xs:element ref='wsse:SecurityTokenReference' minOccurs='0' />
+	  <xs:element name='Properties' type='wsse:PropertiesType' minOccurs='0' />
+	  <xs:choice minOccurs='0' >
+        <xs:element name='Generation' type='xs:unsignedLong' />
+        <xs:sequence>
+          <xs:element name='Offset' type='xs:unsignedLong' />
+		  <xs:element name='Length' type='xs:unsignedLong' minOccurs='0' />
+        </xs:sequence>
+      </xs:choice>
+      <xs:element ref='wsse:Label' minOccurs='0' />
+      <xs:element ref='wsse:Nonce' minOccurs='0' />
+    </xs:sequence>
+    <xs:attribute ref='wsu:Id' />
+    <xs:attribute name='Algorithm' type='wsse:AlgorithmTypeOpenEnum' form='qualified' use='optional' />
+  </xs:complexType>
+
+  <xs:element name='Label' type='xs:string' />
+  <xs:element name='Name' type='xs:anyURI' />
+  <xs:complexType name='PropertiesType' >
+    <xs:sequence>
+      <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+    </xs:sequence>
+  </xs:complexType>
+</xsd:schema>

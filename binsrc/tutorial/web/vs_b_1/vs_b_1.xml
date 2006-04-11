@@ -1,0 +1,88 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-B-1">
+  <refmeta>
+    <refentrytitle>Basic VSP Programming</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Making an Executable Directory</refname>
+    <refpurpose>Making an executable directory in Virtuoso's Web server space.</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-B-1a">
+<title>Preliminaries</title>
+<para>It is necessary to complete the configuration of the executable directory before any of the subsequent
+tutorials  will function. It is therefore important to follow these steps carefully before trying to run the
+vs_b_1.vsp file.</para>
+
+<para>These tutorials are designed for use on an OpenLink Virtuoso V3.0 VDBMS. Earlier versions will not work.</para>
+
+<para>Login to the Conductor UI using the dba account.</para>
+
+</refsect1>
+
+<refsect1 id="VS-B-1b">
+<title>Create the database user account vspdemo</title>
+<orderedlist>
+  <listitem>Go to "System Admin" tab and then go to the "User Accounts" tab.</listitem>
+  <listitem>Click the "Create New Account" link.</listitem>
+  <listitem>Enter for Account Name "vspdemo" and a desired password with confirmation. Check the check-box for "Allow SQL/ODBC Logins".
+  Leave the rest of the fields at their default.</listitem>
+  <listitem>Press the "Save" button. You will see the vspdemo now listed under current user accounts.</listitem>
+</orderedlist>
+</refsect1>
+
+<refsect1 id="VS-B-1c">
+<title>Allow VSP files to be run by vspdemo user with directory browsing allowed</title>
+<orderedlist>
+  <listitem>Go to "WebDAV &amp; HTTP" tab and then go to the "HTTP Hosts &amp; Directories" tab.</listitem>
+  <listitem>From the given list of HTTP Hosts click the icon in front of the Interface value.</listitem>
+  <listitem>Click the "Add new directory" link.</listitem>
+  <listitem>Choose the "File System" type and press the button "Next>>".</listitem>
+  <listitem>Enter "/vs_b_1" for Path, "/tutorial/web/" for physical path, select "vspdemo" for the VSP user, select "Allow Directory Browsing" checkbox and then press the "Save Changes" button.</listitem>
+</orderedlist>
+<para>To test the new directory: enter the "http://your_host:your_http_port/vs_b_1" in browser. For example
+http://localhost:8889 as the URL. If all is ok, the content of the web
+tutorial directory is shown.</para>
+
+</refsect1>
+
+<refsect1 id="VS-B-1d">
+<title>Equivalent SQL commands to achieve executable directory</title>
+<orderedlist>
+  <listitem>Connect to the Virtuoso server via ISQL utility as DBA user.</listitem>
+  <listitem><para>Create the user "vspdemo"</para>
+  <programlisting>
+SQL&gt; create user vspdemo;
+SQL&gt; user_set_qualifier ('vspdemo', 'vspdemo');
+  </programlisting></listitem>
+  <listitem><para>Create the virtual directory with user for execution "vspdemo"</para>
+  <programlisting>
+SQL&gt; vhost_define (vhost=&gt;'*ini*',lhost=&gt;'*ini*',lpath=&gt;'/vs_b_1',
+     ppath=&gt;'/tutorial/web/',vsp_user=&gt;'vspdemo', is_brws=>1);
+  </programlisting></listitem>
+</orderedlist>
+</refsect1>
+</refentry>

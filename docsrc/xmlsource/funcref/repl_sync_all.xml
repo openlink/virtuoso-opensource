@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_repl_sync_all">
+  <refmeta>
+    <refentrytitle>repl_sync_all</refentrytitle>
+    <refmiscinfo>repl</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>repl_sync_all</refname>
+    <refpurpose>synchronize all subscriptions</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_repl_sync_all">
+      <funcprototype id="fproto_repl_sync_all">
+        <funcdef><function>repl_sync_all</function></funcdef>
+        <paramdef />
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_repl_sync_all"><title>Description</title>
+<para>This function is used to syncronize all subscriptions. It make a syncronization 
+requests to the all publisher and will return immediately after that. The status of 
+subscriptions can be tested with repl_stat() function. </para>
+	</refsect1>
+	<!-- 3019
+
+	this function has no return value
+
+	No errors, always succeded
+	
+	-->
+  <refsect1 id="examples_repl_sync_all"><title>Example</title>
+    <example id="ex_repl_sync_all_1"><title>Syncronizing all subscriptions</title>
+     <para>This will start sycronization of all subscriptions.</para>
+      <screen>
+SQL> repl_sync_all (); 
+      </screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_repl_sync_all"><title>See Also</title>
+     <para><link linkend="fn_sub_schedule"><function>sub_schedule()</function></link></para>
+     <para><link linkend="fn_repl_disconnect"><function>repl_disconnect()</function></link></para>
+     <para><link linkend="fn_repl_grant"><function>repl_grant()</function></link></para>
+     <para><link linkend="fn_repl_init_copy"><function>repl_init_copy()</function></link></para>
+     <para><link linkend="fn_repl_new_log"><function>repl_new_log()</function></link></para>
+     <para><link linkend="fn_repl_pub_add"><function>repl_pub_add()</function></link></para>
+     <para><link linkend="fn_repl_pub_init_image"><function>repl_pub_init_image()</function></link></para>
+     <para><link linkend="fn_repl_pub_remove"><function>repl_pub_remove()</function></link></para>
+     <para><link linkend="fn_repl_publish"><function>repl_publish()</function></link></para>
+     <para><link linkend="fn_repl_revoke"><function>repl_revoke()</function></link></para>
+     <para><link linkend="fn_repl_sched_init"><function>repl_sched_init()</function></link></para>
+     <para><link linkend="fn_repl_server"><function>repl_server()</function></link></para>
+     <para><link linkend="fn_repl_server_rename"><function>repl_server_rename()</function></link></para>
+     <para><link linkend="fn_repl_stat"><function>repl_stat()</function></link></para>
+     <para><link linkend="fn_repl_status"><function>repl_status()</function></link></para>
+     <para><link linkend="fn_repl_subscribe"><function>repl_subscribe()</function></link></para>
+     <para><link linkend="fn_repl_sync"><function>repl_sync()</function></link></para>
+     <para><link linkend="fn_repl_text"><function>repl_text()</function></link></para>
+     <para><link linkend="fn_repl_this_server"><function>repl_this_server()</function></link></para>
+     <para><link linkend="fn_repl_unpublish"><function>repl_unpublish()</function></link></para>
+     <para><link linkend="fn_repl_unsubscribe"><function>repl_unsubscribe()</function></link></para>
+  </refsect1>
+</refentry>

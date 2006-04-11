@@ -1,0 +1,37 @@
+Welcome to WikiWikiWeb - a nice place to share your knowledge and experience with your friends and with those who will become your friends soon.
+
+If you're new on this site, various StartingPoints can help you to find the topic or discussion you need.
+
+Visitors are encouraged to write, and almost every page has a button "Edit" at the bottom. Just press it if you want to improve a page. That's how the site grows; let it stay under construction. Follow Doc.GoodStyle to increase the value of your ideas and learn Doc.MoreDetails if you want to make your authoring easier.
+
+*If you can read this text*, then this site is just lauched.
+
+Welcome and enjoy yourself.
+
+---
+This is the list of all clusters on this site that are made visible to public by their authors:
+%MAIN:TABLEOFCLUSTERS%
+<hide><abstract>Notes that may be interesting for all visitors of this site</abstract></hide>
+---
+%INCLUDE{"%MAINCLUSTER%.ClusterSummary"}%
+
+   1 *del.icio.us categories*: %DELICIOUSCATEGORIES%
+   1 *categories*: %CATEGORIES%
+   1 *feeds*:
+      * RSS, local: %RSS:FEED{content="Changes"}%
+      * ATOM, local: %ATOM:FEED{content="Changes"}% 
+      * ATOM, server wide: %ATOM:FEED{content="Changes" area="site"}%
+
+CategoryWiki CategoryUnix
+
+---
+
+<small> Number of hits: %HIT:COUNTER% </small>
+
+---++ Semantic Web support
+
+[[is main page of::ClusterSummary|Main cluster]]
+[[size:=14K|14K chars]] 
+
+%SEMANTIC:FACTS%
+

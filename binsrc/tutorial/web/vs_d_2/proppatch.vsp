@@ -1,0 +1,55 @@
+<?vsp
+  declare hdr any;
+  declare body any;
+  declare ses any;
+
+  DAV_RES_UPLOAD ('/DAV/proptest.bin', 'this is a test', '', '110100100R', 'dav', 'administrators', 'dav', 'dav');
+  commit work;
+
+  body := http_get (sprintf ('http://localhost:%s/DAV/proptest.bin', server_http_port()), hdr, 'PROPPATCH',
+            sprintf ('Content-Type: text/xml\r\nDepth: 1\r\nAuthorization: Basic %s', encode_base64 ('dav:dav')), '
+      	 <?xml version="1.0" encoding="utf-8" ?>
+      	 <D:propertyupdate xmlns:D="DAV:"
+      	 xmlns:Z="http://www.w3.com/standards/z39.50/">
+      	 <D:set>
+      	 <D:prop>
+      	 <Z:authors>
+      	 <Z:Author>Jim Whitehead</Z:Author>
+      	 <Z:Author>Roy Fielding</Z:Author>
+      	 </Z:authors>
+      	 </D:prop>
+      	 </D:set>
+      	 <D:remove>
+      	 <D:prop><Z:Copyright-Owner/></D:prop>
+      	 </D:remove>
+      	 </D:propertyupdate>
+            ');
+
+  ses := string_output ();
+  http_value (body, 'pre', ses);
+  body := string_output_string (ses);
+?>
+
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+<H2>PROPPATCH example</H2>
+<H3>Response header</H3>
+<table class="tableresult">
+<?vsp
+  declare i, l integer;
+  l := length (hdr); i := 0;
+  while (i < l)
+    {
+      http (concat('<tr><td>',hdr [i],'</td></tr>'));
+      i := i + 1;
+    }
+?>
+</table>
+
+<H3>Response body</H3>
+<table class="tableresult">
+<TR><TD><?vsp http(body); ?></TD></TR>
+</table>
+</body>
+</html>

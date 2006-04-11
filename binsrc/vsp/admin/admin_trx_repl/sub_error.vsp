@@ -1,0 +1,69 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Error">
+<title>Subscription is done with errors</title>
+</head>
+<?vsp adm_page_header('Subscription is done with errors', NULL); ?>
+<body>
+
+<H4>Some of subscribed item(s) is not copied.</H4>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<?vsp
+  {
+    declare _ix, _len integer;
+    _ix := 0; _len := length (errors);
+
+    while (_ix < _len)
+      {
+
+?>
+<TR><TD>&nbsp;</TD></TR>
+<TR><TD CLASS="errorhead" COLSPAN="2">Error on: <b><?=errors [_ix]?></b></TD></TR>
+<TR><TD CLASS="genlisthead">SQL state</TD><TD CLASS="gendata"><?=errors [_ix+1]?></TD></TR>
+<TR><TD CLASS="genlisthead">Message</TD><TD CLASS="gendata"><?=errors [_ix+2]?></TD></TR>
+<?vsp
+        _ix := _ix + 3;
+      }
+  }
+?>
+
+</TABLE>
+
+<div>
+<br>
+<div><b>This error(s) may caused by data dependancy</b></div>
+<ul>
+  <li>If the item is a procedures, ask publisher to add the referenced tables/views to the publication</li>
+  <li>If the target collection already exists rename it or delete</li>
+  <li>If the target table is already exists then rename or drop it</li>
+</ul>
+</div>
+<p>Back to subscriptions <a href="trx_sub.vsp">page</a></p>
+
+<?vsp adm_page_footer(); ?>
+</html>

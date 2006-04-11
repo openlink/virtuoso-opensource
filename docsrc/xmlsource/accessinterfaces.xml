@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="accessinterfaces.xml" id="accessinterfaces">
+  <title>Data Access Interfaces</title>
+  <abstract>
+    <para>ISQL is an interactive utility to Virtuoso that allows the user to execute queries
+    and scripts from a command line interface.</para>
+    <para>This chapter provides and explanation of the ODBC, JDBC, OLEDB and 
+    .Net driver implementations in Virtuoso.  
+    </para>
+  </abstract>
+
+&virtclientref;
+
+&isql;
+
+&odbcimplementation;
+
+<sect1 id="VirtuosoDriverJDBC"><title>Virtuoso Driver for JDBC</title>
+				<para>The Virtuoso Drivers for JDBC are available in
+   &quot;jar&quot; file formats for JDBC 1.x,  JDBC 2.x and JDBC 3.x specifications. These
+    are Type 4 Drivers implying that utilization is simply a case of adding the relevant
+    &quot;jar&quot; file to your CLASSPATH and then providing an appropriate JDBC URL format
+    in order to establish a JDBC session with a local or remote Virtuoso server. It is
+    important to note that when you make a JDBC connection to a Virtuoso Server, you do also
+    have access to Native and External Virtuoso tables. Thus, you actually have a type 4 JDBC
+    Driver for any number of different database types that have been linked into Virtuoso.</para>
+    <para>The JDBC 2 and JDBC 3 drivers also incorporate SSL encryption to enable very secure connections
+    to the Virtuoso database.</para>
+				<sect2 id="VirtuosoDriverPackaging">
+					<title>Virtuoso Drivers for JDBC Packaging</title>
+					<para>These drivers are installed alongside the Virtuoso Server
+    or as part of a Virtuoso Client components only installation.
+    They are packaged as follows:</para>
+					<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0" id="JavaCompatibilityTable">
+						<title>Features Comparison</title>
+						<tgroup align="char" charoff="50" char="." cols="5">
+							<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+							<thead>
+								<row>
+									<entry>Driver Name</entry>
+									<entry>Java Package</entry>
+									<entry>&quot;jar&quot; File Archive</entry>
+									<entry>Default Location</entry>
+									<entry>Java  Version</entry>
+								</row>
+							</thead>
+							<tbody>
+								<row>
+									<entry>virtuoso.jdbc.Driver</entry>
+									<entry>virtuoso.jdbc</entry>
+									<entry>virtjdbc.jar</entry>
+									<entry>&lt;virtuoso installation directory&gt;\jdk11</entry>
+									<entry>Java 1.1.x</entry>
+								</row>
+								<row>
+									<entry>virtuoso.jdbc2.Driver</entry>
+									<entry>virtuoso.jdbc2</entry>
+									<entry>virtjdbc2.jar</entry>
+									<entry>&lt;virtuoso installation directory&gt;\jdk12</entry>
+									<entry>Java 1.2/1.3</entry>
+								</row>
+								<row>
+									<entry>virtuoso.jdbc3.Driver</entry>
+									<entry>virtuoso.jdbc3</entry>
+									<entry>virtjdbc3.jar</entry>
+									<entry>&lt;virtuoso installation directory&gt;\jdk13</entry>
+									<entry>Java 1.4</entry>
+								</row>
+							</tbody>
+						</tgroup>
+					</table>
+				</sect2>
+				<sect2 id="jdbcurl4mat">
+					<title>Virtuoso Driver For JDBC URL Format</title>
+					<para>JDBC compliant applications and applets connect to JDBC
+    Drivers using JDBC Uniform Resource Locators (URLs). Although there are two Virtuoso
+    Drivers for JDBC, both share the same JDBC URL format. </para>
+					<para>The Virtuoso Driver for JDBC URL format takes the
+    following form:</para>
+					<programlisting>
+jdbc:virtuoso://&lt;Hostname&gt;:&lt;Port#&gt;/DATABASE=&lt;dbname&gt;/UID=&lt;user name&gt;/PWD=&lt;password&gt;/
+  CERT=&lt;certificate_alias&gt;/KPATH=&lt;keystore_path&gt;/PASS=&lt;keystore_password&gt;/
+  PROVIDER=&lt;ssl_provider_classname&gt;/SSL/CHARSET=&lt;character set&gt;/
+  TIMEOUT=&lt;timeout_secs&gt;/PWDTYPE=&lt;authentication_type&gt;
+</programlisting>
+					<para>Each part of the URL is explained below:</para>
+					<formalpara>
+						<title>Protocol Identifiers</title>
+						<para>this is a
+    constant value of &quot;jdbc&quot; since JDBC is the protocol in question</para>
+					</formalpara>
+					<formalpara>
+						<title>Sub Protocol Identifier</title>
+						<para>this is a constant value that identifies
+    &quot;virtuoso&quot; as a sub protocol of JDBC</para>
+					</formalpara>
+					<formalpara>
+						<title>Hostname</title>
+						<para>this identifies the machine
+    hosting a server process that speaks the &quot;virtuoso&quot; sub dialect of the
+    &quot;jdbc&quot; protocol</para>
+					</formalpara>
+					<formalpara>
+						<title>Port Number</title>
+						<para>this identifies the port
+    number on the machine from which the server which speaks the &quot;virtuoso&quot; sub
+    dialect of &quot;jdbc&quot; listening for incoming client connections The default port
+    number for a Virtuoso server is &quot;1111&quot;.</para>
+					</formalpara>
+					<formalpara>
+						<title>/DATABASE</title>
+						<para>this identifies the database
+    (Qualifier or Catalog) that you are connecting to via a Virtuoso server</para>
+					</formalpara>
+					<formalpara>
+						<title>/UID</title>
+						<para>a valid user name for the
+    Virtuoso database that you are connecting to via JDBC</para>
+					</formalpara>
+					<formalpara>
+						<title>/PWD</title>
+						<para>a valid password for the user name </para>
+					</formalpara>
+  <formalpara><title>/CERT=&lt;certificate_alias&gt;</title>
+    <para>name of the certificate to use for the SSL connection stored in the keystore.
+    This is a required option for an SSL authenticated connection</para>
+  </formalpara>
+  <formalpara><title>/KPATH=&lt;keystore_path&gt;</title>
+    <para>This optional parameter lets you specify the keystore file name
+    (default: $HOME/.keystore).  The path separator is \, and which is then replaced
+    during the connection by the right platform path separator.</para>
+  </formalpara>
+  <formalpara><title>/PASS=&lt;keystore_password&gt;</title>
+    <para>password required for accessing the keystore file.  This is required for
+    the SSL authenticated connection.</para>
+  </formalpara>
+  <formalpara><title>/PROVIDER=&lt;ssl_provider_classname&gt;</title>
+    <para>The class name of the SSL Provider (e.g. com.sun.ssl.net.internal.ssl.Provider)
+    to use for the SSL cryptography.  This parameter is required for SSL connections.</para>
+  </formalpara>
+  <formalpara><title>/SSL</title>
+    <para>The SSL option is used only for SSL connection without user authentication</para>
+  </formalpara>
+  <formalpara><title>/CHARSET=&lt;character set&gt;</title>
+    <para>This allows the client to specify a character set for data encoding.  
+    When this option is set then all Java strings, natively Unicode, are 
+    converted to the character set specified here.</para>
+  </formalpara>
+  <formalpara><title>/TIMEOUT=&lt;timeout_secs&gt;</title>
+    <para>Specifies the maximum amount of time (in seconds) that the driver 
+    will wait for a response to a query.  When this time is exceeded a time-out error 
+    will be reported and the network connection closed, assumed to be broken.</para>
+  </formalpara>
+  <formalpara><title>/PWDCLEAR=&lt;authentication_type&gt;</title>
+    <para>Specifies the authentication mode; how the user credentials may be 
+    transmitted to the server.  This option can be one of the following 3 types: 
+    cleartext, encrypt, digest. The default is digest.</para>
+  </formalpara>
+    <para>"cleartext" will transfer the password to the server in cleartext</para>
+    <para>"encrypt" will transfer the password to the server using Virtuoso's symmetric encryption technique.</para>
+    <para>"digest" will calculate an MD5 digest of the password (and some additional session variables)
+          that will be sent to the server to be compared with the value calculated server-side.</para>
+
+<note><title>Note:</title>
+<para>Since JSSE has only incorporated SSL support for JDK 1.2 and above,
+SSL has only been implemented for the JDBC 2.x and JDBC 3.x drivers for Virtuoso.</para>
+</note>
+
+				</sect2>
+    <sect2 id="jdbc3features"><title>Virtuoso Driver JDBC 3.0 features</title>
+				<sect3 id="jdbc3dsprops">
+					<title>Virtuoso Driver For JDBC 3.0 javax.sql.DataSource</title>
+					<para>JDBC 3.0 compliant applications and applets may connect to a JDBC
+    data source using JDBC <computeroutput>javax.sql.DataSource</computeroutput> instances. 
+    The Virtuoso JDBC 3.0 driver provides an implementation of the 
+    <computeroutput>javax.sql.DataSource</computeroutput> interface in the 
+    <computeroutput>virtuoso.jdbc3.VirtuosoDataSource</computeroutput> class, 
+    supporting the following properties:</para>
+
+					<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0" id="JDBCDataSourceProps">
+						<title>JDBC 3.0 VirtuosoDataSource properties</title>
+						<tgroup align="char" charoff="50" char="." cols="5">
+							<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+							<thead>
+								<row>
+									<entry>Name</entry>
+									<entry>Type</entry>
+									<entry>URL Option Equivalent</entry>
+									<entry>Description</entry>
+								</row>
+							</thead>
+							<tbody>
+								<row>
+									<entry>dataSourceName</entry>
+									<entry>java.lang.String</entry>
+									<entry></entry>
+									<entry>used in connection pooling</entry>
+								</row>
+								<row>
+									<entry>description</entry>
+									<entry>java.lang.String</entry>
+									<entry></entry>
+									<entry>string to describe the data source (free form)</entry>
+								</row>
+								<row>
+									<entry>serverName</entry>
+									<entry>java.lang.String</entry>
+									<entry></entry>
+									<entry>The host name of the remote host to connect to</entry>
+								</row>
+								<row>
+									<entry>portNumber</entry>
+									<entry>int</entry>
+									<entry></entry>
+									<entry>The port on the remote host to connect to</entry>
+								</row>
+								<row>
+									<entry>user</entry>
+									<entry>java.lang.String</entry>
+									<entry>/UID</entry>
+									<entry>username to use for the session</entry>
+								</row>
+								<row>
+									<entry>password</entry>
+									<entry>java.lang.String</entry>
+									<entry>/PWD</entry>
+									<entry>password to use for the session</entry>
+								</row>
+								<row>
+									<entry>databaseName</entry>
+									<entry>java.lang.String</entry>
+									<entry>/DATABASE</entry>
+									<entry>Initial catalog qualifier for the session</entry>
+								</row>
+								<row>
+									<entry>charset</entry>
+									<entry>java.lang.String</entry>
+									<entry>/CHARSET</entry>
+									<entry>Charset used in wide&lt;-&gt;narrow translations</entry>
+								</row>
+								<row>
+									<entry>pwdClear</entry>
+									<entry>java.lang.String</entry>
+									<entry>/PWDTYPE</entry>
+									<entry>authentication method</entry>
+								</row>
+							</tbody>
+						</tgroup>
+					</table>
+				</sect3>
+				<sect3 id="jdbcdspool">
+					<title>Virtuoso Driver For JDBC 3.0 &amp; Connection Pooling</title>
+					<para>The Virtuoso JDBC 3.0 driver supports connection pooling.</para>
+  <para>The virtuoso.jdbc3.VirtuosoDataSource implements the 
+  <computeroutput>javax.sql.ConnectionPoolDataSource</computeroutput> 
+  interface.  In order to use the connection pooling the administrator must deploy 
+  one instance of the <computeroutput>virtuoso.jdbc3.VirtuosoDriver</computeroutput> 
+  in the JNDI repository and set all of it's properties except <computeroutput>dataSourceName</computeroutput>. 
+  This is the "main" connection pooling data source. Then the administrator should 
+  deploy a second instance of the <computeroutput>virtuoso.jdbc3.VirtuosoDataSource</computeroutput> 
+  class and set only it's <computeroutput>dataSourceName</computeroutput> property.</para>
+  <para>Applications will use the second <computeroutput>virtuoso.jdbc3.VirtuosoDataSource</computeroutput> 
+  instance to get a connection. It will in turn call the first one to obtain all connect 
+  info and return the <computeroutput>java.sql.Connection</computeroutput> 
+  instance.</para>
+				</sect3>
+				<sect3 id="jdbcxa">
+					<title>Virtuoso Driver For JDBC 3.0 &amp; Distributed Transactions</title>
+					<para>Virtuoso supports the industry
+standard XA specification for distributed transaction processing. The XA
+specification defines an interface between the transaction manager (TM) and
+resource manager (RM) in a distributed transaction system. This is a generic
+interface and it does not directly address the use of distributed transactions
+from Java. The Java mapping of the XA interface is defined in Sun Microsystems
+Java Transaction API (JTA) and JDBC 3.0 specifications. The Virtuoso JDBC 3.0
+driver supports the JTA architecture by providing the implementation of JTA
+resource manager interfaces.</para>
+					<para>The Virtuoso JDBC 3.0 driver
+provides the <computeroutput>virtuoso.java3.VirtuosoXid</computeroutput>,
+<computeroutput>virtuoso.java3.VirtuosoXADataSource</computeroutput>,
+<computeroutput>virtuoso.java3.VirtuosoXAConnection</computeroutput>, and
+<computeroutput>virtuoso.java3.VirtuosoXAResource</computeroutput> classes
+which implement the interfaces
+<computeroutput>javax.transaction.xa.Xid</computeroutput>,
+<computeroutput>javax.transaction.xa.XADataSource</computeroutput>,
+<computeroutput>javax.sql.XAConnection</computeroutput>, and
+<computeroutput>javax.sql.XAResource</computeroutput> respectively.
+The use if these interfaces is usually transparent for applications and the
+application developer shouldn't bother with them. They are used only by
+the JTS transaction manager which normally runs as a part of the J2EE
+server.</para>
+					<para>The task of the J2EE server
+administrator is to setup the necessary Virtuoso XA datasources. The exact
+procedure of this depends on the J2EE server in use (such as BEA WebLogic,
+IBM WebSphere, etc). Generally, this includes two steps:</para>
+					<orderedlist>
+					    <listitem>
+						<para>Include the JDBC driver's
+jar file into J2EE server's class path.</para>
+					    </listitem>
+					    <listitem>
+						<para>Deploy an instance of
+<computeroutput>javax.transaction.xa.XADataSource</computeroutput> with
+appropriately set properties into the J2EE server's JNDI repository.</para>
+					    </listitem>
+					</orderedlist>
+					<para>
+The <computeroutput>virtuoso.java3.VirtuosoXADataSource</computeroutput> class
+is derived from <computeroutput>virtuoso.java3.VirtuosoDataSource</computeroutput>
+and inherits all of its properties. These properties has to be set as described
+in the section <link linkend="jdbc3dsprops">Virtuoso Driver For JDBC 3.0 javax.sql.DataSource</link>.</para>
+					<para>For example, the following has to
+be done in case of Sun's J2EE Reference Implementation.</para>
+					<orderedlist>
+					    <listitem>
+						<para>Add the path of
+virtjdbc3.jar to the J2EE_CLASSPATH variable in the file
+$(J2EE_HOME)/bin/userconfig.bat on Windows or $(J2EE_HOME)/bin/userconfig.sh on
+Unix/Linux:</para>
+<programlisting>
+    set J2EE_CLASSPATH=C:/Virtuoso/lib/virtjdbc3.jar
+</programlisting>
+or
+<programlisting>
+    J2EE_CLASSPATH=/home/login/virtuoso/lib/virtjdbc3.jar
+    export J2EE_CLASSPATH
+</programlisting>
+					    </listitem>
+					    <listitem>
+						<para>Using the following
+command add the XA datasource with JNDI name "jdbc/Virtuoso" which refers to
+the Virtuoso server running on the same computer on port 1111:</para>
+<programlisting>
+    j2eeadmin -addJdbcXADatasource jdbc/Virtuoso virtuoso.jdbc3.VirtuosoXADataSource -props serverName=localhost portNumber=1111
+</programlisting>
+					    </listitem>
+					</orderedlist>
+				</sect3>
+				<sect3 id="jdbcrs">
+					<title>JDBC 3.0 javax.sql.RowSet Driver Implementation</title>
+					<para>The Virtuoso JDBC 3.0 driver has two implementations of the 
+          <computeroutput>javax.sql.RowSet</computeroutput> interface - 
+          <computeroutput>virtuoso.javax.OPLCachedRowSet</computeroutput> and 
+          <computeroutput>virtuoso.javax.OPLJdbcRowSet</computeroutput>.</para>
+          <para>The <computeroutput>virtuoso.javax.OPLCachedRowSet</computeroutput> 
+          class implements a totally disconnected, memory cached rowset and the 
+          <computeroutput>virtuoso.javax.OPLJdbcRowset</computeroutput> class 
+          spans the rest of the JDBC API to implement it's methods.</para>
+				</sect3>
+                                </sect2>
+				<sect2 id="JDBCDriverInstallConfig">
+					<title>Installation &amp; Configuration Steps</title>
+					<para>Perform the following steps in order to make use of your
+    Virtuoso Drivers for JDBC:</para>
+					<note>
+						<title>Note:</title>
+						<para>You only have to perform these steps if a first attempt to use the
+    Virtuoso Drivers for JDBC fails, the Virtuoso installer will attempt to configure these
+    settings for you at installation time.</para>
+					</note>
+					<orderedlist>
+						<listitem>
+							<para>Ensure your PATH environment variable is pointing to a
+        version of the Java Virtual Machine (JVM) that is compatible with the version of the JDBC
+        Driver Manager installed on your machine.  Consult the <link linkend="VirtuosoDriverPackaging">section 
+        above</link> to double check.  You can also type the following command to verify Java
+        versions:</para>
+
+              <programlisting>java -version</programlisting>
+
+						</listitem>
+						<listitem>
+							<para>Add the appropriate Virtuoso for JDBC &quot;jar&quot; file
+        to your CLASSPATH environment variable.</para>
+						</listitem>
+						<listitem>
+							<para>Attempt to make a connection using one of the
+		sample JDBC Applications or Applets provided with your Virtuoso installation.</para>
+						</listitem>
+					</orderedlist>
+
+  <note><title>Note:</title>
+  <para>If you have problems using the virtuoso JDBC driver despite your CLASSPATH being defined correctly, you
+  may force the Java Virtual Machine to load a specific JDBC driver using: 
+  <computeroutput>-D</computeroutput> on the java command line: e.g:</para> 
+  <para><computeroutput>-Djdbc.drivers=virtuoso.jdbc.Driver</computeroutput>.</para>
+  <para>You can check the Virtuoso JDBC driver version from the command line using: 
+  <computeroutput>java virtuoso.jdbc.Driver</computeroutput></para>
+  </note>
+
+
+				</sect2>
+			</sect1>
+
+&oledbimplementation;
+
+&inprocess;
+
+<sect1 id="accintudsockets"><title>Unix Domain Socket Connections</title>
+
+  <para>Client connections to Virtuoso servers running on the same Unix or Linux 
+  server host can benefit from faster connections utilizing Unix Domain Sockets.  
+  This does not apply to Windows platforms.</para>
+
+ <para>By default Virtuoso will open a Unix Domain listen socket in addition 
+ to the TCP listen socket.  The name of the UD socket will be:</para>
+
+<programlisting><![CDATA[
+/tmp/virt-<tcp-listen-port>
+]]></programlisting>
+
+  <para>When a client attempts to connect to the Virtuoso server using the 
+  specific address <computeroutput>localhost</computeroutput> it will 
+  first try connecting to the UD socket, failing that it will silently revert 
+  to the TCP socket.</para>
+
+    <para>Unix Domain Socket connections only work if 
+	<computeroutput>localhost</computeroutput> is explicity specified or the 
+	host is unspecified which defaults to a localhost connection.  
+	UD socket connections will <emphasis>not</emphasis> work to any other address 
+	such as:</para>
+
+<programlisting><![CDATA[
+virt.mydomain.com:1111
+127.0.0.1:1111
+]]></programlisting>
+
+  <para>regardless of whether that is the localhost or not.</para>
+
+  <para>Unix Domain sockets can be disabled using the 
+  <computeroutput>DisableUnixSocket</computeroutput> parameter in the 
+  Parameters section of the Virtuoso INI file.</para>
+
+  <para>The <link linkend="fn_sys_connected_server_address"><function>sys_connected_server_address()</function></link>
+  function can be used to check the connection type.  It will return </para>
+  <programlisting><![CDATA[
+/tmp/virt-<tcp-listen-port>
+]]></programlisting>
+<para>for connections using UD sockets.</para>
+
+</sect1>
+
+</chapter>

@@ -1,0 +1,214 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare result any;
+declare str varchar;
+declare resp, inp, outp, router, mirror, endpoint, step any;
+--no_c_escapes-
+
+resp := null;
+router   := 'http://localhost:'||server_http_port()||'/router';
+mirror   := 'http://localhost:'||server_http_port()||'/mirror';
+endpoint := 'http://localhost:'||server_http_port()||'/endpoint';
+
+step := coalesce ({?'step'}, '');
+
+if ({?'exec'} is not null)
+  {
+    declare header any;
+    declare action varchar;
+    declare register, query, inv, xml_param any;
+
+    str := get_keyword ('str', params, 'Hello World!');
+
+    action := case step
+	       when '3' then 'http://soapinterop.org/'
+	       when '2' then 'http://schemas.xmlsoap.org/ws/2001/10/referral#query'
+	       else 'http://schemas.xmlsoap.org/ws/2001/10/referral#register'
+	     end;
+
+    header := xml_tree_doc
+	(
+    '<m:path xmlns:m="http://schemas.xmlsoap.org/rp">' ||
+    '  <m:action>' || action || '</m:action>' ||
+    '  <m:to>' || case step when '3' then endpoint else router end || '</m:to>' ||
+    case step when '3' then '<m:fwd><m:via>'|| router ||'</m:via></m:fwd>' else '' end ||
+    '  <m:rev>' ||
+    '    <m:via/>' ||
+    '  </m:rev>' ||
+    '  <m:id>uuid:' || uuid () || '</m:id>' ||
+    '</m:path>'
+	);
+
+    register := xml_tree_doc
+      (
+	'<r:register xmlns:r="http://schemas.xmlsoap.org/ws/2001/10/referral">'||
+	'  <r:ref>'||
+	'    <r:for>'||
+	'      <r:exact>'|| endpoint ||'</r:exact>'||
+	'    </r:for>'||
+	'    <r:if>'||
+	'      <r:ttl>36000000</r:ttl>'||
+	'    </r:if>'||
+	'    <r:go>'||
+	'      <r:via>' || mirror || '</r:via>'||
+	'    </r:go>'||
+	'    <r:refId>uuid:E64134EE-1F0D-11D7-9F95-FD3FB2DAD2D7</r:refId>'||
+	'  </r:ref>'||
+	'</r:register>'
+      );
+
+    query := xml_tree_doc
+       (
+	'<r:query xmlns:r="http://schemas.xmlsoap.org/ws/2001/10/referral">'||
+	'  <r:for>'||
+	'    <r:prefix>'|| endpoint ||'</r:prefix>'||
+	'  </r:for>'||
+	'</r:query>'
+       );
+
+    inv := xml_tree_doc
+      (
+    '<r:register xmlns:r="http://schemas.xmlsoap.org/ws/2001/10/referral">'||
+    '  <r:ref>'||
+    '    <r:for>'||
+    '      <r:exact>'|| endpoint ||'</r:exact>'||
+    '    </r:for>'||
+    '    <r:if>'||
+    '      <r:invalidates>'||
+    '        <r:rid>uuid:E64134EE-1F0D-11D7-9F95-FD3FB2DAD2D7</r:rid>'||
+    '      </r:invalidates>'||
+    '    </r:if>'||
+    '    <r:go>'||
+    '    </r:go>'||
+    '    <r:refId>uuid:7FCA83F4-1F0E-11D7-9F95-FD3FB2DAD2D7</r:refId>'||
+    '  </r:ref>'||
+    '</r:register>'
+      );
+
+    xml_param := case step
+		   when	'1' then register
+		   when '2' then query
+		   when '4' then inv
+		   else null
+		 end;
+
+    if (step in ('1', '2', '4'))
+      {
+        resp := soap_client (url=>router,
+	      operation=>'register',
+	      parameters=>vector ('register', xml_param),
+	      style=> 3,
+	      headers => vector ('path', header),
+	      soap_action=>action
+	      );
+      }
+    else if (step in ('3'))
+      {
+        resp := soap_client (url=>router,
+	      operation=>'echoString',
+	      parameters=>vector (vector ('inputString', 'string'), str),
+	      style=> 2,
+	      headers => vector ('path', header),
+	      target_namespace=>action);
+      }
+  }
+else if (step in ('1','2','3','4'))
+  {
+    step := case step
+	      when '1' then ''
+	      when '2' then '1'
+	      when '3' then '2'
+	      when '4' then '1'
+	      else '' end;
+  }
+?>
+<html>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+<body>
+<H3>WS-Referral demo</H3>
+<P>Step <b><?= case when step in ('1','2','3') then atoi(step)+1 else '1' end ?></b> of <b>4</b></P>
+<form method="post" action="<?= http_path() ?>" name="mform">
+<table class="tableentry">
+<tr><td>1. Choice operation</td>
+    <td>
+     <select name="step" onChange="document.forms[0].submit()">
+      <option value="1" <?= case step when '4' then 'selected' when '' then 'selected' else '' end ?>>
+       Register a mirror</option>
+      <option value="2" <?= case step when '1' then 'selected' else '' end ?>>Query the router</option>
+      <option value="3" <?= case step when '2' then 'selected' else '' end ?>>Call an endpoint</option>
+      <option value="4" <?= case step when '3' then 'selected' else '' end ?>>Delete a mirror</option>
+     </select>
+    </td>
+</tr>
+<?vsp if (step = '2') { ?>
+<tr><td>Enter a string to echo</td><td>
+<input type="text" name="str" size="20" value="Hello World!" />
+</td></tr>
+<?vsp } ?>
+
+<tr><td>2. Call</td><td><input type="submit" name="exec" value="Excute"></td></tr>
+</table>
+</form>
+<?vsp
+  if (resp is not null) {
+  declare inx, oux, atts any;
+  inp := resp[1];
+  outp := resp[2];
+  atts := resp[4];
+  inx := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (inp), vector ('body', 0));
+  oux := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (outp), vector ('body', 0));
+?>
+  <table>
+  <tr>
+    <td><b>
+    Request</b>
+    </td>
+  </tr>
+  <tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (inx, null); ?>
+    </div>
+    </td>
+  </tr>
+  <tr>
+  <tr>
+    <td><b>
+    Response</b>
+    </td>
+  </tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (oux, null); ?>
+    </div>
+    </td>
+  </tr>
+  </table>
+<?vsp
+  }
+?>
+
+
+</body>
+</html>

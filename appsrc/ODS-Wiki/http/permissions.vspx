@@ -1,0 +1,152 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="view_page" on-deadlock-retry="3" decor="wiki_decor.vspx"  style="wiki_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagewrapper>
+    <v:variable name="url" type="varchar" default="null" persist="0"
+	    xmlns:v="http://www.openlinksw.com/vspx/" />
+    <vm:pagetitle>Permissions</vm:pagetitle>
+    <vm:pagebody>
+      <v:data-set name="pages" 
+		  sql="select res_full_path, res_perms from
+				ws.ws.sys_dav_res
+			where
+				res_owner = connection_get ('vspx-uid')
+				and res_name like '%.txt'"
+		  nrows="10" scrollable="1" cursor-type="keyset"
+		  edit="1" width="80%" >
+	<v:before-data-bind><![CDATA[
+          connection_set ('vspx-uid', (select u_id from vspx_session, sys_users where vs_sid = self.sid and vs_uid = u_name));
+	]]>
+	</v:before-data-bind>
+	  
+	<v:template name="pages_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+	  <tr>
+	    <th width="20%"><v:label name="label1" value="Name" format="%s"/></th>
+	    <th width="10%"><v:label name="label2" value="Permissions"
+			 format="%s"/></th>
+	  </tr>
+	</v:template>
+	<v:template name="pages_repeat" type="repeat" name-to-remove="" set-to-remove="">
+	  <v:template name="pages_update" type="edit"
+		      name-to-remove="" set-to-remove="">
+	    <v:form name="updp" type="update"
+		    table="WS.WS.SYS_DAV_RES">
+	      <v:key column="res_full_path"
+		     value="--((self.vc_find_descendant_control('pages') as vspx_data_set).ds_current_row.te_rowset[0])"/>
+	      <v:template name="updtempl" type="simple"
+			  name-to-remove="" set-to-remove="both">
+		<tr>
+		  
+		  <td width="20%">
+		    <v:label name="label7" value="--((self.vc_find_descendant_control('pages') as vspx_data_set).ds_current_row.te_rowset[0])"
+			     format="%s"/>
+		  </td>
+			  <td width="10%">
+		    <v:text name="permtext" column="res_perms"
+			    value="--((self.vc_find_descendant_control('pages') as vspx_data_set).ds_current_row.te_rowset[1])"
+			    format="%s">
+		      <v:validator test="regexp"
+				   regexp="^((([0|1]){9})|(([r|-][w|-][x|-]){3}))[R|N|T]$" 
+				   empty-allowed="0" message="Invalid
+				   permission set"/>
+		    </v:text>
+		  </td>
+		  <td>
+		    <v:button name="upd_button" action="submit"
+			      value="submit" xhtml_title="Save"
+			      xhtml_alt="Save"/>
+		  </td>
+		</tr>
+	      </v:template>
+	    </v:form>
+	  </v:template>
+	  <v:template name="PagesDS_browse" type="browse" name-to-remove="table" set-to-remove="both">
+            <tr>
+              <td width="20%"><v:label name="label5" value="--(control.vc_parent as
+                           vspx_row_template).te_rowset[0]"
+                           format="%s"/></td>
+              <td width="10%"><v:label name="label6" value="--(control.vc_parent as
+                           vspx_row_template).te_rowset[1]"
+                           format="%s"/></td>
+	      <td>
+		<v:button style="url" active="--(1)" action="simple"
+			  value="Edit" width="60" height="24"
+			  name="pages_edit" />
+	      </td>
+            </tr>
+          </v:template>
+	</v:template>
+      </v:data-set>
+      <v:form name="user_config" type="simple" method="POST" action="">
+        <table>
+          <v:form name="upd1" type="update" table="&quot;WV&quot;.&quot;Wiki&quot;.&quot;User&quot;">
+            <v:key column="UserId" value="--connection_get ('vspx-uid')"/>
+            <v:template name="user_config_tmp" type="if-exists">
+              <tr>
+                <th>
+                  <v:label name="lab1" value="Default Permission:"/>
+                </th>
+                <td>
+                  <v:text name="txt1" column="DefaultPermission" null-value="'110100000R'">
+                    <v:validator test="regexp" regexp="^((([0|1]){9})|(([r|-][w|-][x|-]){3}))[R|N|T]$" empty-allowed="0" message="Invalid permission set"/>
+                  </v:text>
+                </td>
+              </tr>
+            </v:template>
+          </v:form>
+          <tr>
+            <td/>
+            <td> 
+            <v:button action="submit" name="okb" xhtml_title="Save" xhtml_alt="Save">
+              <v:after-data-bind>
+                if (not control.vc_focus)
+                  return;
+                self.upd1.vc_focus := 1;
+                self.upd1.vc_set_childs_focus (1, e);
+              </v:after-data-bind>
+            </v:button>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+      <v:form name="back_form" type="simple" method="POST">
+        <v:before-data-bind><![CDATA[
+          if (get_keyword ('url', params) is not null)
+            self.url := get_keyword ('url', params);
+          dbg_obj_print (self.url);
+        ]]></v:before-data-bind>
+        
+        <div class="wiki_button">
+          <v:button xhtml_class="button" action="simple"
+            name="back" value="Back">
+            <v:on-post>
+              <![CDATA[
+                self.vc_redirect (self.url);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

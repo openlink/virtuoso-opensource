@@ -1,0 +1,189 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+  if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+  declare _dsn, _dsn1, _uid, _pwd varchar;
+  declare _item varchar;
+  declare _item_type integer;
+  _item := get_keyword ('item', params, '');
+  _item_type := atoi (get_keyword ('item_type', params, '0'));
+  _dsn := get_keyword ('dsn', params, '');
+  _dsn1 := get_keyword ('dsns1', params, '');
+  if (_dsn = '')
+    _dsn := get_keyword ('dsns1', params, '');
+  if (_dsn = '')
+    _dsn := get_keyword ('dsns', params, '');
+  _uid := get_keyword ('uid', params, 'dba');
+  _pwd := get_keyword ('pwd', params, 'dba');
+  if ('Add' = get_keyword ('adddsn', params))
+    {
+      if (_dsn <> '')
+        DB..vd_remote_data_source (_dsn, '', _uid, _pwd);
+    }
+  if ('' <> get_keyword ('dsn_save', params, ''))
+    {
+      _uid := get_keyword ('n_uid', params, 'dba');
+      _pwd := get_keyword ('n_pwd', params, 'dba');
+      if (_dsn <> '')
+        DB..vd_remote_data_source (_dsn, '', _uid, _pwd);
+        -- update SYS_DATA_SOURCE set DS_UID = _uid, DS_PWD = _pwd where DS_DSN = _dsn;
+    }
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Bidirectional snapshot replication wizard - new subscriber">
+    <script language="javascript" src="link_tables.js"></script>
+    <title>Bidirectional snapshot replication: New subscriber</title>
+  </head>
+<?vsp
+  adm_page_header('Bidirectional Snapshot Replication: New subscriber', NULL);
+
+  if (get_keyword ('Create', params, '') <> '')
+    {
+      if (_dsn = '')
+        {
+	  http ('DSN must be supplied<br>');
+          goto cont;
+        }
+      declare continue handler for sqlstate '*' {
+	  http (sprintf ('Error: %s: %s',
+                    cast (__SQL_STATE as varchar), __SQL_MESSAGE));
+          goto create_exit;
+      };
+      REPL_CREATE_SNAPSHOT_SUB (
+          REPL_SNP_SERVER (_dsn), _item, _item_type, _uid, _pwd);
+      http ('Subscriber added successfully.<br>');
+create_exit:
+      ;
+?>
+<form action="snp_bidir_edit.vsp">
+<input type="hidden" name="item" value="<?=_item?>">
+<input type="hidden" name="item_type" value="<?=_item_type?>">
+<input type="submit" name="Back" value="Back">
+</form>
+<?vsp
+      goto end_st;
+    }
+cont:
+  ;
+?>
+<form name="link_form" action="snp_bidir_new_subscriber.vsp" method=POST>
+<input type="hidden" name="item" value="<?=_item?>">
+<input type="hidden" name="item_type" value="<?=_item_type?>">
+      <p>Select Target Data Source for Replication.</p>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="5">Connected Data Sources</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<tr>
+       <td>
+	<select name="dsns1" Size=5 onChange="javascript:document.link_form.submit ();">
+	  <?vsp for select DS_DSN from SYS_DATA_SOURCE do { ?>
+	    <option <?=select_if (_dsn1, DS_DSN)?>><?=DS_DSN?></option>
+	  <?vsp  } ?>
+	</select>
+	</td>
+	<td>
+<?vsp
+         if (_dsn <> '' and _dsn = get_keyword ('dsns1', params, ''))
+	   {
+	     declare _n_uid, _n_pwd varchar;
+             _n_uid := ''; _n_pwd := '';
+	     whenever not found goto nfd;
+	     select DS_UID, pwd_magic_calc (DS_UID, DS_PWD, 1) into _n_uid, _n_pwd from SYS_DATA_SOURCE where DS_DSN = _dsn;
+nfd:
+?>
+	   <table border=0 class="genlist">
+	     <tr>
+	       <td CLASS="genlisthead">DSN</td>
+	       <td class="gendata"><?=_dsn?></td>
+	     </tr>
+	     <tr>
+	       <td CLASS="genlisthead">User name</td>
+	       <td><input type=text name=n_uid value="<?=_n_uid?>"></td>
+	     </tr>
+	     <tr>
+	       <td CLASS="genlisthead">Password</td>
+	       <td><input type=password name=n_pwd value="<?=_n_pwd?>"></td>
+	     </tr>
+	   </table>
+
+<?vsp
+	   }
+?>
+	</td>
+      </tr>
+      <tr>
+        <td colspan="2" align="right">
+	   <table border=0 class="genlist">
+           <tr>
+              <td><input type=submit name="Create" value="Create Subscription"></td>
+              <td><input type=submit name="dsn_save" value="Save"></td>
+           </tr>
+           </table>
+        </td>
+      </tr>
+      </table>
+<BR></BR>
+<P>If the required target Data Source is not connected, you must connect before selecting it as a target...</P>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="5">Connect to Data Source</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+        <tr>
+	  <td valign="top">
+            <select name="dsns" onChange="javascript:dsns_chg(this);" Size="5">
+               <?vsp adm_lt_dsn_options(_dsn); ?>
+            </select>
+	  </td>
+	  <td>
+            <table>
+              <tr>
+	        <td CLASS="genlisthead">Data Source</td>
+	        <td><input type="text" name="dsn"></td>
+	      </tr>
+              <tr>
+	        <td CLASS="genlisthead">Username</td>
+	        <td><input type="text" name="uid"></td>
+	      </tr>
+              <tr>
+	        <td CLASS="genlisthead">Password</td>
+	        <td><input type="password" name="pwd"></td>
+	      </tr>
+              <tr>
+	        <td colspan="2" align="right"><input type="submit" name="clear" value="Clear">
+	        	<input type="submit" name="adddsn" value="Add"></td>
+	      </tr>
+	    </table>
+	  </td>
+	</tr>
+      </table>
+    </form>
+<?vsp
+end_st:
+  adm_page_footer();
+?>
+</html>

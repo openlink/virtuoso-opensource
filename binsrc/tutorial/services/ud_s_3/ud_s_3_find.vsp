@@ -1,0 +1,129 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare k varchar;
+  declare ent varchar;
+  declare st, q varchar;
+  declare ns integer;
+  declare tk varchar;
+  declare b_text varchar;
+
+  st := 'Step 1: find a tModel for SOAP service';
+  q := '<find_tModel xmlns="urn:uddi-org:api" generic="1.0">\r\n\t<name>SOAP</name>\r\n</find_tModel>';
+  ns := 1;
+  b_text := 'Find';
+
+  if ({?'step'} is not null)
+    {
+       ent := uddi..uddi_str_get ({?'uri'}, {?'q'});
+       ent := xml_tree_doc (ent);
+    }
+
+  if ({?'step'} = '1')
+    {
+       k := xpath_eval ('//@tModelKey', ent, 1);
+       k := cast (k as varchar);
+       ns := 2;
+       tk := k;
+       st := 'Step 2: find a business by tModel';
+       q := sprintf ('<find_business xmlns="urn:uddi-org:api" generic="1.0">\r\n\t<tModelBag><tModelKey>%s</tModelKey></tModelBag>\r\n</find_business>', k);
+       b_text := 'Find business';
+    }
+
+  if ({?'step'} = '2')
+    {
+       k := xpath_eval ('//@businessKey', ent, 1);
+       k := cast (k as varchar);
+       ns := 3;
+       tk := {?'k'};
+       st := 'Step 3: find a service by businessKey and tModel';
+       q := sprintf ('<find_service xmlns="urn:uddi-org:api" generic="1.0" businessKey="%s">\r\n\t<tModelBag><tModelKey>%s</tModelKey></tModelBag>\r\n</find_service>', k, tk);
+       b_text := 'Find service';
+    }
+
+  if ({?'step'} = '3')
+    {
+       k := xpath_eval ('//@serviceKey', ent, 1);
+       k := cast (k as varchar);
+       ns := 4;
+       tk := {?'tk'};
+       st := 'Step 4: find a bindings';
+       q := sprintf ('<find_binding xmlns="urn:uddi-org:api" generic="1.0" serviceKey="%s">\r\n\t<tModelBag>\r\n\t\t<tModelKey>%s</tModelKey>\r\n\t</tModelBag>\r\n</find_binding>', k, tk);
+       b_text := 'Find bindings';
+    }
+
+   if ({?'step'} = '4')
+     {
+       declare x any;
+       x := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/ud_s_3/ud_s_3.xsl', ent, vector ('table_name', 'bindings'));
+       http ('<html>
+	<head><link rel="stylesheet" type="text/css" href="../demo.css"><head>
+	<body>');
+       http_value (x);
+       http ('</body></html>');
+       return;
+     }
+
+?>
+
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"><head>
+<body>
+<form action="ud_s_3_find.vsp" method="POST">
+<input type="hidden" name="step" value="<?=ns?>">
+<input type="hidden" name="k" value="<?=k?>">
+<input type="hidden" name="tk" value="<?=tk?>">
+<table class="tableentry">
+<?vsp if ({?'step'} is null) { ?>
+  <tr>
+    <td>
+    enter the UDDI server URL
+    </td>
+    <td>
+    <input type="text" name="uri" value="http://localhost:<?=server_http_port()?>/uddi" size="60" >
+    </td>
+  </tr>
+<?vsp } else { ?>
+    <input type="hidden" name="uri" value="<?={?'uri'}?>" >
+<?vsp } ?>
+  <tr>
+    <td>
+    <?=st?>
+    </td>
+    <td>
+    <textarea name="q" rows=15 cols="60"><?=q?>
+    </textarea>
+    </td>
+  </tr>
+  <tr>
+    <td>
+    <input type="submit" name="exec" value="<?=b_text?>">
+    </td>
+    <td>
+    &nbsp;
+    </td>
+  </tr>
+</table>
+</form>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+--no_c_escapes-
+declare _host, _root, _url, _descr, _sstart, _sint varchar;
+declare _upd, _dbg integer;
+_upd := 1;
+_dbg := 0;
+_host := '';
+_root := '';
+_url := '';
+_sstart := datestring (now());
+_sint := 10;
+if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+	  'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+if ( get_keyword ('DELETE', params) = 'Delete')
+  {
+    _descr := get_keyword ('descr', params);
+    delete from SYS_SCHEDULED_EVENT where SE_NAME = _descr;
+  }
+if ( get_keyword ('PROCESS', params) = 'yes')
+  {
+    _host := get_keyword ('host', params);
+    _root := get_keyword ('root', params);
+    _upd := atoi (get_keyword ('upd', params));
+    _url := get_keyword ('url', params);
+    select VS_DESCR into _descr from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+    _descr := concat (_descr, ' (', _host,'/',_root,')');
+    if (get_keyword ('Add', params) = 'Add')
+      {
+    	_sstart := get_keyword ('sstart', params);
+    	_sint := atoi (get_keyword ('sint', params));
+	if (exists (select 1 from SYS_SCHEDULED_EVENT where SE_NAME = _descr))
+	  {
+	    update SYS_SCHEDULED_EVENT
+	      set SE_START = cast (_sstart as datetime),
+	          SE_INTERVAL = _sint
+	          where SE_NAME = _descr;
+	  }
+	else
+	  insert into SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL)
+	    values (_descr, cast (_sstart as datetime), _sint,
+	      concat ('WS.WS.SERV_QUEUE_TOP (\'',_host,'\',\'',_root,'\', 1, 0, null, null)'));
+      }
+  }
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="../admin_style.css">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Target Web site definition">
+<title>Web Robot Scheduled Update</title>
+</head>
+  <BODY CLASS="adm_pages_body">
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING=0 CELLSPACING=0>
+<TR><TD CLASS="admpagestitle" COLSPAN="2"><H2>Web Robot Scheduled Update</H2></TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2">
+
+<!--A href="vfs.html"><img src="/images/home.gif"></A-->
+<?include ../adm_js_check.vsp ?>
+<form action="vfs_queue_sched.vsp">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="2"><?= _descr ?></TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<tr><td CLASS="genlisthead">Start at</td><td><input type="text" size="30" name="sstart" value="<?= _sstart ?>"></td></tr>
+<tr><td CLASS="genlisthead">Interval (minutes)</td><td><input type="text" size="5" name="sint" value="<?= _sint ?>"></td></tr>
+<tr><td colspan="2" align="right">
+	<input type="submit" name="Add" value="Add">
+	<input type="submit" name="DELETE" value="Delete">
+	<input type="Button" value="Cancel" name="Cancel" onclick="location.replace ('admin_vfs_queue.vsp')">
+</td></tr>
+</table>
+<input type="hidden" name="host" value="<?= _host ?>">
+<input type="hidden" name="root" value="<?= _root ?>">
+<input type="hidden" name="PROCESS" value="yes">
+<input type="hidden" name="url" value="<?= _url ?>">
+<input type="hidden" name="descr" value="<?= _descr ?>">
+</form>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="stathead" COLSPAN="4">Current Scheduled Updates</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="4"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<tr>
+<td CLASS="genlistheadt">Description</td>
+<td CLASS="genlistheadt">Start on</td>
+<td CLASS="genlistheadt">Interval (minutes)</td>
+<td CLASS="genlistheadt">Last executed</td>
+</tr>
+<?vsp
+declare _cnt integer;
+_cnt := 0;
+for select SE_NAME, SE_START, SE_INTERVAL, SE_LAST_COMPLETED from SYS_SCHEDULED_EVENT where SE_SQL like 'WS.WS.SERV_QUEUE%' do {
+  _cnt := _cnt + 1;
+  http (concat ('<tr><td CLASS="gendata">',
+	SE_NAME, '</td><td CLASS="gendata" align="right">',
+	subseq (cast (SE_START as varchar), 0, 19), '</td><td CLASS="gendata" align="right">',
+	cast (SE_INTERVAL as varchar), '</td><td CLASS="gendata" align="right">',
+	substring (cast (SE_LAST_COMPLETED as varchar), 1 , 20), '</td></tr>'));
+}
+  if (_cnt < 1)
+    http ('<tr><td colspan="4"><table><tr align="center"><td>*** no scheduled updates defined ***</td></tr></table></td></tr>');
+?>
+</table>
+
+</TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD>
+</TABLE>
+<?include ../admin_footer.vsp ?>
+</body>
+</html>

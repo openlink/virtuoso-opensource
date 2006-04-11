@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="xmlschema"><title>XML DTD and XML Schemas</title>
+  <sect2 id="dtd_intro"><title>XML Document Type Definition (DTD)</title>
+<para>It is always useful to store a description of an XML document
+inside the document itself. XML DTD is a set of directives to
+describe the structure of the document and references to other XML documents.
+</para>
+<para>
+The XML parser of the Virtuoso Server can recognize and use most  DTD directives.
+</para>
+<para>If DTD describes the structure of the document (i.e. the allowed content of
+elements with particluar names) then the XML parser can validate the source document
+in order to check if it matches to the rules written in the DTD.
+</para>
+<para>If a DTD describes references to external XML entities then the parser can
+build either "standalone" or "non-standalone" internal representation.
+To build a "standalone" representation, the XML parser will retrieve all external resources
+and then it will replace every occurence of every reference with a copy of the whole
+content of the resource.
+To build a "non-standalone" representation, XML parser remembers only referencing information
+but it tends to not retrieve external documents; they can be retrieved on demand later.
+</para>
+<para>A DTD may describe some attributes as "unique identifiers" and as "references to
+unique identifiers". If requested, the XML parser can check that identifiers are really unique
+or that there are no "dangling" references to missing identifiers.
+</para>
+<para>
+In an ideal world, source documents match the XML standard perfectly and all
+declared URIs are valid and can be accessed. The real application, however,
+should read inaccurate data and ignore some minor errors.
+To let the XML parser signal only errors that really can affect the application,
+it is possible to precisely configure the reaction of the parser on every sort of problem.
+In addition, the application can get a detailed human-readable log of diagnostic
+messages by calling <link linkend="fn_xml_validate_dtd"><function>xml_validate_dtd()</function></link>
+to let user fix the document in question.
+</para>
+<para>If an XML document contains a DTD then DTD is placed before
+any data nodes (if parts of DTD can be placed in separate documents then
+they will be retrieved before parsing data nodes).
+Thus XML parser has enough data to perform "DTD validation" of the source document right during the reading.
+It lets the parser provide detailed diagnostics with precise location of detected errors.
+</para>
+</sect2>
+  <sect2 id="dtd_config"><title>Configuration Options of the DTD Validator</title>
+<para>If some built-in Virtuoso/PL or XPATH function can invoke XML parser then
+it is probably have a special argument to pass configuration options to the XML parser.
+The most typical value of such an argument is "configuration string" that is a sequence of pairs
+parameter=value, delimited by spaces.
+Instead of single string, it can be passed as a vector of strings of even length
+of sort <programlisting>vector (parameter1, value1, parameter2, value2 ...)</programlisting>.
+It can be NULL indicating that the parser can use  default values.
+No errors are reported if a parameter is specified twice, in which case the last specified value will be used.
+The only exception is the 'Validation' parameter which sets typical values for
+all parameters; if it is specified then it should be the first parameter in the list.
+Both parameter names and values are case-insensitive.</para>
+ 			<para> Many parameters are used to specify the importance of a
+particular error. For a particular application some validity constraints may be much more
+important than others. Because less than perfectly valid XML is common in practice it
+is important to configure the validator to report only those errors which are
+relevant to the application.  Using configuration parameters, one may specify
+&quot;importance levels&quot; for every group of problems. There are 5
+&quot;importance levels&quot;:</para>
+
+    <table><title>Error Catch Levels</title>
+      <tgroup cols="2">
+       <thead><row><entry>Error Level</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorname>FATAL</errorname></entry>
+	    <entry>violations must be reported and further processing of XML source must be terminated right after the term where the violation was detected, without checking for errors in the rest of the document</entry>
+	  </row>
+	  <row>
+	    <entry><errorname>ERROR</errorname></entry>
+	    <entry>violations must be reported and validation should continue to find further errors, but no XML document will be built if validation is invoked from such function as <link linkend="fn_xtree_doc"><function>xtree_doc()</function></link> or <link linkend="fn_xper_doc"><function>xper_doc()</function></link></entry>
+	  </row>
+	  <row>
+	    <entry><errorname>WARNING</errorname></entry>
+	    <entry>violations must be reported but XML processing will continue</entry>
+	  </row>
+	  <row>
+	    <entry><errorname>IGNORE</errorname></entry>
+	    <entry>validator must try to locate violations of given sort but only severe (possibly fatal) violations must be reported</entry>
+	  </row>
+	  <row>
+	    <entry><errorname>DISABLE</errorname></entry>
+	    <entry>the specified check must be turned off fully, saving time and maybe memory</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+			<para>
+Some parameters are just switches, with only two values available: 'ENABLE' and 'DISABLE'.</para>
+<!-- List of parameters begin -->
+ 			<formalpara><title>
+AttrCompletion (ENABLE/DISABLE, default is DISABLE)</title><para>
+This is useful when DTD validator is invoked from XML parser.
+When enabled, the XML document built will contain default values of 'IMPLIED' attributes as if they present in source text.
+It may be useful if application should perform free-text search on all attribute values including defaults or if XML should be converted in form suitable for external non-validating XML processor or if given XML data should be stored later as part of composite document and composite document will have another DTD with other default values.</para></formalpara>
+ 			<formalpara><title>
+AttrMisFormat (FATAL/ERROR/WARNING/IGNORE/DISABLE, default is DISABLE)</title><para>This describes how to report errors in syntax of values of attributes.</para></formalpara>
+ 			<formalpara><title>
+AttrUnknown (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>This describes how to report attributes whose names are not listed in the DTD.</para></formalpara>
+ 			<formalpara><title>
+BadRecursion (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>This describes how to report circular references,
+when replacement text of an entity contains reference to this entity again, either directly
+(e.g. '&lt;!ENTITY bad &quot;some &amp;bad; replacement&quot;>)
+or through other entities (e.g. '&lt;!ENTITY a &quot;&amp;b;&quot;> '&lt;!ENTITY b &quot;&amp;a;&quot;>).</para></formalpara>
+ 			<formalpara><title>
+BuildStandalone (ENABLE/DISABLE, default is DISABLE)</title><para>
+When set to ENABLE, replacement texts of external entities will be inserted instead of references to these entities, thus all data from a composite document will be gathered together into one large XML.
+This is useful for checking the element content model of the whole document without breaks on references or if parsed XML will be passed to external application as a standalone document.</para></formalpara>
+ 			<formalpara><title>
+Fsa (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report violations of specified element-content model.
+Virtuoso's DTD validator contains a finite state automaton which can detect the first error in the content of some element, but remaining errors in the same element become &quot;obscured&quot; by the first one and will not be reported.
+Moreover, if element-content model is not SGML-compatible, some errors may remain undiscovered: it is possible to write a complex rule, so ambiguous that full check of all its interpretations will take prohibitively much time and memory.
+The validator will simplify such rules to make check faster, thus some errors will not be reported.</para></formalpara>
+ 			<formalpara><title>
+FsaBadWs (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report the most frequent violation of element-content model specified by DTD:
+the use of whitespace characters in positions where only elements are allowed, not PCDATA.
+It usually happens when XML is indented for readability.
+You may wish to specify 'FsaBadWs=IGNORE' to eliminate redundant messages about this violation.
+Note that if you will specify 'FsaBadWs=DISABLE' then you will disable the check of illegal PCDATA tokens for this particular case,
+so common rule for 'Fsa' violations will be applied and you will see messages.</para></formalpara>
+ 			<formalpara><title>
+FsaSgml (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report violations of SGML compatibility in element-content model.
+Some complex DTD rules for elements are not supported by SGML processors and the validator may report the use of such rules.</para></formalpara>
+ 			<formalpara><title>
+GeRedef (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report redundant definitions of generic entities.
+There redefinitions are errors in SGML but they may be ignored in XML processing. The first definition will be used and others will be ignored.</para></formalpara>
+ 			<formalpara><title>
+IdDuplicates (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report non-unique values of ID attributes.
+It is a data integrity error, because IDs are usually parts of some primary keys, and are expected to be unique.</para></formalpara>
+ 			<formalpara><title>
+IdrefIntegrity (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report &quot;dangling references&quot;.
+Any value of IDREF attribute and any name from value of IDREFS attribute should appear in the same XML document as value of some ID attribute.
+You can think that an ID attribute specifies a hyperlink anchor and IDREF is a hyperlink, so it's a data integrity error if a hyperlink points to unknown location.</para></formalpara>
+ 			<formalpara><title>
+Include (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This configures reading of external sub-documents into &quot;main&quot; document you validate (and maybe load in database).
+If 'DISABLE', no additional documents will be read, otherwise external parameter-entities, external generic-entities and external DTD will be located, using their SYSTEM names.
+External documents may reside in file system, in database or in the Web. Absolute SYSTEM names (of form 'protocol://server/resource') will be used without any modifications, relative SYSTEM names should be &quot;resolved&quot;, i.e. converted to absolute by adding a prefix from the <parameter>base_uri</parameter> argument of SQL function.</para></formalpara>
+ 			<formalpara><title>
+MaxErrors (a string that represents an integer from 1 to 10000, default is '25')</title><para>
+This specifies how many errors may be logged before the &quot;Too many error messages&quot; fatal error will be reported.</para></formalpara>
+ 			<formalpara><title>
+MaxWarnings (a string that represents an integer from 0 to 10000, default is '100')</title><para>
+This specifies how many warnings may be logged before the &quot;Too many warning messages&quot; event will stop their logging.</para></formalpara>
+ 			<formalpara><title>
+NamesUnknown (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report if the document contains element names which are not the declared in DTD.
+They may be typos in element names or signal that DTD is incomplete or obsolete.
+In addition, unknown names may be reported as element-content model violations.</para></formalpara>
+ 			<formalpara><title>
+NamesUnordered (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report element names not declared before use in DTD.
+Proper order (&quot;declare element name before use it&quot;) is important solely for compatibility with SGML standard.</para></formalpara>
+ 			<formalpara><title>
+NamesUnresolved (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report if an element name used in the DTD is not declared at all.
+This may occur if DTD is incomplete or if some declaration in it are ignored conditional sections.
+Unresolved names cause no data integrity errors while remain unused in data section of the XML document,
+NamesUnknown parameter defines what happens if they're actually used.</para></formalpara>
+ 			<formalpara><title>
+PeRedef (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report redundant definitions of parameter entities.
+Similarly to redefinitions of generic entities,
+there redefinitions are errors in SGML but they may be ignored in XML processing. The first definition will be used and others will be ignored.</para></formalpara>
+ 			<formalpara><title>
+Sgml (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report violations of SGML compatibility.
+In fact, not all such violations are detected by the Virtuoso Server,
+because known SGML readers are insensitive to some sorts of violations.</para></formalpara>
+ 			<formalpara><title>
+TooManyWarns (FATAL/ERROR/WARNING/IGNORE/DISABLE)</title><para>
+This describes how to report &quot;Too many warning messages&quot; event.
+While &quot;Too many errors&quot; is fatal error and terminates XML processing,
+&quot;Too many warning messages&quot; may have arbitrary &quot;importance levels&quot;.</para></formalpara>
+ 			<formalpara><title>
+TraceLoading (ENABLE/DISABLE, default is DISABLE)</title><para>
+If set to 'ENABLE', the validator will log every reading of any resource, for easier tracking of URI resolving problems.
+It's possible that some readings of sub-documents will not be reported: there's a limit for number of records in the log returned by the validator.
+In addition, sub-documents may be cached inside validator, so only first references to some sub-document will require reading procedure.</para></formalpara>
+ 			<formalpara><title>
+Validation (SGML/RIGOROUS/QUICK/DISABLE, default is DISABLE)</title><para>
+This loads one of four &quot;preset configurations&quot;. It must be the first parameter in configuration string, if used.
+DISABLE means &quot;do not check for any type of error&quot;,
+QUICK is to check only for violation of &quot;local&quot; validity constraints, with disabled FsaBadWs, IdDuplicates and IdrefIntegrity,
+RIGOROUS enables these three groups, too,
+SGML enables all checks including all checks for SGML compatibility.</para></formalpara>
+ 			<formalpara><title>
+VcData (ENABLE/DISABLE, default is DISABLE)</title><para>
+This describes how to report violations of generic validity constraints in data section of XML document.
+If constraint is not configured by other parameters listed here, it will be configured by this parameter (or by VcDtd if relates to the text of DTD section).</para></formalpara>
+ 			<formalpara><title>
+VcDtd (ENABLE/DISABLE, default is DISABLE)</title><para>
+This describes how to report violations of generic validity constraints in DTD section of XML document.
+If constraint is not configured by other parameters listed here, it will be configured by this parameter (or by VcData if relates to the text of data section).</para></formalpara>
+<!-- List of parameters end -->
+
+</sect2>
+  <sect2 id="xsd_interface"><title>XML Schema Definition Language</title>
+<para>The W3C XML Schema Definition Language is a way of describing
+and constraining the content of XML documents.</para> <para>The XML
+Schema specification consists of three parts. One part defines a set
+of simple datatypes, which can be associated with XML element types
+and attributes; this allows XML software to do a better job of
+managing dates, numbers, and other special forms of information. The
+second part of the specification proposes methods for describing the
+structure and constraining the contents of XML documents, and defines
+the rules governing schema validation of documents. The third part is
+a primer that explains what schemas are, how they differ from DTDs,
+and how one builds a schema.</para>
+<para>XML Schema introduces new levels of
+flexibility that may accelerate the adoption of XML for significant
+industrial use. For example, a schema author can build a schema that
+borrows from a previous schema, but overrides it where new unique
+features are needed.  XML Schema allows the author to determine which
+parts of a document may be validated, or identify parts of a document
+where a schema may apply. XML Schema also provides a way for users of
+e-commerce systems to choose which XML Schema they use to validate
+elements in a given namespace, thus providing better assurance in
+e-commerce transactions and greater security against unauthorized
+changes to validation rules. Further, as XML Schema are XML documents
+themselves, they may be managed by XML authoring tools, or through
+XSLT.  The implementation of XML Schema in Virtuoso is based on <ulink
+url="http://www.w3c.org/XML/Schema">the W3C XML Schema
+Specification</ulink>.</para>
+
+<tip><title>See Also:</title>
+<para><ulink url="http://www.w3c.org/TR/xmlschema-0/">XML Schema Part-0: Primer</ulink></para>
+<para><ulink url="http://www.w3c.org/TR/xmlschema-1/">XML Schema Part-1: Structures</ulink></para>
+<para><ulink url="http://www.w3c.org/TR/xmlschema-2/">XML Schema Part-2: Datatypes</ulink></para>
+</tip>
+
+<para>For parsing the schema definitions the DTD definition of XML
+Schema is used.  This definition was taken from <ulink
+url="http://www.w3c.org/TR/xmlschema-1/">XML Schema Part-1:
+Structures</ulink>. </para>
+</sect2>
+  <sect2 id="xsd_interface"><title>XML Schema Functions</title>
+	<para>The Virtuoso interface to XML Schema is represented
+	primarily by two functions:</para>
+	  <simplelist>
+		  <member><link linkend="fn_xml_validate_schema"><function>xml_validate_schema()</function></link></member>
+		  <member><link linkend="fn_xml_load_schema_decl"><function>xml_load_schema_decl()</function></link></member>
+		</simplelist>
+
+	<para>The signature of the function <link
+linkend="fn_xml_validate_schema"><function>xml_validate_schema()</function></link>
+is the same as the function <link
+linkend="fn_xml_validate_dtd"><function>xml_validate_dtd()</function></link>.
+It parses and validates an XML document.  The root element of the
+document must contain the
+<parameter>&quot;schemaLocation&quot;</parameter> attribute with the
+value of the document's URI.</para>
+
+   <para>As described above, the XML Schema Processor implemented
+within Virtuoso relies on the XML Schema DTD, which is composed of two
+files: &quot;XMLSchema.dtd&quot; and &quot;datatypes.dtd.&quot; These
+files must be placed in the system directory (see <link
+linkend="fn_xml_add_system_path"><function>xml_add_system_path()</function></link>).
+   </para>
+   <para>The following XML Schema items are not fully implemented:
+    <simplelist>
+	  <member>facets support is primitive;</member>
+	    <member>you may only derive by restriction from the &quot;anyType&quot; type;</member>
+	    <member>enumerations are not supported;</member>
+	    <member>the &quot;all&quot; particle is not supported;</member>
+	    <member>elements may not be defined within an element model group declaration;</member>
+	    <member>unions are not supported;</member>
+	    <member>&quot;appinfo,&quot; &quot;documentation,&quot; &quot;list,&quot; and &quot;notation&quot; tags are ignored.</member>
+		</simplelist>
+
+	</para>
+   <para>Virtuoso does not cache XML Schema documents; they are
+completely reprocessed every time the document is loaded.</para>
+
+   <!-- para> Counting for elements is not working fine, therefore it is not
+	turned on by default. New configuration parameter: SCHEMACOUNTER - sets
+	error level for element counting, default value is DISABLED. </para -->
+  </sect2>
+
+<sect2 id="xmlschemaandsoap"><title>XML Schema &amp; SOAP</title>
+
+  <para>The XML Schema defines primitive types, such as "integer","string"
+  and "float".   Users may extend or restrict the primitive types to build their
+  own type system.  For example, a type "monthCode" could be an enumerated
+  list of three character strings corresponding to JAN, FEB, etc...  SOAP types
+  can use any of these types: native, primitive XML Schema types or complex
+  types which should be fully described using XML Schema.</para>
+
+  <para>SOAP messages that use XML Schema types or complex types contain
+  a fragment of XML Schema or a reference to a schema file so that the data types
+  can be determined and messages validated.</para>
+
+  <para>The Virtuoso tutorials contain many examples from the SOAP Interop
+  test suite.  Each tutorial displays both the request message and response
+  message from the server when the tests are executed.  Below is a sample
+  message exchange of the echoStruct tutorial (SO-S-20) which uses a trivial
+  complex struct composed of an integer, float and a string:</para>
+
+<example id="ex_schemaandsoap"><title>Sample Run of Tutorial SO-S-20</title>
+<para>Struct parameter inputs: </para>
+<programlisting><![CDATA[
+ varString = hello
+ varInt = 42
+ varFloat = 99.004997253418
+]]></programlisting>
+
+<para>Return value:</para>
+
+  <programlisting><![CDATA[
+ varString = hello
+ varInt = 42
+ varFloat = 99.004997253418
+]]></programlisting>
+
+<para>Request message: </para>
+  <programlisting><![CDATA[
+<?xml version='1.0' ?>
+<SOAP:Envelope
+    SOAP:encodingType='http://schemas.xmlsoap.org/soap/encoding/'
+    xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+    xmlns:xsd='http://www.w3.org/2001/XMLSchema'
+    xmlns:SOAP='http://schemas.xmlsoap.org/soap/envelope/'
+    xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"  xmlns:dt='urn:schemas-microsoft-com:datatypes'>
+  <SOAP:Body>
+    <cli:echoStruct SOAP:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'
+        xmlns:cli='http://soapinterop/' >
+      <inputStruct>
+        <varInt xsi:type="xsd:int" dt:dt="int">42</varInt>
+        <varFloat xsi:type="xsd:float" dt:dt="float">99.004997</varFloat>
+        <varString xsi:type="xsd:string" dt:dt="string">hello</varString>
+      </inputStruct>
+    </cli:echoStruct>
+  </SOAP:Body>
+</SOAP:Envelope>
+]]></programlisting>
+
+<para>Response message: </para>
+  <programlisting><![CDATA[
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<SOAP-ENV:Envelope
+    xmlns:SOAPSDK1="http://www.w3.org/2001/XMLSchema"
+    xmlns:SOAPSDK2="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:SOAPSDK3="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+  <SOAP-ENV:Body SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+    <SOAPSDK4:echoStructResponse
+        xmlns:SOAPSDK4="http://soapinterop/">
+      <Result href="#id1"/>
+    </SOAPSDK4:echoStructResponse>
+    <SOAPSDK5:SOAPStruct
+        xmlns:SOAPSDK5="http://soapinterop.org/xsd"
+        id="id1" SOAPSDK3:root="0"
+        SOAPSDK2:type="SOAPSDK5:SOAPStruct">
+      <varString>hello</varString>
+      <varInt>42</varInt>
+      <varFloat>99.004997253418</varFloat>
+    </SOAPSDK5:SOAPStruct>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+]]></programlisting>
+</example>
+
+<tip><title>See Also</title>
+<para><link linkend="dtschsoaps">Extending SOAP Types</link></para>
+<para><link linkend="soapdoclitenc1">SOAP Literal Encodings</link></para>
+</tip>
+
+</sect2>
+
+
+</sect1>

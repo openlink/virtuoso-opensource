@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_string_length">
+  <refmeta>
+    <refentrytitle>string-length</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>string-length</refname>
+    <refpurpose>Returns the number of characters in the string.</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv> 
+    <funcsynopsis id="xpf_syn_string_length"> 
+      <funcprototype id="xpf_proto_string_length">
+        <funcdef>integer <function>string-length</function></funcdef>
+	<paramdef><optional><parameter>strg</parameter> string</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_string_length"><title>Description</title>
+<para>
+The string-length() XPATH function returns the number of characters in the string.
+If the argument is omitted, it defaults to the context node converted to a string,
+in other words the string-value of the context node.
+</para></refsect1>
+  <refsect1 id="xpf_params_string_length"><title>Parameters</title>
+    <refsect2><title>strg</title>
+      <para>The string whose length must be measured.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_string_length"><title>Return Types</title><para>Integer</para></refsect1>
+  <refsect1 id="xpf_examples_string_length"><title>Examples</title>
+    <example id="xpf_ex_string_length"><title></title>
+      <para>The following expressions returns 5.</para>
+      <screen>string-length('ABCDE')</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_string_length"><title>See Also</title>
+    <para><link linkend="xpf_string">xpf_string()</link></para>
+  </refsect1>
+</refentry>
+

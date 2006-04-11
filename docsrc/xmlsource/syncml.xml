@@ -1,0 +1,707 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="syncml"><title>SyncML</title>
+
+<para>SyncML is a protocol for synchronization of data collections
+between two devices - a SyncML Client and SyncML Server using an
+XML data representation.  The client is typically some mobile device or
+mobile PC.  The Virtuoso server implements the SyncML server protocol over
+HTTP.</para>
+
+<para>The SyncML server maintains the data collections within the WebDAV
+repository.  The items (resources) in the collections (folders) represents
+items found on the client, e.g. VCARD, vcalendar records.  As the WebDAV
+repository does not restrict the type of data that can be stored, likewise
+there are no restrictions on the type of data that can be synchronized.
+Also every WebDAV virtual directory can act as a SyncML server endpoint, the
+SyncML processing is triggered via the <computeroutput>Content-Type</computeroutput>,
+detected on the POST request (see below).</para>
+
+<tip><title>See Also:</title>
+  <para><link linkend="syncmlschema">SyncML Schema Tables</link></para></tip>
+
+<para>The SyncML server detects the following formats from the
+<computeroutput>Content-Type</computeroutput> header string:</para>
+
+  <simplelist>
+    <member><emphasis><computeroutput>application/vnd.syncml+wbxml</computeroutput></emphasis> - WBXML coded XML documents</member>
+    <member><emphasis><computeroutput>application/vnd.syncml+xml</computeroutput></emphasis> - plain text XML document</member>
+  </simplelist>
+
+<para>These are detected during the POST request to a WebDAV virtual directory
+thus triggering SyncML processing.  When a device makes creates
+'<computeroutput>application/vnd.syncml+wbxml</computeroutput>' session,
+the SyncML server will respond with the WBXML format.  Otherwise
+plain XML will be used to encode SyncML messages.</para>
+
+<para>Basic and MD5 digest SyncML authorization schemes are supported.
+The WebDAV enabled user accounts are used to perform authentication.</para>
+
+<para>It is possible to query the HTTP authentication type supported by the
+target device by assigning an authentication hook to a given virtual directory.
+By default SyncML authentication is digest-md5, so HTTP authentication is
+off (note that HTTP authentication is different from SyncML authentication).</para>
+
+<para>The following synchronization methods are supported:</para>
+
+  <simplelist>
+    <member>Two-way sync</member>
+    <member>Slow two-way sync</member>
+  </simplelist>
+
+<para>Every item sent from the client device is mapped to a WebDAV resource
+under a given WebDAV collection.  Every device database, such as contacts, calendar,
+usually requires that a different WebDAV collection be specified because the devices
+usually can not maintain items of different kinds with a single database.  For
+example, when synchronising the Contacts of a Nokia 9210 with the server,
+we can specify <computeroutput>./contacts/</computeroutput>, and likewise
+for the Calendar database, <computeroutput>./calendar/</computeroutput>.
+This keeps VCARDS (contacts) and vCalendars in separate collections (folders) on
+a given virtual directory.  It is not possible to keep calendar and contacts
+(for example) in the same WebDAV collection, unless the device supports such
+items in a single database.</para>
+
+<note><title>Important Note:</title>
+  <para>The target folders (Virtuoso server-side collections) must exists and
+  must be accessible by the WebDAV account used to authenticate against the
+  SyncML server.  If credentials or permissions are insufficient then an
+  Error 403 (Forbidden) will be returned to the client.</para></note>
+
+<example id="ex_syncmlsession"><title>Example of a SyncML session</title>
+
+<para>The client begins initial request</para>
+
+<programlisting><![CDATA[
+  <SyncML>
+    <SyncHdr>
+      <VerDTD>1.0</VerDTD>
+      <VerProto>SyncML/1.0</VerProto>
+      <SessionID>88</SessionID>
+      <MsgID>1</MsgID>
+      <Target>
+        <LocURI>http://192.168.1.1:6666/</LocURI>
+      </Target>
+      <Source>
+        <LocURI>IMEI:57471724140229</LocURI>
+      </Source>
+      <Meta>
+        <MaxMsgSize>10000</MaxMsgSize>
+      </Meta>
+    </SyncHdr>
+    <SyncBody>
+      <Alert>
+        <CmdID>1</CmdID>
+        <Data>201</Data>
+        <Item>
+          <Target>
+            <LocURI>./calendar</LocURI>
+          </Target>
+          <Source>
+            <LocURI>./C\System\Data\Calendar</LocURI>
+          </Source>
+          <Meta>
+            <Anchor>
+              <Next>20031202T165103Z</Next>
+            </Anchor>
+          </Meta>
+        </Item>
+      </Alert>
+      <Put>
+        <CmdID>2</CmdID>
+        <Meta>
+          <Type>application/vnd.syncml-devinf+wbxml</Type>
+        </Meta>
+        <Item>
+          <Source>
+            <LocURI>./devinf10</LocURI>
+          </Source>
+          <Data>
+            <DevInf>
+              <VerDTD>1.0</VerDTD>
+              <Man>NOKIA</Man>
+              <Mod>9210</Mod>
+              <SwV>256</SwV>
+              <HwV>1.0</HwV>
+              <DevID>IMEI:57471724140229</DevID>
+              <DevTyp>phone</DevTyp>
+	      ....
+            </DevInf>
+          </Data>
+        </Item>
+      </Put>
+      <Get>
+        <CmdID>3</CmdID>
+        <Meta>
+          <Type>application/vnd.syncml-devinf+wbxml</Type>
+        </Meta>
+        <Item>
+          <Target>
+            <LocURI>./devinf10</LocURI>
+          </Target>
+        </Item>
+      </Get>
+      <Final/>
+    </SyncBody>
+  </SyncML>
+]]></programlisting>
+
+<para>Server rejects credential, because no credentials.</para>
+
+<programlisting><![CDATA[
+  <SyncML xmlns:n0="syncml:SYNCML1.0">
+    <SyncHdr>
+      <VerDTD>1.0</VerDTD>
+      <VerProto>SyncML/1.0</VerProto>
+      <SessionID>88</SessionID>
+      <MsgID>1</MsgID>
+      <Target>
+        <LocURI>IMEI:57471724140229</LocURI>
+      </Target>
+      <Source>
+        <LocURI>http://192.168.1.1:6666/</LocURI>
+      </Source>
+    </SyncHdr>
+    <SyncBody>
+      <Status>
+        <CmdID>1</CmdID>
+        <MsgRef>1</MsgRef>
+        <CmdRef>0</CmdRef>
+        <TargetRef>http://192.168.1.1:6666/</TargetRef>
+        <SourceRef>IMEI:57471724140229</SourceRef>
+        <Cmd>SyncHdr</Cmd>
+        <Chal>
+          <Meta>
+            <Type xmlns:n2="syncml:metinf">syncml:auth-md5</Type>
+            <Format xmlns:n2="syncml:metinf">b64</Format>
+            <NextNonce xmlns:n2="syncml:metinf">NzcyYTgyMDRjMGM2NzRlYTZjYWVmNGY4ZjNjMGYzMDk=</NextNonce>
+          </Meta>
+        </Chal>
+        <Data>401</Data>
+      </Status>
+      ....
+      <Final/>
+    </SyncBody>
+  </SyncML>
+]]></programlisting>
+
+<para>Client sends back credentials.</para>
+
+<programlisting><![CDATA[
+  <SyncML>
+    <SyncHdr>
+      <VerDTD>1.0</VerDTD>
+      <VerProto>SyncML/1.0</VerProto>
+      <SessionID>88</SessionID>
+      <MsgID>2</MsgID>
+      <Target>
+        <LocURI>http://192.168.1.1:6666/</LocURI>
+      </Target>
+      <Source>
+        <LocURI>IMEI:57471724140229</LocURI>
+        <LocName>imitko</LocName>
+      </Source>
+      <Cred>
+        <Meta>
+          <Format>b64</Format>
+          <Type>syncml:auth-md5</Type>
+        </Meta>
+        <Data>X8uGR8CX4ogw8Ux+ZWIzkg==</Data>
+      </Cred>
+      <Meta>
+        <MaxMsgSize>10000</MaxMsgSize>
+      </Meta>
+    </SyncHdr>
+    <SyncBody>
+      <Status>
+        <CmdID>1</CmdID>
+        <MsgRef>1</MsgRef>
+        <CmdRef>0</CmdRef>
+        <Cmd>SyncHdr</Cmd>
+        <TargetRef>IMEI:57471724140229</TargetRef>
+        <SourceRef>http://192.168.1.1:6666/</SourceRef>
+        <Data>200</Data>
+      </Status>
+      <Alert>
+        <CmdID>2</CmdID>
+        <Data>201</Data>
+        <Item>
+          <Target>
+            <LocURI>./calendar</LocURI>
+          </Target>
+          <Source>
+            <LocURI>./C\System\Data\Calendar</LocURI>
+          </Source>
+          <Meta>
+            <Anchor>
+              <Next>20031202T165103Z</Next>
+            </Anchor>
+          </Meta>
+        </Item>
+      </Alert>
+      <Put>
+        <CmdID>3</CmdID>
+        <Meta>
+          <Type>application/vnd.syncml-devinf+wbxml</Type>
+        </Meta>
+        <Item>
+          <Source>
+            <LocURI>./devinf10</LocURI>
+          </Source>
+          <Data>
+            <DevInf>
+              <VerDTD>1.0</VerDTD>
+              <Man>NOKIA</Man>
+              <Mod>9210</Mod>
+              <SwV>256</SwV>
+              <HwV>1.0</HwV>
+              <DevID>IMEI:57471724140229</DevID>
+              <DevTyp>phone</DevTyp>
+	      ...
+            </DevInf>
+          </Data>
+        </Item>
+      </Put>
+      <Get>
+        <CmdID>4</CmdID>
+        <Meta>
+          <Type>application/vnd.syncml-devinf+wbxml</Type>
+        </Meta>
+        <Item>
+          <Target>
+            <LocURI>./devinf10</LocURI>
+          </Target>
+        </Item>
+      </Get>
+      <Final/>
+    </SyncBody>
+  </SyncML>
+]]></programlisting>
+
+<para>Server accepts the request.</para>
+
+<programlisting><![CDATA[
+  <SyncML xmlns="syncml:SYNCML1.0">
+    <SyncHdr>
+      <VerDTD>1.0</VerDTD>
+      <VerProto>SyncML/1.0</VerProto>
+      <SessionID>88</SessionID>
+      <MsgID>2</MsgID>
+      <Target>
+        <LocURI>IMEI:57471724140229</LocURI>
+      </Target>
+      <Source>
+        <LocURI>http://192.168.1.1:6666/</LocURI>
+      </Source>
+    </SyncHdr>
+    <SyncBody>
+      <Status>
+        <CmdID>5</CmdID>
+        <MsgRef>2</MsgRef>
+        <CmdRef>0</CmdRef>
+        <TargetRef>http://192.168.1.1:6666/</TargetRef>
+        <SourceRef>IMEI:57471724140229</SourceRef>
+        <Cmd>SyncHdr</Cmd>
+        <Data>212</Data> <!-- Authenticated for session -->
+      </Status>
+      <Status>
+        <CmdID>7</CmdID>
+        <MsgRef>2</MsgRef>
+        <CmdRef>2</CmdRef>
+        <Cmd>Alert</Cmd>
+        <Data>200</Data> <!- two-way alert accepted, 'next' anchor echoed -->
+        <Item>
+          <Data>
+            <Anchor xmlns:n2="syncml:metinf">
+              <Next>20031202T165103Z</Next>
+            </Anchor>
+          </Data>
+        </Item>
+      </Status>
+      <Status>
+        <CmdID>8</CmdID>
+        <MsgRef>2</MsgRef>
+        <CmdRef>3</CmdRef>
+        <Cmd>Put</Cmd>
+        <Data>200</Data> <!-- the 'put' command succeeded;
+		                      device info is written ->
+      </Status>
+      <Results> <!-- the following are server's device info  -->
+        <CmdID>9</CmdID>
+        <MsgRef>2</MsgRef>
+        <CmdRef>4</CmdRef>
+        <Meta>
+          <Type xmlns:n2="syncml:metinf">application/vnd.syncml-devinf+wbxml</Type>
+        </Meta>
+        <Item>
+          <Source>
+            <LocURI>./devinf10</LocURI>
+          </Source>
+          <Data>
+            <DevInf xmlns:n2="syncml:devinf">
+              <VerDTD>1.0</VerDTD>
+              <Man>OpenLink Software Ltd</Man>
+              <Mod>Virtuoso</Mod>
+              <OEM>OpenLink</OEM>
+              <FwV>3.5</FwV>
+              <SwV>2602</SwV>
+              <HwV>0</HwV>
+              <DevID>http://localhost/</DevID>
+              <DevTyp>server</DevTyp>
+              <SyncCap>
+                <SyncType>1</SyncType>
+                <SyncType>2</SyncType>
+              </SyncCap>
+	      ...
+              <UTC/>
+              <SupportLargeObjs/>
+              <SupportNumberOfChanges/>
+            </DevInf>
+          </Data>
+        </Item>
+      </Results>
+      <Alert>
+        <CmdID>6</CmdID>
+        <Data>201</Data> <!-- the ./calendar/ is new empty collection;
+		                      server asks client for slow two-way sync.  -->
+        <Item>
+          <Target>
+            <LocURI>./C\System\Data\Calendar</LocURI>
+          </Target>
+          <Source>
+            <LocURI>./calendar/</LocURI>
+          </Source>
+          <Meta>
+            <Anchor xmlns:n2="syncml:metinf">
+              <Last>1970-01-01T00:00:00.000+02:00</Last>
+              <Next>2003-12-02T18:51:05.000+02:00</Next>
+            </Anchor>
+          </Meta>
+        </Item>
+      </Alert>
+      <Final/>
+    </SyncBody>
+  </SyncML>
+]]></programlisting>
+
+<para>Client sends to server all calendar items. See 'Sync' element below.</para>
+
+<programlisting><![CDATA[
+  <SyncML>
+    <SyncHdr>
+      <VerDTD>1.0</VerDTD>
+      <VerProto>SyncML/1.0</VerProto>
+      <SessionID>88</SessionID>
+      <MsgID>3</MsgID>
+      <Target>
+        <LocURI>http://192.168.1.1:6666/</LocURI>
+      </Target>
+      <Source>
+        <LocURI>IMEI:57471724140229</LocURI>
+      </Source>
+      <Meta>
+        <MaxMsgSize>10000</MaxMsgSize>
+      </Meta>
+    </SyncHdr>
+    <SyncBody>
+      <Status>
+        <CmdID>1</CmdID>
+        <MsgRef>2</MsgRef>
+        <CmdRef>0</CmdRef>
+        <Cmd>SyncHdr</Cmd>
+        <TargetRef>IMEI:57471724140229</TargetRef>
+        <SourceRef>http://192.168.1.1:6666/</SourceRef>
+        <Data>200</Data>
+      </Status>
+      <Status>
+        <CmdID>2</CmdID>
+        <MsgRef>2</MsgRef>
+        <CmdRef>9</CmdRef>
+        <Cmd>Results</Cmd>
+        <Data>200</Data>
+      </Status>
+      <Status>
+        <CmdID>3</CmdID>
+        <MsgRef>2</MsgRef>
+        <CmdRef>6</CmdRef>
+        <Cmd>Alert</Cmd>
+        <TargetRef>./C\System\Data\Calendar</TargetRef>
+        <SourceRef>./calendar/</SourceRef>
+        <Data>200</Data>
+        <Item>
+          <Data>
+            <Anchor>
+              <Next>2003-12-02T18:51:05.000+02:00</Next>
+            </Anchor>
+          </Data>
+        </Item>
+      </Status>
+      <Sync>
+        <CmdID>4</CmdID>
+        <Target>
+          <LocURI>./calendar</LocURI>
+        </Target>
+        <Source>
+          <LocURI>./C\System\Data\Calendar</LocURI>
+        </Source>
+        <Meta>
+          <Mem>
+            <FreeMem>7627614408</FreeMem>
+            <FreeID>59590737</FreeID>
+          </Mem>
+        </Meta>
+        <Replace> <!-- the client uses 'Replace' command -->
+          <CmdID>5</CmdID>
+          <Meta>
+            <Type>text/x-vcalendar</Type>
+          </Meta>
+          <Item>
+            <Source>
+              <LocURI>2</LocURI>
+            </Source>
+            <Data>
+		BEGIN:VCALENDAR
+		VERSION:1.0
+		BEGIN:VEVENT
+		UID:2
+		DESCRIPTION:tests
+		DTSTART:20031127T090000
+		DTEND:20031127T090000
+		X-EPOCAGENDAENTRYTYPE:APPOINTMENT
+		CLASS:PUBLIC
+		DCREATED:20031128T000000
+		LAST-MODIFIED:20031201T123500
+		END:VEVENT
+		END:VCALENDAR
+            </Data>
+          </Item>
+        </Replace>
+        <Replace>
+          <CmdID>6</CmdID>
+          <Meta>
+            <Type>text/x-vcalendar</Type>
+          </Meta>
+          <Item>
+            <Source>
+              <LocURI>3</LocURI>
+            </Source>
+            <Data>
+		BEGIN:VCALENDAR
+		VERSION:1.0
+		BEGIN:VEVENT
+		UID:3
+		DESCRIPTION:tests more
+		DTSTART:20031128T090000
+		DTEND:20031128T190000
+		X-EPOCAGENDAENTRYTYPE:APPOINTMENT
+		CLASS:PUBLIC
+		DCREATED:20031128T000000
+		LAST-MODIFIED:20031201T123500
+		END:VEVENT
+		END:VCALENDAR
+            </Data>
+          </Item>
+        </Replace>
+        <Replace>
+          <CmdID>7</CmdID>
+          <Meta>
+            <Type>text/x-vcalendar</Type>
+          </Meta>
+          <Item>
+            <Source>
+              <LocURI>5</LocURI>
+            </Source>
+            <Data>
+		BEGIN:VCALENDAR
+		VERSION:1.0
+		BEGIN:VEVENT
+		UID:5
+		DESCRIPTION:today integration
+		DTSTART:20031201T090000
+		DTEND:20031201T090000
+		X-EPOCAGENDAENTRYTYPE:APPOINTMENT
+		CLASS:PUBLIC
+		DCREATED:20031201T000000
+		LAST-MODIFIED:20031201T125400
+		END:VEVENT
+		END:VCALENDAR
+            </Data>
+          </Item>
+        </Replace>
+      </Sync>
+      <Final/>
+    </SyncBody>
+  </SyncML>
+]]></programlisting>
+
+<para>Server stores new items.</para>
+
+<programlisting><![CDATA[
+  <SyncML xmlns:n0="syncml:SYNCML1.0">
+    <SyncHdr>
+      <VerDTD>1.0</VerDTD>
+      <VerProto>SyncML/1.0</VerProto>
+      <SessionID>88</SessionID>
+      <MsgID>3</MsgID>
+      <Target>
+        <LocURI>IMEI:57471724140229</LocURI>
+      </Target>
+      <Source>
+        <LocURI>http://192.168.1.1:6666/</LocURI>
+      </Source>
+    </SyncHdr>
+    <SyncBody>
+      <Status>
+        <CmdID>10</CmdID>
+        <MsgRef>3</MsgRef>
+        <CmdRef>0</CmdRef>
+        <TargetRef>http://192.168.1.1:6666/</TargetRef>
+        <SourceRef>IMEI:57471724140229</SourceRef>
+        <Cmd>SyncHdr</Cmd>
+        <Data>212</Data>
+      </Status>
+      <Status>
+        <CmdID>11</CmdID>
+        <MsgRef>3</MsgRef>
+        <CmdRef>5</CmdRef>
+        <Cmd>Replace</Cmd>
+        <Data>201</Data> <!-- 201 (Added) is used to indicate
+		                      that item is added as new. -->
+      </Status>
+      <Status>
+        <CmdID>12</CmdID>
+        <MsgRef>3</MsgRef>
+        <CmdRef>6</CmdRef>
+        <Cmd>Replace</Cmd>
+        <Data>201</Data>
+      </Status>
+      <Status>
+        <CmdID>13</CmdID>
+        <MsgRef>3</MsgRef>
+        <CmdRef>7</CmdRef>
+        <Cmd>Replace</Cmd>
+        <Data>201</Data>
+      </Status>
+      <Status>
+        <CmdID>15</CmdID>
+        <MsgRef>3</MsgRef>
+        <CmdRef>4</CmdRef>
+        <TargetRef>./calendar/</TargetRef>
+        <SourceRef>./C\System\Data\Calendar</SourceRef>
+        <Cmd>Sync</Cmd>
+        <Data>200</Data>
+      </Status>
+      <Sync> <!-- an empty Sync is sent from server. -->
+        <CmdID>14</CmdID>
+        <Source>
+          <LocURI>./calendar/</LocURI>
+        </Source>
+        <Target>
+          <LocURI>./C\System\Data\Calendar</LocURI>
+        </Target>
+      </Sync>
+      <Final/>
+    </SyncBody>
+  </SyncML>
+]]></programlisting>
+
+<para>Final SyncML message from client with status to server's Sync command.</para>
+
+<programlisting><![CDATA[
+  <SyncML>
+    <SyncHdr>
+      <VerDTD>1.0</VerDTD>
+      <VerProto>SyncML/1.0</VerProto>
+      <SessionID>88</SessionID>
+      <MsgID>4</MsgID>
+      <Target>
+        <LocURI>http://192.168.1.1:6666/</LocURI>
+      </Target>
+      <Source>
+        <LocURI>IMEI:57471724140229</LocURI>
+      </Source>
+      <Meta>
+        <MaxMsgSize>10000</MaxMsgSize>
+      </Meta>
+    </SyncHdr>
+    <SyncBody>
+      <Status>
+        <CmdID>1</CmdID>
+        <MsgRef>3</MsgRef>
+        <CmdRef>0</CmdRef>
+        <Cmd>SyncHdr</Cmd>
+        <TargetRef>IMEI:57471724140229</TargetRef>
+        <SourceRef>http://192.168.1.1:6666/</SourceRef>
+        <Data>200</Data>
+      </Status>
+      <Status>
+        <CmdID>2</CmdID>
+        <MsgRef>3</MsgRef>
+        <CmdRef>14</CmdRef>
+        <Cmd>Sync</Cmd>
+        <TargetRef>./C\System\Data\Calendar</TargetRef>
+        <SourceRef>./calendar/</SourceRef>
+        <Data>200</Data>
+      </Status>
+      <Final/>
+    </SyncBody>
+  </SyncML>
+]]></programlisting>
+
+<para>Final message from SyncML server; no more commands issued.</para>
+
+<programlisting><![CDATA[
+  <SyncML xmlns:n0="syncml:SYNCML1.0">
+    <SyncHdr>
+      <VerDTD>1.0</VerDTD>
+      <VerProto>SyncML/1.0</VerProto>
+      <SessionID>88</SessionID>
+      <MsgID>4</MsgID>
+      <Target>
+        <LocURI>IMEI:57471724140229</LocURI>
+      </Target>
+      <Source>
+        <LocURI>http://192.168.1.1:6666/</LocURI>
+      </Source>
+    </SyncHdr>
+    <SyncBody>
+      <Status>
+        <CmdID>16</CmdID>
+        <MsgRef>4</MsgRef>
+        <CmdRef>0</CmdRef>
+        <TargetRef>http://192.168.1.1:6666/</TargetRef>
+        <SourceRef>IMEI:57471724140229</SourceRef>
+        <Cmd>SyncHdr</Cmd>
+        <Data>212</Data>
+      </Status>
+      <Final/>
+    </SyncBody>
+  </SyncML>
+]]></programlisting>
+</example>
+
+<tip><title>See Also:</title>
+  <para><ulink url="http://www.syncml.org/">References : www.syncml.org</ulink></para></tip>
+
+</sect1>

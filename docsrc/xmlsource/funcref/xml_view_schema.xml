@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_xml_view_schema">
+  <refmeta>
+    <refentrytitle>xml_view_schema</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xml_view_schema</refname>
+    <refpurpose>returns an XML schema for the output of given XML VIEW</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_xml_view_schema"> 
+      <funcprototype id="fproto_xml_view_schema">
+        <funcdef>varchar <function>xml_view_schema</function></funcdef>
+        <paramdef>in <parameter>query </parameter>varchar</paramdef>
+        <paramdef>in <parameter>root_element </parameter>varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>
+This function return an XML schema for the output of given XML VIEW.
+The returned schema will be valid if the HTTP_... output of view
+wrapped into the specified root element.
+</para>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>query</title>
+      <para>a string which contains a name of XML view </para></refsect2>
+    <refsect2><title>root_element </title>
+      <para>a string containing the element name in which the XML schema would be wrapped </para></refsect2>
+  </refsect1>
+  <refsect1 id="ret"><title>Return Types</title><para>XML Schema</para></refsect1>
+
+  <refsect1 id="errors"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname>No XML view [view_name]</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_xml_view_schema"><title>Creating an XML Schema</title>
+<!--
+<programlisting>
+SQL&gt; select xml_view_schema ('  select &quot;category&quot;.&quot;CategoryID&quot;, &quot;CategoryName&quot;,
+		&quot;ProductName&quot;, &quot;ProductID&quot;
+	from &quot;Demo&quot;..&quot;Categories&quot; &quot;category&quot;, &quot;Demo&quot;..&quot;Products&quot; as &quot;product&quot;
+	where &quot;product&quot;.&quot;CategoryID&quot; = &quot;category&quot;.&quot;CategoryID&quot; 
+	for xml auto element', 'root');
+ callret
+VARCHAR
+_______________________________________________________________________________
+
+&lt;xsd:schema xmlns:xsd=&quot;http://www.w3.org/1999/XMLSchema&quot;&gt;
+
+ &lt;xsd:annotation&gt;
+  &lt;xsd:documentation&gt;
+   Schema for output of the following SQL statement:
+   &lt;[CDATA[  select &quot;category&quot;.&quot;CategoryID&quot;, &quot;CategoryName&quot;,
+		&quot;ProductName&quot;, &quot;ProductID&quot;
+	from &quot;Demo&quot;..&quot;Categories&quot; &quot;category&quot;, &quot;Demo&quot;..&quot;Products&quot; as &quot;product&quot;
+	where &quot;product&quot;.&quot;CategoryID&quot; = &quot;category&quot;.&quot;CategoryID&quot; 
+	for xml auto element]]&gt;
+  &lt;/xsd:documentation&gt;
+ &lt;/xsd:annotation&gt;
+
+ &lt;xsd:element name=&quot;root&quot; type=&quot;root__Type&quot;/&gt;
+
+ &lt;xsd:complexType name=&quot;root__Type&quot;&gt;
+  &lt;xsd:element name=&quot;category&quot; type=&quot;category_Type&quot; minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;/&gt;
+ &lt;/xsd:complexType&gt;
+
+ &lt;xsd:complexType name=&quot;category_Type&quot;&gt;
+  &lt;xsd:element name=&quot;CategoryID&quot; type=&quot;xsd:int&quot; precision=&quot;10&quot;/&gt;
+  &lt;xsd:element name=&quot;CategoryName&quot; type=&quot;xsd:string&quot; maxLength=&quot;15&quot;/&gt;
+  &lt;xsd:element name=&quot;product&quot; type=&quot;product_Type&quot; minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;/&gt;
+ &lt;/xsd:complexType&gt;
+
+ &lt;xsd:complexType name=&quot;product_Type&quot;&gt;
+  &lt;xsd:element name=&quot;ProductName&quot; type=&quot;xsd:string&quot; maxLength=&quot;40&quot;/&gt;
+  &lt;xsd:element name=&quot;ProductID&quot; type=&quot;xsd:int&quot; precision=&quot;10&quot;/&gt;
+ &lt;/xsd:complexType&gt;
+
+&lt;/xsd:schema&gt;
+
+1 Rows. -- 5 msec.
+</programlisting>
+-->
+
+<programlisting>
+
+SQL&gt; select xml_view_schema ('cat', 'root');
+callret
+VARCHAR
+_______________________________________________________________________________
+ 
+&lt;xsd:schema xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot;&gt;
+ 
+ &lt;xsd:annotation&gt;
+  &lt;xsd:documentation&gt;
+    Schema of XML view 'cat'
+  &lt;/xsd:documentation&gt;
+ &lt;/xsd:annotation&gt;
+ 
+ &lt;xsd:element name=&quot;root&quot; type=&quot;root__Type&quot;/&gt;
+ 
+ &lt;xsd:complexType name=&quot;root__Type&quot;&gt;
+  &lt;xsd:element name=&quot;category&quot; type=&quot;root_category_Type&quot; minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;/&gt;
+ &lt;/xsd:complexType&gt;
+ 
+ &lt;xsd:complexType name=&quot;root_category_Type&quot;&gt;
+  &lt;xsd:attribute name=&quot;CategoryID&quot; type=&quot;xsd:string&quot;/&gt;  
+&lt;!-- &lt;xsd:attribute name=&quot;CategoryID&quot; type=&quot;xsd:int&quot;/&gt; --&gt;
+  &lt;xsd:attribute name=&quot;description&quot; type=&quot;xsd:string&quot;/&gt;
+  &lt;xsd:element name=&quot;product&quot; type=&quot;category_product_Type&quot; minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;/&gt;
+ &lt;/xsd:complexType&gt;
+ 
+ &lt;xsd:complexType name=&quot;category_product_Type&quot;&gt;
+  &lt;xsd:attribute name=&quot;ProductName&quot; type=&quot;xsd:string&quot;/&gt;
+ &lt;/xsd:complexType&gt;
+&lt;/xsd:schema&gt;
+ 
+1 Rows. -- 9 msec.     
+</programlisting>
+
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_xml_view_dtd">xml_view_dtd()</link></para>
+    <para><link linkend="fn_xml_validate_dtd">xml_validate_dtd()</link></para>
+    <para><link linkend="fn_xml_persistent">xml_persistent()</link></para>
+  </refsect1>
+</refentry>
+
+

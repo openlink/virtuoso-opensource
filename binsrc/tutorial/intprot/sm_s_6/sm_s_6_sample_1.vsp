@@ -1,0 +1,74 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+
+?>
+
+
+<?vsp
+  declare err varchar;
+  err := '';
+  if ({?'exec'} = 'Send')
+    {
+      declare exit handler for sqlstate '*' { err := __SQL_MESSAGE; };
+	{
+	  declare mb any;
+	  declare fname varchar;
+
+          fname := get_keyword ('attr-f', params, '');
+          if (fname <> '')
+            {
+              fname := get_keyword ('filename', fname, '');
+	    }
+	  if (fname <> '')
+             mb := vector ('', '');
+	  else
+ 	     mb := vector ('');
+          aset (mb, 0, mime_part ('text/plain', null, null, {?'txt'}));
+	  if (fname <> '')
+            aset (mb, 1, mime_part (http_mime_type (fname), sprintf ('attachment; filename=%s', fname), null, {?'f'}));
+          mb := mime_body (mb);
+
+	  smtp_send ({?'ms'}, {?'se'}, {?'re'}, mb);
+          err := 'Message send successfully';
+	}
+    }
+?>
+
+<html>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+ <body>
+  <H3>Simple MIME message composer</H3>
+  <p style="color: red"><?=err?></p>
+  <form method="post" action="sm_s_6_sample_1.vsp" enctype="multipart/form-data">
+   <table class="tableentry">
+     <tr><td>1. Enter the Mail server address</td><td><input type="text" name="ms" value=""></td></tr>
+     <tr><td>2. Enter the Sender's email</td><td><input type="text" name="se" value=""></td></tr>
+     <tr><td>3. Enter the Recipient's email</td><td><input type="text" name="re" value=""></td></tr>
+     <tr><td>4. Enter the Message text</td><td><textarea name="txt" rows=10 cols=50></textarea></td></tr>
+     <tr><td>5. Add some file as Attachment</td><td><input type=file name="f"></td></tr>
+     <tr><td>6. Compose &amp; send</td><td><input type="submit" name="exec" value="Send"></td><td></td></tr>
+   </table>
+  </form>
+ </body>
+</html>

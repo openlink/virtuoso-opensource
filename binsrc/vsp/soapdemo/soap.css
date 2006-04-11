@@ -1,0 +1,17 @@
+BODY { font-family: Verdana,Arial,Helvetica,sans-serif; }
+
+H1 { font-family: Verdana,Helvetica; color: navy; }
+H2 { font-family: Verdana,Arial,Helvetica,Lucida; color: midnightblue; FONT-SIZE: 100%; }
+
+TD {font-family: Verdana,Arial,Helvetica,Helv,sans-serif;}
+TH {font-family: Verdana,Arial,Helvetica,Helv,sans-serif;}
+
+
+TABLE.tableentry { background-color: #FFDF52 }
+TABLE.tableresult { background-color: #d0ffd0 }
+
+A { TEXT-DECORATION: none }
+
+A:hover { TEXT-DECORATION: underline }
+
+.filelist { font-family: Tahoma, sans-serif; background-color: #eeeeee; color: Black; border: 1px #dddddd solid; }

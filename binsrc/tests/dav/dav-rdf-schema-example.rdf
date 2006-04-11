@@ -1,0 +1,177 @@
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="utf-8"?>
+<!-- An example of RDF schema with Virtuoso extensions.
+ -->
+<rdf:RDF
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
+  xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
+  xmlns:dcns="http://www.purl.org/dc/elements/1.1/"
+  xmlns:dctermsns="http://www.purl.org/dc/types/"
+  xmlns:virtsample="http://www.openlinksw.com/schemas/dav-rdf-schema-example#"
+  xml:base="http://www.openlinksw.com/schemas/dav-rdf-schema-example#" >
+  <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/dav-rdf-schema-example#">
+    <rdfs:label>An example of RDF schema with Virtuoso extensions.</rdfs:label>
+    <rdfs:comment>This schema contains a variety of different editable properties and is used for tutorial purposes.</rdfs:comment>
+    <!-- document version -->
+    <virtrdf:version>0.99</virtrdf:version>
+  </owl:Ontology>
+  <!-- The class of resources described using the schema has URI
+  http://www.openlinksw.com/schemas/dav-rdf-schema-example#sample-resource -->
+  <rdfs:Class rdf:ID="sample-resource">
+    <rdfs:label>Resource with sample properties</rdfs:label>
+  </rdfs:Class>
+  <!-- This is an example of description of a property that is defined in some standard or at least outside this schema. -->
+  <!-- Note that for every string value that have "xml:lang" in this example, there may be more than one RDF triplet, one for every distinct language and
+     maybe one default value -->
+  <rdf:Property rdf:about="http://www.purl.org/dc/types/issued">
+    <!-- <rdfs:Domain> is not specified because the property can be used ouside this schema. -->
+    <!-- The type of allowed values of the property, e.g. http://www.w3.org/2001/XMLSchema#dateTime in this case.
+     The default is http://www.w3.org/2001/XMLSchema#string that is usually written as 'xsd:string'. -->
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#datetime"/>
+    <!-- The value that should be used for sorting purposes if nothing is specified. Default is an empty string -->
+    <virtrdf:defaultValue>0001-01-01T00:00:00</virtrdf:defaultValue>
+    <!-- The value that should be used for sorting purposes if nothing is specified. Default is an empty string -->
+    <virtrdf:defaultDisplayString xml:lang="en-US">(unknown)</virtrdf:defaultDisplayString>
+    <!-- The allowed number of property values, can be 'single' or 'list'. Default is 'single' -->
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <!-- The name of format function to convert value into string, by default the cast (... as varchar) is used -->
+    <virtrdf:formatFunction>strftime</virtrdf:formatFunction>
+    <!-- The name of parsing function to convert string into value, by default the cast (... as ...) is used -->
+    <virtrdf:parseFunction>scantime</virtrdf:parseFunction>
+    <!-- The description of format for formatting/parsing functions.
+       Every such function should support a default format that is passed as NULL to the Virtuoso/PL function.
+       Similarly, every such function should support a missing value that is passed as NULL.
+       parse function reports an parse error by SQL signal. -->
+    <virtrdf:formatString xml:lang="ru">%d.%m.%Y</virtrdf:formatString>
+    <virtrdf:formatString xml:lang="en-US">%a, %d/%m/%Y</virtrdf:formatString>
+    <virtrdf:formatString>%Y-%m-%d</virtrdf:formatString>
+    <!-- Text for mouse-over popup, no popup by default -->
+    <virtrdf:hint xml:lang="en-US">Date of formal issuance (e.g., publication) of the resource.</virtrdf:hint>
+    <!-- The title of a column in the list or a caption for an input control, local part of property name is used by default. -->
+    <virtrdf:label xml:lang="en-US">Issue Date</virtrdf:label>
+    <!-- Every property can be 'invisible', read-only', 'read/write'. More values can be added in the future.
+    By default, 'single' property is 'read-only' in 'ListView' and BrowsePlain and 'read/write' in BrowseExpert.
+    By default, 'list' property is 'invisible' in 'ListView', 'read-only' in BrowsePlain and 'read/write' in BrowseExpert.
+     -->
+    <virtrdf:access>read-only</virtrdf:access>
+    <!-- For every display mode, form generation parameters are listed as properties of blank node.
+  If something is not specified for a particular mode then the value of property is used (like virtrdf:hint in this example) -->
+    <!-- Commonly used propnames are virtrdf:displayMode-ListView, virtrdf:displayMode-BrowsePlain, virtrdf:displayMode-BrowseExpert -->
+    <virtrdf:displayMode-ListView rdf:parseType="Resource">
+      <virtrdf:label xml:lang="en-US">Issued</virtrdf:label>
+      <virtrdf:formatString>%Y-%m-%d</virtrdf:formatString>
+      <virtrdf:displayOrder>1</virtrdf:displayOrder>
+      <!-- Ordering can be 'asc' or 'des', for 'ascending' (default) and 'descending'. Note that for datetime and numeric properties the sorting is made by typed values. -->
+      <virtrdf:defaultSortDir>asc</virtrdf:defaultSortDir>
+    </virtrdf:displayMode-ListView>
+    <virtrdf:displayMode-BrowsePlain rdf:parseType="Resource">
+      <!-- Commonly used propnames are virtrdf:displayMode-ListView, virtrdf:displayMode-BrowsePlain, virtrdf:displayMode-BrowseExpert -->
+      <virtrdf:formatString>%a, %Y-%m-%d</virtrdf:formatString>
+      <virtrdf:displayOrder>1</virtrdf:displayOrder>
+      <!-- no need for not-a-list view: <virtrdf:defaultSortDir>asc</virtrdf:defaultSortDir> -->
+    </virtrdf:displayMode-BrowsePlain>
+    <virtrdf:displayMode-BrowseExpert rdf:parseType="Resource">
+      <!-- Commonly used porpnames are virtrdf:displayMode-ListView, virtrdf:displayMode-BrowsePlain, virtrdf:displayMode-BrowseExpert -->
+      <virtrdf:label xml:lang="en-US">Issue Date</virtrdf:label>
+      <virtrdf:displayOrder>1</virtrdf:displayOrder>
+      <!-- no need for not-a-list view: <virtrdf:defaultSortDir>asc</virtrdf:defaultSortDir> -->
+      <virtrdf:access>read/write</virtrdf:access>
+    </virtrdf:displayMode-BrowseExpert>
+  </rdf:Property>
+  <!-- This is an example of description of a property that is defined only in this schema.
+  The full property name is http://www.openlinksw.com/schemas/dav-rdf-schema-example#samplestring -->
+  <rdf:Property rdf:ID="samplestring">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:hint xml:lang="en-US">Sample string with no special formatting.</virtrdf:hint>
+  </rdf:Property>
+
+  <!-- - - - - - 8< - - - - - -->
+
+  <!-- This part refers to dependant objects and can be implemented after everything else. -->
+
+  <!-- This is an example of description of a property with object nodes as values, not literal values.
+    The full property name is http://www.openlinksw.com/schemas/dav-rdf-schema-example#written-by -->
+  <rdf:Property rdf:ID="written-by">
+    <rdfs:Range rdf:resource="author"/>
+    <virtrdf:range rdf:resource="author"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:hint xml:lang="en-US">Author(s) that wrote this document</virtrdf:hint>
+  </rdf:Property>
+  
+  <!--  Now we declare a class of authors, whose data can be edited in same place where data about the document.
+  For every 
+   -->
+  <rdfs:Class rdf:ID="author">
+    <rdfs:label>Author of a (sample) resource</rdfs:label>
+    <!-- Text for mouse-over popup -->
+    <virtrdf:hint xml:lang="en-US">Author(s) of the resource.</virtrdf:hint>
+    <!-- The title of a caption for a group of input controls or for a list of objects -->
+    <virtrdf:label xml:lang="en-US">Author</virtrdf:label>
+  </rdfs:Class>
+  
+  <!-- Author can have e-mail(s) -->
+  <rdf:Property rdf:ID="e-mail">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <!-- This indicates that e-mail can be a property of author.
+    If no virtrdf:domain is specified for a property then this is a property of the resource.
+    Thus e-mail is dismplyed in the list of proerties of anuthor (if this list is displayed at all), unlike other properties listed above. -->
+    <virtrdf:domain rdf:resource="author"/>
+    <!-- This indicates that e-mail can be a property of editor. -->
+    <virtrdf:domain rdf:resource="editor"/>
+    <!-- The rest is as usual -->
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:hint xml:lang="en-US">E-mail.</virtrdf:hint>
+  </rdf:Property>
+
+  <!-- Author can also have personal web page(s) -->
+  <rdf:Property rdf:ID="webPage">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    <virtrdf:domain rdf:resource="author"/>
+    <virtrdf:domain rdf:resource="editor"/>
+    <!-- The rest is as usual -->
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:hint xml:lang="en-US">E-mail.</virtrdf:hint>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="edited-by">
+    <rdfs:Range rdf:resource="editor"/>
+    <virtrdf:range rdf:resource="editor"/>
+    <virtrdf:cardinality>list</virtrdf:cardinality>
+    <virtrdf:hint xml:lang="en-US">Editor(s) that improved the document in publishing house</virtrdf:hint>
+  </rdf:Property>
+  
+  <rdfs:Class rdf:ID="editor">
+    <rdfs:label>Editor of a (sample) resource</rdfs:label>
+    <!-- Text for mouse-over popup -->
+    <virtrdf:hint xml:lang="en-US">Editor(s) of the resource.</virtrdf:hint>
+    <!-- The title of a caption for a group of input controls or for a list of objects -->
+    <virtrdf:label xml:lang="en-US">Editor</virtrdf:label>
+  </rdfs:Class>
+  
+
+</rdf:RDF>

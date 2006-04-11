@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="admui.internetdomains"><title>Internet Domains</title>
+
+	<sect2 id="httpvirtualdirs">
+		<title>HTTP Virtual Directories</title>
+	<para>This page allows you to define Virtual HTTP directories.  Virtual Directories 
+  let you define multiple HTTP server listeners in Virtuoso for either the same 
+  network interface or another one.  Virtual directories can respond logically 
+  to a name or directly by IP address.  Both types as well as default responses 
+  can be defined here.</para>
+  <para>Each virtual directory can also have HTTP maps defined for it.  This 
+  allow you to set logical paths on an HTTP directory to point to specific 
+  directories available to Virtuoso through the file system or DAV.</para>
+  <para>You can also publish stored procedures to a SOAP defined directory 
+  during the virtual directory definition.</para>
+    
+      <figure float="1"><title>Virtual Directories</title>
+      <graphic fileref="ui/admvirtdir001.jpg" width="583px" depth="338px"/></figure>
+
+  <para>Click on the <emphasis>Add New Site</emphasis> button to start adding 
+  a new Virtual Web Site and its directories.</para>
+
+      <figure float="1"><title>Virtual Directories: Site Details</title>
+      <graphic fileref="ui/admvirtdir002.jpg" width="597px" depth="376px"/></figure>
+
+  <para>When adding or editing a web site you must supply a host.domain name, 
+  which will be used to match again incoming requests to produce the correct 
+  response, the IP address of the network interface, to set-up the listener on, 
+  and the TCP port number that will be used to listen for incoming requests.  
+  Although Virtuoso will be listening on the specified interface you can 
+  set up multiple sites on this interface.  The site required by client web 
+  browsers will be determined by the host name specified in the request.  
+  This provides the virtual site.</para>
+
+  <para>Click on "Add Site" to continue.</para>
+
+      <figure float="1"><title>Virtual Directories Mappings</title>
+      <graphic fileref="ui/admvirtdir003.jpg" width="584px" depth="273px"/></figure>
+
+  <para>Before the directory settings are configured you can select from a 
+  few templates to help configure the details to follow quicker and easier.  
+  For SOAP virtual directories this step is particular useful.</para>
+
+  <para>Click on a template to continue.</para>
+
+      <figure float="1"><title>Virtual Directories</title>
+      <graphic fileref="ui/admvirtdir004.jpg" width="598px" depth="727px"/></figure>
+
+  <para>The main page lets you configure most aspects of the virtual directory.</para>
+
+  <para>The default directory checkbox can be checked if you want the site being 
+  defined to act as the default site for the interface.  This means that if a 
+  request is made to the interface that does not match a hostname defined for 
+  the interface, the default will be returned.</para>
+
+  <para>Logical Path will be the path that Virtuoso will respond to for this 
+  virtual directory mapping.  This is what will be placed on the URL.
+  Physical Path or URL is what Virtuoso will actually supply the content 
+  from.  In either case you can use the Browse buttons to traverse the file systems 
+  graphically.  Use the WebDAV Source Checkbox to instruct Virtuoso to use the 
+  WebDAV store for the physical location.  "Default Page" will be returned if 
+  no page is specified in the incoming URL.  </para>
+
+  <note><title>Note:</title>
+  <para>Virtual directories for SOAP must alway use a physical path of /SOAP/.</para>
+  <para>The physical path of /SOAP/ does not need to exist in the filesystem 
+  under the VSP-root directory for normal SOAP operation.  If it does existing it 
+  can be used to answer non-SOAP requests.  Thus, configuring the 
+  virtual directory for SOAP with a "Default Page" can be used to 
+  avoid SOAP clients receiving HTTP 404 errors when testing the SOAP endpoint 
+  using standard HTTP only.  Some SOAP applications assume the SOAP endpoint 
+  is down if they received HTTP 404 without checking the SOAP endpoint itself.</para></note>
+
+  <para>The permissions panel lets you choose whether to enable various 
+  abilities in the directory.</para>
+
+  <para>In the SOAP Options section you can publish or unpublish procedures 
+  and/or templates, both native and remote to the virtual directory using 
+  the Publish/Unpublish buttons respectivily.  The SOAP Options text-area allows 
+  you to specify other SOAP options such as DIME encapsulations and WS-security 
+  settings.  These options are supplied as name=value pairs terminated with a semi-colon and 
+  a carriage-return.  Here is an example of the options used for the 
+  default Interop test based demo virtual directory:</para>
+
+  <programlisting><![CDATA[
+Namespace=http://soapinterop.org/;
+MethodInSoapAction=no;
+ServiceName=InteropTests;
+HeaderNS=http://soapinterop.org/echoheader/;
+CR-escape=yes;
+]]></programlisting>
+
+  <tip><title>See Also:</title>
+  <para>For a list of available SOAP Options review the end section of the SOAP 
+  chapter: <link linkend="soapoptions">Optional Parameters to the SOAP Endpoint</link>.</para></tip>
+
+  <para>The Authentication Options panel lets you define the authentication 
+  rules for the Virtual Directory.</para>
+
+  <para>Once the form details have been completed press on the Add button to 
+  save the them and proceed to configure mappings for the directory.</para>
+
+      <figure float="1"><title>Virtual Directories Mappings</title>
+      <graphic fileref="ui/admvirtdir005.jpg" width="585px" depth="276px"/></figure>
+
+  <para>This screen lists mappings that have been defined for the virtual site.  
+  If you have just created a fresh site then only one line will be displayed.  
+  The "Add Virtual Directory" button will let you define more.  Back 
+  returns you to the start page, Edit and Delete allow you to edit or remove 
+  existing mappings as their link suggests.</para>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="virtdir">Virtual Directories</link></para></tip>
+
+	</sect2>
+
+</sect1>

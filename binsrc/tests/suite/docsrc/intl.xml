@@ -1,0 +1,248 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<chapter label="XI" id="chapter11">
+<title>International character support and compatibility</title>
+<abstract>
+Virtuoso Internationalization features.  This chapter describes the storage and manipulation of national
+character data.
+</abstract>
+
+<!-- ======================================== -->
+<sect1 id="colldef">
+<title>Creating a collation</title>
+<para>
+The collations are stored into the SYS_COLLTIONS system table.
+A collation can be created by supplying a &quot;collation definition&quot; text file to
+the &quot;collation_define&quot; SQL function.  The collation definition file contains a list of
+the &quot;exceptions&quot; to the binary collation order represented with the character
+code = collation weigth pairs.  For example a case insensitive collation can be defined by specifing
+all the lower case letters to have the same collation weigths as the corresponding uppercase ones.
+</para>
+<sect2 id="coldeffile">
+<title>Collation definition file</title>
+<para>
+The format of the collation definition file should follow the following guidelines:
+</para>
+<itemizedlist mark="bullet">
+<listitem><para>Each definition should reside on a separate line.</para></listitem>
+<listitem><para>The format of the definition is: CHAR=CODE, where CHAR and CODE an be either the
+letters themselfs, or their decimal codes. (Example : 67=68 is equal to C=D using the ASCII character
+set). Not that the codes can exceed the byte boundry (for Unicode collations).
+</para></listitem>
+</itemizedlist>
+</sect2>
+<sect2 id="coll_defiine">
+<title>coll_define SQL Function</title>
+<programlisting>
+collation_define (COLLATION_NAME, FILE_PATH, ADD_TYPE)
+</programlisting>
+<para>
+COLLATION_NAME is the name to be assigned to the collation.
+</para>
+<para>
+FILE_PATH is the path (in the server&apos;s OS) of the collation definition file.
+</para>
+<para>
+ADD_TYPE is the type of the new collation: 1 for 8-bit collation (256 bytes blob); 2 for UNICODE collation
+(65536 unicode blob).  There is a special value of 0 for that parameter instructing the function to only
+check the validity of the definition file and to return a resultset containing the codes of the valid exception
+definitions.
+</para>
+</sect2>
+<sect2 id="sys_collations">
+<title>Collations system table</title>
+<para>
+The SYS_COLLATIONS system table holds the data for all the defined collations. It has the following structure:
+</para>
+<programlisting>
+CREATE TABLE SYS_COLLATIONS (
+    COLL_NAME VARCHAR,
+    COLL_TABLE LONG VARBINARY,
+    COLL_IS_WIDE INTEGER);
+</programlisting>
+<para>
+COLL_NAME is the fully qualified name of the collation (it&apos;s identifier)
+</para>
+<para>
+COLL_TABLE holds the collation table (256 bytes or 65536 wide chars)
+</para>
+<para>
+COLL_IS_WIDE show the collation&apos;s type (0 for CHAR and 1 for NCHAR). Note that a 8bit collation
+cannot be used by a NCHAR data and vice verca.
+</para>
+<para>
+Collation can be deleted by deleting it's row from SYS_COLLATIONS. Note that the collation will be
+still available until restarting the server, as it's definition is cached into memory.
+</para>
+</sect2>
+</sect1>
+
+<sect1 id="8BIT">
+<title>8 bit characters</title>
+<sect2 id="collation">
+<title>Collations</title>
+<para>
+Virtuoso supports collation orders different from the binary for CHAR and VARCHAR fields as per ANSI SQL-92.
+</para>
+<para>
+When comparing strings using a collation Virtuoso compares the &quot;weigths&quot; of the characters
+instead of their codes.  This allows making different characters compare like equal (example:
+case-insensitive comparisons).
+</para>
+<para>
+The collation is a property of the column holding the data. This means that all the comparisons including
+that column will use it&apos;s collation. Note that the SQL functions will strip the collation data from the
+column (example : if a Column &quot;CompanyName&quot; has an assigned collation &quot;Spanish&quot;
+then LEFT (CompanyName, 10) will use the default collation).
+</para>
+<para>
+The collation can be defined per column (on table creation) and per database (as a configuration parameter).
+There is a user-accessible collation definition procedure.
+There is a special form of the CAST operator witch allows casting a column to collation.
+</para>
+<para>
+A collation identifier has the same form as any other SQL identifier (qualifier.owner.name) and it can be
+escaped as the other identifiers.
+</para>
+<sect3 id="tablecoll">
+<title>Defining collation for a table column</title>
+<para>
+The collation for a column is assigned on table creation using the following syntax:
+</para>
+<programlisting>
+create table TABLE_NAME (
+...
+COLLATED   VARCHAR(50) COLLATE Spanish,
+COLLATED   CHAR(20) COLLATE DB.DBA.Spanish,
+....
+)
+</programlisting>
+<para>
+Note that assigning a collation to a non-character column gives an error.
+</para>
+<para>
+If the COLLATE is ommited, the the default database collation is used.
+</para>
+<para>
+On database start-up the collation for each table's collumn is looked into the SYS_COLLATIONS TABLE
+and if not found, the COLLATE attribute is ignored until the next restart.
+</para>
+</sect3>
+<sect3 id="dbcoll">
+<title>Defining database wide collation</title>
+<para>
+The database&apos;s default collation is defined by the configuration parameter &quot;Collation&quot; in
+the &quot;Parameters&quot; section of virtuoso.ini
+</para>
+</sect3>
+</sect2>
+</sect1>
+
+
+<sect1 id="16bit">
+<title>Unicode characters support</title>
+<para>
+Virtuoso allows 16-bit Unicode data to be stored and retrieved from the database fields.
+The data are stored internally as UTF-8 encoded strings for storage space optimization.
+The unicode fields are easily intermixable with other character data as all the SQL functions
+support wide string case and convert to the most wide character representation on demand.
+</para>
+<sect2 id="datatypes">
+<title>Unicode data types</title>
+<para>
+There are 3 additional data types to enable storing of Unicode data
+</para>
+<itemizedlist mark="bullet">
+<listitem><para>NCHAR</para></listitem>
+<listitem><para>NVARCHAR</para></listitem>
+<listitem><para>LONG NVARCHAR</para></listitem>
+</itemizedlist>
+<para>
+All the unicode types are equivalent of the corresponding &quot;narrow&quot; type (CHAR,
+VARCHAR and LONG VARCHAR), except that instead of storing data as one byte they allow
+unicode characters. Their lengths are defined and returned in characters instead of bytes.
+They collate according to the active wide char collation (if any).
+Thease types can be used anywhere the narrow char types can be used, except in LIKE conditions.
+</para>
+<para>
+When there is a need to convert a wide string to a narrow one and vice verca, then a character set is
+used.  A character set returns a wide string code for a wide char. For example there can be a definition of
+ISO-8859-5 &quot;narrow&quot; character set witch describes mapping of NON-ASCII character codes
+to their unicode equivalents.  Virtuoso relies on the fact that the ASCII character codes are represented
+in Unicode by just type-casting and in UTF8 as one-byte tokens with the same value as in ASCII.
+</para>
+<para>
+When conversion is done server-side (using cast, some of the SQL built-in functions, etc.) the wide
+characters are converted to narrow using a system-independant server-side character set. In it&apos;s
+epsence the Latin1 character set is used which project narrow character codes into the Unicode space
+as equaly-valued wide character codes.
+</para>
+<para>
+Things are different when the conversion is done client-side (for example when binding a VARCHAR to a
+wide buffer).  Then the default client's system character set is used.
+</para>
+<para>
+The wide character literals have the ANSI SQL-92 syntax  : N&apos;xxx&apos; (prefixing normal literals
+with the letter N).  Thease strings process escapes with a values large enough to represent all the
+Unicode characters.
+</para>
+</sect2>
+<sect2 id="widefunc">
+<title>Built-in SQL fucntions and wide characters</title>
+<para>
+All the built in SQL functions witch do take a character attribute(s) and do have a character input are
+calculating their output type as follows:
+</para>
+<para>
+If there is any attribute witch is a wide string or a wide blob, then the result is a wide string. Otherwise the output character type is narrow.
+</para>
+<para>
+There are some functions, like make_string, witch do have character result type, but don&apos;t have a
+character parameters. This is resolved by leaving the make_string to produce narrow strings, and
+providing a make_wstring equivalent for wide output.
+</para>
+</sect2>
+<sect2 id="wideodbc">
+<title>Client-side changes to support wide characters</title>
+<para>
+The ODBC client implements the SQL...W functions (like SQLConnectW) that do take unicode arguments.
+This contributes to a faster wide character processing and allows binding of SQL_C_WCHAR output type.
+As the SQL parser doesn&apos;t allow unicode data in SQL commands, they should be bound as parameters
+or should be represented as escapes.
+</para>
+</sect2>
+<sect2 id="nvdb">
+<title>Virtual database and national language support</title>
+<para>
+For narrow strings attached tables are using allways the default collation of the data source.
+</para>
+<para>
+Remote wide string columns are mapped to the appropriate wide character type in Virtuoso.
+The data are then passed as intact in case of wide-to-wide mapping. When the data are converted
+client-side in the VDB the Server's system character set is used (where avaliable).
+</para>
+</sect2>
+</sect1>
+</chapter>

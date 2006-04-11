@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_tidy_list_errors">
+  <refmeta>
+    <refentrytitle>tidy_list_errors</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>tidy_list_errors</refname>
+    <refpurpose>Invoke built-in version of HTML Tidy utility to get list of errors in given input HTML text</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_tidy_list_errors">
+      <funcprototype id="fproto_tidy_list_errors">
+        <funcdef><function>tidy_list_errors</function></funcdef>
+	<paramdef>in <parameter>raw_html</parameter> varchar</paramdef>
+	<paramdef>in <parameter>tidy_config</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>This function lists errors in given source HTML text, by invoking some
+    custom version of HTML Tidy utility. To learn more about Tidy see
+    <ulink url="http://www.w3.org/People/Raggett/tidy/">
+    http://www.w3.org/People/Raggett/tidy/</ulink>.</para>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>raw_html</title>
+      <para>Source HTML text to validate. Note that the encoding of this text
+      must be specified in <parameter>tidy_config</parameter> string,
+      and default encoding of session will not be mentoined by Tidy.</para>
+    </refsect2>
+    <refsect2><title>tidy_config</title>
+      <para>Configuration string, space-delimited list of options, exactly as
+      in original Tidy's command-line or in Tidy's configuration file.
+      Not all options of original Tidy will work, due to obvious reasons,
+      unsupported options will be silently ignored, so you may read your
+      favorite Tidy's configuration file by file_to_string function and
+      pass it to tidy_list_errors. For more datails, see
+      <link linkend="fn_tidy_html"><function>tidy_html</function></link>.
+      </para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret"><title>Return Types</title>
+    <para>Text with the list of found errors and warnings, as string of
+    type varchar.</para>
+  </refsect1>
+  <refsect1 id="errors"><title>Errors</title>
+    <para>This function should not signal errors. Unlike
+    <link linkend="fn_tidy_html"><function>tidy_html</function></link>,
+    it will log errors into the resulting string without signalling them.</para>
+  </refsect1>
+<!--
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_tidy_list_errors"><title></title>
+      <para></para>
+      <screen></screen>
+    </example>
+  </refsect1>
+-->
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_tidy_html"></link></para>
+  </refsect1>
+</refentry>
+

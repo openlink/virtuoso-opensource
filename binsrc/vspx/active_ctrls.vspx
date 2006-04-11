@@ -1,0 +1,68 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<body>
+<v:page name="crtls_demo" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<v:variable name="active" type="int" default="0" />
+<v:variable name="ctr" type="int" default="0" persist="pagestate"/>
+
+<v:form name="sf" type="simple">
+      <v:text name="txt2" default="*none*" type="hidden" />
+  <p>
+    <v:check-box name="cb" value="one">
+    <v:after-data-bind>
+     <![CDATA[
+     if (control.ufl_selected)
+       self.active := 1;
+     else
+       self.active := 0;
+     self.ctr := self.ctr + 1;
+    ]]>
+    </v:after-data-bind>
+  </v:check-box>
+  </p>
+  <p>
+  ctr: <?vsp http (cast (self.ctr as varchar));  ?>
+  </p>
+  <P>
+  <v:url name="url1" value="--'OpenLink Software Ltd.'" format="%s"
+         url="--'http://openlinksw.com/'" active="--self.active" />
+  <v:button name="submit1" action="simple" value="OK" active="--self.active" />
+  <v:button name="submit2" action="simple" value="OK" style="url" active="--self.active" />
+  <v:button name="submit3" action="simple" style="image" value="--'plus.gif'" active="--self.active" />
+  <v:button name="submit4" action="simple" value="OK" active="0" />
+  </P>
+  <p>
+  <v:button action="submit" value="Submit" enabled="--case when self.active then 0 else 1 end"/>
+  </p>
+</v:form>
+
+<v:include url="footer.xml"/>
+<v:on-init>
+  dbg_obj_print ('Page Constructor');
+  dbg_vspx_control (self);
+</v:on-init>
+</v:page>
+</body>
+</html>
+

@@ -1,0 +1,5 @@
+<!ELEMENT prices (book*)>
+<!ELEMENT book (title, source, price)>
+<!ELEMENT title (#PCDATA)>
+<!ELEMENT source (#PCDATA)>
+<!ELEMENT price (#PCDATA)>

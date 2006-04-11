@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_collation_define">
+  <refmeta>
+    <refentrytitle>collation_define</refentrytitle>
+    <refmiscinfo>sql</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>collation_define</refname>
+    <refpurpose>define a new collation</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_collation_define">
+      <funcprototype id="fproto_collation_define">
+        <funcdef><function>collation_define</function></funcdef>
+	<paramdef>in <parameter>COLLATION_NAME</parameter> varchar</paramdef>
+	<paramdef>in <parameter>FILE_PATH</parameter> varchar</paramdef>
+	<paramdef>in <parameter>ADD_TYPE</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_collation_define">
+    <title>Description</title>
+    <para>This function lets you define a new collation.</para>
+  </refsect1>
+  <refsect1 id="params_collation_define">
+    <title>Parameters</title>
+    <refsect2><title>COLLATION_NAME</title>
+      <para>The name to be assigned to the new collation.</para>
+    </refsect2>
+    <refsect2><title>FILE_PATH</title>
+      <para>The path and file name of the collation definition file.  The 
+      path must be specified in the format appropriate to the operating 
+      system hosting the Virtuoso server.</para>
+    </refsect2>
+    <refsect2><title>ADD_TYPE</title>
+      <para>is the type of the new collation: 1 for 8-bit collation 
+      (256-byte blob); 2 for UNICODE collation (65536-byte Unicode blob).  
+      A value of 0 instructs the function only to check the validity of the 
+      definition file and to return a resultset containing the codes of the 
+      valid exception definitions.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_collation_define"><title>Return Types</title>
+    <para>If 0 is supplied to the ADD_TYPE parameter then a result set will 
+    be returned containing the codes of the valid definitions.</para>
+  </refsect1>
+  <!--
+  <refsect1 id="errors_collation_define">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+  <refsect1 id="examples_collation_define">
+    <title>Examples</title>
+    <example id="ex_collation_define"><title></title>
+      <para></para>
+      <screen><![CDATA[
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_collation_define">
+    <title>See Also</title>
+    <para><link linkend="fn"><function></function></link></para>
+  </refsect1>
+  -->
+</refentry>

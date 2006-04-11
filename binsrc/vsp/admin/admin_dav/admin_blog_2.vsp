@@ -1,0 +1,468 @@
+<!-- -*- html -*- -->
+<?vsp
+  declare bid, id varchar;
+  declare userid, ownid, tz, cont, reg, comm, track_ping, refer, api_email, filt, cnot, addblog int;
+  declare tit, own, home, copy, disc, email, about, ping, hpage, kwd, photo, phome, rssver varchar;
+  declare domains, opts any;
+  declare brt, crt, oplt, oclt, wapf, gkey, akey varchar;
+
+  adm_pre_page(lines);
+
+if (http_dav_uid () <> (userid := adm_dav_check_auth (lines, 1)))
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+          'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+
+  bid := {?'bid'};
+  tz := 0; cont := 1; reg := 1; filt := '*default*'; hpage := '/blog/';
+
+  brt := get_keyword ('brt', params, 'Blog Roll');
+  crt := get_keyword ('crt', params, 'Channel Roll');
+  oplt := get_keyword ('oplt', params, 'OPML Links');
+  oclt := get_keyword ('oclt', params, 'OCS Links');
+  wapf := get_keyword ('wapf', params, '*wml-default*');
+  gkey := get_keyword ('gkey', params, '');
+  akey := get_keyword ('akey', params, '');
+
+  if ({?'opts'} is not null)
+    opts := deserialize (decode_base64 ({?'opts'}));
+  else
+    opts := vector ();
+
+  if (bid is null or bid = '' or {?'cncl'} = 'Back')
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: admin_blog.vsp\r\n');
+      return;
+    }
+
+  if ({?'post'} is not null)
+    {
+      tit := {?'tit'};
+      copy := {?'copy'};
+      disc := {?'disc'};
+      email := {?'email'};
+      about := {?'about'};
+      ping := {?'ping'};
+      cont := atoi({?'cont'});
+      reg := atoi({?'reg'});
+      comm := atoi({?'comm'});
+      track_ping := atoi({?'track_ping'});
+      refer := atoi({?'refer'});
+      api_email := atoi({?'api_email'});
+      filt := {?'filt'};
+      hpage := {?'hpage'};
+      phome := {?'phome'};
+      photo := {?'photo'};
+      kwd := {?'kwd'};
+      cnot := atoi({?'cnot'});
+      addblog := atoi({?'addblog'});
+      rssver := {?'rssver'};
+
+      BLOG_SET_OPTION ('OPMLDivTitle', opts, oplt);
+      BLOG_SET_OPTION ('OCSDivTilte', opts, oclt);
+      BLOG_SET_OPTION ('RSSFilter', opts, wapf);
+
+      BLOG_SET_OPTION ('EnableTrackback', opts, track_ping);
+      BLOG_SET_OPTION ('EnableReferral', opts, refer);
+      BLOG_SET_OPTION ('EnableCommentForm', opts, api_email);
+      BLOG_SET_OPTION ('GoogleKey', opts, gkey);
+      BLOG_SET_OPTION ('AmazonKey', opts, akey);
+
+      update SYS_BLOG_INFO set BI_TITLE = tit, BI_COPYRIGHTS = copy, BI_DISCLAIMER = disc,
+	  	BI_ABOUT = about, BI_E_MAIL = email, BI_PINGS = NULL, BI_TZ = atoi ({?'tz'}),
+		BI_SHOW_CONTACT = cont, BI_SHOW_REGIST = reg, BI_COMMENTS = comm, BI_FILTER = filt,
+		BI_HOME_PAGE = hpage, BI_PHOTO = photo, BI_KEYWORDS = kwd, BI_COMMENTS_NOTIFY = cnot,
+		BI_ADD_YOUR_BLOG = addblog, BI_RSS_VERSION = rssver, BI_OPTIONS = serialize (opts)
+	where BI_BLOG_ID = bid;
+
+      {
+        declare ix int;
+        ix := 0;
+        delete from SYS_BLOG_WEBLOG_PING where WP_BLOG_ID = bid;
+        while (ping := adm_next_keyword ('ping', params, ix))
+	  {
+	    if (ping <> '')
+            insert into SYS_BLOG_WEBLOG_PING (WP_URL, WP_BLOG_ID) values (ping, bid);
+          }
+      }
+
+      if ({?'uphoto'} <> '')
+	{
+	  declare cnt, nam any;
+	  cnt := {?'uphoto'};
+	  nam := photo;
+	  if (nam = '')
+       	    nam := get_keyword ('filename', get_keyword ('attr-uphoto', params, vector ('filename', 'photo.gif')));
+	  DAV_RES_UPLOAD_STRSES_INT (phome||nam, cnt,'','110100100N', {?'owner'}, null, null, null, 0);
+	}
+      if ({?'hdomains'} is not null)
+        domains := deserialize (decode_base64 ({?'hdomains'}));
+      else
+        domains := vector ();
+      declare i, l int;
+      i := 0; l := length (domains);
+      delete from SYS_BLOG_DOMAINS where BD_BLOG_ID = bid;
+      while (i < l)
+	{
+	  if (domains[i] is not null)
+	    insert into SYS_BLOG_DOMAINS (BD_DOMAIN, BD_BLOG_ID) values (domains[i], bid);
+	  i := i + 1;
+	}
+
+      delete from SYS_BLOG_SEARCH_ENGINE_SETTINGS where SS_BLOG_ID = bid;
+      for select SE_NAME from SYS_BLOG_SEARCH_ENGINE do
+	{
+          declare akey, amax any;
+	  akey := get_keyword ('key__'||SE_NAME, params, '');
+	  amax := atoi (get_keyword ('rows__'||SE_NAME, params, '10'));
+	  if (length (akey))
+            {
+              insert into SYS_BLOG_SEARCH_ENGINE_SETTINGS (SS_NAME, SS_BLOG_ID, SS_KEY, SS_MAX_ROWS)
+		values (SE_NAME, bid, akey, amax);
+            }
+        }
+    }
+
+  declare blog_name varchar;
+
+  whenever not found goto ef;
+  select BI_TITLE, BI_HOME, BI_COPYRIGHTS, BI_DISCLAIMER, U_NAME, coalesce (BI_E_MAIL, U_E_MAIL), BI_ABOUT, BI_OWNER, BI_PINGS, coalesce(BI_TZ,0), BI_SHOW_CONTACT, BI_SHOW_REGIST, BI_COMMENTS, BI_FILTER, BI_HOME_PAGE, BI_PHOTO, BI_KEYWORDS, BI_P_HOME, BI_COMMENTS_NOTIFY, BI_ADD_YOUR_BLOG, BI_RSS_VERSION, deserialize (blob_to_string (BI_OPTIONS))
+    	into tit, home, copy, disc, own, email, about, ownid, ping, tz, cont, reg, comm, filt, hpage, photo, kwd, phome, cnot, addblog, rssver, opts
+  	from SYS_BLOG_INFO, SYS_USERS where
+ 	BI_BLOG_ID = bid and BI_OWNER = U_ID;
+
+      if (isarray (opts))
+        {
+	  brt := get_keyword ('BDivTitle', opts, brt);
+	  crt := get_keyword ('CDivTitle', opts, crt);
+	  oplt := get_keyword ('OPMLDivTitle', opts, oplt);
+	  oclt := get_keyword ('OCSDivTilte', opts, oclt);
+	  wapf := get_keyword ('RSSFilter', opts, wapf);
+	  track_ping := get_keyword ('EnableTrackback', opts, oclt);
+	  refer := get_keyword ('EnableReferral', opts, oclt);
+	  api_email := get_keyword ('EnableCommentForm', opts, oclt);
+	  gkey := get_keyword ('GoogleKey', opts, gkey);
+	  akey := get_keyword ('AmazonKey', opts, akey);
+        }
+
+   if ({?'add_domain'} is null and {?'del_domain'} is null)
+     {
+       domains := vector ();
+       for select BD_DOMAIN from SYS_BLOG_DOMAINS where BD_BLOG_ID = bid do
+	 {
+	   domains := vector_concat (domains, vector (BD_DOMAIN));
+	 }
+       if (not length (domains))
+	 domains := vector ('*ini*');
+     }
+   else
+     {
+       if ({?'hdomains'} is not null)
+         domains := deserialize (decode_base64 ({?'hdomains'}));
+       else
+	 domains := vector ();
+       if ({?'add_domain'} is not null)
+	 {
+	   if (not position ({?'av_domains'}, domains))
+	     domains := vector_concat (domains, vector ({?'av_domains'}));
+	 }
+       else if ({?'del_domain'} is not null)
+	 {
+	   if (position ({?'domains'}, domains))
+	     {
+	       domains [position ({?'domains'}, domains) - 1] := null;
+	     }
+	 }
+     }
+  blog_name := tit;
+
+ef:
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>BLOG Administration</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="BLOG Management for Virtuoso DB">
+  </head>
+<?vsp adm_page_header('BLOG Administration', ''); ?>
+<script type="text/javascript">
+<!--
+function getFileName()
+{
+  var S = document.forms[0].uphoto.value;
+  var N;
+  var fname;
+  if (S.lastIndexOf('\\') > 0)
+    N = S.lastIndexOf('\\')+1;
+  else
+    N = S.lastIndexOf('/')+1;
+  fname = S.substr(N,S.length);
+  document.forms[0].photo.value = fname;
+}
+// -->
+</script>
+    <H4><?=blog_name?></H4>
+    <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+      <TR><TD class="genhead" COLSPAN="2">BLOG Settings</TD></TR>
+      <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+      <form method="POST" action="admin_blog_2.vsp" enctype="multipart/form-data">
+      <input type="hidden" name="bid" value="<?=bid?>">
+      <input type="hidden" name="id" value="<?=id?>">
+      <input type="hidden" name="owner" value="<?=own?>">
+      <input type="hidden" name="phome" value="<?=phome?>">
+      <input type="hidden" name="hdomains" value="<?=encode_base64 (serialize(domains))?>">
+      <input type="hidden" name="opts" value="<?=encode_base64 (serialize(opts))?>">
+      <tr><td class="geninput">Title</td> <td class="geninput"><input type="text" name="tit" value="<?=tit?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Description</td> <td class="geninput"><input type="text" name="about" value="<?=about?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Author's e-mail</td> <td class="geninput"><input type="text" name="email" value="<?=email?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Owner</td> <td class="geninput"><input type="text" name="own" value="<?=own?>" disabled size="70%"/></td></tr>
+      <!--tr><td class="geninput">Home folder</td> <td class="geninput"><input type="text" name="home" value="<?=home?>" disabled size="70%"/></td></tr-->
+      <tr><td class="geninput">Home page URL</td> <td class="geninput"><input type="text" name="hpage" value="<?=hpage?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Copyrights</td> <td class="geninput"><input type="text" name="copy" value="<?=copy?>"  size="70%"/></td></tr>
+      <tr><td class="geninput">Disclamer</td> <td class="geninput"><input type="text" name="disc" value="<?=disc?>"  size="70%"/></td></tr>
+
+      <tr><td class="geninput">OCS Links Title</td><td class="geninput"><input type="text" name="oclt" value="<?=oclt?>" size="70%"/></td></tr>
+      <tr><td class="geninput">OPML Links Title</td><td class="geninput"><input type="text" name="oplt" value="<?=oplt?>" size="70%"/></td></tr>
+
+
+      <tr><td class="geninput">Keywords</td> <td class="geninput"><input type="text" name="kwd" value="<?=kwd?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Upload Photo Image</td> <td class="geninput"><input type="file" name="uphoto" size="60%" onBlur="javascript: getFileName();"/></td></tr>
+      <tr><td class="geninput">Photo</td> <td class="geninput"><input type="text" name="photo" value="<?=photo?>" size="70%"/></td></tr>
+      <tr><td class="geninput">XSL-T filter for posts</td> <td class="geninput"><input type="text" name="filt" value="<?=filt?>"  size="70%"/></td></tr>
+      <tr><td class="geninput">RSS XSL-T filter</td><td class="geninput"><input type="text" name="wapf" value="<?=wapf?>" size="70%"/></td></tr>
+
+      <?vsp
+         for select SE_NAME from SYS_BLOG_SEARCH_ENGINE do
+	   {
+             declare akey, arows any;
+
+             akey := ''; arows := 10;
+
+             whenever not found goto nextapi;
+             select SS_KEY, SS_MAX_ROWS into akey, arows from SYS_BLOG_SEARCH_ENGINE_SETTINGS
+		where SS_NAME = SE_NAME and SS_BLOG_ID = bid;
+             nextapi:;
+      ?>
+	     <tr>
+	     <td class="geninput"><?= SE_NAME ?> API key &amp; max results</td>
+	     <td class="geninput">
+                <input type="text" value="<?= akey ?>" name="key__<?= SE_NAME ?>" size="60%"/>
+                <input type="text" value="<?= arows ?>" name="rows__<?= SE_NAME ?>" size="3"/>
+             </td>
+	     </tr>
+      <?vsp
+           }
+      ?>
+
+      <!--
+      <tr>
+	<td class="geninput">Google API key</td>
+	<td class="geninput"><input type="text" name="gkey" value="<?=gkey?>" size="70%"/></td>
+      </tr>
+      <tr><td class="geninput">Amazon API key</td><td class="geninput"><input type="text" name="akey" value="<?=akey?>" size="70%"/></td></tr>
+      -->
+      <?vsp if (exists (select 1 from WS.WS.SYS_DAV_GROUP where G_ID = ownid)) { ?>
+      <tr>
+         <td class="geninput">Grants</td>
+	 <td class="geninput">
+	 <select size="5" name="grants" disabled>
+	 <?vsp
+	 for select distinct U_NAME, U_ID from SYS_ROLE_GRANTS, SYS_USERS where GI_SUPER = U_ID and GI_SUB = ownid
+	   do 	{
+	 ?>
+	     <option value="<?=U_ID?>"><?=U_NAME?>
+	 <?vsp
+	 	}
+	 ?>
+	 </select><small>* to remove a user from grants, revoke the role</small>
+	 </td>
+      </tr>
+      <?vsp } ?>
+
+      <tr>
+         <td class="geninput">Domains</td>
+	 <td class="geninput">
+	 <table border="0">
+	 <tr>
+	 <td>
+	 <select size="5" name="domains" >
+	    <?vsp
+	    {
+	     declare i, l int;
+	     l := length (domains);
+	     while (i < l)
+	       {
+		 if (domains[i] is not null)
+		   {
+	    ?>
+		 <option value="<?V domains[i] ?>"><?V domains[i] ?></option>
+	    <?vsp
+		   }
+	    	 i := i + 1;
+	       }
+	    }
+	    ?>
+	 </select>
+	 </td>
+
+	 <td>
+	 <input type="submit" name="add_domain" value="&lt;--"/><br />
+	 <input type="submit" name="del_domain" value="--&gt;"/>
+	 </td>
+
+	 <td>
+	 <select name="av_domains" size="5">
+	 <?vsp
+	 for select distinct HP_HOST as vhost from DB.DBA.HTTP_PATH do {
+	 ?>
+	     <option value="<?V vhost ?>"><?V vhost ?></option>
+	 <?vsp
+	    }
+	 ?>
+	 </select>
+	 </td>
+
+	 </tr>
+	 </table>
+         </td>
+      </tr>
+      <tr><td class="geninput">Weblogs ping</td> <td class="geninput">
+      	<select name="ping" multiple size="5">
+           <?vsp
+	     for select WH_URL, WH_NAME, WH_PROTO from SYS_BLOG_WEBLOG_HOSTS do
+              {
+		declare sel varchar;
+		sel := '';
+                if (exists (select 1 from SYS_BLOG_WEBLOG_PING where WP_URL = WH_URL and WP_BLOG_ID = bid))
+                  sel := 'selected';
+           ?>
+		<option value="<?= WH_URL ?>" <?=sel?>><?= WH_NAME ||' '||upper (WH_PROTO)  ?></option>
+           <?vsp
+	      }
+           ?>
+	</select>
+      </td></tr>
+
+      <?vsp if (bid <> '*weblog-root*') { ?>
+      <tr><td class="geninput">Enable Contacts</td> <td class="geninput">
+      <input type="checkbox" name="cont" <?V check_if (cont, 1) ?> value="1" />
+      </td></tr>
+      <tr><td class="geninput">RSS file version</td> <td class="geninput">
+      	<select name="rssver">
+		<option value="2.0" <?V select_if ('2.0', rssver) ?>>2.0
+		<option value="0.92" <?V select_if ('0.92', rssver) ?>>0.92
+		<option value="0.91" <?V select_if ('0.91', rssver) ?>>0.91
+	</select>
+      </td></tr>
+      <?vsp } ?>
+
+      <?vsp if (bid = '*weblog-root*') { ?>
+      <tr><td class="geninput">Enable Register URL</td> <td class="geninput">
+      <input type="checkbox" name="reg" <?V check_if (reg, 1) ?> value="1" />
+      </td></tr>
+      <tr><td class="geninput">Enable Add Your Blog URL</td> <td class="geninput">
+      <input type="checkbox" name="addblog" <?V check_if (addblog, 1) ?> value="1" />
+      </td></tr>
+      <?vsp } ?>
+
+      <tr><td class="geninput">Enable Comments</td> <td class="geninput">
+      <input type="checkbox" name="comm" <?V check_if (comm, 1) ?> value="1" />
+      </td></tr>
+      <tr><td class="geninput">Enable Trackback/Pingback</td> <td class="geninput">
+      <input type="checkbox" name="track_ping" <?V check_if (track_ping, 1) ?> value="1" />
+      </td></tr>
+      <tr><td class="geninput">Enable Referrals</td> <td class="geninput">
+      <input type="checkbox" name="refer" <?V check_if (refer, 1) ?> value="1" />
+      </td></tr>
+      <tr><td class="geninput">Enable Comment Post Notification via E-mail</td> <td class="geninput">
+         <select name="cnot">
+            <option value="0" <?V select_if (cnot, 0) ?>>disabled
+            <option value="1" <?V select_if (cnot, 1) ?>>with Embedded HTML Form for CommentAPI
+            <option value="2" <?V select_if (cnot, 2) ?>>HTML format
+            <option value="3" <?V select_if (cnot, 3) ?>>TEXT format
+            <option value="4" <?V select_if (cnot, 4) ?>>with HTML Form attached
+         </select >
+      <!--input type="checkbox" name="cnot" <?V check_if (cnot, 1) ?> value="1" /-->
+      </td></tr>
+      <!--tr><td class="geninput">Enable Comment API form in Notification E-Mail</td> <td class="geninput">
+      <input type="checkbox" name="api_email" <?V check_if (api_email, 1) ?> value="1" />
+      </td></tr-->
+      <tr><td class="geninput">Time-zone</td> <td class="geninput">
+      	<select name="tz">
+	<?vsp
+	{
+	   declare i int;
+	   i := -12;
+	   while (i <= 12)
+    	     {
+	?>
+		<option value="<?V i ?>" <?V select_if (i, tz) ?>>GMT <?V case when i < 0 then '-' else '+' end ?><?V sprintf ('%02d', abs(i)) ?>:00</option>
+	<?vsp
+		i := i + 1;
+       	     }
+	}
+	?>
+	</select>
+      </td></tr>
+      <tr>
+        <td class="geninput" COLSPAN="2">
+	<input type="submit" name="post" value="Post" />
+	<input type="submit" name="cncl" value="Back" />
+	<a class="tablelistaction" href="bridge.vspx?bid=<?=bid?>">Bridge Settings</a>
+	    <a  class="tablelistaction" href="admin_blog_category.vsp?bid=<?=bid?>">Categories</a>
+	    <a  class="tablelistaction" href="admin_blog_channel.vsp?bid=<?=bid?>">Channels</a>
+	<a class="tablelistaction" href="admin_blog_notify.vspx?bid=<?=bid?>">Notification</a>
+	<a class="tablelistaction" href="admin_blog_cont.vsp?bid=<?=bid?>">Contacts</a>
+	</td>
+      </tr>
+      </form>
+    </TABLE>
+
+<?vsp
+    adm_page_break();
+    if (bid = '*weblog-root*') {
+?>
+
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="5">Domains assigned</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+            <tr>
+		<th class="genlistheadt">Domain</th>
+		<th class="genlistheadt">Action</th>
+             </tr>
+<?vsp
+   for select BD_DOMAIN
+	      from SYS_BLOG_DOMAINS where BD_BLOG_ID = bid and  BD_DOMAIN <> '*ini*'
+   	 do
+      {
+?>
+       <TR>
+         <TD class="gendata"><?= BD_DOMAIN ?></TD>
+         <TD class="gendata">
+	   <a href="admin_blog_domain_setup.vsp?bid=<?=bid?>&dom=<?=BD_DOMAIN?>">Settings</a>
+	 </TD>
+       </TR>
+<?vsp
+      }
+?>
+
+</TABLE>
+<?vsp
+   }
+adm_page_footer();
+?>
+</html>
+

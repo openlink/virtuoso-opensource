@@ -1,0 +1,262 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+
+  declare _caller, _out_str, _soap_url, p0, p1, _err2 varchar;
+  declare state, msg, st, t_text, opl1, opl2, opl_home varchar;
+  declare idx, len integer;
+  declare _in, _out, _err any;
+  declare meta any;
+  declare urls any;
+
+  _caller := {?'caller'};
+  _in := {?'in'};
+  _out := {?'out'};
+  p0 := 'http://soapinterop/';
+  p1 := '';
+  opl_home := {?'opl_home'};
+
+  if (_caller= 'InteropTestDocLitParameters')
+    {
+       opl1 := concat (opl_home, '/r3/DocPars');
+       opl2 := concat ('OpenLink Software (', opl1, ')');
+       urls := vector (
+	       vector (opl1, opl2),
+	       vector ('http://www.whitemesa.net/interop/r3/doclitparam','White Mesa (http://www.whitemesa.net/interop/r3/doclitparam)'),
+	       vector ('http://mssoapinterop.org/stkv3/wsdl/interopTestDocLitParameters.wsdl','Microsoft (http://mssoapinterop.org/stkv3/wsdl/interopTestDocLitParameters.wsdl)'),
+	       vector ('http://interop.xmlbus.com:7002/xmlbus/container/WSDLInteropTestDocLitParametersApp/WSDLInteropTestDocLitService/WSDLInteropTestDocLitPort/','IONA XMLBus (http://interop.xmlbus.com:7002/.../WSDLInteropTestDocLitPort/)'),
+	       vector ('http://www.dolphinharbor.org/services/R3DocLitParams','Spray (http://www.dolphinharbor.org/services/R3DocLitParams)'),
+	       vector ('http://www.soapclient.com/interop/DocLitParam.wsdl','SQLData (http://www.soapclient.com/interop/DocLitParam.wsdl)'),
+	       vector ('http://mssoapinterop.org/asmx/wsdl/InteropTestDocLitParameters.asmx','ASP.NET (http://mssoapinterop.org/asmx/wsdl/InteropTestDocLitParameters.wsdl)')
+		 );
+    }
+
+  if (_caller= 'InteropTestDocLit')
+    {
+       opl1 := concat (opl_home, '/r3/DocLit');
+       opl2 := concat ('OpenLink Software (', opl1, ')');
+       urls := vector (
+	       vector (opl1, opl2),
+	       vector ('http://www.whitemesa.net/interop/r3/doclit', 'White Mesa (http://www.whitemesa.net/interop/r3/doclit)'),
+	       vector ('http://mssoapinterop.org/stkv3/wsdl/interopTestDocLit.wsdl', 'Microsoft (http://mssoapinterop.org/stkv3/wsdl/interopTestDocLit.wsdl)'),
+	       vector ('http://www.dolphinharbor.org/services/R3DocLit', 'Spray (http://www.dolphinharbor.org/services/R3DocLit)'),
+	       vector ('http://interop.xmlbus.com:7002/xmlbus/container/WSDLInteropTestDocLitApp/WSDLInteropTestDocLitService/WSDLInteropTestDocLitPort/', 'IONA XMLBus (http://interop.xmlbus.com:7002/.../WSDLInteropTestDocLitPort/)'),
+	       vector ('http://www.soapclient.com/interop/DocLit.wsdl', 'SQLData (http://www.soapclient.com/interop/DocLit.wsdl)'),
+	       vector ('http://mssoapinterop.org/asmx/wsdl/InteropTestDocLit.asmx', 'ASP.NET (http://mssoapinterop.org/asmx/wsdl/InteropTestDocLit.wsdl)')
+		 );
+    }
+
+  if (_caller= 'InteropTestRpcEncoded')
+    {
+       opl1 := concat (opl_home, '/r3/RpcEnc');
+       opl2 := concat ('OpenLink Software (', opl1, ')');
+       urls := vector (
+	       vector (opl1, opl2),
+	       vector ('http://www.whitemesa.net/interop/r3/rpcEnc', 'White Mesa (http://www.whitemesa.net/interop/r3/rpcEnc)'),
+	       vector ('http://mssoapinterop.org/stkv3/wsdl/interopTestRpcEnc.wsdl', 'Microsoft (http://mssoapinterop.org/stkv3/wsdl/interopTestRpcEnc.wsdl)'),
+	       vector ('http://interop.xmlbus.com:7002/xmlbus/container/WSDLInteropTestRpcEncApp/WSDLInteropTestRpcEncService/WSDLInteropTestRpcEncPort/', 'IONA XMLBus (http://interop.xmlbus.com:7002/.../WSDLInteropTestRpcEncPort/)'),
+	       vector ('http://www.dolphinharbor.org/services/R3RpcEncoded', 'Spray (http://www.dolphinharbor.org/services/R3RpcEncoded)'),
+	       vector ('http://www.soapclient.com/interop/RpcEnc.wsdl', 'SQLData (http://www.soapclient.com/interop/RpcEnc.wsdl)'),
+	       vector ('http://mssoapinterop.org/asmx/wsdl/WSDLInteropTestRpcEncService.asmx', 'ASP.NET (http://mssoapinterop.org/asmx/wsdl/WSDLInteropTestRpcEncService.wsdl)')
+		 );
+    }
+
+  _out_str := '';
+
+  if ({?'step'} = '1')
+    {
+       _soap_url := {?'soap_svc_url'};
+       if (_soap_url = '')
+         _soap_url := {?'other_uri'};
+
+       if (strstr (_soap_url, 'stkv3') > 0 and _caller = 'InteropTestRpcEncoded')
+	 {
+	   p0 := 'http://soapinterop.org/WSDLInteropTestRpcEnc';
+	   p1 := 'http://soapinterop.org/';
+	 }
+
+       if (strstr (_soap_url, 'xmlbus') > 0 and _caller = 'InteropTestRpcEncoded')
+	 {
+	   p0 := 'http://soapinterop.org/WSDLInteropTestRpcEnc';
+	   p1 := '""';
+	 }
+
+       if (strstr (_soap_url, 'asmx') > 0 and _caller = 'InteropTestRpcEncoded')
+	 {
+	   p0 := 'http://soapinterop.org/WSDLInteropTestRpcEnc';
+	   p1 := '';
+	 }
+
+       t_text := '';
+
+       t_text := replace ({?'inputStrings'}, ' ', ''',''');
+       t_text := concat ('\'', t_text, '\'');
+
+       _soap_url := WS.WS.PARSE_URI (_soap_url);
+
+
+   if (_caller = 'InteropTestRpcEncoded')
+          st := sprintf ('
+		  select soap_call (''%s'', ''%s'', ''%s'', ''echoStringArray'',
+		  vector (vector(''param0'', ''http://soapinterop.org/xsd:ArrayOfstring''),
+		  vector (%s)), 11, NULL, NULL, ''%s'', 2)',
+		  _soap_url[1],_soap_url[2], p0, t_text, p1);
+   else if (_caller = 'InteropTestDocLitParameters')
+          st := sprintf ('
+		  select soap_call (''%s'', ''%s'', ''http://soapinterop/'', ''echoStringArray'',
+		  vector (vector(''echoStringArray'', ''http://soapinterop.org/xsd:echoStringArray''),
+		  vector (vector(%s))), 11, NULL, NULL, ''"http://soapinterop.org/"'', 3)',
+		  _soap_url[1],_soap_url[2], t_text);
+   else
+     st := sprintf ('
+	          select soap_call (''%s'', ''%s'', ''http://soapinterop/'', ''echoStringArray'',
+	          vector (vector(''echoStringArrayParam'', ''http://soapinterop.org/xsd:echoStringArrayParam''),
+	          vector (%s)), 11, NULL, NULL, ''"http://soapinterop.org/"'', 3)',
+		  _soap_url[1],_soap_url[2], t_text);
+
+       state := '00000';
+       exec (st, state, msg, vector (), 1000, meta, _out_str);
+
+       if (state = '00000')
+	 {
+	    _out_str := _out_str[0];
+	    _out_str := _out_str[0];
+	    _in := _out_str[1];
+	    _out := _out_str[2];
+	    _err := _out_str[3];
+	    if (_err <> 0) goto next;
+	    _out_str := _out_str[0];
+
+	   if (_caller= 'InteropTestDocLitParameters')
+              _out_str := _out_str[1];
+	 }
+       else
+	 {
+           _err2 := 'Yes';
+           _out_str := 'Error (see error message)';
+	   _in := msg;
+	 }
+    }
+next:
+?>
+<HTML>
+  <HEAD>
+    <TITLE><?=_caller?> Test</TITLE>
+    <META http-equiv=Content-Type content="text/html; charset=windows-1252">
+    <META name="AUTHOR" content="OpenLink Software">
+    <META name="DESCRIPTION" content="<?=_caller?> Test">
+  </HEAD>
+<BODY>
+<TABLE WIDTH="100%" CLASS="ctrlmain" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+  <TR CLASS="ctrlmain"><TD ALIGN="left">
+  <FORM method="POST" action="echoStringArray.vsp">
+  <P><H2><B>echoStringArray</B> from <?=_caller?></H2>
+  <P>This method has a string array return type and one string array [in] parameter.
+<?vsp
+    declare idx, len integer;
+    declare ch varchar;
+
+    idx := 0;
+    len := length (urls);
+
+    while (idx < len)
+      {
+        ch  := '';
+	if (idx = 0) ch := 'checked';
+?>
+        <P><INPUT TYPE="radio" name="soap_svc_url" value="<?=urls[idx][0]?>" <?=ch?>><?=urls[idx][1]?>
+<?vsp
+         idx := idx + 1;
+      }
+?>
+    <P><INPUT TYPE="radio" name="soap_svc_url" value="">Other
+    <INPUT size=50 value="" name="other_uri">
+	<P>Type in a sentence below to be parsed into tokens and transmitted as a string array.
+	<P><TEXTAREA name=inputStrings rows=3 cols=60>The quick brown fox jumped over the lazy dog.</TEXTAREA>
+    <P><INPUT type="submit" value="Call">
+       <INPUT type="hidden" name="caller" value="<?=_caller?>">
+       <INPUT type="hidden" name="opl_home" value="<?=opl_home?>">
+       <INPUT type="hidden" name="step" value="1">
+
+<?vsp  if (_err <> 0)
+         {
+?>
+    	   <H2>Error:</H2>
+	   <b><?=_err[2]?></b>
+<?vsp
+	   goto buff;
+	 }
+?>
+
+<?vsp  if (_out_str <> '')
+         {
+	   if (_err2 = 'Yes')
+	     {
+?>
+    <P>Return value:
+    <P><?=_out_str?>
+<?vsp
+	     }
+	   else
+	     {
+?>
+    <P><H2>Return value:</H2>
+<?vsp
+
+   len := length (_out_str);
+   if (_caller= 'InteropTestRpcEncoded')
+     len := length (_out_str[1]);
+
+   idx := 1;
+
+             while (idx < len)
+               {
+	           if (_caller= 'InteropTestRpcEncoded')
+		     {
+      		       http (sprintf ('<P><b>%s</b> = %s', _out_str[1][idx][0][0], _out_str[1][idx][1]));
+		     }
+		   else
+		     {
+      		         http (sprintf ('<P><b>%s</b> = %s', _out_str[idx][0][0], _out_str[idx][1]));
+		     }
+	           idx := idx + 1;
+		}
+	     }
+	 }
+buff:
+       if (_in is not NULL)
+         {
+?>
+    <P>Request message buffer:
+    <P><TEXTAREA name=buffer_request rows=15 cols=80><?=_in?></TEXTAREA>
+<?vsp    }
+       if (_out is not NULL)
+         {
+?>
+    <P>Response message buffer:
+    <P><TEXTAREA name=buffer_response rows=15 cols=80><?=_out?></TEXTAREA></P>
+<?vsp    }   ?>
+  </FORM>
+</TABLE>
+</BODY>
+</HTML>

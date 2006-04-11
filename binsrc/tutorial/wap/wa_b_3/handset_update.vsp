@@ -1,0 +1,114 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+   declare _user_name, _login_ok varchar;
+  declare _sid varchar;
+  declare _err long varchar;
+  declare l_display_cols, l_display_rows, l_msg_size_to_read, l_num_msg_to_list integer;
+ declare l_phone_model varchar;
+  declare _random1 integer;
+
+  _random1 := rnd(9999999);
+
+  _sid := '';
+  _sid := get_keyword('SESS', params);
+  l_display_cols := atoi(get_keyword('COLS', params));
+  l_display_rows := atoi(get_keyword('ROWS', params));
+  l_msg_size_to_read := atoi(get_keyword('MSGSIZE', params));
+  l_num_msg_to_list := atoi(get_keyword('MSGLIST', params));
+  l_phone_model := get_keyword('MODEL', params);
+
+   _login_ok := 'NO';
+
+ if (_sid   <> '')
+ {
+  for select _username, _userpass from wapsession where sid = _sid  do
+  {
+   _login_ok := 'YES';
+   _user_name := _username;
+   update wapsession set _time_last_active = datestring ( now() ) where  sid = _sid;
+   update wapsetting set _display_cols = l_display_cols, _display_rows = l_display_rows, _msg_size_to_read = l_msg_size_to_read, _num_msg_to_list = l_num_msg_to_list, _phone_model = l_phone_model where _username = _user_name;
+  }
+  }else{
+    _login_ok := 'NO';
+  }
+?>
+
+<?vsp
+if (_login_ok = 'YES')
+{  http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="page1" title="Handset Details Updated">
+   <onevent type="onenterforward">
+          <refresh>
+   <setvar name="cols1" value=""/>
+   <setvar name="rows1" value=""/>
+   <setvar name="msgsize1" value=""/>
+   <setvar name="msglist1" value=""/>
+   <setvar name="model1" value=""/>
+          </refresh>
+   </onevent>
+     <do type="accept" label="Mail Menu">
+    <go href="checkmail.vsp?SESS=<?=_sid?>&amp;LIST=1&amp;FOLDER=Inbox"/>
+   </do>
+   <do type="options" label="Options">
+    <go href="#opt"/>
+   </do>
+   <p>    Handset Details Updated</p>
+
+  <p><a href="checkmail.vsp?SESS=<?=_sid?>&amp;LIST=1&amp;FOLDER=Inbox" title="Mail Menu">Mail Menu</a></p>
+
+  </card>
+
+  <card id="opt" title="Options">
+     <do type="options" label="Exit">
+      <go href="#page1"/>
+     </do>
+  <p><a href="setting.vsp?SESS=<?=_sid?>&amp;REF=<?vsp http(sprintf('%d',_random1));?>">Setting Menu</a></p>
+       <p mode="nowrap"><a href="checkmail.vsp?SESS=$(sid:e)&amp;REF=<?vsp http(sprintf('%d',_random1));?>&amp;OPEN=Inbox">Mail Menu</a></p>
+    <p><a href="login.vsp?SESS=$(sid:e)&amp;REF=<?vsp http(sprintf('%d',_random1));?>">Top Menu</a></p>
+  <p><a href="logout.vsp?SESS=$(sid:e)">Logout</a></p>
+  <p><a href="#page1">Exit</a></p>
+  </card>
+</wml>
+<?vsp
+}else{ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="P1" title="Wrong" >
+    <p mode="nowrap">
+   Wrong Login
+    </p>
+  </card>
+</wml>
+<?vsp
+}
+?>
+

@@ -1,0 +1,76 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  -- disconnect the client immediately
+  http_flush ();
+
+  declare reqs, ct any;
+  reqs := http_pending_req ();
+  ct := 0;
+  foreach (any x in reqs) do
+    {
+      if (x[1] = http_path ())
+        ct := ct + 1;
+    }
+
+  -- no more than one thread must run the time wait queue
+  if (ct > 1)
+    {
+      return;
+    }
+
+  declare inst, node, scp, scp_inst, ts, conn, unt, cnt, scp_id any;
+  declare cr cursor for select tw_inst, tw_node, tw_until, tw_script, tw_scope_inst, tw_script_id
+	from BPEL..time_wait where tw_sec > 0;
+  whenever not found goto nf;
+again:
+  cnt := 0;
+  commit work;
+  ts := now ();
+  --dbg_obj_print ('start pooling', ts);
+  open cr (exclusive, prefetch 1);
+  while (1)
+    {
+      fetch cr into inst, node, unt, scp, scp_inst, scp_id;
+      if (unt < ts)
+	{
+	  --dbg_obj_print ('expired', inst, node);
+	  update BPEL..time_wait set tw_sec = 0 where current of cr;
+	  conn := ses_connect ('localhost:' || server_http_port ());
+	  ses_write (' \r\n\r\n', conn);
+	  http_on_message (conn, 'BPEL.BPEL.ALARM_CALLBACK', vector (inst, node, scp, scp_inst, scp_id));
+	  commit work;
+	  close cr;
+	  goto again;
+	}
+      cnt := cnt + 1;
+   }
+nf:
+  close cr;
+  -- if no in the queue leave the thread
+  if (cnt = 0)
+    return;
+  -- wait a second (resolution is 1 sec)
+  delay (1);
+  goto again;
+?>

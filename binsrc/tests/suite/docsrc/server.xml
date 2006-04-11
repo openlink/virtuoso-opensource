@@ -1,0 +1,897 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<chapter label="IV" id="chapter4">
+<title>Server Administration &amp; Configuration</title>
+<abstract>
+This chapter describes how to administer the Virtuoso Universe virtual database.
+</abstract>
+
+<!-- ======================================== -->
+<sect1 id="COMMANDLINE">
+<title>Command Line Options</title>
+<sect2 id="SERVER">
+<title>Virtuoso Server</title>
+<para>
+This section presents the command line switches of the Virtuoso
+server executable.  Depending on the model and virtual database middleware the
+server will have different names, all starting with virtuoso-.  All these however
+have the same options.
+</para>
+
+<cmdsynopsis>
+<!-- Usage:
+  virtuoso-t [-fcnCbD] [+foreground] [+configfile arg] [+no-checkpoint]
+             [+checkpoint-only] [+backup-dump] [+crash-dump]
+  +foreground        run in the foreground
+  +configfile        use alternate configuration file
+  +no-checkpoint     do not checkpoint on startup
+  +checkpoint-only   exit as soon as checkpoint on startup is complete
+  +backup-dump       dump database into the transaction log, then exit
+  +crash-dump        dump inconsistent database into the transaction log, then exit
+-->
+<command  os="UNIX">virtuoso-t</command>
+<command  os="WINDOWS">virtuoso-t.exe</command>
+<arg><opt>-fcnCbD</opt></arg>
+<arg><opt>+foreground         run in the foreground</opt></arg>
+<arg><opt>+configfile         use alternate configuration file</opt></arg>
+<arg><opt>+no-checkpoint      do not checkpoint on startup</opt></arg>
+<arg><opt>+checkpoint-only    exit as soon as checkpoint on startup is complete</opt></arg>
+<arg><opt>+backup-dump   dump database into the transaction log, then exit</opt></arg>
+<arg><opt>+crash-dump     dump inconsistent database into the transaction log, then exit</opt></arg>
+<arg os="NT">+service create   create a new NT service entry.<opt></opt></arg>
+</cmdsynopsis>
+
+<para>
+The +crash-dump option will make use of the segmented log defined in virtuoso.ini
+for storing the recovery log. See Crash Recovery and virtuoso.ini.  The other options will not use the segmented log.
+</para>
+<para>
+On Unix platforms the executable will detach itself from the console and run in the background
+as a daemon unless the +foreground switch is specified.
+</para>
+<para os="NT">
+The server will normally be installed as an NT service and will be
+started from the Control Panel or automatically at system startup.
+</para>
+<!--
+   ****
+      what about the extra NT options for creating a new service and playing with instances??
+   ****
+-->
+</sect2>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="VIRTINI">
+<title>Virtuoso Configuration File</title>
+
+<para>Following is the text of the sample virtuoso.ini file that comes with the distribution.
+</para>
+
+<programlisting>
+;
+;  virtuoso.ini
+;
+;  $Id$
+;
+;  Configuration file for the OpenLink Virtuoso VDBMS Server
+;
+;
+;  Database setup
+;
+[Database]
+DatabaseFile		= virtuoso.db
+TransactionFile		= virtuoso.trx
+ErrorLogFile		= virtuoso.log
+ErrorLogLevel   	= 7
+FileExtend      	= 200
+Striping        	= 0
+; LogSegments		= 1
+; crashdump_start_dp	= 0
+; crashdump_end_dp	= 0
+; Log1			= log1.trx
+
+;
+;  Server parameters
+;
+[Parameters]
+ServerPort         	= 1111
+ServerThreads      	= 10
+CheckpointInterval 	= 60
+NumberOfBuffers    	= 2000
+MaxDirtyBuffers    	= 1200
+MaxCheckpointRemap 	= 2000
+UnremapQuota       	= 0
+AtomicDive         	= 1
+PrefixResultNames	= 0
+CaseMode           	= 1
+DisableMtWrite		= 0
+;MinAutoCheckpointSize	= 4000000
+AutoCheckpointLogSize	= 40000000
+CheckpointAuditTrail	= 1
+
+[Client]
+SQL_QUERY_TIMEOUT 	= 0
+SQL_TXN_TIMEOUT		= 0
+SQL_ROWSET_SIZE		= 100
+SQL_PREFETCH_BYTES	= 16000
+
+
+[AutoRepair]
+BadParentLinks		= 0
+BadDTP			= 0
+
+;
+;  Striping setup
+;
+;  These parameters have only effect when Striping is set to 1 in the
+;  [Database] section, in which case the DatabaseFile parameter is ignored.
+;
+;  With striping, the database is spawned accross multiple segments
+;  where each segment can have multiple stripes.
+;
+;  Format of the lines below:
+;    Segment&lt;number&gt; = &lt;size&gt;, &lt;stripe file name&gt; [, &lt;stripe file name&gt; .. ]
+;
+;  &lt;number&gt; must be ordered from 1 up.
+;
+;  The &lt;size&gt; is the total size of the segment which is equally divided
+;  accross all stripes spawning the segment. Its specification can be in
+;  gigabytes (g), megabytes (m), kilobytes (k) or in database blocks
+;  (b, the default)
+;
+;  Note that the segment size must be a multiple of the database page size
+;  which is currently 4k. Also, the segment size must be divisible by the
+;  number of stripe files spawning the segment.
+;
+;  The example below creates a 200 meg database striped on two segments
+;  with two stripes of 50 meg and one of 100 meg.
+;
+;  You can always add more segments to the configuration, but once
+;  added, do not change the setup.
+;
+[Striping]
+Segment1	= 100M, db-seg1-1.db q1, db-seg1-2.db q2
+Segment2	= 100M, db-seg2-1.db q1
+</programlisting>
+
+<para>The virtuoso.ini file is read from the directory that is current at
+server startup.  This file contains an entry for all user settable options in the server.
+It is divided into the following sections:
+</para>
+
+<itemizedlist mark="bullet">
+<listitem><para>[Database]	Location of database files</para></listitem>
+<listitem><para>[Parameters]	Server tuning, options</para></listitem>
+<listitem><para>[Client]	Client default settings</para></listitem>
+<listitem><para>[AutoRepair]	Corrupted database recovery</para></listitem>
+<listitem><para>[Striping]	Multi-file / multi-disk databases</para></listitem>
+</itemizedlist>
+
+<para>Below is are descriptions for each parameter</para>
+
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara><title>[Database]</title>
+<itemizedlist mark="dash">
+<listitem>
+<formalpara><title>DatabaseFile=virtuoso.db</title>
+<para>For a single file database, this is the relative path of the file
+in the format appropriate to the platform. The path is resolved relative
+to the directory that is current at server startup. All other paths are interpreted similarly.
+</para>
+</formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>TransactionFile=virtuoso.trx</title>
+<para>This is the transaction log file.  If this parameter is omitted, which should never
+be the case in practice, the database will run without log, meaning that it cannot
+recover transactions committed since last checkpoint if it should abnormally terminate.
+There is always a single log file for one server. The file grows
+as transactions get committed.
+</para>
+</formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>ErrorLogFile=virtuoso.log</title>
+<para>This file logs database error messages, e.g. &apos;out of disk&apos;.  By viewing this the
+dba can trace problems and see at which times the server has started,  checkpoints have been made etc.
+</para>
+</formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>ErrorLogLevel=7</title>
+<para>This controls what events get logged into the database error log. This should always be 7.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>FileExtend=200M</title></formalpara>
+<formalpara><title>Striping=0</title>
+<para>A non-zero value will enable the settings in [Striping] to take effect. If this
+is the case the DatabaseFile parameter is ignored and the files in [striping] are used.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>LogSegments</title>
+<para>If this is non-0 log segmentation is enabled. This
+is only used for crash dumps where several files may be needed to
+accommodate the recovery logs. If non-0, this will be followed by
+entries of the form </para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>Log1=/tmp/log1.trx100M</title>
+<para>The number in Log&lt;n&gt; is the ordinal number of the log, starting at 1. The entry
+consists of the file name and allocated size.  The log is filled up to the first
+transaction that exceeds the size. The log therefore will be longer than the allocated size by some amount.  If blobs are involved this can be substantially longer. It is therefore indicated to allocate recovery log files so that there is some spare space above the entry for logging blobs that may be referenced from the logged page.
+</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>crashdump_start_dp</title></formalpara>
+<formalpara><title>crashdump_end_dp</title>
+<para>These parameters allow making a crash dump in several passes. If these are non
+specified the crash dump will be over the entire database. If the crash dump
+runs out of configured log space the error message will indicate the first page not logged.
+This can be used for crashdump_start_dp in the next crashdump run.</para></formalpara>
+</listitem>
+</itemizedlist>
+</formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>[Parameters]</title>
+<itemizedlist mark="dash">
+<listitem>
+<formalpara><title>ServerPort=1111</title>
+<para>This is the IP port number where the server will start listening.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>ServerThreads=10</title>
+<para>This is the maximum number of threads used in the serber. This should be
+close to the number of concurrent connections if heave usage is expected.
+Different systems have different limitations on threads per process but a value of
+100 should work in most places.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>CheckpointInterval=60</title>
+<para>This is the interval in minutes at which Virtuoso will
+make a database checkpoint.  The automatic checkpoint will not be made if
+there is less than MinAutoCheckpointSize bytes in the current transaction log.
+A checkpoint interval of 0 means that checkpoints are not made automatically.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>NumberOfBuffers=2000</title>
+<para>This controls the amount of RAM used by Virtuoso to cache database files. This has a critical
+performance impact and thus the value should be fairly high for large databases.  Exceeding
+physical memory in this setting will have a significant negative impact.  For a database-only
+server about 65% of RAM could be configured for database buffers.
+</para>
+<para>Each buffer caches one 4K page of data and occupies approximately 4700 bytes of memory.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>MaxDirtyBuffers=1200</title>
+<para>This controls at what point the database will start writing dirty buffers to disk.
+A value of 60% of all buffers is fine for an update intensive application. Smaller values
+are better for read-intensive applications.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>MaxCheckpointRemap=2000</title></formalpara>
+<formalpara><title>UnremapQuota=0</title>
+<para>See the discussion on checkpoint remapping in the administration and TPC C documents.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>AtomicDive=1</title>
+<para>Always equal to 1.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>PrefixResultNames=0</title>
+<para>This should mever be on.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>CaseMode=1</title>
+<para>This controls the case sensitivity of the Virtuoso SQL interpreter. The following values
+are supported:</para>
+<itemizedlist spacing="compact">
+<listitem>
+<para>0 - SQL is case sensitive and identifiers are stored in the case they are intered in.  This is similar to the Progress or Informix default.
+</para>
+</listitem>
+<listitem>
+<para>1 - SQL is case sensitive and Unquoted identifiers are converted yo upper case when read.
+To use non-upper case identifiers, the identifiers must be quoted with double quotes (&quot;).
+This is similar to Oracle.
+</para>
+</listitem>
+<listitem>
+<para>2 - SQL is case-insensitive and identifiers are stored in the case where first seen.  Unlike the
+  situation in other modes, twi identifiers differing only in case cannot exist.
+  This is similar to the MS SQL Server 7 default behavior.
+</para>
+</listitem>
+</itemizedlist>
+<note><title>Note:</title>
+<para>Once a database is created in one case mode the case mode should not be
+changed as that may change the interpretation of stored procedures etc.</para></note>
+</formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>DisableMtWrite=0</title>
+<para>A non-zero value will disable multithreaded background write
+of dirty buffers.  This should normally be 0.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>;MinAutoCheckpointSize=4000000</title>
+<para>See CheckpointInterval.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>AutoCheckpointLogSize</title>
+<para>This is the size of transaction log in bytes after which an automatic
+checkpoint is initiated. if this is non-0, whenever the transaction log size
+exceeds this size an automatic checkpoint is started. This will result in approximately
+like sized logs to be generated.  This is useful with the CheckpontAuditTrail option
+for generating a trail of even sized consecutive logs.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>CheckpointAuditTrail=1</title>
+<para>If this is non-zero each checkpoint will start a new log and leave the
+old transaction log untouched. A 0 value indicates that the transaction log may
+be reused once the transactions in it have been written in a checkpoint.
+</para><para>
+If it is important to keep an audit trail of all transactions in the database&apos;s life time then this option
+should be true.  A new log file will be generated in the old log file&apos;s directory with a name
+ending with the date and time of the new log file&apos;s creation.  Old log files can be manually
+copied into backup storage or deleted.  Only one log file is active at one time. The newest
+log file may at any time be written to but that is the only log file Virtuoso has open at each time. Thus reading
+any logs except the newest is safe.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>AllowOSCalls=0</title>
+<para>If non-0 the system SQL function is enabled. This will allow a dba group user
+to run shell commands through SQL. This is a security risk and
+hence this setting should normally be 0.</para></formalpara>
+</listitem>
+</itemizedlist>
+</formalpara>
+</listitem>
+
+
+<listitem>
+<formalpara><title>[Client]</title>
+<itemizedlist mark="dash">
+<listitem>
+<formalpara><title>SQL_QUERY_TIMEOUT=0</title>
+<para>This sets the initial value of the SQL_QUERY_TIMEOUT statement option
+in connected clients. The ODBC standard value is 0, meaning indefinite, which is
+impractical in many applications.  This allows overriding the default. The timeout
+is expressed in seconds.  If the client application sets this option in a statement, this default
+is overridden for the statement in question.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>SQL_TXN_TIMEOUT=0</title>
+<para>This is an ODBC extension option allowing setting a maximum duration
+for a transaction.  0 means that there is no maximum. </para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>SQL_ROWSET_SIZE=100</title>
+<para>For a forward only cursor, this option sets the number of rows prefetched at the
+execute and on subsequent fetch requests. A high value will speed up long selects but
+will be a disadvantage if only the first few rows are fetched from a cursor that has a large result set.</para>
+<para>This should not be confused with the SQL_ROWSET_SIZE setting for scrollable
+cursors.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>SQL_PREFETCH_BYTES=16000</title>
+<para>This option specifies the maximum number of bytes the server will send as prefetched rows on
+a forward only cursor.  If long rows are being prefetched this will cut off the prefetch after this many
+bytes even if the number of rows is less than SQL_ROWSET_SIZE.</para></formalpara>
+</listitem>
+</itemizedlist>
+</formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>[AutoRepair]</title>
+<itemizedlist mark="dash">
+<listitem>
+<formalpara><title>BadParentLinks=0</title>
+<para>As a result of an internal error in the database the physical integrity of references may
+be lost.  Enabling this option causes the database to automatically repair such faults without
+having to go through a crash dump plus restore.  A value of 0 should be normally used.</para></formalpara>
+</listitem>
+
+<listitem>
+<formalpara><title>BadDTP=0</title>
+<para>This option should never be enabled unless instructed by support.</para></formalpara>
+</listitem>
+
+</itemizedlist>
+</formalpara>
+</listitem>
+</itemizedlist>
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="BACKUP_AUDIT">
+<title>Backup &amp; Log Audit Trial</title>
+
+<sect2 id="backups">
+<title>Backups</title>
+<para>Administrating a database involves taking backups and having a readiness
+to recover from backups and subsequent transaction logs.
+</para>
+<para>Backups can be taken in two principal ways:</para>
+<para>1. using the backup SQL statement or the selective backup SQL functions</para>
+<para>2. copying the database files.</para>
+<para>
+The database file(s) can be copied while the database is running as long as there is no checkpoint
+made while the copy is in progress. Restarting the database after restoring the backed up files will show the state in effect at the last checkpoint preceding the backup.
+</para><para>
+Backing up a large database can several hours if not days just due
+to to the speed of tapes or local area networks.  The backup must in all cases be done without intervening checkpoint.
+</para><para>
+This is why frequent full backups are not desirable.  To ensure
+the possibility of full recovery one must have the complete audit trail of transactions since the last
+full backup.
+</para><para>
+Virtuoso supports this by having the CheckpointAuditTrail setting
+in the virtuoso.ini file.  This setting being non-0 will cause the database to begin a new
+log after each checkpoint. Thus one automatically gets a full, unbroken sequence of transaction logs for
+the entire age of the database.  These logs are named as specified in virtuoso.ini and are suffixed with their
+creation time.  Transaction logs older than the log that was current at the time of the last full backup are superfluous for
+recovery, since their transactions were checkpointed before the backup started.  Note that the
+transaction of the log current at the time of the backup are NOT in the backed up state.
+</para><para>
+We advise having the CheckpointAuditTrail enabled in any production environment.
+</para><para>
+Note that it is good practice to have at least two generations of full  since the last backup may contain errors that were not known at the time of its making.
+</para><para>
+The recommended way of backing up large databases is first to turn off any automatic checkpoints by the _backup_start function or otherwise, then taking a compressed copy of the files to local disk and then re-enabling
+checkpoints wit backup_close.
+</para><para>
+For example the following isql session
+</para>
+<programlisting>
+SQL&gt; backup_start (&apos;/dev/null&apos;);
+--- copy the files
+SQL&gt; backup_close ();
+</programlisting>
+<para>will disable checkpoints for the period between the commands so that it is safe
+to make a copy.</para>
+</sect2>
+
+<sect2 id="onlinebackups">
+<title>On-Line Backup</title>
+<para>
+It is possible to take an on-line backup of a running Virtuoso database
+at any time.  The backup procedure copies the schema and content of a
+database into a log file. Starting the database server with an empty
+database and a log file resulting from such a backup will restore the
+database status as it was when the backup command was issued.
+</para>
+<para>
+To make a backup, use the interactive SQL utility, isql:
+</para>
+<programlisting>
+SQL&gt; set timeout 3600;
+SQL backup (&apos;/disk/backup.log&apos;);
+</programlisting>
+<para>
+It is  useful to specify a long timeout, in this case
+one hour, because the transaction timing out would terminate the backup
+prematurely. The backup function itself takes one argument, the name
+of the backup file. There must be enough  space on the backup volume to
+accommodate the entire backup.
+</para><para>
+If the backup process is interrupted due to timeout, running out of disk
+or some other reason, the statement will terminate with the appropriate
+error message and SQL state.
+</para><para>
+The database may be updated while a backup is in progress. Any updates
+following the start of the backup will not appear in the backup
+file. Thus, to get a backup of a database at  some exact point in time
+one must:
+</para>
+<simplelist>
+<member>Make a checkpoint</member>
+<member>Start a backup</member>
+<member>Make a new checkpoint, specifying a new log.</member>
+</simplelist>
+<para>
+After this, the backup file and the old log will jointly contain the
+complete state of the database at the time of the second checkpoint.
+</para><para>
+A backup made with the backup procedure is almost always substantially
+smaller than the original database since it only contains the rows
+themselves, without any index structures. It is also possible to make
+a copy of all the database files for backup purposes, as described below.
+</para>
+</sect2>
+
+<sect2 id="filebackups">
+<title>File Backup</title>
+<para>
+A clean backup can be taken at any time from a running database by
+simply copying the database file(s). When restarted, the database will
+be at the state of the last checkpoint. Transactions committed between
+the checkpoint and taking the backup will not be seen in the database
+when restarted.
+</para><para>
+A database file cannot be copied while a checkpoint is being made. Copying
+the file at all other times is safe.
+</para><para>
+To get an up to the minute copy of a running database one can copy
+the database file and the associated log, i.e. the file specified in
+log_file: in the database&apos;s configuration file.  When started, the log
+will roll forward and restore the database to the state following the
+last logged transaction.
+</para>
+</sect2>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="CRASHRECOVERY">
+<title>Crash Recovery</title>
+
+<sect2 id="crashrecovery">
+<title>Rebuilding a Database</title>
+<para>
+The process of rebuilding a database consists of dumping its contents
+into one large log file and doing a roll forward from an empty database
+with that log.
+</para>
+<para>
+This is substantially faster and produces a far better result than the
+&lt;TT/COMPACT/ statement.
+</para>
+<para>
+To rebuild a database:
+</para>
+<itemizedlist mark="bullet" SPACING="compact">
+<listitem><para>Shut down the running server, making a checkpoint. This is done with the SHUTDOWN command from interactive SQL.</para></listitem>
+<listitem><para>Make sure there is a log file specified in wi.cfg.</para></listitem>
+<listitem><para>Start the server process M2 with the -d command line option: e.g. % ./M2 -d</para></listitem>
+<listitem><para>This will write the contents of the database into the log file specified in wi.cfg and exit when complete.</para></listitem>
+<listitem><para>Take a backup of the old database file.</para></listitem>
+<listitem><para>Change the database_file setting in wi.cfg to a non-existing database file or delete the old database file.</para></listitem>
+<listitem><para>Start the server.</para></listitem>
+<listitem><para>The server will build a new database file from the log and once done it will start listening at the specified port.</para></listitem>
+<listitem><para>You may then connect to the database with interactive SQL and make a checkpoint. This will write freeze the state following roll forward and delete the log used for the rebuild.</para></listitem>
+<listitem><para>The database is now ready for normal use.</para></listitem>
+</itemizedlist>
+<IMPORTANT>
+<para>It is recommended you take a backup prior to this procedure.
+</para>
+</IMPORTANT>
+</sect2>
+
+<sect2 id="diagnosingrepairing">
+<title>Diagnosing and Recovering a Damaged Database</title>
+<para>
+It is possible to recover data from a damaged Virtuoso database by
+a procedure similar to rebuilding a database as described above. A
+database file may be corrupt if the database repeatedly crashes during
+a specific operation.
+</para><para>
+To determine whether a database is corrupted, you may use the `backup to a null file
+command in isql:
+</para>
+<programlisting>
+SQL&gt; backup &apos;/dev/null&apos;;
+</programlisting>
+
+<para>This command will read through the database checking
+its integrity. Once complete the command will produce a file named dump
+in the database&apos;s working directory. This file contains statistics on
+the database tree. If the server crashes before writing this file then
+the database is indeed corrupted and needs to be recovered. No other
+activity should take place while the  command is executing. The isql
+</para>
+<para>
+To recover the database, follow the procedure for rebuilding it, except
+use the -D &apos;capital D&apos; switch instead of -d. This will construct a
+log file which you can replay top make a new database. The database
+will contain the transactions that were committed as of the last
+successful checkpoint. If the database altogether fails to open it
+may be the case that the schema is damaged. In such a case, check with
+the manufacturer. Also if the -D recovery crashes before completing you
+may check with the manufacturer for newer recovery software.
+</para>
+<para>
+It is possible that the database to be recovered be too large
+to fit in a single log file.  The crash dump feature herefore allows segmenting the
+recovery log into a number of files. See the virtuoso.ini configuration file documentation
+for details.  It is possible to make a crash dump in several pieces if there is not enough
+total disk space to hold the dump on the system where the database is running.
+</para>
+<para>
+If the recovery log is split over several files it is practival to
+delete the old database file(s) and log and start the server. This will create
+the system tables into an empty database.  One can then connect to the server
+with isql and use the replay command to run the logs. The first
+of the recovery logs must be replayed first since this is the one which contains the schema
+but otherwise the order is not important, as long as all are replayed.
+</para>
+<para>
+e.g. assuming the virtuoso.ini fragment:
+</para>
+<programlisting>
+Log1	= rec-1.log 100M
+Log2  = rec-2.log 100M
+</programlisting>
+<para>
+we would make the dump with
+</para>
+<programlisting>
+virtuoso +crashdump
+</programlisting>
+<para>
+and once the server were started on an empty database
+replay the logs with the isql commands:
+</para>
+<programlisting>
+SQL&gt; replay (&apos;rec-1.log&apos;);
+Done.
+SQL&gt; replay (&apos;rec-2.log&apos;);
+Done.
+SQL&gt; checkpoint;
+</programlisting>
+<para>
+Note that if the recovery is interrupted it can be restarted at the last checkpoint
+made during the recovery.  Note that a mid recovery checkpoint may take a very long time, e.g.
+1 hour  for a 10GB database,,since it is possible that the delta since the previous recovery checkpoint comprise almost
+all the database.
+</para>
+
+<tip>
+<title>See Also:</title>
+<para>virtuoso.ini</para>
+<para>backup statement</para>
+<para>virtuoso Command Line Options</para>
+</tip>
+
+</sect2>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="DBSTAT">
+<title>Server Status Report</title>
+<para>The database status report is divided into 6 sections:</para>
+<itemizedlist mark="bullet">
+<listitem><para>Server</para></listitem>
+<listitem><para>Database</para></listitem>
+<listitem><para>Locks</para></listitem>
+<listitem><para>Clients</para></listitem>
+<listitem><para>Replication</para></listitem>
+<listitem><para>Index Usage</para></listitem>
+</itemizedlist>
+
+<sect2 id="Server">
+<title>Server</title>
+<para>
+This section shows how many connections are open and how many threads
+the process has and how many are running at the present time. This also
+displays the number of requests that have been received but are not yet
+running on any thread.
+</para>
+</sect2>
+
+<sect2 id="Database"><title>Database</title>
+
+<screen xml:space='preserve' WIDTH="80">
+Database Status:
+File size 213811200, 52200 pages, 17547 free.
+8000 buffers, 8000 used, 3539 dirty 10 wired down.
+Disk Usage: 3278403 reads avg 20 msec, 67% read last 67 s, 233189 writes.
+Gate: 113028 2nd in reads, 3 gate write waits, 92014833 in while read 0 busy scrap.
+
+Index space Committed since checkpoint.: 3498 changed, 46 new pages.
+Checkpoint Remap 0 pages, 0 mapped back. 582 s atomic time.
+</screen>
+
+<para>
+The status consists of the following items:
+</para>
+
+<formalpara>
+<title>File size:</title>
+<para>The database file size in bytes or 0 if the database consists
+of statically allocated files. The total number of pages follows, then
+the number of free pages. The number of buffers shown the total count
+of 4K file cache buffers, followed by the number of used buffers and
+the number of buffers that are dirty at the time. The wired down count
+is normally zero but can be transiently other if pages are wired down
+for processing by threads in the server.
+</para>
+</formalpara>
+<formalpara>
+<title>Disk Usage:</title>
+<para>Shows the cumulative total number of reads and writes
+and the average length of time spent inside the read system call for
+the database files.</para>
+<para>
+The percentage is the percentage of the real time spent inside read
+between this status report and the previous status report. This may exceed
+100% if several reads are taking place concurrently on different stripes
+in a multi-file database.
+</para></formalpara>
+<formalpara>
+<title>The Gate:</title>
+<para>Lists concurrent events. The 2nd in read is the count of concurrent requests for the same page, the
+gate write waits is the count of times a modify operation had to wait for
+exclusive access to a page being read by another thread, the in while read
+is the count of file cache hits that have taken place while a read system
+call was in progress on another thread.
+</para>
+</formalpara>
+<formalpara>
+<title>Committed Since Checkpoint:</title>
+<para>The count of changed and new pages since the last checkpoint.
+</para></formalpara>
+<formalpara>
+<title>Checkpoint Remap:</title>
+<para>Shows the count of checkpoint pages mapped to
+a disk page different from their original page. The mapped back count
+is the count of those remapped pages that will return to their original
+location at the next checkpoint.
+</para></formalpara>
+
+<tip><title>See:</title><para>The Disk Configuration section for a discussion of checkpoint
+remapping.</para></tip>
+</sect2>
+
+<sect2 id="Locks"><title>Locks</title>
+<para>
+The lock section shows various locking statistics accumulated since the
+server was started. The deadlock count is divided into deadlocks caused
+by a situation where several transactions read a page and one wants to
+get write access and all other deadlock situations. The first is called
+2r1w deadlock in the report.
+</para>
+<para>
+All locks currently in effect are listed with the owners (a) and possibly
+waiting transactions. The transactions are named after their client. A
+log or replication replay transaction is here named &apos;INTERNAL&apos;.
+</para>
+</sect2>
+
+<sect2 id="Clients"><title>Clients</title>
+<para>
+Each connected client is listed with the number of bytes sent and received
+from the client. The transaction status is either PENDING for OK or
+BLOWN OFF or DELTA ROLLED BACK for a transaction killed by deadlock or
+timeout. The locks owned by the transaction are listed following the
+status. IE means exclusive and IS shared lock.
+</para>
+</sect2>
+
+<sect2 id="Replication"><title>Replication</title>
+<para>
+This section shows the server in question and a list of replication
+accounts wither provided or received by this server. Accounts where
+the server name (left column) is the same as the server name are those
+provided by this.
+</para><para>
+The columns are server name, account name, last transaction number and
+status. The status is OFF for a local account or a replicated account
+where the remote is not available. It is SYNCING if a resync is in
+progress, IN SYNC if the account is up to date or REMOTE DISCONNECTED if
+there was a connection to a remote party which subsequently disconnected.
+</para>
+</sect2>
+
+<sect2 id="indexusage"><title>Index Usage</title>
+<para>
+This part of the report summarizes the database&apos;s access statistics.
+The output is a table with a row for each index in the database. Each
+row is composed of the following columns:</para>
+
+<screen width="80">
+Table		The name of the table
+Index		The name of the index. Same as the table for primary key.
+Touches		The number of touches since startup. Each time the database
+		engine looks at an entry of the index is counted as a touch.
+		Not all touched entries are selected. For instance if the
+		engine scans a table with non-indexed selection criteria it
+		will touch each row but might select none.
+Reads		The number of disk reads caused by reading this index.
+%Miss		The percentage of touches that required a read. This can be
+		over 100% since getting one entry may required more than one
+		read if the top levels of the index are not in memory.
+Locks		The number of times a lock is set on an entry of the index.
+Waits		The number of times the engine has to wait for another
+		transaction to finish in order to set a lock on this index.
+%W		The percentage of waits of all locks set.
+</screen>
+
+<para>
+In interactive SQL
+</para>
+
+<screen>
+SQL&gt; STATUS;
+</screen>
+<para>Will print out the report. See also the SQLStatus API function.</para>
+</sect2>
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="OSI">
+<title>Operating System Interface from SQL</title>
+
+<para>
+system SQL function
+</para><para>
+file_to_string SQL function
+</para><para>
+string_to_file SQL function
+</para><para>
+system (in command varchar)
+</para><para>
+file_to_string (in path varchar) returns varchar
+</para><para>
+string_to_file (in path varchar, in string varchar, in mode integer);
+</para><para>
+The system function will run a shell command from SQL. The shell command is executed
+in the server&apos;s current directory as the user that owns the database server process.
+</para><para>
+This function is available to dba users only. Since this is a security
+risk this feature is normally disabled. It can be enabled by setting the
+AllowOSCalls setting in virtuoso.ini to 1.
+</para><para>
+file_to_string returns the contents of a file as a varchar value. The file&apos;s length is
+limited to 16 MB. The path is relative to the working directory of the database  server.
+</para><para>
+string_to_file writes a varchar value to a file. The path is relative to the server&apos;s
+working directory. The mode is an integer value interpreted as a position. A mode of
+0 writes the content starting at offset 0. A mode of -1 appends to the end of the file.
+The append option is probably the most useful since it allows maintaining
+an application level log of events detected in PL.
+</para>
+
+</sect1>
+
+</chapter>

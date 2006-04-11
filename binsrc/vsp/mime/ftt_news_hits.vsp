@@ -1,0 +1,231 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+--no_c_escapes-
+declare _u_id, _tt_id, _tth_d_id integer;
+declare err, _query, _comment, stat, _sid_id, _own varchar;
+-- This parameters is needed for WebDAV browser
+declare _current_uri, _show_browser, _trf_doc, _q_scope, _sty_to_ent, _disp_result varchar;
+declare _dav_result any;
+_show_browser := null;
+_dav_result := null;
+_current_uri := 'ftt_news_hits.vsp';
+_disp_result := 'yes';
+-- end DAV browser parameters
+
+stat := null;
+set isolation='uncommitted';
+_u_id := DB.DBA.adm_dav_check_auth (lines);
+if ( _u_id < 1)
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+	  'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+_sid_id := adm_get_sesid (params);
+_own := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _u_id), '');
+if (_show_browser is null) {
+_tt_id := atoi (get_keyword ('tt_id', params, '0'));
+_tth_d_id := atoi (get_keyword ('tth_d_id', params, '0'));
+if ('' <> get_keyword ('del', params, ''))
+  {
+    if (_tt_id > 0)
+      {
+	declare ix integer;
+	declare _val varchar;
+	if (_tth_d_id > 0)
+	  delete from DB.DBA.NEWS_MSG_NM_BODY_HIT where TTH_T_ID = _tt_id and TTH_D_ID = _tth_d_id;
+        ix := 0;
+	while (_val := adm_next_checkbox ('CB_', params, ix))
+	  {
+            _tth_d_id := atoi (_val);
+	    delete from DB.DBA.NEWS_MSG_NM_BODY_HIT where TTH_T_ID = _tt_id and TTH_D_ID = _tth_d_id;
+	  }
+      }
+    else
+      {
+        err := 'Query ID is not valid';
+	goto erret;
+      }
+  }
+
+if ('' <> get_keyword ('message', params, ''))
+  {
+    declare mm_b_id integer;
+    declare msg_body varchar;
+    mm_b_id := atoi (get_keyword ('message', params, '0'));
+    msg_body := coalesce ((select blob_to_string (NM_BODY) from DB.DBA.NEWS_MSG where NM_BODY_ID = mm_b_id), '*** Invalid document ID ***');
+    http_rewrite (0);
+    http_header ('Content-Type: text/plain\r\n');
+    http (msg_body);
+    return (0);
+  }
+
+if (_tt_id > 0)
+  {
+    select distinct TT_QUERY, TT_COMMENT into _query, _comment
+	from DB.DBA.NEWS_MSG_NM_BODY_QUERY where TT_ID = _tt_id;
+?>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <script language="javascript" src="../admin/admin_utils.js"></script>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Text trigger hits">
+<title>Internet news text trigger hits</title>
+</head>
+<?vsp adm_page_header('Internet News Text Trigger Hits', NULL); ?>
+
+<p>To remove existing text trigger  hit select "Remove" link subsequent to hit link. CAUTION: this operation cannot be reverted</p>
+<p>To open an document select "Subject" link.</p>
+
+<p>To return at page with list of all text trigger hits select: <b><a href="ftt_news_hits.vsp?sid=<?=_sid_id?>">Back</a></b></p>
+<form method=POST name=del_form action="ftt_news_hits.vsp">
+<table CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="stathead" COLSPAN="5">Current hits</TD></TR>
+<tr>
+  <td CLASS="genlistheadt">Sel</td>
+  <td CLASS="genlistheadt">Subject</td>
+  <td CLASS="genlistheadt">From</td>
+  <td CLASS="genlistheadt">Registered</td>
+  <td CLASS="genlistheadt">Actions</td>
+</tr>
+<?vsp declare _is integer; _is := 0;
+      declare _subj, _from varchar;
+      declare head any;
+      for select TTH_D_ID, TTH_TS, NM_HEAD, NM_BODY_ID, NM_ID
+			              from DB.DBA.NEWS_MSG_NM_BODY_HIT,
+                                           DB.DBA.NEWS_MSG
+				      where TTH_T_ID = _tt_id and TTH_U_ID = _u_id and NM_BODY_ID = TTH_D_ID
+				      order by TTH_TS desc do {  _is := 1;
+     head := deserialize (NM_HEAD);
+     if (isarray (head))
+       head := aref (head, 0);
+     else
+       head := vector ('','');
+
+
+     _subj := get_keyword ('Subject', head, '');
+     _from := get_keyword ('From', head, '');
+?>
+  <tr>
+      <td CLASS="gendata"><input type=checkbox name="CB_<?=TTH_D_ID?>"></td>
+      <td CLASS="gendata"><a href="mime_display.vsp?sid=<?=_sid_id?>&mail_no=<?/NM_ID?>&type=news"><?=_subj?></a></td>
+      <td CLASS="gendata"><?=_from?></td>
+      <td CLASS="gendata"><?=DB.DBA.adm_date_fmt(TTH_TS)?></td>
+       <td>
+         <table BORDER="0" CELLPADDING="0">
+	   <tr>
+            <td CLASS="gendata">
+	     <table border=0>
+	     <tr>
+	     <td>
+	    <a class="tablelistaction" href="ftt_news_hits.vsp?tth_d_id=<?=TTH_D_ID?>&tt_id=<?=_tt_id?>&del=1&sid=<?=_sid_id?>">Remove</a>
+	    </td>
+	    <td>
+	      &nbsp;
+	    </td>
+	    </tr>
+	    </table>
+	    </td>
+	   </tr>
+         </table>
+       </td>
+  </tr>
+<?vsp
+    }
+  if (_is = 0)
+    http ('<td colspan=5 class="gendata" align=center>*** No hits registered ***</td>');
+  else { ?>
+<tr>
+  <td colspan=2 align="left">
+     <input type=button name=selall value="Select All" onClick="selectAllCheckboxes(this.form, this)">
+  </td>
+  <td colspan=3 align="right">
+     <input type=submit name=del value="Delete selected">
+  </td>
+</tr>
+
+<?vsp } ?>
+</table>
+<input type=hidden name="tt_id" value="<?=_tt_id?>">
+<input type=hidden name="sid" value="<?=_sid_id?>">
+</form>
+<?vsp adm_page_footer(); ?>
+</html>
+<?vsp } else { ?>
+
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <script language="javascript" src="../admin/admin_utils.js"></script>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Text triggers hits">
+<title>Internet news text trigger hits</title>
+</head>
+<?vsp adm_page_header('Internet News Text Trigger Hits', NULL); ?>
+
+<p>To view document(s) matches query select an link.</p>
+<table CLASS="genlist" BORDER="0" CELLPADDING="0">
+<!-- there should be added user name -->
+<TR><TD CLASS="stathead" COLSPAN="3">Hits for queries of user:</TD></TR>
+<tr>
+  <td CLASS="genlistheadt">Query</td>
+  <td CLASS="genlistheadt">Comment</td>
+  <td CLASS="genlistheadt">Count</td>
+</tr>
+
+<?vsp declare _cnt, ht integer;
+      for select distinct TTH_T_ID as tid, TT_QUERY, TT_COMMENT from DB.DBA.NEWS_MSG_NM_BODY_HIT,
+                                                    DB.DBA.NEWS_MSG_NM_BODY_QUERY
+          where TTH_T_ID = TT_ID and TTH_U_ID = _u_id do {
+      select count (*) into _cnt from DB.DBA.NEWS_MSG_NM_BODY_HIT, DB.DBA.NEWS_MSG
+	  where TTH_T_ID = tid and TTH_U_ID = _u_id and NM_BODY_ID = TTH_D_ID;
+      ht := 1;
+?>
+<tr>
+  <td CLASS="gendata"><a href="ftt_news_hits.vsp?tt_id=<?=tid?>&sid=<?=_sid_id?>"><?=TT_QUERY?></a></td>
+  <td CLASS="gendata"><?=TT_COMMENT?></td>
+  <td CLASS="gendata"><?=_cnt?></td>
+</tr>
+<?vsp }
+  if (ht <> 1)
+    http ('<td colspan=5 class="gendata" align=center>*** No hits registered ***</td>');
+?>
+
+</table>
+<?vsp adm_page_footer(); ?>
+</html>
+
+<?vsp }
+-- Error exit
+return (0);
+erret:
+?>
+<?include ../admin/admin_dav/error.vsp ?>
+<?vsp } ?>

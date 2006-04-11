@@ -1,0 +1,1875 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="webandxml.xml" id="webandxml">
+	<title>XML Support</title>
+  <abstract>
+    <para>This chapter covers Virtuoso's XML, full text retrieval and related functions.</para>
+
+    <para>Virtuoso provides free text indexing capabilities for
+    textual data, including XML data.  Virtuoso supports extraction of
+    XML documents from SQL datasets.  It also supports <link linkend="fn_xpath_eval">XPath</link>,
+<link linkend="xq">XQuery</link>,
+    <link linkend="xslttrans">XSLT</link> and XML Schema validation.</para>
+			<para>
+An SQL long varchar, long xml or xmltype column in a database table can contain XML data as text or in a binary serialized format, respectively. If
+ a column value is a well-formed XML fragment there are
+special operations that can be performed on the value.
+There is an SQL data type that represents an XML entity.
+A string representing a
+well-formed XML entity can be converted into an entity object
+representing the root node.  XPath expressions can then be applied to
+the entity in order to retrieve other entities or sets of entities.
+Returning an XML entity to a client application or printing it out on
+a dynamic web page will produce the text representation of the entity,
+complete with start and end tags, attributes, namespaces, and so forth.
+</para>
+<para>
+An entity object can be stored as a value of a long varchar or varchar
+column. This will produce and store the text corresponding to the
+entity. Storing the same into a long xml or xmltype column will provide a more compact representation and will guarantee well-formedness and optionally schema validity, even if the data comes in as text.
+</para>
+<para>
+A long varchar column can contain huge XML documents as special
+&quot;persistent XML entity&quot; objects. XML entities of this sort
+consume only a little amount of memory and load small portions of data from
+disk to memory on demand; an application can handle XML documents that
+are order of magnitute larger than the amount of available memory.
+<link linkend="sqlrefxmldatatype">LONG XML</link> column type is convenient
+if a column contains only valid XML documents. An application can save
+XML entities to LONG XML columns and retrieve them back without calling any
+type conversion functions.
+A special user-defined type <link linkend="xmltypeudt">XMLType</link>
+allows the use of an XML entity as a base for deriving user-defined types from it.
+</para>
+<para>
+The <link linkend="xpathcontainspredicate"><function>xpath_contains</function></link> SQL predicate can be used to
+test whether a column value matches a given XPath expression.  If the
+XPath expression specifies a node set and that set is non-empty for a
+given column value, it is possible to bind a result variable to each
+element of the set.  In this way a single row of data in a table can
+produce multiple rows in an SQL result set, one for each entity
+selected by the XPath predicate.
+</para>
+			<para>
+If there is a free text index on a column it is possible to define
+that the content be checked for well-formedness.  In this case both
+<link linkend="containspredicate"><function>contains</function></link> and
+<link linkend="xpathcontainspredicate"><function>xpath_contains</function></link> predicates can be applied to the
+same column in the same query.  You should create a free text index on
+your XML data if you expect any content-based searches. The free text
+index will recognize specific features of XML and allow their use in
+searches.
+ </para>
+<para>
+The <link linkend="xcontainspredicate"><function>xcontains</function></link> SQL predicate is a combination of
+XPath and free text, making automatic use of the free text index for
+evaluating an XPath expression.  This predicate also allows you to
+test text values of entities for complex free text conditions such as
+proximity.
+</para>
+			<para>
+There is a user interface for using this feature on DAV resources.
+The use of the <link linkend="xpathcontainspredicate"><function>xpath_contains</function></link> predicate is not
+limited to DAV resources though.  The use of XPath with XML values is
+independent of free text indexing and of XML views.
+</para>
+		<para>
+Virtuoso offers functions for XPath processing of well-formed XML
+strings in SQL.  Together with the Virtuoso free text support, these
+functions offer a powerful free-form and structured content retrieval
+system.  You can search for XPath matches in any XML-populated column.
+One practical example would be the RES_CONTENT column of the
+WS.WS.SYS_DAV_RES table, which contains the contents of documents
+stored in the WebDAV repository.  As with the sample database, which
+contains the XML sources for this documentation, you may store XML
+documents directly in the WebDAV repository.
+</para>
+		<para>
+An SQL statement can return complex XML documents based on relational data.
+Virtuoso supports both Microsoft's &quot;FOR XML&quot; syntax and the standard set of SQLX XML
+composing functions like
+<link linkend="fn_XMLELEMENT"><function>XMLELEMENT</function></link> and
+<link linkend="fn_XMLAGG"><function>XMLAGG</function></link>.
+Very complicated processing can be done in a single statement that combines
+XML composing functions, <link linkend="fn_xquery_eval"><function>xquery_eval</function></link>
+and <link linkend="fn_xslt"><function>xslt</function></link>.
+</para>
+		<para>
+Virtuoso/PL routines can modify XML entities in DOM style (functions like
+<link linkend="fn_XMLAppendChildren"><function>XMLAppendChildren</function></link>
+and
+<link linkend="fn_XMLReplace"><function>XMLReplace</function></link>). Doing local changes this way
+can be simpler than via XSLT or XQuery; DOM modifications also help speed-critical applications
+to avoid unnecessary copying of data.
+</para>
+		<para>
+Virtuoso's XML parser can read XML documents of any complexity.
+It can validate source documents against DTD and XML schema,
+load compound documents or their fragments,
+recover from errors in ill-formed HTML documents like popular browsers can.
+</para>
+  </abstract>
+
+<sect1 id="forxmlforsql">
+<title>Rendering SQL Queries as XML (FOR XML Clause)</title>
+
+	<para>
+Virtuoso extends SQL-92 with the FOR XML clause that allows any SQL
+result set to be turned into XML according to some simple rules. The
+notation and functionality are similar to those offered by Microsoft
+SQL Server and IIS.
+</para>
+	<para>
+The FOR XML clause has 3 variants:
+</para>
+<formalpara><title>RAW</title>
+<para>
+Make an XML entity from each row of the result set; do not attempt to
+construct hierarchies.  Each row's data is enclosed in a &lt;ROW/&gt;
+element and each column is either an attribute or child element.
+</para>
+</formalpara>
+<formalpara><title>AUTO</title>
+<para>
+A hierarchy is constructed with one level for each table of the join
+for which at least one column is selected. The table whose column is
+first mentioned in the selection will be the topmost element, the next
+table its child, etc.  Each level of the tree will consist of one type
+of element.  A parent element will have multiple children if
+consecutive rows do not differ in the column values coming from the
+parent element.  When a table's column values differ from the previous
+row, the element and all children thereof are closed and a new element
+is started, with children filled out from other columns of the result
+set.
+</para>
+</formalpara>
+<formalpara><title>EXPLICIT</title>
+<para>
+This mode gives more control on the resulting tree's structure while
+requiring a more elaborate query structure.  In this mode, the query
+will be a UNION ALL of many joins and each row will specify exactly
+one element.  Which type of element this is and where in the tree it
+will be placed are determined by the values of the first two columns,
+TAG and PARENT.
+</para>
+</formalpara>
+	<para>
+In all modes, columns may either be attributes or sub-elements.  The
+<emphasis>ELEMENT</emphasis> keyword after the FOR XML clause forces
+all columns to be rendered as sub-elements; attribute are the
+default.
+</para>
+	<para>
+In all modes except explicit, the names of elements are the unprefixed
+table names and the names of attributes are the columns' names in the
+result set.  If tables have correlation names the correlation names
+are used in the output instead of the table names.  Expressions are
+allowed in the selections but these should be named using AS.  In AUTO
+mode Virtuoso assumes expressions belong to the topmost element.
+</para>
+	<para>
+The FOR XML clause is generally allowed in SELECT statements in place
+of the FOR UPDATE clause.  However it only has an effect when the
+statement is executed through the <link
+linkend="fn_xml_auto"><function>xml_auto()</function></link> function.
+</para>
+
+<tip><title>See Also:</title> <para>The <link
+linkend="sqlxmlstmts">SQL-XML Statements</link> page described in the
+Visual Server Administration Interface section provides a fast
+graphical way of supplying an SQL statement to Virtuoso and saving the
+view as a resource accessible from the WebDAV store.</para></tip>
+
+<sect2 id="forxmlexplicmode">
+<title>FOR XML EXPLICIT Mode</title>
+
+<para>
+This mode gives the developer the most control over the generated
+result tree but requires a verbose query formulation.  Each row must
+begin with two integer columns, the first identifying the element
+represented by the row and the second the parent element type of this
+element.  Consider:
+</para>
+
+<programlisting>
+select 1 as tag, null as parent,
+       "CategoryID" as [category!1!cid],
+       "CategoryName" as [category!1!name],
+       NULL as [product!2!pid],
+       NULL as [product!2!name!element]
+from "Demo".."Categories"
+union all
+select 2, 1, "category" ."CategoryID", NULL, "ProductID", "ProductName"
+    from "Demo".."Categories" "category", "Demo".."Products" as "product"
+    where "product"."CategoryID" = "category"."CategoryID"
+order by [category!1!cid], 5
+for xml explicit;
+</programlisting>
+
+<para>
+This query makes a two level tree where Categories have Product
+children.  The selection in the first UNION term specifies the element
+types in the result set.  The two first columns, TAG and PARENT are
+required in all EXPLICIT queries.  Subsequent columns have an extended
+AS declaration that specifies which element they belong to, what that
+element is called in XML and what the column will be called.  A row
+where TAG has a value of 1 will pick the columns which has [xxx!1!yyy]
+as their alias; rows with a TAG of 2 will pick columns with an alias
+with [xxx!2!yyy] and so on.
+</para>
+	<para>
+If consecutive rows have a different TAG but the same PARENT, these
+will be siblings of different types.  This possibility does not exist
+with the other FOR XML modes.
+</para>
+	<para>
+If the PARENT is 0 or NULL, then any previously open elements in the
+result are closed and the element of the row becomes a top-level
+element.  When PARENT refers to the TAG of a presently open element in
+the set, all children of that element are closed and the row's element
+is inserted as the next child of the last element with the TAG equal
+to the new row's PARENT.  All open tags are closed at the end of the
+result set.
+</para>
+<note>
+<title>Note</title>
+<para>Since each level of the tree is generated by a different term in
+the UNION ALL, an ORDER BY will invariably be needed to group the
+children after their parents.  If the parent rows have NULLs in
+place of the child row's key values, the parent gets sorted first
+because NULL collates first.
+</para>
+</note>
+</sect2>
+
+<sect2 id="examplesofforxml"><title>Examples of FOR XML</title>
+
+<para>This section gives one example of each mode of FOR XML combined
+with the <function>xml_auto()</function> function to help us display
+the results simply. First we create a procedure that enables us to
+supply SQL and return XML using the <function>xml_auto()</function>
+function.</para>
+
+<programlisting>
+create procedure xmla (in q varchar)
+{
+  declare st any;
+  st := string_output ();
+  xml_auto (q, vector (), st);
+  result_names (q);
+  result (string_output_string (st));
+}
+</programlisting>
+
+<para>Now we can apply this to a couple of examples:</para>
+
+<example><title>XML RAW</title>
+<programlisting>
+xmla ('select "category"."CategoryID", "CategoryName",
+    "ProductName", "ProductID"
+    from "Demo".."Categories" "category", "Demo".."Products" as "product"
+    where "product"."CategoryID" = "category"."CategoryID" FOR XML RAW');
+</programlisting>
+<screen>
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Chai" ProductID="1"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Chang" ProductID="2"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Guaran&#225; Fant&#225;stica" ProductID="24"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Sasquatch Ale" ProductID="34"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Steeleye Stout" ProductID="35"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="C&#244;te de Blaye" ProductID="38"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Chartreuse verte" ProductID="39"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Ipoh Coffee" ProductID="43"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Laughing Lumberjack Lager" ProductID="67"&gt;
+&lt;/ROW&gt;
+.....
+</screen>
+</example>
+
+<para>As we can see, RAW mode produces a simple row-by-row account
+of the data encased within the &lt;ROW.../&gt; tags.  This is the simplest
+mode.</para>
+
+<example>
+<title>XML AUTO</title>
+<programlisting>
+xmla ('select "category"."CategoryID", "CategoryName",
+    "ProductName", "ProductID"
+    from "Demo".."Categories" "category", "Demo".."Products" as "product"
+    where "product"."CategoryID" = "category"."CategoryID" FOR XML AUTO ELEMENT');
+</programlisting>
+
+<screen>
+&lt;category&gt;
+ &lt;CategoryID&gt;1&lt;/CategoryID&gt; &lt;CategoryName&gt;Beverages&lt;/CategoryName&gt;&lt;product&gt;
+ &lt;ProductName&gt;Chai&lt;/ProductName&gt; &lt;ProductID&gt;1&lt;/ProductID&gt;&lt;/product&gt;
+&lt;product&gt;
+ &lt;ProductName&gt;Chang&lt;/ProductName&gt; &lt;ProductID&gt;2&lt;/ProductID&gt;&lt;/product&gt;
+&lt;product&gt;
+ &lt;ProductName&gt;Guaran&#225; Fant&#225;stica&lt;/ProductName&gt; &lt;ProductID&gt;24&lt;/ProductID&gt;&lt;/product&gt;
+&lt;product&gt;
+ &lt;ProductName&gt;Sasquatch Ale&lt;/ProductName&gt; &lt;ProductID&gt;34&lt;/ProductID&gt;&lt;/product&gt;
+&lt;product&gt;
+ &lt;ProductName&gt;Steeleye Stout&lt;/ProductName&gt; &lt;ProductID&gt;35&lt;/ProductID&gt;&lt;/product&gt;
+&lt;product&gt;
+ &lt;ProductName&gt;C&#244;te de Blaye&lt;/ProductName&gt; &lt;ProductID&gt;38&lt;/ProductID&gt;&lt;/product&gt;
+&lt;product&gt;
+ &lt;ProductName&gt;Chartreuse verte&lt;/ProductName&gt; &lt;ProductID&gt;39&lt;/ProductID&gt;&lt;/product&gt;
+&lt;product&gt;
+ &lt;ProductName&gt;Ipoh Coffee&lt;/ProductName&gt; &lt;ProductID&gt;43&lt;/ProductID&gt;&lt;/product&gt;
+&lt;product&gt;
+ &lt;ProductName&gt;Laughing Lumberjack Lager&lt;/ProductName&gt; &lt;ProductID&gt;67&lt;/ProductID&gt;&lt;/product&gt;
+&lt;product&gt;
+.....
+</screen>
+</example>
+
+<para>In contrast to RAW mode, AUTO produces results that are more
+tree-like.  Only one category element is used for each category, and
+that contains all the children of the category.</para>
+<example>
+<title>XML EXPLICIT</title>
+<programlisting>
+xmla ('
+select 1 as tag, null as parent,
+       "CategoryID" as [category!1!cid],
+       "CategoryName" as [category!1!name],
+       NULL as [product!2!pid],
+       NULL as [product!2!name!element]
+from "Demo".."Categories"
+union all
+select 2, 1, "category" ."CategoryID", NULL, "ProductID", "ProductName"
+    from "Demo".."Categories" "category", "Demo".."Products" as "product"
+    where "product"."CategoryID" = "category"."CategoryID"
+order by [category!1!cid], 5
+FOR XML EXPLICIT');
+</programlisting>
+<screen>
+&lt;CATEGORY CID="1" NAME="Beverages"&gt;
+&lt;PRODUCT PID="1"&gt;
+ &lt;NAME&gt;Chai&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="2"&gt;
+ &lt;NAME&gt;Chang&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="24"&gt;
+ &lt;NAME&gt;Guaran&#225; Fant&#225;stica&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="34"&gt;
+ &lt;NAME&gt;Sasquatch Ale&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="35"&gt;
+ &lt;NAME&gt;Steeleye Stout&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="38"&gt;
+ &lt;NAME&gt;C&#244;te de Blaye&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="39"&gt;
+ &lt;NAME&gt;Chartreuse verte&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="43"&gt;
+ &lt;NAME&gt;Ipoh Coffee&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="67"&gt;
+ &lt;NAME&gt;Laughing Lumberjack Lager&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="70"&gt;
+ &lt;NAME&gt;Outback Lager&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="75"&gt;
+ &lt;NAME&gt;Rh&#246;nbr&#228;u Klosterbier&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="76"&gt;
+ &lt;NAME&gt;Lakkalik&#246;&#246;ri&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;/CATEGORY&gt;
+&lt;CATEGORY CID="2" NAME="Condiments"&gt;
+&lt;PRODUCT PID="3"&gt;
+.....
+</screen>
+</example>
+<para>In this example, we specify precisely the tree structure we
+wish, and construct the EXPLICIT query to produce that tree.  Many
+times programmers know what the resulting XML should look
+like but do not know how to get exactly what they want.  FOR XML
+EXPLICIT can be very useful in these cases.</para>
+</sect2>
+
+<sect2 id="forxmlfunc">
+<title>Functions</title>
+
+<link linkend="fn_xml_auto"><function>xml_auto()</function></link>
+
+</sect2>
+<sect2 id="forxmlsyntax">
+<title>FOR XML Syntax</title>
+
+<programlisting>
+for__xml ::= FOR XML &lt;mode&gt; [ ELEMENT ]
+
+&lt;mode&gt; ::= RAW | AUTO | EXPLICIT
+
+&lt;explicit column&gt; ::=  scalar_exp AS '[' &lt;element&gt; '!' &lt;tag no&gt; '!'
+                   &lt;column name&gt; [ '!' &lt;option&gt; ] ']'
+
+&lt;tag no&gt; ::= INTNUM
+
+&lt;column name&gt; ::= IDENTIFIER
+
+&lt;element&gt; ::= IDENTIFIER
+
+&lt;option&gt; ::= IDENTIFIER
+
+</programlisting>
+<para>
+The &lt;explicit column&gt; should be used in the selection list of
+the first term of the UNION ALL construct in a FOR XML EXPLICIT query.
+Virtuoso provides this functionality separately from any Web server
+context, although these are principally expected to be used inside VSP
+pages.
+</para>
+<para>
+The text of &lt;option&gt; part of the &lt;explicit column&gt; is
+ignored but if it is present then the value is placed into
+a sub-element of the element for the row, not into an attribute.
+</para>
+</sect2>
+
+</sect1>
+
+<sect1 id="composingxmlinsql">
+<title>XML Composing Functions in SQL Statements (SQLX)</title>
+<para>
+The preferred means of constructing XML data from SQL is to use the standard SQLX SQL extension.
+</para>
+<para>SQLX is a collection of functions added for creating XML entities from standard
+relational queries. Basically, you write a SQL statement with calls to SQLX functions in
+the selection  and a piece of XML is created.
+</para>
+<para>
+There are five XML composing functions:
+</para>
+<simplelist>
+<member><link linkend="fn_XMLELEMENT">
+<function>XMLELEMENT()</function>
+</link>
+creates a single XML element that can contain an arbitrary number of attributes and sub-elements.</member>
+<member><link linkend="fn_XMLATTRIBUTES">
+<function>XMLATTRIBUTES()</function>
+</link>
+lists XML attributes to be placed in the XML element created by an enclosing call of <function>XMLELEMENT()</function>.</member>
+<member><link linkend="fn_XMLCONCAT">
+<function>XMLCONCAT()</function>
+</link>
+returns a forest of XML values by concatenating a list of XML values or forests.</member>
+<member><link linkend="fn_XMLAGG">
+<function>XMLAGG()</function>
+</link>
+is an aggregate function that creates a forest of XML values by concatenating the XML values that are returned from multiple rows.</member>
+<member><link linkend="fn_XMLFOREST">
+<function>XMLFOREST()</function>
+</link>
+is similar to <function>XMLATTRIBUTES()</function> but returns a forest of elements instead of list of attributes.</member>
+</simplelist>
+<para>These functions belong
+to the SQLX standard, an emerging SQL standard for XML. All the functions take a variable number of arguments.
+</para>
+<para>
+<function>XMLELEMENT</function> is used to construct XML elements from relational data.
+It takes as parameters the element name, an optional collection of attributes for the element
+(returned by <function>XMLATTRIBUTES</function> call),
+column names, strings, <function>XMLELEMENT</function>, <function>XMLFOREST</function>,
+<function>XMLCONCAT</function>, and <function>XMLAGG</function> calls, and an entity objects (returned by
+corresponding functions, e.g. <function>xtree_doc</function>, <function>xpath_eval</function>,
+<function>xquery_eval</function>) which will make up the content of the element (an exception from this is
+an attribute entity returned by <function>xquery_eval</function> - in this case it is joined to the list of the
+element&apos;s attributes).
+Column names, strings and attribute entities returned by <function>xpath_eval</function> will make up the text content
+of the element.
+The others will make up the children of the element.
+</para>
+<para>
+In the <function>XMLATTRIBUTES</function> clause, the value expressions are evaluated to get the values for the
+attributes.
+</para>
+<para>
+<function>XMLFOREST</function> produces a forest of XML elements from a given list of arguments. It accepts a list of
+SQL value expressions as its arguments, and produces an XML element from each value returned.
+</para>
+<para>
+<function>XMLCONCAT</function> produces a forest of elements by concatenating a list of XML values. XMLCONCAT accepts
+a list of XML value expressions as its arguments, and produces a forest of elements by concatenating the XML values
+that are returned from the same row to make one value. If an argument of the <function>XMLCONCAT</function> is an
+entity object returned by <function>xquery_eval</function> or <function>path_eval</function>, it must not be an
+attribute.
+</para>
+<para>
+The following statements create the same result sets:
+</para>
+<programlisting><![CDATA[
+select XMLELEMENT ('Person',
+                        XMLELEMENT ('firstname', "FirstName"),
+                        XMLELEMENT ('lastname', "LastName"),
+  		        xquery_eval('//country', xtree_doc('<a><country>USA</country></a>')))
+from "Demo"."demo"."Employees";
+
+select
+      XMLELEMENT ('Person',
+                        XMLFOREST ("FirstName"as "firstname", "LastName" as "lastname"),
+  		        xquery_eval('//country', xtree_doc('<a><country>USA</country></a>')))
+from "Demo"."demo"."Employees";
+
+select
+      XMLELEMENT ('Person',
+                             XMLCONCAT (
+                                        XMLELEMENT ('firstname', "FirstName"),
+                                        XMLELEMENT ('lastname', "LastName"),
+  		                        xquery_eval('//country', xtree_doc('<a><country>USA</country></a>'))))
+from "Demo"."demo"."Employees";
+]]></programlisting>
+<note>
+<title>Note:</title>
+<para>
+The second statement is more effictive than the others.
+</para>
+</note>
+<para>
+In order to return more than one row of values, you can use <function>XMLAGG</function>. <function>XMLAGG</function>
+is an aggregate function that produces a forest of XML elements from a collection of XML elements. It concatenates
+the values returned from one column of multiple rows, unlike XMLCONCAT, which concatenates the values
+returned from multiple columns in the same row.
+</para>
+<para>
+The parameters that would be used as element names (in the <function>XMLELEMENT</function> and in the
+&apos;AS clause &apos; of the <function>XMLFOREST</function> and <function>XMLATTRIBUTES</function>)
+must be valid XML names. If the &apos;AS clause &apos; is absent in a list of the parameters of the
+<function>XMLFOREST</function> or <function>XMLATTRIBUTES</function>, Virtuoso uses the partially escaped form of
+the column name as the element or attribute name. The partially escaped form means that SQL &lt;identifier&gt;
+characters that are valid characters in a XML NAME are not changed, SQL &lt;identifier&gt;
+character that is not valid XML NAME  character is replaced with "_xHHHH_", where HHHH is character&apos;s upper case
+hexadecimal code. For example, "first_name" is replaced with "first_x005F_name", "last name" is replaced with
+"last_x0020_name".
+</para>
+<para>The following example creates an &apos;FullAddress&apos; element with
+<itemizedlist mark="bullet">
+<listitem> four attributes, three of them (&apos;PostalCode&apos;, &apos;Address&apos;, &apos;City&apos;) are
+   produced by <function>XMLATTRIBUTES</function>, and the fourth attribute - &apos;country&apos; is calculated by
+   <function>xquery_eval</function> </listitem>
+<listitem>&apos;Region&apos; subelement, that is produced by <function>xtree_doc</function></listitem>
+<listitem>text content, that is produced by <function>xpath_eval</function> </listitem>
+<listitem>&apos;emp&apos; subelement with text content from the column "LastName", that is created by nested
+  <function>XMLELEMENT</function></listitem>
+</itemizedlist>
+</para>
+<programlisting>
+<![CDATA[select XMLELEMENT ('FullAddress',
+                        XMLATTRIBUTES ( "PostalCode", "Address", "City"),
+                        xtree_doc ('<Region>WA</Region>'),
+                        xquery_eval('//@country', xtree_doc('<a country="USA"/>')),
+                        xpath_eval('//@Phone', xtree_doc('<a Phone="(206) 555-9857"/>')),
+                        XMLELEMENT('emp', "LastName"))
+from "Demo"."demo"."Employees"
+
+----------------------------
+
+   <FullAddress PostalCode="98122" Address="507 - 20th Ave. E. Apt. 2A" City="Seattle" country="USA">
+        <Region>WA</Region>
+        (206) 555-9857
+        <emp>Davolio</emp>
+    </FullAddress>
+    <FullAddress PostalCode="98401" Address="908 W. Capital Way" City="Tacoma" country="USA">
+        <Region>WA</Region>
+        (206) 555-9857
+        <emp>Fuller</emp>
+    </FullAddress>
+  . . .
+
+ ]]>
+</programlisting>
+<tip>
+<title>See Also:</title>
+<para>
+<link linkend="fn_XMLAGG">XMLAGG()</link>
+</para>
+<para>
+<link linkend="fn_XMLATTRIBUTES">XMLATTRIBUTE()</link>
+</para>
+<para>
+<link linkend="fn_XMLCONCAT">XMLCONCAT()</link>
+</para>
+<para>
+<link linkend="fn_XMLELEMENT">XMLELEMENT()</link>
+</para>
+<para>
+<link linkend="fn_XMLFOREST">XMLFOREST()</link>
+</para>
+</tip>
+<para>
+XML composing functions deal with arguments of arbitrary type, but the result is always an XML entity that can contain only elements and strings.
+Hence there is a set of type casting rules. These rules are quite common for any XML DOM model, so they're similar to those listed for
+<link linkend="xmldomtypecasting">DOM function arguments</link>:
+</para>
+<para>
+If an instance of XMLType is passed then its internal XML entity is used.
+</para>
+<para>
+If an array representation of an XML tree entity is passed then it is used exactly like XML entity.
+</para>
+<para>
+If an argument is NULL then it is fully ignored, as if there is no such argument at all.
+</para>
+<para>
+If an argument is not of a type listed above and not a string then it is cast to a string first.
+</para>
+<para>
+A root node of some document (or of some generic XML entity) can not appear in the middle of the resulting tree.
+So if a root node is passed then all child nodes of the root (i.e. every top-level node of the document) will be added.
+</para>
+<para>
+SQL/XML standards introduce a special name "forest of XML elements" for an ordered list of XML elements,
+like one returned by <function>XMLFOREST()</function>.
+In Virtuoso, forest can contain XML nodes of any sort, not only XML elements, so it can also contain strings, processing instructions and comments.
+Virtuoso processes any non-empty "forest" as if it were the root node of a "generic XML entity",
+and items of the forest were top-level nodes of that entity.
+Hence, a forest can be passed to any function that accepts an value of type "XML entity".
+The only potential problem is that this entity is well-formed if and only if the forest is non-empty.
+If an empty forest is serialized to an XML text then the result is an empty string that is not an acceptable input for an XML parser.
+</para>
+<para>
+It is important to remember that the XML document can not contain two neighbour text nodes and that the text node can not be an empty string.
+If two consequent strings appear in the list of values of a forest or in the list of children of an new element then
+they are replaced with a single node that is a concatenation of these string.
+Similarly, if an empty string appears in the list of values of a forest or in the list of children of an new element then it is removed from the list.
+</para>
+</sect1>
+
+
+<!-- ####################### -->
+
+<!-- &xmltableview; removed by Kingsley until further notice -->
+
+<!-- ####################### -->
+
+&xmlview;
+
+	<!-- ################### ~~~~~~~~~~ ################### -->
+
+<sect1 id="queryingxmldata"><title>Querying Stored XML Data</title>
+	<sect2 id="xpathcontainsSQLPred">
+		<title>XPATH_CONTAINS SQL Predicate</title>
+		<para>
+XPath expressions can be used in SQL statements to decompose and match
+XML data stored in columns.  The <parameter>xpath_contains</parameter>
+SQL predicate can be used either to test for an XML value matching a
+path expression or to extract one or more entities from the XML value.
+These values can then be used later in the query as contexts for other
+XPath expressions.
+	</para>
+<programlisting>
+xpath_contains (xml_column, xp_expression[, query_variable]);
+</programlisting>
+		<para>
+The first argument, <parameter>xml_column</parameter> is the name of the column on which to perform the XPath search.
+The second argument, <parameter>xp_expression</parameter>, takes an XPath
+expression.
+</para>
+		<para>
+The third argument is an optional query variable that gets bound to
+each result entity value of the xpath expression.  If this variable is
+omitted the xpath_contains predicate will qualify the query by
+returning true for matches.  In this case the result will only return
+one row per match.  If the variable is present, the result set could
+contain multiple rows per result set row of the base table, one row for
+each match.
+</para>
+		<para>
+Consider the example:
+	</para>
+		<programlisting>
+select xt_file, t from xml_text
+  where xpath_contains (xt_text, &apos;//chapter/title[position () = 1]&apos;, t);
+</programlisting>
+		<para>
+This SQL statement will select the first title child of any chapter
+entities in the XML documents in the xt_text column of the table
+<parameter>xml_text</parameter>.  There can be several matching
+entities per row of xml_text.  The result set will contain a row for
+each matching entity.
+</para>
+
+		<para>
+In XPath terms the path expression of
+<parameter>xpath_contains</parameter> is evaluated with the context
+node set to the root node of the XML tree represented by the value of
+the column that is the first argument of xpath_contains.  This node is
+the only element of the context node set.
+	</para>
+<note><title>Note:</title>
+		<para>
+The 't' variable in the above example gets bound to XML entities, not
+to their string values or other representations. One can thus use
+these values as context nodes for other expressions.
+	</para>
+</note>
+<para>
+The XPATH expression can have a list of options in the beginning.
+The list of options is surrounded by square brackets.
+Options in the list are delimited by spaces.
+The most popular option is <parameter>__quiet</parameter> that allows to
+process a set of rows if not all stored documents are valid XMLs;
+if an error is signalled by the XML parser when it prepares a content document for the XPATH in question
+and the XPATH contains <parameter>__quiet</parameter> then the error is suppressed and
+the row is silently ignored as if XPATH found nothing.
+One can configure the DTD validator of the parser by placing its <link linkend="dtd_config">configuration parameters</link> in
+the list of XPATH options.
+</para>
+<para>
+The following example is almost identical to the previous one but it works even if
+not all values of <parameter>xt_text</parameter> are valid XMLs, and the resulting values of the
+'t' variable are standalone entities even if source documents in xt_text contain external generic entities.
+	</para>
+<programlisting>
+select xt_file, t from xml_text
+  where xpath_contains (xt_text, &apos;[__quiet BuildStandalone=ENABLE]//chapter/title[position () = 1]&apos;, t);
+</programlisting>
+
+</sect2>
+<sect2 id="qryusingxpath_eval">
+<title>Using xpath_eval()</title>
+
+	<para>The <function>xpath_eval()</function> function is used to filter
+	out parts of an XML fragment that match a given XPATH expression.  It
+	can be used to retrieve multiple-node answers to queries, as it is often
+	the case that more than one node-set matches.
+
+	Consider the following statements that create a table with XML stored inside.</para>
+
+<programlisting><![CDATA[
+CREATE TABLE t_articles (
+	article_id int NOT NULL,
+	article_title varchar(255) NOT NULL,
+	article_xml long varchar
+	);
+
+insert into t_articles (article_id, article_title) values (1, 'a');
+insert into t_articles (article_id, article_title) values (2, 'b');
+
+UPDATE t_articles SET article_xml = '
+<beatles id = "b1">
+<beatle instrument = "guitar" alive = "no">john lennon</beatle>
+<beatle instrument = "guitar" alive = "no">george harrison</beatle>
+</beatles>'
+WHERE article_id = 1;
+
+UPDATE t_articles SET article_xml = '
+<beatles id = "b2">
+<beatle instrument = "bass" alive = "yes">paul mccartney</beatle>
+<beatle instrument = "drums" alive = "yes">ringo starr</beatle>
+</beatles>'
+WHERE article_id = 2;
+]]></programlisting>
+
+<para>Now we make a query that will return a vector of results, each
+vector element corresponding to a node-set of the result.</para>
+
+<programlisting><![CDATA[
+SELECT xpath_eval('//beatle/@instrument', xml_tree_doc (article_xml), 0)
+	AS beatle_instrument FROM t_articles WHERE article_id = 2;
+]]></programlisting>
+
+<para>The repeating nodes are returned as part of a vector, the third argument
+to <function>xpath_eval()</function> is set to 0, which means that it is to return all nodes.</para>
+
+<para>Otherwise, we can select the first node-set by supplying 1 as the third
+parameter to <function>xpath_eval()</function>: </para>
+
+<programlisting><![CDATA[
+SELECT xpath_eval('//beatle/@instrument', xml_tree_doc (article_xml), 1)
+	AS beatle_instrument FROM t_articles WHERE article_id = 2;
+]]></programlisting>
+
+
+<tip><title>See Also:</title>
+  <para><link linkend="fn_xpath_eval"><function>xpath_eval()</function></link></para>
+  <para><link linkend="fn_xquery_eval"><function>xquery_eval()</function></link></para>
+  <para><link linkend="fn_xmlupdate"><function>xmlupdate()</function></link></para>
+</tip>
+
+</sect2>
+
+<sect2 id="wxmlextentrefinxml">
+<title>External Entity References in Stored XML</title>
+
+	<para>
+When an XML document is stored as either text or in persistent XML
+format it can contain references to external parsed entities with the
+&lt;!entity ...&gt; declaration and the &amp;xx; syntax.  These are
+stored as references and not expanded at storage time if the entity is
+external.  Such references are transparently followed by XPath and
+XSLT.  A run-time error occurs if the referenced resource cannot be
+accessed when needed.  The reference is only followed if the actual
+subtree is selected by XPath or XSLT.  The resource is retrieved at
+most once for each XPath or XSLT operation referencing it, regardless
+of the number of times the link is traversed.  This is transparent, so
+that the document node of the referenced entity appears as if it were
+in the place of the reference.
+</para>
+	<para>
+External entity references have an associated URI, which is either
+absolute, with protocol identifier and full path, or relative.
+Virtuoso resolves relative references with respect to the base URI of
+the referencing document.  If the document is stored as a column value
+in a table it does not have a natural base URI; therefore, the
+application must supply one if relative references are to be
+supported.  This is done by specifying an extra column of the same
+table to contain a path, in the form of collections delimited by
+slashes, like the path of a DAV resource or a Unix file system path.
+This base URI is associated with an XML column with the IDENTIFIED BY
+declaration:
+</para>
+
+	<programlisting>
+create table XML_TEXT (
+	XT_ID integer,
+	XT_FILE varchar,
+	XT_TEXT long varchar identified by xt_file,
+		primary key (XT_ID)
+	);
+
+create index XT_FILE on XML_TEXT (XT_FILE);
+</programlisting>
+
+	<para>
+Thus, each time the value of <parameter>xt_text</parameter> is
+retrieved for XML processing by <function>xpath_contains()</function>
+or <function>xcontains()</function> the base URI is taken from
+<parameter>xt_file</parameter>.  The complete URI for the
+<parameter>xt_text</parameter> of a column of the sample table would
+be:
+</para>
+
+	<programlisting>
+virt://&lt;qualified table name&gt;.&lt;uri column&gt;.&lt;text column&gt;:&lt;uri column value&gt;
+</programlisting>
+
+	<para>
+An example would be:
+</para>
+
+	<programlisting>
+"virt://DB.DBA.XML_TEXT.XT_FILE.XT_TEXT:sqlreference.xml"
+</programlisting>
+
+	<para>
+The '..' and '.' in relative paths are treated like file names when
+combining relative references to base URIs. A relative reference
+without a path just replaces the last part of the path in the base
+URI.
+</para>
+<tip><title>See Also:</title>
+	<para>
+<link linkend="fn_xml_uri_get"><function>xml_uri_get()</function> and
+<function>xml_uri_merge()</function></link> for more details.
+</para>
+</tip>
+</sect2>
+
+<sect2 id="wamlschmdtdfuncs">
+<title>XML Schema &amp; DTD Functions</title>
+
+<para>The following functions can be used to generate XML Schema or
+DTD information about a given SQL query:</para>
+
+  <simplelist>
+   <member><link linkend="fn_xml_auto_schema"><function>xml_auto_schema()</function></link></member>
+   <member><link linkend="fn_xml_auto_dtd"><function>xml_auto_dtd()</function></link></member>
+  </simplelist>
+
+<example id="ex_webandxmlautoschdtd"><title>Generating XML Schema and DTD Data</title>
+<para>This example shows trivial use of the two functions
+<function>xml_auto_schema()</function> and <function>xml_auto_dtd()</function>.
+</para>
+<programlisting><![CDATA[
+SQL> select xml_auto_schema('select u_name from sys_users', 'root');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+ <xsd:annotation>
+  <xsd:documentation>
+   Schema for output of the following SQL statement:
+]]>
+   &lt;![CDATA[select u_name from sys_users]]&gt;
+<![CDATA[
+  </xsd:documentation>
+ </xsd:annotation>
+
+ <xsd:element name="root" type="root__Type"/>
+
+ <xsd:complexType name="root__Type">
+  <xsd:sequence>
+   <xsd:element name="SYS_USERS" type="SYS_USERS_Type" minOccurs="0" maxOccurs="unbounded"/>
+  </xsd:sequence>
+ </xsd:complexType>
+
+ <xsd:complexType name="SYS_USERS_Type">
+  <xsd:attribute name="U_NAME" type="xsd:string"/>
+ </xsd:complexType>
+
+</xsd:schema>
+
+1 Rows. -- 1843 msec.
+SQL> select xml_auto_dtd('select u_name from sys_users', 'root');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+<!-- dtd for output of the following SQL statement:
+select u_name from sys_users
+-->
+<!ELEMENT root (#PCDATA | SYS_USERS)* >
+<!ELEMENT SYS_USERS (#PCDATA)* >
+<!ATTLIST SYS_USERS
+        U_NAME  CDATA   #IMPLIED        >
+
+1 Rows. -- 411 msec.
+]]></programlisting>
+</example>
+
+</sect2>
+
+<sect2 id="usingxmlfreetext">
+<title>Using XML and Free Text</title>
+
+	<para>
+Virtuoso integrates classic free text retrieval and XML
+semi-structured query features to offer a smart, scalable XML
+repository.  When a column is declared as indexed XML with the CREATE
+TEXT XML INDEX statement the text is checked for well-formedness at
+time of storage.  The specific XML structure of the text is also
+considered when making the free text index entries.  This XML-aware
+free text index is used for processing XPath queries in the
+<parameter>xcontains</parameter> SQL predicate.  This predicate is
+only applicable to columns for which there is an XML free text index.
+</para>
+	<para>
+Arbitrary free text criteria can appear inside the XPath expression of
+<parameter>xcontains</parameter>.  These are introduced by the XPath
+extension function <function>text-contains()</function>, which may
+only be used within <parameter>xcontains</parameter> as it relies on
+the underlying free text index.
+</para>
+<note><title>Note</title>
+<para><function>xpath_contains()</function> does not require the
+existence of a free text index and can thus apply to any well-formed
+XML content.</para>
+</note>
+</sect2>
+
+	<sect2 id="xcontainspredicate">
+	<title>XCONTAINS predicate</title>
+
+	<para>This predicate is used in a SQL statement, it returns "true" if a free text
+  indexed column with XML content matches an XPATH expression.  Optionally
+  produces the matching node set as a result set.</para>
+
+	<para>
+Syntax
+</para>
+
+	<programlisting>
+xcontains_pred:
+	xcontains (column, expr [, result_var [, opt_or_value ...]])
+
+opt_or_value:
+	  DESCENDING
+	  | START_ID ',' scalar_exp
+	  | END_ID ',' scalar_exp
+	  | SCORE_LIMIT ',' scalar_exp
+	  | OFFBAND column
+
+result_var:
+	  IDENTIFIER
+	  | NULL
+</programlisting>
+
+	<para>
+The <emphasis>column</emphasis> must refer to a column for which there exists a free text index.
+</para>
+<para>
+The <emphasis>expr</emphasis> must be a narrow or wide string expression whose syntax matches the
+rules in 'XPATH Query Syntax'.
+</para>
+<para>
+The <emphasis>result_var</emphasis> variable is a query variable which, if present, will be
+successively bound to each element of the node set selected by the XPATH
+expression.  if the value is not a node set and is true, the variable will
+be once bound to this value.  The scope of the variable is the containing
+select and its value is a scalar or an XML entity.
+The <emphasis>result_var</emphasis> can be not an identifier but a NULL keyword to explicitely indicate that no query variable is required.
+</para>
+	<para>
+The <emphasis>START_ID</emphasis> is the first allowed document ID to be selected by the
+expression in its traversal order, e.g. least or equal for ascending and
+greatest or equal for descending.
+</para>
+	<para>
+<emphasis>END_ID</emphasis> is the last allowed id in the traversal order.  For descending order
+the START_ID must be &gt;= END_ID for hits to be able to exist.  For ascending
+order the START_ID must be &lt;= END_ID for hits to be able to exist.
+</para>
+	<para>
+<emphasis>DESCENDING</emphasis> specifies that the search will produce the
+hit with the greatest ID first, as defined by integer or composite collation.  This
+has nothing to do with a possible ORDER BY of the
+enclosing statement.  Even if there is an ORDER BY in the enclosing
+statement the DESCENDING keyword of xcontains has an effect in the
+interpretation of the STRT_ID and END_ID xcontains options.
+</para>
+	<para>
+<emphasis>RANGES</emphasis> specifies that the query variable following the RANGES keyword will
+be bound to the word position ranges of the hits of the expression inside
+the document.  The variable is in scope inside the enclosing SELECT
+statement.
+</para>
+	<para>
+<emphasis>SCORE_LIMIT</emphasis> specifies a minimum score that hits must have or exceed  to be
+considered matches of the predicate.
+</para>
+	<para>
+<emphasis>OFFBAND</emphasis> specifies that the following column will be retrieved from the free
+text index instead of the actual table.  For this to be possible the column
+must have been declared as offband with the CLUSTERED WITH option of the
+<link linkend="createtxtidxstmt">CREATE TEXT INDEX</link> statement.
+</para>
+
+	<para>
+If the select statement containing
+the xcontains predicate does not specify an exact match of the primary key of
+the table having the xcontains predicate, then the contains predicate will be
+the 'driving' condition, meaning that rows come in ascending or descending
+order of the free text document ID.  If there is a full equality match of the primary
+key of the table, this will be the driving predicate and xcontains will only be used
+to check if the text expression matches the single row identified by the full match
+of the primary key.
+</para>
+	<para>
+The xcontains predicate may not appear outside of a select statement and may
+only reference a column for which a free text index has been declared.  The
+first argument must be a column for which there is such an index.  The text
+expression may be variable and computed, although it must be constant during
+the evaluation of the select statement containing it.</para>
+<para>
+The xcontains predicate must be a part of the top level AND of the WHERE
+clause of the containing select.  It may not for example be a term of an OR
+predicate in the select but can be AND'ed with an OR expression.
+</para>
+
+<example>
+<title>Selecting Title Elements Called 'Key'</title>
+<programlisting>
+select xt_file from xml_text2 where
+ xcontains (xt_text, &apos;//title = &quot;Key&quot;&apos;);
+</programlisting>
+<para>
+The query retrieves the <parameter>xt_file</parameter> for rows
+whose <parameter>xt_text</parameter> is an XML document containing
+&apos;Key&apos; as the text value of a title element.
+</para>
+<para>If not all values in <parameter>xt_text</parameter> are valid XMLs then
+'__quiet' option can be useful to disable error signalling. It is unusual to get
+an incorrect XML stored in a column that has free text XML index because
+both on insert and on update the text is parsed by an free text indexing routine,
+but the error is possible if e.g. a non-standalone document is stored and
+an important external entity was available at indexing time but disappeared later.
+Thus a modified example might be better for a column with non-standalone documents;
+<programlisting>
+select xt_file from xml_text2 where
+ xcontains (xt_text, &apos;[__quiet] //title = &quot;Key&quot;&apos;);
+</programlisting>
+</para>
+<title>Selecting Title Element that Contains a Specified Text</title>
+<programlisting>
+select n from xml_text2 where
+ xcontains(xt_text,
+ &apos;//title[. = &quot;AS Declaration - Column Aliasing&quot;]&apos;,0,n);
+</programlisting>
+<para>
+The query retrieves each title element from each row of
+<parameter>xml_text2</parameter> where the
+<parameter>xt_text</parameter> contains title elements with the text
+value &quot;AS Declaration - Column Aliasing.&quot;
+</para>
+<note><title>Note</title> <para>The equality test is case- and
+whitespace-sensitive, as normal in XPath.  The free text index is used
+for the search but the final test is done according to XPath
+rules.</para>
+</note>
+</example>
+
+<tip><title>See Also:</title>
+<para>The <link linkend="containspredicate">CONTAINS</link> Predicate.</para></tip>
+</sect2>
+
+<sect2 id="textcontainsxpath">
+<title>text-contains XPath Predicate</title>
+
+<programlisting>
+text-contains (node-set, text-expression)
+</programlisting>
+	<para>
+This XPath predicate is true if any of the nodes in
+<parameter>node-set</parameter> have text values matching the
+<parameter>text-expression</parameter>.  The
+<parameter>text-expression</parameter> should be a constant string
+whose syntax corresponds to the top production of the free text syntax
+for patterns in <function>contains()</function>. The string also may
+not consist exclusively of spaces or noise words.
+</para>
+<tip><title>See Also:</title>
+<para>&quot;Noise Words&quot; in the <link linkend="freetext">Free Text Search
+chapter</link>.</para></tip>
+
+<example>
+<title>Selecting All Titles About Aliasing</title>
+<programlisting>
+select n from xml_text2 where
+  xcontains (xt_text,
+  &apos;//title[text-contains (., &quot;Aliasing&quot;)]&apos;, 0, n);
+</programlisting>
+</example>
+
+	<para>
+This selects all title elements that contain the word
+&quot;Aliasing&quot; using free text match rules: case insensitive and
+whole word.
+</para>
+
+<example>
+<title>Select All Trees with Elements Containing &quot;sql reference&quot;</title>
+<programlisting>
+select n from xml_text2 where
+  xcontains (xt_text,
+  &apos;//*[text-contains (., &apos;&apos;&quot;sql reference&quot;&apos;&apos;)]&apos;,
+  0, n);
+</programlisting>
+</example>
+
+	<para>
+This selects all elements whose text value contains the phrase
+&quot;sql reference&quot;.  Free text matching rules apply.  This
+produces all nodes in document order for all documents which contains
+the phrase, starting with the document node and following downward
+including all paths to the innermost element(s) whose text contains
+the phrase.
+</para>
+</sect2>
+
+<sect2 id="xmlfreetextrules">
+<title>XML Free Text Indexing Rules</title>
+
+	<para>
+XML documents are inserted into the free text index as follows:
+</para>
+<simplelist>
+<member>The process works on the parsed XML tree; therefore character
+and local entity references are expanded.</member>
+<member>Whole words of text content, bounded by delimiters used for
+free text, are each assigned an ordinal number.  Noise words defined
+in the noise.txt file used by free text indexing are not
+counted.</member>
+<member>Attribute names and values are not indexed.</member>
+<member>Element start and end tags are indexed using the expanded
+names &mdash; that is, prefixed with the namespace URI + &apos;:&apos;.</member>
+<member>An element start tag&apos;s ordinal number is one less than
+the ordinal number of the first whole word in the text value.</member>
+<member>A close tag&apos;s ordinal number is one greater than that of
+the last word in the text value.</member>
+</simplelist>
+
+	<para>
+From these rules follows that:
+</para>
+
+<programlisting>
+&lt;html&gt;
+  &lt;body&gt;
+   &lt;title&gt;Title of Document&lt;/title&gt;
+   &lt;p&gt;Some &lt;b&gt;bold&lt;/b&gt; text &lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</programlisting>
+
+	<para>
+will be indexed as follows:
+</para>
+
+<programlisting>
+&lt;html&gt;		0
+&lt;body&gt;		0
+&lt;title&gt;		0
+Title		1
+of		- no number, noise word
+Document		2
+&lt;/title&gt;		3
+   &lt;p&gt;		3
+Some		4
+ &lt;b&gt;		4
+bold		5
+&lt;/b&gt;		6
+ text		6
+&lt;/p&gt;		6
+  &lt;/body&gt;		6
+&lt;/html&gt;		6
+</programlisting>
+
+	<para>
+As a result, the phrase &quot;some bold text&quot; is the string value
+of the &lt;p&gt; tag and will match the free text expression
+&quot;some bold text&quot; even though there is mark-up in it.
+Conversely, the phrase &quot;Document some bold&quot; does not match.
+Words will not considered adjacent if there is a mix of opening and
+closing tags.  They will only be considered adjacent if there are
+solely one or more either opening or closing tags between them.  This
+can be circumvented by using the <parameter>NEAR</parameter> connective
+instead of the phrase construct.
+</para>
+	<para>
+A free text condition will only be true of an element if all the words
+needed to satisfy the condition are part of the element&apos;s string
+value.  This string value includes text children of
+descendants.</para>
+</sect2>
+
+	<sect2 id="xmlencoding">
+		<title>XML Processing &amp; Free Text Encoding Issues</title>
+		<para>
+XML documment may be written in a variety of encodings, and it may cause errors
+if an incorrect encoding is used for reading a document.  Most common errors
+can easily be eliminated by writing proper XML prologs in documents, but this
+is not always possible, e.g. if documents are composed by third-party
+applications.  Virtuoso provides various tools to support different types of
+encodings and to specify encodings to use if a given document has no XML prolog.
+</para>
+		<sect3 id="encodingsvscharsets">
+			<title>Encodings: The Difference Between Encodings &amp; Character Sets</title>
+			<para>
+Not all documents may be converted to Unicode by using simple character sets.
+Some of them are stored in so-called &quot;multibyte&quot; encodings.
+It means that every letter (or ideograph) is represented as a sequence of
+one or more bytes, not by exactly one byte.  The conversion from such representation
+to Unicode and back is usually significally slower than simple transformation
+via character sets, so these representations are supported by data import operations only, but not by internal RDBMS
+routines.</para>
+			<para>
+The Virtuoso Server &quot;knows&quot; some number of built-in encodings, such as UTF-8,
+UTF-16BE and UTF-16LE.  It can load additional encoding descriptions from
+a "UCM" file, and can automatically create a new encoding from a known charset with
+the same name.  See the <link linkend="ucmencodings">UCM Encodings</link> section
+for more details.</para>
+			<para>
+An encoding may be used in the following places:
+</para>
+<simplelist>
+<member>The XML/HTML parser to convert source text to Unicode.</member>
+<member>The free-text indexing engine to convert plain-text or XML documents
+  to Unicode during the indexing.</member>
+<member>It may be used by the compiler of free-text search expressions
+  to convert string constants of the expression to Unicode.</member>
+<member>It may be used to convert string constants of XPath/XQuery expressions.</member>
+</simplelist>
+			<para>You can only use character sets, not encodings as an ODBC connection
+character set, as a character set attribute of a column of a database table,
+as an output encoding of the built-in XSLT processor (it is for future versions).
+UTF-8 is an exception, it is supported in many places where other encodings are not.</para>
+<!-- not clear -->
+  <tip><title>Security Note:</title>
+<para>Two strings converted to Unicode may be identical, but this does not
+guarantee that their source strings were equal byte-by-byte due to the
+nature of some encodings.  For this reason you should avoid processing
+authorization data that are neither in Unicode nor in one of the standard
+character sets (single-byte encodings).  Multibyte encodings and user-defined
+character sets may be unsafe for such purposes.
+  </para></tip>
+			<sect4 id="ucmencodings">
+				<title>UCM Encodings</title>
+				<para>
+The description of a multibyte encodings is much longer than the description
+of a character set.  It is inconvenient to keep such amounts of data inside
+the executable.  Virtuoso can load descriptions of required encodings
+from external files in UCM format.  Every UCM file describes one encoding.</para>
+				<para>
+Virtuoso loads UCM files at system initialization.  The list of UCM files
+is kept in the <link linkend="VIRTINI">Virtuoso INI file</link> under a
+section called [Ucms].  This section should contain a UcmPath parameter and
+one or more parameters with names Ucm1, Ucm2, Ucm3 and so on (up to Ucm99).</para>
+				<para>
+The UcmPath parameter specifies the directory where UCM files are located,
+and every UcmNN parameter specifies the name of a UCM file to load and
+a list of names that the encoding can be identified by the
+&lt;?xml ... encoding="..." ?&gt; XML preamble.  A vertical bar character is
+used to delimit names in the list.</para>
+
+<example id="ucmdefininifile">
+<title>Sample [Ucms] Section</title>
+<programlisting>
+[Ucms]
+UcmPath = /usr/local/javalib/ucm
+Ucm1 = java-Cp933-1.3-P.ucm,Cp933
+Ucm2 = java-Cp949-1.3-P.ucm,Cp949|Korean
+</programlisting>
+
+<para>This section describes two UCM files located in /usr/local/javalib/ucm
+directory: data from java-Cp933-1.3-P.ucm will be used for documents in the
+'Cp933' encoding; data from java-Cp949-1.3-P.ucm will be used for documents
+in the 'Cp949' encoding and for documents in the 'Korean' encoding
+(because these two names refers to the same encoding).  </para>
+</example>
+<note><title>Note:</title>
+  <para>The encoding name specified inside the UCM file itself is not used.</para>
+  </note>
+				<para>
+The Virtuoso server will log the results of processing each UCM file specified
+in the Virtuoso INI file.  If a UCM file specified is not found or contains
+syntax errors, the error is logged, otherwise only the type and name(s) of
+the encoding are logged.</para>
+<note><title>Note:</title>
+<para>If the virtuoso.ini contains a misspelled name of a parameter or section,
+the parameter (or a whole section) is ignored without being reported as an error.
+It is always wise to verify that the log contains a record about the encoding(s)
+you load.</para></note>
+
+<tip><title>See Also:</title>
+<para>UCM files can be found freely from various sites concerning the &quot;International Components
+for Unicode&quot; project, such as: <ulink url="http://www-124.ibm.com/icu">IBM ICU Homepage</ulink>
+or the <ulink url="http://oss.software.ibm.com/cvs/icu/charset/data/ucm/">IBM UCM files directory</ulink>.</para>
+<para>The <link linkend="cinterface">C Interface</link> chapter contains
+further information regarding user customizable support for new encodings and
+languages.  For almost all tasks, it is enough to define a new charset or to
+load an additional UCM file, but some special tasks may require writing
+additional C code.</para>
+</tip>
+</sect4>
+  </sect3>
+	<sect3 id="encodingattr"><title>The <parameter>Encoding</parameter> Attribute</title>
+
+<para>If an XML document contains the <parameter>encoding</parameter>
+parameter in its</para>
+<programlisting>&lt;?xml ... ?&gt;</programlisting>
+<para>prolog declaration, it will be properly decoded and converted into
+UTF-8, so the application code is free from encoding problems.  If the
+value of this attribute is the name of a pre-set or user-defined character
+set, that character set will be used. Virtuoso will recognize names such as
+<parameter>UTF-8</parameter> and <parameter>UTF8</parameter> as multi-character
+or special encodings.  Virtuoso recognizes both official names and aliases.</para>
+
+<para>If an encoding is not specified in an XML prolog, or if the document
+contains no prolog, the default encoding will be used to read the
+document.  If a built-in SQL function invokes the XML parser, it will
+have an optional argument <parameter>parser_mode</parameter> to
+specify whether source text should be parsed as strict XML or as HTML.
+If the source text is 8-bit, then UTF-8 will be used as the default
+encoding for &quot;XML mode&quot;, and ISO-8859-1 (Latin-1) will be the
+default for &quot;HTML mode&quot;.  If the source text is of some
+wide-character type, Unicode is the default.  To make another encoding
+the default, you may specify its official or alias name as the
+<parameter>content_encoding</parameter> argument of a built-in
+function you call.</para>
+  </sect3>
+		<sect3 id="encodingxpathexp">
+			<title>Encoding in XPath Expressions</title>
+			<para>
+Sometimes applications should perform XPath queries using the encoding specified
+by a client.  For example, a search engine may ask a user to specify a pattern to
+search and use the browser's current encoding as a hint to parse the pattern
+properly.  In such cases you may wish to use the <parameter>__enc</parameter>
+XPath option to specify the encoding used for the rest of XPath string:</para>
+
+  <example><title>Specifying Search Encodings in XPath</title>
+    <para>Create a sample table and store an XML with non-Latin-1 characters</para>
+    <programlisting>
+create table ENC_XML_SAMPLE (
+  ID integer,
+  XPER long varchar,
+  primary key (ID)
+);
+
+insert into ENC_XML_SAMPLE (ID, XPER)<!-- values (1, xml_persistent ('<?xml version="1.0" encoding="WINDOWS-1251" ?><book><cit>Îí äîáàâèë êàðòîøêè, ïîñîëèë è ïîñòàâèë àêâàðèóì íà îãîíü (Ì.Æâàíåöêèé)</cit></book>')); -->
+values (
+  1,
+  xml_persistent ('&lt;?xml version="1.0" encoding="WINDOWS-1251" ?&gt;
+    &lt;book&gt;&lt;cit&gt;&#206;&#237; &#228;&#238;&#225;&#224;&#226;&#232;&#235;
+      &#234;&#224;&#240;&#242;&#238;&#248;&#234;&#232;,
+    &#239;&#238;&#241;&#238;&#235;&#232;&#235; &#232;
+    &#239;&#238;&#241;&#242;&#224;&#226;&#232;&#235;
+    &#224;&#234;&#226;&#224;&#240;&#232;&#243;&#236; &#237;&#224;
+    &#238;&#227;&#238;&#237;&#252;
+    (&#204;.&#198;&#226;&#224;&#237;&#229;&#246;&#234;&#232;&#233;
+    )&lt;/cit&gt;&lt;/book&gt;'
+  )
+);
+...
+  </programlisting>
+<para>Find the IDs of all XML documents whose texts contain a specified
+phrase.  Note that there are pairs of single quotes (not double
+quotes) around <parameter>KOI8-R</parameter>.  The encoding name should
+be in single quotes, but because it is inside a string constant the
+quotes must be duplicated.
+ </para>
+ <programlisting>
+select ID from ENC_XML_SAMPLE where
+  xcontains (XPER, '[__enc ''KOI8-R''] //cit[text-contains(.,
+  "''&#208;&#207;&#211;&#212;&#193;&#215;&#201;&#204;
+    &#193;&#203;&#215;&#193;&#210;&#201;&#213;&#205;
+    &#206;&#193; &#207;&#199;&#207;&#206;&#216;''")]');
+<!-- select ID from ENC_XML_SAMPLE where xcontains (XPER, '[__enc ''KOI8-R''] //cit[text-contains(., "''ÐÏÓÔÁ×ÉÌ ÁË×ÁÒÉÕÍ ÎÁ ÏÇÏÎØ''")]'); -->
+</programlisting>
+</example>
+		</sect3>
+		<sect3 id="encodinginfttsp">
+			<title>Encoding in Free Text Search Indexes &amp; Patterns</title>
+			<para>Like XML applications, free text searching may have encoding problems,
+and Virtuoso offers a similar solution for them.</para>
+			<para>Both the CREATE TEXT INDEX statement and vt_create_text_index()
+      Virtuoso/PL procedure
+have an optional argument to specify the encoding of the indexed data.
+The specified encoding will be applied to all source text documents
+(if the TEXT INDEX was created), or to all XML documents that have no encoding
+attribute of the sort &lt;?xml ... encoding=&quot;...&quot; ?&gt;
+(if the TEXT XML INDEX was created).</para>
+			<para>
+The option <parameter>__enc</parameter> may be specified at the
+beginning of free text search pattern, even if the pattern is inside
+an XPath statement:</para>
+  <example>
+<title>Specifying an Encoding for Free Text Searching</title>
+   <para>
+Create a sample table and store a sample of text with non-Latin-1 characters
+(assuming that client encoding is Windows-1251)
+</para>
+  <programlisting>
+create table ENC_TEXT_SAMPLE (
+  ID integer,
+  TEXT long nvarchar,
+  primary key (ID)
+);
+
+insert into ENC_TEXT_SAMPLE (ID, XPER)<!-- values (1, N'Îí äîáàâèë êàðòîøêè, ïîñîëèë è ïîñòàâèë àêâàðèóì íà îãîíü (Ì.Æâàíåöêèé)')); -->
+values (
+  1,
+  '&lt;?xml version="1.0" encoding="WINDOWS-1251" ?&gt;
+&#206;&#237; &#228;&#238;&#225;&#224;&#226;&#232;&#235;
+    &#234;&#224;&#240;&#242;&#238;&#248;&#234;&#232;,
+    &#239;&#238;&#241;&#238;&#235;&#232;&#235; &#232;
+    &#239;&#238;&#241;&#242;&#224;&#226;&#232;&#235;
+    &#224;&#234;&#226;&#224;&#240;&#232;&#243;&#236;
+    &#237;&#224; &#238;&#227;&#238;&#237;&#252;
+    (&#204;.&#198;&#226;&#224;&#237;&#229;&#246;&#234;&#232;&#233;')
+);
+...
+</programlisting>
+  <para>Find the IDs of all text documents whose texts contain a specified phrase.
+</para>
+<!-- select ID from ENC_TEXT_SAMPLE where contains (TEXT, '[__enc ''KOI8-R''] "ÐÏÓÔÁ×ÉÌ ÁË×ÁÒÉÕÍ ÎÁ ÏÇÏÎØ"'); -->
+  <programlisting>
+select ID from ENC_SAMPLE where
+  contains (TEXT, '[__enc ''KOI8-R'']
+    "&#208;&#207;&#211;&#212;&#193;&#215;&#201;&#204;
+    &#193;&#203;&#215;&#193;&#210;&#201;&#213;&#205;
+    &#206;&#193; &#207;&#199;&#207;&#206;&#216;"'
+  );
+</programlisting>
+  <para>Encoding may be applied locally to an argument of the text-search predicate.
+It may be used if the document contains citations in different encodings or if
+the XML document contains non-ASCII characters in names of tags or attributes,
+or if the encoding affects character codes of ASCII symbols such as '/' or '['.
+</para>
+  <programlisting>
+select ID from ENC_XML_SAMPLE where
+  xcontains (XPER, '//cit[text-contains(., "[__enc ''KOI8-R'']
+    ''&#208;&#207;&#211;&#212;&#193;&#215;&#201;&#204;
+    &#193;&#203;&#215;&#193;&#210;&#201;&#213;&#205; &#206;&#193;
+    &#207;&#199;&#207;&#206;&#216;''")]'
+  );
+</programlisting>
+</example>
+<note><title>Note:</title>
+      <para>
+You may have free-text a expression written as a literal contant:
+e.g. if the argument of text-contains XPath function is a literal contant.
+Be careful to not declare the __enc twice, once in the beginning of the whole
+XPath expression and then again in the beginning of the free-text expression
+contant, because words of the text expression will thus be converted twice.</para></note>
+  </sect3>
+		</sect2>
+	</sect1>
+
+	<sect1 id="updategrams">
+<title>Using UpdateGrams to Modify Data</title>
+
+<para>Updategrams allow database updates to be defined as XML.  This
+is ultimately achieved by mapping the XML nodes against corresponding
+database columns.  Updategrams can be used to replace existing data
+access components in a middle tier.  A typical application will
+include a middle tier consisting of business logic and data access
+code.  The data access code will interact with the database using
+disconnected recordsets and command objects calling stored procedures.
+Most of the data access section of the middle tier can be replaced
+with updategrams.</para>
+
+<para>Most data access tiers (both middle tier code and stored
+procedures) will deal individually with specific database tables or
+groups of related tables.  This can inhibit performance and often
+several round trips to the database are required to complete a
+transaction.  Updategrams solve this problem by including all the data
+in an XML document that is then mapped to database tables and columns.
+The entire database update can then be accomplished at once.  This
+update can include inserting, updating and deleting data.</para>
+
+<para>The <function>xmlsql_update()</function> function supports
+XML-based insert, update, and delete operations performed on an
+existing table in the database.</para>
+
+<link linkend="fn_xmlsql_update"><function>xmlsql_update()</function></link>
+
+<sect2 id="updategrambasics">
+<title>Updategrams Basics</title>
+
+	<para>
+The general format of an updategram is:
+</para>
+
+	<programlisting>
+&lt;sql:sync xmlns:sql="xml-sql"&gt;
+ &lt;sql:before&gt;
+    &lt;TABLENAME [sql:id="value"] col="value" col="value"?../&gt;
+ &lt;/sql:before&gt;
+ &lt;sql:after&gt;
+    &lt;TABLENAME [sql:id="value"] [sql:at-identity="value"]
+      col="value" col="value"?../&gt;
+ &lt;/sql:after&gt;
+&lt;/sql:sync&gt;
+</programlisting>
+
+<para>
+or
+</para>
+
+<programlisting>
+&lt;sql:sync xmlns:sql="xml-sql"&gt;
+        &lt;sql:before&gt;
+                &lt;TABLENAME [sql:id="value"]&gt;
+		   &lt;col&gt;"value"&lt;/col&gt;
+		   &lt;col&gt;"value"&lt;/col&gt;
+		   ...
+		&lt;/TABLENAME&gt;
+		...
+        &lt;/sql:before&gt;
+        &lt;sql:after&gt;
+                &lt;TABLENAME [sql:id="value"] [sql:at-identity="value"]&gt;
+		   &lt;col&gt;"value"&lt;/col&gt;
+		   &lt;col&gt;"value"&lt;/col&gt;
+		   ...
+		&lt;/TABLENAME&gt;
+		...
+        &lt;/sql:after&gt;
+&lt;/sql:sync&gt;
+</programlisting>
+</sect2>
+
+	<sect2 id="elementsdesc">
+	<title>Elements Description</title>
+
+	<para>
+The <parameter>&lt;sync&gt;</parameter> tag of the updategram
+signifies the beginning of an operation(s) The rows specified in the
+<parameter>&lt;before&gt;</parameter> refer to existing records in the
+database.  The rows specified in the
+<parameter>&lt;after&gt;</parameter> block refer to what the user
+wants in the database.  <parameter>&lt;TABLENAME.../&gt;</parameter>
+identifies target table.
+</para>
+	<para>
+The <parameter>sql:at-identity</parameter> attribute stores the last
+identity value added by the system (if possible).  This identity value
+can then be used in subsequent operations.
+</para>
+	<para>
+The <parameter>sql:id</parameter> attribute is used to mark rows. This
+forces an association between the record specified in the
+<parameter>&lt;before&gt;</parameter> and
+<parameter>&lt;after&gt;</parameter> block in the update gram.  When
+there are multiple instances specified, it is recommended that
+<parameter>sql:id</parameter> attribute be used for all the instances.
+</para>
+	<para>
+Each <parameter>&lt;TABLENAME.../&gt;</parameter> refers to a single
+table. Multiple <parameter>&lt;TABLENAME.../&gt;</parameter> entries
+are allowed in the same <parameter>&lt;before&gt;</parameter> or
+<parameter>&lt;after&gt;</parameter> tags, or in both
+<parameter>&lt;before&gt;</parameter> and
+<parameter>&lt;after&gt;</parameter> tags; however, nesting is not
+allowed.  The <parameter>&lt;before&gt;</parameter> and
+<parameter>&lt;after&gt;</parameter> tags are optional. A missing tag
+is the same as having a tag with no content.
+</para>
+	</sect2>
+<sect2 id="determiningactions">
+<title>Determining Actions</title>
+	<para>
+If only the <parameter>&lt;after&gt;</parameter> block is specified,
+the rows specified in the <parameter>&lt;after&gt;</parameter> block
+are inserted in the table(s). If both the
+<parameter>&lt;before&gt;</parameter> and
+<parameter>&lt;after&gt;</parameter> blocks are specified, then rows
+specified in the <parameter>&lt;after&gt;</parameter> block for which
+there are no corresponding rows in the
+<parameter>&lt;before&gt;</parameter> block are inserted in the
+table(s).
+</para>
+	<para>
+In an update operation, the rows specified in the
+<parameter>&lt;before&gt;</parameter> block refer to existing rows in
+the database. The corresponding rows in the
+<parameter>&lt;after&gt;</parameter> block reflect what the user wants
+in the database. A row update operation is performed if there is a row
+in both the <parameter>&lt;before&gt;</parameter> and
+<parameter>&lt;after&gt;</parameter> sections with the same set of
+values for the attributes that uniquely identify a row in a
+table. Rows specified in the <parameter>&lt;before&gt;</parameter>
+block must be valid in the database for the updategram to successfully
+update the rows.
+</para>
+	<para>
+In a delete operation, if only the
+<parameter>&lt;before&gt;</parameter> block is specified in the update
+gram, the rows specified in the <parameter>&lt;before&gt;</parameter>
+block are deleted from the table(s). If both the
+<parameter>&lt;before&gt;</parameter> and
+<parameter>&lt;after&gt;</parameter> blocks are specified, the rows
+for which there are no corresponding rows in the
+<parameter>&lt;after&gt;</parameter> block are deleted from the
+table(s).
+</para>
+	</sect2>
+<sect2 id="usinginparams">
+<title>Using Input Parameters</title>
+	<para>
+Parameters declarations should be described in the &lt;header&gt;
+section of the updategram.  There should be one
+<parameter>&lt;param&gt;</parameter> row for each parameter.
+</para>
+	<para>
+General syntax:
+</para>
+	<programlisting>
+&lt;sql:header xmlns:sql="xml-sql"&gt;
+  &lt;sql:param name="PARAM_NAME" [default="DEFAULT_VALUE"]/&gt;
+  ...
+&lt;/sql:header&gt;
+</programlisting>
+	<para>
+Where <parameter>PARAM_NAME</parameter> is the name of the parameter
+and <parameter>DEFAULT_VALUE</parameter> is optional default of
+parameter Parameters in updategram should have
+<parameter>$PARAM_NAME</parameter> instead of a value.  On processing,
+Virtuoso replaces <parameter>$PARAM_NAME</parameter> with the
+corresponding value from the
+<parameter>&lt;input_parameters&gt;</parameter> given to the function
+<function>xmlsql_update()</function>.
+</para>
+</sect2>
+
+<sect2 id="examples">
+<title>Examples</title>
+<para>
+Given the following tables:
+</para>
+<programlisting>
+CREATE TABLE Orders (
+    OrderID int identity,
+    CustomerID varchar(10),
+    EmpID int,
+    PRIMARY KEY (OrderID));
+
+CREATE TABLE OrderDetails (
+    OrderID int,
+    ProductID int,
+    Quantity int);
+</programlisting>
+
+<para>
+A. Update Gram to Insert a Record
+</para>
+
+<programlisting>
+xmlsql_update (xml_tree_doc (xml_tree (
+'&lt;ROOT xmlns:sql="urn:schemas-microsoft-com:xml-sql"&gt;
+&lt;sql:sync&gt;
+  &lt;sql:after&gt;
+    &lt;Orders CustomerID="TEST" EmpID="99"/&gt;
+  &lt;/sql:after&gt;
+&lt;/sql:sync&gt;
+&lt;/ROOT&gt;')));
+</programlisting>
+
+<para>
+B. Updategram with an <parameter>at-identity</parameter> Attribute
+</para>
+
+<programlisting>
+xmlsql_update (xml_tree_doc (xml_tree (
+'&lt;ROOT xmlns:sql="urn:schemas-microsoft-com:xml-sql"&gt;
+&lt;sql:sync&gt;
+  &lt;sql:after&gt;
+    &lt;Orders sql:at-identity="x" CustomerID="VINET" EmpID="10"/&gt;
+      &lt;OrderDetails OrderID="x" ProductID="1" Quantity="50"/&gt;
+      &lt;OrderDetails OrderID="x" ProductID="2" Quantity="20"/&gt;
+    &lt;Orders sql:at-identity="x" CustomerID="HANAR" EmpID="11"/&gt;
+      &lt;OrderDetails OrderID="x" ProductID="1" Quantity="30"/&gt;
+      &lt;OrderDetails OrderID="x" ProductID="4" Quantity="25"/&gt;
+  &lt;/sql:after&gt;
+&lt;/sql:sync&gt;
+&lt;/ROOT&gt;')));
+</programlisting>
+
+<para>
+C. Updategram to Delete a Record
+</para>
+
+<programlisting>
+xmlsql_update (xml_tree_doc (xml_tree (
+'&lt;ROOT xmlns:sql="urn:schemas-microsoft-com:xml-sql"&gt;
+&lt;sql:sync&gt;
+  &lt;sql:before&gt;
+    &lt;Orders CustomerID="HANAR" EmpID="11"/&gt;
+  &lt;/sql:before&gt;
+&lt;/sql:sync&gt;
+&lt;/ROOT&gt;')));
+</programlisting>
+
+<para>
+D. Updategram to Update a Record
+</para>
+
+<programlisting>
+xmlsql_update (xml_tree_doc (xml_tree (
+'&lt;ROOT xmlns:sql="urn:schemas-microsoft-com:xml-sql"&gt;
+&lt;sql:sync&gt;
+  &lt;sql:before&gt;
+    &lt;Orders sql:id="1" CustomerID="VINET" EmpID="10"/&gt;
+  &lt;/sql:before&gt;
+  &lt;sql:after&gt;
+    &lt;Orders sql:id="1" CustomerID="VINET_NEW" EmpID="11"/&gt;
+  &lt;/sql:after&gt;
+&lt;/sql:sync&gt;
+&lt;/ROOT&gt;')));
+</programlisting>
+
+<para>
+E: Using a different syntax for updategrams &mdash; entities in place
+of attributes &mdash; example D can be transformed to:
+</para>
+
+<programlisting>
+xmlsql_update (xml_tree_doc (xml_tree (
+'&lt;ROOT xmlns:sql="urn:schemas-microsoft-com:xml-sql"&gt;
+&lt;sql:sync&gt;
+  &lt;sql:before&gt;
+    &lt;Orders sql:id="1"&gt;
+      &lt;CustomerID&gt;VINET&lt;/CustomerID&gt;
+      &lt;EmpID&gt;10&lt;/EmpID&gt;
+    &lt;/Orders&gt;
+  &lt;/sql:before&gt;
+  &lt;sql:after&gt;
+    &lt;Orders sql:id="1"&gt;
+      &lt;CustomerID&gt;VINET_NEW&lt;/CustomerID&gt;
+      &lt;EmpID&gt;11&lt;/EmpID&gt;
+    &lt;/Orders&gt;
+  &lt;/sql:after&gt;
+&lt;/sql:sync&gt;
+&lt;/ROOT&gt;')));
+</programlisting>
+
+<para>
+Note that two syntaxes cannot be mixed in one document.
+</para>
+<para>
+F: Using input parameters
+</para>
+
+<para>
+Assume the following table:
+</para>
+<programlisting>
+CREATE TABLE Shippers(
+  ShipperID INTEGER,
+  CompanyName VARCHAR(40),
+  Phone VARCHAR(24),
+  PRIMARY KEY (ShipperID));
+
+xmlsql_update (xml_tree_doc (xml_tree (
+'&lt;DocumentElement xmlns:sql="urn:schemas-microsoft-com:xml-sql"&gt;
+    &lt;sql:header&gt;
+      &lt;sql:param name="ShipperID" default="2"/&gt;
+      &lt;sql:param name="CompanyName" default="United Package New"/&gt;
+      &lt;sql:param name="Phone" default="(503) 555-3199 (new)"/&gt;
+    &lt;/sql:header&gt;
+    &lt;sql:sync&gt;
+        &lt;sql:before&gt;
+        &lt;/sql:before&gt;
+        &lt;sql:after&gt;
+            &lt;Shippers sql:id="1" ShipperID="\$ShipperID"
+	    CompanyName="\$CompanyName" Phone="\$Phone"/&gt;
+        &lt;/sql:after&gt;
+    &lt;/sql:sync&gt;
+&lt;/DocumentElement&gt;')),
+    vector ('ShipperID','10','CompanyName','DHL','Phone','+359 32 144'));
+		-- &lt;- this is a array with input parameters
+</programlisting>
+<para>
+This will add one record to the Shippers table with the data in the array.
+Note that the slash/dollar sign pair '\$' transforms to dollar sign '$' only
+</para>
+</sect2>
+</sect1>
+
+	<!-- ################### ~~~~~~~~~~ ################### -->
+
+&xmltemplates;
+
+	<!-- ################### ~~~~~~~~~~ ################### -->
+
+&xmlschema;
+
+	<!-- ################### ~~~~~~~~~~ ################### -->
+
+&xquery;
+
+	<!-- ################### ~~~~~~~~~~ ################### -->
+
+&xslttrans;
+
+	<!-- ################### ~~~~~~~~~~ ################### -->
+
+&XMLType;
+&XMLDOM;
+</chapter>

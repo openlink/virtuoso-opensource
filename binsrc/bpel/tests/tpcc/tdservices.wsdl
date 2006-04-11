@@ -1,0 +1,333 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+ xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+ xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:dime="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+ xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+ xmlns:content="http://schemas.xmlsoap.org/ws/2002/04/content-type/"
+ xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/"
+ xmlns:ns0="http://soaptd.org/"
+ xmlns:dl="http://soaptd.org/"
+ xmlns:tns="http://soaptd.org/"
+ targetNamespace="http://soaptd.org/"
+ name="VirtuosoTestDriverService" xmlns="http://schemas.xmlsoap.org/wsdl/"
+xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/">
+
+	<types>
+	<schema targetNamespace="http://soaptd.org/"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+	<element name="onResultR" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="result" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="onResultRResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="orderInitiate" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="aXML" type="xsd:string" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="orderInitiateResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="orderSuccess" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="result" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="orderId" type="xsd:decimal" />
+		 <element minOccurs="1" maxOccurs="1" name="customerID" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="orderSuccessResponse" >
+	  <complexType>
+	    <all>
+	 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="payment_receipt" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="result" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="payment_receiptResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="orderReceipt" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="result" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="orderReceiptResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="orderDelivered" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="orderID" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="districtID" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="cost" type="xsd:double" />
+		 <element minOccurs="1" maxOccurs="1" name="customerID" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="orderDeliveredResponse" >
+	  <complexType>
+    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="orderFault" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="result" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="orderId" type="xsd:decimal" />
+		 <element minOccurs="1" maxOccurs="1" name="customerID" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="orderFaultResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="deliveryStartTD" >
+	  <complexType>
+	    <sequence>
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="deliveryStartTDResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	</schema>
+	</types>
+	<message name="onResultRRequest">
+		<part element="dl:onResultR" name="parameters" />
+	</message>
+	<message name="onResultRResponse">
+		<part element="dl:onResultRResponse" name="parameters" />
+	</message>
+	<message name="orderInitiateRequest">
+		<part element="dl:orderInitiate" name="parameters" />
+	</message>
+	<message name="orderInitiateResponse">
+		<part element="dl:orderInitiateResponse" name="parameters" />
+	</message>
+	<message name="orderSuccessRequest">
+		<part element="dl:orderSuccess" name="parameters" />
+	</message>
+	<message name="orderSuccessResponse">
+		<part element="dl:orderSuccessResponse" name="parameters" />
+	</message>
+	<message name="payment_receiptRequest">
+		<part element="dl:payment_receipt" name="parameters" />
+	</message>
+	<message name="payment_receiptResponse">
+		<part element="dl:payment_receiptResponse" name="parameters" />
+	</message>
+	<message name="orderReceiptRequest">
+		<part element="dl:orderReceipt" name="parameters" />
+	</message>
+	<message name="orderReceiptResponse">
+		<part element="dl:orderReceiptResponse" name="parameters" />
+	</message>
+	<message name="orderDeliveredRequest">
+		<part element="dl:orderDelivered" name="parameters" />
+	</message>
+	<message name="orderDeliveredResponse">
+		<part element="dl:orderDeliveredResponse" name="parameters" />
+	</message>
+	<message name="orderFaultRequest">
+		<part element="dl:orderFault" name="parameters" />
+	</message>
+	<message name="orderFaultResponse">
+		<part element="dl:orderFaultResponse" name="parameters" />
+	</message>
+	<message name="deliveryStartTDRequest">
+		<part element="dl:deliveryStartTD" name="parameters" />
+	</message>
+	<message name="deliveryStartTDResponse">
+		<part element="dl:deliveryStartTDResponse" name="parameters" />
+	</message>
+	<portType name="TestDriverServiceDocLiteralPortType">
+		<operation name="onResultR">
+			<input message="tns:onResultRRequest" name="onResultRRequest" />
+			<output message="tns:onResultRResponse" name="onResultRResponse" />
+		</operation>
+		<operation name="orderInitiate">
+			<input message="tns:orderInitiateRequest" name="orderInitiateRequest" />
+			<output message="tns:orderInitiateResponse" name="orderInitiateResponse" />
+		</operation>
+		<operation name="orderSuccess">
+			<input message="tns:orderSuccessRequest" name="orderSuccessRequest" />
+			<output message="tns:orderSuccessResponse" name="orderSuccessResponse" />
+		</operation>
+		<operation name="payment_receipt">
+			<input message="tns:payment_receiptRequest" name="payment_receiptRequest" />
+			<output message="tns:payment_receiptResponse" name="payment_receiptResponse" />
+		</operation>
+		<operation name="orderReceipt">
+			<input message="tns:orderReceiptRequest" name="orderReceiptRequest" />
+			<output message="tns:orderReceiptResponse" name="orderReceiptResponse" />
+		</operation>
+		<operation name="orderDelivered">
+			<input message="tns:orderDeliveredRequest" name="orderDeliveredRequest" />
+			<output message="tns:orderDeliveredResponse" name="orderDeliveredResponse" />
+		</operation>
+		<operation name="orderFault">
+			<input message="tns:orderFaultRequest" name="orderFaultRequest" />
+			<output message="tns:orderFaultResponse" name="orderFaultResponse" />
+		</operation>
+		<operation name="deliveryStartTD">
+			<input message="tns:deliveryStartTDRequest" name="deliveryStartTDRequest" />
+			<output message="tns:deliveryStartTDResponse" name="deliveryStartTDResponse" />
+		</operation>
+	</portType>
+	<binding name="TestDriverServiceDocLiteralBinding" type="tns:TestDriverServiceDocLiteralPortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<operation name="onResultR">
+			<soap:operation soapAction="http://soaptd.org/#onResultR" style="document" />
+			<input name="onResultRRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="onResultRResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="orderInitiate">
+			<soap:operation soapAction="http://soaptd.org/#orderInitiate" style="document" />
+			<input name="orderInitiateRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="orderInitiateResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="orderSuccess">
+			<soap:operation soapAction="http://soaptd.org/#orderSuccess" style="document" />
+			<input name="orderSuccessRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="orderSuccessResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="payment_receipt">
+			<soap:operation soapAction="http://soaptd.org/#payment_receipt" style="document" />
+			<input name="payment_receiptRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="payment_receiptResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="orderReceipt">
+			<soap:operation soapAction="http://soaptd.org/#orderReceipt" style="document" />
+			<input name="orderReceiptRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="orderReceiptResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="orderDelivered">
+			<soap:operation soapAction="http://soaptd.org/#orderDelivered" style="document" />
+			<input name="orderDeliveredRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="orderDeliveredResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="orderFault">
+			<soap:operation soapAction="http://soaptd.org/#orderFault" style="document" />
+			<input name="orderFaultRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="orderFaultResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="deliveryStartTD">
+			<soap:operation soapAction="http://soaptd.org/#deliveryStartTD" style="document" />
+			<input name="deliveryStartTDRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="deliveryStartTDResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+	</binding>
+	<service name="VirtuosoTestDriverService">
+		<documentation>Virtuoso SOAP services</documentation>
+		<port name="TestDriverServiceDocLiteralPort" binding="tns:TestDriverServiceDocLiteralBinding">
+		    <soap:address location="http://localhost:HTTPPORTTD/TDPOINT" />
+		</port>
+	</service>
+        <plnk:partnerLinkType name="TestDriverA">
+                <plnk:role name="TestDriverProvider">
+			<plnk:portType name="tns:TestDriverServiceDocLiteralPortType" />
+		</plnk:role>
+	</plnk:partnerLinkType>
+</definitions>

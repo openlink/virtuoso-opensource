@@ -1,0 +1,78 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XS-S-9">
+  <refmeta>
+    <refentrytitle>XML Examples</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Using the xpath_eval()</refname>
+    <refpurpose>Making the resultsets with xpath_eval() function</refpurpose>
+  </refnamediv>
+
+<refsect1 id="XS-S-9a">
+<title>Preliminaries</title>
+<para>The xpath_eval() function returns the result of applying the xpath expression to the
+context node.  By default only the first result is returned, but supplying a third argument 
+allows an index for the value to be specified. The default assumes a value of 1 here.  
+A value of 0 returns an array of 0 or more elements, one for each value selected by the
+xpath expression.</para>
+</refsect1>
+
+<refsect1 id="XS-S-9b">
+<title>Examples</title>
+<para>The examples create an internal representation of the XML image using xml_tree_doc().
+An xpath_eval() statement is then executed against the internal representation of the XML document
+specified as /ROOT/Customers which identifies the &lt;Customers&gt; nodes to be processed.</para>
+
+<para>The loop iterates over result for each attribute value (as CustomerID and ContactName in the first example) 
+and retrieves the necessary values. 
+Then the PL procedures calls result_names() and result() to send the result set to the client.</para>
+
+<para>The first example will produce (when applying via ISQL utility)</para>
+<programlisting>
+CustomerID  ContactName
+VARCHAR     VARCHAR
+________________________
+
+VINET       Paul Henriot
+LILAS       Carlos Gonzalez
+</programlisting>
+
+Here is the result from execution of the second script:
+<programlisting>
+OrderID    CustomerID    OrderDate              ProductID     Quantity
+VARCHAR    VARCHAR       VARCHAR                VARCHAR       VARCHAR
+______________________________________________________________________
+
+10248      VINET         1996-07-04T00:00:00    11            12
+10248      VINET         1996-07-04T00:00:00    42            10
+10283      LILAS         1996-08-16T00:00:00    72            3
+</programlisting>
+
+<para>The VSP code displays the same data, but formats it into a table.</para>
+
+<para>The third example shows XML entities that have returned from first execution of the xpath_eval();</para>
+</refsect1>
+</refentry>

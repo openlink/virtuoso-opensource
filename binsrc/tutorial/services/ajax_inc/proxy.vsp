@@ -1,0 +1,75 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+    declare _xml varchar;
+    declare _xsl_path varchar;
+    declare _mime_type varchar;
+    declare stream any;
+    declare host varchar;
+    declare wsdl_path varchar;
+    declare xslt_type varchar;
+
+    wsdl_path := get_keyword('wsdl_path', params, '');
+    
+    if ( wsdl_path =''){
+      wsdl_path := 'services/services.wsdl';
+    }
+    
+    xslt_type := get_keyword('xslt_type', params, '');
+    if ( xslt_type= ''){
+      xslt_type := 'simple';
+    }
+
+    host := http_request_header(lines, 'Host', null, 'localhost');
+    
+    if(locate('http://',wsdl_path)){
+      _xml := http_get(sprintf('%s',wsdl_path));
+    }else{
+      _xml := http_get(sprintf('http://%s/%s',host,wsdl_path));
+    }  
+
+    _xsl_path := TUTORIAL_XSL_DIR() || '/tutorial/services/ajax_inc';
+
+    if (xslt_type='simple'){
+      _xsl_path := _xsl_path || '/wsdl2js.xsl';
+    }else {
+      _xsl_path := _xsl_path || '/wsdl2js_udt.xsl';
+    }
+
+    _mime_type := 'application/x-javascript';
+
+    xslt_stale(_xsl_path);
+
+    _xml := xml_tree(_xml,0);
+    _xml := xml_tree_doc(_xml);
+    _xml := xslt(_xsl_path,_xml);
+
+    stream := string_output();
+    http_value(_xml,null,stream);
+    _xml := string_output_string(stream);
+
+-- Print to output
+  http_rewrite();
+  http_header (sprintf ('Content-type: %s\r\n', _mime_type));
+  http(_xml);
+?>

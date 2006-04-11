@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_XMLType.transform">
+  <refmeta>
+    <refentrytitle>XMLType.transform</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XMLType.transform</refname>
+    <refpurpose></refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_XMLType.transform">
+      <funcprototype id="fproto_XMLType.transform">
+        <funcdef><function>XMLType.transform</function></funcdef>
+	<paramdef><parameter>stylesheet</parameter> XMLType</paramdef>
+	<paramdef><optional><parameter>params_map</parameter> vector</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_XMLType.transform">
+    <title>Description</title>
+    <para>This member function is not implemented and signals an error if called.</para>
+    <para>Use <function>xslt()</function> built-in function instead.</para>
+  </refsect1>
+<!--  <refsect1 id="params_XMLType.transform">
+    <title>Parameters</title>
+    <refsect2><title></title>
+      <para></para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_XMLType.transform"><title>Return Types</title>
+    <para></para>
+  </refsect1> -->
+<!--  <refsect1 id="examples_XMLType.transform">
+    <title>Examples</title>
+    <example id="ex_XMLType.transform"><title></title>
+      <para></para>
+      <screen><![CDATA[
+]]>
+</screen>
+    </example>
+  </refsect1> -->
+  <refsect1 id="seealso_XMLType.transform">
+    <title>See Also</title>
+    <para><link linkend="fn_xslt"><function>xslt()</function></link></para>
+  </refsect1>
+</refentry>

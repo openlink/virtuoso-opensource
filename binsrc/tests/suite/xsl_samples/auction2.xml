@@ -1,0 +1,113 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<AUCTIONBLOCK>
+
+  <ITEM>
+    <TITLE>Sandstone</TITLE>
+    <ARTIST>Linda Mann</ARTIST>
+    <DIMENSIONS>20x30 inches</DIMENSIONS>
+    <MATERIALS>Oil</MATERIALS>
+    <YEAR>1995</YEAR>
+    <DESCRIPTION>Still Life</DESCRIPTION>
+    <PREVIEW-SMALL src="sand-s.jpg" width="300" height="202" alt="Sandstone"/>
+    <BIDS>
+      <BID>
+        <PRICE>11200</PRICE>
+        <TIME>12:33:19 PM</TIME>
+        <BIDDER>Andrew</BIDDER>
+        <TIMESTAMP>2673</TIMESTAMP>
+      </BID>
+      <BID>
+        <PRICE>11000</PRICE>
+        <TIME>12:21:03 PM</TIME>
+        <BIDDER>Chris</BIDDER>
+        <TIMESTAMP>2665</TIMESTAMP>
+      </BID>
+      <BID>
+        <PRICE>10500</PRICE>
+        <TIME>12:18:00 PM</TIME>
+        <BIDDER>Andrew</BIDDER>
+        <TIMESTAMP>2662</TIMESTAMP>
+      </BID>
+      <BID>
+        <PRICE>10400</PRICE>
+        <TIME>12:16:42 PM</TIME>
+        <BIDDER>Chris</BIDDER>
+        <TIMESTAMP>2649</TIMESTAMP>
+      </BID>
+      <BID>
+        <PRICE>10000</PRICE>
+        <TIME>12:14:26 PM</TIME>
+        <BIDDER>Andrew</BIDDER>
+        <TIMESTAMP>2646</TIMESTAMP>
+      </BID>
+      <BID>
+        <PRICE>9500</PRICE>
+        <TIME>12:09:06 PM</TIME>
+        <BIDDER>Chris</BIDDER>
+        <TIMESTAMP>2642</TIMESTAMP>
+      </BID>
+      <BID>
+        <PRICE>9000</PRICE>
+        <TIME>12:07:55 PM</TIME>
+        <BIDDER>Andrew</BIDDER>
+        <TIMESTAMP>2639</TIMESTAMP>
+      </BID>
+      <BID>
+        <PRICE>8500</PRICE>
+        <TIME>12:03:18 PM</TIME>
+        <BIDDER>Chris</BIDDER>
+        <TIMESTAMP>2622</TIMESTAMP>
+      </BID>
+      <BID>
+        <PRICE>8000</PRICE>
+        <TIME>11:57:02 AM</TIME>
+        <BIDDER>Richard</BIDDER>
+        <TIMESTAMP>2615</TIMESTAMP>
+      </BID>
+      <BID>
+        <PRICE>7000</PRICE>
+        <TIME>11:50:33 AM</TIME>
+        <BIDDER>Chris</BIDDER>
+        <TIMESTAMP>2614</TIMESTAMP>
+      </BID>
+      <BID>
+        <PRICE>6500</PRICE>
+        <TIME>11:42:30 AM</TIME>
+        <BIDDER>John</BIDDER>
+        <TIMESTAMP>2612</TIMESTAMP>
+      </BID>
+      <BID>
+        <PRICE>6200</PRICE>
+        <TIME>11:07:47 AM</TIME>
+        <BIDDER>opening price</BIDDER>
+        <TIMESTAMP>15</TIMESTAMP>
+      </BID>
+  
+    </BIDS>
+    <TIMESTAMP>2673</TIMESTAMP>
+  </ITEM>
+
+</AUCTIONBLOCK>
+

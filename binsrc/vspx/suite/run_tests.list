@@ -1,0 +1,142 @@
+# RUN - what recorded request to run
+# CHECK_EXISTS - the following expresion should be founded in HTTP resulting page
+# CHECK_NOTEXISTS - the following expresion should not be founded in HTTP resulting page
+# SQL - execute expression containing in file
+
+
+#RUN HEADER
+RUN 2003_07_22_03_20_08_000000__vspx_cal_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS Selected Date: (NULL)
+
+#RUN HEADER
+RUN 2003_07_22_03_21_39_000000__vspx_cal_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS Selected Date: 200
+
+#RUN HEADER
+RUN 2003_07_22_03_22_28_000000__vspx_check_box_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS abc
+
+#RUN HEADER
+RUN 2003_07_22_03_23_12_000000__vspx_check_box_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS abc
+
+#RUN HEADER
+RUN 2003_07_22_03_23_37_000000__vspx_check_box_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS cde
+
+#RUN HEADER
+RUN 2003_07_22_03_24_08_000000__vspx_custom_condition_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS Template named template1 is visible
+CHECK_EXISTS Template named template2 is visible
+
+#RUN HEADER
+RUN 2003_07_22_03_24_43_000000__vspx_custom_condition_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS Template named template1 is visible
+CHECK_NOTEXISTS Template named template2 is visible
+
+#RUN HEADER
+RUN 2003_07_22_03_25_13_000000__vspx_custom_condition_vspx
+CHECK_EXISTS 200 OK
+CHECK_NOTEXISTS Template named template1 is visible
+CHECK_EXISTS Template named template2 is visible
+
+#RUN HEADER
+RUN 2003_07_22_03_25_42_000000__vspx_custom_condition_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS Template named template1 is visible
+CHECK_EXISTS Template named template2 is visible
+
+#RUN HEADER
+RUN 2003_07_22_03_26_14_000000__vspx_custom_format_vspx
+CHECK_EXISTS 200 OK
+
+#RUN HEADER
+RUN 2003_07_22_03_27_04_000000__vspx_custom_format_vspx
+CHECK_EXISTS 200 OK
+
+#RUN HEADER
+RUN 2003_07_22_03_27_34_000000__vspx_data_list_vspx
+CHECK_EXISTS 200 OK
+XPATH_EXISTS //input[@type="submit" and @name="submitButtonName"]
+XPATH_EXISTS //select[@name="vdatalist1"]//option[@value="WILMK"]
+XPATH_NOTEXISTS //input[@type="submit" and @name="submitButtonName_DUMMY"]
+
+#RUN HEADER
+RUN 2003_07_22_03_29_22_000000__vspx_data_list_sql_vspx
+CHECK_EXISTS 200 OK
+
+#RUN HEADER
+RUN 2003_07_22_03_29_41_000000__vspx_data_set_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS Alfreds Futterkiste
+
+#RUN HEADER
+RUN 2003_07_22_03_30_26_000000__vspx_data_set_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS Chop-suey Chinese
+
+#RUN HEADER
+RUN 2003_07_22_03_31_47_000000__vspx_textarea_vspx
+CHECK_EXISTS 200 OK
+
+#RUN HEADER
+RUN 2003_07_22_03_32_25_000000__vspx_textarea_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS hello
+
+#RUN HEADER
+RUN 2003_07_22_03_32_50_000000__vspx_text_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS AA
+
+#RUN HEADER
+RUN 2003_07_22_03_33_11_000000__vspx_text_vspx
+CHECK_EXISTS 200 OK
+
+#RUN HEADER
+RUN 2003_07_22_03_33_44_000000__vspx_text_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS AA
+
+#RUN HEADER
+RUN 2003_07_22_03_34_48_000000__vspx_select_vspx
+CHECK_EXISTS 200 OK
+
+#RUN HEADER
+RUN 2003_07_22_03_35_06_000000__vspx_select_vspx
+CHECK_EXISTS 200 OK
+
+#RUN HEADER
+RUN 2003_07_22_03_35_31_000000__vspx_search_login_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS You are not logged in
+
+#RUN HEADER
+RUN 2003_07_22_03_36_01_000000__vspx_search_login_vspx
+SQL 2003_07_22_03_36_01_000000_new_session
+CHECK_EXISTS 200 OK
+CHECK_EXISTS Welcome to VSPX search demo 
+
+#RUN HEADER
+RUN 2003_07_22_03_36_53_000000__vspx_search_login_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS CustomerID
+CHECK_EXISTS CACTU
+
+
+#RUN HEADER
+RUN 2003_07_22_03_37_54_000000__vspx_radio_group_vspx
+CHECK_EXISTS 200 OK
+
+#RUN HEADER
+RUN 2003_07_22_03_38_11_000000__vspx_radio_group_vspx
+CHECK_EXISTS 200 OK
+CHECK_EXISTS value="one" checked="checked"
+XPATH_EXISTS //html//body//input[@value="one"]

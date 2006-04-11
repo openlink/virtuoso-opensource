@@ -1,0 +1,123 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!- -*- html -*- ->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+declare _acct, _log varchar;
+if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+_acct := get_keyword ('acct', params, '');
+if ('Add' = get_keyword ('add', params, ''))
+  {
+    if (_acct <> '')
+      {
+	declare acct_len, ix, _c integer;
+        _acct := ucase (_acct);
+        acct_len := length (_acct);
+	while (ix < acct_len)
+	  {
+            _c := aref (_acct, ix);
+	    if (not ((_c >= ascii ('A') and _c <= ascii ('Z'))
+		  or (_c >= ascii ('0') and _c <= ascii ('9'))))
+	      aset (_acct, ix, ascii ('_'));
+            ix := ix + 1;
+	  }
+        _log := concat (_acct, '.log');
+        declare _is_updateable_kw varchar;
+        _is_updateable_kw := get_keyword ('is_updateable', params, null);
+        declare _is_updateable integer;
+        if (_is_updateable_kw is not null)
+          _is_updateable := 1;
+        else
+          _is_updateable := 0;
+	REPL_PUBLISH (_acct, _log, _is_updateable);
+      }
+    else
+      {
+        http ('<p>Error: publication name is mandatory<p>');
+	goto err;
+      }
+?>
+<script language="JavaScript">
+location.replace ('trx_repl_pub_items.vsp?acct=<?/_acct?>');
+</script>
+<?vsp
+  }
+err:;
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Transactional replication wizard">
+    <title>New transactional replication publication</title>
+  </head>
+<?vsp adm_page_header('New Transactional Replication Publication', NULL); ?>
+
+      <p>Type name of publication and click <b>Add</b> to continue</p>
+      <p>Note: Any lowercase characters will be transformed to uppercase. Any spaces will become underscores.</p>
+    <form method=post action="trx_repl_pub_new.vsp">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+	  <tr>
+           <td>Publication name</td>
+	   <td><input type=text name="acct" value=""></td>
+	  </tr>
+          <tr>
+           <td>Updateable</td>
+           <td><input type="checkbox" name="is_updateable" value=""></td>
+          </tr>
+          <tr>
+           <td>Sync User</td>
+           <td>
+             <select name="sync_user">
+             <?vsp
+               for select U_NAME from DB.DBA.SYS_USERS
+                   where U_IS_ROLE = 0 and U_SQL_ENABLE = 1
+                   order by U_NAME do
+                 {
+                   declare _sel varchar;
+                   if (U_NAME = 'dba')
+                     _sel := ' selected';
+                   else
+                     _sel := '';
+             ?>
+	       <option value=<?=U_NAME?><?=_sel?>><?=U_NAME?></option>
+	     <?vsp
+                 }
+             ?>
+	     </select>
+           </td>
+          </tr>
+	  <tr>
+	   <td align="right" colspan="2">
+	    <input type=submit name="add" value="Add">
+	   </td>
+	  </tr>
+	</table>
+    </form>
+<?vsp adm_page_footer(); ?>
+</html>
+
+
+

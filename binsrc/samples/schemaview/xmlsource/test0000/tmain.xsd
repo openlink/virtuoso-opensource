@@ -1,0 +1,52 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!DOCTYPE schema SYSTEM
+  "XMLSchema.dtd" [
+<!ENTITY % p ''>
+<!ENTITY % s ''>
+<!ENTITY % schemaAttrs "
+	xmlns:db	CDATA	#IMPLIED
+	xmlns:xml	CDATA	#IMPLIED
+	xmlns:tbl	CDATA	#IMPLIED
+">
+]>
+<schema xmlns:xsd='http://www.w3.org/2001/XMLSchema'
+            targetNamespace='http://www.w3.org/2001/XMLSchema'
+            xmlns:db='http://www.oasis-open.org/docbook/xmlschema/4.1.2'
+            xmlns:tbl='http://www.oasis-open.org/tables/exchange/1.0'
+            xmlns:xml='http://www.w3.org/XML/1998/namespace'
+            elementFormDefault='qualified'>
+<include schemaLocation="test0000.xsd"/>
+<complexType name="hello">
+  <choice minOccurs='1' maxOccurs='unbounded'>
+	<element ref="db:test0000"/>
+	<element ref="xsd:test0001"/>
+	<element ref="xsd:test0002"/>
+	<element ref="xsd:test0003"/>
+	<element ref="xsd:test0004"/>
+	<element ref="xsd:test0005"/>
+	<element ref="xsd:test0006"/>
+	<element ref="xsd:test0007"/>
+  </choice>
+</complexType>
+</schema>

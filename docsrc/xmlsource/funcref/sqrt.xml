@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_sqrt">
+  <refmeta>
+    <refentrytitle>sqrt</refentrytitle>
+    <refmiscinfo>number</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>sqrt</refname>
+    <refpurpose>calculate square root</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_sqrt">
+      <funcprototype id="fproto_sqrt">
+         <funcdef><function>sqrt</function></funcdef>
+        <paramdef>in <parameter>x</parameter> double precision</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>x</title>
+      <para><type>double precision</type></para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret"><title>Return Values</title>
+    <para><function>sqrt</function> returns a IEEE 64-bit float.</para>
+  </refsect1>
+  <refsect1 id="desc"><title>Description</title>
+    <para><function>sqrt</function> calculates the square root of its
+    argument and returns it as a IEEE 64-bit float.</para>
+  </refsect1>
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_sqrt"><title>Stored Procedure Example</title>
+      <para>Calculate square roots of integers between 2 numbers.</para>
+      <screen>
+SQL> create procedure
+calc_sqrts (in _from integer, in _to integer)
+{
+  declare i integer;
+  declare result double precision;
+
+  result_names (i, result);
+
+  i := _from;
+  while (i &lt; _to)
+   {
+     result (i, sqrt (i));
+     i := i + 1;
+   }
+}
+;
+(0) (0) (1) (1) (1) (1) (1) (1) (1) (1) (2) (2) (2) (1)
+Done. -- 7 msec.
+SQL> calc_sqrts(1, 10);
+i                 result
+INTEGER NOT NULL  DOUBLE PRECISION NOT NULL
+_______________________________________________________________________________
+
+1                                  1.000000
+2                                  1.414214
+3                                  1.732051
+4                                  2.000000
+5                                  2.236068
+6                                  2.449490
+7                                  2.645751
+8                                  2.828427
+9                                  3.000000
+
+9 Rows. -- 3 msec.
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para>
+      <link linkend="fn_exp"><function>exp</function></link>,
+      <link linkend="fn_log"><function>sqrt</function></link>,
+      <link linkend="fn_log10"><function>log10</function></link>,
+      <link linkend="fn_power"><function>power</function></link>
+    </para>
+  </refsect1>
+</refentry>

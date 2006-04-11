@@ -1,0 +1,220 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!-- $Id$ -->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="robot_queues_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="error_str" persist="1" type="varchar" default="''"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="WebDAV Content Management"/>
+    </vm:menu>
+    <vm:header caption="Content Import Queues"/>
+    <vm:pagebody>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+                        <td class="page_tab" align="center" nowrap="1">
+                          <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_selected" align="center" nowrap="1">
+                          <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab" align="center" nowrap="1">
+			  <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab" align="center" nowrap="1">
+			  <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td width="100%" >
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+            <v:form name="robot_form1" type="simple" method="POST" action="">
+              <table>
+		<tr>
+		  <td align="left" class="listing_col_action">
+		  <v:button style="image" action="simple" value="images/icons/ref_16.png" url="--http_path ()"
+                              xhtml_alt="Refresh page" xhtml_title="Refresh page"
+			       text="&#160;Refresh"
+			       >
+			       <v:before-render><![CDATA[
+				 declare params any;
+				 params := self.vc_event.ve_params;
+				 control.bt_url := sprintf ('%s?host=%U&root=%U&url=%U&start=%U',
+				 http_path (),
+				 get_keyword ('host', params, ''),
+				 get_keyword ('root', params, ''),
+				 get_keyword ('url', params, ''),
+				 get_keyword ('start', params, '0'));
+				 ]]></v:before-render>
+		  </v:button>
+		  </td>
+		  <td>
+		    &#160;
+		  </td>
+                  <td align="right">
+                    <v:button action="simple" value="Back" name="robot_button25" format="%s" style="url">
+                      <v:on-post>
+                        <![CDATA[
+                          http_request_status ('HTTP/1.1 302 Found');
+                          http_header(sprintf('Location: robot_queues.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                          return;
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </v:form>
+      <?vsp
+        set isolation='uncommitted';
+        declare _count, upd, i, l, in_proc, idx integer;
+        declare stime, cnt, wait integer;
+        declare host, root, url, sid, reqs varchar;
+        declare refr, elap int;
+        _count := 0; refr := 0; upd := 1;
+        reqs := http_pending_req();
+        in_proc := 0;
+        host := get_keyword ('host', params, '');
+        root := get_keyword ('root', params, '');
+        url := get_keyword ('url', params, '');
+        sid := get_keyword ('sid', params, '');
+        stime := atoi(get_keyword ('start', params, '0'));
+        elap := msec_time () - stime;
+        i := 0;
+        l := length (reqs);
+        while (i < l)
+        {
+          declare rec any;
+          rec := reqs [i];
+          if (rec[1] = 'robot_queues.vspx')
+            {
+              i := l;
+              in_proc := 1;
+            }
+          i := i + 1;
+        }
+        if (in_proc or(exists( select 1 from WS.WS.VFS_QUEUE where VQ_ROOT = root and VQ_HOST = host and ((VQ_URL <> url and VQ_STAT in ('waiting', 'pending')) or (VQ_URL = url and VQ_STAT = 'pending')))))
+          refr := 1;
+        if (refr)
+          select count(*) into cnt from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT = 'retrieved';
+        else
+          select count(*) into cnt from WS.WS.VFS_URL where VU_HOST = host and VU_ROOT = root;
+        select count(*) into wait from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT = 'waiting';
+        http(concat('<h4>Results for ', host,'</h4>'));
+        if (refr)
+        {
+	  http(sprintf ('<table class="listing"><tr><td>Top %d pending URLs (Total waiting %d)</td></tr><tr class="listing_header_row"><td>URL</td><td>Registered on</td><td>State</td></tr>',
+	    case when wait > 20 then 20 else wait end, wait));
+	  idx := 0;
+	  for select top 10 VQ_URL, VQ_TS, VQ_STAT from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT
+	  in ('waiting', 'pending', 'error') order by VQ_HOST, VQ_ROOT, VQ_TS do
+	    {
+	      idx := idx + 1;
+	  ?>
+	  <tr class="<?V case when mod (idx,2) then 'listing_row_odd' else 'listing_row_even' end ?>"><td class="gendata"><?V VQ_URL ?></td><td class="gendata"><?V adm_date_fmt(VQ_TS) ?></td><td class="gendata">
+	      <font
+		style="<?vsp if (VQ_STAT = 'pending') http ('color:red'); ?>">
+		<?V VQ_STAT ?>
+	      </font>
+	  </td></tr>
+
+	  <?vsp
+	    }
+	    http ('</table>');
+	    http_header ('Refresh: 5\r\n');
+        }
+        else
+        {
+          declare _err_cnt, updated_l, sttime int;
+          _err_cnt := coalesce ((select count(*) from ws.ws.vfs_queue where vq_host = host and vq_root = root and vq_stat = 'error'), 0);
+          if (_err_cnt > 1)
+            http (concat ('<p>errors while retrieving target. wrong entries : ', cast (_err_cnt as varchar) ,'. select "stop" and "reset" to return initial state</p>'));
+          {
+            declare continue handler for sqlstate '*' { upd := 0; sttime := now (); };
+            sttime := cast (get_keyword ('stime', params, cast (now() as varchar)) as datetime);
+          }
+          if (upd)
+          {
+            declare continue handler for not found { updated_l := 0; };
+            {
+              select count(*) into updated_l from ws.ws.vfs_url where vu_root = root and vu_host = host and vu_cptime > sttime and vu_url not like '%/';
+            }
+            if (updated_l > 0)
+              http(sprintf('<p><small><strong>Total updated : %d</strong></small></p>', updated_l));
+            else
+              http(sprintf('<p><small><strong>No Updates</strong></small></p>', updated_l));
+          }
+      ?>
+      <p>
+        <b>download finished</b>
+      </p>
+      <?vsp
+        }
+      ?>
+      <p>total download: <b><?V cnt ?></b> pages</p>
+      <?vsp
+        if (refr)
+        {
+      ?>
+      <p>Elapsed time: <b><?V elap ?></b> msec.</p>
+      <?vsp
+        }
+      ?>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+<table style="display:none"><tr><td>$Id$</td></tr></table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

@@ -1,0 +1,57 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-32">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Serializing CLR classes as SOAP structures</refname>
+    <refpurpose>Serializing CLR classes as SOAP structures</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-32a">
+  <title>Example</title>
+  <itemizedlist mark="bullet">
+    <listitem>To test the service click on the Run link or point your browser to:
+  <ulink url="/services/services.vsmx">http://[host]:[port]/services/services.vsmx</ulink></listitem>
+  </itemizedlist>
+  <!-- description -->
+  <para>
+    This example demonstrates how to use CLR user defined types for SOAP datatype mappings.
+    It's based on the CLR class so_s_32.cs.
+  </para>
+  <para>
+    It demontsrates the two approaches in using the user defined types for SOAP structure mappings :
+  </para>
+  <itemizedlist mark="bullet">
+    <listitem>
+      Attach a user defined type to a predefined schema instance (user defined type SO_S_30).
+    </listitem>
+    <listitem>
+      Generate the WSDL based on the user defined type's definition (user defined type SO_S_30_2).
+    </listitem>
+  </itemizedlist>
+</refsect1>
+</refentry>

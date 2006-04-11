@@ -1,0 +1,77 @@
+<h2>rotator.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>Creats a set of 'rotating' elements, which are circinately moving in an infinite fashion.</p>
+<hr/>
+
+<h3>Objects</h3>
+<ul>
+	<li><a href="#rotator">Rotator(panelX, panelY, paramsObj, callback)</a></li>
+</ul>
+
+
+<h3>Methods</h3>
+<ul>
+	<li><a href="#addpanel">Rotator:addPanel(element)</a></li>
+	<li><a href="#start">Rotator:start()</a></li>
+</ul>
+
+<h3>Constants</h3>
+<ul>
+	<li>RotatorData.TYPE_LEFT</li>
+	<li>RotatorData.TYPE_RIGHT</li>
+	<li>RotatorData.TYPE_BOTTOM</li>
+	<li>RotatorData.TYPE_TOP</li>
+</ul>
+
+<h3>CSS classes</h3>
+<ul>
+	<li>.rotator</li>
+</ul>
+
+<hr/>
+
+<h3><a name="rotator">Rotator(panelX, panelY, paramsObj, callback)</a></h3>
+<p>Creates the Rotator object. It's elements will have width of <em>panelX</em> and height of <em>panelY</em>. 
+<em>Callback</em> will be executed every time rotation pauses. Argument <em>paramsObj</em> is an object of the following properties:</p>
+<ul>
+	<li>delay - rotation speed</li>
+	<li>step - animation smoothness</li>
+	<li>numLeft - how many elements should be rotated before shifting the first one to the end</li>
+	<li>pause - delay after one animation round</li>
+	<li>type - constant, specifies an animation direction</li>
+</ul>
+
+<h3><a name="addpanel">Rotator:addPanel(element)</a></h3>
+<p>Adds a new <em>element</em> to rotating set.
+
+<h3><a name="start">Rotator:start()</a></h3>
+<p>Starts the rotation process.</p>
+
+<p class="code">
+var r = new Rotator(200, 200, {type:Rotator.TYPE_RIGHT}, function(){});<br/>
+r.addPanel("div1");<br/>
+r.addPanel("div2");<br/>
+r.addPanel("div3");<br/>
+r.start();
+</p>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_http_root">
+  <refmeta>
+    <refentrytitle>http_root</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>http_root</refname>
+    <refpurpose>Returns the absolute path of the server root directory.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_http_root">
+      <funcprototype id="fproto_http_root">
+        <funcdef>varchar <function>http_root</function></funcdef>
+        <paramdef />
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="ret_http_root"><title>Return Types</title>
+    <para>
+String of the absolute path of the server root directory.</para>
+  </refsect1>
+  <refsect1 id="seealso_http_root"><title>See Also</title>
+    <para>
+      <link linkend="fn_http"><function>http</function></link>,
+      <link linkend="fn_http_value"><function>http_value</function></link>,
+      <link linkend="fn_http_url"><function>http_url</function></link>,
+      <link linkend="fn_string_output"><function>string_output</function></link>,
+      <link linkend="fn_http_rewrite"><function>http_rewrite</function></link>.
+    </para>
+  </refsect1>
+  <refsect1 id="examples_http_root"><title>Examples</title>
+  <example id="ex_http_root"><title>Obtaining the Client IP Address</title>
+  <programlisting>
+  &lt;?vsp
+    http (file_to_string (sprintf ('%s/banner.html', http_root())));
+  ?&gt;
+  </programlisting>
+  </example>
+  </refsect1>
+</refentry>
+
+

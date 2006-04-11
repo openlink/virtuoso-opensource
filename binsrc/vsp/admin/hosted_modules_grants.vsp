@@ -1,0 +1,157 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare _g_user, _g_op, _role integer; 
+  declare _g_object, _g_col varchar; 
+  declare _class, stmt, _user varchar;
+
+  if (not adm_check_auth (lines)) { adm_tell_unauth (lines); return (0); }
+
+  _g_user := atoi (get_keyword ('r1', params, ''));
+  _g_op := atoi (get_keyword ('r2', params, ''));
+  _g_object := get_keyword ('r3', params, '');
+  _g_col := get_keyword ('r4', params, '');
+
+  if (_g_object <> '')
+    {
+      delete from DB.DBA.SYS_GRANTS where 
+	  G_USER = _g_user and  G_OP = _g_op and G_OBJECT = _g_object and G_COL = _g_col; 
+    }
+
+  if (get_keyword ('add_grant_bt', params, '') <> '')
+    {
+
+      _class := get_keyword ('class', params, '');
+      _role := atoi (get_keyword ('sel_grant', params, '')) - 1;
+
+      if (_role <> -1)
+	select '"' || U_NAME || '"' into _user from DB.DBA.SYS_USERS where U_ID = _role;
+      else
+	_user := 'public';
+     
+      stmt := 'grant execute on "' || _class || '" to ' || _user; 
+
+      exec (stmt); 
+
+      commit work;
+    }
+  
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Hosted modules grants</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Hosted modules grants">
+  </head>
+  <BODY>
+<?vsp adm_page_header('Hosted modules grants', NULL); ?>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+  <TR><TD CLASS="genhead" COLSPAN="4">Loaded modules</TD></TR>
+  <TR><TD CLASS="AdmBorders" COLSPAN="4"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+  <TR>
+    <TH CLASS="genlistheadt">Module name</TH>
+    <TH CLASS="genlistheadt">Type</TH>
+    <TH COLSPAN ="2" CLASS="genlistheadt">Grant to</TH>
+  </TR>
+<?vsp
+     for (select _type, _class from defined_types) do 
+	{
+	   if (not exists (select 1 from SYS_GRANTS where _class like G_OBJECT and G_USER = 1))
+	     {
+?>
+    <TR>
+    <FORM method="POST" name="add_grant" action="hosted_modules_grants.vsp">
+      <TD><?=_class?></TD>
+      <TD><?=_type?></TD>
+      <TD>
+        <select name="sel_grant">
+	<option value="0">Public</option>
+<?vsp
+            for (select u_name, u_id from sys_users where u_id = u_group and u_sql_enable = 1) do
+                  {
+?>                  
+                     <option value="<?= u_id + 1?>"><?= u_name ?></option>
+<?vsp
+                  }
+?>
+	</select>
+      </TD>
+      <TD>
+	<INPUT type="hidden" name="class" value="<?=_class?>">
+	<INPUT type="submit" name="add_grant_bt" value="Add">
+      </TD>
+    </TR>
+    </FORM>
+      
+<?vsp	    }
+	}
+?>
+  </TABLE>
+  <INPUT type="hidden" NAME="chg_col" VALUE="">
+ <BR />
+    <FORM method="POST" name="remove_grant" action="hosted_modules_grants.vsp">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+  <TR><TD CLASS="genhead" COLSPAN="4">Existing grants</TD></TR>
+  <TR><TD CLASS="AdmBorders" COLSPAN="4"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+  <TR>
+    <TH CLASS="genlistheadt">Module name</TH>
+    <TH CLASS="genlistheadt">Type</TH>
+    <TH CLASS="genlistheadt">Granted to</TH>
+    <TH CLASS="genlistheadt">Action</TH>
+  </TR>
+<?vsp
+     for (select G_USER, G_OP, G_OBJECT, G_COL, _type, _class from SYS_GRANTS, defined_types where _class like G_OBJECT) do 
+	{
+	  declare user_name varchar;
+
+	  if (G_USER <> 1)
+	    select U_NAME into user_name from SYS_USERS where U_ID = G_USER;
+	  else
+	    user_name := 'Public';
+?>
+    <TR>
+      <TD><?=_class?></TD>
+      <TD><?=_type?></TD>
+      <TD><?=user_name?></TD>
+      <TD>
+        <a class="tablelistaction" href="hosted_modules_grants.vsp?r1=<?=G_USER?>&r2=<?=G_OP?>&r3=<?=G_OBJECT?>&r4=<?=G_COL?>">remove</a>
+      </TD>
+    </TR>
+      
+<?vsp
+	}
+?>
+  </TABLE>
+
+  
+  </FORM>
+
+<?vsp adm_page_footer(); ?>
+</BODY>
+</HTML>

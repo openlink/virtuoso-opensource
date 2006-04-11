@@ -1,0 +1,99 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<?vsp
+	if ('' <> get_keyword('fetch', params, ''))
+	{
+	declare total_fetched integer;
+	total_fetched := 0;
+	total_fetched := populate_groups_available(atoi(get_keyword('fetch', params, '')));
+?>
+
+<html>
+  <head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Virtuoso News Available Groups Update</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Perform manual refresh of the news server available groups table.">
+  </head>
+  <BODY CLASS="adm_pages_body" LEFTMARGIN="0" TOPMARGIN="0" onLoad="parent.document.location='news_available_processing.vsp?total=<?=total_fetched?>&serv_name=<?=get_keyword('serv_name', params, '')?>';">
+<?include ../adm_js_check.vsp ?>
+<TABLE WIDTH="100%" CLASS="ctrlmain" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+<TR><TD CLASS="adm_pages_title" COLSPAN="2"><H2>Available Groups Update</H2></TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2">
+<BR />
+<BR />
+<P>Task Completed: <?=dayname(now())?>, <?=hour(now())?>:<?=minute(now())?> ...</P>
+<P><STRONG><?=total_fetched?></STRONG> newsgroups reviewed for</P>
+<P><STRONG><?=get_keyword('serv_name', params, '')?></STRONG></P>
+<INPUT TYPE="button" NAME="close" VALUE="Close" onClick="window.close()" />
+<BR />
+<BR />
+</TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+</TABLE>
+<?include ../admin_footer.vsp ?>
+</BODY>
+</HTML>
+
+<?vsp
+	}
+	else
+	{
+?>
+
+<html>
+  <head>
+  <link rel="stylesheet" type="text/css" href="../admin_style.css">
+    <script language="javascript" src="../admin_utils.js"></script>
+    <title>Virtuoso News Available Groups Update</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Perform manual refresh of the news server available groups table.">
+  </head>
+  <BODY LEFTMARGIN="0" TOPMARGIN="0" CLASS="adm_pages_body" onLoad="javascript:document.location='news_available_update.vsp?fetch=<?=get_keyword('nsupdate',params, '')?>&serv_name=<?=get_keyword('serv_name',params, '')?>'">
+<TABLE WIDTH="100%" CLASS="ctrlmain" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2">
+<BR />
+<P>This may take a few minutes to complete if the </P>
+<P>remote server contains many groups.</P>
+<P><STRONG>Started: <?=dayname(now())?>, <?=hour(now())?>:<?=minute(now())?> ...</STRONG></P>
+<P>This page will automatically update when completed.</P>
+<BR />
+</TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+</TABLE>
+<?include ../admin_footer.vsp ?>
+</BODY>
+</HTML>
+
+<?vsp
+	}
+?>
+
+

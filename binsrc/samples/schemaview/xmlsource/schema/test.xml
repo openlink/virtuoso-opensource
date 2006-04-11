@@ -1,0 +1,21 @@
+<?xml version='1.0'?>
+<!-- Copyright 2000, Norman Walsh, Sun Microsystems.  Schema
+     derived from DocBook DTD Copyright 1992-2000 HaL Computer....  -->
+<article xmlns='http://www.oasis-open.org/docbook/schema/4.1.2'
+           xmlns:xsi='http://www.w3.org/2000/10/XMLSchema-instance'
+           xmlns:tbl='http://www.oasis-open.org/tables/exchange/1.0'
+           xsi:schemaLocation='http://www.oasis-open.org/docbook/schema/4.1.2
+                               docbook.xsd'>
+<title>Some Title</title>
+<para>Some paragraph text. With <emphasis>emphasis</emphasis>.</para>
+<informaltable>
+<tbl:tgroup cols='1'>
+<tbl:tbody>
+<tbl:row><tbl:entry>foo</tbl:entry></tbl:row>
+<tbl:row><tbl:entry><para>test</para></tbl:entry></tbl:row>
+</tbl:tbody>
+</tbl:tgroup>
+</informaltable>
+
+</article>
+

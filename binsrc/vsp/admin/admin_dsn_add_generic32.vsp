@@ -1,0 +1,292 @@
+<!-- -*- html -*- -->
+<?vsp
+  declare idx, len int;
+  declare _driver, _name, _name_old, _type, _driver_de varchar;
+  declare _desc, _host, _user, _pass, _database, head varchar;
+  declare _description, _protocol, _buff, _srv_options varchar;
+  declare _long_data, _hport, _srv_type, _no_log, _read_only varchar;
+  declare parameters any;
+
+  adm_pre_page(lines);
+
+  _type := get_keyword ('type', params, '');
+  _name := get_keyword ('name', params, '');
+  _driver := get_keyword ('driver', params, '');
+  _driver_de := deserialize (decode_base64 (_driver));
+  _name_old := _name;
+
+  parameters := sql_get_private_profile_string (_name, _type);
+  len := length (parameters);
+
+  _desc := '';
+  _host := 'localhost';
+  _hport := '5000';
+  _user := '';
+  _pass := '';
+  _database := '';
+  _buff := '60';
+  _srv_options := '';
+  _srv_type := 'SQLServer 2000';
+  _protocol := 'TCP/IP';
+  idx := 0;
+
+  if (is_empty_or_null (get_keyword ('edit', params)))
+    head := 'New OpenLink Data Source';
+  else
+    {
+	head := 'Edit OpenLink Data Source';
+	while (idx < len)
+	  {
+	    _description := aref (aref (parameters, idx), 0);
+
+	    if (_description = 'Description')
+	      _desc := aref (aref (parameters, idx), 1);
+	    if (_description = 'Host')
+	      _host := aref (aref (parameters, idx), 1);
+	    if (sys_stat('st_build_opsys_id') = 'Win32')
+	      {
+		if (_description = 'LastUser')
+		  _user := aref (aref (parameters, idx), 1);
+	      }
+	    else
+	      {
+		if (_description = 'UserName')
+		  _user := aref (aref (parameters, idx), 1);
+	      }
+	    if (_description = 'Port')
+	      _hport := aref (aref (parameters, idx), 1);
+	    if (_description = 'Password')
+	      _pass := aref (aref (parameters, idx), 1);
+	    if (_description = 'Database')
+	      _database := aref (aref (parameters, idx), 1);
+	    if (_description = 'Protocol')
+	      _protocol := aref (aref (parameters, idx), 1);
+	    if (_description = 'FetchBufferSize')
+	      _buff := aref (aref (parameters, idx), 1);
+	    if (_description = 'ServerOptions')
+	      _srv_options := aref (aref (parameters, idx), 1);
+	    if (_description = 'ServerType')
+	      _srv_type := aref (aref (parameters, idx), 1);
+	    if (_description = 'NoLoginBox')
+	      _no_log := aref (aref (parameters, idx), 1);
+	    if (_description = 'DeferLongFetch')
+	      _long_data := aref (aref (parameters, idx), 1);
+	    if (_description = 'ReadOnly')
+	      _read_only := aref (aref (parameters, idx), 1);
+
+	    idx := idx + 1;
+	  }
+	if (get_keyword ('mode', params) <> '')
+	  head := 'New OpenLink Data Source';
+    }
+
+  if (not is_empty_or_null (get_keyword ('remove', params)))
+    head := 'Remove OpenLink Data Source';
+
+  if (_name = '__temp__dsn__')
+    _name := '';
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<HTML>
+  <head>
+  <link rel="stylesheet" type="text/css" href="admin_style.css">
+    <title>OpenLink Data Source</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Link External DSN into Virtuoso using VSP">
+  </head>
+<?vsp
+  adm_page_header(head, NULL);
+  if (not is_empty_or_null (get_keyword ('remove', params)))
+    {
+?>
+      <FORM method="POST" action="admin_dsn.vsp">
+	<TABLE><TR><TD ALIGN="Center" COLSPAN="2"><B> Do you want to delete OpenLink Data Source: </B><I><?=_name?></I></TD></TR>
+	<TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+	<TR><TD ALIGN="Center" COLSPAN="2">
+	<INPUT type="submit" name="remove_" value="OK">
+	<INPUT type="submit" name="cancel_" value="Cancel">
+	<INPUT type="hidden" name="name" value="<?=_name?>">
+	<INPUT type="hidden" name="type_dsn" value="<?=_type?>">
+	<TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR></TABLE>
+      </FORM>
+<?vsp
+    }
+  else
+    {
+?>
+      <FORM method="POST" action="admin_dsn_add_generic32_2.vsp" name="gen32">
+      <TABLE BORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD COLSPAN="3" ALIGN="middle"><P CLASS="copyright_noalign"><?=_driver_de?><BR /><small>Copyright 1994-2005 OpenLink Software</small><BR /><small>All rights reserved</small></P></TD></TR>
+      <TR><TD ROWSPAN="3" VALIGN="top"><IMG SRC="images/opl.jpg" BORDER="1" /></TD>
+      <TD VALIGN="top">
+
+	<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" WIDTH="250">
+	  <TR><TD CLASS="genhead" COLSPAN="2">Data Source</TD></TR>
+	  <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	    <TR><TD CLASS="genlisthead">Name</TD><TD><input type="text" name="dsn_name" value="<?=_name?>" size="20"></TD></TR>
+	    <TR><TD CLASS="genlisthead">Comment</TD><TD><input type="text" name="desc" value="<?=_desc?>" size="20"></TD></TR>
+	</TABLE>
+	<BR />
+	<BR />
+	<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" WIDTH="250">
+	  <TR><TD CLASS="genhead" COLSPAN="2">OpenLink Server</TD></TR>
+	  <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	  <TR><TD CLASS="genlisthead">Domain</TD><TD>
+	    <INPUT type="hidden" name="srv_type_text" value="" size="20">
+	    <SELECT NAME="srv_type">
+<?vsp
+	    adm_add_dsn_option ('DB2', _srv_type);
+
+	    adm_add_dsn_option ('Informix 5', _srv_type);
+	    adm_add_dsn_option ('Informix 6', _srv_type);
+	    adm_add_dsn_option ('Informix 7.1', _srv_type);
+	    adm_add_dsn_option ('Informix 7.2', _srv_type);
+	    adm_add_dsn_option ('Informix 7.3', _srv_type);
+	    adm_add_dsn_option ('Informix 2000', _srv_type);
+	    adm_add_dsn_option ('Ingres 6', _srv_type);
+	    adm_add_dsn_option ('Odbc', _srv_type);
+
+	    adm_add_dsn_option ('OpenIngres 1.x', _srv_type);
+	    adm_add_dsn_option ('Ingres II', _srv_type);
+	    adm_add_dsn_option ('Oracle 6', _srv_type);
+	    adm_add_dsn_option ('Oracle 7', _srv_type);
+	    adm_add_dsn_option ('Oracle 8.0.x', _srv_type);
+	    adm_add_dsn_option ('Oracle 8.1.x', _srv_type);
+	    adm_add_dsn_option ('Postgres 95', _srv_type);
+
+	    adm_add_dsn_option ('Progress 63C', _srv_type);
+	    adm_add_dsn_option ('Progress 63E', _srv_type);
+	    adm_add_dsn_option ('Progress 63F', _srv_type);
+	    adm_add_dsn_option ('Progress 72D', _srv_type);
+	    adm_add_dsn_option ('Progress 73A', _srv_type);
+	    adm_add_dsn_option ('Progress 73C', _srv_type);
+	    adm_add_dsn_option ('Progress 73D', _srv_type);
+
+	    adm_add_dsn_option ('Progress 73E', _srv_type);
+	    adm_add_dsn_option ('Progress 81A', _srv_type);
+	    adm_add_dsn_option ('Progress 81AS', _srv_type);
+	    adm_add_dsn_option ('Progress 82A', _srv_type);
+	    adm_add_dsn_option ('Progress 82AS', _srv_type);
+	    adm_add_dsn_option ('Progress 82C', _srv_type);
+	    adm_add_dsn_option ('Progress 82CS', _srv_type);
+
+	    adm_add_dsn_option ('Progress 83A', _srv_type);
+	    adm_add_dsn_option ('Progress 83AS', _srv_type);
+	    adm_add_dsn_option ('Progress 8S', _srv_type);
+	    adm_add_dsn_option ('Progress 90A', _srv_type);
+	    adm_add_dsn_option ('Progress 90AS', _srv_type);
+	    adm_add_dsn_option ('Progress 90B', _srv_type);
+	    adm_add_dsn_option ('Progress 90BS', _srv_type);
+	    adm_add_dsn_option ('Progress 91A', _srv_type);
+
+	    adm_add_dsn_option ('Progress 91AS', _srv_type);
+	    adm_add_dsn_option ('Progress 91B', _srv_type);
+	    adm_add_dsn_option ('Progress 91BS', _srv_type);
+	    adm_add_dsn_option ('Progress 91C', _srv_type);
+            adm_add_dsn_option ('Progress 91CS', _srv_type);  -- added 12/14/01 - scs
+            adm_add_dsn_option ('Progress 91SQL', _srv_type); -- added 12/14/01 -scs
+	    adm_add_dsn_option ('Proxy', _srv_type);
+	    adm_add_dsn_option ('SQLServer 4', _srv_type);
+	    adm_add_dsn_option ('SQLServer 6', _srv_type);
+	    adm_add_dsn_option ('SQLServer 7', _srv_type);
+	    adm_add_dsn_option ('SQLServer 2000', _srv_type);
+	    adm_add_dsn_option ('Solid', _srv_type);
+	    adm_add_dsn_option ('Sybase 10', _srv_type);
+
+	    adm_add_dsn_option ('Sybase 11', _srv_type);
+	    adm_add_dsn_option ('Sybase 12', _srv_type);
+	    adm_add_dsn_option ('Sybase 4', _srv_type);
+	    adm_add_dsn_option ('Sybase 4.2', _srv_type);
+	    adm_add_dsn_option ('Unify 2000', _srv_type);
+	    adm_add_dsn_option ('Velocis', _srv_type);
+	    adm_add_dsn_option ('Virtuoso', _srv_type);
+?>
+	    </SELECT></TD></TR>
+
+	  <TR><TD CLASS="genlisthead">Protocol</TD><TD><input type="text" name="protocol" value="<?=_protocol?>" size="20" DISABLED></TD></TR>
+	  <TR><TD CLASS="genlisthead">Hostname</TD><TD><input type="text" name="host" value="<?=_host?>" size="20"></TD></TR>
+	  <TR><TD CLASS="genlisthead">Port</TD><TD><input type="text" name="hport" value="<?=_hport?>" size="20"></TD></TR>
+	</TABLE>
+
+
+      </TD><TD VALIGN="top">
+
+	<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" WIDTH="250">
+	  <TR><TD CLASS="genhead" COLSPAN="2">Database</TD></TR>
+	  <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	    <TR><TD CLASS="genlisthead">Name</TD><TD><input type="text" name="database" value="<?=_database?>" size="20"></TD></TR>
+	    <TR TITLE="Database specific connection parameters (typically used for connecting to database engine via the relevant database vendor's database specific network middleware).">
+	      <TD CLASS="genlisthead">Server Options</TD><TD><input type="text" name="srv_opt" value="<?=_srv_options?>" size="20"></TD></TR>
+	    <TR><TD CLASS="genlisthead">Username</TD><TD><input type="text" name="user" value="<?=_user?>" size="20"></TD></TR>
+	    <TR><TD CLASS="genlisthead">Password</TD><TD><input type="password" name="pass" value="<?=_pass?>" size="20"></TD></TR>
+	</TABLE>
+	<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" WIDTH="250">
+	  <TR><TD CLASS="genhead" COLSPAN="2">Other Options</TD></TR>
+	  <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	  <TR><TD CLASS="genlisthead">Read-only connection</TD><TD>
+	    <INPUT type="checkbox" name="read_only" <?vsp if (_read_only = 'Yes') http ('CHECKED');?>></TD></TR>
+
+	  <TR><TD CLASS="genlisthead">No login dialog box</TD><TD>
+	     <INPUT type="checkbox" name="no_log" <?vsp if (_no_log = 'Yes') http ('CHECKED');?>></TD></TR>
+
+	  <TR><TD CLASS="genlisthead">Defer fetching of long data</TD><TD>
+	     <INPUT type="checkbox" name="long_data" <?vsp if (_long_data = 'Yes') http ('CHECKED');?>></TD></TR>
+
+	  <TR><TD CLASS="genlisthead">Row buffer size</TD><TD>
+	    <INPUT type="text" name="buff" value="<?=_buff?>" size="3"></TD></TR>
+	</TABLE>
+
+      </TD></TR>
+      <TR><TD ALIGN="right" VALIGN="top">
+      <INPUT type="hidden" name="type" value="<?=_type?>">
+      <INPUT type="hidden" name="driver" value="<?=_driver?>">
+      <INPUT type="hidden" name="head" value="<?=head?>">
+      <INPUT type="submit" name="test" value="Update and test">
+
+      <INPUT type="submit" name="add" value="Finish">
+<?vsp
+       if (not is_empty_or_null (get_keyword ('edit', params)))
+	 {
+?>
+	      <INPUT type="hidden" name="dsn_name_old" value="<?=_name_old?>">
+	      <INPUT type="hidden" name="edit" value="1">
+	      </FORM></TD>
+	    <FORM method="POST" action="admin_dsn.vsp">
+	      <TD VALIGN="top">
+	      <INPUT type="submit" name= "back" value="Back"></TD>
+	    </FORM>
+	    </TD>
+	    </TR>
+	    </TABLE>
+	    </TD></TR>
+	    <TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+<?vsp
+	  }
+	else
+	  {
+?>
+      <INPUT type="reset"  value="Reset">
+  </FORM>
+</TD><FORM method="POST" action="admin_dsn_add.vsp">
+<TD VALIGN="top">
+<?vsp if (_type = 'system')
+	http ('<input type="hidden" name="add_s" value="1">');
+      else if (_type = 'file')
+	http ('<input type="hidden" name="add_f" value="1">');
+      else
+	http ('<input type="hidden" name="add_u" value="1">');
+?>
+  <INPUT type="submit" name="back" value="Back">
+</TD>
+</FORM>
+</TABLE>
+<?vsp
+	  }
+    }
+  adm_page_footer();
+?>
+</HTML>
+

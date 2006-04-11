@@ -1,0 +1,119 @@
+<html>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<HEAD>
+    <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
+    <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=SOAP_SO_S_11/services.wsdl"></script>
+    <link rel="stylesheet" type="text/css" href="../demo.css" />
+
+<SCRIPT language="JavaScript">
+var ch = 2;
+var mask = 'United States';
+
+
+function adiv ()
+{
+  ajax.Start(get_Divisions2D,'');
+}
+
+
+function cResultsAjax(result)
+{
+      // Show the result
+      document.getElementById('divMenuCountry').innerHTML = result;
+}
+
+function mResultsAjax(result)
+{
+      // Show the result
+      // Show the result
+      var styler;
+      var i, l;
+      l = result.item[0];
+      styler = '<select name="province" id="provinces">';
+      for (i = 1; i < 2*l; i=i+2)
+	     {
+	       styler = styler + '<option name="' + result.item[i] + '">' + result.item[i] + '</option>';
+	     }
+
+      if (i == 1)
+	     {
+	       styler = styler + '<option>N/A</option>';
+	     }
+	     
+      styler = styler + '</select>';
+      document.getElementById('divMenuToken').innerHTML = styler;
+}
+</SCRIPT>
+</HEAD>
+<body onLoad="ajax.Start(countries,'');ajax.Start(get_Divisions2D,'');">
+<H3>Simple registration form using the AJAX behaviours to Web Services</H3>
+<form method="POST" name="divisions">
+<table class="tableentry">
+
+
+<tr><td>1. First Name</td><td>
+<input type="text" name="fn" value="">
+</td></tr>
+
+<tr><td>2. Last Name</td><td>
+<input type="text" name="ln" value="">
+</td></tr>
+
+<tr><td>3. Email address</td><td>
+<input type="text" name="em" value="">
+</td></tr>
+
+<tr><td>4. Select country</td><td>
+  <DIV ID="divMenuCountry"></DIV>
+</td></tr>
+<tr><td>5. Select province</td><td>
+<DIV ID="divMenuToken"></DIV>
+</td></tr>
+
+<tr><td>6. Register</td><td><input type="button" name="exec" value="Register" onClick="alert('You have been registered');"></td></tr>
+
+</table>
+</form>
+      <script defer="defer" type="text/javascript">
+          var countries = {
+            delay: 200,
+            prepare: function() {return ch;},
+            call: proxies.SOAP.countries,
+            finish: function(p){cResultsAjax(p);},
+            onException: proxies.alertException
+          }
+
+          var get_Divisions2D = {
+            delay: 200,
+            prepare: function() {document.getElementById('divMenuToken').innerHTML='<font color="red"> Please wait... </font>'; return Array(document.divisions.country.value,'');},
+            call: proxies.SOAP.get_Divisions2D,
+            finish: function(p){mResultsAjax(p);},
+            onException: proxies.alertException
+          }
+
+      </script>
+
+
+</body>
+</html>

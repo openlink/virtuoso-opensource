@@ -1,0 +1,13 @@
+WikiWikiWeb is a common name for a class of very simple content management system,
+invented by Ward Cunningham.
+It allows a Web site to be written by its users;
+anyone can modify any page or create new pages wihout even rudimentary knowledge of HTML.
+User edit the content of a page in plain text format, using some very simple
+formatting rules. The server utility called "Wiki engine" parses the text and
+converts it into well-formed HTML where pages are properly interconnected.
+Wiki engine also indexes these pages to make links bidirectional: one can
+both follow links from a given page and go to pages that refer to the given one.
+
+---
+
+This site is powered by [[http://www.openlinksw.com OpenLink Virtuoso]] database equipped with a Doc.WikiV.

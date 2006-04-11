@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_is_before">
+  <refmeta> 
+    <refentrytitle>is_before()</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>is_before()</refname> 
+    <refpurpose>Returns true if the given entity is before the second given entity in document order, otherwise returns false.</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv> 
+    <funcsynopsis id="xpf_syn_is_before"> 
+      <funcprototype id="xpf_proto_is_before">
+        <funcdef>boolean <function>is_before()</function></funcdef> 
+	<paramdef><parameter>ent1</parameter> entity</paramdef>
+	<paramdef><parameter>ent2</parameter> entity</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_is_before"><title>Description</title><para>
+The function ensures that both <parameter>ent1</parameter> and <parameter>ent2</parameter> are XML entities
+and the returns true if <parameter>ent1</parameter> and <parameter>ent2</parameter> are both in the same XML
+document and <parameter>ent1</parameter> is strictly before <parameter>ent2</parameter> in document order.
+It returns false 
+if one of them is not an entity but an empty node-set or 
+if their documents differ or
+or if they're equal
+or if one of them is an ancestor of other
+or if <parameter>ent1</parameter> is simply after <parameter>ent2</parameter> in document order.
+</para></refsect1>
+  <refsect1 id="xpf_params_is_before"><title>Parameters</title>
+    <refsect2><title>ent1</title>
+      <para>An XML entity or an node-set whose first node is compared.</para></refsect2>
+    <refsect2><title>ent2</title>
+      <para>An XML entity or an node-set whose first node is compared.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_is_before"><title>Return Types</title><para>Boolean</para></refsect1>
+  <refsect1 id="xpf_errors_is_before"><title>Errors</title>
+    <table><title>Errors signalled by is_before()</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFB0</errorcode></entry>
+	    <entry><errorname>First argument of XPATH function is-after() or is-before() must be XML entity</errorname></entry>
+	    <entry>The value that is neither an XML entity nor an empty node-set may not be compared using document order.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFB1</errorcode></entry>
+	    <entry><errorname>Second argument of XPATH function is-after() or is-before() must be XML entity</errorname></entry>
+	    <entry>The value that is neither an XML entity nor an empty node-set may not be compared using document order.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="xpf_examples_is_before"><title>Examples</title>
+    <example id="xpf_ex_is_before"><title></title>
+      <para>Find all chapters that have table of content before title</para>
+      <screen>/book/chapter[is-before(title,toc)]</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_is_before"><title>See Also</title>
+    <para><link linkend="xpf_is_after">is_after()</link></para>
+  </refsect1>
+</refentry>

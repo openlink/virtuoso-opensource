@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_http_debug_log">
+  <refmeta>
+    <refentrytitle>http_debug_log</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>http_debug_log</refname>
+    <refpurpose>set WebDAV HTTP request logging</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_http_debug_log">
+      <funcprototype id="fproto_http_debug_log">
+        <funcdef><function>http_debug_log</function></funcdef>
+        <paramdef>in <parameter>file_path</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_http_debug_log">
+    <title>Description</title>
+    <para>When an valid path string is supplied and it is allowed in file ACL list,
+    the WebDAV HTTP requests and responses will be logged in append mode in to that file.
+    When an open logging session is encountered the second call will produce an error.
+    Specifying a NULL instead of file_path string stops the logging.</para>
+    <para>The log file consists of lines with following fields:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem><para>The request and response are marked by &lt;&lt;&lt; and
+      &gt;&gt;&gt; signs</para></listitem>
+      <listitem><para>Client IP address</para></listitem>
+      <listitem><para>Date and time of request/response</para></listitem>
+      <listitem><para>Timestamp (milliseconds)</para></listitem>
+      <listitem><para>Request/response line</para></listitem>
+    </itemizedlist>
+  </refsect1>
+  <refsect1 id="errors_http_debug_log"><title>Errors</title>
+    <table><title>Errors signalled by <function>http_debug_log</function></title>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry>
+	  </row>
+	</thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>FA041</errorcode></entry>
+	    <entry><errorname>HTTP debug log is already being generated</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>FA040</errorcode></entry>
+	    <entry><errorname>Access to [file name] is denied due to access control in ini file</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>39000</errorcode></entry>
+	    <entry><errorcode>FA042</errorcode></entry>
+	    <entry><errorname>Can't open debug log file [file name], error : [OS error]</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  <para></para>
+  </refsect1>
+  <refsect1 id="examples_http_debug_log"><title>Examples</title>
+    <example id="ex_http_debug_log_1"><title>Logging DAV HTTP Requests</title>
+      <screen>
+<![CDATA[
+-- start the log session
+SQL> http_debug_log ('dav.log');
+... do some operations in WebDAV repository via WebFolders or other client ...
+-- stop the session
+SQL> http_debug_log (NULL);
+
+Produces in the server working directory a file 'dav.log' with lines looking like this:
+...
+>>> [127.0.0.1] [02/Oct/2001 13:49:37 +0300] [40806] PROPFIND /DAV/css/one.css HTTP/1.1
+<<< [127.0.0.1] [02/Oct/2001 13:49:37 +0300] [40896] HTTP/1.1 207 Multi-Status
+...
+
+]]>
+</screen>
+    </example>
+  </refsect1>
+</refentry>
+

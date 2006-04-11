@@ -1,0 +1,1333 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!--<chapter label="webandxmlview.xml" id="webandxmlview">
+	<title>XML Support</title>  -->
+<sect1 id="xmlservices">
+	<title>Virtuoso XML Services</title>
+	<sect2 id="xpath_sql">
+		<title>XPATH Implementation and SQL</title>
+		<para>
+Virtuoso offers XPATH as a query language for XML views.
+The statement is there converted into SQL in the context of the mapping defined by the __view XPATH option, which is mandatory.
+An XPATH query string is a valid top level SQL statement.  This is interpreted as a single select or union of selects with the result columns being specified by various XPATH options.
+	</para>
+		<para>
+The basic query string
+	</para>
+		<programlisting>
+XPATH [__view &quot;cat&quot;]/category
+</programlisting>
+		<para>
+will select any top level category elements from the cat XML view, defined with CREATE XML VIEW.  This has a single result column with the serialization string of the selected entity as value. This string starts with the category start tag and ends with the
+corresponding end tag. As many result rows are generated as there are top level category nodes in the view.
+	</para>
+		<para>
+This basic behaviour can be modified by XPATH options enclosed in brackets after the XPATH keyword.  These options allow specifying the output columns of the generated select statement.
+	</para>
+	</sect2>
+	<sect2 id="XPATHopts">
+		<title>XPATH Query Options</title>
+ <!-- Note undocumented  __sax | __shallow | __doc STRING | -->
+		<programlisting>
+&lt;xp option&gt; ::=
+    __* | __http | __key   | __view NAME | __tag NAME | __quiet | __base_uri STRING |
+    xmlns:NAME &apos;=&apos; STRING | xmlns &apos;=&apos; STRING |
+    __lang STRING | __enc STRING | KEYWORD &apos;=&apos; KEYWORD
+
+&lt;option list&gt; ::=  | &lt;option list&gt; &apos;[&apos; &lt;option&gt; [...] &apos;]&apos;
+</programlisting>
+		<para>
+The option list may occur between the XPATH keyword and the start of the path,
+e.g.
+	</para>
+		<programlisting>
+XPATH [__key __view &quot;cat&quot;] /category
+</programlisting>
+		<para>The effects of the options are as follows:
+</para>
+		<formalpara>
+			<title>__http</title>
+			<para>Send the serialization of the result entities to the HTTP client. This may only be used inside a VSP page context.
+</para>
+		</formalpara>
+		<formalpara>
+			<title>__key</title>
+			<para>Select the key of the selected entities instead of the serialization text.
+</para>
+		</formalpara>
+		<formalpara>
+			<title>__*</title>
+			<para>Select all columns of the selected entity instead of its serialization text.  This is only valid when __view is specified and the result set is homogeneous.
+</para>
+		</formalpara>
+		<formalpara>
+			<title>__view STRING</title>
+			<para>Specify that the query be interpreted in the context of the specified CREATE XML VIEW, directly accessing the tables.
+				This is mandatory since the elements referenced can only be mapped to tables in the context of an XML view.
+</para>
+		</formalpara>
+		<formalpara>
+			<title>__quiet</title>
+			<para>Specify that the query should not signal non-fatal errors. This option is for cases when an incomplete result is anyway better than nothing.
+Typical example is search in the collection of documents where not all documents are valid.
+</para>
+		</formalpara>
+		<formalpara>
+			<title>__base_uri STRING</title>
+			<para>Specify the base URI that can be used to resolve relative URIs in calls of XPATH functions
+<link linkend="xpf_processXQuery"><function>processXQuery()</function></link>,
+<link linkend="xpf_processXSLT"><function>processXSLT()</function></link> and
+<link linkend="xpf_processXSQL"><function>processXSLT()</function></link>.
+This is similar to the efect of &quot;declare base-uri&quot; in XQuery.
+</para>
+		</formalpara>
+<!--
+		<formalpara>
+			<title>__sax</title>
+			<para></para>
+		</formalpara>
+		<formalpara>
+			<title>__shallow</title>
+			<para></para>
+		</formalpara>
+		<formalpara>
+			<title>__doc STRING</title>
+			<para></para>
+		</formalpara>
+-->
+		<formalpara>
+			<title>xmlns:NAME &apos;=&apos; STRING</title>
+			<para>This declares a pair of namespace prefix and namespace URI for use in the query expression,
+e.g. xmlns:xs="http://www.w3.org/2001/XMLSchema" or xmlns:ora="http://schemas.oracle.com/xpath/extension"</para>
+		</formalpara>
+		<formalpara>
+			<title>xmlns &apos;=&apos; STRING</title>
+			<para>This declares the default namespace URI for use in the query expression,
+e.g. xmlns="http://www.example.com/my-schema". This namespace will become both default element namespace and default function namespace.</para>
+		</formalpara>
+		<formalpara>
+			<title>__lang STRING</title>
+			<para>This declares the language that is used for text search expressions.
+This is for internationalization purposes only. See subsection <link linkend="langfuncapi">&quot;Adding New Languages And Encodings Into Virtuoso&quot;</link>
+for more details.
+			</para>
+		</formalpara>
+		<formalpara>
+			<title>__enc STRING</title>
+			<para>This declares encoding of strings that are used for text search expressions.
+This is for internationalization purposes only. See subsections <link linkend="encodingxpathexp">&quot;Encoding in XPath Expressions&quot;</link>
+and <link linkend="langfuncapi">&quot;Adding New Languages And Encodings Into Virtuoso&quot;</link> for more details.
+			</para>
+		</formalpara>
+		<formalpara>
+			<title>KEYWORD &apos;=&apos; KEYWORD</title>
+			<para>This is useful only if the expression uses XPATH functions like <link linkend="xpf_document"><function>document()</function></link>
+or <link linkend="xpf_document"><function>doc()</function></link>  or if the XPATH expression is an argument of
+<link linkend="xpathcontainspredicate"><function>xpath_contains</function></link> or similar special SQL predicate.
+These are configuration options that XPATH processor provides to the XML parser when the processor should read a document.
+Section <link linkend="dtd_config">&quot;Configuration Options of the DTD Validator&quot;</link> lists all supported options.
+			</para>
+		</formalpara>
+	</sect2>
+	<sect2 id="xmlviews1">
+		<title>XML Views - Representing SQL Data as Dynamic and Persistent XML</title>
+		<para>
+The XML view mechanism allows generating XML content from relational data and to query relational
+data as if it were XML without first converting it to XML.
+	</para>
+		<sect3 id="createxmlview">
+			<title>CREATE XML VIEW statement </title>
+			<programlisting>
+&lt;xml view&gt; ::=
+     CREATE XML VIEW &lt;name&gt; as [ &lt;namespaces_def&gt; ] &lt;element list&gt; &lt;opt_public&gt;
+
+&lt;xml view&gt; ::=
+     CREATE XML VIEW &lt;name&gt; as [ &lt;namespaces_def&gt; ] &lt;query spec&gt; [ELEMENT] &lt;opt_public&gt;
+
+&lt;namespaces_def&gt; ::= &apos;[&apos; &lt;id_namespace&gt; &apos;=&apos;( name | &lt;path string&gt; ) [ ...]  &apos;]&apos;
+
+&lt;element list&gt; ::= &lt;element&gt; [, ...]*
+
+&lt;element&gt; ::=
+	 &lt;table&gt; &lt;correlation name&gt; AS [ &lt;id_namespace&gt; &apos;:&apos; ] &lt;element&gt; &lt;columns&gt;
+	 [ ON &apos;(&apos;  &lt;search condition&gt; &apos;)&apos;]
+	[primary key &apos;(&apos; column_commalist &apos;)&apos; ]
+	[ELEMENT]
+	 [ &apos;{&apos; &lt;element list&gt;&apos;}&apos; ]
+
+&lt;opt_public&gt; ::=  PUBLIC &lt;path string&gt; OWNER &lt;DAV owner name&gt; [PERSISTENT] [INTERVAL &lt;minutes&gt;]
+
+&lt;columns&gt; ::= &apos;(&apos; &lt;column&gt; [, ...] &apos;)&apos;
+
+&lt;column&gt; ::=   &lt;column name&gt; | &lt;column name&gt; AS [ &lt;id_namespace&gt; &apos;:&apos; ] &lt;attribute name&gt;
+
+&lt;id_namespace&gt; :: = identifier
+</programlisting>
+			<para>
+The XML view declaration establishes a &apos;virtual document&apos; a context within
+which XML hierarchy relationships can be translated into arbitrary joins. The virtual
+document can be then materialized into an actual set of persistent XML elements or used to generate
+SQL from XPATH.
+	</para>
+			<para>
+Each table in the declaration generates an element into the result
+document. SQL views can be used as tables to accommodate for hidden joins, sub-queries, ordering and
+aggregates. If a view is used, which by nature has no primary key, the primary key
+clause should be used to define a uniquely identifying set of view columns.
+	</para>
+			<para>
+The only restriction on the XML view declaration is that each branch has a fixed
+depth.
+	</para>
+			<para>
+The structure of joins used to make the text can be specified in two ways: As a SQL query specification,
+that is a SELECT from a list of tables with a WHERE clause specifying the joins, or as a tree of
+join elements.  The first form is called automatic and the second is called explicit. The automatic form allows
+generating a tree with as many levels as there are tables in the join, with elements derived from the rows at each
+level occupying each level of the hierarchy
+</para>
+			<para>
+With both forms the columns of the tables are mapped into either attributes or child elements
+of the element representing each row. In the explicit mode, the attribute / element choice can be made for
+each table, in the automatic mode for the entire view.  The explicit mode also allows specifying a different
+element / attribute name whereas the automatic mode takes the name from the column name.  Even if the
+columns are presented as child elements in the output text, they should be referenced as attributes in
+XPATH queries evaluated in the context of the view.
+</para>
+			<para>
+An XML namespaces can be used in XML view with two restrictions -
+all namespace names must be different and
+the first three letters of namespace name must not be 'xml', except for
+default namespace with name 'xmlns'.
+</para>
+		</sect3>
+		<sect3 id="explicitxmlviews">
+			<title>Explicit XML Views </title>
+			<para>
+In the explicit form each level of the hierarchy is declared as a list of child elements. Each such element maps
+one table or view into an entity according to a join condition.  The join conditions
+can reference columns from the associated table and columns from tables in parent elements.
+The join condition can also have scalar filtering conditions. A top element&apos;s join
+condition may only specify scalar conditions.
+</para>
+			<para>
+Each set of sibling child nodes is delimited by braces {}.  The top
+level of the view typically consists of one element in the outermost braces.  This element
+has itself a child list delimited by braces.  Each such list can have more than
+one different element.
+</para>
+			<para>
+Each element specifies:
+</para>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>SQL table</para>
+				</listitem>
+				<listitem>
+					<para>Correlation name for use in subsequent joins for this table</para>
+				</listitem>
+				<listitem>
+					<para>XML element name to use for delimiting a row of this table</para>
+				</listitem>
+				<listitem>
+					<para>List of columns, with optional XML element or attribute names</para>
+				</listitem>
+				<listitem>
+					<para>join condition - will relate rows of this table to rows of the table in the enclosing element.
+  If this element is at the top level, this can only consist of scalar conditions</para>
+				</listitem>
+				<listitem>
+					<para>Optional PRIMARY KEY clause, needed if the table in this element is a view, does not
+  have a primary key or if a non-primary key unique identity is desired</para>
+				</listitem>
+				<listitem>
+					<para>Optional ELEMENT flag</para>
+				</listitem>
+				<listitem>
+					<para>Optional list of child elements, delimited by braces</para>
+				</listitem>
+			</itemizedlist>
+			<note>
+				<title>Note:</title>
+				<para>A correlation name is mandatory for all the tables.</para>
+			</note>
+			<para>
+The column list can mention a single column or a single column renamed into an
+XML attribute of a different name. If a column of a table is referenced in a subsequent join
+condition it must appear in the output columns list.  Expressions are not directly allowed
+but a view with expression columns can be used.
+	</para>
+			<para>
+The opt_public clause, when present, offers a shorthand for calling xml_view_publish
+at the same time as making the definition.  This makes a DAV resource reflecting the contents
+of the view.  The contents may either be generated on demand or persisted as a DAV accessible XML document.
+In the latter case the document may be regenerated at a fixed interval. The interval is
+expressed in minutes.
+	</para>
+			<para>
+The path is expressed as an absolute path from the root collection of the DAV server.
+	</para>
+			<note>
+				<title>Note:</title>
+				<para>This root collection may be mapped into various places in the web server&apos;s URL space.
+</para>
+			</note>
+			<programlisting>
+create xml view xx ... public &apos;/xx.xml&apos; owner &apos;dav&apos; persistent interval 1;
+</programlisting>
+			<para>
+is equivalent to:
+	</para>
+			<programlisting>
+create xml view xx ...;
+xml_view_publish (xx, /xx.xml&apos;, &apos;dav&apos;, 1, 1);
+</programlisting>
+			<para>
+A DAV resource created in this manner can be deleted as any DAV resource.  The XML view
+itself is not affected but a possibly existing refresh job will be automatically deleted.
+	</para>
+			<para>
+One XML view can be published several times with different names and owners.  There may also exist
+persistent and non-persistent publications of the same view.
+	</para>
+			<para>
+The CREATE XML VIEW statement defines stored procedures for generating an XML text fragment corresponding
+to each element declared in the view.
+	</para>
+			<para>
+The names of the procedures are composed as follows:
+	</para>
+			<programlisting>
+create procedure http_view_&lt;view name&gt;
+	(inout output_mode)
+</programlisting>
+			<programlisting>
+create procedure http_&lt;view name&gt;_&lt;element name&gt;_&lt;correlation name&gt;
+	(in pk1 any, ..., in output_mode integer)
+</programlisting>
+			<para>
+An http output procedure is created for each &lt;element&gt; in the create xml view declaration. It takes
+the primary key columns of the table in question in key order plus a mode flag. It then outputs the
+serialization of the specified element and any child elements. For an output mode of 0 the result
+goes directly to an HTTP client. For an output_mode of 1 the procedure returns the serialization as a string.
+Note that for this to work the tables in question must be real tables and the join conditions must
+only reference the next higher table in the create xml view tree.  Further, the primary
+key columns of each table should be mentioned in the columns list for that table along
+with any foreign keys referenced in subsequent join conditions.
+</para>
+			<example id="vht01">
+				<title>Examples</title>
+				<programlisting>
+create xml view &quot;cat&quot; as
+{
+  &quot;Demo&quot;.&quot;demo&quot;.&quot;Categories&quot; &quot;C&quot; as &quot;category&quot;
+	(&quot;CategoryID&quot;, &quot;Description&quot; as &quot;description&quot;)
+    {
+      &quot;Demo&quot;.&quot;demo&quot;.&quot;Products&quot; &quot;P&quot; as &quot;product&quot;  (&quot;ProductName&quot;)
+	on (&quot;P&quot;.&quot;CategoryID&quot; = &quot;C&quot;.&quot;CategoryID&quot;)
+    }
+}
+</programlisting>
+				<para>
+This declares a two level hierarchy with a category node for each category
+and a product child node for each product in the category.
+</para>
+				<programlisting><![CDATA[
+create xml view "cats_e" as
+  select "category"."CategoryID", "CategoryName",
+    "ProductName", "ProductID"
+    from "Demo".."Categories" "category", "Demo".."Products" as "product"
+    where "product"."CategoryID" = "category"."CategoryID" element;
+]]></programlisting>
+				<para>Here is a similar example, this time using the element option.</para>
+			</example>
+			<para>
+The procedures are
+</para>
+			<programlisting>
+xmlg_cat
+http_cat_category_C (in categoryid any, in _out integer);
+http_cat_product_P (in productid any, in _out integer);
+</programlisting>
+			<para>
+In the following example the function returns the selected items as an XML fragment.
+Consecutive elements are separated by new-lines for readability.
+</para>
+			<example id="vht02">
+				<title>Example</title>
+				<programlisting>
+SQL&gt; call &quot;http_cat_category_C&quot; (1, 1);
+
+1 sets? Done. -- 5 msec.
+RESULT=
+&lt;category CategoryID=&quot;1&quot; description=&quot;Soft drinks, coffees, teas, beers, and ales&quot; &gt;
+&lt;product ProductName=&quot;Chai&quot; &gt;&lt;/product&gt;
+&lt;product ProductName=&quot;Chang&quot; &gt;&lt;/product&gt;
+&lt;product ProductName=&quot;Guarana Fantastica&quot; &gt;&lt;/product&gt;
+&lt;product ProductName=&quot;Sasquatch Ale&quot; &gt;&lt;/product&gt;
+&lt;product ProductName=&quot;Steeleye Stout&quot; &gt;&lt;/product&gt;
+&lt;product ProductName=&quot;CÃ´te de Blaye&quot; &gt;&lt;/product&gt;
+&lt;product ProductName=&quot;Chartreuse verte&quot; &gt;&lt;/product&gt;
+&lt;product ProductName=&quot;Ipoh Coffee&quot; &gt;&lt;/product&gt;
+&lt;product ProductName=&quot;Laughing Lumberjack Lager&quot; &gt;&lt;/product&gt;
+&lt;product ProductName=&quot;Outback Lager&quot; &gt;&lt;/product&gt;
+&lt;product ProductName=&quot;RhÃ¶nbrooou Klosterbier&quot; &gt;&lt;/product&gt;
+&lt;product ProductName=&quot;LakkalikÃ¶Ã¶ri&quot; &gt;&lt;/product&gt;
+&lt;/category&gt;
+</programlisting>
+			</example>
+			<para>
+The below example shows how to use a SQL view for hiding a join.
+The below view generates for each table a set of column children and a set of
+index children, which in turn have column children.
+</para>
+			<programlisting>
+create view KEY_COLS as select KP_KEY_ID, KP_NTH, C.*
+	from SYS_KEY_PARTS, SYS_COLS C where COL_ID = KP_COL;
+
+create xml view &quot;schema&quot; as
+{
+  DB.DBA.SYS_KEYS k as &quot;table&quot; (&quot;KEY_TABLE&quot; as &quot;name&quot;,
+	KEY_ID as &quot;key_id&quot;, KEY_TABLE as &quot;table&quot;)
+	on (k.KEY_IS_MAIN = 1 and k.KEY_MIGRATE_TO is null)
+	{ DB.DBA.KEY_COLS  c as &quot;column&quot; (COLUMN as name)
+		on (k.KEY_ID = c.KP_KEY_ID)
+		primary key (COL_ID),
+	DB.DBA.SYS_KEYS i as &quot;index&quot; (KEY_NAME
+	  as &quot;name&quot;, KEY_ID as &quot;key_id&quot;, KEY_N_SIGNIFICANT as &quot;n_parts&quot;)
+	  on (i.KEY_TABLE = k.KEY_TABLE and i.KEY_IS_MAIN = 0 and i.KEY_MIGRATE_TO is null)
+	  {
+	    DB.DBA.KEY_COLS ic as &quot;column&quot; (COLUMN as &quot;name&quot;)
+	      on (ic.KP_NTH &lt; i.KEY_N_SIGNIFICANT and ic.KP_KEY_ID = i.KEY_ID)
+	      primary key (COL_ID)
+	      }
+	}
+};
+</programlisting>
+			<para>
+The following query will return  the subtree describing the Customers table
+in the demo database:
+</para>
+			<programlisting>
+XPATH [__view &apos;schema&apos;]
+	/table[@name = &apos;Demo.demo.Customers&apos;];
+
+&lt;table name=&quot;0&quot; key_id=&quot;1011&quot; table=&quot;Demo.demo.Customers&quot; &gt;
+&lt;column name=&quot;CustomerID&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;CompanyName&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;ContactName&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;ContactTitle&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;Address&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;City&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;Region&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;PostalCode&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;Country&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;Phone&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;Fax&quot; &gt;&lt;/column&gt;
+&lt;index name=&quot;City&quot; key_id=&quot;1012&quot; n_parts=&quot;2&quot; &gt;
+&lt;column name=&quot;City&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;CustomerID&quot; &gt;&lt;/column&gt;
+&lt;/index&gt;
+&lt;index name=&quot;CompanyName2&quot; key_id=&quot;1013&quot; n_parts=&quot;2&quot; &gt;
+&lt;column name=&quot;CompanyName&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;CustomerID&quot; &gt;&lt;/column&gt;
+&lt;/index&gt;
+&lt;index name=&quot;PostalCode2&quot; key_id=&quot;1014&quot; n_parts=&quot;2&quot; &gt;
+&lt;column name=&quot;PostalCode&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;CustomerID&quot; &gt;&lt;/column&gt;
+&lt;/index&gt;
+&lt;index name=&quot;Region&quot; key_id=&quot;1015&quot; n_parts=&quot;2&quot; &gt;
+&lt;column name=&quot;Region&quot; &gt;&lt;/column&gt;
+&lt;column name=&quot;CustomerID&quot; &gt;&lt;/column&gt;
+&lt;/index&gt;
+&lt;/table&gt;
+</programlisting>
+		</sect3>
+		<sect3 id="xmlviewfromselect">
+			<title>Automatic XML Views - Creating XML Views from SELECT Statements</title>
+			<para>
+The automatic form of CREATE XML VIEW will take a select statement
+and infer a hierarchy from it, based on the order of tables in the from
+clause. The parent table should be to the left of its children.  This is practical
+if the tables form a hierarchy in application terms, like orders and order lines or
+departments and employees.  This notation allows arbitrary depth but all siblings
+at the same level will be of the same type.  Elements of child rows will be
+child elements of the element of their parent row, where the join condition
+identifies the child rows for one parent row.
+</para>
+			<para>
+The columns in the selection will appear as attributes or child elements of the rows selected.
+The names of the attributes will be the names of the columns.  The names of the siblings will be the
+names of the tables in the from clause, without qualifiers or owners. Expressions should not
+appear in the selection.  If the use of expressions is required then you may create a SQL view
+first to facilitate this.
+</para>
+			<para>
+The ELEMENT keyword may be present at the end of the select, before
+the publishing keywords.  This will cause all columns to be represented as child
+elements of the element corresponding to the row.  Note that even if the element
+switch is present, the values will appear like attributes in an XPATH query inside the view.
+</para>
+			<note>
+				<title>Note</title>
+				<para>SQL views or derived tables may not appear directly in the select.  The reason
+for this is that a procedure is generated for each level of the generated XML tree and
+that this must take unique identifying column values for the element in question.
+If one desires to use a view, the explicit form should be used, with the primary key
+option specified where appropriate.
+</para>
+			</note>
+			<sect4 id="addtxt4xmlview">
+				<title>Add to text for explicit XML views</title>
+				<para>
+Each set of sibling child nodes is delimited by braces {}.  The top
+level of the view typically consists of one element in the outermost braces.  This element
+has itself a child list delimited by braces.  Each such list can have more than
+one different element.
+</para>
+				<para>
+Each element specifies:
+</para>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>SQL table</para>
+					</listitem>
+					<listitem>
+						<para>Correlation name for use in subsequent joins for this table</para>
+					</listitem>
+					<listitem>
+						<para>XML element name to use for delimiting a row of this table</para>
+					</listitem>
+					<listitem>
+						<para>List of columns, with optional XML element or attribute names</para>
+					</listitem>
+					<listitem>
+						<para>join condition - will relate rows of this table to rows of the table in the enclosing element.
+  If this element is at the top level, this can only consist of scalar conditions</para>
+					</listitem>
+					<listitem>
+						<para>Optional PRIMARY KEY clause, needed if the table in this element is a view, does not
+  have a primary key or if a non-primary key unique identity is desired</para>
+					</listitem>
+					<listitem>
+						<para>Optional ELEMENT flag</para>
+					</listitem>
+					<listitem>
+						<para>Optional list of child elements, delimited by braces</para>
+					</listitem>
+				</itemizedlist>
+				<example>
+					<title>Add to examples:</title>
+					<programlisting>
+create xml view "cats_e" as
+  select "category"."CategoryID", "CategoryName",
+    "ProductName", "ProductID"
+    from "Demo".."Categories" "category", "Demo".."Products" as "product"
+    where "product"."CategoryID" = "category"."CategoryID" element;
+
+Add to text: after 'free text and xml'
+</programlisting>
+				</example>
+			</sect4>
+		</sect3>
+		<sect3 id="xmlviewpublish">
+			<title>xml_view_publish</title>
+			<programlisting>
+DB.DBA.xml_view_publish (in view_name varchar, in dav_path varchar,
+	in dav_owner varchar, in is_persistent integer, in refresh_interval integer)
+</programlisting>
+			<para>
+This presents an XML view as a DAV resource.
+The view name is the name in the create xml view statement, note that this is case sensitive
+and is never converted since it is a string, not an identifier.
+The path must be absolute and is interpreted as relative from the DAV root collection.
+The DAV user is the owner of the resource.
+If is_persistent is non-zero the resource will be materialized from the view&apos;s description.
+The refresh interval is only applicable if the resource is materialized. If so,
+this is an interval in minutes.  A value of 0 means no automatic refresh.
+</para>
+			<para>
+The reverse operation of xml_view_publish is deleting the DAV resource.  xml_view_publish
+may be called several times to alter the owner or refresh interval.
+</para>
+		</sect3>
+	</sect2>
+  <!-- duplicated in webandxml.xml possibly? -->
+	<sect2 id="xmlviewextentref">
+		<title>External Entity References in Stored XML</title>
+		<para>
+When an XML document is stored as either text, long xml, xmltype or in the persistent XML format it can
+contain references to external parsed entities with the &lt;!entity ...&gt; declaration and
+the &amp;xx; syntax.  These are stored as references and not expanded at storage
+time if the entity is external.
+</para>
+		<para>
+Such references are transparently followed by XPATH and XSLT.  A run time
+error occurs if the referenced resource cannot be accessed when needed.  The reference is only
+followed if the actual subtree is selected by XPATH or XSLT.  The resource is retrieved at most once
+for each XPATH or XSLT operation referencing it, regardless of the number of times the link is traversed.
+This is transparent, so that the document node of the referenced entity appears as if it were in the place of the
+reference.
+</para>
+		<para>
+External entity references have an associated URI, which is either absolute with protocol identifier and full
+path or relative.  Relative references must be resolved with respect to the base URI
+of the referencing document.  If the document is stored as a column value in a table
+it does not have a natural base URI, hence the application must supply one if relative references are to
+be supported.  This is done by specifying an extra column of the same table to contain a path, in the
+form of collections delimited by slashes, just as the path of a DAV resource or a Unix file system path.
+</para>
+		<para>
+This base URI is associated with an XML column with the IDENTIFIED BY declaration:
+</para>
+		<programlisting>
+create table XML_TEXT (
+	XT_ID integer,
+	XT_FILE varchar,
+	XT_TEXT long varchar identified by xt_file,
+		primary key (XT_ID)
+	);
+
+create index XT_FILE on XML_TEXT (XT_FILE);
+</programlisting>
+		<para>
+Thus, each time the value of xt_text is retrieved for XML processing by XPATH_CONTAINS or XCONTAINS
+the base URI is taken from xt_file.
+</para>
+		<para>
+The complete URI for the xt_text of a column of the sample table will be:
+</para>
+		<programlisting>
+virt://&lt;qualified table name&gt;.&lt;uri column&gt;.&lt;text column&gt;:&lt;uri column value&gt;
+</programlisting>
+		<para>
+An example would be:
+</para>
+		<programlisting>
+"virt://DB.DBA.XML_TEXT.XT_FILE.XT_TEXT:sqlreference.xml"
+</programlisting>
+		<para>
+The .. and . in relative paths are treated as with file names when
+combining relative references to base URI's. A relative reference without a path just
+replaces the last part of the path in the base URI.
+</para>
+		<tip>
+			<title>See</title>
+			<para>
+				<link linkend="fn_xml_uri_get">xml_uri_get and xml_uri_merge</link> for more details.
+</para>
+		</tip>
+	</sect2>
+	<sect2 id="xpproc">
+		<title>Using XPATH in SQL Queries and Procedures</title>
+		<para>
+An XPATH expression can appear as a SQL query expression,
+that is, as a derived table or subquery predicate or scalar subquery.
+This means that the XPATH expression is expanded compile time to the corresponding SQL.
+The mapping of the XPATH hierarchy to tables and joins is given by the __view XPATH option, which is mandatory.
+	</para>
+		<para>
+The XPATH keyword introduces an embedded XPATH expression.  The XPATH
+text is presented as a string literal.  Note that the tokenization rules are different
+for XPATH and SQL, so having XPATH as a string makes it clear which rules apply
+to parsing which part of the composite query.
+	</para>
+		<example id="xp01">
+			<title>Example</title>
+			<programlisting>
+select * from (XPATH &apos;[__* __view &quot;cat&quot;]
+	//product&apos;) P order by &quot;P.&quot;ProductName&quot;&quot;;
+</programlisting>
+			<para>
+will evaluate the //product query in the context of the cat XML view
+and produce a result set consisting of all the attributes of the
+product entity as defined in the view.
+	</para>
+		</example>
+		<note>
+			<title>Note:</title>
+			<para>
+The __key and __* XPATH options are central here in
+defining the result columns of the XPATH.  The default result column of an XPATH
+expression is the serialization of the selected entity or scalar, which is most
+of the time impractical in a SQL context.
+	</para>
+		</note>
+		<sect3 id="paramsinxp">
+			<title>Parameters in XPATH</title>
+			<para>
+The &apos;$&apos; sign introduces a parameter in XPATH.  The identifier following the dollar sign should reference a SQL column or variable defined in the surrounding context. The name of the parameter can contain a dot for referencing a column with a correlation name.
+	</para>
+			<para>
+For instance, to make a VSP page that outputs the category tree which contains a specific product, one may write:
+	</para>
+			<programlisting>
+&lt;HTML&gt;
+&lt;?vsp
+      declare N varchar;
+      N := {?&apos;name&apos;};
+      for (XPATH &apos;[__http __view &apos;&apos;cat&apos;&apos;]
+	    /category[product/@ProductName = $N]&apos; do ; ?&gt;
+&lt;/HTML&gt;
+</programlisting>
+			<para>
+This will iterate over the categories containing a product with ProductName equal to
+the URL parameter &apos;name&apos;. Note the __http option that causes the text of the selected entities to go directly to the HTTP client.
+Note the double &apos;&apos; escape for the XML view name inside the SQL string literal forming the name.
+	</para>
+			<para>
+Also note that the N parameter is in upper case to work in all case modes. In some
+modes SQL identifiers will be converted automatically to upper case but this conversion does not apply inside XPATH.
+	</para>
+			<programlisting>
+select * from &quot;Demo&quot;..&quot;Categories&quot; C
+	where exists (XPATH &apos;[__view &quot;ord&quot;]
+	//products[@CategoryID = $C.CategoryID]&apos;);
+</programlisting>
+			<para>
+This example selects the categories of products that have been mentioned in the ord
+XML view.
+	</para>
+		</sect3>
+		<note>
+			<title>Syntax Notes</title>
+			<para>
+The main difference of SQL and XPATH is that the &apos;-&apos; is not a breaking
+character in XPATH and that XPATH is case sensitive without any implicit
+identifier case conversion.
+</para>
+		</note>
+	</sect2>
+	<!-- !!!
+<sect2 id="returningxml">
+<title>XML Schema &amp; DTD Functions</title>
+
+&xml_auto_schema;
+
+&xml_auto_dtd;
+
+</sect2>
+-->
+	<sect2 id="xquery_sql">
+		<title>XQUERY and XML view</title>
+		<para>
+Simalarly to XPATH, XQUERY may also  be used as a query languge for XML views.
+Virtuoso offers a special case of FLWR expression for this purpose. It is possible
+to use the  <link linkend="xpf_xmlview"><function>xmlview()</function></link> function
+in FOR clause expressions for querying XML views.
+This function is similar to document () in the sense that it sets the
+source of the path to be the logical root of the referenced XML view.
+The XML view must be a constant known at compile time.  A SQL query
+against the appropriate tables of the XML view is internally
+constructed and evaluated at run time, producing XML fragments from
+the selected rows.  At no point will non-selected parts of the
+evaluation of the XML view be physically created.  The path expression
+following from <link linkend="xpf_xmlview"><function>xmlview()</function></link> may contain filters
+involving XQuery variables bound in the scope of the path expression, thus allowing joining SQL data to
+XQuery variable values.
+
+</para>
+		<para>
+The XQUERY string
+</para>
+		<programlisting>
+for $cat in xmlview(&quot;cat&quot;)/category return {$cat}
+</programlisting>
+		<para>
+in the query
+</para>
+		<programlisting>
+select xquery_eval(&apos; {for $cat in xmlview(&quot;cat&quot;)/category return &lt;q&gt;{$cat}&lt;/q&gt;}&apos;,
+                     xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+		<para>
+is equivalent to the XPATH query string
+</para>
+
+		<programlisting>
+XPATH [__view &quot;cat&quot;]/category
+</programlisting>
+<para>described above.</para>
+<para> The expression xmlview(&quot;viewname&quot;)/path is not a valid top level SQL statement, but may be
+used by xquery_eval() function.
+The path statement is translated into SQL query in the context of the &quot;viewname&quot; (i.e. the
+necessary table names are taken from &quot;viewname&quot; XML view), so that only the desired relational data will be queried.
+Functionality of this kind of SQL queries is
+similar to functionality of the SQL fetch statement, i.e. such a query provides iteration over the result set
+of a cursor. The query is executed once for each row in the query expression's result set.
+Thus using the CREATE XML VIEW statement and a XQUERY FOR clause expression with
+<link linkend="xpf_xmlview"><function>xmlview()</function></link> function  allows you to query the database
+and to return the results in the form of an XML document and to avoid redundant data access.
+This kind of queries also allows computing joins between two or more documents and restructuring data.
+</para>
+		<note>
+			<title>Note</title>
+			<para>
+The &lt;dummy_tag/&gt; tag is not used and it is necessary only as an arbitrary argument for xtree_doc()
+functions.
+
+</para>
+		</note>
+
+			<example id="vht03">
+				<title>Example 1</title>
+				<programlisting>
+create xml view &quot;product&quot; as
+{
+  &quot;Demo&quot;.&quot;demo&quot;.&quot;Products&quot; p as &quot;product&quot;
+      (&quot;ProductID&quot;, &quot;ProductName&quot; as &quot;product_name&quot;,&quot;UnitPrice&quot; as &quot;price&quot;,
+      &quot;SupplierID&quot;,&quot;CategoryID&quot;)
+    {
+      &quot;Demo&quot;.&quot;demo&quot;.&quot;Suppliers&quot; s as &quot;supplier&quot; (&quot;SupplierID&quot;,&quot;CompanyName&quot;)
+	on (s.&quot;SupplierID&quot; = p.&quot;SupplierID&quot;)
+       ,
+      &quot;Demo&quot;.&quot;demo&quot;.&quot;Categories&quot; c as &quot;category&quot; (&quot;Description&quot;)
+	on (c.&quot;CategoryID&quot; = p.&quot;CategoryID&quot;)
+
+    }
+}
+</programlisting>
+</example>
+<para>
+This declares a two level hierarchy with a product node for each product
+and a supplier child node and a category child node of the product.
+</para>
+<para>The following query will return the XML document in which each category node will contain all suppliers supplying products of the given category.
+</para>
+<programlisting>
+select xquery_eval(&apos;
+  &lt;document&gt;
+    {
+      for $cat in xmlview(&quot;cat&quot;)/category
+      return (
+        &lt;category description={$cat/@description}&gt;
+          {
+            distinct (
+              for $prod in xmlview(&quot;product&quot;)/product
+              where $cat/@CategoryID=$prod/category/@CategoryID
+              return $prod/supplier )
+          }
+        &lt;/category&gt; )
+    }
+  &lt;/document&gt;
+  &apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;)
+  );
+</programlisting>
+<para>
+returns the XML document in which each category node contains all suppliers supplying products of the given category.
+</para>
+			<example id="vht04">
+				<title>Example 2</title>
+<para>
+Let a document named suppliers.xml contains supplier elements; each supplier element in turn contains
+supplier_id and supplier_name subelements.
+The following query
+</para>
+<programlisting>
+select xquery_eval(&apos;
+  &lt;supplier_product&gt;
+    {
+      for $supp in document(&quot;suppliers.xml&quot;)/supplier
+      return (
+        &lt;supplier&gt;{$supp/supplier_name }
+          &lt;product_name&gt;
+            {
+              for $prod in xmlview(&quot;product&quot;)/product
+              where string($supp/supplier_id)=$prod/supplier/@SupplierID
+              return string($prod/@product_name)
+            }
+          &lt;/product_name&gt;
+        &lt;/supplier&gt;)
+    }
+  &lt;/supplier_product&gt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;)
+  );
+</programlisting>
+<para> returns the XML document that contains  supplier elements; each supplier element in turn contains
+supplier_name and product_name elements.
+</para>
+</example>
+<para> The previous query and the following one show that
+it is possible to use variables in a XPATH expression following <link linkend="xpf_xmlview"><function>xmlview()</function></link>
+ functions.
+</para>
+			<example id="vht05">
+				<title>Example 3</title>
+<para>The query </para>
+<programlisting>
+select xquery_eval(&apos;
+  &lt;document&gt;
+    {
+      distinct(
+        let $ex:= &quot;Ex%&quot;
+        for $prod in xmlview(&quot;product&quot;)//supplier[@CompanyName like $ex]
+        return &lt;supp_id&gt;{$prod/@SupplierID}&lt;/supp_id&gt;)
+    }
+  &lt;/document&gt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+<para> is equivalent to </para>
+<programlisting>
+select xquery_eval(&apos;
+  &lt;document&gt;
+    {
+      distinct(
+        for $prod in xmlview(&quot;product&quot;)//supplier [@CompanyName like &quot;Ex%&quot;]
+        return &lt;supp_id&gt;{$prod/@SupplierID}&lt;/supp_id&gt;)
+    }
+  &lt;/document&gt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+<para> and selects all suppliers having attribute "CompanyName" starting with "Ex".</para>
+</example>
+
+		<sect3 id="optimizationinxq">
+			<title>Optimization in the queries with xmlview() function</title>
+
+<para> At least two methods may be used to accelerate the execution of queries with xmlview() function.
+The first method assumes that a path statement following xmlview() function should contain maximum conditions
+to reduce the result set. For example, the query
+</para>
+<programlisting>
+select xquery_eval(&apos;&lt;w&gt;
+  {
+    for $prod in xmlview(&quot;product&quot;)/product[@ProductID=&quot;1&quot;]
+    return &lt;q&gt;{$prod}&lt;/q&gt;
+  }&lt;/w&gt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+<para>will be executed faster than </para>
+<programlisting>
+select xquery_eval(&apos;&lt;w&gt;
+  {
+    for $prod in xmlview(&quot;product&quot;)/product where $prod[@ProductID=&quot;1&quot;]
+    return &lt;q&gt;{$prod}&lt;/q&gt;
+  }&lt;/w&gt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+<para>due to the SQL query produced from the path expression 'product[@ProductID=&quot;1&quot;]' reduces
+the result set in comparison with the SQL query produced from the path expression 'product' in the second
+query.
+</para>
+<para>
+If we execute a join of two (or more) XML views (or XML document and XML view), i.e. the query
+consists of the nested loops, the second method proposes to carry out a piece of query of the nested loop
+which is independent of the outer loop outside the outer loop and uses LET clause for it. For example, the
+query
+</para>
+<programlisting>
+select xquery_eval(&apos;&lt;document&gt;
+  {
+    let $prod_set:=(for $prod in xmlview(&quot;product&quot;)/product return $prod)
+    for $cat in xmlview(&quot;cat&quot;)/category
+    return (&lt;category description={$cat/@description}$gt;
+      {distinct(for $prod in $prod_set
+                where $cat/@CategoryID=$prod/category/@CategoryID
+                return $prod/supplier)}&lt;/category&gt;)}&lt;/document&gt;&apos;,
+   xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+<para> is equivalent to the query in the example 1, but it is about 5 times faster than original one.
+This method is especially useful for full joins. In this case we do not have  a full join and this
+query may be optimized without the use of temporary result sets if
+the 'where' clause is replaced with proper filter:
+</para>
+<programlisting>
+select xquery_eval(&apos;&lt;document&gt;
+  {
+    for $cat in xmlview(&quot;cat&quot;)/category
+    let $catID := $cat/@CategoryID
+    return (&lt;category description={$cat/@description}$gt;
+      {distinct(
+        for $supp in xmlview(&quot;product&quot;)/product[category/@CategoryID=$catID]/supplier
+        return $supp)
+      }&lt;/category&gt;)
+  }
+  &lt;/document&lt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+<para>
+This variant requires no memory for storing $prod_set and it never fetches redundand
+fields from "Demo"."demo"."Products" table but it heavily needs index for "Demo"."demo"."Products"
+on "CategoryID" field. If such index is built the last variant is about 10 times faster than the
+query in example 1. Similarly, the query in example 2 may be optimized as follows:
+</para>
+<programlisting>
+select xquery_eval(&apos;
+  &lt;supplier_product&gt;
+   {
+     for $supp in document(&quot;suppliers.xml&quot;)/supplier
+     let $supp_id:=string($supp/@supplier_id)
+     return (
+      &lt;supplier&gt;{$supp/supplier_name}
+        &lt;product_name&gt;
+          {
+            for $prod in xmlview(&quot;product&quot;)/product[supplier/@SupplierID=$supp_id]
+            return string($prod/@product_name)
+          }
+        &lt;/product_name&gt;
+      &lt;/supplier&gt;)
+   }
+  &lt;/supplier_product&gt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;)
+  );
+</programlisting>
+<para> and it speeds up the operation by more than 15 times.
+</para>
+</sect3>
+
+        		<sect3 id="restictionsinxq">
+			<title>Restrictions in XPATH expressions following the xmlview() function</title>
+<para>Virtuoso does not support certain kinds of XPATH expressions applied to the xmlview() function.
+</para>
+<para>
+1. A path expression must not contain any functions, because it is impossible to translate most of the functions
+to SQL queries.
+</para>
+<para>
+2. A path expression must not contain numeric XQUERY variables in the arithmetic expressions.
+Let a document named products.xml contains product elements; each product element has numeric
+attribute ProductPrice. A run time error occurs if the following query would be used
+</para>
+<programlisting>
+select xquery_eval(&apos;
+  &lt;document&gt;
+   {
+     for $prod_doc in document(&quot;products.xml&quot;)/products/product/@ProductPrice
+       for $prod_view in xmlview(&quot;product&quot;)/product[@price&gt;$prod_doc+1]
+     return &lt;q&gt;{$prod_doc, $prod_view/@product_name}&lt;/q&gt;
+   }
+   &lt;/document&gt;&apos;,
+   xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+<para> because the type of $prod_doc is considered as string. As it is mentioned in the previous restriction
+the using a function in a path expression (e.g. xmlview(&quot;product&quot;)/product[@price&gt;number($prod_doc)+1])
+is not allowed.
+The correct query is as follows:
+</para>
+<programlisting>
+select xquery_eval(&apos;
+  &lt;document&gt;
+    {
+      for $prod_doc in document(&quot;products.xml&quot;)/products/product/@ProductPrice
+        let $prod_doc2:=number($prod_doc)
+        for $prod_view in xmlview(&quot;product&quot;)/product[@price&gt;$prod_doc2+1]
+      return &lt;q&gt;{$prod_doc, $prod_view/@product_name}&lt;/q&gt;
+    }
+  &lt;/document&gt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+<para>
+3. A path expression must not contain XQUERY variables with the following paths. The following query will not be
+executed
+</para>
+<programlisting>
+select xquery_eval(&apos;
+  &lt;document&gt;
+    {
+      for $cat in xmlview(&quot;cat&quot;)/category,
+          $prod in xmlview(&quot;product&quot;)/product[@CategoryID=$cat/@CategoryID]
+      return &lt;q&gt;{$prod/supplier}&lt;/q&gt;
+    }
+  &lt;/document&gt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+<para>
+The correct query may be given as
+</para>
+<programlisting>
+select xquery_eval(&apos;
+  &lt;document&gt;
+    {
+      for $cat in xmlview(&quot;cat&quot;)/category
+      let $cat_id:=$cat/@CategoryID
+      for $prod in xmlview(&quot;product&quot;)/product[@CategoryID=$cat_id]
+      return &lt;q&gt;{$prod/supplier}&lt;/q&gt;
+    }
+  &lt;/document&gt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+<para>
+4. Virtuoso does not support a selection of n-th element in a path expression. The following query will not be executed
+</para>
+<programlisting>
+select xquery_eval(&apos;
+  &lt;document&gt;
+    {
+      for $cat in xmlview(&quot;cat&quot;)//product[1] return &lt;q&gt;{$cat}&lt;/q&gt;
+    }
+  &lt;/document&gt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+
+<para>
+5. Virtuoso does not support a dereference (=&gt;) in a path expression.
+</para>
+
+<para>
+6. It is not recommended to use the long varchar, long varbinary and long nvarchar data types with the logical and
+boolean operations in a filter of the path expression.
+For example, the execution of the following query
+</para>
+<programlisting>
+select xquery_eval(&apos;
+  &lt;document&gt;
+    {
+      for $prod in
+        xmlview("product")/product[@SupplierID&lt;5]/category[@Description like "Sw%"]
+      return &lt;q&gt;{$prod}&lt;/q&gt;
+    }
+  &lt;/document&gt;&apos;,
+  xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
+</programlisting>
+<para>
+may return an error, because the field "Description" has LONG VARCHAR type in the table "demo"."Categories".
+</para>
+
+</sect3>
+
+</sect2>
+
+	<sect2 id="mapping_schemas">
+		<title>Mapping Schemas as XML Views</title>
+		<para>
+Virtuoso supports creating XML views by using annotated XSD
+schemas referred to as mapping schemas.
+A file containing a mapping schema may be loaded by  calling the
+<link linkend="fn_xml_load_mapping_schema_decl"><function>xml_load_mapping_schema_decl()</function></link>
+function. A name (without extension .xsd) of the file containing a mapping schema
+is considered to be the name of the xml view, defined by the given mapping schema.</para>
+
+<para>A loaded mapping schema may be queried in the same way as one would
+query XML views defined using the CREATE XML VIEW statement with XPATH:</para>
+
+    <programlisting>
+XPATH [__view &quot;xml_view_name&quot;]/xpath_query
+</programlisting>
+
+<example id="ex_loadingmapxmlsch"><title>Loading and Querying a Mapping Schema</title>
+
+<para> The XML view "Catmp" from the file "Catmp.xsd" may be loaded
+using the following statement:</para>
+			<programlisting>
+   select  xml_load_mapping_schema_decl (
+      'http://localhost.localdomain/xmlrepository/',
+      'Catmp.xsd',
+      'UTF-8',
+      'x-any' ) ) );
+</programlisting>
+
+      <para>where the contents of "Catmp.xsd" is</para>
+
+      <programlisting>
+&lt;xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:sql="urn:schemas-microsoft-com:mapping-schema"&gt;
+&lt;xsd:annotation&gt;
+  &lt;xsd:appinfo&gt;
+    &lt;sql:relationship name="CategoryProduct"
+          parent="Demo.demo.Categories"
+          parent-key="CategoryID"
+          child="Demo.demo.Products"
+          child-key="CategoryID" /&gt;
+  &lt;/xsd:appinfo&gt;
+&lt;/xsd:annotation&gt;
+
+  &lt;xsd:element name="category" sql:relation="Demo.demo.Categories" type="CategoryType" /&gt;
+   &lt;xsd:complexType name="CategoryType" &gt;
+     &lt;xsd:sequence&gt;
+        &lt;xsd:element name="product"
+                     sql:relation="Demo.demo.Products"
+                     sql:relationship="CategoryProduct" &gt;
+           &lt;xsd:complexType&gt;
+              &lt;xsd:attribute name="ProductName" type="xsd:string" /&gt;
+           &lt;/xsd:complexType&gt;
+        &lt;/xsd:element&gt;
+     &lt;/xsd:sequence&gt;
+        &lt;xsd:attribute name="CategoryID"  type="xsd:integer" /&gt;
+        &lt;xsd:attribute name="description"  sql:field="Description"  type="xsd:string" /&gt;
+    &lt;/xsd:complexType&gt;
+&lt;/xsd:schema&gt;
+			</programlisting>
+
+<para>The XML view "Catmp" loaded from the file "Catmp.xsd" is similar to XML view "cat"
+defined by CREATE XML VIEW in the section <link linkend="explicitxmlviews">Explicit Xml Views</link>.
+</para>
+
+<para>The query</para>
+			<programlisting>
+XPATH [__view 'Catmp'] /category[@* = 1];
+			</programlisting>
+<para>will now return the following result:</para>
+
+      <programlisting>
+&lt;category CategoryID="1" description="Soft drinks, coffees, teas, beers, and ales" &gt;
+  &lt;product ProductName="Chai" &gt;&lt;/product&gt;
+  &lt;product ProductName="Chang" &gt;&lt;/product&gt;
+  &lt;product ProductName="Guarana Fantastica" &gt;&lt;/product&gt;
+  &lt;product ProductName="Sasquatch Ale" &gt;&lt;/product&gt;
+  &lt;product ProductName="Steeleye Stout" &gt;&lt;/product&gt;
+  &lt;product ProductName="Cote de Blaye" &gt;&lt;/product&gt;
+  &lt;product ProductName="Chartreuse verte" &gt;&lt;/product&gt;
+  &lt;product ProductName="Ipoh Coffee" &gt;&lt;/product&gt;
+  &lt;product ProductName="Laughing Lumberjack Lager" &gt;&lt;/product&gt;
+  &lt;product ProductName="Outback Lager" &gt;&lt;/product&gt;
+  &lt;product ProductName="Rhonbrau Klosterbier" &gt;&lt;/product&gt;
+  &lt;product ProductName="Lakkalikoori" &gt;&lt;/product&gt;
+&lt;/category&gt;
+</programlisting>
+</example>
+
+<para>
+Mapping schemas provide more flexibility than XML views defined by
+the <computeroutput>CREATE XML VIEW</computeroutput> statement.
+In the following mapping schema a constant element, "CustomerOrders", an
+element that does not map to any database table or column but may appear in the
+resulting XML as a container element of other subelements, is specified
+by the <computeroutput>sql:is-constant</computeroutput> annotation.</para>
+
+		<programlisting>
+&lt;xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:sql="urn:schemas-microsoft-com:mapping-schema"&gt;
+&lt;xsd:annotation&gt;
+  &lt;xsd:appinfo&gt;
+    &lt;sql:relationship name="CustOrders"
+        parent="Demo.demo.Customers"
+        parent-key="CustomerID"
+        child="Demo.demo.Orders"
+        child-key="CustomerID" /&gt;
+  &lt;/xsd:appinfo&gt;
+&lt;/xsd:annotation&gt;
+
+  &lt;xsd:element name="Customer" sql:relation="Demo.demo.Customers" &gt;
+    &lt;xsd:complexType&gt;
+      &lt;xsd:sequence&gt;
+        &lt;xsd:element name="CustomerOrders" sql:is-constant="1" &gt;
+          &lt;xsd:complexType&gt;
+            &lt;xsd:sequence&gt;
+              &lt;xsd:element name="Order" sql:relation="Demo.demo.Orders"
+                           sql:relationship="CustOrders"
+                           maxOccurs="unbounded" &gt;
+                &lt;xsd:complexType&gt;
+                   &lt;xsd:attribute name="OrderID" type="xsd:integer" /&gt;
+                   &lt;xsd:attribute name="OrderDate" type="xsd:date" /&gt;
+                   &lt;xsd:attribute name="CustomerID" type="xsd:string" /&gt;
+                &lt;/xsd:complexType&gt;
+              &lt;/xsd:element&gt;
+            &lt;/xsd:sequence&gt;
+          &lt;/xsd:complexType&gt;
+        &lt;/xsd:element&gt;
+      &lt;/xsd:sequence&gt;
+          &lt;xsd:attribute name="CustomerID" type="xsd:string" /&gt;
+    &lt;/xsd:complexType&gt;
+  &lt;/xsd:element&gt;
+&lt;/xsd:schema&gt;
+</programlisting>
+
+<para>After loading the "Cust_constant.xsd" file containing the given
+mapping schema, the xpath query:</para>
+
+      <programlisting>
+XPATH [__view 'Cust_constant'] /category[@* = 1];
+			</programlisting>
+
+<para>will return the following result:</para>
+
+      <programlisting>
+&lt;Customer CustomerID="ALFKI" &gt;
+  &lt;CustomerOrders &gt;
+    &lt;Order CustomerID="ALFKI" OrderDate="1995-09-25 00:00:00.000000" OrderID="10643" &gt;&lt;/Order&gt;
+    &lt;Order CustomerID="ALFKI" OrderDate="1995-11-03 00:00:00.000000" OrderID="10692" &gt;&lt;/Order&gt;
+    &lt;Order CustomerID="ALFKI" OrderDate="1995-11-13 00:00:00.000000" OrderID="10702" &gt;&lt;/Order&gt;
+    &lt;Order CustomerID="ALFKI" OrderDate="1996-02-15 00:00:00.000000" OrderID="10835" &gt;&lt;/Order&gt;
+    &lt;Order CustomerID="ALFKI" OrderDate="1996-04-15 00:00:00.000000" OrderID="10952" &gt;&lt;/Order&gt;
+    &lt;Order CustomerID="ALFKI" OrderDate="1996-05-09 00:00:00.000000" OrderID="11011" &gt;&lt;/Order&gt;
+  &lt;/CustomerOrders&gt;
+&lt;/Customer&gt;
+    . . .
+</programlisting>
+
+<para>
+Virtuoso does not support all mapping schema annotations at this time.
+The following  are  currently unsupported:</para>
+
+<simplelist>
+  <member><computeroutput>sql:encode</computeroutput></member>
+  <member><computeroutput>sql:use-cdata</computeroutput></member>
+  <member><computeroutput>sql:overflow-field</computeroutput></member>
+  <member><computeroutput>sql:inverse</computeroutput></member>
+  <member><computeroutput>sql:hide</computeroutput></member>
+  <member><computeroutput>sql:guid</computeroutput></member>
+  <member><computeroutput>sql:max-depth</computeroutput></member>
+</simplelist>
+
+<para>Also, there are some restrictions to the structure   of mapping schemas: </para>
+
+<simplelist>
+  <member>Attributes can not contain sql:relationship annotation.</member>
+  <member>Subelement having no sql:is-constant annotation and not mapped
+  to any table can not contain subelements and attributes.</member>
+  <member>Recursive relationships is not supported.</member>
+</simplelist>
+
+    <note>
+			<title>Note:</title>
+			<para>
+The XML views, defined by mapping schemas may not be queried
+using XQUERY.   They can however be referenced with the xmlview XPATH functions in path expressions inside an XQuery query.</para>
+</note>
+
+<tip><title>See Also:</title>
+<para>SQLXML 3.0 documentation:
+<ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/sqlxml3/htm/ssxsdannotations_0gqb.asp">
+Creating XML Views by Using Annotated XSD Schemas. </ulink>
+</para></tip>
+
+</sect2>
+
+	<sect2 id="view4xmldifferences">
+		<title>Differences Between SQLX, FOR XML and XML Views</title>
+		<para>
+A SQLX or FOR XML query has no effect on the database  schema. It is a
+transient event and does not generate procedures or other schema elements.
+</para>
+		<para>
+These define an ad hoc mapping of a result set to XML.
+There is no possibility of using XPATH to specify a search without first
+constructing the whole tree. An XML view on the other hand
+provides a mapping context in which one can make XQUERY or XPATH queries that are
+mapped into SQL and the XML is only generated after applying the conditions.
+</para>
+		<para>
+XML views will usually be more efficient in complex cases and the notation there
+may be simpler than the EXPLICIT notation in FOR XML.
+For simple cases SQLX or FOR XML is the  more convenient of the two.
+SQLX or FOR XML does not restrict the SQL being used and will allow free use of
+subqueries, expressions, derived tables, qualified joins etc.
+</para>
+	</sect2>
+
+</sect1>
+<!--</chapter>-->
+
+

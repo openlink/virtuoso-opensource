@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?> <!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="xq">
+<title>XQuery 1.0 Support</title>
+<para>
+The Virtuoso Server provides support for the <ulink url="http://www.w3.org/TR/xquery/">XQuery 1.0 XML Query
+Language</ulink> specification.  This specification is currently in
+the working draft stage at the W3C XML Query Working Group working in
+collaboration with the W3C XSL Working Group.  Both the syntax and
+semantics of XQuery will probably vary from version to version.
+</para>
+<para>
+In addition to the XQuery 1.0 standard, which describes the language,
+the <ulink url="http://www.w3.org/TR/xquery-operators/">XQuery 1.0 and
+XPath 2.0 Functions and Operators Version 1.0</ulink> specification
+describes a set of built-in functions.  As with all W3C in-progress
+efforts, there is a list of open issues detailing problems and
+unresolved areas; where these affect Virtuoso's implementation, they
+are noted below.
+</para>
+<para>
+This chapter is not an XQuery textbook and does not replace XQuery-related specifications of W3C.
+Only Virtuoso-specific extensions and differences are described here.
+</para>
+<para>
+The most important deviation from the standard is that Virtuoso does not provide full type information about data values.
+As a consequence, &quot;typeswitch&quot; and automatic type conversions are not implemented.
+</para>
+<sect2 id="xq_supported_expns">
+<title>Types of XQuery Expressions</title>
+<para>
+The current draft of XQuery lists 10 groups of XQuery expressions:</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem><para>Primary expressions, including literals, variable references and function calls.</para></listitem>
+<listitem><para>Path expressions, including all XPATH 1.0 expressions and a &quot;pointer operator&quot;.</para></listitem>
+<listitem><para>Sequence expressions.</para></listitem>
+<listitem><para>Arithmetic, comparison and logical operators.</para></listitem>
+<listitem><para>Element constructors, which allow you to create new element nodes with specified names, lists of attributes and lists of children.</para></listitem>
+<listitem><para>FLWR (FOR-LET-WHERE-RETURN) expressions, which allow you to create variables for intermediate results and to transform sequences of items on a per-item basis.</para></listitem>
+<listitem><para>Ordered and unordered expressions to force some sorting of intermediate results or to prevent the XQuery processor from making redundand sorting.</para></listitem>
+<listitem><para>Control expressions, such as IF.</para></listitem>
+<listitem><para>Quantified expressions: SOME and EVERY.</para></listitem>
+<listitem><para>Expressions that test or modify data types.</para></listitem>
+</itemizedlist>
+<para>
+Not all groups of expressions are implemented. In some groups, not all kinds of clauses are implemented.
+</para>
+<para>
+In addition to the standard, Virtuoso supports special cases of FLWR expressions
+to deal with XML views:
+</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem>
+<para>
+<link linkend="xq_supported_xmlview">FOR Clause expressions
+  with xmlview() function.</link>
+</para>
+</listitem>
+</itemizedlist>
+<sect3 id="xq_supported_primary">
+<title>Primary Expressions</title>
+<para>
+XQuery processor uses 32-bit integers on 32-bit platforms and 64-bit integers on 64-bit platforms.
+Similarly, the scale and precision of floating-point operations may vary from platform to platform.
+</para>
+<para>
+Note that string literals are handled differently in XPath 1.0 and XQuery.
+"Ben &quot;amp; Jerry&quot;apos;s" denotes the string "Ben &quot; Jerry&apos;s" in XQuery and the string "Ben &quot;amp; Jerry&quot;apos;s" in XPath.
+</para>
+</sect3>
+<sect3 id="xq_supported_path">
+<title>Path Expressions</title>
+<para>
+Any XPath 1.0 expression is a valid XQuery 1.0 path expression, which
+the Virtuoso XQuery processor supports.  When invoked from the XQuery
+context, the XPath Processor works in accordance with XSLT rules.
+There are two major differences between standalone and XQuery/XSLT
+path expressions.
+First, the meaning of non-qualified name used as NameTest criterion, as described below.
+Second, the data type used for
+attributes varies.  In XPath or XQuery mode, if a value is calculated by an
+<parameter>attribute::</parameter> axis, it is of type <parameter>attribute
+entity</parameter>; in standalone XPath, the string value of the
+attribute is used instead.
+</para>
+<para>
+As specified in the XQuery 1.0 standard, a node-set returned by an
+XPath expression may be used as a sequence of items, where every node
+of that node-set becomes an item of the sequence.  The opposite is not
+true, however. Not every sequence may be converted into a node-set,
+even if it is a sequence of nodes.  If XPath starts from a function
+which returns a sequence, an error message &quot;Context node is not
+an entity&quot; is returned.  Fortunately, a variable of type
+<programlisting>sequence</programlisting> may be used as a node-set if
+all items of the sequence are nodes.
+</para>
+<para>
+Obsolete drafts of W3C specification contains description of
+&quot;pointer operator&quot;. Virtuoso continues to support this
+operator to provide backward compatibility. XQuery processor needs DTD data
+associated with the XML document in question to distinguish ID attributes
+from other sorts of attributes and to bookmark elements that have ID locations.
+For more details, see the description of <link linkend="xpf_id"><function>id()</function></link> XPATH function.
+This function uses same DTD data for same purposes, so for any given document, either both <function>id()</function> and &quot;pointer operator&quot; are applicable or both does not work.
+</para>
+<para>
+Sometimes the &quot;Context node is not an entity&quot; error is
+signalled if the beginning of the XPath expression is surrounded by
+parenthesis, even if the expression works fine without these
+parenthesis.  This happens because &quot;(...)&quot; is an
+&quot;append&quot; operator in XQuery, not just a way to group
+subexpressions. &quot;append&quot; converts a node-set into a sequence
+even when it is called with a single argument &mdash; that is, without
+commas inside &quot;(...)&quot;.  This sequence cannot be used as
+input for the rest of the XPath expression.
+</para>
+<para>
+As an syntax extension, special notation of QNames is added and can be used, e.g., in NameTest.
+An expanded name can be surrounded by delimiters (! and !), like (!http://www.example.com:MyTag!)
+and this syntax allows   names that contain otherwise prohibited characters.
+This syntax is also useful when the text of the query is generated by software.
+</para>
+<para>
+Note that the NameTest that consists of an unqualified name has different meanings in Virtuoso XPath and in XQuery.
+In XPath, NameTest &quot;sample-tag&quot; means &quot;any element whose local-name is equal to sample-tag&quot;.
+In XQuery, the same test means &quot;any element without namespace-uri whose local-name is equal to sample-tag&quot;.
+</para>
+</sect3>
+<sect3 id="xq_supported_seq"><title>Sequence Expressions</title>
+<para>XQuery sequences are supported not only in XQuery but can also be handled in XPath and XSLT.
+When the  XQuery processor is invoked from SQL and a sequence is returned to the caller, the sequence is automatically converted into a vector of its elements.</para>
+<para>Virtuoso supports all sequence operations listed in current W3C paper plus deprecated operations BEFORE and AFTER.</para>
+<para>
+The <parameter>sequence concatenation</parameter> operator is available in XPath and XSLT as the
+<link linkend="xpf_append"><function>append()</function></link> function.
+In addition, the <link linkend="xpf_tuple"><function>tuple()</function></link> function is available to get the first items of every given argument sequence and return the sequence of these items.
+</para>
+<para>
+XQuery operators UNION, INTERSECT, EXCEPT are available in XPath and XSLT as functions
+<link linkend="xpf_union"><function>union()</function></link>,
+<link linkend="xpf_intersect"><function>intersect()</function></link> and
+<link linkend="xpf_except"><function>except()</function></link>.
+</para>
+</sect3>
+<sect3 id="xq_supported_opers">
+<title>Arithmetic, Comparison and Logical operations</title>
+<para>Virtuoso shares the implementation of basic arithmetic and comparison operations between
+XPath, XQuery, XSLT, SQL and Virtuoso/PL processors, so type casting, scale and precision of calculated values are identical across the system.
+All operators are available in XQuery, in addition, &lt;&lt; and &gt;&gt; operators are available in XPath and XSLT as
+<link linkend="xpf_is_before"><function>is_before()</function></link> and
+<link linkend="xpf_is_after"><function>is_after()</function></link> built-in functions.
+</para>
+</sect3>
+<sect3 id="xq_supported_el_ctors">
+<title>Element Constructors</title>
+<para>
+Virtuoso XQuery supports all XQuery 1.0 direct constructors.
+Previous versions of W3C draft contained the syntax for placing calculated content into the opening tag of direct element constructor,
+such as
+<screen><![CDATA[<{concat("calculated-", "element-name")} {concat("calculated-", "attribute-name")}={concat("calculated-", "attribute-value")}>...</>]]>
+</screen>.
+Thus name of element or attribute, or a value of an attribute can be calculated dynamically. This syntax is still supported.
+The <link linkend="xpf_create_element">
+<function>create-element()</function>
+</link>
+XPath function is implemented to make this functionality available in
+XPath.
+Additionally, a special function <link linkend="xpf_create_attribute">
+<function>create-attribute()</function>
+</link>
+may be used to create a new dynamic attribute entity with value and name calculated, this works similarly to xsl:attribute XSLT instruction.
+</para>
+<para>
+Similarly,
+<link linkend="xpf_create_comment"><function>create-comment()</function></link>,
+<link linkend="xpf_create_element"><function>create-element()</function></link> and
+<link linkend="xpf_create_pi"><function>create-pi()</function></link> mimics other XQuery direct constructors in XPath and XSLT.
+</para>
+<para>
+The XQuery specification states that when sequence of atomic values is covnerted into content of an element constructor,
+whitespace character is insertedbetween adjacent values.
+</para>
+<para>
+Unlike previous versions of Virtuoso, current XQuery syntax allows you to use &quot;pure XML notation&quot; inside element
+constructors.  Thus there is no strict need to write 'constant' expression
+<screen>
+&lt;emp empid="12345">&lt;name>John Smith&lt;/name>&lt;job>Bubble sorter&lt;/job>&lt;/emp>
+</screen>
+as it is dynamically calculated text, like
+<screen>
+&lt;emp empid="12345"&gt;&lt;name&gt;{'John Smith'}&lt;/name&gt;&lt;job&gt;{'Bubble sorter'}&lt;/job&gt;&lt;/emp&gt;
+</screen>
+It is still may be useful to write 'constant' expression in the old way.
+This artificial restriction simplifies finding syntax errors,
+because there are syntactically wrong expressions that are still
+correct &quot;pure XML notation.&quot;
+Alternatively, CDATA sections also may be used to make it obvious that the string is a constant, not an expression with forgotten braces around it:
+<screen>
+&lt;emp empid="12345"&gt;&lt;name>&lt;![CDATA[John Smith]]&gt;&lt;/name&gt;&lt;job&gt;&lt;![CDATA[Bubble sorter]]&gt;&lt;/job&gt;&lt;/emp&gt;
+</screen>
+</para>
+<para>
+The current version of Virtuoso does not support the new XQuery syntax for dynamic constructors.
+</para>
+</sect3>
+<sect3 id="xq_supported_flowr">
+<title>FLWR Expressions</title>
+<para>
+FLWR expressions are fully supported by Virtuoso XQuery. Moreover,
+<link linkend="xpf_for"><function>for()</function></link> and <link linkend="xpf_let"><function>let()</function>
+</link> XPath functions
+are implemented to make this functionality available in XPath and
+XSLT.  In addition, <link linkend="xpf_assign">
+<function>assign()</function>
+</link> and <link linkend="xpf_progn">
+<function>progn()</function>
+</link> functions are
+available to deal with extension functions, especially when extension
+functions are called for their side effects.
+</para>
+<para>
+A special <link linkend="xpf_xmlview">xmlview()</link> function allows
+very effecient access to SQL data from XML views.
+</para>
+<para>
+Previous XQuery specifications used &quot;sort by&quot; instead of &quot;order by&quot;. The difference is that
+&quot;sort by&quot; was applicable to the final results of the FLWR statement made by RETURN clause
+whereas &quot;order by&quot; reorders input data for RETURN. Thus, &quot;order by&quot; can sort outputs using data
+that do not appear in the final result.
+E.g., an expression can collect items, &quot;order&quot; them by category and title but output only title and price.
+This was much harder in previous versions of XQuery because it was necessary to prepare an intermediate result
+that contained title and price and category, then do &quot;sort&quot; by category and title then use one more FLWR
+expression to form a result that is free from redundand data about category.
+</para>
+<para>
+Nevertheless, Virtuoso supports both &quot;sort by&quot; and &quot;order by&quot;, to keep backward compatibility.
+Moreover, &quot;sort by&quot; operator can be freely used with no relation to any FLWR subexpression.
+Typical use of such a simplified notation is
+<screen>
+<![CDATA[<hit-list>{//track[@rating] sort by (@rating descending)}</hit-list>]]>
+</screen>
+instead of portable
+<screen>
+<![CDATA[<hit-list>{for $t in //track[@rating] order by $t/@rating descending return $t}</hit-list>]]>
+</screen>
+</para>
+</sect3>
+<sect3 id="xq_supported_ordered">
+<title>Ordered and Unordered Expressions</title>
+<para>The current version of Virtuoso does not use ordered/unordered hints. Everything is calculated ordered. This will change in the future but it is
+not advisable to place &quot;unordered&quot; hints for future use because there's no way to validate these hints. It is better to place
+appropriate comments but not hints.
+</para>
+</sect3>
+<sect3 id="xq_supported_ctrl">
+<title>Control Expressions</title>
+<para>
+The <link linkend="xpf_if"><function>if()</function></link> special function mimics the XQuery operator for use in XPath and XSLT.
+Functions <link linkend="xpf_and"><function>and()</function></link> and <link linkend="xpf_or"><function>or()</function></link>
+are also control expressions because they calculate arguments in strict left-to-right order and may omit the calculation of some results.
+</para>
+</sect3>
+<sect3 id="xq_supported_quan">
+<title>Quantified Expressions</title>
+<para>
+Both the <parameter>SOME</parameter> and <parameter>EVERY</parameter>
+operators are implemented.  The
+<link linkend="xpf_some"><function>some()</function></link> and
+<link linkend="xpf_every"><function>every()</function></link>
+XPath functions are implemented to make
+this functionality available in XPath and XSLT.
+</para>
+</sect3>
+<sect3 id="xq_supported_metadatatype">
+<title>Expressions That Test or Modify Data types</title>
+<para>
+The operators <parameter>IS</parameter>, <parameter>CASTABLE</parameter>, <parameter>CAST</parameter>,
+<parameter>TREAT</parameter>, <parameter>TYPESWITCH</parameter> and <parameter>VALIDATE</parameter> are
+not implemented.
+</para>
+</sect3>
+<sect3 id="xq_supported_xmlview">
+<title>FOR Clause Expressions With xmlview() Function</title>
+<para>
+XML views can be queried using FOR Clause from FLWR expressions.
+The <link linkend="xpf_xmlview">
+<function>xmlview()</function>
+</link> function
+allows XML views to be accessed as if they were XML documents.  XPath expressions
+beginning with the <function>xmlview()</function> function will be translated
+into SQL statements to avoid redundant data access and to avoid creating
+a whole XML tree.</para>
+</sect3>
+</sect2>
+<sect2 id="xq_supported_syntax">
+<title>Details of XQuery Syntax</title>
+<para>
+Virtuoso XQuery uses some syntax extensions.
+Most visible is an additional notation for qualified names as
+described above (name is surrounded by &quot;(!...!)&quot; delimiters.
+An earlier implementation allowed single-line comments started with
+&quot;#&quot; or &quot;--&quot; continuing to the end of line,
+this syntax is now obsolete.
+</para>
+<para>
+The &quot;default namespace declaration&quot; clause is not currently
+supported, to make the text of XQuery unambiguous.  If used, default
+namespaces must extend element names but not attribute names.
+Extension function names must be extended as they have non-default
+namespace prefixes but the names of basic functions should not be
+extended by the default namespace.  Finally, Virtuoso will not
+preserve any information about used namespace prefixes, so default
+namespaces will be converted into non-default when the resulting XML
+entity is printed.
+</para>
+</sect2>
+<sect2 id="xq_precompilation">
+<title>Pre-compilation of XPath and XQuery Expressions</title>
+<para>Virtuoso compiles XPath and XQuery expressions as early as it is possible.
+E.g. if the first argument of <link linkend="fn_xquery_eval">
+<function>xquery_eval()</function>
+</link>
+is a string constant then the SQL compiler will invoke the XQuery compiler to avoid
+on-demand compilation(s) of this text.
+</para>
+<para>
+This feature significantly enhances performance of XQuery expressions embedded in SQL.
+For a simple search on XML document of average size
+the compilation time can be three times greater than execution time.
+In addition, the use of <link linkend="xpf__sql__column">
+<function>sql:column()</function>
+</link>
+special XQuery function is possible only when pre-compilation can be done by SQL compiler.
+</para>
+<para>
+Pre-compilation is impossible if the text of the expression is not a constant.
+The typical case is passing an XQuery expression as parameter to a function.
+In this case the expression is compiled during the call of xquery_eval() and
+stored for future use. If the same string is passed again to the same invocation of
+xquery_eval() then a stored compiled expression is used.
+</para>
+<para>
+Only partial pre-compilation is possible if XQuery expression refers to
+not-yet defined extension functions or to external resources.
+Partial pre-compilation gives little gain in speed, but it allows
+the use of
+<link linkend="xpf__sql__column">
+<function>sql:column()</function>
+</link>
+</para>
+<para>
+The most important fact about pre-compilation is that passing parameters into XQuery
+statement is much more efficient than printing then into the text of the
+query. This is similar to SQL queries.
+</para>
+<example id="ex_xq_precompilation">
+<title>Good and Poor Coding Practices</title>
+<para><emphasis>GOOD</emphasis> The expression is compiled once when SQL query is compiled:</para>
+<programlisting><![CDATA[
+select xquery_eval('count(//abstract)', SOURCE_XML) from LIB..ARTICLES;]]>
+</programlisting>
+<para><emphasis>GOOD</emphasis> The expression is compiled once when SQL query is compiled:</para>
+<programlisting><![CDATA[
+select xquery_eval('count(//article[@id=$main_id]/abstract)', SOURCE_XML, 1, vector('main_id', MAIN_ID))
+  from LIB..ARTICLES;]]>
+</programlisting>
+<para><emphasis>POOR</emphasis> The expression is compiled once per data row.
+In addition, a hard-to-find error will occur if a value of MAIN_ID may contain double quote or
+a backslash character.
+</para>
+<programlisting><![CDATA[
+select xquery_eval(sprintf('count(//article[@id="%s"]/abstract)', MAIN_ID), SOURCE_XML)
+  from LIB..ARTICLES;]]>
+</programlisting>
+<para><emphasis>GOOD</emphasis> The XQuery expression is compiled once per execution of
+the SQL query.
+The SQL compiler pays special attention to queries that import external resources, because
+the content and availability of these resources may differ from call to call.
+In addition, importing an external resource is usually not possible during SQL compilation due to
+deadlock danger, so the compilation is postponed until run time, but this is not too bad anyway.
+Even in this sophisticated case, XQuery can contain calls of
+<link linkend="xpf__sql__column">
+<function>sql:column()</function>
+</link></para>.
+<programlisting><![CDATA[
+select xquery_eval('
+    namespace tools="http://www.example.com/lib/tools/"
+    import define "http://www.example.com/lib/tools/common.xqr"
+    tools:extract-keywords(//abstract)',
+  SOURCE_XML)
+from LIB..ARTICLES;]]>
+</programlisting>
+<para><emphasis>GOOD</emphasis> Two XQuery expressions are compiled during SQL compilation.</para>
+<programlisting><![CDATA[
+select
+  case
+    when SOURCE_IS_DOCBOOK then xquery_eval ('//formalpara[title="See Also"]/para', SOURCE_XML)
+    else xquery_eval ('//p[@style="seealso"]', SOURCE_XML)
+  end
+from LIB..ARTICLES;]]>
+</programlisting>
+<para><emphasis>POOR</emphasis> Virtuoso can not pre-compile XQquery expressions. Moreover,
+only one precompiled expression is cached per occurrence of xquery_eval() in the SQL statement
+so it is possible that an XQuery compiler will start once per data row.</para>
+<programlisting><![CDATA[
+select
+  xquery_eval (
+    case
+      when SOURCE_IS_DOCBOOK then '//formalpara[title="See Also"]/para'
+      else '//p[@style="seealso"]'
+    end,
+  SOURCE_XML)
+from LIB..ARTICLES;]]>
+</programlisting>
+</example>
+</sect2>
+</sect1>

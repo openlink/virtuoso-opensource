@@ -1,0 +1,1795 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="quicktours.xml" id="quicktours">
+	<title>Quick Start &amp; Tours</title>
+	<abstract>
+<para>This chapter is aimed at getting Virtuoso up and running quickly with a few basic
+examples to demonstrate key concepts.
+</para>
+<para>The Virtuoso quick start tour is designed to familiarize you with some of
+the components in Virtuoso.
+After completing the tour, you should be able to link new tables into Virtuoso,
+and query the tables. </para>
+</abstract>
+	<!-- ======================================== -->
+
+  <sect1 id="newadminui"><title>Where to Start</title>
+    <sect2 id="defpasschange"><title>Default Passwords</title>
+    <para>When you start up Virtuoso for the first time, there are 3 user accounts defined:</para>
+
+  <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Default users of Virtuoso</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>User Name</entry>
+        <entry>Default Password</entry>
+        <entry>Usage</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>dba</entry>
+        <entry>dba</entry>
+        <entry>Default Database Administrator account.</entry>
+      </row>
+      <row>
+        <entry>dav</entry>
+        <entry>dav</entry>
+        <entry>WebDAV Administrator account.</entry>
+      </row>
+      <row>
+        <entry>vad</entry>
+        <entry>vad</entry>
+        <entry>WebDAV account for internal usage in VAD (disabled by default).</entry>
+      </row>
+      <row>
+        <entry>demo</entry>
+        <entry>demo</entry>
+        <entry>Default demo user for the demo database.  This user is the owner of the Demo catalogue of the demo database.</entry>
+      </row>
+      <row>
+        <entry>soap</entry>
+        <entry>soap</entry>
+        <entry>SQL User for demonstrating SOAP services.</entry>
+      </row>
+      <row>
+        <entry>fori</entry>
+        <entry>fori</entry>
+        <entry>SQL user account for 'Forums' tutorial application demonstration in the Demo database.</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+
+    <para>One database user and 2 WebDAV users.  These users have their passwords
+    set to default values.  It is therefore important to change them immediately
+    after the installation.</para>
+    <para>The one database user is the database administrator with username
+    &quot;dba&quot; and password &quot;dba&quot;.  This can be changed using
+    the <link linkend="isql">Interactive SQL</link> utility.  When started without
+    parameters, the ISQL tries to log on as dba with the default password.  The SQL
+    statement to change a user's password is:</para>
+
+    <programlisting>set password &lt;old password&gt; &lt;new password&gt;</programlisting>
+
+    <para>The password is an identifier, so take care to use proper quotation.</para>
+    <para>You can also use the graphical <link linkend="dbusersandgroups">Virtuoso
+    Administration Interface</link> to administer Virtuoso database users.</para>
+    <para>The 2 WebDAV user accounts, dav and davuser also have their password
+    set to their username.  There are 2 easy ways to change them.  Either use
+    the GUI in <link linkend="davuseradm">Administration Interface</link> under
+    WebDAV Administration / WebDAV services / Users Administrator or use the SQL
+    statement: </para>
+
+    <programlisting>
+update WS.WS.SYS_DAV_USER set U_PASSWORD=&apos;&lt;new password&gt;&apos;
+  where U_NAME=&apos;&lt;username&gt;&apos;
+</programlisting>
+
+    <para>Note quotation around varchar values.  Please remember to perform these
+    operations for all Virtuoso server instances installed.  By default these are
+    the Virtuoso with an empty database and Virtuoso [demo] with the demo database.</para>
+    </sect2>
+
+		<sect2 id="postinstsanity">
+			<title>Post-Installation Sanity Check</title>
+			<sect3 id="posttestisql">
+				<title>Verify by ISQL</title>
+			<para>Verify usability of your Virtuoso server by executing the
+      following command from your command line prompt:</para>
+			<programlisting>isql</programlisting>
+			<para>From the ISQL prompt enter the following SQL command:</para>
+			<programlisting>select * from DB.DBA.SYS_USERS;</programlisting>
+			<para>
+      This should produce a resultset containing one record if everything has been implemented
+      correctly to this point.</para>
+			<figure id="inst022" float="1">
+				<title>ISQL in Telnet</title>
+				<graphic fileref="ln-inst3.gif" width="525px" depth="342px"/>
+			</figure>
+			</sect3>
+			<sect3 id="posttesthttp">
+				<title>Verify by HTTP</title>
+
+			<para>A quick way to check that the database is running, is to point a browser to the
+			http port. The following example URLs will show the System Manager for
+			the default, and the demo Virtuoso databases:</para>
+			<programlisting>
+http://localhost:8889/
+http://localhost:8890/
+http://a_virtuoso_server.org:8890/
+</programlisting>
+			<para>On a Windows Client there is a shortcut to the
+      <emphasis>OpenLink Virtuoso System Manager</emphasis> in the OpenLink Virtuoso program group.</para>
+			<para>You will be presented with the OpenLink Virtuoso System Manager screen:</para>
+			<figure id="inst018" float="1">
+				<title>Virtuoso System Manager</title>
+				<graphic fileref="ln-inst4.jpg" />
+			</figure>
+			</sect3>
+			<sect3 id="posttestqry">
+				<title>Verify by web based SQL query</title>
+			<para>Click on the <emphasis>Administration</emphasis> button to enter the Virtuoso
+			Server Administration Interface. You will be presented with a login dialog box, type
+			in the correct details for the database DBA user, by default this is username=dba;
+			password=dba.</para>
+			<figure id="inst019" float="1">
+				<title>Virtuoso Server Administration- Login Box</title>
+				<graphic fileref="ln-inst-login.jpg" width="426px" depth="266px"/>
+			</figure>
+			<para>Expand the menu tree on the left of the screen to select
+			<emphasis>Query Tools/Relational Data Using SQL</emphasis>.</para>
+			<figure id="inst020" float="1">
+				<title>Virtuoso Server Administration - ISQL</title>
+				<graphic fileref="ln-inst-isql.jpg" width="806px" depth="470px"/>
+			</figure>
+			<para>Enter
+      the SQL Statement command &quot;SELECT * FROM SYS_USERS&quot; in the SQL Statement
+      text area.  Note that only valid SQL can be supplied, so you cannot type a database
+      command such as &quot;tables;&quot;.  Also, note that the &quot;;&quot; is not valid
+      in this context.  Press <emphasis>Execute</emphasis>. </para>
+			<para>You should see the SQL results, as shown below. </para>
+			<figure id="inst021" float="1">
+				<title>Virtuoso Server Administration - ISQL</title>
+				<graphic fileref="ln-inst-isql2.jpg" width="806px" depth="517px"/>
+			</figure>
+			</sect3>
+		</sect2>
+  <sect2 id="administeringtheserver"><title>Administering Your Virtuoso Installation</title>
+    <para>Virtuoso has been designed for Web based Administration.  With your
+    Virtuoso server running you will be able to point a Web browser at the servers
+    listening address and port.  The installation will include the default server
+    and optionally the demo database server.  The default server listens on port 8890
+    whilst the demo server listens on port 8889.  If you are using the machine where
+    Virtuoso was installed then the server address can be localhost or the hostname
+    otherwise you will need to know the hostname or IP address of the machine where
+    Virtuoso was installed.  The URL that you will want to point your browser may be:</para>
+
+<programlisting>
+http://localhost:8890/
+</programlisting>
+
+<para>Note that that trailing / is important and may be required for older browsers</para>
+
+  <figure id="qsinst021" float="1">
+    <title>Visual Server Administration Interface</title>
+    <graphic fileref="ln-inst4.jpg" width="524px" depth="382px"/>
+  </figure>
+
+  <para>The Administration button will take you to the Visual Server
+  Administration Interface.  Information about <link linkend="adminui">Visual
+  Server Administration Interface can be found in the Server
+  Administration chapter</link>, which describes all the Interfaces
+  available for configuring your server.</para>
+  </sect2>
+</sect1>
+
+	<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
+
+<sect1 id="qsclientcon"><title>Client Connections</title>
+  <para>Virtuoso supports a number of data access API's such as ODBC and JDBC.
+	They both provide high performance native connectivity to the Virtuoso
+	database system.  </para>
+	<sect2 id="qsodbc"><title>ODBC</title>
+	  <para>The Virtuoso driver for ODBC is available for Windows and most Unix
+		operating systems.  For Windows the you can configure a data source that
+		utilizes the driver in the familiar way via the ODBC Administrator.  This is
+		very easy windows and wizards based process.  On Unix the process has
+		historically not been so simple.  We have been trying to a achieve the same
+		level of usability under Unix through our support of
+		the <ulink url="http://www.iodbc.org/">iODBC project</ulink>.  For
+		more information and details about how to configure the Virtuoso driver for
+		ODBC please go to the <link linkend="virtdsnsetup">Virtuoso Driver for ODBC</link>
+		section.</para>
+	</sect2>
+	<sect2 id="qajdbc"><title>JDBC</title>
+	  <para>The Virtuoso driver for JDBC is a type 4 native driver which is
+		available for all Java platforms.  This means that you have a single jar file,
+		for which to include into your classpath, and then the driver is ready for
+		use by your applications.  The connection URL typically consists of:</para>
+		<programlisting>jdbc:virtuoso://hostname:port/UID=uid/PWD=pwd</programlisting>
+		<para>More information about the JDBC driver can be found in the
+		<link linkend="VirtuosoDriverJDBC">Virtuoso Driver for JDBC</link> section.
+		The JDBC driver also supports SSL encrypted connections.  This JDBC
+		driver is an excellent companion to any web enabled applications especially
+		when combined with Virtuoso's other features such as WSDL and SOAP.</para>
+	</sect2>
+	<sect2 id="qsoledb"><title>OLEDB</title>
+  <para>Virtuoso gives application developers an opportunity to utilize OLE DB
+  interfaces for their database programming needs. OLE DB is a Microsoft developed
+  and promoted technology for uniform data access across diverse data sources.
+  Many applications make indirect use of OLE DB through a higher level ADO interface.</para>
+
+  <para>VIRTOLEDB is the native <link linkend="virtoledb">OLE DB provider for
+  Virtuoso</link>.  This enables applications to access a Virtuoso server using
+  OLE DB interfaces.  VIRTOLEDB provides implementation for all required and many
+  optional OLE DB interfaces.</para>
+	</sect2>
+</sect1>
+<sect1 id="qsvdbsrv"><title>Virtual Database Server</title>
+  <para>Virtuoso's Virtual Database Engine enables you to produce Dynamic
+	Web Content from any major database management system.  This enables dynamic,
+	real-time HTML and XML generation from any number of different database
+	engines concurrently.  The <link linkend="adminui">Visual Server Administration Interface</link>
+	of Virtuoso allows you to effortlessly remotely choose and
+	configure remote data sources to be linked into Virtuoso.  Once a table is
+	linked into Virtuoso then it is usable like any native table leaving you
+	free to perform join queries without ever worrying
+	about the underlying data source.</para>
+	<para>The <link linkend="vdbconcepts">Virtual Database (VDB) Engine</link> section
+	of the <link linkend="concepts">Conceptual Overview</link> chapter explains
+	the concepts in more details.</para>
+	<para>Visit the <link linkend="remotetables">Visual Server Administration Interface</link>
+  section to see how to link tables into Virtuoso, or follow the small example below to
+get you started:</para>
+
+		<sect2 id="confodbcdsn">
+			<title>Configuring Your ODBC Data Sources</title>
+			<para>
+Before you can link a table into Virtuoso, you need to configure an ODBC datasource.
+It is quite likely that you already have ODBC data sources defined.
+If so, you can skip this part of the tour.  </para>
+			<para>
+If you do not have any data sources defined, you should
+    configure your datasource using an appropriate ODBC driver.  The ODBC driver may come
+    from the database vendor or a third-party middleware vendor, such as OpenLink
+    Software.  You will need to configure your ODBC datasource in accordance with the
+    directions from your driver vendor.</para>
+			<para>
+In this part of the tour, we show sample DSN configuration
+    information for some database vendor drivers.  These examples of working data sources
+    are not meant to replace the instructions from the driver vendor.  In your specific
+    installation other parameters may be necessary.  </para>
+			<para>
+To define ODBC data sources on Windows 95/98/NT, click on
+    the ODBC icon in the Control Panel.</para>
+			<para>
+This first datasource uses the driver from Oracle Corporation. </para>
+			<figure id="image01" float="1">
+				<title>Oracle Driver DSN Configuration</title>
+				<graphic fileref="virttour1.gif" width="476px" depth="314px"/>
+			</figure>
+			<para>
+The next example is an Informix 7 datasource using the
+    driver from Informix Software, Inc.</para>
+			<figure id="image02" float="1">
+				<title>Informix Driver DSN Configuration</title>
+				<graphic fileref="virttour2.gif" width="345px" depth="489px"/>
+			</figure>
+			<para>
+The next few images show a Microsoft SQL Server 6.5
+    datasource using the Microsoft Corporation SQL Server driver.</para>
+			<figure id="image03" float="1">
+				<title>MS SQL Server DSN Configuration</title>
+				<graphic fileref="virttour3.gif" width="511px" depth="322px"/>
+			</figure>
+			<figure id="image04" float="1">
+				<title>MS SQL Server DSN Configuration</title>
+				<graphic fileref="virttour4.gif" width="511px" depth="322px"/>
+			</figure>
+			<figure id="image05" float="1">
+				<title>MS SQL Server DSN Configuration</title>
+				<graphic fileref="virttour5.gif"/>
+			</figure>
+			<figure id="image06" float="1">
+				<title>MS SQL Server DSN Configuration</title>
+				<graphic fileref="virttour6.gif" width="511px" depth="322px"/>
+			</figure>
+			<figure id="image07" float="1">
+				<title>MS SQL Server DSN Configuration</title>
+				<graphic fileref="virttour7.gif" width="511px" depth="322px"/>
+			</figure>
+			<para>
+Finally, review the configuration information for your default local Virtuoso datasource,
+named &quot;<emphasis>Local Virtuoso</emphasis>&quot;.</para>
+			<figure id="image08" float="1">
+				<title>OpenLink Virtuoso DSN Configuration</title>
+				<graphic fileref="virttour8.gif" width="294px" depth="224px"/>
+			</figure>
+			<para>DSNs can be created and configured within the Virtuoso System Manager.
+			Expand the menu tree on the left of the screen to select
+			<emphasis>Databases/ External Databases/ Configure Data Sources</emphasis>.
+			This pictures shows the creation of a DSN to an Oracle database using the
+			OpenLink Generic 32 Bit Driver V4.0:</para>
+			<figure id="newdsn" float="1">
+				<title>Creating a new DSN</title>
+				<graphic fileref="newdsn.jpg"/>
+			</figure>
+		</sect2>
+		<sect2 id="dsnchk">
+			<title>Datasource Check</title>
+			<para>
+Before trying to link a table into Virtuoso, you should
+    verify that the datasource is working correctly.  Use a tool such as Microsoft Access, or ODBCtest
+    to test your datasource.  Your sanity check will verify that the datasource is
+    correctly configured, that all necessary software is installed, that the database is
+    running, and that there are no permission related problems.  In addition, it will
+    verify that the driver that you are using works correctly with the underlying datasource.
+      </para>
+			<para>
+If there is a problem using a specific tool such as
+    Microsoft Access with a specific driver, then that same problem will be manifested when
+    the datasource is exposed via Virtuoso. </para>
+		</sect2>
+		<sect2 id="demoquery">
+			<title>Demo Datasource Query</title>
+			<para>
+To query the sample data in the Demo Database make sure the web browser is pointing to the
+Demo database HTTP port which is typically 8890.
+Expand the menu tree on the left of the screen to select
+<emphasis>Query Tools/Relational Data Using SQL</emphasis>.
+Enter a SQL statement for example:</para>
+    <programlisting>SELECT * FROM DEMO..products WHERE UnitPrice &lt; 7</programlisting>
+			<figure id="qsdemoquery" float="1">
+				<title>Demo Database Query</title>
+				<graphic fileref="demoquery.jpg"/>
+			</figure>
+		</sect2>
+		<sect2 id="lnktabvirt">
+			<title>Linking Remote Tables Into Virtuoso</title>
+			<para>
+A table on a remote datasource may be linked into the Virtuoso database so that it appears
+as a local table. Start a browser and point to the System Manager page.
+Expand the menu tree on the left of the screen to select
+<emphasis>Databases/ External Databases/ Connected Data Sources</emphasis>.
+Then hit the Edit but to add a new Table link:</para>
+			<figure id="conndsn1" float="1">
+				<title>Adding to Connected Data Sources</title>
+				<graphic fileref="conndsn1.jpg"/>
+			</figure>
+			<para>In section 1. specify the remote datasource that you wish to
+			link to Virtuoso.</para>
+			<para>In section 2. pick the tables to be linked, and define the names
+			to use.</para>
+			<figure id="rmtadd" float="1">
+				<title>Define tables to link</title>
+				<graphic fileref="rmtadd.jpg"/>
+			</figure>
+		</sect2>
+		<sect2 id="listunlnktabs">
+			<title>Listing or Unlinking Tables</title>
+			<para>
+To list the tables that have been linked into Virtuoso,
+expand the menu tree on the left of the screen to select
+<emphasis>Databases/ External Databases/ Connected Data Sources</emphasis>.
+A table may be unlinked by pressing Edit button.</para>
+			<figure id="conndsn2" float="1">
+				<title>List of Connected Data Sources</title>
+				<graphic fileref="conndsn2.jpg"/>
+			</figure>
+		</sect2>
+		<sect2 id="querybisql">
+			<title>Querying Linked Tables</title>
+			<para>Once the tables have been linked into Virtuoso, they can be queried
+			using the Interactive SQL query.
+			Expand the menu tree on the left of the screen to select
+			<emphasis>Query Tools/Relational Data Using SQL</emphasis>.
+			Type a SQL that accesses a remote table such as: SELECT * FROM DB.ORACLETESTDSN.DEPT</para>
+			<para>Press the Execute button and review the results.</para>
+			<figure id="rmtdsnqry" float="1">
+				<title>Remote Table Query</title>
+				<graphic fileref="rmtdsnqry.jpg"/>
+			</figure>
+		</sect2>
+
+
+</sect1>
+<sect1 id="qswebserver"><title>Web Server</title>
+  <sect2 id="qsvirtdir"><title>Virtual Directories</title>
+    <para>The term virtual directory applies to the mechanism to hide the
+    physical location of a Web resource under different path which user agents
+    use to retrieve it.  This mechanism in virtuoso is a part of host
+    definition.</para>
+    <para>This method is useful when one server has to keep many Web sites.
+    Using a redirect mechanism is not a universal way to do this.
+    It is better to define virtual hosts and paths to the directory entries
+    which contain Web pages.</para>
+    <sect3 id="qsvirtdirpl"><title>Creating Virtual Directories Programmatically</title>
+      <para>For an overview of virtual directories, and how to
+      configure them in PL, refer to the
+      <link linkend="virtdir">Virtual Directories Section</link>.</para>
+    </sect3>
+    <sect3 id="qsvirtdirui"><title>Setup in Administration Interface</title>
+      <para>This step by step example will define a virtual directory /help
+      that will point to the directory /departments/support/</para>
+      <orderedlist>
+        <listitem>
+	  <para>In the Virtuoso Administration Interface select the menu
+	  WebDAV / WebDav Services / HTTP Virtual Directories.</para>
+	  <figure id="virtdir1" float="1">
+	    <title>Select Menu</title>
+	    <graphic fileref="ui/virtdir1.gif" />
+	  </figure>
+	</listitem>
+        <listitem>
+	  <para>To add a new directory definition select Edit URL mappings
+	  action for the Default Web Site.</para>
+	  <figure id="virtdir2" float="1">
+	    <title>Edit URL mappings</title>
+	    <graphic fileref="ui/virtdir2.gif" />
+	  </figure>
+	</listitem>
+        <listitem>
+	  <para>Press the button at the foot of the form to
+	  add a new virtual directory.</para>
+	  <figure id="virtdir3" float="1">
+	    <title>Add virtual directory</title>
+	    <graphic fileref="ui/virtdir3.gif" />
+	  </figure>
+	</listitem>
+        <listitem>
+	  <para>Select File system from the Templates, as this mapping
+	  example will be from one directory to another.</para>
+	  <figure id="virtdir4" float="1">
+	    <title>Use File system template</title>
+	    <graphic fileref="ui/virtdir4.gif" />
+	  </figure>
+	</listitem>
+        <listitem>
+	  <para>Enter details in the form to define the mapping. Most of the
+	  fields are optional. In this example, only the logical and physical
+	  paths and the default page name are required.</para>
+	  <figure id="virtdir5" float="1">
+	    <title>Mapping details</title>
+	    <graphic fileref="ui/virtdir5.gif" />
+	  </figure>
+	</listitem>
+        <listitem>
+	  <para>The following URLs will then be equivalent:</para>
+	  <simplelist>
+	    <member>http://localhost:8890/help</member>
+	    <member>http://localhost:8890/departments/support/index.html</member>
+	  </simplelist>
+	</listitem>
+      </orderedlist>
+    </sect3>
+  </sect2>
+  <sect2 id="qsmultihome"><title>Multi Homing</title>
+    <para>The term Multi Homing refers to the practice of maintaining more
+    than one server on one machine, differentiated by their apparent host
+    name.  It is often desirable for companies sharing a web server to have
+    their own domains, with web servers accessible as www.company1.com and
+    www.company2.com, without requiring the user to know any extra path
+    information.</para>
+    <sect3 id="qsvirthostpl"><title>Creating Multiple Homes Programmatically</title>
+      <para>For an overview of Multi Homing, and how to
+      configure it with PL, refer to the
+      <link linkend="virtandmultihosting">
+      Virtual Hosting and Multi Hosting</link> section.</para>
+    </sect3>
+    <sect3 id="qsvirthostui"><title>Setup in Administration Interface</title>
+      <para>This step by step example will define a virtual home for the URL
+      http://www.ahelp.com/ to the server www.a.com and directory
+      /departments/support/</para>
+      <orderedlist>
+        <listitem>
+	  <para>Have a domain name allocated in the DNS for the ahelp.com
+	  that points to the same IP address of the a.com that is
+	  hosting a virtuoso server.</para>
+	</listitem>
+        <listitem>
+	  <para>In the Virtuoso Administration Interface select the menu
+	  WebDAV / WebDav Services / HTTP Virtual Directories.</para>
+	  <figure id="qsvirtdir1" float="1">
+	    <title>Select Menu</title>
+	    <graphic fileref="ui/virtdir1.gif" />
+	  </figure>
+	</listitem>
+        <listitem>
+	  <para>To add a new host definition select Add new site button.</para>
+	  <figure id="virthost2" float="1">
+	    <title>Add new site</title>
+	    <graphic fileref="ui/virthost2.gif" />
+	  </figure>
+	</listitem>
+        <listitem>
+	  <para>Define the mapping between the virtual host and the actual
+	  listening host domain names.</para>
+	  <figure id="virthost3" float="1">
+	    <title>New site mapping</title>
+	    <graphic fileref="ui/virthost3.gif" />
+	  </figure>
+	</listitem>
+        <listitem>
+	  <para>Select File system from the Templates, as this mapping
+	  example will be from one directory to another.</para>
+	  <figure id="qsvirtdir4" float="1">
+	    <title>Use File system template</title>
+	    <graphic fileref="ui/virtdir4.gif" />
+	  </figure>
+	</listitem>
+        <listitem>
+	  <para>Enter details in the form to define the mapping. Most of the
+	  fields are optional. In this example, only the logical and physical
+	  paths and the default page name are required.</para>
+	  <figure id="virthost4" float="1">
+	    <title>Mapping details</title>
+	    <graphic fileref="ui/virthost4.gif" />
+	  </figure>
+	</listitem>
+        <listitem>
+	  <para>The following URLs will then be equivalent:</para>
+	  <simplelist>
+	    <member>http://www.ahelp.com/</member>
+	    <member>http://www.a.com/departments/support/index.html</member>
+	  </simplelist>
+	</listitem>
+      </orderedlist>
+    </sect3>
+  </sect2>
+</sect1>
+<sect1 id="qswebdav"><title>WebDAV</title>
+  <para>WebDAV support enables Virtuoso to act as the Web Content Store for
+	all of your eBusiness data, this includes Text, Graphics and Multimedia
+	files.  WebDAV support also enables Virtuoso to play the familiar roles of a
+	FILE &amp; WEB SERVER, hosting entire Web sites within a single database
+	file, or across multiple database files.  Virtuoso's WebDAV provides
+	file system like access to its non SQL data repository.</para>
+	<para>Files contained in the DAV repository are stored in a database
+	table.  Free text indexing and replication mechanisms may be applied to
+	the DAV repository as well as the regular database.  Standards based WebDAV
+	methods are used to access resources stored in the repository based
+	on Virtuoso's full-featured SQL-92 database engine with performance that
+	matches or exceeds that of current major players in the DB market.  Typical
+	WebDAV clients that can access the repository for content management
+	include Network Places on Windows through Explorer, Nautilus on
+	Gnome (Linux and Solaris), and the Mac OS X desktop.  Many web development
+	tools also support WebDAV directly.</para>
+	<para>See the <link linkend="webdavadmin">WebDAV Administration</link>
+	section, to setup the WebDAV in the Visual Server Administration Interface.</para>
+	<sect2 id="qswebfolders"><title>Web Folders</title>
+	<para>Microsoft Windows has a notion of a Web Folder.  This is how Windows
+	connects to a WebDAV store which can then be traversed like any other
+	file system.  Files can be copied and moved to and from the DAV using normal
+	drag-and-drop methods.</para>
+       <orderedlist>
+       <listitem><para>To create a Web Folder open the
+	<emphasis>Windows Explorer</emphasis> and navigate to <emphasis>My Network
+	Places</emphasis>.</para>
+         <figure id="qs-dav001" float="1"><title>My Network Places</title>
+           <graphic fileref="ui/qs-dav001.jpg"/></figure></listitem>
+       <listitem><para>You will find an icon or option to <emphasis>Add Network
+	Place</emphasis> which when double-clicked will lead you to the wizard.</para>
+         <figure id="qs-dav002" float="1"><title>Web Folder Wizard</title>
+           <graphic fileref="ui/qs-dav002.jpg"/></figure></listitem>
+       <listitem><para>The first screen encourages you to type the location of the network place,
+       for connecting to a Virtuoso DAV you will need to know the server location and port
+	number.  If you installed Virtuoso on to your local machine taking default
+	options then you would probably be typing:</para>
+	<programlisting>http://localhost:8889/DAV/</programlisting>
+         <figure id="qs-dav003" float="1"><title>WebDAV location</title>
+           <graphic fileref="ui/qs-dav003.jpg"/></figure></listitem>
+       <listitem><para>You will then be asked for authentication information which will
+	require a username and a password.  If defaults are taken then this would simply
+	be dav and dav for both.</para>
+         <figure id="qs-dav004" float="1"><title>WebDAV authentication</title>
+           <graphic fileref="ui/qs-dav004.jpg"/></figure></listitem>
+       <listitem><para>To complete the creation of a Web Folder you be
+	asked to supply a name for the network place.</para>
+         <figure id="qs-dav005" float="1"><title>Name of your WebDAV Web Folder</title>
+           <graphic fileref="ui/qs-dav005.jpg"/></figure></listitem>
+       <listitem><para>Once provided Explorer will automatically open a new Window
+       over looking the new location.</para>
+         <figure id="qs-dav006" float="1"><title>Files contained in your DAV</title>
+           <graphic fileref="ui/qs-dav006.jpg"/></figure></listitem>
+       <listitem><para>You can find your new Web Folder again from My Network
+       Places where the link will be saved.</para></listitem>
+       </orderedlist>
+	</sect2>
+</sect1>
+<sect1 id="qswebservices"><title>Web Services</title>
+  <para>SOAP is a lightweight, extensible, XML-based protocol for information exchange in
+  a decentralized, distributed environment. Primarily, SOAP defines a framework for message
+  structure and a message processing model. SOAP also defines a set of encoding rules for
+  serializing data and a convention for making remote procedure calls. The SOAP extensibility
+  model provides the foundation for a wide range of composable modules and protocols
+  running over a variety of underlying protocols such as HTTP.</para>
+  <para>By Supporting the <link linkend="soap">Simple Object Access Protocol (SOAP)</link>,
+  Virtuoso enables you to integrate business processes within and across organization boundaries.
+  Virtuoso's SOAP Support implementation enables you to execute Virtuoso Stored Procedures over HTTP.
+  This is a significant component in any B2B development and implementation
+  effort.  Development is very rapid and is directly incorporated within
+	the database environment required for keeping B2B processes running accurately.
+	</para>
+</sect1>
+
+<!-- copy from exposingws.xml with different ids -->
+<sect1 id="qstexpwsmodules"><title>Exposing Persistent Stored Modules as Web Services</title>
+  <para>Virtuoso SQL stored procedures and functions can be exposed as SOAP
+  services very simply from Virtuoso, whether they are native Virtuoso or
+  on remote data sources.  This powerful ability means that any database servers
+  already existing within an organisation can easily become a component in an
+  eBusiness solution using Virtuoso.  All you need is a few simple steps that
+  typically take mere minutes to complete:</para>
+  <itemizedlist>
+  <listitem><formalpara><title>Choose your stored procedure(s)</title>
+    <para>The procedures that you want to expose can either be native Virtuoso
+    stored procedures, or remote stored procedures that can be linked in using
+    the Remote Procedures user interface.</para></formalpara>
+    </listitem>
+  <listitem><formalpara><title>Choose a virtual directory</title>
+    <para>Because SOAP services need to be exposed and accessed via HTTP a
+    Virtuoso virtual directory must be used.  Either use the existing
+    SOAP virtual directory or create a new one.</para></formalpara>
+    </listitem>
+  <listitem><formalpara><title>Publish procedures to virtual directory</title>
+    <para>The user specified as SOAP account on the virtual directorymust have execute privileges on the procedures.
+    Use the Publish options on the virtual directory user interface.</para></formalpara>
+    </listitem>
+  <listitem><formalpara><title>Test the VSMX output</title>
+    <para>Once procedures have been published as SOAP services they are
+    automatically described by WSDL and testable using Virtuoso's VSMX feature.</para>
+    </formalpara></listitem>
+  </itemizedlist>
+
+  <para>XML Query Templates provide a direct way to store SQL in an XML file on
+  the Virtuoso server that when executed, ie fetched from a web browser, actually
+  returns the results of the query.</para>
+
+  <para>The C Interface chapter describes how users can define custom built-in
+  functions, from C or other programming languages, that can be used from within
+  Virtuoso PL.  This also means that VSE's can also be published as a Web Service!</para>
+
+<sect2 id="qstexpwspls"><title>Publishing Stored Procedures as Web Services</title>
+
+  <sect3 id="qstexpwssps"><title>Choosing Stored Procedures to Expose</title>
+  <para>You can either expose native Virtuoso stored procedures
+  (previously defined or newly created) using the CREATE PROCEDURE
+  statement, or stored procedures from other database types can be linked
+  into Virtuoso using an ODBC datasource.</para>
+  <para>Virtuoso lists available stored procedures for each catalog under the option:
+  <emphasis>/Database/Databases/&lt;catalog_name&gt;/Stored Procedures</emphasis>
+  from the menu of the Virtuoso Server Administration Interface.  This list will
+  also include any remote procedures already linked into Virtuoso.</para>
+
+  <para>To link a stored procedure from another database system we must first
+  create a valid data source that leads to a connection to that database.
+  Once verified proceed to the Remote Procedures page.</para>
+
+  <figure float="1"><title>Linking Procedures from Remote Datasources</title>
+    <graphic fileref="ui/admrmtprocs001.jpg" width="561px" depth="245px"/></figure>
+
+	<para>The data source will be listed in the data sources list.  Select the
+  data source that you want to used, check the Username and Password fields
+  and press the <emphasis>List</emphasis> button.  The page will next require
+  you to select the catalog/owner combination
+  to refine the search list of procedures on the remote data source.  Use
+  the drop-down to select relevant option and press <emphasis>List Selected</emphasis>
+  to list the available stored procedures.</para>
+
+  <figure float="1"><title>Linking Procedures from Remote Datasources</title>
+    <graphic fileref="ui/admrmtprocs002.jpg" width="307px" depth="66px"/></figure>
+
+  <para>When the page returns you will be presented with a list of
+  available remote procedures.  You can link any of the listed
+  procedures into Virtuoso by selecting them from the list and pressing the
+  <emphasis>Link Selected</emphasis> button.</para>
+
+  <figure float="1"><title>Linking Procedures from Remote Datasources</title>
+    <graphic fileref="ui/admrmtprocs003.jpg" width="383px" depth="145px"/></figure>
+
+  <para>You will be presented with a new page listing the chosen procedures
+  and their data type information.  This gives you an opportunity
+  to alter the  data type mappings that Virtuoso will use both internally and
+  for any future interactions with the SOAP server.  If you do not want to
+  specify any special type information the details can be left as default.</para>
+
+  <figure float="1"><title>Linking Procedures from Remote Datasources</title>
+    <graphic fileref="ui/admrmtprocs004.jpg" width="553px" depth="260px"/></figure>
+
+  <para>For each remote procedure you may change how they
+  will be referenced within Virtuoso by making changes to the fields for
+  <emphasis>Local Name</emphasis>, <emphasis>Database</emphasis>, and
+  <emphasis>Schema</emphasis> fields.  These fields define how you will find the
+  linked procedure locally to Virtuoso only and do not affect the remote
+  data source.</para>
+
+  <para>For each procedure there is an option to <emphasis>Use PL Wrapper</emphasis>.
+  This option is required if your remote procedure is capable of returning
+  a resultset that you want to process via Virtuoso.</para>
+
+  <para>Once the details are correct press the Link button to proceed to the next
+  step: Defining Virtual Directories.</para>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="remoteprocedures">Linking Remote Procedures</link></para></tip>
+  </sect3>
+
+  <sect3 id="qstexpwsvirtdir"><title>Defining Virtual Directories</title>
+  <para>Before any procedures native or linked can be exposed as SOAP Services
+  a location in HTTP space must be defined.  The
+  <emphasis>/WebDAV/HTTP Virtual Directories</emphasis> page lets you
+  make a new URL Mappings.  The HTTP Virtual Directories page should contain a
+  table with a row for {Default Web Site}.  Click on the
+  <emphasis>Edit URL Mappings</emphasis> link for the {Default Web Site}
+  line to begin defining a new SOAP mapping.</para>
+
+      <figure float="1"><title>Virtual Directories</title>
+      <graphic fileref="ui/admvirtdir001.jpg" width="583px" depth="338px"/></figure>
+
+  <para>You will be presented with a list of existing mappings.  Press the
+  <emphasis>Add Virtual Directory</emphasis> button to create a new mapping.
+  You will then be presented with a list of templates.  Select the SOAP
+  template.</para>
+
+      <figure float="1"><title>Virtual Directories Mappings</title>
+      <graphic fileref="ui/admvirtdir003.jpg" width="584px" depth="273px"/></figure>
+
+  <para>You will then be presented with the main configuration page.  Particular
+  options to note are Listener Details and SOAP Options.</para>
+
+      <figure float="1"><title>Virtual Directories</title>
+      <graphic fileref="ui/admvirtdir004.jpg" width="598px" depth="727px"/></figure>
+
+  <para><emphasis>Logical Path</emphasis> will be the path to which Virtuoso will respond
+  for this virtual directory mapping.  This is what will be placed on the URL.
+  <emphasis>Physical Path or URL</emphasis> is to which Virtuoso will map the logical path.
+  In either case you can use the Browse buttons to traverse the file systems
+  graphically.  Use the WebDAV Source Checkbox to instruct Virtuoso to use the
+  WebDAV store for the physical location.</para>
+
+  <para>In <emphasis>SOAP Options</emphasis> you can use the Publish button to select Virtuoso
+  stored procedures, or remotely linked procedures to be published as SOAP
+  web services.  Press this button to select the procedures previously linked.
+  Click on the database where your procedure resides.  The next page will list the
+  procedures in that database.  Select the procedures you want to link using
+  the checkboxes on the left most column and finally click the Publish button
+  to complete the task.</para>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="httpvirtualdirs">Virtual Directories</link></para></tip>
+
+  </sect3>
+
+  <sect3 id="qstexpspublishbtn"><title>Publishing Procedures to a Virtual Directory</title>
+  <para>If you already have a virtual directory defined and know what procedures
+  you want to expose as web services you will have to repeat some of the steps
+  in the section above.  From the menu select <emphasis>/WebDAV/The HTTP
+  Virtual Directories</emphasis>.  Click on the <emphasis>Edit URL mappings</emphasis>
+  link for the site that you want to edit.  You will find the list of previously
+  existing mappings, from which you can select the mapping that you want to edit
+  by pressing on the <emphasis>edit</emphasis> link on the last column of the table.</para>
+
+      <figure float="1"><title>Virtual Directories</title>
+      <graphic fileref="ui/admvirtdir006.jpg" width="544px" depth="395px"/></figure>
+
+  <para>When the virtual directory configuration page is displayed scroll down
+  to the SOAP Options section and use the Publish/UnPublish buttons to
+  expose/hide your procedures and XML Templates as required.</para>
+
+      <figure float="1"><title>Publish/UnPublish Buttons</title>
+      <graphic fileref="ui/admvirtdir008.jpg" width="278px" depth="62px"/></figure>
+
+  <para>You will be presented with a screen for selecting the procedures or
+  XML templates.  For selecting the procedures you first have to select the
+  appropriate catalogue that contains the procedure that you want to publish.
+  For the XML Templates you simply select the template using the checkbox and
+  provide an <emphasis>Export As</emphasis> name to choose the new SOAP name
+  that this XML template will be refered as.</para>
+
+      <figure float="1"><title>Choosing Procedure and XML Templates to Publish</title>
+      <graphic fileref="ui/admvirtdir007.jpg" width="486px" depth="332px"/></figure>
+
+  </sect3>
+
+  <sect3 id="qstexpsvsmxtest"><title>Testing SOAP Services Using VSMX</title>
+  <para>Virtual directory definitions have a <emphasis>Logical Path</emphasis>
+  field, which is reference in URL to find the correct SOAP services.  If you
+  connect to Virtuoso on <emphasis>http://localhost:8890/</emphasis>, and
+  defined your virtual directory with the logical path of <emphasis>/mysoap</emphasis>
+  then you will be able to test the following URLs:</para>
+    <simplelist>
+      <member>http://localhost:8890/mysoap/services.wsdl</member>
+      <member>http://localhost:8890/mysoap/services.vsmx</member>
+    </simplelist>
+
+  <para>The WSDL description is a standards-based description of the Web Services
+  available from /mysoap.  The VSMX page is a Virtuoso generated test page
+  allowing you to test SOAP services.  This feature should improve your
+  development time.</para>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="vsmx">VSMX</link>;
+    <link linkend="soap">SOAP</link>;
+    <link linkend="wsdl">WSDL</link>.</para></tip>
+  </sect3>
+  </sect2>
+
+  <sect2 id="qstxmlqtemplates"><title>XML Query Templates</title>
+  <para>Virtuoso XML templates allow execution of SQL/XML queries over HTTP to
+  obtain an XML document in response and/or perform some operation in the database
+  using <link linkend="updategrams">updategrams</link>.  XML templates can be
+  executed from within Virtuoso procedure language using the
+  <link linkend="fn_xml_template"><function>xml_template()</function></link> function.
+  XML templates support two types of action: SQL based or updategram based.
+  SQL query based templates must contain the FOR XML clause used in a SELECT
+  statement and hence cannot update the database.  Updates to the database
+  can only occur from an updategram.  The XML document returned from calling
+  an XML template can be served either raw, or transformed using XSLT.</para>
+
+  <para>XML templates provide quick easy access to results from a SQL query
+  as usual, but now this can be saved to a file.  The results are not saved, just
+  the query definition.  You can use this feature to rapidly produce dynamic
+  reports that can potentially be rendered in different ways by providing
+  an alternate stylesheet.  The report can be refined on the fly by providing
+  parameters for the query.  The output is reachable via HTTP directly by
+  providing the URL to the template.</para>
+
+  <tip><title>See Also:</title>
+  <para>The <link linkend="xmltemplates">XML Templates</link> Section</para></tip>
+
+  <para>XML Templates can also be published just like normal store procedures.
+  This is achieved by using a PL wrapper around the XML template.  Then the
+  store procedure is published in the normal way.</para>
+  <para>Stylesheets transformations with be inactive for published
+  XML templates invoked from SOAP.</para>
+
+  <tip><title>See Also:</title>
+  <para>The <link linkend="expspublishbtn">Publishing Stored Procedures</link>
+  Section above for a further description of publishing XML Templates.</para></tip>
+
+</sect2>
+
+  <sect2 id="qstpublishbifs"><title>Publishing VSE's as Web Services</title>
+  <para>The Virtuoso distribution includes the sample VSE, bif_sample.c.
+  It is thus possible to create a function such as:</para>
+  <programlisting><![CDATA[
+.....
+static caddr_t
+bif_hello_world (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_dv_short_string ("Hello world.");
+}
+....
+]]></programlisting>
+  <para>Then declare it in the init_func() by adding the following code:</para>
+  <programlisting><![CDATA[
+...
+  bif_define_typed ("hello_world", bif_hello_world, &bt_any);
+...
+]]></programlisting>
+  <para>The next step is creating a stored procedure that calls this function and
+  you are back to publishing a Virtuoso stored procedure again, as in the above section.</para>
+
+<programlisting>
+create procedure BIF_HELLO_WORLD () { return hello_world (); };
+</programlisting>
+
+  <tip><title>See Also:</title>
+  <para>The <link linkend="cinterface">C Interface</link> Chapter</para></tip>
+  </sect2>
+</sect1>
+<!-- end of copy -->
+
+  <sect1 id="qsvsmx"><title>VSMX - Virtuoso Service Module for XML</title>
+  <para>Every WSDL file generated by Virtuoso is automatically accompanied
+  by a SOAP Operations Test page known as a VSMX file, which has
+  the extension .vsmx.  You find this file in the same place as the WSDL file.
+  For a SOAP enabled virtual directory you have the facility to find the WSDL
+  file:</para>
+
+  <programlisting>http://[host:port]/[SOAP Virtual Directory]/services.wsdl</programlisting>
+
+  <para>likewise you also get a VSMX file:</para>
+
+  <programlisting>http://[host:port]/[SOAP Virtual Directory]/services.vsmx</programlisting>
+
+  <para>You simply point your web browser to this file for the test page.  The
+  demo database contains samples that can be found as:</para>
+
+  <programlisting>http://[host:port]/SOAP/services.vsmx</programlisting>
+
+    <figure float="0"><title>VSMX Test Page</title>
+      <graphic fileref="ui/vsmx001.jpg" width="606px" depth="243px"/></figure>
+
+   <tip><title>See Also:</title><para>The <link linkend="vsmx">VSMX section</link>
+   for more details</para></tip>
+
+  </sect1>
+
+<sect1 id="qssqltoxml"><title>SQL to XML</title>
+  <para>Virtuoso enables you to develop eBusiness solutions that use XML as
+  both a Data Source and Data Interchange format. Your XML Data documents can
+  take the form of Pure XML Documents, or documents that are transformed from
+  SQL-XML on the fly. By supporting the XPATH query language for XML Data, you
+  are able to use an industry standard query language to query entire XML
+  Documents or portions of XML Documents stored within Virtuoso. Virtuoso's
+  inclusion of an XSLT transformation engine then allow you to transform XML
+  data for other needs. These XML documents are openly accessible to user
+  agents such as Web Browsers via HTTP and/or WebDAV.  These XML documents
+  are described as being dynamic because they have varying degrees of
+  sensitivity to changes that occur in the underlying database tables from which the XML data
+  originates. Virtuoso allows you to create two types of XML documents from homogeneous or
+  heterogeneous SQL Data on the fly:</para>
+  <simplelist>
+    <member><emphasis>Transient</emphasis> The materialization of the XML
+    Document occurs at the time of file opening, this implies that data from the
+    original SQL database(s) is retrieved and then transformed into XML in one
+    operation. This format of SQL-XML document is highly sensitive to source database(s)
+    changes.</member>
+    <member><emphasis>Persistent (Time Synchronized)</emphasis> -  The materialization
+    of the XML Document re-occurs at a user configurable interval after initial creation.
+    This is a caching scheme which is less sensitive to changes in the source databases(s)
+    in favor of performance.</member>
+  </simplelist>
+  <para>SQL-XML documents may be Valid or Well Formed XML documents, this includes
+  support for both DTDs and XML Schemas which my be external entity references
+  or inlined within the XML Documents prologue in the case of DTDs.</para>
+  <para>Virtuoso supports an extended SQL syntax that is identical to that
+  implemented by Microsoft SQL Server for the purpose of creating SQL-XML
+  documents.  These SQL extensions take the form of a new "FOR XML" clause that
+  includes three main options which control the structure of the resulting XML
+  document tree.  These options are <emphasis>RAW</emphasis>, <emphasis>AUTO</emphasis>
+  and <emphasis>EXPLICIT</emphasis>.</para>
+
+  <para>Virtuoso's HTML based graphical interface includes a user friendly
+  mechanism for creating dynamic XML documents from SQL data using the
+  "FOR XML" extended SQL syntax.  The dynamic XML documents created by this
+  process are typically stored in Virtuoso's  WebDAV repository.  Documents
+  stored in this repository are accessible by any XML consuming client application
+  via HTTP, Windows Web Folders, or any other WebDAV or HTTP compliant environment.
+  A description of the interface in general can be found in the
+  <link linkend="sqlxmlstmts">SQL-XML Statements</link> in
+  the <link linkend="adminui">Visual Server Administration Interface</link> section.</para>
+  <para>The SQL-XML Statements interface lets you supply SQL with options on how
+  produce XML structures from the results.</para>
+
+  <figure id="qssql2xml001" float="1"><title>SQL to XML user interface</title>
+    <graphic fileref="ui/qssql2xml001.jpg" width="757px" depth="497px"/></figure>
+
+  <para>The illustration above depicts the fact that only minor changes to
+  standard SQL are required in order to create powerful dynamic XML documents from
+  SQL.  It also illustrates how the entire process of controlling the type and format
+  of the XML documents and their actually WebDAV storage is all achieved without any
+  programming.  The XML document extract below is a depiction of the XML document tree
+  produced using the "FOR XML" AUTO option.</para>
+
+  <figure id="qssql2xml002" float="1"><title>SQL to XML results</title>
+    <graphic fileref="ui/qssql2xml002.jpg" width="337px" depth="155px"/></figure>
+
+  <para>The Virtuoso Demo database provides a set of sample tables in the Demo catalogue,
+  and some sample XML views that use them.  The bottom of the SQL-XML statements
+  page lists saved XML Views as shown below.</para>
+
+  <figure id="qssql2xml003" float="1"><title>SQL to XML save views</title>
+    <graphic fileref="ui/qssql2xml003.jpg" width="458px" depth="274px"/></figure>
+
+  <para>You can press <emphasis>Edit</emphasis> to edit them, or <emphasis>Delete</emphasis>
+  to remove them or click on the Stored Query DAV URL itself to see the results
+  in your default browser, a sample of the output is shown above.</para>
+
+<sect2 id="qsforxmlmodes"><title>FOR XML Execution Modes</title>
+
+<para>Now we will consider the programmatical approach along side the visual interface
+approach.  We will have one example of each of the modes of FOR XML combined with
+the <link linkend="fn_xml_auto"><function>xml_auto()</function></link> function to
+help us display the results simply.</para>
+
+<para>For the programmatical examples to run smoothly using ISQL a number of steps are
+required to obtain textual output from the xml_auto() function which usually is expected
+to output directly to an HTTP target.  To make the demonstration simpler a utility procedure
+will be created that will simply enable us to supply SQL and return XML using
+the <link linkend="fn_xml_auto"><function>xml_auto()</function></link> function.</para>
+<programlisting>
+create procedure xmla (in q varchar)
+{
+  declare st any;
+  st := string_output ();
+  xml_auto (q, vector (), st);
+  result_names (q);
+  result (string_output_string (st));
+}
+</programlisting>
+
+<itemizedlist>
+  <listitem>
+    <para><emphasis>RAW</emphasis> mode produces an XML entity from
+    each row of the result set, and does not attempt to construct hierarchies.
+    Each row's data is enclosed in a ROW element and
+    each column is either an attribute or child element.</para>
+
+  <figure id="qssql2xml103" float="1"><title>SQL to XML using FOR XML RAW mode</title>
+    <graphic fileref="ui/qssql2xml103.jpg"/></figure>
+
+    <para>The same SQL statement containing the FOR XML syntax is used in the
+    visual interface shown above, and in the programmatical version shown below.
+    This is because both use the xml_auto() function for generating results.
+    In the visual interface once the settings and query have been confirmed
+    you press the execute button to store the query in the specified DAV location.</para>
+
+<programlisting>
+xmla ('select "category"."CategoryID", "CategoryName",
+    "ProductName", "ProductID"
+    from "Demo".."Categories" "category", "Demo".."Products" as "product"
+    where "product"."CategoryID" = "category"."CategoryID" FOR XML RAW');
+</programlisting>
+<note><title>Note:</title><para>The xmla function is not a standard function but quick
+utility for quickly rendering a text output for
+the <link linkend="fn_xml_auto"><function>xml_auto()</function></link> function.  The definition is
+at the top of this section</para></note>
+
+    <para>The resulting XML from either ISQL or the saved links on the
+    visual interface will yield:</para>
+
+<screen>
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Chai" ProductID="1"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Chang" ProductID="2"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Guaran Fantstica" ProductID="24"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Sasquatch Ale" ProductID="34"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Steeleye Stout" ProductID="35"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="C(te de Blaye" ProductID="38"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Chartreuse verte" ProductID="39"&gt;
+&lt;/ROW&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Ipoh Coffee" ProductID="43"&gt;
+&lt;/ROW&gt;
+.....
+</screen>
+  </listitem>
+  <listitem>
+    <para><emphasis>AUTO</emphasis> mode.  A hierarchy is constructed
+    with one level for each table of the join
+    for which at least one column is selected. The table whose column is first
+    mentioned in the selection will be the topmost element, the next table its
+    child etc.  Each level of the tree will consist of one type of element.
+    A parent element will have multiple children if consecutive rows do not
+    differ in the column values coming from the parent element. When a table's
+    column values differ from the previous row, the element and all children
+    thereof are closed and a new element is started, with children filled out
+    from other columns of the result set.</para>
+
+  <figure id="qssql2xml102" float="1"><title>SQL to XML using FOR XML AUTO mode</title>
+    <graphic fileref="ui/qssql2xml102.jpg"/></figure>
+
+    <para>The same SQL statement containing the FOR XML syntax is used in the
+    visual interface shown above, and in the programmatical version shown below.
+    This is because both use the xml_auto() function for generating results.
+    In the visual interface once the settings and query have been confirmed
+    you press the execute button to store the query in the specified DAV location.</para>
+
+<programlisting>
+xmla ('select "category"."CategoryID", "CategoryName",
+    "ProductName", "ProductID"
+    from "Demo".."Categories" "category", "Demo".."Products" as "product"
+    where "product"."CategoryID" = "category"."CategoryID" FOR XML AUTO');
+</programlisting>
+<note><title>Note:</title><para>The xmla function is not a standard function but quick
+utility for quickly rendering a text output for
+the <link linkend="fn_xml_auto"><function>xml_auto()</function></link> function.  The definition is
+at the top of this section</para></note>
+
+    <para>The resulting XML from either ISQL or the saved links on the
+    visual interface will yield:</para>
+
+<screen>
+<![CDATA[
+<category CategoryID="1" CategoryName="Beverages">
+<product ProductName="Chai" ProductID="1">
+</product>
+<product ProductName="Chang" ProductID="2">
+</product>
+<product ProductName="Guaranß Fantßstica" ProductID="24">
+</product>
+<product ProductName="Sasquatch Ale" ProductID="34">
+</product>
+<product ProductName="Steeleye Stout" ProductID="35">
+</product>
+<product ProductName="C(te de Blaye" ProductID="38">
+</product>
+<product ProductName="Chartreuse verte" ProductID="39">
+</product>
+<product ProductName="Ipoh Coffee" ProductID="43">
+</product>
+<product ProductName="Laughing Lumberjack Lager" ProductID="67">
+</product>
+.....
+]]>
+</screen>
+
+<note><title>Note:</title>
+  <para>In contrast to the RAW mode AUTO produces results that are more reasonable and intuitive.
+  Only one category element is used for each category which contains all the children of that
+  category.</para></note>
+  </listitem>
+  <listitem>
+    <para><emphasis>EXPLICIT</emphasis> mode gives more control on the resulting tree's structure
+    while requiring a more elaborate query structure. In this mode, the query
+    will be a UNION ALL of many joins and each row will specify exactly one
+    element.  Which type of element this is and where in the tree it will be
+    placed are determined by the values of the 2 first columns, TAG and
+    PARENT.</para>
+
+  <figure id="qssql2xml101" float="1"><title>SQL to XML using FOR XML EXPLICIT mode</title>
+    <graphic fileref="ui/qssql2xml101.jpg"/></figure>
+
+    <para>The same SQL statement containing the FOR XML syntax is used in the
+    visual interface shown above, and in the programmatical version shown below.
+    This is because both use the xml_auto() function for generating results.
+    In the visual interface once the settings and query have been confirmed
+    you press the execute button to store the query in the specified DAV location.</para>
+
+<programlisting>
+xmla ('
+select 1 as tag, null as parent,
+       "CategoryID" as [category!1!cid],
+       "CategoryName" as [category!1!name],
+       NULL as [product!2!pid],
+       NULL as [product!2!name!element]
+from "Demo".."Categories"
+union all
+select 2, 1, "category" ."CategoryID", NULL, "ProductID", "ProductName"
+    from "Demo".."Categories" "category", "Demo".."Products" as "product"
+    where "product"."CategoryID" = "category"."CategoryID"
+order by [category!1!cid], 5
+FOR XML EXPLICIT');
+</programlisting>
+<note><title>Note:</title><para>The xmla function is not a standard function but quick
+utility for quickly rendering a text output for
+the <link linkend="fn_xml_auto"><function>xml_auto()</function></link> function.
+The definition is at the top of this section</para></note>
+
+    <para>The resulting XML from either ISQL or the saved links on the
+    visual interface will yield:</para>
+
+<screen>
+&lt;CATEGORY CID="1" NAME="Beverages"&gt;
+&lt;PRODUCT PID="1"&gt;
+ &lt;NAME&gt;Chai&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="2"&gt;
+ &lt;NAME&gt;Chang&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="24"&gt;
+ &lt;NAME&gt;Guaran&amp;#225; Fant&amp;#225;stica&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="34"&gt;
+ &lt;NAME&gt;Sasquatch Ale&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="35"&gt;
+ &lt;NAME&gt;Steeleye Stout&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="38"&gt;
+ &lt;NAME&gt;C&amp;#244;te de Blaye&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="39"&gt;
+ &lt;NAME&gt;Chartreuse verte&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="43"&gt;
+ &lt;NAME&gt;Ipoh Coffee&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="67"&gt;
+ &lt;NAME&gt;Laughing Lumberjack Lager&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="70"&gt;
+ &lt;NAME&gt;Outback Lager&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="75"&gt;
+ &lt;NAME&gt;Rh&amp;#246;nbr&amp;#228;u Klosterbier&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;PRODUCT PID="76"&gt;
+ &lt;NAME&gt;Lakkalik&amp;#246;&amp;#246;ri&lt;/NAME&gt;&lt;/PRODUCT&gt;
+&lt;/CATEGORY&gt;
+&lt;CATEGORY CID="2" NAME="Condiments"&gt;
+&lt;PRODUCT PID="3"&gt;
+.....
+</screen>
+<note><title>Note:</title>
+  <para>In contrast again, the EXPLICIT mode produces exactly what we asked for.</para></note>
+  </listitem>
+</itemizedlist>
+</sect2>
+  <para>For more details about 'FOR XML, refer to <link linkend="forxmlforsql">
+  Rendering SQL Queries as XML</link> section of the XML Support chapter.</para>
+
+  <sect2 id="qsxmlcolumn"><title>Tables With XML Columns</title>
+  <para>XML is a new native Virtuoso datatype, based on an extension of LONG
+  VARCHAR for compatibility with ODBC clients, allows direct storage,
+  retrieval and querying of XML stored in a database table.  This has always been
+  possible with Virtuoso utilizing <function>xml_tree_doc()</function> and friends
+  but now you can easily concentrate on what more important, the data, and not
+  which datatype to convert it to next.</para>
+
+  <tip><title>See Also:</title>
+    <para><link linkend="sqlrefxmldatatype">XML Column Type</link></para></tip>
+</sect2>
+
+</sect1>
+<sect1 id="qsnntp"><title>NNTP</title>
+  <para>Virtuoso supports the Network News Transfer Protocol used by Internet
+	newsgroup forums.  NNTP servers manage the global network of collected newsgroup
+	postings and represent a vast repository of targeted information archives.
+	As an NNTP aggregator, Virtuoso enables integration of multiple news forums
+	around the world.  All news content in Virtuoso is dynamically indexed to
+	provide keyword searches, enabling rapid transformation of disparate text
+	data into information.  Virtuoso also acts as an NNTP server, enabling
+	creation of new Internet and Intranet News Forums to leverage the
+	global knowledge base into eBusiness Intelligence.</para>
+  <sect2 id="qsnntpservsetup"><title>NNTP Server Setup</title>
+    <sect3 id="qsnntport"><title>Enable Server</title>
+      <para>Before the NNTP server can be used, it has to be enabled to listen
+      on the NNTP port. This change is made in the configuration file.</para>
+      <para>For more details, refer to <link linkend="newssrvenable">
+      Enable NNTP Server</link> section.</para>
+    </sect3>
+    <sect3 id="qsnntadd"><title>Create/Attach News Groups</title>
+      <para>The definition of news groups is held in system tables.</para>
+      <para>For more details on inserting news groups by SQL command, refer to
+      <link linkend="newssrvadd">Add Groups to NNTP Server</link> section.
+      See also the <link linkend="newsgrpsadm">Newsgroups Administration</link>
+      section, to setup the groups in the Visual Server Administration
+      Interface.</para>
+    </sect3>
+    <sect3 id="qsnntlimit"><title>Limit Groups</title>
+      <para>This is an optional step, appropriate if a news group is to be
+      limited for internal use only, or by a group of IP addresses.
+      This is achieved by creating an Access Control List (ACL) in the
+      DB.DBA.NEWS_ACL table. If no ACL is defined, then all groups are public
+      readable and writable.</para>
+      <para>For table details, refer to <link linkend="newssrvtables">
+      NNTP Server Tables</link> section.</para>
+    </sect3>
+  </sect2>
+  <sect2 id="qslocalvsremotegrps"><title>Local &amp; Remote Groups</title>
+    <para>News groups may be Local such that they are the only instance,
+    or a master instance of a group. Remote groups are ones that are
+    replicated from other news servers.</para>
+    <para>See the <link linkend="newsgrpsadm">Newsgroups Administration</link>
+    section, to setup the groups in the Visual Server Administration
+    Interface.</para>
+  </sect2>
+  <sect2 id="qscliconn"><title>NNTP Client Setup</title>
+    <para>Virtuoso can make a client connection to an external news server
+    to receive newsgroup postings.</para>
+      <para>For more details, refer to the <link linkend="nntpclient">
+      NNTP Client</link> section.</para>
+  </sect2>
+</sect1>
+	<sect1 id="vspquickstart">
+		<title>Dynamic Web Pages</title>
+
+  <para>Virtuoso provides an exstensible array or dynamic methods for creating
+  data driven web pages.  Through runtime hosting Virtuoso can directly host, store
+  and drive:</para>
+    <simplelist>
+	 <member>PHP</member>
+	 <member>JSP</member>
+	 <member>ASP.Net</member>
+	 <member>Perl</member>
+	 <member>Python</member>
+   <member>Ruby</member>
+	 <member>Natively - VSP and VSPX:</member>
+	</simplelist>
+
+  <para>Virtuoso Server Pages (VSP) is Virtuoso's specification for creating dynamic database driven Web
+  pages, these files have the extension ".vsp" and are identical in functionality to: ASP, PHP,
+  and JSP pages.  A fundamental difference between VSP pages and others (PHP, ASP. and JSP pages)
+  is the fact that VSPs are specialized forms of Virtuoso Stored procedures which implies that
+  data is in-process rather than out-of-process, you do not have to complete a client-server
+  connection in order to actually bind to the data being used in a VSP page. The obvious benefit
+  being significant performance improvements over ASP, PHP, and JSP pages (which all bind to data
+  out-of-process).</para>
+			<para>
+Since VSP is essentially Virtuoso PL in a web page you can do anything that PL can from or part of
+a web page either directly or from interaction with the user.  A massive advantage of using VSP
+is that you do not have to worry about making connections to the database or the overhead of RPC's
+because the HTTP server is built into Virtuoso.  When you write a VSP page the
+connection is assumed since you are already in Virtuoso!
+VSP is server script and is therefore executed in the server as it is encountered on the page.  For this reason client (JavaScript) and server
+script cannot directly interact but can supplement each other.  You can call JavaScript inside a VSP loop, for example, to manipulate something
+that already exists on the page but you cannot pass variables by reference from VSP directly to JavaScript or vice versa.
+Page flow control is managed using FORMs.  The state of the page is defined in form fields such as INPUT boxes and TEXTAREA boxes and then
+passed on to the next form or page using POST.
+</para>
+
+<para>Virtuoso Server Pages for XML (VSPX) is an XML based framework and
+state-managed system similar to ASPX.  Pages are written in XML to describe
+templates of data-aware web-widgets.  This massively reduces the code-effort
+and avoids many bugs by providing the functionality for you, of which you specify
+the data-source, be it XML, SQL or other, and which predefined control you want
+it represented by.  VSPX allows for custom-designed controls too.  Since XML is a
+key factor for VSPX so does XSLT for providing total separation between the
+data, business logic and the layout on the web page.</para>
+
+<tip><title>See Also:</title>
+  <para>The <link linkend="webappdevelopment">Web Application Development</link> Chapter.</para></tip>
+
+</sect1>
+  <sect1 id="qsvspexamples"><title>VSP Examples</title>
+		<sect2 id="simpleforms">
+			<title>Simple HTML FORM usage</title>
+
+			<para>
+We will start with a small example that shows a page that constitutes a FORM with data from the
+user being sent when a submit button is pressed and then examine the elements and attributes
+that are important to us at this stage.
+</para>
+			<para>
+Consider the following piece of HTML:
+</para>
+
+<programlisting>
+&lt;HTML&gt;
+  &lt;HEAD&gt;
+    &lt;TITLE&gt;Simple FORM demo&lt;/TITLE&gt;
+  &lt;/HEAD&gt;
+  &lt;BODY&gt;
+  &lt;FORM METHOD=&quot;POST&quot; ACTION=&quot;formdemo_receiver.vsp&quot;&gt;
+    &lt;P&gt;Test form, type some info and click Submit&lt;/P&gt;
+    &lt;INPUT TYPE=&quot;TEXT&quot; NAME=&quot;myInput&quot; /&gt;
+    &lt;INPUT TYPE=&quot;SUBMIT&quot; NAME=&quot;submit&quot; VALUE=&quot;Submit&quot; /&gt;
+  &lt;/FORM&gt;
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+</programlisting>
+
+<para>
+All elements contained in the FORM tag are associated with that form.
+This is how the data and the submit button
+know what to do next, and which data to send, by the attributes of the FORM tag.
+</para>
+			<para>
+The METHOD attribute of the FORM TAG can be either GET or POST.  The GET method allows the form submission to
+be contained completely in a URL which can be advantageous in that it permits bookmarking in browsers,
+but it also prevents form data from containing non-ASCII characters and restricts the amount of form
+data that can be handled.  The get method is limited by the maximum length of the URL that the
+server and browser can process. To be safe, any form whose input might contain non-ASCII
+characters or more than 100 characters should use METHOD=&quot;POST&quot;.
+</para>
+			<para>
+With the POST method, the form input is submitted as an HTTP POST request with the form data sent in the
+body of the request.  Most current browsers are unable to bookmark POST requests,
+but POST does not entail the character encoding and length restrictions imposed by GET.
+</para>
+			<para>
+The ACTION attribute of FORM specifies the URI of the form handler.  This will usually be another web page that
+performs some action based on the data that is sent from the originating form.  The URI could point to the same page
+as the data originated and for pages that perform a well defined small set of functions it usually does.
+When a page needs to manage multiple states there needs to be some flow control that can determine how the page
+was reached whether it arrived as a result of someone clicking on the submit button or it is the first time the page has
+been visited.
+</para>
+
+			<para>
+Now we will add some VSP to check the values of the parameters in the form.  VSP markup is typically
+contained in &lt;?vsp ... VSP ... ?&gt; blocks.</para>
+
+<programlisting>
+&lt;HTML&gt;
+  &lt;HEAD&gt;
+    &lt;TITLE&gt;Simple FORM demo&lt;/TITLE&gt;
+  &lt;/HEAD&gt;
+  &lt;BODY&gt;
+  &lt;P&gt;Last value sent:&lt;/P&gt;
+
+  &lt;?vsp
+    http(get_keyword('myInput', params, 'no value'));
+   ?&gt;
+
+  &lt;FORM METHOD=&quot;POST&quot; ACTION=&quot;formdemo.vsp&quot;&gt;
+    &lt;P&gt;Test form, type some info and click Submit&lt;/P&gt;
+    &lt;INPUT TYPE=&quot;TEXT&quot; NAME=&quot;myInput&quot; /&gt;
+    &lt;INPUT TYPE=&quot;SUBMIT&quot; NAME=&quot;submit&quot; VALUE=&quot;Submit&quot; /&gt;
+  &lt;/FORM&gt;
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+</programlisting>
+
+			<para>
+This is the same example as above that now uses the same page for the form handler and displays the parameters each time.
+The first time you click the button will take you to the same page and will display whatever you typed in the field last time.
+</para>
+			<para>
+The VSP block uses two functions nested.  The http function allows you to send data to the HTTP client, the browser.
+What we send to the browser is the result of the get_keyword function.  The get_keyword function has 3 parameters, it searches
+for the keyword-value pair (keyword=value) where keyword matches the first parameter (in this case 'myInput') in array passed in
+the second parameter, and returns the value if one is found otherwise will return the 3rd parameter in the function 'no value'.
+The params array is a special array that contains all page parameters.
+</para>
+			<para>
+Now we will extend this further to add some conditional control so that if a value was entered we can respond directly to it.
+We will also use a variable this time, which must be declared first.
+</para>
+
+<programlisting>
+&lt;HTML&gt;
+  &lt;HEAD&gt;
+    &lt;TITLE&gt;Simple FORM demo&lt;/TITLE&gt;
+  &lt;/HEAD&gt;
+  &lt;BODY&gt;
+
+  &lt;?vsp
+	declare _myInput varchar;
+
+	_myInput := get_keyword('myInput', params, 'no value');
+
+    if (_myInput &lt;&gt; 'no value')
+	{	http('&lt;P&gt;Hello, ');
+		http(_myInput);
+		http('&lt;/P&gt;');
+	}
+	else
+	{	http('&lt;P&gt;Please enter you name&lt;/P&gt;');
+	}
+   ?&gt;
+
+  &lt;FORM METHOD=&quot;POST&quot; ACTION=&quot;formdemo.vsp&quot;&gt;
+    &lt;P&gt;Test form, type some info and click Submit&lt;/P&gt;
+    &lt;INPUT TYPE=&quot;TEXT&quot; NAME=&quot;myInput&quot; /&gt;
+    &lt;INPUT TYPE=&quot;SUBMIT&quot; NAME=&quot;submit&quot; VALUE=&quot;Submit&quot; /&gt;
+  &lt;/FORM&gt;
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+</programlisting>
+
+			<para>
+We will now extend this even further to control the whole contents of the page.  In this example we will see that VSP and HTML
+can be interleaved.
+</para>
+
+<programlisting>
+&lt;HTML&gt;
+  &lt;HEAD&gt;
+    &lt;TITLE&gt;Simple FORM demo&lt;/TITLE&gt;
+  &lt;/HEAD&gt;
+  &lt;BODY&gt;
+
+  &lt;?vsp
+	declare _myInput varchar;
+	declare Mode varchar;
+
+	_myInput := get_keyword('myInput', params, 'no value');
+	Mode := get_keyword('submit', params, '');
+
+    if (Mode = 'submit')
+	{
+   ?&gt;
+
+    &lt;P&gt;Hello, &lt;?vsp http(_myInput); ?&gt;
+	&lt;/P&gt;
+
+  &lt;?vsp
+	}
+	  else
+	{
+   ?&gt;
+
+  &lt;P&gt;Please enter you name&lt;/P&gt;
+  &lt;FORM METHOD=&quot;POST&quot; ACTION=&quot;formdemo.vsp&quot;&gt;
+    &lt;INPUT TYPE=&quot;TEXT&quot; NAME=&quot;myInput&quot; /&gt;
+    &lt;INPUT TYPE=&quot;SUBMIT&quot; NAME=&quot;submit&quot; VALUE=&quot;Submit&quot; /&gt;
+  &lt;/FORM&gt;
+
+  &lt;?vsp
+    }
+  ?&gt;
+
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+</programlisting>
+
+			<para>
+</para>
+		</sect2>
+
+		<sect2 id="vspdbinout">
+			<title>Manipulating Database Data in VSP</title>
+			<para>
+The following example demonstrates a basic page that has form based flow control, takes input from the user to put into the
+database and then displays the results.  This simple example can be extended to perform more substantial operations
+by adding a few more inputs, buttons and states.
+</para>
+		<para>
+Things to look at:
+</para>
+<simplelist>
+<member>get_keyword is used to extract parameters from the form that were posted last time</member>
+<member>the current mode is determined by the value of the submit parameter</member>
+<member>straight HTML can be inline with VSP flow control which is how the whole page is contained in an <emphasis>if</emphasis> condition.</member>
+</simplelist>
+
+<programlisting>
+&lt;HTML&gt;
+&lt;HEAD&gt;&lt;/HEAD&gt;
+&lt;BODY&gt;
+&lt;form method=&quot;POST&quot; action=&quot;simpletest.vsp&quot;&gt;
+
+&lt;?vsp
+-- assumes that you have a table db..test_table(txt varchar(2000))
+
+-- declare variables for use
+declare _mode varchar;
+declare _theValue varchar;
+declare _stmt varchar;
+
+-- get the current mode and continue accordingly
+_mode := get_keyword ('submit', params, 'default');
+
+if (_mode = 'Submit')
+{
+  -- if a submit was detected then insert the value into the DB
+  _theValue := get_keyword('myTxtBox', params, 'no comment');
+  _stmt := sprintf('insert into db..test_table(txt) values(\'%s\')', _theValue);
+  exec (_stmt, '', '', '', '', '', '');
+
+?&gt;
+   &lt;P&gt;Thank you for your submission.&lt;/P&gt;
+&lt;?vsp
+} else {
+?&gt;
+   &lt;DIV&gt;
+   &lt;DIV&gt;Simple test form, enter some text and hit submit.&lt;/DIV&gt;
+   &lt;DIV&gt;&lt;textarea name=&quot;other&quot; rows=&quot;3&quot; cols=&quot;64&quot;&gt;&lt;/textarea&gt;&lt;/DIV&gt;
+   &lt;/DIV&gt;
+
+   &lt;DIV&gt;&lt;input type=&quot;submit&quot; name=&quot;submit&quot; value=&quot;Submit&quot;&gt;&lt;/DIV&gt;
+
+   &lt;HR /&gt;
+   &lt;H2&gt;Values currently in table&lt;/H2&gt;
+   &lt;TABLE&gt;
+   &lt;?vsp
+   for (select txt from db..test_table) do
+     http(sprintf('&lt;TR&gt;&lt;TD&gt;%s&lt;/TD&gt;&lt;/TR&gt;', txt));
+   ?&gt;
+   &lt;/TABLE&gt;
+
+&lt;?vsp
+}
+?&gt;
+&lt;/form&gt;
+&lt;/BODY&gt;
+&lt;/HTML&gt;
+</programlisting>
+
+	<para>
+You may wish to offload some of the functionality of the page to a stored procedure and call that from that page.  You may do this to improve
+readability of the page or there may be a series of functions that you repeat such as displaying a particular table in some format.
+</para>
+
+	<para>
+You could used a procedure as follows:
+</para>
+
+<programlisting>
+create procedure table_list()
+{
+   http('&lt;H2&gt;Values currently in table&lt;/H2&gt;');
+   http('&lt;TABLE&gt;');
+   for (select txt from db..test_table) do
+      http(sprintf('&lt;TR&gt;&lt;TD&gt;%s&lt;/TD&gt;&lt;/TR&gt;', txt));
+   http('&lt;/TABLE&gt;');
+};
+</programlisting>
+
+<para>
+You could then call this in instead of defining the query and table layout as above.
+</para>
+
+<para>The aspects of VSP are explained in more detail in the following sections.</para>
+</sect2>
+</sect1>
+
+<sect1 id="qshostingplugs"><title>Third-Party Runtime Typing, Hosting &amp; User Defined Types</title>
+
+  <para>All barriers are broken.  If Virtuoso does not readily provide the data
+  type that you require, then make your own.  If you want a database trigger
+  to test data against existing externally developed logic, then do that too.  Virtuoso
+  has been designed with open-design in mind giving ultimate flexibility.  These
+  are the systems current available (linked to the appropriate section
+  of this documentation):</para>
+
+<itemizedlist>
+ <listitem><para><link linkend="runtimehosting">Runtime Hosting</link></para>
+ <para>support other environments and/or languages in-process with Virtuoso and
+ utilizing Virtuoso storage methods such as DAV for replication and roll-out
+ benefits.</para>
+  <itemizedlist>
+   <listitem><para><link linkend="rthclr">CLR</link> &amp; <link linkend="rthclrmono">Mono</link></para>
+     </listitem>
+   <listitem><para><link linkend="javaextvm">Java</link> &amp; <link linkend="rthjsp">Jakarta JSP</link></para>
+     </listitem>
+   <listitem><para><link linkend="servphpext">PHP</link></para>
+     </listitem>
+  </itemizedlist>
+   </listitem>
+ <listitem><para><link linkend="vseplugins">Plugins</link></para>
+ <para>enable support for other scripting langauges.</para>
+  <itemizedlist>
+   <listitem><para><link linkend="perlhosting">Perl</link></para>
+     </listitem>
+   <listitem><para><link linkend="pythonhosting">Python</link></para>
+     </listitem>
+   <listitem><para><link linkend="rubyhosting">Ruby</link></para>
+     </listitem>
+  </itemizedlist>
+   </listitem>
+ <listitem><para><link linkend="cinterface">Extensibility</link></para>
+ <para>the above features are applications of one or another of these interfaces,
+ which are provided so that you have the potential to enhance Virtuoso further
+ for more custom requirements.</para>
+  <itemizedlist>
+   <listitem><para><link linkend="cinterface">Virtuoso Server Extension Interface (VSEI)</link></para>
+     </listitem>
+   <listitem><para><link linkend="vseplugins">VSEI Plugins</link></para>
+     </listitem>
+   <listitem><para><link linkend="udt">User-Defined Types (UDT)</link></para>
+     </listitem>
+   <listitem><para><link linkend="createassembly">Hosted/Imported Assemblies/Classes</link></para>
+     </listitem>
+  </itemizedlist>
+   </listitem>
+ <listitem><para><link linkend="webservices">Web/Service Exposure</link></para>
+ <para>every part of Virtuoso can be view, interacted with or consumed by some
+ third-party via a plethora of interfaces, to name a few:</para>
+  <itemizedlist>
+   <listitem><para><link linkend="soap">SOAP</link></para>
+     </listitem>
+   <listitem><para><link linkend="wsdl">WSDL</link></para>
+     </listitem>
+   <listitem><para><link linkend="webappdevelopment">Static/Dynamic Web Content</link></para>
+     </listitem>
+   <listitem><para><link linkend="webandxml">XML/XSLT</link></para>
+     <para><link linkend="xmlstoragesystem">XML Storage System</link></para>
+     <para><link linkend="xmlrpc">XML RPC</link></para>
+     </listitem>
+  </itemizedlist>
+   </listitem>
+</itemizedlist>
+</sect1>
+
+  <sect1 id="troutips"><title>Troubleshooting Tips</title>
+    <sect2 id="tipsgen"><title>General Tips</title>
+      <para>The following sections are some common faults and tips.
+      For a complete list of troubleshooting tips, please visit
+      sources that are listed in
+      the <link linkend="support">Product Support</link> section of
+      the <link linkend="appendixa">Appendix</link>.</para>
+    </sect2>
+    <sect2 id="tipsdbnotstart"><title>DBMS Server will not start</title>
+      <para>If the Virtuoso DBMS server won't start, there could be 3 reasons.</para>
+      <simplelist>
+      <member>It is already running</member>
+      <member>It died earlier</member>
+      <member>It terminated normally earlier, but the virtuoso.lck file was
+      not deleted</member>
+      </simplelist>
+      <para>When the DBMS server starts up, it creates a file in the bin
+      directory named &quot;virtuoso.lck&quot;. If this file is present, a new
+      instance cannot run.  If you are certain that the DBMS isn't running,
+      then you can delete the virtuoso.lck file and then start it from the
+      Services icon in the Control Panel, or by using the command
+      &quot;<emphasis>virtuoso +service start</emphasis>&quot; in the
+      virtuoso directory. You can check if virtuoso is running from the Task
+      Manager, and you can shut it down using the command
+      &quot;<emphasis>virtuoso +service stop</emphasis>&quot;.</para>
+      <figure id="image32" float="1">
+	<title>Command Prompt</title>
+	<graphic fileref="virttour32.gif" width="525px" depth="184px"/>
+      </figure>
+    </sect2>
+    <sect2 id="tipscasemode"><title>Case Mode</title>
+    <para>Whenever a database object is referenced, all names (schema, owner,
+    table and column) should preferably be placed in double-quotes, exactly as it appears in
+    the catalog.  This way, the object name in the Virtuoso catalog will be correctly
+    referenced.  If names are not quoted, then the case of the object name will be
+    determined by the value of the CaseMode property in the virtuoso.ini file.  The
+    default mode is case sensitive (CaseMode = 1).  This means that all unquoted objects
+    names will be processed exactly as supplied.  This may result in messages indicating
+    that an object could not be found.  If CaseMode is set to 0, then all objects will be
+    translated to upper case.  When using certain tools such as Microsoft Query (which is
+    used by Microsoft Excel) object references are not enclosed in quotes.  As a result,
+    it may be necessary to change from CaseMode=1 to CaseMode=0, or vise-verse before starting
+    up the DBMS if the application that you use does not enclose identifiers in double
+    quotes.  Virtuoso itself will always use the object names that were identified when
+    the table was attached when it communicates with a back-end database.</para>
+    <para>The following table describes when an identifier name will
+    match the catalog entry.</para>
+    <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+				<title>Case mode options</title>
+				<tgroup align="char" charoff="50" char="." cols="4">
+					<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+					<thead>
+						<row>
+							<entry>CaseMode</entry>
+							<entry>Identifiers in Virtuoso Catalog</entry>
+							<entry>Unquoted Identifiers In Query</entry>
+							<entry>Result</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>0 - Case Sensitive</entry>
+							<entry>Lower/Mixed case</entry>
+							<entry>Lower/Mixed case</entry>
+							<entry>Will match</entry>
+						</row>
+						<row>
+							<entry>0 - Case Sensitive</entry>
+							<entry>Lower/Mixed case</entry>
+							<entry>Upper case</entry>
+							<entry>Will not match</entry>
+						</row>
+						<row>
+							<entry>0 - Case Sensitive</entry>
+							<entry>Upper case</entry>
+							<entry>Lower/Mixed case</entry>
+							<entry>Will not match</entry>
+						</row>
+						<row>
+							<entry>0 - Case Sensitive</entry>
+							<entry>Upper case</entry>
+							<entry>Upper case</entry>
+							<entry>Will match</entry>
+						</row>
+						<row>
+							<entry>1 - Translate to Upper </entry>
+							<entry>Lower/Mixed case</entry>
+							<entry>Lower/Mixed case</entry>
+							<entry>Will not match</entry>
+						</row>
+						<row>
+							<entry>1 - Translate to Upper </entry>
+							<entry>Lower/Mixed case</entry>
+							<entry>Upper case</entry>
+							<entry>Will not match</entry>
+						</row>
+						<row>
+							<entry>1 - Translate to Upper </entry>
+							<entry>Upper case</entry>
+							<entry>Lower/Mixed case</entry>
+							<entry>Will match</entry>
+						</row>
+						<row>
+							<entry>1 - Translate to Upper </entry>
+							<entry>Upper case</entry>
+							<entry>Upper case</entry>
+							<entry>Will match</entry>
+						</row>
+					</tbody>
+				</tgroup>
+    </table>
+    <figure id="image33" float="1">
+      <title>Virtuoso.ini file in notepad</title>
+      <graphic fileref="virttour33.gif" width="531px" depth="394px"/>
+    </figure>
+    </sect2>
+  </sect1>
+
+</chapter>
+

@@ -1,0 +1,717 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version='1.0' encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+        xmlns:bpws="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+	targetNamespace="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+        xmlns:bpelv="http://www.openlinksw.com/virtuoso/bpel"
+	xmlns:bpelx="http://schemas.oracle.com/bpel/extension"
+        elementFormDefault="qualified"
+        attributeFormDefault="unqualified" >
+
+    <import namespace="http://www.openlinksw.com/virtuoso/bpel" schemaLocation="bpelv.xsd"/>
+    <import namespace="http://schemas.oracle.com/bpel/extension" schemaLocation="bpelx.xsd"/>
+
+    <complexType name="tExtensibleElements">
+        <annotation>
+            <documentation>
+                 This type is extended by other component types
+                 to allow elements and attributes from
+                 other namespaces to be added.
+            </documentation>
+        </annotation>
+        <sequence>
+            <any namespace="##other" minOccurs="0" maxOccurs="unbounded"
+                 processContents="lax"/>
+        </sequence>
+        <anyAttribute namespace="##other" processContents="lax"/>
+
+    </complexType>
+
+    <element name="process" type="bpws:tProcess"/>
+    <complexType name="tProcess">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <sequence>
+                    <element ref="bpelv:exec" minOccurs="0" maxOccurs="unbounded"/>
+                    <element ref="bpelx:exec" minOccurs="0" maxOccurs="unbounded"/>
+                    <element name="partnerLinks" type="bpws:tPartnerLinks"
+                             minOccurs="0"/>
+                    <element name="partners" type="bpws:tPartners"
+                             minOccurs="0"/>
+                    <element name="variables"
+                             type="bpws:tVariables"
+                             minOccurs="0"/>
+                    <element name="correlationSets"
+                             type="bpws:tCorrelationSets" minOccurs="0"/>
+                    <element name="faultHandlers" type="bpws:tFaultHandlers"
+                             minOccurs="0"/>
+                    <element name="compensationHandler"
+                             type="bpws:tCompensationHandler" minOccurs="0"/>
+                    <element name="eventHandlers"
+                             type="bpws:tEventHandlers" minOccurs="0"/>
+
+                    <group ref="bpws:activity"/>
+                </sequence>
+                <attribute name="name" type="NCName"
+                           use="required"/>
+                <attribute name="targetNamespace" type="anyURI"
+                           use="required"/>
+		       <attribute name="queryLanguage" type="anyURI"/>
+		       <!--default="http://www.w3.org/TR/1999/REC-xpath-19991116"/-->
+		       <attribute name="expressionLanguage" type="anyURI"/>
+		       <!--default="http://www.w3.org/TR/1999/REC-xpath-19991116"/-->
+		       <attribute name="suppressJoinFailure" type="bpws:tBoolean"/>
+		       <!--default="no"/-->
+		       <attribute name="enableInstanceCompensation" type="bpws:tBoolean" />
+		       <!--default="no"/-->
+		       <attribute name="abstractProcess" type="bpws:tBoolean"/>
+		       <!--default="no"/-->
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <group name="activity">
+        <choice>
+            <element name="empty" type="bpws:tEmpty"/>
+            <element name="invoke" type="bpws:tInvoke"/>
+            <element name="receive" type="bpws:tReceive"/>
+            <element name="reply" type="bpws:tReply"/>
+            <element name="assign" type="bpws:tAssign"/>
+            <element name="wait" type="bpws:tWait"/>
+            <element name="throw" type="bpws:tThrow"/>
+            <element name="terminate" type="bpws:tTerminate"/>
+            <element name="flow" type="bpws:tFlow"/>
+            <element name="switch" type="bpws:tSwitch"/>
+            <element name="while" type="bpws:tWhile"/>
+            <element name="sequence" type="bpws:tSequence"/>
+            <element name="pick" type="bpws:tPick"/>
+            <element name="scope" type="bpws:tScope"/>
+            <element ref="bpelv:exec"/>
+	    <!-- This is to pass compensation tests, needs to be removed -->
+            <element name="compensate" type="bpws:tCompensate"/>
+        </choice>
+    </group>
+
+
+    <complexType name="tPartnerLinks">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+               <sequence>
+                    <element name="partnerLink" type="bpws:tPartnerLink"
+                             minOccurs="1" maxOccurs="unbounded"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tPartnerLink">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <attribute name="name" type="NCName" use="required"/>
+                <attribute name="partnerLinkType" type="QName"
+                           use="required"/>
+                <attribute name="myRole" type="NCName"/>
+                <attribute name="partnerRole" type="NCName"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+
+    <complexType name="tPartners">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+               <sequence>
+                    <element name="partner" type="bpws:tPartner"
+                             minOccurs="1" maxOccurs="unbounded"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tPartner">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+               <sequence>
+                  <element name="partnerLink" minOccurs="1"
+                           maxOccurs="unbounded">
+                     <complexType>
+                         <complexContent>
+                            <extension base="bpws:tExtensibleElements">
+                               <attribute name="name" type="NCName"
+                                          use="required"/>
+                            </extension>
+                         </complexContent>
+                     </complexType>
+                  </element>
+               </sequence>
+               <attribute name="name" type="NCName" use="required"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tFaultHandlers">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+
+                <sequence>
+                    <element name="catch" type="bpws:tCatch"
+                             minOccurs="0" maxOccurs="unbounded"/>
+                    <element name="catchAll" type="bpws:tActivityOrCompensateContainer"
+                             minOccurs="0"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tCatch">
+        <complexContent>
+            <extension base="bpws:tActivityOrCompensateContainer">
+                <attribute name="faultName" type="QName"/>
+                <attribute name="faultVariable" type="NCName"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+
+    <complexType name="tActivityContainer">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <sequence>
+                    <group ref="bpws:activity" maxOccurs="unbounded"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+    <complexType name="tActivityOrCompensateContainer">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <choice>
+                    <group ref="bpws:activity"/>
+                    <element name="compensate" type="bpws:tCompensate"/>
+                </choice>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tEventHandlers">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+               <sequence>
+                   <element name="onMessage" type="bpws:tOnMessage"
+                            minOccurs="0" maxOccurs="unbounded"/>
+                   <element name="onAlarm" type="bpws:tOnAlarm"
+                            minOccurs="0" maxOccurs="unbounded"/>
+               </sequence>
+            </extension>
+       </complexContent>
+    </complexType>
+
+
+    <complexType name="tOnMessage">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <sequence>
+                    <element name="correlations" type="bpws:tCorrelations"
+                             minOccurs="0"/>
+                    <group ref="bpws:activity"/>
+                </sequence>
+                <attribute name="partnerLink" type="NCName" use="required"/>
+                <attribute name="portType" type="QName" use="required"/>
+                <attribute name="operation" type="NCName" use="required"/>
+                <attribute name="variable" type="NCName"
+                           use="optional"/>
+            </extension>
+        </complexContent>
+
+    </complexType>
+
+    <complexType name="tOnAlarm">
+        <complexContent>
+            <extension base="bpws:tActivityContainer">
+                <attribute name="for" type="bpws:tDuration-expr"/>
+                <attribute name="until" type="bpws:tDeadline-expr"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tCompensationHandler">
+        <complexContent>
+            <extension base="bpws:tActivityOrCompensateContainer"/>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tVariables">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <sequence>
+                    <element name="variable"
+                             type="bpws:tVariable"
+                             maxOccurs="unbounded"/>
+                </sequence>
+            </extension>
+        </complexContent>
+
+    </complexType>
+
+    <complexType name="tVariable">
+
+            <!-- variable does not allow extensibility elements
+because otherwise its content model would be non-deterministic -->
+                <attribute name="name" type="NCName" use="required"/>
+                <attribute name="messageType" type="QName" use = "optional"/>
+                <attribute name="type" type="QName" use = "optional"/>
+                <attribute name="element" type="QName" use = "optional"/>
+                <anyAttribute namespace="##other" processContents="lax"/>
+
+    </complexType>
+
+    <complexType name="tCorrelationSets">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <sequence>
+                    <element name="correlationSet"
+                             type="bpws:tCorrelationSet"
+                             maxOccurs="unbounded"/>
+                </sequence>
+            </extension>
+        </complexContent>
+
+    </complexType>
+
+    <complexType name="tCorrelationSet">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <attribute name="properties" use="required">
+			<simpleType>
+                        	<list itemType="QName"/>
+			</simpleType>
+                </attribute>
+                <attribute name="name" type="NCName" use="required"/>
+            </extension>
+        </complexContent>
+
+    </complexType>
+
+    <complexType name="tActivity">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <sequence>
+                    <element name="target" type="bpws:tTarget"
+                             minOccurs="0" maxOccurs="unbounded"/>
+                    <element name="source" type="bpws:tSource"
+                             minOccurs="0" maxOccurs="unbounded"/>
+                </sequence>
+                <attribute name="name" type="NCName"/>
+                <attribute name="joinCondition"
+                           type="bpws:tBoolean-expr"/>
+		       <attribute name="suppressJoinFailure" type="bpws:tBoolean" />
+		       <!--default="no"/-->
+            </extension>
+        </complexContent>
+
+    </complexType>
+
+    <complexType name="tSource">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <attribute name="linkName" type="NCName" use="required"/>
+                <attribute name="transitionCondition"
+                           type="bpws:tBoolean-expr"/>
+            </extension>
+        </complexContent>
+
+    </complexType>
+
+    <complexType name="tTarget">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <attribute name="linkName" type="NCName" use="required"/>
+            </extension>
+        </complexContent>
+
+    </complexType>
+
+    <complexType name="tEmpty">
+        <complexContent>
+            <extension base="bpws:tActivity"/>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tCorrelations">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+               <sequence>
+                  <element name="correlation" type="bpws:tCorrelation"
+                           minOccurs="1" maxOccurs="unbounded" />
+               </sequence>
+            </extension>
+      </complexContent>
+   </complexType>
+
+   <complexType name="tCorrelation">
+      <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <attribute name="set" type="NCName" use="required"/>
+		<attribute name="initiate" type="bpws:tBoolean"/>
+		    <!--default="no"/-->
+
+            </extension>
+     </complexContent>
+   </complexType>
+
+    <complexType name="tCorrelationsWithPattern">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <sequence>
+                    <element name="correlation"
+                             type="bpws:tCorrelationWithPattern"
+                             minOccurs="1"
+                             maxOccurs="unbounded"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tCorrelationWithPattern">
+        <complexContent>
+            <extension base="bpws:tCorrelation">
+                <attribute name="pattern">
+                    <simpleType>
+                        <restriction base="string">
+                              <enumeration value="in" />
+                              <enumeration value="out" />
+                              <enumeration value="out-in" />
+                        </restriction>
+                    </simpleType>
+                </attribute>
+            </extension>
+        </complexContent>
+    </complexType>
+
+
+
+    <complexType name="tInvoke">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <sequence>
+                    <element name="correlations"
+                             type="bpws:tCorrelationsWithPattern"
+                             minOccurs="0" maxOccurs="1"/>
+                    <element name="catch" type="bpws:tCatch"
+                             minOccurs="0" maxOccurs="unbounded"/>
+                    <element name="catchAll"
+                             type="bpws:tActivityOrCompensateContainer"
+                             minOccurs="0"/>
+                    <element name="compensationHandler"
+                             type="bpws:tCompensationHandler" minOccurs="0"/>
+                </sequence>
+                <attribute name="partnerLink" type="NCName" use="required"/>
+                <attribute name="portType" type="QName" use="required"/>
+                <attribute name="operation" type="NCName" use="required"/>
+                <attribute name="inputVariable"
+                           type="NCName" use="optional"/>
+                <attribute name="outputVariable" type="NCName"
+                           use="optional"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tReceive">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <sequence>
+                    <element name="correlations"
+                              type="bpws:tCorrelations" minOccurs="0"/>
+                </sequence>
+                <attribute name="partnerLink" type="NCName" use="required"/>
+                <attribute name="portType" type="QName" use="required"/>
+                <attribute name="operation" type="NCName" use="required"/>
+                <attribute name="variable" type="NCName" use="optional"/>
+		<attribute name="createInstance" type="bpws:tBoolean" use="optional"/>
+		<!--default="no"/-->
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tReply">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <sequence>
+                    <element name="correlations"
+                             type="bpws:tCorrelations" minOccurs="0"/>
+                </sequence>
+                <attribute name="partnerLink" type="NCName" use="required"/>
+                <attribute name="portType" type="QName" use="required"/>
+                <attribute name="operation" type="NCName" use="required"/>
+                <attribute name="variable" type="NCName" use="optional"/>
+                <attribute name="faultName" type="QName"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tAssign">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <sequence>
+                    <element name="copy" type="bpws:tCopy"
+                             minOccurs="1" maxOccurs="unbounded"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tCopy">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <sequence>
+                    <element ref="bpws:from"/>
+                    <element ref="bpws:to"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <element name="from" type="bpws:tFrom"/>
+    <complexType name="tFrom">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <attribute name="variable" type="NCName"/>
+                <attribute name="part" type="NCName"/>
+                <attribute name="query" type="string"/>
+                <attribute name="property" type="QName"/>
+                <attribute name="partnerLink" type="NCName"/>
+                <attribute name="endpointReference" type="bpws:tRoles"/>
+                <attribute name="expression" type="string"/>
+                <attribute name="opaque" type="bpws:tBoolean"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <element name="to">
+        <complexType>
+            <!--complexContent>
+                <restriction base="bpws:tFrom">
+                    <attribute name="expression" type="string"
+                               use="prohibited"/>
+                    <attribute name="opaque" type="bpws:tBoolean"
+                               use="prohibited"/>
+                    <attribute name="endpointReference" type="bpws:tRoles"
+                               use="prohibited"/>
+                </restriction>
+            </complexContent-->
+	    <complexContent>
+		<extension base="bpws:tExtensibleElements">
+		    <attribute name="variable" type="NCName"/>
+		    <attribute name="part" type="NCName"/>
+		    <attribute name="query" type="string"/>
+		    <attribute name="property" type="QName"/>
+		    <attribute name="partnerLink" type="NCName"/>
+		</extension>
+	    </complexContent>
+        </complexType>
+    </element>
+
+
+    <complexType name="tWait">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <attribute name="for"
+                           type="bpws:tDuration-expr"/>
+                <attribute name="until"
+                           type="bpws:tDeadline-expr"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tThrow">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <attribute name="faultName" type="QName" use="required"/>
+                <attribute name="faultVariable" type="NCName"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tCompensate">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <attribute name="scope" type="NCName"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tTerminate">
+        <complexContent>
+            <extension base="bpws:tActivity"/>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tFlow">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <sequence>
+                    <element name="links" type="bpws:tLinks" minOccurs="0"/>
+                    <group ref="bpws:activity" maxOccurs="unbounded"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tLinks">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <sequence>
+                    <element name="link"
+                             type="bpws:tLink"
+                             maxOccurs="unbounded"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tLink">
+        <complexContent>
+            <extension base="bpws:tExtensibleElements">
+                <attribute name="name" type="NCName" use="required"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tSwitch">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <sequence>
+                    <element name="case" maxOccurs="unbounded">
+                        <complexType>
+                            <complexContent>
+                                <extension base="bpws:tActivityContainer">
+                                    <attribute name="condition"
+                                               type="bpws:tBoolean-expr"
+                                               use="required"/>
+                                </extension>
+                            </complexContent>
+                        </complexType>
+                    </element>
+                    <element name="otherwise"
+                             type="bpws:tActivityContainer"
+                             minOccurs="0"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tWhile">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <sequence>
+                    <group ref="bpws:activity"/>
+                </sequence>
+                <attribute name="condition"
+                           type="bpws:tBoolean-expr"
+                           use="required"/>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tSequence">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <sequence>
+                    <group ref="bpws:activity" maxOccurs="unbounded"/>
+                </sequence>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tPick">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <sequence>
+                    <element name="onMessage"
+                             type="bpws:tOnMessage"
+                             maxOccurs="unbounded"/>
+                    <element name="onAlarm"
+                             type="bpws:tOnAlarm" minOccurs="0"
+                             maxOccurs="unbounded"/>
+                </sequence>
+		<attribute name="createInstance" type="bpws:tBoolean" />
+		    <!--default="no"/-->
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="tScope">
+        <complexContent>
+            <extension base="bpws:tActivity">
+                <sequence>
+                    <element name="variables"
+                             type="bpws:tVariables"
+                             minOccurs="0"/>
+                    <element name="correlationSets"
+                             type="bpws:tCorrelationSets"
+                             minOccurs="0"/>
+                    <element name="faultHandlers"
+                             type="bpws:tFaultHandlers"
+                             minOccurs="0"/>
+                    <element name="compensationHandler"
+                             type="bpws:tCompensationHandler"
+                             minOccurs="0"/>
+                    <element name="eventHandlers"
+                             type="bpws:tEventHandlers"
+                             minOccurs="0"/>
+                    <group ref="bpws:activity" maxOccurs="unbounded"/>
+                </sequence>
+		<attribute name="variableAccessSerializable" type="bpws:tBoolean" use="optional"/>
+		<!--default="no"/-->
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <simpleType name="tBoolean-expr">
+        <restriction base="string"/>
+    </simpleType>
+
+    <simpleType name="tDuration-expr">
+        <restriction base="string"/>
+    </simpleType>
+
+    <simpleType name="tDeadline-expr">
+        <restriction base="string"/>
+    </simpleType>
+
+    <simpleType name="tBoolean">
+        <restriction base="string">
+            <enumeration value="yes"/>
+            <enumeration value="no"/>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="tRoles">
+        <restriction base="string">
+            <enumeration value="myRole"/>
+            <enumeration value="partnerRole"/>
+        </restriction>
+    </simpleType>
+</schema>

@@ -1,0 +1,1013 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<rss version="2.0">
+  <channel>
+    <title>Weblogs @ ASP.NET</title>
+    <description>.NETWeblogs by .NET Developers</description>
+    <link>http://weblogs.asp.net/MainFeed.aspx</link>
+    <generator>.Text Version 0.95.2005.113</generator>
+    <item>
+      <title>Special Folders Browser</title>
+      <link>http://weblogs.asp.net/KennyKerr/archive/2005/06/17/413503.aspx</link>
+      <pubDate>Fri, 17 Jun 2005 07:47:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/KennyKerr/archive/2005/06/17/413503.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/KennyKerr/comments/413503.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/KennyKerr/comments/commentRss/413503.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/KennyKerr/archive/2005/06/17/413503.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/KennyKerr/services/trackbacks/413503.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/KennyKerr/rss.aspx">Kenny Kerr</source>
+      <content>
+        <p>When using the Environment.SpecialFolder enumeration I often spend a few extra moments checking what path a particular SpecialFolder constant refers to on my computer. Since it can be different from machine to machine and user to user it can help to quickly identify where the special folders point to. I got tired of writing the same boilerplate code over and over again so I quickly wrote the <a href="http://www.kennyandkarin.com/kenny/blog/specialfolders.zip">Special Folders Browser</a>.</p>
+        <p>
+          <a href="http://www.kennyandkarin.com/kenny/blog/specialfolders.zip">
+            <img src="http://www.kennyandkarin.com/kenny/blog/specialfolders.jpg" border="0"/>
+          </a>
+        </p>
+        <p>Some useful features:</p>
+        <ul>
+          <li>Clearly displays the current path that each special folder represents. </li>
+          <li>â€œOpen in Explorerâ€ button to jump to the specified path in Windows Explorer. </li>
+          <li>â€œCopy C++/C# Codeâ€ buttons which copy the necessary code to the clipboard to save you some typing.</li>
+        </ul>
+        <p>Here are some handy shortcuts:</p>
+        <ul>
+          <li>Double click to open folder in Windows Explorer </li>
+          <li>Alt+E for â€œOpen in Explorerâ€ </li>
+          <li>Alt+C for â€œCopy C++ Codeâ€ </li>
+          <li>Alt+O for â€œCopy C# Codeâ€</li>
+        </ul>
+        <p>This tool was compiled for the .NET Framework 2.0 Beta 2. Oh, and it uses reflection so the enumeration constants are not hardcoded just in case the list changes between now and the RTM.</p>
+        <p><a href="http://www.kennyandkarin.com/kenny/blog/specialfolders.zip">Download it here</a>. In an upcoming post I'll be talking about language choice and why I wrote this tool in C#!</p>
+        <p> </p>
+        <img src="http://weblogs.asp.net/KennyKerr/aggbug/413503.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Kenny Kerr</dc:creator>
+    </item>
+    <item>
+      <title>Log4net's new TelnetAppender</title>
+      <link>http://weblogs.asp.net/psteele/archive/2005/06/16/413437.aspx</link>
+      <pubDate>Fri, 17 Jun 2005 03:35:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/psteele/archive/2005/06/16/413437.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/psteele/comments/413437.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/psteele/comments/commentRss/413437.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/psteele/archive/2005/06/16/413437.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">1</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/psteele/services/trackbacks/413437.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/psteele/rss.aspx">Patrick Steele's .NET Blog</source>
+      <content>
+        <p>The recently released 1.2.9-beta of <a href="http://logging.apache.org/log4net/" target="_blank">log4net</a> contains a new appender -- TelnetAppender.  This appender acts like a telnet server and allows telnet clients to connect to it and monitor log4net's trace messages.  I've only used log4net 1.2.8 but the TelnetAppender sounded pretty neat so I had to try it out.  Here's a quick sample app I did.  Note the DOMConfigurator has been deprecated and I'm now using the XmlConfigurator:</p>
+        <pre style="color: #000000"><span style="color: #0000FF">Option</span> Strict <span style="color: #0000FF">On</span><span style="color: #0000FF">Option</span> Explicit <span style="color: #0000FF">On</span><span style="color: #0000FF">Imports</span> System.IO
+<span style="color: #0000FF">Imports</span> System.Reflection
+
+<span style="color: #0000FF">Imports</span> log4net
+<span style="color: #0000FF">Imports</span> log4net.Config
+
+<span style="color: #0000FF">Public</span><span style="color: #0000FF">Class</span> Module1
+
+    <span style="color: #0000FF">Shared</span><span style="color: #0000FF">Sub</span> Main()
+        XmlConfigurator.Configure(<span style="color: #0000FF">New</span> FileInfo(<span style="color: #848284">"logging.xml"</span>))
+
+        Console.WriteLine(<span style="color: #848284">"Logging configured.  Start up a telnet client and press Enter to continue..."</span>)
+        Console.ReadLine()
+
+        <span style="color: #0000FF">Dim</span> w <span style="color: #0000FF">As</span><span style="color: #0000FF">New</span> Worker
+        w.Foo1()
+
+    <span style="color: #0000FF">End</span><span style="color: #0000FF">Sub</span><span style="color: #0000FF">End</span><span style="color: #0000FF">Class</span><span style="color: #0000FF">Public</span><span style="color: #0000FF">Class</span> Worker
+    <span style="color: #0000FF">Public</span><span style="color: #0000FF">Shared</span><span style="color: #0000FF">ReadOnly</span> m_logger <span style="color: #0000FF">As</span> ILog = LogManager.GetLogger(<span style="color: #0000FF">GetType</span>(Worker))
+
+    <span style="color: #0000FF">Public</span><span style="color: #0000FF">Sub</span> Foo1()
+        m_logger.Debug(<span style="color: #848284">"Enter "</span> &amp; LogUtility.MethodName())
+
+        Bar1(34)
+
+        m_logger.Debug(<span style="color: #848284">"Exit "</span> &amp; LogUtility.MethodName())
+    <span style="color: #0000FF">End</span><span style="color: #0000FF">Sub</span><span style="color: #0000FF">Public</span><span style="color: #0000FF">Function</span> Bar1(<span style="color: #0000FF">ByVal</span> val <span style="color: #0000FF">As</span><span style="color: #0000FF">Integer</span>) <span style="color: #0000FF">As</span><span style="color: #0000FF">Integer</span>
+        m_logger.Debug(<span style="color: #848284">"Enter "</span> &amp; LogUtility.MethodName() &amp; <span style="color: #848284">" with val = "</span> &amp; val.ToString())
+
+        <span style="color: #0000FF">Dim</span> result <span style="color: #0000FF">As</span><span style="color: #0000FF">Integer</span> = val * 7
+
+        m_logger.Debug(<span style="color: #848284">"Leaving "</span> &amp; LogUtility.MethodName() &amp; <span style="color: #848284">" with: "</span> &amp; result)
+        <span style="color: #0000FF">Return</span> result
+    <span style="color: #0000FF">End</span><span style="color: #0000FF">Function</span><span style="color: #0000FF">End</span><span style="color: #0000FF">Class</span><span style="color: #0000FF">Public</span><span style="color: #0000FF">Class</span> LogUtility
+
+    <span style="color: #0000FF">Public</span><span style="color: #0000FF">Shared</span><span style="color: #0000FF">Function</span> MethodName() <span style="color: #0000FF">As</span><span style="color: #0000FF">String</span><span style="color: #008200">' back up one stack frame to get the caller's method name</span><span style="color: #0000FF">Dim</span> sf <span style="color: #0000FF">As</span> StackFrame = <span style="color: #0000FF">New</span> StackFrame(1)
+        <span style="color: #0000FF">Dim</span> mb <span style="color: #0000FF">As</span> MethodBase = sf.GetMethod()
+        <span style="color: #0000FF">Return</span><span style="color: #0000FF">String</span>.Format(<span style="color: #848284">"{0}.{1}"</span>, mb.ReflectedType.ToString(), mb.Name)
+    <span style="color: #0000FF">End</span><span style="color: #0000FF">Function</span><span style="color: #0000FF">End</span><span style="color: #0000FF">Class</span></pre>
+        <p>Here's my log4net config file (logging.xml):</p>
+        <pre>
+&lt;?xml version="1.0" encoding="utf-8" ?&gt;
+&lt;log4net&gt;
+
+	&lt;appender name="ods" type="log4net.Appender.OutputDebugStringAppender"&gt;
+		&lt;layout type="log4net.Layout.PatternLayout"&gt;
+			&lt;conversionPattern value="%-5p [%t]: %m%n" /&gt;
+		&lt;/layout&gt;
+	&lt;/appender&gt;
+
+	&lt;appender name="tnet" type="log4net.Appender.TelnetAppender"&gt;
+		&lt;port value="23" /&gt;
+		&lt;layout type="log4net.Layout.PatternLayout"&gt;
+			&lt;conversionPattern value="%-5p [%t]: %m%n" /&gt;
+		&lt;/layout&gt;
+	&lt;/appender&gt;
+
+	&lt;root&gt;
+		&lt;level value="ALL" /&gt;
+		&lt;appender-ref ref="ods" /&gt;
+		&lt;appender-ref ref="tnet" /&gt;
+	&lt;/root&gt;
+
+&lt;/log4net&gt;
+</pre>
+        <p>Obviously the TelnetAppender is designed for a process that is always running (like a Windows Service).  Since this is just a simple console demo, I added a pause right after log4net is initialized to give you a chance to start up a telnet client and connect to your local machine.  You should get a message like:</p>
+        <pre>
+          <b>TelnetAppender v1.0 (1 active connections)</b>
+        </pre>
+        <p>At this point, go back to the demo and press Enter.  The log4net messages will be streamed to your telnet client.  Too fun!</p>
+        <img src="http://weblogs.asp.net/psteele/aggbug/413437.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Patrick Steele</dc:creator>
+    </item>
+    <item>
+      <title>Don Smith shows how everyone should be using VPC Differencing Disks</title>
+      <link>http://weblogs.asp.net/dbrowning/archive/2005/06/16/413435.aspx</link>
+      <pubDate>Fri, 17 Jun 2005 02:36:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/dbrowning/archive/2005/06/16/413435.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/dbrowning/comments/413435.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/dbrowning/comments/commentRss/413435.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/dbrowning/archive/2005/06/16/413435.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/dbrowning/services/trackbacks/413435.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/dbrowning/rss.aspx">.NET Brain Droppings</source>
+      <content><a href="http://dev4net.com/blog">Don's</a> post on <a href="http://dev4net.com/blog/archive/2005/06/16/2328.aspx">how to leverage differencing disks in Virtual PC</a> is truly enlightening.  I am the worst about creating ad hoc VPC images.  I have one base image with WinXP SP2 and Office on it; anytime I need a new "machine" I copy that base image, run <a href="http://www.sysinternals.com/Utilities/NewSid.html">NewSid</a>, and start installing software.  I know this is a waste of drive space (and effort), but I never really thought to much about it.<br/><br/> Well, I have now.  Don does a great job of laying out how he uses his base images combined with differencing disks to support multiple envionments.  This is kick ass stuff.  I'm linking his VPC Model here, but <a href="http://dev4net.com/blog/archive/2005/06/16/2328.aspx">go read the entire thing to get the details</a>.<br/><br/><img src="http://dev4net.members.winisp.net/images/Drawing1.png"/><p/><img src="http://weblogs.asp.net/dbrowning/aggbug/413435.aspx" width="1" height="1"/></content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Don Browning</dc:creator>
+    </item>
+    <item>
+      <title>JetBrains Meta Programming System</title>
+      <link>http://weblogs.asp.net/aaguiar/archive/2005/06/16/413434.aspx</link>
+      <pubDate>Fri, 17 Jun 2005 01:42:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/aaguiar/archive/2005/06/16/413434.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/aaguiar/comments/413434.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/aaguiar/comments/commentRss/413434.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/aaguiar/archive/2005/06/16/413434.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/aaguiar/services/trackbacks/413434.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/aaguiar/rss.aspx">Andres Aguiar's Weblog</source>
+      <content>
+        <p>JetBrains <a href="http://www.jetbrains.com/mps/index.html">opened an EAP</a> for its Meta Programming System.</p>
+        <p>I'm downloading it, I'll post my impressions after I find some time to play with it.</p>
+        <p> </p>
+        <img src="http://weblogs.asp.net/aaguiar/aggbug/413434.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Andres Aguiar</dc:creator>
+    </item>
+    <item>
+      <title>My Wix Journey - Day 16 @ 9:26pm EDT </title>
+      <link>http://weblogs.asp.net/jdennany/archive/2005/06/16/413430.aspx</link>
+      <pubDate>Fri, 17 Jun 2005 01:27:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/jdennany/archive/2005/06/16/413430.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/jdennany/comments/413430.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/jdennany/comments/commentRss/413430.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/jdennany/archive/2005/06/16/413430.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/jdennany/services/trackbacks/413430.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/jdennany/rss.aspx">Jerry Dennany's Occasional Clue</source>
+      <content>
+        <p>Despite the lack of blog posts, I've really been immersed in WiX.  I'm learning to love and hate this project.  I really love the XML declarative style of creating MSIs.  I really hate the fact that WiX wraps the abomination known as Windows installer.  </p>
+        <p>I was very familiar with Windows Installer before this adventure. I've spent years working with both InstallShield and Wise, and have had to edit raw MSI tables many times in the past.  However, these commercial products do a much better job of hiding the complexities of Windows Installer than WiX does.  If you decide to adopt WiX, make certain that you have the time to invest in learning the ins and outs of the MSI SDK.  Even if you think that you know quite a bit in this area, be prepared to spend some time spelunking through MSI.chm.</p>
+        <p>Writing Custom Actions using WiX isn't a walk in the park, either.  I'll talk a bit about managed CAs a bit in the future.  Hopefully people will learn from my trials and tribulations in this area.</p>
+        <p>Just to make sure that this blog entry has some substance, I'm going to give my WiX UI tip of the day:</p>
+        <p>To define the default font, place the following in the &lt;UI/&gt; section:</p>
+        <p>
+          <font face="Courier New" size="2">&lt;<font color="#a52a2a">UI</font>&gt;<br/>  &lt;<font color="#a52a2a">Property</font> <font color="#ff0000">Id</font>=<font color="#0000ff">"DefaultUIFont"</font>&gt;Tahoma8&lt;/<font color="#a52a2a">Property</font>&gt; <br/>  &lt;<font color="#a52a2a">TextStyle</font> <font color="#ff0000">Id</font>=<font color="#0000ff">"Tahoma8"</font> <font color="#ff0000">FaceName</font>=<font color="#0000ff">"Tahoma"</font> <font color="#ff0000">Size</font>=<font color="#0000ff">"8"</font> /&gt;  <br/>  <font color="#008000">&lt;!-- rest of UI (dialogs, etc) go here. --&gt;</font><br/>&lt;<font color="#a52a2a">UI</font>&gt;</font>
+        </p>
+        <p> </p>
+        <img src="http://weblogs.asp.net/jdennany/aggbug/413430.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Jerry Dennany</dc:creator>
+    </item>
+    <item>
+      <title>eQuest Job Posting: Software Development Engineer</title>
+      <link>http://weblogs.asp.net/conrad/archive/2005/06/16/413428.aspx</link>
+      <pubDate>Fri, 17 Jun 2005 00:38:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/conrad/archive/2005/06/16/413428.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/conrad/comments/413428.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/conrad/comments/commentRss/413428.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/conrad/archive/2005/06/16/413428.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/conrad/services/trackbacks/413428.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/conrad/rss.aspx">Conrad Agramont's WebLog</source>
+      <content>
+        <p>I guess I'll join the trend of puting job postings on a blog.  We're growing our development team at eQuest and we're looking for that special person that loves to develop web applications, server side components, and a touch lots of different Microsoft products and technologies.  If you're expereienced in MPS architecture, engineering, and/or development and want to work with a team of MPS experts, than this is youre future home!</p>
+        <p>If you're interested, please shoot me an email with your resume.</p>
+        <p>Conrad Agramont, Senior Architect, <a href="mailto:conrada@eqinc.com">conrada@eqinc.com</a> </p>
+        <p>
+          <strong>Job Title: Software Development Engineer</strong>
+        </p>
+        <p><strong>SUMMARY: <br/></strong>eQuest, a division of Planet Technologies Inc., is looking for a Software Development Engineer that is passionate about developing challenging applications and a desire to work with a variety Microsoft based products and technologies.  eQuest works with Service Providers and Telecommunications companies around the world to solve their business requires through the use of Microsoft products and technologies and custom integration with exciting software solutions.</p>
+        <p><br/>An ideal candidate will be heavily experienced in provisioning and automating Microsoft products and technologies (Active Directory, Exchange, Internet Information Services, and SQL Server).  Knowledge of Microsoft Solutions (Hosted Exchange &amp; Windows based Hosting) and the Microsoft Provisioning System is a plus.<br/></p>
+        <p>This position will also contribute to future product development for the eQuest Automation Framework (EAF).  EAF is an ASP.NET-based user interface and a collection of class libraries (built on Visual Studio.NET 2003 and C#) which provides a web based user interface to manage customers, users, and services in a Microsoft Hosted Exchange and Microsoft Web Hosting environment.</p>
+        <p><br/><strong>DUTIES AND RESPONSIBILITIES:</strong><br/>1. Develop component level specifications<br/>2. Perform peer based reviews for code efficiency and security.<br/>3. Participate in project related team meetings and reviews<br/>4. Work with Project Managers, Developers, and Testers to ensure proper scheduling, integration, and validation of your coding deliverables.<br/>5. Work directly with customers on feature design and requirements.<br/></p>
+        <p>
+          <strong>KNOWLEDGE &amp; SKILLS</strong>
+        </p>
+        <ul>
+          <li>Understanding and experience in Microsoft Solution Framework (MSF) development process</li>
+          <li>Microsoft  Windows Server 2003 (Active Directory, Domain Name Service, &amp; Internet Information</li>
+          <li>Services)</li>
+          <li>Microsoft Exchange Server 2003</li>
+          <li>Microsoft Provisioning System</li>
+          <li>Microsoft SQL Server 2000 (2005 is a plus)</li>
+          <li>Microsoft Visual Studio.NET &amp; C#</li>
+          <li>Scripting: VBScript, JavaScript, Windows Scripting Host</li>
+          <li>Web Development: ASP.NET, HTML, JavaScript</li>
+          <li>XML (Schemas, </li>
+        </ul>
+        <img src="http://weblogs.asp.net/conrad/aggbug/413428.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Conrad Agramont</dc:creator>
+    </item>
+    <item>
+      <title>Browser Keyboard shortcuts</title>
+      <link>http://weblogs.asp.net/jamauss/archive/2005/06/16/413415.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 22:52:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/jamauss/archive/2005/06/16/413415.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/jamauss/comments/413415.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/jamauss/comments/commentRss/413415.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/jamauss/archive/2005/06/16/413415.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">3</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/jamauss/services/trackbacks/413415.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/jamauss/rss.aspx">Jason Mauss' Blog Cabin</source>
+      <content>
+        <p>Whenever I work with other technical people - whether they're developers or not - I'm sometimes surprised at home much they rely on the mouse. As most developers have already come to realize, mastering the keyboard allows you to work much faster. I'm not just talking about stuff like using the tab key to move through input controls on a form or web page, I'm talking about stuff that's helpful for things you do almost every time you open a web browser. It's been a long time since I learned these shortcuts (probably 5+ years) so I thought everybody knew them by now. For those that don't, here's a quick run-down of the more useful ones. As far as I'm aware, these work in both IE and Firefox:</p>
+        <ol>
+          <li>Alt + D (highlight the current text in the address bar so you can type in a URL) </li>
+          <li>Ctrl + Enter (this will add 'http://www.' before what you type into the address bar and '.com' after it. so 'google' and Ctrl + Enter will enter in <a href="http://www.google.com">http://www.google.com</a>. Use Shift + Enter for a .net domain and Ctrl + Shift + Enter for .org (those last two are Firefox only...yet another reason to switch from IE). </li>
+          <li>Ctrl + D (to bookmark the current page) </li>
+          <li>Alt + Shift + Tab (this helps if like me, you have dozens of windows open and want to Alt + Tab to one that's just a couple <strong>before</strong> the one you're on, no need to hit tab 20 times to get to it) </li>
+          <li>Alt + Arrow Keys (to go back and forward use Alt + the left and right arrow keys) </li>
+          <li>Ctrl + T for a new tab in Firefox </li>
+          <li>Ctrl + N for a new window (this is helpful in IE if you're in a window with no menu/tool bar/address bar and want to load the same page w/ all those tools visible) </li>
+          <li>Esc key to stop loading the current page (like you'd have to click the red x in the tool bar to do)</li>
+        </ol>
+        <p>I'm sure there are probably more of them out there. If anybody knows some that I missed, feel free to leave a comment.</p>
+        <img src="http://weblogs.asp.net/jamauss/aggbug/413415.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Jason Mauss</dc:creator>
+    </item>
+    <item>
+      <title>Digital Pontification: Podcast Show Notes - June 17</title>
+      <link>http://weblogs.asp.net/jasonsalas/archive/2005/06/17/413413.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 22:49:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/jasonsalas/archive/2005/06/17/413413.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/jasonsalas/comments/413413.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/jasonsalas/comments/commentRss/413413.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/jasonsalas/archive/2005/06/17/413413.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/jasonsalas/services/trackbacks/413413.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/jasonsalas/rss.aspx">Jason Salas' WebLog</source>
+      <content><a href="http://66.33.214.167/podcasts/dp06172005.mp3"><img src="http://www.kuam.com/archives/podcasts/images/podcast-kuam.gif" border="0"/></a><br/><font size="1"><b><a href="http://66.33.214.167/podcasts/dp06172005.mp3">Download this podcast</a></b></font><br/><br/><font size="4"><b>Leave me a voicemail, send me a shoutout, or make comments about today's podcast: 1-206-600-4JAS (4527)<br/> <br/> </b></font><b/>Topics Discussed:<br/><ul><li>A trifecta of promos from my man The Warlock from <a href="http://www.themetalshow.com/blog">The Metal Show - 923 xTReme Radio in Cleveland</a> <br/> </li><li>I'm working on a delivery content format so our newscasts can be shown as in-flight movies for major airlines</li><li>A sneak peek at KUAM's summer news marketing campaigns &amp; PSAs</li><li>Like two ships passing at a technical conference - Lori the Goddess of Information and Glenn from Vallejo run into each other at TechEd in Orlando and don't even know it</li><li>Both product name and gracious compliment - the marketing genius behind <a href="http://www.geeyourhairsmellsterrific.com/">"Gee Your Hair Smells Terrific"</a></li><li>Joel Suplido's web work for Mac enthusiasts: <a href="http://www.1src.com">1src.com</a> || <a href="http://www.byodkm.net">byodkm.net</a> || <a href="http://www.suplido.com/joel">suplido.com/joel</a></li><li>LISTENER E-MAIL: (Danica, Anaheim) - what's a good metric for the # of listeners for podcasts?</li><li>LISTENER E-MAIL: (Danica, Anaheim) - what are some things you'd like to accomplish before you kick the bucket?</li><li>John Madden joins NBC's Sunday Night Football</li><li><a href="http://weblogs.asp.net/jasonsalas/archive/2005/06/12/411900.aspx">Progress report on PalmCatcher</a></li><li>Stand Alone Software's <a href="http://standalone.com/palmos/hand_rss/">Hand/RSS</a> becomes <a href="http://standalone.com/palmos/quick_news/">Quick News w/podcasting support</a> ($14.95...awesome!)</li><li><a href="http://www.geocities.com/Hollywood/Theater/2404/nepotism.htm">The Hollywood Nepotism Page</a><br/></li></ul><font size="1"><b><a href="http://www.kuam.com/archives/podcasts/podcast.xml">Subscribe to my podcast</a></b></font><img src="http://weblogs.asp.net/jasonsalas/aggbug/413413.aspx" width="1" height="1"/></content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Jason Salas</dc:creator>
+    </item>
+    <item>
+      <title>Great Tool : SpaceMonger</title>
+      <link>http://weblogs.asp.net/rchartier/archive/2005/06/16/413410.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 21:59:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/rchartier/archive/2005/06/16/413410.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/rchartier/comments/413410.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/rchartier/comments/commentRss/413410.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/rchartier/archive/2005/06/16/413410.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/rchartier/services/trackbacks/413410.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/rchartier/rss.aspx">Rob Chartier ~ Contemplation...</source>
+      <content>
+        <p>After it scans  your drive in, it gives a great visual representation of your drive.  Useful for deleting unused files that just eat up your disk space.</p>
+        <p>
+          <a href="http://www.werkema.com/software/spacemonger.html">http://www.werkema.com/software/spacemonger.html</a>
+        </p>
+        <img src="http://weblogs.asp.net/rchartier/aggbug/413410.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Robert Chartier</dc:creator>
+    </item>
+    <item>
+      <title>Dude, I got a Dell</title>
+      <link>http://weblogs.asp.net/Jeff/archive/2005/06/16/413407.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 21:30:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/Jeff/archive/2005/06/16/413407.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/Jeff/comments/413407.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/Jeff/comments/commentRss/413407.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/Jeff/archive/2005/06/16/413407.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">2</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/Jeff/services/trackbacks/413407.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/Jeff/rss.aspx">Jeff's Junk</source>
+      <content>Awhile back I mentioned I needed to replace my HP laptop because of the power connector. I was never really fond of it anyway because it got too hot (regular desktop Celeron), fans were too loud, it was heavy, had two or three annoying bright/dark pixels, crappy video hardware, horrible battery life. It did have pretty blue LED's though.<br/> <br/> I had never really considered buying a Dell, for whatever reason. Still, I posted about the problems I was having and someone linked to a coupon for Dell where you could get $750 off a certain model configured to $1500 or more. So I got mine to $1506.<br/> <br/> Specs: Inspiron 6000, Pentium M 1.6 GHz, 256 MB Centrino chipset, 802.11g, 1680x1050 15" widescreen, 60 gig drive, CD-R/DVD. Not fully loaded at all, but certainly more than adequate for most anything other than gaming. It really addresses all of the problems I had with the HP. Most importantly it runs cool and quiet.<br/> <br/> I've barely used my desktop since I got it. I can park on the couch, the bed, the deck, whatever, and it's a solid performer. For $756, it was an absolute steal. The only minor complaint I had was that I had to blow away the entire hard drive and nuke all of the crap that Dell loaded on it. Seriously, it took several minutes to boot, so I figured it was easier just to start over and download the drivers.<img src="http://weblogs.asp.net/Jeff/aggbug/413407.aspx" width="1" height="1"/></content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Jeff</dc:creator>
+    </item>
+    <item>
+      <title>Tech*Ed Europe: I'll be there!</title>
+      <link>http://weblogs.asp.net/lkempe/archive/2005/06/16/413404.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 20:48:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/lkempe/archive/2005/06/16/413404.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/lkempe/comments/413404.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/lkempe/comments/commentRss/413404.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/lkempe/archive/2005/06/16/413404.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">2</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/lkempe/services/trackbacks/413404.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/lkempe/rss.aspx">Laurent Kempé</source>
+      <content>
+        <table>
+          <tbody>
+            <tr>
+              <td>
+                <img style="WIDTH: 150px; HEIGHT: 130px" alt="" hspace="0" src="http://www.microsoft.com/emea/msdn/betaexperience/images/banner_teched_150x130.gif" align="top" vspace="0" border="0"/>
+              </td>
+              <td valign="top">I finally got the confirmation of my registration to the
+      Tech*Ed 2005 Europe, held in Amsterdam.</td>
+            </tr>
+          </tbody>
+        </table>
+        <img src="http://weblogs.asp.net/lkempe/aggbug/413404.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Laurent Kempé</dc:creator>
+    </item>
+    <item>
+      <title>Retina.NET Performance #1</title>
+      <link>http://weblogs.asp.net/andresv/archive/2005/06/16/413403.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 20:36:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/andresv/archive/2005/06/16/413403.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/andresv/comments/413403.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/andresv/comments/commentRss/413403.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/andresv/archive/2005/06/16/413403.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">4</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/andresv/services/trackbacks/413403.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/andresv/rss.aspx">Andru's WebLog</source>
+      <content>
+        <p>
+          <font face="Tahoma" size="2">Today I started the performance analysis of <a href="http://workspaces.gotdotnet.com/retina">Retina.NET </a>and mostly obtained the expected results, and a couple of surprises.</font>
+        </p>
+        <p>
+          <font face="Tahoma" size="2">I will not surprise anyone if the results indicates that reflection is paying a relative high cost when retrieving an entity from storage. It was expected and the profiling shows it crystal clear.</font>
+        </p>
+        <p>
+          <font face="Tahoma" size="2">The test consisted on retrieving a medium complexity entity called "User" from an MSSQL 2005 database. The test was run 15 times and each run consisted of saving a new entity and retrieving it 1000 times.</font>
+        </p>
+        <p>
+          <font face="Tahoma" size="2">This "User" entity has 12 properties (mostly strings) and a child entity of type "Currency" that is configured to use lazy load. The entity also has several constrints and triggers configured. If you want to see the code of the "User" class you can open the "Test" project in the Retina.NET VS.NET solution and look for the "User.cs" file.</font>
+        </p>
+        <p>
+          <font face="Tahoma" size="2">Using a profiler I obtained the results I wanted, and here I show a simplified execution tree and the most important discoveries:</font>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <u>
+            <span lang="ES">Retina v1.0.0.6<span style="mso-tab-count: 8">                                                                                 </span>Inclusive<span style="mso-tab-count: 1">          </span>Exclusive<n0:p xmlns:n0="o"/></span>
+          </u>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <span lang="ES">
+            <n0:p xmlns:n0="o"> </n0:p>
+          </span>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt 0.5in; TEXT-INDENT: -0.25in; mso-list: l0 level1 lfo1; tab-stops: list -27.0pt">
+          <span lang="ES" style="FONT-FAMILY: Symbol; mso-fareast-font-family: Symbol; mso-bidi-font-family: Symbol">
+            <span style="mso-list: Ignore">Â·<span style="FONT: 7pt 'Times New Roman'">         </span></span>
+          </span>
+          <span lang="ES">InternalDataStoreBroker.Retrieve <span style="mso-tab-count: 5">                                          </span>100%<span style="mso-tab-count: 2">               </span>0.2%</span>
+        </p>
+        <ul style="MARGIN-TOP: 0in" type="disc">
+          <ul style="MARGIN-TOP: 0in" type="circle">
+            <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level2 lfo1; tab-stops: list 1.0in">
+              <span lang="ES">Entity.ResetIsDirty<span style="mso-tab-count: 6">                                                          </span>9.5%<span style="mso-tab-count: 2">                </span>0.3%</span>
+            </li>
+            <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level2 lfo1; tab-stops: list 1.0in">
+              <span lang="ES">BaseEntityPersister.Retrieve<span style="mso-tab-count: 5">                                            </span>89.2%<span style="mso-tab-count: 2">              </span>0.7%</span>
+              <ul style="MARGIN-TOP: 0in" type="square">
+                <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level3 lfo1; tab-stops: list 1.5in">
+                  <span lang="ES">IDbCommand.ExecuteReader<span style="mso-tab-count: 3">                               </span>42.6%<span style="mso-tab-count: 2">              </span>0.1%</span>
+                </li>
+                <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level3 lfo1; tab-stops: list 1.5in">
+                  <b style="mso-bidi-font-weight: normal">
+                    <span lang="ES">Activator.CreateInstance<span style="mso-tab-count: 4">                                  </span>15.4%<span style="mso-tab-count: 2">             </span>0.3%<n0:p xmlns:n0="o"/></span>
+                  </b>
+                </li>
+                <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level3 lfo1; tab-stops: list 1.5in">
+                  <span lang="ES">BaseEntityPersister.RetrieveChildEntities<span style="mso-tab-count: 2">               1</span>2.8%<span style="mso-tab-count: 2">              </span>3.9%</span>
+                </li>
+                <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level3 lfo1; tab-stops: list 1.5in">
+                  <b style="mso-bidi-font-weight: normal">
+                    <span lang="ES">EntityStorageDefn.PopulateEntity<span style="mso-tab-count: 3">                   </span>20.2%<span style="mso-tab-count: 2">             </span>6%<n0:p xmlns:n0="o"/></span>
+                  </b>
+                  <ul style="MARGIN-TOP: 0in" type="disc">
+                    <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level4 lfo1; tab-stops: list 2.0in">
+                      <span lang="ES">SqlDataReader.get_Item<span style="mso-tab-count: 3">                            </span>47.1%<span style="mso-tab-count: 2">              </span>4.9%</span>
+                    </li>
+                    <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level4 lfo1; tab-stops: list 2.0in">
+                      <b style="mso-bidi-font-weight: normal">
+                        <span lang="ES">EntityMember.SetValue<span style="mso-tab-count: 3">                         </span>40.3%<span style="mso-tab-count: 2">             </span>8.5%<n0:p xmlns:n0="o"/></span>
+                      </b>
+                      <ul style="MARGIN-TOP: 0in" type="circle">
+                        <li class="MsoNormal" style="MARGIN: 0in 0in 0pt; mso-list: l0 level5 lfo1; tab-stops: list 2.5in">
+                          <span lang="ES">Reflection.FieldInfo.SetValue<span style="mso-tab-count: 1">           </span>91.5%<span style="mso-tab-count: 2">              </span>4.5%</span>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </ul>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt"><font face="Tahoma" size="2"/> </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <font face="Tahoma" size="2">The test was run 15 times on my dev machine (P4 2.0Gz, 1Gb Ram) and the average execution time for retrieving 1000 entities was 1564.60ms (1.54 for each entity), not too shaby at all for absolutely no tunning.</font>
+        </p>
+        <p> </p>
+        <p>
+          <font face="Tahoma" size="2">Let's go back to the execution tree. I marked in bold the entries that deserve more attention, so move on to explain a little more of what is going on:</font>
+        </p>
+        <ul>
+          <li>
+            <font face="Tahoma" size="2">Of the total retrieve time 9.5% is spent in the "Entity.ResetIsDirty" method. Well, that's a surprise. I will have to evaluate carefully this to get rid of this time. Maybe the call to this method is totally innecesary because it only makes sure that all newly retrieved entitied are flagged as non-dirty.</font>
+          </li>
+          <li>
+            <font face="Tahoma" size="2">Inside the "BaseEntityPersister.Retrieve" method we see that 42.6% of the time is spent in executing the reader. Nothing to do here. The rest of the time is used in creating the new entity (Activator.CreateInstance), populating the entity (filling its properties from the reader) and retrieving child entities.</font>
+          </li>
+          <li>
+            <font face="Tahoma" size="2">The creation of the entity by using reflection is consuming 15.4% of the retrieve time. We can do better than that. I think that we can use some factoy pattern here so each entity is created faster and avoid reflection.</font>
+          </li>
+          <li>
+            <font face="Tahoma" size="2">The population of the entity eats 20.2% of the total retrieve time, and nearly half of that time is used by setting the read values on the entity properties. The rest of the time is used reading from the reader, so we can't do much in this area. As I mentioned before I will make some tests using delegates for setting/getting entity values as they are some orders of magnitude faster than reflection. Whidbey have some more tricks in the sleeve about this, but not rush things here.</font>
+          </li>
+        </ul>
+        <p>
+          <font face="Tahoma" size="2">Well, as can be seen there are plenty of things to do about performance in Retina.NET, but all in all the times measured not seems to be that bad. It feels pretty fast indeed....</font>
+        </p>
+        <p>
+          <font face="Tahoma" size="2">I will keep you posted on the advances of Retina.NET in this department. As always, any comments are welcome.</font>
+        </p>
+        <p>
+          <font face="Tahoma" size="2">Best regards,</font>
+        </p>
+        <p>
+          <font face="Tahoma" size="2">AndrÃ©s G Vettori<br/>MCSE/MCSD/MCT<br/>Leader of the C# Community of the </font>
+          <a href="http://www.mug.org.ar/">
+            <font face="Tahoma" color="#223355" size="2">Microsoft Users Group Argentina</font>
+          </a>
+        </p>
+        <p/>
+        <img src="http://weblogs.asp.net/andresv/aggbug/413403.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Andrés Vettori</dc:creator>
+    </item>
+    <item>
+      <title>What is a wiki, in the end???</title>
+      <link>http://weblogs.asp.net/cazzu/archive/2005/06/16/WhatIsAWiki.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 20:26:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/cazzu/archive/2005/06/16/WhatIsAWiki.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/cazzu/comments/413400.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/cazzu/comments/commentRss/413400.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/cazzu/archive/2005/06/16/WhatIsAWiki.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">2</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/cazzu/services/trackbacks/413400.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/cazzu/rss.aspx">eXtensible mind</source>
+      <content>Is it the format? The idea of collaborative editing? Other features? <a href="http://en.wikipedia.org/wiki/Wikipedia:Overview_FAQ#What_is_Wiki.3F">From the Wikipedia, the definition is</a>:<br/> <blockquote> A <i><a href="http://en.wikipedia.org/wiki/Wiki" title="Wiki">wiki</a></i> is a collaborative <b>collection</b> of interlinked web pages, all of which can be visited and edited by anyone at any time (<a href="http://en.wikipedia.org/wiki/Collaborative_software" title="Collaborative software">collaborative software</a>). <a href="http://en.wikipedia.org/wiki/Ward_Cunningham" title="Ward Cunningham">Ward Cunningham</a> invented the concept and software. You could even edit this page by clicking the "edit" link on the third tab above, or edit only a section by clicking on "[edit]" to its right! If you don't have anything to add or correct on this page and you just want to see how it works, try out the <a href="http://en.wikipedia.org/wiki/Wikipedia:Sandbox" title="Wikipedia:Sandbox">Wikipedia:Sandbox</a>. See also <a href="http://en.wikipedia.org/wiki/Wikipedia:Editing_FAQ" title="Wikipedia:Editing FAQ">Wikipedia:Editing FAQ</a> and <a href="http://en.wikipedia.org/wiki/WikiWiki" title="WikiWiki">WikiWiki</a>.</blockquote> <p>So you can see that there's no reference whatesoever to the format. <br/> I know I hate the format (to make a nicely formatted table header with a bold title with a link, just type ||~*[--/?mylink?;-=+]}||... yeah, right.... even worse is that no two engines implement the same formatting rules)</p><p> I know <a href="http://clariusconsulting.net">we'll something about it</a>.<br/> </p> <img src="http://weblogs.asp.net/cazzu/aggbug/413400.aspx" width="1" height="1"/></content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Daniel Cazzulino</dc:creator>
+    </item>
+    <item>
+      <title>Quick computer shortcuts to Accelerating Excel</title>
+      <link>http://weblogs.asp.net/SBehera/archive/2005/06/17/413394.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 19:44:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/SBehera/archive/2005/06/17/413394.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/SBehera/comments/413394.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/SBehera/comments/commentRss/413394.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/SBehera/archive/2005/06/17/413394.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/SBehera/services/trackbacks/413394.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/SBehera/rss.aspx">Suresh Behera</source>
+      <content>
+        <p>
+          <font face="Verdana" color="#0000ff" size="2">Nice shortcuts for excel </font>
+        </p>
+        <p> </p>
+        <table class="dataTable" id="EABAA" cellspacing="0" cellpadding="0">
+          <thead>
+            <tr class="stdHeader" valign="top">
+              <td id="colEBBABAA" width="50%">
+                <font face="Verdana" color="#0000ff" size="2">To...</font>
+              </td>
+              <td id="colEABABAA" style="BORDER-RIGHT: #cccccc 1px solid" width="50%">
+                <font face="Verdana" color="#0000ff" size="2">Use this shortcut</font>
+              </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="record" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Move right to left, cell by cell </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Tab </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="evenRecord" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Move up and down, cell by cell </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Enter </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="record" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Erase data in current cell </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Backspace </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="evenRecord" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Return to the beginning of the row </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Home </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="record" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Enter the date </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Ctrl + ; (semicolon) </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="evenRecord" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Enter the time </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Ctrl + Shift + : (colon) </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="record" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Start a formula </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">= (equal sign) </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="evenRecord" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Check the spelling of titles or words within the cells </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">F7 </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="record" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Find out about the style within the cell </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">ALT + ' (apostrophe) </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="evenRecord" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Display the Format Cells dialog box </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Ctrl + 1 </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="record" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Apply the general number format </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Ctrl + Shift + ~ </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="evenRecord" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Turn numbers into dollars </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Ctrl + Shift + $ </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="record" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Make numbers a percentage </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Ctrl + Shift + % </font>
+                </p>
+              </td>
+            </tr>
+            <tr class="evenRecord" valign="top">
+              <td>
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Apply a border </font>
+                </p>
+              </td>
+              <td style="BORDER-RIGHT: #cccccc 1px solid">
+                <p class="lastInCell">
+                  <font face="Verdana" color="#0000ff" size="2">Ctrl + Shift + &amp; </font>
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          <font face="Verdana" color="#0000ff" size="2">For more Check this link </font>
+        </p>
+        <p>
+          <a href="http://www.microsoft.com/athome/moredone/compshortcuts.mspx#EBAA">
+            <font face="Verdana" color="#0000ff" size="2">http://www.microsoft.com/athome/moredone/compshortcuts.mspx#EBAA</font>
+          </a>
+        </p>
+        <p>
+          <font face="Verdana" color="#0000ff" size="2">Cheers !!!</font>
+        </p>
+        <p>
+          <font face="Verdana" color="#0000ff" size="2">Suresh Behera</font>
+        </p>
+        <img src="http://weblogs.asp.net/SBehera/aggbug/413394.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Suresh Behera</dc:creator>
+    </item>
+    <item>
+      <title>I got married!</title>
+      <link>http://weblogs.asp.net/rchartier/archive/2005/06/16/413381.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 18:36:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/rchartier/archive/2005/06/16/413381.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/rchartier/comments/413381.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/rchartier/comments/commentRss/413381.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/rchartier/archive/2005/06/16/413381.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">7</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/rchartier/services/trackbacks/413381.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/rchartier/rss.aspx">Rob Chartier ~ Contemplation...</source>
+      <content>
+        <p>Katerina and I finally tied the knot - June 4, 2005.  Excellent turn out, nothing big went wrong, what an awesome day!</p>
+        <p><a href="http://www.chartier-family.com/ngallery/albums/136.aspx">Some pictures here...</a> (I will update them as more friends and family send them in to me)</p>
+        <p>There was a delay in my posting to my blog because of the obvious rush around the date.  We got hitched, moved in with each other, AND went on a quick (1 week) honeymoon into the interior of BC - Penticton, Kelowna, Osoyoos, etc.  </p>
+        <p>For those that are wondering about kids, well it is in the 5 year plan, late, but still there.  ;)</p>
+        <p> </p>
+        <img src="http://weblogs.asp.net/rchartier/aggbug/413381.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Robert Chartier</dc:creator>
+    </item>
+    <item>
+      <title>ReverseDOS in Community Server</title>
+      <link>http://weblogs.asp.net/cfrazier/archive/2005/06/16/413379.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 18:31:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/cfrazier/archive/2005/06/16/413379.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/cfrazier/comments/413379.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/cfrazier/comments/commentRss/413379.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/cfrazier/archive/2005/06/16/413379.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">1</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/cfrazier/services/trackbacks/413379.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/cfrazier/rss.aspx">.NET Blog - Chris Frazier Style</source>
+      <content>
+        <p>After another slew of referrer/comment spam that showed up in my blog this
+morning, I went ahead and downloaded Mike's <a href="http://angrypets.com/tools/rdos/">ReverseDOS</a>.</p>
+        <p>I followed the steps outlined for setup, but it didn't quite work the way it
+was outlined at first - I got the dreaded "yellow screen of death". This was due
+to the entries that I had made in the web.config. So I looked at the entries
+that were already in there, and I noticed that some <span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">section/</span><span style="COLOR: blue">&gt;</span> nodes were added to the <span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">system.web/</span><span style="COLOR: blue">&gt;</span> node. Moving the default configuration from
+looking like this:</p>
+        <pre><span style="COLOR: blue">&lt;</span>!-- copy and paste the following code --<span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">configSections</span><span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">sectionGroup</span><span style="COLOR: red">name</span>="<span style="COLOR: dodgerblue">AngryPets</span>" <span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">section</span><span style="COLOR: red">name</span>="<span style="COLOR: dodgerblue">ReverseDOS</span>" <span style="COLOR: red">type</span>="<span style="COLOR: dodgerblue">AngryPets.Web.Frameworks.ReverseDOS.FilterConfigHandler, AngryPets.Web.Frameworks.ReverseDOS</span>" /<span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span>/<span style="COLOR: maroon">sectionGroup</span><span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span>/<span style="COLOR: maroon">configSections</span><span style="COLOR: blue">&gt;</span></pre>
+        <p class="media">Instead, mine now looks like this:</p>
+        <pre><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">sectionGroup</span><span style="COLOR: red">name</span>="<span style="COLOR: dodgerblue">system.web</span>"<span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">section</span><span style="COLOR: red">name</span>="<span style="COLOR: dodgerblue">membership</span>" <span style="COLOR: red">type</span>="<span style="COLOR: dodgerblue">Microsoft.ScalableHosting.Configuration.MembershipConfigHandler, MemberRole, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b7c773fb104e7562</span>"/<span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">section</span><span style="COLOR: red">name</span>="<span style="COLOR: dodgerblue">roleManager</span>" <span style="COLOR: red">type</span>="<span style="COLOR: dodgerblue">Microsoft.ScalableHosting.Configuration.RolesConfigHandler, MemberRole, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b7c773fb104e7562</span>"/<span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">section</span><span style="COLOR: red">name</span>="<span style="COLOR: dodgerblue">profile</span>" <span style="COLOR: red">type</span>="<span style="COLOR: dodgerblue">Microsoft.ScalableHosting.Configuration.ProfileConfigHandler, MemberRole, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b7c773fb104e7562</span>"/<span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">section</span><span style="COLOR: red">name</span>="<span style="COLOR: dodgerblue">anonymousIdentification</span>" <span style="COLOR: red">type</span>="<span style="COLOR: dodgerblue">Microsoft.ScalableHosting.Configuration.AnonymousIdConfigHandler, MemberRole, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b7c773fb104e7562</span>"/<span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span><span style="COLOR: maroon">section</span><span style="COLOR: red">name</span>="<span style="COLOR: dodgerblue">ReverseDOS</span>" <span style="COLOR: red">type</span>="<span style="COLOR: dodgerblue">AngryPets.Web.Frameworks.ReverseDOS.FilterConfigHandler, AngryPets.Web.Frameworks.ReverseDOS</span>" /<span style="COLOR: blue">&gt;</span><span style="COLOR: blue">&lt;</span>/<span style="COLOR: maroon">sectionGroup</span><span style="COLOR: blue">&gt;</span></pre>
+        <p class="media">And I of course moved the ReverseDOS node to be under system.web.
+We'll see how this pans out, but I thought I would put it out there just in case
+someone else was having issues with it.</p>
+        <p class="media">[ Currently Playing : Stinkfist - Tool - Aenima (5:10)
+]</p>
+        <img src="http://weblogs.asp.net/cfrazier/aggbug/413379.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Christopher Frazier</dc:creator>
+    </item>
+    <item>
+      <title>2-for-1 offer on Carl Franklin's July VB.NET Master Class</title>
+      <link>http://weblogs.asp.net/CFranklin/archive/2005/06/16/413377.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 18:28:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/CFranklin/archive/2005/06/16/413377.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/CFranklin/comments/413377.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/CFranklin/comments/commentRss/413377.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/CFranklin/archive/2005/06/16/413377.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">4</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/CFranklin/services/trackbacks/413377.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/CFranklin/rss.aspx">Carl Franklin</source>
+      <content>I don't usually post these types of things to my blog, but I think some of my blog readers may appreciate it. <br/> <br/> I noticed that nobody was signing up for my ASP.NET Master Classes for the last 3 months or so, and next month was no exception. I attribute this to the fact that there is so much ASP.NET 2.0 hype relative to VB.NET 2.0 hype. Also, people adopt server technology faster than client technology.<br/> <br/> So I'm instead teaching a VB.NET Master Class (which has been well-attended all along) from July 11-15 and I'm extending a deal to people who read my blog, MSDN Event attendees, and INETA user group members. For you, I'm doing a 2-for-1 special. Go ahead and sign up normally, but then <a href="http://www.franklins.net/contact.asp">contact us</a> and tell us you want to take advantage of the July 2-for-1 deal.<br/> <br/> The class is normally $2300, but I'm extending this 2-for-1 deal because of the short notice.<br/> <br/> Details on this 5-day hands-on class are at <a href="http://franklins.net/vb_net_training.aspx">http://franklins.net/vb_net_training.aspx</a><br/> <br/> The Southeastern Connecticut coast is beautiful this time of year, and the food is great!<br/> I should also tell you that every attendee gets a DVD with camtasia movies that I record during the class.<br/> <br/> Carl<br/> <img src="http://weblogs.asp.net/CFranklin/aggbug/413377.aspx" width="1" height="1"/></content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Carl Franklin</dc:creator>
+    </item>
+    <item>
+      <title>Great set of icons</title>
+      <link>http://weblogs.asp.net/rosherove/archive/2005/06/16/413334.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 18:12:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/rosherove/archive/2005/06/16/413334.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/rosherove/comments/413334.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/rosherove/comments/commentRss/413334.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/rosherove/archive/2005/06/16/413334.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">3</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/rosherove/services/trackbacks/413334.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/rosherove/rss.aspx">ISerializable</source>
+      <content>
+        <div><a href="http://www.pixelgirlpresents.com/icons.php?page=4&amp;cat=pc">This is a great set of downloadable icons</a>, many of which available for Windows.</div>
+        <div>The link was sent to me by my lovely wife, Tal. <em>(See if you can spot one familiar icon on the list...)</em></div>
+        <img src="http://weblogs.asp.net/rosherove/aggbug/413334.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Roy Osherove</dc:creator>
+    </item>
+    <item>
+      <title>Mondays tonight (Thurs) at 10pm, Dnr Tomorrow at 6pm</title>
+      <link>http://weblogs.asp.net/CFranklin/archive/2005/06/16/413329.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 17:12:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/CFranklin/archive/2005/06/16/413329.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/CFranklin/comments/413329.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/CFranklin/comments/commentRss/413329.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/CFranklin/archive/2005/06/16/413329.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/CFranklin/services/trackbacks/413329.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/CFranklin/rss.aspx">Carl Franklin</source>
+      <content>Mondays is being recorded live tonight at 10pm Eastern.
+
+DNR tomorrow night at 6pm Eastern
+
+Join us:
+http://www.franklins.net/calldotnetrocks
+<img src="http://weblogs.asp.net/CFranklin/aggbug/413329.aspx" width="1" height="1"/></content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Carl Franklin</dc:creator>
+    </item>
+    <item>
+      <title>Inferring in parameter types in SqlCommand: does not work with Nullable&lt;T&gt; values</title>
+      <link>http://weblogs.asp.net/cazzu/archive/2005/06/16/NullableTSQLParam.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 15:55:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/cazzu/archive/2005/06/16/NullableTSQLParam.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/cazzu/comments/413321.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/cazzu/comments/commentRss/413321.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/cazzu/archive/2005/06/16/NullableTSQLParam.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">1</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/cazzu/services/trackbacks/413321.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/cazzu/rss.aspx">eXtensible mind</source>
+      <content>SqlCommand can infer parameter types from their values. It has always been that way. Therefore, you don't need to care about the mapping between CLR types and SQL types. In Whidbey (.NET v2.0), nullable types (Nullable&lt;T&gt; generic class) were introduced to better support database scenarios, where a field that would map to a CLR value type can actually be null. I would have expected the same type inference on parameters to be performed for these types too, basically resolving to the underlying type (i.e. Int32 in a Nullable&lt;int&gt;) and having the parameter set to null if it didn't contain a value. <br/> <br/> Turns out that if you try to use parameter inference with Nullable&lt;T&gt;, you will get an exception saying that the managed provider does not know how to map the Nullable&lt;T&gt; to a native type. As usual, <a href="http://lab.msdn.microsoft.com/ProductFeedback/viewFeedback.aspx?feedbackid=e4c5e9a3-9fac-4eab-98c0-776e85250d0c">I reported the bug</a>, which they resolved <b>*By Design*</b> (hopefully they will change the resolution to <b>Posponed</b>, which is what I would expect given their own answer to the issue). Hence, it's not supported and will not be in Whidbey. Too bad as auto-generated data access layers now will have to account for this. And it's bad because although the introduccion of the Nullable&lt;T&gt; made it easier to generate the reading piece, it now complicates the querying and updating :(.<img src="http://weblogs.asp.net/cazzu/aggbug/413321.aspx" width="1" height="1"/></content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Daniel Cazzulino</dc:creator>
+    </item>
+    <item>
+      <title>Learn to make SharePoint Web Parts work together</title>
+      <link>http://weblogs.asp.net/pleloup/archive/2005/06/16/413317.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 15:33:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/pleloup/archive/2005/06/16/413317.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/pleloup/comments/413317.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/pleloup/comments/commentRss/413317.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/pleloup/archive/2005/06/16/413317.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">1</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/pleloup/services/trackbacks/413317.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/pleloup/rss.aspx">help.net</source>
+      <content>
+        <p>
+          <font face="Verdana" size="2">Another great article by Dino Esposito. This time Dino explore </font>
+          <a href="http://www.theserverside.net/articles/showarticle.tss?id=WebParts2">
+            <font face="Verdana" size="2">Sharepoint and Web Parts</font>
+          </a>
+          <font face="Verdana" size="2">. Cool stuff</font>
+        </p>
+        <p><font face="Verdana" size="2"/> </p>
+        <img src="http://weblogs.asp.net/pleloup/aggbug/413317.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Paschal L</dc:creator>
+    </item>
+    <item>
+      <title>Forum Discussion: How to clean inside the PC&#8217;s tower &#8211; Tweak XP Forums.         </title>
+      <link>http://weblogs.asp.net/Expertzone/archive/2005/06/16/413315.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 15:24:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/Expertzone/archive/2005/06/16/413315.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/Expertzone/comments/413315.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/Expertzone/comments/commentRss/413315.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/Expertzone/archive/2005/06/16/413315.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/Expertzone/services/trackbacks/413315.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/Expertzone/rss.aspx">Windows XP Expert Zone Community WebLog</source>
+      <content>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <font face="Times New Roman">This blog entry was gleaned from </font>
+          <a href="http://forum.tweakxp.com/forum/">
+            <font face="Times New Roman">TweakXP.com<span style="mso-spacerun: yes">  </span>Forums</font>
+          </a>
+          <span style="FONT-SIZE: 10pt; COLOR: navy; FONT-FAMILY: Arial">, a </span>
+          <span style="COLOR: navy">
+            <a href="http://www.microsoft.com/windowsxp/expertzone/relatedsites.mspx">
+              <font face="Times New Roman">Featured Community </font>
+            </a>
+          </span>
+          <font face="Times New Roman">Web site.<span style="FONT-SIZE: 10pt; COLOR: navy; FONT-FAMILY: Arial"><n0:p xmlns:n0="o"/></span></font>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <n0:p xmlns:n0="o">
+            <font face="Times New Roman"> </font>
+          </n0:p>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <font face="Times New Roman">Whatâ€™s the best way to clean inside the PCâ€™s tower â€“ compressed air, cotton swabs, or something else?</font>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <n0:p xmlns:n0="o">
+            <font face="Times New Roman"> </font>
+          </n0:p>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <font face="Times New Roman">by Joli Ballew</font>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <font face="Times New Roman">Expert Zone Columnist</font>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <n0:p xmlns:n0="o">
+            <font face="Times New Roman"> </font>
+          </n0:p>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <span style="FONT-SIZE: 9pt; FONT-FAMILY: Verdana">
+            <a href="http://www.microsoft.com/info/cpyright.mspx">The items on this WebLog are provided as is with no warranties and confer no rights. See Microsoft Information on Terms of Use.</a>
+          </span>
+        </p>
+        <img src="http://weblogs.asp.net/Expertzone/aggbug/413315.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Expertzone</dc:creator>
+    </item>
+    <item>
+      <title>Troubleshooting Tip: Learn about the Microsoft Windows Malicious Software Removal Tool &#8211; Bink.nu.   </title>
+      <link>http://weblogs.asp.net/Expertzone/archive/2005/06/16/413314.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 15:23:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/Expertzone/archive/2005/06/16/413314.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/Expertzone/comments/413314.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/Expertzone/comments/commentRss/413314.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/Expertzone/archive/2005/06/16/413314.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/Expertzone/services/trackbacks/413314.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/Expertzone/rss.aspx">Windows XP Expert Zone Community WebLog</source>
+      <content>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <font face="Times New Roman">This blog entry was gleaned from</font>
+          <span style="FONT-SIZE: 10pt; COLOR: navy; FONT-FAMILY: Arial"><a href="http://bink.nu/">Bink.nu</a>, a </span>
+          <span style="COLOR: navy">
+            <a href="http://www.microsoft.com/windowsxp/expertzone/relatedsites.mspx">
+              <font face="Times New Roman">Featured Community </font>
+            </a>
+          </span>
+          <font face="Times New Roman">Web site.</font>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <n0:p xmlns:n0="o">
+            <font face="Times New Roman"> </font>
+          </n0:p>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <n0:p xmlns:n0="o"/>
+          <span style="FONT-SIZE: 9pt; COLOR: black; FONT-FAMILY: Verdana">This tool checks your computer for infection by specific, prevalent malicious software (including Blaster, Sasser, and Mydoom) and helps to remove the infection if it is found. Microsoft will release an updated version of this tool on the second Tuesday of each month.<n0:p xmlns:n0="o"/></span>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt"><span style="mso-spacerun: yes"/> </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <font face="Times New Roman">by Joli Ballew</font>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <font face="Times New Roman">Expert Zone Columnist</font>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <n0:p xmlns:n0="o">
+            <font face="Times New Roman"> </font>
+          </n0:p>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <span style="FONT-SIZE: 9pt; FONT-FAMILY: Verdana">
+            <a href="http://www.microsoft.com/info/cpyright.mspx">The items on this WebLog are provided as is with no warranties and confer no rights. See Microsoft Information on Terms of Use.</a>
+            <n0:p xmlns:n0="o"/>
+          </span>
+        </p>
+        <p class="MsoNormal" style="MARGIN: 0in 0in 0pt">
+          <span style="FONT-SIZE: 9pt; FONT-FAMILY: Verdana">
+            <n0:p xmlns:n0="o"> </n0:p>
+          </span>
+        </p>
+        <img src="http://weblogs.asp.net/Expertzone/aggbug/413314.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Expertzone</dc:creator>
+    </item>
+    <item>
+      <title>Scoble throws it right back at Joel.</title>
+      <link>http://weblogs.asp.net/jclarknet/archive/2005/06/16/413297.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 13:56:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/jclarknet/archive/2005/06/16/413297.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/jclarknet/comments/413297.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/jclarknet/comments/commentRss/413297.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/jclarknet/archive/2005/06/16/413297.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">3</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/jclarknet/services/trackbacks/413297.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/jclarknet/rss.aspx">Jason Clark's Blog</source>
+      <content>
+        <p>Joel over at <a href="http://www.joelonsoftware.com/">Joel on software </a>threw out some interesting commentary about how life at FogBugz palace is, compared to the dismal rags over at Microsoft *laugh*.   <a href="http://radio.weblogs.com/0001011/2005/06/16.html#a10405">Scoble responded today </a>with a colorful synopsis of just how bad life is at Microsoft.  I don't know about Joel's developers, but I sit in front of a 22" Apple Cinema display and use a Dual 3.6 Xeon with 2GB of memory ,15K SCSI  and a Quadro 3400 FX at home.</p>
+        <p>On a side note, how does bug tracking software get titled as "painless project management"?  I've always wondered how you could classify a great bug tracking system as a project management system.  They may intertwine, but I don't see how you can micro-manage a project by bugs.  There is a lot more to the delivery software than stamping out bugs...</p>
+        <img src="http://weblogs.asp.net/jclarknet/aggbug/413297.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Jason Clark</dc:creator>
+    </item>
+    <item>
+      <title>Free Tech Books are always nice</title>
+      <link>http://weblogs.asp.net/grobinson/archive/2005/06/16/413281.aspx</link>
+      <pubDate>Thu, 16 Jun 2005 13:23:00 GMT</pubDate>
+      <guid isPermaLink="true">http://weblogs.asp.net/grobinson/archive/2005/06/16/413281.aspx</guid>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/grobinson/comments/413281.aspx</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://weblogs.asp.net/grobinson/comments/commentRss/413281.aspx</n0:commentRss>
+      <comments>http://weblogs.asp.net/grobinson/archive/2005/06/16/413281.aspx#comment</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">1</n0:comments>
+      <n0:ping xmlns:n0="http://madskills.com/public/xml/rss/module/trackback/">http://weblogs.asp.net/grobinson/services/trackbacks/413281.aspx</n0:ping>
+      <source url="http://weblogs.asp.net/grobinson/rss.aspx">Greg Robinson's Blog</source>
+      <content>
+        <p>
+          <a href="http://msdn.microsoft.com/vbasic/whidbey/introto2005/">
+            <font face="Arial" size="2">http://msdn.microsoft.com/vbasic/whidbey/introto2005/</font>
+          </a>
+        </p>
+        <img src="http://weblogs.asp.net/grobinson/aggbug/413281.aspx" width="1" height="1"/>
+      </content>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Greg Robinson</dc:creator>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,105 @@
+<h2>grid.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>Advanced grid control.</p>
+<hr/>
+
+<h3>Objects</h3>
+<ul>
+	<li><a href="#grid">Grid(element, autoNumber)</a></li>
+</ul>
+
+<h3>Methods</h3>
+<ul>
+	<li><a href="#createrow">Grid::createRow(data, [index])</a></li>
+	<li><a href="#createheader">Grid::createHeader(data)</a></li>
+	<li><a href="#appendheader">Grid::appendHeader(data, [index])</a></li>
+	<li><a href="#fromtable">Grid::fromTable(table)</a></li>
+	<li><a href="#addcell">Grid::row::addCell(data, [index])</a></li>
+	<li><a href="#removecolumn">Grid::removeColumn(index)</a></li>
+</ul>
+
+<h3>Constants</h3>
+<ul>
+	<li>Grid.ALIGN_CENTER</li>
+	<li>Grid.ALIGN_LEFT</li>
+	<li>Grid.ALIGN_RIGHT</li>
+	<li>Grid.SORT_NONE</li>
+	<li>Grid.SORT_ASC</li>
+	<li>Grid.SORT_DESC</li>
+	<li>Grid.TYPE_AUTO</li>
+	<li>Grid.TYPE_STRING</li>
+	<li>Grid.TYPE_NUMERIC</li>
+</ul>
+
+<h3>CSS classes</h3>
+<ul>
+	<li>.grid</li>
+	<li>.even</li>
+	<li>.odd</li>
+	<li>.hover</li>
+	<li>.index</li>
+	<li>.header_value</li>
+	<li>.row_value</li>
+</ul>
+
+<hr/>
+
+<h3><a name="grid">Grid(element, autoNumber)</a></h3>
+<p>Creates a grid as a child of <em>element</em>. If <em>autoNumber</em> is true, than the Grid will automatically add first, 
+auto-numbered column.</p>
+
+<h3><a name="createrow">Grid::createRow(data, [index])</a></h3>
+<p>Adds a row. If <em>index</em> is present, it specifies at which index new row should be inserted. <em>Data</em> 
+is an array of either values or objects. If objects are used, they should contain:</p>
+<ul>
+	<li>value - cell value</li>
+	<li>align - one of ALIGN_ constants</li>
+</ul>
+
+<h3><a name="createheader">Grid::createHeader(data)</a></h3>
+<p>Creates a header row. <em>Data</em> is an array of either values or objects. 
+If objects are used, they should contain:</p>
+<ul>
+	<li>value - cell value</li>
+	<li>sortable - whether this column is sortable</li>
+	<li>draggable - whether this column is draggable</li>
+	<li>resizable - whether this column is resizable</li>
+	<li>align - one of ALIGN_ constants</li>
+	<li>sort - one of SORT_ constants</li>
+	<li>type - one of TYPE_ constants</li>
+</ul>
+
+<h3><a name="appendheader">Grid::appendHeader(data, [index])</a></h3>
+<p>Adds a new header cell. If <em>index</em> is present, it specifies at which index new cell should be inserted. 
+Data are in same format as in <code>createHeader</code>.</p>
+
+<h3><a name="fromtable">Grid::fromTable(table)</a></h3>
+<p>Converts existing <em>table</em> into grid.</p>
+
+<h3><a name="addcell">Grid::row::addCell(data, [index])</a></h3>
+<p>Adds one cell to one row. If <em>index</em> is present, it specifies at which index new cell should be inserted. 
+Data are in same format as in <code>createRow</code>. This method should be called as <code>grid.rows[i].addCell()</code>.</p>
+
+<h3><a name="removecolumn">Grid::removeColumn(index)</a></h3>
+<p>Removes one column from grid.</p>

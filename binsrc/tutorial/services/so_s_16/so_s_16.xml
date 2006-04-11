@@ -1,0 +1,57 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-16">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>SOAP &amp; WSDL service</refname>
+    <refpurpose>Web Registration form exploiting global provinces and administrative divisions lookup service</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-16a">
+<title>Example overview</title>
+<para>This example demonstrates:</para>
+<itemizedlist mark="bullet">
+  <listitem>
+  Fetching a two-dimensional array from a SOAP service to populate a provinces list box.
+  </listitem>
+  <listitem>
+  The clients in this case is using AJAX.
+  </listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-16b">
+<title>Example</title>
+<itemizedlist mark="bullet">
+  <listitem>This example uses the <ulink url="../so_s_11/so_s_11.vsp">SO-S-11</ulink> for initial setup,
+  and demonstrates making a simple registration form.</listitem>
+  <listitem>Note: The tables and procedures are used from SO-S-11 example, so run SO-S-11 first.</listitem>
+  <listitem>The SOAP &amp; WSDL service are achieved by defining the /SOAP_SO_S_11 URL to have same functionality as using soap_server() and soap_wsdl() calls.</listitem>
+</itemizedlist>
+</refsect1>
+
+</refentry>

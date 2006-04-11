@@ -1,0 +1,182 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+ xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" 
+ xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:dime="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+ xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" 
+ xmlns:content="http://schemas.xmlsoap.org/ws/2002/04/content-type/" 
+ xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/" 
+ xmlns:plt="http://schemas.xmlsoap.org/ws/2003/05/partner-link/" 
+ xmlns:ns0="services.wsdl"
+ xmlns:wsa="http://schemas.xmlsoap.org/ws/2003/03/addressing"
+ xmlns:wsu="http://schemas.xmlsoap.org/ws/2002/07/utility"
+ xmlns:ns3="http://schemas.oracle.com/bpel"
+ xmlns:tns="http://localhost:6666/TimeSvc/services.wsdl"
+ targetNamespace="http://localhost:6666/TimeSvc/services.wsdl"
+ name="TimeSvc" xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+	<types>
+	<schema targetNamespace="services.wsdl"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+          <element name="CancelInterval" type="int"/>
+          <element name="Interval" type="int"/>
+          <element name="tWaitResponse" type="int"/>
+          <element name="tCancelWaitResponse" type="int"/>
+	</schema>
+	<schema targetNamespace="http://schemas.xmlsoap.org/ws/2003/03/addressing"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+	<import namespace='http://schemas.oracle.com/bpel' />
+	<import namespace='http://schemas.xmlsoap.org/ws/2002/07/utility' />
+          <complexType name="AttributedURI">
+              <simpleContent>
+                  <extension base="anyURI">
+                      <attribute ref="wsu:Id" use="optional"/>
+                      <attribute ref="ns3:rootId" use="optional"/>
+                      <attribute ref="ns3:parentId" use="optional"/>
+                      <attribute ref="ns3:priority" use="optional"/>
+                  </extension>
+              </simpleContent>
+          </complexType>
+          <complexType name="EndpointReferenceType">
+              <sequence>
+                  <element name="Address" type="anyURI"/>
+                  <element name="ReferenceProperties" type="wsa:ReferencePropertiesType" minOccurs="0"/>
+                  <element name="PortType" type="wsa:AttributedQName" minOccurs="0"/>
+                  <element name="ServiceName" type="wsa:ServiceNameType" minOccurs="0"/>
+              </sequence>
+              <attribute ref="wsu:Id"/>
+          </complexType>
+          <complexType name="ServiceNameType">
+              <simpleContent>
+                  <extension base="QName">
+                      <attribute name="PortName" type="NCName"/>
+                  </extension>
+              </simpleContent>
+          </complexType>
+          <complexType name="AttributedQName">
+              <simpleContent>
+                  <extension base="QName"/>
+              </simpleContent>
+          </complexType>
+          <complexType name="ReferencePropertiesType">
+              <sequence>
+                  <any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+              </sequence>
+          </complexType>
+          <element name="MessageID" type="wsa:AttributedURI"/>
+          <element name="ReplyTo" type="wsa:EndpointReferenceType"/>
+	</schema>
+	<schema targetNamespace="http://schemas.xmlsoap.org/ws/2002/07/utility"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+          <attribute name="Id" type="ID"/>
+	</schema>
+	<schema targetNamespace="http://schemas.oracle.com/bpel"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+          <attribute name="priority" type="string"/>
+          <attribute name="parentId" type="string"/>
+          <attribute name="rootId" type="string"/>
+	</schema>
+	</types>
+	<message name="tWaitRequest">
+		<part element="ns0:Interval" name="Interval" />
+	</message>
+	<message name="tWaitResponse">
+		<part element="ns0:tWaitResponse" name="parameters" />
+	</message>
+	<message name="tWaitReplyTo">
+		<part name="ReplyTo" element="wsa:ReplyTo" />
+	</message>
+	<message name="tWaitMessageID">
+		<part name="MessageID" element="wsa:MessageID" />
+	</message>
+	<message name="tCancelWaitRequest">
+		<part element="ns0:CancelInterval" name="CancelInterval" />
+	</message>
+	<message name="tCancelWaitResponse">
+		<part element="ns0:tCancelWaitResponse" name="parameters" />
+	</message>
+	<message name="tCancelWaitReplyTo">
+		<part name="ReplyTo" element="wsa:ReplyTo" />
+	</message>
+	<message name="tCancelWaitMessageID">
+		<part name="MessageID" element="wsa:MessageID" />
+	</message>
+	<portType name="TimeSvcPortType">
+		<operation name="tWait">
+			<input message="tns:tWaitRequest" name="tWaitRequest" />
+		</operation>
+		<operation name="tCancelWait">
+			<input message="tns:tCancelWaitRequest" name="tCancelWaitRequest" />
+		</operation>
+	</portType>
+	<binding name="TimeSvcDocLiteralBinding" type="tns:TimeSvcPortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<operation name="tWait">
+			<soap:operation soapAction="http://openlinksw.com/virtuoso/soap/schema#tWait" style="document" />
+			<input name="tWaitRequest">
+				<soap:body use="literal" />
+				<soap:header use="literal" message="tns:tWaitReplyTo" part="ReplyTo" />
+				<soap:header use="literal" message="tns:tWaitMessageID" part="MessageID" />
+			</input>
+		</operation>
+		<operation name="tCancelWait">
+			<soap:operation soapAction="http://openlinksw.com/virtuoso/soap/schema#tCancelWait" style="document" />
+			<input name="tCancelWaitRequest">
+				<soap:body use="literal" />
+				<soap:header use="literal" message="tns:tCancelWaitReplyTo" part="ReplyTo" />
+				<soap:header use="literal" message="tns:tCancelWaitMessageID" part="MessageID" />
+			</input>
+		</operation>
+	</binding>
+	<service name="TimeSvc">
+		<documentation>Virtuoso SOAP services</documentation>
+		<port name="TimeSvcDocLiteralPort" binding="tns:TimeSvcDocLiteralBinding">
+			<soap:address location="http://localhost:6666/TimeSvc" />
+		</port>
+	</service>
+	<portType name="onResultPortType">
+	    <operation name="onWait">
+		<input message="tns:tWaitResponse"/>
+	    </operation>
+	    <operation name="onCancelWait">
+		<input message="tns:tCancelWaitResponse"/>
+	    </operation>
+	</portType>
+	<plt:partnerLinkType name='TimeSvc'>
+		<plt:role name='TimeSvcProvider'>
+			<plt:portType name='tns:TimeSvcPortType'/>
+		</plt:role>
+		<plt:role name="TimeSvcRequester">
+		    <plt:portType name="tns:onResultPortType"/>
+		</plt:role>
+	</plt:partnerLinkType>
+</definitions>

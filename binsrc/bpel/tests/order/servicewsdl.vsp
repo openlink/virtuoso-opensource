@@ -1,0 +1,146 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?xml version="1.0"?><?vsp http_header ('Content-Type: text/xml\r\n'); ?>
+<definitions
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+ xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+ xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:dime="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+ xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+ xmlns:content="http://schemas.xmlsoap.org/ws/2002/04/content-type/"
+ xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/"
+ xmlns:ns1="http://temp.uri"
+ xmlns:wsa="http://schemas.xmlsoap.org/ws/2003/03/addressing"
+ xmlns:dl="http://temp.uri"
+ xmlns:tns="services.wsdl"
+ targetNamespace="services.wsdl"
+ xmlns:plt="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+ name="VirtuosoOrderService" xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+ <types>
+     <schema targetNamespace="http://temp.uri"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+	 <element name="orderItem" >
+	     <complexType>
+		 <sequence>
+		     <element minOccurs='1' maxOccurs='1' name='itemNo' type='xsd:int' />
+		     <element minOccurs='1' maxOccurs='1' name='quantity' type='xsd:int' />
+		 </sequence>
+	     </complexType>
+	 </element>
+	 <element name="orderItemResponse" >
+	     <complexType>
+		 <all>
+		     <element minOccurs='1' maxOccurs='1' name='itemNo' type='xsd:int' />
+		     <element minOccurs='1' maxOccurs='1' name='orderNo' type='xsd:int' />
+		 </all>
+	     </complexType>
+	 </element>
+     </schema>
+     <schema targetNamespace="http://schemas.xmlsoap.org/ws/2003/03/addressing"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+	 <element name="ReplyTo" type="wsa:EndpointReferenceType"/>
+	 <complexType name="EndpointReferenceType">
+	     <sequence>
+		 <element name="Address" type="anyURI"/>
+		 <element name="ReferenceProperties" type="wsa:ReferencePropertiesType" minOccurs="0"/>
+		 <element name="PortType" type="wsa:AttributedQName" minOccurs="0"/>
+		 <element name="ServiceName" type="wsa:ServiceNameType" minOccurs="0"/>
+	     </sequence>
+	     <attribute name="Id" type="xsd:string"/>
+	 </complexType>
+	 <complexType name="ServiceNameType">
+	     <simpleContent>
+		 <extension base="QName">
+		     <attribute name="PortName" type="NCName"/>
+		 </extension>
+	     </simpleContent>
+	 </complexType>
+	 <complexType name="AttributedQName">
+	     <simpleContent>
+		 <extension base="QName"/>
+	     </simpleContent>
+	 </complexType>
+	 <complexType name="ReferencePropertiesType">
+	     <sequence>
+		 <any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+	     </sequence>
+	 </complexType>
+     </schema>
+ </types>
+ <message name="orderItemRequest">
+     <part element="dl:orderItem" name="parameters" />
+ </message>
+ <message name="orderItemResponse">
+     <part element="dl:orderItemResponse" name="parameters" />
+ </message>
+ <message name="orderItemReplyTo">
+     <part name="ReplyTo" element="wsa:ReplyTo" />
+ </message>
+  <message name="OrderCallbackMessage">
+    <part name="payload" element="dl:orderItemResponse"/>
+  </message>
+ <portType name="OrderServiceDocLiteralPortType">
+     <operation name="orderItem">
+	 <input message="tns:orderItemRequest" name="orderItemRequest" />
+	 <output message="tns:orderItemResponse" name="orderItemResponse" />
+     </operation>
+ </portType>
+  <portType name="OrderCallback">
+    <operation name="onResult">
+      <input message="tns:OrderCallbackMessage"/>
+    </operation>
+  </portType>
+ <binding name="OrderServiceDocLiteralBinding" type="tns:OrderServiceDocLiteralPortType">
+     <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+     <operation name="orderItem">
+	 <soap:operation soapAction="http://temp.uri#orderItem" style="document" />
+	 <input name="orderItemRequest">
+	     <soap:body use="literal" />
+	     <soap:header use="literal" message="tns:orderItemReplyTo" part="ReplyTo" />
+	 </input>
+	 <output name="orderItemResponse">
+	     <soap:body use="literal" />
+	 </output>
+     </operation>
+ </binding>
+ <service name="VirtuosoOrderService">
+     <documentation>Virtuoso SOAP services</documentation>
+     <port name="OrderServiceDocLiteralPort" binding="tns:OrderServiceDocLiteralBinding">
+	 <soap:address location="http://localhost:<?= server_http_port ()?>/ordSvc" />
+     </port>
+ </service>
+
+ <plt:partnerLinkType name="OrderService">
+     <plt:role name="OrderServiceProvider">
+	 <plt:portType name="tns:OrderServiceDocLiteralPortType"/>
+     </plt:role>
+     <plt:role name="OrderServiceRequester">
+	 <plt:portType name="tns:OrderCallback"/>
+     </plt:role>
+ </plt:partnerLinkType>
+</definitions>

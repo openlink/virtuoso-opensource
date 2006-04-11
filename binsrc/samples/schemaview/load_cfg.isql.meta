@@ -1,0 +1,8 @@
+vhost_define(ppath=>'/vsp/', lpath=>'/', vsp_user=>'SCHEMAVIEW');
+
+INSERT INTO vsp_config VALUES('base', 'file://xmlsource');
+INSERT INTO vsp_config VALUES('schema_base', 'file://xmlsource');
+INSERT INTO vsp_config VALUES('version', '<VERSION>');
+INSERT INTO vsp_config VALUES('schema config', 'Validation=SGML FsaBadWs=IGNORE BuildStandalone=ENABLE MaxErrors=200');
+
+

@@ -1,0 +1,350 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <body>
+    <style><![CDATA[
+.page_tab
+{
+    background-color: #eaeaea;
+    text-align: left;
+    padding: 2px;
+    border: 1px solid black;
+}
+
+.page_tab_empty {
+    border-bottom:1px solid black;
+    border-left:1px solid black;
+    border-right:0;
+    border-top:0;
+}
+
+.page_tab_selected
+{
+    background-color: white;
+    text-align: left;
+    padding: 2px;
+    border-top:1px solid black;
+    border-left:1px solid black;
+    border-right:1px solid black;
+    border-bottom:0
+}
+
+.tab_body
+{
+    background-color: white;
+    padding: 2px;
+    border-bottom:1px solid black;
+    border-left:1px solid black;
+    border-right:1px solid black;
+    border-top:0
+}
+
+.emp_record
+{
+    background-color: white;
+    padding: 5px;
+    margin-bottom: 10px;
+    border-bottom:1px solid black;
+    border-left:1px solid black;
+    border-right:1px solid black;
+    border-top:1px solid black;
+}
+.emp_txt
+{
+  font-weight: bold;
+}
+]]></style>
+    <v:page xmlns:v="http://www.openlinksw.com/vspx/" name="tab_demo">
+      <v:variable name="empid" type="int" default="1" />
+      <H3>Browsing a Northwind demo Database using Tab control</H3>
+      <v:method name="astyle" arglist="in cmp varchar">
+	if (self.tab.tb_active is not null and self.tab.tb_active.vc_name = cmp)
+	  return 'page_tab_selected';
+	return 'page_tab';
+      </v:method>
+      <v:form type="simple" method="POST" name="f1">
+	<v:on-post>
+	  if (e.ve_initiator is not null and e.ve_initiator.vc_name = 'emp')
+	  {
+	  e.ve_initiator.vc_parent.vc_focus := 1;
+	  e.ve_initiator.vc_post (e);
+	  e.ve_initiator.vc_user_post (e);
+	  }
+	</v:on-post>
+	<table border="0" cellpadding="0" cellspacing="0" class="emp_record">
+	  <tr><td colspan="2">Employee:</td></tr>
+	  <v:form name="upf1" type="update" table="Demo.demo.Employees" if-not-exists="none">
+	    <v:key  column="EmployeeID" value="--self.empid" default="null" />
+	    <v:template name="updtmpl" type="if-exists">
+	      <tr>
+		<td>Id:
+		  <v:data-list name="emp" sql="select EmployeeID, LastName from Demo.demo.Employees"
+		    key-column="EmployeeID" value-column="EmployeeID" auto-submit="1" value="--self.empid">
+		    <v:on-post>
+		      if (e.ve_initiator = control)
+		      {
+		      self.empid := atoi(control.ufl_value);
+		      self.ds1.vc_reset ();
+		      self.ds2.vc_reset ();
+		      self.ds1.vc_data_bind (e);
+		      self.ds2.vc_data_bind (e);
+		      self.upf1.vc_data_bind (e);
+		      }
+		    </v:on-post>
+		  </v:data-list>
+		</td>
+		<td>&amp;nbsp;</td>
+		<td>
+		  Name:
+		  <span class="emp_txt">
+		  <v:label column="TitleOfCourtesy"/>
+		  <v:label column="FirstName"/>
+		  <v:label column="Lastname"/>
+		  </span>
+		</td>
+	      </tr>
+	      <tr>
+		<td>Region:
+		  <span class="emp_txt">
+		  <v:label column="Region" null-value="''"/>
+		  </span>
+		</td>
+		<td>&amp;nbsp;</td>
+		<td>City:
+		  <span class="emp_txt">
+		  <v:label column="City"/>
+		  </span>
+		</td>
+	      </tr>
+	      <tr>
+		<td>PostalCode:
+		  <span class="emp_txt">
+		  <v:label column="PostalCode"/>
+		  </span>
+		</td>
+		<td>&amp;nbsp;</td>
+		<td>Address:
+		  <span class="emp_txt">
+		  <v:label column="Address" null-value="''"/>
+		  </span>
+		</td>
+	      </tr>
+	      <tr>
+		<td>Country:
+		  <span class="emp_txt">
+		  <v:label column="Country" null-value="''"/>
+		  </span>
+		</td>
+		<td>&amp;nbsp;</td>
+		<td>HomePhone:
+		  <span class="emp_txt">
+		  <v:label column="HomePhone"/>
+		  </span>
+		</td>
+	      </tr>
+	    </v:template>
+	  </v:form>
+      </table>
+	<table border="0" cellpadding="0" cellspacing="0" width="50%">
+        <tr>
+	  <td class="<?V self.astyle ('template1') ?>">
+	    <v:button name="tab_switch_template1" action="simple" value="Customers" style="url" xhtml_style="text-decoration:none;"/>
+          </td>
+	  <td class="<?V self.astyle ('template2') ?>">
+            <v:button name="tab_switch_template2" action="simple" value="Orders" style="url" xhtml_style="text-decoration:none;"/>
+          </td>
+	  <td class="page_tab_empty" align="center" width="100%">
+	    <table cellpadding="0" cellspacing="0">
+	      <tr>
+		<td  width="100%">
+		</td>
+	      </tr>
+	     </table>
+	  </td>
+        </tr>
+	<v:tab name="tab" initial-active="template1" style="custom">
+          <v:template name="template1" type="simple">
+            <tr>
+	      <td class="tab_body" colspan="3">
+	    <div>
+	      <v:data-set name="ds2" nrows="10" scrollable="1" cursor-type="dynamic">
+		<v:sql>
+		  select c.CustomerID, c.CompanyName, count(o.OrderID) as OrdCount
+		  from Demo.demo.Orders o, Demo.demo.Customers c
+		  where o.EmployeeID = :empl and o.CustomerID = c.CustomerID
+		  group by c.CustomerID, c.CompanyName
+		  order by 1
+		</v:sql>
+		<v:param name="empl" value="--self.empid"/>
+		<table width="100%">
+		  <tr bgcolor="#eaeaea">
+		    <th>Customer ID</th>
+		    <th>Company Name</th>
+		    <th>Orders #</th>
+		    <th>Orders Price</th>
+		  </tr>
+		  <v:template name="rpt2" type="repeat">
+		    <v:template name="brw2" type="browse">
+		      <tr bgcolor="<?V case mod(self.ds2.ds_current_row.te_ctr,2) when 0 then 'white' else '#eaeaea' end ?>">
+			<td>
+			  <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+			</td>
+			<td>
+			  <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
+			</td>
+			<td align="right">
+			  <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%d"/>
+			</td>
+			<td align="right">
+			  <v:label value="--(select SUM(Quantity * UnitPrice * (1 - Discount)) from Demo.demo.Order_Details od, Demo.demo.Orders o where o.OrderID = od.OrderId and o.CustomerID = (control.vc_parent as vspx_row_template).te_rowset[0] and o.EmployeeID = self.empid)" format="%10.2f"/>
+			</td>
+		      </tr>
+		    </v:template>
+		  </v:template>
+		  <tr>
+		    <td>
+		      <v:button name="ds2_prev" value="&lt;&lt;" action="simple" style="url" xhtml_style="text-decoration:none;"/>
+		    </td>
+		    <td>
+		      <v:button name="ds2_next" value="&gt;&gt;" action="simple" style="url" xhtml_style="text-decoration:none;"/>
+		    </td>
+		</tr>
+		</table>
+	      </v:data-set>
+	    </div>
+	      </td>
+            </tr>
+          </v:template>
+          <v:template name="template2" type="simple">
+            <tr>
+              <td class="tab_body"  colspan="3">
+	    <div>
+	      <v:data-set name="ds1" nrows="10" scrollable="1" cursor-type="dynamic">
+		<v:sql>
+		  select o.OrderID, c.CompanyName as CustomerCompany, o.OrderDate, s.CompanyName as ShipperName
+		  from Demo.demo.Orders o, Demo.demo.Customers c, Demo.demo.Shippers s
+		  where o.EmployeeID = :empi and o.CustomerID = c.CustomerID and o.ShipVia = s.ShipperID
+		  order by 1
+		</v:sql>
+		<v:column name="OrderID"/>
+		<v:column name="CustomerCompany"/>
+		<v:column name="OrderDate"/>
+		<v:column name="ShipperName"/>
+		<v:param name="empi" value="--self.empid"/>
+		<table width="100%">
+		  <tr bgcolor="#eaeaea"><th>Order ID</th><th>Company Name</th><th>Order Date</th><th>Ship Via</th><th>Order Total</th></tr>
+		  <v:template name="rpt1" type="repeat">
+		    <v:template name="brw1" type="browse">
+		      <tr bgcolor="<?V case mod(self.ds1.ds_current_row.te_ctr,2) when 0 then 'white' else '#eaeaea' end ?>">
+			<td>
+			  <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%d"/>
+			</td>
+			<td>
+			  <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
+			</td>
+			<td>
+			  <v:label value="--datestring((control.vc_parent as vspx_row_template).te_rowset[2])"
+			    format="%.10s"/>
+			</td>
+			<td>
+			  <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[3]" format="%s"/>
+			</td>
+			<td align="right">
+			  <v:label value="--(select SUM(Quantity * UnitPrice * (1 - Discount)) from Demo.demo.Order_Details where OrderId = (control.vc_parent as vspx_row_template).te_rowset[0])" format="%10.2f"/>
+			</td>
+		      </tr>
+		      <tr bgcolor="<?V case mod(self.ds1.ds_current_row.te_ctr,2) when 0 then 'white' else '#eaeaea' end ?>">
+			  <v:tree name="t1" multi-branch="1" orientation="vertical"
+			    start-path="--(control.vc_parent as vspx_row_template).te_rowset[0]"
+			    root="ord_root_node" child-function="ord_child_node">
+			    <v:node-template name="n_tmpl">
+			      <td>
+				<v:button name="t1_toggle" action="simple" style="image" value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then '../plus.gif' else '../minus.gif' end"/>
+			      </td>
+			      <td colspan="4">
+				<table bgcolor="white" cellpadding="2" cellspacing="2">
+				  <v:template name="tmp1" type="simple" enabled="--((control.vc_parent as vspx_tree_node).tn_open)">
+				    <tr><th>Product Name</th><th>Quantity</th><th>UnitPrice</th></tr>
+				  </v:template>
+				  <v:node/>
+				</table>
+			      </td>
+			  </v:node-template>
+			  <v:leaf-template name="l_tmpl">
+			    <tr>
+			      <td>
+				<v:label name="lt1" value="--''">
+				  <v:after-data-bind>
+				    declare xt, xp any;
+				    xt := (control.vc_parent as vspx_tree_node).tn_element;
+				    xp := cast (xpath_eval ('//Product/Name/text()',xt) as varchar);
+				    control.ufl_value := xp;
+				  </v:after-data-bind>
+				</v:label>
+			      </td>
+			      <td align="right">
+				<v:label name="lt2" value="--''">
+				  <v:after-data-bind>
+				    declare xt, xp any;
+				    xt := (control.vc_parent as vspx_tree_node).tn_element;
+				    xp := cast (xpath_eval ('//Product/Quantity/text()',xt) as varchar);
+				    control.ufl_value := xp;
+				  </v:after-data-bind>
+				</v:label>
+			      </td>
+			      <td align="right">
+				<v:label name="lt3" value="--''">
+				  <v:after-data-bind>
+				    declare xt, xp any;
+				    xt := (control.vc_parent as vspx_tree_node).tn_element;
+				    xp := cast (xpath_eval ('//Product/UnitPrice/text()',xt) as varchar);
+				    control.ufl_value := xp;
+				  </v:after-data-bind>
+				</v:label>
+			      </td>
+			    </tr>
+			  </v:leaf-template>
+			  </v:tree>
+		      </tr>
+		    </v:template>
+		  </v:template>
+		  <tr>
+		    <td>
+		      <v:button name="ds1_prev" value="&lt;&lt;" action="simple" style="url" xhtml_style="text-decoration:none;"/>
+		    </td>
+		    <td>
+		      <v:button name="ds1_next" value="&gt;&gt;" action="simple" style="url" xhtml_style="text-decoration:none;"/>
+		    </td>
+		</tr>
+		</table>
+	      </v:data-set>
+	    </div>
+	      </td>
+            </tr>
+          </v:template>
+        </v:tab>
+      </table>
+    </v:form>
+    </v:page>
+  </body>
+</html>

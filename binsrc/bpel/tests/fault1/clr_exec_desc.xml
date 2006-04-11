@@ -1,0 +1,61 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="clrexec">
+  <refmeta>
+    <refentrytitle>BPEL</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+      <refname>.NET Execution</refname>
+      <refpurpose>.NET Execution BPEL4WS process</refpurpose>
+  </refnamediv>
+
+  <refsect1 id="clrexec1">
+    <title>Example</title>
+    <para>This example demonstrates how the C# code can be embedded in a BPEL process.
+    </para>
+    <para>The example contains .NET code which gets data from BPEL variable, prints string to the console and returns string.
+    </para>
+    <para>To build and run the example follow the steps bellow:</para>
+    <itemizedlist mark="bullet">
+      <listitem>
+        Initialize "CLRAssembliesDir" configuration field at BPEL UI 'Configuration' tab
+        with the directory name where the dlls from the distribution are located ( t.e. OpenLink.Data.VirtuosoClient.dll, virt_bpel4ws.dll etc).
+        If you have problems initializing this CLRAssembliesDir, ask your system administrator to initialize this directory for you
+        (and copy all needed DLLs there) or to tell you where this directory is located.
+      </listitem>
+      <listitem>Make sure you are running CLR or Mono enabled server (virtuoso-odbc-clr-t, virtuoso-odbc-mono-t, etc).</listitem>
+      <listitem>Login into the BPEL UI via http://host:port/BPELGUI.</listitem>
+     <listitem>
+       From the 'Home' tab page go to section 'Tasks' and click 'Upload Process' link.
+       Another way is to choose 'Processes' tab and go to the 'Process Upload' sub-tab.
+     </listitem>
+     <listitem>For the given entry form in the "Load Deployment Descriptor URI" field type 'http://host:port/BPELDemo/clr_exec/bpel.xml'.</listitem>
+     <listitem>Choose the 'Import Process' button.</listitem>
+     <listitem>Choose the 'Compile process' button.</listitem>
+     <listitem>If compilation succeeds, will go to the 'Processes' page where the process will be in the given processes list.</listitem>
+     <listitem>To test the process click "Test" in the listing. This goes to a page allowing you to enter a start message for creating a new instance of this process.</listitem>
+   </itemizedlist>
+ </refsect1>
+</refentry>

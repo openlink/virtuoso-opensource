@@ -1,0 +1,251 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!- -*- html -*- ->
+<?vsp adm_pre_page(lines);
+
+  if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Snapshot replication wizard">
+    <title>Snapshot Replication Source Tables</title>
+  </head>
+<?vsp adm_page_header('Snapshot Replications', 'snapshotreplication'); ?>
+<?include ../adm_js_check.vsp ?>
+
+<?vsp
+--dbg_obj_print ('admin_repl_main params : ', params);
+declare _tbl, _rtbl, _stat, _msg varchar;
+declare _idx, _cnt, _int integer;
+_int := atoi (get_keyword ('int', params, '10'));
+while (_rtbl := adm_next_checkbox ('TB_', params, _idx))
+  {
+    if (_rtbl <> '')
+      {
+        _stat := '00000'; _msg := '';
+        _tbl := '';
+	if ('' <> get_keyword ('Sync', params, ''))
+	  {
+	    exec (sprintf ('update snapshot "%I"."%I"."%I"', name_part (_rtbl, 0), name_part (_rtbl, 1), name_part (_rtbl, 2)), _stat, _msg);
+	    if (_stat <> '00000')
+	      {
+		http ('<p color="red">SQL Error : STATE=');
+		http_value (cast (_stat as varchar));
+		http (' ');
+		http_value (cast (_msg as varchar));
+		http ('</p>');
+	      }
+	  }
+	else
+	  {
+	    if ('' <> get_keyword ('Delete', params, '') or
+		'' <> get_keyword ('Delete1', params, ''))
+	      {
+		select
+		    count (*) as cnt,
+		    a.SN_SOURCE_TABLE as tbl
+		  into
+		    _cnt,
+		    _tbl
+		  from
+		    SYS_SNAPSHOT b,
+		    SYS_SNAPSHOT a
+		  where
+		    a.SN_SOURCE_TABLE = b.SN_SOURCE_TABLE and
+		    b.SN_NAME = _rtbl
+		  group by
+		    2;
+		if (_cnt = 1)
+		  {
+		    exec (sprintf ('drop snapshot log for "%I"."%I"."%I"', name_part (_tbl, 0), name_part (_tbl, 1), name_part (_tbl, 2)), _stat, _msg);
+		    if (_stat <> '00000')
+		      {
+			http ('<p color="red">SQL Error : STATE=');
+			http_value (cast (_stat as varchar));
+			http (' ');
+			http_value (cast (_msg as varchar));
+			http ('</p>');
+		      }
+		    exec (sprintf ('drop trigger "%I"."%I"."%I_I_log"', name_part (_tbl, 0),
+			  name_part (_tbl, 1),replace (_tbl, '.', '_')), _stat, _msg);
+---		    if (_stat <> '00000')
+---		      {
+---			http ('<p color="red">SQL Error : STATE=');
+---			http_value (cast (_stat as varchar));
+---			http (' ');
+---			http_value (cast (_msg as varchar));
+--			http ('</p>');
+--		      }
+		    exec (sprintf ('drop trigger "%I"."%I"."%I_U_log"', name_part (_tbl, 0),
+			  name_part (_tbl, 1),replace (_tbl, '.', '_')), _stat, _msg);
+---		    if (_stat <> '00000')
+--		      {
+--			http ('<p color="red">SQL Error : STATE=');
+--			http_value (cast (_stat as varchar));
+---			http (' ');
+--			http_value (cast (_msg as varchar));
+--			http ('</p>');
+--		      }
+		    exec (sprintf ('drop trigger "%I"."%I"."%I_D_log"', name_part (_tbl, 0),
+			  name_part (_tbl, 1),replace (_tbl, '.', '_')), _stat, _msg);
+--		    if (_stat <> '00000')
+--		      {
+--			http ('<p color="red">SQL Error : STATE=');
+--			http_value (cast (_stat as varchar));
+--			http (' ');
+--			http_value (cast (_msg as varchar));
+--			http ('</p>');
+--		      }
+                    _stat := '00000'; _msg := '';
+		  }
+		if ('' <> get_keyword ('Delete1', params, ''))
+		  {
+		    for select RT_DSN as __dsn from SYS_REMOTE_TABLE where RT_NAME = _rtbl do
+		      {
+			declare stmt varchar;
+                        stmt := sprintf ('drop table %s', quote_dotted (__dsn, name_part (_tbl, 2)));
+			rexecute (__dsn, stmt, _stat, _msg);
+			if (_stat <> '00000')
+			  {
+			    http ('<p color="red">SQL Error : STATE=');
+			    http_value (cast (_stat as varchar));
+			    http (' ');
+			    http_value (cast (_msg as varchar));
+			    http ('</p>');
+			  }
+		      }
+		  }
+		exec (sprintf ('drop snapshot "%I"."%I"."%I"', name_part (_rtbl, 0), name_part (_rtbl, 1), name_part (_rtbl, 2)), _stat, _msg);
+		if (_stat <> '00000')
+		  {
+		    http ('<p color="red">SQL Error : STATE=');
+		    http_value (cast (_stat as varchar));
+		    http (' ');
+		    http_value (cast (_msg as varchar));
+		    http ('</p>');
+		  }
+		commit work;
+		exec (sprintf ('drop table "%I"."%I"."%I"', name_part (_rtbl, 0), name_part (_rtbl, 1), name_part (_rtbl, 2)), _stat, _msg);
+		if (_stat <> '00000')
+		  {
+		    http ('<p color="red">SQL Error : STATE=');
+		    http_value (cast (_stat as varchar));
+		    http (' ');
+		    http_value (cast (_msg as varchar));
+		    http ('</p>');
+		  }
+		exec (sprintf ('delete from SYS_SCHEDULED_EVENT where SE_NAME = ''%S''', _rtbl), _stat, _msg);
+		if (_stat <> '00000')
+		  {
+		    http ('<p color="red">SQL Error : STATE=');
+		    http_value (cast (_stat as varchar));
+		    http (' ');
+		    http_value (cast (_msg as varchar));
+		    http ('</p>');
+		  }
+	      }
+	    if ('' <> get_keyword ('Schedule', params, ''))
+	      {
+		if (_int > 0)
+		  insert replacing SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL)
+		    values (_rtbl, now (), _int,
+			sprintf ('UPDATE SNAPSHOT "%I"."%I"."%I"', name_part (_rtbl, 0), name_part (_rtbl, 1), name_part (_rtbl, 2)));
+		else
+	          delete from SYS_SCHEDULED_EVENT where SE_NAME = _rtbl;
+	      }
+	  }
+      }
+  }
+?>
+
+    <form action="admin_repl_main.vsp" METHOD=POST>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="5">Replications</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+        <tr>
+          <td CLASS="genlistheadt">Table Name</td>
+          <td CLASS="genlistheadt">On Remote</td>
+          <td CLASS="genlistheadt">Last Replication</td>
+          <td CLASS="genlistheadt">Interval</td>
+          <td CLASS="genlistheadt">Sel</td>
+        </tr>
+        <?vsp
+        declare _ex integer;
+        declare _ts, _sch varchar;
+        _ex := 0;
+        for select
+	    SN_SOURCE_TABLE as src,
+	    SN_NAME as dst,
+	    SN_LAST_TS as ts,
+	    RT_DSN
+      	  from SYS_SNAPSHOT, SYS_REMOTE_TABLE
+	  where SN_NAME = RT_NAME
+	do
+          {
+            _sch := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT where SE_NAME = dst), 'none');
+	    _ex := _ex + 1;
+	    _ts := '**source not changed**';
+	    if (ts is not null)
+	      _ts := substring (cast (ts as varchar), 1, 19);
+        ?>
+          <tr>
+            <td CLASS="gendata"><?= src ?></td>
+            <td CLASS="gendata"><?= RT_DSN ?></td>
+            <td align="right" CLASS="gendata"><?= _ts ?></td>
+            <td align="right" CLASS="gendata"><?= _sch ?></td>
+            <td CLASS="geninput">
+	      <input type="checkbox" name="TB_<?= dst?>">
+	    </td>
+          </tr>
+        <?vsp
+           }
+	   if (_ex = 0)
+            {
+	      http ('<tr><td colspan=5 CLASS="gendata" align=center> *** No snapshot replications ***</td></tr>');
+	    }
+        ?>
+<tr><td colspan="5" align="right">
+      <input type=button name="New" value="New" onclick="location.replace ('snp_main.vsp')">
+      <?vsp if (_ex > 0) { ?>
+      <input type=submit name="Sync" value="Sync">
+      <input type=submit name="Delete" value="Delete">
+      <input type=submit name="Delete1" value="Delete &amp; Drop Remote"></td></tr>
+      </table>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead">Schedule Interval</TD></TR>
+<TR><TD CLASS="AdmBorders"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD align="right">
+      <input type=text name=int value="<?=_int?>" size=5>
+      <input type=submit name="Schedule" value="Schedule">
+
+      <?vsp } ?>
+</td></tr>
+      </table>
+
+    </form>
+<?vsp adm_page_footer(); ?>
+</html>

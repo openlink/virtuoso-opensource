@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect2 id="bidirrepl"><title>Bi-Directional Snapshot Replication</title>
+
+<para>Bi-directional snapshot replication allows you to set up snapshot replication
+between multiple servers where updates can be performed on all servers.  
+Bidirectional snapshot replication uses the publisher-subscriber model
+where each table or DAV collection has only one publisher and when an
+update is performed on subscriber it goes to publisher first, and then
+to all other subscribers. Conflict resolution may need to take place on 
+the publisher when data coming from a subscriber is processed.
+Bi-directional snapshot replication uses snapshot logs on
+publisher and subscribers to track changes in published table and its
+replicas.</para>
+
+<para>It is assumed that all tables published using bi-directional snapshot
+replication have primary keys columns that are never modified.</para>
+
+<para>To perform conflict resolution a ROWGUID column is added to every
+published table. This column should never be modified manually.
+All INSERT statements should specify exact column-select-lists that do not
+include the ROWGUID column. Likewise the ROWGUID column should never feature
+in any UPDATE statements.</para>
+
+<para>Each server participating in bi-directional snapshot replication
+must have unique name (replication name). For Virtuoso servers replication name
+is assigned to the server in its virtuoso.ini file in the DBName setting.
+For other RDBMS servers replication name is the name of instance or the
+name of database. Replication name of remote server can be obtained
+using <function>REPL_SERVER_NAME()</function> (after this server is defined,
+see below).</para>
+
+<para><function>REPL_CREATE_SNAPSHOT_PUB()</function> function should be used
+to create bi-directional snapshot publication.</para>
+
+<para>To create subscription for the publication, replication subscriber
+server should be defined first using <function>REPL_SNP_SERVER()</function>
+function. The name of the server can be obtained later using
+<function>REPL_SERVER_NAME()</function> function.
+After this <function>REPL_CREATE_SNAPSHOT_SUB()</function> function
+should be used to create a subscription (and create replicated table on
+subscriber if table replication takes place).</para>
+
+<para>To load initial data on
+subscriber <function>REPL_INIT_SNAPSHOT()</function> should be used
+after subscription is created. Loading initial data can take some time
+so <function>REPL_INIT_SNAPSHOT()</function> performs commits after every 100
+rows are copied from source table to the table on subscriber to prevent
+running out of transaction log or deadlocks.
+It is possible to specify an alternative value for number of rows
+per transaction (last parameter of <function>REPL_INIT_SNAPSHOT()</function>
+function). In DAV case commits are performed per copied resource.
+</para>
+
+<para><function>REPL_UPDATE_SNAPSHOT()</function>
+should be called periodically after initial data is loaded on subscriber
+to sync published items (tables or DAV collections) on publisher and
+subscribers. This function reads snapshot logs attached from subscribers
+and replays them with possible conflict resolution. After all snapshot logs
+from subscribers are processed an updating procedure reads snapshot
+log on publisher and replays it on all subscribers.</para>
+
+<note><title>Note:</title>
+<para>Please note that all operations in bi-directional snapshot replication
+(publication, subscription, doing initial copy, syncing) should be performed
+on publisher.</para>
+</note>
+
+<example><title>Creating bi-directional snapshot publication</title>
+<para>This example demonstrates creating bi-directional snapshot publication
+of table 'Demo.demo.Shippers'.</para>
+<screen>
+SQL> REPL_CREATE_SNAPSHOT_PUB ('Demo.demo.Shippers', 2);
+</screen>
+</example>
+
+<example><title>Creating bi-directional snapshot subscription</title>
+<para>This example demonstrates creating bi-directional snapshot subscription
+for table 'Demo.demo.Shippers' and loading initial data on subscriber with
+DSN 'localhost:1121'.</para>
+<screen>
+SQL> REPL_SNP_SERVER ('localhost:1121', 'dba', 'dba');
+SQL> REPL_CREATE_SNAPSHOT_SUB (REPL_SERVER_NAME ('localhost:1121'), 'Demo.demo.Shippers', 2);
+SQL> REPL_INIT_SNAPSHOT (REPL_SERVER_NAME ('localhost:1121'), 'Demo.demo.Shippers', 2);
+</screen>
+</example>
+
+<example><title>Syncing bi-directional snapshot publication</title>
+<para>This example demonstrates syncing bi-directional snapshot publication
+of table 'Demo.demo.Shippers'.</para>
+<screen>
+SQL> REPL_UPDATE_SNAPSHOT ('Demo.demo.Shippers', 2);
+</screen>
+</example>
+
+<tip><title>See Also:</title>
+  <para>The following functions are used for creating, dropping and updating 
+  publications and subscriptions to them:</para>
+	<para><link linkend="fn_REPL_CREATE_SNAPSHOT_SUB"><function>REPL_CREATE_SNAPSHOT_SUB()</function></link></para>
+	<para><link linkend="fn_REPL_CREATE_SNAPSHOT_PUB"><function>REPL_CREATE_SNAPSHOT_PUB()</function></link></para>
+	<para><link linkend="fn_REPL_DROP_SNAPSHOT_SUB"><function>REPL_DROP_SNAPSHOT_SUB()</function></link></para>
+	<para><link linkend="fn_REPL_DROP_SNAPSHOT_PUB"><function>REPL_DROP_SNAPSHOT_PUB()</function></link></para>
+	<para><link linkend="fn_REPL_INIT_SNAPSHOT"><function>REPL_INIT_SNAPSHOT()</function></link></para>
+	<para><link linkend="fn_REPL_UPDATE_SNAPSHOT"><function>REPL_UPDATE_SNAPSHOT()</function></link></para>
+	<para><link linkend="fn_REPL_SNP_SERVER"><function>REPL_SNP_SERVER()</function></link></para>
+	<para><link linkend="fn_REPL_SERVER_NAME"><function>REPL_SERVER_NAME()</function></link></para>
+</tip>
+
+<sect3 id="bidireplconflictrsln"><title>Conflict Resolution</title>
+
+  <para>Since every table can have only one publisher, conflicts can only 
+  occur on the publisher when modifications from a subscriber are attempted.  
+  When DML operations originating on a subscriber are being replayed 
+  on the publisher, three types of conflicts can arise:</para>
+
+<orderedlist>
+ <listitem><formalpara><title>uniqueness conflict (insert conflict)</title>
+	<para>occurs when the row with some primary key &lt;PK&gt;
+	already exists in publisher's table.</para></formalpara></listitem>
+
+ <listitem><formalpara><title>update conflict</title>
+	<para>occurs when UPDATE modifies a row which has already been modified
+	on publisher (by the publisher or another subscriber)</para></formalpara></listitem>
+
+ <listitem><formalpara><title>delete conflict</title>
+	<para>occurs when DELETE deletes a row that does not exist on publisher
+        anymore.</para></formalpara></listitem>
+</orderedlist>
+
+<para>Delete conflicts when UPDATE modifies a row that does not exist
+on publisher can't be detected in snapshot replication case.</para>
+
+<para>Every table has a number of conflict resolvers which are used
+for conflict resolution which are enlisted in the 
+<computeroutput>DB.DBA.SYS_SNAPSHOT_CR</computeroutput> system table. 
+Each conflict resolver has a type, one of ('I', 'U', or 'D'), and an order.  Conflict 
+resolvers are applied in ascending order.</para>
+
+<para>The conflict resolver is a Virtuoso/PL procedure that receives a 
+conflicting row from a subscriber and some other arguments.  The conflict 
+resolver can modify the row, which is passed as an 'inout' argument.
+The conflict resolver should return an integer value, which will be used
+for conflict resolution.</para>
+
+<para>Conflict resolvers of different types have different signatures:</para>
+
+<simplelist>
+ <member>
+   <para><emphasis>'I' - Insert conflict resolvers</emphasis></para>
+   <para>(&lt;ALLCOLS&gt;, inout _origin varchar)</para></member>
+
+ <member>
+   <para><emphasis>'U' - Update conflict resolvers</emphasis></para>
+   <para>(&lt;ALLCOLS&gt;, inout _origin varchar)</para></member>
+
+ <member>
+   <para><emphasis>'D' - Deletion conflict resolvers</emphasis></para>
+   <para>(&lt;PK&gt;, inout _origin varchar)</para></member>
+   </simplelist>
+
+<para>where</para>
+
+<para>&lt;ALLCOLS&gt; are the new values of all columns 
+(including the ROWGUID column), &lt;PK&gt; are the values of primary 
+key columns, and _origin is transaction originator.</para>
+
+<para>Conflict resolvers can return the following integer values; 
+The conflict resolver types concerned for each are listed in parentheses:</para>
+
+<itemizedlist>
+  <listitem><formalpara><title>0 - un-decide (I, U, D)</title>
+	<para>next conflict resolver will be fired.</para></formalpara></listitem>
+
+  <listitem><formalpara><title>1 - subscriber wins (I, U, D)</title>
+	<para>DML operation will be applied with &lt;ALLCOLS&gt;
+	All the subscribers except originator will receive modifications
+	(originator already has them).</para></formalpara></listitem>
+
+  <listitem><formalpara><title>2 - subscriber wins, change origin (I, U)</title>
+	<para>DML operation will be applied with &lt;ALLCOLS&gt; and origin
+	of transaction will be changed to publisher's server name.
+	All the subscribers (including originator) will receive modifications.
+	This return value is useful when conflict resolver changed some of
+	the columns of the row that were passed in.
+    Although all parameters of conflict resolver are inout
+    only changing of &lt;ALLCOLS&gt; (non-PK columns) parameters 
+	makes sense.</para></formalpara></listitem>
+
+  <listitem><formalpara><title>3 - publisher wins (U)</title>
+	<para>DML operation will be applied with &lt;ALLCOLS&gt; taken from
+	publisher's table. All the subscribers will receive
+	modifications.</para></formalpara></listitem>
+
+  <listitem><formalpara><title>4 - reserved</title><para /></formalpara></listitem>
+
+  <listitem><formalpara><title>5 - ignore (D)</title>
+	<para>DML operation is ignored.</para></formalpara></listitem>
+</itemizedlist>
+
+<para>Conflict resolution stops when some conflict resolver returns a non-zero
+value meaning that it has made a decision.</para>
+
+<example id="ex_conflictresln"><title>Conflict Resolution</title>
+<para>Suppose we have the following table:</para>
+
+<programlisting><![CDATA[
+create table items(
+  item_id integer primary key,
+
+  name varchar,
+  price decimal
+);
+]]></programlisting>
+
+<para>"Publisher wins" 'I' conflict resolver will look like:</para>
+
+<programlisting><![CDATA[
+create procedure items_cr(
+    inout _item_id integer,
+    inout _name varchar,
+    inout _price decimal,
+    inout _origin varchar)
+  returns integer
+{
+  return 3;
+}
+]]></programlisting>
+
+<para>The conflict resolver that will make a decision based on the 
+minimal price column will look like:</para>
+
+<programlisting><![CDATA[
+create procedure items_cr(
+    inout _item_id integer,
+    inout _name varchar,
+    inout _price decimal,
+    inout _rowguid varchar,
+    inout _origin varchar)
+  returns integer
+{
+  declare p decimal;
+  -- get current price value
+  select price into p from items where item_id = _item_id;
+  if (p < _price)
+    return 3;			-- publisher wins
+  else if (p > _price)
+    return 1;			-- subscriber wins
+  return 0;			-- can't decide
+}
+]]></programlisting>
+
+<para>The conflict resolver that will change the price to the minimal value 
+will look like:</para>
+
+<programlisting><![CDATA[
+create procedure items_cr(
+    inout _item_id integer,
+    inout _name varchar,
+    inout _price decimal,
+    inout _rowguid varchar,
+    inout _origin varchar)
+  returns integer
+{
+  declare p decimal;
+  -- get current price value
+  select price into p from items where item_id = _item_id;
+  if (p < _price)
+    {
+      _price := p;
+      return 2;			-- publisher wins, change origin
+    }
+  return 1;			-- subscriber wins
+}
+]]></programlisting>
+</example>
+
+<para>Conflict resolution occurs differently for each kind of DML operation:</para>
+
+<itemizedlist>
+  <listitem><formalpara><title>INSERT</title>
+	<para>When INSERT of some row with primary key &lt;PK&gt; is replayed,
+	the row in the publisher's table with such &lt;PK&gt; is looked-up.
+	If the row does not exist then there is no conflict, conflict 
+	resolution stops and the INSERT is replayed.
+	If the row exists then we have a "uniqueness conflict".  In this case 'I'
+	conflict resolvers are fired-up.
+	If none of the 'I' conflict resolvers were able to make a descision
+	(return non-zero value) the default action is 'publisher wins'.</para>
+	</formalpara></listitem>
+
+  <listitem><formalpara><title>UPDATE</title>
+
+	<para>When there is an UPDATE of some row with primary 
+	key &lt;PK&gt; is replayed, the row (and its ROWGUID) in 
+	publisher's table with such &lt;PK&gt; is looked-up.
+	If the row does not exist then we have a "delete conflict", 
+	'D' conflict resolvers are fired up.  If none of the 'D' conflict 
+	resolvers were able to make a decision the default action will be 
+	to 'ignore'.
+	If the row exists in the publisher's table and its ROWGUID is the same
+	as that from the subscriber then there is no conflict.  Conflict
+	resolution stops and the UPDATE is replayed.
+	If the row exists and its ROWGUID differs from the one that came
+	from subscriber then we have an "update conflict".  In this case the 
+	'U' conflict resolvers are fired-up.
+	If none of the 'U' conflict resolvers were able to make a decision 
+	(return non-zero value) the default action will be 'publisher wins'.</para>
+	</formalpara></listitem>
+
+  <listitem><formalpara><title>DELETE</title>
+
+	<para>When DELETE operation of some row with primary key &lt;PK&gt;
+        is replayed, the row in the publisher's table with such &lt;PK&gt;
+        is looked-up.  
+	If the row does not exist or if the row exists but its
+	ROWGUID differs from the one that came from subscriber then
+	we have "delete conflict".  The 'D' conflict resolvers are fired-up.  
+	If none of the 'D' conflict resolvers were able to make a decision then the 
+	default action will be taken to 'ignore'.
+	Otherwise it is assumed that there is no conflict and DELETE statement 
+	is replayed.</para>
+	</formalpara></listitem>
+</itemizedlist>
+</sect3>
+
+
+<sect3 id="bidirreplconflictdav"><title>Conflict Resolution in WebDAV</title>
+
+<para>Conflict resolvers in DAV are found based on the collection.
+The closest collection that specifies resolvers will be the one providing
+the resolver set. Resolvers from any enclosing collection will
+not be invoked.</para>
+
+<para>There is special subcollection in each replicated collection
+named '_SYS_REPL_BACKUP'. This subcollection is never replicated and
+is used to store backup copies of resources that lose conflict
+resolution.</para>
+
+<para>If a resource is locked during an update it will be stored in temporary 
+location.  Conflict resolution will take place after the lock is released.  
+If the update was performed on the publisher then no conflict resolution 
+will be performed on the subscribers and the resource from temporary location 
+will simply replace an existing resource after the lock is released.</para>
+
+<para>Default conflict resolution is 'publisher wins'.</para>
+
+<para>Delete conflicts are not handled when replicating DAV because updates 
+are the same as inserts -- if the resource that was updated does not exist it will
+be created.  INSERT or uniqueness conflict for the same reasons.</para>
+
+<para>Subcollections are not considered in conflict resolution.
+Subcollections are always created as needed during an update.   
+This means that if a resource is updated locally but collection that holds
+this resource does not exist on remote peer it will be created.</para>
+</sect3>
+
+<sect3 id="bidirreplsutogenres"><title>Automatically Generated Conflict Resolvers</title>
+
+<para>Simple table conflict resolvers can be generated automatically 
+by calling the <function>REPL_ADD_SNAPSHOT_CR()</function> function.  
+DAV conflict resolvers be generated by calling 
+<function>REPL_ADD_DAV_CR()</function> function.</para>
+
+<tip><title>See Also:</title>
+  <para><link linkend="fn_REPL_ADD_DAV_CR"><function>REPL_ADD_DAV_CR()</function></link></para>
+  <para><link linkend="fn_REPL_ADD_SNAPSHOT_CR"><function>REPL_ADD_SNAPSHOT_CR()</function></link></para>
+  </tip>
+
+<para>The generated procedures can be modified afterwards.  In particular it is 
+possible to change the notification e-mail address by setting the _notify_email parameter, 
+and the notification text by setting the _notify_text parameter.</para>
+
+<para>The default behaviour for generated procedures is 'pub_wins', making a 
+backup and notifying the owner by e-mail.</para>
+</sect3>
+</sect2>

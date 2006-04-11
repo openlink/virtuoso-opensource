@@ -1,0 +1,94 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+<sect1 id="process_redefine">
+    <title>OpenLink BPEL Process Manager Process Redefine</title>
+    <para>This page shows information about to individually upload or provide external URI's for the bpel and wsdl files defining the process. When these are all provided the process is ready to be compiled.</para>
+    <simplelist>
+      <member><ulink url="i/ref_16.png" alt="Refresh"/> Click to view possible changes.</member>
+    </simplelist>
+    <sect2 id="pu_fields">
+      <title>Form fields</title>
+      <sect3 id="pu_fields_name">
+          <title>Process name</title>
+          <para>The Process name cannot be changed.</para>
+      </sect3>
+      <sect3 id="pu_fields_depl">
+          <title>Redefine by</title>
+          <para>Choose values from the list in order to import process or upload BPEL and WSDL files for redifing the process.</para>
+      </sect3>
+      <sect3 id="pu_fields_bpel">
+          <title>BPEL</title>
+          <para>This is the section for the bpel file for the process.</para>
+          <simplelist>
+            <member><ulink url="i/sinfo_16.png" alt="View"/> Click to view the content of the bpel file. This will go to a separate page showing the xml content of the bpel file for the process.</member>
+            <member><ulink url="i/edit_record_16.png" alt="Update"/> Click to upload a new bpel file for the process. This will go to a separate page showing information about individually uploading or providing external URI's for the bpel file.</member>
+          </simplelist>
+      </sect3>
+      <sect3 id="pu_fields_wsdl">
+          <title>WSDL</title>
+          <para>This is the section for wsdl file for the process.</para>
+          <simplelist>
+            <member><ulink url="i/sinfo_16.png" alt="View"/> Click to view the content of the wsdl file. This will go to a separate page showing the xml content of the wsdl file for the process.</member>
+            <member><ulink url="i/edit_record_16.png" alt="Update"/> Click to upload a new wsdl file for the process. This will go to a separate page showing information about individually uploading or providing external URI's for the wsdl file.</member>
+          </simplelist>
+      </sect3>
+      <sect3 id="pu_fields_plinks">
+          <title>Partner Links</title>
+          <para>This is the section for Partner Links for the process.</para>
+          <simplelist>
+            <member><ulink url="i/sinfo_16.png" alt="View"/> Click to view the content of the wsdl for a Partner Link. This will go to a separate page showing the xml content of the wsdl file for the Partner Link.</member>
+            <member><ulink url="i/edit_record_16.png" alt="Update"/> Click to upload a new wsdl file for a Partner Link. This will go to a separate page showing information about individually uploading or providing external URI's for the wsdl file for the Partner Link.</member>
+          </simplelist>
+      </sect3>
+      <sect3 id="pu_fields_vdir">
+          <title>Virtual Directory</title>
+          <para>When specified, the process will be exposed on this endpoint as a Web Service. Otherwise the endpoint for the process will be http://[host]:[port]/BPELGUI/bpel.vsp?script=[name of the process]</para>
+      </sect3>
+      <sect3 id="pu_fields_action">
+          <title>Action</title>
+          <para>This is the action section for the process.</para>
+          <simplelist>
+            <member>To delete the process click "Delete Process". This will go to a page giving confirmation option for deleting the process. If the process is deleted this action cannot be undone.</member>
+            <member>To compile the process click "Compile Process". When the compilation is successful, the process will be in state "Current" and will be ready for testing.</member>
+          </simplelist>
+      </sect3>
+      <sect3 id="pu_fields_authen">
+          <title>Authentication</title>
+          <para>This is the authentication section. When loading Deployment Descriptor expects authentication, you have to enter user name and paswword for the authentication.</para>
+          <simplelist>
+            <member>Enter the User name in the field "User".</member>
+            <member>Enter the password in the field "Password".</member>
+          </simplelist>
+      </sect3>
+      <sect3 id="pu_fields_descr">
+          <title>Load Deployment Descriptor from</title>
+          <para>This is the Deployment Descriptor section.</para>
+          <simplelist>
+            <member>All bpel and wsdl files referenced by the file at this URL will be loaded and will be ready to compile.</member>
+          </simplelist>
+      </sect3>
+  </sect2>
+</sect1>
+</HelpTopic>

@@ -1,0 +1,192 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="upload_wsdl_page" decor="bpel_decor.vspx" style="bpel_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+<v:method name="plink_delete" arglist="inout id any, inout name varchar">
+  delete from BPEL.BPEL.partner_link_init where bpl_script = id and bpl_name = name;
+</v:method>
+
+<v:method name="plink_update" arglist="inout id any, inout name varchar, inout uri varchar">
+  BPEL.BPEL.wsdl_process_remote(name,uri,id);
+</v:method>
+
+<v:method name="do_redirect" arglist="in url varchar"><![CDATA[
+  url := vspx_uri_add_parameters (url, sprintf ('sid=%s&realm=%s',self.sid,self.realm));
+  http_request_status ('HTTP/1.1 302 Found');
+  http_header ('Location: '||url||'\r\n');
+  ]]>
+</v:method>
+
+<v:on-init>
+    set isolation='committed';
+    if (self.id > 0)
+    {
+      self.partners_data := BPEL..get_partner_links(self.id);
+      self.xml_data := XMLCONCAT(BPEL.BPEL.process_data(self.id),self.partners_data);
+      if ( cast(xpath_eval('//page/bpel_state/text()',self.xml_data) as varchar) = '2' )
+        self.edit:=1;
+    }
+    else
+    {
+      self.xml_data :=  XMLELEMENT('page',XMLELEMENT( 'bpel_name',''),XMLELEMENT( 'partnerLinks',''));
+    };
+</v:on-init>
+
+<vm:pagewrapper>
+  <v:variable name="id" type="int" default="0" param-name="id"/>
+  <v:variable name="edit" type="int" default="0" param-name="edit"/>
+  <v:variable persist="pagestate" name="xml_data" type="any" default="null"/>
+  <v:variable persist="pagestate" name="partners_data" type="any" default="null"/>
+  <v:variable name="bpelc" type="any" default="''" param-name="bpelc"/>
+  <v:variable name="bpelu" type="varchar" default="''" param-name="bpelu"/>
+  <v:variable name="wsdlc" type="any" default="''" param-name="wsdlc"/>
+  <v:variable name="wsdlu" type="varchar" default="''" param-name="wsdlu"/>
+  <v:variable persist="temp" name="r_count" type="integer" default="0"/>
+  <v:variable name="impu" type="varchar" default="''" param-name="impu"/>
+  <v:variable name="rf" type="int" default="0" param-name="rf"/>
+  <vm:pagetitle>OpenLink BPEL Process Manager Process Upload</vm:pagetitle>
+
+  <vm:pagebody>
+    <script type="text/javascript">
+      <![CDATA[
+        function setUrl()
+          {
+            var frm = document.forms["upl"];
+            var len = frm.bpel_url.value.length;
+            var val = frm.bpel_url.value;
+
+            if (val.substring (0, 1) == ' '){
+              val = val.substring (1, len );
+              len = val.length;
+              frm.bpel_url.value = val;
+            };
+
+            if (val.substring (len - 1, len) == ' '){
+              val = val.substring (0, len - 1);
+              len = val.length;
+              frm.bpel_url.value = val;
+            };
+
+            if ( len > 5 && val.substring (len - 5, len) == '.bpel' )
+            {
+              frm.wsdl_url.value = val.substring (0, len - 5);
+              frm.wsdl_url.value += '.wsdl';
+            };
+          };
+	]]>
+     </script>
+    <v:form name="upl" type="simple" method="POST" action="upload_new.vspx" xhtml_enctype="multipart/form-data">
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+        <tr>
+          <th class="info" colspan="2">Process Upload details</th>
+        </tr>
+        <tr>
+          <td colspan="2">
+            <?vsp
+              if (self.id = 0)
+              {
+                http(sprintf('<a target="_blank" href="help.vspx?id=process_upload&sid=%s&realm=%s\r\n"><img title="Help" alt="Help" src="i/help_24.gif" border="0" /></a>', self.sid ,self.realm));
+                http(sprintf('<a target="_blank" href="help.vspx?id=process_upload&sid=%s&realm=%s\r\n"> Help</a>', self.sid ,self.realm));
+              }
+              else if (self.id > 0 and self.edit = 0)
+              {
+                http(sprintf('<a target="_blank" href="help.vspx?id=process_redef&sid=%s&realm=%s\r\n"><img title="Help" alt="Help" src="i/help_24.gif" border="0" /></a>', self.sid ,self.realm));
+                http(sprintf('<a target="_blank" href="help.vspx?id=process_redef&sid=%s&realm=%s\r\n"> Help</a>', self.sid ,self.realm));
+              }
+              else if (self.id > 0 and self.edit > 0)
+              {
+                http(sprintf('<a target="_blank" href="help.vspx?id=process_redefine&sid=%s&realm=%s\r\n"><img title="Help" alt="Help" src="i/help_24.gif" border="0" /></a>', self.sid ,self.realm));
+                http(sprintf('<a target="_blank" href="help.vspx?id=process_redefine&sid=%s&realm=%s\r\n"> Help</a>', self.sid ,self.realm));
+                http('&nbsp;');
+                http(sprintf('<a href="upload_new.vspx?id=%d&sid=%s&realm=%s\r\n"><img title="Refresh" alt="Refresh" src="i/ref_24.png" border="0" /></a>', self.id, self.sid ,self.realm));
+                http(sprintf('<a href="upload_new.vspx?id=%d&sid=%s&realm=%s\r\n"> Refresh</a>', self.id, self.sid ,self.realm));
+              }
+              else
+                http('no help');
+            ?>
+            <!--<v:url name="uHelp" value="Help" url="--sprintf('help.vspx?id=process_upload')" xhtml_target="_blank" enabled="--case when self.id = 0 then 1 else 0 end"/>
+            <v:url name="rHelp" value="Help" url="--sprintf('help.vspx?id=process_redef')" xhtml_target="_blank" enabled="--case when (self.id > 0 and self.edit = 0) then 1 else 0 end"/>
+            <v:url name="rdHelp" value="Help" url="--sprintf('help.vspx?id=process_redefine')" xhtml_target="_blank" enabled="--case when (self.id > 0 and self.edit > 0) then 1 else 0 end"/>-->
+          </td>
+        </tr>
+        <tr>
+          <td width="10%" align="left">
+            <v:url name="uName" value="Process name" url="--sprintf('help.vspx?id=process_upload&name=pu_fields_name')" xhtml_target="_blank" enabled="--case when self.id = 0 then 1 else 0 end"/>
+            <v:url name="rName" value="Process name" url="--sprintf('help.vspx?id=process_redef&name=pu_fields_name')" xhtml_target="_blank" enabled="--case when (self.id > 0 and self.edit = 0) then 1 else 0 end"/>
+            <v:url name="rdName" value="Process name" url="--sprintf('help.vspx?id=process_redefine&name=pu_fields_name')" xhtml_target="_blank" enabled="--case when (self.id > 0 and self.edit > 0) then 1 else 0 end" />
+          </td>
+          <td>
+            <v:text name="bpel_name"
+               element-value="--self.xml_data"
+	       element-path="/page/bpel_name"
+	       element-place="text()"
+               xhtml_size="50"
+               xhtml_disabled="--case when self.id = 0 then '@@hidden@@' else 'true' end"/>
+            <font style="color: red"><v:error-summary match="bpel_name" /></font>
+          </td>
+        </tr>
+        <v:template name="All" type="simple" enabled="--case when (self.id > 0 and self.edit = 0) then 0 else 1 end">
+          <tr>
+             <td align="left" width="10%">
+               <v:url name="lAll1" value="Deployment Methods:" enabled="--case when self.id = 0 then 1 else 0 end" url="--sprintf('help.vspx?id=process_upload&name=pu_fields_depl')" xhtml_target="_blank" />
+               <v:url name="lAll2" value="Redefine by:" enabled="--case when (self.id > 0 and self.edit > 0) then 1 else 0 end" url="--sprintf('help.vspx?id=process_redefine&name=pu_fields_depl')" xhtml_target="_blank" />
+            </td>
+            <td>
+               <v:tab name="tab1" initial-active="redifine_process" style="list" is-input="0" enabled="--case when (self.id > 0 and self.edit > 0) then 1 else 0 end">
+                 <v:include url="bpel_ui_bpelwsdl_edit.vspx"/>
+                 <v:include url="bpel_ui_import.vspx"/>
+               </v:tab>
+               <v:tab name="tab2" initial-active="import_process" style="list" is-input="0" enabled="--case when self.id = 0 then 1 else 0 end">
+                 <v:include url="bpel_ui_import2.vspx"/>
+                 <v:include url="bpel_ui_bpelwsdl_register.vspx"/>
+               </v:tab>
+             </td>
+          </tr>
+        </v:template>
+        <v:template name="actionE" type="simple" enabled="--case when (self.id > 0 and self.edit = 0) then 1 else 0 end">
+          <tr>
+            <td align="left">Action</td>
+            <td>
+              <v:button action="simple" value="Redefine" name="EditP" xhtml_class="m_e">
+              	 <v:on-post>
+                  if (not self.vc_is_valid) return;
+                  self.id := BPEL..copy_script(self.id);
+                  self.do_redirect (sprintf('upload_new.vspx?id=%d',self.id));
+	    	 </v:on-post>
+              </v:button>
+              <v:button value="Cancel" action="simple" xhtml_class="m_e">
+    	       <v:on-post>
+                 if (self.rf = self.id)
+    	           self.do_redirect (sprintf('process.vspx?id=%d',self.id));
+                 else
+                   self.do_redirect (sprintf('process.vspx'));
+    	       </v:on-post>
+    	     </v:button>
+            </td>
+          </tr>
+        </v:template>
+      </table>
+    </v:form>
+  </vm:pagebody>
+</vm:pagewrapper>
+</v:page>

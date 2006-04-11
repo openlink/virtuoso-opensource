@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect2 id="rendezvous"><title>ZeroConfig ("Zero Configuration") Support</title>
+
+<para>The "ZeroConfig" protocol, also known as "Zeroconf" or 
+"Zero Configuration" is a protocol that allows discovery of services on the 
+network that are advertised by their hosts.  It also has provisions for 
+automatic discovery of computers and various devices.  
+The main benefit of ZeroConfig is that it does not require DHCP, DNS or 
+directory servers.</para>
+<para>ZeroConfig is an open protocol that Apple submitted to the IETF for 
+a standard-creation process.</para>
+<para>The Virtuoso server and ODBC driver use the capabilities of ZeroConfig to
+facilitate DSN (Data Source Name) setup and usage.  This is divided in  two parts:  
+Server-side and Client-side.</para>
+
+<para>The Virtuoso server (Server-side) is configured via the Virtuoso INI 
+file to advertise its availability on a network with a given name.  This allows 
+applications, and in particular the Virtuoso ODBC driver, to receive information 
+about a server, such as its network address, default login, etc, and use it 
+for configuring a data source or directory making a connection.</para>
+  
+<para>The Virtuoso ODBC driver (Client side) uses ZeroConfig to locate 
+the desired Virtuoso server during the set-up phase of a data source, and 
+determine available connection options such as:</para>
+
+ <simplelist>
+  <member>secure connection options</member>
+  <member>default database</member>
+  <member>default user </member>
+  <member>default password (if public/demo login is required)</member>
+  <member>default character set </member>
+ </simplelist>
+
+<para>ZeroConfig provides the client with a service name, which must be bound to 
+the IP address/port of a host of the chosen service during DSN configuration.  
+This is used when existing DSN using a ZeroConfig name is used to connect,
+it will map name with IP address and port before making a connection.</para>
+
+ <sect3 id="rendezvousserverside"><title>Setting-up the Server for Service Advertizing</title>
+
+  <para>The Virtuoso server is configured to advertise itself based on the 
+  details specified in the <computeroutput>[Zero Config]</computeroutput> 
+  section of the Virtuoso INI file.  Below is an example of such:</para>
+
+  <programlisting><![CDATA[
+...
+[Zero Config]
+ServerName    = Virtuoso Server
+ServerDSN     = UID=demo;PWD=
+SSLServerName = Virtuoso Server (via SSL)
+SSLServerDSN  = UID=dba;PWD=;ENCRYPT=1
+...
+]]></programlisting>
+
+  <para>The ServerName and SSLServerName are human readable 
+  strings chosen by the administrator to provide clients with a suitable 
+  description of the service being provided.</para>
+  
+  <note><title>Note:</title>
+  <para>If the Virtuoso does not have the SSL listener enabled then the 
+  SSL service will not be advertised automatically.
+  The SSL* keys will simply be ignored and do not need to be removed.
+  </para></note>
+
+  <para>The ServerDSN and SSLServerDSN are default connection 
+  strings that can be used by clients to make the advertised connection.  You only 
+  need to to specify default username and password in these strings.  The 
+  default database can be specified or left to the setting for the username.  
+  You cannot specify the server hostname, IP address or port number, these 
+  are supplied by Virtuoso automatically.</para>
+
+  <para>ZeroConfig service advertizing is multicast, hence it is advertized 
+  on all available network interfaces.</para>
+
+  </sect3>
+
+  <sect3 id="rendezvous"><title>Using the Windows ODBC Driver with ZeroConfig</title>
+
+  <para>Upon DSN set-up the ODBC driver listens for advertising servers, and 
+  compiles a roster.  This is displayed for the user to choose the desired 
+  service to connect to.  </para>
+  <para>If ZeroConfig is used to for data source set-up then the 
+  set-up dialog will be initialized based on the details in the connection 
+  string configured on the server.</para>
+ 
+  <para>When a DSN is configured based on a ZeroConfig service, the driver will 
+  resolve the service name before making the connection to the server.  The driver 
+  does not store the network address or port number of the Virtuoso server, only 
+  the ZeroConfig server name, so if the server's physical address is changed 
+  the client DSNs associated with it do not all have to reconfigured; they will 
+  resolve to the new address automatically on next use.</para>
+
+  </sect3>
+ </sect2>
+  
+  
+

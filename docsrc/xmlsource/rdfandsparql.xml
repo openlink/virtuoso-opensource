@@ -1,0 +1,480 @@
+<chapter label="rdfandsparql.xml" id="rdfandsparql"><title>RDF Database and SPARQL</title>
+<abstract>This chapter discusses Virtuoso's RDF triple storage and query capabilities. This is divided into a discussion of the RDF data representation, the SPARQL and
+ SQL API's, protocol support and standard compliance notes.
+</abstract>
+<sect1 id="rdfimplementationstatus"><title>Implementation Status</title>
+<para>Virtuoso's RDF support is at an experimental stage. The SPARQL language is fairly complete but none of the support functions such as data loading or triple storage are optimized. Many pieces of the present implementation that are written in Virtuoso/PL will be rewritten in C for performance.</para>
+<para>Also, the triple store has no specific security model. Thus access rights of the tables and stored procedures involved in the process dictate who can access these features.</para>
+<para>All triples of all graphs are stored in a single default system table called
+<emphasis>DB.DBA.RDF_QUAD</emphasis>. This will change in the next release, where a complex meta-schema system will be introduced for allowing graphs to be stored in different tables, potentially having different index structures, optionally also full text index on long object values. The meta-schema support will also make it possible to map native
+ SQL tables into the RDF SPARQL -queriable space, as well as introduce finer-grained security.</para>
+<para>Hence the RDF subsystem is offered for an early review but is not a productized whole. Benchmark results obtained with it are tentative and reflect a non-optimized state.</para>
+</sect1>
+<sect1 id="rdfdatarepresentation"><title>Data Representation</title>
+<para>This section covers how Virtuoso stores RDF triples. The IRI_ID built-in data type is introduced, along with the default table structures used for triple persistency.</para>
+<sect2 id="rdfiriidtype"><title>IRI_ID Type</title>
+<para>The central notion of RDF is the IRI, or URI , which serves as the globally unique label of named nodes. The subject and predicate of a triple are always IRI's and the object may be an IRI or any other XML Schema scalar data type. In any case, an IRI is always distinct from any instance of any other data type.</para>
+<para>Virtuoso supports a native IRI_ID data type, internally an unsigned 32 bit integer value. When compared with other IRI's, the collation is as with unsigned 32 bit integers. An IRI_ID is never equal to any instance of any other type.</para>
+<para>Thus, the object column of a table storing triples can be declared as ANY and IRI values will be distinguishable without recourse to any extra flag and IRI's will naturally occupy their own contiguous segment in the ANY type collation sequence. Indices can be defined over such columns. An IRI_ID is never automatically cast into any other type nor any other type into IRI_ID.</para>
+<para>The functions iri_id_num (in i IRI_ID) and iri_id_from_num (in n INT) convert between signed 32 bit integers and IRI_ID's. The function isiri_id (in i any) returns nonzero if the argument is of type IRI_ID, zero otherwise.</para>
+<para>The syntax for an IRI_ID literal is</para>
+<programlisting>
+#i&lt;nnn&gt;, where nnn is up to 10 decimal digits.
+#i12345 is equal to iri_id_from_num (12345)
+</programlisting>
+<para>When received by a SQL client application, the ODBC driver or interactive SQL will bind an IRI_ID to a character buffer, producing the #innn syntax. When passing IRI_ID's from a client, one can pass an integer and use the iri_id_from_num () function in the statement to convert server side. A SQL client will normally not be exposed to IRI_ID's since the SPARQL implementation returns IRI's in their text form, not as internal id's. These will however be seen if reading the internal tables directly.</para>
+</sect2>
+<sect2 id="rdftables"><title>RDF_QUAD and other tables</title>
+<para>The main tables of the default RDF storage system are:</para>
+<programlisting>
+create table DB.DBA.RDF_QUAD (
+  G IRI_ID,
+  S IRI_ID,
+  P IRI_ID,
+  O any,
+  primary key (G,S,P,O) )
+create unique index RDF_QUAD_PGOS on DB.DBA.RDF_QUAD (P, G, O, S);
+</programlisting>
+<para>Each triple is represented by one row in RDF_QUAD. The columns represent the graph, subject, predicate and object. The IRI_ID type columns reference RDF_URL, which translates the internal id to the external name of the IRI. The O column is of type ANY. If the O value is a non-string scalar, such as a number or date or IRI, it is stored in its native binary representation. If it is a string, it will be stored in a 'short' form, meaning a packed binary string with fixed fields for the data type, language, the content and a possible reference to RDF_OBJ if the string is too long to be held in-line in this table.</para>
+<programlisting>
+create table DB.DBA.RDF_URL (
+    RU_IID IRI_ID not null primary key,
+    RU_QNAME varchar )
+create unique index RU_QNAME on DB.DBA.RDF_URL (RU_QNAME);
+</programlisting>
+<para>This is simply a mapping between internal IRI id's and their external form.</para>
+<programlisting>
+create table DB.DBA.RDF_OBJ (
+    RO_ID integer primary key,
+    RO_VAL varchar,
+    RO_LONG long varchar );
+</programlisting>
+<para>When an O value of RDF_QUAD is longer than a certain limit, the string is stored in this table. Depending on the length of the value, it goes into the varchar or the long varchar column. The RO_ID is contained in a fixed position in the string that is stored in the O column. Still, the truncated value of O can be used for determining equality and range matching, even even if &lt; and &gt; of closely matching values need to look at the real string in RDF_OBJ.</para>
+<programlisting>
+create table DB.DBA.RDF_DATATYPE (
+    RDT_IID IRI_ID not null primary key,
+    RDT_TWOBYTE integer not null unique,
+    RDT_QNAME varchar );
+</programlisting>
+<para>The XML Schema data type of a typed string O represented as 2 bytes in the O varchar value. This table maps this into the broader IRI space where the type URI is given an IRI number.</para>
+<programlisting>
+create table DB.DBA.RDF_LANGUAGE (
+    RL_ID varchar not null primary key,
+    RL_TWOBYTE integer not null unique );
+</programlisting>
+<para>The varchar representation of a O which is a string with language has a two byte field for language. This table maps the short integer language id to the real language name such as 'en', 'en-US' or 'x-any'.</para>
+<para><emphasis>Note that unlike datatype names, language names are not URIs.</emphasis></para>
+<para>A short integer value can be used in both RDF_DATATYPE and RDF_LANGUAGE tables for two different purposes. E.g. an integer 257 is for 'unspecified datatype' as well as for 'unspecified language'.</para>
+</sect2>
+<sect2 id="rdfsqlmodes"><title>Short, Long and SQL Values</title>
+<para>When processing an O, the SPARQL implementation may have it in one of three formats. The below cases apply for strings:</para>
+<para>The short format is the format where an O is stored in RDF_QUAD.</para>
+<para>The long value is a SQL vector of five fields:</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem>short integer id of type referencing RDT_TWOBYTE, 257   if the type is not specified,</listitem>
+<listitem>the string as inlined in O or as stored in RO_VAL or   RO_LONG,</listitem>
+<listitem>the RO_ID if the string is from RDF_OBJ (otherwise   zero),</listitem>
+<listitem>the short integer id of language referencing   RL_TWOBYTE, 257 if the language is not specified.</listitem>
+</itemizedlist>
+<para>The SQL value is the string as a narrow string representing the UTF8 encoding of the value, stripped of data type and language tag.</para>
+<para>The SQL form of an IRI is the string from RU_QNAME. The long and short forms are the IRI_ID referencing RU_IRI_ID of RDF_URL.</para>
+<para>For all non-string, non-IRI types, the short, long and
+ SQL values are the same SQL scalar of the appropriate native SQL type. A
+ SQL host variable meant to receive an O should be of the ANY type.</para>
+<para>The SPARQL implementation will usually translate results to the SQL format before returning them. Internally, it uses the shortest possible form suited to the operation. For equalities and joining, the short form is always good. For range comparisons, the long form is needed etc. For arithmetic, all three forms will do since the arguments are expected to be numbers which are stored as their binary selves in O, thus the O column unaltered and uncast will do as an argument of arithmetic or numeric comparison with, say, SQL literal constsnt.</para>
+</sect2>
+<sect2 id="rdfxmlschemacompat"><title>Special Cases and XML Schema Compatibility</title>
+<para>We note that since we store numbers as the equivalent SQL binary type, we do not preserve the distinction of byte, boolean etc. These all become integer. If preserving such detail is for some reason important, then storage as a typed string is possible but is not done at present for reasons of compactness and performance.</para>
+</sect2>
+<sect2 id="rdfquietcast"><title>SQL Compiler Support - QUIETCAST option</title>
+<para>The type cast behaviors of SQL and SPARQL are different. SQL will generally signal an error when an automatic cast fails. For example, a string can be compared to a date column if the string can be parsed as a date but otherwise the comparison should signal an error. In SPARQL , such situations are supposed to silently fail. Generally, SPARQL is much more relaxed with respect to data types.</para>
+<para>These differences will be specially noticed if actual SQL data is processed with SPARQL via some sort of schema mapping translating references to triples into native tables and columns.</para>
+<para>Also, even when dealing with the triple-oriented RDF_QUAD table, there are cases of joining between S and O such that the O can be a heterogenous set of IRI's and other data whereas the S is always an IRI. The non-IRI to IRI comparison should not give cast errors but should silently fail. Also, in order to keep queries simple and easily optimizable, it should not be necessary to introduce extra predicates for testing if the O is n IRI before comparing with the S.</para>
+<para>Due to these considerations, Virtuoso introduces a SQL statement option called QUIETCAST. When given in the OPTION clause of a SELECT, it switches to silent fail mode for automatic type casting.</para>
+<para>The syntax is as follows:</para>
+<programlisting>
+select ... from .... option (QUIETCAST)
+</programlisting>
+<para>This option is automatically added by the SPARQL to
+ SQL translator. The scope is the enclosing procedure body.</para>
+</sect2>
+</sect1><sect1 id="rdfapiandsql"><title>RDF and SPARQL API and SQL
+Support</title> <para>RDF-related procedures use Virtuoso/PL vectors
+and dictionaries to represent RDF triples and sets of triples.</para>
+<para>'Valmode' means the 'format of values returned by an
+expression', i.e. 'short', 'long' or 'sql value'.</para> <para>'Triple
+vector' is a vector (array) of S, P and O, where all values are in
+'long' formats, i.e. IRI_ID's for IRI values, vector of 5 items if O
+is a string, SQL scalar value if O is neither string nor IRI.</para>
+<para>'Dictionary of triples' or 'Hash table of triples' is an
+dictionary object made by the SQL function dict_new () whose keys are
+'triple vectors' and values are not specified; this is a good storage
+format for an unordered set of distinct triples.</para>
+<para>'Dictionary of blank node names' is a dictionary used for tricky
+processing of a number of TURTLE or RDF /XML descriptions of subgraphs
+that come from a common graph. Imagine a situation where  different
+descriptions actually refer to the same blank nodes of the original graph
+and, moreover, the application that generates these descriptions always
+generates the same blank node id string for same node. A reader of
+descriptions can properly join described subgraphs into one big
+subgraph by filling in a dictionary that contains blank node id strings
+as keys and IRI_ID's assigned to that strings as dependant data. As
+soon as all readers of an application share the same dictionary of
+nodes created before, no one blank node is created twice;</para>
+<sect2 id="rdfapi"><title>API Functions</title> <sect3
+id="rdfapidataimport"><title>Data Import</title>
+<programlisting>
+-- This parses TTL (TURTLE or N3 resource and places its triples into DB.DBA.RDF_QUAD.
+create procedure DB.DBA.TTLP (
+    in strg varchar,  -- text of the resource
+    in base varchar,  -- base IRI to resolve relative IRIs to absolute
+    in graph varchar) -- target garph IRI, parsed triples will appear in that graph.
+
+-- This does not load TTL content, instead it returns a dict of triples in 'long valmode'
+create function DB.DBA.RDF_TTL2HASH (
+    in strg varchar,
+    in base varchar,
+    in graph varchar) returns any
+
+-- This parses TTL (TURTLE or N3 resource and places its triples into DB.DBA.RDF_QUAD.
+create procedure DB.DBA.RDF_EXP_LOAD_RDFXML (
+    in g any,                         -- target graph IRI, can be IRI string or integer or IRI ref num
+    inout ent any,                    -- XML entity that contain RDF/XML document
+    in process_as_large_xper integer, -- special mode to load large documents in many transactions of relatively small
+size
+    in app_env any := null )          -- application environment for callbacks, unused in current version
+</programlisting>
+<programlisting>
+-- Simple insertion of a quad where object is a node
+create procedure DB.DBA.RDF_QUAD_URI (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_uri varchar)
+
+-- Simple insertion of a quad where object is a literal value in 'SQL valmode'
+create procedure DB.DBA.RDF_QUAD_URI_L (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_lit any)
+</programlisting>
+</sect3>
+<sect3 id="rdfapidataexport"><title>Data Export</title>
+<programlisting>
+-- Serializes vector of triples into a session, in TURTLE syntax
+create procedure DB.DBA.RDF_TRIPLES_TO_TTL (
+    inout triples any, -- vector of triples in 'long valmode'.
+    inout ses any) -- an output stream in server default encoding
+
+-- Serializes vector of triples into a session, in RDF/XML syntax.
+-- In current version, every triple is printed in separate rdf:Description tag, no nesting.
+create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (
+    inout triples any,          -- vector of triples in 'long valmode'.
+    in print_top_level integer, -- zero if only rdf:Description tags should be written, non-zero if the rdf:RDF top-lev
+el element should also be written
+    inout ses any)              -- an output stream in server default encoding
+</programlisting>
+</sect3>
+<sect3 id="rdfapidataquery"><title>Data query</title>
+<programlisting>
+-- Local execution of SPARQL via SPARQL protocol, produces a result set of SQL values.
+create procedure DB.DBA.SPARQL_EVAL (
+    in query varchar,      -- text of SPARQL query to execute
+    in dflt_graph varchar, -- default graph IRI, if not NULL then this overrides what's specified in query
+    in maxrows integer)    -- limit on numbers of rows that should be returned.
+
+-- Similar to SPARQL_EVAL, but returns a vector of vectors of SQL values.
+create function DB.DBA.SPARQL_EVAL_TO_ARRAY (
+    in query varchar,      -- text of SPARQL query to execute
+    in dflt_graph varchar, -- text of SPARQL query to execute
+    in maxrows integer)    -- limit on numbers of rows that should be returned.
+returns any
+</programlisting>
+<programlisting>
+-- Remote execution of SPARQL via SPARQL protocol, produces a result set of SQL values.
+create procedure DB.DBA.SPARQL_REXEC (
+    in service varchar,    -- service URI to call via HTTP
+    in query varchar,      -- text of SPARQL query to execute
+    in dflt_graph varchar, -- default graph IRI, if not NULL then this overrides what's specified in query
+    in named_graphs any,   -- vector of named graph IRIs, if not NULL then this overrides what's specified in query
+    in req_hdr any,        -- additional HTTP header lines that should be passed to the service; 'Host: ...' is most po
+pular.
+    in maxrows integer,    -- limit on numbers of rows that should be returned.
+    in bnode_dict any)     -- dictionary of bnode ID references.
+
+-- Similar to SPARQL_REXEC (), but returns a vector of vectors of SQL values.
+-- All arguments are the same.
+create function DB.DBA.SPARQL_REXEC_TO_ARRAY (
+    in service varchar, in query varchar, in dflt_graph varchar, in named_graphs any,
+    in req_hdr any, in maxrows integer, in bnode_dict any)
+returns any
+
+-- Similar to SPARQL_REXEC (), but fills in output parameters with metadata (like exec metadata) and a vector of vector
+s of 'long valmode' values.
+-- First seven arguments are the same.
+create procedure DB.DBA.SPARQL_REXEC_WITH_META (
+    in service varchar, in query varchar, in dflt_graph varchar, in named_graphs any,
+    in req_hdr any, in maxrows integer, in bnode_dict any,
+    out metadata any,  -- metadata like exec () returns.
+    out resultset any) -- results as 'long valmode' value.
+</programlisting>
+<para>If the query is a CONSTRUCT or DESCRIBE then the result set consists of a single row and single column, the value inside is a dict of triples in 'long valmode'.</para>
+</sect3>
+</sect2>
+<sect2 id="rdfinternalfunctions"><title>Useful Internal Functions</title>
+<sect3 id="rdfinternalconversion"><title>Conversion Functions for XMLSchema/RDF Data Serialization Syntax</title>
+<para>These functions emulate constructor functions from XQuery Core Function Library.</para>
+<programlisting>
+create function DB.DBA."http://www.w3.org/2001/XMLSchema#boolean" (in strg any) returns integer
+create function DB.DBA."http://www.w3.org/2001/XMLSchema#dateTime" (in strg any) returns datetime
+create function DB.DBA."http://www.w3.org/2001/XMLSchema#double" (in strg varchar) returns double precision
+create function DB.DBA."http://www.w3.org/2001/XMLSchema#float" (in strg varchar) returns float
+create function DB.DBA."http://www.w3.org/2001/XMLSchema#integer" (in strg varchar) returns integer
+</programlisting>
+</sect3>
+<sect3 id="rdfinternalpredicates"><title>RDF-specific Predicates</title>
+<programlisting>
+-- Returns 1 if string s matches pattern p, 0 otherwise
+create function DB.DBA.RDF_REGEX (
+    in s varchar,            -- source string to check
+    in p varchar,            -- regular expression pattern string
+    in coll varchar := null) -- unused for now (modes are not yet implemented)
+
+-- Returns 1 if language identifier r matches ling pattern t
+create function DB.DBA.RDF_LANGMATCHES (
+  in r varchar, -- language identifies (string or NULL)
+  in t varchar) -- language pattern (exact name, first two letters or '*')
+</programlisting>
+</sect3>
+</sect2>
+<sect2 id="rdfsparqlinline"><title>SPARQL Inline in SQL </title>
+<para>Virtuoso extends the SQL 92 syntax with SPARQL queries and subqueries. Instead of writing a SQL SELECT query or subquery, one can write the SPARQL keyword and a SPARQL query after the keyword.</para>
+<programlisting>
+SQL>sparql select distinct ?p where { graph ?g { ?s ?p ?o } };
+p
+varchar
+----------
+http://example.org/ns#b
+http://example.org/ns#d
+http://xmlns.com/foaf/0.1/name
+http://xmlns.com/foaf/0.1/mbox
+...
+
+
+SQL>select distinct subseq (p, strchr (p, '#')) as fragment
+  from (sparql select distinct ?p where { graph ?g { ?s ?p ?o } } ) as all_predicates
+  where p like '%#%';
+fragment
+varchar
+----------
+#query
+#data
+#name
+#comment
+...
+</programlisting>
+<sect3 id="rdfcontrollingsparqloutputtypes"><title>Controlling SPARQL Output Data Types</title>
+<para>The compilation of a SPARQL query may depend on environment that is usually provided by SPARQL protocol, including name of default graph URI . Environment settings that come from protocol may override settings in the text of SPARQL query. To let an application configure the environment for a query,
+ SPARQL syntax is extended with the 'define' clause:</para>
+<programlisting>
+define parameter-qname parameter-value
+</programlisting>
+<para>Supported parameters are</para>
+<para>'output:valmode' sets the format used for values in the result set. In most cases applications need SQL values to be returned by SPARQL . By default the query returns a result set of values in SQL format and behaves as a typical SQL select. To compose triple vectors in Virtuoso/PL code application may need data in 'long' format. If the query contains</para>
+<programlisting>
+define output:valmode 'LONG'
+</programlisting>
+<para>clause then all returned values are in long format. E.g., the following query returns IRI_ID's instead of IRI strings.</para>
+<programlisting>
+SQL>sparql define output:valmode 'LONG' select distinct ?p where { graph ?g { ?s ?p ?o } };
+p
+----------
+#i1000001
+#i1000003
+#i1000005
+#i1000006
+...
+</programlisting>
+</sect3>
+</sect2>
+<sect2 id="rdfdefaultgraph"><title>Default Graph and Graph IRI's</title>
+<para>Sometimes the default graph IRI is not known when the SPARQL query is composed. It can be added at the very last moment by providing the IRI in 'define' clause as follows:</para>
+<programlisting>
+define input:default-graph-uri &lt;http://example.com&gt;
+</programlisting>
+<para>Such a definition overrides the default graph URI set in query by 'FROM ...' clause (if any).</para>
+<para>When Virtuoso receives a SPARQL request via HTTP, the value of default graph set in protocol is sent back in the reply header as 'X-SPARQL-default-graph: ...' header line, for debugging purposes. This value has the highest possible priority and can not be redefined in the text of the query.</para>
+</sect2>
+<sect2 id="rdfsqlfromsparql"><title>Calling SQL from SPARQL </title>
+<para>A SPARQL expression can contain calls of Virtuoso/PL functions
+and built-in SQL functions in both the WHERE clause and in
+result set. Two namespace prefixes, 'bif' and 'sql' are reserved for
+these purposes. When a function name starts with 'bif:' namespace
+prefix, the rest of name is treated as a name of SQL BIF (Built-In
+Function). When a function name starts with 'sql:' namespace prefix,
+the rest of name is treated as a name of Virtuoso/PL function owned by
+'DBA' with database qualifier 'DB', e.g. 'sql:example(...)' is
+converted into 'DB.DBA."examples"(...)'.</para> 
+
+<para>In both cases,
+the function receives arguments in SQL format ('SQL valmode') and
+returns the result also in SQL format.  The SPARQL compiler will
+automatically add code for format conversion into the resulting SQL
+code so SQL functions can be used even if "define output:valmode
+'LONG'" forces the use of internal RDF representation in the
+result set.</para>
+</sect2>
+<sect2 id="rdfinsertanddelete"><title>Insert/Delete of Query Result
+Graphs</title> 
+
+<para>Two functions allow the user to alter RDF storage
+by inserting or deleting  all triples of a result graph of a
+query. Both functions receive an IRI of a graph that should be altered
+and a vector of triples that  should be added or removed. The graph IRI can
+be either IRI ID or a string. The return values of functions are not
+defined and should not be used by applications.</para>
+<programlisting>
+create function DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any)
+create function DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any)
+</programlisting>
+<para>As soon as the Virtuoso SPARQL implementation is extended to provide fine grained   access rights the , SPARQL syntax will be extended with 'INSERT INTO ... CONSTRUCT ...', 'INSERT INTO ... DESCRIBE ...', and 'DELETE FROM ... CONSTRUCT ...' statements.
+</para>
+</sect2>
+</sect1>
+<sect1 id="rdfsparqlimplementationextent"><title>SPARQL Implementation Extent</title>
+<para>The current implementation does not support some SPARQL features.</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem>'FROM NAMED ...' clause of SPARQL language and 'named-graph-uris od SPARQL protocol are not supported.</listitem>
+<listitem>Unicode characters in names are not supported.</listitem>
+<listitem>Comments inside SPARQL query are not supported when   the query is inlined in SQL code.</listitem>
+</itemizedlist>
+<para>On the other hand, Virtuoso implements some extensions to SPARQL . One extension, 'DEFINE ...' clause, e.g., 'define output:valmode "LONG"' is described above.</para>
+
+<para>Virtuoso also allows use of expressions in some places where
+SPARQL only allows constant expressions or variables. For example,
+the values list of SELECT may contain arbitrary expressions in parenthesis
+as well as variable names. Expressions may also appear in triples of
+CONSTRUCT pattern or WHERE pattern: an expression can be used instead
+of constant or variable name for subject, predicate or object. In this
+case, an expression is surrounded by backquotes.</para>
+
+<para>The following return all distinct 'fragment' parts of all subjects in all graphs that have some predicate whose value is equal to 2+2.</para>
+<programlisting>
+SQL>sparql select distinct (bif:subseq (?s, bif:strchr (?s, '#')))
+   where {
+     graph ?g {
+       ?s ?p `2+2` .
+       filter (! bif:isnull (bif:strchr (?s, '#') ) )
+     } };
+
+callret
+VARCHAR
+----------
+#four
+</programlisting>
+<sect2 id="rdfsparqlandxquery"><title>SPARQL and XQuery</title>
+<para>In the current implementation, the XQuery Function Library is not available from SPARQL .</para>
+<para>As a termporary workaround, string parsing functions are made available, because they are widely used in W3C DAWG examples and the like. They are</para>
+<programlisting>
+xsd:boolean (in strg any) returns integer
+xsd:dateTime (in strg any) returns datetime
+xsd:double (in strg varchar) returns double precision
+xsd:float (in strg varchar) returns float
+xsd:integer (in strg varchar) returns integer
+</programlisting>
+<para>(assuming that the query contains declaration 'PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;')</para>
+</sect2>
+</sect1>
+<sect1 id="rdfsparqlprotocolendpoint"><title>SPARQL Protocol End Point</title>
+<para>The Virtuoso Server supports SPARQL protocol according to 'SPARQL Protocol for RDF ', W3C Working Draft 25 January 2006. The server contains both SPARQL protocol server (HTTP service endpoint) and functions of SPARQL protocol client that let application execute remote SPARQL query and receive the result as a typical result set.</para>
+<para>Supported features include
+
+
+</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem>GET and POST requests;</listitem>
+<listitem>variety of transfer MIME-types, including RDF /XML and   TURTLE;</listitem>
+<listitem>default-graph-uri environment parameter;</listitem>
+<listitem>all sorts of queries including CONSTRUCT and DESCRIBE.</listitem>
+</itemizedlist>
+<sect2 id="rdfsupportedmethodsofprotocol"><title>Supported Methods and End Point URI </title>
+
+<para>Virtuoso reserves the path '/sparql/' and a synonym path
+'/SPARQL/' for SPARQL service. In the current implementation, Virtuoso
+defines virtual directories for HTTP requests that come to the port
+specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso
+configuration file and refer to one of these two path strings. So if
+the Virtuoso installation on host example.com listens for HTTP requests on
+port 8080 then client  applications should use the 'service endpoint' string
+equal to 'http://example.com:8080/sparql/'.</para>
+
+<para>Both GET and POST requests are supported by both server and
+client. The server recognizes the 'Accept: ...' line of request header
+to find MIME types preferred by the connected client and adjust the
+output mode of the response.</para>
+
+<para>The client chooses between GET and POST automatically, using the length of query text as a criterion. Queries longer than 1900 bytes are POST-ed, short queries are sent in GET mode.</para>
+</sect2>
+<sect2 id="rdfsupportedmimesofprotocol"><title>Supported MIME Types of SPARQL Protocol</title>
+
+<para>All standard MIME types of SPARQL Protocol are supported. SPARQL
+client supports 'application/sparql-results+xml' for results of SELECT
+and ASK queries, 'application/rdf+xml' and 'text/rdf+n3' for results
+of CONSTRUCT and DESCRIBE queries. If the HTTP header returned by the
+remote server does not contain 'Content-Type' line, the MIME type may
+be guessed from  the text of the returned body. The current implementation
+does not support results of SELECT returned in RDF /XML, TURTLE or
+'sparql-results-2'.</para>
+
+<para>The Virtuoso  SPARQL server can produce 'application/sparql-results+xml' for results of SELECT and ASK queries, 'application/rdf+xml' and 'text/rdf+n3' for results of CONSTRUCT and DESCRIBE queries.</para>
+</sect2>
+<sect2 id="rdfsparqlclientfunctions"><title>SPARQL Client Functions</title>
+<para>
+The  SPARQL client can be invoked by three similar functions. All the  functions get the following list of arguments:
+</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem>'service' - service URI such as   'http://example.com/sparql/';</listitem>
+<listitem>'query' - text of the query;</listitem>
+<listitem>'dflt_graph' - default graph URI (string   or NULL);</listitem>
+<listitem>'named_graphs' - vector of named graphs (or NULL to not   override what's specified in the query;</listitem>
+<listitem>'req_hdr' - additional HTTP header lines that should be   passed to the service; 'Host: ...' is most popular.</listitem>
+<listitem>'maxrows' - limit on numbers of rows that should be   returned (actual size of result set may differ).</listitem>
+<listitem>'bnode_dict' - dictionary of known blank node names, or   NULL for usual loading.</listitem>
+</itemizedlist>
+<para>DBA.SPARQL_REXEC () behaves like DBA.SPARQL_EVAL, but executes the query on the specified server. The procedure does not return anything. Instead, it creates a result set.</para>
+<programlisting>
+create procedure DB.DBA.SPARQL_REXEC (
+    in service varchar, in query varchar, in dflt_graph varchar, in named_graphs any,
+    in req_hdr any, in maxrows integer, in bnode_dict any );
+</programlisting>
+<para>Similarly, DBA.SPARQL_REXEC_TO_ARRAY () behaves like DBA.SPARQL_EXEC_TO_ARRAY (), but executes the query on the specified server. The function return a vector of rows, where every row is represented by a vector of valeus of fields.</para>
+<programlisting>
+create function DB.DBA.SPARQL_REXEC_TO_ARRAY (
+    in service varchar, in query varchar, in dflt_graph varchar, in named_graphs any,
+    in req_hdr any, in maxrows integer, in bnode_dict any )
+    returns any;
+</programlisting>
+
+<para>The function DBA.SPARQL_REXEC_WITH_META () has no local
+'SPARQL_EVAL' analog. It produces not only an array of result rows but
+also array of metadata about result set in a format used by the exec ()
+function. This function can be used when the result should be passed
+later to exec_result_names () and exec_result () built-in
+functions. To process local query in similar style, an application can
+use plain SQL built-in function exec (): an SPARQL query (with
+'SPARQL' keyword in front) can be passed to exec () instead of text of
+plain SQL SELECT statement.</para>
+
+<programlisting>
+create procedure DB.DBA.SPARQL_REXEC_WITH_META (
+    in service varchar, in query varchar, in dflt_graph varchar, in named_graphs any,
+    in req_hdr any, in maxrows integer, in bnode_dict any,
+    out metadata any,  -- metadata like exec () returns.
+    out resultset any) -- results as 'long valmode' values.
+</programlisting>
+
+<para>If the query is a CONSTRUCT or DESCRIBE then the result set
+consists of a single row and a single column, the value inside is a
+dictionary of triples in 'long valmode'. Note that the dictionary
+object can not be sent to SQL client, say, via ODBC . The client can
+loose database connection trying to fetch a result set row that
+contain a dictionary object. This disconnect will be safe for server,
+so the client can re-connect to the server, but the disconnected
+transaction will be rolled back.</para>
+
+</sect2>
+</sect1>
+</chapter>

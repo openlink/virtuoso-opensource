@@ -1,0 +1,106 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="MS-A-4">
+  <refmeta>
+    <refentrytitle>Using Annotated XSD Schemas for Creating XML Views</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname></refname>
+    <refpurpose>Using sql:is-constant for creating constant elements </refpurpose>
+  </refnamediv>
+
+<refsect1 id="MS-A-4a">
+<title>Preliminaries</title>
+<para>
+The sql:is-constant annotation can be used to specify a constant element, an element in the XSD schema 
+that does not map to any database table or column. sql:is-constant takes a Boolean value (false, true), 0 and 1
+(0 = false, 1 = true).  The is-constant annotation can be specified on an element 
+that does not have any attributes. If this annotation is specified on an element with the value true (or 1), 
+that element is not mapped to the database but still appears in the XML document. The sql:is-constant annotation 
+can be added to a &lt;complexType&gt; element.
+</para>
+
+</refsect1>
+<refsect1 id="MS-A-4b">
+<title>Example. Specifying sql:is-constant to add a container element</title>
+<para>
+In this annotated XSD schema, &apos;CustomerOrders&apos;  is defined as a constant element by specifying 
+the sql:is-constant attribute with the value of 1. Therefore, &apos;CustomerOrders&apos; element is not mapped to 
+any database table or column. 
+This constant element consists of the &apos;Order&apos; subelements.
+Although &apos;CustomerOrders&apos; element does not map to any database table or column, it still appears in the 
+resulting XML as a container element containing the &apos;Order&apos; subelements.
+</para>
+<programlisting><![CDATA[
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:sql="urn:schemas-microsoft-com:mapping-schema">
+<xsd:annotation>
+  <xsd:appinfo>
+    <sql:relationship name="CustOrders"
+        parent="Demo.demo.Customers"
+        parent-key="CustomerID"
+        child="Demo.demo.Orders"
+        child-key="CustomerID" />
+  </xsd:appinfo>
+</xsd:annotation>
+
+  <xsd:element name="Customer" sql:relation="Demo.demo.Customers" >
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="CustomerOrders" sql:is-constant="1" >
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="Order" sql:relation="Demo.demo.Orders"
+                           sql:relationship="CustOrders" 
+                           maxOccurs="unbounded" >
+                <xsd:complexType>
+                   <xsd:attribute name="OrderID" type="xsd:integer" />
+                   <xsd:attribute name="CustomerID" type="xsd:string" />
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+          <xsd:attribute name="CustomerID" type="xsd:string" />
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>
+]]></programlisting>
+<para>Let the schema is written to the file &apos;CustOr_constant.xsd&apos;, then after loading this file by 
+<function>xml_load_mapping_schema_decl</function> function, the first example will produce a result for the XPath query:
+</para>
+<programlisting><![CDATA[
+XPATH [__view 'CustOr_constant'] /*[@CustomerID="QUEEN"]
+]]></programlisting>
+<para>
+the second example will produce a result for the XQuery query:
+</para>
+<programlisting><![CDATA[
+select xquery_eval('<doc>{for $r in xmlview("CustOr_constant")/*[@CustomerID="QUEEN"] return $r}</doc>', xtree_doc('<q/>'))
+]]></programlisting>
+
+</refsect1>
+</refentry>

@@ -1,0 +1,340 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<chapter label="III" id="chapter3">
+<title>Virtual Database Concepts</title>
+<abstract>
+This document describes the SQL extensions, system tables and functions
+related to the Virtuoso Universe virtual database.
+</abstract>
+
+<!-- ======================================== -->
+<sect1 id="TRANSMODEL">
+<title>Transaction Model</title>
+<para>
+One transaction on the Virtuoso Universe server may contain operations
+on multiple remote data sources. As a general rule remote connections
+are in manual commit mode and Virtuoso wither commits or rolls back the
+transaction on each of the remote connections as the main transaction
+terminates.
+</para>
+<para>
+ODBC does not support two phase commit. Therefore a transaction that
+succeeds on one remote party may fail on another.
+</para>
+<para>
+A transaction involving local tables and tables on one remote data source
+will always complete correctly since the remote is committed before the
+local and the local is rolled back if the remote commit fails.
+</para>
+<para>
+Note that even though the client to Virtuoso connection may be in
+autocommit mode the continuing connections will typically not be
+autocommitting.
+</para>
+<para>
+A remote connection is in autocommit mode if the Virtuoso connection
+is and the statement is passed through unmodified. In all other cases
+remote connections are in manual commit mode.
+</para>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="STOREDPROCS">
+<title>Stored Procedures</title>
+<sect2 id="vd_remote_data_source">
+<title>DB.DBA.vd_remote_data_source</title>
+<programlisting>B.DBA.vd_remote_data_source (
+    in dsn varchar,
+    in connstr varchar,
+    in user varchar,
+    in password varchar);</programlisting>
+<para>
+A remote data source is uniquely identified by its DSN, the dsn argument
+to this function. The connstr argument is presently ignored. The user and
+password are the login name and password to use when communicating with
+the remote data source. All Virtuoso users dealing with the remote data
+source will appear as this user to the remote data source. Virtuoso will
+make as many connections as there are concurrent users of the data source.
+Connections are cached by Virtuoso.
+</para><para>
+The default qualifier of the user of the remote data source is usually
+not relevant.
+</para><para>
+Remote table names should be fully qualified.
+</para>
+</sect2>
+
+<sect2 id="DB.DBA.vd_remote_table">
+<title>DB.DBA.vd_remote_table</title>
+<programlisting>vd_remote_table (
+    in dsn varchar,
+    in local_name varchar,
+    in remote_name varchar);</programlisting>
+<para>
+Declares an existing table as resident on a data source previously
+declared with vd_remote_data_source.
+</para><para>
+This function declares the table local_name as table remote_name on
+the dsn. The tables names should be full, names with qualifier and
+owner. The names are case sensitive and must be in the exact case where
+they appear in the local and remote schemas.
+</para><para>
+If remote_name is NULL, the effect of a possible previous vd_remote_table
+is reversed. The table is thereafter treated as a local table, except
+in procedures and statements compiled when the remote declaration was
+in effect.
+</para>
+</sect2>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="TYPEMAPPING">
+<title>Data Type Mappings</title>
+
+<para>
+If a statement is passed through to a remote data source, the types
+returned by SQLDescribeCol are taken directly from the remote prepare
+and converted to the closest Virtuoso supported type.
+</para><para>
+If a statement involves both local and remote objects all types are
+taken from the Virtuoso copy of the data dictionary.
+</para><para>
+In executing remote selects Virtuoso binds output columns according
+to the type and precision given by SQLDescribeCol after preparing the
+remote statement.
+</para>
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="TIMESTAMP_AUTOINCREMENT">
+<title>Timestamps &amp; Autoincrement</title>
+<para>
+A transaction timestamp is not the same across the transaction
+if the transaction has branches in different databases.
+</para><para>
+The data type and precision of a time stamp will also vary between
+different types of databases.
+</para><para>
+Hence timestamp columns coming from tables on different servers are not
+comparable for equality.
+</para><para>
+In inserts and updates of remote tables timestamps are assigned by
+the database where the table in question is physically located.
+</para><para>
+Indentity or autoincrement columns are likewise handled by the database holding the
+remote table.
+</para><para>
+Note that MS SQL Server and Virtuoso describe a timestamp column as a binary column in ODBC
+catalog and meta data calls.  Thus remote SQL Server or Virtuoso timestamps will not appear as timestamps at all.
+</para><para>
+In the case of a Virtuoso remote database the binary timestamp can be cast into a DATETIME data type
+and it will appear as a meaningful datetime.
+</para>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="SYSTABS">
+<title>System Tables</title>
+
+<!-- *******  Content not yet defined  ******* -->
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="VDBFUNCTIONS">
+<title>VDB Functions</title>
+
+<sect2 id="ATTACH">
+<title>ATTACH TABLE Statement</title>
+<programlisting>ATTACH TABLE table [AS local_name] FROM dsn [USER uid PASSWORD pwd]</programlisting>
+<variablelist>
+<varlistentry><term>dsn</term><listitem><para>scalar_exp
+</para></listitem></varlistentry>
+<varlistentry><term>user</term><listitem><para>scalar_exp
+</para></listitem></varlistentry>
+<varlistentry><term>password</term><listitem><para>scalar_exp
+</para></listitem></varlistentry>
+<varlistentry><term>table</term><listitem><para>identifier  | identifier.identifier | identifier.identifier.identifier | identifier..identifier
+</para></listitem></varlistentry>
+<varlistentry><term>local_name</term><listitem><para>table
+</para></listitem></varlistentry>
+</variablelist>
+
+<para>This SQL statement defines a remote data source, copies the schema
+information of a giventable to the local database and defines the table as a
+remote table residing on the data source in question.
+</para><para>
+The table is a designation of the table&apos;s name on the remote data source dsn. It
+may consist of an optional qualifier, optional owner and table names, separated
+by dots.  This must identify exactly one table on the remote dsn. The optional
+local_name is a on optionally qualified table name which will identify the table on
+the local database. If qualifier or owner are omitted, these default to the current
+qualifier &apos;dbname ()&apos; and the logged in user, as with CREATE TABLE. If the
+local_name is not given it defaults to the &lt;current qualifier&gt;.&lt;dsn&gt;.&lt;table name on
+dsn&gt;.  The &lt;dsn&gt; will be the dsn with all alphabetic characters in upper case and
+all non-alphanumeric characters replaced by underscores. The &lt;table name on
+dsn&gt; will be the exact name as it is on the remote dsn, case unmodified.
+</para><para>
+If a dsn is not previously defined with vd_remote_data_source or ATTACH
+TABLE, the the USER and PASSWORD clauses have to be given.
+</para>
+</sect2>
+
+<sect2 id="REMOTECAT">
+<title>Remote Catalog Access</title>
+
+<programlisting>
+Sql_data_sources ()
+</programlisting>
+
+<programlisting>
+Sql_ravles(
+   in dsn varchar,
+   in qualifier varchar,
+   in owner varchar,
+   in table_name varchar,
+   in tabletype varchar);
+</programlisting>
+
+<programlisting>
+Sql_columns (
+   in dsn varchar,
+   in qualifier varchar,
+   in owner varchar,
+   in table_name varchar,
+   in column varchar)
+</programlisting>
+
+<programlisting>
+Sql_statistics (
+   in dsn varchar,
+   in qualifier varchar,
+   in owner varchar,
+   in table_name varchar,
+   in is_unique integer,
+   in detail integer)
+</programlisting>
+
+<programlisting>
+Sql_primary_keys (
+   in dsn varchar,
+   in qualifier varchar,
+   in owner varchar,
+   in table_name varchar)
+</programlisting>
+
+<para>
+These SQL functions correspond to the ODBC catalog calls of similar name.
+These are used to access the data dictionary of remote data sources inside the
+ATTACH TABLE process.
+</para><para>
+The dsn argument must refer to a dsn previously defined by
+vd_remote_data_source or ATTACH TABLE.
+</para><para>
+For instance, the qualifier argument corresponds to the szTableQualifier and
+cbTableQualifier arguments of an ODBC catalog function.  A SQL NULL value
+corresponds to the C NULL value.  The arguments can contain % signs, which
+are interpreted as in LIKE.
+</para><para>
+These functions return an array, with one element for each row of the result set.
+Each row is represented as an array with one element for each column.
+</para>
+</sect2>
+
+<sect2 id="MANSETRDS">
+<title>Manually Setting up a Remote Data Source</title>
+<para>
+Defining a remote table involves declaring the table as a local table
+and then defining the data source if not already defined and associating
+the new table with the remote data source.
+</para><para>
+The data source on which a table resides is declared at the table
+level. This has no connection to the table&apos;s qualifier.
+</para><para>
+Assume a remote ODBC data source named test containing a table xyz
+declared as follows:
+</para>
+
+<example id="VDOCS-TRANS-01">
+<title>Example:</title>
+<programlisting>
+   CREATE TABLE XYZ (
+   A INTEGER,
+	B INTEGER,
+	C INTEGER,
+	PRIMARY KEY (A));
+</programlisting>
+</example>
+<para>
+To defined this as a remote table on the data source Virtuoso, first
+define the table locally, using the above CREATE TABLE statement above.
+</para>
+<para>
+Then define the data source:
+</para>
+<programlisting>
+DB..vd_remote_data_source (&apos;test&apos;, &apos;&apos;, &apos;sa&apos;,&apos;&apos;);
+</programlisting>
+<para>
+And the table:
+</para>
+<programlisting>
+DB..vd_remote_table (&apos;test&apos;, &apos;DB.DBA.XYZ&apos;, &apos;master.dbo.XYZ&apos;);
+</programlisting>
+<para>
+This assumes that the remote data source has a login &apos;sa&apos; with an empty
+password and no special connection string options. The table names in
+vd_remote_table have to be fully qualified. We here assume that the
+Virtuoso table was created by DBA in under the default qualifier DB and
+the remote XYZ was created by dbo in master.
+</para>
+<para>
+The vd_remote_table declaration does not affect statements or procedures
+compiled prior to the declaration.
+</para>
+<para>
+Additional indices of remote tables may optionally be defined. They do
+not affect the operation of the SQL compiler. The remote data source
+makes the choice of index based on the order by clause in the statement
+passed through.
+</para>
+</sect2>
+</sect1>
+
+
+<!-- ======================================== -->
+<sect1 id="BUGS">
+<title>Bugs</title>
+<itemizedlist mark="bullet">
+<listitem><para>
+Never define a local table as remote. The server will hang if it tries
+to make a remote commit on itself.
+</para></listitem>
+</itemizedlist>
+</sect1>
+
+
+</chapter>

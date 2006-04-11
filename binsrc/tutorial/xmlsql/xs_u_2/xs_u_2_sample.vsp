@@ -1,0 +1,163 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare templ, st, myTemplate varchar;
+declare err varchar;
+declare photo_inx integer;
+
+err := '';
+
+if ({?'exec'} = 'Add')
+  {
+    if (exists (select 1 from Employees where EmployeeID = atoi({?'EmpID'})))
+      {
+        err := 'Error: duplicate EmpID';
+        goto endf;
+      }
+      photo_inx := null;
+      for(declare i integer,i:=0; i < length(params);i := i + 2){
+      	if (aref(params,i) = 'Photo')
+      		photo_inx := i + 1;
+      }
+      if (photo_inx is not null)
+      	aset(params,photo_inx,cast(aref(params,photo_inx) as varbinary));
+      
+    myTemplate :=
+      '<ROOT xmlns:sql="urn:schemas-microsoft-com:xml-sql">
+       <sql:header>
+	<sql:param name="EmpID" default="1"/>
+	<sql:param name="FirstName"/>
+	<sql:param name="LastName"/>
+	<sql:param name="BirthDate"/>
+	<sql:param name="Photo"/>
+	<sql:param name="Credit"/>
+       </sql:header>
+       <sql:sync>
+       <sql:after>
+       <Employees EmployeeID="$EmpID" FirstName="$FirstName" LastName="$LastName" BirthDate="$BirthDate" Photo="$Photo"/>
+       </sql:after>
+       </sql:sync>
+       </ROOT>';
+    xmlsql_update (xml_tree_doc (xml_tree (myTemplate)), params);
+  }
+endf:
+
+?>
+<HTML>
+  <head>
+    <title>XML Updategram Demonstration</title>
+	  <link rel="stylesheet" type="text/css" href="../demo.css">
+  </head>
+<BODY>
+
+<p style="color: red"><?= err ?></p>
+
+<table class="tableentry">
+<FORM action="xs_u_2_sample.vsp" method=POST enctype="multipart/form-data">
+<tr>
+ <td colspan="2">
+ 1. Enter the data for new record
+ </td>
+</tr>
+<tr>
+ <td>
+ EmployeeID
+ </td>
+ <td>
+ <INPUT type="text" name="EmpID" value="1">
+ </td>
+</tr>
+<tr>
+ <td>
+ FirstName
+ </td>
+ <td>
+ <INPUT type="text" name="FirstName" value="Joe">
+ </td>
+</tr>
+<tr>
+ <td>
+ LastName
+ </td>
+ <td>
+ <INPUT type="text" name="LastName" value="Smith">
+ </td>
+</tr>
+<tr>
+ <td>
+ BirthDate
+ </td>
+ <td>
+ <INPUT type="text" name="BirthDate" value="1970-02-27">
+ </td>
+</tr>
+<tr>
+ <td>
+ Photo
+ </td>
+ <td>
+ <INPUT type="file" name="Photo">
+ </td>
+</tr>
+<tr>
+ <td>
+ Credit
+ </td>
+ <td>
+ <INPUT type="text" name="Credit" value="123456.12">
+ </td>
+</tr>
+<tr>
+ <td>
+ 2. Execute the updategram
+ </td>
+ <td>
+<input type=submit name="exec" value="Add">
+ </td>
+</tr>
+
+</FORM>
+</table>
+
+<TABLE class="tableresult">
+<th>EmployeeID</th>
+<th>FirstName</th>
+<th>LastName</th>
+<th>BirthDate</th>
+<th>Photo</th>
+<?vsp for select EmployeeID, FirstName, LastName, BirthDate, Photo from Employees do { ?>
+<TR>
+    <TD><?=EmployeeID?></TD>
+    <TD><?=FirstName?></TD>
+    <TD><?=LastName?></TD>
+    <TD><?=BirthDate?></TD>
+    <TD>
+    <?vsp if(length(Photo) > 1) { ?>
+    	<img src="xs_u_2_photo.vsp?EmpID=<?=EmployeeID?>">
+    <?vsp } ?>
+    </TD>
+</TR>
+<?vsp } ?>
+</TABLE>
+</BODY>
+</HTML>

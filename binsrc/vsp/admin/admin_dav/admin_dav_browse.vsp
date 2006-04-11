@@ -1,0 +1,368 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines);
+
+-- WebDAV browser include page
+  declare _saved_params any;
+  declare _col_name, _parent_col, _dav_sid varchar;
+  declare _col_id integer;
+  set isolation='uncommitted';
+-- _current_uri, _show_browser and _dav_result should be set by parent page
+  _dav_result := get_keyword ('selected_res', params, null);
+  if (_dav_result = '')
+    _dav_result := null;
+  _sys := get_keyword ('system', params, null);
+  if (_sys is null)
+    {
+      _sys := get_keyword ('sys', params, null);
+      if (_sys is null)
+	_sys := 'dav';
+    }
+
+  if (get_keyword ('ppath_bw', params, '') <> '')
+    _mod := 1;
+  else if (get_keyword ('def_bw', params, '') <> '')
+    _mod := 2;
+  else if (get_keyword ('def_sh', params, '') <> '')
+    _mod := 2;
+  else if (get_keyword ('def_all', params, '') <> '')
+    _mod := 3;
+  else
+    _mod := get_keyword ('mod', params, '0');
+
+  if (__tag (_mod) = 182)
+    _mod := atoi (_mod);
+
+  _saved_params := get_keyword ('saved_params', params, NULL);
+  _dav_sid := adm_get_sesid (params);
+  if (_show_browser is null)
+    {
+      if (_dav_result is not null and _saved_params is not null)
+	_show_browser := null;
+      else if (_dav_result is null and _saved_params is not null)
+	_show_browser := 'yes';
+    }
+  if (_show_browser is not null)
+    {
+      if (_saved_params is null)
+	{
+	  declare _ix, _len integer;
+	  _len := length (params);
+	  _saved_params := params;
+	  _ix := 0;
+	  while (_ix < _len)
+	    {
+	      if (aref (_saved_params, _ix) = '')
+		aset (_saved_params, _ix, null);
+	      _ix := _ix + 1;
+	    }
+	  _saved_params := encode_base64 (serialize (_saved_params));
+	}
+      if ('' = _col_name := get_keyword ('cur_dir', params, ''))
+	{
+          _col_name := adm_get_ses_var (_dav_sid, 'current_collection', '');
+          if (_col_name = '')
+	    _col_name := '/DAV/';
+	}
+      adm_set_ses_var (_dav_sid, 'current_collection', _col_name);
+      adm_set_ses_var (_dav_sid, 'current_collection', _col_name);
+
+      if (_sys='dav')
+	select COL_ID, WS.WS.COL_PATH (COL_PARENT) into _col_id, _parent_col
+	    from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) = _col_name;
+
+      if (_parent_col = '/')
+	_parent_col := _col_name;
+?>
+<!-- WebDAV browser is here -->
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function colMov (dir, sid, sys, mod)
+  {
+    document.dav_list_form.cur_dir.value = dir;
+    document.dav_list_form.sid.value = sid;
+    document.dav_list_form.sys.value = sys;
+    document.dav_list_form.mod.value = mod;
+    document.dav_list_form.submit ();
+//    alert('dir: ' + dir + ' sid: ' + sid + ' sys: ' + sys + ' mod:' + mod);
+  }
+
+function sendResult (res, sid, sys, mod)
+  {
+    document.dav_list_form.selected_res.value = res;
+    document.dav_list_form.sid.value = sid;
+    document.dav_list_form.sys.value = sys;
+    document.dav_list_form.mod.value = mod;
+    document.dav_list_form.submit ();
+  }
+// -->
+</SCRIPT>
+<?vsp if (_sys='dav') { ?>
+
+<HTML>
+<HEAD>
+    <LINK rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <META name="AUTHOR" content="OpenLink Software">
+    <META name="DESCRIPTION" content="Virtuoso WebDAV browser">
+</HEAD>
+<TITLE>Content of <?=_col_name?></TITLE>
+<?vsp adm_page_header(concat('Content of ', _col_name), 'davbrowse'); ?>
+<?include ../adm_js_check.vsp ?>
+     <FORM action="<?=_current_uri?>" method=POST name="dav_list_form">
+       <INPUT type="hidden" name="saved_params" value="<?=_saved_params?>">
+       <INPUT type="hidden" name="cur_dir">
+       <INPUT type="hidden" name="sid">
+       <INPUT type="hidden" name="sys">
+       <INPUT type="hidden" name="mod">
+       <INPUT type="hidden" name="selected_res" value="">
+       <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+       <TR><TD CLASS="genhead" COLSPAN="10">Content Listing of <?=_col_name?></TD></TR>
+       <TR><TD CLASS="AdmBorders" COLSPAN="10"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	 <TR>
+	   <TD CLASS="genlistheadt">&nbsp;</TD>
+	   <TD CLASS="genlistheadt">Name</TD>
+	   <TD CLASS="genlistheadt">Permissions</TD>
+	   <TD CLASS="genlistheadt">Owner</TD>
+	   <TD CLASS="genlistheadt">Group</TD>
+	   <TD CLASS="genlistheadt">Size</TD>
+	   <TD CLASS="genlistheadt">Type</TD>
+	   <TD CLASS="genlistheadt">Last modified</TD>
+	 </TR>
+         <TR><TD class="davicon"><IMG src="/images/dir.gif"></TD>
+			<TD CLASS="gendata" COLSPAN="7"><A href="" onClick="colMov ('<?=_col_name?>', '<?=_dav_sid?>', 'dav', <?=_mod?>); return false">.</A></TD></TR>
+         <TR><TD class="davicon"><IMG src="/images/dir.gif"></TD>
+			<TD CLASS="gendata" COLSPAN="7"><A href="" onClick="colMov ('<?=_parent_col?>', '<?=_dav_sid?>', 'dav', <?=_mod?>); return false">..</A></TD></TR>
+	     <?vsp
+	       declare _owner, _group, _time varchar;
+	       for
+		 select COL_NAME, COL_ID, COL_OWNER, COL_GROUP, COL_PERMS, COL_MOD_TIME
+		 from WS.WS.SYS_DAV_COL
+		 where COL_PARENT = _col_id do {
+                 _owner := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = COL_OWNER), 'public');
+                 _group := coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = COL_GROUP), 'none');
+                 _time := substring (cast (COL_MOD_TIME as varchar),1, 19);
+	     ?>
+	     <TR>
+	       <TD CLASS="genicon">
+<?vsp if (_mod = 2) { ?>
+	       <IMG src="/images/dir.gif"></TD>
+<?vsp } else { ?>
+	       <A class="tablelistaction" href="" onClick="sendResult ('<?=WS.WS.COL_PATH (COL_ID)?>', '<?=_dav_sid?>', 'dav'); return false"><IMG src="/images/dir.gif"></A></TD>
+<?vsp } ?>
+	       <TD CLASS="gendata">
+	       <A href="#" onClick="colMov ('<?=WS.WS.COL_PATH (COL_ID)?>', '<?=_dav_sid?>', 'dav', <?=_mod?>); return false"><?=COL_NAME?></A></TD>
+	       <TD CLASS="gendata"><?=adm_dav_format_perms(COL_PERMS)?></TD>
+	       <TD CLASS="gendata"><?=_owner?></TD>
+	       <TD CLASS="gendata"><?=_group?></TD>
+	       <TD CLASS="gendata"></TD>
+	       <TD CLASS="gendata">collection</TD>
+	       <TD CLASS="gendata"><?=_time?></TD>
+	     </TR>
+	     <?vsp
+	       }
+	       for
+		 select RES_NAME, RES_OWNER, RES_GROUP, RES_PERMS, RES_MOD_TIME,
+	                 RES_TYPE, length (RES_CONTENT) as _size, RES_FULL_PATH
+		 from WS.WS.SYS_DAV_RES
+		 where RES_COL = _col_id do {
+                 _owner := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = RES_OWNER), 'public');
+                 _group := coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = RES_GROUP), 'none');
+                 _time := substring (cast (RES_MOD_TIME as varchar),1, 19);
+	     ?>
+	     <TR>
+	       <TD CLASS="genicon"><IMG src="/images/generic.gif"></TD>
+<?vsp if (_mod= 1) { ?>
+	       <TD CLASS="gendata"><?=RES_NAME?></TD>
+<?vsp } else { ?>
+	       <TD CLASS="gendata"><A href="" onClick="sendResult ('<?=RES_FULL_PATH?>', '<?=_dav_sid?>', 'dav');  return false"><?=RES_NAME?></A></TD>
+<?vsp } ?>
+	       <TD CLASS="gendata"><?=adm_dav_format_perms(RES_PERMS)?></TD>
+	       <TD CLASS="gendata"><?=_owner?></TD>
+	       <TD CLASS="gendata"><?=_group?></TD>
+	       <TD CLASS="gendata"><?=_size?></TD>
+	       <TD CLASS="gendata"><?=RES_TYPE?></TD>
+	       <TD CLASS="gendata"><?=_time?></TD>
+	     </TR>
+	     <?vsp
+	       }
+	     ?>
+       </TABLE>
+     </FORM>
+<?vsp adm_page_footer(); ?>
+</HTML>
+<?vsp
+
+	}
+      else
+	{
+
+	   declare dirarr, filearr any;
+	   declare curdir, dirname, root, virtd, _lpath, _edit, new_dir varchar;
+	   declare ix, len, root_len integer;
+	   curdir := _col_name;
+	   if (length (curdir) < length (http_root ()))
+	     curdir := http_root ();
+	   root := http_root ();
+	   if (aref (root, length (root) - 1) = ascii ('/'))
+	     root := substring (root, 1, length (root) - 1);
+	   root_len := length (root);
+	   _lpath := get_keyword ('lpath', params, '');
+	   _edit := get_keyword ('EDIT', params, '');
+	   if (_edit <> '')
+	     _edit := concat ('&EDIT=', _edit);
+	   --dbg_obj_print ('incoming str: ', curdir);
+	   -- XXX: we should remove trailing dots ..
+	   if (curdir like '%/..' or curdir like '%\\..')
+	     {
+	       declare separ varchar;
+	       declare lastsep integer;
+               separ := curdir [length(curdir) - 3];
+               curdir := substring (curdir, 1, length (curdir) - 3);
+               lastsep := strrchr (curdir, separ);
+               if (lastsep is not null and lastsep > 0)
+		curdir := substring (curdir, 1, lastsep);
+	       --dbg_obj_print ('transformed str: ', curdir);
+	     }
+
+	   dirarr := sys_dirlist (curdir, 0);
+	   filearr := sys_dirlist (curdir, 1);
+	   if (aref (curdir, length (curdir) - 1) <> ascii ('/'))
+	     curdir := concat (curdir, '/');
+	   len := length (dirarr);
+	   ix := 0;
+	   declare root1, curdir1 varchar;
+	   if (aref (root, length (root) - 1) <> ascii ('/'))
+	     root1 := concat (root, '/');
+	   else
+	     root1 := root;
+	   if (aref (curdir, length (curdir) - 1) <> ascii ('/') and aref (curdir, length (curdir) - 1) <> ascii ('.'))
+	     curdir1 := concat (curdir, '/');
+	   else if (aref (curdir, length (curdir) - 1) = ascii ('.') and aref (curdir, length (curdir) - 2) = ascii ('.'))
+	     curdir1 := subseq (curdir, 0, length (curdir) - 2);
+	   else
+		curdir1 := curdir;
+?>
+
+<HTML>
+<HEAD>
+    <LINK rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <META name="AUTHOR" content="OpenLink Software">
+    <META name="DESCRIPTION" content="Virtual WEB directories setup">
+</HEAD>
+<?vsp adm_page_header(concat ('File System: ', substring (curdir, length(root)+1, length (curdir))), 'davbrowse'); ?>
+
+     <FORM action="<?=_current_uri?>" method=POST name="dav_list_form">
+       <INPUT type="hidden" name="saved_params" value="<?=_saved_params?>">
+       <INPUT type="hidden" name="cur_dir">
+       <INPUT type="hidden" name="sid">
+       <INPUT type="hidden" name="sys">
+       <INPUT type="hidden" name="mod">
+       <INPUT type="hidden" name="selected_res" value="">
+       <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+       <TR><TD CLASS="genhead" COLSPAN="10">Browse</TD></TR>
+       <TR><TD CLASS="AdmBorders" COLSPAN="10"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	 <TR>
+	   <TD CLASS="genlistheadt">&nbsp;</TD>
+	   <TD CLASS="genlistheadt">Name</TD>
+	 </TR>
+<?vsp
+
+  while (ix < len)
+    {
+      dirname := aref (dirarr, ix);
+      virtd := substring (concat (curdir, dirname), root_len + 1, length (concat (curdir, dirname)) - root_len);
+      new_dir := concat(curdir, dirname);
+      if ((sys_stat('st_build_opsys_id') = 'Win32') and (_sys <> 'dav'))
+	new_dir := replace (new_dir, '\\', '\\\\');
+      if (aref (dirname, 0) <> ascii ('.'))
+	{
+?>
+   <TR>
+       <TD CLASS="gendata">
+<?vsp if (_mod = 2) { ?>
+       <IMG src="/images/dir.gif"></TD>
+<?vsp } else { ?>
+       <A CLASS="tablelistaction" href="" onClick="sendResult ('<?=new_dir?>', '<?=_dav_sid?>', 'file'); return false"><IMG src="/images/dir.gif"></A></TD>
+<?vsp } ?>
+       <TD CLASS="gendata">
+       <A CLASS="tablelistaction" href="#" onClick="colMov ('<?=new_dir?>', '<?=_dav_sid?>', 'file', <?=_mod?>); return false"><?=dirname?></A></TD>
+<?vsp
+	}
+      else if ((curdir1 <> root1) and dirname = '..')
+	{
+?>
+   <TR><TD CLASS="gendata"><IMG SRC="/images/dir.gif"></TD>
+   <TD CLASS="gendata">
+   <A href="#" onClick="colMov ('<?=new_dir?>', '<?=_dav_sid?>', 'file', <?=_mod?>); return false"><?=dirname?></A></TD>
+<?vsp
+	}
+      ix := ix + 1;
+    }
+
+  len := length (filearr);
+  ix := 0;
+
+  while (ix < len)
+    {
+      dirname := aref (filearr, ix);
+      if ((sys_stat('st_build_opsys_id') = 'Win32') and (_sys <> 'dav'))
+        dirname := replace (dirname, '\\', '\\\\');
+?>
+   <TR>
+   <TD CLASS="gendata"><IMG SRC="/images/generic.gif"></TD>
+   <TD CLASS="gendata">
+<?vsp if (_mod= 1) { ?>
+   <?=dirname?></TD></TR>
+<?vsp } else { ?>
+   <A href="" onClick="sendResult ('<?=dirname?>', '<?=_dav_sid?>', 'file'); return false"><?=dirname?></A></TD></TR>
+<?vsp
+     }
+      ix := ix + 1;
+    }
+?>
+</TABLE></TD></TR>
+</FORM>
+<?vsp adm_page_footer(); ?>
+</HTML>
+<?vsp
+	}
+      _show_browser := 'yes';
+    }
+  else
+    {
+      if (_saved_params is not null)
+	{
+	  declare _ix, _len integer;
+	  params := deserialize (decode_base64(_saved_params));
+	  _len := length (params);
+	  _ix := 0;
+	  while (_ix < _len)
+	    {
+	      if (aref (params, _ix) is null)
+		aset (params, _ix, '');
+	      _ix := _ix + 1;
+	    }
+	}
+      _show_browser := null;
+    }
+?>

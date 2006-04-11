@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="vseplugins"><title>VSEI Plugins</title>
+
+<para>Virtuoso functionality can be enhanced through external libraries by
+loading shared objects or DLLs.  The new functions are written in a language of
+the developer's choice and compiled to produce a shared library appropriate to the operating
+system.  The path to the shared library must be declared in the Virtuoso INI
+file and the server restarted before it can be used.</para>
+
+<para>The Virtuoso INI file uses a [Plugins] configuration section for listing
+shared libraries for the server to load upon startup.  The layout is as
+follows:</para>
+
+<programlisting><![CDATA[
+[Plugins]
+LoadPath = <module path> (example : /home/virtuoso/hosting)
+Load1 = <module type>, <module name> (example : hosting_perl.so)
+Load2 = <module type 2>, <module name 2>
+..
+LoadN = <module type N>, <module name N>
+]]></programlisting>
+
+<para>Virtuoso reads the Load1, Load2, ... LoadN lines from the [Plugins]
+section and attaches them according to their type. </para>
+
+<para><computeroutput>&lt;module path&gt;</computeroutput> is the directory
+containing shared modules for use with Virtuoso.  (e.g. <computeroutput>/home/virtuoso/hosting</computeroutput>)</para>
+
+<para><computeroutput>&lt;module type&gt;</computeroutput> specifies the type of
+module that is to be loaded, and hence how Virtuoso is to use it.  So far only
+the "Hosting" type exists.  </para>
+
+<para><computeroutput>&lt;module name&gt;</computeroutput> is the file name of
+the modules shared library or object.
+(e.g. <computeroutput>hosting_perl.so</computeroutput>)</para>
+
+<para>The "Hosting" type defines entry points for initialization of the runtime
+hosting environment, destruction of the user environment and execution of a
+file or string containing commands in the hosted language.  It also returns a
+list of file extensions that it is capable of processing.  Virtuoso
+dynamically defines memory-resident (no disk image) HTTP server handlers for
+each specified type.  For example, the Perl hosting plugin supports 'pl'
+extension.  Hence, upon initialization of the hosting plugin, Virtuoso defines
+the <function>__http_handler_pl(..)</function>  function according to the API
+for file type handlers in the Virtuoso HTTP server.  With this handler in place,
+each hit on a .pl file (file system or WebDAV) with appropriate execute
+permissions will cause the HTTP server to execute the code within it and return
+the result instead of simple the file contents.</para>
+
+<para>The handler will call the __hosting_http_handler VSE with a special set
+of parameters to represent the HTTP environment correctly.</para>
+
+<para>There's a VSE to call each of the hosting modules:</para>
+
+<para><function>__hosting_http_handler (
+     in <parameter>extension</parameter> varchar,
+     in <parameter>content</parameter> varchar,
+     [in <parameter>params</parameter> varchar, ]
+     [in <parameter>lines</parameter> any, ]
+     [inout <parameter>filename_head_ret</parameter> varchar, ]
+     [in <parameter>options</parameter> any, ]
+     [out <parameter>diag_ret</parameter> varchar]) returns varchar</function></para>
+
+<para>such that:</para>
+
+<variablelist>
+  <varlistentry><term>extension</term>
+   <listitem><para>Selects plugin by supported extension handler.  e.g. pass 'pl' for the perl plugin.</para></listitem>
+  </varlistentry>
+  <varlistentry><term>content</term>
+   <listitem><para>If &lt;filename_head_ret&gt; is NULL or unspecified this
+   will be the name of the file containing the code to execute in the hosted
+   environment, otherwise this will be program code to execute as a string.</para></listitem>
+  </varlistentry>
+  <varlistentry><term>params</term>
+   <listitem><para>(optional) A string containing the HTTP parameters as encoded
+   in the HTTP request body.</para></listitem>
+  </varlistentry>
+  <varlistentry><term>lines</term>
+   <listitem><para>(optional) A vector (array) containing the HTTP request headers, in
+   the same format as those passed to VSPs.</para></listitem>
+  </varlistentry>
+  <varlistentry><term>filename_head_ret</term>
+   <listitem><para>(optional) On input this is the "name" to put on the command
+   text passed in &lt;content&gt;.  If this is NULL it means that &lt;content&gt;
+   holds the path and filename containing the commands.  On output this contains
+   the HTTP headers of the HTTP response generated by the plugin, if any and
+   in HTTP mode.</para></listitem>
+  </varlistentry>
+  <varlistentry><term>options</term>
+   <listitem><para>(optional) A vector holding name/value pairs of strings
+   passed as options to the plugin.  The Perl plugin sets
+   the other options as environment variables before calling the perl code.</para></listitem>
+   <listitem><para>There is a "<computeroutput>__VIRT_CGI</computeroutput>" =
+   "<computeroutput>0</computeroutput>"/"<computeroutput>1</computeroutput>" option
+   to control whether the plugin operates in HTTP mode
+   (<computeroutput>__VIRT_CGI=1</computeroutput>)  i.e. implements the CGI
+   interface and treats the output as an HTTP response.</para></listitem>
+  </varlistentry>
+  <varlistentry><term>diag_ret</term>
+   <listitem><para>(optional) Returns various diagnostics messages returned
+   while the code is running if any.  The perl plugin sets this to the collected
+   STDERR messages.</para></listitem>
+  </varlistentry>
+</variablelist>
+
+<para>The function will return a varchar containing the HTTP body if in HTTP mode
+(<computeroutput>__VIRT_CGI = 1</computeroutput>) or the messages printed to
+STDOUT.</para>
+
+<para>Virtuoso will normally call to memory each plugin as required, and expel
+it when finished.  This behavior can be controlled by the INI file parameter:</para>
+
+<programlisting><![CDATA[
+[HTTPServer]
+PersistentHostingModules = 1/0 default 0
+]]></programlisting>
+
+<para>Setting <computeroutput>PersistentHostingModules</computeroutput> to "1"
+prevents Virtuoso from removing the interpreters from the HTTP threads after
+each request.</para>
+
+<example id="ex_plugshostingsharedobjects"><title>Using the Perl Plugin</title>
+
+<para>Executing Perl code directly:</para>
+
+<programlisting><![CDATA[
+select __hosting_http_handler ('pl', 'print "hello world"; ', '', vector (), 'helloworld.pl');
+]]></programlisting>
+
+<programlisting><![CDATA[
+returns : hello world
+]]></programlisting>
+
+<para>Executing a perl script file (perl/test_print.pl in the Virtuoso
+working directory):</para>
+
+<programlisting><![CDATA[
+/perl/test_print.pl
+-------------------
+#!/usr/bin/perl
+print "hello world file";
+]]></programlisting>
+
+<programlisting><![CDATA[
+select __hosting_http_handler ('pl', 'perl/test_print.pl');
+]]></programlisting>
+
+<programlisting><![CDATA[
+returns : hello world file
+]]></programlisting>
+</example>
+
+<note><title>Note:</title>
+  <para>The hosting_perl hosting module uses the perl <function>tie()</function>
+  function to "tie" up the STDIN, STDOUT, STDERR, exit()  and %ENV perl objects.
+  Untying any of these may lead to unpredictable results.</para></note>
+
+</sect1>

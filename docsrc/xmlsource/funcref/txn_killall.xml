@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_txn_killall">
+  <refmeta>
+    <refentrytitle>txn_killall</refentrytitle>
+    <refmiscinfo>txn</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>txn_killall</refname>
+    <refpurpose>kill all pending transactions</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_txn_killall">
+      <funcprototype id="fproto_txn_killall">
+        <funcdef><function>txn_killall</function></funcdef>
+        <paramdef>in <parameter>code</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+
+	</refsynopsisdiv>
+	<refsect1 id="desc"><title>Description</title>
+	<para>
+This function will terminate all pending transactions.  This can be used
+for resetting infinite loops in stored procedures etc.
+	</para>
+	<para>
+The code determines the error reported to the client. Number 6 is preferable,
+corresponding to the 'transaction rolled back due to previous SQL error'.
+	</para>
+	<para>
+Once any SQL statement or procedure notices that its transaction is dead,
+e.g. deadlocked, it signals the error and takes appropriate action, which is typically
+to signal the error to the caller and ultimately to the client.
+	</para>
+  </refsect1>
+  <refsect1 id="examples"><title>Examples</title>
+    <programlisting>txn_killall (1);</programlisting>
+    <para>-- kills all transactions with the S1T00 'timed out' error.</para>
+
+  </refsect1>
+</refentry>
+
+

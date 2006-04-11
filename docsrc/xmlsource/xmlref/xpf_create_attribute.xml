@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_create_attribute">
+  <refmeta> 
+    <refentrytitle>create-attribute</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>create-attribute</refname>
+    <refpurpose>Creates a special &quot;attribute descriptor&quot; object.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_create_attribute">
+      <funcprototype id="xpf_proto_create_attribute">
+        <funcdef>attribute <function>create-attribute</function></funcdef>
+	<paramdef><parameter>attrname</parameter> string</paramdef>
+	<paramdef><parameter>attrvalue</parameter> string</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_create_attribute"><title>Description</title>
+<para>
+This is an internal XQUERY function and you will probably never need to
+call it explicitely. It is not a part of library of standard XQUERY 1.0
+functions.
+</para>
+<para>
+This function creates an special object, called &quot;attribute descriptor&quot;,
+which may be used only as argument of create-element() XQUERY function.
+Every attribute descriptor will force create-element() function to add
+an attribute with specified name and value into opening tag of the created
+element. If attribute with such name already exists, its value will be
+replaced.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_create_attribute"><title>Parameters</title>
+    <refsect2><title>attrname</title>
+      <para>Name of attribute which should be created or changed</para></refsect2>
+    <refsect2><title>attrvalue</title>
+      <para>Value of of attribute</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_create_attribute"><title>Return Types</title><para>Attribute descriptor</para></refsect1>
+  <refsect1 id="xpf_seealso_create_attribute"><title>See Also</title>
+    <para><link linkend="xpf_create_comment">create-comment()</link></para>
+    <para><link linkend="xpf_create_element">create-element()</link></para>
+    <para><link linkend="xpf_create_pi">create-pi()</link></para>
+  </refsect1>
+</refentry>
+

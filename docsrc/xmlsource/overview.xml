@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter id="overview" label="overview.xml">
+  <title>Overview</title>
+  <abstract>
+    <para>A quick overview on Virtuoso providing answers to simple questions that may
+    already be in mind.</para>
+  </abstract>
+<!-- ======================================== -->
+  <sect1 id="WhatIsVirtuoso">
+    <title>What is Virtuoso?</title>
+    <para>OpenLink Virtuoso is the first CROSS PLATFORM Universal Server to
+		implement Web, File, and Database server functionality alongside Native XML
+		Storage, and Universal Data Access Middleware, as a single server solution.
+		It includes support for key Internet, Web, and Data Access standards such
+		as: XML, XPATH, XSLT, SOAP, WSDL, UDDI, WebDAV, SMTP, SQL-92, ODBC, JDBC,
+		and OLE-DB. Virtuoso currently supports the following Operating systems -
+		Windows 95/98/NT/2000, Linux (Intel, Alpha, Mips, PPC), Solaris, AIX, HP-UX,
+		Unixware, IRIX, Digital UNIX, DYNIX/PTX, FreeBSD, SCO, MacOS X.</para>
+    <para>Virtuoso is a revolutionary, next generation, high-performance virtual database engine
+    for the Distributed Computing Age. It is a core universal data access technology set to
+    accelerate our advances into the emerging Information Age.</para>
+    <para>Virtuoso provides transparent access to your existing data sources, which are typically
+    databases from different database vendors.</para>
+    <para>Through a single connection, Virtuoso will simultaneously connect your ODBC, JDBC,
+    UDBC, OLE-DB client applications and services to data within Oracle, Microsoft SQL Server,
+    DB/2, Informix, Progress, CA-Ingres and other ODBC compliant database engines. All your
+    databases are treated as single logical unit.</para>
+    <para>The diagram below depicts how applications that are built in conformance with industry
+    standards (such as ODBC, JDBC, UDBC, and OLE-DB) only need to make a single connection via
+    Virtuoso&apos;s Virtual Database Engine and end up with concurrent and real-time access to data
+    within different database types.</para>
+		<para>Further still, Virtuoso exposes all of its functionality to Web Services.
+		This means that your existing infrastructure can be used support Web Services
+		directly without any hint of replacement.
+		</para>
+  </sect1>
+  <sect1 id="virtwhydoi">
+    <title>Why Do I Need Virtuoso?</title>
+    <para>You need Virtuoso because Knowledge is power or competitive advantage (depending on how
+    you choose to exploit it). All Knowledge comes from Information. Information is produced
+    from Data. </para>
+    <para>The Internet is reducing the cost of accessing Information, thereby increasing the
+    appetite and rates at which Information is produced and consumed. Unfortunately data
+    required for the production of Information simply does not reside within one database
+    engine within your organization. </para>
+    <para>Whether you know it or not it is highly probable that the quest for critical
+    information within your organization actually requires traversing several data sources
+    served by numerous database engines from different database vendors.</para>
+    <para>Virtuoso simply reduces the cost of bringing together data from different data sources
+    with the view to accelerating the production of information by your Query Tools, Web &amp;
+    Internet Application Development Environments, Traditional Application Development Tools,
+    and Desktop Productivity Tools.</para>
+    <para>Virtuoso enables you to compete effectively in the Information Age.</para>
+
+	  <para>One of the biggest challenges facing the uptake of XML is the
+		availability of key XML Data itself. Virtuoso simplifies the process of
+		creating XML data from existing HTML, syndicated XML, and SQL databases.
+		Virtuoso enables real-time creation of Dynamic XML documents (DTD or
+		XML Schema based) from homogeneous or heterogeneous SQL Databases "on the fly".</para>
+		<para>By implementing a number of protocols in a single server solution,
+		Virtuoso provides you with a unifying foundation upon which next generation
+		eBusiness solutions can be developed and deployed. Virtuoso reduces the cost
+		of bringing together data from different data sources and leverages this
+		into increased effectiveness of your Query Tools, Web &amp; Internet Application
+		Development Environments, Traditional Application Development Tools, and
+		Desktop Productivity Tools. Virtuoso enables you compete effectively in the
+		Information Age.</para>
+		<para>OpenLink Software is an acclaimed technology innovator and leading
+		vendor of High-Performance &amp; CROSS PLATFORM eBuisiness solutions that
+		adhere to a broad range of industry standards that include: ODBC, JDBC,
+		OLE DB, SQL, WebDAV, HTTP, XML, SOAP, UDDI, WSDL, SMTP, NNTP, POP3, LDAP
+		amongst others.</para>
+		<para>Our product &amp; services portfolio includes a suite of
+		High-Performance Universal Data Access Drivers for ODBC, OLE DB and JDBC,
+		Internet Data Integration Servers, Virtual and Federated Database Engines,
+		Embeddable SQL-Database Engines, Application Servers, Enterprise Portal
+		Servers and professional services expertise capable of handling the most
+		demanding eBusiness application development, deployment, and integration
+		challenges.</para>
+
+  </sect1>
+  <sect1 id="whatisnewto2x">
+    <title>Key Features of Virtuoso</title>
+
+<figure id="varch32" float="1"><title>OpenLink Virtuoso Product Architecture</title>
+  <graphic fileref="varch32.jpg" width="384px" depth="377px"/></figure>
+
+		<sect2 id="oxmldocstore"><title>XML Document Storage &amp; Creation</title>
+  	<para>Virtuoso enables you to develop eBusiness solutions that use <emphasis>XML</emphasis>
+		as a common data access foundation layer that provides transparent access
+		to structured and unstructured data. XML Data documents can be created
+		internally, or imported from around the Web and then stored in Virtuoso.
+		You can also create dynamic XML documents by transforming SQL to XML
+		on the fly, leveraging data that resides within homogeneous and/or
+		heterogeneous database(s). <emphasis>XPATH 2.0</emphasis> query language support enables you to
+		query entire XML Documents using and industry standard query language.
+		The Virtuoso Server provides some basic support for the
+		<link linkend="xq"><emphasis>XQuery 1.0</emphasis> XML Query Language</link>
+		specification.
+		There is <emphasis>XML Schema</emphasis> support for extending Virtuoso Data
+		types used by SOAP Services.</para>
+		</sect2>
+		<sect2 id="ointernetsrv"><title>Web Page Hosting</title>
+		<para>Virtuoso has an integrated HTTP web server, for static HTML pages, or
+		dynamic content using <link linkend="vsp1">Virtuoso Server Pages
+		(<emphasis>VSP</emphasis>)</link>.
+		Hosting and execution of <emphasis>PHP4</emphasis> scripts is supported
+		via Virtuoso Server Extensions Interface (VSEI) for Zend.</para>
+		</sect2>
+		<sect2 id="owebsrvhost"><title>Web Services Creation &amp; Hosting</title>
+		<para>Enables the creation of <emphasis>SOAP</emphasis> compliant Web Services from SQL Stored
+		Procedures, these procedures may be native to Virtuoso or resident in
+		third party databases that support ODBC or JDBC. Virtuoso automatically
+		generates <emphasis>WSDL</emphasis> files for the Stored Procedures that it exposes as Web
+		Services. As a <emphasis>UDDI</emphasis> server (registry) all of your Web Services can be
+		stored for access across the internet or within an intranet. It can also
+		synchronize data with other UDDI servers.</para>
+		</sect2>
+		<sect2 id="owebdavstore"><title>WebDAV Compliant Web Store</title>
+		<para><emphasis>WebDAV</emphasis> support enables Virtuoso to act as the Web Content Store for
+		all of your eBusiness data, this includes Text, Graphics and Multimedia
+		files. WebDAV support also enables Virtuoso to play the familiar roles of
+		a FILE &amp; WEB SERVER, hosting entire Web sites within a single database
+		file, or across multiple database files.</para>
+		</sect2>
+		<sect2 id="oreplandsync"><title>Content Replication &amp; Synchronization</title>
+		<para>Virtuoso's sophisticated data replication and synchronization engine
+		enables the automated distribution and updating of SQL and Web Content
+		across distributed Virtuoso servers.</para>
+		</sect2>
+		<sect2 id="ophetdata"><title>Transparent Access To Heterogeneous Data</title>
+		<para>Virtuoso's Virtual Database Engine enables you to produce Dynamic Web
+		Content from any major database management system. This enables dynamic,
+		real-time HTML and XML generation from any number of different database
+		engines concurrently.</para>
+		</sect2>
+		<sect2 id="omaildelresrv"><title>Mail Delivery &amp; Retrieval Services</title>
+		<para>Virtuoso can act as an <emphasis>SMTP</emphasis>, <emphasis>POP3</emphasis>, and <emphasis>IMAP4</emphasis> proxy to any email
+		client. This enables the development and deployment of sophisticated
+		database driven email solutions.</para>
+		</sect2>
+		<sect2 id="onntp"><title>NNTP Aggregation &amp; Serving</title>
+		<para>Virtuoso supports the Network News Transfer Protocol used by Internet
+		newsgroup forums. <emphasis>NNTP</emphasis> servers manage the global network of collected
+		newsgroup postings and represent a vast repository of targeted information
+		archives. As an NNTP aggregator, Virtuoso enables integration of multiple
+		news forums around the world. All news content in Virtuoso is dynamically
+		indexed to provide keyword searches, enabling rapid transformation of
+		disparate text data into information. Virtuoso also acts as an NNTP server,
+		enabling creation of new Internet and Intranet News Forums to leverage the
+		global knowledgebase into eBusiness Intelligence.</para>
+		</sect2>
+	</sect1>
+</chapter>

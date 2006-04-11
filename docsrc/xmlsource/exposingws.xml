@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="expwsmodules"><title>Exposing Persistent Stored Modules as Web Services</title>
+  <para>Virtuoso SQL stored procedures and functions can be exposed as SOAP
+  services very simply from Virtuoso, whether they are native Virtuoso or
+  on remote data sources.  This powerful ability means that any database servers
+  already existing within an organization can easily become a component in an
+  eBusiness solution using Virtuoso.  All you need is a few simple steps that
+  typically take mere minutes to complete:</para>
+  <itemizedlist>
+  <listitem><formalpara><title>Choose your stored procedure(s)</title>
+    <para>The procedures that you want to expose can either be native Virtuoso
+    stored procedures, or remote stored procedures that can be linked in using
+    the Remote Procedures user interface.</para></formalpara>
+    </listitem>
+  <listitem><formalpara><title>Choose a virtual directory</title>
+    <para>Because SOAP services need to be exposed and accessed via HTTP a
+    Virtuoso virtual directory must be used.  Either use the existing
+    SOAP virtual directory or create a new one.</para></formalpara>
+    </listitem>
+  <listitem><formalpara><title>Publish procedures to virtual directory</title>
+    <para>The user specified as SOAP account on the virtual directorymust have execute privileges on the procedures.
+    Use the Publish options on the virtual directory user interface.</para></formalpara>
+    </listitem>
+  <listitem><formalpara><title>Test the VSMX output</title>
+    <para>Once procedures have been published as SOAP services they are
+    automatically described by WSDL and testable using Virtuoso's VSMX feature.</para>
+    </formalpara></listitem>
+  </itemizedlist>
+
+  <para>XML Query Templates provide a direct way to store SQL in an XML file on
+  the Virtuoso server that when executed, i.e. fetched from a web browser, actually
+  returns the results of the query.</para>
+
+  <para>The Virtuoso Server Extension Interface (VSEI) chapter describes how
+  users can define custom Virtuoso functions from C or other programming
+  languages, which can be used from within Virtuoso PL.  This also means
+  that VSEs can also be published as Web Services.</para>
+
+<sect2 id="expwspls"><title>Publishing Stored Procedures as Web Services</title>
+
+  <sect3 id="expwssps"><title>Choosing Stored Procedures to Expose</title>
+  <para>You can either expose native Virtuoso stored procedures
+  (previously defined or newly created) using the CREATE PROCEDURE
+  statement, or stored procedures from other database types can be linked
+  into Virtuoso using an ODBC data source.</para>
+  <para>Virtuoso lists available stored procedures for each catalog under the option:
+  <emphasis>/Database/Databases/&lt;catalog_name&gt;/Stored Procedures</emphasis>
+  from the menu of the Virtuoso Server Administration Interface.  This list will
+  also include any remote procedures already linked into Virtuoso.</para>
+
+  <para>To link a stored procedure from another database system we must first
+  create a valid data source that leads to a connection to that database.
+  Once verified proceed to the Remote Procedures page.</para>
+
+  <figure float="1"><title>Linking Procedures from Remote Data Sources</title>
+    <graphic fileref="ui/admrmtprocs001.jpg" width="561px" depth="245px"/></figure>
+
+	<para>The data source will be listed in the data sources list.  Select the
+  data source that you want to used, check the Username and Password fields
+  and press the <emphasis>List</emphasis> button.  The page will next require
+  you to select the catalog/owner combination
+  to refine the search list of procedures on the remote data source.  Use
+  the drop-down to select relevant option and press <emphasis>List Selected</emphasis>
+  to list the available stored procedures.</para>
+
+  <figure float="1"><title>Linking Procedures from Remote Data Sources</title>
+    <graphic fileref="ui/admrmtprocs002.jpg" width="307px" depth="66px"/></figure>
+
+  <para>When the page returns you will be presented with a list of
+  available remote procedures.  You can link any of the listed
+  procedures into Virtuoso by selecting them from the list and pressing the
+  <emphasis>Link Selected</emphasis> button.</para>
+
+  <figure float="1"><title>Linking Procedures from Remote Data Sources</title>
+    <graphic fileref="ui/admrmtprocs003.jpg" width="383px" depth="145px"/></figure>
+
+  <para>You will be presented with a new page listing the chosen procedures
+  and their data type information.  This gives you an opportunity
+  to alter the  data type mappings that Virtuoso will use both internally and
+  for any future interactions with the SOAP server.  If you do not want to
+  specify any special type information the details can be left as default.</para>
+
+  <figure float="1"><title>Linking Procedures from Remote Data Sources</title>
+    <graphic fileref="ui/admrmtprocs004.jpg" width="553px" depth="260px"/></figure>
+
+  <para>For each remote procedure you may change how they
+  will be referenced within Virtuoso by making changes to the fields for
+  <emphasis>Local Name</emphasis>, <emphasis>Database</emphasis>, and
+  <emphasis>Schema</emphasis> fields.  These fields define how you will find the
+  linked procedure locally to Virtuoso only and do not affect the remote
+  data source.</para>
+
+  <para>For each procedure there is an option to <emphasis>Use PL Wrapper</emphasis>.
+  This option is required if your remote procedure is capable of returning
+  a resultset that you want to process via Virtuoso.</para>
+
+  <para>Once the details are correct press the Link button to proceed to the next
+  step: Defining Virtual Directories.</para>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="remoteprocedures">Linking Remote Procedures</link></para></tip>
+  </sect3>
+
+  <sect3 id="expwsvirtdir"><title>Defining Virtual Directories</title>
+  <para>Before any procedures native or linked can be exposed as SOAP Services
+  a location in HTTP space must be defined.  The
+  <emphasis>/WebDAV/HTTP Virtual Directories</emphasis> page lets you
+  make a new URL Mappings.  The HTTP Virtual Directories page should contain a
+  table with a row for {Default Web Site}.  Click on the
+  <emphasis>Edit URL Mappings</emphasis> link for the {Default Web Site}
+  line to begin defining a new SOAP mapping.</para>
+
+      <figure float="1"><title>Virtual Directories</title>
+      <graphic fileref="ui/admvirtdir001.jpg" width="583px" depth="338px"/></figure>
+
+  <para>You will be presented with a list of existing mappings.  Press the
+  <emphasis>Add Virtual Directory</emphasis> button to create a new mapping.
+  You will then be presented with a list of templates.  Select the SOAP
+  template.</para>
+
+      <figure float="1"><title>Virtual Directories Mappings</title>
+      <graphic fileref="ui/admvirtdir003.jpg" width="584px" depth="273px"/></figure>
+
+  <para>You will then be presented with the main configuration page.  Particular
+  options to note are Listener Details and SOAP Options.</para>
+
+      <figure float="1"><title>Virtual Directories</title>
+      <graphic fileref="ui/admvirtdir004.jpg" width="598px" depth="727px"/></figure>
+
+  <para><emphasis>Logical Path</emphasis> will be the path to which Virtuoso will respond
+  for this virtual directory mapping.  This is what will be placed on the URL.
+  <emphasis>Physical Path or URL</emphasis> is to which Virtuoso will map the logical path.
+  In either case you can use the Browse buttons to traverse the file systems
+  graphically.  Use the WebDAV Source Checkbox to instruct Virtuoso to use the
+  WebDAV store for the physical location.</para>
+
+  <para>In <emphasis>SOAP Options</emphasis> you can use the Publish button to select Virtuoso
+  stored procedures, or remotely linked procedures to be published as SOAP
+  web services.  Press this button to select the procedures previously linked.
+  Click on the database where your procedure resides.  The next page will list the
+  procedures in that database.  Select the procedures you want to link using
+  the checkboxes on the left most column and finally click the Publish button
+  to complete the task.  The SOAP Options text-area allows you to specify other
+  SOAP options such as DIME encapsulations and WS-security settings.  These
+  options are supplied as name=value pairs terminated with a semi-colon and a
+  carriage-return.  Here is an example of the options used for the default Interop
+  test based demo virtual directory:</para>
+
+  <programlisting><![CDATA[
+Namespace=http://soapinterop.org/;
+MethodInSoapAction=no;
+ServiceName=InteropTests;
+HeaderNS=http://soapinterop.org/echoheader/;
+CR-escape=yes;
+]]></programlisting>
+
+  <tip><title>See Also:</title>
+  <para>For a list of available SOAP Options review the end section of the SOAP
+  chapter: <link linkend="soapoptions">Optional Parameters to the SOAP Endpoint</link>.</para></tip>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="httpvirtualdirs">Virtual Directories</link></para></tip>
+
+  </sect3>
+
+  <sect3 id="expspublishbtn"><title>Publishing Procedures to a Virtual Directory</title>
+  <para>If you already have a virtual directory defined and know what procedures
+  you want to expose as web services you will have to repeat some of the steps
+  in the section above.  From the menu select <emphasis>/WebDAV/The HTTP
+  Virtual Directories</emphasis>.  Click on the <emphasis>Edit URL mappings</emphasis>
+  link for the site that you want to edit.  You will find the list of previously
+  existing mappings, from which you can select the mapping that you want to edit
+  by pressing on the <emphasis>edit</emphasis> link on the last column of the table.</para>
+
+      <figure float="1"><title>Virtual Directories</title>
+      <graphic fileref="ui/admvirtdir006.jpg" width="544px" depth="395px"/></figure>
+
+  <para>When the virtual directory configuration page is displayed scroll down
+  to the SOAP Options section and use the Publish/UnPublish buttons to
+  expose/hide your procedures and XML Templates as required.</para>
+
+      <figure float="1"><title>Publish/UnPublish Buttons</title>
+      <graphic fileref="ui/admvirtdir008.jpg" width="278px" depth="62px"/></figure>
+
+  <para>You will be presented with a screen for selecting the procedures or
+  XML templates.  For selecting the procedures you first have to select the
+  appropriate catalogue that contains the procedure that you want to publish.
+  For the XML Templates you simply select the template using the checkbox and
+  provide an <emphasis>Export As</emphasis> name to choose the new SOAP name
+  that this XML template will be referred as.</para>
+
+      <figure float="1"><title>Choosing Procedure and XML Templates to Publish</title>
+      <graphic fileref="ui/admvirtdir007.jpg" width="486px" depth="332px"/></figure>
+
+  </sect3>
+
+  <sect3 id="expsvsmxtest"><title>Testing SOAP Services Using VSMX</title>
+  <para>Virtual directory definitions have a <emphasis>Logical Path</emphasis>
+  field, which is reference in URL to find the correct SOAP services.  If you
+  connect to Virtuoso on <emphasis>http://localhost:8890/</emphasis>, and
+  defined your virtual directory with the logical path of <emphasis>/mysoap</emphasis>
+  then you will be able to test the following URLs:</para>
+    <simplelist>
+      <member>http://localhost:8890/mysoap/services.wsdl</member>
+      <member>http://localhost:8890/mysoap/services.vsmx</member>
+    </simplelist>
+
+  <para>The WSDL description is a standards-based description of the Web Services
+  available from /mysoap.  The VSMX page is a Virtuoso generated test page
+  allowing you to test SOAP services.  This feature should improve your
+  development time.</para>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="vsmx">VSMX</link>;
+    <link linkend="soap">SOAP</link>;
+    <link linkend="wsdl">WSDL</link>.</para></tip>
+  </sect3>
+  </sect2>
+
+  <sect2 id="xmlqtemplates"><title>XML Query Templates</title>
+  <para>Virtuoso XML templates allow execution of SQL/XML queries over HTTP to
+  obtain an XML document in response and/or perform some operation in the database
+  using <link linkend="updategrams">updategrams</link>.  XML templates can be
+  executed from within Virtuoso procedure language using the
+  <link linkend="fn_xml_template"><function>xml_template()</function></link> function.
+  XML templates support two types of action: SQL based or updategram based.
+  SQL query based templates must contain the FOR XML clause used in a SELECT
+  statement and hence cannot update the database.  Updates to the database
+  can only occur from an updategram.  The XML document returned from calling
+  an XML template can be served either raw, or transformed using XSLT.</para>
+
+  <para>XML templates provide quick easy access to results from a SQL query
+  as usual, but now this can be saved to a file.  The results are not saved, just
+  the query definition.  You can use this feature to rapidly produce dynamic
+  reports that can potentially be rendered in different ways by providing
+  an alternate style sheet.  The report can be refined on the fly by providing
+  parameters for the query.  The output is reachable via HTTP directly by
+  providing the URL to the template.</para>
+
+  <tip><title>See Also:</title>
+  <para>The <link linkend="xmltemplates">XML Templates</link> Section</para></tip>
+
+  <para>XML Templates can also be published just like normal store procedures.
+  This is achieved by using a PL wrapper around the XML template.  Then the
+  store procedure is published in the normal way.</para>
+  <para>Style sheets transformations with be inactive for published
+  XML templates invoked from SOAP.</para>
+
+  <tip><title>See Also:</title>
+  <para>The <link linkend="expspublishbtn">Publishing Stored Procedures</link>
+  Section above for a further description of publishing XML Templates.</para></tip>
+
+</sect2>
+
+  <sect2 id="publishbifs"><title>Publishing VSEs as Web Services</title>
+  <para>The Virtuoso distribution includes the sample VSE, bif_sample.c.
+  It is thus possible to create a function such as:</para>
+  <programlisting><![CDATA[
+.....
+static caddr_t
+bif_hello_world (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_dv_short_string ("Hello world.");
+}
+....
+]]></programlisting>
+  <para>Then declare it in the <function>init_func()</function> by adding the
+  following code:</para>
+  <programlisting><![CDATA[
+...
+  bif_define_typed ("hello_world", bif_hello_world, &bt_any);
+...
+]]></programlisting>
+  <para>The next step is creating a stored procedure that calls this function and
+  you are back to publishing a Virtuoso stored procedure again, as in the above section.</para>
+
+<programlisting>
+create procedure BIF_HELLO_WORLD () { return hello_world (); };
+</programlisting>
+
+  <tip><title>See Also:</title>
+  <para>The <link linkend="cinterface">Virtuoso Server Extension Interface (VSEI)</link> Chapter</para></tip>
+  </sect2>
+</sect1>

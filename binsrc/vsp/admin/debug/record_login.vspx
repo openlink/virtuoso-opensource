@@ -1,0 +1,86 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="page1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<v:variable name="attempt" persist="pagestate" type="int" default="0" />
+  <v:login name="login1" realm="vspx" mode="url" user-password-check="http_debug_password_check">
+    <v:template name="if_no_login" type="if-no-login">
+      <P>
+        You are not logged in. Please login as dav administrator.
+        <?vsp
+          if(self.attempt) {
+            http('<div style="color: red">Invalid user name or password</div>');
+          }
+        ?>
+      </P>
+      <table border="0">
+        <tr>
+          <td>User Name</td>
+          <td>
+            <v:text name="username" value="" width="80" error-glyph="*"></v:text>
+          </td>
+        </tr>
+        <tr>
+          <td>Password</td>
+          <td>
+            <v:text name="password" value="" width="80" type="password" error-glyph="*"></v:text>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2">
+            <v:button name="login" style="button" action="submit" value="Login" width="80">
+              <v:on-post>
+                <![CDATA[
+                  self.attempt := 1;
+                ]]>
+              </v:on-post>
+            </v:button>
+          </td>
+        </tr>
+      </table>
+    </v:template>
+    <v:template name="if_login" type="if-login">
+      <P>
+        <v:button name="logoutb" style="button" action="logout" value="--sprintf('User: %s, Logout', connection_get ('vspx_user'))" width="80">
+          <v:on-post>
+            <![CDATA[
+              self.sid := null;
+              self.attempt := 0;
+            ]]>
+          </v:on-post>
+        </v:button>
+      </P>
+    </v:template>
+  </v:login>
+  <v:template name="template_placeholder" type="simple" condition="self.sid is not null">
+    <v:template type="simple" condition="'1' = cfg_item_value(virtuoso_ini_path(), 'HTTPServer','EnableRequestTrap')">
+      <v:placeholder/>
+    </v:template>
+    <v:template type="simple" condition="(cfg_item_value(virtuoso_ini_path(), 'HTTPServer','EnableRequestTrap') is null) or (cfg_item_value(virtuoso_ini_path(), 'HTTPServer','EnableRequestTrap') <> '1')">
+      <h4>
+        Please, set EnableRequestTrap = 1 in [HTTPServer] group in server startup .ini file and restart server.
+        <br/>
+        It's necessary to http recorder works properly.
+      </h4>
+    </v:template>
+  </v:template>
+</v:page>

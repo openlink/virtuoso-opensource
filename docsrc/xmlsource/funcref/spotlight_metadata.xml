@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_spotlight_metadata">
+  <refmeta>
+    <refentrytitle>spotlight_metadata</refentrytitle>
+    <refmiscinfo>string</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>spotlight_metadata</refname>
+    <refpurpose>collect MAC OS X spotlight metadata</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_spotlight_metadata">
+      <funcprototype id="fproto_spotlight_metadata">
+        <funcdef><function>spotlight_metadata</function></funcdef>
+        <paramdef>in <parameter>path</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>path</title>
+      <para><type>varchar</type> relative path.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="desc"><title>Description</title>
+    <para>This function retrieves a file's metadata using the Apple Mac OSX 10.4 Spotlight feature.  The path must be within the paths allowed by the DirsAloowed ini setting and the calling user must have dba privileges.  This function is only available on executables built on Mac OS systems supporting Spotlight.
+
+</para>
+    <para><function>spotlight_metadata</function>The return value is a vector of name-value pairs. 
+	((property name, value), (property name, value), ...). 
+    </para>
+  </refsect1>
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_spotlight_metadata"><title>Simple example</title>
+	<para>Ask spotlight for virtuoso.ini metadata.</para>
+      <screen>
+SQL> select dbg_obj_print (spotlight_metadata ('virtuoso.ini'));
+
+
+Server console:
+
+(("kMDItemFSOwnerUserID" 501.000000 ) ("kMDItemFSOwnerGroupID" 501.000000 ) ("kMDItemFSTypeCode" 0.000000 ) ("kMDItemID" 5989044.000000 ) ("kMDItemFSSize" 4902.000000 ) ("kMDItemFSCreationDate" {ts 2005-06-21 14:00:23.000000} ) ("kMDItemFSName" "virtuoso.ini" ) ("kMDItemFSContentChangeDate" {ts 2005-06-27 07:26:05.000000} ) ("kMDItemFSCreatorCode" 0.000000 ) ("kMDItemFSLabel" 0.000000 ) ("kMDItemFSInvisible" 0 ) ("kMDItemFSNodeCount" 0.000000 ) ("kMDItemAttributeChangeDate" {ts 1970-01-01 06:43:08.000000} ) ("kMDItemFSFinderFlags" 0.000000 ) ("kMDItemUsedDates" ({ts 2005-06-27 06:26:05.000000} ) ) ("kMDItemLastUsedDate" {ts 2005-06-27 06:26:05.000000} ) )
+</screen>
+    </example>
+  </refsect1>
+</refentry>

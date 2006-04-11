@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_xper_doc">
+  <refmeta>
+    <refentrytitle>xper_doc</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xper_doc</refname>
+    <refpurpose>returns an entity object ('XPER entity') created from an XML document</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_xper_doc">
+      <funcprototype id="fproto_xper_doc">
+        <funcdef><function>xper_doc</function></funcdef>
+        <paramdef>in <parameter>document</parameter> varchar</paramdef>
+        <paramdef><optional>in <parameter>parser_mode</parameter> integer</optional></paramdef>
+        <paramdef><optional>in <parameter>base_uri</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>content_encoding</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>content_language</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>dtd_validator_config</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>index_attrs</parameter> integer</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>
+This parses the argument, which is expected to be a well formed XML
+fragment and returns a parse tree as a special object with underlying disk structure, named
+&quot;persistent XML&quot; or &quot;XPER&quot;
+While the result of <link linkend="fn_xml_tree">xml_tree</link> is a memory-resident array of vectors,
+the XPER object consumes only a little amount of memory, and almost all data are disk-resident.
+XPERs are better then &quot;XML trees&quot; for large documents and
+for &quot;write once -- read many&quot; stores such as a table with
+one XML document per row used as a &quot;library&quot; of documents.
+To be saved in a LONG VARCHAR column, &quot;XML tree&quot; entity will be
+converted back to plain text of XML syntax; but &quot;XPER&quot; entity
+will be saved as a ready-to-use disk structure.
+	</para>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>document</title>
+      <para>well formed XML or HTML document</para></refsect2>
+    <refsect2><title>parser_mode</title>
+      <para>0, 1 or 2; 0 - XML parser mode, 1 - HTML parser mode, 2 - 'dirty HTML'
+mode (with quiet recovery after any syntax error)</para></refsect2>
+    <refsect2><title>base_uri</title>
+      <para>in HTML parser mode change all absolute references to relative from
+given base_uri (http://&lt;host&gt;:&lt;port&gt;/&lt;path&gt;)</para></refsect2>
+    <refsect2><title>content_encoding</title>
+      <para>string with content encoding type of &lt;document&gt;; valid are
+'ASCII', 'ISO', 'UTF8', 'ISO8859-1', 'LATIN-1' etc., defaults are 'UTF-8' for
+XML mode and 'LATIN-1' for HTML mode.</para></refsect2>
+    <refsect2><title>content_language</title>
+      <para>string with language tag of content of &lt;document&gt;; valid names
+are listed in IETF RFC 1766, default is 'x-any' (it means 'mix of words from various
+human languages)</para></refsect2>
+    <refsect2><title>dtd_validator_config</title>
+      <para>configuration string for DTD validator, default is empty string meaning
+that DTD validator should be fully disabled.
+See <link linkend="dtd_config">Configuration Options of the DTD Validator</link> for details.</para></refsect2>
+    <refsect2><title>index_attrs</title>
+      <para>1 or 0, indicating if additional free-text indexing information must be
+stored for all attributes of the document. It is 1 by default. If set to '0', it will
+produce a disk structure compatible with old versions of Virtuoso and will give a small
+benefit in disk usage but it will disable some important optimizations in free-text
+search operations.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret"><title>Return Types</title><para>XML entity with underlaying
+parse tree of source document; the tree will be a special sort of BLOB.</para></refsect1>
+<!--
+  <refsect1 id="errors"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+-->
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_xper_doc"><title>Xper_Doc</title>
+<screen>
+declare tree any;
+
+tree := xper_doc (file_to_string ('doc.html'), 1,
+		'http://localhost.localdomain/', 'ISO');
+...
+tree := xper_doc (file_to_string ('doc.xml'));
+...
+-- String cannot be longer than 10 megabytes. String session can.
+tree := xper_doc (file_to_string_session ('huge_doc.xml'));
+...
+-- A special way to read local files.
+-- Strings started from characters 'file://'
+-- are treated as local filesystem URIs.
+tree := xper_doc ('file://doc.xml');
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_xtree_doc">xtree_doc</link></para>
+    <para><link linkend="fn_xml_tree_doc">xml_tree_doc</link></para>
+    <para><link linkend="fn_xper_cut">xper_cut</link></para>
+    <para><link linkend="fn_xper_right_sibling">xper_right_sibling, xper_left_sibling, xper_parent, xper_root_entity, xper_tell, xper_length</link></para>
+  </refsect1>
+</refentry>
+

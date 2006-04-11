@@ -1,0 +1,82 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare thisvsp, _error varchar;
+  thisvsp := aref(path,length(path)-1);
+
+  _error := '';
+  if ({?'add'} = 'Register' and {?'name'} is not null and {?'passw1'} = {?'passw2'})
+    {
+      if (not exists (select * from VS_B_7 where NAME = {?'name'}))
+	{
+	  insert into VS_B_7 values ({?'name'}, {?'fname'}, {?'addr'}, {?'passw1'});
+	  http_request_status ('HTTP/1.1 302 Found');
+	  http_header ('Location: vs_b_7_login.vsp\r\n');
+	  return 0;
+ 	}
+      else
+	{
+	  _error := 'User already exists';
+	}
+    }
+
+?>
+<HTML>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css"></HEAD>
+<BODY>
+<div class="ERROR"> <?= _error ?> </div>
+<H2>Registration page</H2>
+<FORM method="POST" action="<?=thisvsp?>">
+<TABLE class="tableentry">
+  <TR>
+    <TD>User ID</TD>
+    <TD><input type="text" name="name"></TD>
+  </TR>
+  <TR>
+    <TD>Full name</TD>
+    <TD><input type="text" name="fname"></TD>
+  </TR>
+  <TR>
+    <TD>Address</TD>
+    <TD><input type="text" name="addr"></TD>
+  </TR>
+  <TR>
+    <TD>Password</TD>
+    <TD><input type="password" name="passw1"></TD>
+  </TR>
+  <TR>
+    <TD>Retype Password</TD>
+    <TD><input type="password" name="passw2"></TD>
+  </TR>
+  <TR>
+    <TD colspan=2>
+      <input type="reset" value="Clear">
+      <input type="submit" name="add" value="Register">
+    </TD>
+  </TR>
+</TABLE>
+</FORM>
+<p><a href="vs_b_7_login.vsp">Login Form</a><br>
+<a href="vs_b_7_register.vsp">New registration Form</a><br></p>
+</BODY>
+</HTML>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_XMLType.createNonSchemaBasedXML">
+  <refmeta>
+    <refentrytitle>XMLType.createNonSchemaBasedXML</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XMLType.createNonSchemaBasedXML</refname>
+    <refpurpose>Returns a copy of the given instance with the schema reference removed.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_XMLType.createNonSchemaBasedXML">
+      <funcprototype id="fproto_XMLType.createNonSchemaBasedXML">
+        <funcdef><function>XMLType.createNonSchemaBasedXML</function></funcdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_XMLType.createNonSchemaBasedXML">
+    <title>Description</title>
+    <para>The function returns a copy of the given instance with the schema reference removed.</para>
+  </refsect1>
+  <refsect1 id="ret_XMLType.createNonSchemaBasedXML"><title>Return Types</title>
+    <para>The function returns a new instance of XMLType.</para>
+  </refsect1>
+  <refsect1 id="examples_XMLType.createNonSchemaBasedXML">
+    <title>Examples</title>
+    <example id="ex_XMLType.createNonSchemaBasedXML"><title>Converting a schema-based instance to non schema-based</title>
+      <para>The procedure creates a non schema-based copy of a sample schema-based instance.</para>
+      <screen><![CDATA[
+create procedure schema_removal_test ()
+{
+  declare orig_instance XMLType;
+  declare non_schema_copy XMLType;
+  declare PROBE varchar;
+  result_names (PROBE);
+  orig_instance := XMLType ('<sample-xml/>', 'http://www.example.com/test.xsd');
+  result (concat (
+    '"orig_instance" is declared as schema-based, URI=',
+    orig_instance.getSchemaURL() ) );
+  non_schema_copy := orig_instance.createNonSchemaBasedXML();
+  result (concat (
+    '"non_schema_copy" is non schema-based, URI=',
+    cast (non_schema_copy.getSchemaURL() as varchar) ) );
+}
+
+schema_removal_test()
+PROBE
+VARCHAR
+_______________________________________________________________________________
+
+"orig_instance" is declared as schema-based, URI=http://www.example.com/test.xsd
+"non_schema_copy" is non schema-based, URI=
+
+2 Rows. -- 00000 msec.
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_XMLType.createNonSchemaBasedXML">
+    <title>See Also</title>
+    <para><link linkend="fn_XMLType.createSchemaBasedXML"><function>XMLType.createSchemaBasedXML()</function></link></para>
+  </refsect1>
+</refentry>

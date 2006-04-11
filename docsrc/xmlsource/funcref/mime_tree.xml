@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_mime_tree">
+  <refmeta>
+    <refentrytitle>mime_tree</refentrytitle>
+    <refmiscinfo>mail</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>mime_tree</refname>
+    <refpurpose>parses MIME messages into an array structure</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_mime_tree">
+      <funcprototype id="fproto_mime_tree">
+        <funcdef>array <function>mime_tree</function></funcdef>
+        <paramdef>in <parameter>message_text</parameter>  string</paramdef>
+        <paramdef><optional>in <parameter>flag</parameter> integer </optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+
+	</refsynopsisdiv>
+	<refsect1 id="desc_mime_tree">
+		<title>Description</title>
+		<para>
+This function is intended to parse MIME (RFC2045) messages (coming from a RFC822 or HTTP sources).
+It parses the text and produces an array structure representing the structure of the MIME message.
+It copies into the structure MIME headers, but for the MIME bodies it only stores start and end offsets,
+thus optimizing space usage.
+</para>
+		<para>
+The parameters to mime_tree are:
+</para>
+<simplelist>
+<member>message_text (string, required) - contains the text of the message to be parsed.</member>
+<member>flag (integer, optional) - a flag describing the format of the &quot;root&quot; object in the text.</member>
+</simplelist>
+		<para>
+If flag is 1, the &quot;root&quot; message follows RFC822. This means mime_tree will unfold the attributes,
+will scan for MIME registered header fields and will take their attributes.  Alternately this can be a MIME message
+which needs no unfolding and has attributes separated with semicolon.
+</para>
+		<para>
+If flag is 2, the &quot;root&quot; message follows RFC2045. This means mime_tree will scan for MIME attributes.
+</para>
+		<para>
+In either cases mime_tree will look for the Content-Type header field and will parse
+the &quot;message/rfc822&quot; and &quot;multipart/digest&quot; MIME bodies as nested messages.
+</para>
+		<para>
+mime_tree will return an array of 3 elements (message descriptor) with the following structure:
+</para>
+
+<simplelist>
+<member>
+index 0: an array of attributes, parameters and their values, which can be passed to get_keyword
+or get_keyword_ucase functions.
+</member>
+<member>
+index 1: an array of four elements: (0 - starting index of the body into the source_message text
+(for aref), 1 - ending index of the body, 2 - an message descriptor if the body is recognized to
+contain a valid RFC822 message; 0 otherwise, 3 - an array of two elements with starting and ending
+offset if the body is recognized as a valid RFC822 multipart message and has some things after the
+last MIME boundary, 0 otherwise).
+</member>
+<member>
+index 2: an array of subpart message descriptors, if the MIME message is recognized as multipart
+MIME message, 0 otherwise.
+</member>
+</simplelist>
+</refsect1>
+  <refsect1 id="examples_mime_tree"><title>Examples</title>
+			<para>consider the following message text</para>
+			<programlisting>
+Form: Somebody &lt;someuser@somehost&gt;
+Mime-Version: 1.0
+Content-Type: &quot;multipart/mixed&quot;;
+	boundary=&quot;--the boundary&quot;
+To: self@localhost
+
+This is a multipart MIME message
+----the boundary
+Content-Type: image/gif; filename=&quot;the_big_picture.gif&quot;
+
+GIF........
+----the boundary
+Content-Type: message/rfc822
+
+From: Ford@Perfect
+To: vogon
+Mime-Version: 1.0
+Content-Type: multipart/alternate; boundary=&quot;--sub-boundary&quot;
+
+This is some Message
+----sub-boundary
+Content-Type: text/plain
+
+Hi
+----sub-boundary
+Content-Type: text/html
+
+&lt;P&gt;Hi&lt;/P&gt;
+----sub-boundary--
+Some garbage
+----the boundary
+Content-Type: text/plain
+
+Some additional text
+----the boundary--
+Some additional garbage
+</programlisting>
+<para>MIME_TREE(the_text, 1) will produce:</para>
+			<programlisting>
+--- the main message start
+(
+ (&quot;From&quot;, &quot;Somebody &lt;someuser@somehost&gt;&quot;,
+      &quot;Mime-Version&quot;, &quot;1.0&quot;, &quot;Content-Type&quot;,
+      &quot;multipart/mixed&quot;,
+      &quot;boundary&quot;, &quot;--the boundary&quot;,
+      &quot;To&quot;, &quot;self@localhost&quot;), 		--- main attributes
+ (n1, n2, 0, (mg1, mg2)), 		--- main message body
+						(&quot;This is a multipart MIME message&quot;)
+ ( 					--- Sub-parts array start
+  ( 					--- Sub-Part 1
+   (&quot;Content-Type&quot;, &quot;image/gif&quot;,
+        &quot;filename&quot;,
+        &quot;the_big_picture.gif&quot;), 	--- Attributes
+   (s2, e2, 0, 0), 			--- body
+   0 					--- no sub parts of the GIF
+  ),
+  (					--- Sub-Part 2
+   (&quot;Content-Type&quot;, &quot;message/rfc822&quot;),	--- Attributes
+   (s3, e3, 				--- the body offsets
+    (					--- the body is recognized as a message,
+						so parse it
+     (&quot;From&quot;, &quot;Ford@Perfect&quot;, &quot;To&quot;, &quot;vogon&quot;,
+          &quot;Mime-Version&quot;,
+          &quot;multipart/alternate&quot;,
+          &quot;boundary&quot;,
+          &quot;--sub-boundary&quot;),		--- The body&apos;s Attributes
+     (ss1, se1, 0, (g2, ge2)),		--- the body&apos;s body (&quot;This is some message&quot;).
+						The message has the text
+						&quot;Some additional garbage&quot;
+						marked by g2, ge2 offsets
+     (					--- body&apos;s parts
+      (					--- body&apos;s SubPart 1
+       (&quot;Content-Type&quot;, &quot;text/plain&quot;),	--- attributes
+       (ss2, se2, 0, 0),		--- the text &quot;Hi&quot;
+       0				--- no subparts
+      ),
+      ( 				--- body&apos;s SubPart 2
+       (&quot;Content-Type&quot;, &quot;text/html&quot;),	--- attributes
+       (ss3, se3, 0, 0),		--- the HTML paragraph &quot;Hi&quot;
+       0				--- no subparts
+      )
+     )
+    ),					--- end of the body&apos;s structure
+    0					--- no trailers
+   ),
+   0					--- no subparts
+  ),
+  (					--- SubPart 3
+   (&quot;Content-Type&quot;, &quot;text/plain&quot;),	--- attributes
+   (s4, e4, 0, (g1, ge1)),		--- the text &quot;Some additional text&quot;
+						and &quot;Some additional garbage&quot;
+   0					--- no subparts
+  )
+ )					--- end of subparts array of the main message
+)
+</programlisting>
+			<para>
+where the n1, n2, mg1, mg2, s2, e2, s3, e3, ss1, se1, g2, ge2, ss2, se2, ss3, se3, s4, e4, g1, ge1
+are offsets, denoting starts and ends of the appropriate pieces within the source message,
+which can be used by the subseq function:
+</para>
+			<programlisting>
+subseq (the_text, g1, ge1) returns the string &quot;Some additional garbage&quot;
+</programlisting>
+	</refsect1>
+</refentry>
+
+

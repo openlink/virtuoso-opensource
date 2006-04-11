@@ -1,0 +1,43 @@
+<!DOCTYPE schema SYSTEM "/share/doctypes/xmlschema/XMLSchema.dtd" [
+<!ENTITY % schemaAttrs "
+	xmlns:tbl	CDATA	#IMPLIED
+	xmlns:db	CDATA	#IMPLIED
+">
+]>
+<!-- Copyright 2000, Norman Walsh, Sun Microsystems.  Schema
+     derived from DocBook DTD Copyright 1992-2000 HaL Computer....  -->
+
+<schema xmlns='http://www.w3.org/2000/10/XMLSchema'
+        xmlns:tbl='http://www.oasis-open.org/tables/exchange/1.0'
+        targetNamespace='http://www.oasis-open.org/tables/exchange/1.0'
+        xmlns:db='http://www.oasis-open.org/docbook/schema/4.1.2'
+        elementFormDefault='qualified'>
+
+<import namespace='http://www.oasis-open.org/docbook/schema/4.1.2'/>
+
+<redefine schemaLocation='soextblx.xsd'>
+  <!-- declare some extension attributes; these are referenced in -->
+  <!-- soextblx.xsd, but locally defined as empty -->
+  <!-- this doesn't work in xsv ... -->
+  <!--
+  <attributeGroup name='tbl.entry.att'>
+      <attribute ref='tbl.entry.att'/>
+    <attribute name='role' type='string'/>
+  </attributeGroup>
+  -->
+
+  <!-- re-declare the entryType type as an extension of the original -->
+  <!-- entryType declared in soextblx.xsd -->
+  <complexType name='entryType' mixed='true'>
+    <complexContent>
+      <extension base='tbl:entryType'>
+        <choice minOccurs='0' maxOccurs='unbounded'>
+          <group ref='db:para.char.mix'/>
+          <group ref='db:tabentry.mix'/>
+        </choice>
+      </extension>
+    </complexContent>
+  </complexType>
+</redefine>
+
+</schema>

@@ -1,0 +1,209 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare f, needf, error, pwd, current_page, current_loc, title, indexxml, ht_description, ht_path varchar;
+  declare sl, i, l, j, k, at_least_one integer;
+  declare sources, ordvec any;
+  declare v_path, v_sl, v_current_loc, metakwd varchar;
+  declare has_rss integer;
+
+  has_rss := 0;
+
+  if (__proc_exists ('DB.DBA.TUTORIAL_ROOT_DIR') is null)
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: /BPELGUI/start.vsp\r\n');
+      return;
+    }
+
+
+  ordvec := vector (
+	'echo', 'Quick Start',
+	'fi', 'Quick Start',
+	'LoanFlow', 'Quick Start',
+        'SecLoan', 'Quick Start',
+        'RMLoan', 'Quick Start',
+        'SecRMLoan', 'Quick Start',
+	'sqlexec', 'Quick Start',
+	'UseCases', 'Quick Start',
+	'java_exec', 'Quick Start',
+	'clr_exec', 'Quick Start',
+	'processXSLT', 'Quick Start',
+	'processXQuery', 'Quick Start',
+	'processXSQL', 'Quick Start'
+	);
+
+  f := {?'f'};
+  if (f is null)
+    needf := '';
+  else
+    needf := '?f=1';
+
+  ht_path := http_physical_path ();
+  sl := strrchr (ht_path, '/');
+  current_loc := substring (ht_path, 1, sl);
+  current_page := substring (ht_path, sl + 2, length (ht_path));
+  pwd := t_get_pwd (current_loc);
+  sources := t_sys_dirlist (pwd, 0, null, 1);
+  i := 0; l := length (sources); j := 0; k := length (ordvec);
+  title := 'OpenLink BPEL Process Manager Developer Tutorial';
+
+  v_path := http_path ();
+  v_sl := strrchr (v_path, '/');
+  v_current_loc := substring (v_path, 1, v_sl);
+
+  metakwd := '';
+  if (0 <> t_file_stat (concat (pwd, '/index.xml')))
+    {
+      declare exit handler for sqlstate '*' { error := concat (__SQL_STATE, '', __SQL_MESSAGE); indexxml := null; goto err; };
+	{
+          indexxml := t_file_to_string (concat (pwd, '/index.xml'));
+          indexxml := xml_tree_doc (indexxml);
+          title := cast (xpath_eval ('/section/title/@val', indexxml, 1) as varchar);
+          metakwd := cast (xpath_eval ('/section/keywords/text()', indexxml, 1) as varchar);
+	}
+    }
+err:
+
+?>
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="/tutorial/tutorial.css">
+<?vsp
+  if (0 <> t_file_stat (concat (pwd, '/rss.vsp'))) {
+  has_rss := 1;
+?>
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="http://<?= HTTP_GET_HOST () ?><?= v_current_loc ?>/rss.vsp"></link>
+<?vsp } ?>
+    <title><?= title ?></title>
+    <meta name="DESCRIPTION" content="Virtuoso Developer Tutorial">
+    <?vsp if (length (metakwd) > 0) { ?><meta name="KEYWORDS" content="<?= metakwd ?>" /><?vsp } ?>
+  </head>
+  <body>
+<?vsp
+  if (f is null)
+  {
+  ?>
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+// if in a sub frame, reload with ?f=1
+if (window != window.top)
+  location.href = location.href + '?f=1';
+// -->
+</SCRIPT>
+<?vsp
+  }
+  ?>
+  <H3><?= title ?></H3>
+  <table border=0>
+  <?vsp
+   declare ex varchar;
+   ex := '';
+   while (j < k)
+     {
+        i := 0;
+	if (j > 1 and j < k and ordvec[j-1] <> ordvec[j+1])
+          at_least_one := 0;
+	while (i < l)
+	  {
+	    if (sources[i] = ordvec[j])
+	      {
+		 declare xt any;
+		 declare cnt, descr, fn, fret varchar;
+                 descr := 'N/A'; ex := '';
+                 at_least_one := at_least_one + 1;
+		 if (0 <> t_file_stat (concat (pwd, '/', sources[i], '/', 'options.xml')))
+		   {
+                     cnt := t_file_to_string (concat (pwd, '/', sources[i],'/options.xml' ));
+		     xt := xml_tree (cnt, 0);
+		     if (isarray (xt))
+		       {
+			 xt := xml_tree_doc (xt);
+			 fn := cast (xpath_eval ('/init/deps/@function', xt, 1) as varchar);
+                         fret := cast (xpath_eval ('/init/deps/@expect', xt, 1) as varchar);
+                         if (fn is not null)
+			   {
+			     if (__proc_exists (fn, 1) is not null or __proc_exists (fn, 2) is not null)
+			       {
+				 if (fret <> call (fn) ())
+			           goto next_page;
+			       }
+			     else
+			       goto next_page;
+			   }
+		       }
+		   }
+		 if (0 <> t_file_stat (concat (pwd, '/', sources[i], '/', sources[i] , '.xml')))
+		   {
+		     cnt := t_file_to_string (concat (pwd, '/', sources[i],'/' , sources[i] , '.xml' ));
+		     xt := xml_tree (cnt, 0);
+		     if (isarray (xt))
+		       {
+			 xt := xml_tree_doc (xt);
+			 descr := cast (xpath_eval ('/refentry/refnamediv/refpurpose', xt, 1) as varchar);
+		       }
+		   }
+		 if (0 <> t_file_stat (concat (pwd, '/', sources[i], '/', sources[i] , '.vsp')) or
+		     0 <> t_file_stat (concat (pwd, '/', sources[i], '/', sources[i] , '.vspx')))
+		   {
+		     declare targ varchar;
+                     targ := '';
+		     if (0 <> t_file_stat (concat (pwd, '/', sources[i], '/', sources[i] , '.vspx')))
+		       ex := 'x';
+		     if (sources[i] in ('xq_s_1'))
+		       targ := ' TARGET="_BLANK"';
+ 		     if (at_least_one = 1)
+		       {
+      ?>
+	   <tr><td NOWRAP valign="top" colspan="2">&nbsp;</td></tr>
+	   <tr><td NOWRAP valign="center" colspan="2"><b><A NAME="<?=replace(ordvec[j+1],' ','')?>"><?=ordvec[j+1]?></A></b></td></tr>
+<?vsp
+                       }
+?>
+	   <tr><td NOWRAP valign="top"><small><a href="<?=sources[i]?>/<?=sources[i]?>.vsp<?=ex?><?=needf?>" <?=targ?>><?=upper (replace (sources[i],'_','-'))?></a></small></td><td><small><?=descr?></small></td></tr>
+      <?vsp
+		   }
+next_page:
+                  aset (sources, i, '');
+	       }
+	      i := i + 1;
+	   }
+        j := j + 2;
+     }
+   i := 0; at_least_one := 0;
+  ?>
+  </table>
+<?vsp
+--if (f is null)
+  --http('<p><a target="_parent" href="/tutorial/index2.vsp">Return to main index</a></p>');
+?>
+<?vsp if (has_rss <> 0) { ?>
+
+<DIV style="margin-top:15px;">
+<A target="_blank" href="rss.vsp"><img src="/images/mxml.gif" border="0">&nbsp;RSS 2.0</A>
+</DIV>
+
+<?vsp } ?>
+</body>
+</html>

@@ -1,0 +1,692 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<rss version="2.0">
+  <channel>
+    <title>LonghornBlogs.com</title>
+    <link>http://www.longhornblogs.com/</link>
+    <description>Your Source for News about Windows 2006</description>
+    <dc:language xmlns:dc="http://purl.org/dc/elements/1.1/">en-US</dc:language>
+    <generator>CommunityServer 1.0 (Build: 1.0.1.50414)</generator>
+    <item>
+      <title>Localization for Avalon XAML based applications</title>
+      <link>http://www.longhornblogs.com/rrelyea/archive/2005/06/15/14184.aspx</link>
+      <pubDate>Wed, 15 Jun 2005 19:17:00 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14184</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rrelyea</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <content>
+        <p>
+          <strong>
+            <u>Online Documentation for Beta1 RC Now Available</u>
+          </strong>
+        </p>
+        <p>After a few week delay, the <a href="http://winfx.msdn.microsoft.com/library/">online</a> version of the documentation for Beta1 RC has finally made it up on MSDN.  Those of you using that build, had current documentation installed on your machine, but the online documentation was still showing March CTP docs.</p>
+        <p>
+          <u>
+            <strong>Localization and Globalization</strong>
+          </u>
+        </p>
+        <p>That makes it easier for me to point to 2 documents about localizing and globalizing avalon applications.  This <a href="http://longhornblogs.com/rrelyea/archive/2005/05/26/14122.aspx">topic</a> came up recently when I did a presentation at XTech about Avalon and a XUL guy thought that Avalon/XAML didn't have a localization story because I didn't mention one in my talk.</p>
+        <p>This overview <a href="http://winfx.msdn.microsoft.com/library/en-us/wcp_conceptual/winfx/globalizationlocalization/overviews/about_globalization_wcp.asp">article</a> covers several globalization issues.</p>
+        <p>I like our solution for localization, it allows people to use one primary language for development in their XAML.  When these XAML files are compiled into BAML files, they are embedded in satellite assemblies.  This <a href="http://winfx.msdn.microsoft.com/library/en-us/wcp_conceptual/winfx/globalizationlocalization/overviews/locbaml_tutorial.asp">how-to topic</a> documents the steps necessary to localize the content in the baml and to create new satellite assemblies.</p>
+        <p>Please tell me anything that isn't clear or doesn't make sense...</p>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14184">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14184?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14184" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14184&amp;url=http://www.longhornblogs.com/rrelyea/archive/2005/06/15/14184.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14184" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Creating custom controls, the real way</title>
+      <link>http://www.longhornblogs.com/rdawson/archive/2005/06/14/14180.aspx</link>
+      <pubDate>Tue, 14 Jun 2005 15:53:00 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14180</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rdawson</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <content>
+        <p class="Section1">   I know the question has been dodged, and I myself didn't have a firm grasp--but I am back to report on "the way" of creating a custom control.</p>
+        <p class="Section1">   First of all, be aware that a custom control should be created only as a last option. For the sake of all the work that has gone into Avalon to make controls lookless, you should always evaluate the available controls before contunuing. I believe the true circumstance for a custom control is when you want to package certain ideas together with data. The key word being data. That is really the only reason you create a custom control--you want a common ancestor object without having to rewire the data hook-up everytime. A custom control is not for look-ability. Because, in that sense, you are destroying the lookless metaphor--which is undesirable. You always want that style-ability inherent in Avalon.</p>
+        <p class="Section1"> </p>
+        <p class="Section1">   Now you may recall the first step in creating an Avalon application with a custom control is to set the 'UICulture' property in the project settings. This is a temporary work-around for satisfying Avalon's taste for localized apps. To do this, navigate to the project settings file (It will be in the project directory, and called something like "&lt;ProjectName&gt;.csproj"). Open it up in Notepad and it should look like below. Add the bolded line.</p>
+        <p class="Code">   &lt;Project DefaultTargets="Build" xmlns="<a href="http://schemas.microsoft.com/developer/msbuild/2003">http://schemas.microsoft.com/developer/msbuild/2003</a>"&gt;<br/>        &lt;PropertyGroup&gt;<br/>             &lt;Configuration Condition=" '$(Configuration)' == '' "&gt;Debug&lt;/Configuration&gt;<br/>             &lt;Platform Condition=" '$(Platform)' == '' "&gt;AnyCPU&lt;/Platform&gt;<br/>            ...<br/>            <strong><span style="FONT-FAMILY: 'Lucida Console'">&lt;UICulture&gt;en-US&lt;/UICulture&gt;</span></strong><b><br/></b>        &lt;/PropertyGroup&gt;<br/>        ...<br/>  &lt;/Project&gt;</p>
+        <p class="Section1">   </p>
+        <p class="Section1">   The next step is to create class file (Widget.cs). The only difference between a regular class and this one is the 'partial' decorator. The 'partial' tells .NET that there is another part of this class in a separate fill.</p>
+        <p class="Code">      namespace ApplicationNamespace <br/>      {<br/>            public partial class <span style="COLOR: teal">Widget</span> : <span style="COLOR: teal">ContentControl<br/></span>            {<br/>            }<br/>      }</p>
+        <p class="Section1">   Although you could inherit from a number of classes, ContentControl best satisfies the fact that we want a control with lookless behavior. In light of that, ContentControl is just a container. Essentially, this allows us the flexibility of the control to hold anything.</p>
+        <p class="Section1">   Since XAML is the easiest language to describe Avalon elements, it would be a shame to stay in C#. So, go ahead and create a XAML file (Widget.XAML).</p>
+        <p class="Code">      &lt;<span style="COLOR: maroon">ContentControl</span> <span style="COLOR: red">x:Class</span>="ApplicationNamespace.Widget"<br/><span style="COLOR: red">            xmlns</span>="http://schemas.microsoft.com/winfx/avalon/2005"<br/><span style="COLOR: red">            xmlns:x</span>="http://schemas.microsoft.com/winfx/xaml/2005"<b><br/></b>            &gt;<br/><br/>      &lt;/<span style="COLOR: maroon">ContentControl</span>&gt; </p>
+        <p class="Section1">   The above is the second half of the class declared in C#, which now enables us to fully work in XAML. </p>
+        <p class="Section1">   Continuing on, let's add the custom control to the main Window (the stuff bolded is the important lines that hook it up):</p>
+        <p class="Code">      <strong><span style="FONT-SIZE: 10pt; FONT-FAMILY: 'Lucida Console'">&lt;?</span></strong><strong><span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Lucida Console'">Mapping</span></strong><strong><span style="FONT-SIZE: 10pt; COLOR: gray; FONT-FAMILY: 'Lucida Console'"> XmlNamespace="controls" ClrNamespace="ApplicationNamespace" </span></strong><strong><span style="FONT-SIZE: 10pt; FONT-FAMILY: 'Lucida Console'">?&gt;</span></strong><br/>      &lt;<span style="COLOR: maroon">Window</span> <span style="COLOR: red">x:Class</span>="ApplicationNamespace.Window1"<br/><span style="COLOR: red">            xmlns</span>="http://schemas.microsoft.com/winfx/avalon/2005"<br/><span style="COLOR: red">            xmlns:x</span>="http://schemas.microsoft.com/winfx/xaml/2005"</p>
+        <p class="Code"><span style="COLOR: red">            xmlns:cc</span>="controls" <br/>            &gt;<br/>            &lt;<span style="COLOR: maroon">Grid</span>&gt;<br/><strong><span style="FONT-SIZE: 10pt; FONT-FAMILY: 'Lucida Console'">                  &lt;</span></strong><strong><span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Lucida Console'">cc:Widget </span></strong><strong><span style="FONT-SIZE: 10pt; FONT-FAMILY: 'Lucida Console'">/&gt;</span></strong> <br/>            &lt;/<span style="COLOR: maroon">Grid</span>&gt;      </p>
+        <p class="Code">      &lt;/<span style="COLOR: maroon">Window</span>&gt; </p>
+        <p class="Section1">  </p>
+        <p class="Section1">   Now, go ahead and set some properties on the custom control:</p>
+        <p class="Code">      &lt;<span style="COLOR: maroon">ContentControl</span> <span style="COLOR: red">x:Class</span>="ApplicationNamespace.Widget"<br/><span style="COLOR: red">            xmlns</span>="http://schemas.microsoft.com/winfx/avalon/2005"<br/><span style="COLOR: red">            xmlns:x</span>="http://schemas.microsoft.com/winfx/xaml/2005"<strong><span style="FONT-SIZE: 10pt; FONT-FAMILY: 'Lucida Console'">       </span></strong><b><br/></b>            &gt;</p>
+        <p class="Code">
+          <b>       &lt;ContentControl.Style&gt;</b>
+        </p>
+        <p class="Code">
+          <b>              &lt;Style&gt;</b>
+        </p>
+        <p class="Code">
+          <b>                     &lt;Setter </b>
+          <b><span style="COLOR: red">Property</span>="ContentControl.Width" </b>
+          <b><span style="COLOR: red">Value</span>="200" /&gt;</b>
+        </p>
+        <p class="Code">
+          <b>                     &lt;Setter </b>
+          <b><span style="COLOR: red">Property</span>="ContentControl.Height" </b>
+          <b><span style="COLOR: red">Value</span>="200" /&gt;</b>
+        </p>
+        <p class="Code">
+          <b>                     &lt;Setter </b>
+          <b><span style="COLOR: red">Property</span>="ContentControl.Background" </b>
+          <b><span style="COLOR: red">Value</span>="Red" /&gt;</b>
+        </p>
+        <p class="Code">
+          <b>              &lt;/Style&gt;</b>
+        </p>
+        <p class="Code"><b>       &lt;/ContentControl.Style&gt;</b><br/><br/>      &lt;/ContentControl&gt; </p>
+        <p class="Section1">   Run the application...You may notice that nothing is visible. The reason is that we did set the properties and we did create the custom control partial class in XAML, but it really isn't being connected with our real class in C#. The reason is that XAML really isn't a language and it must actually be converted into C#. To do this, we need to call <strong><span style="FONT-SIZE: 10pt">InitializeComponent</span></strong><span style="FONT-SIZE: 10pt"> </span>from the constructor of the Widget class:</p>
+        <p class="Code">      namespace ApplicationNamespace <br/>      {<br/>            public partial class <span style="COLOR: teal">Widget</span> : <span style="COLOR: teal">ContentControl<br/></span>            {</p>
+        <p class="Code">                  public Widget()</p>
+        <p class="Code">                  {</p>
+        <p class="Code">InitializeComponent();</p>
+        <p class="Code">                  }<br/>            }<br/>      }</p>
+        <p class="Section1"><span style="FONT-SIZE: 10pt"/> </p>
+        <p class="MsoNormal">Even now if you run the application the control wonâ€™t show up. The reason is that we may have specified dimensions and a background, but the control cannot set those on content that doesnâ€™t exist, yet. To add a look, we should provide a default templateâ€”which is a way of adding a look to our <i>lookless</i> control. The template can be ripped out or styled differently at any time by the application.</p>
+        <p class="MsoNormal"> </p>
+        <p class="Code">&lt;<span style="COLOR: maroon">ContentControl</span> <span style="COLOR: red">x:Class</span>="ApplicationNamespace.Widget"</p>
+        <p class="Code">    <span style="COLOR: red">xmlns</span>="http://schemas.microsoft.com/winfx/avalon/2005"</p>
+        <p class="Code">    <span style="COLOR: red">xmlns:x</span>="http://schemas.microsoft.com/winfx/xaml/2005"</p>
+        <p class="Code">    <span style="COLOR: red">Width</span>="200" <span style="COLOR: red">Height</span>="200" <span style="COLOR: red">Background</span>="Red"</p>
+        <p class="Code">    &gt;</p>
+        <p class="Code">    &lt;ContentControl.Style&gt;</p>
+        <p class="Code">            &lt;Style&gt;</p>
+        <p class="Code">                    &lt;Setter <span style="COLOR: red">Property</span>="ContentControl.Width" <span style="COLOR: red">Value</span>="200" /&gt;</p>
+        <p class="Code">                    &lt;Setter <span style="COLOR: red">Property</span>="ContentControl.Height" <span style="COLOR: red">Value</span>="200" /&gt;</p>
+        <p class="Code">                    &lt;Setter <span style="COLOR: red">Property</span>="ContentControl.Background" <span style="COLOR: red">Value</span>="Red" /&gt;</p>
+        <p class="Code">
+          <b>                 &lt;</b>
+          <b>
+            <span style="COLOR: maroon">Setter</span>
+          </b>
+          <b><span style="COLOR: red">Property</span>="ContentControl.Template"&gt;</b>
+        </p>
+        <p class="Code">
+          <b>                        &lt;</b>
+          <b><span style="COLOR: maroon">Setter.Value</span>&gt;</b>
+        </p>
+        <p class="Code">
+          <b>                               &lt;</b>
+          <b><span style="COLOR: maroon">ControlTemplate</span>&gt;</b>
+        </p>
+        <p class="Code">
+          <b>                                      &lt;</b>
+          <b>
+            <span style="COLOR: maroon">Grid</span>
+          </b>
+          <b><span style="COLOR: red">Background</span>="{TemplateBinding Property=Background}"&gt;</b>
+        </p>
+        <p class="Code">
+          <b>                                      &lt;/</b>
+          <b><span style="COLOR: maroon">Grid</span>&gt;</b>
+        </p>
+        <p class="Code">
+          <b>                               &lt;/</b>
+          <b><span style="COLOR: maroon">ControlTemplate</span>&gt;</b>
+        </p>
+        <p class="Code">
+          <b>                        &lt;/</b>
+          <b><span style="COLOR: maroon">Setter.Value</span>&gt;</b>
+        </p>
+        <p class="Code">
+          <b>                 &lt;/</b>
+          <b><span style="COLOR: maroon">Setter</span>&gt;</b>
+        </p>
+        <p class="Code">            &lt;/Style&gt;</p>
+        <p class="Code">    &lt;/ContentControl.Style&gt;</p>
+        <p class="Code">&lt;/<span style="COLOR: maroon">ContentControl</span>&gt;</p>
+        <p class="Code">                   <img src="http://www.conviat.com/LonghornBlogs/General/custom-control-1.gif"/></p>
+        <p class="Section1"/>
+        <div class="Section1">Going back to the class, letâ€™s add some data through a property WidgetDataâ€”which returns a simple string â€œRedâ€. This is the data we are going to expose with our custom control (the essence of it): </div>
+        <p class="Section1"/>
+        <div class="Section1">   public partial class Setter <span style="COLOR: red">Property</span>="ContentControl.Template"&gt;
+<p/>
+<p class="Code">                            &lt;<span style="COLOR: maroon">Setter.Value</span>&gt;</p>
+<p class="Code">                                    &lt;<span style="COLOR: maroon">ControlTemplate</span>&gt;</p>
+<p class="Code">                                            &lt;<span style="COLOR: maroon">Grid</span> <span style="COLOR: red">Background</span>="{TemplateBinding Property=Background}"&gt;</p>
+<p class="Code"><b>                                             &lt;</b><b><span style="COLOR: maroon">TextBlock</span></b><b><span style="COLOR: red">TextContent</span>="{Binding Path=WidgetData,RelativeSource=/TemplatedParent}" /&gt;</b></p>
+<p class="Code">                                            &lt;/<span style="COLOR: maroon">Grid</span>&gt;</p>
+<p class="Code">                                    &lt;/<span style="COLOR: maroon">ControlTemplate</span>&gt;</p>
+<p class="Code">                            &lt;/<span style="COLOR: maroon">Setter.Value</span>&gt;</p>
+<p class="Code">                    &lt;/<span style="COLOR: maroon">Setter</span>&gt;</p>
+<p class="MsoNormal">I am binding the value to the TextBlock.TextContent property. The reason I have specified RelativeSource as â€˜/TemplatedParentâ€™ is that the Binding statement will not have any data context without RelativeSource. There are a couple of other values which can be automatically determined by Avalon at runtime. They all start with a forward slash â€˜/â€™ and refer to common paths. â€˜TemplatedParentâ€™ gets us the main element that the ControlTemplate is modifyingâ€”which is the Widget class.</p>
+<p class="MsoNormal">                   <img src="http://www.conviat.com/LonghornBlogs/General/custom-control-2.gif"/></p>
+<p class="Section1"/>
+<div class="Section1"><p class="Section1"/><p class="Code">    <span style="COLOR: red">xmlns</span>="http://schemas.microsoft.com/winfx/avalon/2005"</p><p class="Code">    <span style="COLOR: red">xmlns:x</span>="http://schemas.microsoft.com/winfx/xaml/2005"</p><p class="Code">    <span style="COLOR: red">xmlns:cc</span>="controls"</p><p class="Code">    &gt;</p><p class="Code">    &lt;<span style="COLOR: maroon">Window.Resources</span>&gt;</p><p class="Code">            &lt;<span style="COLOR: maroon">Style</span> <span style="COLOR: red">x:Key</span>="WidgetStyle"&gt;</p><p class="Code">                    &lt;<span style="COLOR: maroon">Setter</span> <span style="COLOR: red">Property</span>="Control.Template"&gt;</p><p class="Code">                            &lt;<span style="COLOR: maroon">Setter.Value</span>&gt;</p><p class="Code">                                    &lt;<span style="COLOR: maroon">ControlTemplate</span>&gt;</p><p class="Code">                                            &lt;<span style="COLOR: maroon">Grid</span> <span style="COLOR: red">Background</span>="{Binding Path=WidgetData,RelativeSource=/TemplatedParent}" /&gt;</p><p class="Code">                                    &lt;/<span style="COLOR: maroon">ControlTemplate</span>&gt;</p><p class="Code">                            &lt;/<span style="COLOR: maroon">Setter.Value</span>&gt;</p><p class="Code">                    &lt;/<span style="COLOR: maroon">Setter</span>&gt;</p><p class="Code">            &lt;/<span style="COLOR: maroon">Style</span>&gt;</p><p class="Code">    &lt;/<span style="COLOR: maroon">Window.Resources</span>&gt;</p><p class="Code">    &lt;<span style="COLOR: maroon">Grid</span>&gt;</p><p class="Code">            &lt;<span style="COLOR: maroon">cc:Widget</span> <span style="COLOR: red">Style</span>="{StaticResource WidgetStyle}" /&gt;</p><p class="Code">            </p><p class="Code">    &lt;/<span style="COLOR: maroon">Grid</span>&gt;</p><p class="Code">&lt;/<span style="COLOR: maroon">Window</span>&gt;</p><p class="Code">                      <img src="http://www.conviat.com/LonghornBlogs/General/custom-control-3.gif"/></p></div></div>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14180">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14180?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14180" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14180&amp;url=http://www.longhornblogs.com/rdawson/archive/2005/06/14/14180.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14180" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Matthew Adams ponderings on XAML</title>
+      <link>http://www.longhornblogs.com/rrelyea/archive/2005/06/13/14177.aspx</link>
+      <pubDate>Mon, 13 Jun 2005 17:22:00 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14177</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rrelyea</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">5</n0:comments>
+      <content>
+        <p>Interesting post on "<a href="http://spaces.msn.com/members/mwadams/Blog/cns!1pAMOzaH98ZfHK1uhQS5Bd5g!217.entry">Avalon, XAML as a discoverable API</a>" by Matthew Adams.</p>
+        <p>In the discoverable API piece, he ends with:</p>
+        <blockquote dir="ltr">
+          <p>But I don't think XAML quite delivers on that ease-of-use goal as it stands. I'm sure the intention is to build tooling around it for RAD development, and so maybe this doesn't register all that high on the radar, but it still doesn't feel as "clean" as it could, to me. Yet.</p>
+        </blockquote>
+        <p dir="ltr">We'd love to know which parts of Avalon/XAML need more cleaning.</p>
+        <p dir="ltr">Yes, we clearly would benefit from visual designers, but we want to still be readable/writable without one.</p>
+        <p dir="ltr"> </p>
+        <p dir="ltr">He also says:</p>
+        <blockquote dir="ltr">
+          <p dir="ltr">Avalon delivers an API which permits the same ease of use; in fact, I think it is more consistent, simpler and generally easier to use even than VB's API, as well as offering richer functionality even at its surface.</p>
+        </blockquote>
+        <p dir="ltr">Glad to hear about the richness and pleasantly surprised about the consistency, simplicity and ease of use you mention.  We still have a number of rough areas, but we've been working towards those goals.</p>
+        <p>He has other posts on Avalon as well  "<a href="http://spaces.msn.com/members/mwadams/Blog/cns!1pAMOzaH98ZfHK1uhQS5Bd5g!204.entry">Bad practice, good practice, what is XAML for?</a>"</p>
+        <p dir="ltr">Please go read his posts and comment on them on his site.  Would love to know what you all think.</p>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14177">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14177?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14177" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14177&amp;url=http://www.longhornblogs.com/rrelyea/archive/2005/06/13/14177.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14177" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Using BitmapVisualManager</title>
+      <link>http://www.longhornblogs.com/rdawson/archive/2005/06/09/14172.aspx</link>
+      <pubDate>Thu, 09 Jun 2005 11:23:00 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14172</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rdawson</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">1</n0:comments>
+      <content><p>I have had some trouble getting this working, and I am not sure why it is that cool (probably the same reason for my fascination with the VisualBrush), but here it is:</p><font color="#0000ff" size="2"><p>&lt;<font color="#800000" size="2">StackPanel</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Width</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">100</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Name</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">stack4</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>      &lt;<font color="#800000" size="2">Button</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Name</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">button4</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Click</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">button4Clicked</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Background</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">Green</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Height</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">25</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>            &lt;<font color="#800000" size="2">Button.Content</font><font color="#0000ff" size="2">&gt;</font><font size="2">dsfasdfasdf</font><font color="#0000ff" size="2">&lt;/</font><font color="#800000" size="2">Button.Content</font><font color="#0000ff" size="2">&gt;</font></p><p>      &lt;/<font color="#800000" size="2">Button</font><font color="#0000ff" size="2">&gt;</font></p><p>      &lt;<font color="#800000" size="2">Image</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Width</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">100</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Height</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">25</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Name</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">img</font><font size="2">"</font><font color="#0000ff" size="2"> /&gt;</font></p><p>&lt;/<font color="#800000" size="2">StackPanel</font><font color="#0000ff" size="2">&gt;</font></p><p><font color="#0000ff" size="2"/><font color="#0000ff" size="2"> </font></p></font><p>In code:</p><font size="2"><p><font color="#0000ff" size="2">private</font><font size="2"> </font><font color="#0000ff" size="2">void</font><font size="2"> button4Clicked(</font><font color="#0000ff" size="2">object</font><font size="2"> sender, </font><font color="#008080" size="2">RoutedEventArgs</font><font size="2"> e)</font></p><p>{</p><p><font color="#008080" size="2">      VisualOperations</font><font size="2">.GetChildren(</font><font color="#0000ff" size="2">this</font><font size="2">.stack4).Remove(</font><font color="#0000ff" size="2">this</font><font size="2">.button4);</font></p><p><font color="#008080" size="2">      VisualOperations</font><font size="2">.SetOffset(</font><font color="#0000ff" size="2">this</font><font size="2">.button4, </font><font color="#0000ff" size="2">new</font><font size="2"> </font><font color="#008080" size="2">Vector</font><font size="2">(0, 0));</font></p><p><font color="#008080" size="2">      VisualOperations</font><font size="2">.SetTransform(</font><font color="#0000ff" size="2">this</font><font size="2">.button4, </font><font color="#0000ff" size="2">null</font><font size="2">);</font></p><p><font color="#008080" size="2">      RenderTargetBitmap</font><font size="2"> bitmap = </font><font color="#0000ff" size="2">new</font><font size="2"> </font><font color="#008080" size="2">RenderTargetBitmap</font><font size="2">(100, 25, 1 / 96, 1 / 96, </font><font color="#008080" size="2">PixelFormats</font><font size="2">.Pargb32);</font></p><p><font color="#008080" size="2">      BitmapVisualManager</font><font size="2"> visual = </font><font color="#0000ff" size="2">new</font><font size="2"> </font><font color="#008080" size="2">BitmapVisualManager</font><font size="2">(bitmap);</font></p><p>      visual.Render(<font color="#0000ff" size="2">this</font><font size="2">.button4);</font></p><p>      img.Source = bitmap <font color="#0000ff" size="2">as</font><font size="2"> </font><font color="#008080" size="2">ImageSource</font><font size="2">;</font></p><p><font color="#008080" size="2">      VisualOperations</font><font size="2">.GetChildren(</font><font color="#0000ff" size="2">this</font><font size="2">.stack4).Add(</font><font color="#0000ff" size="2">this</font><font size="2">.button4);</font></p><p>}</p></font>                         <img src="http://www.conviat.com/longhornblogs/general/BVM1.gif"/><p>You can obviously notice the stretching, and that is because I have a RenderTransform scaling by 6. So, the BitmapVisualManager renders the content at the original size.</p>                         <img src="http://www.conviat.com/longhornblogs/general/BVM2.gif"/><p><map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14172"><area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14172?pos=0" coords="1,2,367,28"/><area shape="rect" href="href" coords="384,10,453,23"/></map><img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14172" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14172&amp;url=http://www.longhornblogs.com/rdawson/archive/2005/06/09/14172.aspx"/></p><img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14172" width="1" height="1"/></content>
+    </item>
+    <item>
+      <title>Understanding 'Metro'</title>
+      <link>http://www.longhornblogs.com/robert/archive/2005/06/08/14171.aspx</link>
+      <pubDate>Thu, 09 Jun 2005 02:26:28 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14171</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rmclaws2k</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <content>
+        <p>I'm working on a big ol' post about Metro. For now, here are some links
+around the web:</p>
+        <p><a href="http://www.pdfzone.com/article2/0,1759,1823451,00.asp">A Look Inside
+Microsoft's 'Metro' Document Format</a> (<a href="http://www.pdfzone.com">PDFzone</a>) - a MUST read<br/><a href="http://www.publish.com/article2/0,1759,1811770,00.asp">Metro's Real
+Target: Control of Document Standards</a> (<a href="http://www.publish.com">Publish</a>)<br/><a href="http://www.publish.com/article2/0,1759,1789933,00.asp">Metro May Not Kill
+PDF After All</a> (<a href="http://www.publish.com">Publish</a>)<br/><a href="http://www.eweek.com/article2/0,1759,1789807,00.asp">Microsoft to
+Pit  Metro Against PDF</a> (<a href="http://www.eweek.com">eWeek</a>)</p>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14171">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14171?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14171" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14171&amp;url=http://www.longhornblogs.com/robert/archive/2005/06/08/14171.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14171" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Beware warnings from the xml editor...avalon2005.xsd/xaml2005.xsd are not perfect way to validate xaml</title>
+      <link>http://www.longhornblogs.com/rrelyea/archive/2005/06/07/14167.aspx</link>
+      <pubDate>Tue, 07 Jun 2005 15:03:00 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14167</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rrelyea</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <content>
+        <p>This issue keeps coming up...</p>
+        <p>
+          <span style="FONT-SIZE: 10pt; COLOR: navy; FONT-FAMILY: Arial">
+            <font face="Times New Roman" color="#000000" size="3">When VS gives you a message like this:</font>
+          </span>
+        </p>
+        <blockquote dir="ltr">
+          <p>
+            <span style="FONT-SIZE: 10pt; COLOR: navy; FONT-FAMILY: Arial">The element 'Page' in namespace 'http://schemas.microsoft.com/winfx/avalon/2005' has invalid child element 'Page.CommandBindings' in namespace 'http://schemas.microsoft.com/winfx/avalon/2005'. Expected 'Page.Resources, Page.StatusBarContent, Page.Storyboards, Page.Opacity, Page.Clip, Page.RenderTransform, Page.DataContext' in namespace 'http://schemas.microsoft.com/winfx/avalon/2005' as well as any element in namespace 'http://schemas.microsoft.com/winfx/xaml/2005' as well as â€¦</span>
+            <n0:p xmlns:n0="o"/>
+          </p>
+        </blockquote>
+        <p>It is likely a warning, not an error.  The xml editor is warning that the xaml doesn't match the schema that we've provided for Avalon/Xaml.</p>
+        <p>Back in February, I blogged about the <a id="_ctl0__ctl0__ctl0__ctl0_RecentPosts__ctl0_postlist__ctl0_EntryItems__ctl10_PostTitle" href="/rrelyea/archive/2005/02/09/12500.aspx">Issues/Suggestions for November Avalon CTP's VS2005 Add-ons ('Fidalgo')</a>.  I've updated the relevant section and included it here:</p>
+        <blockquote dir="ltr">
+          <p><u>Avalon + XAML Schema Files</u><br/>The XML Editor in Visual Studio uses XSD schema files to provide Intellisense support for many XML formats. If you are editing an xml format and want a better experience, you can put an .xsd file in \program files\microsoft visual studio 8\xml\schemas\</p>
+          <ul>
+            <li>WinFX SDK installs Avalon*.xsd and Xaml*.xsd into this directory.
+</li>
+            <li>Avalon*.xsd provides a schema that describes how to use the Avalon namespace (<a href="http://schemas.microsoft.com/winfx/avalon/2005">http://schemas.microsoft.com/winfx/avalon/2005</a>) and all the elements &amp; objects that it supports.
+</li>
+            <li>Xaml*.xsd provides a schema that describes how to use attributes and elements from the "xaml" namespace (<a href="http://schemas.microsoft.com/winfx/xaml/2005">http://schemas.microsoft.com/winfx/xaml/2005</a>)</li>
+          </ul>
+          <p>XSD Schema doesn't do a great job on XAML intellisenseâ€¦but it is better that typing blind! The danger is that the schema isn't perfect. It complains about some syntaxes that are perfectly valid (according to the XAML loader and XAML compiler.) It also suggests some syntaxes which won't compile.</p>
+          <p> </p>
+        </blockquote>
+        <p dir="ltr">
+          <strong>
+            <u>Why doesn't XSD do a great job with XAML?</u>
+          </strong>
+        </p>
+        <p dir="ltr">Why is XSD inappropriate as a XAML validator:</p>
+        <p><span style="FONT-WEIGHT: bold">1) Type Inheritance</span> - 3rd party types that subclass UIElement should be allowed in DockPanel.</p>
+        <p><span style="FONT-WEIGHT: bold">2) Generics</span> - Generic collection type<span style="mso-spacerun: yes">   </span>List -- content model depends on T</p>
+        <p> </p>
+        <p/>
+        <p>foo</p>
+        <p>foo</p>
+        <p/>
+        <p> </p>
+        <p><span style="FONT-WEIGHT: bold">3) Attached Properties</span> - AttachedProperties could be applied anywhere.  Should all attached properties be added to the schema for all UIElements?</p>
+        <p/>
+        <p/>
+        <p/>
+        <p/>
+        <p> </p>
+        <p>
+          <span style="FONT-WEIGHT: bold">4) Attributes and Property Elements shouldn't both be set</span>
+        </p>
+        <p><span style="FONT-WEIGHT: bold"/> </p>
+        <p>The parser/compiler will both error if you do this.  I'm not sure of way to enforce this with XSD.</p>
+        <p>    </p>
+        <p>         </p>
+        <p>              ...</p>
+        <p>         </p>
+        <p>     </p>
+        <p> </p>
+        <p> </p>
+        <p>
+          <strong>5) PropertyElements must all be listed in the schema or they will appear invalid.</strong>
+        </p>
+        <p>I choose to not list every PropertyElement as a possible child of the ObjectElements today because they would provide too many options to insert as children of tags.  I've tried to find the common PropertyElements and add them to the schema.</p>
+        <p dir="ltr">
+          <strong>
+            <u>The solution</u>
+          </strong>
+        </p>
+        <p dir="ltr">Short term: tell us about bad problems in the xsd.  We'll fix most of those until we get our long term solution.</p>
+        <p dir="ltr">Long term: we hope to have an editor that doesn't rely on XSD to provide intellisense.  If you are building tools that are targetting Avalon/Xaml, and want to learn more about what I'd recommend in this area, please contact me...I'd be happy to tell you what I believe would be the best way to do this.</p>
+        <p dir="ltr">Update: I needed to hand escape all my tag examples...fixed them...</p>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14167">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14167?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14167" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14167&amp;url=http://www.longhornblogs.com/rrelyea/archive/2005/06/07/14167.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14167" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Rich Media Experiences Lacking</title>
+      <link>http://www.longhornblogs.com/rdawson/archive/2005/06/06/14163.aspx</link>
+      <pubDate>Mon, 06 Jun 2005 14:50:00 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14163</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rdawson</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">5</n0:comments>
+      <content>
+        <p>   TV is neat because many things are hand coded with explicit pixel positions and absolutes that are composited together to get an intended effect that looks incredible and visually enjoyable.</p>
+        <p>   I once thought Avalon was also going to be neat because we could do similar things. Not the hand coding, though. Yet, I have found that applying animation transitions and niceties is hard--almost to the point where it is best to do it like TV. The grid panel is awesome, which you may remember is the opposite of what I thought before. But, It really allows for an incredible layout. Back to the point, though--when you want to add these custom animation transitions and effects, usually, no make that almost always, you have to break down those nice layouts and go to back to absolute positioning on the Canvas. You also have a big problem trying to get controls (and their shapes) clipped so as to not cover up functionality behind. This means you have to play a game of promoting and demoting things in the Z order--which I would think adds some un-needed overhead.</p>
+        <p>   The thing is that objects and shapes on screen should be able to fly around, link up, decouple, change Z order without having to change the panel children order, and transitioning between shapes easily. Exactly like things on TV. The channel I most want to mimic is MSNBC (the stock channel). They have cool things going on: background animations using 3D and blurring, polished look and feel, and presentation of both information and usefulness in the same package.</p>
+        <p> </p>
+        <p>   I am not trying to rag on Avalon, because I love it. I mean, how could I criticize something that is superior to anything else in existence. I can't. But, on the same token it seems like trying to build these experiences that I want are harder than I would have thought.</p>
+        <p>   Here is something I want to do:</p>
+        <p>   Imagine I have a Window with a button in the middle (the button is gel styled). I want to click the button and have it so that the screen seamlessly transitions from being a button in the middle to a new form with many controls and information. I can imagine the button getting bigger until it is half the size of the new form, at which time the background fades from the button color to the new form color and the controls on the new form start to appear. This is a simple example of something I want to do (simple). But, I find this hard.</p>
+        <p>   Have the designers of Avalon thought of these scenarios? Like I said, I don't mean to criticize, but just bring it to the table...</p>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14163">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14163?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14163" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14163&amp;url=http://www.longhornblogs.com/rdawson/archive/2005/06/06/14163.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14163" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Dell: When Are You Going To Wake Up About Tablets?</title>
+      <link>http://www.longhornblogs.com/robert/archive/2005/06/06/14160.aspx</link>
+      <pubDate>Mon, 06 Jun 2005 14:10:27 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14160</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rmclaws2k</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">3</n0:comments>
+      <content>
+        <p>Todd Bishop at the Seattle Post-Intelligencer <a href="http://seattlepi.nwsource.com/business/227217_msftnotebook06.html">talks about Lenovo's new Tablet PCs</a>, and how Dell is the only major player NOT in the Tablet market at this point. Quote the Raven:</p>
+        <blockquote>"We have no immediate plans to get into the Tablet PC business," said Dell spokeswoman Anne Camden. "The market is still very small."</blockquote>
+        <p>Oh Dell. How can such a smart company be SO DUMB.Whoever you have crafting your strategy there whould be fired. If you can't do it, get Trump to do it for you.</p>
+        <p>One of the main reasons the Tablet business is so small is because <strong>you're not playing in it yet</strong>. Wake up and smell the consumers! You guys are the #1 marketer to the average computing consumer. If you guys had a Tablet, a smart ad campaign from the Dell Dude (fresh out of Rehab or wherever), and had the same financing options you do now, you'd have a LOT more Tablet sales.</p>
+        <p>You guys used to take risks. You guys used to be innovative. Why are you relegating yourselves to being the last to the table out of sheer ignorance? Any move you make at this point will only leave people saying "Where the hell have you been?"</p>
+        <p>Ugh. Maybe they'll get with the program by the time Longhorn gets here. Yeah, right.</p>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14160">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14160?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14160" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14160&amp;url=http://www.longhornblogs.com/robert/archive/2005/06/06/14160.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14160" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Google AdSense for Feeds Updated</title>
+      <link>http://www.longhornblogs.com/robert/archive/2005/06/06/14157.aspx</link>
+      <pubDate>Mon, 06 Jun 2005 07:09:24 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14157</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rmclaws2k</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">1</n0:comments>
+      <content>
+        <p>I just installed the new Google AdSense for Feeds code into the LonghornBlogs.com feeds. You should be noticing it by now. (Sorry that it updates every article... I wish it didn't have to.) This time, Google is using an image map instead of a table to redirect user's clicks. Here's what the new ads look like (click for full size:</p>
+        <p>
+          <a href="http://images.interscapeusa.com/blog/newgoogleads.gif" target="_blank">
+            <img src="http://images.interscapeusa.com/blog/newgoogleads_small.gif"/>
+          </a>
+        </p>
+        <p>I have to say, that I like this new creative a lot. It's unobtrusive, and it incorporates a lot of feedback from other users. I think people will like this version a lot better. Now, all we really need are lots of companies advertising Longhorn-based products, and we'd be set ;).</p>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14157">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14157?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14157" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14157&amp;url=http://www.longhornblogs.com/robert/archive/2005/06/06/14157.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14157" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Announcing the MSBuild Toolkit for Visual Studio 2005 RC!</title>
+      <link>http://www.longhornblogs.com/robert/archive/2005/06/03/14156.aspx</link>
+      <pubDate>Sat, 04 Jun 2005 04:58:11 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14156</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rmclaws2k</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <content>
+        <p>The MSBuild Toolkit for Visual Studio 2005 RC is the long-awaited successor
+to the <a href="http://weblogs.asp.net/rmclaws/posts/msbuildtoolkit.aspx">MSBuild
+Compatibility Toolkit</a> that I released late last year. Thanks to the work of
+<a href="http://blogs.msdn.com/jomo_fisher">Jomo Fisher</a>, <a href="http://mark.michaelis.com/blog">Mark Michaelis</a>, and others, I've been
+able to put together a toolset that delivers on what I wanted to do since I
+first saw MSBuild at the Whidbey Alpha Design Review two years ago.</p>
+        <p><strong>What Is It?</strong><br/>The MSBuild Toolkit for Visual Studio 2005 RC
+consists of two distinct parts:</p>
+        <ol>
+          <li>Drastically improved .TARGETS files for compiling MSBuild-based projects
+  to .NET 1.1 and 1.0.
+  </li>
+          <li>A Visual Studio 2005 add-in that helps you manage the .TARGETS files your
+  projects are referencing.</li>
+        </ol>
+        <p>Lets take a look at these parts in depth.</p>
+        <p><strong>Improved .TARGETS Files</strong><br/>After I released the first
+toolkit (based on <a href="http://blogs.msdn.com/jomo_fisher/archive/2004/10/01/236879.aspx">the work
+of Jomo Fisher</a>), Mark Michaelis and others led the charge to improve support
+for other runtimes through the underlying build engine. When .NET 2.0 Beta 2 was
+released, Jomo released the result of that work <a href="http://blogs.msdn.com/jomo_fisher/archive/2005/04/22/410903.aspx">in a
+sample .TARGETS file</a> that allowed C# projects to compile to .NET 1.1. This
+version allowed you to add other frameworks as options in the "Build
+Configuration" dialog. This is really powerful, as it allows you to compile to
+different frameworks individually, and batch build to all supported versions
+later on.</p>
+        <p>These new targets are significantly smaller than their predecessors, and far
+less brittle. They now handle non-Framework assembly references really well, and
+the whole system is practically seamless. It's really slick, and Jomo did a
+great job of laying the foundation for this project.</p>
+        <p>Besides support for Visual Basic and .NET 1.0 (which I added, and is included
+in this release), I still felt that a crucial portion of UI was missing...</p>
+        <p><strong>Configuring Project Targets</strong><br/>Even with all this
+functionality, Visual Studio was still missing a way to manipulate the
+Project file (to change it's <font face="Courier New" size="2">&lt;Import
+Project=""&gt;</font> tags) without leaving the IDE. So I wrote an add-in that
+takes care of that for you. It gives you a UI similar to your project assembly
+references, and lets you select from the available targets installed on the
+system. You can see that UI below.</p>
+        <p>
+          <img src="http://images.interscapeusa.com/blog/MSBuildToolkit-Targets.jpg"/>
+          <br/>
+          <strong>
+            <font size="2">Figure 1: Managing Imported Targets</font>
+          </strong>
+        </p>
+        <p>You can access this functionality from either of the following menu
+commands:</p>
+        <p><img src="http://images.interscapeusa.com/blog/MSBuildToolkit-Build.jpg"/>  <img src="http://images.interscapeusa.com/blog/MSBuildToolkit-Project.jpg"/><br/><font size="2"><strong>Figure 2: Assessing the Configuration Dialog</strong></font></p>
+        <p><strong>Why Did I Put This Together?</strong><br/>Visual Studio 2005 is an
+extremely compelling development environment. After using it so much in the
+Alpha and Beta 1, the thought of developing new <a href="http://www.communityserver.org">Community Server</a> add-ons in VS.NET
+2003 was really disheartening. This package has allowed me to develop a ton of
+new code for LonghornBlogs.com using the Class Designer, Code Snippets, and
+Refactoring, while compiling for .NET 1.1 (because CS 1.0 was not compatible
+with ASP.NET 2.0).</p>
+        <p>Also, while Interscape has stopped building ASP.NET components for now, we
+might re-enter the market in the near future. One of the most time-consuming
+parts of the development cycle was maintaining two project files in two
+different IDEs that share the same source code files. This problem was one of
+the driving forces in giving our component business a break, and now supporting
+older versions of the Framework is much more feasible.</p>
+        <p><strong>What's Still Missing?</strong><br/>While the add-in works, I'm not
+really happy with it at all. The whole process for building an add-in is
+TERRIBLE (Note to the VS Core Team: HIRE JAMIE CANSDALE!!!) and not for the
+faint of heart. I haven't been able to figure out how to remove commands on
+uninstall, so for now that part will be buggy.</p>
+        <p>Ultimately, I'd like the form for the add-in to either a) appear as a tab on
+the Project Properties form, or b) dock in the Document pane like the
+Project Properties form. I've forwarded the code for the Toolkit to the MSBuild
+team and the Group Product Manager for VS Core, so hopefully this kit will find
+it's way into VS2005, either as a "VB Refactor"-type addon, or a part of the
+code product. Whether or not you compile to older versions of the Framework, I
+think the ability to configure your Project Targets is extremely important, and
+maybe this will kickstart the team into making it into VS2005 RTM.</p>
+        <p>The TARGETS files, on the other hand, I'm pretty satisfied with. They work in
+all my scenarios. Hopefully they'll work in yours too.</p>
+        <p><strong>Getting Support<br/></strong>I want to make this Toolkit better. So if
+you have any issues, list them here in my commants or e-mail me thru my contact
+page, and I'll get them fixed ASAP.</p>
+        <p>
+          <strong>Downloading the Release Candidate<br/></strong>
+          <a href="http://www.interscapeusa.com/downloads/download.aspx?File=MSBuildToolkit_v2_RC.msi">Download
+version 2.0.50602 here.</a>
+        </p>
+        <p>Thanks to everyone who made this possible. Hope it is of use you
+guys.</p>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14156">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14156?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14156" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14156&amp;url=http://www.longhornblogs.com/robert/archive/2005/06/03/14156.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14156" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Sizing Paths</title>
+      <link>http://www.longhornblogs.com/rdawson/archive/2005/06/03/14155.aspx</link>
+      <pubDate>Fri, 03 Jun 2005 12:14:00 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14155</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rdawson</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <content><p>I had a Path (System.Windows.Shapes.Path) that I wanted to show, but it wasn't exactly clear as to how I was going to size it because there aren't any dimension properties to modify.</p><p>So, simple enough, I plopped it in-between some Viewbox tags, and I was able to size it to my requirements.</p><font color="#0000ff" size="2"><p>&lt;<font color="#800000" size="2">StackPanel</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Orientation</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">Horizontal</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>   &lt;<font color="#800000" size="2">Path</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Stroke</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">#000000</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Fill</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">#000000</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">StrokeThickness</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">16</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Data</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">M9,12.844v71l216,72l-217,72v71l290-144L9,12.844z</font><font size="2">"</font><font color="#0000ff" size="2">/&gt;</font></p><p>   &lt;<font color="#800000" size="2">Viewbox</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Width</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">30</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Height</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">30</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>      &lt;<font color="#800000" size="2">Path</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Stroke</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">#000000</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Fill</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">#000000</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">StrokeThickness</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">16</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Data</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">M9,12.844v71l216,72l-217,72v71l290-144L9,12.844z</font><font size="2">"</font><font color="#0000ff" size="2">/&gt;</font></p><p>   &lt;/<font color="#800000" size="2">Viewbox</font><font color="#0000ff" size="2">&gt;</font></p><p>&lt;/<font color="#800000" size="2">StackPanel</font><font color="#0000ff" size="2">&gt;</font></p></font><p>You can see the difference:<br/></p>                             <img src="http://www.conviat.com/longhornblogs/general/viewbox.gif"/><p><map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14155"><area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14155?pos=0" coords="1,2,367,28"/><area shape="rect" href="href" coords="384,10,453,23"/></map><img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14155" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14155&amp;url=http://www.longhornblogs.com/rdawson/archive/2005/06/03/14155.aspx"/></p><img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14155" width="1" height="1"/></content>
+    </item>
+    <item>
+      <title>Doctor-Patient Confidentiality in Longhorn</title>
+      <link>http://www.longhornblogs.com/robert/archive/2005/05/31/14150.aspx</link>
+      <pubDate>Wed, 01 Jun 2005 07:04:28 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14150</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rmclaws2k</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">2</n0:comments>
+      <content>
+        <p>"Dr. Watson, please bring a crash cart to the OR, STAT."</p>
+        <p>Earlier today, <a href="http://www.eweek.com/article2/0,1759,1822153,00.asp">I weighed in</a> on concerns about <a href="http://www.mcpmag.com/columns/print.asp?EditorialsID=979">privacy in Longhorn's beefed up Watson tool</a>. You know, I think it's really funny, how "concerned" everyone gets about Microsoft and privacy. Can you recall a time that Microsoft's customer information (Passport-stored or otherwise) was stolen? Honestly. I mean, I may have downed the kool-aid with a beer bong or something, but I can't remember the last time it happened. But I do know that a bunch of other companies have had their data stolen.</p>
+        <p>So, the question is, am i worried about Microsoft stealing intellectual property from my crash dumps? Hell no. I have Corporate Error Reporting installed on my server, so I can specify which dumps I want sent, and which I don't. I'm more worried about the information stored with my bank than I am about my info getting stolen from Microsoft. According to <a href="http://money.cnn.com/2005/05/23/news/fortune500/bank_info/">this article</a>, almost 1 MILLION customers may be affected by 'the biggest security breach to hit the banking industry'.</p>
+        <p>Ryan's a stand-up guy. I typically like his work. But I think the media's coverage of Longhorn lately is severely jaded. The article is based off of third-party information, not of anyone actually seeing the software. So at this point, any concerns are speculative at best, and ridiculous at worst (Russ Cooper's attack vector scenario was pretty farfetched). How about we wait until they show us something to start having a serious conversation about the issues, guys? In the meantime, lets talk about privacy issues with Bank of America... because it doesn't matter how much electronic security you have... the human factor will always be something that will be harder to protect against.</p>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14150">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14150?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14150" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14150&amp;url=http://www.longhornblogs.com/robert/archive/2005/05/31/14150.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14150" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Site Updates This Weekend</title>
+      <link>http://www.longhornblogs.com/robert/archive/2005/05/27/14137.aspx</link>
+      <pubDate>Fri, 27 May 2005 19:09:05 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14137</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rmclaws2k</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <content>
+        <p>We're going to be upgrading various parts of the site this weekend. I'll be
+testing a newer version of our new CommunityServer Syndication System, as well
+as a new version of our Google AdSense for Feeds implementation. Google has
+updated the ad code, which means that all of the articles will refresh at some
+point this weekend. I'm sorry about that... I wish there was something I could
+to to prevent your aggregator from going nuts. Hopefully these ads will be far
+less intrusive (although far bulkier... I'm definitely not happy with that.</p>
+        <p>We may also be upgrading to CommunityServer 1.1 this weekend... depends on
+whether or not the final version is released soon.</p>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14137">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14137?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14137" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14137&amp;url=http://www.longhornblogs.com/robert/archive/2005/05/27/14137.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14137" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Using Animation (Emphasis on splines)</title>
+      <link>http://www.longhornblogs.com/rdawson/archive/2005/05/27/14135.aspx</link>
+      <pubDate>Fri, 27 May 2005 11:56:00 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14135</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">rdawson</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <content><ol><li>Animations are enumerated by type: <strong>double</strong>, <strong>point</strong>, <strong>color</strong>, etc...</li><li>Animations support <strong>simple</strong> (To, From), <strong>complex</strong> (key frame values: value1, value2, value3...), <strong>and user-defined</strong> (explicit path) scenarios...</li><ul><ul><li>         Animations named for simple are: &lt;type&gt;Animation</li><li>         Animations named for complex are: &lt;type&gt;AnimationUsingKeyFrames</li><li>         Animations names for user-defined are &lt;type&gt;AnimationUsingPath</li></ul></ul><li>Inside complex animations, there are 3 different progression techniques: </li><ul><ul><li>         discrete (jumps to values with no in-between values)</li><li>         linear (line progression from value to value)</li><li>         spline (spline curve progression with 2 control points)</li></ul></ul><li>User-defined animations are specified using a Path geometry</li></ol><p> </p><p>Here is a sample using DoubleAnimationUsingKeyFrames:</p><font color="#0000ff" size="2"><p>&lt;<font color="#800000" size="2">Style</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">x:Key</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">Style1</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>   &lt;<font color="#800000" size="2">Setter</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Property</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">Button.Background</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>      &lt;<font color="#800000" size="2">Setter.Value</font><font color="#0000ff" size="2">&gt;</font></p><p>         &lt;<font color="#800000" size="2">LinearGradientBrush</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">StartPoint</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0,0</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">EndPoint</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0,1</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>            &lt;<font color="#800000" size="2">LinearGradientBrush.GradientStops</font><font color="#0000ff" size="2">&gt;</font></p><p>               &lt;<font color="#800000" size="2">GradientStop</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Color</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">Pink</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Offset</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0</font><font size="2">"</font><font color="#0000ff" size="2"> /&gt;</font></p><p>               &lt;<font color="#800000" size="2">GradientStop</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Color</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">Red</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Offset</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">1</font><font size="2">"</font><font color="#0000ff" size="2"> /&gt;</font></p><p>            &lt;/<font color="#800000" size="2">LinearGradientBrush.GradientStops</font><font color="#0000ff" size="2">&gt;</font></p><p>         &lt;/<font color="#800000" size="2">LinearGradientBrush</font><font color="#0000ff" size="2">&gt;</font></p><p>      &lt;/<font color="#800000" size="2">Setter.Value</font><font color="#0000ff" size="2">&gt;</font></p><p>   &lt;/<font color="#800000" size="2">Setter</font><font color="#0000ff" size="2">&gt;</font></p><p>   &lt;<font color="#800000" size="2">Setter</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Property</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">Control.Template</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>      &lt;<font color="#800000" size="2">Setter.Value</font><font color="#0000ff" size="2">&gt;</font></p><p>         &lt;<font color="#800000" size="2">ControlTemplate</font><font color="#0000ff" size="2">&gt;</font></p><p>            &lt;<font color="#800000" size="2">Grid</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">x:Name</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">grid</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>               &lt;<font color="#800000" size="2">Grid.RenderTransform</font><font color="#0000ff" size="2">&gt;</font></p><p>                  &lt;<font color="#800000" size="2">TranslateTransform</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">X</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Y</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0</font><font size="2">"</font><font color="#0000ff" size="2"> /&gt;</font></p><p>               &lt;/<font color="#800000" size="2">Grid.RenderTransform</font><font color="#0000ff" size="2">&gt;</font></p><p>               &lt;<font color="#800000" size="2">Rectangle</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Fill</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">{TemplateBinding Property=Background}</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">RadiusX</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">5</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">RadiusY</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">5</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Margin</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">2</font><font size="2">"</font><font color="#0000ff" size="2"> /&gt;</font></p><p>            &lt;/<font color="#800000" size="2">Grid</font><font color="#0000ff" size="2">&gt;</font></p><p>            &lt;<font color="#800000" size="2">ControlTemplate.Triggers</font><font color="#0000ff" size="2">&gt;</font></p><p>               &lt;<font color="#800000" size="2">EventTrigger</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">RoutedEvent</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">Mouse.MouseEnter</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>                  &lt;<font color="#800000" size="2">EventTrigger.Actions</font><font color="#0000ff" size="2">&gt;</font></p><p>                     &lt;<font color="#800000" size="2">BeginAction</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">TargetName</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">MouseEnterTimeline2</font><font size="2">"</font><font color="#0000ff" size="2"> /&gt;</font></p><p>                  &lt;/<font color="#800000" size="2">EventTrigger.Actions</font><font color="#0000ff" size="2">&gt;</font></p><p>               &lt;/<font color="#800000" size="2">EventTrigger</font><font color="#0000ff" size="2">&gt;</font></p><p>            &lt;/<font color="#800000" size="2">ControlTemplate.Triggers</font><font color="#0000ff" size="2">&gt;</font></p><p>            &lt;<font color="#800000" size="2">ControlTemplate.Storyboards</font><font color="#0000ff" size="2">&gt;</font></p><p>               &lt;<font color="#800000" size="2">ParallelTimeline</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Name</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">MouseEnterTimeline</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">BeginTime</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">*null</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Duration</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">Forever</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>                  &lt;<font color="#800000" size="2">SetterTimeline</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">TargetName</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">grid</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Path</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">(Grid.RenderTransform).(TranslateTransform.X)</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">FillBehavior</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">HoldEnd</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>                     &lt;<font color="#800000" size="2">DoubleAnimationUsingKeyFrames</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Duration</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0:0:1.3</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">FillBehavior</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">HoldEnd</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>                        &lt;<font color="#800000" size="2">DoubleAnimationUsingKeyFrames.KeyFrames</font><font color="#0000ff" size="2">&gt;</font></p><p>                           &lt;<font color="#800000" size="2">SplineDoubleKeyFrame</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Value</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">10</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">KeyTime</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0:0:0.7</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">KeySpline</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0,1 0,0</font><font size="2">"</font><font color="#0000ff" size="2"> /&gt;</font></p><p>                           &lt;<font color="#800000" size="2">SplineDoubleKeyFrame</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Value</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">40</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">KeyTime</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0:0:1</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">KeySpline</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0,1 0,0</font><font size="2">"</font><font color="#0000ff" size="2"> /&gt;</font></p><p>                           &lt;<font color="#800000" size="2">SplineDoubleKeyFrame</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Value</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">50</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">KeyTime</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0:0:1.3</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">KeySpline</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0,1 0,0</font><font size="2">"</font><font color="#0000ff" size="2"> /&gt;</font></p><p>                        &lt;/<font color="#800000" size="2">DoubleAnimationUsingKeyFrames.KeyFrames</font><font color="#0000ff" size="2">&gt;</font></p><p>                     &lt;/<font color="#800000" size="2">DoubleAnimationUsingKeyFrames</font><font color="#0000ff" size="2">&gt;</font></p><p>                  &lt;/<font color="#800000" size="2">SetterTimeline</font><font color="#0000ff" size="2">&gt;</font></p><p>                  &lt;<font color="#800000" size="2">SetterTimeline</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">TargetName</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">grid</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Path</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">(Grid.RenderTransform).(TranslateTransform.Y)</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">FillBehavior</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">HoldEnd</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>                     &lt;<font color="#800000" size="2">DoubleAnimationUsingKeyFrames</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Duration</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0:0:1.3</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">FillBehavior</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">HoldEnd</font><font size="2">"</font><font color="#0000ff" size="2">&gt;</font></p><p>                        &lt;<font color="#800000" size="2">DoubleAnimationUsingKeyFrames.KeyFrames</font><font color="#0000ff" size="2">&gt;</font></p><p>                           &lt;<font color="#800000" size="2">SplineDoubleKeyFrame</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">Value</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">10</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">KeyTime</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0:0:1.3</font><font size="2">"</font><font color="#0000ff" size="2"> </font><font color="#ff0000" size="2">KeySpline</font><font color="#0000ff" size="2">=</font><font size="2">"</font><font color="#0000ff" size="2">0,1 1,1</font><font size="2">"</font><font color="#0000ff" size="2"> /&gt;</font></p><p>                        &lt;/<font color="#800000" size="2">DoubleAnimationUsingKeyFrames.KeyFrames</font><font color="#0000ff" size="2">&gt;</font></p><p>                     &lt;/<font color="#800000" size="2">DoubleAnimationUsingKeyFrames</font><font color="#0000ff" size="2">&gt;</font></p><p>                  &lt;/<font color="#800000" size="2">SetterTimeline</font><font color="#0000ff" size="2">&gt;</font></p><p>               &lt;/<font color="#800000" size="2">ParallelTimeline</font><font color="#0000ff" size="2">&gt;</font></p><p>            &lt;/<font color="#800000" size="2">ControlTemplate.Storyboards</font><font color="#0000ff" size="2">&gt;</font></p><p>         &lt;/<font color="#800000" size="2">ControlTemplate</font><font color="#0000ff" size="2">&gt;</font></p><p>      &lt;/<font color="#800000" size="2">Setter.Value</font><font color="#0000ff" size="2">&gt;</font></p><p>   &lt;/<font color="#800000" size="2">Setter</font><font color="#0000ff" size="2">&gt;</font></p><p>&lt;/<font color="#800000" size="2">Style</font><font color="#0000ff" size="2">&gt;</font></p></font>   
+<ol/><p><map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14135"><area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14135?pos=0" coords="1,2,367,28"/><area shape="rect" href="href" coords="384,10,453,23"/></map><img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14135" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14135&amp;url=http://www.longhornblogs.com/rdawson/archive/2005/05/27/14135.aspx"/></p><img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14135" width="1" height="1"/></content>
+    </item>
+    <item>
+      <title>Avalon Q&amp;amp;amp;amp;A 101-102 (on XAML)</title>
+      <link>http://www.longhornblogs.com/zhanbos/archive/2005/05/27/14133.aspx</link>
+      <pubDate>Fri, 27 May 2005 09:44:00 GMT</pubDate>
+      <guid isPermaLink="false">20f58a17-7e15-440c-89b3-dfe02fe74bcd:14133</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">zhanbos</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <content>
+        <p class="MsoNormal">
+          <span style="FONT-FAMILY: 'Franklin Gothic Book'">Q101: In XAML file, what can be used as x:Key value within Resources section?<n0:p xmlns:n0="o"/></span>
+        </p>
+        <p class="MsoNormal">
+          <span style="FONT-FAMILY: 'Franklin Gothic Book'">Answer: A key for a dictionary can be String, LiteralExtension, TypeExtension and StaticExtension. You will get this error message from parsing the following XAML:<br/></span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">&lt;</span>
+          <span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Grid</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"> </span>
+          <span style="FONT-SIZE: 10pt; COLOR: red; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">xmlns</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">=</span>
+          <span style="FONT-SIZE: 10pt; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">"<span style="COLOR: blue">http://schemas.microsoft.com/winfx/avalon/2005</span>"<span style="COLOR: blue"> </span><span style="COLOR: red">xmlns:x</span><span style="COLOR: blue">=</span>"<span style="COLOR: blue">http://schemas.microsoft.com/winfx/xaml/2005</span>"<span style="COLOR: blue">&gt;<br/></span></span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"><span style="mso-spacerun: yes">    </span>&lt;</span>
+          <span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Grid.Resources</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">&gt;<br/></span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"><span style="mso-spacerun: yes">        </span>&lt;</span>
+          <span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">SolidColorBrush</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"> </span>
+          <span style="FONT-SIZE: 10pt; COLOR: red; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Color</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">=</span>
+          <span style="FONT-SIZE: 10pt; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">"<span style="COLOR: blue">LightBlue</span>"<span style="COLOR: blue"> </span><span style="COLOR: red">x:Key</span><span style="COLOR: blue">=</span>"<span style="COLOR: blue">{x:Null}</span>"<span style="COLOR: blue">/&gt;<br/></span></span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"><span style="mso-spacerun: yes">    </span>&lt;/</span>
+          <span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Grid.Resources</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">&gt;<br/></span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">&lt;/</span>
+          <span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Grid</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">&gt;</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">
+            <n0:p xmlns:n0="o"> </n0:p>
+          </span>
+        </p>
+        <p class="MsoNormal">
+          <span style="FONT-FAMILY: 'Franklin Gothic Book'">Q102: What if I want to treat {x:Null} as string literal, instead of MarkupExtension?<n0:p xmlns:n0="o"/></span>
+        </p>
+        <p class="MsoNormal">
+          <span style="FONT-FAMILY: 'Franklin Gothic Book'">Answer: {} is used in XAML file as escape sequence for this purpose. Parser will take whatever follows {} as string literal (with leading and trailing spaces trimmed). Try the sample below in which {}{x:Null} is used. Note: {} must be the first and second character. <n0:p xmlns:n0="o"/></span>
+        </p>
+        <p class="MsoNormal">
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">&lt;</span>
+          <span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Grid</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"> </span>
+          <span style="FONT-SIZE: 10pt; COLOR: red; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">xmlns</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">=</span>
+          <span style="FONT-SIZE: 10pt; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">"<span style="COLOR: blue">http://schemas.microsoft.com/winfx/avalon/2005</span>"<span style="COLOR: blue"> </span><span style="COLOR: red">xmlns:x</span><span style="COLOR: blue">=</span>"<span style="COLOR: blue">http://schemas.microsoft.com/winfx/xaml/2005</span>"<span style="COLOR: blue">&gt;<br/></span></span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"><span style="mso-spacerun: yes">    </span>&lt;</span>
+          <span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Grid.Resources</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">&gt;<br/></span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"><span style="mso-spacerun: yes">        </span>&lt;</span>
+          <span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">SolidColorBrush</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"> </span>
+          <span style="FONT-SIZE: 10pt; COLOR: red; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Color</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">=</span>
+          <span style="FONT-SIZE: 10pt; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">"<span style="COLOR: blue">LightBlue</span>"<span style="COLOR: blue"> </span><span style="COLOR: red">x:Key</span><span style="COLOR: blue">=</span>"<span style="COLOR: blue">{}{x:Null}</span>"<span style="COLOR: blue">/&gt;<br/></span></span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"><span style="mso-spacerun: yes">    </span>&lt;/</span>
+          <span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Grid.Resources</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">&gt;<br/></span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"><span style="mso-spacerun: yes">    </span>&lt;</span>
+          <span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Button</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes"> </span>
+          <span style="FONT-SIZE: 10pt; COLOR: red; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Content</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">=</span>
+          <span style="FONT-SIZE: 10pt; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">"<span style="COLOR: blue">Sample 102</span>"<span style="COLOR: blue"> </span><span style="COLOR: red">Background</span><span style="COLOR: blue">=</span>"<span style="COLOR: blue">{StaticResource {}{x:Null}}</span>"<span style="COLOR: blue">/&gt;<br/></span></span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">&lt;/</span>
+          <span style="FONT-SIZE: 10pt; COLOR: maroon; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">Grid</span>
+          <span style="FONT-SIZE: 10pt; COLOR: blue; FONT-FAMILY: 'Courier New'; mso-no-proof: yes">&gt;</span>
+        </p>
+        <em>(This posting is provided "AS IS" with no warranties, and confers no rights.)</em>
+        <p>
+          <map name="google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14133">
+            <area shape="rect" href="http://imageads.googleadservices.com/pagead/imgclick/20f58a17-7e15-440c-89b3-dfe02fe74bcd:14133?pos=0" coords="1,2,367,28"/>
+            <area shape="rect" href="href" coords="384,10,453,23"/>
+          </map>
+          <img usemap="#google_ad_map_20f58a17-7e15-440c-89b3-dfe02fe74bcd:14133" border="0" src="http://imageads.googleadservices.com/pagead/ads?format=468x30_aff_img&amp;client=ca-pub-4330602465258980&amp;channel=&amp;output=png&amp;cuid=20f58a17-7e15-440c-89b3-dfe02fe74bcd:14133&amp;url=http://www.longhornblogs.com/zhanbos/archive/2005/05/27/14133.aspx"/>
+        </p>
+        <img src="http://www.longhornblogs.com/aggbug.aspx?PostID=14133" width="1" height="1"/>
+      </content>
+    </item>
+  </channel>
+</rss>

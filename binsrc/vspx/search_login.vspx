@@ -1,0 +1,189 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <body>
+    <H4>VSPX Search page</H4>
+    <v:page name="search_login_demo" xmlns:v="http://www.openlinksw.com/vspx/">
+      <v:variable name="search_mask" type="varchar" default="null"/>
+      <v:variable name="enable_edit" type="int" default="0" persist="temp"/>
+      <v:login name="loginc" realm="vspx" mode="url" user-password-check="sql_user_password_check">
+        <v:template name='inl' type="if-no-login">
+          <P>You are not logged in</P>
+        </v:template>
+        <v:login-form name="loginf" required="1" title="Login" user-title="User Name" password-title="Password" submit-title="Login"/>
+        <v:template name='il' type="if-login">
+          <P> Welcome to VSPX search demo </P>
+          <P> SID: <?vsp http (self.sid); ?>
+          </P>
+          <P> UID: <?vsp http_value (connection_get ('vspx_user')); ?>
+          </P>
+        </v:template>
+        <v:button name="b1" action="logout" value="Logout">
+          <v:on-post><![CDATA[
+	    self.enable_edit := 0;
+	    self.dg.vc_data_bind (e);
+          ]]></v:on-post>
+        </v:button>
+        <v:after-data-bind>
+self.enable_edit := self.vc_authenticated;
+</v:after-data-bind>
+      </v:login>
+      <v:form name="f1" type="simple" action="search_login.vspx" method="POST">
+        <table WIDTH="30%" BORDER="1" CELLPADDING="0" CELLSPACING="0">
+          <tr>
+            <td>
+              <v:text name="txt" default="%"/>
+            </td>
+            <td>
+              <v:button name="b2" action="simple" value="Search">
+                <v:on-post><![CDATA[
+            self.search_mask := self.txt.ufl_value;
+            self.dg.vc_enabled := 1;
+            self.dg.vc_data_bind (e);
+          ]]></v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+      <hr width="65%" align="left"/>
+      <v:data-grid name="dg" nrows="10" sql="select CustomerID, CompanyName, Phone from Demo.demo.Customers where CustomerId like :mask" scrollable="1" cursor-type="static" select="0" edit="--self.enable_edit" column-titles="1" table="Demo.demo.Customers" enabled="--case when self.search_mask is not null then 1 else 0 end">
+        <v:column name="CustomerID"/>
+        <v:column name="CompanyName"/>
+        <v:column name="Phone"/>
+        <v:param name="mask" value="self.search_mask"/>
+        <v:template name="dg_frame" type="frame">
+          <p>
+            <font style="color:red">
+              <v:error-summary/>
+            </font>
+          </p>
+          <table WIDTH="30%" BORDER="1" CELLPADDING="0" CELLSPACING="0">
+            <tr>
+              <th> Action </th>
+              <th>
+                <v:label name="label1h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[0]"/>
+              </th>
+              <th>
+                <v:label name="label2h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[1]"/>
+              </th>
+              <th>
+                <v:label name="label3h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[2]"/>
+              </th>
+            </tr>
+            <v:rowset/>
+            <v:form name="a1" type="add"/>
+            <tr>
+              <td>&amp;nbsp;</td>
+              <td>
+                <v:button name="dg_prev" action="simple" value="&lt;&lt;" xhtml_size="10pt"/>
+              </td>
+              <td>
+                <v:button name="dg_next" action="simple" value="&gt;&gt;" xhtml_size="10pt"/>
+              </td>
+              <td>&amp;nbsp;</td>
+            </tr>
+          </table>
+        </v:template>
+        <v:template name="dg_rows" type="row">
+          <tr>
+            <td nowrap="nowrap">
+              <v:button name="dg_edit" action="simple" value="Edit"/>
+              <v:button name="dg_delete" action="simple" value="Delete">
+                <v:on-post><![CDATA[
+              {
+                delete from Demo.demo.Customers where CustomerID = self.dg.dg_current_row.te_rowset[0];
+                self.dg.vc_data_bind (e);
+              }
+              ]]></v:on-post>
+              </v:button>
+            </td>
+            <td nowrap="nowrap">
+              <v:label name="label1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
+            </td>
+            <td nowrap="nowrap">
+              <v:label name="label2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"/>
+            </td>
+            <td nowrap="nowrap">
+              <v:label name="label3" value="--(control.vc_parent as vspx_row_template).te_rowset[2]"/>
+            </td>
+          </tr>
+        </v:template>
+        <v:template name="dg_empty" type="if-not-exists">
+          <tr>
+            <td colspan="2">No rows selected</td>
+          </tr>
+        </v:template>
+        <v:template name="dg_edit_templ" type="edit">
+          <v:form name="upf" type="update" table="Demo.demo.Customers" if-not-exists="insert">
+            <v:key column="CustomerID" value="--(control.vc_parent as vspx_data_grid).dg_current_row.te_rowset[0]" default="null"/>
+            <v:template type="if-exists" name="updtmpl">
+              <tr>
+                <td nowrap="nowrap">
+                  <v:button name="upd_button" action="submit" value="Update"/>
+                  <input type="submit" name="cancel" value="Cancel"/>
+                </td>
+                <td nowrap="nowrap">
+                  <v:text name="c_id" column="CustomerID" error-glyph="*">
+                    <v:validator name="c_id_len" test="length" min="5" max="5" message="The CustomerID should be 5 chars long."/>
+                  </v:text>
+                </td>
+                <td>
+                  <v:text name="c_name" column="CompanyName" xhtml_size="50%"/>
+                </td>
+                <td>
+                  <v:text name="c_phone" column="Phone" xhtml_size="15%"/>
+                </td>
+              </tr>
+            </v:template>
+          </v:form>
+        </v:template>
+        <v:template name="dg_add_templ" type="add">
+          <v:form name="add" type="update" table="Demo.demo.Customers" if-not-exists="insert">
+            <v:key column="CustomerID" value="--''" default="null"/>
+            <v:template type="if-exists" name="addtmpl">
+              <tr>
+                <td nowrap="nowrap">
+                  <v:button action="submit" name="add_button" value="Add"/>
+                </td>
+                <td nowrap="nowrap">
+                  <v:text name="c_id2" column="CustomerID" error-glyph="*">
+                    <v:validator name="c_id_len2" test="length" min="5" max="5" message="The CustomerID should be 5 chars long."/>
+                  </v:text>
+                </td>
+                <td>
+                  <v:text name="c_name2" column="CompanyName" xhtml_size="50%"/>
+                </td>
+                <td>
+                  <v:text name="c_phone2" column="Phone" xhtml_size="15%"/>
+                </td>
+              </tr>
+            </v:template>
+          </v:form>
+	</v:template>
+      </v:data-grid>
+      <?vsp dbg_vspx_control (control); ?>
+      <v:include url="footer.xml"/>
+    </v:page>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+First (manual way):   
+   - Set EnableRequestTrap = 1 in [HTTPServer] group in
+     server startup .ini file.
+   - Restart server
+   - install somewhere in your server contents of /binsrc/vsp/admin/debug
+     directory as virtual host
+   - by using any web browser run 'http://host:port/vhost/record.vspx' from this directory
+   - follow the instructions on the screen...
+   
+Other way (recommended):
+   - Set EnableRequestTrap = 1 in [HTTPServer] group in
+     server startup .ini file.
+   - use make_vad.sh script to generate vad installer (http_debug.vad)
+   - use http_debug.vad to install product by VAD_INSTALL('http_debug.vad', 0)
+     from ISQL command line
+   - Start server
+   - access product by http://server:port/http_debug/ as dav/dav

@@ -1,0 +1,74 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VX-S-2">
+  <refmeta>
+    <refentrytitle>Basic VSPX Programming</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Generic VSPX form controls</refname>
+    <refpurpose>Scriptable form and form controls</refpurpose>
+  </refnamediv>
+  <refsect1 id="VS-S-2a">
+    <title>Simple form and field validation example</title>
+    <para>The vspx:form control represents scriptable container of a HTML form.
+    It may contains several other controls which are represented below. In the 
+    form.vspx example the form contains two vspx:label, two vspx:text and vspx:button controls. 
+    In that way vspx:form behaves as control and container, as it may contain other controls and have rendition.
+    The vspx:label controls are shown in that example again to see that these can be used as a child of any vspx: container. Also the values of vspx:label are data bound to the name of control and name of page class.  
+    </para>
+    <para>The vspx:text is a text input control which can accept data from user. It may have modifiers which only change appearance from text to password or hidden field. In that example the vspx:text controls are in their default form.</para>
+    <para>The vspx:button control is a generic scriptable button, which originates post events. In practice it renders as a submit button, but with modifiers it can appear as image or link, so in that cases client-side Java scripts are generated to allow posting.</para>
+    <para>The last in that example we should notice is vspx:validator components assigned to the vspx:text fields. These are used to perform server-side validation of data entered by user.</para>
+    <para>So in short the page will display two fields to enter a data, which must be integer numbers. Where the second one must be in the range from 10 to 20. If you enter a different value an error will appear.</para>
+  </refsect1>
+  <refsect1 id="VS-S-2b">
+    <title>Check-box example</title>
+    <para>This example presents a scriptable check-box (vspx:check-box) and submit button which is modified to look-like as link. Changing a state of check-box and posting a form will change the value of the label at the bottom.</para>
+  </refsect1>
+  <refsect1 id="VS-S-2c">
+    <title>Radio and radio group controls</title>
+    <para>The radio-button and radio-group represented in this example shows 
+    usage of radio controls. The main difference in approach is using a container to designate group of radio boxes or to use attribute "group-name" to do that. These are used as a scriptable variant of radio button in HTML.
+    </para>
+  </refsect1>
+  <refsect1 id="VS-S-2d">
+    <title>Select list example</title>
+    <para>This example shows the usage of select-list control, which is a VSPX analogue of the select control.
+    Its members must be pre-defined with vspx:item controls which are similar to "option" in HTML variant. 
+    </para>
+  </refsect1>
+  <refsect1 id="VS-S-2e">
+    <title>Text area example</title>
+    <para>Sometimes a free-form text needs to be entered in a forms, in that case (in HTML practice) textarea is used. In the VSPX world the scriptable variant of it is vspx:textarea. This example shows simple form allowing 50 chars at max to be entered.</para>
+  </refsect1>
+  <refsect1 id="VS-S-2f">
+    <title>Inter-field form validation</title>
+    <para>As we noticed in the last and first example we have a vspx:validators to control the user input.
+    But they was per text field. What if we need to check two or more inputs against each other in some order? 
+    In that case we can use the form validation. The date.vspx example shows two fields to be filled as date strings. 
+    Each filed is tested to be valid date string, and finally if first date is below second the validation will be passed. This is done with validator assigned to the vspx:form control. The default values are initialized to be in incorrect order to see validation on first hit. 
+    </para>
+  </refsect1>
+</refentry>

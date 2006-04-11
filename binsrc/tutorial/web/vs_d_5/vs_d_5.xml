@@ -1,0 +1,67 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-D-5">
+  <refmeta>
+    <refentrytitle>DAV Maintenance</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DAV Free Text Index</refname>
+    <refpurpose>DAV Free Text Index : general</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-D-5a">
+<title>Real time index mode</title>
+<itemizedlist mark="bullet">
+  <listitem>The WebDAV content is free-text indexed on all documents with a text content.</listitem>
+  <listitem>The documents may have their indexing disabled by turning off the indexing flag. (see DAV security)</listitem>
+  <listitem>By default the WebDAV content is in real time mode. That means after insert/update/delete
+  the content immediately will be indexed.</listitem>
+  <listitem>The real time mode will update the free text index as soon as the indexed resources change.
+  Advantage is that a text search query can be performed immediately after an action.
+  This will however take substantially longer if any significant number
+  of resources are regularly updated.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-D-5b">
+<title>Batch Mode indexing</title>
+<itemizedlist mark="bullet">
+  <listitem>In this mode, changes of the WebDAV content are logged for later indexing.</listitem>
+  <listitem>The index is updated periodically, at approximately the specified period (in minutes),
+  if allowed by other background tasks.</listitem>
+  <listitem>The index refresh period is a scheduled event period to refresh the free-text index in batch mode.</listitem>
+  <listitem>To switch between modes in the Conductor UI, go to the "WebDAV &amp; HTTP" tab, then go to the "WebDAV Content Management" tab and then go to the "Text Triggers" sub-tab.</listitem>
+  <listitem><para>This can also be achieved using a sql command. For example to turn batch mode on for 7 minute updates use:</para>
+<programlisting>
+  SQL&gt; DB.DBA.vt_batch_update ('WS.WS.SYS_DAV_RES', 'ON', 7);
+</programlisting></listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-D-5c">
+<title>Example</title>
+<para>The demonstration allows the mode to be switched. Resource content can be created and tested.</para>
+</refsect1>
+</refentry>

@@ -1,0 +1,434 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  -- This parameters is needed for WebDAV browser
+  declare _current_uri, _show_browser, _trf_doc, _q_scope, _sty_to_ent, _sid_id, _sys, _mod, _link_name, _ename varchar;
+  declare _dav_result any;
+  declare _errors any;
+  if (1 <> adm_dav_check_auth (lines))
+      {
+        http_request_status ('HTTP/1.1 401 Unauthorized');
+        http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+              '<HTML><HEAD>',
+              '<TITLE>401 Unauthorized</TITLE>',
+              '</HEAD><BODY><H1>Unauthorized</H1>',
+              'Access to page is forbidden.</BODY></HTML>'));
+        return (0);
+      }
+
+  _show_browser := null;
+  _dav_result := null;
+  _current_uri := 'admin_dav_new.vsp';
+  _link_name := ''; _ename := '';
+  if ('' <> get_keyword ('ppath_bw', params, '')
+      or '' <> get_keyword ('def_bw', params, '')
+      or '' <> get_keyword ('def_all', params, '')
+     )
+    {
+      declare ses_var1, ses_id1, _col1 any;
+      ses_id1 := get_keyword('sid', params, '');
+      ses_var1 := adm_get_ses_var (ses_id1, 'current_collection', '');
+      if (ses_var1 = '')
+	{
+          _col1 := atoi(get_keyword('coll', params, '1'));
+          adm_set_ses_var (ses_id1, 'current_collection', WS.WS.COL_PATH(_col1));
+	}
+      _show_browser := 'yes';
+    }
+
+?>
+<?include admin_dav_browse.vsp?>
+<?vsp
+
+  if (_show_browser is null)
+   {
+  declare _ses_id, _nf, _nc, _nl, _path, _add, _atype, _perms, _idx, _p varchar;
+  declare _name varchar;
+  declare _file, _perm_box, _fidx any;
+  declare _col, _uid, _grp, _retcode, i integer;
+
+
+  if (_nl <> '' and _dav_result <> '')
+    {
+      declare arr any;
+      arr := WS.WS.HREF_TO_ARRAY (_dav_result, '');
+      if (length (arr))
+        _link_name := arr[length(arr)-1];
+    }
+  if (get_keyword('name', params, '') <> '')
+    _link_name := get_keyword('name', params, _link_name);
+
+  _name := trim(get_keyword('name', params, ''));
+  _col := atoi(get_keyword('coll', params, '1'));
+  _ses_id := get_keyword('sid', params, '');
+  _nf := get_keyword('new_folder', params, '');
+  _nc := get_keyword('new_content', params, '');
+  _nl := get_keyword('new_link', params, '');
+  _path := get_dav_path(_col);
+  _add := get_keyword('add', params, '');
+  _file := get_keyword_ucase('lfile', params, '', 1);
+
+  _uid := coalesce(atoi(get_keyword('own', params, null)), (select min(U_ID) from WS.WS.SYS_DAV_USER));
+  _grp := coalesce(atoi(get_keyword('group', params, null)), (select min(G_ID) from WS.WS.SYS_DAV_GROUP));
+
+  _fidx := vector('N', 'OFF', 'T', 'DIRECT MEMBERS', 'R', 'RECURSIVELY');
+  _idx := get_keyword('idx', params, aref(_fidx, 0));
+  _perms := '';
+  _perm_box := make_array(9, 'any');
+
+  i := 0;
+  while (i < 9)
+  {
+    _p := get_keyword(sprintf('perm%i', i), params, '');
+    if (_p <> '')
+    {
+      _perms := concat(_perms, '1');
+      aset(_perm_box, i, 'checked');
+    }
+    else
+    {
+      _perms := concat(_perms, '0');
+      aset(_perm_box, i, '');
+    }
+    i := i + 1;
+  }
+
+  if (_perms = '000000000')
+  {
+    _perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER
+                      where U_ID = _uid);
+    i := 0;
+    while (i < 9)
+    {
+      if(aref(_perms, i) = ascii('1')) aset(_perm_box, i, 'checked');
+      else  aset(_perm_box, i, '');
+      i := i + 1;
+    }
+  }
+  _perms := concat(_perms, _idx);
+
+  if (_nf <> '')
+    _atype := 'Folder';
+  else if (_nc <> '')
+    _atype := 'Resource';
+  else
+    _atype := 'Link';
+
+  if (aref(_name, 0) = ascii('/'))
+    _name := "right"(_name, length(_name) - 1);
+  if (_name = '' and _nc <> '') _retcode := 6;
+  if (_add <> '' and _retcode = 0)
+  {
+    if (_nf <> '')
+      {
+        _name := trim (_name, '/');
+	if (exists (select 1 from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH(COL_ID) = concat(_path, '/', _name, '/')))
+	  {
+	    _retcode := 8;
+	    _ename := concat(_path, '/', _name, '/');
+            goto err_ret1;
+	  }
+        _retcode := create_dav_col(concat(_path, '/', _name), _uid, _grp, _perms);
+      }
+    else if (_nc <> '')
+      {
+	--dbg_obj_print (_file, _name, _uid, _grp, _perms, _col, 0);
+        _retcode := create_dav_file(_file, _name, _uid, _grp,
+		    _perms, _col, 0, {?'mime_type'});
+      }
+    else if (_nl <> '')
+      {
+	declare _id integer;
+	declare emp varchar;
+        emp := '';
+	if (_name = '')
+          _retcode := 6;
+	else if ({?'link_url'} is null or {?'link_url'} = '')
+	  _retcode := 9;
+        else
+          {
+	    _retcode := create_dav_file(emp, _name, _uid, _grp,
+			_perms, _col, 0, {?'mime_type'});
+            if (_retcode <> 0)
+              goto err_ret1;
+	    for select RES_ID from WS.WS.SYS_DAV_RES where RES_NAME = _name and RES_COL = _col do
+	      {
+		 _id := RES_ID;
+	      }
+	    insert into WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_PARENT_ID, PROP_TYPE, PROP_VALUE)
+		 values (WS.WS.GETID('P'), 'redirectref', _id, 'R', {?'link_url'});
+	  }
+      }
+
+err_ret1:;
+  }
+?>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/admin/admin_style.css">
+    <title>Add WebDAV <?= _atype ?></title>
+</head>
+<?vsp if (_nc <> '' and _add = '') { ?>
+<script language="JavaScript">
+<!--
+function getFileName()
+{
+  var S = document.forms[0].lfile.value;
+  var N;
+  var fname;
+  if (S.lastIndexOf('\\') > 0)
+    N = S.lastIndexOf('\\')+1;
+  else
+    N = S.lastIndexOf('/')+1;
+  fname = S.substr(N,S.length);
+  document.forms[0].name.value = fname;
+  document.forms[0].perm2.checked = false;
+  if (fname.lastIndexOf ('.xsl') == (fname.length - 4))
+    {
+      document.forms[0].perm2.checked = true;
+//      document.forms[0].perm5.checked = true;
+//      document.forms[0].perm8.checked = true;
+    }
+}
+// -->
+</script>
+<?vsp } ?>
+
+<BODY>
+<?include ../adm_js_check.vsp ?>
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+<TR><TD CLASS="AdmPagesTitle"><H2>Add WebDAV <?=_atype?> in <?= _path ?></H2></TD><TD>&nbsp;</TD></TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD CLASS="CtrlMain" COLSPAN="2" ALIGN="middle"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR><TD CLASS="CtrlMain" COLSPAN="2" ALIGN="middle">
+<?vsp
+  if (_add <> '')
+  {
+    adm_set_ses_var (_ses_id, 'current_collection', WS.WS.COL_PATH(_col));
+?>
+<form method=post action="admin_dav_new.vsp" name="new_dav">
+  <input type=hidden name=sid value="<?=_ses_id ?>">
+  <input type=hidden name=coll value="<?=_col?>">
+  <input type=hidden name=new_folder value="<?=_nf?>">
+  <input type=hidden name=new_content value="<?=_nc?>">
+  <input type=hidden name=new_link value="<?=_nl?>">
+<?vsp
+    if (_retcode = 0)
+    {
+?>
+
+  <P><STRONG>Status: OK;  WebDAV <?= _atype ?> (<?= concat(_path, '/', _name) ?>) created successfully</STRONG></P>
+  <table border="0" spacing="0">
+    <tr>
+      <td>Return to WebDAV listing</td>
+      <td><input type="button" value="Return" onclick="location.replace ('admin_dav_documents.vsp?col=<?=_col?>&sid=<?=_ses_id?>');"></td>
+    </tr>
+    <tr>
+      <td>Add another new <?= lower(_atype) ?></td>
+      <td><input type="submit" value="Add"></td>
+    </tr>
+  </table>
+<?vsp
+    }
+    else
+    {
+      declare _err any;
+      _err := vector('Invalid WebDAV Collection Name',
+                     'Unknown Group',
+                     'Unknown User',
+                     'Invalid Permissions',
+                     'WebDAV Resource Already Exists',
+                     'Invalid WebDAV Resource Name',
+                     'Blank WebDAV Collection',
+		     sprintf ('A WebDAV collection "%s" already exists.  Please specify a different name.', _ename),
+		     'Link target is missing');
+?>
+  <P><STRONG>Status: Error; <?= aref(_err, _retcode - 1) ?></STRONG></P>
+  <table border="0" spacing="0">
+    <tr>
+      <td>Cancel</td>
+      <td><input type="button" value="Cancel" onclick="location.replace ('admin_dav_documents.vsp?col=<?=_col?>&sid=<?=_ses_id?>');"></td>
+    </tr>
+    <tr>
+      <td>Try again?</td>
+      <td><input type="submit" value="Submit"></td>
+    </tr>
+  </table>
+<?vsp
+      i := 0;
+      while (i < 9)
+      {
+        if (chr(aref(_perms, i)) = '1')
+        {
+?>
+  <input type=hidden name="perm<?= sprintf('%i', i) ?>" value="checked" ></td>
+<?vsp
+        }
+        i := i + 1;
+      }
+?>
+  <input type=hidden name="name" value=<?=_name?>>
+  <input type=hidden name=owns value=<?=_uid?>>
+  <input type=hidden name=grp value=<?=_grp?>>
+  <input type=hidden name=idx value=<?=_idx?>>
+<?vsp
+    }
+  }
+  else
+  {
+?>
+<form method=post action="admin_dav_new.vsp" enctype="multipart/form-data">
+  <input type=hidden name=sid value="<?=_ses_id ?>">
+  <input type=hidden name=coll value="<?=_col?>">
+  <input type=hidden name=new_folder value="<?=_nf?>">
+  <input type=hidden name=new_content value="<?=_nc?>">
+  <input type=hidden name=new_link value="<?=_nl?>">
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="4"><?=_atype ?> Settings</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="4"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<?vsp
+
+if (_nc <> '')
+{
+?>
+<tr>
+        <td CLASS="genlisthead">File</td>
+        <td><input type="file" name="lfile" onBlur="javascript: getFileName();"></input></td>
+</tr>
+<?vsp } ?>
+<tr>
+        <td CLASS="genlisthead"><?=_atype?> Name</td>
+        <td><input type=text name="name" value="<?=_link_name?>"></td>
+</tr>
+<?vsp if (_nl <> '') { ?>
+
+<tr>
+<td CLASS="genlisthead">Link to</td>
+<td><input type=text name="link_url" value="<?=_dav_result?>"><input type="submit" name="def_all" value="Browse"></td>
+</tr>
+
+<?vsp } ?>
+
+<?vsp if (_nc <> '') { ?>
+
+<tr>
+<td CLASS="genlisthead">MIME type</td>
+<td><input type=text name="mime_type"><small>*blank for extension default</small></td>
+</tr>
+
+<?vsp } ?>
+
+<tr>
+        <td CLASS="genlisthead">Owner</td>
+        <td> <select name="own">
+<?vsp
+i := 0;
+for (select U_ID, U_NAME from WS.WS.SYS_DAV_USER) do
+{
+?>
+               <OPTION VALUE="<?= U_ID ?>" <?= select_if(sprintf('%i', U_ID), sprintf('%i', _uid)) ?>><?= U_NAME ?></OPTION>
+<?vsp
+  i := i + 1;
+}
+?>
+             </select>
+</td></tr>
+<tr>
+        <td CLASS="genlisthead">Group</td>
+        <td> <select name="group">
+<?vsp
+i := 0;
+for (select G_ID, G_NAME from WS.WS.SYS_DAV_GROUP) do
+{
+?>
+               <OPTION VALUE="<?= G_ID ?>" <?= select_if(sprintf('%i', G_ID), sprintf('%i', _grp)) ?>><?= G_NAME ?></OPTION>
+<?vsp
+  i := i + 1;
+}
+?>
+             </select></td></tr>
+<tr>
+    <td CLASS="genlisthead">Set Permissions</td>
+         <td colspan="3">
+           <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+             <tr>
+               <td CLASS="genlistheadt" colspan="3">User</td>
+               <td CLASS="genlistheadt" colspan="3">Group</td>
+               <td CLASS="genlistheadt" colspan="3">Other</td>
+             </tr>
+             <tr>
+              <td CLASS="genlistheadt">r</td><td CLASS="genlistheadt">w</td>
+                                <td CLASS="genlistheadt">x</td><td CLASS="genlistheadt">r</td>
+                                <td CLASS="genlistheadt">w</td><td CLASS="genlistheadt">x</td>
+                                <td CLASS="genlistheadt">r</td><td CLASS="genlistheadt">w</td>
+                                <td CLASS="genlistheadt">x</td>
+             </tr>
+             <tr>
+<?vsp
+i := 0;
+while (i < 9)
+{
+?>
+        <td><input type="checkbox" name="perm<?= sprintf('%i', i) ?>" <?=aref(_perm_box, i)?> ></td>
+<?vsp
+  i := i + 1;
+}
+?>
+             </tr>
+           </table>
+         </td>
+</tr>
+<tr>
+<td CLASS="genlisthead">Free Text Indexing</td>
+<td>
+   <select name="idx">
+<?vsp
+
+   i := 0;
+   while (i < length(_fidx))
+   {
+?>
+     <option value="<?= aref(_fidx, i) ?>" <?= select_if(_idx, aref(_fidx, i)) ?>><?= aref(_fidx, i + 1) ?></option>
+<?vsp
+     i := i + 2;
+   }
+?>
+   </select>
+</td>
+</tr>
+
+<tr>
+        <td colspan="4" align="right">
+                <input type="button" value="Cancel" name="cancel" onclick="location.replace ('admin_dav_documents.vsp?col=<?=_col?>&sid=<?=_ses_id?>');">
+                <input type=submit name=add value="Add" ></td>
+</tr>
+</table>
+</form>
+<?vsp
+}
+adm_page_footer(); ?>
+</html>
+<?vsp
+   }
+?>

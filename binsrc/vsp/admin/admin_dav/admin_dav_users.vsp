@@ -1,0 +1,725 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare cnt, res integer;
+  declare _u_name, _u_pwd, _u_pwd2, _u_group, _u_id, b_text varchar;
+  declare _u_full_name, _u_e_mail, _u_def_perms varchar;
+  declare _u_login_time date;
+  declare _u_account_disabled integer;
+  declare one, _created integer;
+  declare _u_cr_home, _u_home, _h_msg, _own_name, _h_desc, _u_cr_blog, sid varchar;
+  declare _u_groups varchar;
+  declare _is_edit, _u_quota, _b_quota_n, _b_quota_m, _u_sql_enable integer;
+
+  sid := adm_get_sesid (params);
+  if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+    {
+      adm_tell_unauth_dav (lines);
+      return (0);
+    }
+  if ({?'search'} is not null)
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header (sprintf ('Location: admin_import_users.vsp?sid=%s\r\n',sid));
+      return 0;
+    }
+
+  if ('' <> get_keyword ('DEL', params, '')) goto conf_page;
+
+  _u_name := _u_full_name := _u_e_mail :=_u_pwd := _u_group := _u_id := _u_home := '';
+  _u_def_perms := '110100000';
+  _u_quota := 5242880; _b_quota_n := 'unlimited'; _b_quota_m := 'unlimited';
+  one := ascii ('1');
+  b_text := 'Add';
+  cnt := 0;
+  _h_desc := '';
+  _created := 0; _h_msg := ''; _own_name := '';
+  _is_edit := get_keyword ('EDIT', params, '');
+  _u_groups := get_keyword ('_u_groups', params, '');
+
+  if ('' <> _is_edit and not (isstring (_u_groups) and length (_u_groups) > 0))
+    {
+      _u_groups := vector ();
+      for (select UG_GID, U2.G_NAME as UG_GNAME from WS.WS.SYS_DAV_GROUP U2, WS.WS.SYS_DAV_USER_GROUP
+	where UG_GID = U2.G_ID and UG_UID = atoi(_is_edit)) do
+	{
+          _u_groups := vector_concat (_u_groups, vector (UG_GID, UG_GNAME));
+	}
+    }
+  else
+    {
+      if (isstring (_u_groups) and length (_u_groups) > 0)
+	_u_groups := deserialize (decode_base64 (_u_groups));
+      else
+	_u_groups := vector ();
+    }
+
+  if (length (get_keyword ('add_group', params, '')) > 0)
+   {
+     declare add_u_id, ol_g, new_grp integer;
+     add_u_id := atoi (get_keyword ('u_groups_add_group', params, ''));
+     new_grp := get_keyword ('new_group', params, '');
+     if (new_grp <> '')
+       {
+	 add_u_id := USER_ROLE_CREATE (new_grp, 1);
+       }
+     ol_g := _u_group;
+     _u_group :=  atoi (get_keyword ('u_group', params, '0'));
+
+     if (add_u_id > 0 and add_u_id <> _u_group)
+       {
+	 declare _inx, _found integer;
+         _inx := 0;
+         _found := 0;
+	 while (_found = 0 and _inx < length (_u_groups))
+	   {
+	     if (_u_groups[_inx] = add_u_id)
+	       _found := 1;
+	     else
+               _inx := _inx + 2;
+	   }
+	 if (_found = 0)
+	   _u_groups := vector_concat (_u_groups,
+	       vector (add_u_id,
+		 (select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = add_u_id)));
+       }
+     _u_group := ol_g;
+   }
+  if (length (get_keyword ('remove_group', params, '')) > 0)
+   {
+     declare remove_u_id integer;
+     remove_u_id := atoi (get_keyword ('u_groups', params, ''));
+     if (remove_u_id > 0)
+       {
+	 declare _inx, _found integer;
+         _inx := 0;
+         _found := 0;
+	 while (_found = 0 and _inx < length (_u_groups))
+	   {
+	     if (_u_groups[_inx] = remove_u_id)
+	       _found := 1;
+	     else
+               _inx := _inx + 2;
+	   }
+	 if (_found = 1)
+	   _u_groups := vector_concat (subseq (_u_groups, 0, _inx), subseq (_u_groups, _inx + 2));
+       }
+   }
+
+  -- handle home directory delete
+  if (get_keyword ('DEL2', params, '') <> '')
+    {
+      declare home, upwd, uname, sql_flag varchar;
+      declare rc integer;
+      whenever not found goto enddel;
+      select U_NAME, U_SQL_ENABLE into uname, sql_flag from SYS_USERS where U_ID = atoi ({?'DEL2'}) and U_DAV_ENABLE = 1;
+      select pwd_magic_calc (U_NAME,U_PWD,1) into upwd from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid ();
+
+      if (sql_flag)
+        sec_remove_user_struct (uname);
+
+      if (get_keyword ('del_home', params, '') = 'Yes')
+        {
+	  home := USER_GET_OPTION (uname, 'HOME');
+	  rc := DB.DBA.DAV_DELETE (home, 0, 'dav', upwd);
+        }
+      enddel:;
+      --delete from WS.WS.SYS_DAV_COL where COL_OWNER = atoi ({?'DEL2'});
+      --delete from WS.WS.SYS_DAV_RES where RES_OWNER = atoi ({?'DEL2'});
+    }
+
+
+  res := adm_dav_users_action (params);
+
+  _u_name := get_keyword ('u_name', params, '');
+  _u_pwd := get_keyword ('u_pwd', params, '');
+  _u_pwd2 := get_keyword ('u_pwd2', params, '');
+  _u_full_name := get_keyword ('u_full_name', params, '');
+  _u_e_mail := get_keyword ('u_e_mail', params, '');
+  _u_id :=  get_keyword ('u_id', params, '');
+  _u_group :=  get_keyword ('u_group', params, '');
+  _u_cr_home := get_keyword ('u_cr_home', params, '');
+  _u_cr_blog := get_keyword ('u_cr_blog', params, '');
+  _u_home := get_keyword ('u_home', params, '');
+
+  _u_sql_enable := get_keyword ('u_sql_enable', params, 0);
+
+  if (_u_sql_enable = 'on' and get_keyword ('u_account_disabled', params, '') <> 'on')
+    _u_sql_enable := 1;
+  else
+    _u_sql_enable := 0;
+
+  if (res < 0)
+    {
+      b_text := 'Retry';
+      _u_pwd := '';
+      _u_pwd2 := '';
+    }
+
+  if (res = 0)
+    {
+      if ('' <> (_u_id := get_keyword ('EDIT', params, '')) and '' = get_keyword ('add', params, '') )
+        {
+	  declare _pwdx varchar;
+	  select U_NAME, U_FULL_NAME, U_E_MAIL, pwd_magic_calc (U_NAME, U_PASSWORD, 1), U_GROUP, U_ACCOUNT_DISABLED, U_DEF_PERMS, U_HOME, U_SQL_ENABLE
+	    into _u_name, _u_full_name, _u_e_mail, _pwdx, _u_group, _u_account_disabled, _u_def_perms, _u_home, _u_sql_enable
+	    from DB.DBA.SYS_USERS
+	    where U_ID = atoi (_u_id) and U_DAV_ENABLE = 1;
+	  if (atoi(_u_id) = http_dav_uid ())
+	    {
+	      _u_quota := 'unlimited';
+	      _b_quota_n := 'unlimited';
+	      _b_quota_m := 'unlimited';
+	    }
+	  else
+	    {
+	      _u_quota := coalesce(DB.DBA.USER_GET_OPTION (_u_name, 'DAVQuota'), 5242880);
+	      _b_quota_n := coalesce(DB.DBA.USER_GET_OPTION (_u_name, 'WeblogQuotaMaxPosts'), 'unlimited');
+	      _b_quota_m := coalesce(DB.DBA.USER_GET_OPTION (_u_name, 'WeblogQuotaMaxSize'), 'unlimited');
+	    }
+	  if (_u_quota = -1)
+	    _u_quota := 'unlimited';
+	  _u_def_perms := cast(_u_def_perms as varchar);
+          if (_u_pwd = '')
+            _u_pwd := _pwdx;
+	  if (_u_pwd2 = '')
+            _u_pwd2 := _pwdx;
+	  b_text := 'Accept';
+          if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/'||_u_name||'/blog/index.vsp'))
+            _u_cr_blog := 'on';
+	}
+    }
+  if ('' <> get_keyword ('n_grp', params, ''))
+    {
+      declare _gn, _u_id1, _u_name1 varchar;
+      declare _gi integer;
+      _gn := get_keyword ('n_grp', params, '');
+      if (not exists (select 1 from WS.WS.SYS_DAV_GROUP where G_NAME = _gn))
+	{
+          _gi := DAV_ADD_GROUP_INT (_gn);
+	}
+      else
+	{
+	  select G_ID into _gi from WS.WS.SYS_DAV_GROUP where G_NAME = _gn;
+	}
+      _u_id1 :=  get_keyword ('u_id', params, '');
+      _u_name1 := get_keyword ('u_name', params, '');
+      if (_u_id1 <> '')
+	update WS.WS.SYS_DAV_USER set U_GROUP = _gi where U_ID = atoi (_u_id1);
+      else if (_u_name1 <> '')
+	update WS.WS.SYS_DAV_USER set U_GROUP = _gi where U_NAME = _u_name1;
+    }
+  -- Create home directory
+  if (res = 0 and '' <> get_keyword ('add', params, '') and '' <> get_keyword ('u_cr_home', params, '') and '' <> get_keyword ('u_home', params, ''))
+    {
+      declare cpath, hpath any;
+      declare cpid, depth, _own, _grp, _perms integer;
+      declare ucr cursor for select U_ID, U_GROUP, U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_NAME = _own_name;
+      _u_cr_home := get_keyword ('u_cr_home', params, '');
+      _u_home := get_keyword ('u_home', params, '');
+      _own_name := get_keyword ('u_name', params, _u_name);
+
+      if (_u_home not like '/DAV/%')
+	{
+          _h_msg := 'The home directory must be under /DAV/ collection';
+          _h_desc := 'To correct the error: <br> select the "Edit" link of the user account, <br> check the "Create home directory", <br>enter the proper location of home directory and press "Accept" button';
+          goto h_err;
+	}
+
+      whenever not found goto nfuser;
+      open ucr (prefetch 1);
+      fetch ucr into _own, _grp, _perms;
+      nfuser:
+      close ucr;
+
+      if (aref (_u_home, length (_u_home) - 1) <> ascii ('/'))
+	_u_home := concat (_u_home, '/');
+      if (not exists (select 1 from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) = _u_home))
+	{
+	  hpath := WS.WS.HREF_TO_ARRAY (_u_home, '');
+	  cpath := WS.WS.PARENT_PATH (hpath);
+	  depth := WS.WS.FINDCOL (cpath, cpid);
+	  if (depth = length (cpath) and _own_name <> '')
+	    {
+	      insert into WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT,
+		COL_OWNER, COL_GROUP, COL_PERMS, COL_CR_TIME, COL_MOD_TIME)
+		values (WS.WS.GETID ('C'), aref (hpath, length (hpath) - 1), cpid,
+		    _own, _grp, _perms, now (), now ());
+	      _created := 1;
+              update WS.WS.SYS_DAV_USER set U_HOME = _u_home where U_ID = _own;
+	    }
+	  else
+	    _h_msg := 'dependency failed';
+	}
+      else if (exists (select 1 from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) = _u_home
+	    and COL_OWNER = _own))
+	{
+	  update WS.WS.SYS_DAV_COL set COL_GROUP = _grp, COL_PERMS = _perms, COL_MOD_TIME = now () where
+	      WS.WS.COL_PATH (COL_ID) = _u_home;
+          update WS.WS.SYS_DAV_USER set U_HOME = _u_home where U_ID = _own;
+	  _created := 1;
+	}
+      else
+	{
+	  _h_msg := 'already exists (owned by another user)';
+          USER_SET_OPTION (_own_name, 'HOME', '');
+	}
+     h_err:
+      _u_home := '';
+      _u_cr_home := '';
+    }
+  if (res = 0 and '' <> get_keyword ('add', params, '') and '' <> get_keyword ('u_cr_blog', params, ''))
+    {
+      declare uid int;
+      _u_cr_blog := get_keyword ('u_cr_blog', params, '');
+      uid := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = _u_name);
+      BLOG_HOME_CREATE (uid);
+    }
+  if (res = 0 and '' <> get_keyword ('add', params, '') and _is_edit <> '')
+    {
+      declare _i integer;
+      _i := 0;
+      delete from WS.WS.SYS_DAV_USER_GROUP where UG_UID = atoi(_is_edit);
+      while (_i < length (_u_groups))
+        {
+	  insert soft WS.WS.SYS_DAV_USER_GROUP (UG_UID, UG_GID) values (atoi (_is_edit), _u_groups[_i]);
+           _i := _i + 2;
+        }
+    }
+  if (res = 0 and '' <> get_keyword ('add', params, '') and '' <> get_keyword ('u_quota', params, ''))
+    {
+      declare q any;
+      q := get_keyword ('u_quota', params, '');
+      if (q = 'unlimited' or q = '-1')
+        q := -1;
+      else
+        q := atoi (q);
+      if (_u_name <> 'dav')
+        USER_SET_OPTION (_u_name, 'DAVQuota', q);
+    }
+  if (res = 0 and '' <> get_keyword ('add', params, '') and ('' <> get_keyword ('b_quota_m', params, '') or '' <> get_keyword ('b_quota_n', params, '')))
+    {
+      declare qn, qm any;
+      qn := get_keyword ('b_quota_n', params, '');
+      qm := get_keyword ('b_quota_m', params, '');
+
+      if (qn = 'unlimited' or qn = '-1' or qn = '')
+        qn := 'unlimited';
+      else
+        qn := atoi (qn);
+
+      if (qm = 'unlimited' or qm = '-1' or qm = '')
+        qm := 'unlimited';
+      else
+        qm := atoi (qm);
+
+      if (_u_name <> 'dav')
+	{
+          USER_SET_OPTION (_u_name, 'WeblogQuotaMaxPosts', qn);
+          USER_SET_OPTION (_u_name, 'WeblogQuotaMaxSize', qm);
+	}
+    }
+  if ((res = 0 and '' <> get_keyword ('add', params, '')))
+    {
+       declare old_sql_flag, dummy int;
+       old_sql_flag := (select U_SQL_ENABLE from SYS_USERS where U_NAME = _u_name and U_DAV_ENABLE = 1);
+       if (old_sql_flag <> _u_sql_enable)
+         {
+            declare uid int;
+	    uid := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = _u_name);
+	    --dbg_obj_print (old_sql_flag, _u_sql_enable);
+            if (_u_sql_enable = 1)
+	      {
+		declare s, m varchar;
+                update SYS_USERS set U_SQL_ENABLE = 1 where U_NAME = _u_name and U_DAV_ENABLE = 1;
+                sec_set_user_struct (_u_name, _u_pwd, uid, uid, null);
+                exec ('grant execute on DB.DBA.XML_URI_GET_STRING to "'||_u_name||'"', s, m);
+                exec ('grant execute on DB.DBA.XML_URI_GET_STRING_OR_ENT to "'||_u_name||'"', s, m);
+              }
+            else if (_u_name <> 'dba')
+              {
+                update SYS_USERS set U_SQL_ENABLE = 0 where U_NAME = _u_name and U_DAV_ENABLE = 1;
+                sec_remove_user_struct (_u_name);
+	      }
+	 }
+    }
+
+  if ((res = 0 and '' <> get_keyword ('add', params, '')) or '' <> get_keyword ('cancel', params, '') )
+    {
+      _u_groups := vector ();
+      _u_name := _u_full_name := _u_e_mail :=_u_pwd := _u_group := _u_id := _u_home := _is_edit := _u_pwd2 :=  '';
+      _u_cr_blog := ''; _u_sql_enable := 0;
+      _u_quota := 5242880; _b_quota_n := 'unlimited'; _b_quota_m := 'unlimited';
+    }
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function make_def_home (ch)
+  {
+    if (ch.checked == true && document.dav_user.u_name.value != '' && document.dav_user.u_home.value == '')
+      document.dav_user.u_home.value = '/DAV/' + document.dav_user.u_name.value + '/';
+    else if (ch.checked == false)
+      document.dav_user.u_home.value = '';
+  }
+// -->
+</SCRIPT>
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>WebDAV User Accounts</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Scheduled events mgmt using Virtuoso VSP">
+  </head>
+<?vsp adm_page_header('WebDAV User Accounts', 'davuseradm');
+      http(adm_users_error_msg (res));
+       if (res = 0 and _created = 0 and '' <> get_keyword ('u_cr_home', params, '') and '' <> get_keyword ('add', params, '')) {
+       http (sprintf ('<P class="errorhead">*** Home directory cannot be created (error message: %s).</P>', _h_msg));
+       if (_h_desc <> '')
+	 http (sprintf ('<p>%s</p>', _h_desc));
+    }
+?>
+<?include ../adm_js_check.vsp ?>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+
+<?vsp
+      if ('' = _u_name)
+        {
+?>
+		<TR><TD CLASS="genhead" COLSPAN="2">New User</TD></TR>
+<?vsp
+        }
+      else
+        {
+?>
+		<TR><TD CLASS="genhead" COLSPAN="2">Edit User</TD></TR>
+<?vsp
+        }
+?>
+<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR>
+      <form name="dav_user" method="POST" action="admin_dav_users.vsp">
+      <input type="hidden" name="u_id" value="<?= _u_id ?>">
+      <input type="hidden" name="sid" value="<?= sid ?>">
+        <td CLASS="genlisthead">Login Name</td>
+<?vsp     if (is_empty_or_null (_u_name))
+            {
+?>
+	      <td CLASS="geninput"><input type="text" maxlength="128" size="35" name="u_name" value="<?= _u_name ?>">
+<?vsp       }
+          else
+            {
+?>
+	      <td CLASS="gendata"><input type="hidden" name="u_name" value="<?= _u_name ?>">
+	      <?= _u_name ?>
+<?vsp
+            }
+?>
+        </td>
+      </tr><tr>
+         <td CLASS="genlisthead">Full Name</td>
+	 <td CLASS="geninput"><input type="text" maxlength="128" size="35" name="u_full_name" value="<?= _u_full_name ?>"></td>
+      </tr><tr>
+         <td CLASS="genlisthead">Email Address</td>
+	 <td CLASS="geninput"><input type="text" maxlength="128" size="35" name="u_e_mail" value="<?= _u_e_mail ?>"></td>
+      </tr><tr>
+         <td CLASS="genlisthead">Password</td>
+	 <td CLASS="geninput"><input type="password" maxlength="128" size="15" name="u_pwd" value="<?= _u_pwd ?>"></td>
+	   </tr><tr>
+         <td CLASS="genlisthead">Confirm Password</td>
+	 <td CLASS="geninput"><input type="password" maxlength="128" size="15" name="u_pwd2" value="<?= _u_pwd2 ?>"></td>
+      </tr><tr>
+         <td CLASS="genlisthead">Group</td>
+	 <td CLASS="genselect">
+	  <table border=0>
+	   <tr>
+	    <td>
+	     <select name="u_group">
+	       <?vsp adm_dav_u_group_options (_u_group); ?>
+	     </select>
+	    </td>
+	    <td><input type=text name="n_grp" size=10></td>
+	    <!--td><input type=submit name=grp_cr value="New Group"></td-->
+	   </tr>
+	  </table>
+	 </td>
+		</tr>
+	  <!-- Additional groups -->
+	 <tr>
+         <td class="genlisthead">Additional groups</td>
+	 <td class="genselect">
+	    <table border=0>
+	      <tr>
+	        <td colspan=4>
+		    <input type="hidden" name="_u_groups" value="<?=encode_base64 (serialize (_u_groups)) ?>">
+<?vsp
+		    if (_is_edit <> '')
+		      {
+?>
+                        <input type="hidden" name="EDIT" value="<?=_is_edit ?>">
+<?vsp
+                      }
+?>
+		    <select name="u_groups" size=5>
+<?vsp
+                    if (length (_u_groups) = 0)
+                      {
+?>
+			<option value="*** NONE ***">*** NONE ***</option>
+<?vsp
+		      }
+		    declare _u_group_inx integer;
+                    _u_group_inx := 0;
+		    while (_u_group_inx < length (_u_groups))
+		      {
+?>
+			<option value="<?= _u_groups[_u_group_inx] ?>"><?= _u_groups[_u_group_inx + 1] ?></option>
+<?vsp
+			 _u_group_inx := _u_group_inx + 2;
+		      }
+?>
+		    </select>
+		</td>
+		<td>
+		  <table>
+		    <tr><td><input type="submit" name="add_group"    value="&lt;-"></td></tr>
+		    <tr><td><input type="submit" name="remove_group" value="-&gt;"></td></tr>
+		  </table>
+		</td>
+		<td colspan=4>
+		   <select name="u_groups_add_group">
+<?vsp
+		   for (select G_NAME, G_ID from WS.WS.SYS_DAV_GROUP) do
+		     {
+?>
+		       <option value="<?= G_ID ?>"><?= G_NAME ?></option>
+<?vsp
+		     }
+?>
+		   </select>
+		   <input type="text" name="new_group" value="" size="16%" /> <small><small>*new group*</small></small>
+		</td>
+	      </tr>
+	    </table>
+	 </td>
+      </tr>
+      <tr>
+      <td CLASS="genlisthead">SQL Enabled</td>
+      <td CLASS="geninput"><input type="checkbox" name="u_sql_enable" <?vsp if (1 = _u_sql_enable) { http ('checked'); } ?> ><small>Allows account to login via SQL/ODBC connection</small></td>
+      </tr>
+
+	  <!-- endof  Additional groups -->
+<?vsp if (atoi(_u_id) <> 1) { ?>
+		<tr>
+         <td CLASS="genlisthead">Disabled</td>
+	 <td CLASS="geninput"><input type="checkbox" name="u_account_disabled" <?vsp if (1 = _u_account_disabled) { http ('checked'); } ?> ></td>
+      </tr>
+<?vsp } ?>
+      <tr>
+         <td CLASS="genlisthead">Create home directory</td>
+	 <td CLASS="geninput"><input type="checkbox" name="u_cr_home" <?vsp if ('on' = _u_cr_home) { http ('checked'); } ?> onclick="make_def_home(this);"></td>
+      </tr>
+      <tr>
+         <td CLASS="genlisthead">Home directory</td>
+	 <td CLASS="geninput"><input type="text" name="u_home" size=35 value="<?=_u_home?>"></td>
+      </tr>
+      <tr>
+         <td CLASS="genlisthead">Quota</td>
+	 <td CLASS="geninput"><input type="text" name="u_quota" size=9 value="<?=_u_quota?>">
+	 <?vsp
+	   declare globalf any;
+	   globalf := cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'DAVQuotaEnabled');
+	   if (globalf is null or 0 = atoi (globalf))
+             http ('<small><a href="#quota">*check is disabled</a></small>');
+	 ?>
+	 </td>
+      </tr>
+      <tr>
+         <td CLASS="genlisthead">Create Weblog</td>
+	 <td CLASS="geninput"><input type="checkbox" name="u_cr_blog" <?vsp if ('on' = _u_cr_blog) { http ('checked'); } ?>></td>
+      </tr>
+      <tr>
+         <td CLASS="genlisthead">Maximum Number of Posts</td>
+	 <td CLASS="geninput"><input type="text" name="b_quota_n" size=9 value="<?=_b_quota_n?>"></td>
+      </tr>
+      <tr>
+         <td CLASS="genlisthead">Cummulative Post Size</td>
+	 <td CLASS="geninput"><input type="text" name="b_quota_m" size=9 value="<?=_b_quota_m?>"></td>
+      </tr>
+      <tr>
+         <td CLASS="genlisthead" valign="top">Global Permissions on Directory</td>
+	 <td>
+	   <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+	     <tr>
+               <td CLASS="genlistheadt" colspan="3">User</td>
+               <td CLASS="genlistheadt" colspan="3">Group</td>
+               <td CLASS="genlistheadt" colspan="3">Other</td>
+             </tr>
+	     <tr>
+              <td CLASS="genlistheadt">r</td><td CLASS="genlistheadt">w</td>
+				<td CLASS="genlistheadt">x</td><td CLASS="genlistheadt">r</td>
+				<td CLASS="genlistheadt">w</td><td CLASS="genlistheadt">x</td>
+				<td CLASS="genlistheadt">r</td><td CLASS="genlistheadt">w</td>
+				<td CLASS="genlistheadt">x</td>
+             </tr>
+	     <tr>
+	       <td><input type="checkbox" name="perm_ur" <?vsp if (one = aref (_u_def_perms, 0)) { http ('checked'); } ?> ></td>
+	       <td><input type="checkbox" name="perm_uw" <?vsp if (one = aref (_u_def_perms, 1)) { http ('checked'); } ?> ></td>
+	       <td><input type="checkbox" name="perm_ux" <?vsp if (one = aref (_u_def_perms, 2)) { http ('checked'); } ?> ></td>
+	       <td><input type="checkbox" name="perm_gr" <?vsp if (one = aref (_u_def_perms, 3)) { http ('checked'); } ?> ></td>
+	       <td><input type="checkbox" name="perm_gw" <?vsp if (one = aref (_u_def_perms, 4)) { http ('checked'); } ?> ></td>
+	       <td><input type="checkbox" name="perm_gx" <?vsp if (one = aref (_u_def_perms, 5)) { http ('checked'); } ?> ></td>
+	       <td><input type="checkbox" name="perm_or" <?vsp if (one = aref (_u_def_perms, 6)) { http ('checked'); } ?> ></td>
+	       <td><input type="checkbox" name="perm_ow" <?vsp if (one = aref (_u_def_perms, 7)) { http ('checked'); } ?> ></td>
+	       <td><input type="checkbox" name="perm_ox" <?vsp if (one = aref (_u_def_perms, 8)) { http ('checked'); } ?> ></td>
+	     </tr>
+		</TABLE>
+	   </td></tr>
+		<tr>
+        <td colspan="9" align="right">
+              <input type="submit" name="add" value="<?= b_text ?>">
+	      		<input type="submit" name="cancel" value="Cancel">
+			<?vsp if (__proc_exists ('ldap_search', 2)) { ?>
+	      		<input type="submit" name="search" value="LDAP Import">
+			<?vsp } ?>
+            </td></tr>
+      </TABLE>
+      </form>
+<BR />
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="9">Current User Accounts</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="9"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+<?vsp
+    declare _grp, _u_login_t varchar;
+    for (select u_name, u_full_name, u_e_mail, u_id, u_group, u_login_time, u_account_disabled
+           from WS.WS.SYS_DAV_USER) do
+      {
+        cnt := cnt + 1;
+        _grp := coalesce ((select top 1 G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = u_group), 'none');
+	if (u_login_time is not null)
+          _u_login_t := adm_date_fmt(u_login_time);
+        else
+          _u_login_t := 'never';
+        if (cnt = 1)
+          {
+?>
+            <tr>
+            <th CLASS="genlistheadt">Login Name</th>
+            <th CLASS="genlistheadt">Full Name</th>
+            <th CLASS="genlistheadt">Email Address</th>
+            <th CLASS="genlistheadt">Group</th>
+            <th CLASS="genlistheadt">Last Login</th>
+	    <th CLASS="genlistheadt">Disabled</th>
+	    <th CLASS="genlistheadt" colspan="3">Actions</th>
+            </tr>
+<?vsp
+          }
+?>
+        <tr>
+		 <td class="gendata"><a href="admin_dav_users.vsp?EDIT=<?/ u_id ?>"><?= u_name ?></a></td>
+        <td class="gendata"><?= "LEFT"(u_full_name, 25) ?></td>
+        <td class="gendata"><?= "LEFT"(u_e_mail, 25) ?></td>
+        <td class="gendata"><?= _grp ?></td>
+        <td class="gendata"><?= _u_login_t ?></td>
+	     <td class="gendata"><?vsp if (1 = u_account_disabled) { http('Yes'); } else { http('No'); } ?></td>
+        <td class="gendata"><?vsp if (u_id <> http_dav_uid() and u_id) { ?><a class="tablelistaction" href="admin_dav_users.vsp?DEL=<?/ u_id ?>">remove</a><?vsp } ?></td>
+		 <td class="gendata"><a class="tablelistaction" href="admin_dav_users.vsp?EDIT=<?/ u_id ?>">edit</a></td>
+		 <td class="gendata"><a class="tablelistaction" href="admin_dav_user_opts.vsp?uid=<?/ u_name ?>">options</a></td>
+		 </tr>
+<?vsp
+      }
+    if (cnt = 0)
+      {
+?>
+        <tr><td  CLASS="gendata" colspan="8"><strong>*** There are currently no WebDAV user accounts ***</strong></td></tr>
+<?vsp
+      }
+?>
+    </table>
+
+    <?vsp    if (globalf is null or 0 = atoi (globalf)) { ?>
+    <div style="margin-left: 46px; margin-right: 40px; text-align: left;"><a name="quota"><b><i>Notes:</i></b></a>
+    <ul>
+     <li>To enable Quota check in WebDAV repository, set the "DAVQuotaEnabled=1" in the INI file.</li>
+    </ul>
+    <?vsp } ?>
+</div>
+<?vsp adm_page_footer(); ?>
+</html>
+
+<?vsp
+return;
+conf_page:;
+
+  declare _del, _name varchar;
+
+  _del := atoi (get_keyword ('DEL', params, ''));
+  select U_NAME into _name from WS.WS.SYS_DAV_USER where U_ID = _del;
+
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Confirmation</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Deleting DAV User">
+  </head>
+  <BODY>
+<?vsp adm_page_header(concat ('Deleting DAV User ', _name), NULL); ?>
+    <form method="POST" action="admin_dav_users.vsp" name="delete_user">
+    <table border="0" width="60%">
+<?vsp
+      if (
+	  exists (select top 1 1 from WS.WS.SYS_DAV_RES where RES_OWNER = _del)
+	  or exists (select top 1 1 from WS.WS.SYS_DAV_COL where COL_OWNER = _del)
+	  )
+	{
+?>
+      <tr><tdclass="geninput">The account "<?= _name ?>" have a home directory associated, do you wish to remove it ? <select name="del_home" ><option>No<option>Yes</select></td></tr>
+<?vsp
+        }
+?>
+      <tr><td class="genlistheadt">You are about to delete the DAV user <?= _name ?>. This deletion cannot be undone. Do you wish to continue?</td></tr>
+      <input type="hidden" name="DEL2" value="<?= _del ?>">
+      <tr>
+      <td align="center">
+         <input type="submit" name="proceed" value="Delete">&nbsp;
+	 <input type="submit" name="proceed" value="Cancel"></td>
+      </tr>
+    </form>
+    </table>
+</TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+</TABLE>
+<?include ../admin_footer.vsp ?>
+  </body>
+</html>
+

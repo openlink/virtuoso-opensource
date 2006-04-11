@@ -1,0 +1,35 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="iso-8859-1"?>
+<?xml-stylesheet href="adjacent.css" type="text/css"?>
+<!-- compliance patch for microsoft browsers -->
+<!--[if lt IE 7]><html:script src="../ie7-standard.js" type="text/javascript"></html:script><![endif]-->
+<!-- dean.edwards/2004 -->
+<!-- keeping code tidy! -->
+<my:root xmlns:my="http://dean.edwards.name/space">
+	<my:h1>IE7</my:h1>
+	<my:h2>adjacent + selector</my:h2>
+	<my:example>First example</my:example>
+	<my:example>Second example</my:example>
+	<my:example>Third example</my:example>
+</my:root>

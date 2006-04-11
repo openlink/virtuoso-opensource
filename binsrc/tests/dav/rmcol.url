@@ -1,0 +1,4 @@
+localhost 6666
+1 DELETE /DAV/Dav_Coll_Moved/ HTTP/1.0
+1 DELETE /DAV/Dav_Coll_Copied/ HTTP/1.0
+1 DELETE /DAV/Dav%20Coll%20Moved/ HTTP/1.0

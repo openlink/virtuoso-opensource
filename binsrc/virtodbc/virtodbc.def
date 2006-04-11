@@ -1,0 +1,139 @@
+;
+;  virtodbc.def
+;
+;  $Id$
+;
+;  DLL link script
+;
+;  (C)Copyright 2003 OpenLink Software.
+;  All Rights Reserved.
+;
+;  The copyright above and this notice must be preserved in all
+;  copies of this source code.  The copyright above does not
+;  evidence any actual or intended publication of this source code.
+;
+;  This is unpublished proprietary trade secret of OpenLink Software.
+;  This source code may not be copied, disclosed, distributed, demonstrated
+;  or licensed except as authorized by OpenLink Software.
+;
+
+HEAPSIZE	10000
+
+EXPORTS
+	SQLAllocConnect			@1
+	SQLAllocEnv			@2
+	SQLAllocStmt			@3
+	SQLBindCol			@4
+	SQLCancel			@5
+	SQLColAttributes		@6
+	SQLConnect			@7
+	SQLDescribeCol			@8
+	SQLDisconnect			@9
+	SQLError			@10
+	SQLExecDirect			@11
+	SQLExecute			@12
+	SQLFetch			@13
+	SQLFreeConnect			@14
+	SQLFreeEnv			@15
+	SQLFreeStmt			@16
+	SQLGetCursorName		@17
+	SQLNumResultCols		@18
+	SQLPrepare			@19
+	SQLRowCount			@20
+	SQLSetCursorName		@21
+	SQLSetParam			@22
+	SQLTransact			@23
+
+	SQLColumns			@40
+	SQLDriverConnect		@41
+	SQLGetConnectOption		@42
+	SQLGetData			@43
+	SQLGetFunctions			@44
+	SQLGetInfo			@45
+	SQLGetStmtOption		@46
+	SQLGetTypeInfo			@47
+	SQLParamData			@48
+	SQLPutData			@49
+	SQLSetConnectOption		@50
+	SQLSetStmtOption		@51
+	SQLSpecialColumns		@52
+	SQLStatistics			@53
+	SQLTables			@54
+;;;;;;;;SQLBrowseConnect		@55
+	SQLColumnPrivileges		@56
+;;;;;;;;SQLDataSources			@57
+	SQLDescribeParam		@58
+	SQLExtendedFetch		@59
+	SQLForeignKeys			@60
+	SQLMoreResults			@61
+	SQLNativeSql			@62
+	SQLNumParams			@63
+	SQLParamOptions			@64
+	SQLPrimaryKeys			@65
+	SQLProcedureColumns		@66
+	SQLProcedures			@67
+	SQLSetPos			@68
+;;;;;;;;SQLSetScrollOptions		@69
+	SQLTablePrivileges		@70
+;;;;;;;;SQLDrivers			@71
+	SQLBindParameter		@72
+	SQLAllocHandle			@73
+	SQLFreeHandle			@74
+
+	SQLGetDiagRec			@76
+	SQLGetDiagField			@77
+	SQLGetEnvAttr			@78
+	SQLSetEnvAttr			@79
+	SQLSetConnectAttr		@80
+	SQLGetConnectAttr		@81
+	SQLGetStmtAttr			@82
+	SQLSetStmtAttr			@83
+	SQLGetDescField			@84
+	SQLSetDescField			@85
+	SQLGetDescRec			@86
+;;;;;;;;SQLSetDescRec			@87
+;;;;;;;;SQLCopyDesc			@88
+;;;;;;;;SQLColAttribute			@89
+	SQLEndTran			@90
+	SQLBulkOperations		@91
+	SQLFetchScroll			@92
+	SQLConnectW			@93
+	SQLBrowseConnectW		@94
+	SQLColAttributesW		@95
+	SQLColAttributesW		@95
+	SQLColAttributeW		@96
+	SQLColumnPrivilegesW 		@97
+	SQLColumnsW 			@98
+	SQLDriverConnectW 		@99
+	SQLDescribeColW 		@100
+	SQLErrorW 			@101
+	SQLExecDirectW 			@102
+	SQLForeignKeysW 		@103
+	SQLGetConnectAttrW 		@104
+	SQLGetConnectOptionW 		@105
+	SQLGetCursorNameW 		@106
+	SQLGetDescFieldW 		@107
+	SQLGetDescRecW 			@108
+	SQLGetDiagFieldW 		@109
+	SQLGetDiagRecW 			@110
+	SQLGetInfoW 			@111
+	SQLGetStmtAttrW 		@112
+	SQLNativeSqlW 			@113
+	SQLPrepareW 			@114
+	SQLPrimaryKeysW 		@115
+	SQLProcedureColumnsW 		@116
+	SQLProceduresW 			@117
+	SQLSetConnectAttrW 		@118
+	SQLSetConnectOptionW 		@119
+	SQLSetCursorNameW 		@120
+	SQLSetDescFieldW 		@121
+	SQLSetStmtAttrW 		@122
+	SQLSpecialColumnsW 		@123
+	SQLStatisticsW 			@124
+	SQLTablePrivilegesW 		@125
+	SQLTablesW 			@126
+	SQLGetTypeInfoW 		@127
+
+	LoadByOrdinal			@199
+	DllMain				@200
+	ConfigDSNW			@204

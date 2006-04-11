@@ -1,0 +1,193 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_login_form">
+<refmeta>
+  <refentrytitle>vspx_login_form</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_login_form</refname>
+  <refpurpose>form to be shown if not logged in</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_login_form">
+    <funcprototype id="proto_vspx_login_form">
+      <funcdef>
+        <function>login-form</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>required (required) </attribute>
+        <attribute>title (required) </attribute>
+        <attribute>user-title (required) </attribute>
+        <attribute>password-title (required) </attribute>
+        <attribute>submit-title (required) </attribute>
+      </attributes>
+      <childs>
+        <child>after-data-bind</child>
+        <child>after-data-bind-container</child>
+        <child>before-data-bind</child>
+        <child>before-data-bind-container</child>
+        <child>on-post</child>
+        <child>on-post-container</child>
+        <child>before-render</child>
+        <child>before-render-container</child>
+        <child>radio-button</child>
+        <child>button</child>
+        <child>check-box</child>
+        <child>select-list</child>
+        <child>textarea</child>
+        <child>text</child>
+        <child>update-field</child>
+        <child>key</child>
+        <child>variable</child>
+        <child>label</child>
+        <child>url</child>
+        <child>data-grid</child>
+        <child>data-set</child>
+        <child>data-list</child>
+        <child>tab</child>
+        <child>tree</child>
+        <child>include</child>
+        <child>error-summary</child>
+        <child>radio-button</child>
+        <child>button</child>
+        <child>check-box</child>
+        <child>select-list</child>
+        <child>textarea</child>
+        <child>text</child>
+        <child>update-field</child>
+        <child>key</child>
+        <child>node</child>
+        <child>form</child>
+        <child>template</child>
+        <child>login</child>
+        <child>login-form</child>
+      </childs>
+      <class>
+        <screen><![CDATA[
+				
+			    create type vspx_login_form under vspx_form
+			    as
+			      (
+			       vlf_title varchar,		-- title of form
+			       vlf_user_title varchar,		-- text of user name input
+			       vlf_password_title varchar,	-- text of password input	
+			       vlf_submit_title varchar,	-- label of login button	
+			       vlf_login vspx_login		-- the parent login control, obsoleted
+			      ) self as ref temporary
+			    constructor method vspx_login_form (name varchar,  parent vspx_control),
+			    constructor method vspx_login_form (name varchar, title varchar, 
+				user_title varchar, password_title varchar, submit_tile varchar, login vspx_login),
+			    overriding method vc_render () returns any
+			    ;
+				
+			    ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_login_form">
+  <title>Description</title>
+  <para>
+    <function>vspx_login_form</function>
+login-form is the control for getting login information.  This may only appear inside a login.
+Its function will depend on the type of login being attempted.  If the type is digest, this is a button which, when submitted, will send the digest challenge.
+
+If the url or cookie session mode is chosen, this will be a form of 2 fields with user name and password and a submit button.
+
+if the standard form is not suitable, this can be an arbitrary form.  This must post  buttons values named &quot;username&quot; and &quot;password&quot; and a submit button named &quot;login&quot;.  No children need be specified if the default form is OK.
+
+If the redirect attribute of template[@type=if-no-login] is not specified, 
+the contents of this child are instantiated and shown in the place of the login control.  
+This can be arbitrary content. 
+
+			</para>
+</refsect1>
+<refsect1 id="attrs_vspx_login_form">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>required</title>
+    <para>
+If digest is the mode, then this means that the login is mandatory and that instead of displaying the login button which will send the challenge if pressed, the challenge will be sent automatically.
+			   </para>
+  </refsect2>
+  <refsect2>
+    <title>title</title>
+    <para>Title of login button if digest is attempted.
+			   </para>
+  </refsect2>
+  <refsect2>
+    <title>user-title</title>
+    <para>Title of user name field
+			   </para>
+  </refsect2>
+  <refsect2>
+    <title>password-title</title>
+    <para>Title of password field
+			   </para>
+  </refsect2>
+  <refsect2>
+    <title>submit-title</title>
+    <para>Title of submit button
+			   </para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_login_form">
+  <title>Children</title>
+</refsect1>
+<refsect1 id="examples_vspx_login_form">
+  <title>Examples</title>
+  <example id="ex_vspx_login_form">
+    <title>Simple example</title>
+    <para>A simple default login-form
+			    </para>
+    <screen><![CDATA[
+				
+                                 <v:login-form name="login_form01" 
+				               required="1" 
+					        title="Login" 
+						user-title="User Name" 
+						password-title="Password" 
+						submit-title="Login"  />
+				
+			    ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

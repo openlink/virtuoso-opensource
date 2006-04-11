@@ -1,0 +1,7 @@
+.libs
+.deps
+*.la 
+*.lo
+Makefile.in
+Makefile
+virtuoso-php-t

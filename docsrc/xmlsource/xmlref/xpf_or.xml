@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_or">
+  <refmeta> 
+    <refentrytitle>or</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>or</refname>
+    <refpurpose>Returns true if a value of some argument is true, otherwise returns false.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_or">
+      <funcprototype id="xpf_proto_or">
+        <funcdef>boolen <function>or</function></funcdef>
+	<paramdef><parameter>val1</parameter> boolean</paramdef>
+	<paramdef><parameter>val2</parameter> boolean</paramdef>
+	<paramdef><parameter>...</parameter></paramdef>
+	<paramdef><parameter>valN</parameter> boolean</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_or"><title>Description</title>
+<para>
+This function calculates values of its arguments, from left to right.
+If the value of calculated parameter is true, the function returns true immediately,
+without calculating of the remaining parameters.
+If the list of arguments ends without any true value calculated, the function
+returns false (Thus it returns true when called without arguments).
+</para>
+<para>
+The name of this function is the same as name of &quot;or&quot; XPATH and XQUERY operator.
+Thus it must be surronded bu double quotes when used in XPATH or XQUERY expressions.
+Moreover, this function is not a part of XPATH standard, so it cannot be used if
+portability is important.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_or"><title>Parameters</title>
+    <refsect2><title>valI</title>
+      <para>Value of boolean expression argument</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_or"><title>Return Types</title><para>boolean</para></refsect1>
+  <refsect1 id="xpf_examples_or"><title>Examples</title>
+    <example id="xpf_ex_and"><title>Control over sequence of search operations</title>
+      <para>If two conditions must be checked, where one is simple and
+another is hard to calculate, then &quot;and&quot; may be used to calculate
+second condition only if first is false, to reduce average time of processing</para>
+      <screen>
+&quot;or&quot; ( empty(authors),
+  document(concat('http://www.lib20.org/findxml.cgi?isbn=',@isbn))/status[@outofprint='YES'] )
+      </screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_or"><title>See Also</title>
+    <para><link linkend="xpf_not">not</link><link linkend="xpf_and">and</link><link linkend="xpf_some">some</link></para>
+  </refsect1>
+</refentry>
+

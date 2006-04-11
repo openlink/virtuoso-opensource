@@ -1,0 +1,239 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare cnt,res integer;
+  declare _evt_name, _evt_start, _evt_sql, _evt_interval varchar;
+  declare b_text, _del varchar;
+  declare l_start integer;
+
+  if (not adm_check_auth (lines))
+    return (0);
+
+  _evt_start := _evt_sql := _evt_interval := '';
+
+  cnt := 0;
+
+  if ('' <> get_keyword ('DEL', params, ''))
+    {
+        _del :=  (get_keyword ('DEL', params, ''));
+        goto comf_page;
+    }
+
+  res := adm_evt_action (params);
+
+  if ('' <> (_evt_name := get_keyword ('EDIT', params)))
+    {
+      select cast (coalesce (se_start, now ()) as varchar), se_sql, se_interval
+	into _evt_start, _evt_sql, _evt_interval
+	from sys_scheduled_event
+	where se_name = _evt_name;
+      _evt_start := substring (_evt_start, 1, 19);
+      b_text := 'ACCEPT';
+    }
+  else
+    {
+      b_text := 'Add';
+    }
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Scheduled Events</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Scheduled events mgmt using Virtuoso VSP">
+  </head>
+  <BODY CLASS="adm_pages_body">
+<?vsp
+
+  declare _now integer;
+
+  adm_page_header('Scheduled Events', '');
+
+  _now := registry_get ('__scheduler_do_now__');
+
+  declare scheduler_interval any;
+  scheduler_interval := cfg_item_value(virtuoso_ini_path(), 'Parameters', 'SchedulerInterval');
+  scheduler_interval := cast (scheduler_interval as integer);
+  if (scheduler_interval = 0)
+    {
+      http ('<h3><b>The scheduler is disabled</b></h3>');
+      goto next_s;
+    }
+
+  if (_now = '1')
+    http ('<h3><b>The scheduler is running</b></h3>');
+  else if (_now = '0')
+    http ('<h3><b>The scheduler is idle</b></h3>');
+  else if (_now = 'c')
+    http ('<h3><b>Server shutdown while the scheduler was running</b></h3>');
+  else
+    http ('<h3><b>Scheduler was interrupted by a checkpoint</b></h3>');
+
+next_s:
+
+?>
+    <TABLE CLASS="stat_list" BORDER="0" CELLPADDING="0">
+<?vsp
+      if (is_empty_or_null (_evt_name))
+        {
+ ?>
+          <TR><TD CLASS="stathead" COLSPAN="3">New Event</TD></TR>
+<?vsp
+        }
+      else
+        {
+ ?>
+          <TR><TD CLASS="stathead" COLSPAN="3">Edit Event</TD></TR>
+<?vsp
+        }
+?>
+      <form method="POST" action="admin_evt_main.vsp">
+      <TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+      <tr>
+        <td CLASS="genlisthead">Name</td>
+	<?vsp if (is_empty_or_null (_evt_name)) { ?>
+	  <td CLASS="geninput" COLSPAN="2"><INPUT type="text" name="evt_name" value="<?= _evt_name ?>">
+	<?vsp } else { ?>
+	  <input type="hidden" name="evt_name" value="<?= _evt_name ?>">
+	  <td CLASS="gendata" COLSPAN="2"><?= _evt_name ?>
+	<?vsp } ?>
+        </td>
+      </tr><tr>
+        <td CLASS="genlisthead">Start Time</td><td CLASS="geninput"><input type="text" name="evt_stime" value="<?= _evt_start ?>"></td>
+      </tr><tr>
+        <td CLASS="genlisthead">Interval</td><td CLASS="geninput"><input type="text" name="evt_interval" value="<?= _evt_interval ?>"></td><td><a href="#info"><small>More information</small></a></td>
+      </tr><tr>
+        <td CLASS="genlisthead">SQL</td><td CLASS="geninput" colspan="2">
+	  <TEXTAREA type="text" name="evt_sql" rows="3" cols="30"><?= _evt_sql ?></TEXTAREA></td>
+      </tr>
+        <td colspan="3" align="center">
+			<input type="submit" name="add" value="<?= b_text ?>">
+			<input type="reset" value="Clear">
+		</td></tr>
+      </form>
+    </table>
+</TD></TR>
+
+<?vsp adm_page_break(); ?>
+
+       <TABLE CLASS="statlist" BORDER="0" CELLPADDING="0">
+       <TR><TD CLASS="stathead" COLSPAN="7">Scheduled Events:   (Current time: <?= datestring(now()) ?>) </TD></TR>
+       <TR><TD CLASS="AdmBorders" COLSPAN="7"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+<?vsp
+      for (select se_name, adm_date_fmt (se_start) as se_start,
+	     adm_date_fmt (se_last_completed) as se_last_completed2,
+	       se_interval, se_last_completed from sys_scheduled_event) do
+        {
+          cnt := cnt + 1;
+	  if (cnt = 1)
+	    {
+?>
+           <tr>
+           <th class="statlistheadt">Name</th>
+	        <th class="statlistheadt">Initial execution at</th>
+	        <th class="statlistheadt">Last execution at</th>
+	        <th class="statlistheadt">Minutes until next execution</th>
+	        <th class="statlistheadt">Minutes between executions</th>
+	        <th class="statlistheadt" colspan="2">Actions</th>
+	      </tr>
+<?vsp
+            }
+?>
+          <tr>
+       <td class="statdata"><a href="admin_evt_main.vsp?EDIT=<?/ se_name ?>"><?= se_name ?></a></td>
+	    <td class="statdata"><?= se_start ?></small></td>
+	    <td class="statdata"><?= se_last_completed2 ?></td>
+	    <td class="statdata">
+<?vsp
+	    if (not se_last_completed is NULL)
+	      {
+		 l_start := datediff ('minute', se_last_completed, now ());
+
+		 if (l_start > se_interval)
+		   http (sprintf ('<font color=ff0020>%i</font>', l_start));
+		 else
+		   http (sprintf ('%i', l_start));
+	      }
+	    else
+	      http ('&nbsp');
+?>
+	    </td>
+	    <td class="statdata"><?= se_interval ?></td>
+	    <td class="statdata"><a class="tablelistaction" href="admin_evt_main.vsp?DEL=<?/ se_name ?>">remove</a></td>
+		<td class="statdata"><a class="tablelistaction" href="admin_evt_main.vsp?EDIT=<?/ se_name ?>">edit</a></td>
+          </tr>
+<?vsp
+        }
+      if (cnt = 0)
+        {
+?>
+	  <tr><td colspan="7" class="gendata">*** No events ***</td></tr>
+<?vsp
+        }
+?>
+      </table>
+      <br>
+      <div align="left"><a name="info"><b><i>Notes:</i></b></a></div>
+      <small>
+      <li>Events created with an interval less than the INI SchedulerInterval <BR />setting (currently <?=cfg_item_value(virtuoso_ini_path(), 'Parameters', 'SchedulerInterval')?>) will not be executed again until that interval has elapsed.</li>
+      </small>
+<?vsp adm_page_footer(); ?>
+  </body>
+</html>
+<?vsp
+return;
+comf_page:;
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Confirmation</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Deleting Database User">
+  </head>
+  <BODY>
+<?vsp adm_page_header(concat ('Deleting Scheduled Event ', _del), NULL); ?>
+    <form method="POST" action="admin_evt_main.vsp" name="delete_evt">
+    <table border="0" width="60%">
+      <tr><td class="genlistheadt">You are about to delete the event <?= _del ?>.
+        This deletion cannot be undone. Do you wish to continue?</td></tr>
+      <input type="hidden" name="DEL2" value="<?= _del ?>">
+      <tr>
+      <td align="center">
+         <input type="submit" name="proceed" value="Delete">&nbsp;
+	 <input type="submit" name="proceed" value="Cancel"></td>
+      </tr>
+    </form>
+    </table>
+</TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+</TABLE>
+<?include admin_footer.vsp ?>
+  </body>
+</html>
+

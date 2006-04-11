@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_backup">
+  <refmeta>
+    <refentrytitle>backup</refentrytitle>
+    <refmiscinfo>backup</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>backup</refname>
+    <refname>backup_close</refname>
+    <refname>backup_flush</refname>
+    <refname>backup_prepare</refname>
+    <refname>backup_row</refname>
+    <refpurpose>Write data into transaction log format for backup purposes.  Deprecated. </refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_backup">
+      <funcprototype id="fproto_backup">
+        <funcdef><function>backup</function></funcdef>
+        <paramdef>in <parameter>file</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_backup_close">
+      <funcprototype id="fproto_backup_close">
+        <funcdef><function>backup_close</function></funcdef>
+        <paramdef />
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_backup_flush">
+      <funcprototype id="fproto_backup_flush">
+        <funcdef><function>backup_flush</function></funcdef>
+        <paramdef />
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_backup_prepare">
+      <funcprototype id="fproto_backup_prepare">
+        <funcdef><function>backup_prepare</function></funcdef>
+        <paramdef>in <parameter>file</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_backup_row">
+      <funcprototype id="fproto_backup_row">
+        <funcdef><function>backup_row</function></funcdef>
+        <paramdef>in <parameter>row</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params_backup"><title>Parameters</title>
+    <refsect2><title><parameter>file</parameter></title>
+      <para><type>varchar</type> <parameter>file</parameter> filename for
+      the generated log.</para>
+    </refsect2>
+    <refsect2><title><function>backup_row</function></title>
+      <para><type>any</type> <parameter>row</parameter> a value of the pseudo
+      column <varname>_ROW</varname>.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_backup"><title>Return Types</title>
+    <refsect2><title></title>
+      <para></para></refsect2>
+  </refsect1>
+  <refsect1 id="desc_backup">
+    <title>Description</title>
+    <important>
+<para>
+These functions  are deprecated.  The use of backup_online () is preferred for database bacups.
+Performing a backup with the destination file /dev/null is a good way of verifying a database's physical integrity.
+</para>
+<para>All backup files, whether complete (created with
+    <function>backup</function>) or partial (created with
+    <function>backup_prepare</function> and <function>backup_row</function>
+    of selected rows), begin with the complete schema that was effective at
+    the time of the backup.</para>
+    <para>Backup and log files contain assumptions about the schema and row
+    layout of the database. Hence it is not possible to use these for
+    transferring data between databases. Attempt to do so will result in
+    unpredictable results.  Thus a log or backup may only be replayed on
+    the same database, an empty database or a copy of the database which
+    has had no schema changed since it was made.
+Also, when replaying a bacup file  onto an empty database, the +replay-crash-dump switch should be given on the executable command line.  
+</para></important>
+    <para>This function requires dba privileges.</para>
+
+	    <refsect2><title>Full backup</title>
+      <para>The <function>backup</function> function takes a file name as
+      argument. The file produced will be in the log format and will recreate
+      the database as it was at the time of the last checkpoint when replayed
+      on an empty database. Such a file cannot be replayed on anything except
+      an empty database. Logs made after the backup can be replayed over the
+      database resulting from the backup file's replay.  No schema operations
+      are allowed between replays.</para>
+    </refsect2>
+
+    <refsect2>
+      <title>Partial backups</title>
+      <para>The <function>backup_prepare</function>,
+      <function>backup_row</function> and <function>backup_close</function>
+      operations allow making specific partial backups.</para>
+
+      <formalpara><title><function>backup_prepare</function></title>
+        <para><function>backup_prepare</function> initiates the backup. This
+        must be the first statement to execute in its transaction.  The
+        rest of the transaction will be a read only snapshot view of the state
+        as of the last checkpoint.  Checkpointing is disabled until
+				<function>backup_close</function> is called.</para>
+      </formalpara>
+
+      <para>Checkpoints are disabled for the time between
+      <function>backup_prepare</function> and
+      <function>backup_close</function>.  The backup transaction being
+      lock-free, it cannot die of deadlock and hence will stay open for the
+      duration of the backup.</para>
+
+      <formalpara><title><function>backup_row</function></title>
+        <para><function>backup_row</function> writes the row given as
+        parameter into the backup file that was associated to the current
+        transaction by a prior <function>backup_prepare</function>. The row
+        must be obtained obtained by selecting the pseudo column
+        <varname>_ROW</varname> from any table.</para>
+      </formalpara>
+
+      <formalpara><title><function>backup_flush</function></title>
+        <para>The <function>backup_flush</function> function will insert a
+        transaction boundary into the backup log.  All rows backed up between
+        two <function>backup_flush</function> calls will be replayed as a
+        single transaction by replay.  Having long intervals between
+        <function>backup_flush</function> calls will cause significant memory
+        consumption at replay time for undo logs.</para>
+      </formalpara>
+
+      <formalpara><title><function>backup_close</function></title>
+        <para>The <function>backup_close</function> function terminates the
+        backup and closes the file.  The transaction remains a read only
+        snapshot of the last checkpoint but checkpoints are now re-enabled.
+        The transaction should be committed or rolled back after
+        <function>backup_close</function>.</para>
+      </formalpara>
+    </refsect2>
+  </refsect1>
+<!--
+  <refsect1 id="examples_backup"><title>Examples</title>
+    <example id="ex_backup_1"><title>Full backup</title>
+      <para></para>
+    </example>
+    <example id="ex_backup_2"><title>Partial backup</title>
+      <para></para>
+    </example>
+  </refsect1>
+-->
+  <refsect1 id="seealso_backup"><title>See Also</title>
+    <para><link linkend="fn_replay">replay</link></para>
+    <para><link linkend="fn_backup_online"><function>backup_online()</function></link>,
+      <link linkend="fn_backup_context_clear"><function>backup_context_clear()</function></link></para>
+  </refsect1>
+</refentry>

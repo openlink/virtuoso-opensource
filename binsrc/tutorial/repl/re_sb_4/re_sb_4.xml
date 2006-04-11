@@ -1,0 +1,52 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="RE-SB-1">
+  <refmeta>
+    <refentrytitle>Bidirectional Snapshot Replicaton Sample</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Bidirectional Snapshot Replication Demo</refname>
+    <refpurpose>Bidirectional snapshot replication demo</refpurpose>
+  </refnamediv>
+
+<refsect1 id="RE-SB-1a">
+<title>Preliminaries</title>
+<para>This tutorial demonstrates basic snapshot replication features.
+In order to run this tutorial execute the following steps:</para>
+<orderedlist>
+<listitem>Setup ODBC data source named "demoserver2".</listitem>
+<listitem>Make sure that user "demo" with password "demo"
+can connect to data source "demoserver2".</listitem>
+<listitem>Make sure that there is no table named "Shippers"
+in target data source.</listitem>
+</orderedlist>
+<para>
+The data source can be Virtuoso data source as well as any other data
+source type which is supported by Virtuoso bidirectional snapshot replication
+(E.g. Oracle or MS SQL data source). This tutorial will
+demonstrate Virtuoso heterogeneous snapshot replication capabilities.
+</para>
+</refsect1>
+</refentry>

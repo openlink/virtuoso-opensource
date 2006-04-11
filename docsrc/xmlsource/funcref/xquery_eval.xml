@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_xquery_eval">
+  <refmeta>
+    <refentrytitle>xquery_eval</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xquery_eval</refname>
+    <refpurpose>Applies an XQUERY expression to a context node and returns result(s).</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_xquery_eval">
+      <funcprototype id="fproto_xquery_eval">
+        <funcdef><function>xquery_eval</function></funcdef>
+        <paramdef>in <parameter>xquery_expression</parameter> varchar</paramdef>
+        <paramdef>in <parameter>xml_tree</parameter> XML Entity</paramdef>
+        <paramdef><optional>in <parameter>index</parameter> integer</optional></paramdef>
+        <paramdef><optional>in <parameter>named_params</parameter> vector</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+		<para>
+The xquery_eval function returns the result of applying the xquery expression to the
+context node.  By default only the first result is returned, but supplying a third argument
+allows you to specify an index for the value, the default assumes a value of 1 here.
+A value of 0 returns an array of 0 or more elements, one for each value calculated by the
+xquery expression.
+	</para>
+	<para>
+When an entity is returned in a result set to a client the client will see an nvarchar value containing the
+serialization of the entity, complete with markup.
+When the entity is passed as a SQL value it remains
+an entity referencing the node of a parsed XML tree, permitting navigation inside the tree.
+	</para>
+	<para>
+The expression can be passed parameters by specifying a fourth argument
+to <function>xquery_eval()</function>.  This will be a vector of name/value
+pairs. The values can be referenced from inside XPath expression by using
+their names with '$' prefix. You may use any Virtuoso data type.
+The names in the parameter vector should appear without the '$' sign.
+If any of the parameter values is NULL the parameter will be ignored because NULL
+has no XPath counterpart.
+If the same name appears more than once in the vector, the last name/value pair is
+used and all preceding pairs with this name are silently ignored.
+Obviously, names should be strings that are valid XQuery variable names.
+</para>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>xquery_expression</title>
+      <para>A valid XQuery expression. In almost all aplications this is a string.
+There is a tricky extension that is used by BPEL-like applications: <parameter>xpath_expression</parameter> can be an XML entity
+whost string-value is a valid XQuery expression. An example of such an entity is &quot;select&quot; or &quot;test&quot;
+attribute in XSLT stylesheet. This trick lets XQuery processor to resolve namespace prefixes by looking at namespace declarations
+at the header of the stylesheet.</para></refsect2>
+    <refsect2><title>xml_tree</title>
+      <para>An XML entity such as that returned from the <function>xtree_doc()</function> function.</para></refsect2>
+    <refsect2><title>index</title>
+      <para>Result index.  This parameter is optional.  If omitted a value of 1 is assumed,
+meaning only the first result is returned.  If a value of 0 is supplied then an array of 0 or more
+results is returned containing one element per result. (Note that results can be in turn sequences of atomic values).</para></refsect2>
+     <refsect2><title>named_params</title>
+      <para>A vector of keyword/value parameters to be passed to the
+    XQuery processor.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret"><title>Return Types</title><para>This function will return the
+first or index selected result of applying the xpath expression to the <parameter>xml_tree</parameter> input.
+If an index value of 0 is supplied then the output is an array.</para></refsect1>
+<!--
+  <refsect1 id="errors"><title>Errors</title>
+    <table><title>Errors signalled by </title>
+      <tgroup cols="4">
+      <thead>
+	  <row><entry>SQL State</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row>
+     </thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+-->
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_xquery_eval"><title>Finding the Authors of Document Titles</title>
+		<programlisting>
+select xt_file, xquery_eval (&apos;&lt;authors&gt;//author&lt;/authors&gt;&apos;, t) from xml_text
+	where xpath_contains (xt_text, &apos;//chapter/title[. = &apos;Introduction&apos;]&apos;, t);
+</programlisting>
+		<para>
+This will select all titles that are descendants of chapter and have a string value of
+&apos;Introduction&apos;.  This will next evaluate //author in the context of each, retrieving the
+author entities in the document of the title and construct an element whose name is &quot;authors&quot;
+and list of children contains all retrieved entities.
+	</para>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_xpath_eval"><function>xpath_eval()</function></link></para>
+    <para><link linkend="xpathcontainsSQLPred">xpath_contains SQL predicate</link></para>
+    <para><link linkend="xcontainspredicate">xcontains SQL predicate</link></para>
+    <para><link linkend="xpf_processXQuery"><function>processXQuery()</function></link></para>
+  </refsect1>
+</refentry>

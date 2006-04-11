@@ -1,0 +1,192 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!--
+    This example demonstrate the replication for two DSNs.
+ -->
+<?vsp
+
+  declare cnt1, cnt2, _rnd_val integer;
+  declare sel_row varchar;
+
+  cnt1 := cnt2 := _rnd_val := 0;
+  sel_row := get_keyword ('id', params, '');
+
+-- Replication logic
+
+  if (get_keyword ('do_sync', params, '') <> '')
+    {
+      declare last_virt datetime;
+      declare _Rnd_Val integer;
+
+      -- INIT
+      if (not exists (select 1 from LOG_RE_DS_1))
+	{
+	  insert into RE_DS_1_DSN2 (TEXT_ID, RND_VAL) select TEXT_ID, RND_VAL from RE_DS_1_DSN1;
+          insert into LOG_RE_DS_1 (LOD_ID, LOG_LAST_UPDATE) select TEXT_ID, LAST_UPDATE from RE_DS_1_DSN1;
+	  goto finish;
+	}
+
+      select top 1 LOG_LAST_UPDATE into last_virt from LOG_RE_DS_1 order by LOG_LAST_UPDATE desc;
+
+      -- INSERT or UPDATE
+
+      for (select LAST_UPDATE, TEXT_ID as loop_ID from RE_DS_1_DSN1 where LAST_UPDATE > last_virt) do
+	 {
+	    if (exists (select 1 from LOG_RE_DS_1 where loop_ID = LOD_ID))
+	      {
+		 select RND_VAL into _Rnd_Val from RE_DS_1_DSN1 where loop_ID = TEXT_ID;
+		 update RE_DS_1_DSN2 set RND_VAL = _Rnd_Val where loop_ID = TEXT_ID;
+		 update LOG_RE_DS_1 set LOG_LAST_UPDATE = LAST_UPDATE where loop_ID = LOD_ID;
+	      }
+	    else
+	      {
+		 insert into re_ds_1_dsn2 (TEXT_ID, RND_VAL)
+			select TEXT_ID, RND_VAL from RE_DS_1_DSN1 where loop_ID = TEXT_ID;
+		 insert into LOG_RE_DS_1 (LOD_ID, LOG_LAST_UPDATE) values (loop_ID, LAST_UPDATE);
+	      }
+	 }
+
+      -- DELETE
+
+      for (select LOD_ID as loop_ID from LOG_RE_DS_1 except select TEXT_ID from RE_DS_1_DSN1) do
+	{
+	   delete from RE_DS_1_DSN2 where TEXT_ID = loop_ID;
+	   delete from LOG_RE_DS_1 where LOD_ID = loop_ID;
+	}
+
+      commit work;
+    }
+
+  if (get_keyword ('insert', params, '') <> '' or get_keyword ('update', params, '') <> '')
+    _rnd_val := rnd (1000);
+
+  if (get_keyword ('insert', params, '') <> '')
+    insert into RE_DS_1_DSN1 (TEXT_ID, RND_VAL) values (uuid(), _rnd_val);
+
+  if (get_keyword ('update', params, '') <> '')
+    update RE_DS_1_DSN1 set RND_VAL = _rnd_val where TEXT_ID = sel_row;
+
+  if (get_keyword ('delete', params, '') <> '')
+    delete from RE_DS_1_DSN1 where TEXT_ID = sel_row;
+
+finish:;
+
+  registry_set ('__re_ds_1_is_started', serialize (vector (http_pending_req (1)[0][0], now())));
+
+?>
+
+<HTML>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<BODY>
+<form method="POST" action="re_ds_1_sample_repl.vsp">
+<table class="tableentry">
+  <tr>
+   <td colspan="3" align="center">
+	<H3>DSN Replication Sample.</H3>
+    </td>
+   </tr>
+  <tr>
+   <td>
+	<table class="tableresult">
+	 <tr>
+	   <td colspan="3" align="center"><b>DNS1 Table</b></td>
+	 </tr>
+	 <tr>
+	  <th colspan="2">-</th>
+	  <th>Int</th>
+	 </tr>
+<?vsp
+             for (select TEXT_ID, RND_VAL from RE_DS_1_DSN1 order by RND_VAL) do
+               {
+                 cnt1 := cnt1 + 1;
+ ?>
+                 <tr>
+		    <td>
+			<a href="re_ds_1_sample_repl.vsp?update=1&id=<?=TEXT_ID?>">Update</a>
+		    </td>
+		    <td>
+			<a href="re_ds_1_sample_repl.vsp?delete=1&id=<?=TEXT_ID?>">Delete</a>
+		    </td>
+<?vsp
+		 if (_rnd_val = RND_VAL)
+		    http(sprintf ('<td><font color="red"><b>%i</b></font></td>', RND_VAL));
+		 else
+		    http(sprintf ('<td>%i</td>', RND_VAL));
+?>
+		 </tr>
+ <?vsp
+               }
+             if (0 = cnt1)
+               http ('<tr><td colspan="3">The table is empty.</td></tr>');
+ ?>
+	 <tr>
+	   <td colspan="4" align="center">
+		<a href="re_ds_1_sample_repl.vsp?insert=1">Insert</a>
+	   </td>
+	 </tr>
+	</table>
+    </td>
+   <td cellspacing="3" cellpadding="3">
+	<input type="submit" name="do_sync" value=" <- Replicate -> ">
+    </td>
+   <td>
+
+	<table class="tableresult">
+	 <tr>
+	   <td colspan="2" align="center"><b>DNS2 Table</b></td>
+	 </tr>
+	 <tr>
+	  <th>Int</th>
+	 </tr>
+<?vsp
+             for (select RND_VAL from RE_DS_1_DSN2 order by RND_VAL) do
+               {
+                 cnt2 := cnt2 + 1;
+ ?>
+                 <tr>
+		    <td><?=RND_VAL?></td>
+		 </tr>
+ <?vsp
+               }
+             if (0 = cnt2)
+               http ('<tr><td colspan="2">The table is empty.</td></tr>');
+ ?>
+	 <tr>
+	   <td colspan="2" align="center">
+		-
+	   </td>
+	 </tr>
+	</table>
+    </td>
+
+    </td>
+   </tr>
+   <tr>
+    <td colspan="3">
+	<b>Note:</b> <small>The two tables is displaed order by unteger value.<small>
+    </td>
+   </tr>
+</table>
+</form>
+</BODY>
+</HTML>

@@ -1,0 +1,81 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!--
+    This example demonstrate the saving data in a table (table prepared by vs_b_3_sample_2.sql):
+ -->
+<?vsp
+  declare tim datetime;
+  declare thisvsp varchar;
+  thisvsp := aref(path,length(path)-1);
+  if ('Insert' = {?'insert'})
+   {
+      tim := stringdate (concat ({?'yyyy'}, '-', {?'mm'}, '-', {?'dd'}));
+      insert into vs_b_3_sample_2 values ({?'txt'}, tim, {?'chb'});
+   }
+?>
+
+<HTML>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<BODY>
+<H2>Saving data in a table</H2>
+<form method="POST" action="<?=thisvsp?>">
+<table class="tableentry">
+  <tr>
+    <td>1. enter some text</td><td><input type="text" name="txt" value=""></td>
+  </tr>
+  <tr><td>2. enter date yyyy/mm/dd</td>
+    <td>
+      <input type="text" name="yyyy" value="" size=4>/
+      <input type="text" name="mm" value="" size=2>/
+      <input type="text" name="dd" value="" size=2>
+    </td>
+  </tr>
+  <tr><td>3. Optional check this</td>
+    <td>
+       <input type="checkbox" name="chb">
+    </td>
+  </tr>
+  <tr>
+    <td>4. Press "insert"</td><td>
+      <input type="submit" name="insert" value="Insert">
+    </td>
+  </tr>
+</table>
+</form>
+
+<h4>Data in table ordered by date:</h4>
+<table class="tableresult">
+  <tr>
+    <th>Text</th><th>Date</th><th>Checked</th>
+  </tr>
+
+  <?vsp for select TXT, TM, SEL from VS_B_3_SAMPLE_2 order by TM do { ?>
+
+  <tr>
+    <td><?=TXT?></td><td><?=TM?></td><td><?=SEL?></td>
+  </tr>
+
+<?vsp } ?>
+</table>
+</BODY>
+</HTML>

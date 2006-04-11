@@ -1,0 +1,97 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-U-1">
+  <refmeta>
+    <refentrytitle>Maintaining Session State in a VSP Application</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Basics</refname>
+    <refpurpose>Introduction to HTTP session management</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-U-1a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+    <listitem>The HTTP protocol does not define a session management</listitem>
+    <listitem>To make a HTTP session few options are possible:
+	<orderedlist>
+	    <listitem>To set a cookie, but this feature is not supported in all browsers.</listitem>
+	    <listitem>To use the opaque value of the digest authentication, it is also not supported in all user-agents</listitem>
+	    <listitem>The most common way for doing this is to pass an URL variable (http://host:port/path?variable=value) to keep the session id; this is usually named "URL-poisoning".</listitem>
+	</orderedlist>
+    </listitem>
+    <listitem>The Virtuoso HTTP session management consists of functions for session variables manipulation and an ability to define a pre- and post-processing function. </listitem>
+    <listitem>Also there is pre-defined table WS.WS.SESSION, which could be used in various applications to keep session data.</listitem>  
+    <listitem>There are special functions to store/retrieve/restore a variables into the memory. These can be used to persist/restore the session variables.</listitem>  
+</itemizedlist>
+<para>For more details see: Session Management section in Virtuoso HTTP Server documentation.
+</para>
+</refsect1>
+
+<refsect1 id="VS-U-1a">
+<title>Session Table</title>
+The Virtuoso server offers a built-in session table. Application developers can also use their own table.
+<programlisting>
+CREATE TABLE WS.WS.SESSION (
+  S_ID                        varchar,      -- session id
+  S_EXPIRE                    datetime,     -- when it expires
+  S_VARS                      long varchar, -- serialized value of session variables
+  S_REQUEST_UNDER_RELOGIN     long varchar, -- serialized value of request status upon re-login detected 
+  S_REALM                     varchar,      -- authentication realm   
+  S_IS_DIGEST                 integer,      -- flag for digest authentication 
+  S_DOMAIN                    varchar,      -- authentication domain  
+  S_NONCE                     varchar,      -- nonce value
+  S_OPAQUE                    varchar,      -- opaque value
+  S_STALE                     varchar,      -- stale value
+  S_QOP                       varchar,      -- qop value
+  S_ALGORITHM                 varchar,      -- algorithm name
+  S_NC                        integer,      -- nonce count 
+  primary key (S_REALM, S_ID))
+</programlisting>
+</refsect1>
+
+<refsect1 id="VS-U-1b">
+<title>Session Table handling</title>
+<para>To set, clear, or preset the in-memory based session table, the following functions are available.</para>
+<itemizedlist mark="bullet">
+    <listitem>connection_set() - sets the connection variable.</listitem>
+    <listitem>connection_get() - get a connection variable state.</listitem>
+    <listitem>connection_vars() - get all connection variables.</listitem>
+    <listitem>connection_vars_set() - clear and set the session variables.</listitem>
+    <listitem>connection_is_dirty() - indicate state of the session variables (whether changed during the session).</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-U-1c">
+    <title>Common Web application framework</title>
+    <itemizedlist mark="bullet">
+	<listitem>The next examples demonstrates this three techniques for passing the session id to the VSPs</listitem>
+	<listitem>Every application have a startup page with links to login and register a new account</listitem>
+	<listitem>Once registered or logged in, the user will be redirected to the default page, that retrieves a session and variable increase it.</listitem>
+	<listitem>Also they have a authentication hook and post processing hook. These PL hooks are used to restore and save respectively the session variables.</listitem>
+	<listitem>The sessions are kept in the WS.WS.SESSION table. Note that not all columns are used in particular application. The full set of columns are used only in session with digest authentication example.</listitem>
+    </itemizedlist>
+</refsect1>
+</refentry>

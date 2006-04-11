@@ -1,0 +1,236 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<process xmlns:tns="http://temp.org" xmlns:bpelv="http://www.openlinksw.com/virtuoso/bpel" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:svc="http://samples.openlinksw.com/bpel" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing" xmlns:services="http://localhost:6666/StoreSvc/services.wsdl" xmlns:ora="http://schemas.oracle.com/xpath/extension" name="inventory" targetNamespace="http://temp.org">
+  <partnerLinks>
+<!-- caller -->
+    <partnerLink name="caller" partnerLinkType="tns:InventoryService" myRole="InventoryProvider"/>
+<!-- store service -->
+    <partnerLink name="store" partnerRole="StoreServiceProvider" partnerLinkType="services:StoreService"/>
+  </partnerLinks>
+  <variables>
+<!-- keeps the request from caller -->
+    <variable name="request" messageType="tns:initiateRequestMessage"/>
+<!-- a requested item -->
+    <variable name="item" element="tns:Item"/>
+<!-- line count -->
+    <variable name="lcnt" type="xsd:int"/>
+    <variable name="qcnt" type="xsd:int"/>
+<!-- iterator -->
+    <variable name="iter" type="xsd:int"/>
+    <variable name="qiter" type="xsd:int"/>
+<!-- product number -->
+    <variable name="pid" type="xsd:int"/>
+<!-- quantity -->
+    <variable name="cnt" type="xsd:int"/>
+<!-- dynamic XPath expression -->
+    <variable name="xpath" type="xsd:string"/>
+    <variable name="qxpath" type="xsd:string"/>
+<!-- Quote io -->
+    <variable name="q_req" messageType="services:GetQuoteRequest"/>
+    <variable name="q_resp" messageType="services:GetQuoteResponse"/>
+    <variable name="best_quote" type="xsd:decimal"/>
+    <variable name="best_seller" type="xsd:int"/>
+    <variable name="qitem" element="svc:Quote"/>
+<!-- New order io -->
+    <variable name="o_req" messageType="services:NewOrderRequest"/>
+    <variable name="o_resp" messageType="services:NewOrderResponse"/>
+    <variable name="txt" messageType="services:SendMailRequest"/>
+<!--  -->
+    <variable name="ebase" type="xsd:string"/>
+    <variable name="endp" element="wsa:EndpointReference"/>
+  </variables>
+  <sequence>
+<!-- the process starts -->
+    <receive partnerLink="caller" operation="initiate" variable="request" createInstance="yes" portType="tns:InventoryPort"/>
+    <assign name="assign-1">
+      <copy>
+        <from expression="ora:countNodes('request', 'payload', '/tns:Items/tns:item')">
+				</from>
+        <to variable="lcnt"/>
+      </copy>
+      <copy>
+        <from expression="1"/>
+        <to variable="iter"/>
+      </copy>
+      <copy>
+        <from partnerLink="store" endpointReference="partnerRole"/>
+        <to variable="endp"/>
+      </copy>
+      <copy>
+        <from variable="endp" query="/wsa:EndpointReference/wsa:Address"/>
+        <to variable="ebase"/>
+      </copy>
+      <copy>
+<!-- initialize NewOrder with an empty list -->
+        <from>
+          <NewOrder xmlns="http://samples.openlinksw.com/bpel">
+            <Customer>Inventory</Customer>
+            <Line>
+              <ItemID/>
+              <Quantity/>
+              <Price/>
+            </Line>
+          </NewOrder>
+        </from>
+        <to variable="o_req" part="parameters"/>
+      </copy>
+    </assign>
+    <switch name="switch-1">
+      <case condition="getVariableData ('lcnt') &lt; 1">
+        <terminate name="terminate-1"/>
+      </case>
+    </switch>
+<!-- loop over input, get line ask for quote and push into  
+      corresponding Order template item
+      -->
+    <while condition="getVariableData('iter') &lt;= getVariableData('lcnt')" name="while-1">
+      <sequence>
+        <assign name="assign-2">
+          <copy>
+            <from expression="concat('/Items/item[', getVariableData ('iter'),']')"/>
+            <to variable="xpath"/>
+          </copy>
+          <copy>
+            <from expression="getVariableData('request', 'payload', getVariableData ('xpath'))"/>
+            <to variable="item" query="/tns:Item"/>
+          </copy>
+          <copy>
+            <from variable="item" query="/tns:Item/tns:ProductID">
+						</from>
+            <to variable="pid"/>
+          </copy>
+          <copy>
+            <from variable="item" query="/tns:Item/tns:Quantity"/>
+            <to variable="cnt"/>
+          </copy>
+        </assign>
+        <assign name="assign-3">
+          <copy>
+            <from variable="pid"/>
+            <to variable="q_req" part="parameters" query="/GetQuote/ItemID"/>
+          </copy>
+        </assign>
+<!-- get stock quotes -->
+        <invoke name="get_quote" operation="GetQuote" partnerLink="store" inputVariable="q_req" outputVariable="q_resp" portType="services:StoreServiceDocLiteralPortType"/>
+        <assign name="assign-4">
+<!-- calculate quotes offered -->
+          <copy>
+            <from expression="ora:countNodes('q_resp', 'parameters', '/svc:GetQuoteResponse/CallReturn/item')">
+						</from>
+            <to variable="qcnt"/>
+          </copy>
+          <copy>
+            <from expression="1"/>
+            <to variable="qiter"/>
+          </copy>
+          <copy>
+            <from expression="0"/>
+            <to variable="best_quote"/>
+          </copy>
+        </assign>
+<!-- find a best quote from quotes offered -->
+        <while condition="getVariableData('qiter') &lt;= getVariableData('qcnt')" name="while-2">
+          <sequence>
+            <assign name="assign-5">
+              <copy>
+                <from expression="concat('/GetQuoteResponse/CallReturn/item[', getVariableData ('qiter'),']')"/>
+                <to variable="qxpath"/>
+              </copy>
+              <copy>
+                <from expression="getVariableData('q_resp', 'parameters', getVariableData ('qxpath'))"/>
+                <to variable="qitem" query="/Quote"/>
+              </copy>
+            </assign>
+            <switch name="switch-2">
+              <case condition="getVariableData('qitem', '/Quote/Price') &lt; getVariableData ('best_quote') or getVariableData ('best_quote') = 0">
+                <assign name="assign-6">
+                  <copy>
+                    <from variable="qitem" query="/Quote/Price"/>
+                    <to variable="best_quote"/>
+                  </copy>
+                  <copy>
+                    <from variable="qitem" query="/Quote/SellerID"/>
+                    <to variable="best_seller"/>
+                  </copy>
+                </assign>
+              </case>
+            </switch>
+            <assign name="assign-7">
+              <copy>
+                <from expression="1 + number(getVariableData('qiter'))"/>
+                <to variable="qiter"/>
+              </copy>
+            </assign>
+          </sequence>
+        </while>
+<!-- set values in corresponding line in new order message -->
+        <assign name="assign-8">
+          <copy>
+            <from variable="pid"/>
+            <to variable="o_req" part="parameters" query="/NewOrder/Line/ItemID"/>
+          </copy>
+          <copy>
+            <from variable="cnt"/>
+            <to variable="o_req" part="parameters" query="/NewOrder/Line/Quantity"/>
+          </copy>
+          <copy>
+            <from variable="best_quote"/>
+            <to variable="o_req" part="parameters" query="/NewOrder/Line/Price"/>
+          </copy>
+          <copy>
+            <from expression="concat (getVariableData ('ebase'), '?id=', getVariableData ('best_seller'))"/>
+            <to variable="endp" query="/wsa:EndpointReference/wsa:Address"/>
+          </copy>
+          <copy>
+            <from variable="endp"/>
+            <to partnerLink="store"/>
+          </copy>
+        </assign>
+<!-- call new order, it must return order id -->
+        <invoke name="new_ord" operation="NewOrder" partnerLink="store" inputVariable="o_req" outputVariable="o_resp" portType="services:StoreServiceDocLiteralPortType"/>
+<!-- update the local db -->
+        <bpelv:exec binding="SQL"><![CDATA[
+		  declare pid, cnt int;
+		  pid := cast (BPEL..getVariableData ('pid') as int);
+		  cnt := cast (BPEL..getVariableData ('cnt') as int);
+		  update Demo..Products set UnitsInStock = UnitsInStock + cnt where ProductID = pid;
+		  ]]></bpelv:exec>
+        <assign name="assign-9">
+          <copy>
+            <from expression="1 + number(getVariableData('iter'))"/>
+            <to variable="iter"/>
+          </copy>
+        </assign>
+      </sequence>
+    </while>
+    <assign name="assign-10">
+      <copy>
+        <from expression="concat ('Inventory have been updated')"/>
+        <to variable="txt" part="parameters" query="/SendMail/MsgText"/>
+      </copy>
+    </assign>
+<!-- notify the operator -->
+    <invoke name="order_notify" operation="SendMail" partnerLink="store" inputVariable="txt" portType="services:StoreServiceDocLiteralPortType"/>
+  </sequence>
+</process>

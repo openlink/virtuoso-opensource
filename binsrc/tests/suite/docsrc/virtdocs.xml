@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?>
+
+<?xml-stylesheet type="text/xsl" href="html.xsl" ?>
+
+<!DOCTYPE book PUBLIC "-//Norman Walsh//DTD DocBk XML V3.1.7//EN" "DocBook/docbookx.dtd" [
+	<!-- include the document chapters -->
+	<!ENTITY dbconcepts.xml  SYSTEM "dbconcepts.xml">
+	<!ENTITY vdbconcepts.xml  SYSTEM "vdbconcepts.xml">
+	<!ENTITY server.xml  SYSTEM "server.xml">
+	<!ENTITY ptune.xml  SYSTEM "ptune.xml">
+	<!ENTITY sqlreference.xml  SYSTEM "sqlreference.xml">
+	<!ENTITY sqlfunctions.xml  SYSTEM "sqlfunctions.xml">
+	<!ENTITY sqlprocedures.xml  SYSTEM "sqlprocedures.xml">
+	<!ENTITY repl.xml  SYSTEM "repl.xml">
+	<!ENTITY odbcimplementation.xml SYSTEM "odbcimplementation.xml">
+	<!ENTITY intl.xml SYSTEM "intl.xml">
+	<!ENTITY vspandxml.xml SYSTEM "vspandxml.xml">
+	<!ENTITY SOAP.xml SYSTEM "SOAP.xml">
+	<!ENTITY mime.xml SYSTEM "mime.xml">
+
+]>
+<book>
+	<title>Virtuoso V-DBMS documentation</title>
+	<bookinfo>
+	<bookbiblio><authorgroup>
+	<author><firstname>Orri</firstname><surname>Erling</surname></author>
+	<author><firstname>Robert</firstname><surname>Jones</surname></author>
+	<author><firstname>George</firstname><surname>Kodinov</surname></author>
+		</authorgroup></bookbiblio>
+	<copyright><year>1999</year><holder>OpenLink Software</holder></copyright>
+	</bookinfo>
+	<toc/>
+	<lot/>
+	<preface>
+		<title>Introduction</title>
+		<para>This document will should serve as a complete guide to the OpenLink Virtuoso DBMS</para>
+	</preface>
+&dbconcepts.xml;
+&vdbconcepts.xml;
+&server.xml;
+&ptune.xml;
+&sqlreference.xml;
+&sqlfunctions.xml;
+&sqlprocedures.xml;
+&repl.xml;
+&odbcimplementation.xml;
+&intl.xml;
+<!-- &vspandxml.xml; 
+&SOAP.xml;
+&mime.xml;
+-->
+
+</book>

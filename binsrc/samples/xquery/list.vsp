@@ -1,0 +1,122 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _list, _case, _text varchar;
+  declare _items any;
+  declare _ctr integer;
+  declare _case_pattern, _datafile_pattern varchar;
+  _list := {?'list'};
+  if (_list is null)
+    _list := '';
+  _case := {?'case'};
+  if (_case is null)
+    _case := '';
+  _text := {?'text'};
+  _items := "XQ"."XQ"."LIST_MENU_ITEMS"();
+  ?>
+<HTML>
+<BODY TEXT="#000000" LINK="#0000CC" VISITED="#3300CC" background="bg.jpg" TOPMARGIN=0>
+<DIV style="TEXT-ALIGN:center;"><A href="http://www.openlinksw.com/virtuoso/whatis.htm" TARGET="desk">
+<IMG SRC="xquerylogo.jpg" ALT="" border="0" ></A></DIV>
+<?vsp
+  _ctr := 0;
+  while (_ctr < length (_items))
+    {
+      declare _item any;
+      declare _type integer;
+      _item := aref (_items, _ctr);
+      _type := aref (_item, 0);
+      _ctr := _ctr + 1;
+      if (10 = _type)
+	{
+	  ?><FONT SIZE="-1"><?vsp
+	  _case_pattern := aref (_item, 2);
+	  _datafile_pattern := aref (_item, 3);
+	  if (aref (_item, 1) = _list)
+	    {
+	      ?><NOBR><CODE>[-]</CODE>&nbsp;<A HREF="demo.vsp?listmetaonly=<?= aref (_item, 1) ?>&noise=<?= sequence_next('_')?>" TARGET="_top"><?= aref (_item, 1) ?></A></NOBR><BR><?vsp
+	      for select "NAME" as _name, xpath_eval('string(.)', "DESCR") as _descr, "ORIGIN" as _origin from "XQ"."XQ"."TEST_CASES" where "NAME" like _case_pattern order by "ID" do
+		{
+		  _descr := cast (_descr as varchar);
+		  _descr := replace (_descr, '\n', ' ');
+		  _descr := replace (_descr, '\t', ' ');
+		  _descr := replace (_descr, '    ', ' ');
+		  _descr := replace (_descr, '  ', ' ');
+		  if (_name = _case)
+		    {
+		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;(&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?= _name ?>" TITLE="<?= _descr ?>" TARGET="_top"><?= _name ?></A>&nbsp;)</CODE></NOBR><BR><?vsp
+		    }
+		  else
+		    {
+		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?= _name ?>" TITLE="<?= _descr ?>" TARGET="_top"><?= _name ?></A></CODE></NOBR><BR><?vsp
+		    }
+		}
+	      for select "NAME" as _name, "COMMENT" as _comment from "XQ"."XQ"."TEST_FILES" where "COMMENT" like _datafile_pattern order by "NAME" do
+		{
+		  _comment := cast (_comment as varchar);
+		  _comment := replace (_comment, '\n', ' ');
+		  _comment := replace (_comment, '\t', ' ');
+		  _comment := replace (_comment, '    ', ' ');
+		  _comment := replace (_comment, '  ', ' ');
+		  if (_name = _case)
+		    {
+		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;(&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?= _name ?>" TITLE="<?= _comment ?>" TARGET="_top"><?= replace (_name, 'xqdemo/', '') ?></A>&nbsp;)</CODE></NOBR><BR><?vsp
+		    }
+		  else
+		    {
+		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?= _name ?>" TITLE="<?= _comment ?>" TARGET="_top"><?= replace (_name, 'xqdemo/', '') ?></A></CODE></NOBR><BR><?vsp
+		    }
+		}
+	    }
+	  else
+	    {
+	      ?><NOBR><CODE>[+]</CODE>&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&noise=<?= sequence_next('_')?>" TARGET="_top"><?= aref (_item, 1) ?></A></NOBR><BR><?vsp
+	    }
+	  ?></FONT><?vsp
+	}
+      if (5 = _type)
+	{
+	  ?><FONT SIZE="-1"><?vsp
+	  ?><NOBR><A HREF="<?= aref (_item, 2) ?>" TARGET="NEW"><?= aref (_item, 1) ?></A></NOBR><BR><?vsp
+	  ?></FONT><?vsp
+	}
+      if (3 = _type)
+	{
+	  ?><P><NOBR><A HREF="<?= aref (_item, 2) ?>" TARGET="desk"><?= aref (_item, 1) ?></A></NOBR></P><?vsp
+	}
+      if (2 = _type)
+	{
+	  ?><P><NOBR><A HREF="<?= aref (_item, 2) ?>" TARGET="_top"><?= aref (_item, 1) ?></A></NOBR></P><?vsp
+	}
+      if (1 = _type)
+	{
+	  ?></P><?vsp
+	}
+      if (0 = _type)
+	{
+	  ?><P><B><?= aref (_item, 1) ?></B><BR><?vsp
+	}
+    }
+?>
+</BODY>
+</HTML>

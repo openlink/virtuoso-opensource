@@ -1,0 +1,178 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!- -*- html -*- ->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+if (not adm_check_auth (lines))
+  {
+    adm_tell_unauth(lines);
+    return (0);
+  }
+
+declare _acct, _item varchar;
+declare _item_type integer;
+_acct := get_keyword ('acct', params, '');
+_item := get_keyword ('item', params, '');
+_item_type := atoi (get_keyword ('item_type', params, '0'));
+
+declare _crpage varchar;
+if (_item_type <> 0)
+  _crpage := '../admin_repl/snp_bidir_edit.vsp';
+else
+  _crpage := 'trx_repl_cr.vsp';
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+  <meta name="AUTHOR" content="OpenLink Software">
+  <meta name="DESCRIPTION" content="Transactional replication wizard">
+  <title>New Conflict Resolver for <?=_item?></title>
+</head>
+<?vsp adm_page_header (concat ('New Conflict Resolver for ', _item), NULL); ?>
+
+<form method=post action="<?=_crpage?>">
+<input type="hidden" name="acct" value="<?=_acct?>">
+<input type="hidden" name="item" value="<?=_item?>">
+<input type="hidden" name="item_type" value="<?=_item_type?>">
+
+<table class="genlist" border="0" cellpadding="0">
+<tr>
+  <td class="genlistheadt">Name suffix</td>
+  <td class="geninput"><input type="text" name="suffix"></td>
+</tr>
+<tr>
+  <td class="genlistheadt">Order</td>
+  <td class="geninput"><input type="text" name="order"></td>
+</tr>
+<?vsp
+  if (_item_type <> 1)
+    {
+?>
+<tr>
+  <td class="genlistheadt">Type</td>
+  <td class="geninput">
+    <select name="type">
+    <option label="U" value="U">U</option>
+    <option label="I" value="I">I</option>
+    <option label="D" value="D">D</option>
+    </select>
+  </td>
+</tr>
+<?vsp
+    }
+?>
+<tr>
+  <td class="genlistheadt">Class</td>
+  <td class="geninput">
+    <select name="class">
+?>
+<?vsp
+      if (_item_type = 1)
+        {
+?>
+    <option label="Min Creation Time" value="min_ctime">Min Creation Time</option>
+    <option label="Max Creation Time" value="max_ctime">Max Creation Time</option>
+    <option label="Min Modification Time" value="min_mtime">Min Modification Time</option>
+    <option label="Max Modification Time" value="max_mtime">Max Modification Time</option>
+    <option label="Backup" value="backup">Do Backup</option>
+    <option label="Notify" value="notify">Do Notify</option>
+<?vsp
+        }
+      else if (_item_type = 2)
+        {
+?>
+    <option label="Min" value="min">Min</option>
+    <option label="Max" value="max">Max</option>
+    <option label="Ave" value="ave">Ave</option>
+<?vsp
+        }
+      else
+        {
+?>
+    <option label="Min" value="min">Min</option>
+    <option label="Max" value="max">Max</option>
+    <option label="Ave" value="ave">Ave</option>
+    <option label="Add" value="add">Add</option>
+<?vsp
+      }
+?>
+    <option label="Publisher Wins" value="pub_wins">Publisher Wins</option>
+    <option label="Subscriber Wins" value="sub_wins">Subscriber Wins</option>
+    <option label="Custom" value="custom">Custom</option>
+    </select>
+  </td>
+</tr>
+<?vsp
+  if (_item_type <> 1)
+    {
+?>
+<tr>
+  <td class="genlistheadt">Column</td>
+  <td class="geninput">
+    <select name="col">
+<?vsp
+  declare _cols, _col any;
+  declare _col_name varchar;
+  declare _col_dtp integer;
+  declare _ix, _len integer;
+  _cols := REPL_ALL_COLS (_item);
+  _ix := 0;
+  _len := length (_cols);
+  while (_ix < _len)
+    {
+      _col := aref (_cols, _ix);
+      _col_name := repl_undot_name (aref (_col, 0));
+      _col_dtp := aref (_col, 1);
+      if (_col_dtp <> 128)
+        {
+?>
+    <option label="<?=_col_name?>" value="<?=_col_name?>">
+      <?=_col_name?>
+    </option>
+<?vsp
+        }
+      _ix := _ix + 1;
+    }
+?>
+    </select>
+  </td>
+</tr>
+<?vsp
+    }
+?>
+<tr>
+  <td colspan="2">
+    <table class="genlist" border="0" cellpadding="0" align="center">
+    <tr>
+      <td><input type="submit" name="add" value="Add"></td>
+      <td><input type="submit" name="add" value="Cancel"></td>
+    </tr>
+    </table>
+  </td>
+</tr>
+</table>
+</form>
+<?vsp adm_page_footer(); ?>
+</html>

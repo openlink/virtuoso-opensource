@@ -1,0 +1,59 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-B-8">
+  <refmeta>
+    <refentrytitle>Exercises</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Media Archive</refname>
+    <refpurpose>Creating a simple file storage system using an SQL table</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-B-8a">
+<title>Overview</title>
+<para>The media archive shall demonstrate a way to upload files and also to download them.
+The web page shows the upload feature, and download list at the same time.</para>
+</refsect1>
+
+<refsect1 id="VS-B-8b">
+<title>Upload Media</title>
+<itemizedlist mark="bullet">
+  <listitem>The file upload form allows an arbitrary file to be browsed and uploaded.</listitem>
+  <listitem>The input control is of type FILE for the upload field.</listitem>
+  <listitem>The ENCTYPE of the form must be a "multipart/form-data", so that the uploaded file data and type (attr-file) is accessible to the VSP.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-B-8c">
+<title>Download media</title>
+<itemizedlist mark="bullet">
+  <listitem>Display a list of stored files on a single page and have a download link to each.</listitem>
+  <listitem>The default name in the download box must be the original file name.</listitem>
+  <listitem>The INLINEFILE pseudo directory shall be used to set the original name of a file.</listitem>
+  <listitem>The "Content-Type" header must be set to original media type.</listitem>
+  <listitem>Note that INLINEFILE pseudo URL needs a parameter "VSP", this parameter MUST contain the target VSP link encoded as URL.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

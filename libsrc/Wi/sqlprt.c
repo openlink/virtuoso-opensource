@@ -1,0 +1,139 @@
+/*
+ *  sqlprt.c
+ *
+ *  $Id$
+ *
+ *  SQL Statement Printer
+ *  
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *  
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *  
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  
+ *  
+*/
+
+#include "sqlnode.h"
+#include "sqlbif.h"
+
+#define REPORT_BUF_MAX		4000
+#define TA_REPORT_BUFFER	1212
+#define TA_REPORT_PTR		1213
+
+
+void
+trset_start (caddr_t * qst)
+{
+  state_slot_t sample;
+  state_slot_t **sbox;
+  caddr_t err;
+  caddr_t buf;
+
+  buf = dk_alloc_box (REPORT_BUF_MAX, DV_LONG_STRING);
+  buf[0] = 0;
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER, buf);
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR, buf);
+
+  sbox = (state_slot_t **) dk_alloc_box (sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  memset (&sample, 0, sizeof (sample));
+  sbox[0] = &sample;
+
+  sample.ssl_name = box_dv_uname_string ("REPORT");
+  sample.ssl_type = SSL_COLUMN;
+  sample.ssl_dtp = DV_SHORT_STRING;
+  sample.ssl_prec = REPORT_BUF_MAX;
+
+  bif_result_names (qst, &err, sbox);
+
+  dk_free_box ((caddr_t) sbox);
+  dk_free_box (sample.ssl_name);
+}
+
+
+void
+trset_printf (char *str, ...)
+{
+  char *report_linebuf;
+  char *report_ptr;
+  char *line;
+  char *eol;
+  char *copy;
+  va_list ap;
+  size_t length;
+
+  report_linebuf = (char *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER);
+  report_ptr = (char *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR);
+
+  va_start (ap, str);
+  vsnprintf (report_ptr, REPORT_BUF_MAX - (report_linebuf - report_ptr), str, ap);
+  va_end (ap);
+
+  for (line = eol = report_linebuf; *line; line = eol)
+    {
+      if ((eol = strchr (line, '\n')) == NULL)
+	break;
+      *eol++ = 0;
+      if (line[0] == 0)
+	line = " ";
+      copy = box_dv_short_string (line);
+      bif_result_inside_bif (1, copy);
+      dk_free_box (copy);
+    }
+  if (eol == NULL)
+    {
+      length = strlen (line);
+      if (report_linebuf != line && length >= 0)
+	memcpy (report_linebuf, line, length);
+    }
+  else
+    length = 0;
+
+  report_ptr = report_linebuf + length;
+  if (length > REPORT_BUF_MAX - EXPLAIN_LINE_MAX)
+    {
+      caddr_t copy = box_dv_short_string (report_linebuf);
+      bif_result_inside_bif (1, copy);
+      dk_free_box (copy);
+      report_ptr = report_linebuf;
+    }
+
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER, report_linebuf);
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR, report_ptr);
+}
+
+
+void
+trset_end (void)
+{
+  char *report_linebuf;
+  char *report_ptr;
+  char *line;
+
+  report_linebuf = (char *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER);
+  report_ptr = (char *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR);
+
+  if (report_ptr > report_linebuf)
+    {
+      *report_ptr = 0;
+      line = box_dv_short_string (report_linebuf);
+      bif_result_inside_bif (1, line);
+      dk_free_box (line);
+    }
+  dk_free_box (report_linebuf);
+
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER, NULL);
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR, NULL);
+}

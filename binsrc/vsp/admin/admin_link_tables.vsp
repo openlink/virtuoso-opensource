@@ -1,0 +1,380 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  --dbg_obj_print ('params : ', params);
+  if (not adm_check_auth (lines)) { adm_tell_unauth (lines); return (0); }
+
+  declare _se, _dsn, _step, _two_views, _user, _pass varchar;
+  declare _se_ad, _se_re, _tbl_name, _rname, _type varchar;
+  declare _len, _prev_sel, _check_all varchar;
+  declare _dsn, _user, _pass varchar;
+  declare _idx_n varchar;
+  declare _denote_text integer;
+  declare _left_v, _right_v, _tables, _views, _sys_tables any;
+  declare _keys_c, _keys_cv, _keys_in, temp any;
+  declare _keys, _keys_v, _keys_s any;
+  declare apos, _ch_key, _ch_key_s any;
+
+  _dsn := get_keyword ('dsn', params, '');
+  _tbl_name := get_keyword ('tbl_name', params, '');
+  _se_ad := get_keyword ('def_keys', params, get_keyword ('colname_add', params, ''));
+  _se_re := get_keyword ('new_key', params, get_keyword ('colname_rmv', params, ''));
+  _left_v :=  deserialize (decode_base64 (get_keyword ('vec_l', params, '')));
+  _right_v :=  deserialize (decode_base64 (get_keyword ('vec_r', params, '')));
+  _step := get_keyword ('step', params, '');
+  _two_views := get_keyword ('two_views', params, '00');
+  _denote_text := 0;
+
+  if ('' <> get_keyword ('login', params, ''))
+    {
+      if ('' <> get_keyword ('login_2', params, ''))
+	  aset (_two_views, 0, ascii ('1'));
+      if ('' <> get_keyword ('login_3', params, ''))
+	  aset (_two_views, 1, ascii ('1'));
+    }
+  _user := get_keyword ('user', params, '');
+  _pass := get_keyword ('pass', params, '');
+  if (_user = '')
+    _pass := '';
+  _ch_key :=  deserialize (decode_base64 (get_keyword ('ch_key', params, '')));
+  _ch_key_s :=  deserialize (decode_base64 (get_keyword ('ch_key_s', params, '')));
+  _keys :=  deserialize (decode_base64 (get_keyword ('keys', params, '')));
+  _keys_s :=  deserialize (decode_base64 (get_keyword ('keys_s', params, '')));
+  _keys_v :=  deserialize (decode_base64 (get_keyword ('keys_v', params, '')));
+  _views :=  deserialize (decode_base64 (get_keyword ('views', params, '')));
+  _sys_tables :=  deserialize (decode_base64 (get_keyword ('sys_tables', params, '')));
+  _tables :=  deserialize (decode_base64 (get_keyword ('tables', params, '')));
+  apos := adm_button_check ('pm_k', params);
+  if (not is_empty_or_null (apos))
+    {
+	_step := '4';
+        _se := get_keyword (concat ('se_', apos), params, '');
+        _type := "LEFT" (apos, 1);
+        _idx_n := subseq (apos, 1);
+        _keys_in :=  deserialize (decode_base64 (get_keyword (concat ('key_send_', apos), params, '')));
+    }
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+  <script language="javascript" src="admin_link_tables.js"></script>
+    <title>External table management</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Link External Tables into Virtuoso using VSP">
+  </head>
+  <BODY>
+<?vsp if ('4' <> _step and not ('3' = _step and '' <> get_keyword ('link', params, '')))
+        adm_page_header('External Table Management', NULL); ?>
+
+<?vsp
+  if ('4' = _step)
+    {
+      adm_page_header('Change Primary Keys', NULL);
+      adm_key_init (params, _dsn, _se, _left_v, _right_v, _se_ad, _se_re, _keys_in);
+?>
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<FORM method="POST" enctype="multipart/form-data" name="creat_key" action="admin_link_tables.vsp">
+  <TR><TD CLASS="genhead" COLSPAN="4">
+<?vsp
+  if ('T' = _type)
+    {
+      http ('TABLE: ');
+      _rname := aref ( aref (_tables, atof (_idx_n)), 2);
+    }
+  else if ('V' = _type)
+    {
+      http ('VIEW: ');
+      _rname := aref ( aref (_views, atof (_idx_n)), 2);
+    }
+  else if ('S' = _type)
+    {
+      http ('SYSTEM TABLE: ');
+      _rname := aref ( aref (_sys_tables, atof (_idx_n)), 2);
+    }
+  http (sprintf ('%V', _rname));
+?>
+</TD></TR>
+  <TR><TD CLASS="AdmBorders" COLSPAN="4"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+  <TR>
+    <TD class="genlistheadt" COLSPAN="2" WIDTH="50%">Available Columns</TD>
+    <TD class="genlistheadt" COLSPAN="2" WIDTH="50%">Selected Columns</TD>
+  </TR>
+  <TR>
+  <TD ALIGN="right" VALIGN="center">
+    <SELECT name="def_keys" Size="10" onDBLClick="javascript:def_keys_add(this);"><?vsp adm_l_key_options (_left_v);?></select></TD>
+  <TD VALIGN="center" ALIGN="middle" WIDTH="10%" CLASS="geninput">
+    <INPUT type="hidden" NAME="colname_add" VALUE="">
+    <INPUT type="hidden" NAME="colname_rmv" VALUE="">
+    <INPUT type="submit" CLASS="geninput" id="select_k" name="select_k" value=" &gt&gt "><BR /><BR />
+    <INPUT type="submit" CLASS="geninput" name="un_select_k" value=" &lt&lt "></TD>
+  <TD VALIGN="left" ALIGN="left">
+    <select name="new_key" Size="10" onDBLClick="javascript:def_keys_rmv(this);"><?vsp adm_l_key_options (_right_v);?></select></TD>
+  <TD VALIGN="center" ALIGN="left">
+    <INPUT type="submit" name="up" value="Up"><BR /><BR />
+    <INPUT type="submit" name="down" value="Down">
+  </TD>
+  </TR>
+
+  <TR><TD VALIGN="center" ALIGN="middle" COLSPAN="4">
+
+<?vsp
+    if (not (_right_v = vector()))
+      {
+        if ('T' = _type)
+	  {
+            aset (_keys, atof (_idx_n), _right_v);
+            aset (_ch_key, atof (_idx_n), '1');
+	  }
+        else if ('V' = _type)
+	  {
+            aset (_keys_v, atof (_idx_n), _right_v);
+	  }
+	else if ('S' = _type)
+	  {
+            aset (_keys_s, atof (_idx_n), _right_v);
+            aset (_ch_key_s, atof (_idx_n), '1');
+	  }
+      }
+    else
+      _right_v := vector ('Add');
+    _keys := encode_base64 (serialize (_keys));
+    _keys_v := encode_base64 (serialize (_keys_v));
+    _keys_s := encode_base64 (serialize (_keys_s));
+    if (aref (_right_v, 0) = 'Add')
+      _right_v := '';
+?>
+  <INPUT type="hidden" name="dsn" value="<?= _dsn ?>">
+  <INPUT type="hidden" name="R_NAME_" value="<?= _rname ?>">
+  <INPUT type="hidden" name="type_" value="<?= _type ?>">
+  <INPUT type="hidden" name="keys" value="<?= _keys ?>">
+  <INPUT type="hidden" name="keys_v" value="<?= _keys_v ?>">
+  <INPUT type="hidden" name="keys_s" value="<?= _keys_s ?>">
+  <INPUT type="hidden" name="idx" value="<?= _idx_n ?>">
+  <?vsp _left_v := encode_base64 (serialize (_left_v));
+        _right_v := encode_base64 (serialize (_right_v));
+        _tables := encode_base64 (serialize (_tables));
+        _views := encode_base64 (serialize (_views));
+        _sys_tables := encode_base64 (serialize (_sys_tables));
+        _ch_key := encode_base64 (serialize (_ch_key));
+        _ch_key_s := encode_base64 (serialize (_ch_key_s));
+        http (sprintf ('<INPUT type="hidden" name="pm_k%s" value="1">', apos));
+?>
+  <INPUT type="hidden" name="vec_l" value="<?= _left_v ?>">
+  <INPUT type="hidden" name="idx" value="<?= _idx_n ?>">
+  <INPUT type="hidden" name="vec_r" value="<?= _right_v ?>">
+  <INPUT type="hidden" name="step" value="<?= _step ?>">
+  <INPUT type="hidden" name="two_views" value="<?= _two_views ?>">
+  <INPUT type="hidden" name="user" value="<?= _user ?>">
+  <INPUT type="hidden" name="pass" value="<?= _pass ?>">
+  <INPUT type="hidden" name="tables" value="<?= _tables ?>">
+  <INPUT type="hidden" name="views" value="<?= _views ?>">
+  <INPUT type="hidden" name="sys_tables" value="<?= _sys_tables ?>">
+  <INPUT type="hidden" name="ch_key" value="<?= _ch_key ?>">
+  <INPUT type="hidden" name="ch_key_s" value="<?= _ch_key_s ?>">
+<?vsp adm_save_state (params); ?>
+</FORM>
+<FORM method="POST" name="finish" action="admin_link_tables.vsp">
+  <INPUT type="submit" name="finish" value="Finish">
+  <INPUT type="hidden" name="tables" value="<?= _tables ?>">
+  <INPUT type="hidden" name="views" value="<?= _views ?>">
+  <INPUT type="hidden" name="sys_tables" value="<?= _sys_tables ?>">
+  <INPUT type="hidden" name="user" value="<?= _user ?>">
+  <INPUT type="hidden" name="pass" value="<?= _pass ?>">
+  <INPUT type="hidden" name="step" value="3">
+  <INPUT type="hidden" name="dsn" value="<?= _dsn ?>">
+  <INPUT type="hidden" name="two_views" value="<?= _two_views ?>">
+  <INPUT type="hidden" name="ch_key" value="<?= _ch_key ?>">
+  <INPUT type="hidden" name="ch_key_s" value="<?= _ch_key_s ?>">
+  <INPUT type="hidden" name="keys" value="<?= _keys ?>">
+  <INPUT type="hidden" name="keys_v" value="<?= _keys_v ?>">
+  <INPUT type="hidden" name="keys_s" value="<?= _keys_s ?>">
+<?vsp adm_save_state (params); ?>
+</FORM></TD></TR>
+</TABLE>
+
+<?vsp
+    }
+  else if (_step = 5)
+    {
+status_page_display:
+      adm_page_header('Tables Linked Successfully', NULL);
+?>
+    <FORM method="POST" name="link_form" action="admin_link_tables.vsp">
+     <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+      <TR>
+        <TD CLASS="genlisthead">Remote Name</TD>
+        <TD CLASS="genlisthead">Type</TD>
+        <TD CLASS="genlisthead">Linked From</TD>
+        <TD CLASS="genlisthead">Linked As</TD>
+      </TR>
+<?vsp adm_lt_status_display ('T', params, _dsn); ?>
+<?vsp adm_lt_status_display ('S', params, _dsn); ?>
+<?vsp adm_lt_status_display ('V', params, _dsn); ?>
+     </TABLE>
+     <input type="submit" name="OK" value="OK">
+    </FORM>
+<?vsp
+    }
+  else
+    {
+?>
+
+<?vsp     adm_lt_init (params, _step, _dsn, _user, _pass, _prev_sel, _two_views,
+    _keys, _keys_v, _keys_s, _tables, _views, _sys_tables);
+    if (_step = 5)
+      goto status_page_display;
+?>
+    <FORM method="POST" name="link_form" action="admin_link_tables.vsp">
+    <input type="hidden" name="step" value="<?= _step ?>">
+    <input type="hidden" name="two_views" value="<?= _two_views ?>">
+
+<TABLE><TR><TD VALIGN="top">
+   <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+   <TR><TD CLASS="genhead" COLSPAN="2">Currently Linked</TD></TR>
+   <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+   <TR><TD CLASS="genselect" ALIGN="right">
+      <select name="remote_tbls" onChange="javascript:rtbls_chg();" MULTIPLE Size="10">
+      <?vsp adm_lt_rt_options(); ?>
+      </select></TD></TR>
+    <TR><TD VALIGN="bottom" ALIGN="right"><input type="submit" name="unlink" value="Unlink"></TD>
+    </TD>
+  </TR>
+  </TABLE>
+</TD>
+
+<TD VALIGN="top">
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+  <TR><TD class="genhead" COLSPAN="3">Link from Data Source</TD></TR>
+  <TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+  <TR><TD class="genselect" ROWSPAN="3">
+    <select name="dsns" onChange="javascript:dsns_chg(this);" MULTIPLE Size="12">
+    <?vsp adm_lt_dsn_options(_dsn); ?></select></TD>
+  <TD></TD><TD VALIGN="top">
+    <TABLE class="genlist" BORDER="0" CELLPADDING="0">
+    <TR><TD class="genlisthead" NOWRAP>Data Source</TD><TD class="geninput">
+    <input type="text" size="25" name="dsn" value="<?= _dsn ?>"></TD></TR>
+    <TR><TD class="genlisthead">Username</TD><TD class="geninput">
+    <input type="text" size="25" name="user" value="<?= _user ?>"></TD></TR>
+    <TR><TD class="genlisthead">Password</TD><TD class="geninput">
+    <input type="password" size="25" name="pass" value="<?= _pass ?>"></TD></TR>
+    <TR><TD COLSPAN="2" ALIGN="right">
+      <table>
+        <tr>
+	  <td>
+	    <input type="checkbox" name="login_2" value="Views"
+	       <?= case chr (aref (_two_views, 0)) when '1' then 'CHECKED' else '' end?>>Views
+	  </td><td>
+	    <input type="checkbox" name="login_3" value="System tables"
+	    <?= case chr (aref (_two_views, 1)) when '1' then 'CHECKED' else '' end?>>System Tables
+	  </td>
+	<tr>
+      </table>
+    </TR>
+    <TR>
+      <TD COLSPAN="2" ALIGN="right">
+        <input type="submit" name="login" value="List">
+      </TD>
+    </TR>
+    </TABLE>
+  </TD></TR>
+</TABLE>
+</TD></TR></TABLE>
+
+<?vsp
+      if ('2' = _step or '3' = _step)
+        {
+?>
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<?vsp adm_lt_table_r (_dsn, params, _len, _two_views, _keys, _step, _user, _pass, _keys_v, _keys_s, _tables, _views, _sys_tables, _ch_key, _ch_key_s, _denote_text);
+        if ( 0 < _len)
+          {
+	    if ('2' = _step)
+	      {
+?>
+  <TR><TD COLSPAN="6" ALIGN="right">
+  <INPUT type="submit" name="select_all" value="Select All" >
+  <INPUT type="submit" name="link" value="Next">
+  </TD></TR>
+<?vsp
+	      }
+	    else
+              {
+?>
+  <TR><TD COLSPAN="7" ALIGN="right">
+  <INPUT type="submit" name="select_all" value="Select All">
+  <INPUT type="submit" name="link" value="Link Selected">
+  </TD></TR>
+<?vsp
+	      }
+	  }
+	if (_denote_text)
+	  {
+?>
+
+  <TR><TD COLSPAN="7">* Denotes table already linked.  Unlink first. </TD></TR>
+
+<?vsp
+	  }
+	if (length (_views) and _step = '3')
+	  {
+?>
+
+  <TR><TD COLSPAN="7">You must select a primary key before VIEWS can be linked.</TD></TR>
+
+<?vsp
+	  }
+?>
+
+</TD></TR></TABLE>
+
+<?vsp
+	}
+      _ch_key := encode_base64 (serialize (_ch_key));
+      _ch_key_s := encode_base64 (serialize (_ch_key_s));
+      _keys := encode_base64 (serialize (_keys));
+      _keys_v := encode_base64 (serialize (_keys_v));
+      _keys_s := encode_base64 (serialize (_keys_s));
+      _tables := encode_base64 (serialize (_tables));
+      _views := encode_base64 (serialize (_views));
+      _sys_tables := encode_base64 (serialize (_sys_tables)); ?>
+<INPUT type="hidden" name="keys" value="<?=_keys?>">
+<INPUT type="hidden" name="ch_key" value="<?= _ch_key ?>">
+<INPUT type="hidden" name="ch_key_s" value="<?= _ch_key_s ?>">
+<INPUT type="hidden" name="keys_v" value="<?=_keys_v?>">
+<INPUT type="hidden" name="keys_s" value="<?=_keys_s?>">
+<INPUT type="hidden" name="tables" value="<?=_tables?>">
+<INPUT type="hidden" name="views" value="<?=_views?>">
+<INPUT type="hidden" name="sys_tables" value="<?=_sys_tables?>">
+</FORM>
+
+<?vsp
+    }
+?>
+<?vsp adm_page_footer(); ?>
+</BODY>
+</HTML>

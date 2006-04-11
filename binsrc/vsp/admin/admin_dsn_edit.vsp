@@ -1,0 +1,101 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare _dsn, _type, _driver, _text varchar;
+
+  _dsn := get_keyword('name', params, '');
+  _type := get_keyword('type', params, '');
+  _driver := get_keyword ('driver', params, '');
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>External table management</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Link External DSN into Virtuoso using VSP">
+  </head>
+<?vsp
+  adm_page_header('DSN Management', NULL);
+  if (_type = 'file')
+    {
+       _text := file_to_string (_dsn);
+?>
+    <FORM method="POST" action="admin_dsn.vsp">
+	<TABLE CLASS="genlist"><TR><TD>
+          <TEXTAREA name="new_text" rows="25" cols="70"><?=coalesce (_text, '')?></textarea> </TD></TR>
+	  <TR><TD ALIGN="right">
+	  <INPUT type="submit" name="save_file" value="Save">
+	  <INPUT type="submit" name="cancel_file" value="Cancel"></TD></TR>
+	  <INPUT type="hidden" name="name" value="<?vsp =_dsn?>">
+	  <INPUT type="hidden" name="type_dsn" value="<?=_type?>">
+	</TABLE>
+    </FORM>
+<?vsp
+    }
+  else
+    {
+  adm_dsn_update (params);
+  if (not is_empty_or_null (get_keyword ('remove', params)))
+    {
+?>
+      <FORM method="POST" action="admin_dsn.vsp">
+	<TABLE><TR><TD ALIGN="middle" COLSPAN="2"><B> Do you want to delete: </B><I><?=_dsn?></I></TD></TR>
+	<TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+	<TR><TD ALIGN="middle" COLSPAN="2">
+	<INPUT type="submit" name="remove_" value="OK">
+	<INPUT type="submit" name="cancel_" value="Cancel">
+	<INPUT type="hidden" name="name" value="<?vsp =_dsn ?>">
+	<INPUT type="hidden" name="type_dsn" value="<?=_type?>">
+	<TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR></TABLE>
+      </FORM>
+<?vsp
+      }
+    else
+      {
+?>
+    <FORM method="POST" action="admin_dsn.vsp">
+      <TABLE><TR><TD ALIGN="middle" COLSPAN="2"><B>DSN: </B><?=_dsn?></TD></TR>
+      <TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+      <?vsp adm_edit_text (params);?>
+      <TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+      <TR><TD COLSPAN="2" ALIGN="middle">
+	<INPUT type="submit" name="update_ini" value="Update">
+	<INPUT type="submit" name="back" value="Back">
+	<INPUT type="hidden" name="name" value="<?=_dsn?>">
+	<INPUT type="hidden" name="type_dsn" value="<?=_type?>">
+	<INPUT type="hidden" name="driver" value="<?=_driver?>">
+      </TD></TR>
+      <TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR></TABLE>
+    </FORM>
+
+<?vsp
+      }
+    }
+  adm_page_footer();
+?>
+</HTML>

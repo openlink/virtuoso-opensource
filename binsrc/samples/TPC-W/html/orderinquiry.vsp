@@ -1,0 +1,46 @@
+<?vsp
+   declare shopping_id numeric(20);
+   shopping_id := atoi(get_keyword('Shopping_Id',params,'0'));
+   declare cid numeric(10);
+   cid := atoi(get_keyword('C_ID',params,'0'));
+   declare cuname varchar(20);
+   if (cid <> 0)
+       select C_UNAME into cuname from CUSTOMER where C_ID=cid;
+   else
+       cuname:='';
+?>
+<HTML>
+  <HEAD><TITLE>TPC-W Order Inquiry Page</TITLE></HEAD>
+  <BODY BGCOLOR="#ffffff">
+    <H1 ALIGN="center">TPC Web Commerce Benchmark (TPC-W)</H1>
+    <HR WIDTH="700" COLOR="#202020">
+    <H2 ALIGN="center">Order Inquiry Page</H2>
+    <FORM ACTION="orderdisplay.vsp?" METHOD="get">
+    <INPUT TYPE="HIDDEN" NAME="C_ID" VALUE="<?=cid?>">
+    <INPUT TYPE="HIDDEN" NAME="Shopping_Id" VALUE="<?=shopping_id?>">
+      <TABLE ALIGN="CENTER">
+        <TR>
+          <TD><H4>Username:</H4></TD>
+          <TD>
+            <INPUT NAME="username" SIZE="23" VALUE="<?=cuname?>">
+          </TD>
+        </TR>
+        <TR>
+          <TD><H4>Password:</H4></TD>
+          <TD>           
+            <INPUT NAME="password" SIZE="14" TYPE="password" VALUE="password">
+          </TD>
+        </TR>
+      </TABLE>
+      <P ALIGN="CENTER"><BR>
+        <INPUT TYPE="IMAGE" NAME="Display Last Order" SRC="images/display_order.jpg" HEIGHT="30" WIDTH="120">
+        <A HREF="searchrequest.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>">
+           <IMG SRC="images/search.jpg" ALT="Search" BORDER="0" WIDTH="120" HEIGHT="30">
+        </A>
+        <A HREF="index.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>">
+           <IMG SRC="images/home.jpg" ALT="Home" BORDER="0" WIDTH="120" HEIGHT="30">
+        </A>
+      </P>
+    </FORM>
+  </BODY>
+</HTML>

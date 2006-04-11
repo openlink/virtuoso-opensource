@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_backup_online">
+  <refmeta>
+    <refentrytitle>backup_online</refentrytitle>
+    <refmiscinfo>backup</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>backup_online</refname>
+    <refpurpose>perform online backup of database</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_backup_online">
+      <funcprototype id="fproto_backup_online">
+        <funcdef>int <function>backup_online</function></funcdef>
+	<paramdef>in <parameter>file_prefix</parameter> varchar</paramdef>
+	<paramdef>in <parameter>pages</parameter> integer</paramdef>
+	<paramdef><optional>in <parameter>timeout</parameter> integer</optional></paramdef>
+	<paramdef><optional>in <parameter>dirs</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_backup_online">
+    <title>Description</title>
+    <para>This procedure will backup all information from the checkpoint 
+    space to a series of files named 
+    "<computeroutput>&lt;file_prefix&gt;&lt;n&gt;.bp</computeroutput>", where 
+    &lt;n&gt; is the sequence number of the file in the backup series.  
+    The first backup will be a full gzip compressed dump of database pages in 
+    the checkpoint space.  Any subsequent call will only backup pages which have 
+    changed since the last backup was made.  To start with a fresh full backup, 
+    use backup_clear_context to clear the change tracking data.
+    At each checkpoint the checkpoint space will be updated, and the next 
+    "backup_online;" procedure will create new files.  Once backup_online() 
+    has been called for the first time, the arguments supplied will be used for 
+    subsequent calls to it.  Hence, arguments supplied to this procedure (except the 
+    "dirs" argument) will be ignored in subsequent calls.</para>
+    <para>Before a new backup series can be started, the 
+    <link linkend="fn_backup_context_clear"><function>backup_context_clear();</function></link> 
+    procedure must be called first.  This procedure will clear the current backup 
+    context and mark all pages in the checkpoint space as ready for backup.</para>
+    <para>A database checkpoint cannnot be performed while an online backup is 
+    in progress.  Attempt to do a checkpoint will wait until the backup is complete.</para>
+    <para>This is the preferred means of backing up databases and replaces any 
+    other prior means.  As an alternative, copying database files while the 
+    database is running will still work, as long as no checkpoint is made during 
+    the copy process.</para>
+  </refsect1>
+  <refsect1 id="params_backup_online">
+    <title>Parameters</title>
+    <refsect2><title>file_prefix</title>
+      <para>A string to prefix to the filename of the backup files.</para>
+    </refsect2>
+    <refsect2><title>pages</title>
+      <para>The pages argument indicates the maximum number of 8K pages that 
+      will be backed up into each file.  This argument must be larger than 100.  
+      If pages &lt; 100 an error will be returned.</para>
+    </refsect2>
+    <refsect2><title>timeout</title>
+      <para>This parameter has no effect.
+</para>
+    </refsect2>
+    <refsect2><title>dirs</title>
+      <para>This optional parameter must be an array of directory  names (array of strings). The
+      backup files are first stored in the first directory. When  running out of disk
+      any consecutive  backup files are stored in the next directory  in the list. If there are no
+      more  directories  then an  error is signaled and all  the files written by this call to backup_online are
+      deleted so as not to leave half made backups. </para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_backup_online"><title>Return Types</title>
+    <para>This function will return the number of 8k pages that were backed-up.</para>
+  </refsect1>
+  <refsect1 id="errors_backup_online">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode>IB001</errorcode>
+    <errorcode>IB002</errorcode>
+    <errorcode>IB003</errorcode>
+    <errorcode>IB004</errorcode>
+    <errorcode>IB005</errorcode>
+    <errorcode>IB006</errorcode>
+    <errorcode>IB007</errorcode>
+    <errorcode>IB008</errorcode>
+    <errorcode>IB009</errorcode>
+    <errorcode>IB010</errorcode>
+  </refsect1>
+  <refsect1 id="examples_backup_online">
+    <title>Examples</title>
+    <example id="ex_backup_online"><title>Performing an online backup</title>
+      <para>If there are 2010 new pages in the checkpoint space and user invokes:</para>
+      <screen><![CDATA[
+"backup_online ('dump-20021010_#', 500);"
+]]>
+</screen>
+      <para>from ISQL, then the following series of backup files will be 
+      created in the Virtuoso database directory:</para>
+      <screen><![CDATA[
+dump-20011010_#1.bp
+dump-20011010_#2.bp
+dump-20011010_#3.bp
+dump-20011010_#4.bp
+dump-20011010_#5.bp
+]]>
+</screen>
+      <para>The first 4 files will each  contain 500 8K pages.  The actual length 
+      of the files will vary due to varying compression ratio. </para>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_backup_online">
+    <title>See Also</title>
+    <para><link linkend="fn_backup_context_clear"><function>backup_context_clear();</function></link></para>
+  </refsect1>
+</refentry>

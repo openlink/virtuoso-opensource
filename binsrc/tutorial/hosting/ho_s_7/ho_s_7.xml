@@ -1,0 +1,77 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="HO-S-7">
+  <refmeta>
+    <refentrytitle>3rd Party Framework Hosting</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DataGrid ASP.NET Hosting Demo</refname>
+    <refpurpose>A databound ASP.NET page hosted within Virtuoso's
+    WebDAV repository</refpurpose>
+  </refnamediv>
+
+    <refsect1 id="HO-S-7a_overview">
+    <title>Overview</title>
+    <para>This tutorial is a demonstration of how Virtuoso hosts the ASP.NET  and ADO.NET Frameworks as implemented by Microsoft.NET and Mono. The demo consists of a DataGrid control which uses ADO.NET and Virtuoso's managed Data Provider to retrieve data from the local Virtuoso database hosting this tutorial application. </para>
+    </refsect1>
+
+    <refsect1 id="HO-S-7a_prerequisites">
+    <title>Prerequisites</title>
+    <para>The following prerequisites should be used to ensure computer has the appropriate operating system and software to run the Virtuoso 3rd Party Hosting HO-S-7 tutorial on Windows 2000, XP or operating systems capable of running Mono.
+    (See the <ulink url="http://www.go-mono.com/">Mono project home page</ulink> for information regarding Mono developed by Ximian). </para>
+
+<itemizedlist>
+  <listitem>Virtuoso Universal Servers Microsoft ASP .Net or Mono ECMA-CLI enabled binary   </listitem>
+  <listitem>CLR from Microsoft ASP .Net Framework SDK </listitem>
+  <listitem>Review the documentation on CLR Hosting setup in the Runtime Hosting, chapter 15 of the Virtuoso documentation</listitem>
+</itemizedlist>
+
+    </refsect1>
+
+    <refsect1 id="HO-S-7a">
+    <title>Tutorial Example</title>
+
+  <para>The HO-S-7 tutorial uses the C# bound .aspx page to demonstrate
+  data retrieval via ADO.NET, and data display using the standard ASP.NET DataGrid control. </para>
+  <para>The source code for the DataGrid control ("VirtSample.aspx") is
+  viewable  by clicking the associated hyperlink in the "View Source" column, and
+  can be executed by clicking  the "Run" hyperlink in the "Action" column..</para>
+
+<para>Notes</para>
+<para>In this tutorial, the data provider being used is the Virtuoso.NET managed provider, which is installed as part of the Virtuoso installation process.   To run this tutorial, the demo instance requires an Access Control List file modification (in this case the .INI file associated with the demo database instance); this involves adding a section-key-value to "DirsAllowed" section-key that points to the location of the  OpenLink.Data.Virtuoso.dll assembly (which hosts the managed data provider)  </para>
+<para>Simply append  the file reference "../bin/OpenLink.Data.Virtuoso.dll" to the last entry for the section-key  "DirsAllowed". If you have changed the password for "demo" SQL account (you are encouraged to do this at installation time), you will need to Edit the connection string in the Web.config file associated with this application domain and change the password (PWD) in key="ConnectionString" element which is part of the appSettings section,</para>
+<para>e.g.:</para>
+<programlisting><![CDATA[<add key="ConnectionString" value="HOST=localhost:1112;UID=demo;PWD=demo;Database=demo" />]]></programlisting>
+<para>The Web.config file is located in one of the following locations depending on the CLR being used for the demonstration</para>
+<itemizedlist>
+ <listitem>[http_root]/vad/vsp/tutorial/hosting/ho_s_7/Web.config if you are using server hosting MS.NET CLR.</listitem>
+ <listitem>mono/lib/mono/machine.config if you are using server-hosting ECMA-CLI (Mono).</listitem>
+</itemizedlist>
+
+<para>For troubleshooting tips, refer to the "Environment Setup" section in "Runtime Hosting", chapter 15 in the Virtuoso documentation. </para>
+
+
+  </refsect1>
+</refentry>

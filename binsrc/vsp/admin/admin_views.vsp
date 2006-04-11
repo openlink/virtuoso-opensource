@@ -1,0 +1,147 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+
+  declare _q varchar;
+  declare vwname, v_stmt, v_old_text, err_ret varchar;
+  declare idx integer;
+
+  if (not adm_check_auth (lines))
+    {
+      adm_tell_unauth(lines);
+      return (0);
+    }
+
+  err_ret := adm_views_action (params);
+  -- XML views action
+  if ('' <> get_keyword ('xml_view', params, '') and 'Save' = get_keyword ('save', params))
+    {
+      vwname := get_keyword ('vw', params, '');
+      select coalesce (V_TEXT, blob_to_string (V_EXT)) into v_old_text from DB.DBA.SYS_VIEWS where V_NAME = vwname;
+    }
+  else
+    v_old_text := NULL;
+  if ('Yes' = get_keyword ('proceed', params))
+    {
+      idx := 0;
+      while (vwname := adm_next_keyword ('views', params, idx))
+	{
+	  if (exists (select 1 from DB.DBA.SYS_PROCEDURES where P_NAME = concat ('DB.DBA.http_view_', vwname)))
+	    {
+	      declare state, state1, msg, msg1 varchar;
+              state := '00000';
+              state1 := '00000';
+	      exec (sprintf ('drop xml view "%I"', vwname), state, msg);
+	      exec ('commit work', state1, msg1);
+	      if (state <> '00000')
+		{
+		  err_ret := concat (err_ret, '<TABLE class="genlist" BORDER="0" CELLPADDING="0">');
+		  err_ret := concat (err_ret, sprintf ('<TR><TD class="errorhead" COLSPAN="2">Dropping XML view %V failed:</TD></TR>', vwname));
+		  err_ret := concat (err_ret, '<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+		  err_ret := concat (err_ret, sprintf ('<TR><TD class="genlisthead">SQL State</TD><TD class="gendata">%s</TD></TR>', coalesce (state, '')));
+		  err_ret := concat (err_ret, sprintf ('<TR><TD class="genlisthead">Error Message</TD><TD class="gendata">%s</TD></TR>', coalesce (msg, '')));
+		  if ('00000' <> state1)
+		    {
+		      err_ret := concat (err_ret, sprintf('<TR><TD class="genlisthead">Txn SQL State</TD><TD class="gendata">%V</TD></TR>', coalesce(state1, '')));
+		      err_ret := concat (err_ret, sprintf('<TR><TD class="genlisthead">Txn Error Message</TD><TD class="gendata">%V</TD></TR>', coalesce(msg1, '')));
+		    }
+		}
+	    }
+	}
+    }
+
+  if ('' <> get_keyword ('xml_view', params, ''))
+    {
+      if ('Save' = get_keyword ('save', params))
+	{
+          vwname := get_keyword ('vw', params, '');
+	  if ('' <> v_stmt := get_keyword ('stmt', params,'') and vwname <> '')
+	    {
+	      declare state, state1, msg, msg1 varchar;
+              state := '00000';
+              state1 := '00000';
+	      exec (sprintf ('create xml view "%s" as %s', vwname, v_stmt), state, msg);
+	      exec ('commit work', state1, msg1);
+	      if (state <> '00000')
+		{
+		  err_ret := concat (err_ret, '<TABLE class="genlist" BORDER="0" CELLPADDING="0">');
+		  err_ret := concat (err_ret, sprintf ('<TR><TD class="errorhead" COLSPAN="2">Creating XML view %V failed:</TD></TR>', vwname));
+		  err_ret := concat (err_ret, '<TR><TD CLASS="adm_borders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+		  err_ret := concat (err_ret, sprintf ('<TR><TD class="genlisthead">SQL State</TD><TD class="gendata">%s</TD></TR>', coalesce (state, '')));
+		  err_ret := concat (err_ret, sprintf ('<TR><TD class="genlisthead">Error Message</TD><TD class="gendata">%s</TD></TR>', coalesce (msg, '')));
+		  if ('00000' <> state1)
+		    {
+		      err_ret := concat (err_ret, sprintf('<TR><TD class="genlisthead">Txn SQL State</TD><TD class="gendata">%V</TD></TR>', coalesce(state1, '')));
+		      err_ret := concat (err_ret, sprintf('<TR><TD class="genlisthead">Txn Error Message</TD><TD class="gendata">%V</TD></TR>', coalesce(msg1, '')));
+		    }
+		  if (v_old_text is not NULL)
+		    adm_exec_stmt (v_stmt);
+		}
+	    }
+	}
+    }
+  -- end XML views action
+  _q := get_keyword ('q', params, '');
+
+  if ('' = _q)
+    _q := 'db';
+
+?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <!--script language="javascript" src="admin_tables.js"></script-->
+    <script language="javascript" src="admin_utils.js"></script>
+    <title>Views for <?= _q ?></title>
+  </head>
+  <BODY>
+<?vsp adm_page_header(concat('Views for ', _q), NULL);
+
+if (not is_empty_or_null (err_ret))
+  {
+    http (concat (err_ret, '</TABLE>'));
+  }
+?>
+<?include adm_js_check.vsp ?>
+    <form method="POST" action="admin_views_verify.vsp">
+    <input type="hidden" name="q" value="<?= _q ?>">
+
+	  <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+	    <tr>
+	      <td class="genlistheadt"><input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)"></td>
+	      <th class="genlistheadt">View</th>
+	      <th class="genlistheadt">Action</th>
+	    </tr>
+	    <?vsp adm_views_list (_q); ?>
+            <TR ALIGN="right" ><TD COLSPAN="3" ALIGN="right">
+	      <input type="submit" name="drop" value="Drop Selected">
+	    </TD></TR>
+	  </table>
+    </form>
+
+<?vsp adm_page_footer(); ?>
+  </BODY>
+</html>

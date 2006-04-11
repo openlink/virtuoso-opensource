@@ -1,0 +1,268 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_button">
+<refmeta>
+  <refentrytitle>vspx_button</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_button</refname>
+  <refpurpose>scriptable buttons</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_button">
+    <funcprototype id="proto_vspx_button">
+      <funcdef>
+        <function>button</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>action (required) </attribute>
+        <attribute>value (required) </attribute>
+        <attribute>child-window-options (optional) </attribute>
+        <attribute>browser-current (optional) </attribute>
+        <attribute>browser-filter (optional) </attribute>
+        <attribute>browser-list (optional) </attribute>
+        <attribute>browser-mode (optional) </attribute>
+        <attribute>browser-type (optional) </attribute>
+        <attribute>browser-xfer (optional) </attribute>
+        <attribute>style (optional) </attribute>
+        <attribute>selected-image (optional) </attribute>
+        <attribute>not-selected-image (optional) </attribute>
+        <attribute>selector (optional) </attribute>
+      </attributes>
+      <childs>
+        <child>after-data-bind</child>
+        <child>after-data-bind-container</child>
+        <child>before-data-bind</child>
+        <child>before-data-bind-container</child>
+        <child>on-post</child>
+        <child>on-post-container</child>
+        <child>before-render</child>
+        <child>before-render-container</child>
+        <child>field</child>
+      </childs>
+      <class>
+        <screen><![CDATA[
+
+			    -- Button class, encapsulate all controls originating a event
+			    create type vspx_button under vspx_field as
+			    (
+			      bt_pressed int default 0,			-- internal use only
+			      bt_style  varchar default 'submit',	-- button style
+			      bt_close_img varchar,			-- this and below are alternate image links
+			      bt_open_img varchar,			-- for making a two-state image buttons
+			      bt_url varchar				-- if a url specified to button, this alter
+			    ) temporary self as ref			-- it to a image link
+			    overriding method vc_render () returns any,
+			    constructor method vspx_button (name varchar, parent vspx_control),
+			    constructor method vspx_button (name varchar, label varchar, parent vspx_control)
+			    ;
+
+			    -- this represents a browse button
+			    create type vspx_browse_button under vspx_button
+			    as
+			     (
+			       vcb_selector varchar,				-- url to be open in pop-up
+			       vcb_chil_options varchar default '',		-- child window options
+			       vcb_fields any,					-- fileds to be send as parameters
+			       vcb_browser_mode varchar default 'RES', 		-- COL, RES, STANDALONE
+			       vcb_list_mode integer default '1', 		-- 1 full list, 0 short list
+			       vcb_system varchar default '', 			-- 'dav', 'file', '' (none)
+			       vcb_xfer varchar default 'DOM',			-- for now only this option is used
+			       vcb_current integer default 0,			-- current dav collection id
+			       vcb_filter varchar default '*'			-- filter for file list
+			     )
+			     self as ref temporary
+			     constructor method vspx_browse_button (name varchar, parent vspx_control),
+			     overriding method vc_render () returns any
+			    ;
+
+			    -- this represents a delete button
+			    create type vspx_delete_button under vspx_button as
+			    (
+			      btd_table varchar,		-- table for delete
+			      btd_key varchar			-- key column for delete
+			    ) self as ref temporary
+			    constructor method vspx_delete_button (name varchar, parent vspx_control),
+			    constructor method vspx_delete_button (name varchar, label varchar, parent vspx_control)
+			    ;
+
+			    -- these are represantation of varoius button types
+			    create type vspx_radio_button under vspx_button
+			    self as ref temporary
+			    constructor method vspx_radio_button (name varchar, parent vspx_control),
+			    overriding method vc_render () returns any
+			    ;
+			    create type vspx_submit under vspx_button
+			    temporary self as ref
+			    constructor method vspx_submit (name varchar, parent vspx_control)
+			    ;
+			    create type vspx_logout_button under vspx_button
+			    self as ref temporary
+			    constructor method vspx_logout_button (name varchar, parent vspx_control),
+			    constructor method vspx_logout_button (name varchar, label varchar, parent vspx_control, page vspx_page)
+			    ;
+
+			    create type vspx_return_button under vspx_button
+			    self as ref temporary
+			    overriding method vc_render () returns any,
+			    constructor method vspx_return_button (name varchar, parent vspx_control),
+			    constructor method vspx_return_button (name varchar, label varchar, int_name varchar, parent vspx_control)
+			    ;
+
+
+			    ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_button">
+  <title>Description</title>
+  <para>
+    <function>vspx_button</function>Scriptable version of Submit Button of the HTML form. Depending of
+&#39;action&#39; attribute it may have variants. In some of these variants button will not have submit function (as select and browse button), so in that case they will perform special function for selecting or pop up of new window.
+</para>
+</refsect1>
+<refsect1 id="attrs_vspx_button">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>action</title>
+    <para>This designate subclassing of the button.</para>
+    <para>
+         &#39;simple&#39; : is a simple submit button, no special functions
+				</para>
+    <para>
+         &#39;submit&#39; : an alias of &#39;simple&#39; button, obsolete
+				</para>
+    <para>
+         &#39;delete&#39; : a button for deleting a row in a data-set or data-grid controls, it is represented as a submit button with special on-post script. The delete function is perforemd based on table, key attributes. (check implementation!!)
+				</para>
+    <para>
+         &#39;browse&#39; : a button for browsing will be originated, the function of it is to pop-up a window as specified in selector attribute. Designate client-side JavaScript generation.
+
+				</para>
+    <para>
+         &#39;return&#39; : this button type will return a value of fileds named as specified in it&#39;s children &#39;filed&#39; elements to the parent window. The page rendering class will make client-side JavaScript code for serving it&#39;s function.
+				</para>
+    <para>
+         &#39;logout&#39; : can appear only in login control, this is to perform logout functin of it.
+				</para>
+  </refsect2>
+  <refsect2>
+    <title>value</title>
+    <para>Text of the label of the button.</para>
+  </refsect2>
+  <refsect2>
+    <title>child-window-options</title>
+    <para>Options for oppening a child pop-up window.This can be used only with conjuction of action browse.</para>
+  </refsect2>
+  <refsect2>
+    <title>browser-current</title>
+    <para>Current directory of browsing. Can be used only with browse button for WebDAV or Filesystem resources.</para>
+  </refsect2>
+  <refsect2>
+    <title>browser-filter</title>
+    <para>Filter expression(s) for browsing. (see above)</para>
+  </refsect2>
+  <refsect2>
+    <title>browser-list</title>
+    <para>Type of browser list, 0 - short, 1 - long</para>
+  </refsect2>
+  <refsect2>
+    <title>browser-mode</title>
+    <para>COL, RES or STANDALONE , this is to specify what to be selected. In other words this affects behaviour of the pop-up window.</para>
+  </refsect2>
+  <refsect2>
+    <title>browser-type</title>
+    <para>This designate type of browser: dav or os (filesystem).</para>
+  </refsect2>
+  <refsect2>
+    <title>browser-xfer</title>
+    <para>A way of transferring the data between windows, DOM is default. No other options in current implementation.</para>
+  </refsect2>
+  <refsect2>
+    <title>style</title>
+    <para>A style of button, affects appearance.</para>
+    <para>
+         &#39;submit&#39; : This is a default style used, no special handling.
+The button will be rendered as usual submit button.
+				</para>
+    <para>
+         &#39;uri&#39; : The button will be rendered as link, furthermore client side JavaScript code will be produced to act as like submit button.
+				</para>
+    <para>
+         &#39;image&#39; : The button will be rendered as image on browser under link button. In that case value of button control must be link to the image file.
+				</para>
+  </refsect2>
+  <refsect2>
+    <title>selected-image</title>
+    <para>An alternate image</para>
+  </refsect2>
+  <refsect2>
+    <title>not-selected-image</title>
+    <para>A second alternate image. This and above can will be only initialized. One can use them to change simultaniously the value of button (i.e. ufl_value and hance rendering).</para>
+  </refsect2>
+  <refsect2>
+    <title>selector</title>
+    <para>This is a URL to pop-up windows. Note that it can be used only with browse button.</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_button">
+  <title>Children</title>
+  <refsect2>
+    <title>field</title>
+    <para>This element may occur under browse button or select button,
+it enumerates the names of inputs to be sent to/back between pop-up and parent window.</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="examples_vspx_button">
+  <title>Examples</title>
+  <example id="ex_vspx_button">
+    <title>Simple example</title>
+    <para>A simple image submit button
+			    </para>
+    <screen><![CDATA[
+
+      <v:button name="submit1" action="simple" style="image" xhtml:alt="A test button" value="--'plus.gif'" />
+
+			    ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

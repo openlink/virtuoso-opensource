@@ -1,0 +1,109 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:sql="urn:schemas-microsoft-com:mapping-schema" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:annotation>
+		<xsd:appinfo>
+			<sql:relationship name="xddl_table_cols" parent="DB.DBA.XDDL_TABLES" parent-key="T_NAME" child="DB.DBA.XDDL_COLUMNS" child-key="C_TABLE"/>
+			<sql:relationship name="xddl_table_pk" parent="DB.DBA.XDDL_TABLES" parent-key="T_NAME" child="DB.DBA.XDDL_PK" child-key="PK_TABLE"/>
+			<sql:relationship name="xddl_table_pk_parts" parent="DB.DBA.XDDL_PK" parent-key="PK_KEY_ID" child="DB.DBA.XDDL_PK_PARTS" child-key="PKP_KEY_ID"/>
+			<sql:relationship name="xddl_table_fk" parent="DB.DBA.XDDL_TABLES" parent-key="T_NAME" child="DB.DBA.XDDL_FK" child-key="FK_TABLE"/>
+			<sql:relationship name="xddl_table_fk_ref" parent="DB.DBA.XDDL_FK" parent-key="FK_TABLE FK_REF_TABLE" child="DB.DBA.XDDL_FK_REF" child-key="FK_TABLE FK_REF_TABLE"/>
+		</xsd:appinfo>
+	</xsd:annotation>
+	<!--  elementFormDefault="qualified" -->
+	<xsd:element name="tables" sql:is-constant="1">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="table" sql:relation="DB.DBA.XDDL_TABLES" maxOccurs="unbounded">
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="column" sql:relation="DB.DBA.XDDL_COLUMNS" sql:relationship="xddl_table_cols">
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:element name="default_value" type="xsd:string" minOccurs="0" sql:field="C_DEFAULT"/>
+									</xsd:sequence>
+									<xsd:attribute name="name" type="xsd:string" use="required" sql:field="C_COL"/>
+									<xsd:attribute name="type" type="xsd:string" sql:field="C_TYPE"/>
+									<xsd:attribute name="type-text" type="xsd:string" sql:field="C_TYPE_TEXT"/>
+									<xsd:attribute name="prec" type="xsd:integer" use="required" sql:field="C_PREC"/>
+									<xsd:attribute name="scale" type="xsd:integer" use="required" sql:field="C_SCALE"/>
+									<xsd:attribute name="nullable" type="xsd:boolean" sql:field="C_NOTNULLABLE"/>
+									<xsd:attribute name="collation" type="xsd:string" sql:field="C_COLLATION"/>
+									<xsd:attribute name="identified_by" type="xsd:string" sql:field="C_IDENTIFIED_BY"/>
+									<xsd:attribute name="identity" type="xsd:boolean" sql:field="C_IDENTITY"/>
+								</xsd:complexType>
+							</xsd:element>
+							<xsd:element name="pk" sql:relation="DB.DBA.XDDL_PK" sql:relationship="xddl_table_pk">
+								<xsd:complexType>
+									<xsd:sequence maxOccurs="unbounded">
+										<xsd:element name="field" sql:relation="DB.DBA.XDDL_PK_PARTS" sql:relationship="xddl_table_pk_parts">
+											<xsd:complexType>
+												<xsd:attribute name="col" type="xsd:string" sql:field="PKP_COL"/>
+												<xsd:attribute name="ord" type="xsd:string" sql:field="PKP_ORD"/>
+											</xsd:complexType>
+										</xsd:element>
+									</xsd:sequence>
+									<xsd:attribute name="is_unique" type="xsd:boolean" sql:field="PK_IS_UNIQUE"/>
+									<xsd:attribute name="is_clustered" type="xsd:boolean" sql:field="PK_IS_CLUSTERED"/>
+									<xsd:attribute name="is_oid" type="xsd:boolean" sql:field="PK_IS_OID"/>
+								</xsd:complexType>
+							</xsd:element>
+							<xsd:element name="fk" sql:relation="DB.DBA.XDDL_FK" sql:relationship="xddl_table_fk">
+								<xsd:complexType>
+									<xsd:sequence maxOccurs="unbounded">
+										<xsd:element name="reference" sql:relation="DB.DBA.XDDL_FK_REF" sql:relationship="xddl_table_fk_ref">
+											<xsd:complexType>
+												<xsd:attribute name="col" type="xsd:string" sql:field="FK_COL"/>
+												<xsd:attribute name="ref_col" type="xsd:string" sql:field="FK_REF_COL"/>
+											</xsd:complexType>
+										</xsd:element>
+									</xsd:sequence>
+									<xsd:attribute name="ref_table" type="xsd:string" sql:field="FK_REF_TABLE"/>
+									<xsd:attribute name="delete_rule" type="xsd:string" sql:field="FK_DELETE_RULE"/>
+									<xsd:attribute name="update_rule" type="xsd:string" sql:field="FK_UPDATE_RULE"/>
+								</xsd:complexType>
+							</xsd:element>
+						</xsd:sequence>
+						<xsd:attribute name="name" type="xsd:ID" use="required" sql:field="T_NAME"/>
+						<xsd:attribute name="parent" type="xsd:IDREF" use="required" sql:field="T_PARENT"/>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="views" sql:is-constant="1">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="view" sql:relation="DB.DBA.SYS_VIEWS" maxOccurs="unbounded">
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="text" type="xsd:string" sql:field="V_TEXT" sql:use-cdata="1"/>
+						</xsd:sequence>
+						<xsd:attribute name="name" type="xsd:ID" use="required" sql:field="V_NAME"/>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+</xsd:schema>

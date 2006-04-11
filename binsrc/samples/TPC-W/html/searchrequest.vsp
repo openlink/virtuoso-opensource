@@ -1,0 +1,68 @@
+<?vsp
+    declare shopping_id numeric(20);
+    shopping_id:=atoi(get_keyword('Shopping_Id',params,'0'));
+    declare cid numeric(10);
+    cid:=atoi(get_keyword('C_ID',params,'0'));
+?>
+<HTML>
+  <HEAD><TITLE>Search Request Page</TITLE></HEAD>
+  <BODY>
+  <H1 ALIGN="center">TPC W Commerce Benchmark (TPC-W)</H1>
+  <HR WIDTH="700" COLOR="#202020">
+  <H2 ALIGN="center"><IMG SRC="images/tpc_logo.jpg" ALIGN="BOTTOM" BORDER="0" WIDTH="288" HEIGHT="67"></H2>
+  <H2 ALIGN="center">Search Request Page</H2>
+  <TABLE ALIGN="CENTER" BORDER="0" WIDTH="660">
+    <TR ALIGN="CENTER" VALIGN="top">
+      <TD COLSPAN="5"><B><FONT COLOR="#ff0000" SIZE="+1">Click on one of our latest books to find out more !</FONT></B></TD>
+    </TR>
+    <TR ALIGN="CENTER" VALIGN="top">
+<?vsp
+    declare item numeric(10);
+    declare rel numeric(10);
+    item := rnd(get_num_items())+1;
+    select I_RELATED1 into rel from ITEM where I_ID=item;  
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+    select I_RELATED2 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+    select I_RELATED3 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp	 
+    select I_RELATED4 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+    select I_RELATED5 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+    </TR>
+  </TABLE>
+  <FORM ACTION="searchresult.vsp?" METHOD="GET">
+    <INPUT TYPE="HIDDEN" NAME="Shopping_Id" VALUE="<?=shopping_id?>">
+    <INPUT TYPE="HIDDEN" NAME="C_ID" VALUE="<?=cid?>">
+    <TABLE ALIGN="center">
+     <TR>
+       <TD ALIGN="right"><H3>Search by:</H3></TD>
+       <TD WIDTH="100"></TD>
+     </TR>
+     <TR>
+       <TD ALIGN="right">
+         <SELECT NAME="search" SIZE="1">
+           <OPTION SELECTED="SELECTED" VALUE="author">Author </OPTION>
+           <OPTION VALUE="title">Title </OPTION>
+           <OPTION VALUE="subject">Subject</OPTION>
+         </SELECT>
+       </TD>
+       <TD> <INPUT NAME="title_field" SIZE="30"></TD>
+     </TR>
+   </TABLE>
+<P ALIGN="center">
+  <INPUT TYPE="IMAGE" NAME="Search" SRC="images/submit.jpg" HEIGHT="30" WIDTH="120">
+  <A HREF="index.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/home.jpg" ALT="Home" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+  <A HREF="shoppingcart.vsp?ADD_FLAG=N&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/cart.jpg" ALT="Shopping Cart" BORDER="0" WIDTH="120" HEIGHT="30"></A> 
+</P>
+</FORM></BODY></HTML>

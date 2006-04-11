@@ -1,0 +1,622 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+	<sect1 id="dbadmin">
+		<title>Database Administration</title>
+      	<sect2 id="dbusersandgroups">
+      		<title>Users &amp; Group Accounts</title>
+		<para>
+This page allows you to alter the users that can access the Virtuoso database.  You may
+add a new user, edit an existing user, or delete users.  You can associate users with groups or make
+new groups.
+</para>
+		<para>
+Groups are created and function like normal user accounts.  To define a group you simply create a new user, and then to make
+use of the group you assign users to that group from the drop down which will contain available groups.
+</para>
+		<para>
+To create a new user or group you must enter a username, password and confirm the password by retyping it in the
+fields provided.  You may optionally specify a group and default qualifier.  You can use groups to control access to a set of users
+by maintaining the permissions granted to the group for which they are members.  Specifying a default qualifier
+allows you to specify the catalog or database for which queries will be run against that do not explicitly
+refer to a particular catalog or database.
+</para>
+		<para>
+The table at the bottom of the page lists users that have access to the server.  You can use the action
+links on the right of the table to remove or edit the listed users.
+</para>
+      	</sect2>
+
+      	<sect2 id="databases">
+      		<title>Databases</title>
+    <para>
+		Each catalog (database) within Virtuoso will be listed under the Databases
+		link.  For each catalog you will be able to view and in some cases edit
+		details about the tables, views, triggers, and store procedures stored
+		within that catalog.</para>
+
+    <figure float="1"><title>Viewing Table details for the Demo catalogue in the Demo Database</title>
+      <graphic fileref="ui/admtables_01.jpg" width="545px" depth="295px"/></figure>
+
+    <figure float="1"><title>Viewing View details for the Demo catalogue in the Demo Database</title>
+      <graphic fileref="ui/admviews_01.jpg" width="623px" depth="344px"/></figure>
+
+     	<sect3 id="triggers">
+	      		<title>Editing Triggers</title>
+	<para>
+	For each table, Virtuoso gives you the ability to edit the
+	triggers linked to that table, as well as adding new triggers.
+	The link text "Triggers" is followed by a number in parentheses
+	that tells you how many triggers exist associated with that
+	table.  If no number is shown, there are no triggers.  Clicking on
+	the text takes you to the trigger edit page.
+	</para>
+<!--
+need a screenshot  here
+-->
+  <para>
+  The triggers page shows you the name of each trigger, an excerpt
+  from the text of the trigger, and permits you to edit or drop the
+  triggers.  At the bottom of the page is an &quot;Add&quot; button
+  for creation of a new trigger.
+  </para>
+ </sect3>
+
+	<sect3 id="storedprocedures">
+	<title>Editing Stored Procedures</title>
+	<para>
+	The stored procedures link shows a page of information about
+	existing stored procedures for the database you are viewing.  If
+	there are stored procedures, you can see their names and text
+	excerpts, and you may edit or drop them.  Adding new stored
+	procedures can be done via the ISQL command-line interface.
+	</para>
+    <figure float="1"><title>Viewing Stored Procedure details for the Demo catalogue in the Demo Database</title>
+      <graphic fileref="ui/admtables_01.jpg" width="545px" depth="295px"/></figure>
+        <para>
+	Stored procedures may also refer to modules that contain a group
+	of related stored procedures.  These are created and edited as a
+	group, rather than individually.  An example of this is the module
+	DB.DBA.AmazonSearchService, which contains procedures such as
+	KeywordSearchRequest() and BrowseNodeSearchRequest().</para>
+<!--
+need a screenshot here of Edit Procedure DB.DBA.AmazonSearchService
+-->
+			</sect3>
+		</sect2>
+      	<sect2 id="externaldatabases">
+      		<title>External Databases</title>
+		<para>
+		Here you will be able to manage the Virtual Database feature of Virtuoso.
+		You are able to administer ODBC Datasources, how to link remote tables and
+		view, and already linked remote connections.</para>
+
+   	<sect3 id="connecteddsns">
+	      		<title>Connected Data Sources</title>
+			<para>
+			This will present you with Data Sources that have been connected to
+			Virtuoso recently or are required by tables that are currently linked in
+			to Virtuoso.</para>
+
+        <figure float="1"><title>Remote Datasources connected to Virtuoso</title>
+          <graphic fileref="ui/rmtconnected_01.jpg" width="644px" depth="386px"/></figure>
+			<para>
+			If you need to alter the authentication details of a particular Data
+			Source then select it from the list.  If you are not automatically
+			presented with the Data Source details then press the <emphasis>Edit</emphasis>
+			button.  If you then alter the details press the save button to save
+			them back.</para>
+		</sect3>
+
+   	<sect3 id="configureddsns"><title>Configure Data Sources</title>
+			<para>
+			This section will allow you to configure the data sources themselves on
+			the remote machine.  The table that will be presented to you will
+			contain both User and System data sources.  You will be able to edit
+			and create either User or System data sources, however, Virtuoso will
+			only be able to use the User data sources that belong to the user that
+			started the Virtuoso Server.</para>
+
+        <figure float="1"><title>Configuring ODBC Datasources</title>
+          <graphic fileref="ui/odbcadm_01.jpg" width="623px" depth="344px"/></figure>
+
+      <para>Follow the buttons on the screen as to how you want to manage a data
+			source.  You can create new, edit or remove existing data sources.</para>
+
+        <figure float="1"><title>Configuring A Virtuoso ODBC Datasources</title>
+          <graphic fileref="ui/virtdsn_01.jpg" width="561px" depth="322px"/></figure>
+
+      <para>The Virtuoso Server can make use of File Data Sources too.  This 
+      provides the usual associated conveniences.  These enable you to migrate 
+      a Virtuoso database to another machine hosting the same ODBC Driver, 
+      Virtuoso then has enough information to connect using the installed 
+      driver to a remote data source, the tables would not need to be 
+      relinked.  File DSN's are read from server's root directory.  File DSN's can 
+      only be read if this directory is contained in the Virtuoso INI file parameter 
+      DirsAllows.</para>
+
+      <note><title>Note:</title>
+      <para>Windows NT or 2000 services by default start as the LocalSystem 
+      special user account.  This account will not contain the same User DSNs 
+      as your own user.  The Virtuoso service can be started with other users 
+      but you must be aware of any possible system permission problems.  It is 
+      recommended that Virtuoso make use of System or File DSNs wherever 
+      possible.</para></note>
+
+
+		</sect3>
+
+   	<sect3 id="remotetables"><title>Remote Tables</title>
+			<para>
+			This page will allow you to manage the remote tables that are linked
+			into Virtuoso.  When the page opens you will be presented with two
+			tables.  The first table lists the tables that are already connected to
+			Virtuoso.  You can unlink these by selecting them and pressing the
+			unlink button.  The second table lists the Data Sources that are
+			available to Virtuoso to try and connect to and link tables from.</para>
+        <figure float="1"><title>Linking Tables from Remote Datasources</title>
+          <graphic fileref="ui/admrmttbls_01.jpg" width="545px" depth="295px"/></figure>
+			<para>
+			To link new tables into Virtuoso select the data source from the list.
+			If this data source has been used before then the existing authentication
+			details will automatically be provided.  Otherwise you will have to
+			provide these details in the username and password fields provided.
+			When you are ready press one of the buttons to list available Tables or
+			Tables &amp; Views.</para>
+			<para>
+			When the page returns you will be presented with a table of available
+			remote tables and optionally views.  If the connection fails then an
+			error will be returned to the top of the page instead.  You should be
+			able to link any of the listed tables or views into Virtuoso.  In order
+			for Virtuoso to be able to correctly query the underlying table it needs
+			to be able to uniquely identify each row (record) within the table or
+			view.  Tables should always be created with a primary key, and details
+			of which should be available from the data source.  With a primary key
+			available Virtuoso will be able to link the table in to the server easily.
+			In some cases and certainly in the case of views Virtuoso may not be
+			able to determine a primary key or what constitutes uniqueness in the
+			table.  On the right most column will be an action link to a page that
+			allows you to alter the primary key information about the table or view
+			that is to be linked.  Some primary key information is italized to indicate 
+			the explicit definition of a primary key.</para>
+			<para>
+			You will be required to enter primary key information for views before
+			they can be linked.</para>
+			<para>Select the tables that you want to link into the Virtuoso Server
+			by checking the check box on the left most column of the list for table
+			or view in question.  When you are ready press the <emphasis>Link
+			Selected</emphasis> button at the bottom of the page.</para>
+			<para>
+			Provided there are no errors the selected tables will be linked and
+			listed in the first list as Currently Linked.</para>
+		</sect3>
+
+     	<sect3 id="remoteprocedures"><title>Remote Procedures</title>
+			<para>
+			This page will allow you to manage the remote procedures that are linked
+			into Virtuoso.  When the page opens you will be presented with two
+			tables.  The first table lists the procedures that are already connected to
+			Virtuoso.  You can unlink these by selecting them and pressing the
+			<emphasis>Unlink</emphasis> button.  The second table lists the Data 
+      Sources that are available to Virtuoso to try and connect to and link 
+      stored procedures from.</para>
+
+        <figure float="1"><title>Linking Procedures from Remote Datasources</title>
+          <graphic fileref="ui/admrmtprocs001.jpg" width="561px" depth="245px"/></figure>
+
+      <para>To link new procedures into Virtuoso select the data source from 
+      the list.  If this data source has been used before then the existing 
+      authentication details will automatically be provided.  Otherwise you 
+      will have to provide these details in the username and password fields 
+      provided.  When you are ready press the <emphasis>List</emphasis> button.  
+      The page will next require you to select the catalog/owner combination 
+      to refine the search list of procedures on the remote datasource.  Use 
+      the drop-down to select relevant option and press <emphasis>List Selected</emphasis>
+      to list the available stored procedures.</para>
+
+        <figure float="1"><title>Linking Procedures from Remote Datasources</title>
+          <graphic fileref="ui/admrmtprocs002.jpg" width="307px" depth="66px"/></figure>
+
+      <para>When the page returns you will be presented with a list of 
+      available remote procedures.  You should be able to link any of the listed 
+      procedures into Virtuoso.</para>  
+
+        <figure float="1"><title>Linking Procedures from Remote Datasources</title>
+          <graphic fileref="ui/admrmtprocs003.jpg" width="383px" depth="145px"/></figure>
+
+      <para>Select the procedures that you want to link into the Virtuoso Server
+			by checking the check box on the left most column of the list for the 
+			procedure in question.  When you are ready press the <emphasis>Link
+			Selected</emphasis> button at the bottom of the page.</para>
+
+      <para>You will be presented with a new page that lists the procedures chosen 
+      and the data type information regarding them.  This gives you an opportunity  
+      to alter the  data type mappings that Virtuoso will use both internally and 
+      for any future interactions with the SOAP server.  If you do not want to
+      specify any special type information the details can be left as default.</para>
+
+        <figure float="1"><title>Linking Procedures from Remote Datasources</title>
+          <graphic fileref="ui/admrmtprocs004.jpg" width="553px" depth="260px"/></figure>
+
+      <para>For each remote procedure you have the option to change how they 
+      will be referenced within Virtuoso by making changes to the fields for 
+      <emphasis>Local Name</emphasis>, <emphasis>Database</emphasis>, and 
+      <emphasis>Schema</emphasis>.  These fields define how you will find the 
+      linked procedure locally to Virtuoso only and do not affect the remote 
+      data source.</para>
+      
+      <para>For each procedure there are radio buttons for selecting the 
+      <emphasis>PL Wrapper Requirements</emphasis>.  This option is of particular 
+      importance for remote procedures capable of returning a resultset.  Remote 
+      procedures can be linked using a Virtuoso PL wrapper meaning that Virtuoso 
+      procedure language code provides a mechanism for negotiating the result set.  
+      The available options are:</para>
+      <simplelist>
+        <member><emphasis>Soap Execution</emphasis> - Generates a PL wrapper 
+          that can be published to Web Services.</member>
+        <member><emphasis>SQL Execution</emphasis> - Generates a PL Wrapper 
+          that is more suitable for general SQL use.</member>
+        <member><emphasis>None</emphasis> - Does not generate and PL Wrapper 
+          code and simply links the procedure by reference.</member>
+      </simplelist>
+
+      <para>There is a description input box for you to write a description or 
+      comment for the linked procedure.  This comment will only be applicable to 
+      procedures that are linked using a PL Wrapper, and is only directly 
+      applicable for PL Wrappers for SOAP execution.</para>
+
+		</sect3>
+</sect2>
+
+ 	<sect2 id="eventscheduler"><title>Event Scheduler</title>
+		<para>
+		The Event Scheduler page allows you to view, edit and remove events that
+		can be scheduled to run from a particular time at a defined interval.</para>
+		<para>
+		To add a new scheduled event fill in the fields and press the add button.
+		Name is a unique name required to uniquely identify each event.  Start
+		Time is when the event will be run for the first time and takes the form
+		of a normal SQL timestamp value.  Interval is the length of time in minutes
+		to wait to run the event again.  SQL is a valid piece of SQL that you want
+		to schedule to run.</para>
+    <figure float="1"><title>Event Scheduler</title>
+      <graphic fileref="ui/admevt_01.jpg" width="644px" depth="386px"/></figure>
+		<para>
+		Events write possible error messages into the Virtuoso log file.</para>
+  </sect2>
+
+<!-- ################## dbpump ################ -->
+
+  <!-- sect2 id="dbpump"><title>DB Pump</title>
+    <sect3 id="dbpumpintro"><title>Introduction</title>
+    <para>DBPUMP is a reincarnation of the existing DBDUMP utility.  DBDUMP was
+		a RDBMS-independent application for managing data and schema within the
+		database for backup and restore purposes in particular.  Its successor now
+		incorporates a web based interface to make the
+		application more appealing to the end user.  Due to Virtuoso's extended support
+		DBPump has been updated to include the more uncommon data types and schema
+		features Virtuoso has to offer as well as all plain RDBMS features.  DBPUMP
+		has three parts:
+		</para>
+      <itemizedlist mark="bullet" spacing="compact">
+		    <listitem>Single command-line program with ability to be run via CGI</listitem>
+			<listitem>A set of VSP-pages to provide user interface for the mentioned program</listitem>
+			<listitem>A set of PL-SQL procedures in 'PUMP' qualifier to support interaction as above</listitem>
+		  </itemizedlist>
+	</sect3>
+    <sect3 id="dbpumppages"><title>VSP - Pages</title>
+    <para>Currently there are nine basic pages:</para>
+    <sect4 id="dbpumpdumppg"><title>Dump Page</title>
+      <para>enables you to make a dump of selected tables.</para>
+      <para><emphasis>Available Tables</emphasis> listbox provided a list of tables
+      which satisfy the filter conditions specified below</para>
+      <para><emphasis>Select All</emphasis> lets you select all available tables automatically</para>
+      <para><emphasis>Deselect All</emphasis> automatically releases all selected tables</para>
+      <para><emphasis>Filter</emphasis> lets you choose the type of filter you
+      require.  It has the following options:</para>
+
+      <simplelist>
+        <member><emphasis>none</emphasis> (default) all existing non-system tables will be available</member>
+        <member><emphasis>advanced</emphasis> advanced options will be used</member>
+        <member>all existing sub-schemas also will be represented</member>
+      </simplelist>
+
+      <para>The <emphasis>Advanced Filter</emphasis> button will direct you to the
+      Advanced Filter page.</para>
+      <para><emphasis>Dump Type</emphasis> allows you to define what should be
+      included in dump from the following options:</para>
+
+      <simplelist>
+        <member><emphasis>everything</emphasis> (default) all possible data will be saved</member>
+        <member><emphasis>schema-only</emphasis> will only dump the schema and ignore the data residing</member>
+        <member><emphasis>data-only</emphasis> only table data will be processed</member>
+        <member><emphasis>custom</emphasis> specifies that your settings from Dump Options will be used</member>
+      </simplelist>
+
+      <para><emphasis>More Options</emphasis> is where you can define which objects
+      should be processed during the dump.</para>
+      <para><emphasis>Sql-Binary</emphasis> lets you choose the type of dump required.
+      Sql type means plain sql text.  In some cases this can be inconvenient e.g.
+      when the table contains blobs which in any case will be dumped separately
+      with absolute path.  The binary type corresponds to dbpump's default binary format.</para>
+      <para><emphasis>Dump Directory</emphasis> dump location specified as a relative
+      path from the server's root directory to the root directory of dump.</para>
+      <para><emphasis>Browse</emphasis> lets you browse to the desired location</para>
+      <para><emphasis>Dump Name</emphasis> is the name of the dump file name, hence
+      'dump_1' will be converted to 'dump_1.dbk' and will reside in the specified directory</para>
+      <para><emphasis>Dump</emphasis> performs dump with current options.</para>
+      <para><emphasis>Restore Defaults</emphasis> restores default values of the page.</para>
+    </sect4>
+
+    <sect4 id="dbpumpfilteropt"><title>Filter Options</title>
+      <para>This page lets you set the filtering options such as:</para>
+      <para><emphasis>Match Qualifier</emphasis> (default &apos;%&apos;)lets
+      you define filter for qualifier as it would be used in SQL like operator.</para>
+      <para><emphasis>Match User</emphasis> filter based on table owner.</para>
+      <para><emphasis>Match Table</emphasis> filter based table name.</para>
+      <para><emphasis>Restore Defaults</emphasis> restores defaults.</para>
+      <para><emphasis>Apply</emphasis> saves above values.  If any of these values
+      is not equal to '%', this will change the value of parent's filter-type listbox
+      to 'Advanced'.</para>
+      <para><emphasis>Cancel</emphasis> discards changes.</para>
+    </sect4>
+
+    <sect4 id="dbpumpbrowsepg"><title>Browse</title>
+      <para>The Browse page allows you to select the path for objects to dump</para>
+      <para><emphasis>Directory Listing</emphasis> provides a tree-like list of
+      existing directory on the server root.</para>
+      <para>The root directory for dbpump's backup tree is the <emphasis>backup</emphasis>
+      directory found the server's root directory.  Directories with dbpump's
+      special extension '.dbk' are not taken into account.</para>
+      <para><emphasis>Dir Content</emphasis> shows the current dumps stored in the
+      current directory.  The dump itself is a subtree, of which the root directory
+      has the extension .dbk.  The list shows the dump name and its creation
+      date and time.</para>
+      <para><emphasis>Current Directory</emphasis> displays the current dump
+      directory</para>
+      <para><emphasis>Change Directory</emphasis> will refresh the content of
+      selected directory.  To change your current directory select it in
+      <emphasis>Directory Listing</emphasis> and press this <emphasis>Change
+      Directory</emphasis> button.</para>
+      <para><emphasis>Directory Listing</emphasis> lets you choose what to view
+      in the Dir Content listbox.  Possible values are:</para>
+
+      <simplelist>
+        <member><emphasis>Schema</emphasis> lists schema dumps only</member>
+        <member><emphasis>Data</emphasis> displays table data dumps only</member>
+        <member><emphasis>Both</emphasis> (default) will display both types.</member>
+      </simplelist>
+
+      <para><emphasis>Show Manifest</emphasis> will open a new window of the
+      Dump's Manifest.  The Manifest is an xml file placed in dump's root directory
+      containing information about its content with name of creator and creationg date/time.
+      The Manifest window will display an appropriate transformation rather than raw XML.</para>
+      <para><emphasis>Select</emphasis> saves the actual value of Current Dir and passes
+      it to Dump Page</para>
+    </sect4>
+
+    <sect4 id="dbpumpadvdmpopt"><title>Advanced Dump Options</title>
+      <para>The Advanced Dump Options page allows you to select objects to dump</para>
+      <para><emphasis>Dump Type</emphasis> displays the dump type as in the prior page.</para>
+      <para><emphasis>Table Definitions</emphasis> checkbox instructs DBPUMP to
+      output table definitions.  This only applies to plain SQL dumps.</para>
+      <para><emphasis>Triggers</emphasis> checkbox indicates whether to include trigger
+      bodies in the dump.</para>
+      <para><emphasis>Stored Procedures</emphasis> checkbox for including stored procedures
+      in the dump.</para>
+      <para><emphasis>Constraints</emphasis> checkbox for including constraints such as
+      indices, procedures ... in the dump.</para>
+      <para><emphasis>FK Constraints</emphasis> includes foreign key constraint
+      information in dump.</para>
+      <para><emphasis>Views</emphasis> includes view declarations.</para>
+      <para><emphasis>Users</emphasis> includes users.</para>
+      <para><emphasis>Grants</emphasis> includes grants.</para>
+      <para><emphasis>Table Data</emphasis> includes the data within the tables selected.</para>
+      <para><emphasis>Insert Mode</emphasis> defines the method for returning
+      the data to the database during a restore.  Possible options are:</para>
+
+      <simplelist>
+        <member><emphasis>Regular</emphasis> corresponds to &apos;insert into ...&apos;</member>
+        <member><emphasis>Soft</emphasis> corresponds to &apos;insert soft into ...&apos;</member>
+        <member><emphasis>Replacing</emphasis> corresponds to &apos;insert replacing ...&apos;</member>
+      </simplelist>
+
+      <para><emphasis>Change Qualifier</emphasis> when checked all qualifiers in saved
+      data will be changed to pointed.</para>
+      <para><emphasis>Change User</emphasis> when checked all owners in saved data
+      will be changed to pointed. </para>
+      <para><emphasis>Restore</emphasis> restores the default values of the page.</para>
+      <para><emphasis>Apply</emphasis> saves page values.</para>
+      <para><emphasis>Cancel</emphasis> discards changes to the page.</para>
+    </sect4>
+
+    <sect4 id="dbpumprestore"><title>Restore</title>
+      <para>The Restore page lets you restore previously dumped data</para>
+
+      <para><emphasis>Directory Listing</emphasis>this is the same as in 'Browse' page tree-like list of existing folders on server root.
+The root folder for dbpump's backup tree is also 'backup'.
+Folders with dbpump's special extension '.dbk' are not been taken into account.</para>
+      <para><emphasis>Dir Content</emphasis>here you can see a list of dumps placed in current folder.</para>
+      <para><emphasis>Current Directory</emphasis>this is the same as 'Dump Directory' in 'Dump Page'.
+The value of this field will be changed with every click in 'Directory Listing'</para>
+      <para><emphasis>Change Directory</emphasis> will refresh the content of
+      selected directory.  To change your current directory select it in
+      <emphasis>Directory Listing</emphasis> and press this <emphasis>Change
+      Directory</emphasis> button.</para>
+      <para><emphasis>Directory Listing</emphasis> lets you choose what to view
+      in the Dir Content listbox.  Possible values are:</para>
+
+      <simplelist>
+        <member><emphasis>Schema</emphasis> lists schema dumps only</member>
+        <member><emphasis>Data</emphasis> displays table data dumps only</member>
+        <member><emphasis>Both</emphasis> (default) will display both types.</member>
+      </simplelist>
+
+      <para><emphasis>Show Manifest</emphasis> will open a new window of the
+      Dump's Manifest.  The Manifest is an XML file placed in dump's root directory
+      containing information about its content with name of creator and creation date/time.
+      The Manifest window will display an appropriate transformation rather than raw XML.</para>
+      <para><emphasis>Select</emphasis> saves the actual value of Current Dir and passes
+      it to Dump Page</para>
+      <para><emphasis>More Options</emphasis> goes to the Advanced Restore Options page.</para>
+      <para><emphasis>Restore</emphasis> starts the restoration.</para>
+    </sect4>
+
+    <sect4 id="dbpumpadvrestoreopt"><title>Advanced Restore Options</title>
+      <para>The Advanced Restore Options page lets you change some aspects of
+      the restoration process.</para>
+      <para><emphasis>Restore Users</emphasis> includes users.</para>
+      <para><emphasis>Grants</emphasis> includes grants.</para>
+      <para><emphasis>Table Data</emphasis> includes the data within the tables selected.</para>
+      <para><emphasis>Insert Mode</emphasis> defines the method for returning
+      the data to the database during a restore.  Possible options are:</para>
+
+      <simplelist>
+        <member><emphasis>Regular</emphasis> (default) corresponds to &apos;insert into ...&apos;</member>
+        <member><emphasis>Soft</emphasis> corresponds to &apos;insert soft into ...&apos;</member>
+        <member><emphasis>Replacing</emphasis> corresponds to &apos;insert replacing ...&apos;</member>
+      </simplelist>
+
+      <para><emphasis></emphasis></para>
+
+      <para><emphasis>Change Qualifier</emphasis> when checked all qualifiers in saved
+      data will be changed to pointed.</para>
+      <para><emphasis>Change User</emphasis> when checked all owners in saved data
+      will be changed to pointed. </para>
+      <para><emphasis>Apply</emphasis> saves page values.</para>
+      <para><emphasis>Cancel</emphasis> discards changes to the page.</para>
+    </sect4>
+
+    <sect4 id="dbpumppasswdpg"><title>Password Page</title>
+      <para>You will arrive at this page from the Dump and Restore pages when you
+      try to dump or restore respectively.</para>
+      <para><emphasis>User</emphasis> the user name.</para>
+      <para><emphasis>Password</emphasis> the password from that user.</para>
+      <para><emphasis>Start</emphasis> to begin the operation.</para>
+    </sect4>
+
+    <sect4 id="dbpumpdumpres"><title>Tables Dump Results</title>
+      <para>The Tables Dump Results page displays the results of the last
+      dump.  The <emphasis>OK</emphasis> button returns you back to the Dump
+      page.</para>
+    </sect4>
+
+    <sect4 id="dbpumptabrestres"><title>Tables Restore Results</title>
+      <para>The Tables Restore Results page displays the results of the last restore
+      including the output from the stderr of isql.  The <emphasis>OK</emphasis>
+      button will return you to the restore page.</para>
+    </sect4>
+  </sect3>
+
+  <sect3 id="activities"><title>Example scenarios.</title>
+    <sect4 id="savingschema"><title>Saving Schema</title>
+      <itemizedlist mark="bullet" spacing="compact">
+        <listitem>Go to 'Dump' page</listitem>
+        <listitem>Press 'More Options</listitem>
+        <listitem>Select 'Dump Type' = 'Schema only'</listitem>
+        <listitem>Press 'Apply'</listitem>
+        <listitem>Press 'Dump' button and confirm your action</listitem>
+        <listitem>Enter password and press 'Start'</listitem>
+        <listitem>Press 'OK' button after getting results</listitem>
+      </itemizedlist>
+    </sect4>
+    <sect4 id="dumpingtables"><title>Dumping Tables</title>
+      <itemizedlist mark="bullet" spacing="compact">
+        <listitem>Go to 'Dump' page</listitem>
+        <listitem>Press 'More Options'</listitem>
+        <listitem>Select 'Dump Type' = 'Data only'</listitem>
+        <listitem>Press 'Apply'</listitem>
+        <listitem>Select 'UDDI' in 'Filter' listbox</listitem>
+        <listitem>Press 'Dump' button and confirm your action</listitem>
+        <listitem>Enter password and press 'Start'</listitem>
+        <listitem>Press 'OK' button after getting results</listitem>
+      </itemizedlist>
+    </sect4>
+    <sect4 id="restoreschemadata"><title>Restoring Schema and Data</title>
+      <itemizedlist mark="bullet" spacing="compact">
+        <listitem>Go to 'Restore' page</listitem>
+        <listitem>Define restore directory where you have stored schema (tables),
+        you can ensure that by selecting interesting dump in listbox and
+        pressing 'Show manifest'.</listitem>
+        <listitem>Press 'Restore' button</listitem>
+        <listitem>Enter password and press 'Start'</listitem>
+        <listitem>Press 'OK' button after getting results</listitem>
+      </itemizedlist>
+    </sect4>
+  </sect3>
+</sect2 -->
+
+    <sect2 id="virtiniadm"><title>Virtuoso Configuration Editor</title>
+        <figure float="1"><title>Virtuoso (virtuoso.ini) Configuration File Editor</title>
+          <graphic fileref="ui/db_strtp_01.jpg" width="616px" depth="321px"/></figure>
+
+         <figure float="1"><title>Virtuoso (virtuoso.ini) Configuration File Editor</title>
+          <graphic fileref="ui/db_strtp_02.jpg" width="621px" depth="530px"/></figure>
+
+        <figure float="1"><title>Virtuoso (virtuoso.ini) Configuration File Editor</title>
+          <graphic fileref="ui/db_strtp_03.jpg" width="632px" depth="389px"/></figure>
+
+        <figure float="1"><title>Virtuoso (virtuoso.ini) Configuration File Editor</title>
+          <graphic fileref="ui/db_strtp_04.jpg" width="593px" depth="312px"/></figure>
+
+        <figure float="1"><title>Virtuoso (virtuoso.ini) Configuration File Editor</title>
+          <graphic fileref="ui/db_strtp_05.jpg" width="611px" depth="317px"/></figure>
+
+        <figure float="1"><title>Virtuoso (virtuoso.ini) Configuration File Editor</title>
+          <graphic fileref="ui/db_strtp_06.jpg" width="604px" depth="313px"/></figure>
+
+        <figure float="1"><title>Virtuoso (virtuoso.ini) Configuration File Editor</title>
+          <graphic fileref="ui/db_strtp_07.jpg" width="599px" depth="316px"/></figure>
+
+   </sect2>
+
+      	<sect2 id="statistics"><title>Statistics</title>
+		<para>The Statistics menu item consists of a collection of pages which provide statistical information about
+your Virtuoso server.  These include general licensing information, locking, webserver hits statistics and more.
+</para>
+        <!-- not part of admin ui any more
+        figure float="1"><title>Statistics - Audit Trail</title>
+          <graphic fileref="ui/sts_audit_01.jpg" width="615px" depth="463px"/></figure -->
+
+        <figure float="1"><title>Statistics - Disk Usage</title>
+          <graphic fileref="ui/sts_dsk_01.jpg" width="620px" depth="321px"/></figure>
+
+        <figure float="1"><title>Statistics - General Information</title>
+          <graphic fileref="ui/sts_gen_01.jpg" width="659px" depth="785px"/></figure>
+
+        <figure float="1"><title>Statistics - HTTP Usage</title>
+          <graphic fileref="ui/sts_httpsvr_01.jpg" width="528px" depth="256px"/></figure>
+
+        <figure float="1"><title>Statistics - Index Usage</title>
+          <graphic fileref="ui/sts_idx_01.jpg" width="659px" depth="379px"/></figure>
+
+        <figure float="1"><title>Statistics - Lock Status</title>
+          <graphic fileref="ui/sts_lck_01.jpg" width="552px" depth="124px"/></figure>
+
+        <figure float="1"><title>Statistics - Profiling</title>
+          <graphic fileref="ui/sts_profile_01.jpg" width="482px" depth="192px"/></figure>
+
+		</sect2>
+
+</sect1>

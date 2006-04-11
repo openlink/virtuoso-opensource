@@ -1,0 +1,228 @@
+<!-- -*- html -*- -->
+<?vsp
+  declare userid, haveroot int;
+  adm_pre_page(lines);
+
+  if (1 <> (userid := adm_dav_check_auth (lines)))
+    {
+      http_request_status ('HTTP/1.1 401 Unauthorized');
+      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+          'Access to page is forbidden.</BODY></HTML>'));
+      return (0);
+    }
+  haveroot := 1;
+  if ({?'delete'} is not null)
+    {
+      delete from SYS_BLOGS where B_BLOG_ID = {?'bid'};
+      delete from SYS_BLOG_INFO where BI_BLOG_ID = {?'bid'};
+    }
+  if ({?'gener'} is not null)
+    {
+      insert soft
+      SYS_BLOG_INFO (BI_BLOG_ID, BI_OWNER, BI_HOME, BI_TITLE, BI_COPYRIGHTS, BI_DISCLAIMER, BI_ABOUT, BI_E_MAIL)
+      values ('*weblog-root*', http_dav_uid (), '/blog/', 'Welcome', '', '', 'Virtuoso Weblog', '');
+      BLOG_WWWROOT ();
+      if (not exists (select 1 from HTTP_PATH where HP_LPATH = '/RPC2' and HP_HOST = '*ini*'))
+	{
+	  declare bapi, i, l any;
+	  declare grant_stmt, gst, gmsg varchar;
+
+	  VHOST_DEFINE (lpath=>'/RPC2', ppath=>'/SOAP/', soap_user=>'MT', soap_opts=>vector ('XML-RPC', 'yes'));
+	  bapi := "mt.supportedMethods" ();
+          i := 0; l := length (bapi);
+ 	  while (i < l)
+	    {
+	      grant_stmt := 'grant execute on "'||bapi[i]||'" to "MT"';
+	      gst := '00000';
+	      exec (grant_stmt, gst, gmsg);
+	      i := i + 1;
+	    }
+	}
+      registry_set ('BLOG_CURRENT_REVISION_ID', BLOG_GET_CURRENT_REVISION_ID ());
+    }
+  if ({?'gener_rpc'} is not null)
+    {
+      if (not exists (select 1 from HTTP_PATH where HP_LPATH = '/RPC2' and HP_HOST = '*ini*'))
+	{
+	  declare bapi, i, l any;
+	  declare grant_stmt, gst, gmsg varchar;
+
+	  VHOST_DEFINE (lpath=>'/RPC2', ppath=>'/SOAP/', soap_user=>'MT', soap_opts=>vector ('XML-RPC', 'yes'));
+	  bapi := "mt.supportedMethods" ();
+          i := 0; l := length (bapi);
+ 	  while (i < l)
+	    {
+	      grant_stmt := 'grant execute on "'||bapi[i]||'" to "MT"';
+	      gst := '00000';
+	      exec (grant_stmt, gst, gmsg);
+	      i := i + 1;
+	    }
+	}
+    }
+  if ({?'upg'} is not null)
+    {
+      declare idx integer;
+      declare _bid varchar;
+      idx := 0;
+      while (_bid := adm_next_checkbox ('CB_', params, idx))
+	{
+	  declare dretr int;
+	  declare fold, own, rc any;
+
+ 	  dretr := 100;
+	  declare exit handler for sqlstate '40001'
+	   {
+             dretr := dretr - 1;
+	     if (dretr < 0)
+               resignal;
+	     rollback work;
+             goto again_upd;
+           };
+	  --dbg_obj_print ('upgrading ', _bid);
+	  again_upd:;
+	  whenever not found goto nextb;
+	  select BI_P_HOME, BI_OWNER into fold, own from SYS_BLOG_INFO where BI_BLOG_ID = _bid
+			with (prefetch 1, exclusive);
+	  if (_bid = '*weblog-root*')
+            {
+	      BLOG_WWWROOT ();
+	      registry_set ('BLOG_CURRENT_REVISION_ID', BLOG_GET_CURRENT_REVISION_ID ());
+            }
+	  else
+	    {
+	      rc := DAV_PROP_SET_INT (fold, 'Weblog version', '', null, null, 0);
+	      BLOG_HOME_CREATE (own);
+	    }
+nextb:;
+	  commit work;
+	}
+    }
+  if ({?'upgrade'} is not null)
+    {
+      if ({?'bid'} = '*weblog-root*')
+        {
+          BLOG_WWWROOT ();
+	  registry_set ('BLOG_CURRENT_REVISION_ID', BLOG_GET_CURRENT_REVISION_ID ());
+	}
+      else
+	{
+	  declare fold any;
+	  fold := (select BI_P_HOME from SYS_BLOG_INFO where BI_BLOG_ID = {?'bid'});
+	  DAV_PROP_SET_INT (fold, 'Weblog version', '', null, null, 0);
+          BLOG_HOME_CREATE (atoi ({?'upgrade'}));
+	}
+    }
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>BLOG Administration</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="BLOG Management for Virtuoso DB">
+    <script language="javascript" src="../admin_utils.js"></script>
+  </head>
+<?vsp adm_page_header('BLOG Administration', ''); ?>
+
+<form method="post" name="f1" action="admin_blog.vsp" >
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="5">BLOGs</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+            <tr>
+	      <TD class="genlistheadt"><input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)"></TD>
+		<th class="genlistheadt" colspan="1">Blog ID</th>
+		<th class="genlistheadt" colspan="1">Blog Owner</th>
+		<th class="genlistheadt">Action</th>
+             </tr>
+<?vsp
+   for
+	select BI_BLOG_ID as B_BLOG_ID, coalesce (U_FULL_NAME, U_NAME) as B_NAME, BI_HOME, BI_OWNER
+		from SYS_BLOG_INFO, SYS_USERS
+		where BI_OWNER = U_ID
+   	order by 1 do
+      {
+?>
+       <TR>
+       	 <td CLASS="gendata"><input type="checkbox" name="CB_<?=B_BLOG_ID?>"></td>
+         <TD class="gendata" colspan="1"><?=B_BLOG_ID?></TD>
+         <TD class="gendata" colspan="1"><?=B_NAME?></TD>
+         <TD class="gendata">
+	    <a href="admin_blog_1.vsp?akey=akey&bid=<?=B_BLOG_ID?>">Edit</a>
+	    <a href="admin_blog_2.vsp?bid=<?=B_BLOG_ID?>">Settings</a>
+	    <!--a href="admin_blog_category.vsp?bid=<?=B_BLOG_ID?>">Categories</a>
+	    <a href="admin_blog_channel.vsp?bid=<?=B_BLOG_ID?>">Channels</a-->
+	    <a href="admin_blog.vsp?akey=akey&bid=<?=B_BLOG_ID?>&delete">Remove</a>
+	    <?vsp
+
+	     if (1)
+	       {
+	    ?>
+	    <a href="admin_blog.vsp?akey=akey&bid=<?=B_BLOG_ID?>&upgrade=<?=BI_OWNER?>">Upgrade</a>
+            <?vsp
+	       }
+	    ?>
+	 </TD>
+       </TR>
+<?vsp
+      }
+?>
+      <TR>
+         <TD class="gendata" colspan="3"></TD>
+         <TD class="gendata">
+	 <input type="submit" name="upg" value="Upgrade selected" />
+         </form>
+<?vsp if (exists (select 1 from SYS_USERS where U_DAV_ENABLE = 1 and not exists (select 1 from SYS_BLOG_INFO where BI_OWNER = U_ID))) { ?>
+         <form method="POST" action="admin_blog_3.vsp">
+	 	<input type="submit" name="add" value="Add New" />
+	 </form>
+<?vsp } ?>
+          <a href="admin_blog_ping_hosts.vsp">Configure ping hosts</a><br>
+          <a href="admin_blog_search_eng.vsp">Configure Search Engines</a><br>
+          <a href="admin_blog_mail_gw.vsp">Configure comments via E-mail</a>
+  	 </TD>
+      </TR>
+	    <?vsp
+
+	     if (not exists (select 1 from SYS_BLOG_INFO where BI_BLOG_ID = '*weblog-root*'))
+	       {
+	    ?>
+      <TR>
+         <form method="POST" action="admin_blog.vsp">
+         <TD class="gendata" colspan="2"></TD>
+         <TD class="gendata"><input type="submit" name="gener" value="Generate WebSite Pages" /></TD>
+	 </form>
+      </TR>
+            <?vsp
+ 		  haveroot := 0;
+	       }
+	    ?>
+      <?vsp
+      if (not exists (select 1 from HTTP_PATH where HP_LPATH = '/RPC2' and HP_HOST = '*ini*'))
+        {
+      ?>
+      <TR>
+         <form method="POST" action="admin_blog.vsp">
+         <TD class="gendata" colspan="2"></TD>
+         <TD class="gendata"><input type="submit" name="gener_rpc" value="Create default XMLRPC endpoint" /></TD>
+	 </form>
+      </TR>
+      <?vsp
+        }
+      ?>
+</TABLE>
+<?vsp if (haveroot and BLOG_GET_CURRENT_REVISION_ID () <> registry_get ('BLOG_CURRENT_REVISION_ID')) { ?>
+<div>
+<p align=left ><i>Note: There is a newer version of the BLOG pages inside the current server binary.<BR>
+Please upgrade the appropriate BLOGS.</i></p>
+</div>
+<?vsp } ?>
+
+<?vsp adm_page_footer(); ?>
+</html>
+

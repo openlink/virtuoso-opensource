@@ -1,0 +1,279 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!-- $Id$ -->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="vad_main_page"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Virtuoso Conductor: Package Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="upl_file" type="varchar" default="null" persist="temp" />
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Virtuoso Application Deployment"/>
+    </vm:menu>
+    <vm:header caption="VAD installed packages"/>
+    <vm:pagebody>
+      <v:on-init><![CDATA[
+	declare pos, mode int;
+	declare ses, bh any;
+
+	mode := atoi(get_keyword('choice_source', params, '-1'));
+	if (mode = 0 and e.ve_is_post and e.ve_button is not null and e.ve_button.vc_name = 'upl_btn')
+	{
+	  pos := position ('package_path1', params);
+	  if (pos)
+	    {
+	      declare i, ret integer;
+	      declare tmp_name, path varchar;
+
+	      ses := aref_set_0 (params, pos);
+	      tmp_name := '';
+	      while (i < 20)
+                {
+                  tmp_name := sprintf('%s%d', tmp_name, rnd(10));
+                  i := i + 1;
+                }
+	      path := concat('/DAV/temp/', tmp_name, '.vad');
+	      if (ses is not null and length (ses))
+	        {
+		  set isolation='repeatable';
+		  connection_set ('vspx_user', 'dav');
+		  YACUTIA_DAV_COL_CREATE('/DAV/temp/', '111101101N', 'dav', 'administrators');
+		  ret := DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, ses, '', '111101101N', 'dav', 'administrators', now(), now(), null);
+		  connection_set ('vspx_user', null);
+		  if (ret < 0)
+		    {
+		      rollback work;
+		      self.vc_is_valid := 0;
+		      self.vc_error_message := DAV_PERROR (ret);
+		    }
+		  else
+		    {
+--		      dbg_obj_print(path, (select length (RES_CONTENT) FROM WS.WS.SYS_DAV_RES WHERE RES_FULL_PATH = path));
+		      self.upl_file := path;
+		    }
+	        }
+	    }
+	}
+      ]]></v:on-init>
+      <v:after-data-bind><![CDATA[
+        if (length (self.sid) = 0)
+	  {
+	    rollback work;
+	  }
+       ]]></v:after-data-bind>
+      <table class="listing" rules="groups">
+        <colgroup/><colgroup/><colgroup/><colgroup/>
+        <v:data-set name="ds_items1"  data="--VAD.DBA.VAD_GET_PACKAGES ()" meta="--db.dba.vad_packages_meta ()" nrows="0" scrollable="1">
+          <v:template name="header11" type="simple">
+            <thead>
+              <tr class="listing_header_row">
+                <th>Name</th>
+                <th>Version Date</th>
+                <th>Version</th>
+                <th>Last Update</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+          </v:template>
+          <v:template name="rows1" type="repeat">
+            <v:template type="if-not-exists" name="ds_items1_if_not_exists_template">
+                <tr class="listing_row_even">
+                  <td align="center" colspan="9">
+                    <b>No packages are installed</b>
+                  </td>
+                </tr>
+            </v:template>
+            <v:template name="template41" type="browse" >
+              <tr class="<?V case when mod (control.te_ctr, 2) = 0 then 'listing_row_even' else 'listing_row_odd' end ?>">
+                  <td class="listing_col">
+                    <?V (control as vspx_row_template).te_rowset[1] ?>
+                  </td>
+                  <td class="listing_col">
+                    <?V (control as vspx_row_template).te_rowset[3] ?>
+                  </td>
+                  <td class="listing_col">
+                    <?V (control as vspx_row_template).te_rowset[2] ?>
+                  </td>
+                  <td class="listing_col">
+                    <?V (control as vspx_row_template).te_rowset[4] ?>
+                  </td>
+                  <td class="listing_col_action">
+		    <v:button action="simple" style="image" name="delete1"
+		      value="images/icons/del_16.png"
+		      url="--concat('vad_remove.vspx?name=', encode_base64 (serialize (concat((control.vc_parent as vspx_row_template).te_rowset[1], '/', (control.vc_parent as vspx_row_template).te_rowset[2]))))"
+		      xhtml_alt="Uninstall"
+		      xhtml_title="Uninstall"
+		      text="&#160;Uninstall"
+		      >
+                      <v:before-render>
+                        <![CDATA[
+                          declare fullname varchar;
+                          fullname := concat((control.vc_parent as vspx_row_template).te_rowset[1], '/', (control.vc_parent as vspx_row_template).te_rowset[2]);
+                          declare exit handler for sqlstate '*VAD'
+                          {
+                            control.vc_enabled := 0;
+                          };
+                          fullname := DB.DBA.VAD_CHECK_UNINSTALLABILITY(fullname);
+                        ]]>
+                      </v:before-render>
+                    </v:button>
+		    <v:button action="simple" style="image" name="confg1" url="--'vad_wa_config.vspx'"
+		      value="images/icons/confg_16.png"
+		      xhtml_alt="Configure"
+		      xhtml_title="Configure"
+		      text="&#160;Configure"
+		      >
+                      <v:on-init>
+                        <![CDATA[
+                          if ((control.vc_parent as vspx_row_template).te_rowset[1] <> 'wa')
+                            control.vc_enabled := 0;
+                        ]]>
+                      </v:on-init>
+                    </v:button>
+                  </td>
+                </tr>
+            </v:template>
+          </v:template>
+          <v:template name="template31" type="simple">
+              <tr>
+                <td colspan="2" align="center"  class="listing_col_action">
+		  <vm:ds-navigation data-set="ds_items1"/>
+                </td>
+              </tr>
+          </v:template>
+        </v:data-set>
+      </table>
+
+      <v:form name="inx_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+        <h3>Install package</h3>
+        <table class="ctl_grp">
+          <tr class="ctl_grp_title">
+            <th>Install from</th>
+          </tr>
+          <tr>
+            <td>
+	      <v:radio-button name="rb_upload" xhtml_id="rb_upload" value="0" group-name="choice_source"
+		auto-submit="1"
+		initial-checked="1"/>
+              <label for="rb_upload">Upload package</label>
+            </td>
+	    <td>
+	      <?vsp if (self.rb_upload.ufl_selected or not self.vc_event.ve_is_post) { ?>
+	      <input type="file" name="package_path1" size="70"></input>
+	      <?vsp } ?>
+            </td>
+          </tr>
+          <tr>
+            <td>
+	      <v:radio-button name="rb_dav" xhtml_id="rb_dav" value="1" group-name="choice_source"
+		auto-submit="1"
+		/>
+              <label for="rb_dav">DAV resource</label>
+            </td>
+            <td>
+	      <?vsp if (self.rb_dav.ufl_selected) { ?>
+              <v:text name="package_path" xhtml_size="70"/>
+              <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="package_path"/>
+	      <?vsp }  ?>
+            </td>
+          </tr>
+          <tr>
+            <td>
+	      <v:radio-button name="rb_fs" xhtml_id="rb_fs" value="2" group-name="choice_source"
+		auto-submit="1"
+		/>
+              <label for="rb_fs">Server-side file</label>
+            </td>
+            <td>
+	      <?vsp if (self.rb_fs.ufl_selected) { ?>
+              <v:text name="fs_package_path" xhtml_size="70"/>
+              <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.vad" path="DAV" browse_type="res" w_title="File Browser" title="File Browser" lang="en" return_box="fs_package_path"/>
+	      <?vsp } ?>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <v:button action="simple" value="Proceed" name="upl_btn">
+                <v:on-post>
+                  <![CDATA[
+                    declare mode, path, tmp_name varchar;
+                    declare _file any;
+                    declare ret integer;
+
+		    if (self.vc_is_valid = 0)
+		      return;
+
+                    path := '';
+                    mode := atoi(get_keyword('choice_source', control.vc_page.vc_event.ve_params));
+                    if (mode = 0)
+                    {
+		      if (self.upl_file is not null)
+                      {
+		          path := self.upl_file;
+			  commit work;
+--			  dbg_obj_print(path, coalesce ((select length (RES_CONTENT) FROM WS.WS.SYS_DAV_RES WHERE RES_FULL_PATH = path), 'Not found'));
+                      }
+		      else
+		        {
+			  rollback work;
+		          self.vc_is_valid := 0;
+			  self.vc_error_message := 'The file does not exists or it is empty.';
+			  return;
+	                }
+                    }
+                    else if (mode = 1)
+                    {
+                      path := get_keyword('package_path', control.vc_page.vc_event.ve_params);
+                    }
+                    else if (mode = 2)
+                    {
+                      path := get_keyword('fs_package_path', control.vc_page.vc_event.ve_params);
+                    }
+                    if (path = '' or path is null)
+                    {
+                      self.vc_error_message := 'Please, enter correct path';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    --dbg_obj_print((select RES_NAME FROM WS.WS.SYS_DAV_RES WHERE RES_ID = ret));
+                    http_request_status ('HTTP/1.1 302 Found');
+		    http_header (sprintf ('Location: vad_install.vspx?sid=%s&realm=%s&path=%s&mode=%d\r\n',
+		       self.sid, self.realm, encode_base64(serialize(path)), case when mode = 2 then 0 else 1 end));
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+    <table style="display:none"><tr><td>$Id$</td></tr></table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

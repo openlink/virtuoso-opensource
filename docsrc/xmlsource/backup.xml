@@ -1,0 +1,571 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="backup"><title>Data Backup &amp; Recovery</title>
+
+  <para>Administering a database involves taking backups and having a readiness
+  to recover from backups and subsequent transaction logs.</para>
+
+  <para>Backups can be taken in two principal ways:</para>
+	<simplelist>
+	  <member>Using the Virtuoso backup function/procedures.</member>
+		<member>Copying the database files.</member>
+  </simplelist>
+
+  <para>The Virtuoso backup functions can be used from any client directly, such
+  as ISQL.  It is possible, and perhaps preferable, to create stored procedures
+  for performing the backup functions and scheduling these with the Virtuoso
+  scheduler.</para>
+
+  <para>The actual database file(s) can be copied while the database is running
+  so long as no checkpoint is made during the copy process.  Checkpointing can
+  be disabled for this, but make sure it is re-enabled after the backup has been
+  made.</para>
+
+  <para>Making a full backup of a large database can take several hours if not
+  days just due to the speed of tapes or local area networks.  Full backups
+  must in all cases be done without an intervening checkpoint.  This is why
+  frequent full backups are not desirable.  To ensure the possibility of full
+  recovery one must have the complete set of transaction logs (audit trail log)
+  since the last  backup.</para>
+
+  <para>Restarting the database after restoring backed up files will show the
+  state in effect since the last checkpoint preceding the backup.  Any
+  transaction log files made after the point of backup can be replayed to bring
+  the state up to the last recorded transaction.</para>
+
+
+  <!-- ======================================== -->
+	<sect2 id="BACKUP_AUDIT">
+		<title>Log Audit Trail</title>
+
+    <para>Virtuoso can maintain a transaction audit trail.  This is enabled using
+    the <link linkend="checkpointAuditTrail">CheckpointAuditTrail</link> setting
+    in the virtuoso.ini file.  When this setting is non-zero, Virtuoso will
+    begin a new transaction log after each checkpoint.  Thus one automatically gets
+    a full, unbroken sequence of transaction logs for the entire age of the database.
+    These logs are named as specified in virtuoso.ini and are suffixed with their creation
+    time.</para>
+
+
+
+    <para>Transaction logs older than the log that was current at the time of the
+    last  backup are superfluous for recovery, since their transactions were
+    checkpointed before the backup started.  Transactions of the log current at
+    the time of the backup are NOT in the backed up state since they were not
+    checkpointed, i.e. written into the read-only section of the database containing the data being backed up.</para>
+    <para>We strongly advise having the CheckpointAuditTrail enabled in any
+    production environment.</para>
+
+		<para>It is good practice to have at least two generations of full backup,
+    since the last backup may contain errors that were not known at the time of
+    its making.  If such precaution is taken then only transactions logs older than
+    the oldest backup  are safe to remove.  If we needed to recover from the oldest
+    backup for any reason we would require all audit transaction logs created during
+    and after that backup.</para>
+
+    <para>A Virtuoso database can be restored from the last full backup and
+    all Audit Trail transaction files created during and after the backup.  You
+    would need to start the database as normal with the backup version of the
+    database file.  Once the database has been started, connect using iSQL.
+    You can then use the <link linkend="fn_replay">replay()</link> function to
+    replay the transaction files up to the required point.  It is vital that
+    these files are replayed in the correct order.</para>
+  </sect2>
+
+  <sect2 id="onlinebackups"><title>On-Line Backups</title>
+
+  <sect3 id="usingbackuponline"><title>Backup Using Backup_Online()</title>
+
+  <para>Virtuoso is capable of performing online backups so that normal database
+  operation does not have to be disrupted in order to take backups.
+  The <link linkend="fn_backup_online"><function>backup_online()</function></link>
+  can be used to backup the database in the state effective at the last checkpoint
+  to a series of backup files.</para>
+
+  <para><link linkend="fn_backup_online"><function>backup_online
+  <paramdef><parameter>file_prefix</parameter></paramdef>
+  <paramdef><parameter>pages</parameter></paramdef>
+  <paramdef><optional><parameter>timout</parameter></optional></paramdef>
+  <paramdef><optional><parameter>dirst</parameter></optional></paramdef>
+  </function></link></para>
+
+  <para>
+
+The database storage is divided into a checkpoint space that is a read
+only image from the time of the last checkpoint and thus can be safely
+backed up anytime between checkpoints and the commit space where
+updates subsequent to the last checkpoint data are stored.
+Additionlly, the database records what pages have changed since the
+last checkpoint every time new checkpoint is made.  This change
+tracking makes it possible to make incremental backups.  The first
+time the backup_online function is called, it saves a compressed copy
+of the then current checkpoint state into one or more files.  The next
+time it is called, it will write the changes that have come into the
+checkpoint space since the last time backup_online was called.  It is
+possible to erase the change tracking data with the
+backup_context_clear function.  The bext call to backup_online will
+then make a full backup.  Files generated by one or more calls to
+backup_online without intervening backup_context_clear form a series
+with distinct serial numbers and will be restored together.  In order
+to restore such files, the administrator must delete the previous
+database files and start the server with a special flag and indicate
+the location of the backup files.  This will bring the database to the
+state corresponding to the state as of the checkpoint imediately
+preceding the last call to backup_online, i.e. the one tht wrote the
+newest of the backup files being restored.  To restore onwards from
+this state, the administrator must replay transaction logs, starting
+with the log that was current when the last call to backup_online was
+made.  In order to preserve all such logs, ne must run with the
+CheckpointAuditTrail ini paramater set to 1.
+
+
+</para>
+
+  <para>A database checkpoint cannnot be performed while an online backup
+  is in progress.  </para>
+
+  <example id="ex_anonlinebackup"><title>Performing and Online Backup</title>
+  <programlisting><![CDATA[
+SQL> backup_context_clear ();
+SQL> checkpoint;
+SQL> backup_online ('virt-inc_dump_#', 150);
+]]></programlisting>
+  </example>
+
+  <para>The <function>backup_online()</function> procedure differs from the
+  the CheckPointAuditTrail mainly because it can be started from any point
+  in the database.  Unless CheckPointAuditTrail was enabled when the database
+  was created, the database file at a particular state and all transaction logs
+  created by the AuditTrail since that state would be required to restore
+  the database.  Only the backup set files would be required to restore
+  from <function>backup_online()</function>.  The <function>backup_online()</function>
+  also makes a compressed backup, making it far more suitable for large
+  databases.</para>
+
+  <para>The last optional parameter allows to point the directory(ies) where the
+  backup files must be stored. See <function>backup_online()</function> description
+  for details. </para>
+
+  </sect3>
+
+  <sect3 id="rstrfrmbckuponline"><title>Restoring From an Online Backup Series</title>
+
+  <para>To restore from a backup series the administrator must first shutdown
+  the Virtuoso database server and move all database files (e.g. virtuoso.db
+  and virtuoso.trx) out of the database directory.  It is recommended that copies
+  by taken rather than deleting them entirely.  Then the command:</para>
+
+<programlisting>
+&lt;virtuoso exe&gt; +restore-backup &lt;FILE_PREFIX&gt;
+</programlisting>
+
+  <para>must be issued in the directory where the "*.bp" were stored.  The
+  database will then be restored.  The expresion &lt;virtuoso exe&gt; above must
+  be replaced with the path and filename to the Virtuoso server executable used
+  on your system (e.g. ..\virtuoso-odbc-t.exe).</para>
+
+  <para>Each file in the series has a header containing a unique identifier,
+  for the backup set and the sequence number of the file in the backup set .  If
+  an identifier in any file in the backup sequence differs from the identifier
+  contained in the first file, the restoration process will stop and report an
+  error, which is written to the Virtuoso log file.</para>
+
+  <para>At times the backup or restoration commands may return errors.  Use the
+  following list to help diagnose and resolve them:</para>
+
+  <itemizedlist>
+    <listitem><formalpara><title>Timestamp [%lx] is wrong in file %s</title>
+    <para>The unique identifier in header of the file differs from the identifier
+    of the first file.  It is possible that the file was renamed or corrupt or
+    belongs to another backup set.</para>
+    </formalpara></listitem>
+
+    <listitem><formalpara><title>Number of file %s differs from internal number [%ld]</title>
+    <para>The sequence number of the file does not correspond to the internal sequence number of file.
+    This could be caused by the file being renamed or corrupt.</para>
+    </formalpara></listitem>
+
+    <listitem><formalpara><title>Prefix is wrong in file %s</title>
+    <para>The prefix of the file does not correspond to internal information.
+    Possible reason: file was renamed or corrupt or belongs to another backup set.</para>
+    </formalpara></listitem>
+
+    <listitem><formalpara><title>Could not begin online-backup</title>
+    <para>Read error.  Possible reason: Virtuoso database file was corrut.</para>
+    </formalpara></listitem>
+
+    <listitem><formalpara><title>Seek/Read failure on stripe %s/database</title>
+    <para>Read error.  Possible reason: Virtuoso database file was truncated or hardware error.</para>
+    </formalpara></listitem>
+
+    <listitem><formalpara><title>Read of page %ld failed</title>
+    <para>Read error.  Possible reason: Virtuoso database file was trincated or hardware error.</para>
+    </formalpara></listitem>
+
+    <listitem><formalpara><title>Backup file writing error</title>
+    <para>Write error.  Possible reason: disk is malfunctioning  or  full.</para>
+    </formalpara></listitem>
+  </itemizedlist>
+
+  </sect3>
+  </sect2>
+
+    <sect2 id="otherbackupmethods"><title>Other Backup Methods</title>
+			<para>
+A possible  way of making a full backup of a large databases is first to
+turn off any automatic checkpoints and make a compressed copy of the
+files.  After the back up is complete, checkpointing should be re-enabled.  The
+files should be compressed to make efficient use of space, and should be copied
+to a disk separate from  the location of the database, and preferably to an external
+backup medium such as tape.
+</para>
+<sect3 id="manualbackup"><title>Manual Backup</title>
+			<para>
+For a large database it is best to turn off any automatic checkpoints and copy the
+database files to external storage.  Checkpoints should be turned off by
+issuing the command:
+</para>
+			<programlisting>
+checkpoint_interval (-1);
+</programlisting>
+			<para>
+at the SQL prompt.  Checkpoints can be re-enabled in a post-backup
+script by:
+</para>
+			<programlisting>
+checkpoint_interval (&lt;n&gt;);
+</programlisting>
+			<para>
+which sets the automatic checkpoint interval to &lt;n&gt; minutes.  The backup will
+be unusable if there are checkpoints made while it is in progress.  Thus it is
+important to guarantee that checkpoints do not occur.  The only safe way of
+doing this is the above, since it is in principle possible to have a server crash during the
+backup and a roll forward following restart, all while the backup is in progress.  If this
+happens the backup will be readable and consistent with the state of the last checkpoint
+if and only if there are no checkpoints between its start and completion.
+Setting the interval to -1 will guarantee that the server, when starting after recovery
+will not make a checkpoint.
+</para>
+			<para>
+The dba must make sure that clients do not issue checkpoint
+or shutdown statements while a backup is in progress.
+</para>
+			<para>The presence or absence of checkpoints at a given point in time can be
+ascertained from the virtuoso.log event log file.
+</para>
+		</sect3>
+		</sect2>
+		<sect2 id="offlinebackups">
+			<title>Off-Line Backups</title>
+			<para>
+When Virtuoso is not running a complete and clean backup can be taken by making
+a copy of the database file and transaction file(s) created after the last
+checkpoint.
+
+</para>
+			<para>
+To get an up to the minute copy of a running database one can copy
+the database file and the associated log, i.e. the file specified in
+TransactionFile in the database&apos;s configuration file.  When started, the log
+will roll forward and restore the database to the state following the
+last logged transaction.
+</para>
+	</sect2>
+
+	<!-- ======================================== -->
+	<sect2 id="vdbrecovery">
+		<title>Database Recovery</title>
+		<sect3 id="dbrebuild">
+			<title>Rebuilding A Database</title>
+			<para>
+The process of rebuilding a database consists of dumping its contents
+into a large log file, or log files, and doing a roll forward from an empty database
+with that log.
+</para>
+			<para>
+The general steps to rebuild a database are:
+</para>
+  <itemizedlist mark="bullet">
+    <listitem><para>Shut down the running server, making a checkpoint.  This is done with
+the SHUTDOWN command from interactive SQL.</para></listitem>
+    <listitem><para>Make sure there is a log file specified in virtuoso.ini.</para></listitem>
+    <listitem><para>Start the server process virtuoso with the -b command line
+option: e.g. % ./virtuoso -b (+backup_dump)</para>
+<para>This will write the contents of the database into the log file specified
+in virtuoso.ini and exit when complete.</para></listitem>
+    <listitem><para>Take a backup of the old database file.</para></listitem>
+    <listitem><para>Change the DatabaseFile setting in virtuoso.ini to a
+non-existing database file or delete the old database file.</para></listitem>
+    <listitem><para>Start the server with the +restore-crash-dump option.  The option is essential.</para></listitem>
+    <listitem><para>The server will build a new database file from the log and
+once completed it will, by default, perform a checkpoint of the transactions to the
+database file and start listening at the specified port.  Virtuoso can be
+started without a checkpoint using the -n (+no-checkpoint) option.</para></listitem>
+    <listitem><para>You may then connect to the database with interactive SQL
+and if necessary make a checkpoint.  The checkpoint will write freeze the state
+following roll forward and delete the log used for the rebuild.</para></listitem>
+    <listitem><para>The database is now ready for normal use.</para></listitem>
+  </itemizedlist>
+			<important>
+				<para>It is recommended you take a backup copy of the database file(s)prior to this procedure.
+</para>
+			</important>
+
+  <para>
+	It may sometimes be useful to rebuild a database as above to save space.
+	Virtuoso does not relinquish space in the DB file back to the file system as
+	records are removed, however, Virtuoso does reuse pages that are made
+	available from a deletion of records.  The steps above will build a new
+	compact database file.  You would ordinarily not have to worry about this.
+	</para>
+		</sect3>
+		<sect3 id="diagnosingrepairing">
+			<title>Diagnosing and Recovering a Damaged Database File</title>
+			<para>
+It is possible to recover data from a damaged Virtuoso database by
+a procedure similar to rebuilding a database as described above.  A
+database file may be corrupt if the database repeatedly crashes during
+a specific operation.
+</para>
+			<para>
+To determine whether a database is corrupt, you may use the backup to a null file
+command in isql, for Unix platforms:
+</para>
+			<programlisting>
+SQL&gt; backup &apos;/dev/null&apos;;
+</programlisting>
+      <para>For windows platforms you can use:</para>
+			<programlisting>
+SQL&gt; backup &apos;NUL&apos;;
+</programlisting>
+
+			<para>This command will read through the database checking
+its integrity.  If the server crashes before completing the backup process, then
+the database is indeed corrupt and needs to be recovered.  No other
+activity should take place while the command is executing.
+</para>
+			<para>
+To recover the database, follow the procedure for rebuilding it, except
+use the -D &apos;capital D&apos; or +crash-dump switch instead of -b.  This will construct a
+log file which you can replay to make a new database.  The database
+will contain the transactions that were committed as of the last
+successful checkpoint. If the database altogether fails to open it
+may be the case that the schema is damaged.
+<!-- In such a cases or if
+the -D recovery crashes before completing consult the section,
+<link linkend="Xcrashrecovery">Crash Recover When Normal
+Crash Recovery Fails</link>. -->
+</para>
+			<para>
+It is possible that the database to be recovered is too large
+to fit in a single log file.  The crash dump feature therefore allows segmenting the
+recovery log into a number of files. See the virtuoso.ini configuration file documentation
+for details.  It is possible to make a crash dump in several pieces if there is not enough
+total disk space to hold the dump on the system where the database is running.
+</para>
+			<para>
+If the recovery log is split over several files it is  necessary to set the transaction file in the ini to point to the first of these files, delete the database file(s) and start the server with the +restore-crash-dump  option.  When the server comes online,
+one can connect to it with isql and use the replay () function for replaying the remaining logs, one by one, in their original order.
+
+</para>
+			<para>
+For example,assuming the virtuoso.ini fragment:
+</para>
+			<programlisting>
+Log1	= rec-1.log 100M
+Log2  = rec-2.log 100M
+</programlisting>
+			<para>
+we would make the dump with
+</para>
+			<programlisting>
+virtuoso +crash-dump
+</programlisting>
+			<para>
+and once the server has been started with +restore-crash-dump, with the ini setting TransactionFile set to rec1.log, 
+replay the remining log with the isql commands:
+</para>
+			<programlisting>
+
+SQL&gt; replay (&apos;rec-2.log&apos;);
+Done.
+SQL&gt; checkpoint;
+</programlisting>
+			<note>
+				<title>Note:</title>
+				<para>If the recovery is interrupted it can be restarted at the last checkpoint
+made during the recovery.  Note that a mid recovery checkpoint may take a very long time, e.g.
+1 hour  for a 10GB database, since it is possible that the delta since the
+previous recovery checkpoint comprise almost all the database.
+</para>
+			</note>
+		</sect3>
+
+		<sect3 id="Xcrashrecovery">
+			<title>Crash Recovery When The Normal Crash Recovery Fails</title>
+			<para>
+			    When the schema tables (e.g. DB.DBA.SYS_COLS, DB.DBA.SYS_KEYS) have corrupt rows
+			    the normal crash dump/crash restore procedure will not be possible because the server
+			    relies on the schema tables to know the key layouts for reading the
+			    data rows of other tables upon crash dump.</para>
+
+			    <para>In such situations there is a special procedure to be followed to save as much data as
+			    possible from the corrupt database. The general steps are:</para>
+
+<simplelist>
+  <member>dump the intact schema table rows, and read them into a fresh database</member>
+  <member>read the schema from the fresh database in the normal way</member>
+  <member>proceed with dumping the rest of the tables from the corrupt database</member>
+</simplelist>
+
+				<para>Thus the transaction log produced from the corrupt database, when replayed
+				on the new database file (the one holding the schema tables data) makes the closest
+				approximation to the corrupt database's data.  However, this will not produce
+				a workable database by itself - it may possibly deny inserting of data into tables
+				with IDENTITY columns and will lose all the data within the Virtuoso registry
+				(accessible from <function>registry_get()</function>/<function>registry_set()</function>
+				functions).</para>
+
+			    <para>Because of the very nature of the crash-restore process described here and
+			    because of the fact that data is lost in the database schema, the server will not
+			    attempt to dump tables whose schema description is lost.  So care should be
+				taken when reading the data from the database.</para>
+
+			    <para>This restoration procedure in no way replaces the regular database backup
+				procedures, it merely tries to save whatever reasonable data there may be left
+				from the database file.</para>
+
+			<para>
+The recovery sequence is as follows:
+</para>
+
+<orderedlist>
+<listitem><para>
+	Do a crash dump of the schema tables (using the
+	'<computeroutput>+crash-dump +mode oa +dumpkeys schema</computeroutput>'
+	virtuoso command line options).
+</para></listitem>
+<listitem><para>
+	Create a new INI file to describe the layout of the new database you'll use to temorarely fill up the restored data.
+</para></listitem>
+<listitem><para>
+	Move the trasaction log file(s) produced in step 1 to the location required by the new INI file.
+</para></listitem>
+<listitem><para>
+	Replay the transaction log from step 1 on an empty database using the new INI file.
+	You will now have the schema tables readable in the new database (and nothing else):</para>
+<programlisting><![CDATA[
+Virtuoso options : -c <your new ini file> +restore-crash-dump -f
+]]></programlisting>
+</listitem>
+<listitem><para>
+	Make a crashdump of the data in the non-schema tables of the old database while
+	having read the schema tables from the new database: </para>
+<programlisting><![CDATA[
+    +crash-dump -c <your new ini file> +crash-dump-data-ini <your old ini file> +mode o -f
+]]></programlisting>
+</listitem>
+<listitem><para>
+	Move the trasaction log file(s) produced in step 1 to the location required by the new INI file.
+</para></listitem>
+<listitem><para>
+	Replay the transaction log from the previous step into the new db file using: </para>
+<programlisting><![CDATA[
+    -c <your new ini file> +restore-crash-dump
+]]></programlisting>
+</listitem>
+<listitem><para>
+	Do a normal crash dump of the new database:</para>
+<programlisting><![CDATA[
+    -c <your new ini file> +crash-dump
+]]></programlisting>
+</listitem>
+<listitem><para>
+	Move away (backup) the original (old) database files and put the transaction log
+	produced by the above step into the location specified in the original INI file.
+	You can also delete the rest of the DB files of the new database at that point.</para></listitem>
+<listitem><para>
+	Replay the transaction log to make the old database afresh.
+</para></listitem>
+</orderedlist>
+			<para>
+To automate the above procedure, a sample Unix script follows that automates it somewhat.
+This script expects the crashed database virtuoso.db.save and an appropriate INI file
+(no striping, no log segmentation, transaction log file name virtuoso.trx)
+in the current directory and creates the restored database.
+It also expects the virtuoso-iodbc-t executable to be in the operating
+system path. Also, make sure that you have a
+suitable <computeroutput>virtuoso.lic</computeroutput> license file in the current directory.
+</para>
+<programlisting><![CDATA[
+#!/bin/sh
+
+rm -rf xmemdump.txt virtuoso.trx virtuoso.tdb virtuoso.log virtuoso.db virtuoso.lck core.* new.lck new.log new.trx new.tdb new.db new.ini
+cp -f virtuoso.db.save virtuoso.db
+cat virtuoso.ini | sed 's/virtuoso\./new./g' > new.ini
+
+virtuoso-iodbc-t -f +crash-dump +mode oa +dumpkeys schema
+
+ls -la *.trx
+mv virtuoso.trx new.trx
+
+virtuoso-iodbc-t -c new -f -R
+virtuoso-iodbc-t -c new +crash-dump +crash-dump-data-ini virtuoso.ini +mode o -f
+
+ls -la *.trx
+mv virtuoso.trx new.trx
+
+virtuoso-iodbc-t -c new -R -f
+
+virtuoso-iodbc-t -c new +crash-dump -f
+
+rm -f virtuoso.trx virtuoso.tdb virtuoso.log virtuoso.db virtuoso.lck
+ls -la *.trx
+mv new.trx virtuoso.trx
+
+virtuoso-iodbc-t -R -f
+]]></programlisting>
+		</sect3>
+
+		<sect3 id="XversionRecovery">
+			<title>Crash Recovery Across Virtuoso VDBMS Server Versions</title>
+			<para>
+If the database was created with a version prior to the one being used for
+rebuilding, the system tables may be different.  The creation here refers to
+the first time the database was made, a crash recovery does not count as a
+fresh start here.
+</para>
+			<para>
+If this is or may be the case, the first log must be rolled forward into the
+empty database BEFORE the new and possibly incompatible system tables are created.
+This is done by setting the TransactionFile parameter to the first of the
+recovery logs and starting the server with the -R or +restore-crash-dump switch. For
+good practice one should also specify  the no checkpoint switch, so that the log
+will in no case be damaged after the initial step of the roll forward.
+After this initial step the system tables will be compatible and the
+dba can proceed to replay the remaining recovery logs with the replay function.
+</para>
+		</sect3>
+	</sect2>
+</sect1>

@@ -1,0 +1,180 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+  declare akey, bid, id, txt, tit varchar;
+  declare userid int;
+  declare name, nick, mbox, homepage, weblog, rss, imp, url any;
+
+  adm_pre_page(lines);
+
+if (http_dav_uid () <> (userid := adm_dav_check_auth (lines, 1)))
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+          'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+
+  akey := 'appKey';
+  bid := {?'bid'};
+
+  name := {?'name'};
+  nick := {?'nick'};
+  mbox := {?'mbox'};
+  homepage := {?'homepage'};
+  weblog := {?'weblog'};
+  rss := {?'rss'};
+  imp := case when {?'import'} is null then 0 else 1 end;
+  url := 'admin_blog.vsp';
+  if (imp and bid is not null)
+    url := 'admin_blog_channel.vsp?bid='||bid;
+  if (bid is null or bid = '' or {?'cncl'} is not null)
+    {
+      quits:
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header (sprintf('Location: %s\r\n', url));
+      return;
+    }
+  declare blog_name varchar;
+  blog_name := coalesce ((select BI_TITLE from SYS_BLOG_INFO where BI_BLOG_ID = bid), bid);
+
+  id := atoi (coalesce ({?'id'}, '0'));
+
+  if ({?'delete'} is not null)
+    {
+      delete from SYS_BLOG_CONTACTS where BF_BLOG_ID = bid and BF_ID = id;
+      id := '';
+    }
+  else if ({?'post'} is not null)
+    {
+      if (id = 0)
+	{
+	  insert into SYS_BLOG_CONTACTS (BF_BLOG_ID, BF_NAME, BF_NICK, BF_MBOX, BF_HOMEPAGE, BF_WEBLOG, BF_RSS)
+		values (bid, name, nick, mbox, homepage, weblog, rss);
+	}
+      else
+	{
+          update SYS_BLOG_CONTACTS set BF_NAME = name,
+		BF_NICK = nick,
+ 		BF_MBOX = mbox,
+		BF_HOMEPAGE = homepage,
+		BF_WEBLOG = weblog,
+		BF_RSS = rss
+		where BF_BLOG_ID = bid and BF_ID = id;
+	}
+      if (imp)
+	goto quits;
+      id := '';
+      name := nick := mbox := homepage := weblog := rss := '';
+    }
+  if ({?'edit'} is not null)
+    {
+      select BF_NAME, BF_NICK, BF_MBOX, BF_HOMEPAGE, BF_WEBLOG, BF_RSS into
+	name, nick, mbox, homepage, weblog, rss from SYS_BLOG_CONTACTS where BF_BLOG_ID = bid and BF_ID = id;
+    }
+endf:;
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>BLOG Administration</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="BLOG Management for Virtuoso DB">
+  </head>
+<?vsp adm_page_header('BLOG Administration', ''); ?>
+    <H4><?=blog_name?></H4>
+    <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+      <TR><TD class="genhead" COLSPAN="2"><?= case when imp then 'Do you know this person' else 'Contact' end ?></TD></TR>
+      <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+      <form method="POST" action="admin_blog_cont.vsp">
+      <input type="hidden" name="akey" value="<?=akey?>">
+      <input type="hidden" name="bid" value="<?=bid?>">
+      <input type="hidden" name="id" value="<?=id?>">
+      <?vsp if (imp) { ?>
+      <input type="hidden" name="import" value="">
+      <?vsp } ?>
+       <tr><td class="genlisthead">Name</td><td class="geninput" COLSPAN="1">
+	<input type="text" name="name" value="<?= name ?>" size="70" /></td></tr>
+       <tr><td class="genlisthead">Nick</td><td class="geninput" COLSPAN="1">
+	<input type="text" name="nick" value="<?= nick ?>" size="70" /></td></tr>
+       <tr><td class="genlisthead">Mailbox</td><td class="geninput" COLSPAN="1">
+	<input type="text" name="mbox" value="<?= mbox ?>" size="70" /></td></tr>
+       <tr><td class="genlisthead">Home page</td><td class="geninput" COLSPAN="1">
+	<input type="text" name="homepage" value="<?= homepage ?>" size="70" /></td></tr>
+       <tr><td class="genlisthead">Weblog</td><td class="geninput" COLSPAN="1">
+	<input type="text" name="weblog" value="<?= weblog ?>" size="70" /></td></tr>
+       <tr><td class="genlisthead">Rss</td><td class="geninput" COLSPAN="1">
+	<input type="text" name="rss" value="<?= rss ?>" size="70" /></td></tr>
+      <tr>
+        <td class="geninput" COLSPAN="2">
+	<input type="submit" name="post" value="<?= case when imp then 'Yes' else 'Save' end ?>" />
+	<input type="submit" name="cncl" value="<?= case when imp then 'NO' else 'Back' end ?>" />
+	</td>
+      </tr>
+      </form>
+    </TABLE>
+
+<?vsp adm_page_break();
+if ({?'import'} is null) {
+?>
+
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="5">Contacts</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+            <tr>
+		<th class="genlistheadt">ID</th>
+		<th class="genlistheadt">Nick</th>
+		<th class="genlistheadt">Name</th>
+		<th class="genlistheadt">Action</th>
+             </tr>
+<?vsp
+   for select BF_ID, BF_NICK, BF_NAME
+	      from SYS_BLOG_CONTACTS where BF_BLOG_ID = bid
+   	order by BF_ID do
+      {
+?>
+       <TR>
+         <TD class="gendata"><?= BF_ID ?></TD>
+         <TD class="gendata"><?= BF_NICK ?></TD>
+         <TD class="gendata"><?= BF_NAME ?></TD>
+         <TD class="gendata">
+	   <a href="admin_blog_cont.vsp?bid=<?=bid?>&id=<?=BF_ID?>&edit">Edit</a>
+	   <a href="admin_blog_cont.vsp?bid=<?=bid?>&id=<?=BF_ID?>&delete">Delete</a>
+	 </TD>
+       </TR>
+<?vsp
+      }
+?>
+
+</TABLE>
+<?vsp } adm_page_footer(); ?>
+</html>
+

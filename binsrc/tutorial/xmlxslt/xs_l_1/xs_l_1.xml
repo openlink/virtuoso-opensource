@@ -1,0 +1,62 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XS-L-1">
+  <refmeta>
+    <refentrytitle>Large Documents</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Processing a large XML files</refname>
+    <refpurpose>XML persistent storage</refpurpose>
+  </refnamediv>
+
+<refsect1 id="XS-L-1a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+  <listitem>The PL varchar variable has a limit of 10Mb.</listitem>
+  <listitem>This means that variables that may contains a large document for XML processing cannot keep over 10Mb data.</listitem>
+  <listitem>Using a temp file with xml_persistent does not have this limit.</listitem>
+  <listitem>The xml_persistent() can process the large documents using the temporary file for storing the data.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="XS-L-1b">
+<title>Caution: Paths used in that sample are evaluted in the server file system. 
+Specify correct server filesystem paths. </title>
+</refsect1>
+<refsect1 id="XS-L-1c">
+<title>Example</title>
+<itemizedlist mark="bullet">
+  <listitem>The example converts a file to persistent XML and back to a file.</listitem>
+  <listitem>The file is then traversed by XSLT and the result is stored into a string output.</listitem>
+  <listitem>This is then stored into a file.</listitem>
+  <listitem>The input of the sheet is checked against a DTD.</listitem>
+  <listitem>The page shows these steps and the lengths of the files and intermediate data.</listitem>
+  <listitem>The data is an excerpt of dmoz with some extra repetition to make 5MB of data.
+    This is not itself above the varchar limit but is large enough for this example.</listitem>
+  <listitem>The results can be seen in the result file in the directory.</listitem>
+  <listitem>The vsp page will show fragments of the data, e.g. part of the first subtree.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

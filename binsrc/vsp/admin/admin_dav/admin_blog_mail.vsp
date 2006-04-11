@@ -1,0 +1,173 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines);
+
+  declare _u_id, have_blog integer;
+  declare own varchar;
+  declare msg varchar;
+  declare sid varchar;
+  declare v_submit , seen_before integer;
+  declare _sdate datetime;
+
+  sid := adm_get_sesid (params);
+  _u_id := DB.DBA.adm_dav_check_auth (lines, 1);
+  seen_before := adm_get_ses_var (sid, 'seen_before', 0);
+  if (_u_id > 0 and seen_before and '' <> get_keyword ('new_login', params, ''))
+    {
+      _u_id := 0;
+      adm_set_ses_var (sid, 'seen_before', 0);
+    }
+  if (_u_id < 1)
+    {
+      http_request_status ('HTTP/1.1 401 Unauthorized');
+      DB.DBA.vsp_auth_get ('virtuoso_dav_admin', '/mime',
+		md5 (datestring (now ())),
+		md5 ('FloppyBootStompedOntoTheGround'),
+		'false', lines, 1);
+
+      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+            '<HTML><HEAD>',
+            '<TITLE>401 Unauthorized</TITLE>',
+            '</HEAD><BODY><H1>Unauthorized</H1>',
+            'Access to page is forbidden.</BODY></HTML>'));
+      return (0);
+    }
+  else
+    select U_NAME into own from WS.WS.SYS_DAV_USER where U_ID = _u_id;
+
+  have_blog := 0;
+
+  if (exists (select 1 from SYS_BLOG_INFO where BI_OWNER = _u_id))
+    have_blog := 1;
+
+  adm_set_ses_var (sid, 'seen_before', _u_id);
+  v_submit := atoi (get_keyword_ucase ('delete', params));
+
+    if (v_submit > 0)
+      delete from MAIL_MESSAGE where MM_ID = v_submit and MM_OWN = own;
+
+   if ({?'del_sel'} is not null)
+     {
+       declare ix, ln, mid integer;
+       ix := 0;
+       while (mid := adm_next_checkbox ('CB_', params, ix))
+         {
+	    mid := atoi (mid);
+	    delete from DB.DBA.MAIL_MESSAGE where MM_ID = mid and MM_OWN = own;
+	 }
+     }
+?>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>" />
+<meta name="AUTHOR" content="OpenLink Software">
+<meta name="DESCRIPTION" content="Parsing MIME with Virtuoso VSP">
+<script language="javascript" src="../admin_utils.js"></script>
+<title>Messages list</title>
+</head>
+<?vsp adm_page_header(concat('Messages List of ', own), NULL); ?>
+<?include ../adm_js_check.vsp ?>
+<FORM method="post" action="admin_blog_mail.vsp" enctype="multipart/form-data">
+<input type="hidden" name="sid" value="<?=sid?>">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<?vsp
+   if (have_blog <> 1)
+     {
+?>
+    <TR><TD COLSPAN="6"><B>The user <i><?=own?></i> have no blog page.</B></TD></TR>
+    </TABLE>
+<?vsp adm_page_footer(); ?>
+</html>
+<?vsp
+        return;
+     }
+?>
+<TR><TD CLASS="stathead" COLSPAN="6">Messages</TD></TR>
+<TR CLASS="AdmBorders"><TD COLSPAN="6">
+  <IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+    <tr><td CLASS="genlistheadt">
+    <input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)"></td>
+     <td CLASS="genlistheadt">Sender</td><td CLASS="genlistheadt" colspan=2>Subject</td>
+     <td CLASS="genlistheadt">Date</td>
+     <td CLASS="genlistheadt">Action</td>
+     </tr>
+    <?vsp
+          declare exis integer;
+          exis := 0;
+          for select MM_ID, MM_BODY, MM_FROM, MM_SUBJ, MM_REC_DATE, MM_SND_TIME, MM_BODY_ID
+	  	from MAIL_MESSAGE where MM_OWN = own do
+            {
+	      if (MOBBLOGGING_IS_MOB_MESSAGE (blob_to_string (MM_BODY)) <> 1)
+		goto next_message;
+              exis := exis + 1;
+	      if (isstring (MM_SND_TIME) and length (MM_SND_TIME) > 0)
+                _sdate := MM_SND_TIME;
+	      else
+		_sdate := MM_REC_DATE;
+    ?>
+       <tr>
+           <td CLASS="genlistheadt"><input type="checkbox" name="CB_<?=MM_ID?>"></td>
+	   <td CLASS="gendata" nowrap><?vsp http (DB.DBA.adm_mailaddr_pretty (MM_FROM));?></td>
+	   <td CLASS="gendata" colspan=2><small><?= MM_SUBJ ?></small></td>
+	   <td CLASS="gendata" nowrap><small><?= _sdate ?></small></td>
+	   <td CLASS="gendata">
+<?vsp
+	      		http (concat ('<A  class="tablelistaction" href=admin_blog_mail_show.vsp?',
+			      'msg=', cast (MM_ID as varchar), '&subj='));
+			http_url (MM_SUBJ); http ('>');
+?>
+              Blog this
+              </A>
+	   </td>
+       </tr>
+    <?vsp
+next_message:;
+	    }
+
+	   if (not exis)
+             {
+    ?>
+	   <tr><td colspan="6" CLASS="gendata" >
+	   Mail box is empty
+	   </td></tr>
+    <?vsp
+	     }
+	   else
+            {
+    ?>
+	   <tr><td colspan="6" CLASS="genlistheadt" >
+	   <input type="submit" name="del_sel" value="Delete Selected">
+	   </td></tr>
+    <?vsp
+	    }
+    ?>
+</TABLE>
+<hr>
+<TABLE border=0>
+
+
+<tr>
+<td colspan=2 align=right><b>If "<?=own?>" is not your ID, click here </b><INPUT type=submit name="new_login" value="Re-login"></td></tr>
+</TABLE>
+<?vsp adm_page_footer(); ?>
+</html>

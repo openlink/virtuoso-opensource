@@ -1,0 +1,393 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<chapter label="V" id="chapter5">
+<title>Performance Tuning</title>
+<abstract>
+This chapter describes how to administer the Virtuoso Universe virtual database for best performance.
+How to get the most out the Virtuoso Engine.
+</abstract>
+
+<!-- ======================================== -->
+<sect1 id="MEMORY">
+<title>Memory</title>
+
+<!--
+
+*** Contents not yet defined or found ***
+
+-->
+
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="IO">
+<title>I/O</title>
+<sect2 id="DISKIO">
+<title>Optimizing Disk I/O</title>
+<para>
+Virtuoso allows splitting a database over several files that
+may be on different devices.  By allocating database fragments onto
+independent disks I/O performance in both random and sequential database
+operations can be greatly enhanced by judicious use of multiple disks.
+</para><para>
+The basic unit of a database is the segment. A segment consists of an
+integer number of 4K pages.  A segment may consist of one or more files called
+stripes. If a segment has multiple stripes these will be of identical
+length and the segment size will be an integer multiple of the stripe size.
+</para><para>
+The individual files composing a database are limited to 2GB of length.
+Splitting a database over several segments allows database sizes of up to
+16384 GB (32 bit page number with 4KB per page). O
+</para><para>
+When a segment is striped each logically consecutive page resides in a different
+file, thus for a segment of 2 stripes the first stripe will contain
+all even numbered pages and the second all the odd numbered pages. The
+stripes of a segment should always be located on independent disks.
+</para><para>
+In serving multiple clients that do random access to tables the server can
+perform multiple disk operations in parallel, taking advantage of the independent
+devices. Striping guarantees a statistically uniform access frequency to all
+devices holding stripes of a segment.
+</para><para>
+The random access advantages of striping are available without any specific configuring
+besides that of the stripes themselves.
+</para>
+</sect2>
+
+<sect2 id="IOQS">
+<title>Configuring I/O queues</title>
+<para>
+Striping is also useful for a single client doing long sequential
+read operations.  The server can detect the serial nature of an operation, for
+example a count of all rows in a table and can intelligently prefetch rows.
+</para><para>
+If the table is located in a striped segment then the server will read all
+relevant disks in parallel if these disks are allocated to different I/O queues.
+</para><para>
+All stripes of different segments on one device should form an I/O queue.
+The idea is that the database stripes that benefit
+from being sequentially read form a separate queue. All queues are then read and written
+independently, each on a different thread. This means that a thread
+will be allocated per queue. If no queues are declared all database files, even if located
+on different disks share one queue.
+</para><para>
+A queue is declared in the striping section by specifying a stripe
+id after the path of the file.
+</para>
+
+<programlisting>
+[Striping]
+Segment1 = 200M, (disk1/db-seg1-1.db iq1, (disk2/db-seg1-2.db iq2
+Segment2 = 200M, (disk1/db-seg2-1.db iq1, (disk2/db-seg2-2.db iq2
+</programlisting>
+
+<para>
+In the above example the first stripes of the segments form one queue
+and the second stripes form another. This makes sense because now all database files
+on /disk1 are in iq1 and all on /disk2 are on iq2.
+</para><para>
+This configuration could have resulted from originally planning a 200 MB database
+split on 2 disks and subsequently expanding that by another 200 MB.
+</para><para>
+The I/O queue identifier can be an arbitrary string. As many background I/O threads
+will be made as there are distinct I/O queues.
+</para><para>
+Striping and using I/O queues can multiply sequential read rates by a factor almost
+equal to the number of independent disks.  On the other hand assigning stripes on one disk
+to different queues can have a very detrimental effect. The rule is that all that is physically
+accessed sequentially will be on the same queue.
+</para>
+</sect2>
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="SCHEMAS">
+<title>Schema Design Considerations</title>
+
+<sect2 id="DataOrg">
+<title>Data Organization</title>
+<para>
+One should keep the following in mind when designing a schema for
+maximum efficiency.
+</para>
+</sect2>
+
+<sect2 id="Clustering">
+<title>Clustering</title>
+<para>
+If two tables are often joined in an equijoin they should be clustered
+together, i.e.  in the same cluster or clustered by value. Say the ORDERS
+table had a primary key of ORDER_NO and the ORDER_ITEMS table had a
+primary key of ORDER_NO, PRODUCT_CODE, both keys should be clustered
+by value, causing the order items to physically follow the order's
+main record.
+</para><para>
+Clustering also results in better locking behavior.
+</para><para>
+A table that is clustered by value should never be read from end to end
+without search criteria since this requires scanning through the whole
+database. A table that does need to be read from end to end without
+criteria should always have at least one contiguous index, i.e. one that
+is not clustered by value.
+</para>
+</sect2>
+
+<sect2 id="IndexUsage">
+<title>Index Usage</title>
+<para>
+A select from a table using a non-primary key will need to retrieve the
+main row if there are search criteria on columns appearing on the main row
+or output columns that have to be fetched from the main row. Operations
+are noticeably faster if they can be completed without fetching the main
+row if the driving key is a non-primary key. This is the case when search
+criteria and output columns are on the secondary key parts or primary
+key parts. Note that all secondary keys contain a copy of the primary
+key. For this purpose it may be useful to add trailing key parts to a
+secondary key.	Indeed, a secondary key can hold all the columns of a row
+as trailing key parts. This slows insert and update but makes reference
+to the main row unnecessary when selecting using the secondary key.
+</para><para>
+A sequential read on the primary key is always fastest.  A sequential
+search with few hits can be faster on a secondary key if the criterion
+can be evaluated without reference to the main row. This is because a
+short key can have more entries per page.
+</para>
+</sect2>
+
+<sect2 id="SpaceConsump"><title>Space Consumption</title>
+<para>
+Each column takes the space `naturally' required by its value. No field
+lengths are preallocated.  Space consumption for columns is the following:
+</para>
+
+<screen>
+Data				Bytes
+
+Integer below 128		1
+Integer below 256		2
+long				5
+float				5
+timestamp			8
+double				9
+string under 256 chars		2 + characters
+longer strings			5 + characters
+NULL				1
+BLOB				5 + n times 4K
+</screen>
+
+<para>
+Each key has an overhead of 6 bytes for under 256 bytes per entry and 9
+for longer. This applies to the primary key as well as any other keys. The
+length of the concatenation of the key parts is added to this. For the
+primary key the length of all columns are summed. For any other key the
+lengths of the key parts plus any primary key parts not on the secondary
+key are summed.
+</para><para>
+In light of these points primary keys should generally be short.
+</para>
+</sect2>
+
+<sect2 id="PageAlloc">
+<title>Page Allocation</title>
+<para>
+For data inserted in random order pages tend to be 3/4 full. For data
+inserted in ascending order pages will be about 90% full due to a
+different splitting point for a history of rising inserts.
+</para>
+</sect2>
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="CLIENTSERVERSETUP">
+<title>Client Server Setup</title>
+<!--
+
+*** Contents not yet defined or found ***
+
+-->
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="TRANSACTION_ISOLATION">
+<title>Transactions &amp; Isolation</title>
+<!--
+
+*** Contents not yet defined or found ***
+
+-->
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="EfficientSQL">
+<title>Efficient Use of SQL</title>
+<!--
+
+*** Contents not yet defined or found ***
+
+-->
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="METERS_SYSVIEWS">
+<title>Meters &amp; System Views</title>
+
+<sect2 id="kdlstat">
+<title>DB.DBA.SYS_K_STAT, DB.DBA.SYS_D_STAT, DB.DBA.SYS_L_STAT view</title>
+
+<para>
+These views provide statistics on the database engine
+</para>
+
+<programlisting>
+create view SYS_K_STAT as
+  select KEY_TABLE, name_part (KEY_NAME, 2) as index_name,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;n_landings&apos;) as landed,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;total_last_page_hits&apos;) as consec,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;page_end_inserts&apos;) as right_edge,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;page_end_inserts&apos;) as lock_esc
+	from SYS_KEYS;
+</programlisting>
+<programlisting>
+create view SYS_L_STAT as
+  select KEY_TABLE, name_part (KEY_NAME, 2) as index_name,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;lock_set&apos;) as locks,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;lock_waits&apos;) as waits,
+	(key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;lock_waits&apos;) * 100)
+	  / (key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;lock_set&apos;) + 1) as wait_pct,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;deadlocks&apos;) as deadlocks,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;lock_escalations&apos;) as lock_esc
+	from SYS_KEYS;
+</programlisting>
+<programlisting>
+create view sys_d_stat as
+  select KEY_TABLE, name_part (KEY_NAME, 2) as index_name,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;touches&apos;) as touches,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;reads&apos;) as reads,
+	(key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;reads&apos;) * 100)
+	&#10; &gt; / (key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;touches&apos;) + 1) as read_pct
+	from SYS_KEYS;
+</programlisting>
+
+<para>
+These views offer detailed statistics on nidex access locality, lock contention and
+disk usage.
+</para>
+</sect2>
+
+<sect2 id="keystats">
+<title>SYS_K_STAT - Key statistics</title>
+<itemizedlist mark="bullet">
+<listitem><para>KEY_TABLE	The fully qualified table name, e.g. DB.DBA.SYS_PROCEDURES'</para></listitem>
+<listitem><para>INDEX_NAME	The name of the index. This will be equal to the table name for the table's primary key.</para></listitem>
+<listitem><para>LANDED		The count of random accesses, nicluding inserts.  Any insert or select, whether empty, single line or mylti-
+		line counts as one. Updates and deletes do not count, as they imply a select in the same or previous statement.</para></listitem>
+<listitem><para>CONSEC		The number of times a random access falls on the same page as the previous random access. This is always less than LANDED.
+		For repetitive access to the same place or an ascending insert, this will be near LANDED. For a totally
+		random access pattern this will be near 0.</para></listitem>
+<listitem><para>RIGHT_EDGE	The number of times an insert has added a row to the right edge of the page where the insert was made. </para></listitem>
+<listitem><para>LOCK_ESC	The count of lock escalations, see SYS_L_STAT.</para></listitem>
+</itemizedlist>
+</sect2>
+
+<sect2 id="lstats">
+<title>SYS_L_STAT</title>
+
+<itemizedlist mark="bullet">
+<listitem><para>KEY_TABLE	The fully qualified table name, e.g. DB.DBA.SYS_PROCEDURES'</para></listitem>
+<listitem><para>INDEX_NAME	The name of the index. This will be equal to the table name for the table's primary key.</para></listitem>
+<listitem><para>LOCKS		The number of times a lock has been set on the index. Making a new row or page lock
+		counts as one. Entering a row or page lock either after a wait or without wait (for a shared lock) counts as one.</para></listitem>
+<listitem><para>WAITS		The number of times a cursor reading this index waited for a lock. Note that this can be higher
+		than the number of locks set, e.g. a 'read committed' cursor may wait for a lock but will never make one.</para></listitem>
+<listitem><para>WAIT_PCT	The percentage of lock set events that involved a wait. </para></listitem>
+<listitem><para>DEADLOCKS	The number of times a deadlock was detented when trying to wait for a lock on this index.
+		Note that one deadlock event may involve locks on several indices.  Each deadlock detection counts as one.</para></listitem>
+<listitem><para>LOCK_ESC	The number of times the set of row locks on a page of this index where escalated into one page lock
+		or a page lock was set initially. This is always less than LOCKS. This value will
+		be near LOCKS when there are many sequential selects which switch to page lock mode.
+		This happens when a cursor has performed over 2 lock escalations and the page neing entered has no
+		locks, i.e. the lock can be set over the entire page.</para></listitem>
+</itemizedlist>
+</sect2>
+
+<sect2 id="dstats">
+<title>SYS_D_STAT</title>
+
+<itemizedlist mark="bullet">
+<listitem><para>KEY_TABLE	The fully qualified table name, e.g. DB.DBA.SYS_PROCEDURES'</para></listitem>
+<listitem><para>INDEX_NAME	The name of the index. This will be equal to the table name for the table's primary key.</para></listitem>
+<listitem><para>TOUCHES		The number of times a row is located on the index. Every row retrieved by a select or inserted counts as
+		one. All rows scanned by an select count or other aggregate counts as one. </para></listitem>
+<listitem><para>READS		The number of times a disk read was caused by a read operation on this index.
+		This may theoretically be higher than TOUCHES, since several levels of the index tree may have
+		to be read to get to a leaf.</para></listitem>
+<listitem><para>READ_PCT	The percentage of READS in TOUCHES.</para></listitem>
+</itemizedlist>
+
+<example>
+<title>Examples:</title>
+<programlisting>
+select index_name, locks, waits, wait_pct, deadlocks
+    from sys_l_stat order by 2 desc;
+
+Get lock data, indices in descending order of lock count.
+
+select index_name, touches, reads, read_pct
+    from sys_d_stat order by 3 desc;
+
+Get disk read counts, index with most reads first.
+
+select index_name, (consec * 100) / (landed + 1)
+    from sys_k_stat where landed &gt; 1000  order by 2;
+</programlisting>
+</example>
+
+<para>Get the percentage of consecutive page access on indices with over 1000 accesses so far,
+most randomly accessed first.
+</para>
+</sect2>
+
+<sect2 id="statusfunc">
+<title>status SQL function - status ();</title>
+
+<para>This function returns a summary of the database
+status as a result set. The result set has one varchar column,
+which has consecutive lines of text. The lines can be up to several hundred
+characters.
+</para>
+<para>
+The contents of the status summary are described in the Administrator's Guide.
+</para>
+</sect2>
+
+</sect1>
+
+</chapter>

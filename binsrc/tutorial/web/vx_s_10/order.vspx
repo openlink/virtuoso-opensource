@@ -1,0 +1,108 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../demo.css"/>
+  </head>
+  <body>
+    <v:page name="order" xmlns:v="http://www.openlinksw.com/vspx/">
+      <H3>Entering Orders with VSPX form</H3>
+      <div style="color:red;"><v:error-summary /></div>
+      <div style="background-color: #d0ffd0"><b><v:label name="stat" value="--''" /></b></div>
+      <v:form type="simple" method="POST" name="f1">
+        <table class="tableentry" border="0">
+          <tr>
+            <td>1. Pick Customer</td>
+            <td>
+              <v:data-list name="cid" table="Demo.demo.Customers" key-column="CustomerID" value-column="CompanyName"/>
+            </td>
+          </tr>
+          <tr>
+            <td>2. Pick Employee</td>
+            <td>
+              <v:data-list name="eid" sql="select FirstName || ' ' || LastName as EName, EmployeeID from Demo.demo.Employees" key-column="EmployeeID" value-column="EName"/>
+            </td>
+          </tr>
+          <tr>
+            <td>3. Required by Date</td>
+            <td>
+              <v:text xhtml_size="26" name="RequiredDate" value="--cast(now() as varchar)"/>
+            </td>
+          </tr>
+          <tr>
+            <td>4. ShipVia</td>
+            <td>
+              <v:data-list name="shipvia" table="Demo.demo.Shippers" key-column="ShipperID" value-column="CompanyName"/>
+            </td>
+          </tr>
+          <tr>
+            <td>5. ProductID</td>
+            <td>
+              <v:data-list name="pid" table="Demo.demo.Products" key-column="ProductID" value-column="ProductName"/>
+            </td>
+          </tr>
+          <tr>
+            <td>6. Quantity</td>
+            <td>
+              <v:text name="Quantity" xhtml_size="5" value="0"/>
+            </td>
+          </tr>
+          <tr>
+            <td>7. Discount</td>
+            <td>
+              <v:text name="Discount" value="0.00" xhtml_size="5"/>
+            </td>
+          </tr>
+          <tr>
+            <td>8. Execute new_order()</td>
+            <td>
+              <v:button action="simple" name="exec" value="Execute">
+		<v:on-post><![CDATA[
+
+		declare exit handler for sqlstate '*' {
+		self.vc_is_valid := 0;
+		self.f1.vc_error_message := __SQL_MESSAGE;
+		};
+
+		declare oid int;
+
+		oid := new_order_via_vspx (
+			 self.cid.ufl_value,
+			 atoi (self.eid.ufl_value),
+			 atoi (self.shipvia.ufl_value),
+			 stringdate (self.RequiredDate.ufl_value),
+			 atoi (self.pid.ufl_value),
+			 atoi (self.Quantity.ufl_value),
+			 atod (self.Discount.ufl_value)
+		);
+		self.stat.ufl_value := 'New order OrderID=' || cast(oid as varchar) || ' registered; status OK.';
+]]>
+		</v:on-post>
+	      </v:button>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+    </v:page>
+  </body>
+</html>

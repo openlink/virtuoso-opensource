@@ -1,0 +1,62 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="HO-S-9">
+  <refmeta>
+    <refentrytitle>Python Runtime Hosting</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Integrating Python Scripts with Virtuoso</refname>
+    <refpurpose>Using Python code to extend Virtuoso.</refpurpose>
+  </refnamediv>
+
+    <refsect1 id="HO-S-9a_overview">
+    <title>Overview</title>
+  <para>The following tutorial demonstrates how Virtuoso can be extended 
+  through the use of Python.</para>
+  <para>The demonstrations in this section highlight transparent integration 
+  (hosting) between Virtuoso and the Python Runtime. </para>
+  </refsect1>
+
+    <refsect1 id="HO-S-9a_overview_prerequisites">
+    <title>Prerequisites</title>
+  <para>The following prerequisites ensure the usability of these tutorial demos on any platform with a Python runtime:</para>
+<itemizedlist>
+  <listitem>Python 2.2</listitem>
+  <listitem>Python should be compiled to have lybpython2.2 as a shared object</listitem>
+  <listitem>Python should be compiled with -DWITH_THREADS</listitem>
+  <listitem>Virtuoso Universal Server with Python Runtime Hosting module</listitem>
+ </itemizedlist>
+</refsect1>
+
+    <refsect1 id="HO-S-9a">
+    <title>Tutorial Example</title>
+<para>The following tutorial shows how Python scripts using cgi.py are executed within Virtuoso HTTP server. </para>
+<para>Please follow the steps below to maximize the value of this tutorial:</para>
+<orderedlist>
+  <listitem>Click on the "Run" links to actually experience the demo</listitem>
+</orderedlist>
+
+    </refsect1>
+</refentry>

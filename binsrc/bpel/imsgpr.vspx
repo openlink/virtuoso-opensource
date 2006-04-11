@@ -1,0 +1,282 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" name="incoming_msg" decor="bpel_decor.vspx" style="bpel_style.xsl">
+  <v:on-init>
+    set isolation='committed';
+    for select bs_id, bdm_text, bdm_sender_inst, bdm_plink, bdm_recipient,
+    	bdm_activity, bdm_oper, bdm_script, bdm_action
+    	from BPEL..dbg_message, BPEL..script where bdm_id = self.mid do
+      {
+        self.inst := bdm_sender_inst;
+	self.node := bdm_activity;
+	self.endp := bdm_recipient;
+	self.imsg := xml_tree_doc (blob_to_string (bdm_text));
+	self.pl := bdm_plink;
+	self.scp := bdm_script;
+	self.act := trim (bdm_action, '"');
+	self.oper := bdm_oper;
+      }
+    for select ro_output, ro_style, ro_target_namespace from BPEL..remote_operation
+      where ro_operation = self.oper and ro_script = self.scp and ro_partner_link = self.pl do
+     {
+       self.omsgname := ro_output;
+       self.sty := ro_style;
+     }
+    --dbg_obj_print ('self.omsgname', self.omsgname, ' scp=', self.scp, ' pl=',self.pl);
+    if (length (self.msg) = 0)
+        {
+	  for select bsrc_text from BPEL..script_source
+		where bsrc_role = self.pl and bsrc_script_id = self.scp do
+	   {
+	     self.msg := xslt (BPEL.BPEL.res_base_uri() || 'bpel4ws/1.0/bpelmsgen.xsl', bsrc_text,
+	   	vector ('msg', self.omsgname));
+           }
+        }
+    else
+      self.msg := xml_tree_doc (self.msg);
+    --dbg_obj_print ('self.msg', self.msg);
+  </v:on-init>
+  <vm:pagewrapper>
+    <v:variable name="mid" type="int" default="null" param-name="mid"/>
+    <v:variable name="inst" type="int" default="null"/>
+    <v:variable name="node" type="int" default="null"/>
+    <v:variable name="scp" type="int" default="null"/>
+    <v:variable name="sty" type="int" default="1"/>
+    <v:variable name="endp" type="varchar" default="null"/>
+    <v:variable name="imsg" type="xml" default="null"/>
+    <v:variable name="pl" type="varchar" default="null"/>
+    <v:variable name="act" type="any" default="null"/>
+    <v:variable name="msg" type="any" default="null"/>
+    <v:variable name="oper" type="any" default="null"/>
+    <v:variable name="omsgname" type="varchar" default="null"/>
+    <vm:pagetitle>OpenLink BPEL Process Manager Debugger Console Waiting messages</vm:pagetitle>
+    <vm:pagebody>
+      <v:method name="msg_root_node" arglist="in path any">
+	if (self.msg is null)
+	  return vector ();
+	return xpath_eval (path, self.msg, 0);
+      </v:method>
+      <v:method name="msg_chil_node" arglist="in path any, in node any">
+	return xpath_eval ('*', node, 0);
+      </v:method>
+      <v:method name="get_path" arglist="inout ctr vspx_control">
+	declare nod vspx_tree_node;
+	declare elm vspx_field;
+        declare path varchar;
+
+	path := '';
+	nod := ctr.vc_parent;
+	elm := nod.vc_find_control ('elm');
+	path := concat ('/', elm.ufl_value, path);
+	while ((nod := nod.vc_parent) is not null
+		and udt_instance_of (nod, fix_identifier_case ('DB.DBA.vspx_tree_node')))
+	  {
+	    elm := nod.vc_find_control ('pelm');
+	    if (elm is not null)
+	      path := concat (sprintf ('/*[%d]', nod.tn_position+1), path);
+	  }
+	return path;
+      </v:method>
+      <v:form name="f1" type="simple" method="POST">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+          <tr>
+            <th class="info" colspan="4">Outgoing message</th>
+	  </tr>
+          <tr>
+            <td colspan="4">
+              <?vsp http(sprintf('<a target="_blank" href="help.vspx?id=imsgpr&sid=%s&realm=%s\r\n"><img title="Help" alt="Help" src="i/help_24.gif" border="0" /></a>', self.sid ,self.realm));?>
+              <?vsp http(sprintf('<a target="_blank" href="help.vspx?id=imsgpr&sid=%s&realm=%s\r\n"> Help</a>', self.sid ,self.realm));?>
+            </td>
+          </tr>
+	  <tr>
+	    <td width="10%" align="right"><b>Instance</b></td><td colspan="3"> <v:label value="--self.inst" format="%d"/></td>
+	  </tr>
+	  <tr>
+	    <td width="10%" align="right"><b>Partner</b></td><td colspan="3">  <v:label value="--self.pl" format="%s"/></td>
+	  </tr>
+	  <tr>
+	    <td width="10%" align="right"><b>Endpoint</b></td><td colspan="3"> <v:label value="--self.endp" format="%s"/></td>
+	  </tr>
+	  <tr>
+	    <td width="10%" align="right"><b>Node ID</b></td><td colspan="3">  <v:label value="--self.node" format="%d"/></td>
+	  </tr>
+          <tr>
+            <td colspan="4">
+              <table border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <div style="background-color:white">
+	<?vsp for select bdm_text from BPEL..dbg_message where bdm_id = self.mid do
+              {
+	        declare xt any;
+	        xt := xslt (BPEL.BPEL.res_base_uri () || 'bpel4ws/1.0/raw.xsl', xml_tree_doc (blob_to_string (bdm_text)));
+	        http_value (xt, null);
+              }
+	      ?>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+	  </tr>
+	  <tr>
+	    <td colspan="4">
+	      <v:button action="simple" name="invu" value="Proceed with invoke with partner" xhtml_class="m_e">
+		<v:on-post><![CDATA[
+		  self.vc_redirect ('incoming.vspx');
+		  BPEL..forward_to_ultimate (self.mid);
+		  ]]>
+		</v:on-post>
+	      </v:button>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td style="font-weight: bold" colspan="4">
+	      To specify invoke without actual partner
+	      <v:template type="simple" enabled="--case when self.omsgname is null then 0 else 1 end">
+		, manually enter the reply:
+	      </v:template>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td colspan="4">
+	      <table>
+		<v:tree name="t1" multi-branch="1" orientation="vertical" start-path="/*" open-at="--'//*'" root="self.msg_root_node" child-function="self.msg_chil_node">
+                  <v:node-template name="node_tmpl">
+                    <div STYLE="margin-left:1em;">
+                      <v:button name="t1_toggle" action="simple" style="image" value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'plus.gif' else 'minus.gif' end"/>
+                      <b>
+                        <v:label name="pelm" value="--null">
+                          <v:after-data-bind>
+		      declare xt, xp any;
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      xp := cast (xpath_eval ('local-name()',xt) as varchar);
+		      control.ufl_value := xp;
+		    </v:after-data-bind>
+                        </v:label>
+		      </b>
+			<v:node/>
+                    </div>
+                  </v:node-template>
+		  <v:leaf-template name="leaf_tmpl">
+                    <div STYLE="margin-left:1em;">
+                      <v:label name="elm" value="--null">
+                        <v:after-data-bind>
+		         declare xt, xp any;
+		         xt := (control.vc_parent as vspx_tree_node).tn_element;
+		         xp := cast (xpath_eval ('local-name()',xt) as varchar);
+		         control.ufl_value := xp;
+		       </v:after-data-bind>
+		       </v:label>
+		       <v:label name="tylabel2" value="--null" format="(%s)">
+                        <v:after-data-bind>
+		         declare xt, xp any;
+		         xt := (control.vc_parent as vspx_tree_node).tn_element;
+		         xp := BPEL..get_nc_name (cast (xpath_eval ('@type',xt) as varchar));
+		         control.ufl_value := xp;
+		       </v:after-data-bind>
+		     </v:label>
+		       <v:text name="var_val" value="">
+			 <v:after-data-bind>
+		         declare xt, xp any;
+		         xt := (control.vc_parent as vspx_tree_node).tn_element;
+		         xp := cast (xpath_eval ('text()',xt) as varchar);
+		         control.ufl_value := xp;
+		         </v:after-data-bind>
+			 <v:on-post>
+			   declare path, xp any;
+			   path := self.get_path (control);
+			   --dbg_obj_print (path, control.ufl_value);
+			   xp := xpath_eval (path||'/text()', self.msg);
+			   if (xp is not null)
+			     XMLReplace (self.msg, xp, control.ufl_value);
+			   else
+			     XMLAppendChildren (xpath_eval (path, self.msg), control.ufl_value);
+			   --dbg_obj_print (path, control.ufl_value);
+			   --dbg_obj_print (self.msg);
+			 </v:on-post>
+		       </v:text>
+                    </div>
+                  </v:leaf-template>
+                </v:tree>
+              </table>
+            </td>
+	  </tr>
+	  <tr>
+	    <td colspan="4">
+              <v:button action="simple" name="back" value="Back" xhtml_class="m_e">
+                <v:on-post><v:script><![CDATA[
+                  http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: incoming.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                ]]></v:script></v:on-post>
+              </v:button>
+	      <v:button action="simple" name="inv" value="Send Reply" xhtml_class="m_e">
+		<v:after-data-bind>
+		  if (self.omsgname is null)
+		    control.ufl_value := 'Ignore';
+		</v:after-data-bind>
+		<v:on-post><![CDATA[
+		  declare ret, xt, xp, pars, flag any;
+		  declare l int;
+
+		  if (self.omsgname is null)
+		    {
+		      ret := null;
+		      goto reply;
+		    }
+
+		  xp := xpath_eval ('/*', self.msg, 0);
+		  l := length (xp) * 2;
+		  pars := make_array (l, 'any');
+
+		  for (declare i int, i := 0; i < l; i := i + 2)
+		     {
+		       pars [i] := sprintf ('par%d', i/2);
+		       pars [i+1] := xml_cut (xp[i/2]);
+		     }
+
+		  flag := 256;
+
+		  commit work;
+		  ret := db..soap_client (
+		  	url=>self.endp,
+			operation=>self.oper,
+			soap_action=>self.act,
+			style=>self.sty+flag,
+			parameters => pars
+			);
+		reply:
+		  --dbg_obj_print ('OUT MSG', ret);
+
+		  self.vc_redirect ('incoming.vspx');
+		  BPEL..return_reply (self.mid, ret);
+		  ]]>
+		</v:on-post>
+	      </v:button>
+	    </td>
+	  </tr>
+        </table>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

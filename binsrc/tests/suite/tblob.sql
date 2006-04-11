@@ -1,0 +1,278 @@
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+set deadlock_retries = 10;
+
+
+
+drop table tblob
+drop table tblob2;
+drop table tb_stat;
+
+
+
+
+create table tblob (k integer not null primary key,
+		    b1 long varchar,
+		    b2 long varchar,
+		    b3 long varbinary,
+		    b4 long nvarchar,
+		    e1 varchar,
+		    e2 varchar,
+		    en varchar,
+		    ed datetime);
+
+create index tb1 on tblob (e1);
+
+
+
+create table tblob2 (k integer not null primary key, b1 varchar, b2 varchar);
+
+create table tb_stat (k integer not null primary key,
+		     b1_l integer, b2_l integer, b3_l integer, b4_l integer,
+		     e1 varchar, e2 varchar);
+
+
+insert into tblob (k, e1, e2) values (1, 'e1', 'e2');
+
+create procedure tb_e2 ()
+{
+  declare ct int;
+  ct := 3000;
+  while (1)
+    {
+      update tblob set e2 = make_string (ct);
+      commit work;
+      ct := ct + 1;
+    }
+}
+
+tb_e2 ();
+
+
+update tblob set b3 = '12345678901234567890';
+update tblob set b1 = b3, b2 = b3, b4 = b3;
+
+update tblob set e1 = '123';
+
+update tblob set e2 = make_string (4000);
+
+
+
+insert into tblob (k, b1, b2, b3) values (2, make_string (1000), make_string (900), make_string (800));
+
+
+
+update tblob set b1 = make_string (100), b2 = make_string (200), b3 = make_string (1900), e1 = 'e1-';
+update tblob set en = make_string (1900);
+update tblob set en = 'en';
+
+
+delete from tblob2;
+insert into tblob2 (k, b1) select k, b3 from tblob where k = 1;
+
+
+create procedure make_random_wide_string () returns nvarchar
+  {
+    declare wide_len integer;
+    declare wide_ret nvarchar;
+
+    wide_len := case rnd (500) when 144 then 1600000 else 2000 end;
+    wide_ret := make_wstring (wide_len);
+
+    for (declare _inx integer, _inx := 0; _inx < wide_len; _inx := _inx + 1)
+      {
+	declare _char_range integer;
+
+	_char_range := rnd (10) + 1;
+
+	wide_ret [_inx] :=
+	    case
+	      when _char_range between 1 and 2
+	        then (rnd (255) + 1)
+	      when _char_range between 3 and 7
+                then (rnd (10000 - 256) + 256)
+	      when _char_range between 8 and 10
+                then (rnd (1000000000 - 10000) + 10000)
+	    end;
+      }
+    return wide_ret;
+  };
+
+
+
+
+
+
+create procedure tb_upd (in ct integer, in mode varchar)
+{
+  declare deadlock_retry_count integer;
+
+  deadlock_retry_count := 100;
+  declare exit handler for sqlstate '40001'
+    {
+      rollback work;
+      if (deadlock_retry_count > 0)
+	{
+	  deadlock_retry_count := deadlock_retry_count - 1;
+	  goto again;
+	}
+      else
+	resignal;
+    };
+
+again:
+  declare i, len integer;
+  i := 0;
+  while (i < ct) {
+    update tblob set b1 = make_string (rnd (1000)),
+    b2 = make_string (rnd (1000)),
+    b3 = make_string (rnd (1000)),
+    b4 = make_random_wide_string (),
+    e1 = make_string (rnd (1000)),
+    e2 = make_string (rnd (1000));
+    i := i + 1;
+    select length (cast (_ROW as varchar)) into len from tblob;
+    -- dbg_obj_print (len);
+    if (rnd (10) = 1 and mode <> 'rb')
+      commit work;
+    else if (rnd (10) = 1 and mode <> 'co')
+      rollback work;
+
+  }
+  if (mode = 'rb')
+    rollback work;
+}
+
+
+echo both "starting blob random update ...\n";
+tb_upd (2000, '');
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": blob random update " $state "\n";
+
+
+insert into tb_stat select k, length (b1), length (b2), length (b3), length (b4), e1, e2 from tblob;
+
+
+create procedure tb_check (in q integer)
+{
+  if (exists (select 1 from tblob b where not exists (select 1 from tb_stat c where c.k = b.k
+						      and length (b1) = b1_l and length (b2) = b2_l and length (b3) = b3_l
+						      and length (b4) = b4_l and b. e1 = c. e1 and b. e2 = c. e2)))
+    signal ('BLFWD', 'Bad blob roll forward');
+}
+
+
+
+tb_check (1);
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": blobs rollback / roll forward consistency " $state "\n";
+
+
+echo both "starting blob random update ...\n";
+tb_upd (2000 , 'rb');
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": rollback blob random update " $state "\n";
+
+tb_check (1);
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ":  blob check after 2000 rollbacks " $state "\n";
+
+
+
+
+-- Bad inserts and updates - should not affect state in table.
+
+insert into tblob (k, b1, b2, b3, e1, e2) values (3, make_string (1000), make_string (1900), make_string (800),
+						  make_string (1000), make_string (3200));
+update tblob set b1 = make_string (3000), ed = '--';
+
+update tblob set b1 = make_string (2000), ed = 'qq';
+
+tb_check (1);
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": blobs rollback / roll forward consistency " $state "\n";
+
+
+create procedure tb_ins (in ct integer, in mode varchar)
+{
+  declare i, len integer;
+  i := 0;
+  while (i < ct) {
+    insert into tblob (k, b1, b2, b3, e1, e2, b4)
+      values (i + 10, make_string (rnd (1000)), make_string (rnd (1000)),
+	      make_string (rnd (1000)), make_string (rnd (1000)), make_string (rnd (1000)),
+	      make_random_wide_string ());
+    i := i + 1;
+    select length (cast (_ROW as varchar)) into len from tblob;
+    -- dbg_obj_print (len);
+    if (rnd (10) = 1 and mode <> 'rb')
+      commit work;
+    else if (rnd (10) = 1 and mode <> 'co')
+      rollback work;
+
+  }
+  if (mode = 'rb')
+    rollback work;
+}
+
+
+create procedure no_error (in txt varchar)
+{
+  declare err, msg varchar;
+  exec (txt, err, msg, vector (), 0, NULL, NULL);
+}
+
+
+
+create procedure bad_ins_1 (in q integer)
+{
+  no_error ('insert into tblob (k, b1) values (1, make_string (10000))');
+  no_error ('insert into tblob (k, b1) values (1111, make_string (20000))');
+}
+
+
+bad_ins_1 (1);
+
+create procedure bad_upd_1 (in q integer)
+{
+  insert into tblob (k, b1) values (1111, make_string (10000));
+  update tblob set k = 1, b2 = b1 where k = 1111;
+}
+
+bad_upd_1 (1);
+
+
+echo both "starting blob random insert ...\n";
+tb_ins (1000, '');
+echo both "finished blob random insert\n";
+
+select * from tblob where length (blob_to_string (b4)) <> length (b4);
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+echo both ": tblob length check\n";
+
+delete from tb_stat;
+insert into tb_stat select k, length (b1), length (b2), length (b3), length (b4), e1, e2 from tblob;
+
+tb_check (1);
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": tblob insert check " $state "\n";
+
+

@@ -1,0 +1,407 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="plinks_page" decor="bpel_decor.vspx" style="bpel_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/"  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <v:on-init><![CDATA[
+    set isolation='committed';
+    if (self.pl_opts is null)
+      {
+        declare continue handler for NOT FOUND self.pl_opts := null;
+        select bpl_opts into self.pl_opts from BPEL.BPEL.partner_link_init
+	where bpl_script = self.id and bpl_name = self.pl;
+
+	if (self.pl_opts is null)
+	  {
+	     self.pl_opts := xtree_doc (
+	  '<wsOptions>
+	    <addressing version="http://schemas.xmlsoap.org/ws/2003/03/addressing"/>
+	    <security>
+	      <http-auth username="" password=""/>
+	      <key name=""/>
+	      <pubkey name=""/>
+	      <in>
+		<encrypt type="NONE"/>
+		<signature type="NONE"/>
+		<keys/>
+	      </in>
+	      <out>
+		<encrypt type="NONE"/>
+		<signature type="NONE" function=""/>
+	      </out>
+	    </security>
+	    <delivery>
+	      <in  type="NONE"/>
+	      <out type="NONE" />
+	    </delivery>
+	   </wsOptions>'
+	  );
+	  }
+      }
+      self.get_keys ('');
+    ]]></v:on-init>
+  <v:method name="get_keys" arglist="in nam any"><![CDATA[
+    declare opts, keys any;
+    opts := coalesce (DB.DBA.USER_GET_OPTION ('BPEL', 'keys'), vector ());
+    keys := '<keys>';
+    foreach (any k in opts) do
+      {
+        if (isstring (k))
+	  keys := keys || sprintf ('<key name="%s"/>', k);
+      }
+    if (length (nam))
+      keys := keys || sprintf ('<key name="%s"/>', nam);
+    keys := keys || '</keys>';
+    self.keys := xtree_doc (keys);
+    ]]></v:method>
+  <v:method name="get_trusties" arglist=""><![CDATA[
+    declare trs, arr any;
+    trs := '';
+    arr := xpath_eval ('/wsOptions/security/in/keys/key/@name', self.pl_opts, 0);
+    foreach (any elm in arr) do
+      {
+        trs := trs || elm || '\r\n';
+      }
+    return trs;
+    ]]></v:method>
+  <v:method name="set_trusties" arglist="in trs any"><![CDATA[
+    declare arr, repl any;
+    trs := cast (trs as varchar);
+    arr := split_and_decode (trs, 0, '\0\0\n');
+    repl := '<keys>';
+    foreach (any elm in arr) do
+      {
+        declare elm1 any;
+	elm1 := trim (cast (elm as varchar), ' \r');
+	if (length (elm1))
+	  {
+	    repl := repl || sprintf ('\n\t\t<key name="%s"/>', elm1);
+	  }
+      }
+    repl := repl || '</keys>';
+    repl := xtree_doc (repl);
+    XMLReplace (self.pl_opts, xpath_eval ('/wsOptions/security/in/keys', self.pl_opts), repl);
+    ]]></v:method>
+
+<vm:pagewrapper>
+  <v:variable name="id" type="int" default="0" param-name="id"/>
+  <v:variable name="pl" type="varchar" default="null" param-name="pl"/>
+  <v:variable name="pl_opts" type="xml" default="null" />
+  <v:variable name="keys" type="any" default="null" />
+
+  <vm:pagetitle>OpenLink BPEL Process Manager Partner Links Properties</vm:pagetitle>
+
+  <vm:pagebody>
+    <v:form name="upl" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+        <tr>
+	  <th class="info" colspan="2">Partner Link
+	    "<v:label name="pln1" value="--self.pl" render-only="1"/>"
+	  </th>
+	</tr>
+        <tr>
+          <td colspan="2">
+            <?vsp http(sprintf('<a target="_blank" href="help.vspx?id=plinks_props&sid=%s&realm=%s\r\n"><img title="Help" alt="Help" src="i/help_24.gif" border="0" /></a>', self.sid ,self.realm));?>
+            <?vsp http(sprintf('<a target="_blank" href="help.vspx?id=plinks_props&sid=%s&realm=%s\r\n"> Help</a>', self.sid ,self.realm));?>
+          </td>
+        </tr>
+	<tr>
+	  <td>
+	    <table border="1" cellpadding="0" cellspacing="0" id="contentlist">
+	<tr>
+	  <td colspan="2" style="font-weight: bold">WS-Addressing</td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="pVERS" value="Version" url="--sprintf('help.vspx?id=plinks_props&name=pu_version')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:select-list name="wsain"
+	      element-value="--xpath_eval ('/wsOptions/addressing', self.pl_opts)" element-place="@version" xhtml_class="m_e">
+	      <v:item name="2003" value="http://schemas.xmlsoap.org/ws/2003/03/addressing"/>
+	      <v:item name="2004" value="http://schemas.xmlsoap.org/ws/2004/03/addressing"/>
+	    </v:select-list>
+	  </td>
+	</tr>
+	<tr>
+	  <td colspan="2" style="font-weight: bold">Delivery Execution</td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="pWINP" value="Input" url="--sprintf('help.vspx?id=plinks_props&name=pu_dinput')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:select-list name="wsrmin"
+	      element-value="--xpath_eval ('/wsOptions/delivery/in', self.pl_opts)" element-place="@type" xhtml_class="m_e">
+	      <v:item name="NONE" value="NONE"/>
+	      <v:item name="Exactly Once" value="ExactlyOnce"/>
+	      <v:item name="In Order" value="InOrder"/>
+	    </v:select-list>
+	  </td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="pWOTP" value="Output" url="--sprintf('help.vspx?id=plinks_props&name=pu_doutput')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:select-list name="wsrmout"
+	      element-value="--xpath_eval ('/wsOptions/delivery/out', self.pl_opts)" element-place="@type" xhtml_class="m_e">
+	      <v:item name="NONE" value="NONE"/>
+	      <v:item name="Exactly Once" value="ExactlyOnce"/>
+	      <v:item name="In Order" value="InOrder"/>
+	    </v:select-list>
+	  </td>
+	</tr>
+	<tr>
+	  <td colspan="2" style="font-weight: bold">HTTP Authentication</td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="pUN" value="User Name" url="--sprintf('help.vspx?id=plinks_props&name=pu_un')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:text name="httpuid"
+	      element-value="--xpath_eval ('/wsOptions/security/http-auth', self.pl_opts)"
+	      element-place="@username" />
+	  </td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="pPWD" value="Password" url="--sprintf('help.vspx?id=plinks_props&name=pu_pwd')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:text name="httppwd"
+	      element-value="--xpath_eval ('/wsOptions/security/http-auth', self.pl_opts)"
+	      element-place="@password"
+	      type="password"
+	      />
+	  </td>
+	</tr>
+	<tr>
+	  <td colspan="2" style="font-weight: bold">WS-Security</td>
+	</tr>
+	<tr>
+	  <td colspan="2" style="color:red"><v:error-summary/></td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="pKEY" value="Key" url="--sprintf('help.vspx?id=plinks_props&name=pu_wkey')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:text name="wsskey"
+	      element-value="--xpath_eval ('/wsOptions/security/key', self.pl_opts)" element-place="@name" />
+	    <v:button action="browse" name="brw1" selector="wss_keys.vspx" value="Select" xhtml_class="m_e" child-window-options="scrollbars=yes, menubar=no, width=640, height=400">
+	      <v:field name="wskey" ref="wsskey"/>
+	    </v:button>
+	  </td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="pPKEY" value="Partner Public key" url="--sprintf('help.vspx?id=plinks_props&name=pu_wpkey')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:text name="wsspkey"
+	      element-value="--xpath_eval ('/wsOptions/security/pubkey', self.pl_opts)" element-place="@name" />
+	    <v:button action="browse" name="brw2" selector="wss_keys.vspx" value="Select" xhtml_class="m_e" child-window-options="scrollbars=yes, menubar=no, width=640, height=400">
+	      <v:field name="wskey" ref="wsspkey"/>
+	    </v:button>
+	  </td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="pINP" value="Input" url="--sprintf('help.vspx?id=plinks_props&name=pu_winput')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:check-box name="wssin" value="1" auto-submit="1">
+	      <v:after-data-bind><![CDATA[
+		if (not e.ve_is_post)
+		  {
+		    if (xpath_eval ('/wsOptions/security/in/*[@type!="NONE"]', self.pl_opts) is not null)
+		      control.ufl_selected := 1;
+		  }
+		]]></v:after-data-bind>
+	      <v:before-render>
+		if (control.vc_focus and self.vc_event.ve_initiator = control)
+		  {
+		    if (not control.ufl_selected)
+		      {
+		        XMLAddAttribute (xpath_eval ('/wsOptions/security/in/encrypt', self.pl_opts),
+			 2, 'type', 'NONE');
+		        XMLAddAttribute (xpath_eval ('/wsOptions/security/in/signature', self.pl_opts),
+			 2, 'type', 'NONE');
+			self.encrin.ufl_value := null;
+			self.sigin.ufl_value := null;
+		      }
+		  }
+	      </v:before-render>
+	    </v:check-box>
+	  </td>
+	</tr>
+	<v:template name="wssoptsin" type="simple" condition="self.wssin.ufl_selected">
+	<tr>
+	  <td align="right">
+            <v:url name="p1ENC" value="Encryption" url="--sprintf('help.vspx?id=plinks_props&name=pu_ewinput')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:select-list name="encrin"
+	      element-value="--xpath_eval ('/wsOptions/security/in/encrypt', self.pl_opts)" element-place="@type"
+	      xhtml_class="m_e">
+	      <v:item name="NONE" value="NONE"/>
+	      <v:item name="Mandatory" value="Mandatory"/>
+	      <v:item name="Optional" value="Optional"/>
+	    </v:select-list>
+	  </td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="p1SIG" value="Signature" url="--sprintf('help.vspx?id=plinks_props&name=pu_swinput')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:select-list name="sigin"
+	      element-value="--xpath_eval ('/wsOptions/security/in/signature', self.pl_opts)" element-place="@type" xhtml_class="m_e">
+	      <v:item name="NONE" value="NONE"/>
+	      <v:item name="Mandatory" value="Mandatory"/>
+	      <v:item name="Optional" value="Optional"/>
+	    </v:select-list>
+	  </td>
+	</tr>
+	<tr>
+	  <td align="right">Trusties
+	  </td>
+	  <td>
+	    <v:textarea name="intrust" value="--self.get_trusties ()"
+	      xhtml_cols="30" xhtml_rows="--length (xpath_eval ('/wsOptions/security/in/keys/key/@name', self.pl_opts, 0)) + 1" xhtml_class="m_e">
+	      <v:on-post>
+		self.set_trusties (control.ufl_value);
+	      </v:on-post>
+	    </v:textarea>
+	    <!--v:button action="browse" name="brw3" selector="wss_trs.vspx" value="Select" xhtml_class="m_e"
+	      child-window-options="scrollbars=yes, menubar=no, width=640, height=640">
+	      <v:field name="wskey" ref="intrust"/>
+	    </v:button-->
+	  </td>
+	</tr>
+      </v:template>
+	<tr>
+	  <td align="right">
+            <v:url name="pOUT" value="Out" url="--sprintf('help.vspx?id=plinks_props&name=pu_woutput')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:check-box name="wssout" value="1" auto-submit="1">
+	      <v:after-data-bind><![CDATA[
+		if (not e.ve_is_post)
+		  {
+		    if (xpath_eval ('/wsOptions/security/out/*[@type!="NONE"]', self.pl_opts) is not null)
+		      control.ufl_selected := 1;
+		  }
+		]]></v:after-data-bind>
+	      <v:before-render>
+		if (control.vc_focus and self.vc_event.ve_initiator = control)
+		  {
+		    if (not control.ufl_selected)
+		      {
+		        XMLAddAttribute (xpath_eval ('/wsOptions/security/out/encrypt', self.pl_opts),
+			 2, 'type', 'NONE');
+		        XMLAddAttribute (xpath_eval ('/wsOptions/security/out/signature', self.pl_opts),
+			 2, 'type', 'NONE');
+			self.encrout.ufl_value := null;
+			self.sigout.ufl_value := null;
+			self.sigoutfn.ufl_value := null;
+		      }
+		  }
+	      </v:before-render>
+	    </v:check-box>
+	  </td>
+	</tr>
+	<v:template name="wssoptsout" type="simple" condition="self.wssout.ufl_selected">
+	<tr>
+	  <td align="right">
+            <v:url name="p2ENC" value="Encryption" url="--sprintf('help.vspx?id=plinks_props&name=pu_ewoutput')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:select-list name="encrout"
+	      element-value="--xpath_eval ('/wsOptions/security/out/encrypt', self.pl_opts)" element-place="@type" xhtml_class="m_e">
+	      <v:item name="NONE" value="NONE"/>
+	      <v:item name="triple DES" value="3DES"/>
+	      <v:item name="AES 128" value="AES128"/>
+	      <v:item name="AES 192" value="AES192"/>
+	      <v:item name="AES 256" value="AES256"/>
+	    </v:select-list>
+	  </td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="p2SIG" value="Signature" url="--sprintf('help.vspx?id=plinks_props&name=pu_swoutput')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:select-list name="sigout"
+	      element-value="--xpath_eval ('/wsOptions/security/out/signature', self.pl_opts)" element-place="@type" xhtml_class="m_e">
+	      <v:item name="NONE" value="NONE"/>
+	      <v:item name="Default" value="Default"/>
+	      <v:item name="Custom" value="Custom"/>
+	    </v:select-list>
+	  </td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="p2FG" value="Function for Custom signature" url="--sprintf('help.vspx?id=plinks_props&name=pu_fwoutput')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:text name="sigoutfn" error-glyph="*"
+	      element-value="--xpath_eval ('/wsOptions/security/out/signature', self.pl_opts)" element-place="@function">
+	    </v:text>
+	  </td>
+	</tr>
+      </v:template>
+	<tr>
+          <td align="left">Action</td>
+	  <td align="left">
+	    <v:button action="simple" name="bt1" value="i/save_16.png" xhtml_title="Save" style="image" xhtml_alt="Save" text="&#160;Save">
+	      <v:before-render>
+		if (not control.vc_focus)
+		  return;
+	        if (self.sigout.ufl_value = 'Custom' and __proc_exists (self.sigoutfn.ufl_value) is null)
+		  {
+		    self.vc_is_valid := 0;
+		    self.sigoutfn.vc_error_message := 'No such function';
+		    return;
+	          }
+		update BPEL.BPEL.partner_link_init set
+		   bpl_opts = self.pl_opts where bpl_script = self.id and bpl_name = self.pl;
+		self.vc_redirect (sprintf ('plinks.vspx?id=%d', self.id));
+	      </v:before-render>
+	    </v:button>
+	    <v:button action="simple" name="bt2" value="i/cancl_16.png" style="image" xhtml_title="Cancel" xhtml_alt="Cancel" text="&#160;Cancel">
+	      <v:on-post>
+		self.vc_redirect (sprintf ('plinks.vspx?id=%d', self.id));
+	      </v:on-post>
+	    </v:button>
+	  </td>
+	</tr>
+    </table>
+  </td>
+</tr>
+      </table>
+    </v:form>
+  </vm:pagebody>
+</vm:pagewrapper>
+</v:page>

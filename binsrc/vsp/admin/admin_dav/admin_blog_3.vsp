@@ -1,0 +1,124 @@
+<!-- -*- html -*- -->
+<?vsp
+  declare akey, bid, id varchar;
+  declare userid int;
+  declare tit, own, home, copy, disc, email, about, nam varchar;
+
+  adm_pre_page(lines);
+
+if (http_dav_uid () <> (userid := adm_dav_check_auth (lines, 1)))
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+          'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+
+  bid := {?'bid'};
+
+  if ({?'cncl'} = 'Back')
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: admin_blog.vsp\r\n');
+      return;
+    }
+
+  if (not exists (select 1 from SYS_USERS where U_DAV_ENABLE = 1
+                  and not exists (select 1 from SYS_BLOG_INFO where BI_OWNER = U_ID)))
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: admin_blog.vsp\r\n');
+    }
+  tit := own := home := copy := disc := email := about := nam := '';
+
+  if ({?'post'} is not null)
+    {
+      own := {?'own'};
+      bid := cast (own as varchar);
+      home := {?'home'};
+      home := '/blog/' || {?'nam'} || '/blog/';
+      tit := {?'tit'};
+      copy := {?'copy'};
+      disc := {?'disc'};
+      email := {?'email'};
+      about := {?'about'};
+      insert into SYS_BLOG_INFO
+	  (BI_BLOG_ID, BI_OWNER, BI_HOME, BI_TITLE, BI_COPYRIGHTS, BI_DISCLAIMER, BI_ABOUT, BI_E_MAIL, BI_P_HOME)
+	values (bid, atoi(own), home, tit, copy, disc, about, email, '/DAV/' || {?'nam'} || '/blog/');
+      BLOG_HOME_CREATE (atoi(own));
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: admin_blog_2.vsp?bid='||bid||'\r\n');
+      return;
+    }
+  else if ({?'own'} is not null)
+    {
+      for select U_NAME, U_FULL_NAME, U_ID, U_E_MAIL from SYS_USERS where U_ID = atoi ({?'own'}) do
+	{
+	  bid := cast (U_ID as varchar);
+	  own := U_ID;
+          tit := coalesce (U_FULL_NAME, U_NAME) || '\'s Weblog';
+	  home := '/blog/' || U_NAME || '/blog/';
+          email := U_E_MAIL;
+          nam := U_NAME;
+	}
+    }
+
+
+
+ef:
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>BLOG Administration</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="BLOG Management for Virtuoso DB">
+  </head>
+<?vsp adm_page_header('BLOG Administration', ''); ?>
+    <H4><?='New blog'?></H4>
+    <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+      <TR><TD class="genhead" COLSPAN="2">BLOG Settings</TD></TR>
+      <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+      <form method="POST" action="admin_blog_3.vsp">
+      <input type="hidden" name="bid" value="<?=bid?>">
+      <input type="hidden" name="nam" value="<?=nam?>">
+      <tr><td class="geninput">Owner (available accounts)</td> <td class="geninput">
+        <select name="own" onchange="javascript: document.forms[0].submit()">
+	  <?vsp for select U_ID, U_NAME, U_IS_ROLE from SYS_USERS where U_DAV_ENABLE = 1
+	  	  and not exists (select 1 from SYS_BLOG_INFO where BI_OWNER = U_ID) order by U_NAME
+	  	  do
+	  	   {
+	  ?>
+		<option value="<?= U_ID ?>" <?= select_if (U_ID, own) ?>><?= U_NAME ?> <small><?= case U_IS_ROLE when 1 then '(group)' else '' end ?></small>
+	  <?vsp
+		   }
+	  ?>
+	</select>
+      	<!--input type="text" name="own" value="<?=own?>" size="70%"/-->
+	</td></tr>
+      <tr><td class="geninput">Title</td> <td class="geninput"><input type="text" name="tit" value="<?=tit?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Description</td> <td class="geninput"><input type="text" name="about" value="<?=about?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Author's e-mail</td> <td class="geninput"><input type="text" name="email" value="<?=email?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Home</td> <td class="geninput"><input type="text" name="home" value="<?=home?>" disabled size="70%"/></td></tr>
+      <tr><td class="geninput">Copyrights</td> <td class="geninput"><input type="text" name="copy" value="<?=copy?>"  size="70%"/></td></tr>
+      <tr><td class="geninput">Disclaimer</td> <td class="geninput"><input type="text" name="disc" value="<?=disc?>"  size="70%"/></td></tr>
+      <tr>
+        <td class="geninput" COLSPAN="2">
+	<input type="submit" name="post" value="Save" />
+	<input type="submit" name="cncl" value="Back" />
+	</td>
+      </tr>
+      </form>
+    </TABLE>
+
+</TABLE>
+<?vsp adm_page_footer(); ?>
+</html>
+

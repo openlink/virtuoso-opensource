@@ -1,0 +1,244 @@
+# @(#) BUGS 12.1.1.29@(#)
+# The following is a list of the various DBGEN/QGEN bugs that have been
+# and are being fixed. Each entry is of the form:
+# 
+#	Problem #xx: STATUS   -- MR ID and OPEN/closed
+#                        followed by a detailed explanation
+#    TYPE:            -- classification of the bug or issue
+#    SPEC FIX:        -- details of any change to the spec
+#    DBGEN FIX:       -- details of any change needed to QGEN/DBGEN
+#    ANSWER SETS:     -- any effect on answer sets
+#    WORKAROUND:      -- temporary fix, if available
+#    HELP NEEDED:     -- any work/assistance required
+#    AUDITORS NOTIFIED:  -- date auditors were notified, if appropriate
+#    OPENED AGAINST:     -- date and effected versions
+#    CLOSED IN:       -- date and fixed version
+#
+#---------------------------------------------------------------------
+#Complete Bug List
+#==================
+
+Problem #00001: closed
+Summary:      setting up environment for TPCW work
+SEVERITY:     FEATURE
+SPEC FIX:     N/A
+SOURCE FIX:   N/A
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  N/A
+OPENED BY:    N/A
+CLOSED ON:    19990929
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A
+
+Problem #00002: closed
+Summary:      strip down code to do only text generation
+    the code base was 2.1.8 of TPC-DS. This change will remove the unnecessary 
+	sections of code to re-focs on text generation
+SEVERITY:     FEATURE
+SPEC FIX:     N/A
+SOURCE FIX:   N/A
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  990928
+OPENED BY:    jms@gradientsystems.com
+CLOSED ON:    990930
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A
+
+Problem #00003: closed
+Summary:      new functions for TPCW
+    addition of routines that are only needed in TPCW (e.g., digsyl())
+SEVERITY:     FEATURE
+SPEC FIX:     N/A
+SOURCE FIX:   N/A
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  990929
+OPENED BY:    jms@gradientsystems.com
+CLOSED ON:    991006
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A
+
+Problem #00004: closed
+Summary:      seg fault in mk_title
+    access violation/seg fault in digsyl()
+SEVERITY:     BUG
+SPEC FIX:     N/A
+SOURCE FIX:   correction to mk_title in the case of a first letter "splice"
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  PR-1
+OPENED BY:    richard@unisys.com
+CLOSED ON:    991004
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A
+
+Problem #00005: closed
+Summary:      mk_title needs to use prefixes only for spliced words
+    N/A
+SEVERITY:     BUG
+SPEC FIX:     N/A
+SOURCE FIX:   N/A
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  PR-2
+OPENED BY:    richard@unisys.com
+CLOSED ON:    991006
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A
+
+Problem #00006: closed
+Summary:      scale vocab with item count
+SEVERITY:     FEATURE
+SPEC FIX:     N/A
+SOURCE FIX:   N/A
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  PR-1
+OPENED BY:    richard@unisys.com
+CLOSED ON:    991006
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A
+
+Problem #00007: closed
+Summary:      NT porting
+SEVERITY:     FEATURE
+SPEC FIX:     N/A
+SOURCE FIX:   N/A
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  all
+OPENED BY:    jms@gradientsystems.com
+CLOSED ON:    N/A
+CLOSED BY:    N/A
+CHECKED BY:   N/A
+
+Problem #00008: closed
+Summary:      synthetic words are sometime removed in mk_title()
+    since mk_title adds a whole word (with a space) the insertion point can
+	cause the resulting string to be too long. If that happens it's trimmed
+	back to a word boundary, and the output of digsyl() can be removed.
+SEVERITY:     BUG
+SPEC FIX:     N/A
+SOURCE FIX:   shift insertion boundaries
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  PR-3
+OPENED BY:    jms@gradientsystems.com
+CLOSED ON:    N/A
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A
+
+Problem #00009: closed
+Summary:      Correction to digsyl() calls in mk_title and mk_author
+    Based on the latest subcommittee meeting, the bounds for the digsyl()
+	calls needs to be changed
+SEVERITY:     BUG
+SPEC FIX:     N/A
+SOURCE FIX:   N/A
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  PR-3
+OPENED BY:    richard.saunders@unisys.com
+CLOSED ON:    N/A
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A
+
+Problem #00010: closed
+Summary:      calls to digsyl(0) fail.
+    use of log() to calcualte width precludes use for C_NAME.
+SEVERITY:     BUG
+SPEC FIX:     N/A
+SOURCE FIX:   Revert to iterative code to calculate width
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  PR-4
+OPENED BY:    basker@sequent.com
+CLOSED ON:    19991108
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A
+
+
+
+Problem #00011: closed
+Summary:      output should list all authors/titles
+SEVERITY:     FEATURE
+SPEC FIX:     N/A
+SOURCE FIX:   Reoved RNG call in sample driver
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  PR-4
+OPENED BY:    richard.saunders@unisys.com
+CLOSED ON:    19991108
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A
+
+Problem #00012: closed
+Summary:      remove unused functionality
+    N/A
+SEVERITY:     FEATURE
+SPEC FIX:     N/A
+SOURCE FIX:   N/A
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  PR-5
+OPENED BY:    Richard Saunders
+CLOSED ON:    PR-6
+CLOSED BY:    jms@tgradientsystems.com
+CHECKED BY:   N/A
+
+Problem #00013: closed
+Summary:      seg fault under solaris
+SEVERITY:     BUG
+SPEC FIX:     N/A
+SOURCE FIX:   larger malloc() allocation at line 229 in bm_utils.c
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  PR-5
+OPENED BY:    gerson@informix.com
+CLOSED ON:    20000131
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A
+
+Problem #00014: closed
+Summary:      Need to update copyright and revision information for first release
+    N/A
+SEVERITY:     BUG
+SPEC FIX:     N/A
+SOURCE FIX:   N/A
+ANSWER SETS:  N/A
+WORKAROUND:   N/A
+HELP NEEDED:  N/A
+AUDITORS NOTIFIED: N/A	
+OPENED AGAINST:  PR-5
+OPENED BY:    jms@gradientsystems.com
+CLOSED ON:    20000131
+CLOSED BY:    jms@gradientsystems.com
+CHECKED BY:   N/A

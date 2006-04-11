@@ -1,0 +1,106 @@
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Aziz Baktiev (OpenLink Software) -->
+<!-- Virtuoso Application Deployment (VAD) Sticker -->
+<!--<<top>>-->
+<!ENTITY % vad.source_sticker "INCLUDE">
+<!ENTITY % vad.package_sticker "IGNORE">
+<!ENTITY % vad.ecm.group_content "(dependencies | procedures | ddls | resources | registry)">
+<![%vad.source_sticker;[
+    <!ENTITY % vad.ecm.sticker "(caption, (group | %vad.ecm.group_content;)*)">
+    <!ELEMENT group ((group | %vad.ecm.group_content;)*) >
+    ]]>
+<![%vad.package_sticker;[
+    <!ENTITY % vad.ecm.sticker "(caption, %vad.ecm.group_content;)">
+    ]]>
+<!ELEMENT sticker %vad.ecm.sticker;>
+<!ATTLIST sticker
+	version NMTOKEN #REQUIRED
+	xml:lang CDATA #REQUIRED
+>
+<!--<</top>>-->
+<!--<<caption>>-->
+<!ELEMENT caption (name, version)>
+<!ELEMENT name ((prop)*)>
+<!ATTLIST name
+	package NMTOKEN #REQUIRED
+>
+<!ELEMENT version ((prop)*)>
+<!ATTLIST version
+	package NMTOKEN #REQUIRED
+>
+<!ELEMENT prop EMPTY>
+<!ATTLIST prop
+	name NMTOKEN #REQUIRED
+	value CDATA #REQUIRED
+>
+<!--<</caption>>-->
+<!--<<dependencies>>-->
+<!ELEMENT dependencies ((require | allow | conflict)*)>
+<!ENTITY % vad.ecm.version_list "((version | versions_earlier | versions_later)*)">
+<!ELEMENT require (name, %vad.ecm.version_list;)>
+<!ELEMENT allow (name, %vad.ecm.version_list;)>
+<!ELEMENT conflict (name, %vad.ecm.version_list;)>
+<!ATTLIST require
+	group NMTOKEN #IMPLIED
+>
+<!ELEMENT versions_earlier ((prop)*)>
+<!ATTLIST versions_earlier
+	package NMTOKEN #REQUIRED
+>
+<!ELEMENT versions_later ((prop)*)>
+<!ATTLIST versions_later
+	package NMTOKEN #REQUIRED
+>
+<!--<</dependencies>>-->
+<!--<<procedures>>-->
+<!ELEMENT procedures ((sql)*)>
+<!ATTLIST procedures
+	uninstallation (supported | prohibited) #REQUIRED
+>
+<![%vad.source_sticker;[
+    <!ENTITY % vad.sql.include "include CDATA #IMPLIED">
+    ]]>
+<![%vad.package_sticker;[
+    <!ENTITY % vad.sql.include "">
+    ]]>
+<!ELEMENT sql (#PCDATA)>
+<!ATTLIST sql
+	purpose (install-check | pre-install | post-install | uninstall-check | pre-uninstall | post-uninstall) #REQUIRED
+	%vad.sql.include; 
+>
+<!--<</procedures>>-->
+<!--<<ddls>>-->
+<!ELEMENT ddls ((sql)*)>
+<!--<</ddls>>-->
+<!--<<resources>>-->
+<!ELEMENT resources ((file | location)*)>
+<![%vad.source_sticker;[
+    <!ENTITY % vad.file.source_uri "source_uri CDATA #IMPLIED">
+    ]]>
+<![%vad.package_sticker;[
+    <!ENTITY % vad.file.source_uri "">
+    ]]>
+<!ELEMENT file EMPTY>
+<!ATTLIST file
+	type (doc | http | dav | code | special) #REQUIRED
+	target_uri CDATA #REQUIRED
+	makepath (yes | no | abort) "abort"
+	overwrite (yes | no | abort | equal | expected) "equal"
+	package_id CDATA #IMPLIED
+	location IDREF #IMPLIED
+	%vad.file.source_uri; 
+>
+<!ELEMENT location ((prop)*)>
+<!ATTLIST location
+	id ID #REQUIRED
+	default_target_uri CDATA #REQUIRED
+>
+<!--<</resources>>-->
+<!--<<registry>>-->
+<!ELEMENT registry ((record)*)>
+<!ELEMENT record ANY>
+<!ATTLIST record
+	key CDATA #REQUIRED
+	type (STRING | INTEGER | KEY | URL | XML) #REQUIRED
+	overwrite (yes | no | abort | equal | expected) "equal"
+>
+<!--<</registry>>-->

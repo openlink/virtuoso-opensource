@@ -1,0 +1,126 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare cookie, googlecookie, googlekey varchar;
+  declare cookielist any;
+  declare i integer;
+
+  cookie := http_request_header (lines, 'Cookie', null, '');
+
+  if (cookie <> '') {
+    googlecookie := get_keyword ('googlemapkey', split_and_decode (cookie, 0, '\0\0;='), '');
+    googlecookie := get_keyword (' googlemapkey', split_and_decode (cookie, 0, '\0\0;='), googlecookie);
+  }
+  else
+    googlecookie := '';
+    
+  if (googlecookie = '' and http_get_host() like 'demo.openlinksw.com%')
+    googlecookie := 'ABQIAAAAzOpqbSArHlw6OwzlRGdbfxRWLBPS3hXFJXu2r7P1ggVgyts22xTZ5v_An5tuSbg7i4wfyT_5AFpGzw';
+
+  googlekey := get_keyword('key', params, googlecookie);
+  if (googlekey = '')
+    googlekey := '';
+
+  http_header (sprintf ('Set-cookie: googlemapkey=%s; path=/;\r\n', googlekey));
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <title>Google Maps API Example - async</title>
+    <link href="../demo.css" rel="stylesheet" type="text/css" />
+    <style type="text/css">
+    v\:* {
+      behavior:url(#default#VML);
+    }
+    </style>
+    <?vsp if (googlekey <> '') { ?>
+      <script src="http://maps.google.com/maps?file=api&v=1&key=<?V googlekey ?>" type="text/javascript"></script>
+      <script type="text/javascript">
+      //<![CDATA[
+
+      function createMarker(point, number, info) {
+        var marker = new GMarker(point);
+      
+        // Show this markers index in the info window when it is clicked.
+        GEvent.addListener(marker, 'click', function() {
+        marker.openInfoWindowHtml(info);
+        });
+      
+        return marker;
+      }  
+
+      function onLoad() {
+        // Using XML and Asynchronous RPC ("AJAX") with Maps
+        //
+        // In this example, we download a static file ("data.xml") that contains a
+        // list of lat/lng coordinates in XML. When the download completes, we parse
+        // the XML and create a marker at each of those lat/lngs.
+        
+        // Center the map on Palo Alto
+        var map = new GMap(document.getElementById("map"));
+        map.addControl(new GSmallMapControl());
+        map.addControl(new GMapTypeControl());
+        map.centerAndZoom(new GPoint(-123.0730895996094, 44.02822494506836), 13);
+        
+        // Download the data in data_xml.vsp and load it on the map. The format we
+        // expect is:
+        // <markers>
+        //   <marker lat="37.441" lng="-122.141"/>
+        //   <marker lat="37.322" lng="-121.213"/>
+        // </markers>
+        var request = GXmlHttp.create();
+        request.open("GET", "data_xml.vsp", true);
+        request.onreadystatechange = function() {
+          if (request.readyState == 4) {
+            var xmlDoc = request.responseXML;
+            var markers = xmlDoc.documentElement.getElementsByTagName("marker");
+            for (var i = 0; i < markers.length; i++) {
+              var point = new GPoint(parseFloat(markers[i].getAttribute("lng")),
+                                     parseFloat(markers[i].getAttribute("lat")));
+              var marker = createMarker(point,i,markers[i].getAttribute("info"));
+              map.addOverlay(marker);
+            }
+          }
+        }
+        request.send(null);
+      }
+  
+      //]]>
+      </script>
+    <?vsp } ?>
+  </head>
+  <body <?vsp if (googlekey <> '') { ?>onload="onLoad()"<?vsp } ?>>
+    <form>
+      <h3>Google Maps API Demo</h3>
+      <label for="key">Google Maps API Key (optain from <a href="http://www.google.com/apis/maps/">http://www.google.com/apis/maps/</a>): </label>
+      <input id="key" size="83" type="text" name="key" value="<?V googlekey ?>"/>
+      <input type="submit" value="Set"/>
+      <hr/>
+      <?vsp if (googlekey <> '') { ?>
+        <div id="map" style="width: 100%; height: 415px"></div>
+        <div id="message"></div>
+      <?vsp } ?>
+    </form>
+  </body>
+</html>

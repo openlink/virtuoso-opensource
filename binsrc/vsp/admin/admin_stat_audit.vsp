@@ -1,0 +1,233 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+  if (not adm_check_auth (lines))
+    {
+      adm_tell_unauth (lines);
+      return (0);
+    }
+
+declare ft, stmt, err_sqlstate, err_msg, _ord, _where, _filter_c, _order, _order_n varchar;
+declare _maxres, inx, jnx, n_cols, res_len integer;
+declare m_dta, m_dta_col, result, col_names, res_row, res_cols any;
+
+ft := get_keyword('ft',params, 'yes');
+_maxres := atoi(get_keyword('maxres',params, '10'));
+_where := '';
+_filter_c := get_keyword('filter_c', params, '');
+_order_n := get_keyword('order', params, 'Ascending');
+
+if (_order_n = 'Ascending') {_order := 'Desc'; _order_n := 'Ascending';}
+else {_order := 'Asc'; _order_n := 'Descending';}
+
+_ord := concat(get_keyword('ord', params, 'EVTTIME'), ' ', _order);
+
+if ('' <> _filter_c)
+  _where := sprintf('WHERE CLIENT = \'%s\'', get_keyword('filter_c', params, ''));
+
+?>
+<HTML>
+  <HEAD>
+    <LINK REL="stylesheet" TYPE="text/css" HREF="<?=adm_what_css()?>">
+    <TITLE>Web Server Auditing</TITLE>
+    <META NAME="AUTHOR" CONTENT="OpenLink Software">
+    <META NAME="DESCRIPTION" CONTENT="Virtuoso Auditing">
+  </HEAD>
+<?vsp adm_page_header('Web Server Audit Trail', NULL); ?>
+<?include adm_js_check.vsp ?>
+
+	<FORM METHOD="get">
+<TABLE BORDER="0" CELLPADDING="10">
+<TR><TD VALIGN="top">
+	<INPUT TYPE="hidden" NAME="ft" VALUE="no">
+	<INPUT TYPE="hidden" NAME="filter_c" VALUE="<?=_filter_c?>">
+</TD><TD VALIGN="top">
+  <table cellpadding="0" cellspacing="2" border="0"  CLASS="genlist">
+    <tr><td CLASS="genhead" colspan="2">Web Server Log Viewer</td></tr>
+    <THEAD>
+      <tr>
+        <th CLASS="genhead">Display Columns</th>
+        <th CLASS="genhead">Show hits from</th>
+      </tr>
+    </THEAD>
+    <TBODY>
+      <tr><td>
+	  <table cellpadding="0" cellspacing="2" border="0">
+	    <tr>
+      	      <td CLASS="genlisthead"> Event Time</td>
+      	      <td align="left"><input type="checkbox" name="time" CHECKED onClick="javascript:this.form.submit()"></td>
+            </tr>
+	    <tr>
+	      <td CLASS="genlisthead"> Referrer</td>
+	      <td align="left"><input type="checkbox" name="referer"  onClick="javascript:this.form.submit()"></td>
+	    </tr>
+	    <tr>
+	      <td CLASS="genlisthead"> URI</td>
+	      <td align="left"><input type="checkbox" name="uri"  CHECKED onClick="javascript:this.form.submit()"></td>
+	    </tr>
+	    <tr>
+	      <td CLASS="genlisthead"> Host</td>
+	      <td align="left"><input type="checkbox" name="host"  onClick="javascript:this.form.submit()"></td>
+	    </tr>
+	    <tr>
+	      <td CLASS="genlisthead"> Client IP</td>
+	      <td align="left"><input type="checkbox" name="client"  CHECKED onClick="javascript:this.form.submit()"></td>
+	    </tr>
+	    <tr>
+	      <td CLASS="genlisthead"> Authentication</td>
+	      <td align="left"><input type="checkbox" name="auth"  CHECKED onClick="javascript:this.form.submit()"></td>
+	    </tr>
+	    <tr>
+	      <td CLASS="genlisthead"> Command</td>
+	      <td align="left"><input type="checkbox" name="cmd"  onClick="javascript:this.form.submit()"></td>
+	    </tr>
+	    <tr>
+	      <td CLASS="genlisthead"> User Agent</td>
+	      <td align="left"><input type="checkbox" name="ua"  onClick="javascript:this.form.submit()"></td>
+	    </tr>
+	  </table>
+	</td><td valign="top" align="center">
+	  <table border="0" cellpadding="2" cellspacing="0">
+	    <tr>
+	      <th CLASS="statlistheadt">Client IP</th>
+	      <th CLASS="statlistheadt">Hit Count</th>
+	      <th CLASS="statlistheadt">&nbsp;</th>
+	    </tr>
+	    <tr>
+	      <td CLASS="statdata">127.0.0.1</td>
+	      <td CLASS="statdata" align="center">563</td>
+	      <td CLASS="statdata" align="left"><input type="checkbox"
+		  NAME="Filter" Value="127.0.0.1"
+		  onClick="javascript:this.form.filter_c.value='127.0.0.1';
+		  this.form.submit();"></td>
+    	    </tr>
+	  </table>
+      </td></tr>
+      <tr>
+	<td CLASS="genlisthead">Row Limit</td>
+	<td CLASS="geninput"><INPUT SIZE="5" TYPE="text" NAME="maxres"
+	    VALUE="10">&nbsp;(0 implies no limit)</td>
+    </tr>
+    <tr>
+      <td CLASS="geninput" COLSPAN="2" align="center">
+	  <INPUT TYPE="submit" NAME="refresh" VALUE="Refresh">
+	  <INPUT TYPE="submit" NAME="clearlog" HIDEFOCUS VALUE="Clear">
+      </td>
+    </tr>
+  </TBODY>
+</table>
+</TD><TD VALIGN="top">
+</TD></TR></TABLE>
+	</FORM>
+<?vsp
+
+stmt:= 'SELECT ';
+if ('' <> get_keyword('time', params, '') or ft='yes') stmt := concat(stmt, 'EVTTIME, ');
+if ('' <> get_keyword('referer', params, '')) stmt := concat(stmt, 'REFERER, ');
+if ('' <> get_keyword('uri', params, '') or ft='yes') stmt := concat(stmt, 'URI, ');
+if ('' <> get_keyword('host', params, '')) stmt := concat(stmt, 'HOST, ');
+if ('' <> get_keyword('client', params, '') or ft='yes') stmt := concat(stmt, 'CLIENT, ');
+if ('' <> get_keyword('auth', params, '') or ft='yes') stmt := concat(stmt, 'sprintf(\'[%s]:%s/%s\', coalesce(AUTHALGORITHM, \'\'), coalesce(REALM, \'\'), coalesce(USERNAME, \'\')) AS AUTH, ');
+if ('' <> get_keyword('cmd', params, '')) stmt := concat(stmt, 'COMMAND, ');
+if ('' <> get_keyword('ua', params, '')) stmt := concat(stmt, 'USERAGENT, ');
+
+stmt := concat(stmt, '1 FROM WS.WS.AUDIT_LOG ', _where ,' ORDER BY ', _ord);
+
+	declare err_sqlstate1, err_msg1 varchar;
+	  err_sqlstate := '00000';
+	  err_msg := 'none';
+
+exec (stmt, err_sqlstate, err_msg, vector(), _maxres, m_dta, result);
+
+-- headers
+  if (0 = m_dta)
+  {
+    http('<P>No data found.</P>');
+  }
+  else
+  {
+    n_cols := length (aref (m_dta,0)) -1 ; -- that dummy 1 col
+
+?>
+
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="2" CLASS="statlist">
+<TR><TD CLASS="stathead" COLSPAN="<?=n_cols?>">Web Server Admin Log</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="<?=n_cols?>"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR>
+
+<?vsp
+
+    while (inx < n_cols)
+    {
+      m_dta_col := aref (aref (m_dta, 0), inx);
+
+      http ('<TD CLASS="statlistheadt" NOWRAP>');
+      col_names := aref (m_dta_col, 0);
+
+      if (adm_unqualify(col_names) = 'EVTTIME') http('Event Time');
+      if (adm_unqualify(col_names) = 'REFERER') http('Referer');
+      if (adm_unqualify(col_names) = 'URI') http('URI');
+      if (adm_unqualify(col_names) = 'HOST') http('Host');
+      if (adm_unqualify(col_names) = 'CLIENT') http('Client');
+      if (adm_unqualify(col_names) = 'AUTH') http('Authentication');
+      if (adm_unqualify(col_names) = 'COMMAND') http('Command');
+      if (adm_unqualify(col_names) = 'USERAGENT') http('User Agent');
+
+      http ('</TD>');
+
+      inx := inx + 1;
+    }
+    http('</TR>\n');
+
+-- data
+
+    res_len := length (result);
+    inx := 0;
+
+    while (inx < res_len)
+    {
+      http ('<TR>');
+
+      res_row := aref (result, inx);
+
+      jnx := 0;
+
+      while (jnx < n_cols)
+	{
+	  http ('<TD CLASS="statdata">');
+	  http_value (coalesce (aref (res_row, jnx), '<DB NULL>'));
+	  http ('</TD>');
+	  jnx := jnx + 1;
+	}
+
+      http ('</TR>\n');
+      inx := inx + 1;
+    }
+
+    http ('</TABLE>');
+
+  }
+?>
+<?vsp adm_page_footer(); ?>
+</HTML>

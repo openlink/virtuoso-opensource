@@ -1,0 +1,100 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="WA-B-3">
+  <refmeta>
+    <refentrytitle>WAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>WAP based Email</refname>
+    <refpurpose>WAP Phone E-mail Retrieval</refpurpose>
+  </refnamediv>
+
+<refsect1 id="WA-B-3a">
+<title>Preliminaries</title>
+<para>Thought the only way to check your email on a wireless phone was via
+Yahoo.com? This demo will illustrate how a few VSP scripts on a Virtuoso
+server can provide a fully-functional wireless E-mail solution. Read messages
+from your POP-based email account from any WAP-enabled wireless device, or
+from the wireless phone emulators.</para>
+</refsect1>
+
+<refsect1 id="WA-B-3b">
+<title>Running the Demo on a WAP device</title>
+<para>To access this application via WAP/WML, enter the following URL
+into a WAP-enabled wireless device:</para>
+<programlisting>http://&lt;hostname&gt;/tutorial/apps/wa_b_3/index.vsp</programlisting>
+
+</refsect1>
+
+<refsect1 id="WA-B-3c">
+<title>Email WAP Application files</title>
+<itemizedlist mark="bullet">
+  <listitem>index.vap - Main page that calls the other files.</listitem>
+  <listitem>signup.vsp - Code to register details about a new user.</listitem>
+  <listitem>login.vsp - Code to sign-in a registered user.</listitem>
+  <listitem>checkmail.vsp - Code to communicate with the POP3 account.</listitem>
+  <listitem>logout.vsp - Code to sign-out.</listitem>
+
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="WA-B-3d">
+<title>Running the Demo on a WAP emulator</title>
+
+<para>To simulate viewing the output on a wireless device. Run the
+<ulink url="wap/wa_b_3/RunWapEmail.vsp">RunWapEmail.html</ulink> file.
+Then choose a web-based emulator from one below:</para>
+
+<itemizedlist mark="bullet">
+  <listitem>Wap.com -
+  This is the most accurate Java and web based emulator, almost to the point
+  of the definitive WAP SDK emulators from Openwave. However, its performance
+  is not always optimal.
+  </listitem>
+
+  <listitem>Wapsilon.com -
+  This is a reasonably accurate emulator, but the user interface handling is
+  not quite the same as a real WAP phone.
+  </listitem>
+
+  <listitem>Wapmore.com -
+  This is a PDA style emulator. Although its interface is a bit quirky, the
+  performance is reasonable.
+  </listitem>
+
+  <listitem>Gelon.net -
+  This is probably the fastest web-based WAP emulator; however, it sometimes
+  exhibits problems displaying WML forms.
+  </listitem>
+
+  <listitem>Download WAP SDK -
+  Our recommended option, this standard WAP SDK for emulators from
+  <ulink url="http://www.openwave.com">Openwave.com</ulink>
+  (formerly Phone.com).
+  </listitem>
+
+</itemizedlist>
+</refsect1>
+</refentry>

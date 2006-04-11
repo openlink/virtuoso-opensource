@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_string_to_file">
+  <refmeta>
+    <refentrytitle>string_to_file</refentrytitle>
+    <refmiscinfo>string</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>string_to_file</refname>
+    <refpurpose>writes a varchar to a file</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_string_to_file">
+      <funcprototype id="fproto_string_to_file">
+        <funcdef><function>string_to_file</function></funcdef>
+        <paramdef>in <parameter>path</parameter> varchar</paramdef>
+        <paramdef>in <parameter>string</parameter> varchar</paramdef>
+        <paramdef>in <parameter>mode</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>path</title>
+      <para><type>varchar</type> relative path.</para>
+    </refsect2>
+    <refsect2><title>string</title>
+      <para><type>varchar</type> or <type>string session</type> to write to
+      the file.</para>
+    </refsect2>
+    <refsect2><title>mode</title>
+      <para><type>integer</type> mode.</para>
+        <simplelist>
+          <member>0 - overwrite from start offset 0</member>
+          <member>-1 - append to end of file</member>
+          <member>-2 - overwrite and truncate.</member>
+	</simplelist>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="desc"><title>Description</title>
+    <para>This function requires dba privileges.</para>
+    <para><function>string_to_file</function> writes a <type>varchar</type>
+    value or string session to a file. The path is relative to the server's
+    working directory. The mode is an integer value interpreted as a
+    position. A mode of 0 writes the content starting at offset 0.
+    A mode of -1 appends to the end of the file. The append option is
+    probably the most useful for producing application level logs,
+    etc.</para>
+    <para>The string argument can also be a string output object. In this
+    case the content is used as the string.</para>
+    <para>If the mode is -2, the new content supersedes the old.  This is
+    different from 0 in that the file will be truncated if the new content
+    is shorter than the old.</para>
+    <para>The DirsAllowed and DirsDenied lists in Parameters section of the
+    virtuoso configuration file (virtuoso.ini by default) are used to control
+    disk access. An error 42000/FA024 is signalled if an attempt is made to
+    write to a file in a directory to which disk access is not explicitly
+    allowed.</para>
+  </refsect1>
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_string_to_file"><title>Simple example</title>
+      <para>Write an entry to an application log</para>
+      <screen>
+SQL>string_to_file ('logs/applog.txt',
+  concat (datestring(now()),'\t','Application started.\n'), -1);
+
+Done. -- 4 msec.
+SQL> quit;
+bash$ cat logs/applog.txt
+2001-03-19 15:15:12.000000	Application started.
+bash$
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_file_to_string"><function>file_to_string</function></link></para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,94 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version='1.0'?>
+<?xml-stylesheet type="text/css" href="review.css" ?>
+<story xmlns:HTML="http://www.w3.org/Profiles/XHTML-transitional">
+  <restaurant>
+    <name>Red Apple Inn</name>
+    <logo>
+      <HTML:A href="javascript:alert('Visit the Red Apple Inn!')">
+        <HTML:IMG src="red-apple.gif" height="50" width="200"/>
+      </HTML:A>
+    </logo>
+    <address>
+      <street>3100 Longview Lane</street>
+      <city>Palabro</city>
+      <state>Wyoming</state>
+    </address>
+    <phone>123-555-1212</phone>
+  </restaurant>
+  
+  <review>
+    <rating stars="4">****</rating>
+    <date>December 29, 1998</date>
+    <reviewer><person>Louis Framptenheimer</person></reviewer>
+  </review>
+  
+  <body>
+    <p><summary>The small town of <city>Palabro</city> seems like
+    an unlikely place for a high-class culinary establishment, but
+    the <self>Red Apple Inn's</self> Chef <person>Alex
+    Choperoni</person> is earning a national reputation for innovative
+    dishes.</summary>  And rightly so, if this reviewer's recent
+    culinary experience is any example.</p>
+  
+    <p>Within striking distance from the ski slopes at <city>Jackson
+    Hole</city>, the <self>Red Apple Inn</self> is a completely
+    restored Victorian hotel, and offers a warm and elegant atmosphere and
+    gracious service.  The upscale clientele includes regular
+    appearances by movie stars <person>Drew Barrymore</person> and
+    <person>Matthew Broderick</person>.  Reservations are a must, and
+    during the ski season it is not uncommon for the dining room to
+    be booked solid six weeks in advance.</p>
+    
+    <p>It is hard to go wrong with a menu this packed with interesting
+    choices.  The crab cakes are especially fine with a thin crisp
+    crust that opens with a gentle prod of a fork to reveal a light,
+    moist, almost mousse-like interior with a rich nutty flavor.</p>
+  
+    <p>The <self>Red Apple Inn</self> boasts one of the finest wine
+    cellars in the region.  None of the dishes we sampled were less than
+    outstanding. Here are a few of the selections from the daily menu.</p>
+  </body>
+    
+  <menu>
+    <appetizer>
+      <description>Crab cakes with a creamy dill sauce served with crispy herbed daikon fries</description>
+      <price>$23</price>
+    </appetizer>
+    <HTML:HR/>
+    <entree>
+      <description>Braised jumbo sea scallops on a tomato beurre blanc</description>
+      <price>$39</price>
+    </entree>
+    <entree>
+      <description>Free-range chicken breast stuffed with morels in a brandy/green-peppercorn sauce</description>
+      <price>$31</price>
+    </entree>
+    <entree>
+      <description>Tarragon roast pork loin on a bed of ginger apple slaw and caramelized onions</description>
+      <price>$34</price>
+    </entree>
+  </menu>
+  
+</story>

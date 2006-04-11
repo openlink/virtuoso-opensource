@@ -1,0 +1,347 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml:stylesheet type="text/xsl" href="stock-sorter-vb.xsl"?>
+<portfolio xmlns="x-schema:portfolio-schema.xml">
+  <description>Technology Stock Index</description>
+  <date>1998-10-13T15:56:00</date>
+  <stock>
+    <symbol>ACXM</symbol>
+    <name>acxiom corp</name>
+    <price>18.875</price>
+    <change>-1.250</change>
+    <percent>-6.21</percent>
+    <volume>0.23</volume>
+  </stock>
+  <stock>
+    <symbol>AFFX</symbol>
+    <name>affymetrix inc</name>
+    <price>20.313</price>
+    <change>-1.438</change>
+    <percent>-6.61</percent>
+    <volume>0.08</volume>
+  </stock>
+  <stock>
+    <symbol>AOL</symbol>
+    <name>america online inc</name>
+    <price>92.250</price>
+    <change>-1.125</change>
+    <percent>-1.20</percent>
+    <volume>4.99</volume>
+  </stock>
+  <stock>
+    <symbol>AIG</symbol>
+    <name>american intl group inc</name>
+    <price>74.125</price>
+    <change>-0.063</change>
+    <percent>-0.08</percent>
+    <volume>2.66</volume>
+  </stock>
+  <stock>
+    <symbol>AMR</symbol>
+    <name>amr corp</name>
+    <price>48.000</price>
+    <change>-3.750</change>
+    <percent>-7.25</percent>
+    <volume>1.37</volume>
+  </stock>
+  <stock>
+    <symbol>AMAT</symbol>
+    <name>applied matls inc</name>
+    <price>26.438</price>
+    <change>-0.375</change>
+    <percent>-1.40</percent>
+    <volume>6.11</volume>
+  </stock>
+  <stock>
+    <symbol>CWP</symbol>
+    <name>cable &amp; wireless pub ltd co</name>
+    <price>32.125</price>
+    <change>-0.188</change>
+    <percent>-0.58</percent>
+    <volume>0.20</volume>
+  </stock>
+  <stock>
+    <symbol>CSCO</symbol>
+    <name>cisco sys inc</name>
+    <price>50.688</price>
+    <change>-1.688</change>
+    <percent>-3.22</percent>
+    <volume>18.23</volume>
+  </stock>
+  <stock>
+    <symbol>DAI</symbol>
+    <name>daimler-benz a g rep 1 ord sh</name>
+    <price>75.125</price>
+    <change>-1.438</change>
+    <percent>-1.88</percent>
+    <volume>0.72</volume>
+  </stock>
+  <stock>
+    <symbol>DELL</symbol>
+    <name>dell computer corp</name>
+    <price>53.000</price>
+    <change>-3.063</change>
+    <percent>-5.46</percent>
+    <volume>32.95</volume>
+  </stock>
+  <stock>
+    <symbol>DIS</symbol>
+    <name>disney walt co (hldg co)</name>
+    <price>25.500</price>
+    <change>+0.875</change>
+    <percent>+3.55</percent>
+    <volume>4.86</volume>
+  </stock>
+  <stock>
+    <symbol>EMC</symbol>
+    <name>e m c corp mass</name>
+    <price>52.188</price>
+    <change>-1.938</change>
+    <percent>-3.58</percent>
+    <volume>3.18</volume>
+  </stock>
+  <stock>
+    <symbol>ENE</symbol>
+    <name>enron corp (oregon)</name>
+    <price>51.188</price>
+    <change>+0.250</change>
+    <percent>+0.49</percent>
+    <volume>0.92</volume>
+  </stock>
+  <stock>
+    <symbol>FDX</symbol>
+    <name>fdx corp (holding co)</name>
+    <price>47.750</price>
+    <change>+0.563</change>
+    <percent>+1.19</percent>
+    <volume>0.27</volume>
+  </stock>
+  <stock>
+    <symbol>FDC</symbol>
+    <name>first data corp</name>
+    <price>20.938</price>
+    <change>-0.188</change>
+    <percent>-0.89</percent>
+    <volume>1.14</volume>
+  </stock>
+  <stock>
+    <symbol>GSTRF</symbol>
+    <name>globalstar telecommun ltd</name>
+    <price>10.063</price>
+    <change>-0.063</change>
+    <percent>-0.62</percent>
+    <volume>0.49</volume>
+  </stock>
+  <stock>
+    <symbol>INCY</symbol>
+    <name>incyte pharmaceuticals inc</name>
+    <price>25.688</price>
+    <change>-1.438</change>
+    <percent>-5.30</percent>
+    <volume>0.56</volume>
+  </stock>
+  <stock>
+    <symbol>INTC</symbol>
+    <name>intel corp</name>
+    <price>83.563</price>
+    <change>-1.875</change>
+    <percent>-2.19</percent>
+    <volume>25.17</volume>
+  </stock>
+  <stock>
+    <symbol>LU</symbol>
+    <name>lucent technologies inc</name>
+    <price>64.438</price>
+    <change>-2.188</change>
+    <percent>-3.28</percent>
+    <volume>6.82</volume>
+  </stock>
+  <stock>
+    <symbol>MAR</symbol>
+    <name>marriott intl inc new cl a</name>
+    <price>22.875</price>
+    <change>+1.188</change>
+    <percent>+5.48</percent>
+    <volume>0.57</volume>
+  </stock>
+  <stock>
+    <symbol>WCOM</symbol>
+    <name>mci worldcom inc</name>
+    <price>46.500</price>
+    <change>-0.813</change>
+    <percent>-1.72</percent>
+    <volume>11.40</volume>
+  </stock>
+  <stock>
+    <symbol>MSFT</symbol>
+    <name>microsoft corp</name>
+    <price>96.438</price>
+    <change>-3.313</change>
+    <percent>-3.32</percent>
+    <volume>12.00</volume>
+  </stock>
+  <stock>
+    <symbol>MTC</symbol>
+    <name>monsanto co</name>
+    <price>37.000</price>
+    <change>-13.375</change>
+    <percent>-26.55</percent>
+    <volume>32.78</volume>
+  </stock>
+  <stock>
+    <symbol>NWS</symbol>
+    <name>news corp ltd</name>
+    <price>23.125</price>
+    <change>0.000</change>
+    <percent>0.00</percent>
+    <volume>0.43</volume>
+  </stock>
+  <stock>
+    <symbol>NOK/A</symbol>
+    <name>nokia corporation</name>
+    <price>70.813</price>
+    <change>-1.438</change>
+    <percent>-1.99</percent>
+    <volume>1.06</volume>
+  </stock>
+  <stock>
+    <symbol>NUE</symbol>
+    <name>nucor corp</name>
+    <price>44.000</price>
+    <change>+0.375</change>
+    <percent>+0.86</percent>
+    <volume>0.14</volume>
+  </stock>
+  <stock>
+    <symbol>PMTC</symbol>
+    <name>parametric technology</name>
+    <price>9.188</price>
+    <change>-0.438</change>
+    <percent>-4.55</percent>
+    <volume>3.90</volume>
+  </stock>
+  <stock>
+    <symbol>PSFT</symbol>
+    <name>peoplesoft inc</name>
+    <price>18.875</price>
+    <change>-4.250</change>
+    <percent>-18.38</percent>
+    <volume>20.33</volume>
+  </stock>
+  <stock>
+    <symbol>QWST</symbol>
+    <name>qwest communications intl inc</name>
+    <price>30.000</price>
+    <change>-1.750</change>
+    <percent>-5.51</percent>
+    <volume>1.78</volume>
+  </stock>
+  <stock>
+    <symbol>RTRSY</symbol>
+    <name>reuters group plc adr</name>
+    <price>46.375</price>
+    <change>+0.250</change>
+    <percent>+0.54</percent>
+    <volume>0.24</volume>
+  </stock>
+  <stock>
+    <symbol>SLB</symbol>
+    <name>schlumberger ltd</name>
+    <price>44.500</price>
+    <change>-1.688</change>
+    <percent>-3.65</percent>
+    <volume>3.23</volume>
+  </stock>
+  <stock>
+    <symbol>SCH</symbol>
+    <name>schwab charles corp new</name>
+    <price>41.813</price>
+    <change>+1.875</change>
+    <percent>+4.69</percent>
+    <volume>1.23</volume>
+  </stock>
+  <stock>
+    <symbol>SBH</symbol>
+    <name>smithkline beecham plc ord sh</name>
+    <price>53.750</price>
+    <change>+1.875</change>
+    <percent>+3.61</percent>
+    <volume>0.90</volume>
+  </stock>
+  <stock>
+    <symbol>SNE</symbol>
+    <name>sony corp</name>
+    <price>70.125</price>
+    <change>-1.813</change>
+    <percent>-2.52</percent>
+    <volume>0.08</volume>
+  </stock>
+  <stock>
+    <symbol>STT</symbol>
+    <name>state street corp</name>
+    <price>57.750</price>
+    <change>+2.000</change>
+    <percent>+3.59</percent>
+    <volume>0.52</volume>
+  </stock>
+  <stock>
+    <symbol>SUNW</symbol>
+    <name>sun microsystems</name>
+    <price>44.750</price>
+    <change>-0.250</change>
+    <percent>-0.56</percent>
+    <volume>3.45</volume> 
+  </stock>
+  <stock>
+    <symbol>TMO</symbol>
+    <name>thermo electron corp</name>
+    <price>14.875</price>
+    <change>+0.375</change>
+    <percent>+2.59</percent>
+    <volume>0.52</volume>
+  </stock>
+  <stock>
+    <symbol>WMT</symbol>
+    <name>wal mart stores inc</name>
+    <price>59.938</price>
+    <change>-0.875</change>
+    <percent>-1.44</percent>
+    <volume>2.49</volume>
+  </stock>
+  <stock>
+    <symbol>WIND</symbol>
+    <name>wind river systems</name>
+    <price>35.813</price>
+    <change>-3.563</change>
+    <percent>-9.05</percent>
+    <volume>0.29</volume> 
+  </stock>
+  <stock>
+    <symbol>YHOO</symbol>
+    <name>yahoo! inc</name>
+    <price>109.938</price>
+    <change>-4.500</change>
+    <percent>-3.93</percent>
+    <volume>6.48</volume>
+  </stock>
+</portfolio>

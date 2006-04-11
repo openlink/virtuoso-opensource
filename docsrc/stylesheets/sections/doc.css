@@ -1,0 +1,422 @@
+@import "openlink.css";
+
+@media screen, print {
+
+#text {
+  background:#fff;
+  color: black;
+  padding: 1px;
+  padding-left: 20px;
+  padding-right: 20px;
+  margin-left: 200px;
+  margin-right:0px;
+  margin-left: 200px;
+  margin-right:0px;
+  }
+
+html>body #text {
+  margin-left: 200px;
+  margin-right:0px;
+  }
+
+#navbarbottom {
+  WIDTH: 100%;
+  height: 65px;
+  top: auto;
+  right: 0;
+  left: 0;
+  bottom: auto;
+  clear: both;
+  }
+DIV.homepage { 
+  PADDING: 2em;
+  TEXT-ALIGN: center;
+  }
+.search { color: inherit; background-color: inherit; padding: 2px; padding-bottom: 2em;}
+#currenttoc {
+  position: absolute;
+  left:0px;
+  top:100px;
+  width:197px;
+  background:#f0f0f0;
+  color: black;
+  padding: 1px;
+  FONT-FAMILY: Tahoma, Utopia, Times, Helvetica, Sans-Serif;
+  }
+#currenttoc A {
+  display: block;
+  BACKGROUND-COLOR: inherit;
+  COLOR: Blue;
+  PADDING: 3px;
+  }
+#currenttoc .selected {
+  FONT-WEIGHT: bolder;
+  }
+#currenttoc div div { 
+  margin-left: 1em;
+  }
+#currenttoc A:hover {
+  BACKGROUND-COLOR: #efefef;
+  border: 1px solid silver;
+  PADDING: 2px;
+  COLOR: Blue;
+  TEXT-DECORATION: none
+  }
+.toc, .toc1, .toc2, .toc3 {
+  FONT-FAMILY: Verdana, Sans-Serif;
+  FONT-SIZE: 100%;
+  }
+.maintoc a, .minitoc a { display: block; width: auto;}
+.maintoc a:active, .maintoc a:visited {color: blue; background: inherit;}
+.minitoc a:active, .minitoc a:visited {color: blue; background: inherit;}
+
+.minitoc a.sect1 { margin-top: 1em; margin-left: 4em; }
+.minitoc a.sect2 { margin-left: 8em; }
+
+.maintoc a.chapter { margin-top: 2em; }
+.maintoc a.sect1   { margin-top: 1em; margin-left: 6em;}
+.maintoc a.sect2   { margin-left: 12em; }
+
+.headnumbers { padding-right: 0.5em; }
+
+P
+{
+    MARGIN-TOP: 2px;
+    MARGIN-BOTTOM: 5px;
+    TEXT-ALIGN: left;
+}
+.formaltitle
+{
+    FONT-WEIGHT: bolder;
+    MARGIN: 5px
+}
+PRE
+{
+    FONT-SIZE: 100%;
+	MARGIN-BOTTOM: 1ex;
+}
+.note
+{
+    PADDING-RIGHT: 2px;
+    MARGIN-TOP: 20px;
+    PADDING-LEFT: 2px;
+    MARGIN-BOTTOM: 30px;
+    PADDING-BOTTOM: 2px;
+    PADDING-TOP: 2px;
+    BACKGROUND-COLOR: #fafadc;
+	COLOR: black;
+	BORDER: solid 1px #eaeacc;
+}
+.notetitle
+{
+    FONT-WEIGHT: bolder
+}
+.tip
+{
+    PADDING-RIGHT: 2px;
+    MARGIN-TOP: 20px;
+    PADDING-LEFT: 2px;
+    MARGIN-BOTTOM: 30px;
+    PADDING-BOTTOM: 2px;
+    PADDING-TOP: 2px;
+    BACKGROUND-COLOR: #dcfbdc;
+	COLOR: black;
+	BORDER: solid 1px #ccebcc;
+}
+.tiptitle
+{
+    FONT-WEIGHT: bolder
+}
+.refentrytitle
+{
+    MARGIN-TOP: 20px;
+    FONT-WEIGHT: bolder;
+    FONT-SIZE: 140%;
+    MARGIN-BOTTOM: 10px;
+    PADDING-BOTTOM: 2px;
+    background: inherit;
+    COLOR: black;
+    PADDING-TOP: 5px;
+    FONT-FAMILY: Verdana, Sans-Serif
+}
+.refsect1title
+{
+    FONT-WEIGHT: bolder;
+    FONT-SIZE: 115%;
+    PADDING-BOTTOM: 5px
+}
+.refsect2title
+{
+    FONT-WEIGHT: bolder
+}
+.refsect1
+{
+    PADDING-BOTTOM: 10px
+}
+.refsect2
+{
+}
+.refpurpose
+{
+    PADDING-BOTTOM: 2px;
+    background: inherit;
+    COLOR: navy;
+    PADDING-TOP: 2px;
+    FONT-FAMILY: Tahoma, Verdana, Sans-Serif
+}
+.funcsynopsis
+{
+    MARGIN-TOP: 10px;
+    FONT-SIZE: 110%;
+    MARGIN-BOTTOM: 10px;
+    background: inherit;
+    COLOR: #777777;
+    FONT-FAMILY: Tahoma, Sans-Serif
+}
+.funcdef
+{
+    FONT-SIZE: 100%
+}
+.function
+{
+    FONT-SIZE: 100%;
+    background: inherit;
+    COLOR: red;
+    FONT-FAMILY: Tahoma, Sans-Serif
+}
+.parameter
+{
+    FONT-SIZE: 100%;
+    background: inherit;
+    COLOR: navy;
+    FONT-FAMILY: Tahoma, Sans-Serif
+}
+.paramdef
+{
+    FONT-SIZE: 100%;
+    FONT-FAMILY: Tahoma, Sans-serif
+}
+.paramdefoptional
+{
+    FONT-SIZE: 100%;
+    FONT-STYLE: italic;
+    FONT-FAMILY: Tahoma, Sans-serif
+}
+.optional
+{
+    FONT-SIZE: 100%;
+    background: inherit;
+    COLOR: navy;
+    FONT-FAMILY: Tahoma, Sans-serif
+}
+.example
+{
+    MARGIN-TOP: 20px;
+    FONT-SIZE: 100%;
+    MARGIN-BOTTOM: 20px
+}
+.exampletitle
+{
+    FONT-WEIGHT: bolder;
+    FONT-SIZE: 100%;
+    background: inherit;
+    MARGIN-BOTTOM: 10px;
+    COLOR: teal;
+    BACKGROUND-REPEAT: repeat;
+    FONT-FAMILY: Verdana, Sans-Serif
+}
+.varlist
+{
+    FONT-SIZE: 100%;
+    MARGIN-LEFT: 1cm;
+    MARGIN-RIGHT: 0.5cm
+}
+.varterm
+{
+    FONT-WEIGHT: bolder;
+    FONT-SIZE: 10pt;
+    MARGIN-LEFT: 0cm;
+    background: inherit;
+    COLOR: navy;
+    MARGIN-RIGHT: 0cm;
+    FONT-FAMILY: Verdana, Sans-Serif;
+    TEXT-ALIGN: right
+}
+.itemizedlist
+{
+    FONT-SIZE: 100%
+}
+.screen
+{
+    FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace;
+	COLOR: Black;
+    BACKGROUND-COLOR: #F0F0F0;
+	BORDER: solid 1px #E0E0E0;
+}
+.programlisting
+{
+    FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace;
+	COLOR: Black;
+    BACKGROUND-COLOR: #F0F0F0;
+	BORDER: solid 1px #E0E0E0;
+}
+.computeroutput, .classname
+{
+    FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace;
+}
+.chapsep
+{
+    BORDER-TOP: 1px;
+    FONT-SIZE: 110%;
+    COLOR: white;
+    BORDER-BOTTOM: gray 1px solid;
+    FONT-FAMILY: Verdana, Sans-Serif;
+    BACKGROUND-COLOR: black
+}
+.funcindexitem
+{
+    BORDER-RIGHT: silver 1px solid;
+    BORDER-TOP: thin;
+    BORDER-LEFT: thin;
+    WIDTH: 170px;
+    BORDER-BOTTOM: silver 1px outset;
+    FONT-FAMILY: Verdana, Sans-Serif;
+    HEIGHT: 30px
+}
+.figure
+{
+    MARGIN-TOP: 2em;
+    MARGIN-BOTTOM: 3em;
+    MARGIN-LEFT: 5px;
+	margin-right: 2em;
+    background: inherit;
+    COLOR: navy;
+    FONT-FAMILY: Tahoma, Sans-Serif;
+    TEXT-ALIGN: center
+}
+.important
+{
+    MARGIN: 10px 5px;
+    background: inherit;
+    COLOR: red
+}
+TABLE.data
+{
+    MARGIN-TOP: 2em;
+    MARGIN-BOTTOM: 3em;
+    BORDER-TOP: #cccccc 1px solid;
+    BORDER-COLLAPSE: collapse
+}
+TH.data
+{
+    BORDER-RIGHT: #cccccc 1px solid;
+    BORDER-LEFT: #cccccc 1px solid;
+    BORDER-BOTTOM: #cccccc 1px solid;
+    BACKGROUND-COLOR: #eeeeee;
+	color: black;
+}
+TD.data
+{
+    BORDER-RIGHT: #cccccc 1px solid;
+    FONT-WEIGHT: normal;
+    BORDER-LEFT: #cccccc 1px solid;
+    BORDER-BOTTOM: #cccccc 1px solid
+}
+caption
+{
+    background: inherit;
+    COLOR: navy;
+    FONT-FAMILY: Tahoma, Sans-serif;
+    FONT-SIZE: 8pt;
+}
+HR
+{
+    WIDTH: 60%
+}
+.msgset, msg, msgexplain
+{
+    PADDING-BOTTOM: 5px;
+    PADDING-TOP: 3px;
+}
+.msgentry
+{
+    margin-left: 9em;
+    text-indent: -9em;
+    PADDING-BOTTOM: 1ex;
+}
+.msgsettitle { FONT-WEIGHT: Bold; }
+.errorcode, .errortype { FONT-FAMILY: Monaco, 'Andale Mono', 'Lucida Console', monospace; PADDING-RIGHT: 1em; }
+.errorname { COLOR: Black; background: inherit; PADDING-RIGHT: 1em;}
+
+.classsynopsis, .constructorsynopsis {
+  border-top: dashed silver 2px;
+  border-right: dashed silver 2px;
+  width: auto;
+  margin-left: 4em;
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+.classsynopsis .modifier, .constructorsynopsis .modifier {
+  background-color: #dddddd;
+  color: inherit;
+  margin-left: 0em;
+  border-left: solid silver 1px;
+  border-bottom: solid silver 1px;
+}
+
+.classsynopsis .ooclass .classname, .constructorsynopsis .methodname, .methodsynopsis .methodname{
+  background-color: #eeeeee;
+  color: inherit;
+  padding: 1em;
+  margin-left: 4em;
+  border-left: solid silver 1px;
+  border-bottom: solid silver 1px;
+}
+
+.classsynopsis .oointerface, .constructorsynopsis .methodparam, .methodsynopsis .methodparam {
+  background-color: #dddddd;
+  color: inherit;
+  padding: 1em;
+  margin-left: 8em;
+  border-left: solid silver 1px;
+  border-bottom: solid silver 1px;
+}
+
+.mptype, modifier
+{
+    FONT-SIZE: 100%;
+    FONT-FAMILY: Tahoma, Sans-Serif;
+	padding: 2px;
+}
+.mpparam
+{
+    background: inherit;
+    COLOR: navy;
+    FONT-FAMILY: Verdana, Sans-Serif;
+}
+
+}
+
+@media print {
+ #currenttoc {
+  display: none; 
+ }
+
+ BODY {  
+  background-image: none; 
+ }
+ 
+ #text {
+  margin-left: 1em;
+  margin-right:0px;
+ }
+
+ #navbar { 
+  display: none; 
+ }
+
+ html>body #text {
+  margin-left: 1em;
+  margin-right:0px;
+  }
+}

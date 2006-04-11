@@ -1,0 +1,59 @@
+<h2>combobox.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>Creates a combobox, which is an enhanced &lt;select&gt;</p>
+<hr/>
+
+<h3>Objects</h3>
+<ul>
+	<li><a href="#combobox">Combobox(defaultValue)</a></li>
+</ul>
+
+<h3>Methods</h3>
+<ul>
+	<li><a href="#addoption">Combobox::addOption(element, textValue)</a></li>
+</ul>
+
+<h3>CSS classes</h3>
+<ul>
+	<li>.combo_box</li>
+	<li>.combo_box_value</li>
+	<li>.combo_box_list</li>
+	<li>.combo_image</li>
+</ul>
+
+<hr/>
+
+<h3><a name="combobox">Combobox(defaultValue)</a></h3>
+<p>Creates a combobox with a value of <em>defaultValue</em>. Its main div is accessible as <code>Combobox::div</code>. 
+Onchange callback may be set via <code>Combobox::onchange</code> property.</p>
+
+<h3><a name="addoption">Combobox::addOption(element, textValue)</a></h3>
+<p>Adds a new option, represented by <em>element</em> with a value of <em>textValue</em>.</p>
+
+<p class="code">
+	var cb = new Combobox("[choose here]");<br/>
+	document.body.appendChild( cb.div );<br/>
+	cb.addOption(someElement, "option 1");<br/>
+	cb.addOption(someOtherElement, "option 2");
+</p>

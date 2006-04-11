@@ -1,0 +1,106 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_data_list">
+<refmeta>
+  <refentrytitle>vspx_data_list</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_data_list</refname>
+  <refpurpose>Select box initialized from a SQL select</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_data_list">
+    <funcprototype id="proto_vspx_data_list">
+      <funcdef>
+        <function>data-list</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>table (required) </attribute>
+        <attribute>key (required) </attribute>
+        <attribute>value (required) </attribute>
+      </attributes>
+      <childs />
+      <class>
+        <screen><![CDATA[
+			   
+			    create type vspx_data_list under vspx_select_list self as ref temporary
+			    constructor method vspx_data_list (name varchar, parent vspx_control)
+			    ;
+			   
+			   ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_data_list">
+  <title>Description</title>
+  <para>
+    <function>vspx_data_list</function>This control is used to make a select list, based on a SQL expression.</para>
+</refsect1>
+<refsect1 id="attrs_vspx_data_list">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>table</title>
+    <para>A table name for select statement.</para>
+  </refsect2>
+  <refsect2>
+    <title>key</title>
+    <para>A key column name.</para>
+  </refsect2>
+  <refsect2>
+    <title>value</title>
+    <para>A value column name.</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_data_list">
+  <title>Children</title>
+</refsect1>
+<refsect1 id="examples_vspx_data_list">
+  <title>Examples</title>
+  <example id="ex_vspx_data_list">
+    <title>Simple example</title>
+    <para>A simple data bound select list</para>
+    <screen><![CDATA[
+			     <v:data-list name="data_list" table="Demo.demo.Products" key="ProductID" value="ProductName" />
+			   ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

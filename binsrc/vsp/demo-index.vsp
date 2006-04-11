@@ -1,0 +1,189 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>OpenLink Virtuoso Server Feature Demonstrations</title>
+    <meta name="description" content="OpenLink Virtuoso Server">
+	  <link rel="stylesheet" type="text/css" href="admin/admin_style.css">
+  </head>
+  <BODY>
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+<TR><TD CLASS="AdmPagesTitle" COLSPAN="2"><H2>Virtuoso Feature Demonstrations</H2></TD></TR>
+<TR CLASS="AdmBorders"><TD COLSPAN="2"><IMG SRC="admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR CLASS="demomain"><TD COLSPAN="2"><IMG SRC="admin/images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR CLASS="demomain"><TD ALIGN="LEFT" COLSPAN="2">
+<H2>Virtuoso E-Business Integration Server</H2>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="10">
+<TR><TD COLSPAN="2">
+<P CLASS="featuretext">
+Virtuoso 2.0 is the first CROSS PLATFORM E-business Integration Server to
+implement key Web, Internet, and Data Access Protocols (XML, XSL-T, XPATH,
+WebDAV, SOAP, SMTP, HTTP, SQL, ODBC, JDBC etc.) in a single server solution.
+</P>
+</TD></TR>
+<TR>
+	<TD class="feature" ROWSPAN="3" WIDTH="65%" VALIGN="top">
+<H3>XML Support</H3>
+<P CLASS="featuretext">Virtuoso enables you to develop E-business solutions that use XML as a both a Data Source and Data Interchange format.  
+Your XML Data documents can take the form of Pure XML Documents or documents that are transformed from SQL-XML on the fly.  
+By Supporting the XPATH query language for XML Data, you are able to use an industry standard query language to query 
+entire XML Documents or portions of XML Documents stored within Virtuoso.</P>
+</TD>
+<TD class="demo" VALIGN="top"><A CLASS="demolink" HREF="admin/admin_dav/admin_vfs_site.vsp">XML Data Imports</A>
+	<P CLASS="demodesc">This interface allows you import information from an arbitrary Internet site including XML feeds.</P></TD>
+</TR>
+<TR><TD class="demo" VALIGN="top"><A CLASS="demolink" HREF="admin/admin_dav/admin_dav_xslt.vsp">SQL to XML Transformations</A>
+	<P CLASS="demodesc">Query SQL data and form an XML view from it.</P></TD>
+</TR>
+<!--TD class="demo" VALIGN="top"><A CLASS="demolink" HREF="admin/admin_ixpath_main.vsp">XML Data Queries</A>
+	<P CLASS="demodesc">Query XML directly using XPATH.</P></TD-->
+</TR>
+<TD class="demo" VALIGN="top"><A CLASS="demolink" HREF="admin/admin_dav/admin_dav_document_search.vsp?qtype=XPATH&out=xml">XSL-T Demo</A>
+	<P CLASS="demodesc">Virtuoso XSL-T Transformation Engine Demo</P></TD>
+</TR>
+<TR>
+	<TD class="feature" VALIGN="top">
+<H3>SOAP Based Messaging</H3>
+<P CLASS="featuretext">By supporting the Simple Object Access Protocol (SOAP), Virtuoso enables you to integrate business processes within and across organization 
+boundaries.  SOAP support enables you to execute Virtuoso Stored Procedures over HTTP.  This is a critical requirement for any Business-to-Business development 
+and implementation effort.
+</P>
+</TD>
+<?vsp if (not exists (select 1 from sys_procedures where P_NAME like '%fishselect%'))
+        {
+?>
+	<TD class="demo" VALIGN="top">
+<P CLASS="demolinkdisabled">This demo requires demo.db</P>
+<P CLASS="demodesc">Please point your browser to Virtuoso server running the demo database and try again there.</P>
+</TD>
+<?vsp   } else { ?>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="soapdemo/SOAP.html">Sample SOAP page</A>
+<P CLASS="demodesc">This demo allows you to see SOAP in action directly from Virtuoso.</P>
+</TD>
+<?vsp   }
+?>
+</TR>
+<TR>
+	<TD class="feature" VALIGN="top" ROWSPAN="2">
+<H3>WebDAV Compliant Web Store</H3>
+<P CLASS="featuretext">WebDAV support enables Virtuoso to act as the Web Content Store for all of your 
+E-business data, this includes Text, Graphics and Multimedia files.  WebDAV support also enables Virtuoso to play the 
+familiar roles of a FILE &amp; WEB SERVER, hosting entire Web sites within a single database file, or across multiple 
+database files.</P>
+</TD>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="admin/admin_dav/admin_dav_documents.vsp">WebDav Document Management</A>
+<P CLASS="demodesc">Manage your online Document Content from this interface.</P>
+</TD>
+</TR>
+<TR>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="admin/admin_dav/admin_dav_document_search.vsp">Free Text Index Search</A>
+<P CLASS="demodesc">Search the WebDAV repository using Free Text searching to find particular content.</P>
+</TD>
+</TR>
+<TR>
+	<TD class="feature" VALIGN="top" ROWSPAN="2">
+<H3>Content Replication and Synchronization</H3>
+<P CLASS="featuretext">Virtuoso's sophisticated data replication and synchronization engine enables the automated 
+distribution and updating of SQL and Web Content across distributed Virtuoso Servers.</P>
+</TD>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="admin/admin_repl/admin_repl_main.vsp">Snapshot Replication</A>
+<P CLASS="demodesc">Replicate data between Virtuoso Servers</P>
+</TD>
+</TR>
+<TR>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="admin/admin_trx_repl/trx_repl_pub.vsp">Transactional Replication</A>
+<P CLASS="demodesc">Replicate data between Virtuoso Servers</P>
+</TD>
+</TR>
+<TR>
+	<TD class="feature" VALIGN="top">
+<H3>Transparent Access To Heterogeneous Data</H3>
+<P CLASS="featuretext">Virtuoso's Virtual Database Engine enables you to produce Dynamic Web Content from any major database 
+management system.  This implies that your dynamic HTML and XML documents can be generated using real-time data streams from a number 
+of different database engines concurrently.  </P>
+</TD>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="admin/admin_link_tables.vsp">Attaching / Linking External Tables Into Virtuoso</A>
+<P CLASS="demodesc">Manage connections to remote Data Sources and external tables.</P>
+</TD>
+</TR>
+<TR>
+	<TD class="feature" VALIGN="top" ROWSPAN="6">
+<H3>Mail Delivery &amp; Retrieval Services</H3>
+<P CLASS="featuretext">Virtuoso can act as an SMTP, POP3, IMAP4 proxy to any e-mail client enabling the 
+development and deployment of sophisticated database driven e-mail solution</P>
+</TD>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="mime/mime_compose.vsp">MIME Composition</A>
+<P CLASS="demodesc">Compose new MIME messages.</P>
+</TD>
+</TR>
+<TR>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="mime/mime_plain.vsp">MIME Messages</A>
+<P CLASS="demodesc">Create and store MIME content within Virtuoso</P>
+</TD>
+</TR>
+<TR>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="mime/pop3_get.vsp">Get mail with POP3</A>
+<P CLASS="demodesc">Download messages from a POP3 server</P>
+</TD>
+</TR>
+<TR>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="mime/mail_search.vsp">Mail box text search</A>
+<P CLASS="demodesc">Search for text phrase in owner's mail box. The query can be combined with logical operators.</P>
+</TD>
+</TR>
+<TR>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="mime/ftt_mail_query.vsp">Text triggers definition on mail box</A>
+<P CLASS="demodesc">Definition of search queries, if retrieved mail matches the query the hit will be stored. Can act as message filter over incoming e-mails.</P>
+</TD>
+</TR>
+<TR>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="mime/ftt_mail_hits.vsp">Result from text triggers on mail boxes</A>
+<P CLASS="demodesc">Hit results of text filter defined with "Text trigger definition".</P>
+</TD>
+</TR>
+<TR>
+	<TD class="feature" VALIGN="top" rowspan=4>
+<H3>NNTP News Server and Client</H3>
+<P CLASS="featuretext">Virtuoso can act as an NNTP server, proxy &amp; client for any NNTP enabled News server and client. 
+ </P>
+</TD>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="mime/news_servers.vsp">News Server administration</A>
+<P CLASS="demodesc">Allows mirroring remote newsgroups, managing local newsgroups &amp; their content</P>
+</TD>
+</TR>
+<TR>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="mime/news_search.vsp">Internet News text search</A>
+<P CLASS="demodesc">Search for text phrase in Internet news. The query can be combined with logical operators.</P>
+</TD>
+</TR>
+<TR>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="mime/ftt_news_query.vsp">Text triggers definition on Internet news</A>
+<P CLASS="demodesc">Definition of search queries, if retrieved Internet news message matches the query the hit will be stored. Can act as message filter over incoming news.</P>
+</TD>
+</TR>
+<TR>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="mime/ftt_news_hits.vsp">Result from text triggers on Internet news</A>
+<P CLASS="demodesc">Hit results of text filter over Internet news defined with "Text trigger definition".</P>
+</TD>
+</TR>
+<TR>
+	<TD class="feature" VALIGN="top">
+<H3>Pure Java JDBC 2.0 Type 4 Drivers</H3>
+<P CLASS="featuretext">Virtuoso offers a very lightweight, high-performance Driver for JDBC. This
+Driver is JDBC 2.0 compliant and its JDBC Driver format is Type 4, implying
+direct access to  Virtuoso Servers.
+ </P>
+</TD>
+	<TD class="demo" VALIGN="top"><A CLASS="demolink" href="jdbcdemo/index.htm">JDBC Applet Demos</A>
+<P CLASS="demodesc">Give the JDBC Driver a quick spin using supplied applets.</P>
+</TD>
+</TR>
+</TABLE>
+</TD></TR>
+<TR CLASS="demomain"><TD COLSPAN="2"><IMG SRC="admin/images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD>
+</TABLE>
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+<TR CLASS="CopyrightBorder"><TD><IMG SRC="/admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD><P CLASS="copyright">Virtuoso Server <!--(<?= sys_stat('st_dbms_ver') ?>)--> Administration Interface - Copyright&copy; 1999, 2000 OpenLink Software.  </P></TD></TR>
+</TABLE>
+<!--?include admin/admin_footer.vsp ?-->
+</html>

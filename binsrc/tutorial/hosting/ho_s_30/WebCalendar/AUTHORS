@@ -1,0 +1,75 @@
+Most of the code was written by Craig Knudsen <cknudsen@radix.net>
+
+Other code (new features and bug fixes) provided by (and probably
+many others that I have inadvertantly missed):
+
+Jukka Aittola <Jukka.Aittola@hut.fi>
+Mike Baptiste <baptiste@cc-concepts.com>
+Ralph Bossler <rbossler@gmx.de>
+Toby Cabot <toby@toby.cabot@pobox.com>
+Antonio Costa <accmdq@esoterica.pt>
+Lachlan Cox <lachie@zip.com.au>
+Matthew Crosby <mcrosby@marthon.org>
+Dominik Fischer <dfischer@megla.de>
+Tollef Fog Heen <tollef@add.no>
+T.R. Fullhart <kayos@kayos.org>
+Ken Harris <kharris@lhinfo.com>
+Florian Helmberger <fh@enemy.org>
+Michiel Holtkamp <michiel@reseau.nl>
+Jeff Hoover <jhoov@thebusstop.net>
+Lucie Houel <lyly134@caramail.com>
+Peter Huetmannsberger <huetmann@site38.ping.at>
+Thomas James <tbjames@bellsouth.net>
+Ian R. Justman <ianj@calweb.com>
+Thorsten Klein <klein@lfm.rwth-aachen.de>
+Ulrich Leodolter <ulrich@lab1.psy.univie.ac.at>
+Benoit Maisonny <benoit@synclude.com>
+Jonathan Mark <jhmark@xenops.com>
+Ed Palmer <palmered@users.sourceforge.net>
+Otto Paukner <Otto.Paukner@m-v-l.de>
+Paul Reisdorf <preisdorf@binus.net>
+David Rodrigues <drodrig@netextensions.com>
+Andy Skunza <askunza@dynamix-ltd.com>
+Oliver Teuber <teuber@devicen.de>
+Romuald Texier <romuald@idp9001.com>
+Frederic Tyndiuk [email address suppressed]
+Jan Willamowius <jan@mobile.de>
+Vadim Zaliva <lord@crocodile.org>
+
+Translations:
+
+Danish:
+  Allan Thraen <allan@12go.dk>
+Dutch:
+  Marcel van der Boom <marcel@hsdev.com>
+  Patrick Gutlich <pgutlich@casema.net>
+  Klaus Spithost <k.spithost@it-works.nl>
+French:
+  Luc Capronnier
+  Olivier Piquerez <Piquerez@topd.ch>
+  Yves Moenner <yves.moenner@mailcity.com>
+  Romuald Texier <romualdt@free.fr>
+German:
+  Markus Egartner <markus.egartner@kh.hallein.at>
+  Ralph Bossler <rbossler@gmx.de>,
+  Peter Huetmannsberger <huetmann@site38.ping.at>
+Italian:
+  Simone Cortesi <simone@cortesi.com>
+Korean:
+  Joonyup Jeon <goodwill@wowbook.com>
+Norwegian:
+  Pål Løberg/Magni Onsøien <initio@initio.no>
+Portuguese:
+  Antonio Costa <accmdq@mail.esoterica.pt>
+  Nuno Lopes <nuno.lopes@maxitel.com>
+Portuguese/Brazil:
+  Sérgio Oliveira <sloliv@terra.com.br>
+Russian:
+  Andre E. Bar'yudin <baryudin@pob.huji.ac.il>
+Spanish:
+  Pedro Del Medico <pdmp@interhoster.com>
+Swedish:
+  Jesper Thörn <jesper@thorn.as>
+Turkish:
+  Atilla Kazanci <support@dig-it-berlin.de>
+

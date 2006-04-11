@@ -1,0 +1,140 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<process name="Fi"
+    targetNamespace="http://temp.org"
+    suppressJoinFailure="yes"
+    xmlns:tns="http://temp.org"
+    xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+    xmlns:bpws="http://schemas.xmlsoap.org/ws/2003/03/business-process/">
+
+    <partnerLinks>
+	<partnerLink name="client"
+	    partnerLinkType="tns:Fi"
+	    partnerRole="FiProvider" />
+
+	<partnerLink name="FiService"
+	    partnerLinkType="tns:Fi"
+	    partnerRole="FiProvider"/>
+    </partnerLinks>
+
+    <variables>
+	<variable name="input" messageType="tns:FiRequestMessage"/>
+	<variable name="output" messageType="tns:FiResultMessage"/>
+	<variable name="request1" messageType="tns:FiRequestMessage"/>
+	<variable name="request2" messageType="tns:FiRequestMessage"/>
+	<variable name="reply1" messageType="tns:FiResultMessage"/>
+	<variable name="reply2" messageType="tns:FiResultMessage"/>
+    </variables>
+
+    <sequence>
+	<receive name="receiveInput" partnerLink="client"
+	    portType="tns:Fi"
+	    operation="initiate" variable="input"
+	    createInstance="yes"/>
+
+	<switch>
+	    <case condition="bpws:getVariableData('input', 'payload', '/tns:value') &lt; 2">
+	      <sequence>
+		<assign>
+		    <copy>
+			<from variable="input" part="payload" query="/tns:value"/>
+			<to variable="output" part="payload" query="/tns:result"/>
+		    </copy>
+		</assign>
+		<invoke name="replyOutput" partnerLink="client"
+		    portType="tns:Fi"
+		    operation="onResult" inputVariable="output"/>
+	      </sequence>
+	    </case>
+	    <otherwise>
+		<flow>
+		    <links>
+			<link name="a_branch"/>
+			<link name="b_branch"/>
+		    </links>
+		    <sequence>
+			<assign>
+			    <copy>
+				<from expression="bpws:getVariableData('input', 'payload', '/tns:value') - 1"/>
+				<to variable="request1" part="payload" query="/tns:value"/>
+			    </copy>
+			</assign>
+			<invoke
+			    name="Fi1"
+			    partnerLink="FiService"
+			    portType="tns:Fi"
+			    operation="initiate"
+			    inputVariable="request1"
+			    />
+			<receive
+			    name="Fi1r"
+			    partnerLink="FiService"
+			    portType="tns:Fi"
+			    operation="onResult"
+			    variable="reply1">
+			    <source linkName="a_branch"/>
+			</receive>
+		    </sequence>
+		    <sequence>
+			<assign>
+			    <copy>
+				<from expression="bpws:getVariableData('input', 'payload', '/tns:value') - 2"/>
+				<to variable="request2" part="payload" query="/tns:value"/>
+			    </copy>
+			</assign>
+			<invoke
+			    name="Fi2"
+			    partnerLink="FiService"
+		    portType="tns:Fi"
+			    operation="initiate"
+			    inputVariable="request2"
+			    />
+			<receive
+			    name="Fi2r"
+			    partnerLink="FiService"
+			    portType="tns:Fi"
+			    operation="onResult"
+			    variable="reply2">
+			    <source linkName="b_branch"/>
+			</receive>
+		    </sequence>
+		    <sequence joinCondition="getLinkStatus('a_branch') and getLinkStatus('b_branch')" suppressJoinFailure="no">
+			<target linkName="a_branch"/>
+			<target linkName="b_branch"/>
+			<assign>
+			    <copy>
+				<from expression="bpws:getVariableData('reply1', 'payload', '/tns:result') + bpws:getVariableData('reply2', 'payload', '/tns:result')"/>
+				<to variable="output" part="payload" query="/tns:result"/>
+			    </copy>
+			</assign>
+			<invoke name="replyOutput" partnerLink="client"
+			    portType="tns:Fi"
+			    operation="onResult" inputVariable="output"/>
+		    </sequence>
+		</flow>
+	    </otherwise>
+	</switch>
+    </sequence>
+
+</process>
+

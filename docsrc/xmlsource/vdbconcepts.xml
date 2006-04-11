@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="vdbconcepts"><title>Virtual Database</title>
+
+	<!-- ======================================== -->
+	<sect2 id="linkrmttableauto">
+		<title>Linking Remote Tables &amp; Views</title>
+
+    <para>The Virtuoso Server supports linking in of tables, views, procedures and
+    other components from a remote ODBC data-source, enabling them to be
+    queried as native objects in Virtuoso; this process is called 
+    "attaching" or "linking".  The easiest way to link to an external table is 
+    to use the  <link linkend="remotetables">Linking Remote Tables Wizard</link>, 
+    part of the Visual Server Administration Interface.  Alternatively you can 
+    attach these objects programmatically, as this section explains; 
+    finally you can attach tables manually - see <link linkend="MANSETRDS">Manually 
+    Setting Up A Remote Data Source</link> which is useful for connections to 
+    less-capable ODBC data-sources.</para>
+
+    <sect3 id="ATTACH">
+			<title>ATTACH TABLE Statement</title>
+  <programlisting><![CDATA[
+ATTACH TABLE <table> [PRIMARY KEY '(' <column> [, ...] ')']
+  [AS <local_name>] FROM <dsn> [USER <uid> PASSWORD <pwd>]
+  [ON SELECT] [REMOTE AS <literal_table_name>]
+]]></programlisting>
+  <variablelist>
+    <varlistentry>
+      <term>table</term>
+      <listitem><para>Adequately qualified table name of the form: identifier  | identifier.identifier | identifier.identifier.identifier | identifier..identifier</para></listitem>
+    </varlistentry>
+    <varlistentry>
+      <term>column</term>
+      <listitem><para>column to assume primary key</para></listitem>
+    </varlistentry>
+    <varlistentry>
+      <term>local_name</term>
+      <listitem><para>fully qualified table name specifying local reference.</para></listitem>
+    </varlistentry>
+    <varlistentry>
+      <term>dsn</term>
+      <listitem><para>scalar_exp</para></listitem>
+    </varlistentry>
+    <varlistentry>
+      <term>user</term>
+      <listitem><para>scalar_exp</para></listitem>
+    </varlistentry>
+    <varlistentry>
+      <term>password</term>
+      <listitem><para>scalar_exp</para></listitem>
+    </varlistentry>
+     <varlistentry>
+      <term>literal_table_name</term>
+      <listitem><para>scalar_exp</para></listitem>
+    </varlistentry>
+ </variablelist>
+			<para>This SQL statement defines a remote data source, copies the schema
+information of a given table to the local database and defines the table as a
+remote table residing on the data source in question.
+</para>
+			<para>
+The table is a designation of the table&apos;s name on the remote data source dsn. It
+may consist of an optional qualifier, optional owner and table names, separated
+by dots.  This must identify exactly one table on the remote dsn. The optional
+local_name is an optionally qualified table name which will identify the table on
+the local database. If qualifier or owner are omitted, these default to the current
+qualifier &apos;dbname()&apos; and the logged in user, as with CREATE TABLE. If the
+local_name is not given it defaults to the &lt;current qualifier&gt;.&lt;dsn&gt;.&lt;table name on
+dsn&gt;.  The &lt;dsn&gt; will be the dsn with all alphabetic characters in upper case and
+all non-alphanumeric characters replaced by underscores. The &lt;table name on
+dsn&gt; will be the exact name as it is on the remote dsn, case unmodified.
+</para>
+			<para>
+The PRIMARY KEY option is only required for attaching views or tables where the primary key on the
+remote table cannot be ascertained directly from the remote data source.</para>
+			<para>
+If a dsn is not previously defined with vd_remote_data_source or ATTACH
+TABLE, the USER and PASSWORD clauses have to be given.
+</para>
+  <para>The <emphasis>REMOTE AS</emphasis> option allows you to provide a
+	string literal for referencing the remote table.  This is useful when linking
+	tables from sources that do not support three-part qualification correctly.</para>
+		</sect3>
+		<sect3 id="attachview">
+			<title>Attaching views</title>
+			<para>
+A view can be attached as a table if a set of uniquely identifying
+columns is supplied.
+</para>
+			<para>
+This is done with the PRIMARY KEY option to ATTACH TABLE as follows:
+</para>
+			<programlisting>
+attach table T1_VIEW primary key (ROW_NO) from &apos;somedsn&apos;;
+</programlisting>
+			<note>
+				<title>Note:</title>
+				<para>Views cannot be attached unless the PRIMARY KEY options is used.</para>
+			</note>
+		</sect3>
+  </sect2>
+	<!-- ======================================== -->
+	<sect2 id="linkrmtprocauto">
+		<title>Linking Remote Procedures</title>
+		<sect3 id="ATTACHPROC">
+			<title>ATTACH PROCEDURE Statement</title>
+			<programlisting><![CDATA[
+ATTACH (PROCEDURE|FUNCTION) <proc_name> ([<parameter1>[,<parameter2>[...]]])
+  [ RETURNS <rettype> ] [AS <local_name>] FROM <dsn>
+	]]></programlisting>
+			<variablelist>
+				<varlistentry>
+					<term>dsn</term>
+					<listitem>
+						<para>scalar_exp</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term>proc_name</term>
+					<listitem>
+						<para>identifier  | identifier.identifier | identifier.identifier.identifier | identifier..identifier</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term>parameter1..parameterN</term>
+					<listitem>
+						<para>parameters declaration (as in CREATE PROCEDURE)</para>
+					</listitem>
+				</varlistentry>
+				<varlistentry>
+					<term>local_name</term>
+					<listitem>
+						<para>table</para>
+					</listitem>
+				</varlistentry>
+			</variablelist>
+  <para>The ATTACH PROCEDURE statement allows you to associate stored procedures 
+  from remote datasources with Virtuoso so they can be used as if they were 
+  defined directly within Virtuoso.  Much like the ATTACH TABLE statement, 
+  this SQL statement creates a local alias for a procedure on a given remote 
+  data source so it can be considered locally defined.  When this alias is called 
+  called the procedure at the remote data source will actually be called.</para>
+  <para>Procedure generated result sets are not supported by the ATTACH PROCEDURE 
+  statement.  The only portable way to return values from a remote procedure is 
+  to use INOUT or OUT parameters.  Remote procedure result sets can be used by 
+  combination of <function>rexecute()</function> and Virtuoso PL, but this is 
+  left for the user to implement as required.</para>
+  <para>The ATTACH PROCEDURE statement is not able to define new connections to 
+  remote data sources, the connection should be defined prior using either 
+  vd_remote_data_source or by attaching a table or view using the ATTACH TABLE 
+  statement with USER/PASSWORD supplied.</para>
+  <para>Note that when generating pass-through statements to a given remote, 
+  any procedure call for an attached procedure is passed through if the current 
+  DSN is the same as the remote procedure&apos;s DSN.</para>
+  <para>The <emphasis>proc_name</emphasis> is the designation of the 
+  procedure&apos;s name on the remote data source, DSN.  The remote procedure 
+  name supplied should always be fully qualified to avoid ombiguity, it may 
+  consist of an optional qualifier/catalog, optional owner and finally procedure 
+  name, separated by dots.  This must identify exactly one procedure on the 
+  remote data source.</para>
+  <para>The optional <emphasis>local_name</emphasis> is an optionally qualified 
+  procedure name which will identify the procedure on the local Virtuoso 
+  database.  If the local_name is not given it defaults to the &lt;current 
+  qualifier&gt;.&lt;dsn&gt;.&lt;proc name on dsn&gt;.  The &lt;dsn&gt; will be 
+  the data source name in upper case and with all non-alphanumeric characters 
+  replaced by underscores.  The &lt;proc name on dsn&gt; will be the exact 
+  name as it is on the remote dsn, case unmodified.</para>
+  <para>If a dsn is not previously defined with vd_remote_data_source or ATTACH 
+  TABLE, the ATTACH PROCEDURE will fail.</para>
+
+		<example id="VDOCS-TRANS-01">
+			<title>Example:</title>
+			<para>
+			On remote Virtuoso (DSN name : remote_virt):
+			</para>
+			<programlisting>
+   CREATE PROCEDURE RPROC (IN PARAM VARCHAR) returns VARCHAR
+   {
+     return (ucase (PARAM));
+   }
+</programlisting>
+<para>
+On the local virtuoso (DSN name : local_virt) :
+</para>
+<programlisting>
+vd_remote_data_source ('remote_virt', '', 'demo', 'demopwd');
+ATTACH PROCEDURE RPROC (IN PARAM VARCHAR) RETURNS VARCHAR from 'remote_virt';
+</programlisting>
+<para>
+will result in creation of an procedure alias for RPROC in local_virt named DB.REMOTE_VIRT.RPROC
+</para>
+<para>
+Calling it from the local_virt (using ISQL)
+</para>
+<programlisting>
+select REMOTE_VIRT.RPROC ('MiXeD CaSe') as rproc_result;
+
+rproc_result
+---------------
+MIXED CASE
+1 rows
+</programlisting>
+		</example>
+    </sect3>
+    <tip><title>See Also:</title>
+    <para>The Virtuoso Visual Server Administration Interface provides a 
+    graphical user interface for 
+    <link linkend="remoteprocedures">linking remote stored procedures</link>.</para></tip>
+  </sect2>
+	<!-- ======================================== -->
+	<sect2 id="TYPEMAPPING">
+		<title>Data Type Mappings</title>
+		<para>
+If a statement is passed through to a remote data source, the types
+returned by SQLDescribeCol are taken directly from the remote prepare
+and converted to the closest Virtuoso supported type.
+</para>
+		<para>
+If a statement involves both local and remote resources all types are
+taken from the Virtuoso copy of the data dictionary.
+</para>
+		<para>
+In executing remote selects Virtuoso binds output columns according
+to the type and precision given by SQLDescribeCol after preparing the
+remote statement.
+</para>
+		<para>
+When a table is attached from a remote data source the catalog is read and
+the equivalent entries are created in Virtuoso.  Since the types present on different
+DBMS&apos;s vary, the following logic is used to map ODBC types to Virtuoso types.
+	</para>
+		<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+			<title>Attach Table Type Mappings</title>
+			<tgroup align="char" charoff="50" char="." cols="2">
+				<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+				<thead>
+					<row>
+						<entry>SQL Type</entry>
+						<entry>Mapped Type</entry>
+					</row>
+				</thead>
+				<tbody>
+					<row>
+						<entry>SQL_CHAR</entry>
+						<entry>varchar (precision)</entry>
+					</row>
+					<row>
+						<entry>SQL_VARCHAR</entry>
+						<entry>varchar (precision)</entry>
+					</row>
+					<row>
+						<entry>SQL_BIT</entry>
+						<entry>smallint </entry>
+					</row>
+					<row>
+						<entry>SQL_TINYINT</entry>
+						<entry>smallint</entry>
+					</row>
+					<row>
+						<entry>SQL_SMALLINT</entry>
+						<entry>smallint </entry>
+					</row>
+					<row>
+						<entry>SQL_INTEGER</entry>
+						<entry>integer </entry>
+					</row>
+					<row>
+						<entry>SQL_BIGINT</entry>
+						<entry>decimal (20)</entry>
+					</row>
+					<row>
+						<entry>SQL_DECIMAL</entry>
+						<entry/>
+					</row>
+					<row>
+						<entry>SQL_NUMERIC</entry>
+						<entry>
+							<para>smallint  if precision &lt; 5 and scale = 0</para>
+							<para>integer if precision &lt; 10 and scale = 0</para>
+							<para>double precision if precision &lt; 16</para>
+							<para>decimal (precision, scale)  otherwise</para>
+						</entry>
+					</row>
+					<row>
+						<entry>SQL_REAL</entry>
+						<entry>real</entry>
+					</row>
+					<row>
+						<entry>SQL_FLOAT</entry>
+						<entry>double precision</entry>
+					</row>
+					<row>
+						<entry>SQL_DOUBLE</entry>
+						<entry>double precision</entry>
+					</row>
+					<row>
+						<entry>SQL_BINARY</entry>
+						<entry>varbinary (precision)</entry>
+					</row>
+					<row>
+						<entry>SQL_VARBINARY</entry>
+						<entry>varbinary (precision)</entry>
+					</row>
+					<row>
+						<entry>SQL_LONGVARCHAR</entry>
+						<entry>long varchar</entry>
+					</row>
+					<row>
+						<entry>SQL_LONGVARBINARY</entry>
+						<entry>long varbinary</entry>
+					</row>
+					<row>
+						<entry>SQL_DATE</entry>
+						<entry>date </entry>
+					</row>
+					<row>
+						<entry>SQL_TIME</entry>
+						<entry>time</entry>
+					</row>
+					<row>
+						<entry>SQL_TIMESTAMP</entry>
+						<entry>datetime</entry>
+					</row>
+				</tbody>
+			</tgroup>
+		</table>
+		<note>
+			<title>Note:</title>
+			<para>The general case of decimal and numeric both revert to the Virtuoso
+      decimal type, which is a variable precision decimal floating point.</para>
+		</note>
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="TRANSMODEL">
+		<title>Transaction Model</title>
+		<para>
+One transaction on the Virtuoso VDBMS server may contain operations
+on multiple remote data sources. As a general rule remote connections
+are in manual commit mode and Virtuoso either commits or rolls back the
+transaction on each of the remote connections as the main transaction
+terminates.
+</para>
+		<para>
+ODBC does not support two phase commit.  Therefore a transaction that
+succeeds on one remote party may fail on another.  
+</para>
+		<para>
+A transaction involving local tables and tables on one remote data source
+will always complete correctly since the remote is committed before the
+local and the local is rolled back if the remote commit fails.
+</para>
+		<para>
+Note that even though the client to Virtuoso connection may be in
+autocommit mode the continuing connections will typically not be
+autocommitting.
+</para>
+		<para>
+A remote connection is in autocommit mode if the Virtuoso connection
+is and the statement is passed through unmodified. In all other cases
+remote connections are in manual commit mode.
+</para>
+  <para>Virtuoso supports 2PC - Two Phase Commit.  See the 
+  <link linkend="twopcimplementation">Distributed Transaction &amp; Two Phase 
+  Commit</link> section for more information.</para>
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="TIMESTAMP_AUTOINCREMENT">
+		<title>Timestamps &amp; Autoincrement</title>
+		<para>
+A transaction timestamp is not the same across the transaction
+if the transaction has branches in different databases.
+</para>
+		<para>
+The data type and precision of a time stamp will also vary between
+different types of databases.
+</para>
+		<para>
+Hence timestamp columns coming from tables on different servers are not
+comparable for equality.
+</para>
+		<para>
+In inserts and updates of remote tables timestamps are assigned by
+the database where the table in question is physically located.
+</para>
+		<para>
+Identity or autoincrement columns are likewise handled by the database holding the
+remote table.
+</para>
+		<para>
+Note that MS SQL Server and Virtuoso describe a timestamp column as a binary column in ODBC
+catalog and meta data calls.  Thus remote SQL Server or Virtuoso timestamps will not appear as timestamps at all.
+</para>
+		<para>
+In the case of a Virtuoso remote database the binary timestamp can be cast into a DATETIME data type
+and it will appear as a meaningful datetime.
+</para>
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="vdbSTOREDPROCS">
+		<title>VDB Stored Procedures &amp; Functions</title>
+		<para>These procedures allow you to manually manage remote data sources and their tables.</para>
+
+<itemizedlist>
+  <listitem><link linkend="fn_vd_remote_data_source">vd_remote_data_source()</link></listitem>
+  <listitem><link linkend="fn_vd_remote_table">vd_remote_table()</link></listitem>
+  <listitem><link linkend="fn_rexecute">rexecute()</link></listitem>
+  <listitem><link linkend="fn_rnext">rnext()</link></listitem>
+  <listitem><link linkend="fn_rmoreresults">rmoreresults()</link></listitem>
+  <listitem><link linkend="fn_rclose">rclose()</link></listitem>
+  <listitem><link linkend="fn_rstmtexec">rstmtexec()</link></listitem>
+</itemizedlist>
+
+  <para>Functions capable of returning a result-set make use of the 
+  <parameter>results_set</parameter> parameter.  To prevent them from returning 
+  a result-set, the <parameter>results_set</parameter> parameter should be set to 
+  'null'.  If Virtuoso finds an awaiting parameter to contain <parameter>results_set</parameter> 
+  it will fetch the result set regardless of <parameter>cursor_handle</parameter> 
+  parameter.</para> 
+
+  <para>Unless explicitly granted, only the DBA group is permitted to use the 
+  <function>rexecute()</function> to maintain security.  Caution is required 
+  here since any user granted use of <function>rexecute()</function> has 
+  full control of the remote data source set-up by the DBA, however limited 
+  to the overall abilities of the remote user on the remote data source.  
+  Users can be granted and denied access to this function using the following 
+  commands:</para>
+
+<programlisting><![CDATA[
+GRANT REXECUTE ON '<attached_dsn_name>' TO <user_name>
+REVOKE REXECUTE ON '<attached_dsn_name>' FROM <user_name>
+]]></programlisting>
+
+  <para>The following remote catalogue functions help you to obtain information about the
+  remote datasources that you are using.  These could be especially useful in Virtuoso PL
+  later on if you are not able to know everything about the remote tables ahead of time for
+  the ATTACH TABLE statement</para>
+
+<itemizedlist>
+  <listitem><link linkend="fn_sql_data_sources">sql_data_sources()</link></listitem>
+  <listitem><link linkend="fn_sql_tables">sql_tables()</link></listitem>
+  <listitem><link linkend="fn_sql_columns">sql_columns()</link></listitem>
+  <listitem><link linkend="fn_sql_statistics">sql_statistics()</link></listitem>
+  <listitem><link linkend="fn_sql_primary_keys">sql_primary_keys()</link></listitem>
+</itemizedlist>
+
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="MANSETRDS">
+		<title>Manually Setting Up A Remote Data Source</title>
+		<para>
+Defining a remote table involves declaring the table as a local table
+and then defining the data source if not already defined and associating
+the new table with the remote data source.
+</para>
+		<para>
+The data source on which a table resides is declared at the table
+level. This has no connection to the table&apos;s qualifier.
+</para>
+		<para>
+Assume a remote ODBC data source named test containing a table xyz
+declared as follows:
+</para>
+		<example id="VDOCS-TRANS-01">
+			<title>Example:</title>
+			<programlisting>
+   CREATE TABLE XYZ (
+   A INTEGER,
+	B INTEGER,
+	C INTEGER,
+	PRIMARY KEY (A));
+</programlisting>
+		</example>
+		<para>
+To defined this as a remote table on the data source Virtuoso, first
+define the table locally, using the above CREATE TABLE statement above.
+</para>
+		<para>
+Then define the data source:
+</para>
+		<programlisting>
+DB..vd_remote_data_source (&apos;test&apos;, &apos;&apos;, &apos;sa&apos;,&apos;&apos;);
+</programlisting>
+		<para>
+And the table:
+</para>
+		<programlisting>
+DB..vd_remote_table (&apos;test&apos;, &apos;DB.DBA.XYZ&apos;, &apos;master.dbo.XYZ&apos;);
+</programlisting>
+		<para>
+This assumes that the remote data source has a login &apos;sa&apos; with an empty
+password and no special connection string options. The table names in
+vd_remote_table have to be fully qualified. We here assume that the
+Virtuoso table was created by DBA in under the default qualifier DB and
+the remote XYZ was created by dbo in master.
+</para>
+		<para>
+The vd_remote_table declaration does not affect statements or procedures
+compiled prior to the declaration.
+</para>
+		<para>
+Additional indices of remote tables may optionally be defined. They do
+not affect the operation of the SQL compiler. The remote data source
+makes the choice of index based on the order by clause in the statement
+passed through.
+</para>
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="BUGSlimits">
+		<title>Caveats</title>
+		<itemizedlist mark="bullet">
+			<listitem>
+				<para>
+Never attempt to attach a local table as a remote.  The server will hang if it tries
+to make a remote commit on itself.
+</para>
+			</listitem>
+			<listitem>
+				<para>
+If the schema of the remote table is changed it will need to be re-attached to Virtuoso.
+</para>
+			</listitem>
+			<listitem>
+				<para>
+The Virtuoso server treats dots (.) in the double-quotes escaped names as name element separators.
+For example : the table name &quot;a.b.c&quot; is treated as &quot;a&quot;.&quot;b&quot;.&quot;c&quot; .
+Because of this remote tables with dots in their table name (like tables from MS Text driver) require the dot
+inside the table name to be replaced with the VDB "non-delimiting-dot" (\x0A) and the
+vd_attach_table (in dsn varchar, in remote_name varchar, in local_name varchar, in uid varchar, in pwd varchar)
+to be used instead of ATTACH TABLE statement.
+</para>
+				<para>
+The statement ATTACH TABLE "datafile.txt" as 'test' from 'text' user 'a' password 'b' should become :
+</para>
+				<programlisting>
+vd_attach_table ('text', 'datafile\x0Atxt', 'test', 'a', 'b');
+</programlisting>
+			</listitem>
+		</itemizedlist>
+
+  <para>When Virtuoso interacts with a table or view attached from a remote 
+  data source, it must be able to uniquely identify each row of the query.  
+  At the attach time Virtuoso will query remote data source for the tables 
+  primary keys and indices.  These will be used to construct a copy of the 
+  table definition in Virtuoso which is then used in reference to the remote 
+  data source.  At query time this information is used as much as possible.  
+  This information may need to be supplimented by calls to SQLStatistics() for 
+  further indicies or primary key informtation, as a last resort Virtuoso will 
+  use SQLColAttribute() to determine which columns are SQL_DESC_SEARCHABLE.  
+  </para>
+	</sect2>
+</sect1>

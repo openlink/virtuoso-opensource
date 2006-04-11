@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="rthjsp"><title>Writing JSP Applications</title>
+
+<para>The Virtuoso server with Java hosting support can be used to execute 
+JSP pages, however, Virtuoso requires a JSP container engine first.  Jakarta 
+provide such an engine that can be hosted inside Virtuoso with Java support.  
+This section describes how JSP's can be executed using Jakarta Tomcat JSP 
+implementation.</para>
+
+<figure id="http_handler_jsp" float="1"><title>The HTTP JSP handler using Jakarta Tomcat</title>
+  <graphic fileref="http_handler_jsp.jpg" format="jpeg"></graphic></figure>
+
+<sect2 id="rthjspprelim"><title>Environment Setup &amp; Verification</title>
+
+<para>The following components are required:</para>
+
+<simplelist>
+ <member>Java SDK (or runtime only) needs to be installed.  Version 1.2 or later.</member>
+ <member>Jakarta Tomcat package must be installed and configured.  This can 
+ be obtained from the <ulink url="http://jakarta.apache.org/tomcat/">Jakarta project site</ulink> 
+ (http://jakarta.apache.org/tomcat/)</member>
+</simplelist>
+
+<para>The virtuoso.ini file must edited to including the following settings in the 
+<computeroutput>[Parameters]</computeroutput> section:</para>
+
+<programlisting><![CDATA[.....
+JavaClasspath = <jdk install dir>/lib/tools.jar:<tomcat install dir>/bin/bootstrap.jar 
+JavaVMOption1 = -Djava.endorsed.dirs=<tomcat install dir>/bin:<tomcat install dir>/common/endorsed
+JavaVMOption2 = -Dcatalina.base=<tomcat install dir>
+JavaVMOption3 = -Dcatalina.home=<tomcat install dir>
+JavaVMOption4 = -Djava.io.tmpdir=<tomcat install dir>/temp
+.....]]></programlisting>
+
+<note><title>Note:</title>
+<para>The above has been tested for the jakarta-tomcat-4.1.18 distribution 
+only.  Setting may vary for any other versions of Jakarta Tomcat, in which case we 
+advise you consult the Tomcat documentation.</para></note>
+
+<para>Run the <computeroutput>virtuoso-*-javavm*-t</computeroutput> binary, 
+The Virtuoso server that includes Java hosting.</para>
+
+<para>Start the Jakarta Tomcat server inside virtuoso server process using the 
+following command from ISQL:</para>
+
+<programlisting><![CDATA[
+SQL> java_call_method ('org.apache.catalina.startup.BootstrapService', null, 'main', 'V',
+     vector ('[Ljava/lang/String;', vector ('start')));
+]]></programlisting>
+
+<para>
+In order to invoke the above command automatically at server startup you might 
+put it in the autoexec.isql init script.
+</para>
+
+<para>Make a virtual directory for accessing JSP server, here is an example:</para>
+
+<programlisting><![CDATA[vhost_define (lpath=>'/tomcat',ppath=>'http://localhost:8080/');]]></programlisting>
+
+<para>Verify that your installations are correct by pointing your web browser 
+of choice to <computeroutput>http://localhost:8890/tomcat/</computeroutput> 
+(assuming you are working on your local machine).  Run some of JSP examples 
+provided with Tomcat distribution to verify that they are executed without errors.</para>
+  
+<note><title>Note:</title>
+<para>For debugging purposes you may run the virtuoso-*-javavm*-t server with
+foreground option to receive Java error messages, if any occur.</para></note>
+
+<tip><title>See Also:</title>
+  <para><link linkend="inprocess">In-Process Data Access Client</link></para></tip>
+
+</sect2>
+
+</sect1>

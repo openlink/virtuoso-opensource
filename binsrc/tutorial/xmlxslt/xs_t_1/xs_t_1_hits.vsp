@@ -1,0 +1,78 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  
+  if ({?'del'} = '1')
+    delete from DB.DBA.XML_TEXT2_XT_TEXT_HIT where TTH_T_ID = atoi ({?'tt_id'}) and TTH_D_ID = atoi ({?'tth_d_id'});
+ 
+?>
+
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+
+<table class="tableresult">
+<TR><TD COLSPAN="5">Current hits</TD></TR>
+<tr>
+  <td CLASS="genlistheadt">File</td>
+  <td CLASS="genlistheadt">ID</td>
+  <td CLASS="genlistheadt">Registered</td>
+  <td CLASS="genlistheadt">Actions</td>
+</tr>
+<?vsp 
+        for select TTH_D_ID, TTH_TS, XT_FILE 
+			              from DB.DBA.XML_TEXT2_XT_TEXT_HIT, 
+                                           DB.DBA.XML_TEXT2 
+				      where TTH_T_ID = atoi ({?'tt_id'}) and TTH_U_ID = 1 and XT_ID = TTH_D_ID
+				      order by TTH_TS desc do {  
+?>
+  <tr>
+      <td><?=XT_FILE?></td>
+      <td><?=TTH_D_ID?></td>
+      <td><?=TTH_TS?></td>
+       <td>
+         <table BORDER="0" CELLPADDING="0">
+	   <tr>
+            <td>
+	     <table border=0>
+	     <tr>
+	     <td> 
+	    <a href="xs_t_1_hits.vsp?tth_d_id=<?=TTH_D_ID?>&tt_id=<?={?'tt_id'}?>&del=1">Remove</a>
+	    </td>
+	    <td>
+	      &nbsp;
+	    </td>
+	    </tr>
+	    </table>
+	    </td>
+	   </tr> 
+         </table>
+       </td>	 
+  </tr>
+<?vsp  
+    } 
+?> 
+</table>
+<p>Back to <a href="xs_t_1_list.vsp">main</a></p>
+</body>
+</html>

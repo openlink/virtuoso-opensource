@@ -1,0 +1,91 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+
+  declare opl_home varchar;
+
+  opl_home := http_request_header (lines,'Host', NULL, 'localhost');
+  opl_home := concat ('http://', opl_home);
+
+?>
+
+<HTML>
+<HEAD>
+  <LINK rel="stylesheet" type="text/css" href="../demo.css">
+  <TITLE> Round 3 Interop Test Clients in Virtuoso</TITLE>
+  <META name="AUTHOR" content="OpenLink Software">
+  <META name="DESCRIPTION" content="Round 3 Interop Test Clients in Virtuoso">
+</HEAD>
+<BODY>
+<p>
+<table class="tableentry" border="0">
+   <th>Test</th><th>Operation</th>
+   <tr><td><b>EmptySA</b>
+   </td><td><A HREF="echoString.vsp?caller=EmptySA&opl_home=<?=opl_home?>">echoString</A></td></tr>
+
+   <tr><td colspan="2">&nbsp;</td></tr>
+   <tr><td><b>Import1</b>
+   </td><td><A HREF="echoString.vsp?caller=Import1&opl_home=<?=opl_home?>">echoString</A></td></tr>
+   <tr><td colspan="2">&nbsp;</td></tr>
+   <tr><td><b>Import2</b></td><td>
+   <A HREF="echoStruct.vsp?caller=Import2&opl_home=<?=opl_home?>">echoStruct</A></td></tr>
+   <tr><td colspan="2">&nbsp;</td></tr>
+   <tr><td><b>Import3</b></td><td>
+   <A HREF="echoStruct.vsp?caller=Import3&opl_home=<?=opl_home?>">echoStruct</A></td></tr>
+   <tr><td>&nbsp;</td><td>
+   <A HREF="echoStructArray.vsp?caller=Import3&opl_home=<?=opl_home?>">echoStructArray</A></td></tr>
+   <tr><td colspan="2">&nbsp;</td></tr>
+   <tr><td><b>Compound1</b></td><td>
+   <A HREF="echoPerson.vsp?caller=Compound1&opl_home=<?=opl_home?>">echoPerson</A></td></tr>
+   <tr><td>&nbsp;</td><td>
+   <A HREF="echoDocument.vsp?caller=Compound1&opl_home=<?=opl_home?>">echoDocument</A></td></tr>
+   <tr><td colspan="2">&nbsp;</td></tr>
+   <tr><td><b>Compound2</b></td>
+   <td><A HREF="echoEmployee.vsp?caller=Compound2&opl_home=<?=opl_home?>">echoEmployee</A></td></tr>
+   <tr><td colspan="2">&nbsp;</td></tr>
+   <tr><td><b>InteropTestDocLitParameters</b></td>
+   <td><A HREF="echoString.vsp?caller=InteropTestDocLitParameters&opl_home=<?=opl_home?>">echoString</A></td></tr>
+   <tr><td>&nbsp;</td>
+   <td><A HREF="echoStringArray.vsp?caller=InteropTestDocLitParameters&opl_home=<?=opl_home?>">echoStringArray</A></td></tr>
+   <tr><td>&nbsp;</td>
+   <td><A HREF="echoStructLit.vsp?caller=InteropTestDocLitParameters&opl_home=<?=opl_home?>">echoStruct</A></td></tr>
+   <tr><td colspan="2">&nbsp;</td></tr>
+   <tr><td><b>InteropTestDocLit</b></td>
+   <td><A HREF="echoString.vsp?caller=InteropTestDocLit&opl_home=<?=opl_home?>">echoString</A></td></tr>
+   <tr><td>&nbsp;</td>
+   <td><A HREF="echoStringArray.vsp?caller=InteropTestDocLit&opl_home=<?=opl_home?>">echoStringArray</A></td></tr>
+   <tr><td>&nbsp;</td>
+   <td><A HREF="echoStructLit.vsp?caller=InteropTestDocLit&opl_home=<?=opl_home?>">echoStruct</A></td></tr>
+   <tr><td colspan="2">&nbsp;</td></tr>
+   <tr><td><b>InteropTestRpcEncoded</b></td>
+   <td><A HREF="echoString.vsp?caller=InteropTestRpcEncoded&opl_home=<?=opl_home?>">echoString</A></td></tr>
+   <tr><td>&nbsp;</td>
+   <td><A HREF="echoStringArray.vsp?caller=InteropTestRpcEncoded&opl_home=<?=opl_home?>">echoStringArray</A></td></tr>
+   <tr><td>&nbsp;</td>
+   <td><A HREF="echoStruct.vsp?caller=InteropTestRpcEncoded&opl_home=<?=opl_home?>">echoStruct</A></td></tr>
+
+<!--   <tr><td colspan=2><A HREF="Extensibility.vsp"><b>InteropTestExtensibility</b></A></td></tr> -->
+   <tr><td colspan=2><A HREF="ExtensibilityRequired.vsp"><b>InteropTestExtensibilityRequired</b></A></td></tr>
+</table>
+</BODY>
+</HTML>

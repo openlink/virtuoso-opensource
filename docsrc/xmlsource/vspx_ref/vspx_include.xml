@@ -1,0 +1,91 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_include">
+<refmeta>
+  <refentrytitle>vspx_include</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_include</refname>
+  <refpurpose>Macro expansion</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_include">
+    <funcprototype id="proto_vspx_include">
+      <funcdef>
+        <function>include</function>
+      </funcdef>
+      <attributes>
+        <attribute>url (required) </attribute>
+      </attributes>
+      <childs />
+      <class>
+        <screen><![CDATA[
+				
+				This element will not be instantiated.
+				instead of instantiating it wil lbe replaced with content of another document.
+				
+			    ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_include">
+  <title>Description</title>
+  <para>
+    <function>vspx_include</function>A place where the source code of other page should be inserted.
+This will include the content from the specified url at this point of the page.  The url is relative to the page.
+The inclusion will be done before VSPX compile stage, hence the include can contain vspx, HTML or either content.
+The only requirement is that the included file be well formed. Note also that if you are using vspx namespace in the include file, it must be declared as such.  
+</para>
+</refsect1>
+<refsect1 id="attrs_vspx_include">
+  <title>Attributes</title>
+  <refsect2>
+    <title>url</title>
+    <para>Relative to the page URL of file to be included</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_include">
+  <title>Children</title>
+</refsect1>
+<refsect1 id="examples_vspx_include">
+  <title>Examples</title>
+  <example id="ex_vspx_include">
+    <title>Simple example</title>
+    <para>Include a common back-link
+			    </para>
+    <screen><![CDATA[
+				
+				-- footer.xml --
+                                <P><a href="index.vsp">Back to index</a></P>
+				--- eof footer.xml ---
+				
+                                <v:include url="footer.xml"/> <!-- this will include file above -->
+				
+			    ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

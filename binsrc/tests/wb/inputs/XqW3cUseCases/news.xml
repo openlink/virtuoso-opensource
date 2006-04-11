@@ -1,0 +1,105 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE news SYSTEM "news.dtd">
+<news>
+<news_item>
+   <title>Gorilla Corporation acquires YouNameItWeIntegrateIt.com</title>
+   <content>
+      <par> 
+            Today, Gorilla Corporation announced that it will purchase
+          YouNameItWeIntegrateIt.com. The shares of YouNameItWeIntegrateIt.com
+          dropped $3.00 as a result of this announcement.
+      </par>
+
+      <par> 
+            As a result of this acquisition, the CEO of YouNameItWeIntegrateIt.com
+          Bill Smarts resigned. He did not announce what he will do next.
+          Sources close to YouNameItWeIntegrateIt.com hint that Bill Smarts
+          might be taking a position in Foobar Corporation.
+      </par>
+
+      <par> 
+            YouNameItWeIntegrateIt.com is a leading systems integrator that enables
+          <quote>brick and mortar</quote> companies to have a presence on the web.
+      </par>
+
+   </content>
+   <date>1-20-2000</date>
+   <author>Mark Davis</author>
+   <news_agent>News Online</news_agent>
+</news_item>
+
+<news_item>
+   <title>Foobar Corporation releases its new line of Foo products today</title>
+   <content>
+      <par> 
+            Foobar Corporation releases the 20.9 version of its Foo products.
+          The new version of Foo products solve known performance problems which
+          existed in 20.8 line and increases the speed of Foo based products
+          tenfold. It also allows wireless clients to be connected to the Foobar
+          servers.
+      </par>
+      <par> 
+            The President of Foobar Corporation announced that they were proud to
+          release 20.9 version of Foo products and they will upgrade existing
+          customers <footnote>where service agreements exist</footnote>
+          promptly. TheAppCompany Inc. immediately announced that it
+          will release the new version of its products to utilize the 20.9
+          architecture within the next three months.
+      </par>
+      <figure>
+          <title>Presidents of Foobar Corporation and TheAppCompany Inc. Shake Hands</title>
+          <image source="handshake.jpg"/>
+      </figure>
+   </content>
+   <date>1-20-2000</date>
+   <news_agent>Foobar Corporation</news_agent>
+</news_item>
+
+<news_item>
+   <title>Foobar Corporation is suing Gorilla Corporation for patent infringement</title>
+   <content>
+      <par>
+           In surprising developments today, Foobar Corporation announced that
+         it is suing Gorilla Corporation for patent infringement. The patents
+         that were mentioned as part of the lawsuit are considered to be the
+         basis of Foobar Corporation's <quote>Wireless Foo</quote> line of
+            products.
+      </par>
+      <par>
+           The tension between Foobar and Gorilla Corporations has been increasing
+         ever since the Gorilla Corporation acquired more than 40 engineers who
+         have left Foobar Corporation, TheAppCompany Inc. and
+         YouNameItWeIntegrateIt.com over the past 3 months. The engineers who
+         have left the Foobar corporation and its partners were rumored to be
+         working on the next generation of server products and applications
+         which will directly compete with Foobar's Foo 20.9 servers. Most of the
+         engineers have relocated to Hawaii where the Gorilla Corporation's
+         server development is located.
+      </par>
+   </content>
+   <date>1-20-2000</date>
+   <news_agent>Reliable News Corporation</news_agent>
+</news_item>
+</news>

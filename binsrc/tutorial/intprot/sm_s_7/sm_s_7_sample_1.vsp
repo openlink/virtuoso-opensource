@@ -1,0 +1,83 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare err varchar;
+  err := '';
+  if ({?'get'} = 'Get')
+    {
+      declare ma any;
+      declare i, l integer;
+      declare exit handler for sqlstate '*' { err := __SQL_MESSAGE;  goto endr;};
+      ma := pop3_get ({?'s'}, {?'u'}, {?'p'}, 10000000);
+      i := 0; l := length (ma);
+      while (i < l)
+        {
+          NEW_MAIL ({?'lu'}, ma[i][1]);
+          i := i + 1;
+	}
+      if (i > 0)
+	{
+	  http_request_status ('HTTP/1.1 302 Found');
+	  http_header ('Location: /mime/mime_plain.vsp\r\n');
+	}
+
+    }
+
+ endr:
+?>
+
+<html>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+<body>
+  <H3>Storing the mail messages to the local POP3 server data</H3>
+  <p>On success this page redirects to the mail messages UI</p>
+  <p>You can also view the retrieved data using own mail reader. In this case you may needed to setup the mail reader to get messages from Virtuoso's POP3 server. Note: Make sure that POP3 service is enabled in virtuooso.ini (POP3Port).</p>
+  <p style="color: red"><?=err?></p>
+
+  <form method="post" action="sm_s_7_sample_1.vsp">
+    <table class="tableentry">
+      <tr><td>1. Enter the POP3 server address&amp;port</td>
+             <td><input type="text" name="s"></td></tr>
+      <tr><td>2. Enter the POP3 account</td>
+             <td><input type="text" name="u"></td></tr>
+      <tr><td>3. Enter the POP3 password</td>
+             <td><input type="password" name="p"></td></tr>
+      <tr><td>4. Choose the Local mail(WebDAV) account</td>
+             <td>
+	      <select name="lu">
+	      <?vsp
+	        for select U_NAME from WS.WS.SYS_DAV_USER do
+                  {
+	      ?>
+		    <option value="<?=U_NAME?>"><?=U_NAME?></option>
+	      <?vsp
+	          }
+	       ?>
+	      </select>
+	     </td></tr>
+      <tr><td>5. Retrieve&amp;store</td><td><input type="submit" name="get" value="Get"></td>
+      </tr>
+    </table>
+  </form>
+</body>
+</html>

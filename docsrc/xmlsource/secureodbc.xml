@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect2 id="secureodbcx509"><title>Using X509 Certificates With ODBC Connection</title>
+
+<para>Virtuoso can be configured to authenticate ODBC logins with a single
+X.509 certificate.  The certificate must be registered server side for this purpose
+and may contain an additional custom attribute for the users SQL account name.
+In this way all login information is held in the possibly password protected
+certificate.  The user specifies the certificate path in the place of the user name
+and the certificate encryption password as the password.  This works with the
+login dialog of the ODBC driver or within a SQLDriverConnect login string.</para>
+
+<!-- is any indication on the client dialog that you can supply a key file instead.  either a browse button or a checkbox to specify key and a browse button. -->
+<!-- ser admin page for uploading keys to the server? -->
+
+<para>It is also possible to set up the ODBC client to check for the server's
+X.509 certificate by specifying a client side CA (Certificate Authority) list.</para>
+
+<para>The X509 certificate can be used for authentication with the
+Virtuoso server via SSL.  In this  case the ODBC client will use an X.509
+certificate which contains a SQL username as an extension.
+This extension is added when the certificate is issued.  Since an object
+ID (OID) of the username attribute can be used any valid object identifier that
+does not conflict with existing OIDs (for example 2.16.840.1.NNNNNN).
+It will be best to have one's own registered OID for that purpose.</para>
+
+<sect3 id="secureodbccertgen"><title>ODBC Client Certificate Generation Using "openssl" Tool</title>
+
+  <para>To generate X509 certificates one can use the "openssl" tool obtained
+  freely from <ulink url="http://www.openssl.org/">www.openssl.org</ulink>.
+  The <computeroutput>openssl.cnf</computeroutput> configuration file
+  must be edited to include the new extension for sqlUserName, but first we
+  have to find the hexedecimal representation of the SQL Username.  Then
+  you can proceed the use the openssl to create and confirm the
+  certificate.  Follow the steps below:</para>
+
+ <orderedlist>
+  <listitem><para><emphasis>Find the HEX representation of the SQL Username</emphasis></para>
+  <para>You can either work this out from ASCII codes or use a hexdump utility
+  found on most Unix platforms.  The following command would be sufficient,
+  replacing &lt;user_name&gt; with the actual username:</para>
+
+<programlisting><![CDATA[
+$ echo -n "<user_name>" | hexdump -e '":" 1/1 "%02X"'
+]]></programlisting>
+
+  <para>For example, the username <computeroutput>'dba'</computeroutput>
+  would be <computeroutput>:64:62:61</computeroutput>.</para>
+  </listitem>
+
+  <listitem><para><emphasis>Edit the OpenSSL config file: openssl.cnf</emphasis></para>
+  <para>Open the file in a text editor of your choosing and add the following:</para>
+
+<programlisting><![CDATA[
+[ new_oids ]
+sqlUserName=2.16.840.1.NNNNNN.1
+
+...
+[ usr_cert ]
+...
+sqlUserName = DER:NN:NN:NN:NN:NN.....
+]]></programlisting>
+
+   <para>replacing <computeroutput>:NN:NN.....</computeroutput> with the
+   hexadecimal represantation of the username we discovered in the
+   previous step.</para>
+   </listitem>
+
+  <listitem><para><emphasis>Make New Certificate Request</emphasis></para>
+
+  <para>Make new certificate request using the command:</para>
+
+<programlisting><![CDATA[
+$ openssl req -new
+]]></programlisting>
+
+  <para>The tool will ask for certain details.  Once completed it will
+  generate a private key also.</para>
+  </listitem>
+
+  <listitem><para><emphasis>Generate Certificate</emphasis></para>
+  <para>Assuming the role of CA, generate a certificate using the request
+  from the previous step, using the following command:</para>
+
+<programlisting><![CDATA[
+$ openssl ca -in <req_file>
+]]></programlisting>
+
+  <para>The tool will print the details of request and will ask you to sign and
+  commit the certificate into the CA repository.</para>
+  </listitem>
+
+  <listitem><para><emphasis>Verify New Certificate</emphasis></para>
+  <para>Check that the certificate contains the right SQL account name; use
+  the following command to obtain a text dump of the certifcate:</para>
+
+<programlisting><![CDATA[
+openssl x509 -in <certfile> -text -noout
+]]></programlisting>
+
+<para>Now we can scan the contents of the output for the extension entries
+we added earlier:</para>
+
+<programlisting><![CDATA[
+>>>>>
+X509v3 extensions:
+....
+2.16.840.1.NNNNNNN.1:
+<SqlAccountName>
+^^^^^^ this should match the new OID ^^^^^
+>>>>>
+]]></programlisting>
+  </listitem>
+ </orderedlist>
+</sect3>
+
+<sect3 id="secureodbcclisrvsetup"><title>Virtuoso Server Configuration</title>
+  <para>The Virtuoso server can work in two modes based on an
+  SSL connection:</para>
+
+  <simplelist>
+   <member><emphasis>basic</emphasis> - this is when only connection is
+   secured, no certificate verification.  The client is not required to have its own
+   trusted certificate.</member>
+   <member><emphasis>trusted</emphasis> - additional mechanisms are
+   enabled to check client's certificate.  in this case the client is required to have
+   a trusted certificate.</member>
+  </simplelist>
+
+  <para>To allow Virtuoso to check the client's certificates, the virtuoso.ini
+  file must contain the following entries in [Parameters] section:</para>
+
+<programlisting><![CDATA[
+; Basic session encryption only parameters
+SSLServerPort           = 1113
+SSLCertificate          = ./srv.cert.pem ; server's certificate
+SSLPrivateKey           = ./srv.key.pem  ; server's private key, must match the certificate
+; Trusted operation parameters
+X509ClientVerify        = 1
+X509ClientVerifyCAFile  = ./ca.pem	   ; CA list; file containing certificates of acceptable CA
+X509ClientVerifyDepth   = 1 		   ; dependent of type of certificate checking can be &gt;1
+X509ExtensionOID	  = 2.16.840.1.NNNNNNN.1 ; the OID value, same as that used to make client's certificates
+]]></programlisting>
+
+  <para>All certificate/key files need to be in PEM format.</para>
+
+  <para>The server needs an "SSLCertificate" and "SSLPrivateKey" to begin
+  listening on the "SSLServerPort".  These are essential for the secure
+  operations.  Furthermore the certificate must match the private key;
+  non-matching certificate and private keys will prevent server startup and
+  an error will be logged.
+  The private key is required to guarantee that the certificate's claim is true.
+  The server certificate is used by the client to identify the server.  The
+  client can retrieve and verify this key and choose whether the server
+  an be trusted depending on circumstances. </para>
+
+  <note><title>Note:</title>
+  <para>basic operation (SSL/TLS) encryption only cannot be used to
+  identify a client with certificate. </para></note>
+
+  <para>The "X509ClientVerifyCAFile" is a file containing a CA's (Certificate
+  Authority) certificates that the server can use to verify client certificates.
+  The client certificate verification in general depends on the "X509ClientVerify" flag,
+  which enables or disable this feature.  The 'X509ClientVerifyDepth"
+  parameter is used to verify to what degree server will trust the  client's
+  certificate. The lower the value, the higher the restriction levels, with a
+  minimum value of 1.  This  means that the server will look in CA's certificates
+  to find who has issued the client certificate.  If there is no matching CA
+  entry the connection will be rejected;  If there is a matching entry then
+  verify the issuer chain; If issuer chain is greater than "X509ClientVerifyDepth",
+  the connection will be rejected.</para>
+
+  <para>All file paths above must be either absolute or relative to the server working directory. </para>
+
+  <note><title>Note:</title>
+  <para>If primary key file is encrypted then the server must be started
+  in foreground mode so that a password can be supplied in order to open the file.
+  </para></note>
+
+</sect3>
+
+<sect3 id="secureodbcclisetup"><title>Virtuoso Client Configuration</title>
+
+  <para>The following connection options control the client's behavior regarding SSL:</para>
+
+  <simplelist>
+   <member><emphasis>Encrypt</emphasis> - specifies type of secure
+   connection to be used. </member>
+   <member><emphasis>ServerCert</emphasis> - (optional) to specify which
+   certificate(s) are to be used to verify server certificates.</member>
+  </simplelist>
+
+  <para>The <emphasis>Encrypt</emphasis> option can be set to '1' to specify
+  a basic secure connection; no server identity verification will be performed.
+  Note that this is only possible when the server is also set to make
+  basic SSL connections.</para>
+
+  <para>To ensure server's identity the <emphasis>Encrypt</emphasis> option
+  must be set to full or relative (to application working directory) path to the file
+  containing client's certificate and private key.  This file can be encoded in
+  PKCS#12 or PEM format.  The certificate and private key contained may be
+  generated using the steps outlined above.</para>
+
+  <para>When the Encrypt option is set to point to a cetificate file, the
+  <emphasis>ServerCert</emphasis> option must be set to the full or
+  relative path to file containing list of CA certificates in PEM format.  The content
+  of this file will be used to verify server's certificate.</para>
+
+  <para>When using these options the UID connection-option must be set to
+  an empty string to enable certificate authorization.  The PWD option will be
+  used to open the private key.</para>
+
+  <para>Here is an example of an ODBC connect-string:</para>
+
+<programlisting><![CDATA[
+...
+connectString =
+"HOST=localhost:1113;UID=;PWD=keysecret;ENCRYPT=c:\certs\mycertwithkey.p12;SERVERCERT=c:\certs\ca.pem"
+...
+]]></programlisting>
+
+  <para>If client's certificate does not contains user name for SQL login then
+  the server will try matching the certificate fingerprint against registered
+  certificates. If any SQL account has such a certificate registered it
+  will be used for login.  Otherwise login will be rejected.</para>
+
+  </sect3>
+
+  <sect3 id="secureodbcregkeys"><title>Registering Keys with Virtuoso</title>
+
+  <para>To enable a client certificate to be used for authorization,
+  the DBA must register it's MD5 fingerprint (checksum) in the database.
+  Registered certificates can be removed from system.  Two functions
+  exist for the purposes: <function>USER_CERT_REGISTER()</function>,
+  and <function>USER_CERT_UNREGISTER()</function>.  Both functions
+  rely on the MD5 checksum of the certificates being registered or un-registered,
+  therefor you have the option of supplying these functions with the certificate
+  file or the MD5 checksum directly.</para>
+
+  <para>The functions are:</para>
+
+<para><function>USER_CERT_REGISTER (<param>user_name</param>, <param>certificate</param>, <param>password</param>, <param>type</param>);</function></para>
+<para><function>USER_CERT_UNREGISTER (<param>user_name</param>, <param>certificate</param>, <param>password</param>, <param>type</param>);</function></para>
+
+ <para>The registered certificate's fingerprints are kept in the DB.DBA.SYS_USERS table as
+ vectors of strings under the 'LOGIN_CERTIFICATES' user option value (U_OPTS column).
+ The data stored there can be retrieved using a third function: </para>
+
+ <para><function>USER_GET_OPTION()</function></para>
+
+  <para>For example, one might invoke:</para>
+
+<programlisting><![CDATA[
+USER_CERT_REGISTER ('DBA', 'file:/dba.pem', '', 'PEM');
+]]></programlisting>
+
+  <para>Note that 'file:' URL is needed to designate
+  certificate is in a file on file system. </para>
+
+  <para>The above action can be performed also without certificate supplied
+  if the MD5 fingerprint is known:</para>
+
+<programlisting><![CDATA[
+USER_CERT_REGISTER ('DBA', 'D9:6D:47:D7:67:47:D7:3C:2C:E0:89:91:F3:BC:E7:59');
+]]></programlisting>
+
+  <para>and</para>
+
+<programlisting><![CDATA[
+USER_CERT_UNREGISTER ('DBA', 'D9:6D:47:D7:67:47:D7:3C:2C:E0:89:91:F3:BC:E7:59');
+]]></programlisting>
+
+ </sect3>
+
+</sect2>

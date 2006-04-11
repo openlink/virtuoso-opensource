@@ -1,0 +1,252 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+declare _u_id, _tt_id integer;
+declare _u_name, _comment, _query, err, stat, _email, _owneml, _sid_id, _own varchar;
+set isolation='uncommitted';
+stat := null;
+_u_id := DB.DBA.adm_dav_check_auth (lines);
+if ( _u_id < 1)
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+	  'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+
+_sid_id := adm_get_sesid (params);
+select U_E_MAIL, U_NAME into _owneml, _own from WS.WS.SYS_DAV_USER where U_ID = _u_id;
+_email := get_keyword ('email', params);
+if (_email is null)
+  _email := _owneml;
+
+_comment := ''; _query := '';
+_tt_id := atoi (get_keyword ('tt_id', params, '0'));
+if ('' <> get_keyword ('edit', params, ''))
+  {
+    if (_tt_id > 0)
+      {
+	select TT_COMMENT, TT_QUERY into _comment, _query from
+	    DB.DBA.MAIL_MESSAGE_MM_BODY_QUERY where TT_ID = _tt_id;
+        _email := coalesce ((select TTU_NOTIFY from DB.DBA.MAIL_MESSAGE_MM_BODY_USER where
+		      TTU_T_ID = _tt_id and TTU_U_ID = _u_id), '');
+      }
+    else
+      {
+        err := 'Query ID is not valid';
+	goto erret;
+      }
+  }
+else if ('' <> get_keyword ('del', params, ''))
+  {
+    if (_tt_id > 0)
+      {
+        delete from DB.DBA.MAIL_MESSAGE_MM_BODY_QUERY where TT_ID = _tt_id;
+	delete from DB.DBA.MAIL_MESSAGE_MM_BODY_USER where TTU_T_ID = _tt_id;
+	delete from DB.DBA.MAIL_MESSAGE_MM_BODY_HIT where TTH_T_ID = _tt_id;
+      }
+    else
+      {
+        err := 'Query ID is not valid';
+	goto erret;
+      }
+  }
+else if ('' <> get_keyword ('add', params, ''))
+  {
+    _query := get_keyword ('query', params, '');
+    _comment := get_keyword ('comment', params, '');
+    if (_query = '')
+      {
+        err := 'Query text cannot be empty string';
+	goto erret;
+      }
+
+    stat := '00000';
+    exec ('vt_parse (?)', stat, err, vector (_query));
+    if (stat <> '00000')
+      goto erret;
+    else
+      stat := null;
+    -- e-mail notification can do cycle
+    DB.DBA."TT_QUERY_MAIL_MESSAGE" (_query, _u_id, _comment, '');
+    if ('' <> get_keyword ('init_hits', params, ''))
+      {
+	declare _qt_id integer;
+        _qt_id := coalesce ((select TTU_T_ID from DB.DBA.MAIL_MESSAGE_MM_BODY_USER where TTU_U_ID = _u_id order by TTU_T_ID desc), 1);
+	for select MM_BODY_ID from DB.DBA.MAIL_MESSAGE where contains (MM_BODY, _query) and MM_OWN = _own do
+	  {
+	    insert soft DB.DBA.MAIL_MESSAGE_MM_BODY_HIT (TTH_U_ID, TTH_T_ID, TTH_D_ID, TTH_NOTIFY)
+		values (_u_id, _qt_id, MM_BODY_ID, '');
+	  }
+      }
+  }
+else if ('' <> get_keyword ('upd', params, ''))
+  {
+    _query := get_keyword ('query', params, '');
+    _comment := get_keyword ('comment', params, '');
+    if (_query = '')
+      {
+        err := 'Query text cannot be empty string';
+	goto erret;
+      }
+    stat := '00000';
+    exec ('vt_parse (?)', stat, err, vector (_query));
+    if (stat <> '00000')
+      goto erret;
+    else
+      stat := null;
+    if (_tt_id > 0)
+      {
+	declare _old_query varchar;
+        _old_query := coalesce ((select distinct TT_QUERY from DB.DBA.MAIL_MESSAGE_MM_BODY_QUERY
+			  where TT_ID = _tt_id) , '');
+        if (_old_query <> _query)
+	  {
+	    delete from DB.DBA.MAIL_MESSAGE_MM_BODY_QUERY where TT_ID = _tt_id;
+	    delete from DB.DBA.MAIL_MESSAGE_MM_BODY_USER where TTU_T_ID = _tt_id;
+	    delete from DB.DBA.MAIL_MESSAGE_MM_BODY_HIT where TTH_T_ID = _tt_id;
+	    DB.DBA."TT_QUERY_MAIL_MESSAGE" (_query, _u_id, _comment, '');
+	  }
+	else
+	  {
+	    update DB.DBA.MAIL_MESSAGE_MM_BODY_QUERY set TT_COMMENT = _comment where TT_ID = _tt_id;
+	    update DB.DBA.MAIL_MESSAGE_MM_BODY_USER
+		set TTU_NOTIFY = '' where TTU_T_ID = _tt_id and TTU_U_ID = _u_id;
+	  }
+      }
+    else
+      {
+        err := 'Query ID is not valid';
+	goto erret;
+      }
+  }
+
+
+?>
+
+
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function queryTest ()
+  {
+    document.query_test_form.stmt.value = document.query_form.query.value;
+    document.query_test_form.submit ();
+  }
+// -->
+</SCRIPT>
+
+
+
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Text triggers">
+<title>Internet mail text triggers</title>
+</head>
+<?vsp adm_page_header('Internet Mail Text Trigger Definition', NULL); ?>
+
+<p>To add new text trigger just fill the form and press "Add" button</p>
+<p>To edit existing text trigger select "Edit" link subsequent to query, change query and/or comment and press "Update" button </p>
+<p>To remove existing text trigger select "Remove" link subsequent to query. CAUTION: this operation cannot be reverted</p>
+
+<p>
+This page will store the query and generate a hit for each time a e-mail matching the query is either created or modified. <br> Use the <b>'Test'</b> button to see what pre-existing documents match the query. To return from query test page press browser 'Go back' button.<br>
+Check the 'initialize hits' box if you wish the pre-existing matching documents to be added to the hits list for this text trigger.
+</p>
+
+<form method=POST action="ftt_mail_query.vsp" name=query_form>
+<input type="hidden" name="tt_id" value="<?=_tt_id?>">
+<input type="hidden" name="sid" value="<?=_sid_id?>">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="stathead" COLSPAN="3">text trigger query definition</TD></TR>
+<TR CLASS="AdmBorders"><TD COLSPAN="3"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+<tr><td CLASS="genlisthead">Comment</td><td CLASS="geninput"><input type="text" name="comment" size="60%" value="<?=_comment?>"> </td><td>&nbsp;</td></tr>
+<tr><td CLASS="genlisthead">Query text</td><td CLASS="geninput"><input type="text" name="query" size="60%" value="<?=_query?>"> </td><td>&nbsp;</td></tr>
+<tr><td CLASS="genlisthead">&nbsp;</td><td CLASS="geninput"><input type="hidden" name="email" size="60%" value=""> </td><td>&nbsp;</td></tr>
+<tr><td CLASS="genlisthead">Initialize hits</td><td CLASS="geninput"><input type="checkbox" name="init_hits" size="60%"> </td><td>&nbsp;</td></tr>
+<tr>
+	<td align="right" colspan="2">
+<?vsp if ('' <> get_keyword ('edit', params, '')) { ?>
+		<input type="submit" name="upd" value="Update">
+<?vsp } else { ?>
+		<input type="submit" name="add" value="Add">
+<?vsp } ?>
+		<input type="submit" name="clr" value="Clear">
+	 </td>
+	 <td>
+		<input type="button" name="tst" value="Test" onClick="queryTest ();">
+	</td>
+</tr>
+
+</table>
+</form>
+
+<form action="mail_search.vsp" method=POST name="query_test_form">
+<input type=hidden name="stmt" value="">
+<input type=hidden name=qtype value="freetext">
+<input type=hidden name="sid" value="<?=_sid_id?>">
+<input type=hidden name="maxres" value="500">
+<input type=hidden name="xecute" value="Execute query">
+</form>
+
+<table CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="stathead" COLSPAN="3">Current triggers</TD></TR>
+<tr>
+  <td CLASS="genlistheadt">Query</td>
+  <td CLASS="genlistheadt">Comment</td>
+  <td CLASS="genlistheadt">Actions</td>
+</tr>
+<?vsp declare _is integer; _is := 0; for select distinct TT_QUERY, TT_COMMENT, TT_ID from DB.DBA.MAIL_MESSAGE_MM_BODY_QUERY,
+                                           DB.DBA.MAIL_MESSAGE_MM_BODY_USER
+				      where TTU_U_ID = _u_id and TTU_T_ID = TT_ID
+				      order by TT_ID do {  _is := 1; ?>
+  <tr>
+      <td CLASS="gendata"><a href="ftt_mail_query.vsp?tt_id=<?=TT_ID?>&edit=1"><?=TT_QUERY?></a></td>
+      <td CLASS="gendata"><?=TT_COMMENT?></td>
+       <td>
+         <table BORDER="0" CELLPADDING="0">
+	   <tr>
+            <td CLASS="gendata"><a class="tablelistaction" href="ftt_mail_query.vsp?tt_id=<?=TT_ID?>&edit=1">Edit</a></td>
+            <td CLASS="gendata"><a class="tablelistaction" href="ftt_mail_query.vsp?tt_id=<?=TT_ID?>&del=1">Remove</a></td>
+	   </tr>
+         </table>
+       </td>
+  </tr>
+<?vsp  } if (_is = 0) http ('<td colspan=3 CLASS="gendata" align=center>*** No triggers defined ***</td>'); ?>
+</table>
+<?vsp adm_page_footer(); ?>
+</html>
+
+
+<?vsp
+-- Error exit
+return (0);
+erret:
+?>
+<?include ../admin/admin_dav/error.vsp ?>

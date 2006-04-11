@@ -1,0 +1,106 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+http_header ('Content-Type: text/xml\r\n');
+set_qualifier ('BLOG');
+xml_auto (
+'select
+	1 as tag,
+	null as parent,
+	\'2.0\' as [rss!1!version],
+	\'http://purl.org/dc/elements/1.1/\' as [rss!1!"xmlns:dc"],
+ 	null as [channel!2!title!element],
+ 	null as [channel!2!link!element],
+ 	null as [channel!2!description!element],
+ 	null as [channel!2!managingEditor!element],
+ 	null as [channel!2!pubDate!element],
+	null as [channel!2!generator!element],
+	null as [channel!2!webMaster!element],
+        null as [image!3!title!element],
+        null as [image!3!url!element],
+        null as [image!3!link!element],
+        null as [image!3!description!element],
+        null as [image!3!width!element],
+        null as [image!3!height!element],
+	null as [cloud!4!domain],
+	null as [cloud!4!port],
+	null as [cloud!4!path],
+	null as [cloud!4!registerProcedure],
+	null as [cloud!4!protocol],
+	null as [item!5!title!element],
+	null as [item!5!guid!element],
+	null as [item!5!link!element],
+ 	null as [item!5!comments!element],
+	null as [item!5!pubDate!element],
+	null as [item!5!description!element],
+	null as [item!5!author!element],
+	null as [item!5!"dc:subject"!element],
+	null as [item!5!ts!hide]
+  from DB..SYS_USERS where U_ID  = http_dav_uid ()
+
+union all
+
+select
+      	2,
+	1,
+	null, null,
+	\'MyFeed\',
+        \'http://\'||BLOG_GET_HOST ()|| \'/wa/\',
+	\'\',
+	U_E_MAIL,
+	date_rfc1123(now ()),
+	\'Virtuoso Universal Server \' || sys_stat(\'st_dbms_ver\'),
+	U_E_MAIL,
+        null, null, null, null, null, null,
+ 	null, null, null, null, null,
+	null, null, null, null, null, null, null, null, null
+  from DB..SYS_USERS where U_ID  = http_dav_uid ()
+
+union all
+
+select
+	5,
+	2,
+        null, null,
+ 	null, null, null, null, null, null, null,
+	null, null, null, null, null, null,
+        null, null, null, null, null,
+	BLOG_GET_TITLE (B_META, B_CONTENT),
+        \'http://\'||BLOG_GET_HOST ()||BLOG_GET_HOME_DIR (BI_HOME)||\'?id=\'||B_POST_ID,
+        \'http://\'||BLOG_GET_HOST ()||BLOG_GET_HOME_DIR (BI_HOME)||\'?id=\'||B_POST_ID,
+        \'http://\'||BLOG_GET_HOST ()||BLOG_GET_HOME_DIR (BI_HOME)||\'?id=\'||B_POST_ID||\'#comments\',
+	date_rfc1123 (B_TS),
+	B_CONTENT,
+	U_FULL_NAME || \' (\'||U_E_MAIL||\')\',
+	BLOG_GET_SUBJECT (B_POST_ID,B_BLOG_ID),
+	B_TS
+	from
+	(select TOP 15 B_CONTENT, B_TS, B_META, BI_HOME, B_POST_ID, U_FULL_NAME, U_E_MAIL, B_BLOG_ID from
+		SYS_BLOGS, SYS_BLOG_INFO, DB..SYS_USERS where BI_BLOG_ID = B_BLOG_ID and B_USER_ID = U_ID and
+		exists (select 1 from SYS_BLOG_DOMAINS where BD_DOMAIN = http_map_get (\'vhost\')
+		  and BD_BLOG_ID = B_BLOG_ID)
+		order by B_TS desc
+	) sub
+
+for xml explicit', vector ());
+?>

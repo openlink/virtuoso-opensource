@@ -1,0 +1,768 @@
+<?xml version="1.0" ?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<dirinfo>
+  <dir path="">
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="adminui"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="backup"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="cinterface"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="dbconcepts"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="errors"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="freetext"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="functions"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="hooks"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="installation"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="intl"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="isql"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="ldap"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="mailsrv"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="mime"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="odbcimplementation"	/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="overview"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="preface"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="ptune"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="quicktours"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="repl"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="sampleapps"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="server"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="soap"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="sqlfunctions"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="sqlprocedures"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="sqlreference"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="support"		/>
+<!--    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="test"			/> -->
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="tpcc"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="vdbconcepts"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="virtwhitepaper"	/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="vsp"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="vsptraining"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="webandxml"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="webserver"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="xpfs"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="xquery"		/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="yacsqlgrammar"		/>
+<!--    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Drafts" name="uni"			/> -->
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Main" name="virtdocs"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="uddi"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="xslttrans"		/>
+  </dir>
+  <dir path="releasenotes">
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Chapters" name="vrelnotes-nw"		/>
+  </dir>
+  <dir path="funcref">
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="abs"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="any_grants"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="aref"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ascii"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="aset"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="atof"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="atoi"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="att_local_name"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="backup_context_clear"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="backup_online"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="backup"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_array_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_array_or_null_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_bin_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_double_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_entity_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_float_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_funcs"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_long_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_long_or_char_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_string_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_string_or_null_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_string_or_wide_or_null_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bif_strses_arg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bit_and"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bit_not"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bit_or"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bit_shift"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bit_xor"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="blob_to_string_output"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="blob_to_string"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="blogger.deletePost"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="blogger.editPost"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="blogger.getPost"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="blogger.getRecentPosts"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="blogger.getTemplate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="blogger.getUserInfo"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="blogger.getUsersBlogs"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="blogger.newPost"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="blogger.setTemplate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="bookmark"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ceiling"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="cfg_item_count"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="cfg_item_name"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="cfg_item_value"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="cfg_section_count"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="cfg_section_name"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="cfg_write"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="charset_define"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="charset_recode"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="charsets_list"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="checkpoint_interval"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="chr"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="client_attr"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="collation_define"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="complete_table_name"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="composite_ref"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="composite"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="concatenate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="concat"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="connection_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="connection_id"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="connection_is_dirty"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="connection_set"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="connection_vars_set"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="connection_vars"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="contains"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="corr"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="covar_pop"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="covar_samp"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="cov_load"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="cov_report"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="cov_store"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="createXML"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="curdate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="current_charset"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dateadd"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="datediff"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="datestring_gmt"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="datestring"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dav_api_add"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dav_api_change"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dav_api_search"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dav_api_user"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dav_exp"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dayname"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dayofmonth"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dayofweek"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dayofyear"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dbg_obj_print"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dbg_printf"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dbname"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="delay"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="disconnect_user"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dt_set_tz"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="dvector"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="either"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="elh_get_handler"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="elh_load_handler"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="encode_base64"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="end_result"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="equ"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="exec_close"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="exec_next"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="exec_result_names"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="exec_result"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="exec"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="explain"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="exp"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="file_delete"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="file_stat"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="file_to_string_output"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="file_to_string"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="fk_check_input_values"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="floor"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ftp_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ftp_ls"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ftp_put"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="get_certificate_info"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="getdate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="get_keyword_ucase"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="get_keyword"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="get_timestamp"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="gz_compress"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="gz_uncompress"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="hour"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_acl_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_body_read"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_client"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_client_ip"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_debug_log"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_enable_gz"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_file"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_flush"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_header_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_header"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_kill"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_listen_host"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_map_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_map_table"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_path"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_pending_req"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_physical_path"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_proxy"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_request_header"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_request_status"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_rewrite"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_root"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_url"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_value"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_xslt"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="import_clr"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="import_jar"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="initcap"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="internal_to_sql_type"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="internal_type_name"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="internal_type"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="isarray"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="isbinary"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="isblob"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="isdouble"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="isentity"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="isfloat"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="isinteger"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="isnull"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="isnumeric"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="isstring"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="iszero"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="java_call_method"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="java_get_property"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="java_load_class"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="java_new_object"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="java_set_property"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="java_vm_attach"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="java_vm_detach"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="jvm_ref_import"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="lcase"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ldap_add"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ldap_delete"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ldap_modify"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ldap_search"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="left"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="length"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="lfs_exp"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="lh_get_handler"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="lh_load_handler"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="locate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="log10"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="log_enable"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="log_text"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="log"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="lower"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ltrim"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="make_array"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="make_string"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="md5_final"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="md5_init"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="md5_update"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="md5"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="metaWeblog.editPost"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="metaWeblog.getPost"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="metaWeblog.getRecentPosts"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="metaWeblog.newPost"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mime_body"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mime_part"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mime_tree"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="minute"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mod"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="monthname"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="month"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="msec_time"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mt.getCategoryList"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mt.getPostCategories"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mt.getRecentPostTitles"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mt.getTrackbackPings"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mt.publishPost"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mts_connect"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mt.setPostCategories"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mts_get_timeout"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mts_set_timeout"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mts_status"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="mt.supportedMethods"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="name_part"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="nntp_auth_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="nntp_auth_post"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="nntp_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="nntp_post"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="now"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ope"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="os_chmod"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="os_chown"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="pem_certificates_to_array"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="pldbg_stats_load"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="pldbg_stats"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="pop3_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="position"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="power"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="prof_enable"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="prof_sample"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="quarter"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="quote_dotted"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="randomize"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="rclose"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regexp_instr"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regexp_like"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regexp_match"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regexp_parse"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regexp_replace"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regexp_substr"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="registry_get_all"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="registry_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="registry_set"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regr_avgx"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regr_avgy"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regr_count"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regr_intercept"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regr_r2"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regr_slope"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regr_sxx"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regr_sxy"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="regr_syy"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repeat"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="replace"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="REPL_ADD_CR"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="REPL_ADD_DAV_CR"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="REPL_ADD_SNAPSHOT_CR"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="replay"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="REPL_CREATE_SNAPSHOT_PUB"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="REPL_CREATE_SNAPSHOT_SUB"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_disconnect"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="REPL_DROP_SNAPSHOT_PUB"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="REPL_DROP_SNAPSHOT_SUB"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_grant"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_init_copy"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="REPL_INIT_SNAPSHOT"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_new_log"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_pub_add"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_pub_init_image"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_publish"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_pub_remove"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_purge"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_revoke"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_sched_init"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="REPL_SERVER_NAME"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_server_rename"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_server"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="REPL_SNP_SERVER"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_status"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_stat"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_subscribe"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_sync_all"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_sync"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_text"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_this_server"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_unpublish"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="repl_unsubscribe"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="REPL_UPDATE_SNAPSHOT"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="result_names"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="result"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="rexecute"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="right"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="rmoreresults"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="rnd"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="rnext"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="row_count"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="rstmtexec"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="rtrim"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="second"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sequence_get_all"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sequence_next"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sequence_set"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="serialize_to_UTF8"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="serialize"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="serv_queue_top"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ses_connect"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ses_disconnect"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ses_read_line"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ses_write"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="set_identity_column"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="set_user_id"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="signal"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sign"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sinv_create_key_mapping"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sinv_create_inverse"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sinv_drop_inverse"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="smime_sign"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="smime_verify"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="smtp_send"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="soap_box_entity"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="soap_call"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="soap_client"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="soap_dt_define"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="soap_make_error"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="soap_print_box"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="soap_sdl"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="soap_server"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="soap_wsdl_import"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="soap_wsdl"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="space"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="split_decode"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sprintf"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_columns"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_config_data_sources"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_data_sources"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_driver_connect"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_get_installed_drivers"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_get_private_profile_string"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_gettypeinfo"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_primary_keys"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_procedures"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_remove_dsn_from_ini"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_special_columns"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_statistics"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_tables"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_transact"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_write_file_dsn"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_write_private_profile_string"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sqrt"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="status"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="stddev_pop"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="stddev_samp"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="stddev"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="strcasestr"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="strchr"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="stringdate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="string_output_flush"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="string_output_gz_compress"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="string_output_string"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="string_output"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="stringtime"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="string_to_file"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="strrchr"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="strstr"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sub_schedule"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="subseq"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="substring"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sync_repl"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sys_db_stat"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sys_stat_analyze"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sys_stat_histogram"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sys_stat"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sys_lockdown"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="system"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="table_set_policy"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="table_drop_policy"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="template"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="tidy_html"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="tidy_list_errors"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="timezone"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="tmp_file_name"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="trace_off"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="trace_on"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="trace_status"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="tree_md5"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="trigonometric"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="trim"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="txn_error"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="txn_killall"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="ucase"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_delete_binding"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_delete_business"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_delete_service"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_delete_tModel"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_discard_authToken"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_find_binding"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_find_business"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_find_service"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_find_tModel"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_get_authToken"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_get_bindingDetail"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_get_businessDetailExt"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_get_businessDetail"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_get_registeredInfo"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_get_serviceDetail"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_get_tModelDetail"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_save_binding"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_save_business"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_save_service"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uddi_save_tModel"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="udt_defines_field"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="udt_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="udt_implements_method"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="udt_instance_of"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="udt_set"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="unimport_clr"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="unimport_jar"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="updateXML"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="upper"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_change_password"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_create"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_drop"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_get_option"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_grant_role"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_key_load"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="username"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_revoke_role"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_role_create"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_role_drop"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_set_option"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_set_password"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="user_set_qualifier"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uudecode"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uuencode"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="uuvalidate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vad_check_installability"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vad_check_uninstallability"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vad_check"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vad_fail_check"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vad_install"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vad_load_file"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vad_pack"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vad_safe_exec"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vad_uninstall"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="var_pop"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="var_samp"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="var"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vdd_disconnect_data_source"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vdd_measure_rpc_time"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vd_remote_data_source"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vd_remote_table"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vd_statistics"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vector_concat"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vector"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vhost_define"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vhost_remove"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="virtuoso_ini_path"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vt_batch_d_id"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vt_batch_feed_offband"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vt_batch_feed"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vt_batch_update"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vt_batch"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vt_create_text_index"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vt_drop_ftt"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vt_is_noise"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="week"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="wsdl_import_udt"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="wst_cli"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xenc_key_3des_rand_create"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xenc_key_remove"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLAddAttribute"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLAGG"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLAppendChildren"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLATTRIBUTES"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_auto_dtd"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_auto_schema"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_auto"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLCONCAT"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_create_tables_from_mapping_schema_decl"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_cut"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLELEMENT"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLFOREST"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLInsertAfter"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLInsertBefore"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_load_mapping_schema_decl"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_load_schema_decl"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_path"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_persistent"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLReplace"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xmlsql_update"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xmlStorageSystem.deleteMultipleFiles"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xmlStorageSystem.getServerCapabilities"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xmlStorageSystem.mailPasswordToUser"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xmlStorageSystem.registerUser"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xmlStorageSystem.saveMultipleFiles"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_template"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_tree_doc_media_type"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_tree_doc"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_tree"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.createNonSchemaBasedXML"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.createSchemaBasedXML"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.createXML"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.existsNode"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.extract"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.getClobVal"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.getNamespace"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.getNumVal"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.getRootElement"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.getSchemaURL"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.getStringVal"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.isFragment"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.isSchemaBased"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.isSchemaValidated"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.isSchemaValid"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.schemaValidate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.setSchemaValidated"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.toObject"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.transform"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="XMLType.XMLType"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xmlupdate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_uri_get"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_uri_merge"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_validate_dtd"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_validate_schema"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_view_dtd"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xml_view_schema"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xpath_eval"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xper_cut"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xper_doc"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xper_locate_words"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xper_navigation"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xpf_extension_remove"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xpf_extension"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xquery_eval"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xslt_format_number"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xslt_prof_enable"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xslt_sheet"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xslt_stale"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xslt"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xte_head"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xte_nodebld_acc"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xte_nodebld_final"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xte_nodebld_init"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xte_node_from_nodebld"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xte_node"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="xtree_doc"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="year"/>
+  </dir>
+  <dir path="vspx_ref">
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_button"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_check_box"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_data_grid"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_data_list"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_data_set"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_error_summary"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_field"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_form"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_include"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_label"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_login_form"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_login"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_page"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_radio_button"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_select_list"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_tab"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_template"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_textarea"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_text"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_tree"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_update_field"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_url"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_validator"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="VSPX Controls" name="vspx_variable"/>
+  </dir>
+  <dir path="xmlref">
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_and"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_append"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_assign"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_avg"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_boolean"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_ceiling"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_concat"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_contains"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_count"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_create_attribute"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_create_element"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_current"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_deass"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_distinct"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_document_literal"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_document"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_doc"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_empty"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_ends_with"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_every"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_false"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_filter"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_floor"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_format_number"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_for"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_function_available"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_generate_id"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_id"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_if"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_is_after"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_is_before"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_iterate_rev"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_iterate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_key"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_lang"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_last"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_let"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_list"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_local_name"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_max"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_min"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_namespace_uri"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_name"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_normalize_space"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_not"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_number"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_or"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_position"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_progn"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_replace"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_round_number"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_round"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_serialize"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_shallow"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_some"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_starts_with"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_string_length"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_string"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_substring_after"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_substring_before"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_substring"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_sum"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_system_property"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_text_contains"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_translate"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_true"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_tuple"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_unordered"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_unparsed_entity_uri"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_xmlview"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="XPFs" name="xpf_collection"/>
+  </dir>
+  <dir path="DocBook">
+    <file type="dtd" ext="dtd" dtd="DocBook/docbookx.dtd" group="DocBook" name="calstblx"			/>
+    <file type="dtd" ext="mod" dtd="DocBook/docbookx.dtd" group="DocBook" name="dbcentx"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="dbgenent"			/>
+    <file type="dtd" ext="mod" dtd="DocBook/docbookx.dtd" group="DocBook" name="dbhierx"			/>
+    <file type="dtd" ext="mod" dtd="DocBook/docbookx.dtd" group="DocBook" name="dbnotnx"			/>
+    <file type="dtd" ext="mod" dtd="DocBook/docbookx.dtd" group="DocBook" name="dbpoolx"			/>
+    <file type="dtd" ext="dtd" dtd="DocBook/docbookx.dtd" group="DocBook" name="dbtblcals"			/>
+    <file type="dtd" ext="dtd" dtd="DocBook/docbookx.dtd" group="DocBook" name="dbtblxchg"			/>
+    <file type="dtd" ext="dtd" dtd="DocBook/docbookx.dtd" group="DocBook" name="docbookx"			/>
+    <file type="dtd" ext="dtd" dtd="DocBook/docbookx.dtd" group="DocBook" name="soextblx"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="DocBook" name="tblcals"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="DocBook" name="tblxchg"			/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="DocBook" name="test"				/>
+  </dir>
+  <dir path="DocBook/ent">
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-amsa"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-amsb"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-amsc"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-amsn"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-amso"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-amsr"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-box"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-cyr1"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-cyr2"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-dia"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-grk1"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-grk2"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-grk3"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-grk4"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-lat1"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-lat2"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-num"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-pub"			/>
+    <file type="dtd" ext="ent" dtd="DocBook/docbookx.dtd" group="DocBook" name="iso-tech"			/>
+  </dir>
+</dirinfo>

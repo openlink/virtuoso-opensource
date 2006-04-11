@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_xml_uri_get">
+  <refmeta>
+    <refentrytitle>xml_uri_get</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xml_uri_get</refname>
+    <refpurpose>Retrieve a resource based on a URI</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_xml_uri_get">
+      <funcprototype id="fsyn_xml_uri_get">
+        <funcdef>varchar DB.DBA.<function>xml_uri_get</function></funcdef>
+        <paramdef>in <parameter>base</parameter> varchar</paramdef>
+        <paramdef>in <parameter>ref</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+			<para>
+This function combines a base URI and a relative URI and returns the referenced resource.
+</para>
+			<para>
+The supported protocol identifiers are http: file: and virt:.  The virt: allows
+referencing data stored in local Virtuoso tables without passing through HTTP.   See
+'Entity References in Stored XML' for details.
+</para>
+			<para>
+The effective URI will be the reference if the URI of the reference is absolute.  Otherwise it will
+be the base URI modified by the relative reference.
+</para>
+			<para>
+Authorization is derived from the SQL or DAV identification of the caller.  The DAV
+identification is used if processing DAV content in response to a DAV request.  The SQL user
+account is used otherwise.
+</para>
+			<para>
+xml_uri_get returns the text of the requested resource. If specific encodings
+or special authentication schemes are desired one may use
+http_get directly.
+</para>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>base</title>
+      <para>A string containing the name of the location (URI) of the resource to be referenced.</para></refsect2>
+    <refsect2><title>ref</title>
+      <para>The name of the resource as a relative reference from the base URI.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret"><title>Return Types</title><para>The referenced resource.</para></refsect1>
+  <refsect1 id="errors"><title>Errors</title>
+    <table><title>Errors signalled by </title>
+      <tgroup cols="4">
+      <thead>
+	  <row><entry>SQL State</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row>
+     </thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_xml_uri_get"><title>Basic Application of xml_uri_get()</title>
+      <programlisting>
+declare doc_base varchar;
+declare doc_tree any;
+
+doc_base := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/docsrc/';
+doc_tree := xml_tree_doc(xml_tree(
+    xml_uri_get(doc_base, 'virtdocs.xml')
+      ), doc_base);
+
+http_value(
+  xslt('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/stylesheets/html_chapter.xsl',
+    doc_tree
+  )
+);
+</programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+<!--    <para><link linkend=""></link>Entity References in Stored XML</para> -->
+    <para><link linkend="fn_xslt"></link>xslt()</para>
+    <para><link linkend="fn_http_value"></link>http_value()</para>
+    <para><link linkend="fn_xml_tree_doc"></link>xml_tree_doc()</para>
+    <para><link linkend="fn_xml_tree"></link>xml_tree()</para>
+  </refsect1>
+</refentry>
+
+

@@ -1,0 +1,107 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp 
+  declare pid,cnew, fid, fsid,pkind,cmsg,tid integer;
+  declare l_all,n,usr,fdesc, fsdesc, sid, raddr, bpage varchar;
+  declare maxmg datetime;        
+    
+  
+   
+  fid   := atoi (get_keyword ('id', params, '0')); 
+  sid   := get_keyword('sid', params, ''); 
+  pkind := atoi (get_keyword('pkind', params,'0')); 
+  bpage := 'home.vsp';    
+
+  if (sid <> '')
+    {
+      if (pkind = 1)
+	{
+	  SESS_EXPIRE(sid);
+	  MISC_REDIRECT(sprintf('%s?id=%s','subforums.vsp',cast(fid as varchar)));           
+	  return;
+	}
+      else
+	{  
+          pid := connection_get ('pid');
+          if (pid = -1)
+	    {
+              raddr := 'subforums.vsp';
+              MISC_REDIRECT(sprintf('%s?k=%s&raddr=%s&id=%d',
+		    'login.vsp','1',raddr,fid));           	
+              return;
+            } 
+          else
+            n := '2';
+	};  
+    }
+  else
+    n := '1';
+  
+  http_xslt (sprintf ('file:%s/subforums.xsl', registry_get ('app_forums_xslt_location')));  
+
+  usr := connection_get ('usr');
+  
+  ?>
+<?xml version="1.0"?>
+<page sid="<?=sid?>">
+  <?vsp
+  FOR SELECT FORUM_DESC FROM FORUMS WHERE FORUM_ID = fid DO
+    {
+      fdesc := FORUM_DESC;
+	     
+--      if (pid < 1)
+--	usr := 'anonymous';
+--      else
+--        SELECT E_MAIL INTO usr FROM AUTHORS WHERE AUTHOR_ID = pid; 
+     ?> 
+      <forum id="<?=fid?>" n="<?=n?>" usr="<?=usr?>" bpage="<?=bpage?>" name="<?=fdesc?>">
+     <?vsp
+     FOR SELECT FORUM_ID, FORUM_DESC FROM FORUMS WHERE PARENT_ID = fid ORDER BY FORUM_DESC DO
+       {
+         fsdesc := FORUM_DESC;      
+         fsid   := FORUM_ID;            
+
+         SELECT count(*)INTO cmsg FROM MESSAGES WHERE FORUM_ID = fsid AND PARENT_ID IS NOT NULL; 
+	 
+	 SELECT max(TIME_CHANGED)INTO maxmg FROM MESSAGES 
+	     WHERE  PARENT_ID IS NOT NULL AND  FORUM_ID = fsid;       
+	 
+	 SELECT count(*) INTO cnew FROM MESSAGES 
+	     WHERE  PARENT_ID IS NOT NULL AND  FORUM_ID = fsid
+	     AND datediff('hour',time_changed,now()) <= 24;         
+	 
+	 if (cmsg <> 0)
+	   l_all := CONVERT_DATE(maxmg);
+     
+         maxmg := case when cmsg = 0 then '-' else l_all end;    
+         ?>		
+         <subforum id="<?=fsid?>" fid="<?=fid?>" cmsg="<?=cmsg?>" maxmg="<?=maxmg?>" name="<?=fsdesc?>" cnew="<?=cnew?>">
+         </subforum>
+	 <?vsp
+       };
+     ?>
+    </forum>
+    <?vsp 
+  };
+?>
+</page>

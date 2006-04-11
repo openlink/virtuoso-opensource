@@ -1,0 +1,150 @@
+<HTML>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+    <HEAD>
+	<link rel="stylesheet" type="text/css" href="../admin_style.css">
+	<meta name="author" content="Openlink Software">
+	<meta name="description" content="WebDAV search help">
+    <title>WebDAV search help page</title>
+    </HEAD>
+ <BODY CLASS="adm_pages_body">
+   <div>
+   <H1>WebDAV document search</H1>
+
+     <H3>1. Using freetext search</H3>
+
+         <p CLASS="adm_help_txt">1.1. Choose "Free text match"</p>
+         <p CLASS="adm_help_txt">1.2. Enter some word in text area below</p>
+         <p CLASS="adm_help_txt">1.3. Enter number of matches at time (by default 500) </p>
+         <p CLASS="adm_help_txt">1.4. Press "Execute" button</p>
+
+         <p CLASS="adm_help_txt">This produces list of files containing the "word".</p>
+         <p CLASS="adm_help_txt">Clicking over document name will display document body in browser.</p>
+
+     <H3>2. Using XPATH search</H3>
+
+         <p CLASS="adm_help_txt">1.1. Choose "XPATH expression"</p>
+         <p CLASS="adm_help_txt">1.2. Enter XPATH query in text area below (for example "//title")</p>
+	 <p CLASS="adm_help_txt">1.3. Choose output type </p>
+	 <p CLASS="adm_help_txt">1.3.1. Using "XML" output type</p>
+         <p CLASS="adm_help_txt">1.3.1.1. Choose scope of query (WebDAV collection or resource) using button "Browse" at right of "Query scope" or enter manually. This parameter will restrict search only in this WebDAV collection or only in this WebDAV resource. For example if entered "/DAV/docsrc/" then query will be executed only over resources bellow this collection.</p>
+	 <p CLASS="adm_help_txt">1.3.1.2. Choose "Output style sheet" using button browse at right of text box. This step is conditional if we want to view XSL-T transformation clicking over the founded document. If this field is empty then two outputs are possible - body of xml document or xml entities from XPATH query.</p>
+	 <p CLASS="adm_help_txt">1.3.1.3. Choose "Output transformation"
+	     <p CLASS="adm_help_txt">- if selected "none" then clicking over document link will display content of resource without any transformation.</p>
+	     <p CLASS="adm_help_txt">- if selected "xml only" then two possibilities are - if "Output style sheet" is empty then xml document beginning with "Root element" will be produced otherwise xml-stylesheet will be added.</p>
+	     <p CLASS="adm_help_txt">- if "XML-T transformation" used then clicking over document link produces XSL-T transformation of selected document using "Output style sheet"</p>
+	 <p CLASS="adm_help_txt">1.3.2. Using "entity" output type</p>
+	 <p CLASS="adm_help_txt">1.3.2.1. Choose scope of query (WebDAV collection or resource) using button "Browse" at right of "Query scope" or enter manually. This parameter will restrict search only in this WebDAV collection or only in this WebDAV resource. For example if entered "/DAV/docsrc/" then query will be executed only over resources bellow this collection.</p>
+	 <p CLASS="adm_help_txt">1.3.2.2. Choose "Output style sheet" using button browse at right of text box. This step is conditional if we want to view XSL-T transformation clicking over the founded document. If this field is empty then two outputs are possible - body of xml document or xml entities from XPATH query.</p>
+
+    <H3>3. Examples using XPATH query search and XML output</H3>
+
+	<p CLASS="adm_help_txt">All strings should be entered unquoted (i.e. if in text we read 'enter "a"' then we should enter letter a only)</p>
+	<p CLASS="adm_help_txt">For demonstration purposes in "/DAV/xslsamples/portfolio/" WebDAV folder should be uploaded <a href="portfolio.xml">portfolio.xml</a> and <a href="portfolio.xsl">portfolio.xsl</a></p>
+
+	<p CLASS="adm_help_txt">3.1. Search without transformation</p>
+
+	    <p CLASS="adm_help_txt">- Choose "XPATH expression"</p>
+	    <p CLASS="adm_help_txt">- Enter "//stock" in text area bellow</p>
+	    <p CLASS="adm_help_txt">- Press "Browse" at right of "Query scope" (browser display WebDAV content of root collection)</p>
+	    <p CLASS="adm_help_txt">- Click over folder icon of "docsrc" (in "Query scope" should appear "/DAV/xslsamples/portfolio/")</p>
+	    <p CLASS="adm_help_txt">- All other controls should be - "Output type" is "XML", "Output style sheet" is empty, "Output transformation" is "none", "Root element" is "root"</p>
+	    <p CLASS="adm_help_txt">- Click on "Execute" button</p>
+	    <p CLASS="adm_help_txt">- At bottom of the page will be displayed document "portfolio.xml" containing "stock" element</p>
+	    <p CLASS="adm_help_txt">- Clicking over document name will display document source</p></p>
+
+	   <pre>
+           Symbol Name          Price
+           ZCXM   zacx corp     28.875
+           ZFFX   zaffymat inc  92.250
+           ZYSZ   zysmergy inc  20.313
+	   </pre>
+
+           <p>This result is produced by browser i.e. portfolio.xml contains xml-stylesheet information in XML header.</p>
+
+	<p CLASS="adm_help_txt">3.2. Entities output without style-sheet</p>
+
+	    <p CLASS="adm_help_txt">- All fields as 3.1. example </p>
+	    <p CLASS="adm_help_txt">- Check "xml only" from "Output transformation" radio group</p>
+	    <p CLASS="adm_help_txt">- Enter "portfolio" in "Root element" instead of "root"</p>
+	    <p CLASS="adm_help_txt">- Click on "Execute" button</p>
+	    <p CLASS="adm_help_txt">- At bottom of the page will be displayed document "portfolio.xml" containing "title" element</p>
+	    <p CLASS="adm_help_txt">- Clicking over document name will display result like that</p>
+
+	    <pre>
+	    &lt;?xml version="1.0"?&gt;
+	    &lt;portfolio&gt;
+	    &lt;stock exchange="nyse"&gt;
+		&lt;name&gt;zacx corp&lt;/name&gt;
+		&lt;symbol&gt;ZCXM&lt;/symbol&gt;
+		&lt;price  xmlns:n0="urn:schemas-microsoft-com:datatypes" n0:dt="number"&gt;28.875&lt;/price&gt;
+	      &lt;/stock&gt;
+	    &lt;stock exchange="nasdaq"&gt;
+		&lt;name&gt;zaffymat inc&lt;/name&gt;
+		&lt;symbol&gt;ZFFX&lt;/symbol&gt;
+		&lt;price  xmlns:n0="urn:schemas-microsoft-com:datatypes" n0:dt="number"&gt;92.250&lt;/price&gt;
+	      &lt;/stock&gt;
+	    &lt;stock exchange="nasdaq"&gt;
+		&lt;name&gt;zysmergy inc&lt;/name&gt;
+		&lt;symbol&gt;ZYSZ&lt;/symbol&gt;
+		&lt;price  xmlns:n0="urn:schemas-microsoft-com:datatypes" n0:dt="number"&gt;20.313&lt;/price&gt;
+	      &lt;/stock&gt;
+	    &lt;/portfolio&gt;
+	    </pre>
+
+	<p CLASS="adm_help_txt">3.3. Entities output with xml-stylesheet header and browser transformation</p>
+
+	    <p CLASS="adm_help_txt">- All fields as 3.2. example </p>
+	    <p CLASS="adm_help_txt">- Press "Browse" at right of "Output style sheet" (browser display WebDAV content of root collection)</p>
+	    <p CLASS="adm_help_txt">- Click over "xslsamples" link after that click over "portfolio" link and choose "portfolio.xsl"</p>
+	    <p CLASS="adm_help_txt">- Click on "Execute" button</p>
+	    <p CLASS="adm_help_txt">- At bottom of the page will be displayed document "portfolio.xml" containing "stock" element</p>
+	    <p CLASS="adm_help_txt">- Clicking over document name will display HTML result like that</p>
+
+	    <pre>
+            Symbol Name          Price
+            ZCXM   zacx corp     28.875
+            ZFFX   zaffymat inc  92.250
+            ZYSZ   zysmergy inc  20.313
+            </pre>
+
+	<p CLASS="adm_help_txt">3.4. Transformation with Virtuoso XSL-T engine</p>
+
+	    <p CLASS="adm_help_txt">- All fields as 3.3. example </p>
+	    <p CLASS="adm_help_txt">- Check "XSL-T engine" from "Output transformation" radio group</p>
+	    <p CLASS="adm_help_txt">- Click on "Execute" button</p>
+	    <p CLASS="adm_help_txt">- At bottom of the page will be displayed document "portfolio.xml" containing "stock" element</p>
+	    <p CLASS="adm_help_txt">- Clicking over document name will display HTML result like that</p>
+
+	    <pre>
+            Symbol Name          Price
+            ZCXM   zacx corp     28.875
+            ZFFX   zaffymat inc  92.250
+            ZYSZ   zysmergy inc  20.313
+            </pre>
+    </div>
+    <FORM>
+    <input type=button value="Back" onclick="location.replace ('admin_dav_document_search.vsp')">
+    </FORM>
+ </BODY>
+</HTML>

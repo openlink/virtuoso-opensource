@@ -1,0 +1,80 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-23">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Publishing Java class as SOAP service</refname>
+    <refpurpose>Publishing Java classes as Web Services</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-23a">
+<title>Example</title>
+<itemizedlist mark="bullet">
+  <listitem>This example demonstrates how to call Java VM methods from
+  Virtuoso/PL and expose them as SOAP services.</listitem>
+  <listitem>It's based on the java class demo_server.java.</listitem>
+  <listitem>Also provided is a demonstration of how the JAVA Reflect API
+  can be used to automatically generate PL wrappers.</listitem>
+  <listitem>Click on the Run link or point your browser to:
+  <ulink url="/services/services.vsmx">http://[host]:[port]/services/services.vsmx</ulink></listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-23b">
+<title>Source code detail</title>
+<itemizedlist mark="bullet">
+  <listitem><para>javavm_xml.pl - This file contains a Virtuoso/PL procedure which
+  produces a XML description of the java classes.</para>
+  <programlisting>jvm_ref_describe_class (in class_name varchar,
+	in inherited integer := 0)</programlisting>
+  <para>First argument is the absolute JAVA class name (example: java_server
+  or java.util.Calendar).</para>
+  <para>Second argument controls whether to create entries for the inherited
+  constructors/ methods/ attributes of the class, or only for the ones
+  defined in it (java.lang.Class.getDeclaredMethods() vs.
+  java.lang.Class.getMethods()).</para>
+  </listitem>
+  <listitem>javavm_pl.xsl - Is an XSLT stylesheet that produces the
+  Virtuoso/PL wrappers based on the XML file from jvm_ref_describe_class.
+  The stylesheet has a parameter "module" = "1" | "0" (default "1") which
+  controls whether it to generate code for a Virtuoso/PL module, or a set of
+  procedures.
+  For each field it generates Get../Set.. methods (or only Get.. if the
+  field is read-only).
+  It also generates wrappers for each class method.
+  For the non-static fields/methods it instantiates a java object
+  every time the method is invoked.
+  </listitem>
+  <listitem>java_pl_wrapper.sql - This file is generated using the above files
+  and then the java_properties procedure is added.</listitem>
+</itemizedlist>
+<para>
+    Important: This demo needs Virtuoso server with Java hosting option. 
+    Otherwise demo will not run properly.
+</para>
+</refsect1>
+</refentry>

@@ -1,0 +1,126 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../demo.css"/>
+  </head>
+  <body>
+    <v:page name="pageset1" xmlns:v="http://www.openlinksw.com/vspx/">
+      <v:variable name="endpoint" type="varchar" default="'http://localhost:8890/RPC2'"/>
+      <v:variable name="appkey" type="varchar" default="'appKey'"/>
+      <v:variable name="blogid" type="varchar" default="''"/>
+      <v:variable name="uid" type="varchar" default="null" persist="1"/>
+      <v:variable name="pwd" type="varchar" default="null" persist="1"/>
+      <v:on-init>
+  self.endpoint := 'http://localhost:'||server_http_port()||'/RPC2';
+</v:on-init>
+      <!-- LOGIN -->
+      <v:login name="login1" realm="blog" mode="url" user-password-check="BLOG..blog_user_password_check">
+        <v:template type="if-no-login" redirect="blog_login.vspx"/>
+        <v:template type="if-login"/>
+        <v:after-data-bind><![CDATA[
+        for select bs_appkey, bs_blogid, bs_endpoint from blog_settings where bs_uid = connection_get ('vspx_user') do
+	  {
+	    self.endpoint := bs_endpoint;
+	    self.appkey := bs_appkey;
+	    self.blogid := bs_blogid;
+	  }
+       ]]></v:after-data-bind>
+      </v:login>
+      <!-- END LOGIN -->
+      <div align="center">
+        <div align="left" style="margin-left: 100px;">
+          <H2>Weblog setup</H2>
+        </div>
+        <v:form name="form1" type="simple" action="blog_setup.vspx">
+          <table border="0" cellpadding="0" cellspacing="0" width="80%" class="tableentry">
+            <tr>
+              <td valign="top">
+                <table border="0" cellpadding="0" cellspacing="0" width="70%">
+                  <tr>
+                    <td>Endpoint URL</td>
+                    <td>
+                      <v:text name="b_endpoint1" value="--self.endpoint" xhtml_size="70%"/>
+                    </td>
+                  </tr>
+                  <!--tr>
+      <td>Application key</td>
+      <td><v:text name="appkey1" value="- -self.appkey" xhtml_size="70%"/></td>
+    </tr-->
+                  <tr>
+                    <td>Blog User</td>
+                    <td class="geninput" width="9">
+                      <v:text name="b_user1" value="--self.uid" xhtml_size="9"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Blog Password</td>
+                    <td class="geninput" widht="9">
+                      <v:text name="b_pwd1" value="--self.pwd" type="password" xhtml_size="9"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Blog ID</td>
+                    <td nowrap="nowrap">
+                      <v:text error-glyph="?" name="b_blogid1" value="--self.blogid" xhtml_size="70%">
+                      	<v:validator test="sql" expression="not exists(select BLOGID from BLOG..BLOG_USERS_BLOGS where URI = self.b_endpoint1.ufl_value and NAME = self.b_user1.ufl_value and passwd = self.b_pwd1.ufl_value and BLOGID = self.b_blogid1.ufl_value)" message="invalid Blog ID"/>
+                      </v:text>
+                      <v:browse-button name="get_blogs1" value="Fetch" selector="get_blogs.vspx" child-window-options="scrollbars=yes, menubar=no, height=100, width=600">
+                        <v:field name="b_endpoint1"/>
+                        <v:field name="b_user1"/>
+                        <v:field name="b_pwd1"/>
+                        <v:field name="b_blogid1"/>
+                      </v:browse-button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>&amp;nbsp;</td>
+                    <td>
+                      <v:button name="exec" value="Save" action="simple">
+                        <v:on-post>
+	     declare url, akey, bid vspx_field;
+             url := control.vc_parent.vc_find_control ('b_endpoint1');
+             bid := control.vc_parent.vc_find_control ('b_blogid1');
+	     insert replacing blog_settings
+	          (bs_uid, bs_appkey, bs_blogid, bs_endpoint)
+	          values (
+		  connection_get ('vspx_user'),
+		  'appKey',
+		  bid.ufl_value,
+		  url.ufl_value
+		  );
+	   </v:on-post>
+                      </v:button>
+                      <v:error-summary />
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+        <v:url name="work" url="blog_home.vspx" value="Home"/>
+      </div>
+    </v:page>
+  </body>
+</html>

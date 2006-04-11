@@ -1,0 +1,341 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!- -*- html -*- ->
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+declare _acct varchar;
+declare _item varchar;
+declare _idx, _len integer;
+declare err_items any;
+declare _i, _l integer;
+declare _m varchar;
+declare _is_updateable integer;
+
+err_items := vector ();
+
+if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+_acct := get_keyword ('acct', params, '');
+_is_updateable := REPL_IS_UPDATEABLE (repl_this_server(), _acct);
+if ('' <> get_keyword ('add_to_pub', params, ''))
+  {
+    if (_acct <> '')
+      {
+        _idx := 0;
+	while (_item := adm_next_checkbox ('TB_', params, _idx))
+	    REPL_PUB_ADD (_acct, _item, 2, 1, 0);
+        _idx := 0;
+	while (_item := adm_next_checkbox ('PR_', params, _idx))
+	    REPL_PUB_ADD (_acct, _item, 3, 1, 1);
+      }
+  }
+if ('' <> get_keyword ('davcol', params, ''))
+  {
+    if (_acct <> '')
+      {
+	declare _exist integer;
+        _idx := 0;
+	while (_item := adm_next_checkbox ('CB_', params, _idx))
+	  {
+             _exist := 0;
+	     for select TI_ITEM from DB.DBA.SYS_TP_ITEM
+	       where TI_SERVER = repl_this_server () and TI_ACCT = _acct and TI_TYPE = 1 do
+		 {
+		   declare _item1, _item2 varchar;
+                   _item1 := _item;
+                   _item2 := TI_ITEM;
+		   if (isstring (_item) and length (_item) > 0 and aref (_item, length (_item) - 1) <> ascii ('/'))
+		     _item1 := concat (_item, '/');
+
+		   if (isstring (_item2) and length (_item2) > 0 and aref (_item2, length (_item2) - 1) <> ascii ('/'))
+		     _item2 := concat (_item2, '/');
+
+		   if (_item2 like concat ('/DAV', _item1, '%'))
+		     {
+                       err_items := vector_concat (err_items, vector (sprintf ('The selected collection "/DAV%s" conflicts with the "%s"', _item, TI_ITEM)));
+                       _exist := 1;
+		     }
+		   else if (concat ('/DAV', _item1) like concat (_item2, '%'))
+		     {
+			err_items := vector_concat (err_items, vector (sprintf ('The selected collection "/DAV%s" conflicts with the "%s"', _item, TI_ITEM)));
+                       _exist := 1;
+		     }
+		 }
+
+	    if (not _exist)
+	      REPL_PUB_ADD (_acct, concat ('/DAV', _item), 1, 1, 0);
+	  }
+      }
+  }
+if ('' <> get_keyword ('set_sync_user', params, ''))
+  {
+    declare _sync_user varchar;
+    _sync_user := get_keyword ('sync_user', params);
+    REPL_SYNC_USER (repl_this_server(), _acct, _sync_user);
+  }
+if ('' <> get_keyword ('add_grant', params, ''))
+  {
+    if (_acct <> '')
+      {
+        _idx := 0;
+	while (_item := adm_next_checkbox ('GR_', params, _idx))
+	    REPL_GRANT (_acct, _item);
+      }
+  }
+if ('' <> get_keyword ('revoke', params, ''))
+  {
+    if (_acct <> '')
+      {
+        _idx := 0;
+	while (_item := adm_next_checkbox ('CBG_', params, _idx))
+	    REPL_REVOKE (_acct, _item);
+      }
+  }
+if ('' <> get_keyword ('del', params, ''))
+  {
+    if (_acct <> '')
+      {
+        _idx := 0;
+	while (_item := adm_next_checkbox ('CB1_', params, _idx))
+	    REPL_PUB_REMOVE (_acct, _item, 1, 1);
+        _idx := 0;
+	while (_item := adm_next_checkbox ('CB2_', params, _idx))
+	    REPL_PUB_REMOVE (_acct, _item, 2, 1);
+        _idx := 0;
+	while (_item := adm_next_checkbox ('CB3_', params, _idx))
+	    REPL_PUB_REMOVE (_acct, _item, 3, 1);
+      }
+  }
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Transactional replication wizard">
+    <title>Transactional replication publication items</title>
+    <script language="javascript" src="../admin_utils.js"></script>
+  </head>
+<?vsp adm_page_header(concat('Items of Publication ',_acct), NULL); ?>
+<?include ../adm_js_check.vsp ?>
+
+
+    <!-- If we have any smtp error -->
+    <?vsp if (length (err_items) > 0) { ?>
+    <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+    <TR><TD CLASS="genheaderror">Conflict(s)</TD></TR>
+    <?vsp
+      _i := 0; _l := length (err_items);
+      while (_i < _l)
+	{
+	  _m := aref (err_items, _i);
+          _i := _i + 1;
+    ?>
+    <TR><TD CLASS="genlisthead"><?=_m?></TD></TR>
+    <?vsp } ?>
+    </TABLE>
+    <p><b>CAUTION: The WebDAV collections selected for replication CANNOT be nested.</b><br>
+    If you wish to insert this item, first remove the conflicting items.</p>
+    <?vsp } ?>
+
+      <p>To add new item to publication click <b>"Add.."</b> and follow the wizard.</p>
+      <p>To remove select some item(s) and click on <b>Remove</b>.
+      <br>Caution: this action cannot be reverted</p>
+      <p>To revoke any grant to publication select grantee and click on <b>Revoke</b>.
+      <br>Caution: this action cannot be reverted</p>
+      <p>Note: The default copy mode is used from the subscribers to set the initial state of the copy mode. <br />
+      If you wish to change it,  press the <b>Advanced</b> button and follow the instructions</p>
+
+
+<form action="trx_repl_pub_items.vsp" method=post enctype="multipart/form-data">
+<input type=hidden name="acct" value="<?=_acct?>">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<tr>
+<td class="genlistheadt">
+            <input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)">
+</td>
+<td class="genlistheadt">Item</td>
+<td class="genlistheadt">Type</td>
+<td class="genlistheadt">Default copy mode</td>
+<td class="genlistheadt">Replication Mode</td>
+</tr>
+<?vsp
+_len := 0;
+for select TI_ITEM, TI_TYPE, TI_IS_COPY, TI_OPTIONS from SYS_TP_ITEM
+        where TI_SERVER = repl_this_server() and TI_ACCT = _acct do
+  {
+    _len := _len + 1;
+    declare _href varchar;
+    if (_is_updateable <> 0 and TI_TYPE = 2)
+      _href := 'trx_repl_cr.vsp';
+    else
+      _href := 'trx_repl_pub_items.vsp';
+?>
+   <tr>
+	<td CLASS="geninput"><input type=checkbox name="CB<?=TI_TYPE?>_<?=TI_ITEM?>"></td>
+   <td CLASS="gendata"><a href="<?=_href?>?item=<?=TI_ITEM ?>&acct=<?=_acct?>"><?= TI_ITEM ?></a></td>
+   <td CLASS="gendata">
+<?vsp
+       if (TI_TYPE = 1)
+	 http ('WebDAV Collection');
+       else if (TI_TYPE = 2)
+	 http ('Table');
+       else if (TI_TYPE = 3)
+	 http ('PL/SQL Procedure');
+?>
+       </td>
+       <td CLASS="gendata">
+<?vsp
+       if (TI_IS_COPY = 0 or TI_IS_COPY = '0')
+	 http ('Keep');
+       else if (TI_IS_COPY = 1 or TI_IS_COPY = '1')
+	 http ('Drop');
+?>
+       </td>
+       <td CLASS="gendata">
+<?vsp
+       if (TI_OPTIONS = 1 or TI_OPTIONS = '1')
+	 http ('Calls');
+       else if (TI_OPTIONS = 2 or TI_OPTIONS = '2')
+	 http ('Definitions');
+       else if (TI_OPTIONS = 3 or TI_OPTIONS = '3')
+	 http ('Calls&amp;Definition');
+       else
+	 http ('N/A');
+?>
+       </td>
+<?vsp } if (_len = 0) http ('<tr><td CLASS="gendata" colspan=5>*** No items added to this publication ***</td></tr>'); ?>
+</table>
+<table border=0>
+<tr>
+<td>
+<input type=submit name="del" value="Remove">
+</td>
+</form>
+<form method=post action="trx_dav.vsp" name="items_form">
+<input type=hidden name="acct" value="<?/_acct?>">
+<td>
+<input type=submit name="dav" value="Add WebDAV collection">
+</td>
+</form>
+<form method=post action="trx_repl_item_add.vsp" name="items_form">
+<input type=hidden name="acct" value="<?/_acct?>">
+<td>
+<input type=submit name="tbl" value="Add Table/Procedure">
+</td>
+</form>
+<form method=post action="trx_repl_item_adv.vsp">
+<input type=hidden name="acct" value="<?/_acct?>">
+<td>
+<input type=submit name="adv" value="Advanced">
+</td>
+</form>
+</tr>
+</table>
+
+<?vsp
+if (_is_updateable <> 0)
+{
+?>
+<form action="trx_repl_pub_items.vsp" method=post>
+<input type=hidden name="acct" value="<?/_acct?>">
+<H3>Sync User for publication "<?=_acct?>"</H3>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<tr>
+<td>
+<select name="sync_user">
+<?vsp
+  declare _sync_user varchar;
+  _sync_user := null;
+  whenever not found goto sync_user_nf;
+  select SYNC_USER into _sync_user
+      from DB.DBA.SYS_REPL_ACCOUNTS
+      where SERVER = repl_this_server() and ACCOUNT = _acct;
+sync_user_nf:
+  if (_sync_user is null or _sync_user = '')
+    _sync_user := 'dba';
+  for select U_NAME from DB.DBA.SYS_USERS
+      where U_IS_ROLE = 0 and U_DAV_ENABLE = 0
+      order by U_NAME do
+    {
+      declare _sel varchar;
+      if (U_NAME = _sync_user)
+        _sel := ' selected';
+      else
+        _sel := '';
+?>
+  <option value=<?=U_NAME?><?=_sel?>><?=U_NAME?></option>
+<?vsp
+    }
+?>
+</select>
+</td>
+<td>
+<input type="submit" name="set_sync_user" value="Set">
+</td>
+</table>
+</form>
+<?vsp
+}
+?>
+
+<form action="trx_repl_pub_items.vsp" method=post>
+<input type=hidden name="acct" value="<?/_acct?>">
+<H3>Grants to publication "<?=_acct?>"</H3>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<tr>
+<td CLASS="genlistheadt">
+            <input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)">
+</td>
+<td CLASS="genlistheadt">Grantee</td>
+</tr>
+<tr><td><br></td><td CLASS="gendata">dba</td></tr>
+<?vsp
+for select TPG_GRANTEE from SYS_TP_GRANT where TPG_ACCT = _acct do {
+  if (TPG_GRANTEE is not null)
+    http (concat ('<tr><td><input type=checkbox name="CBG_', TPG_GRANTEE,'"></td><td>', TPG_GRANTEE, '</td></tr>'));
+  else
+    http (concat ('<tr><td><input type=checkbox name="CBG_<DB_NULL>"></td><td>', 'public', '</td></tr>'));
+}
+?>
+</table>
+
+<table border=0>
+<tr>
+<td>
+<input type=submit name="revoke" value="Revoke">
+</td>
+</form>
+<form method=post action="trx_repl_item_add.vsp" name="new_form">
+<td>
+<input type=submit name="grnt" value="Grant">
+</td>
+</tr>
+<tr><td>
+</td></tr>
+</table>
+<input type=hidden name="acct" value="<?/_acct?>">
+</form>
+<?vsp adm_page_footer(); ?>
+</html>

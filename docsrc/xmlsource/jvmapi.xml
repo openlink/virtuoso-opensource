@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="javaextvm"><title>Embedded Java VM API</title>
+
+  <para>The Java VM is an embedded system within Virtuoso that allows the
+  calling of class Java methods and getting class properties.  It uses the
+  JAVA JNI API to interact with the JAVA VM.</para>
+
+  <sect2 id="virtvsjvmthreads"><title>Correspondence Between Virtuoso &amp; Java VM Threads</title>
+
+    <para>At maximum one Java VM will be started on demand. If a function from the
+    Java VM API is called and no JVM is running, one will be started, as required.
+    Since Virtuoso is multithreaded it requires JDK version 1.3 or above in order
+    to make better use of it's multithreading support.  If the Java VM is already
+    running the API VSEs attaches the current Virtuoso working thread, if not
+    already attached, as a Java VM thread to the running VM.  The Virtuoso
+    worker thread does not automatically detached itself from the Java VM after
+    use, therefore, in order to prevent leaving redundant Virtuoso worker threads
+    being left attached to the Java VM the
+    <link linkend="fn_java_vm_detach"><function>java_vm_detach()</function></link>
+    VSE should be used.</para>
+
+    <para>The following require access to the Java VM:</para>
+    <simplelist>
+      <member>all Virtuoso JAVA PL API (JVM VSEs)</member>
+      <member>allocating/deallocating/copying of the Virtuoso/PL Java VM class
+      reference values.</member>
+    </simplelist>
+
+    <para>If no subsequent JVM VSEs are called after calling
+    <function>java_vm_detach()</function>, the worker thread can still attach to
+    the VM in order to deallocate or copy Java VM class reference values.
+    In order to ensure that the worker thread is properly detached it is
+    advisable to set all the variables that may hold Java VM class reference
+    values to NULL, which deallocates their current value, before calling the
+    <function>java_vm_detach()</function> JVM VSE.</para>
+
+    <para>Attaching and detaching Virtuoso worker threads is marked as a debug
+    level message in the Virtuoso Event log, so that these messages can be used to
+    debug the process.</para>
+  </sect2>
+
+  <sect2 id="virtpljvmtypemapp"><title>Virtuoso/PL &lt;-&gt; Java VM Type Mapping Schema</title>
+
+    <para>Since the Java language uses a different set of data types than
+    Virtuoso a type mapping system has been established to allow the passage of data
+    to and from Java.  All Java simple types are mapped to a corresponding
+    Virtuoso type as follows:</para>
+
+<table><title>Java - Virtuoso Data Type Mapping</title>
+  <tgroup cols="2">
+   <thead><row>
+     <entry>Java Type/Class</entry>
+     <entry>Virtuoso Internal Type</entry>
+   </row></thead>
+   <tbody>
+     <row><entry>boolean</entry>
+       <entry>smallint</entry></row>
+     <row><entry>char</entry>
+       <entry>smallint</entry></row>
+     <row><entry>double</entry>
+       <entry>double precision</entry></row>
+     <row><entry>float</entry>
+       <entry>real</entry></row>
+     <row><entry>int</entry>
+       <entry>integer</entry></row>
+     <row><entry>short</entry>
+       <entry>integer</entry></row>
+     <row><entry>long</entry>
+       <entry>integer</entry></row>
+     <row><entry>boolean</entry>
+       <entry>smallint</entry></row>
+     <row><entry>java.lang.String</entry>
+       <entry>NVARCHAR</entry></row>
+     <row><entry>java.util.Date</entry>
+       <entry>DATETIME</entry></row>
+   </tbody>
+  </tgroup>
+</table>
+
+    <para>All other Java objects are represented as a special Virtuoso value,
+    which contains a reference to the Java object in the VM memory space.  When
+    such a value is returned as a Virtuoso/PL return value or as a result set
+    column, it calls the <function>java.lang.Object.toString()</function> method
+    for the Java VM object it refers to and that result is returned to the
+    calling client.</para>
+
+    <para>Arrays are mapped to a Virtuoso vector of their elements.  The array
+    handling routines are recursive, so each element may be a Java array or a
+    scalar type.</para>
+
+    <para>The above mappings are applied when converting Virtuoso/PL data to
+    Java data as follows:</para>
+
+    <simplelist>
+      <member>method parameter values in java_call_method VSE</member>
+      <member>method parameter values in java_new_object VSE</member>
+      <member>property values in java_set_property VSE</member>
+      <member>the instance parameters in
+      java_call_method/java_get_property/java_set_property VSEs</member>
+    </simplelist>
+
+    <para>The above mappings are applied in the opposite direction
+    (Java Data -> Virtuoso/PL data) as follows:</para>
+
+    <simplelist>
+      <member>method return values in java_call_method VSE</member>
+      <member>return value of the java_new_object VSE</member>
+      <member>property values returned from java_get_property VSE</member>
+    </simplelist>
+
+  </sect2>
+
+  <sect2 id="referencestojvminvpl"><title>References to Java VM Class Instances in Virtuoso/PL</title>
+
+    <para>Java Class instances are represented as a Virtuoso/PL variable values
+    using a Java VM Global Reference.  Each time such a Virtuoso/PL variable
+    value is created or copied, it adds a Java VM Global Reference.  When it is
+    freed, it removes the Java VM global reference, allowing the Java
+    Garbage collector (GC) to free it.  Each of the API VSEs create a Java VM
+    local frame upon it's start, and frees it upon exit. This allows for
+    fast deallocation of the local objects created by mapping Virtuoso/PL native
+    values to Java objects.</para>
+  </sect2>
+
+  <sect2 id="correctjavatype"><title>Specifying the Correct Java Type When Passing Values from Virtuoso/PL</title>
+
+    <para>Each method parameter in the
+    <function>java_new_object()</function>/<function>java_call_method()</function>
+    can be either the value itself or a two-element vector.  When it is a
+    two-element vector it's first element is the JNI type signature string,
+    e.g.: for integer - I, for array of integers - [I], for
+    java.lang.String - Ljava/lang/String.  The signature is important because
+    the Java VM JNI API needs it in order to find the appropriate
+    constructor/method/property.</para>
+  </sect2>
+
+  <sect2 id="virtjavabifs"><title>Virtuoso Java PL API VSEs</title>
+
+    <para>The API consists of the following VSEs:</para>
+
+    <simplelist>
+      <member><link linkend="fn_java_call_method"><function>java_call_method()</function></link></member>
+      <member><link linkend="fn_java_set_property"><function>java_set_property()</function></link></member>
+      <member><link linkend="fn_java_get_property"><function>java_get_property()</function></link></member>
+      <member><link linkend="fn_java_load_class"><function>java_load_class()</function></link></member>
+      <member><link linkend="fn_java_new_object"><function>java_new_object()</function></link></member>
+      <member><link linkend="fn_java_vm_attach"><function>java_vm_attach()</function></link></member>
+      <member><link linkend="fn_java_vm_detach"><function>java_vm_detach()</function></link></member>
+    </simplelist>
+
+  </sect2>
+
+<sect2 id="jvmapisecurity"><title>Java Security</title>
+
+<para>Java classes are hosted in one of two modes:</para>
+
+   <simplelist>
+     <member>Restricted</member>
+	 <member>Unrestricted</member>
+  </simplelist>
+
+    <para>Java class Permissions are managed by security classes that fall into
+  categories as follows listed with it managing class:</para>
+    <simplelist>
+	  <member>File - java.io.FilePermission</member>
+      <member>Socket - java.net.SocketPermission</member>
+	  <member>Net - java.net.NetPermission</member>
+	  <member>Security - java.security.SecurityPermission</member>
+	  <member>Runtime - java.lang.RuntimePermission</member>
+	  <member>Property - java.util.PropertyPermission</member>
+	  <member>AWT - java.awt.AWTPermission</member>
+	  <member>Reflect - java.lang.reflect.ReflectPermission</member>
+	  <member>Serializable - java.io.SerializablePermission</member>
+	</simplelist>
+
+	<para>Restricted classes are not allowed any of the above priviledges.
+	Virtuoso returns errors that are returned by the security manager if
+	breaches in security are attempted by a hosted Java class.</para>
+
+  <para>By default all Java classes are imported/created/hosted in restricted
+  mode.  To create Java class based user defined types that are unrestricted
+  you need to use create type syntax with UNRESTRICTED keyword.  The
+  <link linkend="fn_import_jar"><function>import_jar()</function></link>
+  funtion can also be used to import classes, its third optional parameter
+  can be used to define the security mode.</para>
+
+  <note><title>Note:</title>
+    <para>New behavior since Virtuoso 3.2 provides these two security modes
+	defaulting to restricted.  Prior to this Java classes were hosted in
+    unrestricted mode.</para></note>
+
+  <example id="ex_javasecurity"><title>Java Security</title>
+
+  <para>The class Write_file, shown below, will attempt to write to a file on
+  the file system.  This class will be used to create a user defined type first
+  in unrestricted mode and then in restricted mode to demonstrate how security
+  exceptions are returned.</para>
+
+  <para>Source of Write_file.java:</para>
+
+<programlisting><![CDATA[
+import java.io.*;
+
+public class Write_file
+{
+  public String write ()
+    {
+      String myFile = "foo";
+      File f = new File(myFile);
+      DataOutputStream dos;
+
+      try
+	{
+	  dos = new DataOutputStream (new BufferedOutputStream(new FileOutputStream (myFile),128));
+	  dos.writeBytes("ABC\n");
+	  dos.flush();
+	  dos.close();
+	}
+
+      catch (IOException ioe)
+	{
+	  System.out.println("writeFile: caught i/o exception");
+	}
+
+      return "OK";
+    }
+}
+]]></programlisting>
+
+  <para>Create the unrestricted type:</para>
+
+<programlisting><![CDATA[
+create type "Write_file" language JAVA external name 'Write_file'
+  unrestricted METHOD "write" ()
+  returns nvarchar external type 'Ljava/lang/String;' external name 'write';
+]]></programlisting>
+
+  <para>Test calling the method:</para>
+
+<programlisting><![CDATA[
+SQL> select new Write_file().write();
+callret
+NVARCHAR
+_________________________________________
+
+OK
+]]></programlisting>
+
+  <para>Now we want to recreate the type in restricted mode, remembering to
+  drop it first:</para>
+
+<programlisting><![CDATA[
+drop type DB.DBA.write_file;
+
+create type "Write_file" language JAVA external name 'Write_file'
+  METHOD "write" ()
+  returns nvarchar external type 'Ljava/lang/String;' external name 'write';
+]]></programlisting>
+
+  <para>Test calling the method:</para>
+
+<programlisting><![CDATA[
+SQL> select new Write_file().write();
+
+*** Error 42000: [Virtuoso Driver][Virtuoso Server]JV001: Java exception
+occurred : java.security.AccessControlException : access denied
+(java.io.FilePermission foo write)
+in  __udt_method_call:(BIF),
+<Top Level>
+at line 1 of Top-Level:
+select new Write_file().write()
+]]></programlisting>
+
+  <para>Another way to import the above class is by use the
+  <function>import_jar()</function> such as:</para>
+<programlisting><![CDATA[
+import_jar (NULL, 'Write_file', 1) - will import java classes in unrestricted mode.
+import_jar (NULL, 'Write_file') - will import java classes in restricted mode.
+]]></programlisting>
+</example>
+</sect2>
+
+  </sect1>

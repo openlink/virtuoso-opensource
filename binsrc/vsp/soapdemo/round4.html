@@ -1,0 +1,578 @@
+<html xmlns="http://www.w3.org/TR/REC-html40">
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<title>SOAP Builders Round IV : Web Services Interoperability Testing</title>
+<link rel="stylesheet" type="text/css" href="soap.css">
+</head>
+
+<body lang=EN-US link=blue vlink=blue style='tab-interval:.5in'>
+
+<div class=Section1>
+
+<h1>SOAP Builders Round IV : Web Services Interoperability Testing</h1>
+
+<h2>Overview</h2>
+
+<p>The following tests demonstrate other areas of WSDL interoperability between
+SOAP-based web service toolkits. The first test suite Group G cover testing the
+binding of messages based on the MIME multipart mechanism for encapsulation of
+compound documents.<span style="mso-spacerun: yes">   </span>This test area covers
+SOAP 1.1 messages with attachments in both RPC style and Document Literal style
+test cases.<span style="mso-spacerun: yes">    </span>The Group H also using
+SOAP 1.1 cover fault messaging where the content of faults thrown by an
+operation are passed as a parameter to the operation.<span style="mso-spacerun:
+yes">   </span>Group I covers WSDL/XSD testing. &nbsp; Methods for these tests
+include all the methods used in round 1 and round 2 but use as DOC/LIT soap
+messages instead of RPC/ENC soap messages. &nbsp; The description overview
+under each test group have links detailing the test specifications.<span
+style="mso-spacerun: yes">    </span>Results and links to the wsdls and
+endpoints are included in each group section.</p>
+
+<h2>Group G Tests</h2>
+
+<h2>SwA/DIME (attachments)<span style='mso-fareast-font-family:"Arial Unicode MS"'></span></h2>
+
+<ul type=disc>
+ <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+     mso-list:l3 level1 lfo3;tab-stops:list .5in'><b>SOAP Messages with
+     Attachments</b> The ability to send and receive attachments will be tested
+     using the <a
+     href="http://www.w3.org/TR/2000/NOTE-SOAP-attachments-20001211">SOAP
+     Messages with Attachments</a> specification. Two sets of operations and
+     SOAP bindings are defined for test purposes: </li>
+ <ul type=circle>
+  <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+      auto;mso-list:l3 level2 lfo3;tab-stops:list 1.0in'>RPC style test cases
+      described in <a href="http://www.pocketsoap.com/interop/mime-rpc.wsdl">this
+      WSDL document</a>. </li>
+  <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+      auto;mso-list:l3 level2 lfo3;tab-stops:list 1.0in'>Document/literal style
+      test cases described in <a
+      href="http://www.pocketsoap.com/interop/mime-doc.wsdl">this WSDL document</a>.
+      </li>
+ </ul>
+ <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+     mso-list:l3 level1 lfo3;tab-stops:list .5in'><b>Direct Internet Message
+     Encapsulation</b> The ability to send and receive attachments will be tested
+     using <a
+     href="http://www.ietf.org/internet-drafts/draft-nielsen-dime-02.txt">DIME
+     packaging</a> in conjunction with the <a
+     href="http://www.ietf.org/internet-drafts/draft-nielsen-dime-soap-01.txt">WS-Attachments</a>
+     conventions for packaging SOAP messages. Two sets of operations and SOAP
+     bindings are defined for test purposes: </li>
+ <ul type=circle>
+  <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+      auto;mso-list:l3 level2 lfo3;tab-stops:list 1.0in'>RPC style test cases
+      described in <a href="http://www.pocketsoap.com/interop/dime-rpc.wsdl">this
+      WSDL document</a>. </li>
+  <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+      auto;mso-list:l3 level2 lfo3;tab-stops:list 1.0in'>Document/literal style
+      test cases described in <a
+      href="http://www.pocketsoap.com/interop/dime-doc.wsdl">this WSDL document</a>.
+      </li>
+ </ul>
+</ul>
+
+<h2><span style='font-size:14.0pt;mso-bidi-font-size:18.0pt'>The procedure</span></h2>
+
+<p style='margin-left:.5in'>Here are the steps for each test and a
+corresponding table that illustrates the code being generated and the calls
+being made. </p>
+
+<ol start=1 type=1>
+ <ol start=1 type=1>
+  <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+      auto;mso-list:l6 level2 lfo6;tab-stops:list 1.0in'>Generate and execute
+      client code based on given wsdl. </li>
+  <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+      auto;mso-list:l6 level2 lfo6;tab-stops:list 1.0in'>Execute client against
+      every service for Group G Fault tests. </li>
+ </ol>
+</ol>
+
+<h4><b>The Tests</b></h4>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<table border=1 cellspacing=0 cellpadding=0 width=1215 style='width:729.0pt;
+ mso-cellspacing:0in;margin-left:26.7pt;mso-padding-alt:0in 0in 0in 0in'>
+ <tr>
+  <td width=135 valign=top style='width:81.0pt;padding:0in 0in 0in 0in'>
+  <p><b>Test</b></p>
+  </td>
+  <td width=390 valign=top style='width:3.25in;padding:0in 0in 0in 0in'>
+  <p><b>Description</b></p>
+  </td>
+  <td width=138 valign=top style='width:82.5pt;padding:0in 0in 0in 0in'>
+  <p><b>Binding Style/Use</b></p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p><b>Virtuoso URL</b></p>
+  </td>
+ </tr>
+ <tr>
+  <td width=135 valign=top style='width:81.0pt;padding:0in 0in 0in 0in'>
+  <p><a href="http://demo.openlinksw.com:8890/r4/groupG/dime/doc/services.wsdl">Dime
+  Doc/Lit</a></p>
+  </td>
+  <td width=390 valign=top style='width:3.25in;padding:0in 0in 0in 0in'>
+  <p>Series of Tests</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoBase64AsAttachement()
+  </p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoAttachementAsBase64()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoAttachment()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoAttachments()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoAttachmentAsString()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoUnrefAttachments()</p>
+  </td>
+  <td width=138 valign=top style='width:82.5pt;padding:0in 0in 0in 0in'>
+  <p>Doc/Literal</p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p><a href="http://demo.openlinksw.com:8890/r4/groupG/dime/doc/services.wsdl">http://demo.openlinksw.com:8890/r4/groupG/dime/doc/services.wsdl</a>
+  </p>
+  </td>
+ </tr>
+ <tr>
+  <td width=135 valign=top style='width:81.0pt;padding:0in 0in 0in 0in'>
+  <p><a href="http://demo.openlinksw.com:8890/r4/groupG/dime/rpc/services.wsdl">Dime
+  RPC</a></p>
+  </td>
+  <td width=390 valign=top style='width:3.25in;padding:0in 0in 0in 0in'>
+  <p>Series of Tests</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoBase64AsAttachement()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoAttachementAsBase64()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoAttachment()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoAttachments()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoAttachmentAsString()</p>
+  </td>
+  <td width=138 valign=top style='width:82.5pt;padding:0in 0in 0in 0in'>
+  <p>Rpc/encoded</p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p><a href="http://demo.openlinksw.com:8890/r4/groupG/dime/rpc/services.wsdl">http://demo.openlinksw.com:8890/r4/groupG/dime/rpc/services.wsdl</a>
+  </p>
+  </td>
+ </tr>
+ <tr>
+  <td width=135 valign=top style='width:81.0pt;padding:0in 0in 0in 0in'>
+  <p>SwA Doc/Lit</p>
+  </td>
+  <td width=390 valign=top style='width:3.25in;padding:0in 0in 0in 0in'>
+  <p><span style="mso-spacerun: yes"> </span></p>
+  </td>
+  <td width=138 valign=top style='width:82.5pt;padding:0in 0in 0in 0in'>
+  <p>Doc/Literal</p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p>&nbsp;</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=135 valign=top style='width:81.0pt;padding:0in 0in 0in 0in'>
+  <p>SwA RPC</p>
+  </td>
+  <td width=390 valign=top style='width:3.25in;padding:0in 0in 0in 0in'>
+  <p>&nbsp;</p>
+  </td>
+  <td width=138 valign=top style='width:82.5pt;padding:0in 0in 0in 0in'>
+  <p>Rpc/encoded</p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p>&nbsp;</p>
+  </td>
+ </tr>
+</table>
+
+<h3><span style='font-size:18.0pt;mso-bidi-font-size:13.5pt'>Group H Tests</span></h3>
+
+<h3><span style='font-size:18.0pt;mso-bidi-font-size:13.5pt'>Fault message
+processing</span></h3>
+
+<p style='margin:0in;margin-bottom:.0001pt'>The <a
+href="http://soapinterop.java.sun.com/soapbuilders/r4/faults.shtml">Test
+Specification Document</a> outlines the test cases. WSDL documents: </p>
+
+<ul type=disc>
+ <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+     mso-list:l4 level1 lfo11;tab-stops:list .5in'><a
+     href="http://soapinterop.java.sun.com/soapbuilders/r4/simple-rpc-encoded.wsdl">simple-rpc-encoded</a>
+     </li>
+ <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+     mso-list:l4 level1 lfo11;tab-stops:list .5in'><a
+     href="http://soapinterop.java.sun.com/soapbuilders/r4/complex-rpc-encoded.wsdl">complex-rpc-encoded</a>
+     </li>
+ <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+     mso-list:l4 level1 lfo11;tab-stops:list .5in'><a
+     href="http://soapinterop.java.sun.com/soapbuilders/r4/simple-doc-literal.wsdl">simple-doc-literal</a>
+     </li>
+ <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+     mso-list:l4 level1 lfo11;tab-stops:list .5in'><a
+     href="http://soapinterop.java.sun.com/soapbuilders/r4/complex-doc-literal.wsdl">complex-doc-literal</a>
+     </li>
+ <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+     mso-list:l4 level1 lfo11;tab-stops:list .5in'><a
+     href="http://soapinterop.java.sun.com/soapbuilders/r4/soapfault.wsdl">soapfault</a>
+     </li>
+</ul>
+
+<h2><span style='font-size:14.0pt;mso-bidi-font-size:18.0pt'>The procedure</span></h2>
+
+<p style='margin-left:.5in'>Here are the steps for each test and a
+corresponding table that illustrates the code being generated and the calls
+being made. </p>
+
+<ol start=1 type=1>
+ <ol start=2 type=1>
+  <ol start=1 type=1>
+   <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+       auto;mso-list:l6 level3 lfo6;tab-stops:list 1.5in'>Generate and execute
+       client code based on given wsdl. </li>
+   <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+       auto;mso-list:l6 level3 lfo6;tab-stops:list 1.5in'>Execute client
+       against every service for Group H Fault tests. </li>
+  </ol>
+ </ol>
+</ol>
+
+<h4><b>The Tests</b></h4>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<table border=1 cellspacing=0 cellpadding=0 width=1215 style='width:729.0pt;
+ mso-cellspacing:0in;margin-left:26.7pt;mso-padding-alt:0in 0in 0in 0in'>
+ <tr>
+  <td width=262 valign=top style='width:157.2pt;padding:0in 0in 0in 0in'>
+  <p><b>Test</b></p>
+  </td>
+  <td width=294 valign=top style='width:176.6pt;padding:0in 0in 0in 0in'>
+  <p><b>Description</b></p>
+  </td>
+  <td width=106 valign=top style='width:63.7pt;padding:0in 0in 0in 0in'>
+  <p><b>Binding Style/Use</b></p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p><b>Virtuoso URL</b></p>
+  </td>
+ </tr>
+ <tr>
+  <td width=262 valign=top style='width:157.2pt;padding:0in 0in 0in 0in'>
+  <p><a
+  href="http://demo.openlinksw.com:8890/r4/groupH/simple/rpc/services.wsdl">simple-rpc-encoded</a></p>
+  </td>
+  <td width=294 valign=top style='width:176.6pt;padding:0in 0in 0in 0in'>
+  <p>Series of Tests</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoEmptyFault()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoStringFault()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoIntArrayFault()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoMultipleFaults1(1-4)</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoMultipleFaults2(1-4)</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoMultipleFaults3(1-3)</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l1 level1 lfo8;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoMultipleFaults4(1-3)</p>
+  </td>
+  <td width=106 valign=top style='width:63.7pt;padding:0in 0in 0in 0in'>
+  <p>Rpc/encoded</p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p><a
+  href="http://demo.openlinksw.com:8890/r4/groupH/simple/rpc/services.wsdl">http://demo.openlinksw.com:8890/r4/groupH/simple/rpc/services.wsdl</a>
+  </p>
+  <p>&nbsp;</p>
+  </td>
+ </tr>
+ <tr>
+  <td width=262 valign=top style='width:157.2pt;padding:0in 0in 0in 0in'>
+  <p><a
+  href="http://demo.openlinksw.com:8890/r4/groupH/complex/rpc/services.wsdl">complex-rpc-encoded</a></p>
+  </td>
+  <td width=294 valign=top style='width:176.6pt;padding:0in 0in 0in 0in'>
+  <p>Series of Tests</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l2 level1 lfo14;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoSOAPStructFault()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l2 level1 lfo14;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoBaseStructFault()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l2 level1 lfo14;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoExtendedStructFault()</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l2 level1 lfo14;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoMultipleFaults1(1-3)</p>
+  <p style='margin-left:.5in;text-indent:-.25in;mso-list:l2 level1 lfo14;
+  tab-stops:list .5in'><span style='font-family:Symbol'>·<span
+  style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span>echoMultipleFaults2(1-4)</p>
+  </td>
+  <td width=106 valign=top style='width:63.7pt;padding:0in 0in 0in 0in'>
+  <p>Rpc/encoded</p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p><a
+  href="http://demo.openlinksw.com:8890/r4/groupH/complex/rpc/services.wsdl">http://demo.openlinksw.com:8890/r4/groupH/complex/rpc/services.wsdl</a>
+  </p>
+  </td>
+ </tr>
+ <tr>
+  <td width=262 valign=top style='width:157.2pt;padding:0in 0in 0in 0in'>
+  <p><a
+  href="http://demo.openlinksw.com:8890/r4/groupH/simple/doc/services.wsdl">simple-doc-literal</a></p>
+  </td>
+  <td width=294 valign=top style='width:176.6pt;padding:0in 0in 0in 0in'>
+  <p>&nbsp;</p>
+  </td>
+  <td width=106 valign=top style='width:63.7pt;padding:0in 0in 0in 0in'>
+  <p>Doc/Literal</p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p><a
+  href="http://demo.openlinksw.com:8890/r4/groupH/simple/doc/services.wsdl">http://demo.openlinksw.com:8890/r4/groupH/simple/doc/services.wsdl</a></p>
+  </td>
+ </tr>
+ <tr>
+  <td width=262 valign=top style='width:157.2pt;padding:0in 0in 0in 0in'>
+  <p><a
+  href="http://demo.openlinksw.com:8890/r4/groupH/complex/doc/services.wsdl">complex-doc-literal</a></p>
+  </td>
+  <td width=294 valign=top style='width:176.6pt;padding:0in 0in 0in 0in'>
+  <p>&nbsp;</p>
+  </td>
+  <td width=106 valign=top style='width:63.7pt;padding:0in 0in 0in 0in'>
+  <p>Doc/Literal</p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p><a
+  href="http://demo.openlinksw.com:8890/r4/groupH/complex/doc/services.wsdl">http://demo.openlinksw.com:8890/r4/groupH/complex/doc/services.wsdl</a></p>
+  </td>
+ </tr>
+ <tr>
+  <td width=262 valign=top style='width:157.2pt;padding:0in 0in 0in 0in'>
+  <p>soapfault</p>
+  </td>
+  <td width=294 valign=top style='width:176.6pt;padding:0in 0in 0in 0in'>
+  <p>&nbsp;</p>
+  </td>
+  <td width=106 valign=top style='width:63.7pt;padding:0in 0in 0in 0in'>
+  <p>SoapFault</p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p>&nbsp;</p>
+  </td>
+ </tr>
+</table>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<h3><span style='font-size:18.0pt;mso-bidi-font-size:13.5pt'>Group I Tests</span></h3>
+
+<h3><span style='font-size:18.0pt;mso-bidi-font-size:13.5pt'>WSDL/XSD testing</span></h3>
+
+<p style='margin:0in;margin-bottom:.0001pt'>The <a
+href="http://mssoapinterop.org/asmx/xsd/">Test Specification Document</a>
+outlines the test cases. WSDL documents: </p>
+
+<ul type=disc>
+ <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+     mso-list:l0 level1 lfo17;tab-stops:list .5in'><a
+     href="http://mssoapinterop.org/asmx/xsd/round4XSD.wsdl">round4XSD.wsdl</a>
+     </li>
+</ul>
+
+<h2><span style='font-size:14.0pt;mso-bidi-font-size:18.0pt'>The procedure</span></h2>
+
+<p style='margin-left:.5in'>Here are the steps for each test and a
+corresponding table that illustrates the code being generated and the calls
+being made. </p>
+
+<ol start=1 type=1>
+ <ol start=3 type=1>
+  <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+      auto;mso-list:l6 level2 lfo6;tab-stops:list 1.0in'>Generate and execute
+      client code based on given wsdl. </li>
+  <li class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+      auto;mso-list:l6 level2 lfo6;tab-stops:list 1.0in'>Execute client against
+      every service for Group I WSDL/XSD test. </li>
+ </ol>
+</ol>
+
+<h4><b>The Tests</b></h4>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<table border=1 cellspacing=0 cellpadding=0 width=1215 style='width:729.0pt;
+ mso-cellspacing:0in;margin-left:26.7pt;mso-padding-alt:0in 0in 0in 0in'>
+ <tr>
+  <td width=180 valign=top style='width:1.5in;padding:0in 0in 0in 0in'>
+  <p><b>Test</b></p>
+  </td>
+  <td width=376 valign=top style='width:225.8pt;padding:0in 0in 0in 0in'>
+  <p><b>Description</b></p>
+  </td>
+  <td width=106 valign=top style='width:63.7pt;padding:0in 0in 0in 0in'>
+  <p><b>Binding Style/Use</b></p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p><b>Virtuoso URL</b></p>
+  </td>
+ </tr>
+ <tr>
+  <td width=180 valign=top style='width:1.5in;padding:0in 0in 0in 0in'>
+  <p><a href="http://demo.openlinksw.com:8890/r4/groupI/services.wsdl">WSDL/XSD</a>
+  </p>
+  </td>
+  <td width=376 valign=top style='width:225.8pt;padding:0in 0in 0in 0in'>
+  <p>Series of Tests</p>
+  <ul style='margin-top:0in' type=disc>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoVoid()<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>                            </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoInteger()<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>                         </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoFloat()<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>                           </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoString(1)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>                         </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoString(2)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>                         </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoBase64()<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>                        </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoDate()<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>                            </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoComplexType(1)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>              </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoComplexType(2)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>              </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoIntegerMultiOccurs()<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>         </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoFloatMultiOccurs()<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>           </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoStringMultiOccurs(1)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>        </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoStringMultiOccurs(2)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>        </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoComplexTypeMultiOccurs(1)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>       </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoComplexTypeMultiOccurs(2)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>       </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoDecimal()</li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoBoolean()<span
+       style='font-family:"Arial Unicode MS"'></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoHexBinary()<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>                    </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoComplexTypeAsSimpleTypes(1)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>   </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoComplexTypeAsSimpleTypes(2)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>   </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoSimpleTypesAsComplexType(1)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>   </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoSimpleTypesAsComplexType(2)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>   </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoNestedComplexType(1)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>     </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoNestedComplexType(2)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>     </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoNestedMultiOccurs()<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>         </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoChoice()<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>                         </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoEnum()<span
+       style='font-family:"Arial Unicode MS"'></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoAnyType()<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>                      </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoAnyElement()<span
+       style='font-family:"Arial Unicode MS"'></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoVoidSoapHeader(1)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>          </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoVoidSoapHeader(2)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>          </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoVoidSoapHeader(3)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>          </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoVoidSoapHeader(4)<span
+       style='font-family:"Arial Unicode MS"'></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoVoidSoapHeader(5)<span
+       style='font-family:"Arial Unicode MS"'><span style='mso-tab-count:1'>          </span></span></li>
+   <li class=MsoNormal style='mso-list:l5 level1 lfo21;tab-stops:list .5in left 189.5pt 225.7pt'>echoVoidSoapHeader(6)</li>
+  </ul>
+  </td>
+  <td width=106 valign=top style='width:63.7pt;padding:0in 0in 0in 0in'>
+  <p>Rpc/encoded</p>
+  </td>
+  <td width=553 valign=top style='width:331.5pt;padding:0in 0in 0in 0in'>
+  <p><a href="http://demo.openlinksw.com:8890/r4/groupI/services.wsdl">http://demo.openlinksw.com:8890/r4/groupI/services.wsdl</a>
+  </p>
+  </td>
+ </tr>
+</table>
+
+<p class=MsoNormal style='tab-stops:189.5pt 225.7pt'><span style='font-family:
+"Arial Unicode MS"'><span style='mso-tab-count:1'>                                                     </span></span></p>
+
+<h2 style='margin-left:.5in'>&nbsp;</h2>
+
+<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+margin-left:.25in'>&nbsp;</p>
+
+</div>
+
+</body>
+
+</html>

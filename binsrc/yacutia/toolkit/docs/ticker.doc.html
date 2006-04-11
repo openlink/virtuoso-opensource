@@ -1,0 +1,77 @@
+<h2>ticker.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>Ticker - slowly appearing (and disappearing) text.</p>
+<hr/>
+
+<h3>Objects</h3>
+<ul>
+	<li><a href="#ticker">Ticker(element, text, optObj)</a></li>
+</ul>
+
+<h3>Methods</h3>
+<ul>
+	<li><a href="#start">Ticker::start()</a></li>
+	<li><a href="#stop">Ticker::stop()</a></li>
+</ul>
+
+<h3>Constants</h3>
+<ul>
+	<li>TickerData.ADD_START - add characters to the beginning</li>
+	<li>TickerData.ADD_END - add characters to end</li>
+</ul><ul>	
+	<li>TickerData.CLEAR_ALL - remove all characters at once</li>
+	<li>TickerData.CLEAR_START - remove characters from beginning</li>
+	<li>TickerData.CLEAR_END - remove characters from end</li>
+</ul><ul>	
+	<li>TickerData.TIMING_PERCHAR - delay is specified per character</li>
+	<li>TickerData.TIMING_GLOBAL - delay is specified per string</li>
+</ul><ul>	
+	<li>TickerData.LOOP_NONE - don't loop</li>
+	<li>TickerData.LOOP_BACK - draw text, hide it and stop</li>
+	<li>TickerData.LOOP_FULL - loop</li>
+</ul>
+
+<hr/>
+
+<h3><a name="ticker">Ticker(element, text, optObj)</a></h3>
+<p>Creates Ticker. It will show <em>text</em> in <em>element</em>. Argument <em>optObj</em> is an object containing the following:</p>
+<ul>
+	<li>loop - a LOOP_ constant</li>
+	<li>add - an ADD_ constant</li>
+	<li>clear - a CLEAR_ constant</li>
+	<li>timing - a TIMING_ constant</li>
+	<li>delay - delay in msec</li>
+	<li>pause - pause (in msec) when all text is drawn</li>
+</ul>
+
+<p class="code">
+var t = new Ticker(div, "Hello world!", {delay:30,timing:TickerData.TIMING_PERCHAR}); <br/>
+t.start();
+</p>
+
+<h3><a name="start">Ticker::start()</a></h3>
+<p>Starts ticking.</p>
+
+<h3><a name="stop">Ticker::stop()</a></h3>
+<p>Stops ticking.</p>

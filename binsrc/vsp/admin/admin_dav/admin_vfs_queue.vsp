@@ -1,0 +1,192 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines);
+--no_c_escapes-
+declare _host, _root, _url, sid varchar;
+declare _upd, _dbg integer;
+declare res_ses any;
+_upd := 1;
+_dbg := 3;
+_host := '';
+_root := '';
+_url := '';
+if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+  {
+    adm_tell_unauth_dav (lines);
+    return (0);
+  }
+res_ses := string_output ();
+sid := adm_get_sesid (params);
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Web robot queues">
+<title>Web Robot Queues</title>
+</head>
+<?vsp adm_page_header('Web Robot Queues', 'webdataimportsexports'); ?>
+
+<?vsp
+if ( get_keyword ('PROCESS', params) = 'yes')
+  {
+    declare _err_cnt integer;
+    _host := get_keyword ('host', params);
+    _root := get_keyword ('root', params);
+    _upd := atoi (get_keyword ('upd', params));
+    _url := get_keyword ('url', params);
+    if (_upd < 2)
+      {
+	http ('<br>\n');
+        declare _start_t, _end_t integer;
+	declare _t_int, updated_l integer;
+	declare sttime datetime;
+
+        declare continue handler for not found { sttime := now (); };
+	  {
+	    select max(VU_CPTIME) into sttime from WS.WS.VFS_URL where VU_ROOT = _root and VU_HOST = _host;
+	  }
+        updated_l := 0;
+	if (_upd = 0)
+	  {
+	    -- always do re-fetch
+            if (_url is null)
+	      _url := coalesce ((select VS_URL from WS.WS.VFS_SITE where VS_ROOT = _root and VS_HOST = _host), '/');
+	    delete from WS.WS.VFS_URL where VU_ROOT = _root and VU_HOST = _host;
+	    delete from WS.WS.VFS_QUEUE where VQ_ROOT = _root and VQ_HOST = _host and VQ_URL <> _url;
+	    update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting'
+		where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url;
+	  }
+        _start_t := msec_time ();
+	-- disable the following code to enable old behaviour
+        if (1)
+          {
+	    http_rewrite ();
+	    http_header (sprintf ('Location: vfs_status.vsp?host=%U&root=%U&url=%U&start=%d&sid=%s&stime=%s\r\n',
+		  _host, _root, _url, _start_t, sid, cast (sttime as varchar)));
+	    http_request_status ('HTTP/1.1 302 Found');
+	    http_flush ();
+	  }
+	WS.WS.SERV_QUEUE_TOP (_host, _root, _upd, _dbg, null, null);
+        _end_t := msec_time ();
+        _t_int := _end_t - _start_t;
+        declare continue handler for not found { updated_l := 0; };
+	  {
+	    select count(*) into updated_l from WS.WS.VFS_URL
+		where VU_ROOT = _root and VU_HOST = _host and VU_CPTIME > sttime and VU_URL not like '%/';
+	  }
+	if (_upd = 1)
+	  {
+	    if (updated_l > 0)
+	      http (sprintf ('<p><small><strong>Total updated : %d</strong></small></p>', updated_l), res_ses);
+	    else
+	      http (sprintf ('<p><small><strong>No updates</strong></small></p>', updated_l), res_ses);
+	  }
+        http (concat ('<p><strong> Total time: ', cast (_t_int as varchar), ' (msec) </strong></p>'), res_ses);
+        _err_cnt := coalesce ((select count(*) from WS.WS.VFS_QUEUE where VQ_HOST = _host and
+		VQ_ROOT = _root and VQ_STAT = 'error'), 0);
+	if (_err_cnt > 1)
+	  http (concat ('<p>Errors while retrieving target. Wrong entries : ', cast (_err_cnt as varchar) ,'. Select "Stop" and "Reset" to return initial state</p>'), res_ses);
+      }
+    else if (_upd = 2)
+      update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url;
+    else if (_upd = 3)
+      {
+        delete from  WS.WS.VFS_QUEUE where
+	    VQ_HOST = _host and VQ_ROOT = _root and VQ_URL <> _url and VQ_STAT <> 'pending';
+      }
+    commit work;
+  }
+?>
+
+<?vsp
+      http (string_output_string (res_ses));
+?>
+
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="10">Robot Targets</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="10"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<tr>
+<th class="genlistheadt">Description</th>
+<th class="genlistheadt">Host</th>
+<th class="genlistheadt">URL</th>
+<th class="genlistheadt">Target collection</th>
+<th class="genlistheadt">State</th>
+<th class="genlistheadt" colspan=5 align=center>Actions</th>
+</tr>
+<?vsp
+for select VS_DESCR, VQ_HOST, VQ_STAT, VQ_ROOT, VQ_URL from WS.WS.VFS_QUEUE , WS.WS.VFS_SITE
+where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT and VQ_URL = VS_URL do {
+http (concat ('<tr><td class="gendata">',VS_DESCR,'</td><td class="gendata">', VQ_HOST,'</td><td class="gendata">', VQ_URL,'</td><td class="gendata">',VQ_ROOT,'</td><td class="gendata">',VQ_STAT,'</td><td class="gendata">',
+      '\n<!--table border=0 width="100%"><tr><td align="center"-->\n',
+      '<a class="tablelistaction" href="admin_vfs_queue.vsp?PROCESS=yes&upd=0&host=',VQ_HOST));
+      http ('&root=');
+      http_url (VQ_ROOT);
+      http (concat ('">Start</a></td><td class="gendata" align="center">',
+      '<a class="tablelistaction" href="admin_vfs_queue.vsp?PROCESS=yes&upd=1&host=',VQ_HOST,'&root='));
+      http_url (VQ_ROOT);
+      http (concat ('">Update</a></td><td class="gendata" align="center">',
+      '<a class="tablelistaction" href="vfs_queue_sched.vsp?PROCESS=yes&upd=1&host=',VQ_HOST,'&root='));
+      http_url (VQ_ROOT);
+      http (concat ('">Schedule</a></td><td class="gendata" align="center">',
+      '<a class="tablelistaction" href="admin_vfs_queue.vsp?PROCESS=yes&upd=2&host=',VQ_HOST,'&root='));
+      http_url (VQ_ROOT);
+      http('&url=');
+      http_url (VQ_URL); http (concat ('">Reset</a></td><td class="gendata">',
+	    '<a class="tablelistaction" href="admin_vfs_queue.vsp?PROCESS=yes&upd=3&host=',VQ_HOST,'&root=',VQ_ROOT,'&url='));
+      http_url (VQ_URL); http (concat ('">Stop</a></td></tr>','\n<!--/table-->\n','</td></tr>\n'));
+}
+?>
+</table>
+
+
+<P>Warning: queue processing for this site may take a long time.</P>
+
+<TABLE class="statlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="stathead" COLSPAN="4">Current Scheduled Updates</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="4"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<tr>
+<th class="statlistheadt">Description</th>
+<th class="statlistheadt">Start on</th>
+<th class="statlistheadt">Interval (minutes)</th>
+<th class="statlistheadt">Last executed</th>
+</tr>
+<?vsp
+declare _cnt integer;
+_cnt := 0;
+for select SE_NAME, SE_START, SE_INTERVAL, SE_LAST_COMPLETED from SYS_SCHEDULED_EVENT where SE_SQL like 'WS.WS.SERV_QUEUE%' do {
+  _cnt := _cnt + 1;
+  http (concat ('<tr><td class="statdata">',
+	SE_NAME, '</td><td class="statdata" align="right">',
+	subseq (cast (SE_START as varchar), 0, 19), '</td><td class="statdata" align="right">',
+	cast (SE_INTERVAL as varchar), '</td><td class="statdata" align="right">',
+	substring (cast (SE_LAST_COMPLETED as varchar), 1 , 20), '</td></tr>'));
+}
+  if (_cnt < 1)
+    http ('<tr><td colspan="4"><table><tr align="center"><td>*** no scheduled updates defined ***</td></tr></table></td></tr>');
+?>
+</table>
+<?vsp adm_page_footer(); ?>
+</html>

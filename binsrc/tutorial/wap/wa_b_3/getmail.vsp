@@ -1,0 +1,132 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+   declare _user_name, _user_pass, _login_ok varchar;
+  declare  _counter, _num_of_msg, inx, len integer;
+  declare _server, _name, _password, mess varchar;
+
+ declare _login_ok varchar;
+  declare _sid, _getpop3, _port varchar;
+  declare _pop_state1, _pop_msg varchar;
+  declare res any;
+  declare _random1 integer;
+
+  _random1 := rnd(9999999);
+  _pop_msg := '';
+  _sid := '';
+  _sid := get_keyword('SESS', params);
+ _getpop3 := get_keyword('GETPOP3', params);
+ _port := '';
+
+   _login_ok := 'NO';
+
+ if (_sid   <> '') {
+  for select _username, _userpass from wapsession where sid = _sid  do
+  {
+   _login_ok := 'YES';
+   _user_name := _username;
+   _user_pass := _userpass;
+   update wapsession set _time_last_active = datestring ( now() ) where  sid = _sid;
+  }
+  }else{
+    _login_ok := 'NO';
+
+  }
+?>
+<?vsp
+if(_login_ok <> 'NO'){
+   _counter := 0;
+ for select _username, _pop_server, _pop_login_name, _pop_password, _pop_port as _port from wappop3account where _username = _user_name do
+ {
+  if (isnull(_port))
+  {
+    _port := '110';
+  }
+
+  exec( 'pop3_get (? , ?, ?, ?)', _pop_state1, _pop_msg, vector(concat(_pop_server, ':', _port), _pop_login_name, _pop_password, 10), 1, NULL, NULL);
+
+  if (  matches_like(_pop_msg, '%[abcedfghijklmnopqrstuvwxyz]%') = 0)
+  {
+
+   res := pop3_get (concat(_pop_server, ':', _port), _pop_login_name, _pop_password, 99999999);
+   inx := 0;
+   len := length(res);
+
+   while (inx < len)
+   {
+    mess := aref (aref(res, inx), 1);
+    insert into MAIL_STAGING (ST_MM_OWN, ST_MM_BODY, ST_INDEX) values (_user_name, mess, inx);
+    inx := inx + 1;
+   }
+
+     if (exists (select 1 from MAIL_STAGING where ST_MM_OWN = _user_name))
+     {
+     for select ST_MM_BODY from MAIL_STAGING
+      where ST_MM_OWN = _user_name and mail_header(ST_MM_BODY, 'Message') Not In
+       (select mail_header (MM_BODY, 'Message') from MAIL_MESSAGE where MM_OWN = _user_name and MM_FLD <> 'Draft') do
+     {
+      NEW_MAIL (_user_name, ST_MM_BODY);
+       _counter := _counter + 1;
+     }
+    }
+   delete from MAIL_STAGING where ST_MM_OWN = _user_name;
+   update MAIL_MESSAGE set MM_FROM = mail_header (MM_BODY, 'From'), MM_TO = mail_header (MM_BODY, 'To'), MM_SUBJ = mail_header (MM_BODY, 'Subject')
+    where MM_OWN = _user_name and MM_FLD <> 'Draft';
+
+   update MAIL_MESSAGE set MM_SUBJ = 'No Subject' where MM_OWN = _user_name and length (MM_SUBJ) < 1;
+  }
+  }
+http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="P1" title="Mail Retrieved" >
+    <do type="accept" label="Continue">
+ <go  href="checkmail.vsp?SESS=<?=_sid?>&amp;ACTION=SKIPMENU&amp;OPEN=Inbox&amp;REF=<?=_random1?>"/>
+    </do>
+    <do type="options" label="Back">
+   <prev/>
+    </do>
+    <p> <?=_counter?> New Messages</p>
+ <p><a href="checkmail.vsp?SESS=<?=_sid?>&amp;ACTION=SKIPMENU&amp;OPEN=Inbox&amp;REF=<?=_random1?>">Mail Menu</a></p>
+  </card>
+</wml>
+<?vsp
+}else{  http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="P1" title="Wrong" >
+    <p mode="nowrap">
+   Wrong Login
+    </p>
+  </card>
+</wml>
+<?vsp
+}
+?>
+

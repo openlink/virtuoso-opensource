@@ -1,0 +1,34 @@
+
+load tpcwdrop.sql;
+
+load tpcwddk.sql;
+load tpcw.sql;
+
+DB.DBA.VHOST_REMOVE(lpath=>'/tpcw');
+DB.DBA.VHOST_DEFINE(lpath=>'/tpcw', ppath=>'/', vsp_user=>'DBA');
+
+create procedure get_path() returns varchar
+{
+    declare path varchar;
+    path := '/mnt/hde1/home_aziz/virtdev/binsrc/samples/TPC-W/';
+    return path;
+}
+
+create procedure init_shop()
+{
+    declare NUM_ITEMS numeric(10);
+    declare NUM_EBs integer;
+    
+    declare LOG_LINE varchar;
+    result_names (LOG_LINE);
+    NUM_ITEMS:=5000;
+    NUM_EBs:=3;
+    ini_base(NUM_ITEMS, NUM_EBs);
+}
+
+init_shop();
+
+ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
+ECHO BOTH ": TPC-W http server database is populated: STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+

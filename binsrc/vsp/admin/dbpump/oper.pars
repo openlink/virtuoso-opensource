@@ -1,0 +1,88 @@
+_datasource~~Selected Datasource~Selected Datasource~~~
+datasource~~Selected Datasource~Selected Datasource~~~
+comment~~General comment~General comment~~~
+user~~User Name~This string identifies the user in terms of Virtuoso DBMS core.<br>~~~
+owner_mask~%~Owner Filter~Template for tables selection.<br>~~~
+password~~User Password~This string authenticates the user in terms of Virtuoso DBMS core.<br>~~~
+back~~To previous page~This will discard all operational parameters changes which was made on current page.<br>~~~
+accept~~Accept last changes~This will accept all operational parameters changes which was made on current page.<br>~~~
+dump~~dump~dump~~~
+restore~~restore~restore~~~
+lpath~~Local Path~Path on local computer to oper.parsupload.<br>~~~
+rpath~~Remote Path~Path on server to dump schema/tables.<br>~~~
+print_to_screen~~Print To Screen~If true, result in text form will be sent to client. In other case it will be saved at remote path.<br>~~~
+tabname~%~Table Name~Filter of table names.<br>~~~
+qualifier~~Database Qualifier~Database Qualifier.<br>~~~
+selected_qualifier~%~Qualifier Filter~Template for tables selection.<br>~~~
+qualifier_mask~%~Qualifier Filter~Template for tables selection.<br>~~~
+text_flag~Binary~SQL or Binary~Choice of results format.<br>~~~
+split_by~~Split By~Size of maximal result parts in MB.<br>~~~
+sql_where~~Sql Where~This will be used as a filter in dumping of tables.<br>~~~
+from1~~From~.<br>~~~
+from2~~From~.<br>~~~
+to1~~To~.<br>~~~
+to2~~To~.<br>~~~
+tab_linkage_calls~~Produce Table Linkage Calls~Produce Table Linkage Calls .<br>~~~
+link_none_if_fails~~Link none if any linkage fails ~Link none if any linkage fails .<br>~~~
+produce_primary_key_by_any_means~~Produce Primary Key by any means ~Produce Primary Key by any means.<br>~~~
+surround_doublequotes~~Surround all column and index names with doublequotes ~Surround all column and index names with doublequotes .<br>~~~
+prefix_names~~Prefix all names with backslash ~Prefix all names with backslash.<br>~~~
+prefix_select~~Like above but also in select statement ~Like above but also in select statement .<br>~~~
+no_drops~~No drops ~No drops.<br>~~~
+no_foreach~~Never use foreach ~Never use foreach .<br>~~~
+verbose_flag~~Brief/Verbose~Brief/Verbose.<br>~~~
+escape_flag~~Type Of Escaping~Escape strange chars/Escape also ISO-8859/1/Escape only single quotes by doubling them<br>~~~
+debug_trace~~Debug Trace~Debug Trace.<br>~~~
+default_conversions~~Virtuoso Default Conversions ~Virtuoso Default Conversions .<br>~~~
+new_name_for_tables~~New name for Table~New name for Table.<br>~~~
+initial_statement~~Initial Statement~Initial Statement.<br>~~~
+select_override~~Select Override~Select Override.<br>~~~
+unquoted_columns~~Unquoted Columns~Unquoted Columns.<br>~~~
+need_table~~Dump Tables~Dump Tables.<br>~~~
+need_system_table~~Dump System Tables~Dump System Tables.<br>~~~
+need_global_temporary~~Dump Global Temporary Tables~Dump Global Temporary Tables.<br>~~~
+need_view~~Dump Views~Dump Views.<br>~~~
+need_synonym~~Dump Synonyms~Dump Synonyms.<br>~~~
+need_local_temporary~~Dump Local Temporary~Dump Local Temporary.<br>~~~
+need_alias~~Dump Aliases~DumpAliases.<br>~~~
+insert_mode~1~Insert Mode~INTO/SOFT/REPLACING.<br>~~~
+maxline~~Max Line Length~Max Line Length.<br>~~~
+hexlen~~Max HexLen~Max HexLen.<br>~~~
+retrieve_tables~~List of Available Tables~List of Available Tables~~~
+choice_tables~~Component For Selecting an Available Tables~Component For Selecting an Available Tables~valid_choice_tables~~
+choice_sav~~internal property~internal property~valid_choice_sav~out_choice_sav~choice_sav_flafdef
+dump_name~~Dump Name~File Name of schema/tables data to dump/restore~~~
+result_txt~~Text explaining the result of last action~Text explaining the result of last action~~~
+debug_in_footer~~This allows the debug print in footer~This allows the debug print in footer~~~
+upload_flag~~~~~~
+allow_make_path~~Allow to make Path~This allows to create nonexisting path in dump  of schema & tables~~~
+manual_datasource~~This allows you to change datasource by hands rather then define it from listbox.~This allows you to change datasource by hands rather then define it from listbox.~~~
+connected_flag~~~~~~
+dump_type~1~Dump Type~Choice between "Everything", "Schema only", "Data only", "Custom" Shows "Custom" when non-default values are defined in Checkboxes #3-#10 on screen "Dump Options"~~~
+table_defs~on~Include Definition~If true, resulting tables dumps will begin from table definitions.<br>~~~
+triggers~on~Include Triggers Definition~If true, resulting tables dumps will end from trigger definitions.<br>~~~
+stored_procs~on~Include Stored Procs Definition~If true, resulting dumps will contain procs definitions.<br>~~~
+constraints~on~Include Constraints~If true, resulting tables dumps will contain constraints definitions.<br>~~~
+fkconstraints~~Include Foreign Keys Constraints~If true, resulting tables dumps will contain foreign keys constraints definitions.<br>~~~
+views~on~Include Views Definition~If true, resulting dumps will contain views definitions.<br>~~~
+users~on~Include Users Definition~If true, resulting dumps will contain users definitions.<br>~~~
+grants~on~Include Grants Definition~If true, grants will be restored.<br>~~~
+restore_users~on~Restore Users Definition~If true, users will be restored.<br>~~~
+restore_grants~on~Restore Grants Definition~If true, resulting dumps will contain grants definitions.<br>~~~
+table_data~on~Include Table Data~If true, resulting tables dumps will contain data.<br>~~~
+change_qualifier~~Change Qualifier~If true, resulting tables dumps will have custom qualifier.<br>~~~
+change_owner~~Change Owner~If true, resulting tables dumps will have custom owner.<br>~~~
+new_qualifier~~New Qualifier~Custom qualifier for dumped tables.<br>~~~
+new_owner~~New Owner~Custom owner for dumped tables.<br>~~~
+change_rqualifier~~Change Restore Qualifier~If true, resulting tables restores will have custom qualifier.<br>~~~
+change_rowner~~Change Restore Owner~If true, resulting tables restores will have custom owner.<br>~~~
+new_rqualifier~~New Restore Qualifier~Custom qualifier for restored tables.<br>~~~
+new_rowner~~New Restore Owner~Custom owner for restored tables.<br>~~~
+show_content~6~Show Content~What to show in current dump directory.<br> ~~~
+next_url~~~~~~
+custom_qual~0~~~~~
+custom_dump_opt~0~~~~~
+dump_path~./backup~Path to dump\'s root directory~Path to dump\'s root directory~~~
+dump_dir~~Name of the dump\'s root directory~Name of the dump\'s root directory~~~
+selected_tables~~~~~~
+last_error~~~~~~

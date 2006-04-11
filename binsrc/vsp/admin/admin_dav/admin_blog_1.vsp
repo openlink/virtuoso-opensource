@@ -1,0 +1,288 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+  declare akey, bid, id, txt, tit, disable_html varchar;
+  declare userid int;
+
+  adm_pre_page(lines);
+
+if (http_dav_uid () <> (userid := adm_dav_check_auth (lines, 1)))
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+          'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+
+  akey := {?'akey'};
+  bid := {?'bid'};
+  txt := {?'msg'};
+  disable_html := get_keyword_ucase ('disable_html', params, '0');
+
+  if (akey is null or bid is null or akey = '' or bid = '' or {?'cncl'} = 'Back')
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: admin_blog.vsp\r\n');
+      return;
+    }
+  declare blog_name varchar;
+  blog_name := coalesce ((select BI_TITLE from SYS_BLOG_INFO where BI_BLOG_ID = bid), bid);
+
+  id := coalesce ({?'id'}, '');
+  if (id <> '')
+    disable_html := '1';
+
+  if ({?'delete'} is not null)
+    {
+      delete from SYS_BLOGS where B_BLOG_ID = bid and B_POST_ID = id;
+      id := '';
+    }
+  else if ({?'post'} = 'Post')
+    {
+      declare title, dat, dummy, tbu any;
+      declare res DB.DBA."MTWeblogPost";
+      dummy := null;
+      title := {?'tit'};
+      dat := stringdate ({?'dt'});
+      if (dat > now ())
+	dat := now ();
+      if (title = '' and txt = '')
+	goto endf;
+
+      if (disable_html <> '1')
+        txt := BLOG_HTMLIZE_TEXT (txt);
+
+      tbu := vector ();
+      if ({?'tb'} <> '')
+        {
+	  declare tb any;
+	  declare i, l int;
+	  tb := {?'tb'};
+	  tb := replace (tb, '\r', '\n');
+	  tb := split_and_decode (tb, 0, '\0\0\n');
+	  l := length (tb);  i := 0;
+	  while (i < l)
+	    {
+	      if (lower (tb[i]) like 'http://%')
+		tbu := vector_concat (tbu, vector (tb[i]));
+	      i := i + 1;
+	    }
+  	}
+
+      if (id <> '')
+	{
+	  select BLOG_MESSAGE_OR_META_DATA (B_META, B_USER_ID, dummy, B_POST_ID, B_TS)
+	      into res from SYS_BLOGS where B_BLOG_ID = bid and B_POST_ID = id;
+	  res.dateCreated := dat;
+	  res.title := title;
+	  res.mt_tb_ping_urls := tbu;
+          update SYS_BLOGS set B_CONTENT = txt, B_META = res, B_TS = dat
+	      where B_BLOG_ID = bid and B_POST_ID = id;
+	  commit work;
+	  res.description := txt;
+	  BLOG_SEND_TB_PINGS (res);
+	  delete from MTYPE_BLOG_CATEGORY where MTB_POST_ID = id and MTB_BLOG_ID = bid;
+	}
+      else
+	{
+	  declare postid int;
+	  postid := cast (sequence_next ('blogger.postid') as varchar);
+          res := BLOG_MESSAGE_OR_META_DATA (dummy, userid, dummy, postid, dat);
+	  res.dateCreated := dat;
+	  res.title := title;
+	  res.mt_tb_ping_urls := tbu;
+	  insert into SYS_BLOGS (B_APPKEY, B_BLOG_ID, B_CONTENT, B_POST_ID, B_USER_ID, B_TS, B_META)
+	      values (akey, bid, txt, postid, userid, dat, res);
+	  commit work;
+	  res.description := txt;
+	  BLOG_SEND_TB_PINGS (res);
+	  id := postid;
+	}
+      declare cat, ix any;
+      ix := 0;
+      while (cat := adm_next_keyword ('cat', params, ix))
+	{
+	  if (cat <> '')
+	  insert into MTYPE_BLOG_CATEGORY (MTB_CID, MTB_POST_ID, MTB_BLOG_ID)
+	      values (atoi(cat), id, bid);
+	}
+      id := '';
+    }
+endf:;
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>BLOG Administration</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="BLOG Management for Virtuoso DB">
+  </head>
+<?vsp adm_page_header('BLOG Administration', ''); ?>
+  <script type="text/javascript">
+  function html_view ()
+   {
+     txt = document.forms[0].msg.value;
+     if (!document.forms[0].disable_html.checked)
+       {
+	 txt = txt.replace (/\r\n\r\n/, '<p></p>');
+	 txt = txt.replace (/\n\n/, '<p></p>');
+
+	 txt = txt.replace (/\r\n/, '<br />');
+	 txt = txt.replace (/\n/, '<br />');
+       }
+
+     window.open ("blog_post_preview.vsp?txt="+escape(txt), 'window', 'scrollbars=yes, menubar=no, height=500, width=500');
+   }
+  </script>
+  <noscript>
+  Your browser do not support JavaScript or it's disabled. This will not allow to preview the posts.
+  </noscript>
+    <H4><?=blog_name?></H4>
+    <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+      <TR><TD class="genhead" COLSPAN="2">BLOG Message</TD></TR>
+      <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+      <form method="POST" action="admin_blog_1.vsp">
+      <input type="hidden" name="akey" value="<?=akey?>">
+      <input type="hidden" name="bid" value="<?=bid?>">
+      <input type="hidden" name="id" value="<?=id?>"><?vsp
+	  declare msg, dt varchar;
+	 tit := ''; dt := now ();
+	  if ({?'edit'} is not null and id <> '')
+            {
+	      select blob_to_string (B_CONTENT), BLOG_GET_TITLE (B_META, B_CONTENT), B_TS into msg, tit, dt
+		  	from SYS_BLOGS where
+		       	 B_BLOG_ID = bid and B_POST_ID = id;
+	    }
+          dt := adm_date_fmt (dt);
+	 ?>
+      <tr>
+	<td class="genlisthead">Title</td>
+        <td class="geninput" COLSPAN="1">
+	<input type="text" name="tit" value="<?= tit ?>" size="70" />
+	</td>
+	</tr>
+      <tr>
+	<td class="genlisthead">Description</td>
+        <td class="geninput" COLSPAN="1">
+	<textarea rows="18" cols="70" name="msg"><?vsp
+	  if ({?'edit'} is not null and id <> '')
+            {
+	      http_value (msg);
+	    }
+	 ?></textarea>
+	</td>
+      <tr>
+	<td class="genlisthead">Disable HTML formating</td>
+        <td class="geninput" COLSPAN="1">
+	<input type="checkbox" name="disable_html" <?V check_if (disable_html, 1) ?> value="1" />
+	</td>
+	</tr>
+	<tr>
+        <tr>
+	<td class="genlisthead">Date</td>
+        <td class="geninput" COLSPAN="1">
+	<input type="text" name="dt" value="<?= dt ?>" size="19" />
+	</td>
+	</tr>
+	<tr>
+	<td class="genlisthead">Post Categories</td>
+        <td class="geninput">
+	<select name="cat" multiple size="5">
+	<option value="">none
+	<?vsp for select MTC_ID, MTC_NAME, MTC_DEFAULT from MTYPE_CATEGORIES where MTC_BLOG_ID = bid do {
+	  declare sel1, cid varchar;
+	  cid := MTC_ID;
+	  if (id <> '' and exists (select 1 from MTYPE_BLOG_CATEGORY where MTB_CID = cid and MTB_POST_ID = id and MTB_BLOG_ID = bid))
+	    sel1 := 'SELECTED';
+          else if (id = '' and MTC_DEFAULT)
+	    sel1 := 'SELECTED';
+	  else
+	    sel1 := '';
+	?>
+	<option value="<?=MTC_ID?>" <?=sel1?>><?=MTC_NAME?>
+	<?vsp } ?>
+	</select>
+	</td>
+	</tr>
+	<tr>
+	<td class="genlisthead">Trackback ping URLs</td>
+        <td class="geninput" COLSPAN="1">
+	<textarea name="tb" cols="70" rows="3"></textarea>
+	</td>
+	</tr>
+      </tr>
+      <tr>
+        <td class="geninput" COLSPAN="2">
+	<input type="submit" name="post" value="Post" />
+	<input type="button" name="prev" value="Preview" onClick="html_view ()" />
+	<input type="submit" name="cncl" value="Back" />
+	</td>
+      </tr>
+      </form>
+    </TABLE>
+
+<?vsp adm_page_break(); ?>
+
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="5">BLOGs</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+            <tr>
+		<th class="genlistheadt">ID</th>
+		<th class="genlistheadt">Message (excerpt)</th>
+		<th class="genlistheadt">Posted</th>
+		<th class="genlistheadt">Action</th>
+             </tr>
+<?vsp
+   for select B_POST_ID, B_CONTENT, B_TS, B_META
+	      from SYS_BLOGS where B_BLOG_ID = bid
+   	order by B_TS desc do
+      {
+	declare tit varchar;
+        tit := BLOG_GET_TITLE (B_META, B_CONTENT);
+?>
+       <TR>
+         <TD class="gendata"><?= B_POST_ID ?></TD>
+         <TD class="gendata"><?vsp http(tit); ?></TD>
+         <TD class="gendata"><?=adm_date_fmt(B_TS)?></TD>
+         <TD class="gendata">
+	   <a href="admin_blog_1.vsp?akey=<?=akey?>&bid=<?=bid?>&id=<?=B_POST_ID?>&edit">Edit</a>
+	   <a href="admin_blog_1.vsp?akey=<?=akey?>&bid=<?=bid?>&id=<?=B_POST_ID?>&delete">Delete</a>
+	   <a href="admin_blog_comments.vsp?bid=<?=bid?>&id=<?=B_POST_ID?>">Comments</a>
+	 </TD>
+       </TR>
+<?vsp
+      }
+?>
+
+</TABLE>
+<?vsp adm_page_footer(); ?>
+</html>
+

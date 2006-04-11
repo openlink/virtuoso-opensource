@@ -1,0 +1,2165 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="soap">
+  <title>SOAP</title>
+
+  <para>The Simple Object Access Protocol (SOAP) is a lightweight, extensible,
+  XML-based application layer protocol for information exchange in a decentralized,
+  distributed environment.
+  SOAP defines a framework for message structures and a message processing
+  model. SOAP also defines a set of encoding rules for serializing data and a
+  convention for making remote procedure calls. The SOAP extensibility
+  model provides a foundation for a wide range of composable modules and protocols.
+  Although the most common way to transport SOAP messages is HTTP, it may also be
+  run on top of other protocols.</para>
+  <para>SOAP includes:</para>
+  <simplelist>
+    <member>an envelope that defines a framework for describing what
+    is in a message and how to process it</member>
+    <member>a set of encoding rules for expressing instances of
+    application-defined datatypes</member>
+    <member>a convention for representing remote procedure calls and responses.</member>
+  </simplelist>
+  <sect2 id="soapovervw">
+    <title>Virtuoso SOAP Support Overview</title>
+    <para>
+Virtuoso provides a framework for both consuming SOAP services (acting as a
+client) and producing them (acting as a server).  The Virtuoso web server
+has a mechanism for handling SOAP messages and passing them to stored procedures
+for processing.  Both SOAP 1.0 and SOAP 1.1 messages and data types are supported.
+You may use all base SQL data types, as well as heterogeneous arrays, as both arguments and return values of
+Virtuoso SOAP services.  A full-featured set of functions for handling SOAP objects is provided.
+Services using a transport mechanism other than HTTP can also be constructed using the API.  The SOAP
+framework may be used independently of any of the other web-related services.
+    </para>
+    <para>
+Virtuoso/PL can also issue requests to SOAP servers.  SOAP can be used to access any application
+servers, including those running within the Virtuoso server.
+    </para>
+    <para>
+The Virtuoso SOAP server extends Virtuoso/PL parameter handling by adding complex data types
+declared with XML schema as parameter values for stored procedures.
+The Virtuoso SOAP server provides
+automatic validation of the parameters in requests, based on schema declarations.
+    </para>
+  </sect2>
+  <sect2 id="soapcallhandling">
+    <title>Handling of SOAP HTTP Requests</title>
+    <para>
+The Virtuoso web server recognizes SOAP HTTP requests and their
+version in the POST method handler.  When
+<parameter>SOAPMethodName</parameter> or
+<parameter>SOAPAction</parameter> HTTP header attributes are present
+with <programlisting>Content-Type: text/xml</programlisting>, the
+server initiates SOAP call handling. The XML namespace of the SOAP
+method name is stripped off and Virtuoso searches for a stored
+procedure with the same name, ignoring case.
+</para>
+<para> The search is done within the default qualifier of the SQL user
+account assigned for SOAP call execution defined for the virtual host.
+For example, if the database user assigned in the virtual host&apos;s
+definition for SOAP execution is called SOAPDBUSER and this user has a
+default qualifier &apos;SOAPDB&apos; and the request contains an
+invocation of method called
+<programlisting>OurSoapMethod</programlisting>, Virtuoso would
+attempt to find a stored procedure named
+<function>SOAPDB.SOAPDBUSER.OurSoapMethod</function>.
+    </para>
+    <para>
+When a matching stored procedure is found, any of its parameters that have names matching parameter
+entity names in the SOAP call are bound to the call parameter. The parameter name match is also
+case-insensitive.
+    </para>
+    <para>
+Virtuoso maps the procedure parameter datatypes internally
+by <link linkend="dtcasting">casting</link>
+from XML data (a string) to the declared parameter datatype of the
+stored procedure.  There is one exception: When an array is being
+passed, the server creates an array with values of types inferred from
+the XML Schema of its elements.
+It is possible to declare that a user defined SQL type be used to represent a
+specific XML element in a SOAP request.  Thus SQL objects can be constructed
+and serialized automaticlly.  Note that this also means that the implementation
+of the user defined type instance may be in a hosted language, thus Java or
+CLR code may be transparently involved.
+    </para>
+    <para>
+Two special parameters &mdash; <parameter>ws_soap_headers</parameter>
+and <parameter>ws_http_headers</parameter> &mdash; are available to a
+stored procedure handling a SOAP method invocation.  If declared as
+input parameters for the procedure,
+<parameter>ws_soap_headers</parameter> must contain an XML parse tree
+of the <parameter>SOAP:Header</parameter> in same format as returned
+by <link linkend="fn_xml_tree"><function>xml_tree()</function></link>.
+<parameter>ws_http_headers</parameter> should hold a one-dimensional
+array of attribute/value pairs representing the HTTP header fields in
+the request.
+    </para>
+  </sect2>
+  <sect2 id="dtschsoaps">
+    <title>Extending Datatypes for SOAP Objects</title>
+    <para>
+Complex datatypes can be defined using XMLSchema and represented by WSDL.
+Any of the declared types may be used as arguments and return types of
+Virtuoso/PL procedures.  Any procedures can thus be exposed as SOAP methods.
+    </para>
+    <para>
+Complex data type definitions are used for values that cannot be contained by
+simple scalar datatypes.  Typical examples are arrays of scalars, structures
+of scalars, arrays of structures or structures of arrays.  A complex datatype
+may contain scalar and complex datatypes.  When a complex type is used in
+the definition of another complex type, the definition of the contained complex
+type must exist.
+    </para>
+    <para>
+In addition to 'usual' complex types as structures and arrays Virtuoso implements support for
+'choice', 'enumeration', anyType and anyElement and extensions to the  simple types.
+Inheritance of complex types is also possible and is discussed further in next chapter.
+    </para>
+    <para>
+The 'nillable' and 'minOccurs' attributes in schema definitions have special meaning
+for PL values returned by PL procedure via SOAP.  If this attribute is 'true' then
+output of NULL values will be serialized in their XML form with XMLSchema instance
+attribute 'nil' as 'true'.  Otherwise if elements have 'minOccurs' equal to 0 (zero),
+the element will be omitted. If minOccurs is equal to 1 (one) an empty element will
+be sent to the client. The same algorithm applies to the serialization of PL values
+passed as parameters to soap_client() function. Therefore it's important to make
+proper use of these attributes when defining complex structures.
+    </para>
+    <para>
+The '__VOID__' string constant has a special meaning in XMLSchema Datatypes.
+It is used to designate no output for return value. In other words returned
+value from PL procedure will not be serialized nor exposed in the WSDL file.
+    </para>
+    <para>
+You define complex datatypes using
+<link linkend="fn_soap_dt_define"><function>soap_dt_define()</function></link>.
+The function accepts a schema definition excerpt, based on the element
+<parameter>complexType</parameter>. The definition must be a valid XML document.
+    </para>
+    <example id="ex_soap_complex_dt_def">
+      <title>Declaring and using complex datatypes in SOAP</title>
+      <para>
+In this example we define two complex datatypes. The first one, <type>SOAPStruct</type>,
+consists of scalars; the second one, <type>ArrayOfSOAPStruct</type>, is an array
+of these structures. These schema excerpts
+are stored in the filesystem as <literal>struct.xsd</literal> and <literal>array.xsd</literal>.
+      </para>
+
+<para><emphasis>struct.xsd:</emphasis></para>
+<programlisting><![CDATA[
+<!-- a SOAPStruct type declaration
+     file name: struct.xsd -->
+<complexType name="SOAPStruct"
+   targetNamespace="http://tempuri.tmp/"
+   xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
+   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+   xmlns="http://www.w3.org/2001/XMLSchema"
+   xmlns:tns="services.wsdl">
+
+   <sequence>
+     <element name="varString" type="string" nillable="true"/>
+     <element name="varInt" type="int" nillable="true"/>
+     <element name="varFloat" type="float" nillable="true"/>
+   </sequence>
+</complexType>
+]]>
+</programlisting>
+
+<para><emphasis>array.xsd:</emphasis></para>
+          <programlisting><![CDATA[
+<!-- array of SOAPStruct
+     file name: array.xsd -->
+<complexType name="ArrayOfSOAPStruct"
+   targetNamespace="http://tempuri.tmp/"
+   xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
+   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+   xmlns="http://www.w3.org/2001/XMLSchema"
+   xmlns:tns="services.wsdl">
+
+   <complexContent>
+   <restriction base="enc:Array">
+   <sequence>
+   <element name="item" type="tns:SOAPStruct" minOccurs="0" maxOccurs="unbounded"/>
+   </sequence>
+   <attribute ref="enc:arrayType" wsdl:arrayType="tns:SOAPStruct[]"/>
+   <attributeGroup ref="enc:commonAttributes"/>
+   <attribute ref="enc:offset"/>
+   </restriction>
+   </complexContent>
+</complexType>
+]]></programlisting>
+
+      <para>
+Next, we issue commands to define a new complex datatype.  Correct
+order is important.  (SQL&gt; is the prompt of the Interactive
+SQL utility included with Virtuoso and should not be typed)
+      </para>
+      <programlisting><![CDATA[
+SQL> DB..soap_dt_define ('SOAPStruct', file_to_string ('struct.xsd'));
+SQL> DB..soap_dt_define ('ArrayOfSOAPStruct', file_to_string ('array.xsd'));
+]]></programlisting>
+    </example>
+
+      <note><title>Note:</title>
+      <para>The WSDL specification requires that array names be prefixed with <literal>ArrayOf</literal>.</para>
+      </note>
+  </sect2>
+
+  <sect2 id="dtsch_inherit">
+    <title>Inheritance of Datatypes for SOAP Objects</title>
+    <para>
+   The Virtuoso SOAP server implements handling of inherited XSD types.
+   The simple example of such relation between types can be explained as</para>
+   <programlisting><![CDATA[
+   Type  A, also know as the 'base' type,
+   and type B an extension of A.
+   +---+   +---+
+   | a |-->| c |
+   | b |   | d |
+   +---+   +---+
+
+   which can be defined by two separate types without relation
+
+   A type   B type
+   +---+   +---+
+   | a |   | a |
+   | b |   | b |
+   +---+   +- -+
+           | c |
+           | d |
+           +---+
+   ]]></programlisting>
+   <para>
+   But when type A has changed, type B will not be changed in second representation.
+   This is because B is not a relative to A per se. </para>
+   <para>
+   To work in such situations Virtuoso SOAP server handles extensions to
+   XSD types as follows:
+   </para>
+   <orderedlist>
+   <listitem>each type and base type have defined a User Defined SQL type (UDT).</listitem>
+   <listitem>the XSD types defined for SOAP processing are defined with UDT relation (see soap_dt_define)</listitem>
+   <listitem>the inheritance is declared with 'extension' element in XSD type declaration</listitem>
+   </orderedlist>
+  <para>
+   When we have these preliminaries the WSDL will declare in 'schema' part of WSDL all
+   depending types. Furthermore the SOAP processor will handle inherited members of derived types.
+    </para>
+
+    <example id="inhertype"><title>Declaration and usage of depending types</title>
+    <para>Consider the following XSD and User Defined Type declaration for a base type
+    'BaseStruct':
+    </para>
+    <programlisting><![CDATA[
+        <!-- XSD type declaration, file base.xsd -->
+	<complexType name="BaseStruct">
+		<sequence>
+			<element name="floatMessage" type="xsd:float"/>
+			<element name="shortMessage" type="xsd:short"/>
+		</sequence>
+	</complexType>
+
+	-- corresponding user defined sql type
+        create type DB.DBA.BaseStruct as (floatMessage real, shortMessage int __soap_type 'short');
+    ]]>
+    </programlisting>
+    <para>Furthermore we are extending the BaseStruct with adding three more elements (members)
+    with declaration of ExtendedStruct:
+    </para>
+    <programlisting><![CDATA[
+        <!-- XSD type declaration, file ext.xsd -->
+	<complexType name="ExtendedStruct">
+		<complexContent>
+			<extension base="tns:BaseStruct">
+				<sequence>
+					<element name="stringMessage" type="xsd:string"/>
+					<element name="intMessage" type="xsd:int"/>
+					<element name="anotherIntMessage" type="xsd:int"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+
+	-- corresponding user defined SQL type
+       create type DB.DBA.ExtendedStruct under DB.DBA.BaseStruct as (
+	    stringMessage nvarchar __soap_type 'string',
+	    intMessage int __soap_type 'int',
+	    anotherIntMessage int __soap_type 'int');
+    ]]>
+    </programlisting>
+    <para>
+    Once we are done with declarations as XSD files and user defined SQL types,
+    we must register them as SOAP types for processing:
+    </para>
+    <programlisting><![CDATA[
+SQL> soap_dt_define ('', file_to_string ('base.xsd'), 'DB.DBA.BaseStruct');
+SQL> soap_dt_define ('', file_to_string ('ext.xsd'), 'DB.DBA.ExtendedStruct');
+    ]]>
+    </programlisting>
+    <para>
+    Now we are able to create a PL procedure to use as a SOAP method,
+    which simply will accept an ExtendedStruct and echo it back to the client.
+    </para>
+    <programlisting><![CDATA[
+create procedure
+echoExtendedStruct (in param DB.DBA.ExtendedStruct __soap_type 'http://soapinterop.org/types:ExtendedStruct')
+returns DB.DBA.ExtendedStruct __soap_type 'http://soapinterop.org/types:ExtendedStruct'
+{
+  --  All members  of DB.DBA.ExtendedStruct and DB.DBA.BaseStruct are available in param.
+  return param;
+}
+;
+
+grant execute on echoExtendedStruct to SOAP;
+    ]]>
+    </programlisting>
+
+    <para>
+    The SOAP request to that method will be  as follows:
+    </para>
+    <programlisting><![CDATA[
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+  xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+  xmlns:m0="http://soapinterop.org/types">
+  <SOAP-ENV:Body>
+    <m:echoExtendedStruct xmlns:m="http://soapinterop.org/wsdl">
+      <param xsi:type="m0:ExtendedStruct">
+        <floatMessage xsi:type="xsd:float">3.14159</floatMessage>
+        <shortMessage xsi:type="xsd:short">4096</shortMessage>
+        <stringMessage xsi:type="xsd:string">String</stringMessage>
+        <intMessage xsi:type="xsd:int">0</intMessage>
+        <anotherIntMessage xsi:type="xsd:int">0</anotherIntMessage>
+      </param>
+    </m:echoExtendedStruct>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+    ]]>
+    </programlisting>
+    <para>
+    The SOAP response to the above request  will be as follows:
+    </para>
+    <programlisting><![CDATA[
+
+<SOAP:Envelope
+SOAP:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+xmlns:SOAP="http://schemas.xmlsoap.org/soap/envelope/"
+xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+xmlns:dt="urn:schemas-microsoft-com:datatypes"
+xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+xmlns:xenc="http://www.w3.org/2001/04/xmlenc#"
+xmlns:wsse="http://schemas.xmlsoap.org/ws/2002/07/secext"
+xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/"
+xmlns:ns0="http://soapinterop.org/types" xmlns:wsdl="services.wsdl">
+
+  <SOAP:Body>
+    <cli:echoExtendedStructResponse xmlns:cli="http://soapinterop.org/wsdl">
+      <CallReturn xsi:type="ns0:ExtendedStruct">
+        <stringMessage xsi:type="xsd:string">String</stringMessage>
+        <intMessage xsi:type="xsd:int">0</intMessage>
+        <anotherIntMessage xsi:type="xsd:int">0</anotherIntMessage>
+        <floatMessage xsi:type="xsd:float">3.14159</floatMessage>
+        <shortMessage xsi:type="xsd:short">4096</shortMessage>
+      </CallReturn>
+    </cli:echoExtendedStructResponse>
+  </SOAP:Body>
+</SOAP:Envelope>
+    ]]>
+    </programlisting>
+    <note><title>Note:</title>
+    <para>Although the namespace declarations of XSD types are skipped for better
+    readability, these must be present when declaring (see the Extending Datatypes
+    for SOAP Objects section, discussed earlier)</para></note>
+    </example>
+
+  </sect2>
+
+  <sect2 id="dtsoapcplx">
+    <title>Complex Types in PL Procedure and UDT Method Definition</title>
+    <para>
+	Virtuoso/PL allows parameters to be declared as  complex
+	objects (structures and arrays) without special XMLSchema datatype defined.
+	To declare a structure as a type of a parameter an UDT must be created
+	and parameter to have it as datatype reference. Also all permitted
+	datatypes (including UDTs) could be declared as elements of an ARRAY of unlimited or limited length.
+    </para>
+    <para>
+	Important: when a UDT is used in a SOAP context, it MUST be granted to the
+        SQL user for SOAP invocation. In other words the user on whose behalf the SOAP
+        call is processed.
+    </para>
+    <example id="ex_dtsoapcplx_1">
+	<title>Procedure definition with a input and output as a structure</title>
+	<para>
+	    The following example defines a UDT 'SOAP_Struct'
+	    (containing varchar, integer and float members) and declares
+	    the input parameter and return value of a PL procedure to be of the SOAP_Struct type.
+	    The input will be verified, UDT will be instantiated with given values for members
+	    and it will be echoed back to the client.
+	</para>
+	<programlisting><![CDATA[
+	    create type SOAP_Struct as (varString varchar, varInt integer, varFloat real);
+
+	    create procedure echoStruct (in s DB.DBA.SOAP_Struct) returns DB.DBA.SOAP_Struct
+	    {
+	      return s;
+	    };
+	    ]]></programlisting>
+    </example>
+    <example id="ex_dtsoapcplx_2">
+	<title>Procedure definition with a input and output as an integer array</title>
+	<para>
+	    This example declares that input must be an array of integer values
+	    with maximum length of 5. If input or output contains more than five
+	    integers then a SOAP Fault will be sent back to the client containing
+	    an appropriate error message ; otherwise the input array will be echoed back.
+	</para>
+	<programlisting><![CDATA[
+	    create procedure echoIntArray (in ia integer array[5]) returns integer array[5]
+	    {
+	      return ia;
+	    };
+	    ]]></programlisting>
+    </example>
+    <example id="ex_dtsoapcplx_3">
+	<title>Procedure definition with a input and output as a two-dimensional varchar array</title>
+	<para>
+	    This example declares that the input must be an array of integer array values
+	    with unlimited length. If the input SOAP message contains a valid array following
+	    the current XML encoding rules then an array of integer arrays
+	    (vector containing vectors of integers) will be created and passed to the procedure.
+	    On success the input array will be echoed back to the client.
+	</para>
+	<programlisting><![CDATA[
+	    create procedure echoIntMulArray (in iaa integer array array) returns integer array array
+	    {
+	      return iaa;
+	    };
+	    ]]></programlisting>
+    </example>
+    <example id="ex_dtsoapcplx_4">
+	<title>Procedure definition with a input and output as an struct array</title>
+	<para>
+	    This example shows how to use an array of structures (UDTs) and also shows
+	    usage of the array type as an member of the structure. The UDT 'SOAP_StructA'
+	    is similar to the those in first example except 4the member which is
+	    an array of integers. This is to demonstrate that arrays are not limited
+	    to the Stored Procedure's parameters declaration, they also can be used
+	    as a type of UDT member.
+	    Upon success the procedure will echo of the input back to the client.
+	</para>
+	<programlisting><![CDATA[
+	    create type SOAP_StructA as (varString varchar, varInt integer, varFloat real, varArray integer array);
+
+	    create procedure echoStructArray (in sa DB.DBA.SOAP_StructA array) returns DB.DBA.SOAP_StructA array
+	    {
+	      return sa;
+	    };
+	    ]]></programlisting>
+	<para>
+	    The SOAP request to an endpoint which exposes the echoStructArray as a
+	    document/literal encoded SOAP method would be as follows:
+	</para>
+	<programlisting><![CDATA[
+<?xml version="1.0" ?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+  <SOAP-ENV:Body>
+    <ns0:echoStructArray xmlns:ns0="http://temp.uri">
+      <sa>
+        <item>
+          <varString>abcd</varString>
+          <varInt>1234</varInt>
+          <varFloat>3.14</varFloat>
+          <varArray>
+            <item>3</item>
+            <item>4</item>
+          </varArray>
+        </item>
+      </sa>
+    </ns0:echoStructArray>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+	    ]]></programlisting>
+	<para>
+	    The SOAP server will receive and array of one element containing a
+	    structure with string, integer, float and integer array of two elements.
+	    Then the response from the SOAP server to the requestor will be:
+	</para>
+	<programlisting><![CDATA[
+<?xml version="1.0" ?>
+<SOAP:Envelope xmlns:SOAP="http://schemas.xmlsoap.org/soap/envelope/">
+  <SOAP:Body>
+    <cli:echoStructArrayResponse xmlns:cli="http://temp.uri">
+      <CallReturn>
+        <item>
+          <varString>abcd</varString>
+          <varInt>1234</varInt>
+          <varFloat>3.14</varFloat>
+          <varArray>
+            <item>3</item>
+            <item>4</item>
+          </varArray>
+        </item>
+      </CallReturn>
+    </cli:echoStructArrayResponse>
+  </SOAP:Body>
+</SOAP:Envelope>
+	    ]]></programlisting>
+    </example>
+    <para>
+	See also the WSDL file generation section for details how such PL procedures with parameters of
+	complex datatypes are exposed via SOAP enabled virtual HTTP directories.
+    </para>
+  </sect2>
+
+
+  <sect2 id="dtsch_procdef">
+    <title>Complex Types in Procedure Definition using a pre-defined XML Schema datatypes</title>
+    <para>
+Declaration of a complex datatype as a parameter is done by adding a special
+keyword <literal>__soap_type</literal> followed by the name of the defined complex
+type after normal parameter declaration in the parameter list. The type name is given
+as a string literal.  The same syntax extension also applies to declaration of the return type.
+This is shown in the following example.
+    </para>
+    <example id="ex_soap_complex_parm_proc_def">
+      <title>Procedure Definition with Complex Datatype Parameters</title>
+        <para>
+We create a  procedure that will accept an array of structures (as defined in the previous example) and
+return it to the client.  It instructs the WSDL generator to assign <type>ArrayOfSOAPStruct</type> as
+the input parameter and return value types when
+<function>WS.SOAP.echoSOAPArray()</function> is exposed as a
+SOAP method. The type information is available to SOAP clients that read the WSDL description.
+Upon receiving an incoming SOAP request, Virtuoso converts the XML
+representation of the data, after validation, to the
+form <programlisting>vector(vector([varchar],[integer],[real]), ...)</programlisting> and passed to the
+<function>WS.SOAP.echoSOAPArray</function>. Failed parameter validation is reported to the client.
+        </para>
+        <programlisting><![CDATA[
+SQL> CREATE PROCEDURE WS.SOAP.echoSOAPArray (in inArray any __soap_type 'ArrayOfSOAPStruct')
+            RETURNS any __soap_type 'ArrayOfSOAPStruct'
+    {
+      return inArray;
+    };
+]]></programlisting>
+    </example>
+    </sect2>
+    <sect2 id="defaultsoapsqltypes"><title>Default SOAP-SQL Datatype Mappings</title>
+    <para>
+When no alternative datatype is assigned, the WSDL generator and SOAP server
+will use the default mapping described below:
+    </para>
+    <table id="dtsh_dtmaptable">
+      <title>Default datatype mappings in SOAP</title>
+      <tgroup cols="2">
+        <thead>
+          <row>
+            <entry>Datatype</entry>
+            <entry>Maps to</entry>
+          </row>
+        </thead>
+        <tbody>
+	  <row>
+	    <entry>integer</entry>
+	    <entry>xsd:int</entry>
+	  </row>
+	  <row>
+	    <entry>real</entry>
+	    <entry>xsd:float</entry>
+	  </row>
+	  <row>
+	    <entry>double precision</entry>
+	    <entry>xsd:double</entry>
+          </row>
+	  <row>
+	    <entry>numeric</entry>
+	    <entry>xsd:decimal</entry>
+	  </row>
+	  <row>
+	    <entry>datetime</entry>
+	    <entry>xsd:timeInstant</entry>
+          </row>
+	  <row>
+	    <entry>any other type</entry>
+	    <entry>xsd:string</entry>
+	  </row>
+        </tbody>
+      </tgroup>
+    </table>
+
+  <para>The REAL SQL type is mapped to the xsd:float SOAP datatype by default
+  and so loss of precision can occur.  To improve the precision, the SOAP
+  server will map the xsd:float to the PL double precision datatype instead,
+  but only if the SOAP type is specified.  The explicit declaration of
+  __soap_type 'xsd:float' is required to instruct Virtuoso to use the mapping
+  to double precision.</para>
+
+  <para>All strings from a SOAP request declared with the SOAP datatype
+  xsd:string will be treated as NVARCHARs on input.  All string data such a
+  CHAR, VARCHAR, or NVARCHAR will be encoded as UTF-8 in a SOAP response.
+  This makes processing of wide character sets in SOAP operations possible.</para>
+
+  <para>If a User Defined Type (UDT) is used as a type of parameter and no
+      explicit XML Schema datatype given (see special syntax for PL procedures)
+      then in WSDL will be included as a struct definition. Further upon
+      SOAP processing the input struct will be encoded as a UDT instance and passed
+      to the given PL procedure.
+  </para>
+
+  <para>
+      The parameters which are declared as an array (see PL procedure syntax)
+      and having no explicit XML Schema datatype given will be exposed as
+      array by means of SOAP encoding rules (see also 'Use' SOAP option to the
+      virtual directory).
+  </para>
+
+  <para>Some SOAP applications need a void return as opposed to an empty return,
+  from SOAP operations.  To distinguish the empty return from the void return
+  a special SOAP datatype '__VOID__' has been introduced.   This will cause
+  the SOAP server to ommit the procedure return value when responding to a
+  SOAP request.  Also, the return message will be discarded from the
+  WSDL description file.</para>
+
+  </sect2>
+  <sect2 id="exposingprocsassoaps">
+    <title>Exposing Stored Procedures as SOAP Objects</title>
+    <para>
+The special physical path <literal>/SOAP/</literal> in the Virtuoso
+Web server is reserved for SOAP objects.  Virtuoso makes available any
+stored procedure created in the default qualifier of the SOAP user,
+with execution privileges granted to the SOAP user.
+You can also use Virtuoso's <link linkend="virtdir">virtual
+host</link> mechanism to create new logical paths for accessing SOAP
+objects.  A logical path property <literal>soap_user</literal>
+determines the db user for SOAP.  If a logical path points to the
+<literal>/SOAP/</literal> special physical path, it will expose any
+procedures created in the default qualifier of, and with execution
+privileges to, <literal>soap_user</literal> to the world as SOAP
+objects.
+    </para>
+	<para>If the physical path of <computeroutput>/SOAP</computeroutput>
+	exists under the VSP root directory
+	then any non-SOAP specific HTTP requests will be directed there for content.
+	This can be useful for helping to establish the presence and location of a SOAP
+	endpoint - some applications attempt a standard HTTP connection first.
+	You might configure a virtual directory, intended for SOAP, with a
+	default page referencing a description of the SOAP endpoint, a page
+	in the &lt;VSPROOT&gt;/SOAP directory, preventing an
+	<computeroutput>HTTP 404</computeroutput> style error misleading an
+	application into believing the SOAP endpoint is down regardless of whether
+	it tried to talk SOAP to it or not.</para>
+    <note>
+      <title>Note:</title>
+      <para>
+Procedures exposed as SOAP procedures run as any other stored procedure in Virtuoso
+and can call and get return values from other procedures and functions not exposed through SOAP.
+The ability to execute procedures attached from remote data sources facilitates
+SOAP-enabling existing database applications in a heterogeneous environment.
+      </para>
+    </note>
+    <example id="ex_soap_new_vhost">
+      <title>Creating a new virtual host for SOAP execution</title>
+      <para>
+Create new user in the database for SOAP:
+      </para>
+      <screen>
+SQL&gt;CREATE USER SOAPDEMO;
+</screen>
+      <para>
+Set the default catalogue/qualifier for the new user to WS. This is where
+procedures to be used as SOAP objects will be created:
+      </para>
+      <screen>
+SQL&gt;USER_SET_QUALIFIER ('SOAPDEMO', 'WS');
+</screen>
+        <para>
+Create a new virtual host definition, using
+<link linkend="fn_vhost_define"><function>vhost_define()</function></link>.
+        </para>
+        <screen>
+SQL&gt;VHOST_DEFINE (vhost=&gt;'*ini*',lhost=&gt;'*ini*',lpath=&gt;'/mysoapdomain',ppath=&gt;'/SOAP/',soap_user=&gt;'SOAPDEMO');
+</screen>
+        <para>
+An existing mapping could be removed using the command:
+        </para>
+        <screen>
+SQL&gt;VHOST_REMOVE (vhost=&gt;'*ini*',lhost=&gt;'*ini*',lpath=&gt;'/mysoapdomain')
+</screen>
+        <note>
+          <title>Note:</title>
+          <para>
+'<literal>*ini*</literal>' is a special value that instructs Virtuoso to use the default
+values from the Virtuoso initialization file.
+          </para>
+        </note>
+        <para>
+All procedures that are created with the WS.SOAPDEMO qualifier and then
+granted execution to SOAPDEMO will be visible to SOAP.
+Make a simple SOAPTEST procedure and grant the appropriate
+privileges to the SOAPDEMO user:
+        </para>
+        <screen>
+SQL&gt; create procedure
+  WS.SOAPDEMO.SOAPTEST (in par varchar)
+{
+  return (upper(par));
+};
+
+SQL&gt; grant execute on WS.SOAPDEMO.SOAPTEST to SOAPDEMO;
+</screen>
+        <para>
+The SOAP object may now be tested by
+using the <link linkend="fn_soap_client"><function>soap_client()</function></link>
+function, which returns a vector representation of
+the SOAP object returned by the call. The example below simply extracts
+the returned string with <link linkend="fn_aref"><function>aref()</function></link>, as
+the exact format of the object returned is known:
+        </para>
+<screen>
+SQL&gt;select aref(aref(
+	soap_client (url=&gt;sprintf ('http://localhost:%s/mysoapdomain', server_http_port ()),
+	operation=&gt;'SOAPTEST',
+	parameters=&gt;vector('par', 'demotext')),
+	1), 1);
+callret
+VARCHAR
+_______
+
+DEMOTEXT
+</screen>
+        <para>
+Printing the output on the console or server log with
+<link linkend="fn_dbg_obj_print"><function>dbg_obj_print()</function></link> would
+output something like:
+        </para>
+        <screen>
+(("SOAPTESTResponse" ) (("CallReturn" ) "DEMOTEXT" ) )
+</screen>
+        <para>
+The automatic service description generation can be verified by retrieving
+<parameter>http://&lt;server:port&gt;/mysoapdomain/services.wsdl</parameter>,
+and preferably tested by pointing a web browser at
+<parameter>http://&lt;server:port&gt;/mysoapdomain/services.vsmx</parameter>
+
+        </para>
+        <screen><![CDATA[
+SQL> select http_get (sprintf ('http://localhost:%s/mysoapdomain/services.wsdl', server_http_port()));
+callret
+VARCHAR
+_______________________________________________________________________________
+
+<?xml version="1.0"?>
+<definitions
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+ xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+ xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+ xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+ xmlns:s="services.wsdl"
+ xmlns:tns="services.wsdl"
+ targetNamespace="services.wsdl"
+ name="VirtuosoSOAP" xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+  <types>
+  <schema targetNamespace="services.wsdl"
+   xmlns="http://www.w3.org/2001/XMLSchema"
+   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+    <complexType name="echoStringArrayResponse">
+      <sequence>
+        <element name="return" type="ArrayOfstring_literal"/>
+      </sequence>
+    </complexType>
+    <complexType name="echoVoid"/>
+    <complexType name="ArrayOffloat">
+      <complexContent>
+        <restriction base="soapenc:Array">
+          <sequence>
+            <element name="item" type="float" minOccurs="0" maxOccurs="unbounded"/>
+          </sequence>
+          <attributeGroup ref="soapenc:commonAttributes"/>
+          <attribute ref="soapenc:offset" />
+          <attribute ref="soapenc:arrayType" wsdl:arrayType="float[]"/>
+        </restriction>
+      </complexContent>
+    </complexType>
+    <complexType name="SOAPStruct">
+      <sequence>
+        <element name="varString" type="string"/>
+        <element name="varInt" type="int"/>
+        <element name="varFloat" type="float"/>
+      </sequence>
+    </complexType>
+    <complexType name="echoStructResponse">
+      <sequence>
+        <element name="return" type="SOAPStruct"/>
+      </sequence>
+    </complexType>
+    <complexType name="echoVoidResponse"/>
+    <complexType name="ArrayOfString2D">
+    ...
+]]>
+</screen>
+    </example>
+
+    <tip><title>See Also:</title>
+    <para><link linkend="vsmx">Testing Web Services using VSMX</link></para></tip>
+
+  </sect2>
+
+  <sect2 id="soapudtproxy"><title>Creation of SOAP proxy based on User Defined Types</title>
+
+      <para>It is possible to automatically generate PL procedures or UDT classes for invoking a remote SOAP service.
+      </para>
+
+      <tip><title>See Also</title>
+       <para>The <link linkend="fn_wsdl_import_udt"><function>WSDL_IMPORT_UDT()</function></link> function for details and examples.</para>
+      </tip>
+
+      <para>The proxy-creation function <function>WSDL_IMPORT_UDT()</function> performs the following purposes:</para>
+
+      <simplelist>
+	  <member>retrieve and expand the WSDL file published by the end point to be called</member>
+	  <member>compile the result and make SQL script with UDT definition</member>
+	  <member>generate and register XML Schema definition for special types used in the source service</member>
+	  <member>optionally execute the SQL script generated</member>
+      </simplelist>
+
+
+      <para>Once such UDT SOAP proxy is defined it can be used within application code
+	  or be re-exposed as a SOAP service on local server instance (see next chapter how to
+	  expose UDT as service).
+      </para>
+
+
+      <tip><title>See Also</title>
+	  <para>The Virtuoso Administration Interface provides a web based
+	      interface for importing WSDL definitions and creating UDTs and procedures.
+	      This can be found in the <link linkend="admiui.wsdl">Virtuoso Server Administration
+		  Interface</link> Chapter.</para>
+      </tip>
+  </sect2>
+
+  <sect2 id="exposingudtssoap">
+    <title>Exposing User Defined Type Methods as SOAP Objects</title>
+    <para>
+	SQL User Defined Types may define  methods. In context of
+	Virtuoso SOAP server they can be exposed as  SOAP methods.
+	To do that the UDT must be published at an endpoint. So publishing could be done in
+        two ways: using SQL INSERT statement or using Admin UI: Publishing UI via
+	Virtual directories section.
+    </para>
+    <para>
+	The published UDTs will then expose all methods to the given virtual directory
+	assigned for SOAP execution. In this case the default constructor will be called
+	for method invocation if the UDT method is non-static.
+    </para>
+    <para>
+	Note: The method definitions may also contains special SOAP syntax for XML Schema datatypes, using the same options  as
+	for PL procedures. (see "PL Procedures and UDT Methods Syntax Affecting WSDL &amp; SOAP Processing" section for details)
+    </para>
+    <para>
+	The following table specifies which UDTs are published at which end points.</para>>
+        <programlisting><![CDATA[
+create table SYS_SOAP_UDT_PUB
+	    (SUP_CLASS varchar, -- name of the published UDT, referencing SYS_USER_TYPES.UT_NAME
+	     SUP_LHOST varchar, -- listen host, referencing HTTP_PATH.HP_LISTEN_HOST
+	     SUP_HOST varchar,  -- virtual host, referencing HTTP_PATH.HP_HOST
+	     SUP_END_POINT varchar, -- logical path, referencing HTTP_PATH.HP_LPATH
+	     primary key (SUP_LHOST, SUP_HOST, SUP_END_POINT, SUP_CLASS))
+;
+	    ]]></programlisting>
+
+    <example id="ex_soap_expose_udt">
+	<title>Exposing a UDT Method using SQL statement</title>
+	<para>
+	    The below code  creates a UDT containing two methods: static and non-static
+	    and exposes them on a virtual directory '/soap-udt'
+        </para>
+	<programlisting><![CDATA[
+create user SOAP_U2;
+
+VHOST_DEFINE (lpath=>'/soap-udt', ppath=>'/SOAP/', soap_user=>'SOAP_U2',
+    soap_opts=>
+    vector ('ServiceName', 'UDT',
+	    'Namespace', 'http://temp.uri',
+	    'SchemaNS', 'http://temp.uri',
+	    'MethodInSoapAction', 'yes',
+	    'elementFormDefault', 'unqualified',
+	    'Use', 'encoded')
+);
+
+create type MyWebSvc
+static method echoStatInt (in a int) returns int,
+method echoInt (in a int) returns int;
+
+create static method echoStatInt (in a int)
+returns int for MyWebSvc
+{
+  return a;
+}
+;
+
+
+create method echoInt (in a int)
+returns int for MyWebSvc
+{
+  return a;
+}
+;
+
+-- Important: without grant publishing is not final as
+-- user for SOAP invokation will not have permissions to instantiate the UDT nor
+-- to call its methods
+grant execute on MyWebSvc to SOAP_U2;
+
+-- exposing the UDT methods to the /soap-udt endpoint
+insert soft SYS_SOAP_UDT_PUB values ('MyWebSvc', '*ini*', '*ini*', '/soap-udt');
+]]></programlisting>
+    </example>
+    <para>
+	Exposing the  methods of a UDT could be done using Admin UI/Virtual Directories:
+         Create a new or edit an existing SOAP enabled virtual directory and navigate to the
+        SOAP options section, click on the 'Publish' button and from presented list of
+	Database qualifiers select the qualifier containing target UDT, then select
+	it from the User Defined Types list and follow the wizard.
+    </para>
+  </sect2>
+
+  <sect2 id="exposrmtprocsoap">
+    <title>Exposing Remote Third Party SQL Stored Procedures as SOAP Services</title>
+    <para>Virtuoso can expose any of its available PL resources to the SOAP
+world.  This includes data from remote attached tables and procedures.  To do this, one needs to
+write a wrapper procedure in Virtuoso/PL.</para>
+    <example id="ex_exposrmtprocsoap">
+      <title>Exposing a MS SQL Server procedure to SOAP using Virtuoso</title>
+      <para>Here we have a sample MS SQL Server procedure and an accompanying Virtuoso wrapper
+function.  The MS SQL Server function returns a result set based on a simple join
+query with a filter input.  The Virtuoso procedure calls the remote procedure,
+iterates through the result set returned and produces XML output. First the MS SQL Server procedure:
+      </para>
+      <programlisting><![CDATA[
+create procedure ms_remote
+        @mask varchar(15)
+as
+  select c.CustomerID, c.CompanyName, o.OrderDate,
+      o.ShippedDate,ol.ProductID, ol.Quantity, ol.Discount
+    from Northwind..Customers c
+      inner join Northwind..Orders o on c.CustomerID = o.CustomerID
+      inner join Northwind.."Order Details" ol on o.OrderID = ol.OrderID
+    where c.CustomerID like @mask
+;
+]]></programlisting>
+    <para>Then the Virtuoso wrapper function:</para>
+    <programlisting><![CDATA[
+create procedure WS.SOAP.ms_remote_call (
+  in dsn varchar, in uid varchar, in pwd varchar, in mask varchar)
+{
+  declare m, r, ses any;
+  vd_remote_data_source (dsn, '', uid, pwd);
+  rexecute (dsn, 'ms_remote ?', null, null, vector (mask), 1000, m, r);
+  ses := string_output ();
+  http ('<?xml version="1.0" ?>\n<remote>\n', ses);
+  if (isarray(m) and isarray (r))
+    {
+      declare i, l, j, k integer;
+      declare md, rs any;
+      md := m[0];
+      i := 0; l := length (md); k := length (r); j := 0;
+      while (j < k)
+       {
+	 http ('<record ', ses);
+         i:=0;
+         while (i < l)
+           {
+	     dbg_obj_print (md[i][0],r[j][i]);
+	     http (sprintf (' %s="%s"', trim(md[i][0]), trim(cast (r[j][i] as varchar))), ses);
+             i := i + 1;
+	   }
+	 http (' />\n', ses);
+         j := j + 1;
+       }
+    }
+  http ('</remote>', ses);
+  return string_output_string (ses);
+};
+]]></programlisting>
+    <para>
+Now, as before, we grant execute rights to the SOAP user:
+    </para>
+    <screen>
+grant execute on WS.SOAP.ms_remote_call to SOAP;
+    </screen>
+    <para>
+The remote procedure <function>ms_remote()</function> can now be accessed via SOAP.
+    </para>
+</example>
+     <tip>
+      <title>See Also:</title>
+      <para>The <link linkend="thevdb">Virtual Database</link> chapter for information regarding use of
+remote datasources and their tables.</para>
+    </tip>
+  </sect2>
+  <sect2 id="soapclient"><title>Virtuoso/PL SOAP Client</title>
+    <para>
+Virtuoso has generic SOAP client functionality.  This was demonstrated in an example
+above, where we showed that we had correctly exposed a stored procedure
+as a SOAP object.  The entry point to the SOAP client is
+<link linkend="fn_soap_client"><function>soap_client ()</function></link>.
+    </para>
+    <tip><title>See Also:</title>
+    <para><link linked="importwsdl">Importing A WSDL File</link></para></tip>
+  </sect2>
+  <sect2 id="execpriv"><title>Execution Privileges</title>
+    <para>
+<link linkend="virtandmultihosting">Virtual directory</link> mappings allow you to define a
+specific database user on behalf of which to execute code invoked via SOAP.  By
+default Virtuoso disables SOAP calls unless the database account
+'SOAP' exists or a virtual directory mapping is
+defined for SOAP call execution.  If we map a logical HTTP path to <literal>/SOAP</literal> and
+specify the user 'demo' as the SOAP user then stored procedures or UDT methods will be executed
+with demo's privileges.
+    </para>
+  </sect2>
+  <sect2 id="customsoapsrv">
+    <title>Custom Soap Server Support</title>
+    <para>
+Virtuoso allows any VSP page to act as a SOAP endpoint.
+This permits preprocessing of the SOAP requests to extract
+additional information &mdash; such as one placed for ebXML &mdash; and
+conversion of the SOAP replies to put any additional information in them.
+SOAP messages with attachments can also be processed this way.
+    </para>
+    <para>
+SOAP extensions, such as the ones required for ebXML, can be programmed
+as VSP services that can handle the additional information contained in the
+SOAP requests.  The <link linkend="fn_xpath_eval"><function>xpath_eval()</function></link> function
+is useful here.  The SOAP server could be called
+after removing extension information; this removal could be done with an XSL transformation.
+After the SOAP request is processed, additional information can be
+placed in the result by another XSL transformation.
+    </para>
+    <para>
+Having a SOAP server outside the <literal>/SOAP</literal> physical
+path allows a greater degree of
+control over what procedures are executed by providing a list of mappings.
+Having this suite of functions allows SOAP requests to be processed outside an
+HTTP context (for example after doing <function>mime_tree()</function> over an e-mail) and sending
+the SOAP replies as SMTP messages.
+    </para>
+    <para>
+The following built-in functions are relevant in this context:
+    </para>
+
+<para><link linkend="fn_soap_server"><function>soap_server()</function></link></para>
+<para><link linkend="fn_soap_make_error"><function>soap_make_error()</function></link></para>
+<para><link linkend="fn_soap_box_xml_entity"><function>soap_box_xml_entity()</function></link></para>
+<para><link linkend="fn_soap_print_box"><function>soap_print_box()</function></link></para>
+<para><link linkend="fn_http_body_read"><function>http_body_read()</function></link></para>
+
+    <example id="soap1.1server"><title>Sample SOAP 1.1 server</title>
+      <screen>
+&lt;?vsp
+        dbg_obj_print ('vspsoap called');
+	declare content_type, soap_method, soap_xml varchar;
+	declare payloads any;
+
+	-- get the encoding to find out where the SOAP request should be searched for
+
+        content_type := http_request_header (lines, 'Content-Type');
+	if (isstring (content_type))
+           content_type := lower (content_type);
+
+	-- get the SOAP method name to execute
+
+        soap_method := http_request_header (lines, 'SOAPAction');
+        soap_xml := NULL;
+        payloads := NULL;
+
+	-- get the SOAP request
+        if (content_type = 'multipart/related')
+	  {
+	    -- as in SOAP messages with attachments
+	    declare attrs any;
+	    declare inx integer;
+	    declare start_req varchar;
+
+	    -- the SOAP body is in the root part
+	    -- so get the root part's name
+            start_req := http_request_header (lines, 'Content-Type', 'start');
+
+	    -- loop over the parts and get the root one.
+	    -- Others are placed in the payload array
+
+	    inx := 1;
+	    soap_xml := null;
+	    attrs := vector (1);
+	    while (isarray (attrs))
+	     {
+	       declare content_id varchar;
+
+	       -- get the part's MIME header
+	       attrs := get_keyword (sprintf ('attr-mime_part%d', inx), params);
+
+	       if (isarray (attrs))
+		 {
+		   -- extract the Content-ID from it
+		   content_id := get_keyword ('Content-ID', attrs);
+		   dbg_obj_print ('cont-id', content_id);
+
+		   if (isstring (content_id))
+		     {
+		       -- if it is the root part (SOAP request) parse it.
+		       if (content_id = start_req)
+			 soap_xml := xml_tree_doc (xml_tree (
+                      get_keyword (sprintf ('mime_part%d', inx), params)));
+		       else
+			 {
+			   -- otherwise consider it a payload and store a info about the payload
+			   -- for later retrieval by get_keyword () VSE based on Content-ID
+			   if (payloads is null)
+			     payloads := vector (vector (content_id, inx));
+			   else
+			     payloads := vector_concat (payloads, vector (content_id, inx));
+			 }
+		     }
+		 }
+	       inx := inx + 1;
+	     }
+	  }
+	else if (content_type = 'text/xml')
+          {
+	    -- it's a SOAP request without attachments
+            -- so get the POST body and parse it.
+	    soap_xml := xml_tree_doc (xml_tree (http_body_read ()));
+	  }
+        else
+	  signal ('42000', 'unsupported encoding');
+
+        -- the things retrieved so far
+	dbg_obj_print ('vspsoap message', soap_xml);
+	dbg_obj_print ('vspsoap payloads', payloads);
+
+	-- execute the message
+
+	-- catch any subsequent SQL error and generate and return SOAP reply XML for it.
+
+	declare exit handler for SQLSTATE '*' {
+	  dbg_obj_print ('vspsoap in error handler for ', __SQL_MESSAGE);
+	  declare err_msg varchar;
+	  err_msg := soap_make_error ('300', __SQL_STATE, __SQL_MESSAGE);
+	  dbg_obj_print ('vspsoap error', err_msg);
+	  http (err_msg);
+
+	  -- note the SOAP SQL state - this is required since based on this value the
+	  -- HTTP server will not generate any additional reply if the SQL state starts with SOAP
+	  -- and this way the client will get a properly formated reply
+	  resignal 'SOAP';
+	};
+
+        -- now check what is required and act accordingly
+        if (soap_method = 'ebXML')
+          {
+	    signal ('42000', 'ebXML not implemented yet');
+	  }
+        else if (soap_method in ('fake#test'))
+          {
+	    declare res any;
+
+	    -- note the mapping here : the SOAP call to fake:test will result in a
+            -- call to DB.DBA.SOAPTEST PL procedure and it's results returned.
+
+	    res := soap_server (soap_xml, soap_method, lines, 11,
+                    vector ('fake:test', 'DB.DBA.SOAPTEST'));
+
+	    dbg_obj_print ('vspsoap result', res);
+	    http (res);
+	  }
+        else
+	  {
+	    -- simple signal will do as this will be cached by the handler
+          -- and formated as an SOAP error XML
+	    signal ('42000', concat ('Procedure ', soap_method, ' not defined'));
+	  }
+?&gt;
+      </screen>
+    </example>
+  </sect2>
+  <sect2 id="soapextendedsyntax"><title>PL Procedures and UDT Methods Syntax Affecting WSDL &amp; SOAP Processing</title>
+
+  <para>Special PL syntax can be applied to any of the parameters (including the
+  return value) in a declaration.  All of these begins with __SOAP_ prefix and
+  have special meaning.   To manipulate more than the XMLSchema type
+  represantation and SOAP encoding style, extended syntax is available.  With
+  this syntax we can further override the default request/response namespace,
+  name of the output elements, "soapAction" corresponding to the PL procedure
+  and such.</para>
+
+  <para>The syntax is as follows:</para>
+<programlisting><![CDATA[
+   ...
+   CREATE (PROCEDURE|METHOD) ([param_decl [rout_alt_type]] ...) { [BODY] } [RETURNS ....] [rout_alt_type]
+   ...
+
+rout_alt_type
+	:  /* no SOAP options */
+	| soap_kwd STRING opt_soap_enc_mode 	/* the basic syntax */
+	| __SOAP_OPTIONS '(' soap_kwd EQUALS STRING opt_soap_enc_mode ',' soap_proc_opt_list ')'/* extended syntax */
+	;
+
+soap_proc_opt_list
+	: soap_proc_opt
+	| soap_proc_opt_list ',' soap_proc_opt
+	;
+
+soap_proc_opt /* extension options as PartName:='part2' */
+	: NAME EQUALS signed_literal
+	;
+
+soap_kwd
+	: __SOAP_TYPE  	/* denotes XML datatype, RPC encoding style if applied to the procedure */
+	| __SOAP_HEADER	/* the parameter is a message in the SOAP Header */
+	| __SOAP_FAULT	/* the parameter is a message in SOAP Fault */
+	| __SOAP_DOC	/* applies to the procedure, free-form of encoding (literal) */
+	| __SOAP_XML_TYPE /*applies to the parameters, the input will be XML tree */
+	| __SOAP_DOCW		/* applies to the procedure, literal encoduing in style like RPC */
+	| __SOAP_HTTP		/* HTTP GET/POST binding will be used */
+	;
+
+opt_soap_enc_mode 		/* which part of traffic will be encapsulated and in what way : DIME or MIME */
+	: /* no encapsulation */
+	| __SOAP_DIME_ENC IN
+	| __SOAP_DIME_ENC OUT
+	| __SOAP_DIME_ENC INOUT
+	| __SOAP_MIME_ENC IN
+	| __SOAP_MIME_ENC OUT
+	| __SOAP_MIME_ENC INOUT
+	;
+
+param_decl
+	: (IN|OUT|INOUT) param_name data_type_ref [(DEFAULT|:=)	literal]
+	;
+
+data_type_ref
+	: (data_type_name|udt_name) [ARRAY [intnum] ...]
+	;
+]]></programlisting>
+
+   <para>The above syntax can be applied to the parameter and to the whole
+   procedure, so both places designate different purposes and limitations.
+   When it is applied to the parameter the following keywords can be used:
+   __SOAP_TYPE, __SOAP_HEADER, __SOAP_FAULT and __SOAP_XML_TYPE.
+   The __SOAP_TYPE means that only XSD type will be used to interpret the data,
+   in contrast __SOAP_XML_TYPE designates no deserialization from XML, only
+   parses the parameter XML representation to XML tree and passes it to the
+   procedure.  The __SOAP_HEADER and __SOAP_FAULT designate that parameter
+   will be exposed in the SOAP Header or in the SOAP Fault elements.  In the
+   second case, that parameter needs to be an 'OUT' parameter (not IN or INOUT).
+   The string after these keywords always denotes the XSD type for SOAP serialization.
+   When it is applied to the PL procedure (after procedure's body), the
+   __SOAP_TYPE, __SOAP_DOC, __SOAP_DOCW, __SOAP_HTTP, __SOAP_DIME_ENC and
+   __SOAP_MIME_ENC can be used.  The string after these keywords always denotes
+   the XSD type for SOAP serialization, except __SOAP_DIME_ENC and __SOAP_MIME_ENC
+   which are used for other purposes and can be combined with other keywords.
+   The __SOAP_TYPE denotes RPC style encoding, __SOAP_DOC for document literal
+   (bare parameters) encoding, __SOAP_DOCW for the free-form literal (wrapped)
+   encoding.  __SOAP_HTTP is used to denote HTTP style binding insted of SOAP
+   one, in that way procedure can be called via HTTP GET/POST methods without
+   SOAP XML encoding.  </para>
+   <para>The following keywords are supported as extended options:</para>
+   <simplelist>
+    <member><emphasis>PartName</emphasis> - changes the name of a OUT paramter
+    to the string as specified, affects WSDL generation and SOAP serialization.</member>
+    <member><emphasis>RequestNamespace</emphasis> - designate namespace for
+    the message in the request, affects header, fault and body WSDL declaration,
+    and serialization of SOAP in RPC encoding style.</member>
+    <member><emphasis>ResponseNamespace</emphasis> - the same as RequestNamespace,
+    but for SOAP response and output in WSDL declaration.</member>
+    <member><emphasis>soapAction</emphasis> - sets the 'soapAction' attribute
+    in WSDL generation, can be applied to the procedure only.</member>
+   </simplelist>
+   <para>The RequestNamespace and ResponseNamespace can be used only for
+       the procedure and together with the __SOAP_FAULT and __SOAP_HEADER keywords.</para>
+
+   <para>The 'ARRAY' modifier to the SQL datatype is allowed  when no XML Schema datatype is
+       assigned to the given parameter of the PL procedure or UDT method. In this case
+       the input and output value will be varified to confirm to the rules applicable for
+       an array. Furthermore in this case an XSD definition will be added in the WSDL
+       file at run time.
+   </para>
+
+<example id="ex_soapextsynt"><title>SOAP Extension</title>
+ <para>This example shows both approaches to define parameters and
+   SOAP encoding style.  In practice this definition is part of the Interop tests
+   round 4 (group H).  The meaning of this is: the SOAP operation is uses RPC
+   encoding style, 'whichFault' is integer, 'param1' and 'param2' are strings.
+   The out parameters 'part2_1' and 'part2_2' will be printed in SOAP:Fault element
+   (see Exposing &amp; Processing SOAP Fault Messages for more
+   details).  The interesting fact is that the last two parameters will be serialized
+   as "part2" in different namespaces.  And finally no return of the SOAP
+   operation is defined (it's empty).  </para>
+
+   <programlisting><![CDATA[
+create procedure
+"echoMultipleFaults3" (
+    in whichFault int __soap_type 'http://www.w3.org/2001/XMLSchema:int',
+    in param1 varchar __soap_type 'http://www.w3.org/2001/XMLSchema:string',
+    in param2 varchar __soap_type 'http://www.w3.org/2001/XMLSchema:string',
+    out part2_1 varchar __soap_options (
+        __soap_fault:='http://www.w3.org/2001/XMLSchema:string',
+	PartName:='part2',
+        ResponseNamespace:='http://soapinterop.org/wsdl/fault1'),
+    out part2_2 varchar __soap_options (
+        __soap_fault:='http://www.w3.org/2001/XMLSchema:string',
+	PartName:='part2',
+        ResponseNamespace:='http://soapinterop.org/wsdl/fault2')
+    )
+   __soap_type '__VOID__'
+{
+
+  if (whichFault > 2)
+    whichFault := mod (whichFault, 3) + 1;
+  declare exit handler for sqlstate 'SF000'
+    {
+      http_request_status ('HTTP/1.1 500 Internal Server Error');
+      if (whichFault = 1)
+	{
+          part2_1 := param1;
+	}
+      else if (whichFault = 2)
+	{
+	  part2_2 := param2;
+	}
+      connection_set ('SOAPFault', vector ('400', 'echoMultipleFaults3'));
+      return;
+    };
+  signal ('SF000', 'echoEmptyFault');
+}
+;
+]]></programlisting>
+</example>
+  </sect2>
+  <sect2 id="soapheadermessages"><title>Exposing &amp; Processing SOAP Header Messages</title>
+
+  <para>The Virtuoso SOAP server can be used to process the SOAP Header
+  messages as  described in the W3C reccomendation
+  (<ulink url="http://www.w3c.org/TR/SOAP/">http://www.w3c.org/TR/SOAP</ulink>,
+  SOAP Header section).  They can also be exposed in the WSDL file
+  (services.wsdl) as per W3C WSDL recommendation, using the RPC style encoding.</para>
+
+  <para>To bind a message to a SOAP header the special keyword __soap_header
+  is reserved for input and output parameters.  The __soap_header followed by the
+  SOAP datatype can be specified for any input or output parameter after
+  normal datatype declarations.  This will expose parameters as input or
+  output messages separately.  Header binding will also be added to an
+  apropriate section of the WSDL description file for the SOAP message.</para>
+
+
+  <example id="procsoapheader"><title>Processing of the SOAP Header element</title>
+  <para>Consider the following simple SOAP request message with Header element:</para>
+
+<programlisting><![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope
+       xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+       xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+       xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+    <SOAP-ENV:Header>
+      <h:echoMeStringRequest
+	 xmlns:h="http://soapinterop.org/echoheader/"
+	 SOAP-ENV:actor="http://schemas.xmlsoap.org/soap/actor/next"
+	 mustUnderstand="1">hello world</h:echoMeStringRequest>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+      <m:echoVoid xmlns:m="http://soapinterop.org/"></m:echoVoid>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>]]></programlisting>
+
+  <para>This request will be processed by the Virtuoso SOAP server in the
+  following way:</para>
+
+  <orderedlist>
+  <listitem>Check whether the echoVoid operation is defined for the given
+  web directory mapping (see: exposing a PL procedure as a SOAP operation)</listitem>
+  <listitem>Test whether there is an in-parameter echoMeStringRequest defined
+  for header processing (see below exposing a header parameters)</listitem>
+  <listitem>Test the mustUnderstand attribute:
+    <itemizedlist>
+    <listitem>If mustUnderstand is 0 or is undefined the request will continue
+    without an error.</listitem>
+    <listitem>If mustUnderstand is 1 and the actor attribute is not empty
+    or defined with the http://schemas.xmlsoap.org/soap/actor/next special URI,
+    the request will continue without an error.</listitem>
+    <listitem>If the two conditions about fail then the request will be
+    rejected with a SOAP MustUnderstand error.</listitem></itemizedlist>
+    </listitem>
+  <listitem>The value of the echoMeStringRequest will be passed as a parameter
+  to the echoVoid procedure.</listitem>
+  <listitem>If the call to the echoVoid succeeds, and the corresopnding out
+  parameter is supplied for the SOAP response header then it will be
+  sent to the SOAP client.</listitem>
+  </orderedlist>
+
+  <para>The following procedure, which represents a part from echoHeaderBindings
+  iterop test (round C), for the demonstration purposes is designed to process
+  the above SOAP message.</para>
+
+  <programlisting><![CDATA[
+create procedure
+Interop.INTEROP.echoVoid
+   (in echoMeStringRequest nvarchar := NULL __soap_header 'http://www.w3.org/2001/XMLSchema:string',
+    out echoMeStringResponse nvarchar := NULL __soap_header 'http://www.w3.org/2001/XMLSchema:string')
+   __soap_type '__VOID__'
+{
+  if (echoMeStringRequest is not null)
+    echoMeStringResponse := echoMeStringRequest;
+};]]></programlisting>
+
+  <note><title>Note:</title>
+  <para>The __soap_header keyword that instructs the SOAP server to process this
+  parameter via a SOAP Header with datatype string.  Also, the condition in
+  the procedure is needed to return the value in SOAP header only if it is
+  supplied.  In some other cases it can be returned always, but in this
+  particular example it will be echoed only if the apropriate header is sent.</para>
+  </note>
+  </example>
+  </sect2>
+  <sect2 id="soapfaultmessages"><title>Exposing &amp; Processing SOAP Fault Messages</title>
+  <para>
+   The SOAP:Fault message is used to indicate which part of SOAP request fails,
+   so in its general form it may not have a detailed error.  But in some cases it is
+   useful to report in detail which element's input(s) are not correct.</para>
+   <para>
+Custom soap:fault messages can be generated by application logic as illustrated below:
+</para>
+   <para>Have a procedure to generate custom SOAP:Fault messages with at least one OUT parameter
+   denoted by __SOAP_FAULT instead of __SOAP_TYPE keyword following by type to be returned as literal.</para>
+   <para>Once we have such parameter(s) declared we can set these to some value (of atomic, simple or complex type) as may be appropriate.
+
+</para>
+   <para>
+   And finally we need to set a special connection variable 'SOAPFault', in order to signal custom SOAP:Fault
+   on output. The value of the connection variable needs to be an array of two elements :
+   An integer of 100, 200, 300, 400 which represents the SOAP:VersionMismatch, SOAP:MustUnderstand,
+   SOAP:Client and SOAP:Server errors.
+   And a string which will be printed in textual explanation, human readable format.
+   In real life we will not need to generate 100 or 200 fault messages, but anyway it is possible to do that.
+  </para>
+  <example id="procsoapfault"><title>Signalling a custom SOAP Fault element</title>
+  <para>Consider we need to indicate to the client that some string is not a valid input, we can use
+  the custom fault messsage mechanism as.</para>
+  <programlisting><![CDATA[
+create procedure
+echoStringFault (in param nvarchar,
+                 out part2 nvarchar __soap_fault 'string')
+returns nvarchar
+{
+  declare exit handler for sqlstate 'SF000'
+    {
+      http_request_status ('HTTP/1.1 500 Internal Server Error');
+      -- we are setting the fault message
+      part2 := param;
+      -- and instructing the SOAP server to make error 400 with text explanantion StringFault
+      connection_set ('SOAPFault', vector ('400', 'StringFault'));
+      ----------------^^^^^^^^^^
+      return;
+    };
+  -- in real life signalling of the error is under some condition
+  -- for example if string is longer that 10 chars
+  signal ('SF000', 'echoEmptyFault');
+}
+;
+
+  ]]>
+  </programlisting>
+  <para>And an wire dump of SOAP request</para>
+  <programlisting><![CDATA[
+<SOAP-ENV:Envelope SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" ...>
+  <SOAP-ENV:Body>
+    <m:echoStringFault xmlns:m="http://soapinterop.org/wsdl">
+      <param xsi:type="xsd:string">String</param>
+    </m:echoStringFault>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+  ]]>
+  </programlisting>
+  <para>And SOAP Fault response</para>
+  <programlisting><![CDATA[
+<?xml version="1.0"?>
+<SOAP:Envelope SOAP:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" ...>
+  <SOAP:Body>
+    <SOAP:Fault>
+      <faultcode>SOAP:Server</faultcode>
+      <faultstring>[Virtuoso SOAP server] StringFault</faultstring>
+      <detail>
+        <h:part2 xmlns:h="http://soapinterop.org/wsdl" xsi:type="xsd:string">String</h:part2>
+      </detail>
+    </SOAP:Fault>
+  </SOAP:Body>
+</SOAP:Envelope>
+  ]]>
+  </programlisting>
+  <para>Please note that in wire dumps there is no namespace declarations for brevity (places are denoted with '...').
+  </para>
+  </example>
+  </sect2>
+
+<sect2 id="soapdoclitenc1"><title>Document Literal Encoding</title>
+
+<para>The Virtuoso SOAP server and client support Document Literal encoding
+for processing as an alternative to SOAP/RPC.  The document/literal
+encoding allows the transmission of any arbitrary valid XML document instead
+  of  a SOAP call following rules from section 5 from
+SOAP/1.1 specification.  This allows us to send and receive SOAP packets that
+are more free-form ("document" style).   If you create a service that can accept
+more free-form type packets, you can employ constraints within the methods so
+that they can be independant (bare) or serialized as embedded elements within
+the method's SOAP structure (wrapped parameters style).</para>
+
+<example id="ex_soapi3doclit"><title>Comparing SOAP Types</title>
+<para>Here are examples of SOAP requests that represent the RPC, Doc/Literal
+and Doc/Literal with parameters types of SOAP message</para>
+
+<para>-- RPC encoded --</para>
+<programlisting><![CDATA[
+<?xml version="1.0"?>
+<SOAP-ENV:Envelope
+      xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+      xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+   <SOAP-ENV:Body>
+     <m:echoString
+         SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	 xmlns:m="http://soapinterop.org/">
+	   <param0 xsi:type="xsd:string">Enter a message here</param0>
+     </m:echoString>
+   </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+]]></programlisting>
+
+<para>-- Document Literal --</para>
+<programlisting><![CDATA[
+<?xml version="1.0"?>
+<SOAP-ENV:Envelope
+      xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+   <SOAP-ENV:Body>
+     <ns1:echoStringParam xmlns:ns1="http://soapinterop.org/xsd">Enter a message here</ns1:echoStringParam>
+   </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+]]></programlisting>
+
+<para>-- Document Literal with parameters --</para>
+<programlisting><![CDATA[
+<?xml version="1.0"?>
+<SOAP-ENV:Envelope
+      xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+   <SOAP-ENV:Body>
+     <ns1:echoString xmlns:ns1="http://soapinterop.org/xsd">
+       <param0>Enter a message here</param0>
+     </ns1:echoString>
+   </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+]]></programlisting>
+</example>
+
+<para>SOAP operations can be designated as document/literal or RPC by using the
+appropriate values in the WSDL description file associated to that SOAP endpoint.
+As Virtuoso SOAP operations are PL procedures special keywords are used within
+the procedure to indicate that the document/literal encoding should be used.
+These special keywords are:</para>
+
+  <simplelist>
+    <member>__soap_doc</member>
+    <member>__soap_docw</member>
+  </simplelist>
+
+<para>These should be placed after the 'returns' keyword in a Virtuoso procedure
+definition.  If 'returns ... __soap_type' is omitted the procedure return type
+will be equivalent to 'returns varchar __soap_type 'http://www.w3.org/2001/XMLSchema:string'.</para>
+
+<para>Another way to expose a PL procedure or UDT method as a document/literal SOAP
+    methods is to use non-explicit XMLSchema datatypes and to force encoding rules
+    via virtual directory option 'Use' (see also SOAP options section in this chapter and in WSDL chapter section: "Exposing SQL Stored Procedures containing complex datatype definitions" for details and examples).
+</para>
+
+<tip><title>See Also:</title>
+<para><ulink url="http://www.w3.org/TR/wsdl">WSDL 1.1 Specification</ulink></para></tip>
+
+<example id="ex_soapreturnrpc"><title>SOAP Returns RPC</title>
+<para>The following example shows a procedure that will be exposed as an RPC
+encoded SOAP operation:</para>
+
+<programlisting><![CDATA[
+create procedure
+Import1.echoString (in x nvarchar __soap_type 'http://www.w3.org/2001/XMLSchema:string')
+returns nvarchar __soap_type 'http://www.w3.org/2001/XMLSchema:string'
+{
+  return x;
+};
+]]></programlisting>
+</example>
+
+<example id="ex_soapreturndoclit"><title>SOAP Returns Document Literal</title>
+<para>The following example shows a procedure that will be exposed as a document
+literal encoded operation.  Note the __soap_doc keyword after 'returns', also
+in this case __soap_type for each parameter must be specified since the incoming
+request must be validated by the given schema element declaration (see below
+for XMLSchema elements declaration).</para>
+
+<programlisting><![CDATA[
+create procedure
+DocLit.echoString (in echoStringParam varchar __soap_type 'http://soapinterop.org/xsd:echoStringParam')
+      returns any __soap_doc 'http://soapinterop.org/xsd:echoStringReturn'
+{
+      return echoStringParam;
+};
+]]></programlisting>
+</example>
+
+<example id="ex_soapreturndoclitwrapped"><title>SOAP Returns Document Literal with Parameters</title>
+<para>The following example shows a procedure that will be exposed as document
+literal encoding operation with parameters style (wrapped).  note the __soap_docw
+keyword after 'returns'.</para>
+
+<programlisting><![CDATA[
+create procedure
+DocPars.echoString (in echoString varchar __soap_type 'http://soapinterop.org/xsd:echoString')
+      returns any __soap_docw 'http://soapinterop.org/xsd:echoStringResponse'
+{
+      return echoString;
+};
+]]></programlisting>
+</example>
+
+<para>In both cases of Document Literal encoding we need to specify the schema
+element for validation of the incoming SOAP request.  Furthermore, this applies
+to the output elements and return value, as they need to be encoded/validated
+properly.</para>
+
+<sect3 id="wsdlschemadtandelts"><title>Defining WSDL Schema Data Type and Elements</title>
+
+<para>When defining a schema data type (for use within SOAP) the
+'targetNamespace' attribute on top level element must be specified in order
+to describe in which namespace this type is valid.  In other words, this type
+will be used to validate request only within this namespace.  Therefore it
+will be exposed only at this WSDL point where it is used to describe a
+parameter of an operation associated to it.</para>
+
+<para><important>All datatypes and elements defined for use in SOAP must have
+namespace (QName), which means that 'targetNamespace' must be specified in the
+definition.  All non-qualified types will be rejected in SOAP validation and
+will not be described in the WSDL file.</important></para>
+
+<example id="ex_soapi3stringarray"><title>Making an array of string data type</title>
+<para>Here is an example demonstrating making an array-of-string datatype:</para>
+
+<programlisting><![CDATA[
+select soap_dt_define('','<complexType name="ArrayOfstring"
+   targetNamespace="http://soapinterop.org/xsd"
+   xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
+   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+   xmlns="http://www.w3.org/2001/XMLSchema"
+   xmlns:tns="http://soapinterop.org/xsd">
+  <complexContent>
+     <restriction base="enc:Array">
+	<sequence>
+	   <element name="item" type="string" minOccurs="0" maxOccurs="unbounded" nillable="true"/>
+	</sequence>
+	<attributeGroup ref="enc:commonAttributes"/>
+	<attribute ref="enc:arrayType" wsdl:arrayType="string[]"/>
+     </restriction>
+  </complexContent>
+</complexType>');
+]]></programlisting>
+</example>
+
+<para>As document literal encodings work with elements, the elements must be
+declared as a part of the WSDL file (in the types/schema section).  The declared
+elements can be used to define a doc/literal encoded SOAP operation.  This
+allows for the definition of an element of request and response to enable
+the server to understand the requests (validate and process) and respond to
+them (validate the PL data and serialize properly).</para>
+
+<example id="ex_si3params"><title>Example of defining elements</title>
+<para>Here is an example for the DocLit.echoString SOAP operation using
+parameters (input parameter and return type):</para>
+
+<programlisting><![CDATA[
+select soap_dt_define('','<element xmlns="http://www.w3.org/2001/XMLSchema"
+                                   name="echoStringParam"
+                                   targetNamespace="http://soapinterop.org/xsd" type="string" />');
+
+select soap_dt_define('','<element xmlns="http://www.w3.org/2001/XMLSchema"
+                                   name="echoStringReturn"
+				   targetNamespace="http://soapinterop.org/xsd" type="string" />');
+]]></programlisting>
+</example>
+</sect3>
+
+<sect3 id="soapexttosimptypes"><title>Extensions to Simple Types</title>
+
+<para>The attribute extensions to the simple types (string, float, etc...) can
+be defined and used in SOAP messages.  In that case a PL value is
+represented as a special structure of 3 elements as follows:</para>
+
+<programlisting><![CDATA[
+vector (<composite>, vector (<attr-name>, <attr-value>, ...), <simple type value>)
+]]></programlisting>
+
+<example id="ex_defsimptypedocument"><title>An example to define a simple type 'Document'</title>
+
+<programlisting><![CDATA[
+select soap_dt_define('','<complexType name="Document"
+             xmlns="http://www.w3.org/2001/XMLSchema"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             targetNamespace="http://soapinterop.org/xsd">
+  <simpleContent>
+    <extension base="string">
+      <xsd:attribute name ="ID" type="string"/>
+    </extension>
+  </simpleContent>
+</complexType>');
+]]></programlisting>
+
+<para>Note that soap_dt_define() does not need the name to be specified when
+adding a new type, the name/namespace will be extracted from XSD fragment.</para>
+</example>
+</sect3>
+
+<sect3 id="wsdlgeneration"><title>WSDL Generation</title>
+
+<para>As the WSDL file generation is based on granted PL procedures exposed to
+a given SOAP endpoint, only SOAP datatypes and schema elements used for them will
+be printed in &lt;types&gt; section.  If an undeclared datatype is used for an
+exposed procedure, the error will be printed in an XML comment where the type
+definition was expected and not found.  If an element or datatype refers to
+other (dependant) types they will also be automatically included.  For example,
+if we have exposed for a SOAP endpoint only the following procedure:</para>
+
+<programlisting><![CDATA[
+create procedure
+INTEROP.echoStructArray (
+    in inputStructArray any __soap_type 'http://soapinterop.org/xsd:ArrayOfSOAPStruct')
+    __soap_type 'http://soapinterop.org/xsd:ArrayOfSOAPStruct'
+{
+  return inputStructArray;
+};
+]]></programlisting>
+
+<para>The schema fragment will consist of both SOAPStructure and ArrayOfSOAPStruct
+data types declaration:</para>
+
+<programlisting><![CDATA[
+<schema targetNamespace="http://soapinterop.org/xsd"
+   xmlns="http://www.w3.org/2001/XMLSchema"
+   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+     <complexType name="ArrayOfSOAPStruct" >
+       <complexContent>
+         <restriction base="soapenc:Array">
+           <sequence>
+             <element name="item" type="ns0:SOAPStruct" minOccurs="0" maxOccurs="unbounded"/>
+           </sequence>
+           <attribute ref="soapenc:arrayType" wsdl:arrayType="ns0:SOAPStruct[]"/>
+           <attributeGroup ref="soapenc:commonAttributes"/>
+           <attribute ref="soapenc:offset"/>
+         </restriction>
+      </complexContent>
+    </complexType>
+    <!-- Note this fragment, it's included because ArrayOfSOAPStruct depends from it -->
+    <complexType name="SOAPStruct" >
+       <all>
+	  <element name="varString" type="string" nillable="true"/>
+	  <element name="varInt" type="int" nillable="true"/>
+	  <element name="varFloat" type="float" nillable="true"/>
+       </all>
+    </complexType>
+</schema>
+]]></programlisting>
+</sect3>
+
+<sect3 id="multnswsdlsoap"><title>Multiple Namespaces in WSDL and SOAP</title>
+
+<para>When you define a SOAP operation that has parameters from different
+namespaces or a type referring to a type in another namespace, both will be defined
+and printed as a separate schema definition in the WSDL file.  Hence,
+we can define a data type in different namespace so they will live together in
+a single WSDL file.  This allows us to make more complex and flexabile
+document-centric style SOAP operations.</para>
+
+<example id="ex_mnsi3test"><title>Example from the SOAP Interop 3 Tests</title>
+<para>This example is of the echoEmployee operation from interop 3 tests:</para>
+
+<programlisting><![CDATA[
+create procedure
+Compund2.echoEmployee (in x any __soap_type 'http://soapinterop.org/employee:x_Employee')
+      returns any __soap_doc 'http://soapinterop.org/employee:result_Employee'
+{
+  return x;
+};
+]]></programlisting>
+
+<para>This will generate the following schema in the WSDL file (only affected
+parts are shown):</para>
+
+<programlisting><![CDATA[
+<definitions
+...
+xmlns:ns1="http://soapinterop.org/person"
+xmlns:ns0="http://soapinterop.org/employee"
+... >
+
+<types>
+	<schema targetNamespace="http://soapinterop.org/person"
+		xmlns="http://www.w3.org/2001/XMLSchema"
+		xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" elementFormDefault="qualified" >
+	   <complexType name="Person" >
+	      <sequence>
+		<element minOccurs="1" maxOccurs="1" name="Name" type="string"/>
+	        <element minOccurs="1" maxOccurs="1" name="Male" type="boolean"/>
+	      </sequence>
+	   </complexType>
+ 	</schema>
+
+	<schema targetNamespace="http://soapinterop.org/employee"
+		xmlns="http://www.w3.org/2001/XMLSchema"
+		xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" elementFormDefault="qualified" >
+		<import namespace='http://soapinterop.org/person' />
+	    <complexType name="Employee" >
+		<sequence>
+		   <element minOccurs="1" maxOccurs="1" name="person" type="ns1:Person"/>
+		   <element minOccurs="1" maxOccurs="1" name="salary" type="double"/>
+	           <element minOccurs="1" maxOccurs="1" name="ID" type="int"/>
+	    	</sequence>
+	   </complexType>
+
+	   <element name="result_Employee" type="ns0:Employee" />
+	   <element name="x_Employee" type="ns0:Employee" />
+
+	</schema>
+</types>
+...
+]]></programlisting>
+
+<para>The PL procedure is defined to use element declaration x_Employee and result_Employee,
+so this will automatically include the Employee and Person type, upon which they
+depend.  Also, as these types are defined in different namespace, two schema
+parts will be specified in the WSDL file.</para>
+</example>
+
+<para>In practice the SOAP developer needs to define elements and
+types (using soap_dt_define() function), after this, specifying a parameter of
+PL procedure (or return type) will cause automatic generation of the
+associated WSDL description in the manner described.  Hence, no user intervention
+is required besides the initial element/type definition.</para>
+</sect3>
+
+<sect3 id="soapi3endpoints"><title>SOAP Interop round III Endpoints</title>
+
+<para>The following endpoints are pre-defined in the Demo database for
+SOAP interop III testing (the WSDL files are in the usual services.wsdl for
+each group of tests):</para>
+
+<itemizedlist>
+  <listitem><para><emphasis>D tests</emphasis></para>
+    <itemizedlist>
+      <listitem>/r3/EmptySA/ - echoString operation with empty ("") soapAction (PRC encoded)</listitem>
+      <listitem>/r3/Import1/ - echoString operation, rpc encoded</listitem>
+      <listitem>/r3/Import2/ - echoStruct operation, rpc encoded</listitem>
+      <listitem>/r3/Import3/ - echoStruct and adds method echoStructArray, rpc encoded (echoStruct is in different namespace)</listitem>
+      <listitem>/r3/Compound1/ - Use of attributes in SOAP payload, including attribute on element of simpleType , doc/literal</listitem>
+      <listitem>/r3/Compound2/ - Two schema sections, types in 1st schema references types in the 2nd schema, doc/literal</listitem>
+      <listitem>/r3/DocPars/  -  Reduced version of SOAPBuilders Interop test wsdl with "parameters" way of describing rpc requests in Document/Literal (Document/Literal - Wrapped). Version has operations echoString, echoArrayOfString and echoStruct</listitem>
+      <listitem>/r3/DocLit/ - Reduced version of SOAPBuilders InteropTest test, document/literal mode. Version has operations echoString, echoArrayOfString and echoStruct</listitem>
+      <listitem>/r3/RpcEnc/ - Reduced version of SOAPBuilders InteropTest test, rpc/encoded mode. Version has operations echoString, echoArrayOfString and echoStruct</listitem>
+    </itemizedlist>
+  </listitem>
+  <listitem><para><emphasis>E tests</emphasis></para>
+    <itemizedlist>
+      <listitem><para>/r3/List/ -  echo of list structure (as shown) , RPC encoded</para>
+        <programlisting>
+struct list {
+  int varInt;
+  string varString;
+  list child; //nullable
+}
+</programlisting>
+      </listitem>
+    </itemizedlist>
+  </listitem>
+  <listitem><para><emphasis>F tests</emphasis></para>
+    <itemizedlist>
+      <listitem>/r3/Hdr/ - Modified version of SOAPBuilders InteropTest test, document/literal mode Version has one operation echoString with 2 headers defined.</listitem>
+    </itemizedlist>
+  </listitem>
+</itemizedlist>
+</sect3>
+
+</sect2>
+
+<sect2 id="soapdimeenc"><title>DIME encapsulation of SOAP messages</title>
+<para>
+   The Direct Message Encapsulation (DiME) format is a message format
+   that can be used to encapsulate one or more payloads of arbitrary type and size.
+   This format can be used in place of MIME, but benefits of DIME are  ease of parsing  and
+   low memory consumption, as DIME does not require  loading the whole message body in order to parse it.
+
+   This is due to the  fact that MIME does not have mechanism for specifying the  length of payloads etc.  DIME prefixes all data with length and type information.
+
+   </para>
+   <para>
+   The structure of a DIME message as per draft-nielsen-dime-02 is:
+   </para>
+   <programlisting><![CDATA[
+/*
+      Legend:
+
+      VERSION = 0x01
+      RESRVD  = 0x00
+      MB - begin mark
+      ME - end mark
+      CF - chunked flag
+      TYPE_T - type of content type field
+
+
+      0                   1                   2                   3
+      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |         |M|M|C|       |       |                               |
+     | VERSION |B|E|F| TYPE_T| RESRVD|         OPTIONS_LENGTH        |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |            ID_LENGTH          |           TYPE_LENGTH         |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                          DATA_LENGTH                          |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                                                               /
+     /                     OPTIONS + PADDING                         /
+     /                                                               |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                                                               /
+     /                          ID + PADDING                         /
+     /                                                               |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                                                               /
+     /                        TYPE + PADDING                         /
+     /                                                               |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                                                               /
+     /                        DATA + PADDING                         /
+     /                                                               |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*/
+   ]]>
+   </programlisting>
+   <para>
+    The MB,ME,CF flags are used to indicate which part of the DIME message is the
+    current block of data.  Also, we notice that there are four length fields
+    of fixed length before any data, id or type payload. This is to make the payload
+    easier to read.
+   </para>
+<para>
+
+   The Virtuoso server implements a DIME parser and composer as functions and filter for DIME in SOAP server.
+   Furthermore the Virtuoso WSDL generator can be instructed to specify a DIME extension to the
+   PL procedure exposed as SOAP method.  The implementation is based on draft-nielsen-dime-02 RFC proposal.
+   Please note that in the rest of document we will use 'DIME attachment' term , which is about
+   SOAP message with attachment encapsulated with DIME as per draft-nielsen-dime-soap-01. The special case in these messages is type of first payload, so it's supposed to be a SOAP:Envelope message.
+ </para>
+<para>
+   Note: Option fields are not supported.
+</para>
+<para>
+To setup a SOAP endpoint to recognize DIME encapsulation the "DIME-ENC" option to SOAP in virtual directory
+must  be set to 'yes'. Furthermore the WSDL description of endpoint defined as DIME enabled will contain
+WSDL extensions to DIME.
+</para>
+<para>
+As not in all cases input and output of the SOAP server needs to be DIME encoded,
+the particular PL procedure exposed as SOAP method needs to be defined in special way to indicate which
+traffic is encoded as DIME.
+This is done by using special keywords on procedure declaration:
+</para>
+
+   <programlisting>
+   <![CDATA[
+   CREATE PROCEDURE ([PARAMETERS DECLARATION])
+    [RETURNS TYPE] [(__SOAP_TYPE|__SOAP_DOC|_SOAP_DOCW) 'LITERAL'] [__SOAP_DIME_ENC (IN/OUT/INOUT)]
+   ]]>
+   </programlisting>
+
+   <para>
+   The '__SOAP_DIME_ENC IN' indicate that the procedure expects a DIME attachments on input.
+   This can also be used with OUT and INOUT.
+   This will also be indicated in WSDL file (services.wsdl) as DIME extension in
+   apropriate place of 'soap:operation' element.
+   </para>
+
+   <para>
+   The format of SOAP attachments passed to PL procedure defined in this way
+   is an array which consists of three string elements: ID, content-type, and attachment data itself.
+   The same format must be used when parameter is an output which needs to be sent as DIME attachment.
+   There is also a special parameter of PL procedure exposed as SOAP method named 'ws_soap_attachments',
+   so when we have such, all attachments received  will be passed thru it. In practice we will not need to use 'ws_soap_attachments' , but anyway it's practical use is to handle unreferenced parameters or to debug the request.
+   </para>
+
+   <para>
+   Finally we must say that type of parameter needs to have datatype declared as per 'WSDL Extension for SOAP in DIME' proposal, this is needed for indicating in the WSDL what to expect and how to send the attachment. See also the example below.
+   </para>
+
+<example id="procdimesoap"><title>Using DIME encapsulation</title>
+<para>Suppose we need to accept a binary attachment and echo it back as string
+encoded in the popular 'base64'.</para>
+<para>We first need to enable DIME encapsulation to an endpoint, with virtual directory definition:</para>
+<programlisting><![CDATA[
+SQL> VHOST_DEFINE (lpath=>'/r4/groupG/dime/rpc', ppath=>'/SOAP/', soap_user=>'interop4',
+    soap_opts => vector ('DIME-ENC', 'yes')) ;
+
+]]></programlisting>
+<para>The sample PL procedure that takes a binary attachment and transforms it to
+a base64 encoded string must be declared as:
+</para>
+<programlisting><![CDATA[
+create procedure
+EchoAttachmentAsBase64 (in "In" nvarchar __soap_type 'http://soapinterop.org/attachments/xsd:ReferencedBinary')
+returns nvarchar __soap_type 'base64Binary'
+__soap_dime_enc in
+{
+  -- we are getting the attachment as the 3rd element of input,
+  -- do the base64 encoding for it and return it to the requestor
+  return encode_base64 (cast ("In"[2] as varchar));
+}
+;
+]]></programlisting>
+
+<para>
+As we have noticed an 'ReferencedBinary' is used to declare  'In' parameter.
+This has a special purpose for WSDL definition, not for SOAP processing itself.
+In that case clients are instructed to look at annotation/appinfo of a simple type declared as:
+</para>
+<programlisting><![CDATA[
+	<complexType name="ReferencedBinary">
+		<simpleContent>
+			<restriction base="soap-enc:base64Binary">
+				<annotation>
+					<appinfo>
+						<content:mediaType value="application/octetstream"/>
+					</appinfo>
+				</annotation>
+				<attributeGroup ref="soap-enc:commonAttributes"/>
+			</restriction>
+		</simpleContent>
+	</complexType>
+]]></programlisting>
+<para>
+This is a little-bit tricky, but this is how  to indicate the type of the content and how to resolve the
+references to the attachments as per the ’WSDL Extension for SOAP in DIME' proposal.
+</para>
+
+</example>
+
+</sect2>
+
+<sect2 id="soapoptions"><title>SOAP Endpoint Options</title>
+  <para>The virtual directory mechanism provides a special SOAP options for
+  SOAP processing.  The SOAP options are name-value pairs contained in a vector:
+  i.e. vector ('name1', 'value1', ....).  The SOAP server accepts the following
+  optional parameters settable in the SOAP Options field of the
+  <link linkend="httpvirtualdirs">HTTP Virtual Directories Setup</link>
+  interface, or using the
+  <link linkend="fn_vhost_define"><function>vhost_define()</function></link>
+  function:</para>
+
+  <simplelist>
+  <member><emphasis>ServiceName</emphasis>: name of the SOAP service, will be
+  prefixed with 'Virtuoso'.  That name is shown in WSDL description.</member>
+  <member><emphasis>Namespace</emphasis>: namespace URI of the SOAP:Body
+  request and response.</member>
+  <member><emphasis>HeaderNS</emphasis>: namespace URI for SOAP:Header messages.</member>
+  <member><emphasis>FaultNS</emphasis>: namespace URI for SOAP:Fault messages. </member>
+  <member><emphasis>MethodInSoapAction</emphasis>: enable or disable appending
+  of the method name in the soapAction attribute (WSDL) after namespace URI.</member>
+  <member><emphasis>CR-escape</emphasis>: enable or disable escaping of the
+  CRs on wire as &amp;#0xd</member>
+  <member>
+  <emphasis>elementFormDefault=(unqualified|qualified);</emphasis>
+    <para>Sets the elementFormDefault for schema specification.  if
+    qualified is used the elementFormDefault attribute will be set to qualified,
+    in which case elements required to be unqualified can be declared with
+    value of "form" attribute "unqualified".</para>
+  </member>
+  <member>
+      <emphasis>Use=(encoded|literal)</emphasis>
+      <para>
+	  Sets the default SOAP message encoding rules for those PL procedures which have no
+	  explicit encoding rule assigned (see SOAP special syntax for PL procedures).
+	  The default is 'encoded' which means to follow SOAP RPC encoding as described
+	  in SOAP v1.1 specification section 5.1.
+	  The 'literal' mode forces the SOAP server to expose PL procedures
+	  with  the document/literal  parameter encoding style.
+      </para>
+  </member>
+  <member>
+  <emphasis>MethodInSoapAction=(no|yes|empty|only);</emphasis>
+    <para>Controls soapAction attribute manipulation.  <emphasis>no</emphasis> -
+    only URL for soap requests will be printed.  <emphasis>yes</emphasis>
+    (default) - the URL and soap method will be printed in form:
+    &lt;url&gt;#&lt;method name&gt;.  <emphasis>empty</emphasis> - no value will
+    be specified for soapAction.  <emphasis>only</emphasis> - only the method
+    will be specified in form #&lt;method name&gt;.</para>
+  </member>
+  <member><emphasis>DIME-ENC</emphasis>: Controls DIME encapsulation on particualr
+  SOAP endpoint, valid values are <emphasis>no</emphasis> - (default) not enabled. <emphasis>yes</emphasis> -
+  DIME encapsulation is enabled on endpoint
+  </member>
+  <member><emphasis>WS-SEC</emphasis>: WS-Security processing is enabled on the endpoint, if it's <emphasis>yes</emphasis>, otherwise disabled (default)
+  </member>
+  <member><emphasis>WSS-KEY</emphasis>: name of PL procedure, which is supposed to return a key instance, used together with "WS-SEC" option.
+  </member>
+  <member><emphasis>WSS-Template</emphasis>: path to the file for making the XML Signature in response message.
+  The "[key reference for signing]" denotes using a default template for signing, see WS Security signing SOAP messages.
+  </member>
+  <member><emphasis>WSS-Validate-Signature</emphasis>: This option controls the
+  input behavior, i.e. how to verify the incoming message.  Possible values are
+  "0", "1" or "2", where 0 does not verify signatures, 1 expects a signature to
+  exist, 2 will verify signature if one exists.</member>
+  <member><emphasis>WS-RP</emphasis>: to enable WS-Routing protocol on particular endpoint, if it's <emphasis>yes</emphasis>, otherwise disabled (default).
+  </member>
+  <member><emphasis>wsrp-from</emphasis>: Constant for identification of endpoint, an example is 'some@user.network'. This will be included in 'form' element in WS Routing header.
+  </member>
+  </simplelist>
+  </sect2>
+</sect1>
+
+
+

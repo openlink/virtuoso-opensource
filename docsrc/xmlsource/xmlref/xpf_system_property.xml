@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_system_property">
+  <refmeta> 
+    <refentrytitle>system-property</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>system-property</refname> 
+    <refpurpose>Returns a value of the system property identified by the name</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv> 
+    <funcsynopsis id="xpf_syn_system_property"> 
+      <funcprototype id="xpf_proto_system_property">
+        <funcdef>object <function>system-property</function></funcdef> 
+	<paramdef><parameter>property_qname</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_system_property"><title>Description</title>
+<para>
+The function returns an object representing the value of the system property identified by the name.
+If there is no such system property, the empty string is returned.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_system_property"><title>Parameters</title>
+    <refsect2><title>property_qname</title>
+      <para>a string that is a QName. The QName is expanded into a name using the namespace declarations in scope for the expression.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_system_property"><title>Return Types</title><para>String or double precision number.</para></refsect1>
+  <refsect1 id="xpf_examples_system_property"><title>Examples</title>
+    <example id="xpf_ex_system_property_1"><title>xsl:version</title>
+      <para>xsl:version is a number giving the version of XSLT implemented by the processor; this version returns 1.0.</para>
+      <screen>[xmlns:xsl='http://www.w3.org/1999/XSL/Transform'] system-property('xsl:version')</screen>
+    </example>
+    <example id="xpf_ex_system_property_2"><title>xsl:vendor</title>
+      <para>xsl:vendor is a string identifying the vendor of the XSLT processor; this version returns 'OpenLink Software'.</para>
+      <screen>[xmlns:xsl='http://www.w3.org/1999/XSL/Transform'] system-property('xsl:vendor')</screen>
+    </example>
+    <example id="xpf_ex_system_property_3"><title>xsl:vendor-url</title>
+      <para>xsl:vendor-url is a string containing a URL identifying the vendor of the XSLT processor; this version returns 'http://www.openlinksw.com'.</para>
+      <screen>[xmlns:xsl='http://www.w3.org/1999/XSL/Transform'] system-property('xsl:vendor-url')</screen>
+    </example>
+    <example id="xpf_ex_system_property_4"><title>xsl:product-name</title>
+      <para>xsl:product-name is a string containing a name of XSLT processor; this version returns 'OpenLink Virtuoso Server'.</para>
+      <screen>[xmlns:xsl='http://www.w3.org/1999/XSL/Transform'] system-property('xsl:product-name')</screen>
+    </example>
+    <example id="xpf_ex_system_property_5"><title>xsl:product-version</title>
+      <para>xsl:product-version is a string containing a version of XSLT processor implementation; the returned string may depend on OS, hardware and other parameters of installation.</para>
+      <screen>[xmlns:xsl='http://www.w3.org/1999/XSL/Transform'] system-property('xsl:product-version')</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_system_property"><title>See Also</title>
+    <para><link linkend="xpf_function_available"><function>function_available</function>()</link></para>
+  </refsect1>
+</refentry>
+

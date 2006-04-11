@@ -1,0 +1,96 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<?vsp 
+  declare have_cond, have_wa, have_demo, deadl int;
+
+  deadl := 0;
+  have_cond := 0; have_wa := 0; have_demo := 0;
+  declare exit handler for sqlstate '40001'
+  {
+    rollback work;
+    deadl := deadl + 1;
+    if (deadl < 4)
+      goto again;
+    resignal;
+  };
+
+  set isolation='uncommitted';
+
+again:
+
+  if (VAD_CHECK_VERSION ('conductor') is not null)
+        have_cond := 1; 
+  if (VAD_CHECK_VERSION ('wa') is not null)  
+    have_wa := 1;
+
+  if (exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE like 'Demo.demo.%'))
+    have_demo := 1;
+  
+?><html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="/default.css">
+    </head>
+    <body id="LCB">
+      <?vsp if (have_cond) { ?>
+      <ul class="left_nav">
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/conductor/" target="_top">Conductor UI</a></li>
+      </ul>
+      <?vsp } ?>
+
+      <?vsp if (have_wa) { ?>
+      <ul class="left_nav">
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/wa/" target="_top">Web Applications</a></li>
+      </ul>
+      <?vsp } ?>
+
+      <?vsp if (sys_stat ('st_has_vdb')) { ?>
+      <ul class="left_nav">
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/admin/" target="_top">Classic Admin UI</a></li>
+      </ul>
+      <?vsp } ?>
+
+      <ul class="left_nav">
+	<!--li><img src="/images/tour_16.png" width="16" height="16" /><a href="http://support.openlinksw.com/support/tutorials.vsp">Take A Tour</a></li-->
+      <li><img src="/images/wnew_16.png" width="16" height="16" /><a href="/newfeatures.html" target="_top">What's New</a></li>
+      <?vsp if (have_demo) { ?>
+      <li><img src="/images/opts_16.png" width="16" height="16" /><a href="/tutorial/" target="_top">Demos&nbsp;and&nbsp;Tutorials<small> (local)</small></a></li>
+      <?vsp } else { ?>
+      <li><img src="/images/opts_16.png" width="16" height="16" /><a href="http://demo.openlinksw.com/tutorial/" target="_top">Demos&nbsp;and&nbsp;Tutorials<small> (web)</small></a></li>
+      <?vsp } ?>
+      <!--li><img src="/images/docs_16.png" width="16" height="16" /><a href="releasenotes.html">Release Notes</a> </li-->
+    <li class="xtern"></li>
+  </ul>
+
+  <ul class="left_nav">
+    <li class="xtern"><img src="/images/web_16.png" width="16" height="16" /><a href="http://www.openlinksw.com" target="_top">OpenLink Software Web</a>
+    </li>
+    <li class="xtern"><img src="/images/web_16.png" width="16" height="16" /><a href="http://www.openlinksw.com/virtuoso" target="_top">Virtuoso Web</a>
+    </li>
+  </ul>
+      <ul class="left_id">
+        <li>Version: <?V sys_stat ('st_dbms_ver') ?></li>
+        <li>Build: <?V sys_stat ('st_build_date') ?></li>
+      </ul>
+</body>
+</html>

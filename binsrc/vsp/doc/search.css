@@ -1,0 +1,41 @@
+@import "html/doc.css";
+
+@media screen, print {
+
+#searchbar {
+  padding: 1em;
+  text-align: center;
+  }
+input, form {
+  margin: 0px;
+  padding: 0px;
+  }
+#srcnavbar {
+  margin-left: 10%;
+  margin-right: 10%;
+  padding: 1em;
+  text-align: center;
+  }
+#srcnavbar a {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  font-size: 90%;
+  }
+#searchresults {
+  text-align: center;
+  margin-left: 200px;
+  margin-right: 5%;
+  padding: 2em;
+  border-bottom: 1px silver solid;
+  }
+#searchresults td {
+  font-size: 80%;
+  padding-right: 1em;
+  }
+#footer {
+  margin-top: 10px;
+  margin-left: 100px;
+  margin-right: 100px;
+  clear: both;
+  }
+}

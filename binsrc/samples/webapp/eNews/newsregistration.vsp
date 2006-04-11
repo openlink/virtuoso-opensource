@@ -1,0 +1,148 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _first, _last, _email, _pwd, _pwdr, _submit varchar;
+  _first := trim(get_keyword('first', params, ''));
+  _last := trim(get_keyword('last', params, ''));
+  _email := trim(get_keyword('email', params, ''));
+  _pwd := get_keyword('pwd', params, '');
+  _pwdr := get_keyword('pwdr', params, '');
+  _submit := get_keyword('submit', params, '');
+?>
+
+<html>
+  <head>
+  <title>eNews Registration</title>
+    <style>
+      .heading {font-family:Times New Roman; font-size:13pt; font-weight:bold; color:black; text-align:center; background-color:808080}
+      .message {font-family:Times New Roman; font-size:9pt; color:#800000; text-align:center}
+      td.cell {font-family:Times New Roman; font-size:13pt; text-align:right; color:black; width:190px}
+    </style>
+    <title>Registration</title>
+  </head>
+  <body bgcolor="#FFFFFF" text="#000000">
+    <form method="POST" action="newsregistration.vsp">
+      <table cellspacing="20">
+        <tr>
+          <td class="heading">
+            Registration Page
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <table border="0" width="400">
+              <tr>
+                <td class="cell">First Name:</td>
+                <td width="190">
+                  <input type="text" name="first" size="30" value="<?=_first?>" />
+                </td>
+              </tr>
+              <tr>
+                <td class="cell">Surname:</td>
+                <td width="190">
+                  <input type="text" name="last" size="30" value="<?=_last?>" />
+                </td>
+              </tr>
+              <tr>
+                <td class="cell">E-Mail:</td>
+                <td width="190">
+                  <input type="text" name="email" size="30" value="<?=_email?>" />
+                </td>
+              </tr>
+              <tr>
+                <td class="cell">Password:</td>
+                <td width="190">
+                  <input type="password" name="pwd" size="30" value="<?=_pwd?>" />
+                </td>
+              </tr>
+              <tr>
+                <td class="cell">Re-Type Password:</td>
+                <td width="190">
+                  <input type="password" name="pwdr" size="30" value="<?=_pwdr?>" />
+                </td>
+              </tr>
+              <tr>
+                <td class="cell">&nbsp;</td>
+                <td width="190">
+                  <input type="submit" value="SUBMIT" name="submit" />
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td class="message">All fields are needed.</td>
+        </tr>
+      </table>
+    </form>
+
+<?vsp
+  if (_submit <> '')
+  {
+?>
+    <hr>
+<?vsp
+    declare _message varchar;
+    _message := '<table width="400"><tr><td class="message">%s</td></tr></table>';
+    if (_first = '' or _last = '' or _email = '' or _pwd = '' or _pwdr = '')
+    {
+      http(sprintf(_message, 'You have not entered all the necessary fields.'));
+    }
+    else if(_pwd <> _pwdr)
+    {
+      http(sprintf(_message, 'Passwords do not match!'));
+    }
+    else if (exists(select 1 from eNews..registry where Email = _email))
+    {
+      http(sprintf(_message, 'This user E-Mail has already been registered.'));
+    }
+    else
+    {
+      declare _body, _pid, _mserver, _admin_mail varchar;
+      declare _sheet integer;
+      declare _e_ini any;
+      _e_ini := eNews..eNews_Params();
+      _mserver := get_keyword('mailserver', _e_ini);
+      _admin_mail := get_keyword('email', _e_ini);
+      _sheet := (select xslviewsheet from eNews..newsxslsheet where sheetname = get_keyword('stylesheet', _e_ini));
+      _pid := md5(_pwd);
+      insert into eNews..registry (First, Last, Email, Pwd, xslviewsheet) values (_first, _last, _email, _pid, _sheet);
+      _body := sprintf('Subject: eNews Registration\r\nDear %s %s,\nThank you for registering with OpenLink eNews.\n\Your login information is:\n\nE-mail: %s\nPassword: %s', _first, _last, _email, _pwd);
+      smtp_send(_mserver, _admin_mail, _email, _body);
+      http(sprintf(_message, 'You have been registered.<br />In a few seconds you will be entering OpenLink eNews.'));
+      declare _uid integer;
+      _uid := (select UID from eNews..registry where Email = _email);
+?>
+    <SCRIPT language="javascript">
+    function jumpTo()
+    {
+      document.location = 'changeNews.vsp?UID=<?=_uid?>&P=<?=_pid?>';
+    }
+    setTimeout('jumpTo()', 5000);
+    </SCRIPT>
+<?vsp
+    }
+  }
+?>
+  </body>
+</html>

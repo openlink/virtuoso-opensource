@@ -1,0 +1,26 @@
+HKCR
+{
+	OpenLink.MailDrop.1 = s 'MailDrop Class'
+	{
+		CLSID = s '{B4A134C6-FA30-4039-A14C-E1771CCE6867}'
+	}
+	OpenLink.MailDrop = s 'MailDrop Class'
+	{
+		CLSID = s '{B4A134C6-FA30-4039-A14C-E1771CCE6867}'
+		CurVer = s 'OpenLink.MailDrop.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {B4A134C6-FA30-4039-A14C-E1771CCE6867} = s 'MailDrop Class'
+		{
+			ProgID = s 'OpenLink.MailDrop.1'
+			VersionIndependentProgID = s 'OpenLink.MailDrop'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Free'
+			}
+			'TypeLib' = s '{36F66888-C74F-42c0-9BC6-2863E82E320D}'
+		}
+	}
+}

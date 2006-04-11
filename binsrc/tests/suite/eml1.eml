@@ -1,0 +1,112 @@
+From - Fri Sep  4 09:04:59 1998
+X-POP3-Rcpt: kgeorge@home
+Return-Path: <kidehen@openlinksw.com>
+Received: from plovdiv.techno-link.com (kgeorge@localhost [127.0.0.1])
+	by home.techno-link.com (8.8.6/8.8.6) with ESMTP id JAA00175
+	for <kgeorge@localhost>; Fri, 4 Sep 1998 09:04:38 +0300
+Received: from plovdiv.techno-link.com
+	by localhost (fetchmail-4.3.0 POP3 run by kgeorge)
+	for <kgeorge@localhost> (single-drop); Fri Sep  4 09:04:38 1998
+Received: from relay1.smtp.psi.net (unverified [38.8.14.2]) by plovdiv.techno-link.com
+ (EMWAC SMTPRS 0.83) with SMTP id <B0000296448@plovdiv.techno-link.com>;
+ Thu, 03 Sep 1998 21:15:09 +0300
+Received: from [38.233.242.2] (helo=oplmail.openlinksw.com)
+	by relay1.smtp.psi.net with esmtp (Exim 1.90 #1)
+	id 0zEdx0-0003D0-00; Thu, 3 Sep 1998 14:17:42 -0400
+Received: from kidehen ([38.233.242.103]) by oplmail.openlinksw.com (8.7.4/8.7.3) with SMTP id OAA15100; Thu, 3 Sep 1998 14:32:21 -0400 (EDT)
+Reply-To: <kidehen@openlinksw.com>
+From: "Kingsley Idehen" <kidehen@openlinksw.com>
+To: "'I H Ting'" <ting@mail.com>
+Cc: "Patrick van Kleef (E-mail)" <pkleef@openlink.co.uk>,
+        "Paul Nieuwdorp (E-mail)" <pnieuw@openlink.co.uk>,
+        "Orri Erling (E-mail)" <oerling@openlinksw.com>,
+        "George Kodinov (E-mail)" <kgeorge@plovdiv.techno-link.com>,
+        "Yrjana Rankka (E-mail)" <ghard@openlinksw.com>,
+        "Roys Hengwatenakal (E-mail)" <roys@openlink.co.uk>
+Subject: RE: PTR Database for Virtuoso
+Date: Thu, 3 Sep 1998 14:26:18 -0400
+Message-ID: <001d01bdd768$5830b680$67f2e926@kidehen.openlinksw.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook 8.5, Build 4.71.2173.0
+In-reply-to: <01BDD751.7BB0D070.ting@mail.com>
+Importance: Normal
+X-MimeOLE: Produced By Microsoft MimeOLE V4.72.3110.3
+X-Mozilla-Status: 8013
+X-Mozilla-Status2: 00000000
+X-UIDL: <001d01bdd768$5830b680$67f2e926@kidehen.openlinksw.com>
+Status: RO
+X-Status: 
+X-Keywords:
+X-UID: 1
+
+Ting,
+
+Great.
+
+Others: Please use this database to log bugs and new feature request
+relating to Virtuoso. There are several new feature issues that need to go
+into this DB ASAP. Patrick, please discuss this with Orri.
+
+I await feedback clarifying that this system is accessible and that we all
+know how to use it. Point your browsers to:
+http://oplapp.openlink.co.uk/Development/Development.htm or
+http://195.153.164.68/Development/Development.htm
+
+Roys: Please ensure Yrjana (George 1) and George Kodinov have access to this
+system.
+
+
+Regards,
+Kingsley
+
+>>-----Original Message-----
+>>From: I H Ting [mailto:ting@mail.com]
+>>Sent: Thursday, September 03, 1998 10:37 AM
+>>To: 'kidehen@openlinksw.com'
+>>Subject: RE: PTR Database for Virtuoso
+>>
+>>
+>>Hi Kingsley,
+>>
+>>It's done.
+>>
+>>Best Regards.
+>>
+>>Ting
+>>
+>>------------------------------------
+>>I. H. Ting
+>>Research & Development Manager
+>>OpenLink Software Web: http://www.openlinksw.co.uk
+>>Universally Database Connectivity Technology Providers
+>>mailto:ting@openlinksw.co.uk
+>>
+>>
+>>On Thursday, September 03, 1998 4:13 AM, Kingsley Idehen
+>>[SMTP:kidehen@openlinksw.com] wrote:
+>>> Ting,
+>>>
+>>> I need the PTR system to incorporate support for Virtuoso,
+>>especially as we
+>>> are about to commence the internal QA phase.
+>>>
+>>> Once this is ready please let me know as I have a few PTRs
+>>I would like to
+>>> log.
+>>>
+>>> Best Regards,
+>>>
+>>> Kingsley Idehen
+>>> President & CEO
+>>> OpenLink Software    Web: http://www.openlinksw.com
+>>> Universal Data Access Technology Providers
+>>>
+>>>
+>>>  << File: Kingsley Idehen (E-mail).vcf >>
+>>
+

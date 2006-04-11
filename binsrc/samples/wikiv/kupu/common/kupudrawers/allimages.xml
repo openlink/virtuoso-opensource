@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<collection>
+    <uri>kupudrawers/allimages.xml</uri>
+    <icon>kupuimages/kupulibrary.png</icon>
+    <title>All images</title>
+    <src>kupudrawers/allimages.xml</src>
+    <items>
+        <collection id="logos">
+            <uri>kupudrawers/logos.xml</uri>
+            <title>Logo's</title>
+            <src>kupudrawers/logos.xml</src>
+            <icon>kupuimages/kupulibrary.png</icon>
+        </collection>
+        <collection id="kupubuttons">
+            <uri>kupudrawers/kupubuttons.xml</uri>
+            <title>Kupu buttons</title>
+            <src>kupudrawers/kupubuttons.xml</src>
+            <icon>kupuimages/kupulibrary.png</icon>
+        </collection>
+    </items>
+</collection>

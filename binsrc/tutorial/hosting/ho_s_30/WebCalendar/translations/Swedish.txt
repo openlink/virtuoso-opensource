@@ -1,0 +1,1311 @@
+# Use this as a starting point to translate this application into
+# another language.  The format is "English text: translated text"
+# There cannot be a ":" in the English text.
+# Translated by: Jesper Thörn <jesper@thorn.as>
+# Updated by: Patrik Grip-Jansson <patrikj@gnulix.org>
+# Last update: 2001-08-02
+# Translation last updated on 11-30-2002
+
+
+###############################################
+# Page: admin.php
+#
+#
+# << MISSING >>
+# Server URL is required:
+#
+# << MISSING >>
+# Server URL must end with '/':
+Invalid color for document background: Ogiltig bakgrundsfärg
+Invalid color for document title: Ogiltig färg för dokumenttiteln
+Invalid color for table cell background: Ogiltig färg f tabellbakgrunden
+#
+# << MISSING >>
+# Invalid color for table grid:
+#
+# << MISSING >>
+# Invalid color for table header background:
+#
+# << MISSING >>
+# Invalid color for table text background:
+#
+# << MISSING >>
+# Invalid color for event popup background:
+#
+# << MISSING >>
+# Invalid color for event popup text:
+Invalid color for table cell background for today: Ogiltig färg för dagens tabellbakgrund
+Color format should be '#RRGGBB': Färgen skall skrivas som '#RRGGBB'
+#
+# << MISSING >>
+# System Settings:
+You are not authorized: Förbjuden åtgärd 
+#
+# << MISSING >>
+# Note:
+#
+# << MISSING >>
+# Your user preferences:
+#
+# << MISSING >>
+# may be affecting the appearance of this page.:
+#
+# << MISSING >>
+# Click here:
+#
+# << MISSING >>
+# to not use your user preferences when viewing this page:
+#
+# << MISSING >>
+# are being ignored while viewing this page.:
+#
+# << MISSING >>
+# to load your user preferences when viewing this page:
+Save: Spara
+Help: Hjälp
+Settings: Inställningar 
+#
+# << MISSING >>
+# app-name-help:
+# English text: Specifies the name of the application that will appear in the browser title bar for all pages and on the login page.  The value you specify here will be looked up in the translations file allowing you to provide different titles for different languages.
+#
+#
+# << MISSING >>
+# Application Name:
+#
+# << MISSING >>
+# server-url-help:
+# English text: Specifies the base URL for the application.  This will be included when sending out email reminders and notifications.
+#
+#
+# << MISSING >>
+# Server URL:
+language-help: Ange vilket språk du vill använda.
+Language: Språk
+Your browser default language is: Standardspråket i din webläsare är
+#
+# << MISSING >>
+# fonts-help:
+# English text: Specifies a list of system fonts to use (such as "Arial, Helvetica")
+#
+#
+# << MISSING >>
+# Fonts:
+preferred-view-help: Specificera standardvisning (dag, vecka, månad eller år).
+Preferred view: Vald vy
+Day: Dag
+Week: Vecka
+Month: Månad
+Year: År
+#
+# << MISSING >>
+# display-weekends-help:
+# English text: Include weekends when viewing a week.
+#
+#
+# << MISSING >>
+# Display weekends in week view:
+Yes: Ja
+No: Nej
+#
+# << MISSING >>
+# date-format-help:
+# English text: Specifies the preferred date format.
+#
+#
+# << MISSING >>
+# Date format:
+December: December
+time-format-help: Skall tiden visas i 12 eller 24-timmars format.
+Time format: Tidsformat
+12 hour: 12 timmar
+24 hour: 24 timmar
+#
+# << MISSING >>
+# time-interval-help:
+# English text: Specifies how long the time blocks in the week view and day view will be.
+#
+#
+# << MISSING >>
+# Time interval:
+#
+# << MISSING >>
+# hour:
+minutes: minuter
+#
+# << MISSING >>
+# auto-refresh-help:
+# English text: When enabled, the day view, week view, month view, and list aunapproved pages will all automatically refresh themselves periodically.
+#
+#
+# << MISSING >>
+# Auto-refresh calendars:
+#
+# << MISSING >>
+# auto-refresh-time-help:
+# English text: If Auto-refresh is enabled, this specifies the time between each refresh.
+#
+#
+# << MISSING >>
+# Auto-refresh time:
+#
+# << MISSING >>
+# require-approvals-help:
+# English text: When enabled, a user must approve an event before it is displayed on their calendar (unless Display unapproved is enabled).  Note setting this to "No" will not turn off approvals for the Public Access calendar (if the Public Access calendar is enabled).
+#
+#
+# << MISSING >>
+# Require event approvals:
+display-unapproved-help: Specificera om din kalender skall visa icke godkända aktiviteter.
+Display unapproved: Visa icke godkända.
+display-week-number-help: Specificera om veckonummerna skall visas på veckovyn.
+Display week number: Visa veckonummer
+display-week-starts-on: Börjar din vecka på söndagar eller måndagar.
+Week starts on: Veckan börjar på
+Sunday: Söndag
+Monday: Måndag
+work-hours-help: Specificera dagliga arbetstimmar.
+Work hours: Arbetstimmar.
+From: Från
+to: till
+#
+# << MISSING >>
+# disable-priority-field-help:
+# English text: Selecting "Yes" will remove the "Priority" field from event information pages, providing a simpler interface for novices.
+#
+#
+# << MISSING >>
+# Disable Priority field:
+#
+# << MISSING >>
+# disable-access-field-help:
+# English text: Selecting "Yes" will remove the "Access" field from event information pages, providing a simpler interface for novices.
+#
+#
+# << MISSING >>
+# Disable Access field:
+#
+# << MISSING >>
+# disable-participants-field-help:
+# English text: Selecting "Yes" will remove the "Particpants" field from event information pages, preventing users from adding other users to their events.  If you enable this option, you may want to also disable the "Allow viewing other user's calendars" field also.
+#
+#
+# << MISSING >>
+# Disable Participants field:
+#
+# << MISSING >>
+# disable-repeating-field-help:
+# English text: Selecting "Yes" will remove the "Repeating" field when adding events.  This will provide a simpler interface for novices.
+#
+#
+# << MISSING >>
+# Disable Repeating field:
+#
+# << MISSING >>
+# allow-view-other-help:
+# English text: Specifies whether one user may view another user's calendar.
+#
+#
+# << MISSING >>
+# Allow viewing other user's calendars:
+#
+# << MISSING >>
+# allow-public-access-help:
+# English text: When enabled, the calendar can be used as a read-only public calendar that does not require users to login.
+#
+#
+# << MISSING >>
+# Allow public access:
+#
+# << MISSING >>
+# public-access-view-others-help:
+# English text: When access the system with public access, specifies whether the user can view the calendar of another calendar user.
+#
+#
+# << MISSING >>
+# Public access can view other users:
+#
+# << MISSING >>
+# public-access-can-add-help:
+# English text: When enabled, users that access the system through Public Access will be able to add new events, but they will not show up in the calendar until an administrator approves the new event.
+#
+#
+# << MISSING >>
+# Public access can add events:
+#
+# << MISSING >>
+# public-access-add-requires-approval-help:
+# English text: Specifies whether events added via the public access account require approval before being displayed.
+#
+#
+# << MISSING >>
+# Public access new events require approval:
+# English text: Public access new events require approval:
+#
+#
+# << MISSING >>
+# allow-view-add-help:
+# English text: A '+' icon will be included in views, allowing users to quickly add events to other users' calendars.
+#
+#
+# << MISSING >>
+# Include add event link in views:
+#
+# << MISSING >>
+# allow-external-users-help:
+# English text: Specifies whether a non-calendar user can be added to an event.  This allows non-calendar users to be listed as event participants.
+#
+#
+# << MISSING >>
+# Allow external users:
+#
+# << MISSING >>
+# external-can-receive-notification-help:
+# English text: When external users are enabled and email usage is enabled, external users can receive email notifications when the event is added, updated or delete (if the external user's email address is provided).
+#
+#
+# << MISSING >>
+# External users can receive email notifications:
+#
+# << MISSING >>
+# external-can-receive-reminder-help:
+# English text: When external users are enabled and email usage is enabled, external users can receive email reminders (if the external user's email address is provided).
+#
+#
+# << MISSING >>
+# External users can receive email reminders:
+#
+# << MISSING >>
+# remember-last-login-help:
+# English text: When enabled, the user's login will be filled in for them on the login page (but not the password), and the user's preferences will be loaded (including their preferred colors and language selection).
+#
+#
+# << MISSING >>
+# Remember last login:
+#
+# << MISSING >>
+# conflict-check-help:
+# English text: Check for event conflicts (two events scheduled for the same time for the same person).  If you set this to "Yes", you will still be able to schedule two events at the same time after confirming a warning. If you set this to "No", no checking for conflicts will be done.  You probably want to set this to "Yes", so conflict checking occurs.
+#
+#
+# << MISSING >>
+# Check for event conflicts:
+#
+# << MISSING >>
+# conflict-months-help:
+# English text: If conflict checking is in place ("Check for event conflicts" is set to "No"), this specifies how many months into the future we should check for conflicts.  If you find adding events is taking a long time to process, reduce this number.
+#
+#
+# << MISSING >>
+# Conflict checking months:
+#
+# << MISSING >>
+# conflict-check-override-help:
+# English text: Allows users to override event conflicts and schedule two or more events for the same time.
+#
+#
+# << MISSING >>
+# Allow users to override conflicts:
+#
+# << MISSING >>
+# limit-appts-help:
+# English text: Allows the system administrator to set a system-wide limit on the number of appointments a single user can have on any single day.
+#
+#
+# << MISSING >>
+# Limit number of timed events per day:
+#
+# << MISSING >>
+# limit-appts-number-help:
+# English text: Specifies the maximum number of timed events a user can have in a single day.
+#
+#
+# << MISSING >>
+# Maximum timed events per day:
+#
+# << MISSING >>
+# Plugins:
+#
+# << MISSING >>
+# plugins-enabled-help:
+# English text: Enable plugin applications.
+#
+#
+# << MISSING >>
+# Enable Plugins:
+#
+# << MISSING >>
+# plugins-sort-key-help:
+# English text: Specifies a sort key for the plugin.  This allows the plugins to appear in a specific order.
+#
+#
+# << MISSING >>
+# Plugin:
+#
+# << MISSING >>
+# Groups:
+#
+# << MISSING >>
+# groups-enabled-help:
+# English text: Enables group support, allowing users to select users by groups.
+#
+#
+# << MISSING >>
+# Groups enabled:
+#
+# << MISSING >>
+# user-sees-his-group-help:
+# English text: If enabled, users will not see calendar users that are not in at least one of their groups.
+#
+#
+# << MISSING >>
+# User sees only his groups:
+#
+# << MISSING >>
+# Categories:
+#
+# << MISSING >>
+# categories-enabled-help:
+# English text: Enables support for event categories.
+#
+#
+# << MISSING >>
+# Categories enabled:
+Email: E-post
+#
+# << MISSING >>
+# email-enabled-help:
+# English text: Turn on or off all sending of email for notification and reminders.  Set to "no", if your server is not properly setup to send mail.
+#
+#
+# << MISSING >>
+# Email enabled:
+#
+# << MISSING >>
+# email-default-sender:
+# English text: Specifies the email address to specify as the sender when sending out reminders.
+#
+#
+# << MISSING >>
+# Default sender address:
+#
+# << MISSING >>
+# Default user settings:
+email-event-reminders-help: Anger om programmet ska skicka påminnelser via e-post
+Event reminders: Aktivitestpåminnelser
+email-event-added: E-post vid tillägg av aktiviter
+Events added to my calendar: Aktivteter som lagts till i min kalender
+email-event-updated: E-post när aktiviter uppdateras
+Events updated on my calendar: Aktiviter som uppdaterats i min kalender
+email-event-deleted: E-post vid radering av aktiviteter
+Events removed from my calendar: Aktiviteter som raderats från min kalender
+email-event-rejected: E-post vid avslag av aktiviteter
+Event rejected by participant: Aktiviteter som avböjts av deltagare
+colors-help: Alla färger skall skrivas in som #RRGGBB där RR är hexkoden för rött, GG är hexkoden för grönt och BB är hexkoden för den blå färgen.
+Colors: Färger
+#
+# << MISSING >>
+# Allow user to customize colors:
+Document background: Dokumentbakgrund
+Select: Välj
+Document title: Dokumenttitel
+#
+# << MISSING >>
+# Document text:
+#
+# << MISSING >>
+# Table grid color:
+#
+# << MISSING >>
+# Table header background:
+#
+# << MISSING >>
+# Table header text:
+Table cell background: Tabellbakgrund
+Table cell background for current day: Tabellbakgrund för nuvarande dag
+#
+# << MISSING >>
+# Table cell background for weekends:
+#
+# << MISSING >>
+# Event popup background:
+#
+# << MISSING >>
+# Event popup text:
+
+
+###############################################
+# Page: activity_log.php
+#
+#
+# << MISSING >>
+# Activity Log:
+User: Användare
+#
+# << MISSING >>
+# Calendar:
+Date: Datum
+Time: Klockan
+#
+# << MISSING >>
+# Event:
+#
+# << MISSING >>
+# Action:
+#
+# << MISSING >>
+# Event created:
+#
+# << MISSING >>
+# Event approved:
+#
+# << MISSING >>
+# Event rejected:
+#
+# << MISSING >>
+# Event updated:
+#
+# << MISSING >>
+# Event deleted:
+#
+# << MISSING >>
+# Notification sent:
+#
+# << MISSING >>
+# Reminder sent:
+Database error: Fel i databasen
+#
+# << MISSING >>
+# Next:
+
+
+###############################################
+# Page: add_entry.php
+#
+Invalid entry id: Ogiltigt händelse-ID
+This is a private event and may not be added to your calendar.: Detta är ett privat möte och kan inte läggas till i din kalender.
+Error adding event: Fel vid inläggning av ny händelse
+
+
+###############################################
+# Page: admin_handler.php
+#
+Error: Fel
+The following error occurred: Följande fel uppstod
+
+
+###############################################
+# Page: approve_entry.php
+#
+Error approving event: Ett fel uppstod när händelsen skulle godkännas
+
+
+###############################################
+# Page: category.php
+#
+#
+# << MISSING >>
+# Add:
+#
+# << MISSING >>
+# Category Name:
+#
+# << MISSING >>
+# Global:
+Delete: Radera
+Are you sure you want to delete this entry?: Är du säker på att du vill radera händelsen?
+#
+# << MISSING >>
+# Add New Category:
+
+
+###############################################
+# Page: category_handler.php
+#
+
+
+###############################################
+# Page: colors.php
+#
+
+
+###############################################
+# Page: datesel.php
+#
+#
+# << MISSING >>
+# Previous:
+
+
+###############################################
+# Page: day.php
+#
+#
+# << MISSING >>
+# Assistant mode:
+Generate printer-friendly version: Visa i utskriftsversion
+Printer Friendly: Utskriftsversion
+
+
+###############################################
+# Page: del_entry.php
+#
+Hello: Hej
+An appointment has been canceled for you by: Ett möte inställts av
+The subject was: Ämnet var
+Notification: Påminnelse
+
+
+###############################################
+# Page: del_layer.php
+#
+
+
+###############################################
+# Page: edit_entry.php
+#
+You have not entered a Brief Description: Da har inte angivit någon kort beskrivning
+You have not entered a valid time of day: Du har inte angivit någon tidpunkt
+The time you have entered begins before your preferred work hours.  Is this correct?: Tidpunkten du har angivit ligger före din önskade arbetstid. Är detta korrekt?
+Edit Entry: Ändra händelse
+Add Entry: Lägg till händelse
+brief-description-help: Här skall det stå en kort beskrivning av aktiviteten/händelsen - den i översiktskalendern.
+Brief Description: Kort beskrivning
+full-description-help: Här kan du skriva en komplett beskrivning av aktiviteten.
+Full Description: Fullständig beskrivning
+date-help: Anger datum för aktiviteten.
+time-help: Anger tidpunkt för aktiviteten.<BR><I>Det här fältet behöver inte vara ifyllt.</I>
+am: f.m.
+pm: e.m.
+#
+# << MISSING >>
+# Untimed event:
+#
+# << MISSING >>
+# Timed event:
+#
+# << MISSING >>
+# All day event:
+duration-help: I detta fält anger du aktivitetens varaktighet <BR><I>Det här fältet behöver inte vara ifyllt.</I>
+Duration: Varaktighet
+hours: timmar
+priority-help: Ange aktivitetens prioritet.
+Priority: Prioritet
+Low: Låg
+Medium: Mellan
+High: Hög
+access-help: Ange om händelsen/aktiviteten skall kunna ses av andra eller om den skall vara privat.
+Access: Tillgång
+Public: Offentlig
+Confidential: Privat
+#
+# << MISSING >>
+# category-help:
+# English text: Specifies the category of the event.
+#
+#
+# << MISSING >>
+# Category:
+days: dagar
+before event: före händelse
+participants-help: Visa deltagare för denna händelse.
+Participants: Deltagare
+#
+# << MISSING >>
+# external-participants-help:
+# English text: Specifies a list of participants for the event that are not calendar users.  The users should be listed one per line and can include an email address.  If an email address is specified, the user is eligible to receive notications and reminders.
+#
+#
+# << MISSING >>
+# External Participants:
+repeat-type-help: Hur ofta skall aktiviteten upprepas.
+Repeat Type: Upprepningstyp
+None: Aldrig
+Daily: Dagligen
+Weekly: Veckovis
+Monthly: Månatlig
+by day: efter bestämd dag
+by date: efter bestämt datum
+Yearly: Årlig
+repeat-end-date-help: Specificera slutdatum och upprepning av denna aktivitet.
+Repeat End Date: Upprepa slutdatum
+Use end date: Använd slutdatum
+repeat-day-help: Vilka veckodagar skall aktiviteten upprepas på
+Repeat Day: Upprepa datum
+for weekly: Veckovis
+Tuesday: Tisdag
+Wednesday: Onsdag
+Thursday: Torsdag
+Friday: Fredag
+Saturday: Lördag
+repeat-frequency-help: Hur ofta skall aktiviteten upprepas? Talet 1 visar att det skall ske varje gång, 2 varannan o.s.v...
+Frequency: Upprepningsfrekvens
+Delete entry: Radera händelse
+You are not authorized to edit this entry: Du har inte lov att radera denna händelse
+
+
+###############################################
+# Page: edit_entry_handler.php
+#
+The following conflicts with the suggested time: Följande händelseer krockar med vald tidpunkt
+Unnamed Event: händelsen är utan namn
+#
+# << MISSING >>
+# The description is:
+Title: Webbkalender
+A new appointment has been made for you by: Du har fått en mötesinbjudan från
+An appointment has been updated by: En aktivitet har uppdaterats av
+The subject is: Ämnet är 
+Please look on: Var vänlig se på
+to accept or reject this appointment: För att acceptera/avböja mötet
+to view this appointment: För att se detta möte
+Scheduling Conflict: Konflikt i kalendern
+Your suggested time of: Den föreslagna tiden för
+conflicts with the following existing calendar entries: krockar med tidigare möten i din kalender
+Cancel: Avbryt
+
+
+###############################################
+# Page: edit_layer.php
+#
+Invalid color: Ogiltig färg
+Edit Layer: Redigera lager
+Add Layer: Lägg till lager
+Source: Källa
+Color: Färg
+Duplicates: Dubbletter
+Show layer events that are the same as your own: Visa lagerhändelser som är samma som dina egna
+Are you sure you want to delete this layer?: Är du säker på att du vill ta bort detta lager?
+Delete layer: Ta bort lager
+
+
+###############################################
+# Page: edit_layer_handler.php
+#
+#
+# << MISSING >>
+# You cannot create a layer for yourself:
+#
+# << MISSING >>
+# You can only create one layer for each user:
+
+
+###############################################
+# Page: edit_user.php
+#
+Edit User: Redigera användare
+Add User: Ny användare
+Username: Användarnamn
+First Name: Förnamn
+Last Name: Efternamn
+E-mail address: E-postadress
+Password: Lösenord
+again: igen
+Admin: Admin
+Disabled for demo: Avslaget i demoversionen
+Change Password: Ändra lösenord
+New Password: Nytt lösenord
+Set Password: Bestäm lösenord
+
+
+###############################################
+# Page: edit_user_handler.php
+#
+#
+# << MISSING >>
+# Deleting users not supported:
+The passwords were not identical: Lösenorden stämmer inte överens med varandra
+You have not entered a password: Du har inte angivit något lösenord
+
+
+###############################################
+# Page: export.php
+#
+Export: Exportera
+Export format: Exportformat
+Palm Pilot: Palm Pilot
+Export all dates: Exportera allt
+Start date: Startdatum
+End date: Slutdatum
+Modified since: Ändrad efter
+
+
+###############################################
+# Page: export_handler.php
+#
+
+
+###############################################
+# Page: group_edit.php
+#
+#
+# << MISSING >>
+# Unnamed Group:
+#
+# << MISSING >>
+# Add Group:
+#
+# << MISSING >>
+# Edit Group:
+#
+# << MISSING >>
+# Group name:
+Updated: Uppdaterad
+Created by: Skapad av
+Users: Användare
+
+
+###############################################
+# Page: group_edit_handler.php
+#
+#
+# << MISSING >>
+# You must specify a group name:
+
+
+###############################################
+# Page: groups.php
+#
+#
+# << MISSING >>
+# Add New Group:
+
+
+###############################################
+# Page: help_admin.php
+#
+
+
+###############################################
+# Page: pref.php
+#
+Preferences: Inställningar
+#
+# << MISSING >>
+# to modify the preferences for the Public Access calendar:
+#
+# << MISSING >>
+# tz-help:
+# English text: Specifies how many hours to adjust the time from server time to local time.
+#
+#
+# << MISSING >>
+# Timezone Offset:
+#
+# << MISSING >>
+# Add N hours to:
+#
+# << MISSING >>
+# Subtract N hours from:
+#
+# << MISSING >>
+# same as:
+#
+# << MISSING >>
+# server time:
+#
+# << MISSING >>
+# Default Category:
+Sun: Sön
+Mon: Mån
+Tue: Tis
+Wed: Ons
+Thu: Tor
+Fri: Fre
+Sat: Lör
+Save Preferences: Spara inställningarna
+
+
+###############################################
+# Page: help_bug.php
+#
+#
+# << MISSING >>
+# Report Bug:
+
+
+###############################################
+# Page: help_edit_entry.php
+#
+Adding/Editing Calendar Entries: Lägg till/ändra aktivitet
+
+
+###############################################
+# Page: help_index.php
+#
+Help Index: Hjälpöversikt
+Layers: Lager
+
+
+###############################################
+# Page: help_layers.php
+#
+#
+# << MISSING >>
+# Layers are useful for displaying other users' events in your own calendar.  You can specifiy the user and the color the events will be displayed in.:
+#
+# << MISSING >>
+# Add/Edit/Delete:
+#
+# << MISSING >>
+# Clicking the Edit Layers link in the admin section at the bottom of the page will allow you to add/edit/delete layers.:
+#
+# << MISSING >>
+# Specifies the user that you would like to see displayed in your calendar.:
+#
+# << MISSING >>
+# The text color of the new layer that will be displayed in your calendar.:
+#
+# << MISSING >>
+# If checked, events that are duplicates of your events will be shown.:
+#
+# << MISSING >>
+# Disabling:
+#
+# << MISSING >>
+# Press the Disable Layers link in the admin section at the bottom of the page to turn off layers.:
+#
+# << MISSING >>
+# Enabling:
+#
+# << MISSING >>
+# Press the Enable Layers link in the admin section at the bottom of the page to turn on layers.:
+
+
+###############################################
+# Page: help_pref.php
+#
+#
+# << MISSING >>
+# default-category-help:
+# English text: Specifies the category a new event should default to.
+#
+
+
+###############################################
+# Page: week.php
+#
+#
+# << MISSING >>
+# cont.:
+
+
+###############################################
+# Page: index.php
+#
+
+
+###############################################
+# Page: layers.php
+#
+#
+# << MISSING >>
+# to modify the layers settings for the:
+Layers are currently: Lager-nr
+Enabled: Aktiverat
+Disabled: Inaktiverat
+Disable Layers: Inaktivera lager
+Enable Layers: Aktivera lager
+Layer: Lager
+Edit layer: Redigera lager
+Add layer: Lägg till lager
+
+
+###############################################
+# Page: layers_toggle.php
+#
+
+
+###############################################
+# Page: list_unapproved.php
+#
+View this entry: Visa aktivitet
+Approve this entry?: Godkänn händelsen?
+Approve/Confirm: Godkänn/bekräfta
+Reject this entry?: Avböj denna händelse?
+Reject: Avböj
+#
+# << MISSING >>
+# No unapproved events for:
+Unapproved Events: Aktiviteter som icke är godkända
+#
+# << MISSING >>
+# Public Access:
+
+
+###############################################
+# Page: login.php
+#
+You must enter a login and password: Ange användarnamn och lösenord
+Save login via cookies so I don't have to login next time: Kom ihåg användarnamnet tills nästa gång (cookie)
+Login: Logga in
+#
+# << MISSING >>
+# Access public calendar:
+cookies-note: <strong>OBS:</strong> Programmet kräver att din webbläsare tillåter cookies, ändra dina inställningar i webbläsaren
+
+
+###############################################
+# Page: view_v.php
+#
+
+
+###############################################
+# Page: month.php
+#
+
+
+###############################################
+# Page: pref_handler.php
+#
+
+
+###############################################
+# Page: reject_entry.php
+#
+An appointment has been rejected by: Ett möte har inte godkänts av
+
+
+###############################################
+# Page: search.php
+#
+Search: Sök
+#
+# << MISSING >>
+# Advanced Search:
+Keywords: Sökord
+
+
+###############################################
+# Page: search_handler.php
+#
+You must enter one or more search keywords: Du måste ange ett eller flera sökord
+Search Results: Sökresultat
+match found: träff hittad
+matches found: träffar hittade
+No matches found: Inga träffar
+
+
+###############################################
+# Page: select_user.php
+#
+View Another User's Calendar: Titta på en annan användares kalender
+Go: Gå till
+
+
+###############################################
+# Page: set_entry_cat.php
+#
+#
+# << MISSING >>
+# You have not added any categories:
+#
+# << MISSING >>
+# Set Category:
+
+
+###############################################
+# Page: users.php
+#
+denotes administrative user: indikerar administratör
+Add New User: Lägg till en ny användare
+
+
+###############################################
+# Page: usersel.php
+#
+#
+# << MISSING >>
+# All:
+#
+# << MISSING >>
+# Reset:
+#
+# << MISSING >>
+# Remove:
+#
+# << MISSING >>
+# Ok:
+
+
+###############################################
+# Page: view_entry.php
+#
+every: varje
+1st: 1:a
+2nd: 2:a
+3rd: 3:de
+4th: 4:de
+5th: 5:e
+Description: Beskrivning
+#
+# << MISSING >>
+# Status:
+#
+# << MISSING >>
+# Waiting for approval:
+#
+# << MISSING >>
+# Deleted:
+Rejected: Avböjd
+#
+# << MISSING >>
+# External User:
+Approve/Confirm entry: Godkänn/bekräfta händelsen
+Reject entry: Avböj händelsen
+#
+# << MISSING >>
+# Set category:
+#
+# << MISSING >>
+# Edit repeating entry for all dates:
+#
+# << MISSING >>
+# Edit entry for this date:
+This will delete this entry for all users.: Det här kommer att radera händelsen för alla deltagare
+#
+# << MISSING >>
+# Delete repeating event for all dates:
+#
+# << MISSING >>
+# Delete entry only for this date:
+Edit entry: Ändra händelse
+This will delete the entry from your calendar.: Detta kommer att ta bort mötet från din kalender.
+Do you want to add this entry to your calendar?: Vill du lägga till detta möte i kalendern?
+This will add the entry to your calendar.: Detta kommer att lägga till mötet i din kalender.
+Add to My Calendar: Lägg till i min kalender
+#
+# << MISSING >>
+# Email all participants:
+#
+# << MISSING >>
+# Show activity log:
+#
+# << MISSING >>
+# Hide activity log:
+
+
+###############################################
+# Page: view_m.php
+#
+
+
+###############################################
+# Page: view_w.php
+#
+
+
+###############################################
+# Page: views.php
+#
+#
+# << MISSING >>
+# Views:
+#
+# << MISSING >>
+# Add New View:
+
+
+###############################################
+# Page: views_edit.php
+#
+#
+# << MISSING >>
+# Unnamed View:
+#
+# << MISSING >>
+# Add View:
+#
+# << MISSING >>
+# Edit View:
+#
+# << MISSING >>
+# View Name:
+#
+# << MISSING >>
+# View Type:
+
+
+###############################################
+# Page: views_edit_handler.php
+#
+#
+# << MISSING >>
+# You must specify a view name:
+
+
+###############################################
+# Page: week_details.php
+#
+New Entry: Ny händelse
+Private: Privat
+
+
+###############################################
+# Page: week_ssi.php
+#
+
+
+###############################################
+# Page: year.php
+#
+
+
+###############################################
+# Page: assistant_edit.php
+#
+#
+# << MISSING >>
+# Yours assistants:
+#
+# << MISSING >>
+# Assistants:
+
+
+###############################################
+# Page: assistant_edit_handler.php
+#
+
+
+###############################################
+# Page: purge.php
+#
+
+
+###############################################
+# Page: includes/trailer.php
+#
+Go to: Gå till
+Back to My Calendar: Tillbaka till kalendern
+My Calendar: Min kalender
+Logout: Logga ut
+Another User's Calendar: Titta på andras kalendrar
+Add New Entry: Lägg till ny händelse
+#
+# << MISSING >>
+# Manage Views:
+Edit Layers: Redigera lager
+Account: Konto
+Current User: Nuvarande Användare
+#
+# << MISSING >>
+# Manage calendar of:
+
+
+###############################################
+# Page: includes/connect.php
+#
+
+
+###############################################
+# Page: includes/functions.php
+#
+This event is confidential: Privat aktivitet
+#
+# << MISSING >>
+# exceeds limit of XXX events per day:
+#
+# << MISSING >>
+# You have XXX unapproved events:
+January: Januari
+February: Februari
+March: Mars
+April: April
+May_: Kan_
+June: Juni
+July: Juli
+August: Augusti
+September: September
+October: Oktober
+November: November
+Jan: Jan
+Feb: Feb
+Mar: Mar
+Apr: Apr
+May: Maj
+Jun: Juni
+Jul: Juli
+Aug: Aug
+Sep: Sep
+Oct: Okt
+Nov: Nov
+Dec: Dec
+
+
+###############################################
+# Page: includes/user.php
+#
+Invalid login: Felaktig inloggning
+#
+# << MISSING >>
+# Invalid user login:
+
+
+###############################################
+# Page: includes/site_extras.php
+#
+#
+# << MISSING >>
+# Send Reminder:
+
+
+###############################################
+# Page: includes/translate.php
+#
+
+
+###############################################
+# Page: includes/validate.php
+#
+
+
+###############################################
+# Page: includes/user-ldap.php
+#
+
+
+###############################################
+# Page: includes/user-nis.php
+#
+
+
+###############################################
+# Page: includes/help_trailer.php
+#
+
+
+###############################################
+# Page: includes/config.php
+#
+
+
+###############################################
+# Page: includes/index.php
+#
+
+
+###############################################
+# Page: includes/js.php
+#
+
+
+###############################################
+# Page: includes/php-dbi.php
+#
+
+
+###############################################
+# Page: includes/styles.php
+#
+
+
+###############################################
+# Page: includes/dbtable.php
+#
+
+
+###############################################
+# Page: tools/send_reminders.php
+#
+This is a reminder for the event detailed below.: Detta är en påminnelse angående följande aktivitet
+Reminder: Påminnelse

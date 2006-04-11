@@ -1,0 +1,128 @@
+<!--
+---- Ahoy!
+----
+---- Use fn_ for general functions, me_ for methods such as uddi
+----
+---- Remember to make IDs unique, i.e. suffix with function name.
+---- It's simple to get a draft of a file for some new function
+---- by using template.sh resided in this directory.
+---- Simply call it as follows:
+----
+---- template.sh <name_of_my_function> <miscinfo> <prefix_like_fn_or_me>
+----
+---- Errors and examples sections are there for a reason!
+---- Ditto with params and return values/types.
+---- Use the Description cell in errors table if the error message
+---- is not self-explanatory.
+----
+---- Excessive cross-linking is a Good Thing(tm). Just make sure
+---- that the ID you're linking with exists.
+----
+---- Use tables for tables, simplelists for what they are:
+---- simple lists. See errors section for an example of how to
+---- make tables. ID the tables so they may later be cross-referenced
+---- if needed: <table id="table_<function name>_<table name>">
+----
+---- Please make sure that your example also runs as written
+---- in the doc: BEWARE OF SQL92 RESERVED WORDS IN IDENTIFIERS.
+----
+---- Best way to do this is using ISQL and pasting output into
+---- the example when possible.
+----
+---- FIXME: means you fix it yourself BEFORE committing
+----        in the archive.
+----
+---- When documenting, try to put yourself into your average
+---- app developer/dba's shoes: They can't use the source, Duke!
+---- A good example can save both us and "them" from hours of
+---- grief and countless customer support calls!
+----
+---- Remove this comment before committing.
+----
+---- Happy documenting! ;)
+----
+---->
+
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+  $Id$
+  (C)Copyright 2005 OpenLink Software
+-->
+<refentry id="fn_">
+  <refmeta>
+    <refentrytitle></refentrytitle>
+    <refmiscinfo></refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname></refname>
+    <refpurpose></refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_">
+      <funcprototype id="fproto_">
+        <funcdef><function></function></funcdef>
+	<paramdef> <parameter></parameter> </paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_">
+    <title>Description</title>
+    <para></para>
+  </refsect1>
+  <refsect1 id="params_">
+    <title>Parameters</title>
+    <refsect2><title></title>
+      <para></para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_"><title>Return Types</title>
+    <para></para>
+  </refsect1>
+  <refsect1 id="errors_">
+    <title>Errors</title>
+
+<!-- In case of non-function-specific errors, i.e. only common
+     parameter errors are signalled, comment out the table below 
+     otherwise add the unique error values as individual errorcodes -->
+
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+  <refsect1 id="examples_">
+    <title>Examples</title>
+    <example id="ex_"><title></title>
+      <para></para>
+      <screen><![CDATA[
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_">
+    <title>See Also</title>
+    <para><link linkend="fn"><function></function></link></para>
+  </refsect1>
+</refentry>

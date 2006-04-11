@@ -1,0 +1,868 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<cases>
+
+<case id="1.1.9.1">
+<descr>List all books.</descr>
+<xpath><![CDATA[
+   document("bib.xml")/bib/book
+]]></xpath>
+<etalon>
+<book year="1994">
+  <title>TCP/IP Illustrated</title>
+  <author><last>Stevens</last><first>W.</first>
+  </author>
+  <publisher>Addison-Wesley</publisher>
+  <price>65.95</price>
+</book>
+<book year="1992">
+  <title>Advanced Programming in the Unix environment</title>
+  <author><last>Stevens</last><first>W.</first>
+  </author>
+  <publisher>Addison-Wesley</publisher>
+  <price>65.95</price>
+</book>
+<book year="2000">
+  <title>Data on the Web</title>
+  <author><last>Abiteboul</last><first>Serge</first>
+  </author>
+  <author><last>Buneman</last><first>Peter</first>
+  </author>
+  <author><last>Suciu</last><first>Dan</first>
+  </author>
+  <publisher>Morgan Kaufmann Publishers</publisher>
+  <price>39.95</price>
+</book>
+<book year="1999">
+  <title>The Economics of Technology and Content for Digital TV</title>
+  <editor><last>Gerbarg</last><first>Darcy</first>
+    <affiliation>CITI</affiliation>
+  </editor>
+  <publisher>Kluwer Academic Publishers</publisher>
+  <price>129.95</price>
+</book>
+</etalon>
+</case>
+
+
+<case id="1.1.9.2">
+<descr>List books published by Addison-Wesley after 1991.</descr>
+<xpath><![CDATA[
+   document("bib.xml")/bib/book[publisher = "Addison-Wesley" and @year > 1991]
+]]></xpath>
+<etalon>
+<book year="1994">
+  <title>TCP/IP Illustrated</title>
+  <author><last>Stevens</last><first>W.</first>
+  </author>
+  <publisher>Addison-Wesley</publisher>
+  <price>65.95</price>
+</book>
+<book year="1992">
+  <title>Advanced Programming in the Unix environment</title>
+  <author><last>Stevens</last><first>W.</first>
+  </author>
+  <publisher>Addison-Wesley</publisher>
+  <price>65.95</price>
+</book> 
+</etalon>
+</case>
+
+
+<case id="1.1.9.3">
+<descr>List all titles of the books.</descr>
+<xpath><![CDATA[
+   document("bib.xml")/bib/book/title
+]]></xpath>
+<etalon>
+    <title>TCP/IP Illustrated</title>
+    <title>Advanced Programming in the Unix environment</title>
+    <title>Data on the Web</title>
+    <title>The Economics of Technology and Content for Digital TV</title>
+</etalon>
+</case>
+
+
+<case id="1.1.9.4">
+<descr>List books having the authors.</descr>
+<xpath><![CDATA[
+   document("bib.xml")/bib/book[author]
+]]></xpath>
+<etalon>
+<book year="1994">
+  <title>TCP/IP Illustrated</title>
+  <author><last>Stevens</last><first>W.</first>
+  </author>
+  <publisher>Addison-Wesley</publisher>
+  <price>65.95</price>
+</book>
+<book year="1992">
+  <title>Advanced Programming in the Unix environment</title>
+  <author><last>Stevens</last><first>W.</first>
+  </author>
+  <publisher>Addison-Wesley</publisher>
+  <price>65.95</price>
+</book>
+<book year="2000">
+  <title>Data on the Web</title>
+  <author><last>Abiteboul</last><first>Serge</first>
+  </author>
+  <author><last>Buneman</last><first>Peter</first>
+  </author>
+  <author><last>Suciu</last><first>Dan</first>
+  </author>
+  <publisher>Morgan Kaufmann Publishers</publisher>
+  <price>39.95</price>
+</book>
+</etalon>
+</case>
+
+<case id="1.1.9.5">
+<descr>List author's name </descr>
+<xpath><![CDATA[
+     document("bib.xml")//author
+]]></xpath>
+<etalon>
+  <author><last>Stevens</last><first>W.</first>
+  </author>
+  <author><last>Stevens</last><first>W.</first>
+  </author>
+  <author><last>Abiteboul</last><first>Serge</first>
+  </author>
+  <author><last>Buneman</last><first>Peter</first>
+  </author>
+  <author><last>Suciu</last><first>Dan</first>
+  </author>
+</etalon>
+</case>
+
+<case id="1.1.9.5a">
+<descr>List distinct author's name </descr>
+<xpath><![CDATA[
+     distinct(document("bib.xml")//author)
+]]></xpath>
+<etalon>
+  <author><last>Suciu</last><first>Dan</first>
+  </author>
+  <author><last>Stevens</last><first>W.</first>
+  </author>
+  <author><last>Abiteboul</last><first>Serge</first>
+  </author>
+  <author><last>Buneman</last><first>Peter</first>
+  </author>
+</etalon>
+</case>
+
+
+<case id="1.1.9.6">
+<descr>List books having more than one author.</descr>
+<xpath><![CDATA[
+   document("bib.xml")//book[count(author)>1]
+]]></xpath>
+<etalon>
+<book year="2000">
+  <title>Data on the Web</title>
+  <author><last>Abiteboul</last><first>Serge</first>
+  </author>
+  <author><last>Buneman</last><first>Peter</first>
+  </author>
+  <author><last>Suciu</last><first>Dan</first>
+  </author>
+  <publisher>Morgan Kaufmann Publishers</publisher>
+  <price>39.95</price>
+</book></etalon>
+</case>
+
+<case id="1.1.9.7">
+<descr>Find books in which some element has a tag ending in "or" and the same element contains 
+the string "Suciu" (at any level of nesting).
+</descr>
+<xpath><![CDATA[
+  document("bib.xml")//book/*[contains(string(.), "Suciu") and ends-with(name(.), "or")]/..
+]]></xpath>
+<etalon>
+ <book year="2000">
+  <title>Data on the Web</title>
+  <author><last>Abiteboul</last><first>Serge</first>
+  </author>
+  <author><last>Buneman</last><first>Peter</first>
+  </author>
+  <author><last>Suciu</last><first>Dan</first>
+  </author>
+  <publisher>Morgan Kaufmann Publishers</publisher>
+  <price>39.95</price>
+ </book> 
+</etalon>
+</case>
+
+<case id="1.1.9.8">
+<descr>
+In the document "books.xml", find all elements titles that contain
+the word "XML", regardless of the level of nesting.</descr>
+<xpath><![CDATA[
+ document("books.xml")//*[title[contains(., "XML")]]
+]]></xpath>
+
+<etalon>
+<section>
+  <title>XML</title>
+  <section>
+    <title>Basic Syntax</title>
+  </section>
+  <section>
+    <title>XML and Semistructured Data</title>
+  </section>
+</section>
+<section>
+  <title>XML and Semistructured Data</title>
+</section> 
+</etalon>
+</case>
+
+<case id="1.1.9.9">
+<descr>
+List all attributes' values of the figure.
+</descr>
+<xpath><![CDATA[
+   document("book1.xml")//figure/@*
+]]></xpath>
+<etalon>
+400
+400
+200
+500
+250
+400
+</etalon>
+</case>
+<case id="1.1.9.10">
+<descr>
+How many sections are in Book1? </descr>
+<xpath><![CDATA[
+     count(document("book1.xml")//section)
+]]></xpath>
+<etalon>
+7
+</etalon>
+</case>
+
+
+<case id="1.1.9.11">
+<descr>
+How many top-level sections are in Book1? </descr>
+<xpath><![CDATA[
+   count(document("book1.xml")/book/section)
+]]></xpath>
+<etalon>
+2
+</etalon>
+</case>
+
+
+<case id="1.3.4.1">
+<descr>
+In the Procedure section of Report1, what Instruments were used in the second
+Incision? </descr>
+<xpath><![CDATA[
+  document("report1.xml")//section[section.title = "Procedure"]//incision[2]/instrument
+]]></xpath>
+<etalon>
+<instrument>electrocautery</instrument>
+</etalon>
+</case>
+
+<case id="1.3.4.3">
+<descr>
+In Report1, what Instruments were used in the second Incision? </descr>
+<xpath><![CDATA[
+    document("report1.xml")//incision[2]/instrument
+]]></xpath>
+<etalon>
+<instrument>electrocautery</instrument> 
+</etalon>
+</case>
+
+<case id="1.3.4.4">
+<descr>
+In Report1, find Incision having Geography and  Instrument</descr>
+<xpath><![CDATA[
+  document("report1.xml")//incision[geography and instrument]
+]]></xpath>
+<etalon>
+<incision>A curvilinear incision was made 
+<geography>in the midline immediately infraumbilical</geography>
+and the subcutaneous tissue was divided 
+<instrument>using electrocautery.</instrument>
+</incision> 
+</etalon>
+</case>
+
+<case id="1.3.4.5">
+<descr>
+In Report1, find Instrument in Incision having Geography
+</descr>
+<xpath><![CDATA[
+document("report1.xml")//incision[geography]/instrument
+]]></xpath>
+<etalon>
+<instrument>using electrocautery.</instrument>
+</etalon>
+</case>
+<case id="1.5.4.1">
+<descr>
+Locate all paragraphs in the report (all "para" elements occurring anywhere
+within the "report" element).</descr>
+<xpath><![CDATA[
+document("sgml_intro.xml")//report//para
+]]></xpath>
+<etalon>
+  <para>With the ever-changing and growing global market, companies and
+<!-- 7-->large organizations are searching for ways to become more viable and
+<!-- 8-->competitive. Downsizing and other cost-cutting measures demand more
+<!-- 9-->efficient use of corporate resources. One very important resource is
+<!--10-->an organization's information.</para>
+  <para>As part of the move toward integrated information management,
+<!--12-->whole industries are developing and implementing standards for
+<!--13-->exchanging technical information. This report describes how one such
+<!--14-->standard, the Standard Generalized Markup Language (SGML), works as
+<!--15-->part of an overall information management strategy.</para>
+  <para>While SGML is a fairly recent technology, the use of
+<!--21-->
+    <emph>markup</emph>in computer-generated documents has existed for a
+<!--22-->while.</para>
+  <para>Markup is everything in a document that is not content. The
+<!--28-->traditional meaning of markup is the manual <emph>marking</emph>up
+<!--29-->of typewritten text to give instructions for a typesetter or
+<!--30-->compositor about how to fit the text on a page and what typefaces to
+<!--31-->use. This kind of markup is known as <emph>procedural markup</emph>.</para>
+  <para>Most electronic publishing systems today use some form of
+<!--35-->procedural markup. Procedural markup codes are good for one
+<!--36-->presentation of the information.</para>
+  <para>Generic markup (also known as descriptive markup) describes the
+<!--40-->
+    <emph>purpose</emph>of the text in a document. A basic concept of
+<!--41-->generic markup is that the content of a document must be separate from
+<!--42-->the style. Generic markup allows for multiple presentations of the
+<!--43-->information.</para>
+  <para>Industries involved in technical documentation increasingly
+<!--47-->prefer generic over procedural markup schemes. When a company changes
+<!--48-->software or hardware systems, enormous data translation tasks arise,
+<!--49-->often resulting in errors.</para>
+  <para>SGML defines a strict markup scheme with a syntax for defining
+<!--54-->document data elements and an overall framework for marking up
+<!--55-->documents.</para>
+  <para>SGML can describe and create documents that are not dependent on
+<!--57-->any hardware, software, formatter, or operating system. Since SGML documents
+<!--58-->conform to an international standard, they are portable.</para>
+  <para>You can break a typical document into three layers: structure,
+<!--63-->content, and style. SGML works by separating these three aspects and
+<!--64-->deals mainly with the relationship between structure and content.</para>
+  <para>At the heart of an SGML application is a file called the DTD, or
+<!--68-->Document Type Definition. The DTD sets up the structure of a document,
+<!--69-->much like a database schema describes the types of information it
+<!--70-->handles.</para>
+  <para>A database schema also defines the relationships between the
+<!--72-->various types of data. Similarly, a DTD specifies <emph>rules</emph>
+<!--73-->to help ensure documents have a consistent, logical structure.</para>
+  <para>Content is the information itself. The method for identifying
+<!--77-->the information and its meaning within this framework is called
+<!--78-->
+    <emph>tagging</emph>. Tagging must
+<!--79-->conform to the rules established in the DTD (see <xref xrefid="top4" />).</para>
+  <para>SGML does not standardize style or other processing methods for
+<!--84-->information stored in SGML.</para>
+  <para>The Graphic Communications Association has been
+<!--91-->instrumental in the development of SGML. GCA provides conferences,
+<!--92-->tutorials, newsletters, and publication sales for both members and
+<!--93-->non-members.</para>
+  <para security="c">Exiled members of the former Soviet Union's secret
+<!--95-->police, the KGB, have infiltrated the upper ranks of the GCA and are
+<!--96-->planning the Final Revolution as soon as DSSSL is completed.</para>
+</etalon>
+</case>
+
+<case id="1.5.4.2">
+<descr>
+Locate all paragraph elements in an introduction (all "para" elements
+directly contained within an "intro" element). </descr>
+<xpath><![CDATA[
+document("sgml_intro.xml")//intro/para
+]]></xpath>
+<etalon>
+  <para>With the ever-changing and growing global market, companies and 
+<!-- 7-->large organizations are searching for ways to become more viable and 
+<!-- 8-->competitive. Downsizing and other cost-cutting measures demand more 
+<!-- 9-->efficient use of corporate resources. One very important resource is 
+<!--10-->an organization's information.</para>
+  <para>As part of the move toward integrated information management, 
+<!--12-->whole industries are developing and implementing standards for 
+<!--13-->exchanging technical information. This report describes how one such 
+<!--14-->standard, the Standard Generalized Markup Language (SGML), works as 
+<!--15-->part of an overall information management strategy.</para>
+  <para>While SGML is a fairly recent technology, the use of 
+<!--21-->
+    <emph>markup</emph>in computer-generated documents has existed for a 
+<!--22-->while.</para>
+  <para>Markup is everything in a document that is not content. The 
+<!--28-->traditional meaning of markup is the manual <emph>marking</emph>up 
+<!--29-->of typewritten text to give instructions for a typesetter or 
+<!--30-->compositor about how to fit the text on a page and what typefaces to 
+<!--31-->use. This kind of markup is known as <emph>procedural markup</emph>.</para>
+  <para>SGML defines a strict markup scheme with a syntax for defining 
+<!--54-->document data elements and an overall framework for marking up 
+<!--55-->documents.</para>
+  <para>SGML can describe and create documents that are not dependent on 
+<!--57-->any hardware, software, formatter, or operating system. Since SGML documents 
+<!--58-->conform to an international standard, they are portable.</para>
+  <para>You can break a typical document into three layers: structure, 
+<!--63-->content, and style. SGML works by separating these three aspects and 
+<!--64-->deals mainly with the relationship between structure and content.</para>
+  <para>The Graphic Communications Association has been 
+<!--91-->instrumental in the development of SGML. GCA provides conferences, 
+<!--92-->tutorials, newsletters, and publication sales for both members and 
+<!--93-->non-members.</para>
+  <para security="c">Exiled members of the former Soviet Union's secret 
+<!--95-->police, the KGB, have infiltrated the upper ranks of the GCA and are 
+<!--96-->planning the Final Revolution as soon as DSSSL is completed.</para>
+</etalon>
+</case>
+
+<case id="1.5.4.3">
+<descr>
+Locate all paragraphs in the introduction of a section that is in a chapter
+that has no introduction (all "para" elements directly contained within an
+"intro" element directly contained in a "section" element directly contained in
+a "chapter" element. The "chapter" element must not directly contain an "intro"
+element). </descr>
+<xpath><![CDATA[
+   document("sgml_intro.xml")//chapter[empty(intro)]/section/intro/para
+]]></xpath>
+<etalon>
+  <para>The Graphic Communications Association has been 
+<!--91-->instrumental in the development of SGML. GCA provides conferences, 
+<!--92-->tutorials, newsletters, and publication sales for both members and 
+<!--93-->non-members.</para>
+  <para security="c">Exiled members of the former Soviet Union's secret 
+<!--95-->police, the KGB, have infiltrated the upper ranks of the GCA and are 
+<!--96-->planning the Final Revolution as soon as DSSSL is completed.</para>
+</etalon>
+</case>
+
+<case id="1.5.4.4">
+<descr>
+Locate the second paragraph in the third section in the second chapter (the
+second "para" element occurring in the third "section" element occurring in the
+second "chapter" element occurring in the "report"). </descr>
+<xpath><![CDATA[
+   document("sgml_intro.xml")//chapter[2]//section[3]//para[2]
+]]></xpath>
+<etalon>
+  <para>At the heart of an SGML application is a file called the DTD, or
+<!--68-->Document Type Definition. The DTD sets up the structure of a document,
+<!--69-->much like a database schema describes the types of information it
+<!--70-->handles.</para>
+</etalon>
+</case>
+
+<case id="1.5.4.5">
+<descr>
+Locate all classified paragraphs (all "para" elements whose "security"
+attribute has the value "c").</descr>
+<xpath><![CDATA[
+  document("sgml_intro.xml")//para[@security = "c"]
+]]></xpath>
+<etalon>
+  <para security="c">Exiled members of the former Soviet Union's secret 
+<!--95-->police, the KGB, have infiltrated the upper ranks of the GCA and are 
+<!--96-->planning the Final Revolution as soon as DSSSL is completed.</para>
+</etalon>
+</case>
+
+<case id="1.5.4.6">
+<descr>
+List texts of the short titles of all sections (the values of the "shorttitle"
+attributes of all "section" elements, expressing each short title as the value
+of a new element.) </descr>
+<xpath><![CDATA[
+   document("sgml_intro.xml")//section/@shorttitle
+]]></xpath>
+<etalon>
+What is markup?
+What is SGML?
+How does SGML work?</etalon>
+</case>
+
+<case id="1.5.4.8">
+<descr>
+Locate all sections with a title that has "is SGML" in it (all "section"
+elements that contain a "title" element that has the consecutive characters "is
+SGML" in its content). The string can be interrupted by sub-elements. </descr>
+<xpath><![CDATA[
+document("sgml_intro.xml")//section[contains(string(.//title), "is SGML")]
+]]></xpath>
+<etalon>
+  <section shorttitle="What is SGML?">
+<!--51-->
+    <title>What <emph>is</emph>SGML in the grand scheme of the universe, anyway?</title>
+<!--52-->
+    <intro>
+<!--53-->
+      <para>SGML defines a strict markup scheme with a syntax for defining 
+<!--54-->document data elements and an overall framework for marking up 
+<!--55-->documents.</para>
+<!--56-->
+      <para>SGML can describe and create documents that are not dependent on 
+<!--57-->any hardware, software, formatter, or operating system. Since SGML documents 
+<!--58-->conform to an international standard, they are portable.</para>
+    </intro>
+  </section>
+  <section shorttitle="How does SGML work?">
+<!--60-->
+    <title>How is SGML and would you recommend it to your grandmother?</title>
+<!--61-->
+    <intro>
+<!--62-->
+      <para>You can break a typical document into three layers: structure, 
+<!--63-->content, and style. SGML works by separating these three aspects and 
+<!--64-->deals mainly with the relationship between structure and content.</para>
+    </intro>
+<!--65-->
+    <topic topicid="top4">
+<!--66-->
+      <title>Structure</title>
+<!--67-->
+      <para>At the heart of an SGML application is a file called the DTD, or 
+<!--68-->Document Type Definition. The DTD sets up the structure of a document, 
+<!--69-->much like a database schema describes the types of information it 
+<!--70-->handles.</para>
+<!--71-->
+      <para>A database schema also defines the relationships between the 
+<!--72-->various types of data. Similarly, a DTD specifies <emph>rules</emph>
+<!--73-->to help ensure documents have a consistent, logical structure.</para>
+    </topic>
+<!--74-->
+    <topic topicid="top5">
+<!--75-->
+      <title>Content</title>
+<!--76-->
+      <para>Content is the information itself. The method for identifying 
+<!--77-->the information and its meaning within this framework is called 
+<!--78-->
+        <emph>tagging</emph>. Tagging must 
+<!--79-->conform to the rules established in the DTD (see <xref xrefid="top4" />).</para>
+<!--80-->
+      <graphic graphname="tagexamp" />
+    </topic>
+<!--81-->
+    <topic topicid="top6">
+<!--82-->
+      <title>Style</title>
+<!--83-->
+      <para>SGML does not standardize style or other processing methods for 
+<!--84-->information stored in SGML.</para>
+    </topic>
+  </section>
+</etalon>
+</case>
+
+<case id="1.5.4.9">
+<descr>
+Same as (1.5.4.8), but the string cannot be interrupted by sub-elements. </descr>
+<xpath><![CDATA[
+document("sgml_intro.xml")//section[contains(.//title/text(), "is SGML")]
+]]></xpath>
+<etalon>
+  <section shorttitle="How does SGML work?">
+<!--60-->
+    <title>How is SGML and would you recommend it to your grandmother?</title>
+<!--61-->
+    <intro>
+<!--62-->
+      <para>You can break a typical document into three layers: structure, 
+<!--63-->content, and style. SGML works by separating these three aspects and 
+<!--64-->deals mainly with the relationship between structure and content.</para>
+    </intro>
+<!--65-->
+    <topic topicid="top4">
+<!--66-->
+      <title>Structure</title>
+<!--67-->
+      <para>At the heart of an SGML application is a file called the DTD, or 
+<!--68-->Document Type Definition. The DTD sets up the structure of a document, 
+<!--69-->much like a database schema describes the types of information it 
+<!--70-->handles.</para>
+<!--71-->
+      <para>A database schema also defines the relationships between the 
+<!--72-->various types of data. Similarly, a DTD specifies <emph>rules</emph>
+<!--73-->to help ensure documents have a consistent, logical structure.</para>
+    </topic>
+<!--74-->
+    <topic topicid="top5">
+<!--75-->
+      <title>Content</title>
+<!--76-->
+      <para>Content is the information itself. The method for identifying 
+<!--77-->the information and its meaning within this framework is called 
+<!--78-->
+        <emph>tagging</emph>. Tagging must 
+<!--79-->conform to the rules established in the DTD (see <xref xrefid="top4" />).</para>
+<!--80-->
+      <graphic graphname="tagexamp" />
+    </topic>
+<!--81-->
+    <topic topicid="top6">
+<!--82-->
+      <title>Style</title>
+<!--83-->
+      <para>SGML does not standardize style or other processing methods for 
+<!--84-->information stored in SGML.</para>
+    </topic>
+  </section>
+</etalon>
+</case>
+
+<case id="1.5.4.10">
+<descr>
+Locate all the topics referenced by a cross-reference anywhere in the parent element
+(all the "topic" elements whose "topicid" attribute value is the same as an
+"xrefid" attribute value of any "xref" element inside parent element of the "topic"). </descr>
+<xpath><![CDATA[
+   document("sgml_intro.xml")//topic[@topicid = ..//xref/@xrefid]
+]]></xpath>
+<etalon>
+  <topic topicid="top4">
+<!--66-->
+    <title>Structure</title>
+<!--67-->
+    <para>At the heart of an SGML application is a file called the DTD, or 
+<!--68-->Document Type Definition. The DTD sets up the structure of a document, 
+<!--69-->much like a database schema describes the types of information it 
+<!--70-->handles.</para>
+<!--71-->
+    <para>A database schema also defines the relationships between the 
+<!--72-->various types of data. Similarly, a DTD specifies <emph>rules</emph>
+<!--73-->to help ensure documents have a consistent, logical structure.</para>
+  </topic>
+</etalon>
+</case>
+
+<case id="1.6.4.1">
+<descr>
+Find all "news_items" where the name "Foobar Corporation" appears in the title.
+</descr>
+<xpath><![CDATA[
+document("news.xml")//news_item/title[contains(./text(), "Foobar Corporation")]
+]]></xpath>
+<etalon>
+<title>Foobar Corporation releases its new line of Foo products today</title>
+<title>Foobar Corporation is suing Gorilla Corporation for patent infringement </title>
+</etalon>
+</case>
+
+<case id="1.6.4.5">
+<descr>
+For each "news_item" that is relevant to the "Gorilla Corporation", list the content of the
+"title".
+</descr>
+<xpath><![CDATA[
+document("news.xml")//news_item[contains(string(content), "Gorilla Corporation" )]/title/text()
+]]></xpath>
+<etalon>
+Gorilla Corporation acquires YouNameItWeIntegrateIt.com
+Foobar Corporation is suing Gorilla Corporation for patent infringement 
+</etalon>
+</case>
+
+<case id="1.7.4.1">
+<descr>List first unique namespaces used in all elements of the sample data.</descr>
+<xpath><![CDATA[
+namespace-uri(document("auction.xml")//*)
+]]></xpath>
+<etalon>
+http://www.AuctionMediatorCompany.com/AuctionWatch 
+</etalon>
+</case>
+<!--
+<case id="1.7.4.1a">
+<descr>List all unique namespaces used in all attributes of the sample data.</descr>
+<xpath><![CDATA[
+ namespace-uri(document("auction.xml")//*/@*)
+]]></xpath>
+<etalon>
+  <ns>http://www.AuctionMediatorCompany.com/AuctionWatch</ns>
+  <ns>http://www.AuctionMediatorCompany.com/auctioneers#anyzone</ns>
+  <ns>http://www.AuctionMediatorCompany.com/auctioneers#yabadoo</ns>
+  <ns>http://www.w3.org/1999/XMLSchema-datatypes</ns>
+  <ns>http://www.w3.org/1999/xlink</ns>
+  <ns>xml</ns>
+</etalon>
+</case>
+-->
+<case id="1.7.4.2">
+<descr>
+Select the title of each record that is for sale.</descr>
+<xpath><![CDATA[
+[ xmlns:music = "http://www.musicdatabase.org/music/records"]
+document("auction.xml")//music:title
+]]></xpath>
+<etalon>
+  <n0:title xmlns:n0="http://www.musicdatabase.org/music/records">In a Silent Way</n0:title>
+  <n0:title xmlns:n0="http://www.musicdatabase.org/music/records">Think of One ...</n0:title>
+</etalon>
+</case>
+
+<case id="1.7.4.3">
+<descr>
+Select all elements using datatypes from "XML Schema: Part 2" datatypes.</descr>
+<xpath><![CDATA[
+[ xmlns:dt = "http://www.w3.org/1999/XMLSchema-datatypes" ]
+document("auction.xml")//*[@dt:*]
+]]></xpath>
+<etalon>
+<n0:Open xmlns:n0="http://www.AuctionMediatorCompany.com/AuctionWatch" xmlns:n2="http://www.w3.org/1999/XMLSchema-datatypes" n2:type="timeInstant">2000-03-21:07:41:34-05:00</n0:Open>
+<n0:Close xmlns:n0="http://www.AuctionMediatorCompany.com/AuctionWatch" xmlns:n2="http://www.w3.org/1999/XMLSchema-datatypes" n2:type="timeInstant">2000-03-23:07:41:34-05:00</n0:Close>
+<n0:Open xmlns:n0="http://www.AuctionMediatorCompany.com/AuctionWatch" xmlns:n2="http://www.w3.org/1999/XMLSchema-datatypes" n2:type="timeInstant">2000-03-19:17:03:00-04:00</n0:Open>
+<n0:Close xmlns:n0="http://www.AuctionMediatorCompany.com/AuctionWatch" xmlns:n2="http://www.w3.org/1999/XMLSchema-datatypes" n2:type="timeInstant">2000-03-29:17:03:00-04:00</n0:Close>
+</etalon>
+</case>
+
+<case id="1.7.4.4">
+<descr>
+List the target URI's of all XLinks in the document.</descr>
+<xpath><![CDATA[
+[ xmlns:xlink = "http://www.w3.org/1999/xlink" ]
+   document("auction.xml")//@xlink:href
+]]></xpath>
+<etalon>
+  <link>http://auction.anyzone.com/item/0321K372910</link>
+  <link>http://auction.eachbay.com/members?get=RecordsRUs</link>
+  <link>http://auction.anyzone.com/members/VintageRecordFreak</link>
+  <link>http://auctions.yabadoo.com/auction/13143816</link>
+  <link>http://auction.eachbay.com/showRating/user=VintageRecordFreak</link>
+  <link>http://auction.eachbay.com/showRating/user=StarsOn45</link>
+</etalon>
+</case>
+
+<case id="1.7.4.4a">
+<descr>
+List the target URI's of all XLinks in the document.</descr>
+<xpath><![CDATA[
+[ xmlns:xlink = "http://www.w3.org/1999/xlink" ]
+   document("auction.xml")//*/@xlink:href
+]]></xpath>
+<etalon>
+  http://auction.anyzone.com/item/0321K372910
+  http://auction.eachbay.com/members?get=RecordsRUs
+  http://auction.anyzone.com/members/VintageRecordFreak
+  http://auctions.yabadoo.com/auction/13143816
+  http://auction.eachbay.com/showRating/user=VintageRecordFreak
+  http://auction.eachbay.com/showRating/user=StarsOn45
+</etalon>
+</case>
+
+
+<case id="1.7.4.6">
+<descr>
+Select the closing time elements of all AnyZone auctions currently monitored.
+</descr>
+<xpath><![CDATA[
+[ xmlns:ma = "http://www.AuctionMediatorCompany.com/AuctionWatch"
+  xmlns:anyzone = "http://www.AuctionMediatorCompany.com/auctioneers#anyzone" ]
+document("auction.xml")//ma:Auction[@anyzone:ID]/ma:Schedule/ma:Close
+]]></xpath>
+<etalon>
+  <n0:Close xmlns:n0="http://www.AuctionMediatorCompany.com/AuctionWatch" 
+   xmlns:n2="http://www.w3.org/1999/XMLSchema-datatypes" n2:type="timeInstant">2000-03-23:07:41:34-05:00
+  </n0:Close>
+</etalon>
+</case>
+
+<case id="1.7.4.7">
+<descr>
+Select the homepage of all auctions where both seller and high bidder are
+registered at the same auctioneer.</descr>
+<xpath><![CDATA[
+[ xmlns:ma = "http://www.AuctionMediatorCompany.com/AuctionWatch"]
+   document("auction.xml")//ma:Auction[namespace-uri (ma:Trading_Partners/ma:Seller/*:ID) = 
+    namespace-uri (ma:Trading_Partners/ma:High_Bidder/*:ID)]/ma:AuctionHomepage
+]]></xpath>
+<etalon>
+  <ma:AuctionHomepage
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    xmlns:ma="http://www.AuctionMediatorCompany.com/AuctionWatch"
+    xlink:type="simple"
+    xlink:href="http://auctions.yabadoo.com/auction/13143816" />
+</etalon>
+</case>
+
+<case id="1.7.4.8">
+<descr>
+Select all high bidder traders without negative
+comments</descr>
+<xpath><![CDATA[
+[ xmlns:ma = "http://www.AuctionMediatorCompany.com/AuctionWatch" ]
+document("auction.xml")//ma:Trading_Partners/ma:High_Bidder[*:NegativeComments = 0]
+]]></xpath>
+<etalon>
+<n0:High_Bidder xmlns:n0="http://www.AuctionMediatorCompany.com/AuctionWatch">
+  <n2:ID xmlns:n2="http://www.AuctionMediatorCompany.com/auctioneers#eachbay">VintageRecordFreak</n2:ID>
+  <n2:PositiveComments xmlns:n2="http://www.AuctionMediatorCompany.com/auctioneers#eachbay">232</n2:PositiveComments>
+  <n2:NeutralComments xmlns:n2="http://www.AuctionMediatorCompany.com/auctioneers#eachbay">0</n2:NeutralComments>
+  <n2:NegativeComments xmlns:n2="http://www.AuctionMediatorCompany.com/auctioneers#eachbay">0</n2:NegativeComments>
+  <n0:MemberInfoPage xmlns:n2="http://www.w3.org/1999/xlink" n2:type="simple" n2:href="http://auction.eachbay.com/showRating/user=VintageRecordFreak" n2:role="ma:MemberInfoPage" />
+</n0:High_Bidder> 
+</etalon>
+</case>
+
+<case id="1.8.4.1">
+<descr>List all parts that have no attribute partof.
+</descr>
+<xpath><![CDATA[
+document("partlist.xml")//part[not @partof]
+]]></xpath>
+<etalon>
+<part partid="0" name="car" />
+<part partid="10" name="skateboard" />
+<part partid="20" name="canoe" /> 
+</etalon>
+</case>
+
+
+<case id="1.8.4.2">
+<descr>List all parts with attribute partof having the same value as attribute partid of 
+another part of the same parent.
+</descr>
+<xpath><![CDATA[
+distinct(document("partlist.xml")//part[not @partof]/../part[@partof = //part[not @partof]/@partid])
+]]></xpath>
+<etalon>
+<part partid="1" partof="0" name="engine" />
+<part partid="2" partof="0" name="door" />
+<part partid="11" partof="10" name="board" />
+<part partid="12" partof="10" name="wheel" /> 
+</etalon>
+</case>
+
+</cases>
+

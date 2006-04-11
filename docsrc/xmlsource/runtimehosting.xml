@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter id="runtimehosting" label="runtimehosting.xml">
+ <title>Runtime Hosting</title>
+
+ <abstract>
+<para>Virtuoso can be extended by in-process hosting of a number
+of different run time environments.  This includes: Microsoft's .NET CLR (CLR),
+the Mono ECMA-CLI (Mono), and the Java Virtual Machine (JVM).
+Thus, you can create persistent stored modules, SQL functions,
+and user defined data types using any Microsoft .NET or Mono
+bound language, Java, and traditional languages such as 'C'/C++.</para>
+<para>Objects provided by hosted run times, such as Java and CLR can be
+directly and transparently accessed from SQL.  This also means that
+application logic in any hosted language can be exposed as a web
+service.  By offering a choice of hosted run times in a cross platform
+setting, Virtuoso adds a new degree of freedom for the application
+designer.  Applications can now be developed and deployed on either
+Windows, Linux or Unix, can be written in Java or any .net CLR bound
+language and can talk to any database via Virtuoso's virtual databasing
+capabilities.</para>
+ <para>The Virtuoso Server Extension Interface (VSEI) provides C
+ interfaces and hooks that enable developers to write external functionality
+ that can be bolted on the side of Virtuoso and called as SQL functions.
+</para>
+</abstract>
+
+<sect1 id="rthactivation"><title>Runtime Environments</title>
+ <para>The Virtuoso server in its standard build is a single executable.  To
+ allow for external customizations based on VSEs the Virtuoso server engine
+ becomes a callable library, the main function is re-written to incorporate other
+ libraries and a new executable is created.
+For example, a Virtuoso server
+ that contains PHP support under Windows consists of: </para>
+
+<programlisting>
+ 65K virtuoso-odbc-php-t.exe
+5.2M libvirtuoso-odbc-t.dll
+1.2M php4ts.dll
+</programlisting>
+
+ <para>which replaces the usual <computeroutput>7M virtuoso-odbc-t.exe</computeroutput>.
+ <computeroutput>virtuoso.odbc-php-t.exe</computeroutput> is then executed
+ in the usual way.</para>
+
+ <para>The Linux counterpart would be an
+ <computeroutput>8M virtuoso-odbc-php-t</computeroutput> binary.</para>
+
+ <para>The Virtuoso executable files provided in the installer are appropriately
+ named to indicate which customizations are supported.  e.g. one that
+ contains "php" and "clr" in the file name has been built with PHP and
+ CLR support.</para>
+
+ <para>The location of the support libraries (.DLL's) for the various
+ customizations of Virtuoso on Windows must either be in the %PATH%;
+ environment variable or be the same directory as the virtuoso .EXE file.
+ Virtuoso will not be able to start otherwise.</para>
+
+ <note><title>Note:</title>
+ <para>If Virtuoso is starting as a system service then the
+ SYSTEM PATH must be altered as opposed to the USER PATH.  The USER PATH
+ is appropriate to alter if Virtuoso is being started as that user, usually when
+ in debug/foreground mode.  This is applicable to any required environment
+ variables, not just PATH.</para></note>
+
+ <para>Hosted environments that require SQL access back to the database can
+ make use of the in-process client mechanism.  Hosted Runtimes such as PHP
+ and ASP .Net would ordinarily use an RPC based (ODBC) connection.  To improve
+ the efficiency of the system, keeping it all in-process, a special connection
+ can be made with no alteration to the API used in the code for communication.</para>
+
+ <tip><title>See Also:</title>
+   <para>The <link linkend="inprocess">In-Process Client</link> keeps connections
+   within Virtuoso avoiding unnecessary RPCs.</para></tip>
+ </sect1>
+
+<sect1 id="rthclr"><title>CLR, .Net &amp; ASPX Host</title>
+ <para>The Common Language Runtime (CLR) is the foundation upon which the
+ Microsoft® .NET strategy is built.  The CLR provides an execution environment
+ that manages running code and provides services that make software development
+ easier.  These services include automatic memory management, cross-language
+ integration, interoperability with existing code and systems, simplified
+ deployment, and a fine grained security system.  The .NET platform also
+ brings with it a new programming language called C#.  It is very similar to Java
+ and allows developers to make full use of all features available on the .NET runtime.</para>
+
+ <para>The CLR can run a variety of different types of applications, such as:
+ console applications, Web server scripts, traditional Win32-based applications,
+  and more.</para>
+
+<para>The CLR provides a language specification for compilers to generate classes
+ and code that can interoperate with other programming languages (The
+ Common Language Specification: CLS) .  Any API that is written using a
+ CLS provider language can be used by any language that is a CLS consumer.
+ Compilers generate code in a format called Common Intermediate Language
+ (CIL) which is an intermediate representation of a compiled program and is
+ easy to compile to native code or be compiled using Just-in-Time (JIT)
+ engines.  The restrictions placed by the runtime on the CIL byte codes
+ ensures good potential for code optimization by the JIT compiler.  The runtime
+ environment provides garbage collection, threading and a comprehensive class
+ library.  All these things make code development easier and more appealing
+ by allowing a mixture of languages to be collaborating to produce results, all
+ contained within a managed sandbox to prevent bugs from breaking other running
+ programs.</para>
+
+ <para>Windows has compilers that target the virtual machine from a number
+ of languages: Managed C++, JavaScript, Eiffel, Component Pascal, APL, Cobol,
+ Perl, Python, Ruby, Scheme, Smalltalk, Standard ML, Haskell, Mercury and Oberon. </para>
+
+ <para>Virtuoso is a CLR host.  It is responsible for initializing the runtime,
+ defining the application domain (its runtime boundaries, security settings, etc),
+ and executing user code within such domains.  Windows can be used
+ as the development platform, a very developer friendly environment with
+ a rich set of tools, but you  will not be restricted to Windows, .NET
+ and IIS to run the assemblies produced.  Where .NET is not readily available
+ or desired Virtuoso contains Mono, an open source re-implementation of
+ Microsoft .NET, a vehicle making .NET cross-platform.  </para>
+
+ <para>The CLR run time is a part of the Virtuoso process.  The Mono run time may be
+run either as in-process or as out-of-process.  Hosted applications can make use of
+the regular Virtuoso .net data provider to access Virtuoso SQL data and procedures.
+ Microsoft ASPX files can also be run directly from Virtuoso either from
+ the filesystem or WebDAV.  Each of these capabilities releases you from
+ the Microsoft platforms without compromising your development platform.</para>
+
+
+<!-- You can create single-file or multifile assemblies using an IDE, such as Visual
+Studio .NET, or the compilers and tools provided by the .NET Framework
+SDK.  The simplest assembly is a single file that has a simple name and is
+loaded into a single application domain. This assembly cannot be
+referenced by other assemblies outside the application directory and
+does not undergo version checking. To uninstall the application made up of
+the assembly, you simply delete the directory where it resides. For many developers,
+an assembly with these features is all that is needed to deploy an application.
+-->
+
+
+ <sect2 id="rthclrenvsetdotnet"><title>Environment Setup</title>
+ <para>Follow the steps below to configure the CLR runtime environment
+ with Virtuoso:</para>
+
+ <orderedlist>
+  <listitem><formalpara><title>Install .Net Framework SDK</title>
+  <para>The .Net Framework can be downloaded from the Microsoft web site.</para>
+  </formalpara>
+  </listitem>
+  <listitem><formalpara><title>Install virtclr.dll into the GAC</title>
+  <para>The <computeroutput>virtclr.dll</computeroutput> library supplied with
+  Virtuoso must be installed into the .Net 'Global Assembly Cache (GAC)'.</para>
+  </formalpara>
+  <para>.Net library components can be installed into the GAC using the command:
+  <computeroutput>gacutil /i &lt;DLL&gt;</computeroutput>.  The gacutil utility is supplied
+  with the .Net framework.  In this case we would use the command:</para>
+  <programlisting>gacutil /i virtclr.dll</programlisting>
+  </listitem>
+  <listitem><formalpara><title>Register virtclr with COM</title>
+  <para>The virtclr.dll library must be registered as COM object  using the
+  'regasm' utility as follows:</para></formalpara>
+  <programlisting>regasm virtclr.dll</programlisting>
+  </listitem>
+  <listitem><formalpara><title>Install virt_http.dll into the GAC</title>
+  <para>The <computeroutput>virt_http.dll</computeroutput> library supplied with
+  Virtuoso must be installed into the .Net 'Global Assembly Cache (GAC)'.</para>
+  </formalpara>
+  <programlisting>gacutil /i virt_http.dll</programlisting>
+  </listitem>
+ </orderedlist>
+
+ <note><title>Note:</title>
+ <para>The utilities gacutil and regasm are typically found in
+ <computeroutput>%WINDIR%\Microsoft.NET\Framework\&lt;version&gt;</computeroutput>
+ e.g. <computeroutput>C:\WINDOWS\Microsoft.NET\Framework\v1.0.3705.288</computeroutput>.</para>
+ </note>
+
+ <para>Failure to register the components successfully as described will generate
+ "Virtuoso failed to initialize" messages.  The Virtuoso installer, however, should
+ automatically register the components for you.</para>
+
+ <para>Private assemblies must be deployed within the directory of the
+ containing application and are found during runtime through a process called
+ probing - a mapping from an assembly's identity to a file on disk that contains
+ the manifest. </para>
+
+ <para>By default, probing for private assemblies is done from the root directory
+ (application base) of the calling application (Virtuoso in this case) and the subdirectories that
+ follow naming conventions based on assembly name and culture.  You can
+ customize this behavior by specifying a privatePath in your application's
+ configuration file. The privatePath is a semi-colon delimited list of directories
+ that the common language runtime will search for private assemblies.  These
+ directory names are relative to the application base - they cannot point outside
+ the application base. The directories in the privatePath will be searched after
+ the application base itself.  The following configuration file adds a bin
+ directory to the assembly search path: </para>
+
+<programlisting><![CDATA[
+<configuration>
+    <runtime>
+        <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+            <probing privatePath="bin"/>
+        </assemblyBinding>
+    </runtime>
+</configuration>
+]]></programlisting>
+
+ <para>Configuration files are called:
+ <computeroutput>&lt;application name&gt;.config</computeroutput>.  </para>
+</sect2>
+
+ <sect2 id="rthclrdotnettest"><title>Testing the Virtuoso .NET Runtime Environment</title>
+ <para>To test that you have successfully started the Virtuoso server with
+ .NET CLR runtime support make a simple library, import the contained class
+ into Virtuoso and call it.</para>
+
+ <para>Using an text editor create a C# source file in the server
+ root directory called sanity.cs, with the following contents:</para>
+
+ <programlisting><![CDATA[
+using System;
+
+public class sanity
+{
+    public static string test(string  name) {
+       return "Hello "+ name + ", from Virtuoso";
+    }
+}
+]]></programlisting>
+ <para>This sample needs to be compiled into bytecode assembly before it can
+ be used.  Use a command prompt that is suitable set up to find .NET
+ utilities in its path, the .NET Framework SDK installation provides a
+ shortcut in the Start menu to a command prompt that is preconfigured.
+ From the command prompt change directory to the Virtuoso server root
+ containing the C# source file.</para>
+
+ <programlisting><![CDATA[
+C:\Program Files\OpenLink\Virtuoso 3.0\bin>csc /target:library sanity.cs
+Microsoft (R) Visual C# .NET Compiler version 7.00.9466
+for Microsoft (R) .NET Framework version 1.0.3705
+Copyright (C) Microsoft Corporation 2001. All rights reserved.
+]]></programlisting>
+
+ <para>Now this library must be introduce to the Virtuoso Server.  Using ISQL
+ use the following commands to test the CLR:</para>
+
+ <programlisting><![CDATA[
+C:\Program Files\OpenLink\Virtuoso 3.0\bin>isql 1112
+Connected to OpenLink Virtuoso
+Driver: 03.00.2315 OpenLink Virtuoso ODBC Driver
+OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+Type HELP; for help and EXIT; to exit.
+SQL> DB..import_clr (vector ('sanity'), vector ('sanity'));
+
+Done. -- 300 msec.
+SQL> select sanity::test('Rob');
+callret
+VARCHAR
+______________________________________________
+
+Hello Rob, from Virtuoso
+
+1 Rows. -- 60 msec.
+]]></programlisting>
+
+ <para>Congratulations, you have proven that your Virtuoso server
+ can run .NET classes.</para>
+
+ <tip><title>See Also:</title>
+ <para>The Virtuoso Tutorials, which are installed with the Demo Virtuoso
+ Server (port 1112), contains numerous samples further demonstrating the use
+ of the CLR, .NET and Virtuoso.</para></tip>
+
+  <tip><title>See Also:</title>
+    <para>The <link linkend="createassembly">Create Assembly</link> Syntax</para>
+    <para>The External Hosted <link linkend="createassembly">Create PROCEDURE</link> Syntax</para></tip>
+
+ </sect2>
+</sect1>
+
+<sect1 id="rthclrmono"><title>CLR &amp; Mono</title>
+
+ <para>The Mono Project is an open development initiative sponsored by Ximian
+ that is working to develop an open source, Unix version of the Microsoft .NET
+ development and run time platform.  Its objective is to enable Unix developers to build
+ and deploy cross-platform .NET Applications.  Likewise, this expands the
+ capabilities of Windows programmers, this project opens .NET to non
+ Windows platforms.  Mono will implement various Microsoft technologies that
+ have now been submitted to the ECMA for standardization.</para>
+
+ <para>The Goal is similar to that of Java, implementing a common virtual machine
+ on multiple operating systems, however you are not restricted to one
+ language.</para>
+
+ <para>Like .NET, Mono contains a Common Language Infrastructure (CLI) virtual,
+ machine that contains a class loader, Just-in-time compiler, and a garbage
+ collecting runtime; a class library that can work with any language which
+ works on the CLR; a compiler for the C# language.</para>
+
+ <para>Windows has compilers that target the virtual machine from a number
+ of languages: Managed C++, JavaScript, Eiffel, Component Pascal, APL, Cobol,
+ Perl, Python, Ruby, Scheme, Smalltalk, Standard ML, Haskell, Mercury and Oberon.
+ A single object system, threading system, class libraries, and garbage
+ collection system can be shared across all these languages, the CLR.</para>
+
+ <para>The CLR and the Common Type System (CTS) enables applications and
+ libraries to be written in a collection of different languages that target
+ the CLR byte code.  This means that you could define a class to do algebraic
+ manipulation written in C#, that class can be reused from any other
+ language that supports the CLI.  You could create a class in C#, subclass
+ it in C++ and instantiate it in an Eiffel program.</para>
+
+  <tip><title>See Also:</title>
+    <para>The <link linkend="createassembly">Create Assembly</link> Syntax</para>
+    <para>The External Hosted <link linkend="createassembly">Create PROCEDURE</link> Syntax</para></tip>
+
+ <sect2 id="rthclrenvsetmono"><title>Environment Setup</title>
+ <para>Ximian announced the launch of the Mono project, an effort to create
+ an open source implementation of the .NET Development Framework.</para>
+ <para>Follow the steps below to configure the CLR runtime environment
+ with Virtuoso:</para>
+
+ <orderedlist>
+  <listitem><formalpara><title>Install Mono</title>
+  <para>The Mono package is available from the
+  <ulink url="http://www.go-mono.com/">Mono project home page</ulink> in the
+  form of an RPM for Linux.  The source is also available.</para>
+  </formalpara>
+  </listitem>
+  <listitem><formalpara><title>Make mscorlib.dll available to /usr/local/lib</title>
+  <para>The mscorlib.dll is installed by Mono and needs to be symlinked from
+  its default location to <computeroutput>/usr/local/lib</computeroutput>.</para>
+  </formalpara>
+  </listitem>
+ </orderedlist>
+
+</sect2>
+
+ <sect2 id="rthclrmonotest"><title>Testing the Virtuoso Mono Runtime Environment</title>
+ <para>To test that you have successfully started the Virtuoso server with
+ Mono CLR runtime support make a simple library, import the contained class
+ into Virtuoso and call it.</para>
+
+ <para>Using an text editor create a C# source file in the server
+ root directory called sanity.cs, with the following contents:</para>
+
+ <programlisting><![CDATA[
+using System;
+
+public class sanity
+{
+    public static string test(string  name) {
+       return "Hello "+ name + ", from Virtuoso";
+    }
+}
+]]></programlisting>
+ <para>This sample needs to be compiled into bytecode assembly before it can
+ be used.  Make sure you environment is configured to use Mono,
+ change directory to the Virtuoso server root containing the C# source file.  Run:</para>
+
+ <programlisting><![CDATA[
+bash$ mcs /target:library sanity.cs
+Compilation succeeded
+]]></programlisting>
+
+ <para>Now this library must be introduce to the Virtuoso Server.  Using ISQL
+ use the following commands to test the CLR:</para>
+
+ <programlisting><![CDATA[
+C:\Program Files\OpenLink\Virtuoso 3.0\bin>isql 1112
+Connected to OpenLink Virtuoso
+Driver: 03.00.2315 OpenLink Virtuoso ODBC Driver
+OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+Type HELP; for help and EXIT; to exit.
+SQL> DB..import_clr (vector ('sanity'), vector ('sanity'));
+
+Done. -- 300 msec.
+SQL> select sanity::test('Rob');
+callret
+VARCHAR
+______________________________________________
+
+Hello Rob, from Virtuoso
+
+1 Rows. -- 60 msec.
+]]></programlisting>
+
+ <para>Congratulations, you have proven that your Virtuoso server
+ can run .NET classes via Mono Runtime.</para>
+
+ <tip><title>See Also:</title>
+ <para>The Virtuoso Tutorials, which are installed with the Demo Virtuoso
+ Server (port 1112), contains numerous samples further demonstrating the use
+ of the CLR, .NET, Mono and Virtuoso.</para></tip>
+
+  <tip><title>See Also:</title>
+    <para>The <link linkend="createassembly">Create Assembly</link> Syntax</para>
+    <para>The External Hosted <link linkend="createassembly">Create PROCEDURE</link> Syntax</para></tip>
+
+ </sect2>
+</sect1>
+
+&jvmapi;
+&cinterface;
+&plugins;
+
+<!--
+
+For Java :
+0) JDK or JRE needs to be instaled
+1) jvm.dll needs to be in %PATH% , *copy* will not work !
+2) JavaClasspath (INI setting) needs to contain path to all .class .jar files which are used
+
+
+There's a [Mono] INI section.
+In there there are :
+MONO_PATH - where your assemblies (non-system ones) are
+MONO_ROOT - where the Mono is installed.
+MONO_CFG_DIR - where the mono configuration files are
+virtclr.dll - the full path to the above.
+
+
+The three upcase values you can set also as env variables.
+
+To start ASPX demos on Linux (demo machine) needed:
+
+copy virt_aspx.dll and virtclr.dll in demo directory.
+copy machine.config to demo/mono directory
+export MONO_ROOT=/dbs/virtuoso/3.0/mono/lib
+
+all necessary file can be found in =/dbs/virtuoso/3.0/mono
+
+The virtclr.dll can be put on ever dir described in settings MONO_PATH (Global assembly cache in Windows).
+
+But virt_aspx.dll need for now in db (application root dir)
+
+For now we link static libmono.a and we need dll (classes) from some distribution.
+
+The static link has two good sides:
+
+We not depend from mono cvs tree status
+We can fast put ours patchs.
+Also will add necessary dll in distrib.
+
+-->
+</chapter>
+

@@ -1,0 +1,840 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <head>
+    <title>Virtuoso Documentation Search</title>
+    <link rel="stylesheet" type="text/css" href="search.css"/>
+  </head>
+  <v:page name="main" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+    <v:variable name="ds_data" type="any" default="null"/>
+    <v:variable name="ds_meta" type="any" default="null"/>
+    <v:variable name="output" type="varchar" default="'html'" param-name="output"/>
+    <v:variable name="qry" type="varchar" default="null" param-name="q"/>
+    <v:variable name="sqry" type="varchar" default="null" param-name="type"/>
+    <v:variable name="qtype" type="varchar" default="'text'" param-name="type"/>
+    <v:variable name="qurl" type="any" default="''"/>
+    <v:variable name="rowcnt" type="int" default="10" param-name="cnt"/>
+    <v:variable name="pageno" type="int" default="1" param-name="page"/>
+    <v:variable name="total" type="int" default="0" />
+    <v:variable name="osrch" type="int" default="0" param-name="OpenSearch" />
+    <v:variable name="opensearch" type="varchar" default="null" param-name="OpenSearch"/>
+    <v:variable name="pkwd" type="varchar" default="null" param-name="kwds"/>
+    <v:on-init>
+      <![CDATA[
+        set isolation = 'committed';
+        set http_charset='utf-8';
+        declare _cookie_vec any;
+        _cookie_vec := vsp_ua_get_cookie_vec(lines);
+        if (self.ds_data is null)
+        {
+          self.ds_data := vector ();
+          self.ds_meta := vector ();
+          self.qt.ufl_value := self.qtype;
+        }
+      ]]>
+    </v:on-init>
+    <v:after-data-bind>
+      <![CDATA[
+        if (self.qry is null)
+          return;
+        self.expr.ufl_value := self.qry;
+        self.qt.ufl_value := self.qtype;
+        if (not e.ve_is_post)
+          self.do_search (e);
+      ]]>
+    </v:after-data-bind>
+    <v:method name="get_host" arglist="">
+      <![CDATA[
+        declare ret varchar;
+        if (is_http_ctx ())
+          {
+            ret := http_request_header (http_request_header (), 'Host', null, sys_connected_server_address ());
+            if (isstring (ret) and strchr (ret, ':') is null)
+              {
+                declare hp varchar;
+                declare hpa any;
+                hp := sys_connected_server_address ();
+                hpa := split_and_decode (hp, 0, '\0\0:');
+                ret := ret || ':' || hpa[1];
+              }
+          }
+        else
+         {
+           ret := sys_connected_server_address ();
+           if (ret is null)
+             ret := sys_stat ('st_host_name')||':'||server_http_port ();
+         }
+        return ret;
+      ]]>
+    </v:method>
+    <v:method name="enable_it" arglist="in what varchar, in flag int">
+      <![CDATA[
+        declare rc int;
+        if ((self.qry is null and self.qt.ufl_value = what) or (self.qry is not null and self.qtype = what))
+          rc := flag;
+        else if (self.qry is null and self.qt.ufl_value is null
+          and get_keyword ('type', self.vc_event.ve_params) = what)
+          rc := flag;
+        else
+          rc := case when flag then 0 else 1 end;
+        return rc;
+      ]]>
+    </v:method>
+    <v:method name="score_to_length" arglist="in s numeric">
+      <![CDATA[
+        if (s > 300)
+          return 300;
+        if (s < 0)
+          return 0;
+        return s;
+      ]]>
+    </v:method>
+    <v:method name="search_utf2wide" arglist="in s any">
+      <![CDATA[
+        declare exit handler for sqlstate '*' { return s; };
+        return charset_recode (s, 'UTF-8', '_WIDE_');
+      ]]>
+    </v:method>
+    <v:method name="search_xml2string" arglist="in pXml any">
+      <![CDATA[
+        declare sStream any;
+        sStream := string_output();
+        http_value(pXml, null, sStream);
+        return string_output_string(sStream);
+      ]]>
+    </v:method>
+    <v:method name="do_search" arglist="inout e vspx_event">
+      <![CDATA[
+        declare exp varchar;
+        declare i, l, j, cnt, _from, _to, _from1, _to1, br, st, max_i, cf, results_per_page, m, n integer;
+        declare hit_words any;
+        declare vt, war, res1 any;
+        declare xmldoc, ses, arr, res any;
+        declare i, l, max1 int;
+        declare url, exp1, res1 any;
+        declare inx, s_off, e_off int;
+        max1 := atoi (self.maxhit.ufl_value);
+        s_off := (self.pageno - 1) * self.rowcnt;
+        e_off := s_off + self.rowcnt;
+        declare exit handler for sqlstate '*'
+        {
+          self.vc_is_valid := 0;
+          self.vc_error_message := __SQL_MESSAGE;
+          return;
+        };
+        self.ds_data := vector ();
+        exp := trim(self.expr.ufl_value, ' ');
+        if (length (exp) < 2)
+        {
+          self.expr.vc_error_message := 'No expression entered';
+          self.vc_is_valid := 0;
+          return;
+        }
+        declare res_name, excerpt any;
+        declare i, p integer;
+        declare excerpt_samples varchar;
+
+        res := vector ();
+
+        declare doc_installed integer;
+        doc_installed := case when DB.DBA.vad_check_version ('doc') is not null then 1 else 0 end;
+        if (doc_installed)
+        {
+          for select "RES_ID", "RES_CONTENT", "RES_NAME", length("RES_CONTENT") as rlen
+           from "WS"."WS"."SYS_DAV_RES"
+           where "RES_FULL_PATH" like '/DAV/VAD/doc/html/%'
+             and "RES_FULL_PATH" not like '/DAV/VAD/doc/html/chaptermenu%'
+             and "RES_FULL_PATH" not like '/DAV/VAD/doc/html/virtdocs%'
+             and "RES_FULL_PATH" <> '/DAV/VAD/doc/html/contents.html'
+             and "RES_FULL_PATH" <> '/DAV/VAD/doc/html/functionsidx.html'
+          do
+          {
+            res := vector_concat (res, vector (cast (RES_ID as varchar), RES_NAME));
+          }
+        }else{
+          for select "RES_ID", "RES_CONTENT", "RES_NAME", length("RES_CONTENT") as rlen
+           from "WS"."WS"."SYS_DAV_RES"
+           where "RES_FULL_PATH" like '/DAV/doc/html/%'
+             and "RES_FULL_PATH" not like '/DAV/doc/html/chaptermenu%'
+             and "RES_FULL_PATH" not like '/DAV/doc/html/virtdocs%'
+             and "RES_FULL_PATH" <> '/DAV/doc/html/contents.html'
+             and "RES_FULL_PATH" <> '/DAV/doc/html/functionsidx.html'
+          do
+          {
+            res := vector_concat (res, vector (cast (RES_ID as varchar), RES_NAME));
+          }
+        }
+        if (self.qt.ufl_value = 'text')
+        {
+          declare str varchar;
+          --str := FTI_MAKE_SEARCH_STRING (self.expr.ufl_value);
+          str := '';
+          hit_words := vector();
+          if (strchr (exp, '"') is not null or strchr (exp, '''') is not null)
+          {
+            declare tmp, w varchar;
+            tmp := exp;
+            w := regexp_match ('["][^"]+["]|[''][^'']+['']|[^"'' ]+', tmp, 1);
+            while (w is not null)
+            {
+              w := trim (w, '"'' ');
+              if (upper(w) <> 'AND' and upper(w) <> 'NOT' and upper(w) <> 'NEAR' and upper(w) <> 'OR' and length (w) > 1and not vt_is_noise (w, 'utf-8', 'x-ViDoc'))
+                str := concat (str, sprintf ('"%s" AND ', replace(w, '"', '')));
+              w := regexp_match ('["][^"]+["]|[''][^'']+['']|[^"'' ]+', tmp, 1);
+            }
+            if (length (str) > 6)
+            {
+              str := substring (str, 1, length (str) - 5);
+              goto end_parse;
+            }
+          }
+          vt := vt_batch ();
+          vt_batch_feed (vt, exp, 0, 0, 'x-ViDoc');
+          war := vt_batch_strings_array (vt);
+          m := length (war);
+          n := 0;
+          str := '(';
+          while (n < m)
+          {
+            declare word1 varchar;
+            if (war[n] <> 'AND' and war[n] <> 'NOT' and war[n] <> 'NEAR' and war[n] <> 'OR' and length (war[n]) > 1 and not vt_is_noise (war[n], 'utf-8', 'x-ViDoc'))
+            {
+              word1 := war[n];
+              hit_words := vector_concat (hit_words, vector (word1));
+              word1 := concat ('"', word1, '"');
+              str := concat (str, word1, ' AND ');
+            }
+            n := n + 2;
+          }
+
+          if (length (str) > 5)
+          {
+            str := substring (str, 1, length (str) - 5);
+            str := concat (str, ')');
+          }
+          else
+            str := 'thiscantbefoundanywhere';
+          end_parse:;
+          inx := 0;
+          res1 := vector();
+          for (select "d_id" as id, "d_anch", "d_res_id", score
+           from "DB"."DBA"."document_search"
+           where contains (d_txt, concat ('[__lang ''x-ViDoc''] ',str))
+            order by score desc)
+          do
+          {
+            declare d_txt any;
+            d_txt := (select d_txt from "DB"."DBA"."document_search" where "d_id" = id);
+            excerpt := regexp_match ('>[^<>]+</', Blob_to_string(d_txt));
+            if (length (hit_words) > 9)
+              hit_words := subseq (hit_words, 0, 9);
+            if (length (hit_words) > 0)
+              excerpt_samples := coalesce (search_excerpt (hit_words,  blob_to_string (d_txt)), '');
+            else
+              excerpt_samples := '';
+            if (excerpt is not null)
+               excerpt := trim (excerpt, '></ ');
+            else
+            {
+              excerpt := substring (blob_to_string(d_txt), 1, 50);
+            }
+            res_name := get_keyword (cast(d_res_id as varchar), res, '');
+            if (res_name = '')
+              goto nextc;
+            cnt := cnt + 1;
+            if (cnt < _from)
+              goto nextc;
+            if (not br)
+            {
+              res1 := vector_concat(res1, vector(vector(excerpt, res_name, d_anch, self.score_to_length(SCORE), excerpt_samples)));
+            }
+            nextc:;
+            inx:=inx+1;
+          }
+          self.total := inx;
+
+          goto retres;
+        }
+        if (self.qt.ufl_value not in ('xpath', 'xquery'))
+        {
+          self.vc_is_valid := 0;
+          self.vc_error_message := 'Invalid query type.';
+          return;
+        }
+        inx := 0;
+        res1 := vector();
+        for select xtree_doc(concat('<div>', blob_to_string (d_txt), '</div>'), 2) as xp,
+          "d_id" as id, "d_anch" as anch, "d_res_id" as res_id
+           from "DB"."DBA"."document_search"
+        do
+        {
+          declare exit handler for sqlstate '42000'
+          {
+            self.vc_is_valid := 0;
+            self.vc_error_message := 'The query path or query document referenced in this query is non existent.';
+            return;
+          };
+          declare exit handler for sqlstate '37000'
+          {
+            self.vc_is_valid := 0;
+            self.vc_error_message := 'Invalid query expression.';
+            return;
+          };
+          if (self.qt.ufl_value = 'xpath')
+            arr := xpath_eval (self.expr.ufl_value, xp, 0);
+          else if (self.qt.ufl_value = 'xquery')
+          {
+            arr := xquery_eval (self.expr.ufl_value, xp);
+            if (isentity (arr))
+              arr := vector  (arr);
+          }
+          if (isarray(arr))
+          {
+            declare d_txt1 any;
+            d_txt1 := (select d_txt from "DB"."DBA"."document_search" where "d_id" = id);
+            excerpt := regexp_match ('>[^<>]+</', Blob_to_string(d_txt1));
+            if (excerpt is not null)
+               excerpt := trim (excerpt, '></ ');
+            else
+              excerpt := substring (blob_to_string(d_txt1), 1, 50);
+            i := 0;
+            l := length (arr);
+            while (i < l)
+            {
+              if (not isinteger (arr[i]))
+              {
+                res_name := get_keyword (cast(res_id as varchar), res, '');
+                res1 := vector_concat(res1, vector(vector(excerpt, res_name, anch, 10, serialize_to_UTF8_xml(arr[i]))));
+                inx := inx + 1;
+                self.total := inx;
+                max1 := max1 - 1;
+                if (max1 <= 0)
+                {
+                  goto retres;
+                }
+              }
+              i := i + 1;
+            }
+          }
+        }
+        retres:
+        if (self.output1.ufl_value in ('xml', 'rdf' , 'atom'))
+          self.output := self.output1.ufl_value;
+        self.qurl := sprintf ('adv_search.vspx?q=%U&type=%s&output=', self.expr.ufl_value, self.qt.ufl_value);
+        self.ds_data := res1;
+        if (self.output in ('xml' , 'rdf' , 'atom'))
+           return;
+        if (self.qt.ufl_value = 'text')
+        {
+          self.dst.vc_enabled := 1;
+          self.dst.vc_data_bind (e);
+        }
+        else
+        {
+          self.ds.vc_enabled := 1;
+          self.ds.vc_data_bind (e);
+        }
+        self.ct1.vc_data_bind (e);
+        return;
+      ]]>
+    </v:method>
+    <body>
+      <DIV id="header">
+        <A name="search"></A><IMG src="images/misc/logo.jpg" alt=""/>
+        <H1>Virtuoso Documentation Search</H1>
+      </DIV>
+      <div id="navbartop">
+        <div>
+          <a href="html/index.html">Home</a> |
+          <a href="html/contents.html">Contents</a>
+        </div>
+      </div>
+      <v:form name="form1" type="simple" method="POST">
+        <v:on-post>
+          <![CDATA[
+            declare tab vspx_tab;
+            declare tmpl vspx_control;
+            tab := self.help1;
+            tmpl := tab.vc_find_control(self.qt.ufl_value||'_help');
+            tab.tb_active := tmpl;
+            if (e.ve_button = control)
+            {
+              self.expr.ufl_value := '';
+              self.ds_data := vector ();
+              self.ds.ds_rows_offs := 0;
+              self.ds.vc_enabled := 0;
+              self.dst.vc_enabled := 0;
+              self.ct1.vc_data_bind (e);
+            }
+          ]]>
+        </v:on-post>
+        <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
+          <tr>
+            <v:template name="leftt" type="simple" enabled="--case when self.sqry is null then 1 else 0 end">
+              <td class="box" id="left" valign="top">
+                <div class="box">
+                  <b>Query Type</b>
+                  <div class="roll">
+                    <v:select-list name="qt" auto-submit="1">
+                      <v:item name="Text" value="text"/>
+                      <v:item name="XPath" value="xpath"/>
+                      <v:item name="XQuery" value="xquery"/>
+                    </v:select-list>
+                  </div>
+                  <b>Results As</b>
+                  <div class="roll">
+                    <v:select-list name="output1">
+                      <v:item name="HTML" value="html"/>
+                      <v:item name="XML - RSS 2.0" value="xml"/>
+                      <v:item name="XML - Atom" value="atom"/>
+                      <v:item name="XML - RDF" value="rdf"/>
+                    </v:select-list>
+                  </div>
+                  <b>Example</b>
+                  <div class="roll">
+                    <v:tab name="help1" initial-active="text_help">
+                      <v:template name="text_help" type="simple">
+                        To perform Full-Text search,<br/>
+                        enter a word or phrase:<br/>
+                        <b>ODBC DRIVER</b><br/>
+                        or<br/>
+                        <b>"exact phrase"</b>
+                      </v:template>
+                      <v:template name="xpath_help" type="simple">
+                        <v:select-list name="xp" xhtml_onchange="javascript: document.form1.expr.value = this.value">
+                          <v:item value="" name="* select an example *"/>
+                          <v:item value="//p[a]" name="paragraph with link(s)"/>
+                          <v:item value="//p[contains(.,\'Virtuoso\')]" name="about Virtuoso"/>
+                          <v:item value="//a[@href]/@href" name="link targets"/>
+                          <v:item value="//a/text()" name="link titles"/>
+                          <v:item value="//a[@name or @id]" name="link references"/>
+                          <v:item value="//b" name="text in bold"/>
+                          <v:item value="//i" name="text in italic"/>
+                          <v:item value="//p[b or i or u or s or small or big]/*" name="formatting"/>
+                          <v:item value="//p[b or i or u or s or small or big]/ancestor::*" name="section with formatting"/>
+                          <v:item value="//*[@class]" name="css formated sections"/>
+                          <v:item value="//table[.//tr/td]" name="tables"/>
+                          <v:item value="//img[@src]" name="images"/>
+                          <v:item value="//p[img[@src]]" name="sections with images"/>
+                          <v:item value="//p[a/@href[contains(.,\'.xml\')]]" name="about XML"/>
+                        </v:select-list>
+                      </v:template>
+                      <v:template name="xquery_help" type="simple">
+                        <v:select-list name="xq" xhtml_onchange="javascript: document.form1.expr.value = this.value">
+                          <v:item value="" name="* select an example *"/>
+                          <v:item value="for $i in node()//table return $i" name="all tables"/>
+                          <v:item value="for $t in node()//table return <ul> {for $i in $t//tr return <li>{$i/td/text()}</li> }</ul>" name="table to list"/>
+                          <v:item value="for $i in node()//a return <p>{ string($i/@href) }</p>" name="list of links"/>
+                          <v:item value="for $i in node() return <p>{ .//text() }</p>" name="text nodes"/>
+                          <v:item value="for $i in node()//p[contains(.,\'Virtuoso\')] return <p>{ string($i) }</p>" name="about Virtuoso"/>
+                        </v:select-list>
+                      </v:template>
+                    </v:tab>
+                  </div>
+                </div>
+              </td>
+            </v:template>
+            <td id="texttd" align="left">
+              <div id="text" align="left">
+                <v:template name="sboxt" type="simple" enabled="--case when self.sqry is null then 1 else 0 end">
+                  <b>Search Expression</b>
+                  <div class="error"><v:error-summary /></div>
+                  <table class="formdata">
+                    <tr>
+                      <td colspan="2">
+                        <div>
+                          <v:textarea name="expr" value="" xhtml_rows="5" xhtml_cols="70" error-glyph="*"/>
+                        </div>
+                      </td>
+                    </tr>
+                    <v:template type="simple">
+                      <tr>
+                        <td colspan="2">
+                          <div>Max results
+                            <v:text name="maxhit" default_value="100" xhtml_size="5" error-glyph="*">
+                              <v:validator name="vvnum1" test="regexp" regexp="^[0-9]+$" message="Only digits are allowed for setting &quot;Max results&quot;" runat="client"/>
+                            </v:text>
+                          </div>
+                        </td>
+                      </tr>
+                      <v:before-render>
+                        <![CDATA[
+                          control.vc_enabled := case when self.qt.ufl_value = 'text' or self.qt.ufl_value is null then 0 else 1 end;
+                        ]]>
+                      </v:before-render>
+                    </v:template>
+                    <tr>
+                      <td COLSPAN="2">
+                        <v:button xhtml_class="real_button" action="simple" name="post" value="Execute" xhtml_title="Execute" xhtml_alt="Execute">
+                          <v:on-post>
+                            <![CDATA[
+                              self.do_search (e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="2">
+                        <?vsp
+                          if (length (self.ds_data))
+                          {
+                        ?>
+                        <a href="<?V self.qurl ?>html"><img src="html401.gif" border="0" title="HTML" alt="HTML"/></a>
+                        <a href="<?V self.qurl ?>xml"><img src="rss201.gif" border="0" title="RSS" alt="RSS"/></a>
+                        <a href="<?V self.qurl ?>atom"><img src="atom10.gif" border="0" title="ATOM" alt="ATOM"/></a>
+                        <a href="<?V self.qurl ?>rdf"><img src="rdf.gif" border="0" title="RDF" alt="RDF"/></a>
+                        <a href="<?V self.qurl ?>xbel"><img src="xbel01.gif" border="0" title="XBEL" alt="XBEL"/></a>
+                        <a href="<?V sprintf ('adv_search.vspx?type=%s&kwds=%U&OpenSearch', self.qt.ufl_value, coalesce (self.expr.ufl_value, self.qry))  ?>"><img src="opensearch.gif" border="0"/></a>
+                        <?vsp
+                          }
+                        ?>
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+                <b>Results
+                  <v:label name="ct1" value="--length (self.ds_data)" format=" (%d)"/>
+                  <v:template name="rest" type="simple" condition="length (self.sqry)">
+                    from search by "<?V self.qry ?>" <br />
+                    <a href="<?V self.qurl ?>xml"><img src="rss201.gif" border="0"/></a>
+                    <a href="<?V self.qurl ?>atom"><img src="atom10.gif" border="0"/></a>
+                    <a href="<?V self.qurl ?>rdf"><img src="rdf.gif" border="0"/></a>
+                    <a href="<?V self.qurl ?>xbel"><img src="xbel01.gif" border="0"/></a>
+                    <a href="<?V sprintf ('adv_search.vspx?type=%s&kwds=%U&OpenSearch', self.qt.ufl_value, coalesce (self.expr.ufl_value, self.qry))  ?>"><img src="opensearch.gif" border="0"/></a>
+                  </v:template>
+                </b>
+                <br />
+                <v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="10" scrollable="1" instantiate="--self.enable_it ('text', 0)">
+                  <v:template name="tmpl1" type="repeat">
+                    <v:template name="tmpl7" type="if-not-exists">
+                      <div class="message">No matches found</div>
+                    </v:template>
+                    <v:template name="tmpl4" type="browse">
+                      <div class="message">
+                        <div>
+                          <v:url name="lfft6" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
+                            url="--sprintf('http://%s/doc/html/%s#%s', self.get_host (), (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[2])" render-only="1"/>
+                        </div>
+                        <div class="desc">
+                          <?vsp http (control.te_rowset[4]); ?>
+                        </div>
+                      </div>
+                    </v:template>
+                  </v:template>
+                  <v:template name="tmpl3" type="simple">
+                    <div align="center">
+                      <v:button name="ds_first" action="simple" style="image"
+                                value="first_16.png"
+                                xhtml_alt="First"
+                                xhtml_title="First"/>
+                      <v:button name="ds_prev" action="simple" style="image"
+                                value="previous_16.png"
+                                xhtml_alt="Previous"
+                                xhtml_title="Previous"/>
+                      <v:button name="ds_next" action="simple" style="image"
+                                value="next_16.png"
+                                xhtml_alt="Next"
+                                xhtml_title="Next"/>
+                      <v:button name="ds_last" action="simple" style="image"
+                                       value="last_16.png"
+                                       xhtml_alt="Last"
+                                       xhtml_title="Last"/>
+                    </div>
+                  </v:template>
+                </v:data-set>
+                <table>
+                  <v:data-set name="dst" data="--self.ds_data"
+                    meta="--self.ds_meta"
+                    nrows="10" scrollable="1" instantiate="--self.enable_it ('text', 1)">
+                    <v:template name="tmplt1" type="repeat">
+                      <v:template name="tmplt7" type="if-not-exists">
+                        <tr><td class="message" colspan="4">No matches found</td></tr>
+                      </v:template>
+                      <v:template name="tmplt4" type="browse">
+                        <tr>
+                          <td>
+                            <v:label render-only="1" name="clt1" value="--(control.vc_parent as vspx_row_template).te_ctr+ self.dst.ds_rows_offs + 1" format="%d."/>
+                          </td>
+                          <td>
+                            <v:url name="lt6" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
+                            url="--sprintf('http://%s/doc/html/%s#%s', self.get_host (), (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[2])" render-only="1"/>
+                          </td>
+                          <td>
+                            <img src="score.gif" height="5" width="<?V control.te_rowset[3] ?>" xhtml_title="Score" xhtml_alt="Score"/>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td/>
+                          <td>
+                            <v:label name="descclt1" value="--(control.vc_parent as vspx_row_template).te_rowset[4]" format="%s"/>
+                          </td>
+                          <td/>
+                        </tr>
+                      </v:template>
+                    </v:template>
+                    <v:template name="tmplt3" type="simple">
+                      <tr>
+                        <td colspan="4" align="center">
+                        <v:button name="dst_first" action="simple" style="image"
+                                value="first_16.png"
+                                xhtml_alt="First"
+                                xhtml_title="First"/>
+                        <v:button name="dst_prev" action="simple" style="image"
+                                value="previous_16.png"
+                                xhtml_alt="Previous"
+                                xhtml_title="Previous"/>
+                        <v:button name="dst_next" action="simple" style="image"
+                                value="next_16.png"
+                                xhtml_alt="Next"
+                                xhtml_title="Next"/>
+                        <v:button name="dst_last" action="simple" style="image"
+                                          value="last_16.png"
+                                          xhtml_alt="Last"
+                                          xhtml_title="Last"/>
+                        </td>
+                      </tr>
+                    </v:template>
+                  </v:data-set>
+                </table>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+      <DIV id="footer"><DIV>&amp;copy;2005 OpenLink Software. All rights reserved.</DIV></DIV>
+    </body>
+    &lt;?vsp
+    <![CDATA[
+      if (self.output in ('xml', 'rdf', 'xbel', 'atom'))
+      --if (self.output = 'xml' or self.output = 'rdf')
+      {
+        declare dta any;
+        declare retValue any;
+        declare selm varchar;
+
+        dta := self.ds_data;
+
+        retValue := string_output ();
+
+        http_rewrite ();
+        http('<?xml version ="1.0" encoding="UTF-8"?>\n', retValue);
+        http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n', retValue);
+        http ('<channel>\n', retValue);
+
+        http ('<title>', retValue);
+        http_value (self.search_utf2wide(concat('Search results for \"', self.expr.ufl_value, '\"')), null, retValue);
+        http ('</title>\n', retValue);
+
+        http ('<link>', retValue);
+        http_value (concat('http://',self.get_host (), '/doc/'), null, retValue);
+        http_value (self.qurl || 'html', null, retValue);
+        http ('</link>\n', retValue);
+
+        http ('<pubDate>', retValue);
+        http_value (soap_print_box (now(), '', 1), null, retValue);
+        http ('</pubDate>\n', retValue);
+
+        http ('<description>', retValue);
+        http_value ('To enable users to quickly search based on the keywords for parts of the documentation.', null, retValue);
+        http ('</description>\n', retValue);
+
+        http ('<managingEditor>', retValue);
+        http_value ('OpenLink Software <doc@openlinksw.com>', null, retValue);
+        http ('</managingEditor>\n', retValue);
+
+        http ('<generator>', retValue);
+        http_value ('Virtuoso Universal Server ' || sys_stat('st_dbms_ver'), null, retValue);
+        http ('</generator>\n', retValue);
+
+        foreach (any elm in dta) do
+        {
+          http ('<item>\n', retValue);
+          http ('<title>', retValue);
+          http_value (self.search_utf2wide(elm[0]), null, retValue);
+          http ('</title>\n', retValue);
+          http ('<description>', retValue);
+          http_value (self.search_xml2string(elm[4]), null, retValue);
+          http ('</description>\n', retValue);
+
+          selm := '';
+
+          if ( elm[2] is null)
+             selm := sprintf ('http://%s/doc/html/%s', self.get_host (), elm[1]);
+          else
+             selm := sprintf ('http://%s/doc/html/%s#%s', self.get_host (), elm[1], elm[2]);
+
+          http ('<link>', retValue);
+          http_value (selm, null, retValue);
+          http ('</link>\n', retValue);
+
+          http ('<guid>', retValue);
+          http_value (selm, null, retValue);
+          http ('</guid>\n', retValue);
+          http ('<pubDate>', retValue);
+          http_value (soap_print_box (now(), '', 1), null, retValue);
+          http ('</pubDate>\n',retValue);
+
+          if (self.output <> 'xml')
+          {
+            http ('<vi:modified>', retValue);
+            http_value (soap_print_box (now(), '', 0), null, retValue);
+           http ('</vi:modified>\n', retValue);
+          }
+
+          http ('</item>\n',retValue);
+
+        }
+
+        http ('</channel>\n', retValue);
+        http ('</rss>',retValue);
+
+        http_rewrite ();
+        http_header ('Content-Type: text/xml\r\n');
+
+        if (self.output = 'atom'){
+      	  http_value(xslt ('file://doc/rss2atom.xsl', xtree_doc(retValue)));
+          http_flush();
+        }
+        else if (self.output = 'rdf'){
+     	  http_value(xslt ('file://doc/rss2rdf.xsl', xtree_doc(retValue)));
+          http_flush();
+        }
+        else if (self.output = 'xbel')
+    	  http_value(xslt ('file://doc/rss2xbel.xsl', xtree_doc(retValue)));
+
+        else
+            http(retValue);
+
+        return;
+
+      }
+
+--        http_header ('Content-Type: text/xml\r\n');
+--        http ('<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/">\r\n<channel>\r\n');
+--        http ('<title>');
+--        http_value (concat('Search results for \"', self.expr.ufl_value, '\"'));
+--        http ('</title>');
+--        http ('<link>');
+--        http ('http://'); http(self.get_host ()); http_value ('/doc/' ||self.qurl || 'xml');
+--        http ('</link>');
+--        http (sprintf ('<description>To enable users to quickly search based on the keywords for parts of the documentation.</description>'));
+--        http (sprintf ('<openSearch:totalResults>%d</openSearch:totalResults>\r\n', self.total));
+--        http (sprintf ('<openSearch:startIndex>%d</openSearch:startIndex>\r\n', ((self.pageno - 1)*self.rowcnt + 1)));
+--        http (sprintf ('<openSearch:itemsPerPage>%d</openSearch:itemsPerPage>\r\n', self.rowcnt));
+--        foreach (any elm in dta) do
+--        {
+--          http ('<item>');
+--          http ('<description>');
+--          http_value (elm[4]);
+--          http ('</description>');
+--          http ('<title>');
+--          http_value (elm[0]);
+--          http ('</title>');
+--          http (sprintf ('<link>http://%s/doc/html/%s#%s', self.get_host (), elm[1], elm[2]));
+--          http ('</link>');
+--          http ('<pubDate>');
+--          http_value (soap_print_box (now(), '', 1));
+--          http ('</pubDate>');
+--          http ('</item>');
+--        }
+--        http ('</channel></rss>');
+--        if (self.output = 'rdf')
+--          http_xslt ('http://local.virt/rss2rdf');
+--        return;
+--      }
+--      if (self.output = 'atom')
+--      {
+--        declare dta any;
+--        dta := self.ds_data;
+--        http_rewrite ();
+--        http_header ('Content-Type: text/xml\r\n');
+--        http ('<feed xmlns="http://purl.org/atom/ns#" version="0.3" xml:lang="en-us">\n');
+--        http ('<title>');
+--        http_value (concat('Search results for \"', self.expr.ufl_value, '\"'));
+--        http ('</title>\n');
+--        http ('<author>');
+--        http ('<name>');
+--        http_value ('OpenLink Software');
+--        http ('</name>');
+--        http ('</author>\n');
+--        http ('<modified>');
+--        http_value(soap_print_box(now(), '', 0));
+--        http ('</modified>\n');
+--        http (sprintf ('<link href="%Vtext" rel="alternate" type="text/html"/>\n', '/doc/' || self.qurl));
+--        foreach (any elm in dta) do
+--        {
+--          http ('<entry>\n');
+--          http (sprintf ('<id>http://%s/doc/html/%s#%s</id>', self.get_host (), elm[1], elm[2]));
+--          http ('<title>');
+--          http_value (elm[0]);
+--          http ('</title>\n');
+--          http ('<created>');
+--          http_value (soap_print_box (now(), '', 0));
+--          http ('</created>\n');
+--          http ('<issued>');
+--          http_value (soap_print_box (now(), '', 0));
+--          http ('</issued>\n');
+--          http ('<modified>');
+--          http_value (soap_print_box (now(), '', 0));
+--          http ('</modified>\n');
+--          http (sprintf ('<link rel="alternate" type="text/html" href="http://%s/doc/html/%s#%s" />', self.get_host (), elm[1], elm[2]));
+--          http ('<content type="text/html" mode="escaped" xml:lang="en-us">');
+--          http_value (elm[4]);
+--          http ('</content>\n');
+--          http ('</entry>\n');
+--        }
+--        http ('</feed>');
+--        return;
+--      }
+      if (self.opensearch is not null)
+      {
+        declare sho varchar;
+        http_header ('Content-Type: text/xml\r\n');
+        declare host, title, about, copyr, home, name, descr, mail, author, discl, kwds, bid, welk, opts any;
+        host := http_request_header (lines, 'Host');
+        kwds := get_keyword('kwds', self.vc_event.ve_params);
+        http_rewrite ();
+        http ('<?xml version="1.0" ?>');
+    ]]>
+    ?&gt;&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearchdescription/1.0/"&gt;
+  <Url>http://<?V host ?>/doc/adv_search.vspx?<?V sprintf ('q={searchTerms}&cnt={count}&page={startPage}&type=%s&output=xml&OpenSearch=1', self.qt.ufl_value) ?></Url>
+  <Format>http://a9.com/-/spec/opensearchrss/1.0/</Format>
+  <ShortName><?V 'Search results' ?></ShortName>
+  <LongName><?V concat('Search results for \"', kwds, '\"') ?></LongName>
+  <Description>About: <?V trim(kwds, ''' "') ?></Description>
+  <Tags><?V trim(kwds, ''' "') ?></Tags>
+  <Image>http://<?V host ?>/doc/vbloglogo1.gif</Image>
+  <SampleSearch><?V kwds ?></SampleSearch>
+  <Developer><?V 'OpenLink Software' ?></Developer>
+  <Contact><?V 'docs@openlinksw.com' ?></Contact>
+  <Attribution><?V 'OpenLink Software' ?></Attribution>
+  <SyndicationRight>open</SyndicationRight>
+  <AdultContent>false</AdultContent>
+  &lt;/OpenSearchDescription&gt;
+<?vsp
+  return;
+}
+  ?>
+  </v:page>
+</html>

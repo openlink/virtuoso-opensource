@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_http_header_get">
+  <refmeta>
+    <refentrytitle>http_header_get</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>http_header_get</refname>
+    <refpurpose>returns header of current HTTP request</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_http_header_get">
+      <funcprototype id="fproto_http_header_get">
+        <funcdef>varchar <function>http_header_get</function></funcdef>
+        <paramdef />
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_http_header_get"><title>Description</title>
+    <para>
+Returns the response header associated with the current HTTP request.  This will not return the default header lines, only those explicitly set with http_header.
+</para>
+    <para>
+This is useful for incrementally modifying response headers during processing
+of a URL.
+</para>
+  </refsect1>
+  <refsect1 id="ret_http_header_get"><title>Return Types</title>
+    <para>Varchar of the current headers</para>
+  </refsect1>
+  <refsect1 id="examples_http_header_get"><title>Examples</title>
+  <example id="ex_http_header_get"><title>Retrieving the current header</title>
+  <programlisting>
+&lt;?vsp
+http_header (concat (http_header_get (), 'Location: default.html'));
+?&gt;
+</programlisting>
+  </example>
+  </refsect1>
+</refentry>
+

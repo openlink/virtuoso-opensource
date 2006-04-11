@@ -1,0 +1,256 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines);
+
+  if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+  declare _idx integer;
+  declare _tblname, _colname varchar;
+  declare new_col varchar;
+
+  new_col := get_keyword ('col_name', params, NULL);
+
+  if ((new_col is not NULL) and (new_col <> ''))
+    {
+      declare res any;
+      declare col_name varchar;
+      declare name varchar;
+
+      name := get_keyword ('name', params, '') || new_col || '/';
+      col_name := '/DAV' || name;
+
+      res := DAV_COL_CREATE_INT (col_name, '110100000R', NULL, NULL, NULL, NULL, 0, 0, 0);
+
+      params := vector_concat (params, vector (('CB_' || name), 'on')); -- BAD hack
+
+    }
+
+  if (get_keyword ('crsnp', params, '') <> '' or
+      get_keyword ('davcol', params, '') <> '')
+    {
+      declare _ses_res any;
+      _ses_res := string_output ();
+
+      _idx := 0;
+      while (_colname := adm_next_checkbox ('CB_', params, _idx))
+	{
+          _colname := concat ('/DAV', _colname);
+          declare continue handler for sqlstate '*' {
+	    http (
+                sprintf ('<tr><td>%s</td><td>ERR</td><td>%s: %s</td></tr>',
+                    _colname,
+                    cast (__SQL_STATE as varchar), __SQL_MESSAGE),
+                _ses_res);
+            goto next_col;
+          };
+          REPL_CREATE_SNAPSHOT_PUB (_colname, 1);
+	  http (
+              sprintf ('<tr><td>%s</td><td>OK</td><td>WebDAV collection published successfully.</td></tr>',
+                  _colname),
+              _ses_res);
+next_col:
+          ;
+        }
+
+      _idx := 0;
+      while (_tblname := adm_next_checkbox ('TB_', params, _idx))
+	{
+          declare continue handler for sqlstate '*' {
+	    http (
+                sprintf ('<tr><td>%s</td><td>ERR</td><td>%s: %s</td></tr>',
+                    _tblname,
+                    cast (__SQL_STATE as varchar), __SQL_MESSAGE),
+                _ses_res);
+            goto next_tbl;
+          };
+          REPL_CREATE_SNAPSHOT_PUB (_tblname, 2);
+	  http (
+              sprintf ('<tr><td>%s</td><td>OK</td><td>Table published successfully.</td></tr>',
+                  _tblname),
+              _ses_res);
+next_tbl:
+          ;
+        }
+?>
+    <html>
+      <head>
+        <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+        <meta name="AUTHOR" content="OpenLink Software">
+        <meta name="DESCRIPTION" content="Snapshot replication wizard - create replication">
+        <title>Bidirectional snapshot creation</title>
+      </head>
+<?vsp adm_page_header('Bidirectional Snapshot Replication Created', 'snapshotreplication'); ?>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+        <tr>
+	  <td CLASS="genlistheadt">Item&nbsp;Name</td>
+	  <td CLASS="genlistheadt">Status</td>
+	  <td CLASS="genlistheadt">Status&nbsp;Description</td>
+	</tr>
+<?vsp http (string_output_string (_ses_res)); ?>
+	</table>
+        <br>
+          <p>From the main menu choose &quot;Bidirectional Snapshot Replication&quot; to Remove or change scheduled update</p>
+        <form>
+          <input type="Button" value="Bidirectional Snapshot Replications" name="Snapshot replications" onclick="location.replace ('snp_bidir.vsp')">
+	  <!--script language="JavaScript">
+	     setTimeout ("location.replace ('snp_bidir.vsp')", 20000)
+	  </script-->
+        </form>
+<?vsp
+      goto end_st;
+    }
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Bidirectional snapshot replication wizard">
+    <title>Bidirectional Snapshot Replication</title>
+  </head>
+<?vsp
+  adm_page_header('Bidirectional Snapshot Replication', NULL); ?>
+<?include ../adm_js_check.vsp ?>
+<?vsp
+  if (get_keyword ('Delete', params, '') <> '')
+    {
+      _idx := 0;
+      while (_colname := adm_next_checkbox ('CB_', params, _idx))
+	{
+          declare continue handler for sqlstate '*' {
+            http(sprintf ('Error: %s: %s<br>',
+                     cast (__SQL_STATE as varchar), __SQL_MESSAGE));
+          };
+          REPL_DROP_SNAPSHOT_PUB (_colname, 1);
+        }
+
+      _idx := 0;
+      while (_tblname := adm_next_checkbox ('TB_', params, _idx))
+	{
+          declare continue handler for sqlstate '*' {
+            http(sprintf ('Error: %s: %s<br>',
+                     cast (__SQL_STATE as varchar), __SQL_MESSAGE));
+          };
+          REPL_DROP_SNAPSHOT_PUB (_tblname, 2);
+        }
+    }
+  if (get_keyword ('Sync', params, '') <> '')
+    {
+      _idx := 0;
+      while (_colname := adm_next_checkbox ('CB_', params, _idx))
+	{
+          declare continue handler for sqlstate '*' {
+            http(sprintf ('Error: %s: %s<br>',
+                     cast (__SQL_STATE as varchar), __SQL_MESSAGE));
+          };
+          REPL_UPDATE_SNAPSHOT (_colname, 1);
+        }
+
+      _idx := 0;
+      while (_tblname := adm_next_checkbox ('TB_', params, _idx))
+	{
+          declare continue handler for sqlstate '*' {
+            http(sprintf ('Error: %s: %s<br>',
+                     cast (__SQL_STATE as varchar), __SQL_MESSAGE));
+          };
+          REPL_UPDATE_SNAPSHOT (_tblname, 2);
+        }
+    }
+?>
+<form action="snp_bidir.vsp" method="post">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="5">Publications</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<tr>
+<td CLASS="genlistheadt">Table Name</td>
+<td CLASS="genlistheadt">Last Replication</td>
+<td CLASS="genlistheadt">Interval</td>
+<td CLASS="genlistheadt">Sel</td>
+</tr>
+<?vsp
+  declare _count integer;
+  _count := 0;
+
+  declare _sch, _ts, _prefix varchar;
+  for select SP_ITEM, SP_TYPE, SP_LAST_TS from DB.DBA.SYS_SNAPSHOT_PUB
+      order by SP_TYPE, SP_ITEM do
+    {
+      _count := _count + 1;
+      _sch := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT where SE_NAME = SP_ITEM), 'none');
+      _ts := 'never';
+      if (SP_LAST_TS is not null)
+	_ts := substring (cast (SP_LAST_TS as varchar), 1, 19);
+      if (SP_TYPE = 1)
+        _prefix := 'CB_';
+      else
+        _prefix := 'TB_';
+?>
+<tr>
+<td CLASS="gendata"><a href="snp_bidir_edit.vsp?item=<?=SP_ITEM?>&item_type=<?=SP_TYPE?>"><?=SP_ITEM?></a></td>
+<td align="center" CLASS="gendata"><?=_ts?></td>
+<td align="center" CLASS="gendata"><?=_sch?></td>
+<td CLASS="geninput">
+<input type="checkbox" name="<?=_prefix?><?=SP_ITEM?>">
+</td>
+</tr>
+<?vsp
+    }
+  if (_count = 0)
+    {
+      http ('<tr><td colspan="4" CLASS="gendata" align="center">*** No bidirectional snapshot publications ***</td></tr>');
+    }
+?>
+<tr><td colspan="4" align="right">
+<table class="genlist" border="0" cellpadding="0">
+<tr>
+<?vsp
+  if (_count > 0)
+    {
+?>
+       <td><input type=submit name="Sync" value="Sync"></td>
+       <td><input type=submit name="Delete" value="Delete"></td>
+<?vsp
+    }
+?>
+</form>
+<td>
+<form action="snp_main.vsp" method="post">
+<input type="hidden" name="crpage" value="snp_bidir.vsp">
+<input type="submit" name="New" value="New Table">
+</form>
+</td>
+<td>
+<form action="../admin_trx_repl/trx_dav.vsp" method="post">
+<input type="hidden" name="crpage" value="../admin_repl/snp_bidir.vsp">
+<input type="submit" name="New" value="New WebDAV Collection">
+</form>
+</td>
+</table>
+</td></tr>
+</table>
+<?vsp
+end_st:
+  adm_page_footer();
+?>
+</html>

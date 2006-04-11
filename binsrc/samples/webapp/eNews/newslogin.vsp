@@ -1,0 +1,120 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _email, _pwd, _login, _pid varchar;
+  _email := trim(get_keyword('email', params, ''));
+  _pwd := get_keyword('pwd', params, '');
+  _pid := md5(_pwd);
+  _login := get_keyword('login', params, '');
+
+  if (_login <> '' and exists(select 1 from eNews..registry where lower(Email) = lower(_email)
+                                                              and Pwd = _pid))
+  {
+    declare _uid, _cid integer;
+    _uid := (select UID from eNews..registry where lower(Email) = lower(_email) and Pwd = _pid);
+
+    http_request_status ('HTTP/1.1 302 Found');
+
+    http_header(sprintf('Location: newswatch.vsp?UID=%d&P=%s\r\n', _uid, _pid));
+  }
+  else
+  {
+    declare _e_ini any;
+    _e_ini := eNews..eNews_Params();
+    if (get_keyword('mailserver', _e_ini, '') = 'default' or
+        get_keyword('email', _e_ini,'') = 'default')
+    {
+?>
+<html>
+  <head>
+    <title>eNews Initialization</title>
+  </head>
+  <body bgcolor="#FFFFFF" text="#000000">
+  <b>The eNews initialization file has not been properly configured.<br />Please contact the web server administrator.</b>
+  </body>
+</html>
+<?vsp
+      return;
+    }
+?>
+<html>
+  <head>
+    <title>eNews Login</title>
+  </head>
+  <body bgcolor="#FFFFFF" text="#000000">
+    <table border="0" width="250">
+      <tr>
+        <td bgcolor="#808080">
+          <p align="center"><font face="Times New Roman" size="4">I'm a New User</font></p>
+        </td>
+      </tr>
+      <tr>
+        <td height="45">
+          <p align="center"><font face="Times New Roman" size="4">
+            <a href="newsregistration.vsp">Sign Me Up</a>
+          </font></p>
+        </td>
+      </tr>
+      <tr>
+        <td bgcolor="#808080">
+          <p align="center"><font face="Times New Roman" size="4">Registered Users Sign In</font></p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <form method="POST" action="newslogin.vsp">
+            <table border="0" width="300">
+              <tr>
+                <td align="right" width="140">
+                  <font face="Times New Roman">User E-Mail:</font>
+                </td>
+                <td width="145"><input type="text" name="email" size="20" value="<?=_email?>" /><td>
+              </tr>
+              <tr>
+                <td align="right" width="140">
+                  <font face="Times New Roman">Password:</font>
+                </td>
+                <td width="145"><input type="password" name="pwd" size="20" /><td>
+              </tr>
+              <tr>
+                <td align="right" width="140"></td>
+                <td width="145"><input type="submit" name="login" value="SUBMIT" /><td>
+              </tr>
+            </table>
+          </form>
+        </td>
+      </tr>
+    </table>
+<?vsp
+    if (_login <> '')
+    {
+?>
+    <hr /><p><font face="Times New Roman" size="3" color="#800000">Incorrect login.</font></p>
+<?vsp
+    }
+?>
+  </body>
+</html>
+<?vsp
+  }
+?>

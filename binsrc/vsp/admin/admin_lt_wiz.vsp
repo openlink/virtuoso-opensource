@@ -1,0 +1,725 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<?vsp
+--no_c_escapes-
+  declare _spagein varchar;
+  declare _spage integer;
+  declare _town varchar;
+  declare _tdsn varchar;
+  declare _rows integer;
+  declare _tablelist varchar;
+  declare _tpwd varchar;
+  declare _pwd varchar;
+  declare _tqual varchar;
+  declare _sql varchar;
+  declare _reswin integer;
+  declare _cmd varchar;
+  declare _dsn varchar;
+  declare _tuid varchar;
+  declare _uid varchar;
+  declare _fontsize varchar;
+
+  declare _table varchar;
+  declare _frame varchar;
+  declare _justvirt integer;
+
+  declare m_dta, m_dta_col, result any;
+  declare err_sqlstate, err_msg varchar;
+
+  if (not adm_check_auth (lines))
+    return (0);
+
+--  dbg_obj_print(path);
+--  dbg_obj_print (params);
+--  dbg_obj_print(lines);
+
+
+  _spagein := get_keyword ('spage', params, '');
+if (_spagein='')
+{
+?>
+<html><head><title>Wizard</title>
+<SCRIPT Language="JavaScript">
+<!--
+function WinOpen(wURL, wName, wWidth, wHeight){
+  return window.open(wURL,wName,"toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=yes,width=" + wWidth + ",height=" + wHeight)
+}
+function startwizard() {
+    WinOpen("/admin/admin_lt_wiz.vsp?spage=1", "wizard", "476", "360");
+    history.go(-1);
+}
+startwizard();
+ -->
+ </SCRIPT>
+<body>
+<hr>
+Your browser does not support Javascript which is required for the Wizard.<br>
+Please use alternative menu options.
+</body></html>
+<?vsp
+return;
+}
+  _spage := atoi(_spagein);
+  _fontsize := get_keyword ('fontsize', params, '2');
+  _town := get_keyword ('town', params, '');
+  _tdsn := get_keyword ('tdsn', params, '');
+  _rows := atoi(get_keyword ('rows', params, '100'));
+  _tablelist := get_keyword ('tablelist', params, '');
+  _tpwd := get_keyword ('tpwd', params, '');
+  _pwd := get_keyword ('pwd', params, '');
+  _tqual := get_keyword ('tqual', params, '');
+  _sql := replace(get_keyword ('sql', params, ''),'\n',' ');
+  _reswin := adm_is_checked ('reswin', params, '');
+  _cmd := trim(replace(get_keyword ('cmd', params, ''),'+',''));
+  _dsn := get_keyword ('dsn', params, '');
+  if (ascii(_dsn)=33) {
+    _dsn:=subseq(_dsn,1);
+  }
+  _tuid := get_keyword ('tuid', params, '');
+  _uid := get_keyword ('uid', params, 'dba');
+
+  _table := get_keyword ('table', params, '');
+  _frame := get_keyword ('frame', params, '');
+  _justvirt := adm_is_checked ('justvirt', params);
+
+  _spage := nextpage(_spage,params);
+  dbg_printf ('newpage %d; cmd=\'%s\'',_spage,_cmd);
+
+  if (_spage=1) {
+?>
+
+<head><title>Virtuoso External Table Linking Wizard (ODBC)</title>
+<SCRIPT Language="JavaScript">
+function candolink(thisform) {
+    i = thisform.dsn.selectedIndex;
+    if (i > 0) {
+	return true;
+    } else {
+	alert("Select a DSN to link with.");
+	return false;
+    }
+}
+function candolist(thisform) {
+    i = thisform.dsn.selectedIndex;
+    if (i < 1) {
+	alert("Select a DSN to use for the list.");
+	return false;
+    }
+    dsn=thisform.dsn.options[i].value;
+    if (dsn.charAt(0)!="!") {
+	alert("You can only list tables on a Virtuoso DSN.");
+	return false;
+    }
+    return true;
+}
+function candoisql(thisform) {
+    i = thisform.dsn.selectedIndex;
+    if (i > 0) {
+	return true;
+    } else {
+	alert("Select a DSN to run the SQL against");
+	return false;
+    }
+}
+function togglevirt(thisform) {
+thisform.next.value='Main';
+thisform.submit();
+}
+function focusonload() {
+}
+</SCRIPT>
+<SCRIPT LANGUAGE="JavaScript1.1">
+function focusonload() {
+self.focus()
+}
+</SCRIPT>
+</head>
+<body bgcolor="#C0C0C0" onload="focusonload()">
+<center><font size=4>Virtuoso External Table Linking Wizard (ODBC)</font></center>
+
+<?include adm_js_check.vsp ?>
+<FORM name='dsnlist' method="POST" action='/admin/admin_lt_wiz.vsp'>
+<table border="0" width="100%" valign="top">
+<tr>
+<td width="300">
+<SELECT SIZE="13" NAME="dsn">
+<SCRIPT LANGUAGE="JavaScript">
+if (navigator.appName != "Netscape")
+    document.write("<OPTION>Name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Comment:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+else
+{
+  if (parseFloat(navigator.appVersion) >= 4)
+    document.write("<OPTION>Name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Comment:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+  else
+    document.write("<OPTION>Name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Comment:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+}
+</SCRIPT>
+<?vsp adm_lt_dsn_options('',_justvirt); ?>
+</SELECT>
+</td>
+<td valign="top">
+<table border="0" align="left">
+<input type="hidden" name="spage" value=1>
+<input type="hidden" name="next" value="Next >">
+<SCRIPT LANGUAGE="JavaScript">
+if (navigator.appName == "Netscape" && (parseFloat(navigator.appVersion) >= 4)) {
+    document.write("<tr><td><INPUT Type=\"submit\" name=cmd width=\"82\" Value=\"Link\" onclick='return candolink(this.form)'></td></tr>");
+    document.write("<tr><td><INPUT Type=\"submit\" name=cmd width=\"82\" Value=\"List\" onclick='return candolist(this.form)'></td></tr>");
+    document.write("<tr><td><INPUT Type=\"submit\" name=cmd width=\"82\" Value=\"ISQL\" onclick='return candoisql(this.form)'></td></tr>");
+} else {
+    document.write("<tr><td><INPUT Type=\"submit\" name=cmd Value=\"  Link    \" onclick='return candolink(this.form)'></td></tr>");
+    document.write("<tr><td><INPUT Type=\"submit\" name=cmd Value=\"   List    \" onclick='return candolist(this.form)' onmouseover=\"dls('simple left<br>line 2<br>line3'); return true;\"></td></tr>");
+    document.write("<tr><td><INPUT Type=\"submit\" name=cmd Value=\"  ISQL  \" onclick='return candoisql(this.form)'></td></tr>");
+}
+</script>
+<tr><td>
+<INPUT TYPE=CHECKBOX NAME="justvirt" onclick='togglevirt(this.form)'
+<?vsp
+if (_justvirt) http(' CHECKED');
+?>
+>Just<br>Virtuoso</td></tr>
+</table>
+</td>
+</tr>
+<tr>
+
+<td colspan="2"><img src="/images/virtv.gif" align=left>
+<FONT SIZE="2">
+&nbsp;Select a DSN, and then an action Button.
+</FONT></td>
+</tr>
+<tr><td colspan="2" align="right"><a href="javascript:self.close()">
+<img src="/images/exit.gif" border="0"></a></td></tr>
+</table>
+</form>
+<DIV id=overDiv style="POSITION: absolute"></DIV>
+<SCRIPT SRC="popuphlp.js"></SCRIPT>
+</body>
+<?vsp
+return;
+}
+
+if (_spage=2)
+{
+
+?>
+<head><title>Connect details for <?=_cmd?></title></head>
+<body bgcolor="#C0C0C0">
+<form method="POST" name='page2' action='/admin/admin_lt_wiz.vsp'>
+<input type="hidden" name="spage" value=2>
+<input type="hidden" name="town" value="<?=_town?>">
+<input type="hidden" name="tdsn" value="<?=_tdsn?>">
+<input type="hidden" name="rows" value="<?=_rows?>">
+<input type="hidden" name="tablelist" value="<?=_tablelist?>">
+<input type="hidden" name="tpwd" value="<?=_tpwd?>">
+<input type="hidden" name="tqual" value="<?=_tqual?>">
+<input type="hidden" name="sql" value="<?=_sql?>">
+<input type="hidden" name="reswin" value="<?=_reswin?>">
+<input type="hidden" name="fontsize" value="<?=_fontsize?>">
+<input type="hidden" name="cmd" value="<?=_cmd?>">
+<input type="hidden" name="dsn" value="<?=_dsn?>">
+<input type="hidden" name="tuid" value="<?=_tuid?>">
+<table border="0" cellpadding="2" cellspacing="0" width="100%">
+<tr>
+<td rowspan="5" width=120><img src="/images/vdlgbox.jpg" border="0"></td>
+<td colspan="2"><font size="2">Enter the connect details to access the DSN called<br>
+<?=_dsn?>:</font></td>
+</tr>
+<tr>
+<td><font size="2">User Name:</font></td><td><INPUT TYPE=TEXT NAME=uid SIZE=30 MAXLENGTH=30 VALUE="<?=_uid?>" tabindex=1></td>
+</tr>
+<tr><td colspan=2 valign=top><font size="2">The username for this connection.</font></td></tr>
+<tr>
+<td><font size="2">Password:</font></td><td><INPUT TYPE=password NAME=pwd SIZE=30 VALUE="<?=_pwd?>" tabindex=2></td>
+</tr>
+<tr><td colspan=2 valign=top><font size="2">The password for this connection.</font></td></tr>
+<tr>
+<td colspan=3 align=right><br>
+<input type="submit" name="prev" value="< Back" tabindex=4>&nbsp;
+<input type="submit" name="next" value="Next >" tabindex=3>&nbsp;
+<input type="submit" name="next" value=" Main " tabindex=5>&nbsp;
+<input type="button" name="exit" value="  Exit   " onclick="self.close()" tabindex=6>
+</td>
+</tr>
+</table>
+</form>
+</body>
+
+<?vsp
+
+return;
+}
+if (_spage=3 AND _frame='' AND (_cmd='List' OR _cmd='Link'))
+{
+
+?>
+
+<HTML><HEAD><TITLE>
+<?vsp
+if (_cmd='Link')
+  http(_cmd);
+else
+  http('Unlink');
+?>
+Table List</TITLE>
+</HEAD>
+<FRAMESET ROWS="60,*,40">
+  <FRAME NAME="listtop" SRC="/admin/admin_lt_wiz.vsp?dsn=<?/_dsn?>&spage=3&cmd=<?/_cmd?>&frame=top" SCROLLING="no" FRAMEBORDER="0" NORESIZE>
+  <FRAME NAME="listmain" SRC="/admin/admin_lt_wiz.vsp?dsn=<?/_dsn?>&spage=3&cmd=<?/_cmd?>&uid=<?/_uid?>&pwd=<?/_pwd?>&frame=tbllst" SCROLLING="auto" FRAMEBORDER="0" NORESIZE>
+  <FRAME NAME="listfoot" SRC="/admin/admin_lt_wiz.vsp?dsn=<?/_dsn?>&spage=3&cmd=<?/_cmd?>&frame=foot" SCROLLING="no" FRAMEBORDER="0" NORESIZE MARGINHEIGHT="4" MARGINWIDTH="6">
+</FRAMESET>
+
+<?vsp
+return;
+}
+
+if ('top' = _frame)
+{
+  if (_cmd='List') { _cmd:='Unlink'; }
+?>
+<html><body bgcolor="#C0C0C0">
+<font size=3><b><?=_cmd?> tables from <?=_dsn?></b></font><br>
+<font size=2>Select the tables you wish to <?=_cmd?> then press "Next".</font>
+</body></html>
+
+<?vsp
+return;
+}
+
+if ('tbllst' = _frame AND _cmd='Link')
+{
+?>
+<!-- table selection -->
+
+<html><head><title>Link Table List</title>
+<SCRIPT Language="JavaScript">
+function checklink(thisform) {<?vsp
+declare numtables integer;
+declare tables any;
+  vd_remote_data_source (_dsn, '', _uid, _pwd);
+  if (sys_stat ('vdb_attach_autocommit') > 0) vd_autocommit (_dsn, 1);
+  tables := sql_tables (_dsn, NULL, '%', '%', 'TABLE');
+numtables:=length(tables);
+-- dbg_obj_print(numtables);
+if (numtables=0) http('alert("There are no tables to link");return false;');
+if (numtables=1) http('if (thisform.tablelist.checked) { return true }');
+if (numtables>1) {
+?>
+  for (var i=0; i < thisform.tablelist.length; i++) {
+    if (thisform.tablelist[i].checked) { return true }
+  }
+  alert("Choose at least one table");
+  return false;
+<?vsp
+ }
+?>
+}
+</SCRIPT></head>
+<body bgcolor="#C0C0C0">
+  <FORM METHOD=POST action="admin_lt_wiz.vsp" target="_top" name=form>
+    <TABLE BORDER=1 NOWRAP WIDTH=99%>
+      <TR>
+        <TH ALIGN=CENTER><font size=2>Link</font></TH><TH ALIGN=LEFT><font size=2>Qual.</font></TH><TH ALIGN=LEFT><font size=2>Owner</font></TH>
+        <TH ALIGN=LEFT><font size=2>Name</font></TH><TH ALIGN=LEFT><font size=2>Type</font></TH><TH ALIGN=LEFT><font size=2>Remarks</font></TH>
+      </TR>
+      <?vsp adm_lt_tables_in_table(tables); ?>
+    </TABLE><P>
+
+    <input type="hidden" name="spage" value=3>
+    <input type="hidden" name="frame" value="tbllst">
+    <input type="hidden" name="prev" value="">
+    <input type="hidden" name="next" value="">
+    <input type="hidden" name="town" value="<?=_town?>">
+    <input type="hidden" name="tdsn" value="<?=_tdsn?>">
+    <input type="hidden" name="pwd" value="<?=_pwd?>">
+    <input type="hidden" name="rows" value="<?=_rows?>">
+    <input type="hidden" name="tpwd" value="<?=_tpwd?>">
+    <input type="hidden" name="tqual" value="<?=_tqual?>">
+    <input type="hidden" name="sql" value="<?=_sql?>">
+    <input type="hidden" name="reswin" value="<?=_reswin?>">
+    <input type="hidden" name="uid" value="<?=_uid?>">
+    <input type="hidden" name="fontsize" value="<?=_fontsize?>">
+    <input type="hidden" name="cmd" value="<?=_cmd?>">
+    <input type="hidden" name="dsn" value="<?=_dsn?>">
+    <input type="hidden" name="tuid" value="<?=_tuid?>">
+
+  </FORM>
+</BODY></HTML>
+
+<?vsp
+return;
+}
+
+if ('foot' = _frame)
+{
+?>
+<!-- table selection list footer -->
+
+<html>
+<head>
+<SCRIPT Language="JavaScript">
+function do_prev() {
+  parent.listmain.document.form.prev.value=document.form.prev.value;
+  parent.listmain.document.form.submit();
+}
+function checklink() {
+  if (parent.listmain.document.form.tablelist.checked) { return true }
+  for (var i=0; i < parent.listmain.document.form.tablelist.length; i++) {
+    if (parent.listmain.document.form.tablelist[i].checked) { return true }
+  }
+  alert("Choose at least one table to <?vsp
+if (_cmd='Link')
+  http('link');
+else
+  http('unlink');
+?>");
+  return false;
+}
+function do_next() {
+  if (checklink()) {
+    parent.listmain.document.form.next.value="Next";
+    parent.listmain.document.form.submit();
+  }
+}
+function do_main() {
+  parent.listmain.document.form.next.value="Main";
+  parent.listmain.document.form.submit();
+}
+</SCRIPT>
+</head>
+<body bgcolor="#C0C0C0">
+<FORM METHOD=POST name=form>
+<DIV ALIGN=right>
+<SCRIPT Language="JavaScript">
+if (parent.listmain.document.title!="Error") {
+   document.write('<input type="button" name="prev" value="< Back" onclick="do_prev()">&nbsp;');
+   document.write('<input type="button" name="next" value="Next >" onclick="do_next()">&nbsp;');
+   document.write('<input type="button" name="next" value=" Main " onclick="do_main()">&nbsp;');
+}
+</SCRIPT>
+<input type="button" name="exit" value="  Exit  " onclick="top.close()">
+</DIV>
+</FORM>
+</BODY></HTML>
+
+<?vsp
+return;
+}
+
+if (_spage=5 AND _cmd='Link')
+{
+  -- dbg_obj_print (params);
+  _town := ucase (_dsn);
+
+?>
+
+<!-- Attach details 2 -->
+<head><title>Attach details</title>
+<SCRIPT Language="JavaScript">
+function checkfield (n, s, exclude)
+{
+    var i,c;
+    for (i = 0; i < s.length; i++)
+    {
+	c = s.charAt(i);
+	if (exclude.indexOf(c) >= 0) {
+	    alert(n+" must not contain the character "+c);
+	    return false;
+	}
+    }
+    return true;
+}
+function checkform(thisform) {
+     if (!checkfield("Qualifier",thisform.tqual.value,".!")) return false;
+    if (!checkfield("Owner",thisform.town.value,".!")) return false;
+    return true;
+}
+</SCRIPT>
+</head>
+<body bgcolor="#C0C0C0">
+<form method="POST" name='page5'>
+<input type="hidden" name="spage" value=5>
+<input type="hidden" name="tdsn" value="<?=_tdsn?>">
+<input type="hidden" name="pwd" value="<?=_pwd?>">
+<input type="hidden" name="rows" value="<?=_rows?>">
+<input type="hidden" name="tablelist" value="<?=adm_http_parm_concat ('tablelist', '^', params)?>">
+<input type="hidden" name="tpwd" value="<?=_tpwd?>">
+<input type="hidden" name="sql" value="<?=_sql?>">
+<input type="hidden" name="reswin" value="<?=_reswin?>">
+<input type="hidden" name="uid" value="<?=_uid?>">
+<input type="hidden" name="fontsize" value="<?=_fontsize?>">
+<input type="hidden" name="cmd" value="<?=_cmd?>">
+<input type="hidden" name="dsn" value="<?=_dsn?>">
+<input type="hidden" name="tuid" value="<?=_tuid?>">
+
+<table border="0" cellpadding="2" cellspacing="0" width=100%>
+<tr>
+<td rowspan="5" width=120><img src="/images/vdlgbox.jpg" border="0"></td>
+<td colspan=2><font size="2">
+Here you can overrule the qualifier and owner to match
+your Virtuoso DBMS environment.
+</font></td>
+</tr>
+<tr>
+<td><font size="2">Qualifier name:</font></td><td><INPUT TYPE=TEXT NAME=tqual SIZE=30 MAXLENGTH=30 VALUE="<?=dbname()?>"></td>
+</tr>
+<tr><td colspan=2 valign=top><font size="2">New Qualifier name.</font></td></tr>
+<tr>
+<td><font size="2">Owner name:</font></td><td><INPUT TYPE=TEXT NAME=town SIZE=30 VALUE="<?=_town?>"></td>
+</tr>
+<tr><td colspan=2 valign=top><font size="2">New Owner name.</font></td></tr>
+<tr>
+<td colspan=3 align=right><br>
+<input type="submit" name="prev" value="< Back">&nbsp;
+<input type="submit" name="next" value="Next >" onclick='return checkform(this.form)'>&nbsp;
+<input type="submit" name="next" value=" Main ">&nbsp;
+<input type="button" name="exit" value="  Exit   " onclick="self.close()">
+</td>
+</tr>
+</table>
+</form>
+</body>
+
+<?vsp
+  return;
+}
+if (_spage=6 AND _cmd='Link')
+{
+
+?>
+
+<!-- list of done links -->
+
+<html><head><title>Linked Tables</title>
+<SCRIPT Language="JavaScript">
+</SCRIPT>
+</head>
+<body bgcolor="#C0C0C0">
+<table align=center border=1 width="100%"><tr><th><font size=2>OK</font></th><th><font size=2>Link</font></th><th><font size=2>To</font></th></tr>
+<?vsp
+adm_lt_wiz_link_tables (_tablelist, _dsn, _town, _tqual);
+?>
+</table>
+<form method="POST" action="/admin/admin_lt_wiz.vsp" target="_top" name=form>
+
+<input type="hidden" name="spage" value=6>
+<input type="hidden" name="prev" value="">
+<input type="hidden" name="next" value="">
+<input type="hidden" name="town" value="<?=_town?>">
+<input type="hidden" name="tdsn" value="<?=_tdsn?>">
+<input type="hidden" name="pwd" value="<?=_pwd?>">
+<input type="hidden" name="rows" value="<?=_rows?>">
+<input type="hidden" name="tablelist" value="<?=_tablelist?>">
+<input type="hidden" name="tpwd" value="<?=_pwd?>">
+<input type="hidden" name="tqual" value="<?=_tqual?>">
+<input type="hidden" name="sql" value="<?=_sql?>">
+<input type="hidden" name="reswin" value="<?=_reswin?>">
+<input type="hidden" name="uid" value="<?=_uid?>">
+<input type="hidden" name="fontsize" value="<?=_fontsize?>">
+<input type="hidden" name="cmd" value="<?=_cmd?>">
+<input type="hidden" name="dsn" value="<?=_dsn?>">
+<input type="hidden" name="tuid" value="<?=_tuid?>">
+</form></body></html>
+
+<!-- Done list footer -->
+
+<html>
+<head>
+<SCRIPT Language="JavaScript">
+function do_prev() {
+  parent.listmain.document.form.prev.value=document.form.prev.value;
+  parent.listmain.document.form.submit();
+}
+function checklink() {
+  if (parent.listmain.document.form.tablelist.checked) { return true }
+  for (var i=0; i < parent.listmain.document.form.tablelist.length; i++) {
+    if (parent.listmain.document.form.tablelist[i].checked) { return true }
+  }
+  alert("Please choose at least one table to link");
+  return false;
+}
+function do_next() {
+  if (checklink()) {
+    parent.listmain.document.form.next.value="Next";
+    parent.listmain.document.form.submit();
+  }
+}
+function do_main() {
+  parent.listmain.document.form.next.value="Main";
+  parent.listmain.document.form.submit();
+}
+</SCRIPT>
+</head>
+<body bgcolor="#C0C0C0">
+<FORM METHOD=POST name=form>
+<DIV ALIGN=right>
+<SCRIPT Language="JavaScript">
+if (parent.listmain.document.title!="Error") {
+ document.write('<input type="button" name="next" value=" Main " onclick="do_main()">&nbsp;');
+}
+</SCRIPT>
+<input type="button" name="exit" value="  Exit  " onclick="top.close()">
+</DIV>
+</FORM>
+</BODY></HTML>
+
+<?vsp
+return;
+}
+if (_spage=3 AND _cmd='ISQL')
+{
+
+?>
+<html><head><title>SQL Statement</title></head>
+<body bgcolor="#C0C0C0">
+<form method="POST" name='page3' action='/admin/admin_lt_wiz.vsp'>
+<input type="hidden" name="spage" value=3>
+<input type="hidden" name="prev" value="">
+<input type="hidden" name="next" value="">
+<input type="hidden" name="pwd" value="<?=_pwd?>">
+<input type="hidden" name="uid" value="<?=_uid?>">
+<input type="hidden" name="cmd" value="<?=_cmd?>">
+<input type="hidden" name="dsn" value="<?=_dsn?>">
+
+<table border="0" cellpadding="2" cellspacing="0" width=100%>
+<tr>
+<td rowspan="3" width=120><img src="/images/vdlgbox.jpg" border="0"></td>
+<td colspan="2"><font size="2">Enter the SQL statement to execute using the DSN called<br>
+<?=_dsn?>:<br>
+<TEXTAREA COLS=35 NAME=sql ROWS=5 WRAP=VIRTUAL><?=_sql?></TEXTAREA>
+</font></td>
+</tr>
+<tr>
+<td colspan="2"><font size="2">Maximum number of rows in resultset&nbsp;<INPUT TYPE=TEXT NAME=rows SIZE=5 MAXLENGTH=5 VALUE="<?=_rows?>"></font></td></tr>
+<tr>
+<td><font size="2">Result Font size&nbsp;<INPUT TYPE=TEXT NAME=fontsize SIZE=1 MAXLENGTH=1 VALUE="<?=_fontsize?>"></td>
+<td><INPUT TYPE=CHECKBOX NAME="reswin"
+<?vsp
+if (_reswin) http(' CHECKED');
+?>
+>Separate window</font></td>
+</tr>
+<tr>
+<td colspan=3 align=right><br>
+<input type="submit" name="prev" value="< Back">&nbsp;
+<input type="submit" name="next" value="Next >" tabindex=1>&nbsp;
+<input type="submit" name="next" value=" Main ">&nbsp;
+<input type="button" name="exit" value="  Exit   " onclick="self.close()">
+</td>
+</tr>
+</table>
+</form>
+</body></html>
+
+<?vsp
+return;
+}
+
+if (_spage=4 AND _cmd='ISQL' AND _reswin)
+{
+?>
+<html><head>
+<SCRIPT Language="JavaScript">
+var rw=window.open('','resultset','toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=560,height=400');
+if (rw==null) { history.go(-1);}
+rw.document.write('<html><head></head><body onload="document.form.submit()">');
+rw.document.write('<form method="POST" action="/admin/admin_lt_wiz.vsp" name=form>');
+rw.document.write('<input type="hidden" name="spage" value=5>');
+rw.document.write('<input type="hidden" name="pwd" value="<?=_pwd?>">');
+rw.document.write('<input type="hidden" name="rows" value="<?=_rows?>">');
+rw.document.write('<input type="hidden" name="sql" value="<?=_sql?>">');
+rw.document.write('<input type="hidden" name="reswin" value="0">');
+rw.document.write('<input type="hidden" name="uid" value="<?=_uid?>">');
+rw.document.write('<input type="hidden" name="fontsize" value="<?=_fontsize?>">');
+rw.document.write('<input type="hidden" name="cmd" value="<?=_cmd?>">');
+rw.document.write('<input type="hidden" name="dsn" value="<?=_dsn?>">');
+rw.document.write('</form></body></html>');
+rw.document.close();
+history.go(-1);
+</SCRIPT></head><body></body></html>
+<?vsp
+return;
+}
+
+if (_spage>=4 AND _cmd='ISQL')
+{
+-- dbg_obj_print('4-5 and isql');
+?>
+<head><title>Result set</title>
+<link rel="stylesheet" type="text/css" href="admin_style.html">
+</head>
+<body bgcolor="#C0C0C0">
+<?vsp
+if (_spage=4)
+{
+?>
+<?include adm_js_check.vsp ?>
+<form method="POST" action='/admin/admin_lt_wiz.vsp'>
+<input type="hidden" name="spage" value=4>
+<input type="button" name="prev" value="< Back" onclick="history.go(-1)">&nbsp;
+<input type="submit" name="next" value=" Main " tabindex=1>&nbsp;
+<input type="button" name="exit" value="  Exit  " onclick="self.close()">
+</form>
+<?vsp
+}
+
+  err_sqlstate := '00000';
+  err_msg := 'none';
+
+   if (dsn_is_us(_dsn, lines) ) {
+-- dbg_obj_print('exec');
+	exec (_sql, err_sqlstate, err_msg, vector(),
+                _rows, m_dta, result);
+   } else {
+	declare _rowsout integer;
+-- dbg_obj_print('rexecute');
+	vd_remote_data_source (_dsn, '', _uid, _pwd);
+	rexecute (_dsn, _sql, err_sqlstate, err_msg, vector(),
+               _rowsout, m_dta, result);
+   }
+
+   --dbg_printf('exec: sqlstate %s, msg %s', err_sqlstate, err_msg);
+
+   if ('00000' <> err_sqlstate) {
+              http (sprintf ('<hr><strong>SQL Error:</strong> sqlstate %s, %s',
+	                      err_sqlstate, err_msg));
+      return;
+    }
+
+-- dbg_obj_print(result);
+    adm_result_to_table(result, m_dta);
+    http('</head><body></body></html>');
+    return;
+}
+
+?>
+<head><title>Error</title></head>
+<body bgcolor="#C0C0C0">
+Fatal error:<br>
+No appropriate page to display in file /admin/admin_lt_wiz.vsp
+</body>
+</html>
+

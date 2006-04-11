@@ -1,0 +1,199 @@
+<!-- -*- html -*- -->
+<?vsp
+  declare akey, bid, id varchar;
+  declare userid, ownid, tz, cont, reg, comm, filt, cnot, addblog int;
+  declare tit, own, home, copy, disc, email, about, ping, hpage, kwd, photo, phome, rssver varchar;
+  declare domains, dom any;
+
+  adm_pre_page(lines);
+
+if (http_dav_uid () <> (userid := adm_dav_check_auth (lines, 1)))
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+          'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+
+  akey := 'appKey';
+  bid := {?'bid'};
+  dom := {?'dom'};
+  tz := 0; cont := 1; reg := 1; filt := '*default*'; hpage := '/blog/';
+
+  if (dom is null or bid is null or bid = '' or {?'cncl'} = 'Back')
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header (sprintf ('Location: admin_blog_2.vsp?bid=%s\r\n', bid));
+      return;
+    }
+
+  if ({?'post'} is not null)
+    {
+      tit := {?'tit'};
+      copy := {?'copy'};
+      disc := {?'disc'};
+      email := {?'email'};
+      about := {?'about'};
+      ping := {?'ping'};
+      cont := coalesce (atoi({?'cont'}), 0);
+      reg := coalesce (atoi({?'reg'}), 0);
+      comm := coalesce (atoi({?'comm'}), 0);
+      filt := {?'filt'};
+      hpage := {?'hpage'};
+      phome := {?'phome'};
+      photo := {?'photo'};
+      kwd := {?'kwd'};
+      cnot := coalesce (atoi({?'cnot'}), 0);
+      addblog := coalesce (atoi({?'addblog'}), 0);
+      rssver := {?'rssver'};
+      update SYS_BLOG_DOMAINS set BD_TITLE = tit, BD_COPYRIGHTS = copy, BD_DISCLAIMER = disc,
+	  	BD_ABOUT = about, BD_E_MAIL = email, BD_PINGS = ping, BD_TZ = atoi ({?'tz'}),
+		BD_SHOW_CONTACT = cont, BD_SHOW_REGIST = reg, BD_COMMENTS = comm, BD_FILTER = filt,
+		BD_HOME_PAGE = hpage, BD_PHOTO = photo, BD_KEYWORDS = kwd, BD_COMMENTS_NOTIFY = cnot,
+		BD_ADD_YOUR_BLOG = addblog, BD_RSS_VERSION = rssver
+	where BD_BLOG_ID = bid and BD_DOMAIN = dom;
+      if ({?'uphoto'} <> '')
+	{
+	  declare cnt, nam any;
+	  cnt := {?'uphoto'};
+	  nam := photo;
+	  if (nam = '')
+       	    nam := get_keyword ('filename', get_keyword ('attr-uphoto', params, vector ('filename', 'photo.gif')));
+	  DAV_RES_UPLOAD_STRSES_INT (phome||nam, cnt,'','110100100N', {?'owner'}, null, null, null, 0);
+	}
+    }
+
+  declare blog_name varchar;
+
+  whenever not found goto ef;
+  select BI_TITLE, BI_HOME, BI_COPYRIGHTS, BI_DISCLAIMER, U_NAME, coalesce (BI_E_MAIL, U_E_MAIL), BI_ABOUT, BI_OWNER, BI_PINGS, coalesce(BI_TZ,0), BI_SHOW_CONTACT, BI_SHOW_REGIST, BI_COMMENTS, BI_FILTER, BI_HOME_PAGE, BI_PHOTO, BI_KEYWORDS, BI_P_HOME, BI_COMMENTS_NOTIFY, BI_ADD_YOUR_BLOG, BI_RSS_VERSION
+    	into tit, home, copy, disc, own, email, about, ownid, ping, tz, cont, reg, comm, filt, hpage, photo, kwd, phome, cnot, addblog, rssver
+  	from SYS_BLOG_DOMAIN_INFO, SYS_USERS where
+ 	BI_BLOG_ID = bid and BI_OWNER = U_ID and BI_DOMAIN = dom;
+
+  blog_name := tit;
+
+ef:
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>BLOG Administration</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="BLOG Management for Virtuoso DB">
+  </head>
+<?vsp adm_page_header('BLOG Administration', ''); ?>
+<script type="text/javascript">
+<!--
+function getFileName()
+{
+  var S = document.forms[0].uphoto.value;
+  var N;
+  var fname;
+  if (S.lastIndexOf('\\') > 0)
+    N = S.lastIndexOf('\\')+1;
+  else
+    N = S.lastIndexOf('/')+1;
+  fname = S.substr(N,S.length);
+  document.forms[0].photo.value = fname;
+}
+// -->
+</script>
+    <H4>Settings for "<?=dom?>"</H4>
+    <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+      <TR><TD class="genhead" COLSPAN="2">Domain Blog Settings</TD></TR>
+      <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+      <form method="POST" action="<?= http_path () ?>" enctype="multipart/form-data">
+      <input type="hidden" name="bid" value="<?=bid?>">
+      <input type="hidden" name="dom" value="<?=dom?>">
+      <input type="hidden" name="id" value="<?=id?>">
+      <input type="hidden" name="owner" value="<?=own?>">
+      <input type="hidden" name="phome" value="<?=phome?>">
+      <input type="hidden" name="hdomains" value="<?=encode_base64 (serialize(domains))?>">
+      <tr><td class="geninput">Title</td> <td class="geninput"><input type="text" name="tit" value="<?=tit?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Description</td> <td class="geninput"><input type="text" name="about" value="<?=about?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Author's e-mail</td> <td class="geninput"><input type="text" name="email" value="<?=email?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Owner</td> <td class="geninput"><input type="text" name="own" value="<?=own?>" disabled size="70%"/></td></tr>
+      <tr><td class="geninput">Home page URL</td> <td class="geninput"><input type="text" name="hpage" value="<?=hpage?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Copyrights</td> <td class="geninput"><input type="text" name="copy" value="<?=copy?>"  size="70%"/></td></tr>
+      <tr><td class="geninput">Disclamer</td> <td class="geninput"><input type="text" name="disc" value="<?=disc?>"  size="70%"/></td></tr>
+      <tr><td class="geninput">Keywords</td> <td class="geninput"><input type="text" name="kwd" value="<?=kwd?>" size="70%"/></td></tr>
+      <tr><td class="geninput">Upload Photo Image</td> <td class="geninput"><input type="file" name="uphoto" size="60%" onBlur="javascript: getFileName();"/></td></tr>
+      <tr><td class="geninput">Photo</td> <td class="geninput"><input type="text" name="photo" value="<?=photo?>" size="70%"/></td></tr>
+      <tr><td class="geninput">XSL-T filter for posts</td> <td class="geninput"><input type="text" name="filt" value="<?=filt?>"  size="70%"/></td></tr>
+
+      <tr><td class="geninput">Weblogs ping</td> <td class="geninput">
+      	<select name="ping">
+		<option value="">*disabled*
+		<option value="xmlrpc" <?V select_if ('xmlrpc', ping) ?>>XML-RPC
+		<option value="soap" <?V select_if ('soap', ping) ?>>SOAP
+		<option value="xml-rpc:http://ping.blo.gs/" <?V select_if ('xml-rpc:http://ping.blo.gs/', ping) ?>>blo.gs XML-RPC
+		<option value="xml-rpc:http://rpc.technorati.com/rpc/ping" <?V select_if ('xml-rpc:http://rpc.technorati.com/rpc/ping', ping) ?>>technorati XML-RPC
+	</select>
+      </td></tr>
+
+      <?vsp if (bid <> '*weblog-root*') { ?>
+      <tr><td class="geninput">Enable Contacts</td> <td class="geninput">
+      <input type="checkbox" name="cont" <?V check_if (cont, 1) ?> value="1" />
+      </td></tr>
+      <tr><td class="geninput">RSS file version</td> <td class="geninput">
+      	<select name="rssver">
+		<option value="2.0" <?V select_if ('2.0', rssver) ?>>2.0
+		<option value="0.92" <?V select_if ('0.92', rssver) ?>>0.92
+		<option value="0.91" <?V select_if ('0.91', rssver) ?>>0.91
+	</select>
+      </td></tr>
+      <?vsp } ?>
+
+      <?vsp if (bid = '*weblog-root*') { ?>
+      <tr><td class="geninput">Enable Register URL</td> <td class="geninput">
+      <input type="checkbox" name="reg" <?V check_if (reg, 1) ?> value="1" />
+      </td></tr>
+      <tr><td class="geninput">Enable Add Your Blog URL</td> <td class="geninput">
+      <input type="checkbox" name="addblog" <?V check_if (addblog, 1) ?> value="1" />
+      </td></tr>
+      <?vsp } ?>
+
+      <tr><td class="geninput">Enable Comments</td> <td class="geninput">
+      <input type="checkbox" name="comm" <?V check_if (comm, 1) ?> value="1" />
+      </td></tr>
+      <tr><td class="geninput">Enable Comment Post Notification via E-mail</td> <td class="geninput">
+      <input type="checkbox" name="cnot" <?V check_if (cnot, 1) ?> value="1" />
+      </td></tr>
+      <tr><td class="geninput">Time-zone</td> <td class="geninput">
+      	<select name="tz">
+	<?vsp
+	{
+	   declare i int;
+	   i := -12;
+	   while (i <= 12)
+    	     {
+	?>
+		<option value="<?V i ?>" <?V select_if (i, tz) ?>>GMT <?V case when i < 0 then '-' else '+' end ?><?V sprintf ('%02d', abs(i)) ?>:00</option>
+	<?vsp
+		i := i + 1;
+       	     }
+	}
+	?>
+	</select>
+      </td></tr>
+      <tr>
+        <td class="geninput" COLSPAN="2">
+	<input type="submit" name="post" value="Post" />
+	<input type="submit" name="cncl" value="Back" />
+	</td>
+      </tr>
+      </form>
+    </TABLE>
+
+</TABLE>
+<?vsp adm_page_footer(); ?>
+</html>
+

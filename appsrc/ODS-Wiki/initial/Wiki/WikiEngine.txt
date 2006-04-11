@@ -1,0 +1,7 @@
+Wiki engine is a server utility that allows you to browse and modify the content of Wiki site.
+This site is based on WikiV engine that is a component of OpenLink Virtuoso server.
+
+The engine is responsible for storing texts of these notes on the server and for
+converting them into well-formed HTML.
+A Wiki engine also indexes these pages to make links bidirectional: you can
+both follow links from a given page and go to pages that refer to the given one.

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project>
+	<Folder FolderName="XML Files" ExtStr="xml;cml;math;mtx;rdf;smil;svg;wml">
+		<File FilePath=".\dbconcepts.xml" HomeFolder="Yes"/>
+		<File FilePath=".\installation.xml" HomeFolder="Yes"/>
+		<File FilePath=".\intl.xml" HomeFolder="Yes"/>
+		<File FilePath=".\mailsrv.xml" HomeFolder="Yes"/>
+		<File FilePath=".\mime.xml" HomeFolder="Yes"/>
+		<File FilePath=".\odbcimplementation.xml" HomeFolder="Yes"/>
+		<File FilePath=".\overview.xml" HomeFolder="Yes"/>
+		<File FilePath=".\ptune.xml" HomeFolder="Yes"/>
+		<File FilePath=".\quicktours.xml" HomeFolder="Yes"/>
+		<File FilePath=".\repl.xml" HomeFolder="Yes"/>
+		<File FilePath=".\sampleapps.xml" HomeFolder="Yes"/>
+		<File FilePath=".\server.xml" HomeFolder="Yes"/>
+		<File FilePath=".\sqlfunctions.xml" HomeFolder="Yes"/>
+		<File FilePath=".\sqlprocedures.xml" HomeFolder="Yes"/>
+		<File FilePath=".\sqlreference.xml" HomeFolder="Yes"/>
+		<File FilePath=".\vdbconcepts.xml" HomeFolder="Yes"/>
+		<File FilePath=".\virtdocs.xml" HomeFolder="Yes"/>
+		<File FilePath=".\virtwhitepaper.xml" HomeFolder="Yes"/>
+		<File FilePath=".\webandxml.xml" HomeFolder="Yes"/>
+	</Folder>
+	<Folder FolderName="XSL Files" ExtStr="xsl;xslt">
+		<File FilePath="E:\Devel\xml\virtuoso\virtdocs\stylesheets\html_xt.xsl" HomeFolder="Yes"/>
+	</Folder>
+	<Folder FolderName="HTML Files" ExtStr="html;htm;xhtml;asp"/>
+	<Folder FolderName="DTD/Schemas" ExtStr="dtd;dcd;xdr;biz;xsd">
+		<File FilePath=".\DocBook\docbookx.dtd" HomeFolder="Yes"/>
+	</Folder>
+	<Folder FolderName="Entities" ExtStr="ent"/>
+</Project>

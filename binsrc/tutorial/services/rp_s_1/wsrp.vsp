@@ -1,0 +1,172 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare result any;
+declare a, b int;
+declare resp,inp,outp, url, url1, url2 any;
+
+resp := null;
+url := coalesce ({?'url'}, 'http://localhost:'||server_http_port()||'/router');
+url1 := coalesce ({?'url1'}, '');
+url2 := coalesce ({?'url2'}, 'http://localhost:'||server_http_port()||'/SumService');
+
+if ({?'exec'} is not null)
+  {
+    -- http://mitko/wsdkquickstart/sumservice/service/sumservice.asmx
+    -- http://mitko/wsdkquickstart/routing/server/sumservice.asmx
+    declare header any;
+    declare op, action varchar;
+    a := atoi (get_keyword ('a', params, '0'));
+    b := atoi (get_keyword ('b', params, '0'));
+    op := {?'op'};
+
+    action := case op
+		when '1' then 'http://temp.uri'
+		when '2' then 'http://microsoft.com/wsdk/samples/SumService/AddInt'
+		else 'http://soapinterop.org/' end;
+
+    header := xml_tree_doc
+	(
+	 '    <rp:path soap:actor="http://schemas.xmlsoap.org/soap/actor/next" soap:mustUnderstand="1" '
+	 ||'   xmlns:rp="http://schemas.xmlsoap.org/rp" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"'
+	 ||'   soap:encodingStyle="">'
+	 ||'        <rp:action>'||action||'</rp:action>'
+	 ||'        <rp:to>'|| url2 ||'</rp:to>'
+	 ||'        <rp:id>uuid:'|| uuid() ||'</rp:id>'
+	 ||'	<rp:fwd>'
+	 ||'          <rp:via>'|| {?'url'} ||'</rp:via>'
+	 || case when url1 <> '' then '          <rp:via>'|| url1 ||'</rp:via>' else '' end
+	 ||'	</rp:fwd>'
+	 ||'	<rp:rev />'
+	 ||'    </rp:path>');
+    if (op = '1')
+      {
+        resp := soap_client (url=>url,
+	      operation=>'AddInt',
+	      parameters=>vector (vector ('a', 'int'), a, vector('b', 'int'), b),
+	      style=> 2,
+	      headers => vector ('path', header),
+	      target_namespace=>'http://temp.uri');
+      }
+    else if (op = '2')
+      {
+        resp := soap_client (url=>url,
+	      operation=>'AddInt',
+	      parameters=>vector (vector ('a', 'int'), a, vector('b', 'int'), b),
+	      style=> 7,
+	      headers => vector ('path', header),
+	      soap_action=>action,
+	      target_namespace=>'http://microsoft.com/wsdk/samples/SumService');
+      }
+    else if (op = '3')
+      {
+        resp := soap_client (url=>url,
+	      operation=>'echoString',
+	      parameters=>vector (vector ('inputString', 'string'), {?'str'}),
+	      style=> 2,
+	      headers => vector ('path', header),
+	      soap_action=>action,
+	      target_namespace=>'http://soapinterop.org/');
+      }
+  }
+?>
+<html>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+<body>
+<H3>WS-Routing SOAP client</H3>
+<form method="post" action="<?= http_path() ?>" name="mform">
+<table class="tableentry">
+<tr><td>1. Enter the first router URL</td><td>
+<input type="text" name="url" size="100" value="<?=url?>" />
+<input type="button" onClick="window.url=document.forms[0].url; window.open('wsrptargets.vsp?w=url', 'window', 'resizable=yes, status=no, menubar=no, scrollbars=no, width=640, height=400');" value="Select">
+</td></tr>
+<tr><td>2. Enter the second router URL</td><td>
+<input type="text" name="url1" size="100" value="<?=url1?>" />
+<input type="button" onClick="window.url1=document.forms[0].url1; window.open('wsrptargets.vsp?w=url1', 'window', 'resizable=yes, status=no, menubar=no, scrollbars=no, width=640, height=400');" value="Select">
+</td></tr>
+<tr><td>3. Enter the endpoint URL</td><td>
+<input type="text" name="url2" size="100" value="<?=url2?>" />
+<input type="button" onClick="window.url2=document.forms[0].url2; window.open('wsrptargets.vsp?w=url2', 'window', 'resizable=yes, status=no, menubar=no, scrollbars=no, width=640, height=400');" value="Select">
+</td></tr>
+<?vsp dbg_obj_print ({?'op'}); if ({?'op'} = '3') { ?>
+<tr><td>4. Enter a string to echo</td><td>
+<input type="text" name="str" size="30" value="Hello World!" />
+</td></tr>
+<?vsp } else { ?>
+<tr><td>4. Enter a two numbers to calculate sum</td><td>
+<input type="text" name="a" size="15" value="0" />
+<input type="text" name="b" size="15" value="0" />
+</td></tr>
+<?vsp } ?>
+<tr><td>5. Choose a operation to invoke</td><td>
+<select name="op" onChange="document.forms[0].submit()">
+ <option value="1" <?= case {?'op'} when '1' then 'selected' else '' end ?>>AddInt (RPC)</option>
+ <option value="2" <?= case {?'op'} when '2' then 'selected' else '' end ?>>AddInt (Doc/Literal)</option>
+ <option value="3" <?= case {?'op'} when '3' then 'selected' else '' end ?>>echoString</option>
+</select>
+</td></tr>
+<tr><td>6. Call the AddInt</td><td><input type="submit" name="exec" value="Calculate"></td></tr>
+</table>
+</form>
+<?vsp
+  if (resp is not null) {
+  declare inx, oux, atts any;
+  inp := resp[1];
+  outp := resp[2];
+  atts := resp[4];
+  inx := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (inp), vector ('body', 0));
+  oux := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (outp), vector ('body', 0));
+?>
+  <table>
+  <tr>
+    <td>
+    Request
+    </td>
+  </tr>
+  <tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (inx, null); ?>
+    </div>
+    </td>
+  </tr>
+  <tr>
+  <tr>
+    <td>
+    Response
+    </td>
+  </tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (oux, null); ?>
+    </div>
+    </td>
+  </tr>
+  </table>
+<?vsp
+  }
+?>
+
+
+</body>
+</html>

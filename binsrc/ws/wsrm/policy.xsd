@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+Legal Disclaimer
+
+The presentation, distribution or other dissemination of the information 
+contained in this document is not a license, either expressly or impliedly, 
+to any intellectual property owned or controlled by IBM or Microsoft or BEA or SAP and\or any other 
+third party.  IBM and Microsoft and BEA or SAP and\or any other third party may have patents, patent 
+applications, trademarks, copyrights, or other intellectual property rights 
+covering subject matter in this document.  The furnishing of this document 
+does not give you any license to IBM's and Microsoft's and BEA or SAP or any other third party's patents, 
+trademarks, copyrights, or other intellectual property.
+
+This document and the information contained herein is provided on an "AS IS"
+ basis and to the maximum extent permitted by applicable law, IBM and Microsoft and BEA or SAP provides 
+the document AS IS AND WITH ALL FAULTS, and hereby disclaims all other warranties 
+and conditions, either express, implied or statutory, including, but not limited 
+to, any (if any) implied warranties, duties or conditions of merchantability, of 
+fitness for a particular purpose, of accuracy or completeness of responses, of 
+results, of workmanlike effort, of lack of viruses, and of lack of negligence, 
+all with regard to the document. ALSO, THERE IS NO WARRANTY OR CONDITION OF 
+TITLE, QUIET ENJOYMENT, QUIET POSSESSION, CORRESPONDENCE TO DESCRIPTION OR 
+NON-INFRINGEMENT OF ANY INTELLECTUAL PROPERTY RIGHTS WITH REGARD TO THE DOCUMENT.
+
+IN NO EVENT WILL IBM or MICROSOFT or BEA or SAP BE LIABLE TO ANY OTHER PARTY FOR THE COST OF PROCURING 
+SUBSTITUTE GOODS OR SERVICES, LOST PROFITS, LOSS OF USE, LOSS OF DATA, OR ANY 
+INCIDENTAL, CONSEQUENTIAL, DIRECT, INDIRECT, OR SPECIAL DAMAGES WHETHER UNDER 
+CONTRACT, TORT, WARRANTY, OR OTHERWISE, ARISING IN ANY WAY OUT OF THIS OR ANY 
+OTHER AGREEMENT RELATING TO THIS DOCUMENT, WHETHER OR NOT SUCH PARTY HAD ADVANCE 
+NOTICE OF THE POSSIBILITY OF SUCH DAMAGES.
+
+Copyright Notice
+
+Copyright 2001-2002 BEA Systems Inc. and IBM Corporation and Microsoft Corporation and SAP AG. All rights reserved.
+-->
+<xs:schema targetNamespace="http://schemas.xmlsoap.org/ws/2002/12/policy" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:wsp="http://schemas.xmlsoap.org/ws/2002/12/policy" xmlns:wsu="http://schemas.xmlsoap.org/ws/2002/07/utility" elementFormDefault="qualified" blockDefault="#all">
+	<xs:import namespace="http://schemas.xmlsoap.org/ws/2002/07/utility" schemaLocation="http://schemas.xmlsoap.org/ws/2002/07/utility"/>
+	<!-- //////////////////// WS-Policy ////////////////////////////// -->
+	<xs:attribute name="Usage" type="wsp:OpenUsageType"/>
+	<xs:simpleType name="OpenUsageType">
+		<xs:annotation>
+			<xs:documentation>Per GXA norms, we allow other values that are not pre-defined.</xs:documentation>
+		</xs:annotation>
+		<xs:union memberTypes="wsp:UsageType xs:QName"/>
+	</xs:simpleType>
+	<xs:simpleType name="UsageType">
+		<xs:annotation>
+			<xs:documentation>Pre-defined Usage types that apply to individual assertions. Per GXA norms, we use QNames rather than traditional token-based enumerations.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:QName">
+			<xs:enumeration value="wsp:Required"/>
+			<xs:enumeration value="wsp:Optional"/>
+			<xs:enumeration value="wsp:Rejected"/>
+			<xs:enumeration value="wsp:Ignored"/>
+			<xs:enumeration value="wsp:Observed"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:attribute name="Preference" type="xs:int"/>
+	<xs:element name="PolicyReference" type="wsp:PolicyReferenceType"/>
+	<xs:complexType name="PolicyReferenceType">
+		<xs:sequence>
+			<xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="URI" type="xs:anyURI" use="optional"/>
+		<xs:attribute name="Ref" type="xs:QName" use="optional"/>
+		<xs:attribute name="Digest" type="xs:base64Binary" use="optional"/>
+		<xs:attribute name="DigestAlgorithm" type="xs:QName" use="optional"/>
+		<xs:anyAttribute namespace="##any" processContents="lax"/>
+	</xs:complexType>
+	<xs:element name="All" type="wsp:Compositor"/>
+	<xs:element name="OneOrMore" type="wsp:Compositor"/>
+	<xs:element name="ExactlyOne" type="wsp:Compositor"/>
+	<xs:complexType name="Compositor">
+		<xs:group ref="wsp:CompositorContent" maxOccurs="unbounded"/>
+		<xs:attributeGroup ref="wsp:CompositorAndAssertionAttributes"/>
+	</xs:complexType>
+	<xs:group name="CompositorContent">
+		<xs:choice>
+			<xs:element ref="wsp:OneOrMore"/>
+			<xs:element ref="wsp:All"/>
+			<xs:element ref="wsp:ExactlyOne"/>
+			<xs:element ref="wsp:PolicyReference"/>
+			<xs:group ref="wsp:PolicyAssertions"/>
+			<xs:any namespace="##other" processContents="lax"/>
+			<!-- Include global elements from WS-PolicyAssertions -->
+		</xs:choice>
+	</xs:group>
+	<xs:attributeGroup name="CompositorAndAssertionAttributes">
+		<xs:attribute ref="wsp:Usage" use="optional"/>
+		<xs:attribute ref="wsp:Preference" use="optional"/>
+		<xs:attribute ref="wsu:Id" use="optional"/>
+		<xs:anyAttribute namespace="##any" processContents="lax"/>
+	</xs:attributeGroup>
+	<xs:element name="Policy" type="wsp:PolicyExpression"/>
+	<xs:complexType name="PolicyExpression">
+		<xs:group ref="wsp:CompositorContent" minOccurs="0" maxOccurs="unbounded"/>
+		<xs:attribute name="Name" type="xs:NCName" use="optional"/>
+		<xs:attribute name="TargetNamespace" type="xs:anyURI" use="optional"/>
+		<xs:attribute ref="wsu:Id" use="optional"/>
+		<xs:anyAttribute namespace="##any" processContents="lax"/>
+	</xs:complexType>
+	<!-- //////////////////// WS-PolicyAttachment ////////////////////////////// -->
+	<xs:attribute name="PolicyRefs" type="wsp:tPolicyRefs"/>
+	<xs:simpleType name="tPolicyRefs">
+		<xs:annotation>
+			<xs:documentation>Typedef to allow a list of policy names (as QNames).</xs:documentation>
+		</xs:annotation>
+		<xs:list itemType="xs:QName"/>
+	</xs:simpleType>
+	<xs:attribute name="PolicyURIs" type="wsp:tPolicyURIs"/>
+	<xs:simpleType name="tPolicyURIs">
+		<xs:annotation>
+			<xs:documentation>Typedef to allow a list of policy names (as URI).</xs:documentation>
+		</xs:annotation>
+		<xs:list itemType="xs:anyURI"/>
+	</xs:simpleType>
+	<xs:element name="UsingPolicy">
+		<xs:annotation>
+			<xs:documentation>Global element decl for use as a WSDL extension element</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:anyAttribute namespace="##any" processContents="lax"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="AppliesTo" type="wsp:AppliesTo"/>
+	<xs:complexType name="AppliesTo">
+		<xs:sequence>
+			<xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>All children are interpreted as domain expressions.</xs:documentation>
+				</xs:annotation>
+			</xs:any>
+		</xs:sequence>
+		<xs:anyAttribute namespace="##any" processContents="lax"/>
+	</xs:complexType>
+	<xs:element name="PolicyAttachment" type="wsp:PolicyAttachmentType"/>
+	<xs:complexType name="PolicyAttachmentType">
+		<xs:sequence>
+			<xs:element ref="wsp:AppliesTo"/>
+			<xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:choice maxOccurs="unbounded">
+				<xs:element ref="wsp:Policy"/>
+				<xs:element ref="wsp:PolicyReference"/>
+			</xs:choice>
+			<xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:anyAttribute namespace="##any" processContents="lax"/>
+	</xs:complexType>
+	<!-- //////////////////// WS-PolicyAssertions ////////////////////////////// -->
+	<xs:element name="Language" type="wsp:LanguageAssertion"/>
+	<xs:complexType name="LanguageAssertion">
+		<xs:sequence>
+			<xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="Language" type="xs:language" use="required"/>
+		<xs:attributeGroup ref="wsp:CompositorAndAssertionAttributes"/>
+	</xs:complexType>
+	<xs:element name="TextEncoding" type="wsp:TextEncodingAssertion"/>
+	<xs:complexType name="TextEncodingAssertion">
+		<xs:sequence>
+			<xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="Encoding" type="xs:string" use="required"/>
+		<xs:attributeGroup ref="wsp:CompositorAndAssertionAttributes"/>
+	</xs:complexType>
+	<xs:element name="SpecVersion" type="wsp:SpecVersionAssertion"/>
+	<xs:complexType name="SpecVersionAssertion">
+		<xs:sequence>
+			<xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="URI" type="xs:anyURI" use="required"/>
+		<xs:attributeGroup ref="wsp:CompositorAndAssertionAttributes"/>
+	</xs:complexType>
+	<xs:element name="MessagePredicate" type="wsp:MessagePredicateAssertion"/>
+	<xs:complexType name="MessagePredicateAssertion">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="Dialect" type="xs:anyURI" use="optional" default="http://www.w3.org/TR/1999/REC-xpath-19991116"/>
+				<xs:attributeGroup ref="wsp:CompositorAndAssertionAttributes"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:group name="PolicyAssertions">
+		<xs:choice>
+			<xs:element ref="wsp:TextEncoding"/>
+			<xs:element ref="wsp:Language"/>
+			<xs:element ref="wsp:SpecVersion"/>
+			<xs:element ref="wsp:MessagePredicate"/>
+		</xs:choice>
+	</xs:group>
+</xs:schema>

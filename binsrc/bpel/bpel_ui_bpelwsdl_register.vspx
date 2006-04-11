@@ -1,0 +1,197 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:template name="upload_process" type="simple" xmlns:v="http://www.openlinksw.com/vspx/" title="Upload process">
+  <tr>
+    <td>&nbsp; </td>
+    <td><font style="color: red">*</font> This page allows you to individually upload or provide external URI's for the bpel and wsdl files defining the process. When these are all provided the process is ready to be compiled.</td>
+  </tr>
+  <tr>
+    <td>&nbsp; </td>
+    <td>
+      <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="right"><v:url name="rAuth" xhtml_class="m_e" value="Authentication" url="--sprintf('help.vspx?id=process_upload&name=pu_fields_authen')" xhtml_target="_blank"/></td>
+          <td>
+            <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+              <tr>
+                <td nowrap="1" align="right"><label for="login_userR">User</label></td>
+                <td>
+                  <v:text name="usernR" value="--connection_get('HTTP_CLI_UID')" null-value="''" xhtml_maxlength="30" xhtml_size="20" xhtml_id="login_userR"/>
+                </td>
+              </tr>
+              <tr>
+                <td align="right"><label for="login_pwdR">Password</label></td>
+                <td>
+                  <v:text name="passR" value="--connection_get('HTTP_CLI_PWD')" null-value="''" xhtml_size="20" xhtml_maxlength="30" type="password" xhtml_id="login_pwdR"/>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td align="right">&nbsp;</td>
+    <td>
+      <table width="100%" border="2" id="subcontent" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="left" width="8%" valign="middle"><b><v:url name="rBPEL" xhtml_class="m_e" value="BPEL" url="--sprintf('help.vspx?id=process_upload&name=pu_fields_bpel')" xhtml_target="_blank"/></b></td>
+          <td>
+            <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+               <tr>
+                 <td valign="top" align="right"><BR/>URL</td>
+                 <td valign="top" >
+                   <BR/><v:radio-button initial-checked="1" value="13" name="bpel_first" group-name="bpel"/>
+                 </td>
+                 <td><font style="color: red"><v:error-summary match="bpel_url" /></font><BR/>
+                   <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+                     <tr>
+                       <td colspan="2">
+                         <v:text name="bpel_url" value="''" xhtml_size="60%" xhtml_onchange="javascript:setUrl();"/>
+                       </td>
+                     </tr>
+                   </table>
+                 </td>
+               </tr>
+               <tr>
+                 <td valign="top" align="right"><BR/>File</td>
+                 <td valign="top" >
+                   <BR/><v:radio-button initial-checked="0" value="126" name="bpel_second" group-name="bpel"/>
+                 </td>
+                 <td><font style="color: red"><v:error-summary match="bpel_file" /></font><BR/>
+                   <v:text name="bpel_file" type="file" xhtml_class="m_e" xhtml_size="65%"/><br/>
+                   <table id="subcontent"><tr><td/><td/><td/><td><font color="Red">Note: </font>No relative references inside file will be accepted.</td></tr></table>
+                 </td>
+               </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="left" width="8%" valign="middle"><b><v:url name="rWSDL" xhtml_class="m_e" value="WSDL" url="--sprintf('help.vspx?id=process_upload&name=pu_fields_wsdl')" xhtml_target="_blank"/></b></td>
+          <td>
+            <font style="color: red"><v:error-summary match="wsdl_url" /></font>
+            <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+               <tr>
+                 <td valign="top" align="right">URL</td>
+                 <td valign="top">
+                   <BR/><v:radio-button initial-checked="1" value="14" name="wsdl_first" group-name="wsdl"/>
+                 </td>
+                 <td><font style="color: red"><v:error-summary match="bpel_url" /></font><BR/>
+                   <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+                     <tr>
+                       <td colspan="2">
+                         <v:text name="wsdl_url" value="''" xhtml_size="60%"/>
+                       </td>
+                     </tr>
+                   </table>
+                 </td>
+               </tr>
+               <tr>
+                 <td valign="top" align="right">File</td>
+                 <td valign="top">
+                   <BR/><v:radio-button initial-checked="0" value="127" name="wsdl_second" group-name="wsdl"/>
+                 </td>
+                 <td>
+                   <font style="color: red"><v:error-summary match="wsdl_file" /></font><BR/>
+                   <v:text name="wsdl_file" type="file" xhtml_class="m_e" xhtml_size="65%"/><br/>
+                   <table id="subcontent"><tr><td/><td/><td/><td><font color="Red">Note: </font>No relative inside file references will be accepted.</td></tr></table>
+                 </td>
+               </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td/>
+          <td>
+            <v:button action="simple" value="Upload Process" xhtml_class="m_e" name="upload123">
+              <v:on-post>
+                if (not self.vc_is_valid)
+                  return;
+
+                if ( trim(self.bpel_name.ufl_value, ' ') = '')
+                {
+                  self.bpel_name.vc_error_message := 'Please, enter valid process name.';
+                  self.vc_is_valid := 0;
+                  return 0;
+                };
+
+                if (self.bpel_first.ufl_selected = 1)
+                {
+                  if (not length (self.bpel_url.ufl_value))
+                  {
+                    self.bpel_url.vc_error_message := 'Please, enter correct URL for BPEL file.';
+                    self.vc_is_valid := 0;
+                    return 0;
+                  };
+                  self.bpelu:=trim(self.bpel_url.ufl_value,' ');
+                  self.bpelc:='';
+                }
+                else if (self.bpel_second.ufl_selected = 1)
+                {
+                  if (not length (self.bpel_file.ufl_value))
+                    {
+                      self.bpel_file.vc_error_message := 'Please, choose a valid BPEL file.';
+                      self.vc_is_valid := 0;
+                      return 0;
+                    };
+                  self.bpelu:='';
+                  self.bpelc:=self.bpel_file.ufl_value;
+                };
+
+                if (self.wsdl_first.ufl_selected = 1)
+                {
+                  if (not length (self.wsdl_url.ufl_value))
+                  {
+                    self.wsdl_url.vc_error_message := 'Please, enter correct URL for WSDL file.';
+                    self.vc_is_valid := 0;
+                    return 0;
+                  };
+                  self.wsdlu:=trim(self.wsdl_url.ufl_value,' ');
+                  self.wsdlc:='';
+                }
+                else if (self.wsdl_second.ufl_selected = 1)
+                {
+                  if (not length (self.wsdl_file.ufl_value))
+                   {
+                      self.wsdl_file.vc_error_message := 'Please, choose a valid WSDL file.';
+                      self.vc_is_valid := 0;
+                      return 0;
+                    };
+                   self.wsdlu:='';
+                   self.wsdlc:=self.wsdl_file.ufl_value;
+                };
+
+                BPEL.BPEL.set_uri_connection(self.usernR.ufl_value, self.passR.ufl_value);
+                self.vc_data_bind(e);
+                self.id := BPEL.BPEL.register_script(self.bpel_name.ufl_value,self.bpelu,self.wsdlu,self.bpelc,self.wsdlc);
+                self.do_redirect (sprintf ('upload_new.vspx?id=%d', self.id));
+              </v:on-post>
+            </v:button>
+            <font style="color: red"><v:error-summary match="upload123"/></font>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</v:template>

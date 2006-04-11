@@ -1,0 +1,7 @@
+EXPORTS
+virtm_client_attach	@1
+virtm_client_detach	@2
+virtm_http_handler	@3
+hosting_fcgi_check	@4
+virtm_client_free	@5
+virtm_client_clone	@6

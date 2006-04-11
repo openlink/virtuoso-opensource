@@ -1,0 +1,91 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+
+  declare _q varchar;
+  declare _proc varchar;
+  declare _stmt varchar;
+
+  if (not adm_check_auth (lines))
+    {
+      adm_tell_unauth (lines);
+      return 0;
+    }
+
+  _q := get_keyword ('q', params, '');
+
+  if ('' = _q)
+    _q := 'db';
+
+  _proc := get_keyword ('proc', params, '');
+
+  if ('' <> _proc)
+    {
+      select coalesce(p_text, blob_to_string(p_more))
+        into _stmt from sys_procedures where p_name = _proc;
+
+      if (substring (_stmt, 1, 7) = '__repl ')
+	{
+	  declare _off integer;
+          _off := strstr (lower (_stmt), 'create ');
+          _stmt := substring (_stmt, _off + 1, length (_stmt) - _off);
+	}
+
+    }
+  else
+    {
+      _stmt := get_keyword('stmt', params, '');
+    }
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <!--script language="javascript" src="admin_tables.js"></script-->
+    <title>Edit trigger <?= _proc ?></title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Scheduled events mgmt using Virtuoso VSP">
+  </head>
+  <BODY>
+<?vsp adm_page_header(concat('Edit Procedure ', _proc), NULL); ?>
+
+    <form method="POST" action="admin_procs.vsp">
+<TABLE CLASS="genlist"><TR><TD>
+    <input type="hidden" name="q" value="<?=_q?>">
+    <input type="hidden" name="proc" value="<?=_proc?>">
+
+	        <textarea name="stmt" rows="25" cols="70"><?=coalesce (_stmt, '')?></textarea>
+</TD></TR>
+<TR><TD ALIGN="right">
+	<input type="submit" name="save" value="Save">
+	<input type="submit" name="save" value="Cancel"></TD>
+</TR>
+</TABLE>
+
+    </form>
+<?vsp adm_page_footer(); ?>
+  </body>
+</html>

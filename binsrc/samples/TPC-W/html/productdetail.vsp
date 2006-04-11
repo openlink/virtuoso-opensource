@@ -1,0 +1,79 @@
+<?vsp
+    declare iid numeric(10);
+    declare title varchar(60);
+    declare author_id numeric(10);
+    declare pubdate date;
+    declare publisher varchar(60);
+    declare subject varchar(60);
+    declare description varchar(500);
+    declare image long varbinary;
+    declare srp numeric(15,2);
+    declare cost numeric(15,2);
+    declare avail date;
+    declare isbn character(13);
+    declare page integer;
+    declare backing varchar(15);
+    declare dimension varchar(25);
+   declare cid numeric(10);
+   cid:=atoi(get_keyword('C_ID',params,'0'));
+    declare shopping_id numeric(20);
+    shopping_id:=atoi(get_keyword('Shopping_Id',params,'0'));
+
+    declare book_info
+        cursor for select I_TITLE,I_A_ID,I_PUB_DATE,I_PUBLISHER,
+			I_SUBJECT,I_IMAGE,I_DESC,I_SRP,I_COST,I_AVAIL,
+			I_ISBN,I_PAGE,I_BACKING,I_DIMENSIONS 
+	      from db.dba.ITEM where I_ID=iid;
+    iid := atoi (get_keyword ('BookInfo', params, '0'));
+    if (iid>0) 
+    {
+      whenever not found goto not_found_any;
+      open book_info (prefetch 1);
+      fetch book_info into title,author_id, pubdate, publisher, 
+                           subject, image, description, srp, cost, avail,
+                           isbn, page, backing, dimension;
+not_found_any:
+      close book_info;
+      goto display_page;
+   }
+
+display_page:
+?>
+<HTML>
+  <HEAD><TITLE>TPC-W Product Detail Page</TITLE></HEAD>
+  <BODY BGCOLOR="#ffffff">
+  <H1 ALIGN="center">TPC Web Commerce Benchmark (TPC-W)</H1>
+  <CENTER><IMGALIGN="bottom" BORDER="0" HEIGHT="67" SRC="images/tpc_logo.jpg" WIDTH="288"></CENTER>
+  <H2 ALIGN="center">Product Detail Page</H2>
+  <H2>Title: <?= title ?> </H2>
+<?vsp declare fname varchar(20);
+      declare mname varchar(20);
+      declare lname varchar(20);
+      select A_FNAME,A_MNAME,A_LNAME into fname, mname, lname from AUTHOR where A_ID=author_id;
+?>
+  <P>Author: <?=fname?> <?= mname  ?> <?= lname  ?><BR>Subject: <?=subject?></P>
+  <P><IMG ALIGN="right" BORDER="0" HEIGHT="200" SRC="imagegen/i_<?=iid?>.jpg" WIDTH="200">
+      Description: <I><?=description?></I>
+  </P>
+  <BLOCKQUOTE>
+    <P><B>Suggested Retail: $<?=srp?></B><BR>
+       <B>Our Price:</B><FONT COLOR="#dd0000"><B> $<?=cost?></B></FONT><BR>
+       <B>You Save:</B><FONT COLOR="#dd0000"><B> $<?=srp-cost?></B></FONT></P>
+  </BLOCKQUOTE>
+  <DL>
+    <DT><FONT SIZE="2">Backing: <?=backing?>, <?=page?> pages<BR>
+        Published by <?=publisher?><BR>
+        Publication date: <?= cast(pubdate as date)?><BR>
+        Avail date:    <?= avail?><BR>
+        Dimensions(in inches): <?=dimension?><BR>ISBN:    <?=isbn?><BR></FONT>
+    </DT>
+  </DL>
+<P ALIGN="center">
+<A HREF="shoppingcart.vsp?ADD_FLAG=Y&I_ID=<?/iid?>&Shopping_Id=<?/shopping_id?>&C_ID=<?/cid?>&QTY=1">
+         <IMG SRC="images/add.jpg" ALT="Add to Basket" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+<A HREF="searchrequest.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/search.jpg" ALT="Search" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+<A HREF="index.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/home.jpg" ALT="Home" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+<A HREF="adminrequest.vsp?I_ID=<?/iid ?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/update.jpg" ALT="Update" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+</P>
+</BODY>
+</HTML>

@@ -1,0 +1,124 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 0--> <!DOCTYPE report SYSTEM "sgml_report.dtd">
+<!-- 1--> <report>
+<!-- 2--> <title>Getting started with SGML</title>
+<!-- 3--> <chapter>
+<!-- 4--> <title>The business challenge</title>
+<!-- 5--> <intro>
+<!-- 6--> <para>With the ever-changing and growing global market, companies and
+<!-- 7--> large organizations are searching for ways to become more viable and
+<!-- 8--> competitive. Downsizing and other cost-cutting measures demand more
+<!-- 9--> efficient use of corporate resources. One very important resource is
+<!--10--> an organization's information.</para>
+<!--11--> <para>As part of the move toward integrated information management,
+<!--12--> whole industries are developing and implementing standards for
+<!--13--> exchanging technical information. This report describes how one such
+<!--14--> standard, the Standard Generalized Markup Language (SGML), works as
+<!--15--> part of an overall information management strategy.</para>
+<!--16--> <graphic graphname="infoflow"/></intro></chapter>
+<!--17--> <chapter>
+<!--18--> <title>Getting to know SGML</title>
+<!--19--> <intro>
+<!--20--> <para>While SGML is a fairly recent technology, the use of
+<!--21--> <emph>markup</emph> in computer-generated documents has existed for a
+<!--22--> while.</para></intro>
+<!--23--> <section shorttitle="What is markup?">
+<!--24--> <title>What is markup, or everything you always wanted to know about
+<!--25--> document preparation but were afraid to ask?</title>
+<!--26--> <intro>
+<!--27--> <para>Markup is everything in a document that is not content. The
+<!--28--> traditional meaning of markup is the manual <emph>marking</emph> up
+<!--29--> of typewritten text to give instructions for a typesetter or
+<!--30--> compositor about how to fit the text on a page and what typefaces to
+<!--31--> use. This kind of markup is known as <emph>procedural markup</emph>.</para></intro>
+<!--32--> <topic topicid="top1">
+<!--33--> <title>Procedural markup</title>
+<!--34--> <para>Most electronic publishing systems today use some form of
+<!--35--> procedural markup. Procedural markup codes are good for one
+<!--36--> presentation of the information.</para></topic>
+<!--37--> <topic topicid="top2">
+<!--38--> <title>Generic markup</title>
+<!--39--> <para>Generic markup (also known as descriptive markup) describes the
+<!--40--> <emph>purpose</emph> of the text in a document. A basic concept of
+<!--41--> generic markup is that the content of a document must be separate from
+<!--42--> the style. Generic markup allows for multiple presentations of the
+<!--43--> information.</para></topic>
+<!--44--> <topic topicid="top3">
+<!--45--> <title>Drawbacks of procedural markup</title>
+<!--46--> <para>Industries involved in technical documentation increasingly
+<!--47--> prefer generic over procedural markup schemes. When a company changes
+<!--48--> software or hardware systems, enormous data translation tasks arise,
+<!--49--> often resulting in errors.</para></topic></section>
+<!--50--> <section shorttitle="What is SGML?">
+<!--51--> <title>What <emph>is</emph> SGML in the grand scheme of the universe, anyway?</title>
+<!--52--> <intro>
+<!--53--> <para>SGML defines a strict markup scheme with a syntax for defining
+<!--54--> document data elements and an overall framework for marking up
+<!--55--> documents.</para>
+<!--56--> <para>SGML can describe and create documents that are not dependent on
+<!--57--> any hardware, software, formatter, or operating system. Since SGML documents
+<!--58--> conform to an international standard, they are portable.</para></intro></section>
+<!--59--> <section shorttitle="How does SGML work?">
+<!--60--> <title>How is SGML and would you recommend it to your grandmother?</title>
+<!--61--> <intro>
+<!--62--> <para>You can break a typical document into three layers: structure,
+<!--63--> content, and style. SGML works by separating these three aspects and
+<!--64--> deals mainly with the relationship between structure and content.</para></intro>
+<!--65--> <topic topicid="top4">
+<!--66--> <title>Structure</title>
+<!--67--> <para>At the heart of an SGML application is a file called the DTD, or
+<!--68--> Document Type Definition. The DTD sets up the structure of a document,
+<!--69--> much like a database schema describes the types of information it
+<!--70--> handles.</para>
+<!--71--> <para>A database schema also defines the relationships between the
+<!--72--> various types of data. Similarly, a DTD specifies <emph>rules</emph>
+<!--73--> to help ensure documents have a consistent, logical structure.</para></topic>
+<!--74--> <topic topicid="top5">
+<!--75--> <title>Content</title>
+<!--76--> <para>Content is the information itself. The method for identifying
+<!--77--> the information and its meaning within this framework is called
+<!--78--> <emph>tagging</emph>. Tagging must
+<!--79--> conform to the rules established in the DTD (see <xref xrefid="top4"/>).</para>
+<!--80--> <graphic graphname="tagexamp"/></topic>
+<!--81--> <topic topicid="top6">
+<!--82--> <title>Style</title>
+<!--83--> <para>SGML does not standardize style or other processing methods for
+<!--84--> information stored in SGML.</para></topic></section></chapter>
+<!--85--> <chapter>
+<!--86--> <title>Resources</title>
+<!--87--> <section>
+<!--88--> <title>Conferences, tutorials, and training</title>
+<!--89--> <intro>
+<!--90--> <para>The Graphic Communications Association has been
+<!--91--> instrumental in the development of SGML. GCA provides conferences,
+<!--92--> tutorials, newsletters, and publication sales for both members and
+<!--93--> non-members.</para>
+<!--94--> <para security="c">Exiled members of the former Soviet Union's secret
+<!--95--> police, the KGB, have infiltrated the upper ranks of the GCA and are
+<!--96--> planning the Final Revolution as soon as DSSSL is completed.</para>
+<!--97--> </intro>
+<!--98--> </section>
+<!--99--> </chapter>
+<!--100--></report>

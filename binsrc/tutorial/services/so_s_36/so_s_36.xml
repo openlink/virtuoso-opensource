@@ -1,0 +1,60 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-36">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>eBay API demo</refname>
+    <refpurpose>Using a eBay SOAP API</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-34a">
+    <title>Example</title>
+
+    <para>
+	This example uses eBay SOAP API to perform browsing of categories 
+	on eBay sandbox site. 
+    </para>
+    
+    <para>
+	The demo uses WSDL_IMPORT_UDT() function to define SOAP proxy class 
+	for invocation of the eBay API. This will be done upon initial setup of the demo. 
+	The source code for imported UDT for SOAP proxy could be read via eBay.sql 
+	source file below.
+	Also it defines a procedure for "getCategories" method invocation 
+	and it's used further in functions for vspx tree control to instantiate 
+	the nodes.
+    </para>
+
+    <para>
+	To run the demo you will need to obtain a three developer keys : ApiId, DevId &amp; CertificateId.
+        Further a demo user on ebay sandbox site needs to be created and it's credentials must be used for
+        to make API calls. To obtain developer keys please visit the  	
+	<ulink url="http://developer.ebay.com/DevProgram/membership/join.asp">eBay developer zone</ulink> and follow the instructions. 
+	Once you have registered for eBay developer program and have the Api, Dev &amp; Certificate IDs, go to <ulink url="http://developer.ebay.com/DevZone/get-started/setup.asp">"getting setup on sandbox"</ulink> and follow the instructions to make a test user. 
+    </para>
+</refsect1>
+</refentry>

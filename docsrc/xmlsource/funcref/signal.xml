@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_signal">
+  <refmeta>
+    <refentrytitle>signal</refentrytitle>
+    <refmiscinfo>sql</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>signal</refname>
+    <refpurpose>Signal an exception   in the calling procedure</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_signal">
+      <funcprototype id="fproto_signal">
+        <funcdef><function>signal</function></funcdef>
+        <paramdef>in <parameter>sqlstate</parameter> varchar</paramdef>
+        <paramdef>in <parameter>message</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+			<para>
+This signals the given SQLSTATE with the message.  The calling procedure will transfer control to the most appropriate local handler. In the absence of a local handler the procedure terminates and signals the exception in the scope where it was called from, until there either is a handler or there are no more calling procedures.  If there is no handler in the entire stack of call contexts the error is signalled to the client.
+Handlers can be declared with whenever .. goto and the declare handler for construct.
+See the Virtuoso/PL documentation.
+</para>
+			<screen>
+CREATE PROCEDURE WITHDRAW (IN C_ID VARCHAR, IN DELTA NUMERIC)
+{
+    DECLARE BAL NUMERIC;
+
+    DECLARE CR CURSOR FOR SELECT C_BALANCE FROM CUSTOMER WHERE C_ID = C_ID;
+
+    WHENEVER NOT FOUND GOTO NOCUSTOMER;
+
+    OPEN CR (EXCLUSIVE);
+    FETCH CR INTO BAL;
+    IF (BAL &gt; DELTA)
+	UPDATE CUSTOMER SET C_BALANCE = BAL - DELTA WHERE CURRENT OF CR;
+    ELSE
+	SIGNAL (&apos;NOMONEY&apos;, &apos;INSUFFICIENT BALANCE.&apos;);
+
+    RETURN;
+
+NOCUSTOMER:
+    SIGNAL (&apos;NOCUS&apos;, &apos;BAD CUSTOMER ID&apos;);
+}
+</screen>
+	</refsect1>
+</refentry>
+

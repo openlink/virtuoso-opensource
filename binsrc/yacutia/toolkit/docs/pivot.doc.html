@@ -1,0 +1,75 @@
+<h2>pivot.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>Advanced interactive Pivot table.</p>
+<hr/>
+
+<h3>Objects</h3>
+<ul>
+	<li><a href="#pivot">Pivot(div, headerRow, dataRows, headerRowIndexes, headerColIndexes, filterIndexes, dataColumnIndex, optObj)</a></li>
+</ul>
+	
+<h3>Constants</h3>
+<ul>
+	<li>PivotData.AGG_SUM</li>
+	<li>PivotData.AGG_MAX</li>
+	<li>PivotData.AGG_MIN</li>
+	<li>PivotData.AGG_AVG</li>
+	<li>PivotData.AGG_COUNT</li>
+	<li>PivotData.AGG_DISTINCT</li>
+	<li>PivotData.AGG_PRODUCT</li>
+	<li>PivotData.AGG_VAR</li>
+	<li>PivotData.AGG_DEVIATION</li>
+</ul>
+
+<h3>CSS classes</h3>
+<ul>
+	<li>.pivot_table</li>
+	<li>.h1</li>
+	<li>.h2</li>
+	<li>.odd</li>
+	<li>.even</li>
+</ul>
+
+<hr/>
+
+<h3><a name="pivot">Pivot(div, headerRow, dataRows, headerRowIndexes, headerColIndexes, filterIndexes, dataColumnIndex, optObj)</a></h3>
+<p>Creates Pivot table. Arguments are explained below:</p>
+<ul>
+	<li><em>div</em> - table will be created as a child of this element</li>
+	<li><em>headerRow</em> - array of headings for <em>dataRows</em></li>
+	<li><em>dataRows</em> - array of rows. Every row (array) must have the same number as elements as <em>headerRow</em></li>
+	<li><em>headerRowIndexes</em> - array, containing indexes of columns which should be drawn as vertical aggregate columns</li>
+	<li><em>headerColIndexes</em> - array, containing indexes of columns which should be drawn as horizontal aggregate columns</li>
+	<li><em>filterIndexes</em> - array, containing indexes of columns which should be drawn as paging aggregate columns</li>
+	<li><em>dataColumnIndex</em> - index of data column</li>
+	<li><em>optObj</em> - object containing
+		<ul>
+			<li>headingBefore - should we create headings before data?</li>
+			<li>headingAfter - should we create headings after data?</li>
+			<li>agg - constant, specifying appropriate aggregating function</li>
+		</ul>
+	</li>
+</ul>
+<p>For each column specified in <em>filterIndexes</em>, HTML element &lt;select&gt; is created; users are encouraged 
+to append them to DOM tree. They are available in <code>pivot.filters</code> array.</p>

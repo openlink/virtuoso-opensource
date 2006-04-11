@@ -1,0 +1,2058 @@
+<!-- ...................................................................... -->
+<!-- DocBook XML Schema V4.1.2.1........................................... -->
+<!-- ...................................................................... -->
+<!-- Copyright 2000, Norman Walsh, Sun Microsystems.  Schema
+     derived from DocBook DTD Copyright 1992-2000 HaL Computer....  -->
+<!-- ...................................................................... -->
+<!-- Entities for module inclusions ....................................... -->
+
+<!--ENTITY % dbhier.redecl.module		"IGNORE"-->
+<!--ENTITY % dbhier.redecl2.module	"IGNORE"-->
+
+<!-- ...................................................................... -->
+<!-- Entities for element classes ......................................... -->
+
+<!--ENTITY % local.appendix.class ""-->
+<group name='appendix.class'>
+  <choice>
+    <element ref='db:appendix'/>
+    <!-- %local.appendix.class; -->
+  </choice>
+</group>
+
+
+<!--ENTITY % local.article.class ""-->
+<group name='article.class'>
+  <choice>
+    <element ref='db:article'/>
+    <!-- %local.article.class; -->
+  </choice>
+</group>
+
+
+<!--ENTITY % local.book.class ""-->
+<group name='book.class'>
+  <choice>
+    <element ref='db:book'/>
+    <!-- %local.book.class; -->
+  </choice>
+</group>
+
+
+<!--ENTITY % local.chapter.class ""-->
+<group name='chapter.class'>
+  <choice>
+    <element ref='db:chapter'/>
+    <!-- %local.chapter.class; -->
+  </choice>
+</group>
+
+<!--ENTITY % local.index.class ""-->
+<group name='index.class'>
+  <choice>
+    <element ref='db:index'/>
+    <element ref='db:setindex'/>
+    <!-- %local.index.class; -->
+  </choice>
+</group>
+
+
+<!--ENTITY % local.refentry.class ""-->
+<group name='refentry.class'>
+  <choice>
+    <element ref='db:refentry'/>
+    <!-- %local.refentry.class; -->
+  </choice>
+</group>
+
+
+<!--ENTITY % local.nav.class ""-->
+<group name='nav.class'>
+  <choice>
+    <element ref='db:toc'/>
+    <element ref='db:lot'/>
+    <element ref='db:index'/>
+    <element ref='db:glossary'/>
+    <element ref='db:bibliography'/>
+    <!-- %local.nav.class; -->
+  </choice>
+</group>
+
+
+<!-- Redeclaration placeholder ............................................ -->
+
+<!-- For redeclaring entities that are declared after this point while
+     retaining their references to the entities that are declared before
+     this point -->
+
+<!-- Defining rdbhier here makes some buggy XML parsers happy. -->
+<!--ENTITY % rdbhier ""-->
+<!--%rdbhier;-->
+
+<!-- ...................................................................... -->
+<!-- Entities for element mixtures ........................................ -->
+
+<!-- The DocBook TC may produce an official forms module for DocBook. -->
+<!-- This PE provides the hook by which it can be inserted into the DTD. -->
+<!--ENTITY % forms.hook ""-->
+
+<!--ENTITY % local.divcomponent.mix ""-->
+<group name='divcomponent.mix'>
+  <choice>
+    <group ref='db:list.class'/>
+    <group ref='db:admon.class'/>
+    <group ref='db:linespecific.class'/>
+    <group ref='db:synop.class'/>
+    <group ref='db:para.class'/>
+    <group ref='db:informal.class'/>
+    <group ref='db:formal.class'/>
+    <group ref='db:compound.class'/>
+    <group ref='db:genobj.class'/>
+    <group ref='db:descobj.class'/>
+    <group ref='db:ndxterm.class'/>
+    <element ref='db:beginpage'/>
+    <!-- %local.divcomponent.mix; -->
+  </choice>
+</group>
+
+
+<!--ENTITY % local.refcomponent.mix ""-->
+<group name='refcomponent.mix'>
+  <choice>
+    <group ref='db:list.class'/>
+    <group ref='db:admon.class'/>
+    <group ref='db:linespecific.class'/>
+    <group ref='db:synop.class'/>
+    <group ref='db:para.class'/>
+    <group ref='db:informal.class'/>
+    <group ref='db:formal.class'/>
+    <group ref='db:compound.class'/>
+    <group ref='db:genobj.class'/>
+    <group ref='db:descobj.class'/>
+    <group ref='db:ndxterm.class'/>
+    <element ref='db:beginpage'/>
+    <!-- %local.refcomponent.mix; -->
+  </choice>
+</group>
+
+
+<!--ENTITY % local.indexdivcomponent.mix ""-->
+<group name='indexdivcomponent.mix'>
+  <choice>
+    <element ref='db:itemizedlist'/>
+    <element ref='db:orderedlist'/>
+    <element ref='db:variablelist'/>
+    <element ref='db:simplelist'/>
+    <group ref='db:linespecific.class'/>
+    <group ref='db:synop.class'/>
+    <group ref='db:para.class'/>
+    <group ref='db:informal.class'/>
+    <element ref='db:anchor'/>
+    <element ref='db:remark'/>
+    <group ref='db:link.char.class'/>
+    <element ref='db:beginpage'/>
+    <!-- %local.indexdivcomponent.mix; -->
+  </choice>
+</group>
+
+
+<!--ENTITY % local.refname.char.mix ""-->
+<group name='refname.char.mix'>
+  <choice>
+    <!-- #PCDATA -->
+    <group ref='db:tech.char.class'/>
+    <!-- %local.refname.char.mix; -->
+  </choice>
+</group>
+
+
+<!--ENTITY % local.partcontent.mix ""-->
+<group name='partcontent.mix'>
+  <choice>
+    <group ref='db:appendix.class'/>
+    <group ref='db:chapter.class'/>
+    <group ref='db:nav.class'/>
+    <group ref='db:article.class'/>
+    <element ref='db:preface'/>
+    <group ref='db:refentry.class'/>
+    <element ref='db:reference'/>
+    <!-- %local.partcontent.mix; -->
+  </choice>
+</group>
+
+
+<!--ENTITY % local.refinline.char.mix ""-->
+<group name='refinline.char.mix'>
+  <choice>
+    <!-- #PCDATA -->
+    <group ref='db:xref.char.class'/>
+    <group ref='db:gen.char.class'/>
+    <group ref='db:link.char.class'/>
+    <group ref='db:tech.char.class'/>
+    <group ref='db:base.char.class'/>
+    <group ref='db:docinfo.char.class'/>
+    <group ref='db:other.char.class'/>
+    <group ref='db:ndxterm.class'/>
+    <element ref='db:beginpage'/>
+    <!-- %local.refinline.char.mix; -->
+  </choice>
+</group>
+
+
+<!--ENTITY % local.refclass.char.mix ""-->
+<group name='refclass.char.mix'>
+  <choice>
+    <!-- #PCDATA -->
+    <element ref='db:application'/>
+    <!-- %local.refclass.char.mix; -->
+  </choice>
+</group>
+
+
+<!-- Redeclaration placeholder 2 .......................................... -->
+
+<!-- For redeclaring entities that are declared after this point while
+     retaining their references to the entities that are declared before
+     this point -->
+
+<!-- Defining rdbhier2 here makes some buggy XML parsers happy. -->
+<!--ENTITY % rdbhier2 ""-->
+<!--%rdbhier2;-->
+
+<!-- ...................................................................... -->
+<!-- Entities for content models .......................................... -->
+
+<group name='div.title.content'>
+  <sequence>
+    <element ref='db:title'/>
+    <element ref='db:subtitle' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:titleabbrev' minOccurs='0' maxOccurs='1'/>
+  </sequence>
+</group>
+
+<group name='bookcomponent.title.content'>
+  <sequence>
+    <element ref='db:title'/>
+    <element ref='db:subtitle' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:titleabbrev' minOccurs='0' maxOccurs='1'/>
+  </sequence>
+</group>
+
+<group name='sect.title.content'>
+  <sequence>
+    <element ref='db:title'/>
+    <element ref='db:subtitle' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:titleabbrev' minOccurs='0' maxOccurs='1'/>
+  </sequence>
+</group>
+
+<group name='refsect.title.content'>
+  <sequence>
+    <element ref='db:title'/>
+    <element ref='db:subtitle' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:titleabbrev' minOccurs='0' maxOccurs='1'/>
+  </sequence>
+</group>
+
+<group name='bookcomponent.content'>
+  <choice>
+    <sequence>
+      <choice minOccurs='1' maxOccurs='unbounded'>
+        <group ref='db:divcomponent.mix'/>
+      </choice>
+      <choice>
+        <element ref='db:sect1' minOccurs='0' maxOccurs='unbounded'/>
+        <group ref='db:refentry.class' minOccurs='0' maxOccurs='unbounded'/>
+        <element ref='db:simplesect' minOccurs='0' maxOccurs='unbounded'/>
+        <element ref='db:section' minOccurs='0' maxOccurs='unbounded'/>
+      </choice>
+    </sequence>
+    <choice>
+      <element ref='db:sect1' minOccurs='1' maxOccurs='unbounded'/>
+      <group ref='db:refentry.class' minOccurs='1' maxOccurs='unbounded'/>
+      <element ref='db:simplesect' minOccurs='1' maxOccurs='unbounded'/>
+      <element ref='db:section' minOccurs='1' maxOccurs='unbounded'/>
+    </choice>
+  </choice>
+  <!-- "((%divcomponent.mix;)+,
+         (sect1*|(%refentry.class;)*|simplesect*|section*))
+        | (sect1+|(%refentry.class;)+|simplesect+|section+)" -->
+</group>
+
+<!-- ...................................................................... -->
+<!-- Set and SetInfo ...................................................... -->
+
+<attributeGroup name='set.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='set'>
+  <sequence>
+    <group ref='db:div.title.content' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:setinfo' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:toc' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:book.class' minOccurs='1' maxOccurs='unbounded'/>
+    <element ref='db:setindex' minOccurs='0' maxOccurs='1'/>
+  </sequence>
+  <!-- ((%div.title.content;)?, setinfo?, toc?, (%book.class;)+,
+		setindex?) -->
+
+  <!-- FPI: SGML formal public identifier -->
+  <attribute name='fpi' type='string'/>
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:set.role.attrib'/>
+  <attributeGroup ref='db:local.set.attrib'/>
+</complexType>
+
+<attributeGroup name='setinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='setinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <!-- Contents: IDs of the ToC, Books, and SetIndex that comprise
+           the set, in the order of their appearance -->
+      <attribute name='contents' type='IDREFS'/>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:setinfo.role.attrib'/>
+      <attributeGroup ref='db:local.setinfo.attrib'/>
+    </extension>
+  </complexContent>
+</complexType>
+
+<!-- ...................................................................... -->
+<!-- Book and BookInfo .................................................... -->
+
+<attributeGroup name='book.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='book'>
+  <sequence>
+    <group ref='db:div.title.content' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:bookinfo' minOccurs='0' maxOccurs='1'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+      <element ref='db:dedication'/>
+      <element ref='db:toc'/>
+      <element ref='db:lot'/>
+      <element ref='db:glossary'/>
+      <element ref='db:bibliography'/>
+      <element ref='db:preface'/>
+      <group ref='db:chapter.class'/>
+      <element ref='db:reference'/>
+      <element ref='db:part'/>
+      <group ref='db:article.class'/>
+      <group ref='db:appendix.class'/>
+      <group ref='db:index.class'/>
+      <element ref='db:colophon'/>
+    </choice>
+  </sequence>
+  <!-- ((%div.title.content;)?, bookinfo?,
+ 		(dedication | toc | lot
+ 		| glossary | bibliography | preface
+		| %chapter.class; | reference | part
+		| %article.class;
+ 		| %appendix.class;
+		| %index.class;
+		| colophon)*) -->
+
+  <!-- FPI: SGML formal public identifier -->
+  <attribute name='fpi' type='string'/>
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:book.role.attrib'/>
+  <attributeGroup ref='db:local.book.attrib'/>
+</complexType>
+
+<attributeGroup name='bookinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='bookinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <!-- Contents: IDs of the ToC, Books, and SetIndex that comprise
+           the set, in the order of their appearance -->
+      <attribute name='contents' type='IDREFS'/>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:bookinfo.role.attrib'/>
+      <attributeGroup ref='db:local.bookinfo.attrib'/>
+    </extension>
+  </complexContent>
+</complexType>
+
+<!-- ...................................................................... -->
+<!-- Dedication, ToC, and LoT ............................................. -->
+
+<attributeGroup name='dedication.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='dedication'>
+  <sequence>
+    <group ref='db:sect.title.content' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:legalnotice.mix' minOccurs='1' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- ((%sect.title.content;)?, (%legalnotice.mix;)+) -->
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:dedication.role.attrib'/>
+  <attributeGroup ref='db:local.dedication.attrib'/>
+</complexType>
+
+<attributeGroup name='colophon.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='colophon'>
+  <sequence>
+    <group ref='db:sect.title.content' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:textobject.mix' minOccurs='1' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- ((%sect.title.content;)?, (%textobject.mix;)+) -->
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:colophon.role.attrib'/>
+  <attributeGroup ref='db:local.colophon.attrib'/>
+</complexType>
+
+<attributeGroup name='toc.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='toc'>
+  <sequence>
+    <group ref='db:bookcomponent.title.content' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:tocfront' minOccurs='0' maxOccurs='unbounded'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+      <element ref='db:tocpart'/>
+      <element ref='db:tocchap'/>
+    </choice>
+    <element ref='db:tocback' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- ((%bookcomponent.title.content;)?, tocfront*,
+		(tocpart | tocchap)*, tocback*) -->
+
+  <attributeGroup ref='db:pagenum.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:toc.role.attrib'/>
+  <attributeGroup ref='db:local.toc.attrib'/>
+</complexType>
+
+<attributeGroup name='tocfront.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='tocfront' mixed='true'>
+  <choice minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:para.char.mix'/>
+  </choice>
+  <!-- (%para.char.mix;)* -->
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:linkend.attrib'/>
+  <attributeGroup ref='db:pagenum.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:tocfront.role.attrib'/>
+  <!-- %local.tocfront.attrib; -->
+</complexType>
+
+<attributeGroup name='tocentry.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='tocentry' mixed='true'>
+  <choice minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:para.char.mix'/>
+  </choice>
+  <!-- (%para.char.mix;)* -->
+
+  <attributeGroup ref='db:linkend.attrib'/>
+  <attributeGroup ref='db:pagenum.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:tocentry.role.attrib'/>
+  <!-- %local.tocentry.attrib; -->
+</complexType>
+
+<attributeGroup name='tocpart.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='tocpart'>
+  <sequence>
+    <element ref='db:tocentry' minOccurs='1' maxOccurs='unbounded'/>
+    <element ref='db:tocchap' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (tocentry+, tocchap*) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:tocpart.role.attrib'/>
+  <!-- %local.tocpart.attrib; -->
+</complexType>
+
+<attributeGroup name='tocchap.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='tocchap'>
+  <sequence>
+    <element ref='db:tocentry' minOccurs='1' maxOccurs='unbounded'/>
+    <element ref='db:toclevel1' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (tocentry+, toclevel1*) -->
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:tocchap.role.attrib'/>
+  <!-- %local.tocchap.attrib; -->
+</complexType>
+
+<attributeGroup name='toclevel1.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='toclevel1'>
+  <sequence>
+    <element ref='db:tocentry' minOccurs='1' maxOccurs='unbounded'/>
+    <element ref='db:toclevel2' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (tocentry+, toclevel2*) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:toclevel1.role.attrib'/>
+  <!-- %local.toclevel1.attrib; -->
+</complexType>
+
+<attributeGroup name='toclevel2.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='toclevel2'>
+  <sequence>
+    <element ref='db:tocentry' minOccurs='1' maxOccurs='unbounded'/>
+    <element ref='db:toclevel3' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (tocentry+, toclevel3*) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:toclevel2.role.attrib'/>
+  <!-- %local.toclevel2.attrib; -->
+</complexType>
+
+<attributeGroup name='toclevel3.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='toclevel3'>
+  <sequence>
+    <element ref='db:tocentry' minOccurs='1' maxOccurs='unbounded'/>
+    <element ref='db:toclevel4' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (tocentry+, toclevel4*) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:toclevel3.role.attrib'/>
+  <!-- %local.toclevel3.attrib; -->
+</complexType>
+
+<attributeGroup name='toclevel4.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='toclevel4'>
+  <sequence>
+    <element ref='db:tocentry' minOccurs='1' maxOccurs='unbounded'/>
+    <element ref='db:toclevel5' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (tocentry+, toclevel5*) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:toclevel4.role.attrib'/>
+  <!-- %local.toclevel4.attrib; -->
+</complexType>
+
+<attributeGroup name='toclevel5.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='toclevel5'>
+  <sequence>
+    <element ref='db:tocentry' minOccurs='1' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (tocentry+) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:toclevel5.role.attrib'/>
+  <!-- %local.toclevel5.attrib; -->
+</complexType>
+
+<attributeGroup name='tocback.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='tocback' mixed='true'>
+  <choice minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:para.char.mix'/>
+  </choice>
+  <!-- (%para.char.mix;)* -->
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:linkend.attrib'/>
+  <attributeGroup ref='db:pagenum.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:tocback.role.attrib'/>
+  <!-- %local.tocback.attrib; -->
+</complexType>
+
+<attributeGroup name='lot.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='lot'>
+  <sequence>
+    <group ref='db:bookcomponent.title.content' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:lotentry' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- ((%bookcomponent.title.content;)?, lotentry*) -->
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:lot.role.attrib'/>
+  <!-- %local.lot.attrib; -->
+</complexType>
+
+<attributeGroup name='lotentry.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='lotentry' mixed='true'>
+  <choice minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:para.char.mix'/>
+  </choice>
+  <!-- (%para.char.mix;)* -->
+
+  <!-- SrcCredit: Information about the source of the entry,
+       as for a list of illustrations -->
+  <attribute name='srccredit' type='string'/>
+  <attributeGroup ref='db:pagenum.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:linkend.attrib'/>
+  <attributeGroup ref='db:lotentry.role.attrib'/>
+  <!-- %local.lotentry.attrib; -->
+</complexType>
+
+<!-- ...................................................................... -->
+<!-- Appendix, Chapter, Part, Preface, Reference, PartIntro ............... -->
+
+<attributeGroup name='appendix.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='appendix'>
+  <sequence>
+    <element ref='db:appendixinfo' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:bookcomponent.title.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='db:tocchap' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:bookcomponent.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (appendixinfo?,
+                     (%bookcomponent.title.content;),
+                     (%nav.class;)*,
+                     tocchap?,
+                     (%bookcomponent.content;),
+                     (%nav.class;)*) -->
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:appendix.role.attrib'/>
+  <!-- %local.appendix.attrib; -->
+</complexType>
+
+<attributeGroup name='chapter.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='chapter'>
+  <sequence>
+    <element ref='db:chapterinfo' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:bookcomponent.title.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='db:tocchap' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:bookcomponent.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (chapterinfo?,
+                    (%bookcomponent.title.content;),
+                    (%nav.class;)*,
+                    tocchap?,
+                    (%bookcomponent.content;),
+                    (%nav.class;)*) -->
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:chapter.role.attrib'/>
+  <!-- %local.chapter.attrib; -->
+</complexType>
+
+<!-- Note that Part was to have its content model reduced in V4.1.2.  This
+change will not be made after all. -->
+
+<attributeGroup name='part.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='part'>
+  <sequence>
+    <element ref='db:partinfo' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:bookcomponent.title.content'/>
+    <element ref='db:partintro' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:partcontent.mix' minOccurs='1' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (partinfo?, (%bookcomponent.title.content;), partintro?,
+		(%partcontent.mix;)+) -->
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:part.role.attrib'/>
+  <!-- %local.part.attrib; -->
+</complexType>
+
+<!--ELEMENT PartIntro (defined below)-->
+
+<attributeGroup name='preface.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='preface'>
+  <sequence>
+    <element ref='db:prefaceinfo' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:bookcomponent.title.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='db:tocchap' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:bookcomponent.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (prefaceinfo?,
+                    (%bookcomponent.title.content;),
+                    (%nav.class;)*,
+                    tocchap?,
+                    (%bookcomponent.content;),
+                    (%nav.class;)*) -->
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:preface.role.attrib'/>
+  <!-- %local.preface.attrib; -->
+</complexType>
+
+<attributeGroup name='reference.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='reference'>
+  <sequence>
+    <element ref='db:referenceinfo' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:bookcomponent.title.content'/>
+    <element ref='db:partintro' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:refentry.calss' minOccurs='1' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (referenceinfo?,
+                     (%bookcomponent.title.content;), partintro?,
+                     (%refentry.class;)+) -->
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:reference.role.attrib'/>
+  <!-- %local.reference.attrib; -->
+</complexType>
+<!--ELEMENT PartIntro (defined below)-->
+
+<attributeGroup name='partintro.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='partintro'>
+  <sequence>
+    <group ref='db:div.title.content' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:bookcomponent.content'/>
+  </sequence>
+  <!-- ((%div.title.content;)?, (%bookcomponent.content;)) -->
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <!-- %local.partintro.attrib; -->
+  <attributeGroup ref='db:partintro.role.attrib'/>
+</complexType>
+
+<!-- ...................................................................... -->
+<!-- Other Info elements .................................................. -->
+
+<attributeGroup name='appendixinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='appendixinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:appendixinfo.role.attrib'/>
+      <!-- %local.appendixinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='bibliographyinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='bibliographyinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:bibliographyinfo.role.attrib'/>
+      <!-- %local.bibliographyinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='chapterinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='chapterinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:chapterinfo.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='glossaryinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='glossaryinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:glossaryinfo.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='indexinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='indexinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:indexinfo.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='setindexinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='setindexinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:setindexinfo.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='partinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='partinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:partinfo.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='prefaceinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='prefaceinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:prefaceinfo.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='refentryinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refentryinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:refentryinfo.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='refsect1info.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refsect1info'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:refsect1info.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='refsect2info.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refsect2info'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:refsect2info.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='refsect3info.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refsect3info'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:refsect3info.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='refsynopsisdivinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refsynopsisdivinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:refsynopsisdivinfo.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='referenceinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='referenceinfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:referenceinfo.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='sect1info.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='sect1info'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:sect1info.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='sect2info.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='sect2info'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:sect2info.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='sect3info.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='sect3info'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:sect3info.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='sect4info.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='sect4info'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:sect4info.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<attributeGroup name='sect5info.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='sect5info'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:sect5info.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<!-- ...................................................................... -->
+<!-- Section (parallel to Sect*) ......................................... -->
+
+<attributeGroup name='section.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='section'>
+  <sequence>
+    <element ref='db:sectioninfo' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:sect.title.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+    <choice>
+      <sequence>
+        <group ref='db:divcomponent.mix' minOccurs='1' maxOccurs='unbounded'/>
+        <choice>
+          <group ref='db:refentry.class' minOccurs='0' maxOccurs='unbounded'/>
+          <element ref='db:section' minOccurs='0' maxOccurs='unbounded'/>
+        </choice>
+      </sequence>
+      <choice>
+        <group ref='db:refentry.class' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:section' minOccurs='1' maxOccurs='unbounded'/>
+      </choice>
+    </choice>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (sectioninfo?,
+			(%sect.title.content;),
+			(%nav.class;)*,
+			(((%divcomponent.mix;)+,
+ 			  ((%refentry.class;)*|section*))
+			 | (%refentry.class;)+|section+),
+			(%nav.class;)*) -->
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:section.role.attrib'/>
+  <!-- %local.section.attrib; -->
+</complexType>
+
+<attributeGroup name='sectioninfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='sectioninfo'>
+  <complexContent>
+    <extension base='db:infoContentModel'>
+      <attributeGroup ref='db:common.attrib'/>
+      <attributeGroup ref='db:sectioninfo.role.attrib'/>
+      <!-- %local.chapterinfo.attrib; -->
+    </extension>
+  </complexContent>
+</complexType>
+
+<!-- ...................................................................... -->
+<!-- Sect1, Sect2, Sect3, Sect4, Sect5 .................................... -->
+
+<attributeGroup name='sect1.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='sect1'>
+  <sequence>
+    <element ref='db:sect1info' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:sect.title.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+    <choice>
+      <sequence>
+        <group ref='db:divcomponent.mix' minOccurs='1' maxOccurs='unbounded'/>
+        <choice>
+          <group ref='db:refentry.class' minOccurs='0' maxOccurs='unbounded'/>
+          <element ref='db:sect2' minOccurs='0' maxOccurs='unbounded'/>
+          <element ref='db:simplesect' minOccurs='0' maxOccurs='unbounded'/>
+        </choice>
+      </sequence>
+      <choice>
+        <group ref='db:refentry.class' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:sect2' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:simplesect' minOccurs='1' maxOccurs='unbounded'/>
+      </choice>
+    </choice>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (sect1info?, (%sect.title.content;), (%nav.class;)*,
+		(((%divcomponent.mix;)+,
+		((%refentry.class;)* | sect2* | simplesect*))
+		| (%refentry.class;)+ | sect2+ | simplesect+), (%nav.class;)*)
+   -->
+
+  <!-- Renderas: Indicates the format in which the heading should
+       appear -->
+  <attribute name='renderas'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='sect2'/>
+        <enumeration value='sect3'/>
+        <enumeration value='sect4'/>
+        <enumeration value='sect5'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:sect1.role.attrib'/>
+  <!-- %local.sect1.attrib; -->
+</complexType>
+
+<attributeGroup name='sect2.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='sect2'>
+  <sequence>
+    <element ref='db:sect2info' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:sect.title.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+    <choice>
+      <sequence>
+        <group ref='db:divcomponent.mix' minOccurs='1' maxOccurs='unbounded'/>
+        <choice>
+          <group ref='db:refentry.class' minOccurs='0' maxOccurs='unbounded'/>
+          <element ref='db:sect3' minOccurs='0' maxOccurs='unbounded'/>
+          <element ref='db:simplesect' minOccurs='0' maxOccurs='unbounded'/>
+        </choice>
+      </sequence>
+      <choice>
+        <group ref='db:refentry.class' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:sect3' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:simplesect' minOccurs='1' maxOccurs='unbounded'/>
+      </choice>
+    </choice>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (sect2info?, (%sect.title.content;), (%nav.class;)*,
+		(((%divcomponent.mix;)+,
+		((%refentry.class;)* | sect3* | simplesect*))
+		| (%refentry.class;)+ | sect3+ | simplesect+), (%nav.class;)*)
+   -->
+
+  <!-- Renderas: Indicates the format in which the heading should
+       appear -->
+  <attribute name='renderas'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='sect1'/>
+        <enumeration value='sect3'/>
+        <enumeration value='sect4'/>
+        <enumeration value='sect5'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:sect2.role.attrib'/>
+  <!-- %local.sect2.attrib; -->
+</complexType>
+
+<attributeGroup name='sect3.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='sect3'>
+  <sequence>
+    <element ref='db:sect3info' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:sect.title.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+    <choice>
+      <sequence>
+        <group ref='db:divcomponent.mix' minOccurs='1' maxOccurs='unbounded'/>
+        <choice>
+          <group ref='db:refentry.class' minOccurs='0' maxOccurs='unbounded'/>
+          <element ref='db:sect4' minOccurs='0' maxOccurs='unbounded'/>
+          <element ref='db:simplesect' minOccurs='0' maxOccurs='unbounded'/>
+        </choice>
+      </sequence>
+      <choice>
+        <group ref='db:refentry.class' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:sect4' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:simplesect' minOccurs='1' maxOccurs='unbounded'/>
+      </choice>
+    </choice>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (sect3info?, (%sect.title.content;), (%nav.class;)*,
+		(((%divcomponent.mix;)+,
+		((%refentry.class;)* | sect4* | simplesect*))
+		| (%refentry.class;)+ | sect4+ | simplesect+), (%nav.class;)*) -->
+
+  <!-- Renderas: Indicates the format in which the heading should
+       appear -->
+  <attribute name='renderas'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='sect1'/>
+        <enumeration value='sect2'/>
+        <enumeration value='sect4'/>
+        <enumeration value='sect5'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:sect3.role.attrib'/>
+  <!-- %local.sect3.attrib; -->
+</complexType>
+
+<attributeGroup name='sect4.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='sect4'>
+  <sequence>
+    <element ref='db:sect4info' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:sect.title.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+    <choice>
+      <sequence>
+        <group ref='db:divcomponent.mix' minOccurs='1' maxOccurs='unbounded'/>
+        <choice>
+          <group ref='db:refentry.class' minOccurs='0' maxOccurs='unbounded'/>
+          <element ref='db:sect5' minOccurs='0' maxOccurs='unbounded'/>
+          <element ref='db:simplesect' minOccurs='0' maxOccurs='unbounded'/>
+        </choice>
+      </sequence>
+      <choice>
+        <group ref='db:refentry.class' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:sect5' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:simplesect' minOccurs='1' maxOccurs='unbounded'/>
+      </choice>
+    </choice>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (sect4info?, (%sect.title.content;), (%nav.class;)*,
+		(((%divcomponent.mix;)+,
+		((%refentry.class;)* | sect5* | simplesect*))
+		| (%refentry.class;)+ | sect5+ | simplesect+), (%nav.class;)*) -->
+
+  <!-- Renderas: Indicates the format in which the heading should
+       appear -->
+  <attribute name='renderas'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='sect1'/>
+        <enumeration value='sect2'/>
+        <enumeration value='sect3'/>
+        <enumeration value='sect5'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:sect4.role.attrib'/>
+  <!-- %local.sect4.attrib; -->
+</complexType>
+
+<attributeGroup name='sect5.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='sect5'>
+  <sequence>
+    <element ref='db:sect5info' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:sect.title.content'/>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+    <choice>
+      <sequence>
+        <group ref='db:divcomponent.mix' minOccurs='1' maxOccurs='unbounded'/>
+        <choice>
+          <group ref='db:refentry.class' minOccurs='0' maxOccurs='unbounded'/>
+          <element ref='db:simplesect' minOccurs='0' maxOccurs='unbounded'/>
+        </choice>
+      </sequence>
+      <choice>
+        <group ref='db:refentry.class' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:simplesect' minOccurs='1' maxOccurs='unbounded'/>
+      </choice>
+    </choice>
+    <group ref='db:nav.class' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (sect5info?, (%sect.title.content;), (%nav.class;)*,
+		(((%divcomponent.mix;)+, ((%refentry.class;)* | simplesect*))
+		| (%refentry.class;)+ | simplesect+), (%nav.class;)*) -->
+
+  <!-- Renderas: Indicates the format in which the heading should
+       appear -->
+  <attribute name='renderas'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='sect1'/>
+        <enumeration value='sect2'/>
+        <enumeration value='sect3'/>
+        <enumeration value='sect4'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+
+  <attributeGroup ref='db:label.attrib'/>
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:sect5.role.attrib'/>
+  <!-- %local.sect5.attrib; -->
+</complexType>
+
+<attributeGroup name='simplesect.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='simplesect'>
+  <sequence>
+    <group ref='db:sect.title.content'/>
+    <group ref='db:divcomponent.mix' minOccurs='1' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- ((%sect.title.content;), (%divcomponent.mix;)+) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:simplesect.role.attrib'/>
+  <!-- %local.simplesect.attrib; -->
+</complexType>
+
+<!-- ...................................................................... -->
+<!-- Bibliography ......................................................... -->
+
+<attributeGroup name='bibliography.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='bibliography'>
+  <sequence>
+    <element ref='db:bibliographyinfo' minOccurs='0' maxOccurs='unbounded'/>
+    <group ref='db:bookcomponent.title.content' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:component.mix' minOccurs='0' maxOccurs='unbounded'/>
+    <choice>
+      <element ref='db:bibliodiv' minOccurs='1' maxOccurs='unbounded'/>
+      <choice minOccurs='1' maxOccurs='unbounded'>
+        <element ref='db:biblioentry'/>
+        <element ref='db:bibliomixed'/>
+      </choice>
+    </choice>
+  </sequence>
+  <!-- (bibliographyinfo?,
+                        (%bookcomponent.title.content;)?,
+                        (%component.mix;)*,
+                        (bibliodiv+ | (biblioentry|bibliomixed)+)) -->
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:bibliography.role.attrib'/>
+  <!-- %local.bibliography.attrib; -->
+</complexType>
+
+<attributeGroup name='bibliodiv.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='bibliodiv'>
+  <sequence>
+    <group ref='db:sect.title.content' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:component.mix' minOccurs='0' maxOccurs='unbounded'/>
+    <choice minOccurs='1' maxOccurs='unbounded'>
+      <element ref='db:biblioentry'/>
+      <element ref='db:bibliomixed'/>
+    </choice>
+  </sequence>
+  <!-- ((%sect.title.content;)?, (%component.mix;)*,
+		(biblioentry|bibliomixed)+) -->
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:bibliodiv.role.attrib'/>
+  <!-- %local.bibliodiv.attrib; -->
+</complexType>
+
+<!-- ...................................................................... -->
+<!-- Glossary ............................................................. -->
+
+<attributeGroup name='glossary.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='glossary'>
+  <sequence>
+    <element ref='db:glossaryinfo' minOccurs='0' maxOccurs='unbounded'/>
+    <group ref='db:bookcomponent.title.content' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:component.mix' minOccurs='0' maxOccurs='unbounded'/>
+    <choice>
+      <element ref='db:glossdiv' minOccurs='1' maxOccurs='unbounded'/>
+      <element ref='db:glossentry' minOccurs='1' maxOccurs='unbounded'/>
+    </choice>
+    <element ref='db:bibliography' minOccurs='0' maxOccurs='1'/>
+  </sequence>
+  <!-- (glossaryinfo?,
+                    (%bookcomponent.title.content;)?,
+                    (%component.mix;)*,
+                    (glossdiv+ | glossentry+), bibliography?) -->
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:glossary.role.attrib'/>
+  <!-- %local.glossary.attrib; -->
+</complexType>
+
+<attributeGroup name='glossdiv.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='glossdiv'>
+  <sequence>
+    <group ref='db:sect.title.content' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:component.mix' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='db:glossentry' minOccurs='1' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- ((%sect.title.content;), (%component.mix;)*,
+		glossentry+) -->
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:glossdiv.role.attrib'/>
+  <!-- %local.glossdiv.attrib; -->
+</complexType>
+
+<!-- ...................................................................... -->
+<!-- Index and SetIndex ................................................... -->
+
+<attributeGroup name='indexes.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='index'>
+  <sequence>
+    <element ref='db:indexinfo' minOccurs='0' maxOccurs='unbounded'/>
+    <group ref='db:bookcomponent.title.content' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:component.mix' minOccurs='0' maxOccurs='unbounded'/>
+    <choice>
+      <element ref='db:indexdiv' minOccurs='1' maxOccurs='unbounded'/>
+      <element ref='db:indexentry' minOccurs='1' maxOccurs='unbounded'/>
+    </choice>
+  </sequence>
+  <!-- (indexinfo?,
+                 (%bookcomponent.title.content;)?,
+                 (%component.mix;)*,
+                 (indexdiv* | indexentry*)) -->
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:indexes.role.attrib'/>
+  <!-- %local.indexes.attrib; -->
+</complexType>
+
+<complexType name='setindex'>
+  <sequence>
+    <element ref='db:setindexinfo' minOccurs='0' maxOccurs='unbounded'/>
+    <group ref='db:bookcomponent.title.content' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:component.mix' minOccurs='0' maxOccurs='unbounded'/>
+    <choice>
+      <element ref='db:indexdiv' minOccurs='1' maxOccurs='unbounded'/>
+      <element ref='db:indexentry' minOccurs='1' maxOccurs='unbounded'/>
+    </choice>
+  </sequence>
+  <!-- (setindexinfo?,
+                    (%bookcomponent.title.content;)?,
+                    (%component.mix;)*, (indexdiv* | indexentry*)) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:indexes.role.attrib'/>
+  <!-- %local.indexes.attrib; -->
+</complexType>
+
+<!-- SegmentedList in this content is useful for marking up permuted
+     indices. -->
+
+<attributeGroup name='indexdiv.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='indexdiv'>
+  <sequence>
+    <group ref='db:sect.title.content' minOccurs='0' maxOccurs='1'/>
+    <sequence>
+      <group ref='db:indexdivcomponent.mix' minOccurs='0' maxOccurs='unbounded'/>
+      <element ref='db:indexentry' minOccurs='0' maxOccurs='unbounded'/>
+      <element ref='db:segmentedlist'/>
+    </sequence>
+  </sequence>
+  <!-- ((%sect.title.content;)?, ((%indexdivcomponent.mix;)*,
+		(indexentry+ | segmentedlist))) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:indexdiv.role.attrib'/>
+  <!-- %local.indexdiv.attrib; -->
+</complexType>
+
+<!-- Index entries appear in the index, not the text. -->
+
+<attributeGroup name='indexentry.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='indexentry'>
+  <sequence>
+    <element ref='db:primaryie'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+      <element ref='db:seeie'/>
+      <element ref='db:seealsoie'/>
+    </choice>
+    <sequence minOccurs='0' maxOccurs='unbounded'>
+      <element ref='db:secondaryie'/>
+      <choice minOccurs='0' maxOccurs='unbounded'>
+        <element ref='db:seeie'/>
+        <element ref='db:seealsoie'/>
+        <element ref='db:tertiaryie'/>
+      </choice>
+    </sequence>
+  </sequence>
+  <!-- (primaryie, (seeie|seealsoie)*,
+		(secondaryie, (seeie|seealsoie|tertiaryie)*)*) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:indexentry.role.attrib'/>
+  <!-- %local.indexentry.attrib; -->
+</complexType>
+
+<attributeGroup name='primsecterie.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='primaryie' mixed='true'>
+  <choice minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:ndxterm.char.mix'/>
+  </choice>
+  <!-- (%ndxterm.char.mix;)* -->
+
+  <!-- to IndexTerms that these entries represent -->
+  <!-- FIXME: constrain -->
+
+  <attributeGroup ref='db:linkends.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:primsecterie.role.attrib'/>
+  <!-- %local.primsecterie.attrib; -->
+</complexType>
+
+<complexType name='secondaryie' mixed='true'>
+  <choice minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:ndxterm.char.mix'/>
+  </choice>
+  <!-- (%ndxterm.char.mix;)* -->
+
+  <!-- to IndexTerms that these entries represent -->
+  <!-- FIXME: constrain -->
+
+  <attributeGroup ref='db:linkends.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:primsecterie.role.attrib'/>
+  <!-- %local.primsecterie.attrib; -->
+</complexType>
+
+<complexType name='tertiaryie' mixed='true'>
+  <choice minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:ndxterm.char.mix'/>
+  </choice>
+  <!-- (%ndxterm.char.mix;)* -->
+
+  <!-- to IndexTerms that these entries represent -->
+  <!-- FIXME: constrain -->
+
+  <attributeGroup ref='db:linkends.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:primsecterie.role.attrib'/>
+  <!-- %local.primsecterie.attrib; -->
+</complexType>
+
+<attributeGroup name='seeie.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='seeie' mixed='true'>
+  <choice minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:ndxterm.char.mix'/>
+  </choice>
+  <!-- (%ndxterm.char.mix;)* -->
+
+  <!-- to IndexEntry to look up -->
+  <!-- FIXME: constrain -->
+
+  <attributeGroup ref='db:linkend.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:seeie.role.attrib'/>
+  <!-- %local.seeie.attrib; -->
+</complexType>
+
+<attributeGroup name='seealsoie.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='seealsoie'>
+  <choice minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:ndxterm.char.mix'/>
+  </choice>
+  <!-- (%ndxterm.char.mix;)* -->
+
+  <!-- to related IndexEntries -->
+  <!-- FIXME: constrain -->
+
+  <attributeGroup ref='db:linkends.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:seealsoie.role.attrib'/>
+  <!-- %local.seealsoie.attrib; -->
+</complexType>
+
+<!-- ...................................................................... -->
+<!-- RefEntry ............................................................. -->
+
+<attributeGroup name='refentry.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refentry'>
+  <sequence>
+    <group ref='db:ndxterm.class' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='db:refentryinfo' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:refmeta' minOccurs='0' maxOccurs='1'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+      <element ref='db:remark'/>
+      <group ref='db:link.char.class'/>
+    </choice>
+    <element ref='db:refnamediv'/>
+    <element ref='db:refsynopsisdiv' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:refsect1' minOccurs='1' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- ((%ndxterm.class;)*,
+                    refentryinfo?, refmeta?, (remark|%link.char.class;)*,
+                    refnamediv, refsynopsisdiv?, refsect1+) -->
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refentry.role.attrib'/>
+  <!-- %local.refentry.attrib; -->
+</complexType>
+
+<attributeGroup name='refmeta.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refmeta'>
+  <sequence>
+    <group ref='db:ndxterm.class' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='db:refentrytitle'/>
+    <element ref='db:manvolnum' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:refmiscinfo' minOccurs='0' maxOccurs='unbounded'/>
+    <group ref='db:ndxterm.class' minOccurs='0' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- ((%ndxterm.class;)*,
+                   refentrytitle, manvolnum?, refmiscinfo*,
+                   (%ndxterm.class;)*) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refmeta.role.attrib'/>
+  <!-- %local.refmeta.attrib; -->
+</complexType>
+
+<attributeGroup name='refmiscinfo.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refmiscinfo' mixed='true'>
+  <sequence minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:docinfo.char.mix'/>
+  </sequence>
+  <!-- (%docinfo.char.mix;)* -->
+
+  <!-- Class: Freely assignable parameter; no default -->
+  <attribute name='class' type='string'/>
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refmiscinfo.role.attrib'/>
+  <!-- %local.refmiscinfo.attrib; -->
+</complexType>
+
+<attributeGroup name='refnamediv.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refnamediv'>
+  <sequence>
+    <element ref='db:refdescriptor' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:refname' minOccurs='1' maxOccurs='unbounded'/>
+    <element ref='db:refpurpose'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+      <element ref='db:remark'/>
+      <group ref='db:link.char.class'/>
+    </choice>
+  </sequence>
+  <!-- (refdescriptor?, refname+, refpurpose, refclass*,
+		(remark|%link.char.class;)*) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refnamediv.role.attrib'/>
+  <!-- %local.refnamediv.attrib; -->
+</complexType>
+
+<attributeGroup name='refdescriptor.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refdescriptor' mixed='true'>
+  <sequence minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:refname.char.mix'/>
+  </sequence>
+  <!-- (%refname.char.mix;)* -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refdescriptor.role.attrib'/>
+  <!-- %local.refdescriptor.attrib; -->
+</complexType>
+
+<attributeGroup name='refname.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refname' mixed='true'>
+  <sequence minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:refname.char.mix'/>
+  </sequence>
+  <!-- (%refname.char.mix;)* -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refname.role.attrib'/>
+  <!-- %local.refname.attrib; -->
+</complexType>
+
+<attributeGroup name='refpurpose.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refpurpose' mixed='true'>
+  <sequence minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:refinline.char.mix'/>
+  </sequence>
+  <!-- (%refinline.char.mix;)* -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refpurpose.role.attrib'/>
+  <!-- %local.refpurpose.attrib; -->
+</complexType>
+
+<attributeGroup name='refclass.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refclass' mixed='true'>
+  <sequence minOccurs='0' maxOccurs='unbounded'>
+    <group ref='db:refclass.char.mix'/>
+  </sequence>
+  <!-- (%refclass.char.mix;)* -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refclass.role.attrib'/>
+  <!-- %local.refclass.attrib; -->
+</complexType>
+
+<attributeGroup name='refsynopsisdiv.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refsynopsisdiv'>
+  <sequence>
+    <element ref='db:refsynopsisdivinfo' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:refsect.title.content' minOccurs='0' maxOccurs='1'/>
+    <choice>
+      <sequence>
+        <group ref='db:refcomponent.mix' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:refsect2' minOccurs='0' maxOccurs='unbounded'/>
+      </sequence>
+      <element ref='db:refsect2' minOccurs='1' maxOccurs='unbounded'/>
+    </choice>
+  </sequence>
+  <!-- (refsynopsisdivinfo?, (%refsect.title.content;)?,
+		(((%refcomponent.mix;)+, refsect2*) | (refsect2+))) -->
+
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refsynopsisdiv.role.attrib'/>
+  <!-- %local.refsynopsisdiv.attrib; -->
+</complexType>
+
+<attributeGroup name='refsect1.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refsect1'>
+  <sequence>
+    <element ref='db:refsect1info' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:refsect.title.content'/>
+    <choice>
+      <sequence>
+        <group ref='db:refcomponent.mix' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:refsect2' minOccurs='0' maxOccurs='unbounded'/>
+      </sequence>
+      <element ref='db:refsect2' minOccurs='1' maxOccurs='unbounded'/>
+    </choice>
+  </sequence>
+  <!-- (refsect1info?, (%refsect.title.content;),
+		(((%refcomponent.mix;)+, refsect2*) | refsect2+)) -->
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refsect1.role.attrib'/>
+  <!-- %local.refsect1.attrib; -->
+</complexType>
+
+<attributeGroup name='refsect2.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refsect2'>
+  <sequence>
+    <element ref='db:refsect2info' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:refsect.title.content'/>
+    <choice>
+      <sequence>
+        <group ref='db:refcomponent.mix' minOccurs='1' maxOccurs='unbounded'/>
+        <element ref='db:refsect3' minOccurs='0' maxOccurs='unbounded'/>
+      </sequence>
+      <element ref='db:refsect3' minOccurs='1' maxOccurs='unbounded'/>
+    </choice>
+  </sequence>
+  <!-- (refsect2info?, (%refsect.title.content;),
+	(((%refcomponent.mix;)+, refsect3*) | refsect3+)) -->
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refsect2.role.attrib'/>
+  <!-- %local.refsect2.attrib; -->
+</complexType>
+
+<attributeGroup name='refsect3.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='refsect3'>
+  <sequence>
+    <element ref='db:refsect3info' minOccurs='0' maxOccurs='1'/>
+    <group ref='db:refsect.title.content'/>
+    <group ref='db:refcomponent.mix' minOccurs='1' maxOccurs='unbounded'/>
+  </sequence>
+  <!-- (refsect3info?, (%refsect.title.content;),
+	(%refcomponent.mix;)+) -->
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:refsect3.role.attrib'/>
+  <!-- %local.refsect3.attrib; -->
+</complexType>
+
+<!-- ...................................................................... -->
+<!-- Article .............................................................. -->
+
+<!-- An Article is a chapter-level, stand-alone document that is often,
+     but need not be, collected into a Book. -->
+
+<attributeGroup name='article.role.attrib'>
+  <attributeGroup ref='db:role.attrib'/>
+</attributeGroup>
+
+<complexType name='article'>
+  <sequence>
+    <group ref='db:div.title.content' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:articleinfo' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:tocchap' minOccurs='0' maxOccurs='1'/>
+    <element ref='db:lot' minOccurs='0' maxOccurs='unbounded'/>
+    <group ref='db:bookcomponent.content'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+      <group ref='db:nav.class'/>
+      <group ref='db:appendix.class'/>
+      <element ref='db:ackno'/>
+    </choice>
+  </sequence>
+  <!-- ((%div.title.content;)?, articleinfo?, tocchap?, lot*,
+			(%bookcomponent.content;),
+			((%nav.class;) | (%appendix.class;) | ackno)*) -->
+
+  <!-- Class: Indicates the type of a particular article;
+       all articles have the same structure and general purpose.
+       No default. -->
+  <attribute name='class'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='journalarticle'/>
+        <enumeration value='productsheet'/>
+        <enumeration value='whitepaper'/>
+        <enumeration value='techreport'/>
+        <enumeration value='specification'/>
+        <enumeration value='faq'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+
+  <!-- ParentBook: ID of the enclosing Book -->
+  <attribute name='parentbook' type='IDREF'/>
+
+  <attributeGroup ref='db:status.attrib'/>
+  <attributeGroup ref='db:common.attrib'/>
+  <attributeGroup ref='db:article.role.attrib'/>
+  <!-- %local.article.attrib; -->
+</complexType>
+
+<element name='appendix' type='db:appendix'/>
+<element name='appendixinfo' type='db:appendixinfo'/>
+<element name='article' type='db:article'/>
+<element name='bibliodiv' type='db:bibliodiv'/>
+<element name='bibliography' type='db:bibliography'/>
+<element name='bibliographyinfo' type='db:bibliographyinfo'/>
+<element name='book' type='db:book'/>
+<element name='bookinfo' type='db:bookinfo'/>
+<element name='chapter' type='db:chapter'/>
+<element name='chapterinfo' type='db:chapterinfo'/>
+<element name='colophon' type='db:colophon'/>
+<element name='dedication' type='db:dedication'/>
+<element name='glossary' type='db:glossary'/>
+<element name='glossaryinfo' type='db:glossaryinfo'/>
+<element name='glossdiv' type='db:glossdiv'/>
+<element name='index' type='db:index'/>
+<element name='indexdiv' type='db:indexdiv'/>
+<element name='indexentry' type='db:indexentry'/>
+<element name='indexinfo' type='db:indexinfo'/>
+<element name='lot' type='db:lot'/>
+<element name='lotentry' type='db:lotentry'/>
+<element name='part' type='db:part'/>
+<element name='partinfo' type='db:partinfo'/>
+<element name='partintro' type='db:partintro'/>
+<element name='preface' type='db:preface'/>
+<element name='prefaceinfo' type='db:prefaceinfo'/>
+<element name='primaryie' type='db:primaryie'/>
+<element name='refclass' type='db:refclass'/>
+<element name='refdescriptor' type='db:refdescriptor'/>
+<element name='refentry' type='db:refentry'/>
+<element name='refentryinfo' type='db:refentryinfo'/>
+<element name='reference' type='db:reference'/>
+<element name='referenceinfo' type='db:referenceinfo'/>
+<element name='refmeta' type='db:refmeta'/>
+<element name='refmiscinfo' type='db:refmiscinfo'/>
+<element name='refname' type='db:refname'/>
+<element name='refnamediv' type='db:refnamediv'/>
+<element name='refpurpose' type='db:refpurpose'/>
+<element name='refsect1' type='db:refsect1'/>
+<element name='refsect1info' type='db:refsect1info'/>
+<element name='refsect2' type='db:refsect2'/>
+<element name='refsect2info' type='db:refsect2info'/>
+<element name='refsect3' type='db:refsect3'/>
+<element name='refsect3info' type='db:refsect3info'/>
+<element name='refsynopsisdiv' type='db:refsynopsisdiv'/>
+<element name='refsynopsisdivinfo' type='db:refsynopsisdivinfo'/>
+<element name='secondaryie' type='db:secondaryie'/>
+<element name='sect1' type='db:sect1'/>
+<element name='sect1info' type='db:sect1info'/>
+<element name='sect2' type='db:sect2'/>
+<element name='sect2info' type='db:sect2info'/>
+<element name='sect3' type='db:sect3'/>
+<element name='sect3info' type='db:sect3info'/>
+<element name='sect4' type='db:sect4'/>
+<element name='sect4info' type='db:sect4info'/>
+<element name='sect5' type='db:sect5'/>
+<element name='sect5info' type='db:sect5info'/>
+<element name='section' type='db:section'/>
+<element name='sectioninfo' type='db:sectioninfo'/>
+<element name='seealsoie' type='db:seealsoie'/>
+<element name='seeie' type='db:seeie'/>
+<element name='set' type='db:set'/>
+<element name='setindex' type='db:setindex'/>
+<element name='setindexinfo' type='db:setindexinfo'/>
+<element name='setinfo' type='db:setinfo'/>
+<element name='simplesect' type='db:simplesect'/>
+<element name='tertiaryie' type='db:tertiaryie'/>
+<element name='toc' type='db:toc'/>
+<element name='tocback' type='db:tocback'/>
+<element name='tocchap' type='db:tocchap'/>
+<element name='tocentry' type='db:tocentry'/>
+<element name='tocfront' type='db:tocfront'/>
+<element name='toclevel1' type='db:toclevel1'/>
+<element name='toclevel2' type='db:toclevel2'/>
+<element name='toclevel3' type='db:toclevel3'/>
+<element name='toclevel4' type='db:toclevel4'/>
+<element name='toclevel5' type='db:toclevel5'/>
+<element name='tocpart' type='db:tocpart'/>

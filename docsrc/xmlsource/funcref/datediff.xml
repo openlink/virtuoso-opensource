@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_datediff">
+  <refmeta>
+    <refentrytitle>datediff</refentrytitle>
+    <refmiscinfo>time</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>datediff</refname>
+    <refpurpose>get difference of 2 dates</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_datediff">
+      <funcprototype id="fproto_datediff">
+        <funcdef><function>datediff</function></funcdef>
+        <paramdef>in <parameter>unit</parameter> string</paramdef>
+        <paramdef>in <parameter>date1</parameter> datetime</paramdef>
+        <paramdef>in <parameter>date2</parameter> datetime</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params_datediff"><title>Parameters</title>
+    <refsect2><title>unit</title>
+      <para>The resulting unit name as a string. May be 'millisecond', 'second', 'minute', 'hour', 'day',
+      'month', or 'year'</para>
+    </refsect2>
+    <refsect2><title>date1</title>
+      <para>The <type>datetime</type> value that will be subtracted from
+      <parameter>date2</parameter></para>
+    </refsect2>
+    <refsect2><title>date2</title>
+      <para>The <type>datetime</type> value <parameter>date1</parameter>
+      is subtracted from</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_datediff"><title>Return Values</title>
+     <para>Difference of <parameter>date1</parameter> and
+     <parameter>date2</parameter> as an <type>integer</type>.</para>
+  </refsect1>
+  <refsect1 id="desc_datediff"><title>Description</title>
+    <para>datediff subtracts date1 from date2 and returns the difference as
+    an integer in the specified units.</para>
+  </refsect1>
+  <refsect1 id="errors_datediff"><title>Errors</title>
+    <table><title>Errors signalled by <function>datediff</function></title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>DT002</errorcode></entry>
+	    <entry><errorname>Bad unit in datediff: &gt;offending unit string&lt;</errorname></entry>
+	    <entry>The unit given was not one of the units listed above.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="examples_datediff"><title>Examples</title>
+    <example id="ex_datediff"><title>A simple example</title>
+      <para>Get hour difference of 1996.10.10 and 1996.10.11.</para>
+      <screen>SQL> SELECT datediff ('hour',  stringdate ('1996.10.10'), stringdate ('1996.10.11'));
+callret
+INTEGER
+_________________________________________________________________________
+24
+
+1 Rows. -- 57 msec.
+      </screen>
+    </example>
+    <example id="ex_datediff_2"><title>Demo DB example</title>
+      <para>Get average order processing time in days</para>
+      <screen>
+SQL> use "Demo";
+SQL> SELECT avg (datediff ('day', "OrderDate", "ShippedDate"))
+  as "Avg_Processing_Time" from "Orders" where "ShippedDate" is not null;
+Avg_Processing_Time
+INTEGER
+_________________________________________________________________________
+8
+
+1 Rows. -- 11 msec.
+
+      </screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_datediff"><title>See Also</title>
+    <para><link linkend="fn_dateadd"><function>dateadd</function></link>,
+      <link linkend="fn_datestring"><function>datestring</function></link></para>
+  </refsect1>
+</refentry>
+
+
+
+
+
+
+
+
+

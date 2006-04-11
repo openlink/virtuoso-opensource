@@ -1,0 +1,382 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+declare _acct, _file, _proc varchar;
+declare _split, _ix, _mod, _rc, _iscp integer;
+
+if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+
+--dbg_obj_print (params);
+
+_acct := get_keyword ('acct', params, '');
+if ('' <> get_keyword ('img', params, ''))
+  {
+    _file := get_keyword ('exp_file', params, '');
+    _split := atoi (get_keyword ('split', params, '0'));
+    if (_file <> '' and _split > 0)
+      {
+	commit work;
+        DB.DBA.REPL_PUB_INIT_IMAGE (_acct, _file, _split);
+      }
+    else
+      http ('<p><b>The file name and split size is mandatory for export</b></p>');
+  }
+if ('' <> get_keyword ('chm', params, ''))
+  {
+    _ix := 0;
+    _mod := atoi (get_keyword ('sel', params, '1'));
+    if (_acct <> '' and _mod > 0)
+      {
+	while (_proc := adm_next_checkbox ('CB_', params, _ix))
+	  {
+	    if (exists (select 1 from DB.DBA.SYS_TP_ITEM where TI_ITEM = _proc and TI_TYPE = 3
+		  and TI_SERVER = repl_this_server () and TI_ACCT = _acct))
+	      {
+		_rc := DB.DBA.REPL_PROC_MODE (_acct, _proc, _mod);
+		if (_rc > 0)
+		  {
+		    update DB.DBA.SYS_TP_ITEM set TI_OPTIONS = _mod where TI_ITEM = _proc and
+			TI_SERVER = repl_this_server () and TI_ACCT = _acct;
+		    repl_text (_acct, 'update DB.DBA.SYS_TP_ITEM set TI_OPTIONS = ? where TI_ITEM = ? and TI_SERVER = ? and TI_ACCT = ? and TI_TYPE = 3', _mod, _proc, repl_this_server (), _acct);
+		  }
+	      }
+	  }
+      }
+  }
+if ('' <> get_keyword ('chcp', params, ''))
+  {
+    _ix := 0;
+    _iscp := atoi (get_keyword ('iscp', params, '0'));
+    if (_acct <> '')
+      {
+	while (_proc := adm_next_checkbox ('CB_', params, _ix))
+	  {
+	    if (exists (select 1 from DB.DBA.SYS_TP_ITEM where TI_ITEM = _proc
+		  and TI_SERVER = repl_this_server () and TI_ACCT = _acct))
+	      {
+		update DB.DBA.SYS_TP_ITEM set TI_IS_COPY = _iscp where TI_ITEM = _proc and
+		    TI_SERVER = repl_this_server () and TI_ACCT = _acct;
+	      }
+	  }
+      }
+  }
+
+ if ('' <> get_keyword ('apply', params, '') and _acct <> '')
+   {
+     declare t_mode, t_copy, it_mode, it_copy, it_type integer;
+     declare it_item varchar;
+     declare ti cursor for select TI_ITEM, TI_OPTIONS, TI_IS_COPY, TI_TYPE from DB.DBA.SYS_TP_ITEM
+       where TI_SERVER = repl_this_server () and TI_ACCT = _acct;
+     declare exit handler for not found;
+     open ti (exclusive, prefetch 1);
+     while (__SQL_STATE = 0)
+       {
+	 fetch ti into it_item, it_mode, it_copy, it_type;
+	 if (it_type <> 3)
+	   it_mode := 0;
+         t_mode := atoi (get_keyword (concat ('proc_mode_', it_item), params, 0));
+         t_copy := atoi (get_keyword (concat ('copy_mode_', it_item), params, 0));
+--         dbg_obj_print ('Changing: ', it_item, 'mode: ', it_mode, ' copy ', it_copy, ' type ', it_type, '\r\n n mode', t_mode, ' n copy ', t_copy);
+         if (t_copy <> it_copy)
+	   {
+             update DB.DBA.SYS_TP_ITEM set TI_IS_COPY = t_copy where current of ti;
+--	     dbg_obj_print ('Changed: ', it_item, ' type: ', it_type, ' copy: ', it_copy , '->', t_copy, ' mode: ', it_mode , '->', t_mode);
+	   }
+	 if (it_type = 3 and t_mode <> it_mode)
+	   {
+	     _rc := DB.DBA.REPL_PROC_MODE (_acct, it_item, t_mode);
+	     if (_rc > 0)
+	       {
+	          update DB.DBA.SYS_TP_ITEM set TI_OPTIONS = t_mode where current of ti;
+		  repl_text (_acct, 'update DB.DBA.SYS_TP_ITEM set TI_OPTIONS = ? where TI_ITEM = ? and TI_SERVER = ? and TI_ACCT = ? and TI_TYPE = 3', t_mode, it_item, repl_this_server (), _acct);
+	       }
+--	     dbg_obj_print ('Changed: ', it_item, ' type: ', it_type, ' copy: ', it_copy , '->', t_copy, ' mode: ', it_mode , '->', t_mode);
+	   }
+       }
+     close ti;
+   }
+if ('Add' = get_keyword ('add_subscriber', params, ''))
+  {
+    declare _subscriber varchar;
+    _subscriber := get_keyword ('subscriber', params, '');
+    repl_add_subscriber (repl_this_server (), _acct, _subscriber);
+    repl_changed ();
+  }
+if ('' <> get_keyword ('remove_subscriber', params, ''))
+  {
+    declare _item varchar;
+    declare _idx integer;
+    _idx := 0;
+    while (_item := adm_next_checkbox ('CB_', params, _idx))
+      {
+        declare _subscriber varchar;
+        _subscriber := get_keyword (concat ('CB_SUB_', _item), params, '');
+        delete from SYS_REPL_SUBSCRIBERS
+            where RS_SERVER = repl_this_server () and RS_ACCOUNT = _acct
+            and RS_SUBSCRIBER = _subscriber;
+      }
+    repl_changed ();
+  }
+if ('' <> get_keyword ('set_valid', params, ''))
+  {
+    declare _item varchar;
+    declare _idx integer;
+    _idx := 0;
+    while (_item := adm_next_checkbox ('CB_', params, _idx))
+      {
+        declare _subscriber varchar;
+        _subscriber := get_keyword (concat ('CB_SUB_', _item), params, '');
+        if (not exists (select 1 from SYS_REPL_SUBSCRIBERS
+                        where RS_SERVER = repl_this_server()
+                        and RS_ACCOUNT = _acct
+                        and RS_SUBSCRIBER = _subscriber))
+          repl_add_subscriber (repl_this_server(), _acct, _subscriber);
+        else
+          {
+            update SYS_REPL_SUBSCRIBERS set RS_VALID = 1
+                where RS_SERVER = repl_this_server () and RS_ACCOUNT = _acct
+                and RS_SUBSCRIBER = _subscriber;
+          }
+      }
+    repl_changed();
+  }
+if ('' <> get_keyword ('set_invalid', params, ''))
+  {
+    declare _item varchar;
+    declare _idx integer;
+    _idx := 0;
+    while (_item := adm_next_checkbox ('CB_', params, _idx))
+      {
+        declare _subscriber varchar;
+        _subscriber := get_keyword (concat ('CB_SUB_', _item), params, '');
+        if (not exists (select 1 from SYS_REPL_SUBSCRIBERS
+                        where RS_SERVER = repl_this_server()
+                        and RS_ACCOUNT = _acct
+                        and RS_SUBSCRIBER = _subscriber))
+          repl_add_subscriber (repl_this_server(), _acct, _subscriber);
+        update SYS_REPL_SUBSCRIBERS set RS_VALID = 0
+            where RS_SERVER = repl_this_server () and RS_ACCOUNT = _acct
+            and RS_SUBSCRIBER = _subscriber;
+      }
+    repl_changed();
+  }
+adm_config_purger_actions (repl_this_server (), _acct, params);
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Transactional replication wizard">
+    <title>Publication items advanced</title>
+  </head>
+<?vsp adm_page_header(concat('Advanced Options of Publication ', _acct), NULL); ?>
+
+      <p class="helptext">To create a backup of this Publication as an image file, enter the directory
+      and <b>File name</b> and file <b>Split size</b>.  Then press <b>Create image</b> to export content.
+      </p>
+      <p class="helptext">The Image file will be created as splices with <b>Spilt size</b> designating the
+      splice cutoff in bytes.
+      </p>
+    <form action="trx_repl_item_adv.vsp" method=post enctype="multipart/form-data">
+     <input type=hidden name="acct" value="<?=_acct?>">
+     <table BORDER="0" CELLPADDING="0" CELLSPACING="2" CLASS="genlist">
+      <tr>
+       <td class="genlisthead">File name</td>
+       <td><input type=text name="exp_file" size=60></td>
+      </tr>
+      <tr>
+       <td class="genlisthead">Split size</td>
+       <td><input type=text name="split" value="1000000" align=right></td>
+      </tr>
+      <tr>
+       <td colspan="2" align="right"><input type=submit name="img" value="Create image"></td>
+      </tr>
+     </table>
+    </form>
+    <hr>
+    <!--p class=helptext>
+    To change default local copy options for item(s) in this Publication choose <b>Default Copy Mode</b>
+    and click <b>Change Copy Mode</b>.
+    </p>
+    <p class=helptext>
+    To change replication mode options for item(s) in this Publication, choose
+    <b>Replication Mode</b> and click <b>Change Repl Mode</b>.  Applicable only for PL/SQL procedures.
+   </p-->
+    <p class=helptext>
+    To change default local copy or/and replication mode options for item(s) in this Publication choose
+    and click <b>Apply</b> button.
+    </p>
+    <hr>
+    <form action="trx_repl_item_adv.vsp" method=post> <!--enctype="multipart/form-data"-->
+     <input type=hidden name="acct" value="<?=_acct?>">
+      <!--table BORDER="0" CELLPADDING="0" CELLSPACING="2" CLASS="genlist">
+      <tr><td class="genlisthead" colspan=2>Default copy mode</td>
+      <td>
+         <select name=iscp>
+	   <option value="1">Drop local copy</option>
+	   <option value="0">Leave local copy</option>
+         </select>
+	</td>
+      <td><input type=submit name=chcp value="Change Copy Mode"></td></tr>
+      <tr><td class=genlisthead colspan=2>Replication mode</td>
+      <td>
+         <select name=sel>
+	   <option value="1">Calls</option>
+	   <option value="2">Definition</option>
+	   <option value="3">Both</option>
+         </select>
+	</td>
+      <td><input type=submit name=chm value="Change Repl Mode"></td></tr>
+      </table-->
+      <table border="0" class="genlist" cellpadding="0" cellspacing="2">
+      <tr>
+        <td class=genlisthead>&nbsp;</td>
+        <td class=genlisthead>Item name</td>
+        <td class=genlisthead>Type</td>
+        <td class=genlisthead>Default copy mode</td>
+        <td class=genlisthead>Repl mode</td>
+      </tr>
+      <?vsp
+        declare _opt, _tp, _md varchar;
+	declare _ll integer;
+        _ll := 0;
+        for select TI_ITEM, TI_OPTIONS as opt, TI_TYPE, TI_IS_COPY from DB.DBA.SYS_TP_ITEM
+            where TI_SERVER = repl_this_server ()
+            and TI_ACCT = _acct  do {
+
+             _ll := _ll + 1;
+	     if (opt = 1)
+	       _opt := 'Calls';
+	     else if (opt = 2)
+	       _opt := 'Definition';
+	     else if (opt = 3)
+	       _opt := 'Both';
+	     else
+	       _opt := 'N/A';
+
+	   if (TI_TYPE = 1)
+	     _tp := 'WebDAV Collection';
+	   else if (TI_TYPE = 2)
+	     _tp := 'Table';
+	   else if (TI_TYPE = 3)
+	     _tp := 'PL/SQL Procedure';
+
+	   if (TI_IS_COPY = 0 or TI_IS_COPY = '0')
+	     _md := 'Keep';
+	   else if (TI_IS_COPY = 1 or TI_IS_COPY = '1')
+	     _md := 'Drop';
+      ?>
+         <tr>
+	  <td class="geninput"><!--input type=checkbox name="CB_<?=TI_ITEM?>"-->&nbsp;</td>
+	  <td class="gendata"><?=TI_ITEM?></td>
+	  <td class="gendata"><?=_tp?></td>
+	  <td class="gendata">
+	    <select name="copy_mode_<?=TI_ITEM?>">
+	      <option value="1" <?=select_if ('Drop', _md)?>>Drop</option>
+	      <option value="0" <?=select_if ('Keep', _md)?>>Keep</option>
+	    </select>
+	  </td>
+	  <td class="gendata">
+           <select name="proc_mode_<?=TI_ITEM?>">
+	   <?vsp if (TI_TYPE = 3)
+	     { ?>
+	     <option value="1" <?=select_if ('Calls', _opt)?>>Calls</option>
+	     <option value="2" <?=select_if ('Definition', _opt)?>>Definition</option>
+	     <option value="3" <?=select_if ('Both', _opt)?>>Both</option>
+	     <?vsp } else {  ?>
+	     <option value="0">N/A</option>
+	     <?vsp }  ?>
+           </select>
+	  </td>
+	 </tr>
+      <?vsp
+        }
+	if (_ll = 0)
+          http ('<tr><td colspan=5>** No procedures replicated **</td></tr>');
+	else  {
+
+      ?>
+	 <tr><td colspan="5" align="right"><input type=submit name="apply" value="Apply"></td></tr>
+      <?vsp } ?>
+      </table>
+    </form>
+
+<hr>
+<h3>Purger configuration for publication "<?=_acct?>"</h3>
+<form action="trx_repl_item_adv.vsp" method="post">
+<input type=hidden name="acct" value="<?=_acct?>">
+<?vsp
+  adm_config_purger_form (repl_this_server(), _acct);
+?>
+</form>
+
+<hr>
+<h3>Subscribers to publication "<?=_acct?>"</h3>
+<form action="trx_repl_item_adv.vsp" method="post">
+<input type=hidden name="acct" value="<?/_acct?>">
+<table class="genlist" border="0" cellpadding="0">
+<tr>
+<td class="genlistheadt">Sel</td>
+<td class="genlistheadt">Subscriber</td>
+<td class="genlistheadt">Valid</td>
+</tr>
+<?vsp
+declare _num integer;
+_num := 0;
+for select RS_SERVER, RS_SUBSCRIBER, RS_VALID from SYS_REPL_SUBSCRIBERS
+    where RS_SERVER = repl_this_server() and RS_ACCOUNT = _acct do {
+  declare _valid varchar;
+  if (RS_VALID <> 0)
+    _valid := 'Yes';
+  else
+    _valid := 'No';
+?>
+<tr>
+<td><input type="checkbox" name="CB_<?=_num?>"</td>
+<td class="gendata"><?=RS_SUBSCRIBER?></td>
+<td class="gendata"><?=_valid?></td>
+<input type="hidden" name="CB_SUB_<?=_num?>" value="<?=RS_SUBSCRIBER?>">
+</tr>
+<?vsp
+  _num := _num + 1;
+}
+?>
+</table>
+
+<table border="0">
+<tr>
+<td><input type=submit name="remove_subscriber" value="Remove"></td>
+<td><input type=submit name="set_valid" value="Set Valid"></td>
+<td><input type=submit name="set_invalid" value="Set Invalid"></td>
+</form>
+
+<form method=post action="trx_repl_subscriber_add.vsp" name="new_form">
+<td><input type=submit name="add_subscriber" value="Add"></td>
+</tr>
+</table>
+<input type=hidden name="acct" value="<?/_acct?>">
+</form>
+
+<?vsp adm_page_footer(); ?>
+</html>

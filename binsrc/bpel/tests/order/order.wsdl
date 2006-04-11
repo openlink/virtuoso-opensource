@@ -1,0 +1,119 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions name="order"
+        targetNamespace="services.wsdl"
+        xmlns:tns="services.wsdl"
+	xmlns:dl="http://temp.uri"
+        xmlns="http://schemas.xmlsoap.org/wsdl/"
+        xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+	xmlns:bpws="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+        >
+        
+  <types>
+      <schema targetNamespace="http://temp.uri" xmlns="http://www.w3.org/2001/XMLSchema">
+	  <element name="orderItems">
+	      <complexType>
+		  <sequence>
+		      <element minOccurs="3" maxOccurs="3" ref="dl:orderItem"/>
+		  </sequence>
+	      </complexType>
+	  </element>
+	  <element name="orderItem" >
+	      <complexType>
+		  <sequence>
+		      <element minOccurs='1' maxOccurs='1' name='itemNo' type='xsd:int' />
+		      <element minOccurs='1' maxOccurs='1' name='quantity' type='xsd:int' />
+		  </sequence>
+	      </complexType>
+	  </element>
+	  <element name="orderItemsResponse">
+	      <complexType>
+		  <sequence minOccurs="3" maxOccurs="3" ref="dl:orderItemResponse"/>
+	      </complexType>
+	  </element>
+	  <element name="orderItemResponse" >
+	      <complexType>
+		  <all>
+		      <element minOccurs='1' maxOccurs='1' name='itemNo' type='xsd:int' />
+		      <element minOccurs='1' maxOccurs='1' name='orderNo' type='xsd:int' />
+		  </all>
+	      </complexType>
+	  </element>
+      </schema>
+  </types>
+
+  
+  <message name="OrderRequestMessage">
+      <part name="payload" element="dl:orderItems"/>
+  </message>
+
+  <message name="OrderResultMessage">
+    <part name="payload" element="dl:orderItemsResponse"/>
+</message>
+
+  <message name="OrderCallbackMessage">
+    <part name="payload" element="dl:orderItemResponse"/>
+  </message>
+
+  <portType name="Order">
+    <operation name="initiate">
+      <input message="tns:OrderRequestMessage"/>
+      <output message="tns:OrderResultMessage"/>
+    </operation>
+  </portType>
+
+  <portType name="OrderCallback">
+    <operation name="onResult">
+      <input message="tns:OrderCallbackMessage"/>
+    </operation>
+  </portType>
+ 
+  <!-- these are from OrderService  -->
+	<message name="orderItemRequest">
+		<part element="dl:orderItem" name="parameters" />
+	</message>
+	<message name="orderItemResponse">
+		<part element="dl:orderItemResponse" name="payload" />
+	</message>
+
+  <bpws:property name="ItemNo" type="xsd:int"/>
+
+  <bpws:propertyAlias propertyName="tns:ItemNo"
+                  messageType="tns:orderItemRequest" part="parameters"
+		  query="/orderItem/itemNo"/>
+  <bpws:propertyAlias propertyName="tns:ItemNo"
+                  messageType="tns:orderItemResponse" part="payload"
+		  query="/orderItemResponse/itemNo"/>
+  
+  <plnk:partnerLinkType name="Order">
+    <plnk:role name="OrderProvider">
+      <plnk:portType name="tns:Order"/>
+    </plnk:role>
+    <plnk:role name="OrderRequester">
+      <plnk:portType name="tns:OrderCallback"/>
+    </plnk:role>
+  </plnk:partnerLinkType>  
+
+</definitions>

@@ -1,0 +1,826 @@
+----------------------------------------------------------------------------
+JDBC 1.2 Implementation
+----------------------------------------------------------------------------
+java.sql.Driver ---> openlink.virtuoso.Driver
+	acceptsURL(String)										Implemented Tested
+	connect(String,Properties) 							Implemented Tested
+	getMajorVersion() 										Implemented Tested
+	getMinorVersion() 										Implemented Tested
+	getPropertyInfo() 										Implemented Tested
+	jdbcCompliant()											Implemented Tested
+	
+java.sql.Connection ---> openlink.virtuoso.VirtuosoConnection
+	clearWarnings()											Implemented
+	close()														Implemented Tested
+	commit() 													Implemented Tested
+	createStatement() 										Implemented Tested
+	getAutoCommit()											Implemented Tested
+	getCatalog()												
+	getMetaData()												Implemented Tested
+	getTransactionIsolation()								Implemented
+	getWarnings()												Implemented
+	isClosed()													Implemented Tested
+	isReadOnly()
+	nativeSQL(String)
+	prepareCall(String)										Implemented Tested
+	prepareStatement(String)								Implemented Tested
+	rollback()													Implemented Tested
+	setAutoCommit(boolean)									Implemented Tested
+	setCatalog(String)
+	setReadOnly(boolean)
+	setTransactionIsolation(int)							Implemented Tested
+	
+java.sql.Statement ---> openlink.virtuoso.VirtuosoStatement
+	cancel() 													Implemented Tested
+	clearWarnings()											Implemented
+	close()														Implemented Tested
+	execute(String)											Implemented Tested
+	executeQuery(String) 									Implemented Tested
+	executeUpdate(String)									Implemented Tested
+	getMaxFieldSize() 										Implemented Tested
+	getMaxRows()		 										Implemented Tested
+	getMoreResults()											Implemented Tested
+	getQueryTimeout() 										Implemented Tested
+	getResultSet() 											Implemented Tested
+	getUpdateCount()											Implemented Tested
+	getWarnings()												Implemented
+	setCursorName(String)									Implemented
+	setEscapeProcessing(boolean)
+	setMaxFieldSize(int) 									Implemented
+	setMaxRows(int)											Implemented Tested
+	setQueryTimeout(int)										Implemented Tested
+	
+java.sql.PreparedStatement ---> openlink.virtuoso.VirtuosoPreparedStatement
+	clearParameters() 										Implemented Tested
+	execute()													Implemented Tested
+	executeQuery() 											Implemented Tested
+	executeUpdate()											Implemented Tested
+	setAsciiStream(int,InputStream,int) 				Implemented Tested
+	setBigDecimal(int,BigDecimal) 						Implemented Tested
+	setBinaryStream(int,InputStream,int) 				Implemented Tested
+	setBoolean(int,boolean) 								Implemented Tested
+	setByte(int,byte) 										Implemented Tested
+	setBytes(int,byte[])										Implemented Tested
+	setDate(int,Date) 										Implemented Tested
+	setDouble(int,double)									Implemented Tested
+	setFloat(int,float)										Implemented Tested
+	setInt(int,int)											Implemented Tested
+	setLong(int,long) 										Implemented Tested
+	setNull(int,int)											Implemented Tested
+	setObject(int,Object)									Implemented
+	setObject(int,Object,int)								Implemented
+	setObject(int,Object,int,int)							Implemented
+	setShort(int,short)										Implemented Tested
+	setString(int,String)									Implemented Tested
+	setTime(int,Time) 										Implemented Tested
+	setTimestamp(int,Timestamp)							Implemented Tested
+	setUnicodeStream(int,InputStream,int)				Implemented
+	
+java.sql.CallableStatement ---> openlink.virtuoso.VirtuosoCallableStatement
+	getBigDecimal(int,int)									Implemented Tested
+	getBoolean(int)											Implemented Tested
+	getByte(int)												Implemented Tested
+	getBytes(int)												Implemented Tested
+	getDate(int)												Implemented Tested
+	getDouble(int) 											Implemented Tested
+	getFloat(int)												Implemented Tested
+	getInt(int) 												Implemented Tested
+	getLong(int)												Implemented Tested
+	getObject(int)												Implemented
+	getShort(int)												Implemented Tested
+	getString(int)												Implemented Tested
+	getTime(int)												Implemented Tested
+	getTimestamp(int)											Implemented Tested
+	registerOutParameter(int,int)							Implemented Tested
+	registerOutParameter(int,int,int)					Implemented Tested
+	wasNull()													Implemented Tested
+
+java.sql.ResultSet ---> openlink.virtuoso.VirtuosoResultSet
+	clearWarnings()											Implemented
+	close()														Implemented Tested
+	findColumn(String)										Implemented Tested
+	getAsciiStream(int)										Implemented Tested
+	getAsciiStream(String)									Implemented Tested
+	getBigDecimal(int,int)									Implemented Tested
+	getBigDecimal(String,int)								Implemented Tested
+	getBinaryStream(int)										Implemented Tested
+	getBinaryStream(String)									Implemented Tested
+	getBoolean(int)											Implemented Tested
+	getBoolean(String)										Implemented Tested
+	getByte(int)												Implemented Tested
+	getByte(String)											Implemented Tested
+	getBytes(int)												Implemented Tested
+	getBytes(String)											Implemented Tested
+	getCursorName()											Implemented
+	getDate(int)												Implemented Tested
+	getDate(String)											Implemented Tested
+	getDouble(int)												Implemented Tested
+	getDouble(String)											Implemented Tested
+	getFloat(int)												Implemented Tested
+	getFloat(String)											Implemented Tested
+	getInt(int)													Implemented Tested
+	getInt(String)												Implemented Tested
+	getLong(int)												Implemented Tested
+	getLong(String)											Implemented Tested
+	getMetaData()												Implemented Tested
+	getObject(int) 											Implemented
+	getObject(String) 										Implemented
+	getShort(int)												Implemented Tested
+	getShort(String)											Implemented Tested
+	getString(int)												Implemented Tested
+	getString(String)											Implemented Tested
+	getTime(int)												Implemented Tested
+	getTime(String)											Implemented Tested
+	getTimestamp(int)											Implemented Tested
+	getTimestamp(String)										Implemented Tested
+	getUnicodeStream(int)									Implemented
+	getUnicodeStream(String)								Implemented
+	getWarnings()												Implemented
+	next()														Implemented Tested
+	wasNull()													Implemented
+	
+java.sql.ResultSetMetaData ---> openlink.virtuoso.VirtuosoResultSetMetaData
+	getCatalogName(int)
+	getColumnCount()											Implemented Tested
+	getColumnDisplaySize(int)								Implemented Tested
+	getColumnLabel(int)										Implemented Tested
+	getColumnName(int)										Implemented Tested
+	getColumnType(int)										Implemented Tested
+	getColumnTypeName(int)									Implemented Tested
+	getPrecision(int) 										Implemented Tested
+	getScale(int)												Implemented Tested
+	getSchemaName(int)
+	getTableName(int)
+	isAutoIncrement(int) 									Implemented Tested
+	isCaseSensitive(int) 									Implemented Tested
+	isCurrency(int)											Implemented Tested
+	isDefinitelyWritable(int)								Implemented Tested
+	isNullable(int)											Implemented Tested
+	isReadOnly(int)											Implemented Tested
+	isSearchable(int) 										Implemented Tested
+	isSigned(int)
+	isWritable(int)											Implemented Tested
+
+java.sql.DatabaseMetaData ---> openlink.virtuoso.VirtuosoDatabaseMetaData
+	allProceduresAreCallable() 							Implemented Tested
+	allTablesAreSelectable()								Implemented Tested
+	dataDefinitionCausesTransactionCommit()			Implemented Tested
+	dataDefinitionIgnoredInTransactions()				Implemented Tested
+	doesMaxRowSizeIncludeBlobs()							Implemented Tested
+	getBestRowIdentifier(String, String, String, int, boolean)
+	getCatalogs()												
+	getCatalogSeparator()									Implemented Tested
+	getCatalogTerm() 											Implemented Tested
+	getColumnPrivileges(String, String, String, String)
+	getColumns(String, String, String, String)		Implemented Tested
+	getCrossReference(String, String, String, String, String, String)
+	getDatabaseProductName()								Implemented Tested
+	getDatabaseProductVersion()							Implemented Tested
+	getDefaultTransactionIsolation() 					Implemented Tested
+	getDriverMajorVersion() 								Implemented Tested
+	getDriverMinorVersion() 								Implemented Tested
+	getDriverName()											Implemented Tested
+	getDriverVersion()										Implemented Tested
+	getExportedKeys(String, String, String)			
+	getExtraNameCharacters()								Implemented Tested
+	getIdentifierQuoteString() 							Implemented Tested
+	getImportedKeys(String, String, String)
+	getIndexInfo(String, String, String, boolean, boolean)
+	getMaxBinaryLiteralLength()							Implemented Tested
+	getMaxCatalogNameLength()								Implemented Tested
+	getMaxCharLiteralLength()								Implemented Tested
+	getMaxColumnNameLength()								Implemented Tested
+	getMaxColumnsInGroupBy()								Implemented Tested
+	getMaxColumnsInIndex()									Implemented Tested
+	getMaxColumnsInOrderBy()								Implemented Tested
+	getMaxColumnsInSelect() 								Implemented Tested
+	getMaxColumnsInTable()									Implemented Tested
+	getMaxConnections()										Implemented Tested
+	getMaxCursorNameLength()								Implemented Tested
+	getMaxIndexLength()										Implemented Tested
+	getMaxProcedureNameLength()							Implemented Tested
+	getMaxRowSize()											Implemented Tested
+	getMaxSchemaNameLength()								Implemented Tested
+	getMaxStatementLength() 								Implemented Tested
+	getMaxStatements()										Implemented Tested
+	getMaxTableNameLength() 								Implemented Tested
+	getMaxTablesInSelect()									Implemented Tested
+	getMaxUserNameLength()									Implemented Tested
+	getNumericFunctions()									Implemented Tested
+	getPrimaryKeys(String, String, String) 			
+	getProcedureColumns(String, String, String, String)
+	getProcedures(String, String, String)				Implemented Tested
+	getProcedureTerm()										Implemented Tested
+	getSchemas()												Implemented Tested
+	getSchemaTerm()											Implemented Tested
+	getSearchStringEscape() 								Implemented Tested
+	getSQLKeywords()											Implemented Tested
+	getStringFunctions() 									Implemented Tested
+	getSystemFunctions() 									Implemented Tested
+	getTablePrivileges(String, String, String)
+	getTables(String, String, String, String[])		Implemented Tested
+	getTableTypes()											
+	getTimeDateFunctions()									Implemented Tested
+	getTypeInfo()												Implemented Tested
+	getURL() 													Implemented Tested
+	getUserName()												Implemented Tested
+	getVersionColumns(String, String, String)
+	isCatalogAtStart()										Implemented Tested
+	isReadOnly()
+	nullPlusNonNullIsNull() 								Implemented Tested
+	nullsAreSortedAtEnd()									Implemented Tested
+	nullsAreSortedAtStart() 								Implemented Tested
+	nullsAreSortedHigh() 									Implemented Tested
+	nullsAreSortedLow()										Implemented Tested
+	storesLowerCaseIdentifiers()							Implemented Tested
+	storesLowerCaseQuotedIdentifiers()					Implemented Tested
+	storesMixedCaseIdentifiers()							Implemented Tested
+	storesMixedCaseQuotedIdentifiers()					Implemented Tested
+	storesUpperCaseIdentifiers()							Implemented Tested
+	storesUpperCaseQuotedIdentifiers()					Implemented Tested
+	supportsAlterTableWithAddColumn()					Implemented Tested
+	supportsAlterTableWithDropColumn()					Implemented Tested
+	supportsANSI92EntryLevelSQL() 						Implemented Tested
+	supportsANSI92FullSQL() 								Implemented Tested
+	supportsANSI92IntermediateSQL()						Implemented Tested
+	supportsCatalogsInDataManipulation()				Implemented Tested
+	supportsCatalogsInIndexDefinitions()				Implemented Tested
+	supportsCatalogsInPrivilegeDefinitions()			Implemented Tested
+	supportsCatalogsInProcedureCalls()					Implemented Tested
+	supportsCatalogsInTableDefinitions()				Implemented Tested
+	supportsColumnAliasing()								Implemented Tested
+	supportsConvert() 										Implemented Tested
+	supportsConvert(int, int)								Implemented Tested
+	supportsCoreSQLGrammar()								Implemented Tested
+	supportsCorrelatedSubqueries()						Implemented Tested
+	supportsDataDefinitionAndDataManipulationTransactions()	Implemented Tested
+	supportsDataManipulationTransactionsOnly()		Implemented Tested
+	supportsDifferentTableCorrelationNames()			Implemented Tested
+	supportsExpressionsInOrderBy() 						Implemented Tested
+   supportsExtendedSQLGrammar()  						Implemented Tested
+   supportsFullOuterJoins() 								Implemented Tested
+   supportsGroupBy() 										Implemented Tested
+   supportsGroupByBeyondSelect() 						Implemented Tested
+   supportsGroupByUnrelated() 							Implemented Tested
+   supportsIntegrityEnhancementFacility() 			Implemented Tested
+   supportsLikeEscapeClause() 							Implemented Tested
+   supportsLimitedOuterJoins() 							Implemented Tested
+   supportsMinimumSQLGrammar() 							Implemented Tested
+   supportsMixedCaseIdentifiers() 						Implemented Tested
+   supportsMixedCaseQuotedIdentifiers() 				Implemented Tested
+   supportsMultipleResultSets()  						Implemented Tested
+   supportsMultipleTransactions() 						Implemented Tested
+   supportsNonNullableColumns()  						Implemented Tested
+   supportsOpenCursorsAcrossCommit() 					Implemented Tested
+   supportsOpenCursorsAcrossRollback() 				Implemented Tested
+   supportsOpenStatementsAcrossCommit() 				Implemented Tested
+   supportsOpenStatementsAcrossRollback() 			Implemented Tested
+   supportsOrderByUnrelated() 							Implemented Tested
+   supportsOuterJoins() 									Implemented Tested
+   supportsPositionedDelete() 							Implemented Tested
+   supportsPositionedUpdate() 							Implemented Tested
+   supportsSchemasInDataManipulation() 				Implemented Tested
+   supportsSchemasInIndexDefinitions() 				Implemented Tested
+   supportsSchemasInPrivilegeDefinitions() 			Implemented Tested
+   supportsSchemasInProcedureCalls() 					Implemented Tested
+   supportsSchemasInTableDefinitions() 				Implemented Tested
+   supportsSelectForUpdate()  							Implemented Tested
+   supportsStoredProcedures() 							Implemented Tested
+   supportsSubqueriesInComparisons() 					Implemented Tested
+   supportsSubqueriesInExists()  						Implemented Tested
+   supportsSubqueriesInIns()  							Implemented Tested
+   supportsSubqueriesInQuantifieds() 					Implemented Tested
+   supportsTableCorrelationNames()  					Implemented Tested
+   supportsTransactionIsolationLevel(int) 			Implemented Tested
+   supportsTransactions()  								Implemented Tested
+   supportsUnion() 											Implemented Tested
+   supportsUnionAll() 										Implemented Tested
+   usesLocalFilePerTable() 								Implemented Tested
+   usesLocalFiles()											Implemented Tested
+
+----------------------------------------------------------------------------
+JDBC 2.0 Implementation
+----------------------------------------------------------------------------
+java.sql.Driver ---> openlink.virtuoso.Driver
+	acceptsURL(String)										Implemented Tested
+	connect(String,Properties) 							Implemented Tested
+	getMajorVersion() 										Implemented Tested
+	getMinorVersion() 										Implemented Tested
+	getPropertyInfo() 										Implemented Tested
+	jdbcCompliant()											Implemented Tested
+	
+java.sql.Connection ---> openlink.virtuoso.VirtuosoConnection
+	clearWarnings()											Implemented
+	close()														Implemented Tested
+	commit() 													Implemented Tested
+	createStatement() 										Implemented Tested
+	createStatement(int,int) 								Implemented Tested	JDBC2
+	getAutoCommit()											Implemented Tested
+	getCatalog()												
+	getMetaData()												Implemented Tested
+	getTransactionIsolation()								Implemented
+	getTypeMap()																			JDBC2
+	getWarnings()												Implemented
+	isClosed()													Implemented Tested
+	isReadOnly()
+	nativeSQL(String)
+	prepareCall(String)										Implemented Tested
+	prepareCall(String,int,int)							Implemented Tested	JDBC2
+	prepareStatement(String)								Implemented Tested
+	prepareStatement(String,int,int)						Implemented Tested	JDBC2
+	rollback()													Implemented Tested
+	setAutoCommit(boolean)									Implemented Tested
+	setCatalog(String)
+	setReadOnly(boolean)
+	setTransactionIsolation(int)							Implemented Tested
+	setTypeMap(Map)																		JDBC2
+
+java.sql.Statement ---> openlink.virtuoso.VirtuosoStatement
+	addBatch(String)											Implemented Tested	JDBC2
+	cancel() 													Implemented Tested
+	clearBatch()												Implemented Tested	JDBC2
+	clearWarnings()											Implemented
+	close()														Implemented Tested
+	execute(String)											Implemented Tested
+	executeBatch() 											Implemented Tested	JDBC2
+	executeQuery(String) 									Implemented Tested
+	executeUpdate(String)									Implemented Tested
+	getConnection()											Implemented Tested	JDBC2
+	getFetchDirection()										Implemented Tested	JDBC2
+	getFetchSize()												Implemented Tested	JDBC2
+	getMaxFieldSize() 										Implemented Tested
+	getMaxRows()		 										Implemented Tested
+	getMoreResults()											Implemented Tested
+	getQueryTimeout() 										Implemented Tested
+	getResultSet() 											Implemented Tested
+	getResultSetConcurrency()								Implemented Tested	JDBC2
+	getResultSetType()										Implemented Tested	JDBC2
+	getUpdateCount()											Implemented Tested
+	getWarnings()												Implemented
+	setCursorName(String)									Implemented
+	setEscapeProcessing(boolean)
+	setFetchDirection(int)									Implemented Tested	JDBC2
+	setFetchSize(int)											Implemented Tested	JDBC2
+	setMaxFieldSize(int) 									Implemented
+	setMaxRows(int)											Implemented Tested
+	setQueryTimeout(int)										Implemented Tested
+	
+java.sql.PreparedStatement ---> openlink.virtuoso.VirtuosoPreparedStatement
+	addBatch(String)											Implemented Tested	JDBC2
+	clearParameters() 										Implemented Tested
+	execute()													Implemented Tested
+	executeQuery() 											Implemented Tested
+	executeUpdate()											Implemented Tested
+	setArray(int,Array)																	JDBC2
+	setAsciiStream(int,InputStream,int) 				Implemented Tested
+	setBigDecimal(int,BigDecimal) 						Implemented Tested
+	setBinaryStream(int,InputStream,int) 				Implemented Tested
+	setBlob(int,Blob) 										Implemented Tested	JDBC2
+	setBoolean(int,boolean) 								Implemented Tested
+	setByte(int,byte) 										Implemented Tested
+	setBytes(int,byte[])										Implemented Tested
+	setCharacterStream(int,Reader,int)					Implemented Tested	JDBC2
+	setClob(int,Clob) 										Implemented Tested	JDBC2
+	setDate(int,Date) 										Implemented Tested
+	setDate(int,Date,Calandar) 							Implemented 			JDBC2
+	setDouble(int,double)									Implemented Tested
+	setFloat(int,float)										Implemented Tested
+	setInt(int,int)											Implemented Tested
+	setLong(int,long) 										Implemented Tested
+	setNull(int,int)											Implemented Tested
+	setNull(int,int,String)																JDBC2
+	setObject(int,Object)									Implemented
+	setObject(int,Object,int)								Implemented
+	setObject(int,Object,int,int)							Implemented
+	setRef(int,Ref)																		JDBC2
+	setShort(int,short)										Implemented Tested
+	setString(int,String)									Implemented Tested
+	setTime(int,Time) 										Implemented Tested
+	setTime(int,Time,Calendar) 							Implemented 			JDBC2
+	setTimestamp(int,Timestamp)							Implemented Tested
+	setTimestamp(int,Timestamp,Calendar)				Implemented 			JDBC2
+	setUnicodeStream(int,InputStream,int)				Implemented
+	
+java.sql.CallableStatement ---> openlink.virtuoso.VirtuosoCallableStatement
+	getArray(int)																			JDBC2
+	getBigDecimal(int)										Implemented Tested	JDBC2
+	getBigDecimal(int,int)									Implemented Tested
+	getBlob(int)												Implemented Tested	JDBC2
+	getBoolean(int)											Implemented Tested
+	getByte(int)												Implemented Tested
+	getBytes(int)												Implemented Tested
+	getClob(int)												Implemented Tested	JDBC2
+	getDate(int)												Implemented Tested
+	getDate(int,Calendar)									Implemented 			JDBC2
+	getDouble(int) 											Implemented Tested
+	getFloat(int)												Implemented Tested
+	getInt(int) 												Implemented Tested
+	getLong(int)												Implemented Tested
+	getObject(int)												Implemented
+	getObject(int,Map)																	JDBC2
+	getRef(int) 																			JDBC2
+	getShort(int)												Implemented Tested
+	getString(int)												Implemented Tested
+	getTime(int)												Implemented Tested
+	getTime(int,Calandar)									Implemented 			JDBC2
+	getTimestamp(int)											Implemented Tested
+	getTimestamp(int,Calandar)								Implemented 			JDBC2
+	registerOutParameter(int,int)							Implemented Tested
+	registerOutParameter(int,int,int)					Implemented Tested
+	registerOutParameter(int,int,String)											JDBC2
+	wasNull()													Implemented Tested
+
+java.sql.ResultSet ---> openlink.virtuoso.VirtuosoResultSet
+	absolute(int)												Implemented Tested	JDBC2
+	afterLast() 												Implemented Tested	JDBC2
+	beforeFirst()												Implemented Tested	JDBC2
+	cancelRowUpdate() 										Implemented Tested	JDBC2
+	clearWarnings()											Implemented
+	close()														Implemented Tested
+	deleteRow() 												Implemented Tested	JDBC2
+	findColumn(String)										Implemented Tested
+	first()														Implemented Tested	JDBC2
+	getArray(int)																			JDBC2
+	getArray(String)																		JDBC2
+	getAsciiStream(int)										Implemented Tested
+	getAsciiStream(String)									Implemented Tested
+	getBigDecimal(int)										Implemented Tested	JDBC2
+	getBigDecimal(int,int)									Implemented Tested
+	getBigDecimal(String)									Implemented Tested	JDBC2
+	getBigDecimal(String,int)								Implemented Tested
+	getBinaryStream(int)										Implemented Tested
+	getBinaryStream(String)									Implemented Tested
+	getBlob(int)												Implemented Tested	JDBC2
+	getBlob(String)											Implemented Tested	JDBC2
+	getBoolean(int)											Implemented Tested
+	getBoolean(String)										Implemented Tested
+	getByte(int)												Implemented Tested
+	getByte(String)											Implemented Tested
+	getBytes(int)												Implemented Tested
+	getBytes(String)											Implemented Tested
+	getCharacterStream(int) 								Implemented Tested	JDBC2
+	getCharacterStream(String) 							Implemented Tested	JDBC2
+	getClob(int)												Implemented Tested	JDBC2
+	getClob(String)											Implemented Tested	JDBC2
+	getConcurrency()											Implemented Tested	JDBC2
+	getCursorName()											Implemented
+	getDate(int)												Implemented Tested
+	getDate(int,Calandar)									Implemented Tested	JDBC2
+	getDate(String)											Implemented Tested
+	getDate(String,Calandar)								Implemented Tested	JDBC2
+	getDouble(int)												Implemented Tested
+	getDouble(String)											Implemented Tested
+	getFetchDirection()										Implemented Tested	JDBC2
+	getFetchSize()												Implemented Tested	JDBC2
+	getFloat(int)												Implemented Tested
+	getFloat(String)											Implemented Tested
+	getInt(int)													Implemented Tested
+	getInt(String)												Implemented Tested
+	getLong(int)												Implemented Tested
+	getLong(String)											Implemented Tested
+	getMetaData()												Implemented Tested
+	getObject(int) 											Implemented
+	getObject(int,Map) 																	JDBC2
+	getObject(String) 										Implemented
+	getObject(String,Map) 																JDBC2
+	getRef(int) 																			JDBC2
+	getRef(String) 																		JDBC2
+	getRow() 													Implemented Tested	JDBC2
+	getShort(int)												Implemented Tested
+	getShort(String)											Implemented Tested
+	getStatement() 											Implemented Tested	JDBC2
+	getString(int)												Implemented Tested
+	getString(String)											Implemented Tested
+	getTime(int)												Implemented Tested
+	getTime(int,Calandar)									Implemented Tested	JDBC2
+	getTime(String)											Implemented Tested
+	getTime(String,Calandar)								Implemented Tested	JDBC2
+	getTimestamp(int)											Implemented Tested
+	getTimestamp(int,Calandar)								Implemented Tested	JDBC2
+	getTimestamp(String)										Implemented Tested
+	getTimestamp(String,Calandar)							Implemented Tested	JDBC2
+	getType()													Implemented Tested	JDBC2
+	getUnicodeStream(int)									Implemented
+	getUnicodeStream(String)								Implemented
+	getWarnings()												Implemented
+	insertRow() 												Implemented Tested	JDBC2
+	isAfterLast()												Implemented Tested	JDBC2
+	isBeforeFirst()											Implemented Tested	JDBC2
+	isFirst()													Implemented Tested	JDBC2
+	isLast() 													Implemented Tested	JDBC2
+	last()														Implemented Tested	JDBC2
+	moveToCurrentRow()										Implemented Tested	JDBC2
+	moveToInsertRow() 										Implemented Tested	JDBC2
+	next()														Implemented Tested
+	previous()													Implemented Tested	JDBC2
+	refreshRow()												Implemented Tested	JDBC2
+	relative(int)												Implemented Tested	JDBC2
+	rowDeleted()												Implemented Tested	JDBC2
+	rowInserted()												Implemented Tested	JDBC2
+	rowUpdated()												Implemented Tested	JDBC2
+	setFetchDirection()										Implemented Tested	JDBC2
+	setFetchSize() 											Implemented Tested	JDBC2
+	updateAsciiStream(int,InputStream,int) 			Implemented Tested	JDBC2
+	updateAsciiStream(String,InputStream,int) 		Implemented Tested	JDBC2
+	updateBigDecimal(int,BigDecimal) 					Implemented Tested	JDBC2
+	updateBigDecimal(String,BigDecimal) 				Implemented Tested	JDBC2
+	updateBinaryStream(int,InputStream,int) 			Implemented Tested	JDBC2
+	updateBinaryStream(String,InputStream,int) 		Implemented Tested	JDBC2
+	updateBoolean(int,boolean) 							Implemented Tested	JDBC2
+	updateBoolean(String,boolean) 						Implemented Tested	JDBC2
+	updateByte(int,byte) 									Implemented Tested	JDBC2
+	updateByte(String,byte) 								Implemented Tested	JDBC2
+	updateBytes(int,byte[])									Implemented Tested	JDBC2
+	updateBytes(String,byte[])								Implemented Tested	JDBC2
+	updateCharacterStream(int,Reader,int)				Implemented Tested	JDBC2
+	updateCharacterStream(String,Reader,int)			Implemented Tested	JDBC2
+	updateDate(int,Date) 									Implemented Tested	JDBC2
+	updateDate(String,Date) 								Implemented Tested	JDBC2
+	updateDate(int,Date,Calandar) 						Implemented 			JDBC2
+	updateDate(String,Date,Calandar) 					Implemented 			JDBC2
+	updateDouble(int,double)								Implemented Tested	JDBC2
+	updateDouble(String,double)							Implemented Tested	JDBC2
+	updateFloat(int,float)									Implemented Tested	JDBC2
+	updateFloat(String,float)								Implemented Tested	JDBC2
+	updateInt(int,int)										Implemented Tested	JDBC2
+	updateInt(String,int)									Implemented Tested	JDBC2
+	updateLong(int,long) 									Implemented Tested	JDBC2
+	updateLong(String,long) 								Implemented Tested	JDBC2
+	updateNull(int)											Implemented Tested	JDBC2
+	updateNull(String)										Implemented Tested	JDBC2
+	updateObject(int,Object)								Implemented 			JDBC2
+	updateObject(int,Object,int)							Implemented 			JDBC2
+	updateObject(String,Object)							Implemented 			JDBC2
+	updateObject(String,Object,int)						Implemented 			JDBC2
+	updateRow() 												Implemented Tested	JDBC2
+	updateShort(int,short)									Implemented Tested	JDBC2
+	updateShort(String,short)								Implemented Tested	JDBC2
+	updateString(int,String)								Implemented Tested	JDBC2
+	updateString(String,String)							Implemented Tested	JDBC2
+	updateTime(int,Time) 									Implemented Tested	JDBC2
+	updateTime(int,Time,Calendar) 						Implemented 			JDBC2
+	updateTime(String,Time) 								Implemented Tested	JDBC2
+	updateTime(String,Time,Calendar) 					Implemented 			JDBC2
+	updateTimestamp(int,Timestamp)						Implemented Tested	JDBC2
+	updateTimestamp(int,Timestamp,Calendar)			Implemented 			JDBC2
+	updateTimestamp(String,Timestamp)					Implemented Tested	JDBC2
+	updateTimestamp(String,Timestamp,Calendar)		Implemented 			JDBC2
+	wasNull()													Implemented
+	
+java.sql.ResultSetMetaData ---> openlink.virtuoso.VirtuosoResultSetMetaData
+	getCatalogName(int)
+	getColumnClassName(int) 								Implemented 			JDBC2
+	getColumnCount()											Implemented Tested
+	getColumnDisplaySize(int)								Implemented Tested
+	getColumnLabel(int)										Implemented Tested
+	getColumnName(int)										Implemented Tested
+	getColumnType(int)										Implemented Tested
+	getColumnTypeName(int)									Implemented Tested
+	getPrecision(int) 										Implemented Tested
+	getScale(int)												Implemented Tested
+	getSchemaName(int)
+	getTableName(int)
+	isAutoIncrement(int) 									Implemented Tested
+	isCaseSensitive(int) 									Implemented Tested
+	isCurrency(int)											Implemented Tested
+	isDefinitelyWritable(int)								Implemented Tested
+	isNullable(int)											Implemented Tested
+	isReadOnly(int)											Implemented Tested
+	isSearchable(int) 										Implemented Tested
+	isSigned(int)
+	isWritable(int)											Implemented Tested
+
+java.sql.DatabaseMetaData ---> openlink.virtuoso.VirtuosoDatabaseMetaData
+	allProceduresAreCallable() 							Implemented Tested
+	allTablesAreSelectable()								Implemented Tested
+	dataDefinitionCausesTransactionCommit()			Implemented Tested
+	dataDefinitionIgnoredInTransactions()				Implemented Tested
+	deletesAreDetected(int) 								Implemented Tested	JDBC2
+	doesMaxRowSizeIncludeBlobs()							Implemented Tested
+	getBestRowIdentifier(String, String, String, int, boolean)
+	getCatalogs()												
+	getCatalogSeparator()									Implemented Tested
+	getCatalogTerm() 											Implemented Tested
+	getColumnPrivileges(String, String, String, String)
+	getColumns(String, String, String, String)		Implemented Tested
+	getCrossReference(String, String, String, String, String, String)
+	getDatabaseProductName()								Implemented Tested
+	getDatabaseProductVersion()							Implemented Tested
+	getDefaultTransactionIsolation() 					Implemented Tested
+	getDriverMajorVersion() 								Implemented Tested
+	getDriverMinorVersion() 								Implemented Tested
+	getDriverName()											Implemented Tested
+	getDriverVersion()										Implemented Tested
+	getExportedKeys(String, String, String)			
+	getExtraNameCharacters()								Implemented Tested
+	getIdentifierQuoteString() 							Implemented Tested
+	getImportedKeys(String, String, String)
+	getIndexInfo(String, String, String, boolean, boolean)
+	getMaxBinaryLiteralLength()							Implemented Tested
+	getMaxCatalogNameLength()								Implemented Tested
+	getMaxCharLiteralLength()								Implemented Tested
+	getMaxColumnNameLength()								Implemented Tested
+	getMaxColumnsInGroupBy()								Implemented Tested
+	getMaxColumnsInIndex()									Implemented Tested
+	getMaxColumnsInOrderBy()								Implemented Tested
+	getMaxColumnsInSelect() 								Implemented Tested
+	getMaxColumnsInTable()									Implemented Tested
+	getMaxConnections()										Implemented Tested
+	getMaxCursorNameLength()								Implemented Tested
+	getMaxIndexLength()										Implemented Tested
+	getMaxProcedureNameLength()							Implemented Tested
+	getMaxRowSize()											Implemented Tested
+	getMaxSchemaNameLength()								Implemented Tested
+	getMaxStatementLength() 								Implemented Tested
+	getMaxStatements()										Implemented Tested
+	getMaxTableNameLength() 								Implemented Tested
+	getMaxTablesInSelect()									Implemented Tested
+	getMaxUserNameLength()									Implemented Tested
+	getNumericFunctions()									Implemented Tested
+	getPrimaryKeys(String, String, String) 			
+	getProcedureColumns(String, String, String, String)
+	getProcedures(String, String, String)				Implemented Tested
+	getProcedureTerm()										Implemented Tested
+	getSchemas()												Implemented Tested
+	getSchemaTerm()											Implemented Tested
+	getSearchStringEscape() 								Implemented Tested
+	getSQLKeywords()											Implemented Tested
+	getStringFunctions() 									Implemented Tested
+	getSystemFunctions() 									Implemented Tested
+	getTablePrivileges(String, String, String)
+	getTables(String, String, String, String[])		Implemented Tested
+	getTableTypes()											
+	getTimeDateFunctions()									Implemented Tested
+	getTypeInfo()												Implemented Tested
+	getUDTs(String,String,String,int[]) 											JDBC2
+	getURL() 													Implemented Tested
+	getUserName()												Implemented Tested
+	getVersionColumns(String, String, String)
+	insertsAreDetected(int) 								Implemented Tested	JDBC2
+	isCatalogAtStart()										Implemented Tested
+	isReadOnly()
+	nullPlusNonNullIsNull() 								Implemented Tested
+	nullsAreSortedAtEnd()									Implemented Tested
+	nullsAreSortedAtStart() 								Implemented Tested
+	nullsAreSortedHigh() 									Implemented Tested
+	nullsAreSortedLow()										Implemented Tested
+	othersDeletesAreVisible(int)  						Implemented Tested	JDBC2
+	othersInsertsAreVisible(int)  						Implemented Tested	JDBC2
+	othersUpdatesAreVisible(int)  						Implemented Tested	JDBC2
+	ownDeletesAreVisible(int)  							Implemented Tested	JDBC2
+	ownInsertsAreVisible(int)  							Implemented Tested	JDBC2
+	ownUpdatesAreVisible(int)								Implemented Tested	JDBC2
+	storesLowerCaseIdentifiers()							Implemented Tested
+	storesLowerCaseQuotedIdentifiers()					Implemented Tested
+	storesMixedCaseIdentifiers()							Implemented Tested
+	storesMixedCaseQuotedIdentifiers()					Implemented Tested
+	storesUpperCaseIdentifiers()							Implemented Tested
+	storesUpperCaseQuotedIdentifiers()					Implemented Tested
+	supportsAlterTableWithAddColumn()					Implemented Tested
+	supportsAlterTableWithDropColumn()					Implemented Tested
+	supportsANSI92EntryLevelSQL() 						Implemented Tested
+	supportsANSI92FullSQL() 								Implemented Tested
+	supportsANSI92IntermediateSQL()						Implemented Tested
+	supportsCatalogsInDataManipulation()				Implemented Tested
+	supportsCatalogsInIndexDefinitions()				Implemented Tested
+	supportsCatalogsInPrivilegeDefinitions()			Implemented Tested
+	supportsCatalogsInProcedureCalls()					Implemented Tested
+	supportsCatalogsInTableDefinitions()				Implemented Tested
+	supportsColumnAliasing()								Implemented Tested
+	supportsConvert() 										Implemented Tested
+	supportsConvert(int, int)								Implemented Tested
+	supportsCoreSQLGrammar()								Implemented Tested
+	supportsCorrelatedSubqueries()						Implemented Tested
+	supportsDataDefinitionAndDataManipulationTransactions()	Implemented Tested
+	supportsDataManipulationTransactionsOnly()		Implemented Tested
+	supportsDifferentTableCorrelationNames()			Implemented Tested
+	supportsExpressionsInOrderBy() 						Implemented Tested
+   supportsExtendedSQLGrammar()  						Implemented Tested
+   supportsFullOuterJoins() 								Implemented Tested
+   supportsGroupBy() 										Implemented Tested
+   supportsGroupByBeyondSelect() 						Implemented Tested
+   supportsGroupByUnrelated() 							Implemented Tested
+   supportsIntegrityEnhancementFacility() 			Implemented Tested
+   supportsLikeEscapeClause() 							Implemented Tested
+   supportsLimitedOuterJoins() 							Implemented Tested
+   supportsMinimumSQLGrammar() 							Implemented Tested
+   supportsMixedCaseIdentifiers() 						Implemented Tested
+   supportsMixedCaseQuotedIdentifiers() 				Implemented Tested
+   supportsMultipleResultSets()  						Implemented Tested
+   supportsMultipleTransactions() 						Implemented Tested
+   supportsNonNullableColumns()  						Implemented Tested
+   supportsOpenCursorsAcrossCommit() 					Implemented Tested
+   supportsOpenCursorsAcrossRollback() 				Implemented Tested
+   supportsOpenStatementsAcrossCommit() 				Implemented Tested
+   supportsOpenStatementsAcrossRollback() 			Implemented Tested
+   supportsOrderByUnrelated() 							Implemented Tested
+   supportsOuterJoins() 									Implemented Tested
+   supportsPositionedDelete() 							Implemented Tested
+   supportsPositionedUpdate() 							Implemented Tested
+   supportsSchemasInDataManipulation() 				Implemented Tested
+   supportsSchemasInIndexDefinitions() 				Implemented Tested
+   supportsSchemasInPrivilegeDefinitions() 			Implemented Tested
+   supportsSchemasInProcedureCalls() 					Implemented Tested
+   supportsSchemasInTableDefinitions() 				Implemented Tested
+   supportsSelectForUpdate()  							Implemented Tested
+   supportsStoredProcedures() 							Implemented Tested
+   supportsSubqueriesInComparisons() 					Implemented Tested
+   supportsSubqueriesInExists()  						Implemented Tested
+   supportsSubqueriesInIns()  							Implemented Tested
+   supportsSubqueriesInQuantifieds() 					Implemented Tested
+   supportsTableCorrelationNames()  					Implemented Tested
+   supportsTransactionIsolationLevel(int) 			Implemented Tested
+   supportsTransactions()  								Implemented Tested
+   supportsUnion() 											Implemented Tested
+   supportsUnionAll() 										Implemented Tested
+	updatesAreDetected(int) 								Implemented Tested	JDBC2
+   usesLocalFilePerTable() 								Implemented Tested
+   usesLocalFiles()											Implemented Tested
+
+java.sql.Blob ---> openlink.virtuoso.VirtuosoBlob
+	getBinaryStream() 										Implemented 			JDBC2
+	getBytes(long,int)										Implemented Tested	JDBC2
+	length() 													Implemented Tested	JDBC2
+	position(Blob,long)										Implemented 			JDBC2
+	position(byte[],long)									Implemented 			JDBC2
+
+java.sql.Clob ---> openlink.virtuoso.VirtuosoBlob
+	getAsciiStream()  										Implemented 			JDBC2
+	getCharacterStream() 									Implemented 			JDBC2
+	getSubstring(long,int)									Implemented Tested	JDBC2
+	length() 													Implemented Tested	JDBC2
+	position(Clob,long)										Implemented 			JDBC2
+	position(String,long)									Implemented 			JDBC2
+	
+java.sql.Array
+	getArray()																				JDBC2
+	getArray(long,int) 																	JDBC2
+	getArray(long,int,Map)  															JDBC2
+	getArray(Map)  																		JDBC2
+	getBaseType()  																		JDBC2
+	getBaseTypeName() 																	JDBC2
+	getResultSet() 																		JDBC2
+	getResultSet(long,int)  															JDBC2
+	getResultSet(long,int,Map) 														JDBC2
+	getResultSet(Map) 																	JDBC2
+
+java.sql.Ref
+	getBaseTypeName() 																	JDBC2
+	
+java.sql.Struct
+	getAttributes()																		JDBC2
+	getAttributes(Map)																	JDBC2
+	getSQLTypeName()																		JDBC2
+	
+java.sql.SQLData
+	getSQLTypeName()																		JDBC2
+	readSQL(SQLInput,String)															JDBC2
+	writeSQL(SQLOutput)																	JDBC2
+	
+java.sql.SQLInput
+	readArray() 																			JDBC2
+	readAsciiStream() 																	JDBC2
+	readBigDecimal()  																	JDBC2
+	readBinaryStream() 																	JDBC2
+	readBlob()  																			JDBC2
+	readBoolean()  																		JDBC2
+	readByte()  																			JDBC2
+	readBytes() 																			JDBC2
+	readCharacterStream() 																JDBC2
+	readClob()  																			JDBC2
+	readDate()  																			JDBC2
+	readDouble() 																			JDBC2
+	readFloat() 																			JDBC2
+	readInt() 																				JDBC2
+	readLong()  																			JDBC2
+	readObject() 																			JDBC2
+	readRef() 																				JDBC2
+	readShort() 																			JDBC2
+	readString() 																			JDBC2
+	readTime()  																			JDBC2
+	readTimestamp() 																		JDBC2
+	wasNull()																				JDBC2
+	
+java.sql.SQLOutput
+	writeArray(Array) 	  																JDBC2
+	writeAsciiStream(InputStream) 	  												JDBC2
+	writeBigDecimal(BigDecimal)	 													JDBC2
+	writeBinaryStream(InputStream)	 												JDBC2
+	writeBlob(Blob)	 																	JDBC2
+	writeBoolean(boolean)	 															JDBC2
+	writeByte(byte) 																		JDBC2
+	writeBytes(byte[])	 																JDBC2
+	writeCharacterStream(Reader)	 													JDBC2
+	writeClob(Clob)	 																	JDBC2
+	writeDate(Date)	 																	JDBC2
+	writeDouble(double)	 																JDBC2
+	writeFloat(float)  	 																JDBC2
+	writeInt(int)	 																		JDBC2
+	writeLong(long)	 																	JDBC2
+	writeObject(SQLData) 	  															JDBC2
+	writeRef(Ref)	 																		JDBC2
+	writeShort(short)  																	JDBC2
+	writeString(String)	 																JDBC2
+	writeStruct(Struct)	 																JDBC2
+	writeTime(Time)	 																	JDBC2
+	writeTimestamp(Timestamp)  														JDBC2

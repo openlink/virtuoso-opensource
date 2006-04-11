@@ -1,0 +1,62 @@
+/*
+ *  sqlver.h
+ *
+ *  $Id$
+ *
+ *  Build & Version information, license control
+ *  
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *  
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *  
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  
+ *  
+*/
+
+#define PRODUCT_COPYRIGHT	"Copyright (C) OpenLink Software 1999-2006"
+#define PRODUCT_NAME		"OpenLink Virtuoso"
+
+/* DBMS Server */
+/*#define PRODUCT_DBMS		PRODUCT_NAME " VDBMS"*/
+#define PRODUCT_DBMS		PRODUCT_NAME
+#define DBMS_SRV_NAME		PRODUCT_DBMS " Universal Server"
+#define DBMS_SRV_VER_ONLY	"04.50"
+#define DBMS_SRV_GEN_MAJOR	"29"
+#define DBMS_SRV_GEN_MINOR	"02"
+#define DBMS_SRV_VER		DBMS_SRV_VER_ONLY "." \
+				DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR
+
+/* Database compatibility version */
+#define DBMS_STORAGE_VER	"2300"
+
+/* ODBC Driver */
+#define PRODUCT_ODBC		PRODUCT_NAME " ODBC"
+#define ODBC_DRV_NAME		PRODUCT_ODBC " Driver"
+#define ODBC_DRV_VER_ONLY	"04.50"
+#define ODBC_DRV_GEN_MAJOR	DBMS_SRV_GEN_MAJOR
+#define ODBC_DRV_GEN_MINOR	DBMS_SRV_GEN_MINOR
+#define ODBC_DRV_VER		ODBC_DRV_VER_ONLY "." \
+				ODBC_DRV_GEN_MAJOR ODBC_DRV_GEN_MINOR
+
+#define ODBC_DRV_VER_G_NO(v)	atoi (&(v)[6])
+
+
+extern char *build_date;
+extern char *build_host_id;
+extern char *build_opsys_id;
+extern char *build_thread_model;
+extern const char *build_special_server_model;
+void build_set_special_server_model (const char *new_model);

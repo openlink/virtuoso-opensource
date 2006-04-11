@@ -1,0 +1,69 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="RE-DS-1">
+  <refmeta>
+    <refentrytitle>Replication Demo between two Datsources (DSNs)</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Replication Demo between two Datsources (DSNs)</refname>
+    <refpurpose>Replication Demo between two Datsources (DSNs)</refpurpose>
+  </refnamediv>
+
+<refsect1 id="RE-DS-1a">
+<title>Preliminaries</title>
+<para>This sample shows how to replicate two heterogeneous DSNs (MySQL DSN and Microsoft SQL Server DSN for example) with all logic in Virtuoso.
+    The replicated table has two columns. First is varchar Primary key, second integer representing user data.
+</para>
+
+<title> Sample includes: </title>
+
+<itemizedlist mark="bullet">
+  <listitem>Select DSN for demo. There must be two connected DSNs to start the sample.</listitem>
+  <listitem>Create tables on the two DSNs.</listitem>
+  <listitem>Attach tables from these DSNs.</listitem>
+  <listitem>Show simple page with table content.</listitem>
+</itemizedlist>
+
+<title> How it works: </title>
+<itemizedlist mark="bullet">
+    <listitem>The Primary key plus timestamp column from source is replicated locally.</listitem>
+    <listitem>On initial state  all date from the first DSN  s copyed to the Second.</listitem>
+    <listitem>The user table on the first DSN has one timestamp column more that the table on the second. This column is used to get new / changed rows on replication state.</listitem>
+</itemizedlist>
+
+</refsect1>
+
+<refsect1 id="RE-DS-1b">
+    <title>Instructions for setting:</title>
+<orderedlist>
+    <listitem>Click on the "Set Initial State" to create virtuoso table.</listitem>
+    <listitem>Click on the "Run" links to actually experience the demo.</listitem>
+</orderedlist>
+
+<para>Important: This sample is not thread save.
+</para>
+
+</refsect1>
+</refentry>

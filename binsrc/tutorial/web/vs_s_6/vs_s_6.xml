@@ -1,0 +1,84 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-S-6">
+  <refmeta>
+    <refentrytitle>Web Server Setup</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Examples of Mapping</refname>
+    <refpurpose>Multiple interfaces setup</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-S-6a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+  <listitem>The Web server can listen on multiple physical interfaces.</listitem>
+  <listitem>Requests for each interface can be dispatched to a separate directory.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-S-6b">
+<title>Using the Virtual Directories UI</title>
+<itemizedlist mark="bullet">
+  <listitem>Login to the Conductor UI using the dba account.</listitem>
+  <listitem>Go to "WebDAV &amp; HTTP" tab and then go to the "HTTP Hosts &amp; Directories" tab.</listitem>
+  <listitem>In the empty fields below the list of HTTP Listeners enter:</listitem>
+  <listitem>In the "HTTP Host" field the qualified name of the host.</listitem>
+  <listitem>In the "Interface" field the qualified name of the interface to listen to.</listitem>
+  <listitem>In the "Port" field the port number to listen on.</listitem>
+  <listitem>Press the "Add" button.</listitem>
+  <listitem>Create a "/www2" directory under the HTTPServer ServerRoot directory. This will be used for the new mapping.</listitem>
+  <listitem>Click the icon in front of the Interface value.</listitem>
+  <listitem>Click the "Add new directory" link.</listitem>
+  <listitem>Choose the "File System" type and press the button "Next>>".</listitem>
+  <listitem>Enter for "Path" "/www2" and enter "/www2/" (or select with "Browse" button the same directory) in the "Physical path" location.</listitem>
+  <listitem>To give execute permission, specify the VSP user. (See also: <ulink url="../vs_b_1/vs_b_1.vsp">VS-B-1 example</ulink>)</listitem>
+  <listitem>Press the "Save Changes" button.</listitem>
+  <listitem>Repeat this setup for another interface, directing to a different path (for example WebDAV repository).</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-S-6c">
+<title>Testing the Virtual Directories</title>
+<itemizedlist mark="bullet">
+  <listitem>To test the definition enter http://[first_interface:port]/ in location box of your browser. After this try http://[second_interface:port]/</listitem>
+  <listitem>Note that you may test this using official host name and localhost. The local loopback is also a possibility for a second interface.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-S-6d">
+<title>Equivalent SQL commands for above</title>
+<itemizedlist mark="bullet">
+  <listitem>Connect to the Virtuoso server via ISQL utility as the DBA user.</listitem>
+  <listitem><para>Define a virtual directory mapping for the host alias:</para>
+     <programlisting>
+SQL&gt; vhost_define (vhost=&gt;'[first interface]:4444',lhost=&gt;'[first interface]:4444',
+                      lpath=&gt;'/',ppath=&gt;'/www2/', def_page=&gt;'index.html', is_brws=&gt;1);
+SQL&gt; vhost_define (vhost=&gt;'[second interface]:4444',lhost=&gt;'[first interface]:4444',
+                      lpath=&gt;'/',ppath=&gt;'/DAV/', is_dav=&gt;1, def_page=&gt;'index.html', is_brws=&gt;1);
+     </programlisting></listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

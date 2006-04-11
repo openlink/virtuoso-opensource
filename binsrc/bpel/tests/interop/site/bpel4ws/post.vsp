@@ -1,0 +1,79 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare aComments, aRes any;
+  declare
+    sManifactor,
+    sProduct,
+    sVersion,
+    sItestName,
+    sEndPoint,
+    sFiles,
+    sDate,
+    sContact,
+    sServer,
+    sSender,
+    sErr varchar;
+
+  sServer := 'mail2.openlinksw.com';
+  sSender := 'rtsekova@openlinksw.com';
+  sErr := '';
+
+  sManifactor := get_keyword ('manf', params, '');
+  sProduct := get_keyword ('prct', params, '');
+  sVersion := get_keyword ('vrsn', params, '');
+  sItestName := get_keyword ('pname', params, '');
+  sEndPoint := get_keyword ('pend', params, '');
+  sFiles := get_keyword ('fils', params, '');
+  sDate := get_keyword ('date', params, '');
+  aComments := get_keyword ('comt', params, '');
+  sContact := get_keyword ('cmail', params, '');
+
+  if ( get_keyword ('submit', params, '') <> '')
+  {
+    aRes := string_output();
+    http('<InteropTest>\n',aRes);
+    http(sprintf('<Manifactor>%s</Manifactor>\n',sManifactor),aRes);
+    http(sprintf('<Product>%s</Product>\n',sProduct),aRes);
+    http(sprintf('<Version>%s</Version>\n',sVersion),aRes);
+    http(sprintf('<InteropTestName>%s</InteropTestName>\n',sItestName),aRes);
+    http(sprintf('<EndPoint>%s</EndPoint>\n',sEndPoint),aRes);
+    http('<Files>\n',aRes);
+    http_value(sFiles,null,aRes);
+    http('</Files>\n',aRes);
+    http(sprintf('<Date>%s</Date>\n',sDate),aRes);
+    http('<Comments>\n',aRes);
+    http_value(aComments,null,aRes);
+    http('</Comments>\n',aRes);
+    http(sprintf('<Contact>%s</Contact>\n',sContact),aRes);
+    http('</InteropTest>\n',aRes);
+    aRes := string_output_string(aRes);
+
+    declare exit handler for sqlstate '*' { sErr := __SQL_MESSAGE; };
+      {
+        smtp_send (sServer, sSender, sSender, aRes);
+        sErr := 'Message successfully sent';
+      };
+  };
+  http_value (xslt('file://bpel4ws/post.xsl',xml_tree_doc(xml_tree('<page/>')), vector('err',sErr)));
+?>

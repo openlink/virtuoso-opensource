@@ -1,0 +1,82 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+
+  declare _q, _tab4cols, err_http, _owner varchar;
+
+  if (not adm_check_auth (lines))
+     {
+       adm_tell_unauth (lines);
+       return (0);
+     }
+
+  err_http := adm_tbls_action (params);
+
+  _q := get_keyword ('q', params, '');
+  _tab4cols := get_keyword ('tab', params, '');
+  _owner := get_keyword ('own', params, '');
+
+  if ('' = _q)
+    _q := 'db';
+?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <!--script language="javascript" src="admin_tables.js"></script-->
+    <script language="javascript" src="admin_utils.js"></script>
+    <title>Tables for <?= _q ?></title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Scheduled events mgmt using Virtuoso VSP">
+  </head>
+<?vsp adm_page_header(concat('Tables for ',_q), 'databases'); ?>
+<?include adm_js_check.vsp ?>
+    <form method="POST" action="admin_tables_verify.vsp">
+
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING=0 CELLSPACING=0>
+<?vsp
+    if (not is_empty_or_null (err_http))
+      {
+        http (err_http);
+      }
+?>
+    <input type="hidden" name="q" value="<?= _q ?>">
+
+	  <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+	    <TR>
+	      <TD class="genlistheadt"><input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)"></TD>
+	      <TH class="genlistheadt">Table</TH>
+	      <TH class="genlistheadt">Action</TH>
+	    </TR>
+	    <?vsp adm_tbls_list(_q, _tab4cols, _owner); ?>
+		<TR><TD COLSPAN="3" ALIGN="right"><input type="submit" name="drop" value="Drop Selected"></TD></TR>
+	  </TABLE>
+
+    </form>
+<?vsp adm_page_footer(); ?>
+</html>
+
+

@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="servphpext">
+<title>Writing PHP Applications</title>
+
+<para>The PHP server extension allows Virtuoso to execute PHP (v4) pages
+stored in the file system or in Virtuoso’s WebDAV repository.   PHP pages run inside the Virtuoso process.</para>
+
+<figure id="http_handler_php" float="1"><title>The HTTP PHP handler</title>
+  <graphic fileref="http_handler_php.jpg" format="jpeg"></graphic></figure>
+
+<para>
+The VSE __http_handler_php() has been implemented so that the file
+extension '.php' is recognised by Virtuoso to switch between 'normal' mode and
+extension processing for PHP mode in the HTTP/WebDAV services.</para>
+
+<para>PHP (recursive acronym for "PHP: Hypertext Preprocessor") is a widely-used
+Open Source general-purpose scripting language that is suited for Web-based
+development.  Here is an example of a simple PHP page:</para>
+
+<example id="ex_phpintro"><title>PHP introductory example</title>
+
+<programlisting><![CDATA[
+<html>
+    <head>
+        <title>Example</title>
+    </head>
+    <body>
+
+        <?php
+        echo "Hi, I'm a PHP script!";
+        ?>
+
+    </body>
+</html>
+]]></programlisting>
+</example>
+
+<para>Notice how this is similar to VSP script, and different from a script
+written in other languages like Perl or C -- instead of writing a program
+with lots of commands to output HTML, you write an HTML script with
+some embedded code to do something. The PHP code is enclosed in
+special start and end tags that allow you to jump into and out of "PHP mode".</para>
+
+<tip><title>See Also:</title>
+  <para><ulink url="http://www.php.net/docs.php">PHP Online Documentation</ulink></para>
+  <para><link linkend="inprocess">In-Process Data Access Client</link></para></tip>
+
+<sect2 id="serverphpbuild"><title>Building the Virtuoso Server With PHP Extension</title>
+
+<orderedlist>
+<listitem>
+Firstly you need to have the PHP4 library installed with Zend and ODBC interface enabled.
+On UNIX-es this can be enabled by doing 'configure --enable-experimental-zts --with-iodbc'.
+On Windows the library must be downloaded from the <ulink url="http://www.php.net/">php.net</ulink> site.
+</listitem>
+
+<listitem>
+Make sure that the iODBC library is installed if you are preparing to build on UNIX platform.
+</listitem>
+
+<listitem>
+Make the bif_server_php executable in the bifsdk/examples/ directory.  This same directory
+contains the source file for the bif_server_php executable: bif_server_php.cpp.
+</listitem>
+</orderedlist>
+
+<para>
+The Virtuoso distribution may already contain a binary executable of the
+PHP extension of the Virtuoso's Web Service.  In which case you may skip the build process
+and start the server with the PHP extensions instead of starting the normal virtuoso
+server executable.
+</para>
+
+<para>
+To start and test the Virtuoso server with  the PHP extension do the following:
+</para>
+
+<orderedlist>
+<listitem>
+<para>
+Make a simple file 'info.php' and place it in the HTTP root directory.
+The content of the info.php file should be the single line: </para>
+<programlisting><![CDATA[
+<?phpinfo();?>
+]]></programlisting>
+<para>
+This function produces an HTML page containing various PHP processor information.
+</para>
+</listitem>
+<listitem>
+Start the server.  For Linux platform: bif_server_php -f, for Windows
+platform: bif_server_php-odbc-t.exe -f</listitem>
+<listitem>
+Test the installation by entering the http://[host:port]/info.php as the
+URL of a browser of your choosing.
+</listitem>
+</orderedlist>
+
+<note><title>Note:</title>
+<para>Windows users will need to install the php4ts.dll (from the
+<ulink url="http://www.php.net/">php.net</ulink> site) before running the
+PHP enabled Virtuoso server.  This DLL must be in the system path when Virtuoso
+starts and can typically be placed in the %SYSTEMROOT% directory without any path
+modifications.</para>
+</note>
+
+<note><title>Note:</title>
+<para>The PHP library used with Virtuoso must be version 4.3.1 or greater.
+From this version the PHP libary includes a serious PHP CGI vulnerability fix,
+without which the Virtuoso server will fail to start for security reasons.</para>
+</note>
+
+</sect2>
+
+<sect2 id="serverphpinc">
+<title>PHP Extension Functions</title>
+
+<para>
+The following functions have been added to the Virtuoso server in order to enable PHP processing.
+</para>
+
+<formalpara id="phphandlerfunction"><title>PHP Server Handler</title>
+
+<funcsynopsis id="fsyn_http_handler_php">
+  <funcprototype id="fproto_http_handler_php">
+    <funcdef><function>__http_handler_php</function></funcdef>
+    <paramdef>in <parameter>file_name</parameter> varchar</paramdef>
+    <paramdef>in <parameter>params</parameter> vector (opt1, value [,...]) or string session</paramdef>
+    <paramdef>in <parameter>lines</parameter> vector (opt, value[,...] )</paramdef>
+    <paramdef><optional>inout <parameter>what</parameter> any</optional></paramdef>
+  </funcprototype>
+</funcsynopsis>
+
+<para>
+This function will be detected and called automatically by the Virtuoso HTTP/WebDAV
+server when a request for a file with extension .php is made.
+</para>
+
+<itemizedlist mark="bullet">
+<listitem>
+The <emphasis>file_name</emphasis> argument will be the path to the file when the PHP page is stored on the
+file system or the actual content of the page when a WebDAV resource is processed.
+</listitem>
+<listitem>
+The content of request entity body will be stored in a string session
+and passed down to the __http_handler_php as the <emphasis>params</emphasis> argument.
+</listitem>
+<listitem>
+The HTTP request header will be passed as the <emphasis>lines</emphasis> argument.
+</listitem>
+<listitem>
+The <emphasis>what</emphasis> parameter is used for in two ways: to indicate whether the first argument is a
+path/file name to a file on the filesystem or the content of the required WebDAV resource.
+The HTTP/WebDAV server will return an array of two elements to this parameter.
+</listitem>
+</itemizedlist>
+</formalpara>
+
+<formalpara id="phpinlineprocessor"><title>PHP Processor</title>
+
+<funcsynopsis id="fsyn_php_str">
+  <funcprototype id="fproto_php_str">
+    <funcdef><function>__http_php_str</function></funcdef>
+    <paramdef>in <parameter>string</parameter> varchar</paramdef>
+    <paramdef>in <parameter>params</parameter> vector (opt1, val1 [,...]) , varchar</paramdef>
+  </funcprototype>
+</funcsynopsis>
+
+<para>
+This function takes a string containing PHP code (page), and parameters supplied in the
+params array and returns the result from the PHP engine as a string.
+This can be useful for performing PHP transformations in PL or VSP code.
+</para>
+
+<itemizedlist mark="bullet">
+<listitem>the <emphasis>string</emphasis> is the source of the PHP page</listitem>
+<listitem><emphasis>params</emphasis> is a string or array of strings containing parameter
+name and parameter value pairs.  In the case of a single string it must contain form
+parameters in the application/x-www-form-urlencoded encoding.
+In case of an aref of strings it must contain the name and value for parameters.
+(Like the params argument in the VSPs).
+</listitem>
+</itemizedlist>
+</formalpara>
+</sect2>
+
+<sect2 id="serverphpexamples"><title>PHP Examples</title>
+<example id="ex_serverphpstr">
+<title>Examples of the php_str() usage</title>
+
+<para>
+Unless the examples are shown as executed in the ISQL tool, this can be made also in the Virtuoso/PL code.
+</para>
+
+<programlisting><![CDATA[
+
+SQL> select php_str ('<?php echo "Hello World"?>');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+Hello World
+
+SQL> select php_str ('<?php print abs (-1);?>');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+1
+
+SQL> set MACRO_SUBSTITUTION off;
+SQL> select php_str ('<?php echo $a?>', 'a=Hello+World');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+Hello World
+
+SQL> select php_str ('<?php echo $a?>', vector ('a', 'Hello World'));
+callret
+VARCHAR
+_______________________________________________________________________________
+
+Hello World
+
+SQL> select php_str ('<?php echo "$a $b"?>', 'a=Hello+World&b=Hello+Again+World');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+Hello World Hello Again World
+
+SQL> select php_str ('<?php $a=1; $b=2; $c=3; $d=$a+$b+$c; echo $d?>');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+6
+
+SQL>  select php_str ('<?php $a=8; $b=4; $c=8; echo $a|$b&$c?>');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+8
+
+]]></programlisting>
+</example>
+
+
+<example id="serverphpredir">
+<title>Examples of the php redirect page</title>
+
+<para>
+This is test how the PHP processor can instruct the HTTP server to send a custom
+response and header to the user agent.  The following page can stored on
+the file system or in the WebDAV repository (in which case execution rights must be enabled).
+Hitting that page will redirect user-agent to the index.html page in HTTP server root.
+</para>
+
+<programlisting><![CDATA[
+<?php
+  header ("HTTP/1.1 302 Found");
+  header ("Location: /index.html");
+?>
+]]></programlisting>
+</example>
+
+</sect2>
+
+</sect1>

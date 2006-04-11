@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="replicationandsynchronization">
+	<title>Replication &amp; Synchronization</title>
+
+	<sect2 id="snapshotreplication">
+		<title>Snapshot Replication</title>
+	<para>
+To replicate local table(s) to another data source click <emphasis>New</emphasis> and follow the wizard.
+</para>
+	<para>
+To copy the changes from the local table to the remote select some replications and
+press <emphasis>Sync</emphasis>
+</para>
+	<para>
+To drop the replication definition without dropping the destination table select some replications and press
+<emphasis>Delete</emphasis>
+</para>
+	<para>
+To drop the replication definition and the destination table select some replications and
+press <emphasis>Delete &amp; Drop Remote</emphasis>
+</para>
+	<para>
+To copy the changes from the local table to the remote automatically select some
+replications, enter minutes in <emphasis>Scheduled Interval</emphasis> and
+press <emphasis>Schedule</emphasis>
+</para>
+	<para>
+To remove scheduled update select the replications enter 0 in "Scheduled Interval" and press Schedule
+</para>
+        <figure float="1"><title>Snapshot Replication</title>
+          <graphic fileref="ui/replt_ss_01.jpg" width="524px" depth="175px"/></figure>
+        <figure float="1"><title>Snapshot Replication</title>
+          <graphic fileref="ui/replt_ss_add_01.jpg" width="540px" depth="198px"/></figure>
+        <figure float="1"><title>Snapshot Replication</title>
+          <graphic fileref="ui/replt_ss_add_02.jpg" width="568px" depth="328px"/></figure>
+        <figure float="1"><title>Snapshot Replication</title>
+          <graphic fileref="ui/replt_ss_add_03.jpg" width="626px" depth="546px"/></figure>
+	</sect2>
+
+	<sect2 id="transactionalreplication">
+		<title>Transactional Replication</title>
+		<sect3 id="publications">
+			<title>Publications</title>
+<para>The Transaction Publication screen lists publications.  You can add, edit or 
+remove publications as necessary, each time using the guide-lines of the wizard.</para>
+
+        <figure float="1"><title>Transaction Replication - Publications</title>
+          <graphic fileref="ui/repltranspub001.jpg" width="479px" depth="175px"/></figure>
+
+<simplelist>
+ <member>Add a new publication by clicking on the <emphasis>New</emphasis> button.</member>
+ <member>Edit an existing publication by clicking on publication name.</member>
+ <member>Remove publications by selecting their checkbox and clicking on the 
+  <emphasis>Delete</emphasis> button.  Use caution, as this action cannot be reverted.</member>
+</simplelist>
+
+<para>When creating a new publication you must supply a name.  At this point 
+you have the option to create an updateable publication - see the 
+<link linkend="bidirtransrepl">Bi-Directional Transactional Replication</link> 
+section for more details - which allows updates to come from subscribers 
+rather than being limited to originating from the publisher only.</para>
+
+        <figure float="1"><title>Transaction Replication - New Publication</title>
+          <graphic fileref="ui/repltranspub002.jpg" width="580px" depth="151px"/></figure>
+
+<para>Once a new publication has been made you can add database objects to 
+it using the <emphasis>Add ...</emphasis> buttons, or remove them by selecting 
+their checkbox and using the <emphasis>Remove</emphasis> button.  To add a 
+new table to the publication click on <emphasis>Add Table/Procedure</emphasis>.
+Follow the wizard by choosing the appropriate database/catalog by clicking on its name, 
+you will then be presented with the tables within it.</para>
+
+        <figure float="1"><title>Transaction Replication - Publish Tables and Procedures</title>
+          <graphic fileref="ui/repltranspub003.jpg" width="546px" depth="232px"/></figure>
+
+<para>Select the tables to publish using the checkboxes and press 
+<emphasis>Add to publication</emphasis> to add the tables and continue.</para>
+
+<para>Once returned the publication screen, the published tables will be listed.  
+Updatable publication will need conflict resolvers incase of conflicting data 
+arriving from a subscriber.  Click on the table name to manage the resolvers 
+list.</para>
+
+		<figure float="1"><title>Transaction Replication - Published Items</title>
+          <graphic fileref="ui/repltranspub004.jpg" width="543px" depth="325px"/></figure>
+
+<para>Use the <emphasis>Add</emphasis>/<emphasis>Remove</emphasis> to add 
+or remove selected resolvers.</para>
+
+<para>Click on <emphasis>Add</emphasis> to add a new resolver.  You have the 
+following details to contend with:</para>
+
+<itemizedlist>
+    <listitem><emphasis>Name Suffix</emphasis>
+      <para>Conflict resolver name suffix.</para></listitem>
+    <listitem><emphasis>Order</emphasis>
+      <para>Resolver order number.</para></listitem>
+    <listitem><emphasis>Type</emphasis>
+      <para>The resolver type, one of: Insert, Update, or Delete for resolving 
+	  such SQL queries.</para></listitem>
+    <listitem><emphasis>Class</emphasis>
+      <para>The kind of resolver.  Class can be one of the following:</para> 
+<simplelist>
+  <member><emphasis>&#39;max&#39;</emphasis>
+  row with maximum value of specified column wins</member>
+  <member><emphasis>&#39;min&#39;</emphasis>
+  row with minumum value of specified column wins</member>
+  <member><emphasis>&#39;ave&#39;</emphasis>
+  new value of specified column is calculated as: 
+<computeroutput>current_val = (current_val + new_val) / 2</computeroutput></member>
+  <member><emphasis>&#39;add&#39;</emphasis>
+  new value of specified column is calculated as: 
+<computeroutput>current_val = current_val + (new_val - old_val) </computeroutput></member>
+  <member><emphasis>&#39;pub_wins&#39;</emphasis></member>
+  <member><emphasis>&#39;custom&#39;</emphasis>
+  publisher always wins</member>
+  <member><emphasis>&#39;sub_wins&#39;</emphasis>
+  subscriber always wins</member>
+</simplelist>
+</listitem>
+    <listitem><emphasis>Column</emphasis>
+      <para>This should specify the column name if <computeroutput>class</computeroutput> is not one of &#39;pub_wins&#39;, &#39;sub_wins&#39; or &#39;custom&#39;.</para></listitem>
+</itemizedlist>
+
+		<figure float="1"><title>Transaction Replication - Resolvers</title>
+          <graphic fileref="ui/repltranspub006.jpg" width="475px" depth="158px"/></figure>
+
+
+
+		<figure float="1"><title>Transaction Replication - Advanced</title>
+          <graphic fileref="ui/repltranspub005.jpg" width="785px" depth="578px"/></figure>
+
+		</sect3>
+		<sect3 id="subscriptions">
+			<title>Subscriptions</title>
+		<para>
+To add new subscription click at New and follow the wizard
+</para>
+		<para>
+Select subscription to change properties
+</para>
+		<para>
+To drop subscription click at link Drop
+</para>
+		<para>
+To synchronize all subscriptions click at Sync all button
+</para>
+		<para>
+To disconnect all subscriptions click at Disconnect all button
+</para>
+		<para>
+To load image file click at Load image button and follow the wizard
+</para>
+        <figure float="1"><title>Transaction Replication - Subscription</title>
+          <graphic fileref="ui/replt_trans_sub_01.jpg" width="648px" depth="423px"/></figure>
+        <figure float="1"><title>Transaction Replication - Subscription</title>
+          <graphic fileref="ui/replt_trans_sub_02.jpg" width="597px" depth="176px"/></figure>
+
+		</sect3>
+	</sect2>
+</sect1>

@@ -1,0 +1,10 @@
+2000-04-03  Norman Walsh  <ndw@nwalsh.com>
+
+	* docbook.xsl: Added banner comment
+
+	* docbook.xsl: New file.
+
+	* helpset.xsl, map.xsl, toc.xsl: New file.
+
+	* helpset.xsl, map.xsl, toc.xsl: JavaHelp release
+

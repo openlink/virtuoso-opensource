@@ -1,0 +1,167 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<ma:AuctionWatchList
+    xmlns:ma="http://www.AuctionMediatorCompany.com/AuctionWatch"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    xmlns:anyzone="http://www.AuctionMediatorCompany.com/auctioneers#anyzone"
+    xmlns:eachbay="http://www.AuctionMediatorCompany.com/auctioneers#eachbay"
+    xmlns:yabadoo="http://www.AuctionMediatorCompany.com/auctioneers#yabadoo"
+>
+
+<!-- ________________________________________________________________________________ -->
+
+<ma:Auction anyzone:ID="0321K372910">
+
+    <ma:AuctionHomepage
+        xlink:type="simple"
+        xlink:href="http://auction.anyzone.com/item/0321K372910"
+    />
+
+    <ma:Schedule>
+        <ma:Open    xmlns:dt="http://www.w3.org/1999/XMLSchema-datatypes"
+                dt:type="timeInstant">2000-03-21:07:41:34-05:00</ma:Open>
+        <ma:Close    xmlns:dt="http://www.w3.org/1999/XMLSchema-datatypes"
+                dt:type="timeInstant">2000-03-23:07:41:34-05:00</ma:Close>
+    </ma:Schedule>
+    
+    <ma:Price>
+        <ma:Start ma:currency="USD">3.00</ma:Start>
+        <ma:Current ma:currency="USD">10.00</ma:Current>
+        <ma:Number_of_Bids>5</ma:Number_of_Bids>
+    </ma:Price>
+
+    <ma:Trading_Partners>
+        <ma:High_Bidder>
+            <eachbay:ID>RecordsRUs</eachbay:ID>
+            <eachbay:PositiveComments>231</eachbay:PositiveComments>
+            <eachbay:NeutralComments>2</eachbay:NeutralComments>
+            <eachbay:NegativeComments>5</eachbay:NegativeComments>
+            <ma:MemberInfoPage
+                xlink:type="simple"
+                xlink:href="http://auction.eachbay.com/members?get=RecordsRUs"
+                xlink:role="ma:MemberInfoPage"
+            />            
+        </ma:High_Bidder>
+        <ma:Seller>
+            <anyzone:ID>VintageRecordFreak</anyzone:ID>
+            <anyzone:Member_Since>October 1999</anyzone:Member_Since>
+            <anyzone:Rating>5</anyzone:Rating>
+            <ma:MemberInfoPage
+                xlink:type="simple"
+                xlink:href="http://auction.anyzone.com/members/VintageRecordFreak"
+                xlink:role="ma:MemberInfoPage"
+            />
+        </ma:Seller>
+    </ma:Trading_Partners>
+
+    <ma:Details>
+        <record xmlns="http://www.musicdatabase.org/music/records">
+            <artist>Miles Davis</artist>
+            <title>In a Silent Way</title>
+            <recorded>1969</recorded>
+            <label>Columbia Records</label>
+            <remark>
+                With Miles Davis (trumpet), Herbie Hancock (Electric Piano),
+                Chick Corea (Electric Piano), Wayne Shorter (Tenor Sax), Josef Zawinul
+                (Electric Piano &amp;amp; Organ), John McLaughlin (Guitar), and
+                Tony Williams ( Drums).    The liner notes were written by Frank Glenn,
+                and the record is in fine condition. 
+            </remark>
+        </record>
+    </ma:Details>
+
+</ma:Auction>
+
+<!-- ________________________________________________________________________________ -->
+
+
+<ma:Auction yabadoo:ID="13143816">
+
+    <ma:AuctionHomepage
+        xlink:type="simple"
+        xlink:href="http://auctions.yabadoo.com/auction/13143816"
+    />
+
+    <ma:Schedule>
+        <ma:Open    xmlns:dt="http://www.w3.org/1999/XMLSchema-datatypes"
+                dt:type="timeInstant">2000-03-19:17:03:00-04:00</ma:Open>
+        <ma:Close    xmlns:dt="http://www.w3.org/1999/XMLSchema-datatypes"
+                dt:type="timeInstant">2000-03-29:17:03:00-04:00</ma:Close>
+    </ma:Schedule>
+    
+    <ma:Price>
+        <ma:Start ma:currency="USD">3.00</ma:Start>
+        <ma:Current ma:currency="USD">3.00</ma:Current>
+        <ma:Number_of_Bids>0</ma:Number_of_Bids>
+    </ma:Price>
+
+    <ma:Trading_Partners>
+        <ma:High_Bidder>
+            <eachbay:ID>VintageRecordFreak</eachbay:ID>
+            <eachbay:PositiveComments>232</eachbay:PositiveComments>
+            <eachbay:NeutralComments>0</eachbay:NeutralComments>
+            <eachbay:NegativeComments>0</eachbay:NegativeComments>
+            <ma:MemberInfoPage
+                xlink:type="simple"
+                xlink:href="http://auction.eachbay.com/showRating/user=VintageRecordFreak"
+                xlink:role="ma:MemberInfoPage"
+            />            
+        </ma:High_Bidder>
+        <ma:Seller xmlns:seller="http://www.AuctionMediatorCompany.com/auctioneers#eachbay">
+            <seller:ID>StarsOn45</seller:ID>
+            <seller:PositiveComments>80</seller:PositiveComments>
+            <seller:NeutralComments>1</seller:NeutralComments>
+            <seller:NegativeComments>2</seller:NegativeComments>
+            <ma:MemberInfoPage
+                xlink:type="simple"
+                xlink:href="http://auction.eachbay.com/showRating/user=StarsOn45"
+                xlink:role="ma:MemberInfoPage"
+            />            
+        </ma:Seller>
+    </ma:Trading_Partners>
+
+    <ma:Details>
+        <record xmlns="http://www.musicdatabase.org/music/records">
+            <artist>Wynton Marsalis</artist>
+            <title>Think of One ...</title>
+            <recorded>1983</recorded>
+            <label>Columbia Records</label>
+            <remark xml:lang="en">
+                Columbia Records 12" 33-1/3 rpm LP, #FC-38641, Stereo. The record is
+                still clean and shiny and looks unplayed (looks like NM condition).
+                The cover has very light surface and edge wear.
+            </remark>
+            <remark xml:lang="de">
+                Columbia Records 12" 33-1/3 rpm LP, #FC-38641, Stereo. Die Platte
+                ist noch immer sauber und gl&#19386;end und sieht ungespielt aus
+                (NM Zustand). Das Cover hat leichte Abnutzungen an Oberfl&#18664;e und Ecken.
+            </remark>
+
+        </record>
+    </ma:Details>
+
+</ma:Auction>         
+
+</ma:AuctionWatchList>

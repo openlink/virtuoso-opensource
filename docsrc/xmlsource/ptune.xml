@@ -1,0 +1,973 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="ptune"><title>Performance Tuning</title>
+	<!-- ======================================== -->
+	<sect2 id="IO">
+		<title>I/O</title>
+		<sect3 id="DISKIO">
+			<title>Optimizing Disk I/O</title>
+			<para>
+Virtuoso allows splitting a database over several files that
+may be on different devices.  By allocating database fragments onto
+independent disks I/O performance in both random and sequential database
+operations can be greatly enhanced.
+</para>
+			<para>
+The basic unit of a database is the segment. A segment consists of an
+integer number of 8K pages.  A segment may consist of one or more files called
+stripes. If a segment has multiple stripes these will be of identical
+length and the segment size will be an integer multiple of the stripe size.
+</para>
+			<para>
+The size limit on individual database files is platform dependent, but 64 bit file offsets are used where available. 
+For large databases use of multiple disks and segments is recommended for reasons of parallelism even though a single database file can get very large. 
+A database can in principle grow up to 32TB (32-bit page number with 8KB per page).
+</para>
+			<para>
+When a segment is striped each logically consecutive page resides in a different
+file, thus for a segment of 2 stripes the first stripe will contain
+all even numbered pages and the second all the odd numbered pages. The
+stripes of a segment should always be located on independent disks.
+</para>
+			<para>
+In serving multiple clients that do random access to tables the server can
+perform multiple disk operations in parallel, taking advantage of the independent
+devices. Striping guarantees a statistically uniform access frequency to all
+devices holding stripes of a segment.
+</para>
+			<para>
+The random access advantages of striping are available without any specific configuring
+besides that of the stripes themselves.
+</para>
+		</sect3>
+		<sect3 id="IOQS">
+			<title>Configuring I/O queues</title>
+			<para>
+Striping is also useful for a single client doing long sequential
+read operations.  The server can detect the serial nature of an operation, for
+example a count of all rows in a table and can intelligently prefetch rows.
+</para>
+			<para>
+If the table is located in a striped segment then the server will read all
+relevant disks in parallel if these disks are allocated to different I/O queues.
+</para>
+			<para>
+All stripes of different segments on one device should form an I/O queue.
+The idea is that the database stripes that benefit
+from being sequentially read form a separate queue. All queues are then read and written
+independently, each on a different thread. This means that a thread
+will be allocated per queue. If no queues are declared all database files, even if located
+on different disks share one queue.
+</para>
+			<para>
+A queue is declared in the striping section by specifying a stripe
+id after the path of the file.
+</para>
+			<programlisting>
+[Striping]
+Segment1 = 200M, (disk1/db-seg1-1.db iq1, (disk2/db-seg1-2.db iq2
+Segment2 = 200M, (disk1/db-seg2-1.db iq1, (disk2/db-seg2-2.db iq2
+</programlisting>
+			<para>
+In the above example the first stripes of the segments form one queue
+and the second stripes form another. This makes sense because now all database files
+on /disk1 are in iq1 and all on /disk2 are on iq2.
+</para>
+			<para>
+This configuration could have resulted from originally planning a 200 MB database
+split on 2 disks and subsequently expanding that by another 200 MB.
+</para>
+			<para>
+The I/O queue identifier can be an arbitrary string. As many background I/O threads
+will be made as there are distinct I/O queues.
+</para>
+			<para>
+Striping and using I/O queues can multiply sequential read rates by a factor almost
+equal to the number of independent disks.  On the other hand assigning stripes on one disk
+to different queues can have a very detrimental effect. The rule is that all that is physically
+accessed sequentially will be on the same queue.
+</para>
+		</sect3>
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="SCHEMAS">
+		<title>Schema Design Considerations</title>
+		<sect3 id="DataOrg">
+			<title>Data Organization</title>
+			<para>
+One should keep the following in mind when designing a schema for
+maximum efficiency.
+</para>
+		</sect3>
+		<sect3 id="IndexUsage">
+			<title>Index Usage</title>
+			<para>
+A select from a table using a non-primary key will need to retrieve the
+main row if there are search criteria on columns appearing on the main row
+or output columns that have to be fetched from the main row. Operations
+are noticeably faster if they can be completed without fetching the main
+row if the driving key is a non-primary key. This is the case when search
+criteria and output columns are on the secondary key parts or primary
+key parts. Note that all secondary keys contain a copy of the primary
+key. For this purpose it may be useful to add trailing key parts to a
+secondary key.	Indeed, a secondary key can hold all the columns of a row
+as trailing key parts. This slows insert and update but makes reference
+to the main row unnecessary when selecting using the secondary key.
+</para>
+			<para>
+A sequential read on the primary key is always fastest.  A sequential
+search with few hits can be faster on a secondary key if the criterion
+can be evaluated without reference to the main row. This is because a
+short key can have more entries per page.
+</para>
+		</sect3>
+		<sect3 id="SpaceConsump">
+			<title>Space Consumption</title>
+			<para>
+Each column takes the space &apos;naturally&apos; required by its value. No field
+lengths are preallocated.  Space consumption for columns is the following:
+</para>
+			<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+				<title>Data type Space Consumption</title>
+				<tgroup align="char" charoff="50" char="." cols="2">
+					<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+					<thead>
+						<row>
+							<entry>Data</entry>
+							<entry>Bytes</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>Integer below 128</entry>
+							<entry>1</entry>
+						</row>
+						<row>
+							<entry>Smallint</entry>
+							<entry>2</entry>
+						</row>
+						<row>
+							<entry>long</entry>
+							<entry>4</entry>
+						</row>
+						<row>
+							<entry>float</entry>
+							<entry>4</entry>
+						</row>
+						<row>
+							<entry>timestamp</entry>
+							<entry>10</entry>
+						</row>
+						<row>
+							<entry>double</entry>
+							<entry>8</entry>
+						</row>
+						<row>
+							<entry>string</entry>
+							<entry>2 + characters</entry>
+						</row>
+						<row>
+							<entry>NULL</entry>
+							<entry>data length for fixed length column, as value of 0 length for variable length column. </entry>
+						</row>
+						<row>
+							<entry>BLOB</entry>
+							<entry>88 on row + n x 8K (see note below)</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+			<para>
+If a BLOB fits in the remaining free bytes on a row after non-LOBs are stored,
+it is stored inline and consumes only 3 bytes + BLOB length.
+			</para>
+			<para>
+Each index entry  has an overhead of 4 bytes.
+ This applies to the primary key as well as any other keys. The
+length of the concatenation of the key parts is added to this. For the
+primary key the length of all columns are summed. For any other key the
+lengths of the key parts plus any primary key parts not on the secondary
+key are summed.  The maximum length of a row is 4076 bytes.
+</para>
+			<para>
+In light of these points primary keys should generally be short.
+</para>
+		</sect3>
+		<sect3 id="PageAlloc">
+			<title>Page Allocation</title>
+			<para>
+For data inserted in random order pages tend to be 3/4 full. For data
+inserted in ascending order pages will be about 90% full due to a
+different splitting point for a history of rising inserts.
+</para>
+		</sect3>
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="EfficientSQL">
+		<title>Efficient Use of SQL - SQL Execution profiling</title>
+		<para>
+Virtuoso offers an execution profiling mechanism that keeps track of the
+relative time consumption and response times of different SQL statements.
+	</para>
+		<para>
+Profiling can be turned on or off with the prof_enable function.  When profiling is on, the
+real time between the start and end of each SQL statement execute call is logged on the server.
+When prof_enable is called for the second time the statistics gathered between the
+last call to prof_enable and this call are dumped to the virtprof.out file in the server&apos;s
+working directory.
+	</para>
+		<para>
+Profiling is off by default.  Profiling can be turned on with the statement:
+	</para>
+		<programlisting>
+prof_enable (1);
+</programlisting>
+		<para>
+The virtprof.out file will be generated when prof_enable is called for the second time, e.g.
+	</para>
+		<programlisting>
+prof_enable (0);
+</programlisting>
+		<para>
+will write the file and turn profiling back off.
+	</para>
+		<para>
+Below is a sample profile output file:
+	</para>
+		<screen>
+Query Profile (msec)
+Real 183685, client wait 2099294, avg conc 11.428772 n_execs 26148 avg exec  80
+
+99 % under 1 s
+99 % under 2 s
+99 % under 5 s
+100 % under 10 s
+100 % under 30 s
+
+23 stmts compiled 26 msec, 99 % prepared reused.
+
+ %  total n-times n-errors
+49 % 1041791  7952     53     new_order
+28 % 602789   8374     490   delivery_1
+12 % 259833   8203     296   payment
+5  % 123162   821      35    slevel
+2  % 54182    785      0     ostat (?, ?, ?, ?)
+0  % 11614    4        0     checkpoint
+0  % 2790     2        1     select no_d_id, count (*) from new_orde
+0  % 2457     3        1     select count (*) from new_order
+0  % 662      2        0     status ()
+0  % 11       1        1     set autocommit on
+0  % 3        1        0     select * from district
+</screen>
+		<para>
+This file was produced by profiling the TPC C sample application for 3 minutes.
+The numbers have the following meanings:
+	</para>
+		<para>
+The real time is the real time interval of the measurement, that is the space in
+time between the prof_enable call that started the profiling and the call that wrote the report.
+The client wait time is the time cumulatively spent inside the execute call server side, only calls completely
+processed between profiling start and end are counted. The average concurrency is the exec time divided by real time
+and indicates how many requests were on the average concurrently pending during the measurement interval.
+The count of executes and their average duration is also shown.
+	</para>
+		<para>
+The next section shows the percentage of executes that finished under 1, 2, 5, 10 and 30 seconds
+of real time.
+	</para>
+		<para>
+The compilation section indicates how many statements were compiled during the
+interval.  These will be SQLPrepare calls or SQLExecDirect calls where the text of the statement
+was not previously known to the server.  The real time spent compiling the statements is added up.
+The percentage of prepared statement reuses, that is, executes not involving compiling over all executes is
+shown. This is an important performance metric, considering that it is always better to use prepared
+statements with parameters than statements with parameters as literals.
+	</para>
+		<para>
+The next section shows individual statements executed during the measurement interval sorted by
+descending cumulative real time between start and completion of the execute call.
+	</para>
+		<para>
+The table shows the percentage of real time spent during the calls to the statement as a percentage
+of the total real time spent in all execute calls.  Note that these real times can be higher than the measurement
+interval since real times on all threads are added up.
+	</para>
+		<para>
+The second column shows the total execute real time, the third column shows the count of executes of
+the statement during the measurement interval.  The fourth column is the count of executes that resulted in an error.
+The error count can be used for instance to spot statements that often produce deadlocks.
+	</para>
+		<para>
+Statements are distinguished for profiling purposes using the 40 first characters of their text.
+Two distinct statements that do not differ in their first 40 characters will be considered the same for profiling.
+If a statement is a procedure call then only the name of the procedure will be
+considered, not possibly differing literal parameters.
+	</para>
+		<para>
+The profiler will automatically write the report after having 10000 distinct statements in the measurement
+interval.  This is done so as to have a maximum on the profiling memory consumption for applications that always
+compile a new statement with different literals, resulting in a potentially infinitely long list of
+statements each executed once.  It is obvious that such a profile will not be very useful.
+	</para>
+		<para>
+It cannot be overemphasized that if an application does any sort of repetitive processing then this should be
+done with prepared statements and parameters, for both reasons of performance and profilability.
+	</para>
+		<note>
+			<title>Note:</title>
+			<para>
+Note that measurements are made with a one millisecond precision.  Percentages are rounded to
+2 digits.  Timing of fast operations, under a few milliseconds, will be imprecise as a result of the 1 ms resolution.
+Also the cumulative compilation time may be substantially off, since the compilation may often take
+less than 1 ms at a time.  Also note that the precision may also vary between platforms.
+</para>
+		</note>
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="METERS_SYSVIEWS">
+		<title>Meters &amp; System Views</title>
+		<sect3 id="kdlstat">
+			<title>DB.DBA.SYS_K_STAT, DB.DBA.SYS_D_STAT, DB.DBA.SYS_L_STAT view</title>
+			<para>
+These views provide statistics on the database engine
+</para>
+			<programlisting>
+create view SYS_K_STAT as
+  select KEY_TABLE, name_part (KEY_NAME, 2) as index_name,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;n_landings&apos;) as landed,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;total_last_page_hits&apos;) as consec,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;page_end_inserts&apos;) as right_edge,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;page_end_inserts&apos;) as lock_esc
+	from SYS_KEYS;
+</programlisting>
+			<programlisting>
+create view SYS_L_STAT as
+  select KEY_TABLE, name_part (KEY_NAME, 2) as index_name,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;lock_set&apos;) as locks,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;lock_waits&apos;) as waits,
+	(key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;lock_waits&apos;) * 100)
+	  / (key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;lock_set&apos;) + 1) as wait_pct,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;deadlocks&apos;) as deadlocks,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;lock_escalations&apos;) as lock_esc
+	from SYS_KEYS;
+</programlisting>
+			<programlisting>
+create view sys_d_stat as
+  select KEY_TABLE, name_part (KEY_NAME, 2) as index_name,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;touches&apos;) as touches,
+	key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;reads&apos;) as reads,
+	(key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;reads&apos;) * 100)
+	&#10; &gt; / (key_stat (KEY_TABLE, name_part (KEY_NAME, 2), &apos;touches&apos;) + 1) as read_pct
+	from SYS_KEYS;
+</programlisting>
+			<para>
+These views offer detailed statistics on index access locality, lock contention and
+disk usage.
+</para>
+		</sect3>
+		<sect3 id="keystats">
+			<title>SYS_K_STAT - Key statistics</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>KEY_TABLE	The fully qualified table name, e.g. DB.DBA.SYS_PROCEDURES</para>
+				</listitem>
+				<listitem>
+					<para>INDEX_NAME	The name of the index. This will be equal to the table name for the table&apos;s primary key.</para>
+				</listitem>
+				<listitem>
+					<para>LANDED		The count of random accesses, including inserts.  Any insert or select, whether empty, single line or multi-
+		line counts as one. Updates and deletes do not count, as they imply a select in the same or previous statement.</para>
+				</listitem>
+				<listitem>
+					<para>CONSEC		The number of times a random access falls on the same page as the previous random access. This is always less than LANDED.
+		For repetitive access to the same place or an ascending insert, this will be near LANDED. For a totally
+		random access pattern this will be near 0.</para>
+				</listitem>
+				<listitem>
+					<para>RIGHT_EDGE	The number of times an insert has added a row to the right edge of the page where the insert was made. </para>
+				</listitem>
+				<listitem>
+					<para>LOCK_ESC	The count of lock escalations, see SYS_L_STAT.</para>
+				</listitem>
+			</itemizedlist>
+		</sect3>
+		<sect3 id="lstats">
+			<title>SYS_L_STAT</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>KEY_TABLE	The fully qualified table name, e.g. DB.DBA.SYS_PROCEDURES</para>
+				</listitem>
+				<listitem>
+					<para>INDEX_NAME	The name of the index. This will be equal to the table name for the table&apos;s primary key.</para>
+				</listitem>
+				<listitem>
+					<para>LOCKS		The number of times a lock has been set on the index. Making a new row or page lock
+		counts as one. Entering a row or page lock either after a wait or without wait (for a shared lock) counts as one.</para>
+				</listitem>
+				<listitem>
+					<para>WAITS		The number of times a cursor reading this index waited for a lock. Note that this can be higher
+		than the number of locks set, e.g. a &apos;read committed&apos; cursor may wait for a lock but will never make one.</para>
+				</listitem>
+				<listitem>
+					<para>WAIT_PCT	The percentage of lock set events that involved a wait. </para>
+				</listitem>
+				<listitem>
+					<para>DEADLOCKS	The number of times a deadlock was detected when trying to wait for a lock on this index.
+		Note that one deadlock event may involve locks on several indices.  Each deadlock detection counts as one.</para>
+				</listitem>
+				<listitem>
+					<para>LOCK_ESC	The number of times the set of row locks on a page of this index where escalated into one page lock
+		or a page lock was set initially. This is always less than LOCKS. This value will
+		be near LOCKS when there are many sequential selects which switch to page lock mode.
+		This happens when a cursor has performed over 2 lock escalations and the page being entered has no
+		locks, i.e. the lock can be set over the entire page.</para>
+				</listitem>
+			</itemizedlist>
+		</sect3>
+		<sect3 id="dstats">
+			<title>SYS_D_STAT</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>KEY_TABLE	The fully qualified table name, e.g. DB.DBA.SYS_PROCEDURES</para>
+				</listitem>
+				<listitem>
+					<para>INDEX_NAME	The name of the index. This will be equal to the table name for the table&apos;s primary key.</para>
+				</listitem>
+				<listitem>
+					<para>TOUCHES		The number of times a row is located on the index. Every row retrieved by a select or inserted counts as
+		one. All rows scanned by an select count or other aggregate counts as one. </para>
+				</listitem>
+				<listitem>
+					<para>READS		The number of times a disk read was caused by a read operation on this index.
+		This may theoretically be higher than TOUCHES, since several levels of the index tree may have
+		to be read to get to a leaf.</para>
+				</listitem>
+				<listitem>
+					<para>READ_PCT	The percentage of READS in TOUCHES.</para>
+				</listitem>
+			</itemizedlist>
+			<example>
+				<title>Examples:</title>
+				<programlisting>
+select index_name, locks, waits, wait_pct, deadlocks
+    from sys_l_stat order by 2 desc;
+
+Get lock data, indices in descending order of lock count.
+
+select index_name, touches, reads, read_pct
+    from sys_d_stat order by 3 desc;
+
+Get disk read counts, index with most reads first.
+
+select index_name, (consec * 100) / (landed + 1)
+    from sys_k_stat where landed &gt; 1000  order by 2;
+</programlisting>
+			</example>
+			<para>Get the percentage of consecutive page access on indices with over 1000 accesses so far,
+most randomly accessed first.
+</para>
+		</sect3>
+		<sect3 id="statusfunc">
+			<title>status SQL function - status ();</title>
+			<para>This function returns a summary of the database
+status as a result set. The result set has one varchar column,
+which has consecutive lines of text. The lines can be up to several hundred
+characters.
+</para>
+			<para>The contents of the status summary are described in
+      the <link linkend="DBSTAT">Administrator&apos;s Guide</link>.</para>
+		</sect3>
+
+		<sect3 id="statusfunc">
+			<title>Virtuoso db file usage detailed info</title>
+
+<para>All data in a virtuoso database are logically stored as database key rows.
+Thus the primary key for a table holds the entire row (including the dependent
+part) and the secondary keys just hold their respective key parts.
+So the space that the table occupies is the sum of the space occupied by it's
+primary key and all the secondary keys.</para>
+<para>The main physical unit of allocation in a virtuoso db file is the database page
+(about 8k in virtuoso 3.x).
+So the server needs to map the key rows and outline blobs to database pages.</para>
+<para>Virtuoso will store as many rows in a db page as it can, so usually one DB page
+will contain more than 1 row of a given key. No page contains rows from more than one key. However
+blobs (when not inlined on the row) will be placed in consecutive DB pages (up
+to their size). In addition to the blob and key pages the Virtuoso DB will hold a number of
+pages containing internal data. So the sum of the pages occupied by the key rows and the blobs is
+leas then the amount of occupied pages (as reported by the <link linkend="fn_status"><function>status()</function></link> BIF).</para>
+
+<para>To provide detailed information about the space consumption of each key there's
+a system view:</para>
+<programlisting>
+DB.DBA.SYS_INDEX_SPACE_STATS
+    ISS_KEY_TABLE       varchar -- name of the table
+    ISS_KEY_NAME        varchar -- name of the key
+    ISS_KEY_ID          integer -- id of the key (corresponding to KEY_ID from DB.DBA.SYS_KEYS)
+    ISS_NROWS           integer -- number of rows in the table
+    ISS_ROW_BYTES       integer -- sum of the byte lengths of all the rows in the table
+    ISS_BLOB_PAGES      integer -- sum of the blob pages occupied by the outline blobs on all the rows of the table
+    ISS_ROW_PAGES       integer -- sum of all the db pages containing rows of this key
+    ISS_PAGES           integer -- = ISS_BLOB_PAGES + ISS_ROW_PAGES (for convenience).
+</programlisting>
+
+<para>Each select on that view causes the server to go over all the db pages in the db file
+(similarly to how the crash dump operates) and collect the statistics above. The pages are
+traversed 1 time per select, but still on large database files that may take some time.	</para>
+</sect3>
+
+	</sect2>
+<sect2 id="TRANSACTION_ISOLATION_LEVELS"><title>Transaction Metrics, Diagnostics and Optimization</title><ulink url="">Transaction-Isolation
+    Levels in Virtuoso</ulink>
+
+    <bridgehead class="h1"><ulink url="">Metrics, Diagnostics
+    and Optimization of Transactions</ulink></bridgehead>
+
+    <para>Bad design and implementation of transactions affects
+    applications in two ways:</para>
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Performance is lost by having to needlessly retry
+      transactions that are</listitem>
+    </itemizedlist>
+    aborted by deadlock. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Concurrency is lost by having rows stay locked for too
+      long</listitem>
+
+      <listitem>Memory is transiently consumed, adversely affecting
+      working set, by</listitem>
+    </itemizedlist>
+    keeping data structures for too many simultaneous locks,
+    rollback records and uncommitted roll forward logs. 
+
+    <para>The following rules should be observed when writing
+    transactions:</para>
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Do not lock needlessly. For example, any report
+      transaction that reads</listitem>
+    </itemizedlist>
+    the data once can always be done as read committed instead of
+    repeatable read without affecting semantics. Even if some data
+    is read multiple times, the repeatable read semantic is
+    typically not relevant for reports. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Lock for what is needed. If you mean to update later, do
+      the initial</listitem>
+    </itemizedlist>
+    read with exclusive locks. See the for update clause in select,
+    for example. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Lock in constant order. If you must lock different
+      resources in one</listitem>
+    </itemizedlist>
+    transaction, lock them always in the same order. When updating
+    stock for an order, update the quantity on hand in increasing
+    order of item number, for instance. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Lock the item with the least contention first. For
+      example, update the</listitem>
+    </itemizedlist>
+    detail before updating the summary. Update the quantity in
+    stock for the ordered items before updating the orders count of
+    the whole warehouse. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Keep transactions short. Use stored procedures. Use the
+      explicit</listitem>
+    </itemizedlist>
+    commit work statement. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>For each transaction in a stored procedure, make sure
+      that if it is</listitem>
+    </itemizedlist>
+    deadlocked, the deadlocked transaction gets retried. For
+    example, have a "declare exit handler for sqlstate 40001" for
+    every transaction context. Make sure that a deadlocking
+    transaction is never retried endlessly. Two mutually
+    deadlocking transactions can keep retrying and again
+    deadlocking each other endlessly. To avoid this, have a maximum
+    count of retries and a random delay before restarting. The
+    restart delay should be between 0 and the expected duration of
+    the transaction. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Always break batch updates into multiple transactions.
+      Update a few</listitem>
+    </itemizedlist>
+    thousand or tens of thousands of rows per transaction, never
+    more than that. Failing to do this makes for prohibitive cost
+    of retry with deadlocks and can cause swapping by keeping tens
+    or hundreds of megabytes in rollback state, locks and other
+    transaction temporary structures. This happens if one inserts,
+    updates, deletes several million rows in a single transaction.
+    If this is really needed and concurrency is no issue, use the
+    atomic mode, effectively making the server single user for the
+    transaction, thus having no locking or rollback. See __atomic
+    (). 
+
+    <bridgehead class="h2"><ulink url="">Programming</ulink></bridgehead>
+
+    <bridgehead class="h3"><ulink url="">Virtuoso/PL</ulink></bridgehead>
+    The isolation level is set in Virtuoso/PL with the 
+<programlisting>
+set isolation := level;
+</programlisting>
+
+    <para>statement, where level is one of 'serializable',
+    'repeatable', 'committed', 'uncommitted'. Example :</para>
+<programlisting>
+set isolation = 'serializable';
+</programlisting>
+
+    <para>The standard SQL syntax is also supported :</para>
+<programlisting>
+SET TRANSACTION ISOLATION LEVEL &lt;isolation_level>
+isolation level : READ UNCOMMITTED | READ COMMITTED | REPEATABLE READ | SERIALIZABLE
+</programlisting>
+    Example : 
+<programlisting>
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED
+</programlisting>
+
+    <para>The effect is for the rest of the procedure and any
+    procedure called from this procedure. The effect stops when the
+    procedure having executed the set isolation statement
+    returns.</para>
+
+    <bridgehead class="h3"><ulink url="">Sample Deadlock Handler</ulink></bridgehead>
+
+    <para>The text for a deadlock handler is</para>
+<programlisting>
+  declare retry_count int;
+  retry_count := 0;
+retry:
+  {
+    declare exit handler for sqlstate '40001' 
+      {
+        rollback work;
+        ... 
+        delay (rnd (2.5));  --- if 2.5 seconds is the expected duration of
+the transaction.
+        ...
+
+        retry_count := retry_count + 1;
+        if (retry_count > 5)
+          signal ("xxxxx", "Too many deadlock retries in xxxxx.");
+        goto retry;
+      }
+   -- do the operations.  The actual working code here.
+
+    commit work;
+  }
+</programlisting>
+
+    <para>An exclusive read is done with</para>
+<programlisting>
+select s_quantity from stock where s_i_id = 111 for update;
+</programlisting>
+
+    <bridgehead class="h3"><ulink url=""/> ODBC</bridgehead>
+
+    <para>For the Virtuoso ODBC driver the isolation
+    is set by :</para>
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>connection option (in either <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/odbcsqlsetconnectattr.asp">SQLSetConnectAttr ()</ulink> or <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/odbcsqlsetconnectoption.asp">SQLSetConnectOption ()</ulink>)</listitem>
+    </itemizedlist>
+<programlisting>
+   rc = SQLSetConnectOption (hdbc, SQL_TXN_ISOLATION, SQL_TXN_READ_COMMITTED);
+</programlisting>
+    or 
+<programlisting>
+  rc = SQLSetConnectAttr (hdbc, SQL_TXN_ISOLATION, SQL_TXN_READ_COMMITTED, NULL);
+</programlisting>
+
+    <para>Constants are : SQL_TXN_READ_UNCOMMITTED,
+    SQL_TXN_READ_COMMITTED, SQL_TXN_REPEATABLE_READ,
+    SQL_TXN_SERIALIZABLE</para>
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>ODBC setup dialog
+      option : In Windows there is a drop-down combo box to set the
+      default transaction isolation level for a connection.</listitem>
+    </itemizedlist>
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>connection string element : You may specify the default
+      transaction isolation level for a given connection in it's
+      conect string (passed to the <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/odbcsqldriverconnect.asp">SQLDriverConnect ()</ulink> ODBC API). Example
+      :</listitem>
+    </itemizedlist>
+<programlisting>
+   SQLDriverConnect (hdbc, hwnd, 
+       "DSN=MyDSN;IsolationLevel=Repeatable Read;UID=dba;PWD=dbapwd", SQL_NTS, 
+       NULL, 0, 
+       NULL,
+       SQL_DRIVER_NOPROMPT).
+</programlisting>
+    The possible options for the connection string are : "Read
+    Uncommitted", "Read Committed", "Repeatable Read" and
+    "Serializable" 
+
+    <bridgehead class="h3"><ulink url=""/> JDBC</bridgehead>
+
+    <para>In the Virtuoso JDBC driver the isolation is set by the <ulink url="http://java.sun.com/j2se/1.5.0/docs/api/java/sql/Connection.html#setTransactionIsolation(int)">java.sql.Connection.setTransactionIsolation()</ulink>
+    JDBC API.</para>
+<programlisting>
+  conn.setTransactionIsolation (java.sql.Connection.TRANSACTION_SERIALIZABLE)
+</programlisting>
+    The constants are described <ulink url="http://java.sun.com/j2se/1.5.0/docs/api/java/sql/Connection.html#field_summary">here</ulink> 
+
+    <bridgehead class="h3"><ulink url=""/> NET</bridgehead>
+
+    <para>In the VirtuosoClient.NET provider the isolation is set by the <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfsystemdataidbconnectionclassbegintransactiontopic2.asp">System.Data.IDbConnection.BeginTransaction
+    Method (IsolationLevel)</ulink> function.</para>
+<programlisting>
+  System.Data.IDBTransaction trx = conn.BeginTrasnaction (System.Data.IsolationLevel.ReadCommitted)
+</programlisting>
+
+    <para>The constants are described <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfsystemdataisolationlevelclasstopic.asp">here</ulink></para>
+
+    <bridgehead class="h2"><ulink url="">Metrics and Diagnostics</ulink></bridgehead>
+
+    <para>Metrics are presented at the server and the table level.</para>
+
+    <para>The first metric to check is the output of status ('');</para>
+
+    <para>The paragraph titled transaction status contains the
+    following:</para>
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Count of deadlocks since server startup. There is a total
+      number of</listitem>
+    </itemizedlist>
+    deadlocks and the number of 2r1w deadlocks. The latter is a
+    special case where two transactions both hold a shared lock on
+    a resource and one tries to convert the lock to exclusive. This
+    situation can kill the transaction attempting to write. Such
+    deadlocks are essentially always needless. These are avoided by
+    reading for update when first reading the resource. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Count of waits since server startup. This is incremented
+      every time</listitem>
+    </itemizedlist>
+    some operation waits for a lock, except if this wait leads into
+    a deadlock. If the number of deadlocks is high, let's say over
+    5% of the number of waits, transactions are likely badly
+    designed and deadlock too often, either because of not locking
+    for write at the get go (2r1w) or because of locking resources
+    in varying order. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Count of threads running. This is the count of all
+      threads that are</listitem>
+    </itemizedlist>
+    somehow occupied, whether running or waiting. This count minus
+    the count of waiting minus the count of threads in vdb is the
+    count of threads that in principle could be on CPU. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Count of threads waiting. This is the cound of threads
+      that are</listitem>
+    </itemizedlist>
+    waiting for a lock. If this is a high percentage of the count
+    of threads running, say over 30%, resources are likely locked
+    inefficiently, keeping too many locked. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>Count of threads in vdb. This isthe count of threads that
+      are at the</listitem>
+    </itemizedlist>
+    time waiting for I/O either from a remote database or any sort
+    of network operation, including access to web services on other
+    serbers, access to web pages on other hosts etc. 
+
+    <para>The system view db.dba.sys_l_stat is used for locating
+    bottlenecks.</para>
+
+    <para>The columns are:</para>
+
+    <para>* Table - The table in question</para>
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>index The index being locked. Note that when reading on
+      non-primary</listitem>
+    </itemizedlist>
+    key, the lock is set on the index first, only then on the pk,
+    that is if the pk is accessed at all. For all updates however,
+    the pk will always be accessed. *locks - The count of times a
+    lock was set on this index. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>waits - The number of times there was a wait on this
+      index. There can</listitem>
+    </itemizedlist>
+    be more waits than locks because a read committed cursor can
+    wait but will not lock, thus all waits do not result in locks. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>wait_pct - The percentage of times setting a lock waited.
+      (100 *</listitem>
+    </itemizedlist>
+    waits) / locks 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>deadlocks - The number of times a deadlock was signalled
+      when</listitem>
+    </itemizedlist>
+    attempting to wait for a lock onthis index. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>lock_esc - The number of times a set of row locks was
+      converted into a</listitem>
+    </itemizedlist>
+    page lock on this index. 
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>wait_msecs - The total amount of real time spent by some
+      thread waiting</listitem>
+    </itemizedlist>
+    for a lock on this index. This may be greater than elapsed time
+    because many threads can wait at the same time. 
+
+    <para>All counts and times are cumulative from server startup.</para>
+
+    <para>The interpretation is as follows:</para>
+
+    <para>If deadlocks is high in relation to waits or locks, i.e.
+    over 5%, there are many deadlocks and the transaction profiles
+    may have to be adjusted. The table where deadlocks is
+    incremented is the table where the deadlock was detected but
+    the deadlock may involve any number of tables. So, if A and B
+    are locked in the order A, B half of the time and B, a the rest
+    of the time, then the deadlocks of the tables of A and B will
+    be about the same, half of the deadlocks being detected when
+    locking A, the other half when locking B.</para>
+
+    <para>If waits is high in relation to locks, for example 20%, then
+    there is probably needless contention. Things are kept locked
+    needlessly. Use read committed or make shorter transactions or
+    lock items with the less contention first.</para>
+
+    <para>Because transaction duration varies, the place with the
+    highest count of waits is not necessarily the place with the
+    heaviest contention if the waits are short. Use wait_msecs in
+    addition to waits for determining where the waiting takes
+    place.</para>
+
+    <para>To get a general picture, use the Conductor's Statistics
+    page or simply do</para>
+
+    <para>select top 5 * from sys_l_statt order by wait_msecs
+    desc;</para>
+
+    <para>to get a quick view of where time is spent. You can also
+    sort by waits desc or locks desc.</para>
+
+    <bridgehead class="h2"><ulink url=""/> SQL Issues</bridgehead>
+
+    <para>It is possible to get bad locking behavior if the SQL
+    compiler decides to make linear scans of tables or indices and
+    the isolation is greater than read committed. The presence of a
+    linear scan on an index with locking is often indicated by
+    having a large number of lock escalations. If lock_esc is near
+    locks then a large part of the activity is likely sequential
+    reads.</para>
+
+    <para>The general remedy is to do any long report type
+    transactions as read committed unless there are necessary
+    reasons to do otherwise.</para>
+
+    <para>To see how a specific query is compiled, one can use the
+    explain () function. To change how a query is compiled, one can
+    use the table option or option SQL clauses.</para>
+
+    <bridgehead class="h2"><ulink url="">Observation of Dynamics</ulink></bridgehead>
+
+    <para>Deadlocks and contention do not occur uniformly across time.
+    The occurrences will sharply increase after a certain
+    application dependent load threshold is exceeded.</para>
+
+    <para>Also, deadlocks will occur in batches. Several transactions
+    will first wait for each other and then retry maybe several
+    times, maybe only one succeeding at every round. In such worst
+    cases, there will be many more deadlocks than successfully
+    completed transactions. Optimize locking order and make the
+    transactions smaller.</para>
+
+    <para>Looking at how counts change, specially if they change in
+    bursts is useful.</para>
+
+    <bridgehead class="h2"><ulink url="">Tracing and Debugging</ulink></bridgehead>
+
+    <para>The most detailed picture of a system's behavior, including
+    deadlocks nd other exceptions cn be obtained with profiling. If
+    the application is in C, Java or some other compiled language,
+    one can use the language's test coverage facility to see
+    execution counts for various branches of the code.</para>
+
+    <para>For client applications, using the Virtuoso trace ()
+    function can be useful for seeing which statements signal
+    errors. Also the profiling report produced by prof_enable ()
+    can give useful hints on execution times and error frequencies.
+    See Profiling and prof_enable ().</para>
+
+    <para>For PL applications, Virtuoso provides a profiler and test
+    coverage facility. This is actibated by setting PLDebug = 2 in
+    the Parameters section of the ini file and starting the server.
+    The functions cov_store () and cov_report are used for
+    obtaining a report of the code execution profile thus far. See
+    the documentation on "Branch Coverage" for this. The execution
+    counts of the lines for exception handler code will show the
+    frequency of exceptions. If in a linear block of code a
+    specific line has an execution count lower than that of the
+    line above it, then this means that the line with the higher
+    count has signalled as many exceptions as the difference of the
+    higher and lower count indicates.</para>
+
+    <para>The times indicated in the flat and call graph profile
+    reports for PL procedures are totals across all threads and
+    include time spent waiting for locks. Thus a procedure that
+    consumes almost no CPU can appear high on the list if it waits
+    for locks, specially if this is so on multiple threads
+    concurrently. The times are real times measured on threads
+    separately and can thus exceed any elapsed real tiime.</para>
+
+    <para>Single stepping is not generally useful for debugging
+    locking since locking issues are timing sensitive.</para>
+
+  </sect2>
+
+</sect1>
+
+
+

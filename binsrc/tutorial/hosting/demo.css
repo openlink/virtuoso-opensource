@@ -1,0 +1,45 @@
+BODY { font-family: Verdana,Arial,Helvetica,sans-serif; }
+
+.restitle { 
+  font-family: Verdana,Arial,Helvetica,sans-serif; 
+  font-weight: bold; 
+  float: left;
+  color: blue;	 
+  background-color: #d0ffd0;
+}
+
+.resfooter { 
+  font-family: Verdana,Arial,Helvetica,sans-serif; 
+  font-weight: bold; 
+  float: left;
+  background-color: #d0ffd0;
+}
+
+.rescolname { 
+  font-family: Verdana,Arial,Helvetica,sans-serif; 
+  font-weight: bold; 
+  float: left;
+  color: black; 
+}
+
+.rescoltype { 
+  color: blue; 
+  font-family: Verdana,Arial,Helvetica,sans-serif; 
+  font-style: italic;
+  font-size: x-small; 
+  float: left; 
+}
+
+H1 { font-family: Verdana,Helvetica; color: navy; }
+H2 { font-family: Verdana,Arial,Helvetica,Lucida; color: midnightblue; FONT-SIZE: 100%; }
+
+TD {font-family: Verdana,Arial,Helvetica,Helv,sans-serif;}
+TH {font-family: Verdana,Arial,Helvetica,Helv,sans-serif;}
+
+TABLE.tableentry { background-color: #FFDF52 }
+TABLE.tableresult { background-color: #d0ffd0 }
+TABLE.restable { background-color: #d0ffd0 }
+
+A { TEXT-DECORATION: none }
+
+A:hover { TEXT-DECORATION: underline }

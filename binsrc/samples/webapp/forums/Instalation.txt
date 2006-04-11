@@ -1,0 +1,48 @@
+Installation
+-----------
+
+1. Copy /forums and /xslt to directory where points your "[HTTPServer] ServerRoot =" statement in database.ini file.
+
+2. Execute def.sql script via isql tool with dba privileges.
+   example:
+   [where is isql tool in your directories]\isql [put your server ip@ or host here]:[port] dba dba
+   
+   Connected to OpenLink Virtuoso VDBMS
+   Driver: 02.10.2015 OpenLink Virtuoso ODBC Driver
+   OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+   Type HELP; for help and EXIT; to exit.
+   SQL>load c:\temp\def.sql;
+   Done. -- 20 msec.
+   . . .
+   Done. -- 20 msec.
+   . . .
+   Done. -- 20 msec.
+   
+(!!!) take a look for errors at this point ...
+      if no errors, go to next step ...
+
+3. Execute func.sql script.
+   example:
+
+   SQL>load c:\temp\func.sql;
+   Done. -- 20 msec.
+   . . .
+   Done. -- 20 msec.
+   . . .
+   Done. -- 20 msec.
+   
+(!!!) take a look for errors at this point ...
+      if no errors, go to next step ...
+ 
+4. Check your installation:
+   http://[your server ip@ or host]:[port]/forums/home.vsp
+   
+5. Congratulations!
+
+Alternate way to install
+------------------------
+
+   - go to step 1;
+   - copy virtuoso.db from this archive to your database directory;
+   - start database server;
+   - goto step 4.	

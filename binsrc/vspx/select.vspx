@@ -1,0 +1,58 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="demo_select" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<html>
+ <body>
+
+ <p>
+ <?vsp http ('<H3>Simple page to demonstrate simple VSPX controls</H3>'); ?>
+ </p>
+ <v:form name="f1" method="POST" action="select.vspx" type="simple">
+ <p>
+ <v:select-list name="sel">
+   <v:item name="*default*" value="0" />
+   <v:item name="FIRST" value="1" />
+   <v:item name="SECOND" value="2" />
+ </v:select-list>
+ </p>
+
+ <p>
+ <v:select-list name="mul_sel" multiple="1" xhtml_size="3">
+   <v:item name="one" value="0" />
+   <v:item name="two" value="1" />
+   <v:item name="three" value="2" />
+ </v:select-list>
+ </p>
+
+ <!--v:button name="test_btn" value="OK" /-->
+ <v:button action="simple" name="button" value="OK"/>
+ </v:form>
+
+ <v:include url="footer.xml"/>
+ </body>
+</html>
+<v:before-render>
+  dbg_vspx_control (self.mul_sel);
+</v:before-render>
+
+</v:page>

@@ -1,0 +1,72 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="RE-SD-1">
+  <refmeta>
+    <refentrytitle>Bidirectional Snapshot Replicaton Setup</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Publishing a DAV collection</refname>
+    <refpurpose>Publishing a DAV collection for replication</refpurpose>
+  </refnamediv>
+
+<refsect1 id="RE-SD-1a">
+<title>Preliminaries</title>
+<para>Bidirectional snapshot replication allows you to set up snapshot
+replication between multiple servers where updates can be performed on all
+servers.</para>
+
+<itemizedlist mark="bullet">
+  <listitem>Publisher-subscriber model where each DAV collection has only one
+    publisher and when an update is performed on subscriber it goes to
+    publisher first, and then to all other subscribers.
+  </listitem>
+  <listitem>Conflict resolution may need to take place on the publisher when
+    DAV resources coming from a subscriber are processed.
+  </listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="RE-SD-1b">
+<title>Example publishing a DAV collection</title>
+<orderedlist>
+  <listitem>Login to the Conductor UI using the dba account.</listitem>
+  <listitem>Go to the "Replication" tab and then go to the "Bidirectional Snapshot" tab.</listitem>
+  <listitem>Press "Add DAV Collection" button.</listitem>
+  <listitem>Enter DAV collection name or select DAV collection
+            using "Browse..." button and press "Add" button.</listitem>
+</orderedlist>
+</refsect1>
+
+<refsect1 id="RE-SD-1c">
+<title>Equivalent SQL commands to above</title>
+<orderedlist>
+  <listitem>Connect to the Virtuoso server via ISQL utility as DBA user.</listitem>
+  <listitem>Publish "/DAV/doc" DAV collection.
+  <programlisting>
+SQL&gt; repl_create_snapshot_pub ('/DAV/doc', 1);
+  </programlisting></listitem>
+</orderedlist>
+</refsect1>
+</refentry>

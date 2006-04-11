@@ -1,0 +1,80 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:variable name="TopicId" type="int" default="null" persist="0"
+	    xmlns:v="http://www.openlinksw.com/vspx/" />
+<v:login name="login1" 
+  realm="wiki" 
+  mode="url" 
+  user-password="web_user_password"
+  user-password-check="web_user_password_check"
+  xmlns:v="http://www.openlinksw.com/vspx/">
+  <v:template type="if-no-login">
+  </v:template>
+  <v:template type="if-login">
+    <div clas="login_fm_ctr">
+      <div class="fm">
+        <div class="fm_row">
+<!--
+	  <?vsp 
+	  connection_set ('vspx_user', (select vs_uid from
+	  VSPX_SESSION where vs_sid = self.sid));
+	  http (connection_get ('vspx_user'));?>
+-->	  
+        </div>
+      </div>
+    </div>
+  </v:template>
+    
+  <v:login-form name="loginf" required="1">
+    <table class="dialog_body">
+      <tr>
+        <td style="width: 70px;">Name</td>
+        <td class="login">
+          <v:text xhtml_class="input_box" name="username" value="" xhtml_style="width: 100px;" />
+        </td>
+      </tr>
+      <tr>
+        <td style="width: 70px;">Password</td>
+        <td class="login">
+          <v:text xhtml_class="input_box" name="password" value="" type="password"
+            xhtml_style="width: 100px;"/>
+        </td>
+      </tr>
+      <tr align="center">
+        <td colspan="2">
+          <v:button xhtml_class="button" action="simple" name="login"
+		    value="Login" style="url"/>
+          <v:button xhtml_class="button" action="simple" style="url"
+		    name="register" value="Register">
+	    <v:on-post>
+	      <![CDATA[
+	        self.vc_redirect('/wa/register.vspx');
+	      ]]>
+	    </v:on-post>
+	  </v:button>
+	</td>
+      </tr>
+    </table>
+  </v:login-form>
+</v:login>
+

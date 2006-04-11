@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?> <!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="uriqa">
+<title>URIQA Semantic Web Enabler</title>
+<para>
+Virtuoso supports the URIQA (URI Query Agent) extension of HTTP WebDAV protocol.
+URIQA adds three new methods to HTTP in order to retrieve, add and remove RDF metadata about a given subject.
+The subject is identified by its URI. If the subject is a DAV resource then URIQA will usually reuse the DAV URI of the resouce.
+If the subject is not a resource but something else (physical entity, imaginary thing or vocabulary item) then URIQA can
+be used to process metadata about the subject even if the subject itself can not be accessed via HTTP.</para>
+<para>
+URIQA-specific HTTP methods are called MGET (to retrieve existing metadata), MPUT (to add or update RDF triples) and
+MDELETE (to remove some or all triplets). A single URIQA request usually deals with a single subject that is specified by request URI.
+The MGET responce, however, can return metadata about more than one RDF subject, e.g., the request about a book can return both
+data about the book itself plus some data about persons who are known as authors of the book.</para>
+<para>
+In addition to URIQA-specific HTTP methods, Virtuoso implements a semantic web service interface that let plain HTTP clients access metadata using
+traditional GET or POST HTTP methods.
+</para>
+<para>
+The Virtuoso URIQA implementation allows flexible configuration using an ordered list of request handlers. Every handler has a pattern for URIs;
+if the URI in the request does not match the pattern then the handler is ignored, otherwise a callback function of the handler is called to
+process the request. The default configuration of Virtuoso server will try three sorts of actions.
+</para>
+<simplelist>
+<member>If the URI points to a resource located at the server then the first handler returns DAV metadata of the resource.</member>
+<member>If the URI points to a resource that is outside the server, and URI is of sort 'http://...' then Virtuoso will send a URIQA web service
+request to the remote server specified in URI in hope that it will return at least something, the responce is passed to the client unchange.</member>
+<member>Any other URI results in an error.</member>
+</simplelist>
+<note>
+<title>Note:</title>
+<para>URIQA is not yet a stable standard. Virtuoso implements draft of URIQA proposal from Nokia, dated 2004.
+As URIQA will evolve, future versions of Virtuoso will implement updated versions of the specification.
+There is no warranty that future implementations will be compatible with the current one.</para>
+</note>
+<tip>
+<title>See Also: External References</title>
+<para>
+<ulink url="http://sw.nokia.com/uriqa/URIQA.html">The Nokia URI Query Agent Model</ulink>
+</para>
+</tip>
+<sect2 id="uriqamethods"><title>URIQA HTTP Methods</title>
+<para>
+All three methods have a set of HTTP header parameters to specify the precise URI of the subject. HTTP does not require that every resource
+is accessible via a single valid URI, so many equivalent URLs can point to same resource and the result of typical HTTP request does not change
+if one of equivalent URLs is replaces with some other. Unlike HTTP GET, HTTP PUT etc., metadata methods may return different results for
+different URLs even if these URLs are equivalent for other methods. URIQA rules are very simple.
+</para>
+<simplelist>
+<member>If the URIQA requrest header contains 'URIQA-uri' parameter line then the value of this parameter is used and any other URI data are ignored.</member>
+<member>If the URIQA requrest header contains 'Host' parameter line then the URL from the first line of the request is patched to contain host name specified by 'Host' parameter, no matter whether the
+original URL contains host or what host name or network iterface or port is user by client to connect to the server.</member>
+<member>If the URIQA requrest header does not contain 'URIQA-uri' or 'Host' line then the URL from the first line of the request is used 'as is',
+extended by host name from 'DefaultHost' URIQA configuration parameter if needed.
+</member>
+</simplelist>
+<example id="uriqamethodsuri">
+<title>Examples of MGET Requests</title>
+<para>The following requests are all equivalent:</para>
+<para>Request 1. 'URIQA-uri' is used, the rest does not matter.</para>
+<programlisting>
+MGET /foo HTTP/1.1
+Host: example.com
+URIQA-uri: http://example.com/foo
+</programlisting>
+<para>Request 2. 'URIQA-uri' is missing, 'Host' is used, the host name www.example.com is ignored.</para>
+<programlisting>
+MGET http://www.example.com/foo HTTP/1.1
+Host: example.com
+</programlisting>
+<para>Request 3. The URI from the first line is used verbatim. This is unsafe, because proxy servers can alter the URI, e.g. by adding port number.</para>
+<programlisting>
+MGET http://example.com/foo HTTP/1.1
+</programlisting>
+<para>Request 4. The URI from the first line is used, but host name is retrieved from 'DefaultHost' URIQA configuration parameter.
+If the parameter is set to example.com then the request is equivalent to previous.</para>
+<programlisting>
+MGET /foo HTTP/1.1
+</programlisting>
+</example>
+<sect3 id="uriqamget"><title>MGET Method</title>
+<para>
+MGET request contains a subject URI and the responce consists of RDF/XML representation of an RDF graph with metadata about the subject.
+In many cases, the returned graph is a Concise Bounded Description of the resource or something similar, but it can be of any sort.
+</para>
+<para>
+There are  no integrity rules. E.g., if a responce for request about subject A contains some data about B
+then the request about B may return same or different data, or even report that B does not exists.
+If URI refers to non-existing resource or even to a non-existing server or protocol then the responce can be an 'not found' error or
+an empty graph or even a non-empty graph, depending on the handler that processed the request.
+</para>
+<para>
+Usually MGET request consints of only subject URI specification, but it can contain any other parameters such as an authentication
+or even the HTTP request body with extra data for some particular handler.
+For Virtuoso DAV resources, MGET will need read permission on the subject resource, because the resulting RDF is retrieved from
+'http://local.virt/DAV-RDF' property of the resource.
+</para>
+</sect3>
+<sect3 id="uriqamput"><title>MPUT Method</title>
+<para>
+MPUT request contains an HTTP header that describe a subject URI and contains Content-Length,
+and the body must be an RDF/XML that consist of triples that should be added.
+The server will try to add new RDF triples from the body to the description of the subject.
+In some cases, the server will replace obsolete triplets with triplets from the body,
+e.g., if some RDF Schema is in use that states for a predicate that it can not have more than one value for any given subject.
+</para>
+<para>
+There are  no integrity rules. If MPUT request with subject A submits data about resource B then the updated data may become visible
+via MGET request with subject A and stay unchanged if retrieved directly by MGET with subject B. For instance, the default request handler for DAV
+will update only 'http://local.virt/DAV-RDF' DAV property of the subject resource not touching any DAV properties of resources named in the request.
+</para>
+<para>
+A client application can not use MPUT with subject URI that refers to a non-DAV Virtuoso resource, because disk-resident resources do not have
+DAV properties, including DAV metadata properties. MPUT can refer to nonexisting Virtuoso DAV resource only if the name
+of this resource has been already locked for uploading of the resource. The most reliable way, however, is to
+upload the resource first and update metadata only after the uploading. There are two reasons to do operations in this sequence.
+First of all, Virtuoso can automatically extract some metadata from the content of uploaded resource and if MPUT happens after the upload then
+MPUT data can properly overwrite automatically extracted values. An additional reason is that resource uploading will set the MIME-type of the resource
+and may associate some RDF Schemas with the resource; hence MPUT can properly update some triples instead of storing multiple values for some
+predicate that should have only one value according to RDF Schema.
+</para>
+<para>
+For Virtuoso DAV resources, MPUT will need both read and write permissions on the subject resource,
+because 'http://local.virt/DAV-RDF' property of the resource is first retrieved and then updated.
+</para>
+</sect3>
+<sect3 id="uriqamdelete"><title>MDELETE Method</title>
+<para>
+MDELETE request contains an HTTP header that describe a subject URI and may contain the body. If present then the body must be an RDF/XML that consist of triples that should be deleted.
+If the body is totally missing then MDELETE removes all metadata associated with the subject URI.
+</para>
+<para>
+There are  no integrity rules. If MDELETE request with subject A removes triples about resource B then these triples may stay visible
+if retrieved directly by MGET with subject B. For instance, the default request handler for DAV
+will update only 'http://local.virt/DAV-RDF' DAV property of the subject resource not touching any DAV properties of resources named in the request.
+</para>
+<para>
+For Virtuoso DAV resources, MPUT will need both read and write permissions on the subject resource,
+because 'http://local.virt/DAV-RDF' property of the resource is first retrieved and then updated.
+</para>
+</sect3>
+</sect2>
+<sect2 id="uriqaws"><title>URIQA Web Service</title>
+<para>
+Virtuoso provides the '/uriqa/' web service for clients that does not support URIQA-specific methods.
+Instead of passing URI and method name in HTTP parameter lines, web service calls passes them as
+part of web service URI. The beginning of the path can be any, starting from '/uriqa/' or '/URIQA/'.
+The following two requests are to retrieve metadata about 'http://example.com/foo'.
+</para>
+<programlisting>
+<![CDATA[GET /uriqa?uri=http%3a%2f%2fexample%2ecom%2ffoo HTTP/1.1]]>
+</programlisting>
+<programlisting>
+<![CDATA[GET /uriqa?uri=http%3a%2f%2fexample%2ecom%2ffoo&method=MGET HTTP/1.1]]>
+</programlisting>
+The following request header is for MPUT
+<programlisting>
+<![CDATA[GET /uriqa?uri=http%3a%2f%2fexample%2ecom%2ffoo&method=MPUT HTTP/1.1]]>
+</programlisting>
+<para>
+The URIQA web service does not need complicated rules for URI passing because the request can not be significally changed by any proxy.
+The value of the 'uri' parameter should be an absolute URI.
+</para>
+</sect2>
+<sect2 id="uriqainifile"><title>URIQA Section in Virtuoso Configuration File</title>
+<para>
+By default,the  Virtuoso server acts only as URIQA proxy, i.e. it redirects incoming requests to other servers without trying to return metadata about
+DAV resources or other data stored on the server itself.
+To let URIQA retrieve local metadata, Virtuoso server should know names that can be used by clients to access it.
+Virtuoso configuration file, e.g., virtuoso.ini, can contain these names as parameters in &quot;[URIQA]&quot; section
+</para>
+<simplelist>
+<member>&quot;DefaultHost&quot; is the &quot;canonical&quot; server name that is used to identify the service.
+It should be either server name including domain name, or an IP address in standard notation, if the server does not have any name.
+If Virtuoso default HTTP port is not equal to 80 then the port should be mentioned, e.g. &quot;www.example.com:8088&quot;.</member>
+<member>&quot;LocalHostNames&quot; lists all names that can be used to access the server, such as server names with and without domain name,
+IP addresses in Internet and intranets etc. The list is comma-delimited string of names. If an URIQA can reside on server's box,
+e.g. for debugging purposes, then it may be worth to add names &quot;localhost, localhost.localdomain, 127.0.0.1&quot; to this list.
+</member>
+<member>&quot;LocalHostMasks&quot; is similar to &quot;LocalHostNames&quot; but it lists patterns for names in SQL &quot;like&quot; operator style.
+If Virtuoso listens at multiple ports and it is the only URIQA enabled service on the machine then it can be convenient to specify
+&quot;LocalHostMasks = www.example.com:%&quot; instead of &quot;LocalHostNames = www.example.com:8088, www.example.com:8089, www.example.com:8090 ...&quot;.
+</member>
+<member>
+&quot;Fingerprint&quot; is a string that identifies a group of servers that shares same metadata, such as servers that replicate each other.
+It is an error if two servers have the same fingerprint string and one of them tries to redirect a URIQA request to another instead of prepare an
+response locally. Such behavior indicates configuration error, and the use of fingerprints help administrator to get a meaningful diagnostics,
+because suspicious URIQA requests become signed by all intermediate Virtuoso proxies. If this parameter is not specified then a random unique
+string is created and stored in the database, so you don&apos;t have to specify this paraemter for typical installations.
+</member>
+</simplelist>
+<para>
+These configuration parameters are &quot;sticky&quot;. If they&apos;re found in configuration file then they are preserved in the database registry.
+If configuration file has changed then new values will be used after server restart. If database dump is replayed on a server whose configuration file does
+not contain these parameters then values from dump will stay in the registry. If database dump is replayed on a server whose configuration file contains
+other values then values from dump will stay in the registry till server restart.
+</para>
+</sect2>
+<sect2 id="uriqamatching"><title>URI Matching Rules</title>
+<para>
+A simple installation does not require any special configuration of URIQA except specifying server names in the [URIQA] section of configuration file (virtuoso.ini).
+However complex applications may need from URIQA more than simple retrieval of metadata of DAV resources.
+Like HTTP virtual hosts, URIQA may require different processing for different URIs, so Virtuoso offers appropriate tools.
+</para>
+<para>
+When the URIQA server gets an URI to process, it reads system table WS.WS.URIQA_HANDLER to find out the procedure that can access metadata about some range of URIs.
+This table is defined as follows:
+</para>
+<programlisting>
+create table WS.WS.URIQA_HANDLER
+(
+  UH_ID integer not null primary key,
+  UH_ORDER integer not null,
+  UH_NAME varchar not null unique,
+  UH_MATCH_COND varchar not null,
+  UH_MATCH_ENV any,
+  UH_HANDLER varchar not null,
+  UH_HANDLER_ENV any
+)
+create index URIQA_HANDLER_ORDER_NAME on WS.WS.URIQA_HANDLER (UH_ORDER, UH_NAME)
+;
+</programlisting>
+<para>
+The server scans the table in order of ascending values in UH_ORDER column,
+and checks whether the request URI matches the condition specified by UH_MATCH_COND and UH_MATCH_ENV.
+As soon as an appropriate row is found, a function with name specified by UH_HANDLER is called with parameters that describe the request plus any
+extra application-specific data as stored in UH_HANDLER_ENV. The function should either compose a response and set a flag to 1 or do nothing and set a flag to 0.
+If 1 is set then the processing of the request is complete, otherwise the server resumes table scan.
+</para>
+<para>
+At server startup, up to three records are automatically added into WS.WS.URIQA_HANDLER.
+</para>
+<simplelist>
+<member>First record has UH_ORDER equal to 100.
+It tells the server that if an URI has server name equal to one of names listed in &quot;LocalHostNames&quot; configuration parameter
+then metadata should be retrieved from local DAV of the server.</member>
+<member>
+Second record is very similar, it also has UH_ORDER equal to 100, but uses SQL 'like' operator instead of '='.
+It tells the server that if an URI has server name like one of masks listed in &quot;LocalHostMasks&quot; configuration parameter
+then metadata should be retrieved from local DAV of the server.</member>
+<member>
+The third record has UH_ORDER equal to 999, and tells the server to act as URIQA proxy if the requested URI starts with &quot;http&quot; protocol name.
+</member>
+</simplelist>
+<para>
+Applications can add more lines to the table to handle different sorts of URIs via different applications-pecific functions. The name of function
+should begin with &quot;WS.WS.URIQA_HANDLER_&quot;, the rest is as specified by UH_HANDLER of the row. The signature of function should be
+</para>
+<programlisting>
+function WS.WS.URIQA_HANDLER_myexample (
+  inout op varchar,   -- operation name, 'MGET', 'MPUT' or 'MDELETE';
+  inout uri varchar,  -- request URI;
+  inout split any,    -- request URI splitted by WS.WS.PARSE_URI into parts;
+  inout body any,     -- the body of the request;
+  inout params any,   -- get_keyword style vector of parameters of the request;
+  inout lines any,    -- vector of lines of HTTP request header;
+  inout app_env any,  -- any application-specific data from UH_HANDLER_ENV;
+  inout is_final integer -- status flag. Function sets the flag to 1 to report that the request responce is prepared.
+  ) returns any	      -- returns a status vector, see below.
+</programlisting>
+<para>
+Status vector describes either the reason why the request has failed, or the success status. It consists of four elements:
+</para>
+<simplelist>
+<member>SQL_STATE as five-char string, &quot;00000&quot; if success;</member>
+<member>DAV error code as an integer, if the operation has failed due to DAV error, 0 if success or an error other than DAV;</member>
+<member>HTTP status as three-digit string, such as &quot;200&quot; for &quot;OK&quot; or &quot;404&quot; for &quot;not found&quot;;</member>
+<member>Brief description of an error, such as HTTP response status (&quot;OK&quot;, &quot;not found&quot; etc.) or SQL_MESSAGE, &quot;OK&quot; if success;</member>
+</simplelist>
+<para>
+In case of DAV error, elements 3 and 4 can be set to NULL to generate proper values automatically.
+</para>
+<para>
+Examples are:
+</para>
+<programlisting>
+vector ('00000', 0, '200', 'OK');
+vector ('URIQA', 0, '500', 'The remote URIQA server returned an invalid header');
+vector ('URIQA', -1, '404', 'Invalid URI; Ill formed or missing path to the resource');
+vector ('URIQA', -12, null, null);
+</programlisting>
+<para>
+The current version of Virtuoso supports the following names of matching operations for use in UH_MATCH_COND:
+</para>
+<simplelist>
+<member>&quot;schema =&quot; -- URI schema name should be equal to UH_MATCH_ENV;</member>
+<member>&quot;server =&quot; -- URI server name (including port, if specified) should be equal to UH_MATCH_ENV;</member>
+<member>&quot;server like&quot; -- URI server name (including port, if specified) should be &quot;like&quot; to UH_MATCH_ENV;</member>
+<member>&quot;server in&quot; -- URI server name (including port, if specified) should be member of UH_MATCH_ENV vector of strings;</member>
+<member>&quot;server like in&quot; -- URI server name (including port, if specified) should be &quot;like&quot; to one mof mebers of UH_MATCH_ENV vector of strings;</member>
+<member>&quot;default&quot; -- Any URI will match so any request is passed to the handler if not handled before.</member>
+</simplelist>
+</sect2>
+</sect1>

@@ -1,0 +1,176 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+  declare drivers, at_str, at_def any;
+  declare driver_str, driver_def any;
+  declare driver_t, driver_te, type_dsn varchar;
+  declare len, idx, fl integer;
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<HTML>
+  <head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>DSN management</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Link External DSN into Virtuoso using VSP">
+  </head>
+  <?vsp adm_page_header('New Data Source', NULL); ?>
+  <?vsp
+  if (not is_empty_or_null (get_keyword ('add_ff', params))) ------------------ REMOVE THIS !!!!!
+    {
+  ?>
+      <FORM method="POST" action="admin_dsn.vsp">
+	<TR><TD CLASS="ctrlmain" ALIGN="Center" COLSPAN="2"><B> Not Supported </B></TD></TR>
+	<TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+	<TR><TD ALIGN="Center" COLSPAN="2">
+	<input type="submit" name="back" value="Back">
+	<TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+      </FORM>
+  <?vsp
+    }
+  else
+    {
+  ?>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+  <TR><TD CLASS="genhead" COLSPAN="2">ODBC Drivers</TD></TR>
+  <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+    <?vsp
+      if (not is_empty_or_null (get_keyword ('add_u', params)))
+	type_dsn:='user';
+      if (not is_empty_or_null (get_keyword ('add_s', params)))
+	type_dsn:='system';
+
+      drivers := sql_get_installed_drivers ();
+
+      idx := 0;
+      len := length (drivers);
+
+      if (not is_empty_or_null (get_keyword ('add_f', params)))
+	{
+	   fl := 0;
+	   http('<TR><TD CLASS="genlistheadt">Driver</TD><TD CLASS="genlistheadt">Action</TD></TR>');
+
+	   while (idx < len)
+	     {
+	        driver_t := aref (drivers, idx);
+	        driver_te := encode_base64 (serialize (driver_t));
+
+	        if (strcasestr (driver_t, 'irtuoso'))
+		  {
+		     fl := 1;
+	             driver_str := encode_base64 (serialize (vector (1, 'DSN', 'Server', 'Port', 'User', 'SSL')));
+		     driver_def := encode_base64 (serialize (vector (1, '', 'localhost', '1111', 'demo', 'No')));
+	             http (sprintf ('<TR><TD CLASS="gendata">%s</TD><TD CLASS="gendata" ALIGN="center">
+			        <a CLASS="tablelistaction"
+			        href="admin_dsn_add_virt.vsp?driver=%U&type=file&driver_str=%U&driver_def=%U&step=1">
+			        New</a></TD></TR>', driver_t, driver_te, driver_str, driver_def));
+		  }
+
+		if (strcasestr (driver_t, 'penLink') and (strcasestr (driver_t, 'Virtuoso') is null))
+		  {
+		     fl := 1;
+	             http (sprintf ('<TR><TD CLASS="gendata">%s</TD><TD CLASS="gendata" ALIGN="center">
+			        <a CLASS="tablelistaction" href="admin_dsn_add_generic32.vsp?driver=%U&type=file">
+			        New</a></TD></TR>', driver_t, driver_te));
+		  }
+	        idx := idx + 1;
+	     }
+
+	   if (fl = 0)
+	     http('<b>No Virtuoso or OpenLink Generic ODBC Drivers Installed<b>');
+
+	   goto end_table;
+	}
+
+      if (len = 0)
+	{
+	  http('<b>No ODBC Drivers Installed <b>');
+	}
+      else
+	{
+	  http('<TR><TD CLASS="genlistheadt">Driver</TD><TD CLASS="genlistheadt">Action</TD></TR>');
+
+	  while (idx < len)
+	    {
+	      at_str := vector (0, 'DSN', 'Description');
+	      at_def := vector (0, '', '');
+
+	      driver_t := aref (drivers, idx);
+	      driver_te := encode_base64 (serialize (driver_t));
+
+	      if ("LEFT" (driver_t, 10) = 'SQL Server')
+		{
+		  at_str := vector (4, 'DSN',  'Description', 'Server', 'User', 'Password', 'Database');
+		  at_def := vector (4, '', '', 'local', 'demo', '', '');
+		}
+
+	      if ("LEFT" (driver_t, 6) = 'Oracle')
+		{
+		  at_str := vector (5, 'DSN',  'Description', 'Server', 'LastUser', 'Password', 'Database');
+		  at_def := vector (5, '', '', 'local', '', '', 'demo');
+		}
+
+	      if ( (strcasestr (driver_t, 'irtuoso')) or (strcasestr (driver_t, 'eneric')) or (strcasestr (driver_t, 'penLink')))
+		{
+		  if (strcasestr (driver_t, 'penLink') and (strcasestr (driver_t, 'Virtuoso') is null))
+		    http (sprintf ('<TR><TD CLASS="gendata">%s</TD><TD CLASS="gendata" ALIGN="center"><a CLASS="tablelistaction"
+				    href="admin_dsn_add_generic32.vsp?driver=%s&type=%s">New</a></TD></TR>', driver_t, driver_te, type_dsn));
+		  else
+		    {
+		      at_str := vector (1, 'DSN', 'Description', 'Server', 'Port', 'User', 'Password', 'Database', 'Daylight', 'SSL');
+at_def := vector (1, '', '', 'localhost', '1111', 'demo', '', 'demo', 'Yes', 'No');
+		      driver_str := encode_base64 (serialize (at_str));
+		      driver_def := encode_base64 (serialize (at_def));
+		      http (sprintf ('<TR><TD CLASS="gendata">%s</TD><TD CLASS="gendata" ALIGN="center"><a CLASS="tablelistaction"
+				      href="admin_dsn_add_virt.vsp?driver=%s&type=%s&driver_str=%U&driver_def=%U&step=1">
+				      New</a></TD></TR>',
+				      driver_t, driver_te , type_dsn,  driver_str, driver_def));
+		    }
+		}
+	      else
+		{
+    		  driver_str := encode_base64 (serialize (at_str));
+    		  driver_def := encode_base64 (serialize (at_def));
+		  http (sprintf ('<TR><TD CLASS="gendata">%s</TD><TD CLASS="gendata" ALIGN="center"><a CLASS="tablelistaction"
+				  href="admin_dsn_add2.vsp?driver=%s&type=%s&driver_str=%U&driver_def=%U&step=1">
+				  New</a></TD></TR>',
+				  driver_t, driver_te , type_dsn,  driver_str, driver_def));
+		}
+	      idx := idx + 1;
+	    }
+	}
+end_table:
+?>
+  </TABLE>
+  </TD></TR>
+  <?vsp
+    }
+  ?>
+    <TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+</TABLE>
+<?include admin_footer.vsp ?>
+</BODY>
+</HTML>

@@ -1,0 +1,75 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <head>
+    <link href="../demo.css" type="text/css" rel="stylesheet"/>
+  </head>
+  <body>
+    <v:page name="form_demo" xmlns:v="http://www.openlinksw.com/vspx/">
+      <H3>Generic VSPX form controls</H3>
+      <p>
+        <font style="color:red">
+          <v:error-summary/>
+        </font>
+      </p>
+      <table class="tableentry">
+        <v:form name="sf" type="simple" action="form.vspx" method="POST">
+          <v:text name="txt2" default="*none*" type="hidden"/>
+          <p>name of current control : <b>
+              <v:label name="label1" value="--control.vc_name"/>
+            </b>
+          </p>
+          <p>
+	    name of page control : <b>
+              <v:label name="label2" value="--control.vc_page.vc_name"/>
+            </b>
+          </p>
+          <tr>
+            <td> An digit only field:
+	    </td>
+            <td>
+              <v:text name="txt" default_value="1200" xhtml_size="7">
+                <v:validator test="regexp" regexp="^[0-9]+$" message="only digits are allowed"/>
+              </v:text>
+            </td>
+          </tr>
+          <tr>
+            <td>
+		An 10-20 range field
+		</td>
+            <td>
+              <v:text name="txt1" default_value="12" xhtml_size="7">
+                <v:validator test="value" min="10" max="20" message="10 - 20 range" empty-allowed="1"/>
+              </v:text>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <v:button name="submit2" action="simple" value="OK" initial-enable="--1"/>
+            </td>
+          </tr>
+        </v:form>
+      </table>
+    </v:page>
+  </body>
+</html>

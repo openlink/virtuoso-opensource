@@ -1,0 +1,293 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+
+  declare _TUT_XML any;
+  declare _TUT_ROOT varchar;
+  
+  declare _file, body, get_path, xml_output varchar;
+  declare req_path, mount_point, ph_path, xsl_mountpoint, _xsl_params any;
+  declare _stream, hdr any;
+  declare _our_path integer;
+  
+  _our_path := 0;
+  
+  xml_output := '';
+
+  _stream := string_output();
+  
+  --_TUT_ROOT := '/virtuoso-head/binsrc/tutorial';
+  
+  req_path := http_path ();    -- requested resource
+  mount_point := http_map_get('domain');
+  
+  if (req_path = mount_point) -- If we are missing trailing slash on mount_point request, we should put it.
+  {
+	  http_request_status ('HTTP/1.1 302 Found');
+  	http_header ('Location: '||req_path||'/\r\n');
+   	return;
+  };
+  
+  ph_path := substring(http_physical_path(),1,length(http_physical_path()) - 8); -- physical_path to the mount_point
+  -- Lets get rid of the mount_point
+  req_path := substring(req_path,length(mount_point) + 1,length(req_path));
+  
+  _TUT_ROOT := ph_path;
+
+  if (strrchr(req_path,'.') and subseq(req_path,strrchr(req_path,'.') + 1,length(req_path)) not in ('vsp','vspx'))
+    goto ret_res;
+  
+  --generate all files
+  --if (not(isnull(get_keyword('gen',params))))
+  --{
+  	--TUT_generate_files(_TUT_ROOT,'web');
+	  --return (0);
+  --};
+
+  _TUT_XML := TUT_get_xml(_TUT_ROOT);
+
+  -- if it is one of generated files we regenerate it and then return it.
+  if (trim(req_path,'/') = '' or not(isnull(xpath_eval('//*[@wwwpath = '''||trim(req_path,'/')||''']',_TUT_XML)))
+  		or req_path = '/search.vsp'
+  		or req_path like '%/rss.vsp'
+  		or req_path = '/opml.vsp'
+  		or req_path = '/ocs.vsp') 
+  {
+  	if (req_path like '%/rss.vsp')
+  		xml_output := '_rss_output';
+  	else if (req_path = '/opml.vsp')
+  		xml_output := '_opml_output';
+  	else if (req_path = '/ocs.vsp')
+  		xml_output := '_ocs_output';
+  	_our_path := 1;
+	  _file := 'index.vsp';
+	  
+	  if (length(req_path) > 5 and (
+	      subseq(req_path,length(req_path) - 4,length(req_path)) = '.vsp'  or
+	  		subseq(req_path,length(req_path) - 5,length(req_path)) = '.vspx')
+	  		)
+	  		_file := '';
+
+  	if (length(req_path) > 2 and subseq(req_path,length(req_path) - 1,length(req_path)) <> '/' and _file <> '')
+	  {
+		  http_request_status ('HTTP/1.1 302 Found');
+	  	http_header ('Location: '|| mount_point ||req_path||'/\r\n');
+	   	return;
+	  };
+	  xsl_mountpoint := regexp_replace(ltrim(req_path,'/'),'[^/]*/','../',1,null);
+	  if (length(xsl_mountpoint) > 5 and (
+	      subseq(xsl_mountpoint,length(xsl_mountpoint) - 4,length(xsl_mountpoint)) = '.vsp'  or
+	  		subseq(xsl_mountpoint,length(xsl_mountpoint) - 5,length(xsl_mountpoint)) = '.vspx')
+	  		)
+	  	xsl_mountpoint := regexp_replace(xsl_mountpoint,'[^/]*$','');
+	  xsl_mountpoint := trim(xsl_mountpoint,'/');
+	  if (xsl_mountpoint = '')
+	    xsl_mountpoint := '.';
+	  _xsl_params := vector('mount_point',xsl_mountpoint);
+	  if (trim(req_path,'/') <> '')
+	    _xsl_params := vector_concat(_xsl_params,vector('path',ltrim(req_path,'/')));
+	    
+	  http_value(xslt('file://'||_TUT_ROOT || '/page'||xml_output||'.xsl',_TUT_XML,_xsl_params),null,_stream);
+	  if (_file = '')
+	  	file_mkpath ('../..'||ph_path|| '/vad_files/vsp/tutorial'|| regexp_replace(req_path,'[^/]*$',''));
+		else
+	  	file_mkpath ('../..'||ph_path|| '/vad_files/vsp/tutorial'|| req_path);
+	  _stream := string_output_string(_stream);
+	  if (xml_output <> '') {
+	    _stream := replace(_stream,'dc:dc=""','');
+	    _stream := replace(_stream,'ocs:ocs=""','');
+	  };
+	  string_to_file(http_root() ||ph_path|| '/vad_files/vsp/tutorial'|| req_path || _file,_stream,-2);
+	};
+
+	ret_res:;
+-- Below is the code of WS.WS.DEFAULT with changed how p1 is taken 
+  declare p1 varchar;
+  declare p_len, slash integer;
+  p1 := '';
+  --dbg_obj_print (lines);
+  if (__tag (path) = 193)
+    p_len := length (path);
+  else p_len := 0;
+  	
+-- We get here the path from the request if it is one of ours we get the generated file
+-- else we get the requested path
+  if (_our_path)
+    p1 := ph_path|| '/vad_files/vsp/tutorial'|| req_path || _file;
+  else
+  	p1 := ph_path || req_path;
+  
+  if (not isstring (p1))
+    p1 := '';
+  if (p1 = '' or p1 = '/') {
+    http_file ('/index.html');
+    return;
+  }
+  if (lower(p1) like 'http://%')
+    {
+      declare host, u, lpath varchar;
+      u := aref (lines, 0); 
+      lpath := http_path(); 
+       
+      if (p1 like '%/' and lpath not like '%/') 
+        {
+          http_request_status ('HTTP/1.1 301 Moved Permanently');
+          http_header (sprintf ('Location: %s/\\r\\n', lpath));
+          return;
+        }
+      u := replace (u, lpath, p1, 1); 
+      slash := strchr (subseq (p1, 8, length (p1)), '/');
+      if (slash is null) 
+	{
+	  slash := length (p1) - 7;
+	}
+      else
+	{
+	  slash := slash + 1;
+	}
+      host := substring (p1, 8, slash);
+      u := replace (u, substring (p1, 1, slash+8), '/', 1); 
+      aset (lines, 0, u); 
+       if (not DB.DBA.HTTP_PROXY_ACCESS (host)) 
+	  signal ('42000', sprintf ('Proxy access to %s denied due to access control', host), 'HT059'); 
+      http_proxy (host, lines, __http_stream_params ());
+      return;
+    }
+  if (lower (p1) like '%.vsp' and isstring (http_map_get ('vsp_uid')))
+    {
+      if (ws_proc_def (p1))
+	call (concat (sprintf ('%s.%s.', http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner')), p1)) (path, params, lines);
+    }
+  else if (lower (p1) like '%.vspx' and isstring (http_map_get ('vsp_uid')))
+    {
+      if (not isstring (file_stat (concat (http_root (), p1)))) 
+        { 
+          http_rewrite (); 
+          goto not_exist; 
+        }; 
+       vspx_dispatch (p1, path, params, lines); 
+    }
+   else if (lower (p1) like '%.vxml' and isstring (http_map_get ('vsp_uid'))) 
+     { 
+       declare dot integer; 
+       declare p2, _xml, _xslt_uri, _doc_uri, ses, p3, stat, msg, result, ses2 varchar; 
+       dot := strrchr (p1, '.'); 
+       if (dot is null) 
+ 	goto err_exit; 
+       p2 := concat (substring (p1, 1, dot), '.vxsl'); 
+       p3 := concat (substring (p1, 1, dot), '.vsp'); 
+       if (0 = file_stat (concat (http_root (), p2))) 
+ 	goto err_exit; 
+       _doc_uri := concat ('file://', p1); 
+       _xslt_uri := WS.WS.EXPAND_URL (_doc_uri, p2); 
+       _xml := DB.DBA.XML_URI_GET ('', _doc_uri); 
+       result := xslt (_xslt_uri, xml_tree_doc (_xml, _doc_uri)); 
+       http_output_flush (); 
+       ses := string_output (); 
+       ses2 := string_output (); 
+       http_value (result, null, ses2); 
+       ses2 := string_output_string (ses2); 
+       http (sprintf ('create procedure \"%s\".\"%s\".\\\"', http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner')), ses); 
+       http (p3, ses); 
+       http ('\" (in path varchar, in params varchar, in lines varchar) { ?>', ses); 
+       declare vst any; 
+       vst := NULL; 
+       expand_includes (p3, ses, 0, ses2, vst); 
+       http ('<?vsp }', ses); 
+       stat := '00000'; 
+       ses := string_output_string (ses); 
+       __set_user_id (http_map_get ('vsp_uid'));
+       declare warnings any;
+       warnings := NULL; 
+       exec (ses, stat, msg, NULL, 0, NULL, NULL, NULL, warnings); 
+       if (stat <> '00000') 
+         signal (stat, msg); 
+       if (warnings is not NULL) 
+         sql_warnings_resignal (warnings); 
+       call (concat (sprintf ('%s.%s.', http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner')), p3)) (path, params, lines);
+       return; 
+       err_exit: 
+ 	http_file (p1); 
+     } 
+  else if (lower (p1) like '%.xml' and isstring (http_map_get ('vsp_uid')) and http_map_get ('xml_templates')) 
+     { 
+       if (not isstring (file_stat (concat (http_root (), p1)))) 
+         { 
+           http_rewrite (); 
+           goto not_exist; 
+         }; 
+       DB.DBA.__XML_TEMPLATE (path, params, lines);
+     } 
+  else if (p_len = 1 and path[0] = 'services.wsil')
+     { 
+       DB.DBA.SERVICES_WSIL (path, params, lines); 
+     } 
+  else if (lower (p1) not like '%.vsp' and lower (p1) not like '%.vspx')
+    {
+      declare fext varchar; 
+      declare is_exist, dot integer; 
+      is_exist := 0; 
+      if (not isstring (file_stat (concat (http_root (), p1))) and 
+         not (__proc_exists ('WS.WS.__http_handler_aspx', 1) is not null 
+              and (strstr (p1, '.asmx') is not null))) 
+        { 
+          http_rewrite (); 
+          goto not_exist; 
+        }; 
+      if (isstring (p1)) dot := strrchr (p1, '.'); 
+      if (dot is not null) { 
+        fext := DB.DBA.ws_get_ftext (p1, dot); 
+      } else 
+        fext := ''; 
+      if (__proc_exists (fext, 2)) 
+        is_exist := 1; 
+        else { 
+        fext := concat ('WS.WS.', fext); 
+        if (__proc_exists (fext, 1)) 
+          is_exist := 1; 
+        } 
+      if (is_exist) { 
+        declare hdl_mode, stream_params any; 
+        hdl_mode := NULL; 
+        stream_params := __http_stream_params (); 
+        http (call (fext) (concat (http_root (), http_physical_path ()), stream_params, lines, hdl_mode)); 
+        if (isarray (hdl_mode) and length (hdl_mode) > 1) 
+          { 
+	     if (hdl_mode[0] <> '' and isstring (hdl_mode[0])) 
+	       http_request_status (hdl_mode[0]); 
+	     if (hdl_mode[1] <> '' and isstring (hdl_mode[1])) 
+	       http_header (hdl_mode[1]); 
+	   } 
+      } else { 
+   not_exist: 
+        http_body_read ();
+        http_file (p1);
+       } 
+    }
+  else 
+    {
+      http_request_status ('HTTP/1.1 403 Forbidden');
+      http ('<HTML><BODY><H3>The requested active content cannot be displayed due to execution restriction</H3></BODY></HTML>'); 
+    }
+
+?>

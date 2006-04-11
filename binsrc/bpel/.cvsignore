@@ -1,0 +1,17 @@
+vad
+vad.db
+vad.log
+vad.trx
+vad_dav.xml
+vad_fs.xml
+virtuoso.ini
+virtuoso.pxa
+virtuoso.tdb
+bpel4ws.vad
+bpel4ws_dev.vad
+make_bpel_vad.log
+make_bpel_vad.xml
+bpel_dav.vad
+bpel_filesystem.vad
+Makefile.in
+Makefile

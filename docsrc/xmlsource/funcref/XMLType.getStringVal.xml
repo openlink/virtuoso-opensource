@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_XMLType.getStringVal">
+  <refmeta>
+    <refentrytitle>XMLType.getStringVal</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XMLType.getStringVal</refname>
+    <refpurpose>The function returns the string-value of the current node like XPATH function 'string()'.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_XMLType.getStringVal">
+      <funcprototype id="fproto_XMLType.getStringVal">
+        <funcdef><function>XMLType.getStringVal</function></funcdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_XMLType.getStringVal">
+    <title>Description</title>
+    <para>The function returns the string-value of the current node.  This is similar to the XPATH function 'string()'.</para>
+  </refsect1>
+  <refsect1 id="ret_XMLType.getStringVal"><title>Return Types</title>
+    <para>The member function returns wide string.</para>
+  </refsect1>
+  <refsect1 id="examples_XMLType.getStringVal">
+    <title>Examples</title>
+    <example id="ex_XMLType.getStringVal"><title>A table with an XMLType column</title>
+      <para>This populates a table with XML data and then selects the 
+	  string-value of an 'ename' element from the appropriate record.</para>
+      <screen><![CDATA[
+create table TEST_XMLS  (I integer primary key, XMLVAL XMLType);
+insert into TEST_XMLS  values (1, XMLType('<emp><empno>221</empno><ename>John</ename></emp>'));
+insert into TEST_XMLS  values (2, XMLType('<po><pono>331</pono><poname>PO_1</poname></po>'));
+insert into TEST_XMLS  values (3, XMLType('<oil-rig id="14a" water="0.413"/><oil-rig id="14b" water="0.402"/>'));
+select e.XMLVAL.extract ('//ename').getStringVal() as ENAME
+  from TEST_XMLS  as e
+  where e.XMLVAL.existsNode('/emp/empno')
+ENAME
+NVARCHAR
+_______________________________________________________________________________
+
+John
+
+1 Rows. -- 00000 msec.
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_XMLType.getStringVal">
+    <title>See Also</title>
+    <para><link linkend="fn_XMLType.getNumVal"><function>XMLType.getNumVal()</function></link></para>
+    <para><link linkend="fn_XMLType.getClobVal"><function>XMLType.getClobVal()</function></link></para>
+  </refsect1>
+</refentry>

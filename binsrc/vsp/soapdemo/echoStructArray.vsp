@@ -1,0 +1,198 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+
+  declare _caller, _out_str, _soap_url, _err2, opl1, opl2, opl_home varchar;
+  declare state, msg, st varchar;
+  declare _in, _out, _err any;
+  declare meta any;
+  declare urls any;
+
+  _caller := {?'caller'};
+  _in := {?'in'};
+  _out := {?'out'};
+  opl_home := {?'opl_home'};
+
+  if (_caller= 'Import3')
+    {
+       opl1 := concat (opl_home, '/r3/Import3');
+       opl2 := concat ('OpenLink Software (', opl1, ')');
+       urls := vector (
+	       vector (opl1, opl2),
+	       vector ('http://www.whitemesa.net/interop/r3/import3','White Mesa (http://www.whitemesa.net/interop/r3/import3)'),
+	       vector ('http://mssoapinterop.org/stkv3/wsdl/import3.wsdl','Microsoft (http://mssoapinterop.org/stkv3/wsdl/import3.wsdl)'),
+	       vector ('http://interop.xmlbus.com:7002/xmlbus/container/SoapInteropImport3App/Import3/SoapInteropImport3Port/','IONA XMLBus (http://interop.xmlbus.com:7002/.../SoapInteropImport3Port/)'),
+	       vector ('http://www.dolphinharbor.org/services/R3Import3','Spray (http://www.dolphinharbor.org/services/R3Import3)'),
+	       vector ('http://www.soapclient.com/interop/Import3.wsdl','SQLData (http://www.soapclient.com/interop/Import3.wsdl)'),
+	       vector ('http://mssoapinterop.org/asmx/wsdl/import3.asmx','ASP.NET (http://mssoapinterop.org/asmx/wsdl/import3.wsdl)')
+		 );
+    }
+
+  _out_str := '';
+
+  if ({?'step'} = '1')
+    {
+       _soap_url := {?'soap_svc_url'};
+       if (_soap_url = '')
+         _soap_url := {?'other_uri'};
+
+       _soap_url := WS.WS.PARSE_URI (_soap_url);
+
+          st := sprintf ('select soap_call (''%s'', ''%s'', ''http://soapinterop/'',
+	     ''echoStructArray'',
+	     vector (vector (''inputArray'', ''http://soapinterop.org/xsd:ArrayOfSOAPStruct''),
+	     vector (
+	     soap_box_structure (''varInt'', cast (%s as integer),
+	       ''varString'', ''%s'', ''varFloat'', cast (%s as real)),
+	     soap_box_structure (''varInt'', cast (%s as integer),
+	       ''varString'', ''%s'', ''varFloat'', cast (%s as real)),
+	     soap_box_structure (''varInt'', cast (%s as integer),
+	       ''varString'', ''%s'', ''varFloat'', cast (%s as real))
+	     )),
+	  11, NULL, NULL, ''"http://soapinterop.org/"'', 2)',
+	  _soap_url[1],_soap_url[2], {?'param1'}, {?'param3'}, {?'param2'},
+	  			     {?'param1'}, {?'param3'}, {?'param2'},
+				     {?'param1'}, {?'param3'}, {?'param2'});
+       state := '00000';
+       exec (st, state, msg, vector (), 1000, meta, _out_str);
+
+       if (state = '00000')
+	 {
+	    _out_str := _out_str[0];
+	    _out_str := _out_str[0];
+	    _in := _out_str[1];
+	    _out := _out_str[2];
+	    _err := _out_str[3];
+	    if (_err <> 0) goto next;
+	    if (_out_str[3] <> 0)
+	    _out_str := _out_str[0];
+	    _out_str := _out_str[1];
+	 }
+       else
+	 {
+           _err2 := 'Yes';
+           _out_str := 'Error (see error message)';
+	   _in := msg;
+	 }
+    }
+next:
+?>
+<HTML>
+  <HEAD>
+    <TITLE><?=_caller?> Test</TITLE>
+    <META http-equiv=Content-Type content="text/html; charset=windows-1252">
+    <META name="AUTHOR" content="OpenLink Software">
+    <META name="DESCRIPTION" content="<?=_caller?> Test">
+  </HEAD>
+<BODY>
+<TABLE WIDTH="100%" CLASS="ctrlmain" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+  <TR CLASS="ctrlmain"><TD ALIGN="left">
+  <FORM method="POST" action="echoStructArray.vsp">
+  <P><H2><B>echoStructArray</B> from <?=_caller?></H2>
+    <P>This method has a Array of Struct return type and one Array of Struct [in]
+       parameter.<BR>The struct consists of an integer value, a float value, and a string value.
+    <P>Select the SOAP service endpoint URL you wish to use:
+<?vsp
+    declare idx, len integer;
+    declare ch varchar;
+
+    idx := 0;
+    len := length (urls);
+
+    while (idx < len)
+      {
+        ch  := '';
+	if (idx = 0) ch := 'checked';
+?>
+        <P><INPUT TYPE="radio" name="soap_svc_url" value="<?=urls[idx][0]?>" <?=ch?>><?=urls[idx][1]?>
+<?vsp
+         idx := idx + 1;
+      }
+?>
+    <P><INPUT TYPE="radio" name="soap_svc_url" value="">Other
+    <INPUT size=50 value="" name="other_uri">
+       <H3>Enter the input Struct parameter values desired:</H3>
+       <P><B>varInt</B> (please enter an <I>integer</I> value)&nbsp;&nbsp;<INPUT value=42 name=param1>
+       <P><B>varFloat</B> (please enter a <I>float</I> value)&nbsp;&nbsp;<INPUT value=99.005 name=param2>
+       <P><B>varString</B> (please enter a <I>string</I> value)&nbsp;&nbsp;<INPUT value=hello name=param3>
+       <P>Array size :&nbsp;&nbsp;3
+    <P><INPUT type="submit" value="Call">
+       <INPUT type="hidden" name="caller" value="<?=_caller?>">
+       <INPUT type="hidden" name="opl_home" value="<?=opl_home?>">
+       <INPUT type="hidden" name="step" value="1">
+
+<?vsp  if (_err <> 0)
+         {
+?>
+    	   <H2>Error:</H2>
+	   <b><?=_err[2]?></b>
+<?vsp
+	   goto buff;
+	 }
+?>
+
+<?vsp  if (_out_str <> '')
+         {
+	   if (_err2 = 'Yes')
+	     {
+?>
+    <P>Return value:
+    <P><?=_out_str?>
+<?vsp
+	     }
+	   else
+	     {
+?>
+    <P><H2>Return value:</H2>
+    <P><b><i><?=_out_str[1][0][0]?></i></b>
+    <P><b><?=_out_str[1][1][0][0]?></b> = <?=_out_str[1][1][1]?>
+    <P><b><?=_out_str[1][2][0][0]?></b> = <?=_out_str[1][2][1]?>
+    <P><b><?=_out_str[1][3][0][0]?></b> = <?=_out_str[1][3][1]?>
+    <P><b><i><?=_out_str[2][0][0]?></i></b>
+    <P><b><?=_out_str[2][1][0][0]?></b> = <?=_out_str[2][1][1]?>
+    <P><b><?=_out_str[2][2][0][0]?></b> = <?=_out_str[2][2][1]?>
+    <P><b><?=_out_str[2][3][0][0]?></b> = <?=_out_str[2][3][1]?>
+    <P><b><i><?=_out_str[3][0][0]?></i></b>
+    <P><b><?=_out_str[3][1][0][0]?></b> = <?=_out_str[3][1][1]?>
+    <P><b><?=_out_str[3][2][0][0]?></b> = <?=_out_str[3][2][1]?>
+    <P><b><?=_out_str[3][3][0][0]?></b> = <?=_out_str[3][3][1]?>
+<?vsp
+	     }
+	 }
+buff:
+       if (_in is not NULL)
+         {
+?>
+    <P>Request message buffer:
+    <P><TEXTAREA name=buffer_request rows=15 cols=80><?=_in?></TEXTAREA>
+<?vsp    }
+       if (_out is not NULL)
+         {
+?>
+    <P>Response message buffer:
+    <P><TEXTAREA name=buffer_response rows=15 cols=80><?=_out?></TEXTAREA></P>
+<?vsp    }   ?>
+  </FORM>
+</BODY>
+</TABLE>
+</HTML>

@@ -1,0 +1,154 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+
+	<head>
+		<title>Table manipulations calling CLR functions</title>
+	</head>
+
+	<body>
+           <v:page name="sms_handler" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+		<h2>Table manipulations calling CLR functions</h2>
+
+		    <v:login name="loginc" realm="vspx" mode="url" user-password="sql_user_password" user-password-check="sql_user_password_check" >
+		    <v:template type="if-no-login" redirect="so_s_26.vspx">
+		    </v:template>
+
+		    <v:login-form name="loginf" required="1" title="Login" user-title="User Name" password-title="Password" submit-title="Login" >
+		    </v:login-form>
+
+		    <v:template type="if-login">
+		      <P>
+			SID: <?vsp http (self.sid); ?>
+		      </P>
+		      <P>
+			UID: <?vsp http_value (connection_get ('vspx_user')); ?>
+		      </P>
+		      <P> ClientSerialNo : <?vsp http_value (connection_get ('so_s_26.Redcoal.ClientSerialNo')); ?> </P>
+		      <P> SMSKey : <?vsp http_value (connection_get ('so_s_26.Redcoal.SMSKey')); ?> </P>
+		      <P> MGRPhone : <?vsp http_value (connection_get ('so_s_26.MGRPhone')); ?> </P>
+
+		<?vsp
+     declare params any;
+     params := (self.vc_event).ve_params;
+     dbg_obj_print (params);
+   {
+     declare _ClientSerialNo, _SMSKey, _Recepient varchar;
+
+
+     _ClientSerialNo := connection_get ('so_s_26.Redcoal.ClientSerialNo');
+     _SMSKey := connection_get ('so_s_26.Redcoal.SMSKey');
+     _recepient := connection_get ('so_s_26.MGRPhone');
+
+     if (isstring (_ClientSerialNo) and isstring (_SMSKey) and isstring (_recepient) and
+	  length (_ClientSerialNo) > 0 and length (_SMSKey) > 0 and length (_recepient) > 0)
+       {
+?>
+		<p><i>SMS Sending <v:url name="on_url" url="--'setup_sms.vspx'" format="%s" value="--'on'" /></i></p>
+		<?vsp
+    } else {
+?>
+		<p><i>SMS Sending <v:url name="off_url" url="--'setup_sms.vspx'" format="%s" value="--'off'" /></i></p>
+		<?vsp
+    }
+   }
+?><?vsp
+  declare _add_it, _delete_it integer;
+  declare _supplier_id varchar;
+
+  declare exit handler for sqlstate '*' {
+?>
+		<hr />
+		<table>
+			<tr>
+				<td>SQL State</td>
+				<td><?V __SQL_STATE ?></td>
+			</tr>
+			<tr>
+				<td>SQL Message</td>
+				<td><?V __SQL_MESSAGE ?></td>
+			</tr>
+		</table>
+		<hr />
+		<?vsp
+     goto page_start;
+  };
+
+      _add_it := trim (get_keyword ('add_it', params, ''));
+      _delete_it := trim (get_keyword ('delete_it', params, ''));
+
+      _supplier_id := trim (get_keyword ('supplier_id', params, ''));
+      if (_add_it <> '')
+        {
+	  insert soft SOAP..Suppliers (SupplierID) values (cast (_supplier_id as integer));
+?>
+		<hr />
+		<p>Added : SupplierID <b><?V cast (_supplier_id as integer) ?></b>.</p>
+		<hr />
+		<?vsp
+	}
+      else if (_delete_it <> '')
+        {
+          _supplier_id := trim (get_keyword ('supplier_id1', params, ''));
+	  delete from SOAP..Suppliers where SupplierID = cast (_supplier_id as integer);
+?>
+		<hr />
+		<p>Deleted : SupplierID <b><?V cast (_supplier_id as integer) ?></b>.</p>
+		<hr />
+		<?vsp
+	}
+page_start:
+?>
+		<v:form action="handler.vspx" name="delate_form">
+			<table>
+				<tr>
+					<td>SupplierID</td>
+					<td><select name="supplier_id1" value="<?V _supplier_id ?>">
+							<?vsp
+            for select SupplierID as supp_id from SOAP..Suppliers do {
+?>
+							<option label="<?V supp_id ?>" value="<?V supp_id ?>"><?V supp_id ?></option><?vsp       }
+?>
+						</select></td>
+					<td><input type="submit" name="delete_it" value="Delete" /></td>
+				</tr>
+			</table>
+		</v:form>
+		<hr />
+		<v:form action="handler.vspx" name="add_form">
+			<table>
+				<tr>
+					<td>New SupplierID</td>
+					<td><input type="text" name="supplier_id" value="<?V _supplier_id ?>" /></td>
+					<td><input type="submit" name="add_it" value="Add" /></td>
+				</tr>
+			</table>
+		</v:form>
+
+		    </v:template>
+
+		    </v:login>
+          </v:page>
+	</body>
+
+</html>

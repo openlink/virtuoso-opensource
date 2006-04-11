@@ -1,0 +1,283 @@
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+
+  declare _title, _helpstring, _author, _page_desc varchar;
+  declare is_empty integer;
+
+  _title := 'Virtuoso Documentation Search';
+  _author := 'OpenLink Software';
+  _helpstring := 'virtdocsearch';
+  _page_desc := 'To enable users to quickly search based on the keywords for parts of the documentation.';
+
+-- #######################################
+
+declare _keywords varchar;
+is_empty := 0;
+
+_keywords := get_keyword('keywords', params, '');
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">
+<HTML>
+  <HEAD>
+  <LINK REL="stylesheet" TYPE="text/css" HREF="search.css" />
+    <TITLE><?=_title?></TITLE>
+    <meta name="AUTHOR" CONTENT="<?=_author?>">
+    <meta name="DESCRIPTION" CONTENT="<?=_page_desc?>">
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+    <meta name="COPYRIGHT" content="OpenLink Software., 2005">
+    <meta name="GENERATOR" content="OpenLink XSLT Team"></head>
+    <link rel="top" href="index.html" title="Virtuoso Universal Server Documentation">
+    <link rel="search" href="/doc/search.vsp" title="Search Virtdocs">
+    <link rel="shortcut icon" href="../images/misc/viwin32.ico" type="image/x-icon">
+  </HEAD>
+<body>
+<DIV id="header"><A name="search"></A><IMG src="images/misc/logo.jpg" alt="">
+<H1><?=_title?></H1></DIV>
+
+<div id="navbartop"><div>
+<a href="html/index.html">Home</a> |
+<a href="html/contents.html">Contents</a>
+</div></div>
+<div id="searchbar">
+  <form method="POST" action="/doc/search.vsp">
+  Keyword Search: <input type="text" name="txt" value="<?={?'txt'}?>"/> <input type="submit" name="go" VALUE="Go" />
+  </form>
+</div>
+
+<div id="searchresults">
+<table>
+<?vsp
+ declare exp, exp1, exp2 varchar;
+ declare hit_words any;
+ declare i, l, j, cnt, _from, _to, _from1, _to1, br, st, max_i, cf, results_per_page, m, n integer;
+ declare ra, xt, xp, res any;
+ declare vt, war, res1 any;
+ --dbg_obj_print (params);
+ results_per_page :=20;
+ exp := get_keyword ('txt', params, '');
+ if (length (exp)< 2)
+   exp := 'thiscantbefoundanywhere';
+ exp := trim (exp, ' ');
+
+ exp1 := '';
+ hit_words := vector();
+ if (strchr (exp, '"') is not null or strchr (exp, '''') is not null)
+   {
+     declare tmp, w varchar;
+     tmp := exp;
+     w := regexp_match ('["][^"]+["]|[''][^'']+['']|[^"'' ]+', tmp, 1);
+     while (w is not null)
+       {
+--   dbg_obj_print ('match:' , w);
+         w := trim (w, '"'' ');
+         if (upper(w) <> 'AND' and upper(w) <> 'NOT' and upper(w) <> 'NEAR' and upper(w) <> 'OR' and length (w) > 1and not vt_is_noise (w, 'utf-8', 'x-ViDoc'))
+           exp1 := concat (exp1, sprintf ('"%s" AND ', replace(w, '"', '')));
+         w := regexp_match ('["][^"]+["]|[''][^'']+['']|[^"'' ]+', tmp, 1);
+       }
+--     dbg_obj_print (exp1);
+     if (length (exp1) > 6)
+       {
+         exp1 := substring (exp1, 1, length (exp1) - 5);
+         goto end_parse;
+       }
+   }
+
+ vt := vt_batch ();
+ vt_batch_feed (vt, exp, 0, 0, 'x-ViDoc');
+ war := vt_batch_strings_array (vt);
+
+ m := length (war);
+ --dbg_obj_print (war);
+ n := 0;
+ exp1 := '(';
+ while (n < m)
+   {
+     declare word1 varchar;
+     if (war[n] <> 'AND' and war[n] <> 'NOT' and war[n] <> 'NEAR' and war[n] <> 'OR' and length (war[n]) > 1 and not vt_is_noise (war[n], 'utf-8', 'x-ViDoc'))
+       {
+         word1 := war[n];
+   hit_words := vector_concat (hit_words, vector (word1));
+--         if (strchr (word1, '.') is not null)
+           word1 := concat ('"', word1, '"');
+         exp1 := concat (exp1, word1, ' AND ');
+       }
+     n := n + 2;
+   }
+
+ if (length (exp1) > 5)
+   {
+     exp1 := substring (exp1, 1, length (exp1) - 5);
+     exp1 := concat (exp1, ')');
+   }
+ else
+   exp1 := 'thiscantbefoundanywhere';
+
+end_parse:
+
+-- dbg_obj_print ('expr: ', exp1);
+-- exp2 := replace (exp, '"', '');
+http(exp1);
+--return;
+
+ _from := atoi (get_keyword ('f',params,'0'));
+ _to := atoi (get_keyword ('t',params, cast (results_per_page as char)));
+ cf := _to;
+ st := 0;
+ max_i := 100;
+ if (_from < 2)
+   st := 1;
+ res := vector ();
+ br := 0;
+
+ declare doc_installed integer;
+ doc_installed := case when DB.DBA.vad_check_version ('doc') is not null then 1 else 0 end;
+
+ if (doc_installed)
+ {
+   for select "RES_ID", "RES_CONTENT", "RES_NAME", length("RES_CONTENT") as rlen
+     from "WS"."WS"."SYS_DAV_RES"
+     where "RES_FULL_PATH" like '/DAV/VAD/doc/html/%'
+       and "RES_FULL_PATH" not like '/DAV/VAD/doc/html/chaptermenu%'
+       and "RES_FULL_PATH" not like '/DAV/VAD/doc/html/virtdocs%'
+       and "RES_FULL_PATH" <> '/DAV/VAD/doc/html/contents.html'
+       and "RES_FULL_PATH" <> '/DAV/VAD/doc/html/functionsidx.html'
+     do
+     {
+       res := vector_concat (res, vector (cast (RES_ID as varchar), RES_NAME));
+     }
+  }else{
+ for select "RES_ID", "RES_CONTENT", "RES_NAME", length("RES_CONTENT") as rlen
+   from "WS"."WS"."SYS_DAV_RES"
+   where "RES_FULL_PATH" like '/DAV/doc/html/%'
+     and "RES_FULL_PATH" not like '/DAV/doc/html/chaptermenu%'
+     and "RES_FULL_PATH" not like '/DAV/doc/html/virtdocs%'
+     and "RES_FULL_PATH" <> '/DAV/doc/html/contents.html'
+     and "RES_FULL_PATH" <> '/DAV/doc/html/functionsidx.html'
+   do
+   {
+     res := vector_concat (res, vector (cast (RES_ID as varchar), RES_NAME));
+   }
+  };
+  -- dbg_obj_print(res);
+  j := 0; l := length (res); cnt := 0;
+  --while (j<l)
+  {
+    declare res_name, excerpt any;
+    declare i, p integer;
+    declare excerpt_samples varchar;
+    i := 0;
+    for (select "d_id" as id, "d_anch", "d_res_id", score
+       from "DB"."DBA"."document_search"
+       where contains (d_txt, concat ('[__lang ''x-ViDoc''] ',exp1))
+       order by score desc)
+    do
+    {
+      declare d_txt any;
+      d_txt := (select d_txt from "DB"."DBA"."document_search" where "d_id" = id);
+      excerpt := regexp_match ('>[^<>]+</', Blob_to_string(d_txt));
+      if (length (hit_words) > 9)
+        hit_words := subseq (hit_words, 0, 9);
+      if (length (hit_words) > 0)
+        excerpt_samples := coalesce (search_excerpt (hit_words,  blob_to_string (d_txt)), '');
+      else
+        excerpt_samples := '';           
+      if (excerpt is not null)
+         excerpt := trim (excerpt, '></ ');
+      else
+      {
+        excerpt := substring (blob_to_string(d_txt), 1, 50);
+      }
+      res_name := get_keyword (cast(d_res_id as varchar), res, '');
+      if (res_name = '')
+        goto nextc;
+      cnt := cnt + 1;
+      if (cnt < _from)
+        goto nextc;
+      if (not br)
+      {
+        is_empty := 1;
+?>
+   <tr>
+     <td><?=cnt?>.</td>
+     <td><a href="html/<?=res_name?>#<?=d_anch?>"><?vsp http(excerpt); ?></a></td>
+     <td><img src="score.gif" height="5" width="<?vsp if(score>300) {http('100');} else {http_value(score);} ?>" /></td>
+   </tr>
+   <tr>  <td colspan="3"><?vsp http(excerpt_samples); ?></td> </tr>
+<?vsp
+      }
+      if (cnt >= _to)
+      {
+        br := 1;
+        if (cnt >= max_i)
+         goto endf;
+      }
+      nextc:;
+      i:=i+1;
+    }
+    j := j + 1;
+  }
+endf:;
+   --dbg_obj_print ('i=',i,' j=', j,'br= ', br, 'cnt=', cnt,' max_i=', max_i);
+   if (cnt = results_per_page)
+     br := 0;
+   if (not is_empty)
+     {
+       if (exp = 'thiscantbefoundanywhere')
+   exp := '';
+?>
+   <tr><td colspan="3">Your search "<?=exp?>" did not match any documents.</td></tr>
+<?vsp
+     }
+
+
+   _from1 := _to - (2 * results_per_page);
+
+   if (_from1 < 0)
+     _from1 := 0;
+
+   _to1 := _from1 + results_per_page;
+   _from1 := _from1 + 1;
+
+   _from := _to;
+   _to := _from + results_per_page;
+   _from := _from + 1;
+
+?>
+</table>
+</div>
+
+<DIV id="srcnavbar">
+<?vsp if (not st) { ?>
+<A HREF="search.vsp?txt=<?=exp?>&f=<?=_from1?>&t=<?=_to1?>">&lt;&lt; Prev</A>
+<?vsp } ?>
+<?vsp
+  declare x integer;
+  x:= results_per_page;
+  while (cnt > results_per_page and is_empty and (x <= cnt+results_per_page))
+    {
+      if (cf = x)
+  {
+?>
+    <A HREF="search.vsp?txt=<?=exp?>&f=<?=(x-results_per_page)+1?>&t=<?=(x-results_per_page)+results_per_page?>"><b>[<?=x/results_per_page?>]</b></A>
+<?vsp
+  }
+      else
+  {
+?>
+    <A HREF="search.vsp?txt=<?=exp?>&f=<?=(x-results_per_page)+1?>&t=<?=(x-results_per_page)+results_per_page?>"><?=x/results_per_page?></A>
+<?vsp
+  }
+      x := x+results_per_page;
+    }
+?>
+<?vsp if (br) { ?>
+<A HREF="search.vsp?txt=<?=exp?>&f=<?=_from?>&t=<?=_to?>">Next &gt;&gt;</A>
+<?vsp } ?>
+</DIV>
+
+<DIV id="footer"><DIV>©2005 OpenLink Software. All rights reserved.</DIV></DIV>
+</body>
+</HTML>

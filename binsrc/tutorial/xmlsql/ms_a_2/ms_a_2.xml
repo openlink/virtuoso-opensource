@@ -1,0 +1,97 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="MS-A-2">
+  <refmeta>
+    <refentrytitle>Using Annotated XSD Schemas for Creating XML Views</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname></refname>
+    <refpurpose>Using sql:relation and sql:field</refpurpose>
+  </refnamediv>
+
+<refsect1 id="MS-A-2a">
+<title>Preliminaries</title>
+<para>
+The sql:relation annotation maps an XML node in the XSD schema to a database table. 
+The name of a table (view) is specified as the value of the sql:relation annotation.
+When sql:relation is specified on an element, the scope of this annotation applies to all attributes and 
+subelements that are described in the complex type definition of that element, therefore, providing a shortcut 
+in writing annotations.
+The sql:relation annotation also may be used if identifiers that are valid in SQL 
+are not valid in XML. For example, &apos;Order Details&apos; is a valid table name in SQL, but not in XML. 
+In such cases, the sql:relation annotation can be used to specify the mapping, for example:
+&lt;xsd:element name="OrderDetails" sql:relation="Order Details"&gt;
+...
+
+The sql:field annotation maps an XML node in the schema to a database column. It's not allowed to specify 
+sql:field on an empty content element.
+</para>
+</refsect1>
+<refsect1 id="MS-A-2b">
+<title>Example</title>
+<para>
+In this example, the XSD schema consists of an &apos;Emp&apos; element of complex type with &apos;FirstName&apos;,
+&apos;LastName&apos; and &apos;title&apos; child elements and the &apos;EmpID&apos; attribute.
+The sql:relation annotation maps the &apos;Emp&apos; element to the Demo.demo.Employees table. The sql:field 
+annotation maps the &apos;title&apos; element to the &apos;Title&apos; column and the &apos;EmpID&apos; attribute 
+to the "EmployeeID" column.
+No annotations are specified for the &apos;FirstName&apos; and &apos;LastName&apos; elements. This results in a 
+default mapping of the elements to the columns with the same names. 
+</para>
+<programlisting><![CDATA[
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:sql="urn:schemas-microsoft-com:mapping-schema">
+  <xsd:element name="Emp" sql:relation="Demo.demo.Employees" >
+   <xsd:complexType>
+     <xsd:sequence>
+        <xsd:element name="FirstName"  
+                     type="xsd:string" /> 
+        <xsd:element name="LastName"  
+                     type="xsd:string" />
+        <xsd:element name="title"  
+		     sql:field="Title"
+                     type="xsd:string" />
+     </xsd:sequence>
+     <xsd:attribute name="EmpID"  sql:field="EmployeeID"  type="xsd:integer" />
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>
+]]></programlisting>
+<para>Let the schema is written to the file &apos;EmpSchema.xsd&apos;, then after loading this file by 
+<function>xml_load_mapping_schema_decl</function> function, the first example will produce a result for the XPath query:
+</para>
+<programlisting><![CDATA[
+XPATH [__view 'EmpSchema'] /*
+]]></programlisting>
+the second example will produce a result for the XQuery query:
+<programlisting><![CDATA[
+ select xquery_eval('<doc>{for $r in xmlview("EmpSchema")/* return $r}</doc>', xtree_doc('<q/>')); 
+]]></programlisting>
+<para>
+&lt;doc&gt; is necessary for serialization (any name instead &apos;doc&apos; is possible)
+</para>
+
+</refsect1>
+</refentry>

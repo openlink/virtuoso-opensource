@@ -1,0 +1,895 @@
+/*
+ *  
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *  
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *  
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  
+ *  
+*/
+/* VirtuosoInputStream.java */
+package virtuoso.jdbc2;
+
+import java.io.*;
+import java.net.*;
+import java.sql.*;
+import java.util.*;
+import java.math.*;
+import openlink.util.*;
+
+/**
+ * The VirtuosoInputStream is used to deserialize data during
+ * an answer message between Virtuoso DBMS and the JDBC driver .
+ *
+ * @version 1.0 (JDBC API 2.0 implementation)
+ */
+class VirtuosoInputStream extends BufferedInputStream
+{
+   // The connection attached to this stream
+   private VirtuosoConnection connection;
+
+   // -------------------- A new BufferedInputStream design -----------------
+   // Some methods used to design a InputBufferedStream without
+   // the java official implementation. It's more efficient.
+   // The buffer
+/*
+   private byte[] buffer;
+
+   private int count;
+
+   private int pos;
+
+   private InputStream in;
+
+   private void fill() throws IOException
+   {
+      try {
+      	count = pos = 0;
+        while(in.available() > 0 && pos>=count && count<=buffer.length)
+   	{
+           int j = in.read(buffer,count,buffer.length-count<in.available() ? buffer.length-count : in.available());
+           if(j != -1) count = count+j;
+	}
+      } catch(Exception e) {
+           if(e instanceof IOException) throw (IOException)e;
+        }
+   }
+   public int read() throws IOException
+   {
+      long timeout = System.currentTimeMillis();
+      while(pos >= count)
+      {
+         fill();
+         if(pos >= count)
+	 {
+	    if(connection.getTimeout() != 0 &&
+	       System.currentTimeMillis()-timeout>=connection.getTimeout()*1000)
+	      {
+		if (VirtuosoFuture.rpc_log != null)
+		  {
+		    synchronized (VirtuosoFuture.rpc_log)
+		      {
+			VirtuosoFuture.rpc_log.println ("(conn " + connection.hashCode() + ") *** TIMEOUT in read");
+		      }
+		  }
+		throw new IOException("Read: Time out expired");
+	      }
+            try {
+	      new Thread().sleep(20);
+	    } catch(InterruptedException e) { }
+         }
+      }
+      return buffer[pos++] & 0xff;
+   }
+
+   public int read(byte b[]) throws IOException
+   {
+      return this.read(b, 0, b.length);
+   }
+   public int read(byte b[], int off, int len) throws IOException
+   {
+      if(len >= (count-pos))
+      {
+         try {
+            int n = count - pos, m;
+            System.arraycopy(buffer, pos, b, off, n);
+            pos = count;
+            m = in.read(b,off+n,len-n);
+            if(m != -1) n = n+m;
+            return n;
+          } catch(Exception e) {
+               if(e instanceof IOException) throw (IOException)e;
+            }
+      }
+      System.arraycopy(buffer,pos,b,off,len);
+      pos += len;
+      return len;
+   }
+
+   public long skip(long n) throws IOException
+   {
+      if(n < 0)
+         return 0;
+      long avail = count - pos;
+      if(avail >= n)
+      {
+         pos += n;
+         return n;
+      }
+      pos += avail;
+      return avail + in.skip(n - avail);
+   }
+
+   public int available() throws IOException
+   {
+      return (count - pos) + in.available();
+   }
+
+   public boolean markSupported()
+   {
+      return false;
+   }
+
+   public void reset() throws IOException
+   {
+      in.reset();
+      pos = 0;
+      count = 0;
+   }
+
+   public void close() throws IOException
+   {
+      in.close();
+      buffer = null;
+   }
+*/
+
+   // End of the InputBufferedStram design
+
+    public int read () throws IOException
+      {
+	int c = super.read();
+	if (c == -1)
+	  throw new IOException ("Connection to the server lost");
+	return c;
+      }
+
+    public int read(byte[] b, int off, int len) throws IOException
+      {
+	int c = super.read (b, off, len);
+	if (c == -1)
+	  throw new IOException ("Connection to the server lost");
+	return c;
+      }
+
+
+    private static final int DefaultBufferSize = 2048;
+   /**
+    * Constructs a VirtuosoInputStream using a InputStream from
+    * a socket connecting the driver to the database.
+    *
+    * @param connection The connection attached to this stream.
+    * @param input   The InputStream representing data from the database.
+    * @exception java.io.IOException   An error occurred creating a
+    * BufferedInputStream for the InputStream
+    * @see java.io.BufferInputStream
+    */
+   VirtuosoInputStream(VirtuosoConnection connection, InputStream input) throws IOException
+   {
+      this (connection,input,DefaultBufferSize);
+   }
+
+   /**
+    * Constructs a VirtuosoInputStream using a InputStream from
+    * a socket connecting the driver to the database with a specific
+    * buffer size.
+    *
+    * @param connection The connection attached to this stream.
+    * @param input   The InputStream representing data from the database.
+    * @param size The BufferedInputStream buffer size.
+    * @exception java.io.IOException   An error occurred creating a
+    * BufferedInputStream for the InputStream
+    * @see java.io.BufferInputStream
+    */
+   VirtuosoInputStream(VirtuosoConnection connection, InputStream input, int size) throws IOException
+   {
+     super (input, size);
+      this.connection = connection;
+/*
+      this.in = input;
+      // Setup the buffer
+      buffer = new byte[size];
+*/
+   }
+
+   /**
+    * Constructs a VirtuosoInputStream using from the Socket
+    * connecting the driver to the database.
+    *
+    * @param connection The connection attached to this stream.
+    * @param input   The Socket representing data from the database.
+    * @exception java.io.IOException   An error occurred creating a
+    * BufferedInputStream for the InputStream
+    * @see java.net.Socket
+    */
+   VirtuosoInputStream(VirtuosoConnection connection, Socket input) throws IOException
+   {
+      this (connection,input.getInputStream());
+   }
+
+   /**
+    * Constructs a VirtuosoInputStream using from the Socket
+    * connecting the driver to the database with a specific size
+    * buffer.
+    *
+    * @param connection The connection attached to this stream.
+    * @param input   The Socket representing data from the database.
+    * @param size The buffer size.
+    * @exception java.io.IOException   An error occurred creating a
+    * BufferedInputStream for the InputStream
+    * @see java.net.Socket
+    */
+   VirtuosoInputStream(VirtuosoConnection connection, Socket input, int size) throws IOException
+   {
+      this (connection,input.getInputStream(),size);
+   }
+
+   /**
+    * Check if the input stream is closed.
+    *
+    * @return true if the connection is closed, false if it's still open.
+    */
+   protected boolean isClosed()
+   {
+      return (in == null);
+   }
+
+   /**
+    * Method uses to deserialize an object from a DV format.
+    *
+    * @return Object	The object read from the stream.
+    * @exception	java.io.IOException  An IO error occurred on the stream.
+    * @exception  java.io.EOFException An end of stream is occurred
+    * (read incomplete).
+    * @exception  virtuoso.jdbc2.VirtuosoException   An internal error occurred.
+    */
+   protected Object read_object() throws IOException, EOFException, VirtuosoException
+   {
+     // Read and treat the tag
+     int tag = read();
+     Object res;
+     try
+       {
+         switch(tag)
+           {
+             case VirtuosoTypes.DV_NULL:
+                   {
+                     //System.out.println("DV_NULL");
+                     return new Short((short)0); //null; because off absence of TAG_BOX in O12
+                   }
+             case VirtuosoTypes.DV_DB_NULL:
+                   {
+                     //System.out.println("DV_DB_NULL");
+                     return null;
+                   }
+             case VirtuosoTypes.DV_ARRAY_OF_POINTER:
+             case VirtuosoTypes.DV_LIST_OF_POINTER:
+                   {
+                     //System.out.println("DV_ARRAY_OF_POINTER");
+                     int n = readint();
+                     Object[] array = new Object[(int)n];
+                     for(int i = 0;i < n;i++)
+                       array[i] = read_object();
+		     res = new openlink.util.Vector(array);
+                     //System.out.print("DV_ARRAY_OF_POINTER: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_ARRAY_OF_LONG:
+                   {
+                     //System.out.println("DV_ARRAY_OF_LONG");
+                     int n = readint();
+                     Object[] array = new Object[(int)n];
+                     for(int i = 0;i < n;i++)
+                       array[i] = new Long(readlongint());
+                     res = new VectorOfLong(array);
+                     //System.out.print("DV_ARRAY_OF_LONG");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_ARRAY_OF_LONG_PACKED:
+                   {
+                     // ???? Perhaps a VectorOfLongPacked class to design ????
+                     //System.out.println("DV_ARRAY_OF_LONG_PACKED");
+                     int n = readint();
+                     Object[] array = new Object[(int)n];
+                     for(int i = 0;i < n;i++)
+                       array[i] = new Long(readlongint());
+                     res = new VectorOfLong(array);
+                     //System.out.print("DV_ARRAY_OF_LONG_PACKED: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_ARRAY_OF_DOUBLE:
+                   {
+                     //System.out.println("DV_ARRAY_OF_DOUBLE");
+                     int n = readint();
+                     Object[] array = new Object[(int)n];
+                     for(int i = 0;i < n;i++)
+                       array[i] = new Double(readdouble());
+                     res = new VectorOfDouble(array);
+                     //System.out.print("DV_ARRAY_OF_DOUBLE: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_ARRAY_OF_FLOAT:
+                   {
+                     //System.out.println("DV_ARRAY_OF_FLOAT");
+                     int n = readint();
+                     Object[] array = new Object[(int)n];
+                     for(int i = 0;i < n;i++)
+                       array[i] = new Float(readfloat());
+                     res = new VectorOfFloat(array);
+                     //System.out.print("DV_ARRAY_OF_FLOAT: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_LONG_WIDE:
+                   {
+                     //System.out.println("DV_LONG_WIDE");
+                     int n = readlongint();
+                     byte[] array = new byte[(int)n];
+                     for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
+                     res = new String(array, "UTF8");
+                     //System.out.print("DV_LONG_WIDE: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+
+             case VirtuosoTypes.DV_WIDE:
+                   {
+                     //System.out.println("DV_WIDE");
+                     int n = readshortint();
+                     byte[] array = new byte[n];
+                     for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
+		     //for (int i = 0; i < array.length; i++)
+		     //  if (array[i] > 0)
+			// System.err.print (array[i] + " ");
+		      // else
+			// System.err.print ((256 + array[i]) + " ");
+		     //System.err.println ();
+                     res = new String(array, "UTF8");
+		     //System.err.println ("UTF16 len=" + ((String)res).length());
+		     //for (int i = 0; i < ((String)res).length(); i++)
+		     //  System.err.print (((int) ((String)res).charAt(i)) + " ");
+		     //System.err.println ();
+                     //System.out.print("DV_WIDE: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+
+             case VirtuosoTypes.DV_C_STRING:
+             case VirtuosoTypes.DV_STRING:
+             case VirtuosoTypes.DV_LONG_CONT_STRING:
+                   {
+                     //System.out.println("DV_LONG_STRING ");
+                     int n = readlongint();
+                     byte[] array = new byte[(int)n];
+                     for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
+                     res = new String(array, "8859_1");
+                     //System.out.print("DV_LONG_STRING: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_LONG_BIN:
+                   {
+		     //System.out.println("reading DV_LONG_BIN");
+                     int n = readlongint();
+                     byte[] array = new byte[(int)n];
+                     for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
+		     //System.out.println("reading DV_LONG_BIN done");
+                     return array;
+                   }
+             case VirtuosoTypes.DV_C_SHORT:
+             case VirtuosoTypes.DV_SHORT_STRING_SERIAL:
+             case VirtuosoTypes.DV_SHORT_CONT_STRING:
+                   {
+                     //System.out.println("DV_SHORT_STRING_SERIAL");
+                     int n = readshortint();
+                     byte[] array = new byte[n];
+                     for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
+                     res = new String(array, "8859_1");
+                     //System.out.print("DV_SHORT_STRING_SERIAL: " + res.toString());
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+
+             case VirtuosoTypes.DV_BIN:
+                   {
+		     //System.out.println("reading DV_BIN");
+                     int n = readshortint();
+                     byte[] array = new byte[n];
+                     for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
+		     //System.out.println("reading DV_BIN done");
+                     return array;
+                   }
+
+             case VirtuosoTypes.DV_SINGLE_FLOAT:
+                   {
+                     //System.out.println("DV_SINGLE_FLOAT");
+                     res = new Float(readfloat());
+                     //System.out.print("DV_SINGLE_FLOAT: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_DOUBLE_FLOAT:
+                   {
+                     //System.out.println("DV_DOUBLE_FLOAT");
+                     res = new Double(readdouble());
+                     //System.out.print("DV_DOUBLE_FLOAT: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_SHORT_INT:
+                   {
+                     //System.out.println("DV_SHORT_INT");
+		     int ret = readshortint();
+		     if (ret > 127)
+		       ret = ret - 256;
+                     res = new Short((short)ret);
+                     //System.out.print("DV_SHORT_INT: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_LONG_INT:
+                   {
+                     //System.out.println("DV_LONG_INT");
+                     res = new Integer(readlongint());
+                     //System.out.print("DV_LONG_INT: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_DATETIME:
+             case VirtuosoTypes.DV_TIMESTAMP_OBJ:
+             case VirtuosoTypes.DV_TIMESTAMP:
+             case VirtuosoTypes.DV_TIME:
+             case VirtuosoTypes.DV_DATE:
+                   {
+                     //System.out.println("DV_DATE");
+                     res = readDate(tag);
+                     //System.out.print("DV_DATE: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_BLOB_HANDLE:
+             case VirtuosoTypes.DV_BLOB_WIDE_HANDLE:
+                   {
+                     //System.out.println("DV_BLOB_HANDLE dtp=" + tag);
+                     res = new VirtuosoBlob(connection,readlongint(),readlongint(),readlongint(),readlongint(),readlongint(),readlongint(), readlongint(), read_object(), tag);
+                     //System.out.print("DV_BLOB_HANDLE: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             case VirtuosoTypes.DV_NUMERIC:
+                   {
+                     //System.out.println("DV_NUMERIC");
+                     res = readNumeric();
+                     //System.out.print("DV_NUMERIC: ");
+		     //System.out.println (res.toString());
+                     /*try
+                       {
+                         java.math.BigDecimal dec = (java.math.BigDecimal) res;
+                         java.math.BigInteger bi = dec.setScale (0, java.math.BigDecimal.ROUND_UNNECESSARY).unscaledValue();
+                         return bi;
+                       }
+                     catch (ArithmeticException e) {};*/
+                     return res;
+                   }
+	     case VirtuosoTypes.DV_OBJECT:
+		   {
+                     //System.out.println("DV_NUMERIC");
+		     res = readObject();
+                     //System.out.print("DV_NUMERIC: ");
+		     //System.out.println (res.toString());
+		     return res;
+		   }
+             case VirtuosoTypes.DV_STRING_SESSION:
+                   {
+                     //System.out.println("DV_LONG_STRING ");
+		     int flags = read();
+		     ByteArrayOutputStream os = new ByteArrayOutputStream ();
+		     do
+		       {
+			 int part_tag = read ();
+			 if (part_tag != VirtuosoTypes.DV_STRING &&
+				 part_tag != VirtuosoTypes.DV_SHORT_STRING_SERIAL)
+			   {
+			     throw new VirtuosoException (
+				     "Invalid data (tag=" + part_tag + ") in deserializing a string session",
+				     "42000",
+				     VirtuosoException.BADTAG);
+			   }
+			 int n = (part_tag == VirtuosoTypes.DV_STRING) ? readlongint() : read ();
+			 if (n > 0)
+			   {
+			     byte[] array = new byte[(int)n];
+			     for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
+			     os.write (array, 0, n);
+			   }
+			 else
+			   break;
+		       }
+		     while (true);
+                     res = os.toString ((flags & 0x1) != 0 ? "UTF-8" : "8859_1");
+                     //System.out.print("DV_STRING_SESSION: ");
+		     //System.out.println (res.toString());
+                     return res;
+                   }
+             default:
+                 // Problem !
+                 //System.out.println("Tag not defined : "+tag);
+                 throw new VirtuosoException("Tag " + tag + " not defined.",VirtuosoException.BADTAG);
+           }
+       }
+     catch (ClassCastException e)
+       {
+         if (VirtuosoFuture.rpc_log != null)
+           {
+             synchronized (VirtuosoFuture.rpc_log)
+               {
+                 VirtuosoFuture.rpc_log.println ("(conn " + connection.hashCode() + ") **** runtime " +
+                     e.getClass().getName() + " encountered while reading tag " + tag);
+                 e.printStackTrace(VirtuosoFuture.rpc_log);
+               }
+           }
+         throw new Error (e.getClass().getName() + ":" + e.getMessage());
+       }
+   }
+
+   /**
+    * Method to read an int value depending DV_xxx_INT type.
+    *
+    * @return int	Value read.
+    * @exception	java.io.IOException  An IO error occurred on the stream.
+    */
+   private int readint() throws IOException
+   {
+      return (read() == VirtuosoTypes.DV_SHORT_INT) ? readshortint() : readlongint();
+   }
+
+   /**
+    * Method to read a short int value depending DV_SHORT_INT type.
+    *
+    * @return int	Value read.
+    * @exception	java.io.IOException  An IO error occurred on the stream.
+    */
+   private int readshortint() throws IOException
+   {
+      return read();
+   }
+
+   /**
+    * Method to read a long int value depending DV_LONG_INT type.
+    *
+    * @return int	Value read.
+    * @exception	java.io.IOException  An IO error occurred on the stream.
+    */
+   private int readlongint() throws IOException
+   {
+      return (int)( ((read() << 24) & 0xff000000) |
+          ((read() << 16) & 0xff0000) | ((read() << 8) & 0xff00) |
+	  (read() & 0xff) );
+   }
+
+   /**
+    * Method to read a float value depending DV_SINGLE_FLOAT type.
+    *
+    * @return float	Value read.
+    * @exception	java.io.IOException  An IO error occurred on the stream.
+    */
+   private float readfloat() throws IOException
+   {
+      return Float.intBitsToFloat(readlongint());
+   }
+
+   /**
+    * Method to read a double value depending DV_DOUBLE_FLOAT type.
+    *
+    * @return double	Value read.
+    * @exception	java.io.IOException  An IO error occurred on the stream.
+    */
+   private double readdouble() throws IOException
+   {
+     return Double.longBitsToDouble ((((long)readlongint() << 32) & 0xffffffff00000000L) |
+          (readlongint() & 0xffffffffL) );
+   }
+
+   /**
+    * Method to read a numeric value depending DV_NUMERIC type.
+    *
+    * @return BigDecimal	Numeric value.
+    * @exception	java.io.IOException	An IO error occurred on the stream.
+    */
+   private BigDecimal readNumeric() throws IOException, VirtuosoException
+   {
+      int n = readshortint(), i = 0;
+      int len, scale, rp, ep;
+      boolean isneg, isinvalid;
+      byte array[] = new byte[n + 2];
+      byte dp[] = new byte[n << 1];
+      BigDecimal bd;
+
+      if (array!=null && dp!=null)
+      {
+        array[0] = (byte)VirtuosoTypes.DV_NUMERIC;
+	array[1] = (byte)n;
+	for(int inx = read(array,2,n) ; inx != n ; inx+=read(array,inx + 2,n-inx));
+      }
+      else
+        return null;
+
+      /* Init the dp array with a zero value */
+      dp[0] = (byte) '0';
+
+      /* Get some evident informations */
+      len = array[3] << 1;
+      scale = (array[1] - array[3] - 2) << 1;
+      isneg = ((array[2] & 0x1) == 0x1) ? true : false;
+      isinvalid = ((array[2] & 0x18) == 0x18) ? true : false;
+
+      /* Return already here if the value is not good */
+      switch(array[2] & 0x18)
+      {
+        case 0x8:
+            {
+	      return new BigDecimal(Double.NaN);
+            }
+	case 0x10:
+            {
+               if(isneg)
+                 return new BigDecimal(Double.NEGATIVE_INFINITY);
+               return new BigDecimal(Double.POSITIVE_INFINITY);
+            }
+      };
+
+      /* Get the real and exponent parts */
+      rp = 4;
+      ep = 2 + array[1];
+
+      if ((array[2] & 0x04) == 0x04)
+      {
+        dp[i++] = (byte)((array[rp ++] & 0x0f) + '0');
+	len --;
+      }
+
+      if ((array[2] & 0x02) == 0x02)
+        scale --;
+
+      while(rp < ep)
+      {
+        if (i == len)
+	  dp[i++] = (byte) '.';
+        dp[i++] = (byte)(((array[rp] >> 4) & 0x0f) + '0');
+        if (i == len)
+	  dp[i++] = (byte) '.';
+	dp[i++] = (byte)((array[rp++] & 0x0f) + '0');
+      }
+
+      bd = new BigDecimal( ((isneg) ? "-" : "") + new String(dp, 0,
+          (rp != 4) ? (i - (((array[2] & 0x02) == 0x02) ? 1 : 0)) : 1));
+      return bd;
+   }
+
+   private Object readObject() throws IOException, VirtuosoException
+   {
+     int obj_id = readlongint();
+     Object obj = read_object ();
+     if (obj instanceof String)
+       {
+	 try
+	   {
+	     java.io.ByteArrayInputStream bis = new ByteArrayInputStream (((String)obj).getBytes ("8859_1"));
+	     ObjectInputStream ois = new ObjectInputStream (bis);
+	     obj = ois.readObject();
+	   }
+	 catch (Exception e)
+	   {
+	     obj = null;
+	   }
+       }
+     return obj;
+   }
+   /**
+    * Method to read a date value depending of DV_DATE type.
+    *
+    * @param  tag      The tag to determine if it will be a date or a time.
+    * @return Object   The date or a time.
+    * @exception  java.io.IOException  An IO error occurred on the stream.
+    */
+   private Object readDate(int tag) throws IOException
+   {
+      java.util.Calendar cal_dat = new java.util.GregorianCalendar ();
+      int day = read() << 16 | read() << 8 | read();
+      int hour = read();
+      int temp = read();
+      int minute = temp >> 2;
+      int second = (((temp & 0x3) << 4) | ((temp = read()) >> 4));
+      int fraction = (((temp & 0xf) << 16) | (read() << 8) | read());
+      int tz_bytes[] = new int[2], tz_interm;
+
+      tz_bytes[0] = read();
+      tz_bytes[1] = read();
+      int tz = (((int)(tz_bytes[0] & 0x07)) << 8) | tz_bytes[1];
+      int type = tz_bytes[0] >> 5;
+
+      //System.err.println ("type =" + type);
+      //System.err.println ("tz_bytes[0] =" + (byte) tz_bytes[0]);
+      //System.err.println ("tz_bytes[1] =" + (byte) tz_bytes[1]);
+      if ((tz_bytes[0] & 0x4) != 0)
+        {
+          tz_interm = tz_bytes[0] & 0x07;
+	  tz_interm |= 0xF8;
+        }
+      else
+        tz_interm = tz_bytes[0] & 0x03;
+      //System.err.println ("tz_interm =" + tz_interm);
+      //System.err.println ("tz_bytes[1] =" + tz_bytes[1]);
+      tz = ((int)(tz_interm << 8)) | tz_bytes[1];
+
+      //System.err.println ("tag=" + tag + " day=" + day + " hour=" + hour + " minute=" + minute +
+      //	  " second=" + second + " fraction=" + fraction + " tz=" + tz);
+
+      if (tz > 32767)
+	tz -= 65536;
+
+
+      if(tz != 0)
+	{
+	  int sec = time_to_sec (0, hour, minute, second);
+	  sec += 60 * tz;
+	  if (sec < 0)
+	    {
+	      day = day - (1 + ((-sec) / SPERDAY));
+
+	      sec = sec % SPERDAY;
+
+	      if (sec == 0)
+		day++;
+
+	      sec = SPERDAY + sec;
+	    }
+	  else
+	    {
+	      day = day + sec / SPERDAY;
+	      sec = sec % SPERDAY;
+	    }
+	  int dummy_day = sec / SPERDAY;
+	  hour = (sec - (dummy_day * SPERDAY)) / (60 * 60);
+	  minute = (sec - (dummy_day * SPERDAY) - (hour * 60 * 60)) / 60;
+	  second = sec % 60;
+	}
+      num2date(day, cal_dat);
+      //System.out.println ("Time=" + hour + ":" + minute + "." + second);
+      cal_dat.set (Calendar.HOUR_OF_DAY, hour);
+      cal_dat.set (Calendar.MINUTE, minute);
+      cal_dat.set (Calendar.SECOND, second);
+
+      switch(type)
+      {
+         case VirtuosoTypes.DT_TYPE_DATE:
+            return java.sql.Date.valueOf ((new java.sql.Date(cal_dat.getTime().getTime())).toString());
+         case VirtuosoTypes.DT_TYPE_TIME:
+            return java.sql.Time.valueOf ((new java.sql.Time(cal_dat.getTime().getTime())).toString());
+         default:
+            {
+               Timestamp _return = new java.sql.Timestamp(cal_dat.getTime().getTime());
+               _return.setNanos(fraction);
+               return _return;
+            }
+      }
+   }
+
+   static final int SPERDAY = (24 * 60 * 60);
+   static int time_to_sec (int day, int hour, int min, int sec)
+     {
+       return (day * SPERDAY + hour * 60 * 60 + min * 60 + sec);
+     }
+   public static void num2date(int julian_days, Calendar date)
+   {
+      double x;
+      int i, year;
+      if(julian_days > 577737)
+         julian_days += 10;
+      x = ((double)julian_days) / 365.25;
+      i = (int)x;
+      if((double)i != x)
+         year = i + 1;
+      else
+	{
+	  year = i;
+	  i--;
+	}
+      if(julian_days > 577737)
+      {
+         julian_days -= ((year / 400) - (1582 / 400));
+         julian_days += ((year / 100) - (1582 / 100));
+         x = ((double)julian_days) / 365.25;
+         i = (int)x;
+         if((double)i != x)
+            year = i + 1;
+         else
+	   {
+	     year = i;
+	     i--;
+	   }
+         if((year % 400) != 0 && (year % 100) == 0)
+            julian_days--;
+      }
+      i = (int)(julian_days - ((int) (i * 365.25)));
+      if((year > 1582)
+	  && (year % 400) != 0
+	  && (year % 100) == 0
+	  && (i < ((year / 100) - (1582 / 100)) - ((year / 400) - (1582 / 400))))
+	i++;
+      date.set (Calendar.YEAR, year);
+      //System.out.println ("Year=" + year);
+      yearday2date(i,(VirtuosoOutputStream.days_in_february(year) == 29),date);
+   }
+
+   static final int GREG_JDAYS = 577737;
+   static final int GREG_LAST_DAY = 14;
+   static final int GREG_FIRST_DAY = 5;
+   static final int GREG_MONTH = 10;
+   static final int GREG_YEAR = 1582;
+   static final int DAY_LAST = 365;
+   static final int DAY_MIN = 1;
+   static final int MONTH_MIN = 1;
+   static final int MONTH_MAX = 12;
+   static final int MONTH_LAST = 31;
+   static final int days_in_month[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+
+   static void yearday2date(int yday, boolean is_leap_year, Calendar date)
+     {
+       int i;
+       boolean decrement_date;
+       int month, day;
+
+       if (yday > DAY_LAST + (is_leap_year ? 1 : 0) || yday < DAY_MIN)
+	 return;
+
+       decrement_date = (is_leap_year && (yday > 59));
+       if (decrement_date)
+	 yday--;
+       for (i = MONTH_MIN; i < MONTH_MAX; i++)
+	 {
+	   yday -= days_in_month[i - 1];
+	   if (yday <= 0)
+	     {
+	       yday += days_in_month[i - 1];
+	       break;
+	     }
+	 }
+       month = i;
+       day = yday;
+       if (decrement_date && month == 2 && day == 28)
+	 day = day + 1;
+
+       //System.err.println (" day=" + day + " month=" + month);
+       date.set(Calendar.MONTH, month - 1);
+       date.set(Calendar.DAY_OF_MONTH, day);
+       return;
+     }
+}

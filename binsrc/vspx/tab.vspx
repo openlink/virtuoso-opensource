@@ -1,0 +1,54 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <body>
+    <v:page name="tab_demo" xmlns:v="http://www.openlinksw.com/vspx/">
+      <H3>VSPX Tab Deck Control Demo</H3>
+      <v:tab name="tab" active="" initial-active="template1" style="list" is-input="0" >
+	<v:template name="template1" type="simple" title="First">
+	  <P>
+	    This is a first template <br />
+	    <v:button name="bt1" value="OK" action="simple" />
+	  </P>
+	</v:template>
+	<v:template name="template2" type="simple">
+	  <P>
+	    This is a second template <br />
+	    <v:text name="txt1" value="--self.vc_name" />
+	    <v:button name="bt2" value="OK" action="simple" />
+	  </P>
+	</v:template>
+	<v:template name="template3" type="simple" title="Third">
+	  <P>
+	    This is a third template
+	    <v:button name="bt3" value="OK" action="simple" />
+	  </P>
+	</v:template>
+      </v:tab>
+      <?vsp
+      dbg_vspx_control (self);
+      ?>
+      <v:include url="footer.xml"/>
+    </v:page>
+  </body>
+</html>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_serialize">
+  <refmeta>
+    <refentrytitle>serialize</refentrytitle>
+    <refmiscinfo>string</refmiscinfo>
+    <refmiscinfo>array</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>serialize</refname>
+    <refname>deserialize</refname>
+    <refpurpose>convert any heterogeneous array or tree of arrays into a binary string and back</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_serialize">
+      <funcprototype id="fproto_serialize">
+        <funcdef>binary string <function>serialize</function></funcdef>
+        <paramdef>in <parameter>tree</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_deserialize">
+      <funcprototype id="fproto_deserialize">
+        <funcdef>binary string <function>deserialize</function></funcdef>
+        <paramdef>in <parameter>str</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+			<para>
+These functions will convert any heterogeneous
+array or tree of arrays into a binary string and back.  The format
+is platform independent.
+	</para>
+			<programlisting>
+deserialize (serialize (x))
+</programlisting>
+			<para>
+is the identity function.
+	</para>
+			<para>
+These functions are useful for persisting heterogeneous arrays.
+	</para>
+			<note>
+						<title>Note:</title>
+						<para>The serialization can be stored as a blob, so that there is no practical
+length limit.  The string length is however limited to 16 MB.
+</para>
+					</note>
+
+	</refsect1>
+</refentry>
+
+

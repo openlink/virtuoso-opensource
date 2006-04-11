@@ -1,0 +1,48 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<process xmlns:tns="http://temp.org" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" name="tver" targetNamespace="http://temp.org">
+  <partnerLinks>
+    <partnerLink name="caller" partnerLinkType="tns:echoSLT"/>
+    <partnerLink name="service" partnerLinkType="tns:LifeSvc" partnerRole="LifeSvcProvider"/>
+  </partnerLinks>
+
+  <variables>
+    <variable name="request" messageType="tns:echoStringIn"/>
+    <variable name="tmp" messageType="tns:echoStringOut"/>
+    <variable name="response" messageType="tns:echoStringOut"/>
+    <variable name="in" messageType="tns:echoSyncRequest"/>
+    <variable name="out" messageType="tns:echoSyncResponse"/>
+  </variables>
+
+  <sequence name="EchoSequence">
+    <receive partnerLink="caller" portType="tns:echoPT" operation="echo" variable="request" createInstance="yes" name="EchoReceive"/>
+    <assign>
+      <copy>
+	  <from variable="request" part="payload" query="/echo/varString"/>
+	  <to variable="response" part="payload" query="/echoResponse/varString"/>
+      </copy>
+    </assign>
+    <reply partnerLink="caller" portType="tns:echoPT" operation="echo" variable="response" name="EchoReply"/>
+  </sequence>
+</process>

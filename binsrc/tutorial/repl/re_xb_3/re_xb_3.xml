@@ -1,0 +1,107 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="RE-XB-3">
+  <refmeta>
+    <refentrytitle>Bidirectional Transactional Replicaton Setup</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Creating a publication</refname>
+    <refpurpose>Defining conflict resolvers</refpurpose>
+  </refnamediv>
+
+<refsect1 id="RE-XB-3a">
+<title>Preliminaries</title>
+<para>Because every table can have only one publisher, conflicts can occur
+only on publisher (when modifications from subscriber are applied).</para>
+
+<para>Every table on publisher can have a number of conflict resolvers
+which are used for conflict resolution. Each conflict resolver has a type
+('I', 'U', or 'D') and an order. Conflict resolvers are applied
+in ascending order.</para>
+
+<para>Conflict resolver is a Virtuoso/PL procedure which receives conflicting
+row (row from subscriber) and some other arguments. Conflict resolver
+signatures are described in Virtuoso documentation.
+Conflict resolver can modify the row which is passed in as 'inout' arguments.
+Conflict resolver should return an integer value which will be used
+for conflict resolution. Possible return values and their meaning
+are described in Virtuoso documentation.</para>
+
+<para>Conflict resolution occurs differently for each kind of DML operation.
+Details can be found in Virtuoso documentation.</para>
+
+<para>There is a possibility to automatically generate some types of
+conflict resolvers. Automatically generated conflict resolver classes are:
+</para>
+
+<itemizedlist mark="bullet">
+  <listitem>max - 
+    <para>row with maximum value of specified column wins</para></listitem>
+  <listitem>min - 
+    <para>row with minumum value of specified column wins</para></listitem>
+  <listitem>ave - 
+    <para>new value of specified column is calculated as:</para>
+    <para>current_val = (current_val + new_val) / 2</para></listitem>
+  <listitem>add - 
+    <para>new value of specified column is calculated as:</para>
+    <para>current_val = current_val + (new_val - old_val)</para></listitem>
+  <listitem>pub_wins - 
+    <para>publisher always wins</para></listitem>
+  <listitem>sub_wins - 
+    <para>subscriber always wins</para></listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="RE-XB-3b">
+<title>Example defining a conflict resolver</title>
+<orderedlist>
+  <listitem>Login to the Conductor UI using the dba account.</listitem>
+  <listitem>Go to the "Replication" tab, then go to the "Transactional" tab and then go the "Publications" sub-tab.</listitem>
+  <listitem>Select the link with the name of your publication ("repldemo").</listitem>
+  <listitem>Select the link with the name of the table ("Demo.demo.Orders").</listitem>
+  <listitem>Press the "New Resolver" button.</listitem>
+  <listitem>Enter conflict resolver name suffix for example "min_OrderDate",
+  select conflict resolver type (select "U"),
+  select conflict resolver class (select "min"),
+  select a column (select "OrderDate"). You can optionally
+  specify conflict resolver order (default is 100).</listitem>
+  <listitem>Press "Add" button. A conflict resolver will be added. You
+  can view and edit conflict resolver code by selecting the link with
+  its name from the list of conflict resolvers.</listitem>
+</orderedlist>
+</refsect1>
+
+<refsect1 id="RE-XB-3c">
+<title>Equivalent SQL commands to above</title>
+<orderedlist>
+  <listitem>Connect to the Virtuoso server via ISQL utility as DBA user.</listitem>
+  <listitem>Create 'U' conflict resolver for table "Demo.demo.Orders" that
+    will choose a row with minimal OrderDate column.
+  <programlisting>
+SQL&gt; repl_add_cr('Demo.demo.Orders', 'min_OrderDate', 'U', 100, 'min', 'OrderDate');
+  </programlisting></listitem>
+</orderedlist>
+</refsect1>
+</refentry>

@@ -1,0 +1,35 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<HTML>
+  <head>
+    <title>HTTP session variables sample</title>
+    <meta name="AUTHOR" content="Mitko Iliev (imitko@openlinksw.co.uk), OpenLink Software"> 
+    <meta name="DESCRIPTION" content="HTTP session variables sample">
+  </head>
+  <BODY>
+   <H3><u>HTTP session variables sample</u></H3>
+   <H4>Default application page</H4>
+   <P><b><a href="default.vsp">Login</a></b> If you already have an account</P>
+   <P><b><a href="register.vsp">Registration</a></b> You are a for the first time</P>
+  </BODY>
+</HTML>  

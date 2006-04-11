@@ -1,0 +1,44 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XS-F-2">
+  <refmeta>
+    <refentrytitle>FOR XML SQL Clause</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>General</refname>
+    <refpurpose>FOR XML EXPLICIT SQL statements</refpurpose>
+  </refnamediv>
+
+<refsect1 id="XS-F-2a">
+<title>Example</title>
+<para>This sample demonstrates the use of the FOR XML EXPLICIT mode.</para>
+
+<!-- Mitko's original text ???
+Orders by Month by Customer
+The monthly total is shown and contains a link to open the orders of that month.
+Monthly report with order count and new customers for each month - use the explicit mode to get heterogenous siblings.
+-->
+</refsect1>
+</refentry>

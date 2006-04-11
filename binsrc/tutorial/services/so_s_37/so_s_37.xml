@@ -1,0 +1,78 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-37">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Northwind query via SOAP</refname>
+    <refpurpose>Building a document style oriented Web services</refpurpose>
+  </refnamediv>
+
+  <refsect1 id="SO-S-37a">
+      <title>Preliminaries</title>
+      <para>The SOAP messages are XML documents which may follow 
+	  encoding rules or an XML Schema. The ones that follow encoding rules 
+	  are known as RPC encoded, so the 
+	  XML Schema following messages are known as Document/literal encoded. 
+	  Most of SOAP toolkits can work with both kind of messages, but for some purposes 
+	  RPC encoded messages are not suitable. 
+      </para>
+      <para>The MS Office Infopath supports only document/literal encoded SOAP 
+	  messages. So to inter operate with it, Web services have to be set to define 
+	  document/literal SOAP messages and generate appropriate WSDL file.</para>
+      <para>The Virtuoso can expose a services that using document/literal encoding by two ways:</para>
+      <itemizedlist mark="bullet">
+	  <listitem>explicit declarations in stored procedure's definition</listitem>
+	  <listitem>default SOAP encoding as an option of the SOAP enabled virtual directory</listitem>
+      </itemizedlist>
+      <para>
+	  The first approach imply that procedure can be used only in the designated 
+	  encoding style. So the second is more flexabile as it can switch very easy 
+	  between encodings without procedure's re-definition.   
+      </para>
+      <para>
+	  To allow a stored procedure to be exposed in a virtual directory 
+	  that default SOAP encoding as a document/literal it should not use 
+	  explicit declarations. This is because explicit declarations are not 
+	  compatible in all cases. Instead of explicit declarations a user defined types 
+	  must be used to describe the structures and array modifier have to be used to 
+	  describe array parameters. 
+      </para>
+  </refsect1>
+
+  <refsect1 id="SO-S-37b">
+      <title>Example</title>
+      <para>The example script defines a service that do a query on Northwind Demo Database 
+      and return an array of structures containing sales volume per product category.</para>
+  <para>To run example, set the initial state and then click on the Run link or point
+  	your browser to <ulink url="/Northwind/services.vsmx">http://[host]:[port]/Northwind/services.vsmx</ulink> 
+  	to go to vsmx test pages.</para>
+  <para>
+      Note: the dateinput must follow ISO8601 format (for example: YYYY-MM-DD'T'HH:MM:SS) 
+  </para>
+  </refsect1>
+
+</refentry>

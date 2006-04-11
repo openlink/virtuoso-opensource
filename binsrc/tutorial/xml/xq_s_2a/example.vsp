@@ -1,0 +1,149 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+<table class="tableentry">
+<form method="post" action="<?V http_path () ?>" name="form1">
+<tr>
+  <td>
+
+  </td>
+  <td>
+      <input type="hidden" name="last_selected">
+      <select name="qry_sel" onchange="javascript: document.form1.qry.value = this.value; document.form1.last_selected.value = this.selectedIndex;">
+         <option value="
+   for $j in collection ('http://local.virt/DAV/feeds/xq_s_2a/')//item
+    let $link := $j/link/string()
+    let $title := $j/title/string()
+       return <a href='{$link}'>{$title}</a>
+">All articles</option>
+         <option value="
+   for $j in collection ('http://local.virt/DAV/feeds/xq_s_2a/')//item[description[contains(.,'Indigo')]]
+    let $link := $j/link/string()
+    let $title := $j/title/string()
+       return <a href='{$link}'>{$title}</a>
+">Articles about Indigo</option>
+         <option value="
+   declare namespace msdn='http://msdn.microsoft.com/aboutmsdn/rss/';
+   for $j in collection ('http://local.virt/DAV/feeds/xq_s_2a/')//item[msdn:technology[.='ASP.NET']]
+    let $link := $j/link/string()
+    let $title := $j/title/string()
+       return <a href='{$link}'>{$title}</a>
+">Articles about ASP.NET tehnology</option>
+<?vsp
+  if (exists (select 1 from WS..SYS_DAV_RES where RES_FULL_PATH = '/DAV/feeds/opml/gnomedexers.opml')) {
+?>
+	<option value="count(document ('http://local.virt/DAV/feeds/opml/gnomedexers.opml')//outline[@xmlUrl!=''])">Count of Gnomedex attendees that have a blog</option>
+<?vsp } ?>
+<?vsp
+  if (exists (select 1 from WS..SYS_DAV_RES where RES_FULL_PATH = '/DAV/feeds/opml/web2005.opml')) {
+?>
+	<option value="count(document ('http://local.virt/DAV/feeds/opml/web2005.opml')//outline[@xmlUrl!=''])">Count of Web 2.0 attendees that have a blog</option>
+<?vsp } ?>
+<?vsp
+  if (exists (select 1 from WS..SYS_DAV_RES where RES_FULL_PATH = '/DAV/feeds/opml/o100.opml')) {
+?>
+	<option value="count(document ('http://local.virt/DAV/feeds/opml/o100.opml')//outline[@xmlUrl!=''])">Count of AO 100 attendees that have a blog</option>
+<?vsp } ?>
+<?vsp
+  if (exists (select 1 from WS..SYS_DAV_RES where RES_FULL_PATH = '/DAV/feeds/foaf/foaf.xml')) {
+?>
+	<option value="declare namespace ns='http://www.w3.org/2000/01/rdf-schema#' ;
+declare namespace rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+count(document ('http://local.virt/DAV/feeds/foaf/foaf.xml')//ns:seeAlso[@rdf:resource!=''])
+">How many people in network have a blog</option>
+<?vsp } ?>
+
+<?vsp
+  if (exists (select 1 from WS..SYS_DAV_RES where RES_FULL_PATH = '/DAV/feeds/opml/nigerian_bloggers.opml')) {
+?>
+	<option value="count(document ('http://local.virt/DAV/feeds/opml/nigerian_bloggers.opml')//outline[@xmlUrl!=''])"
+>Count of Nigerian bloggers from Network</option>
+<?vsp } ?>
+<?vsp
+  if (exists (select 1 from WS..SYS_DAV_RES where RES_FULL_PATH = '/DAV/feeds/opml/o100.opml') and
+  		exists (select 1 from WS..SYS_DAV_RES where RES_FULL_PATH = '/DAV/feeds/opml/web2005.opml')) {
+?>
+	<option value="<table>{
+  let $ao := document ('http://local.virt/DAV/feeds/opml/o100.opml')//outline
+  for $w2 in document ('http://local.virt/DAV/feeds/opml/web2005.opml')//outline
+    where ($ao[@text = $w2/@text])
+       return
+          <tr>
+            <td>{ string($w2/@text) }</td>
+            <td><a href='{ string($w2/@htmlUrl) }'>{ string($w2/@title) }</a></td>
+            <td><a href='{ string($w2/@xmlUrl) }'>{ string($w2/@xmlUrl) }</a></td>
+          </tr>
+}
+</table>
+">Count of Web 2.0 attendees that as on AO 100</option>
+<?vsp } ?>
+      </select>
+  </td>
+</tr>
+<tr>
+ <td>1. Enter the search text</td>
+ <td>
+   <textarea name="qry" rows="25" cols="100">
+<?vsp if ({?'qry'} is not null) 
+   	  http({?'qry'});
+   	else {
+   
+?>   for $j in collection ('http://local.virt/DAV/feeds/xq_s_2a/')//item
+    let $link := $j/link/string()
+    let $title := $j/title/string()
+      return <a href="{$link}">{$title}</a><?vsp } ?>
+   </textarea>
+ </td>
+</tr>
+<tr>
+ <td>2. Execute</td>
+ <td><input type="submit" name="exec" value="Execute"></td>
+</tr>
+</form>
+</table>
+<?vsp if ({?'last_selected'} is not null and {?'last_selected'} <> '') { ?>
+	<script language="javascript">
+	  document.form1.qry_sel.selectedIndex = <?V {?'last_selected'} ?>;
+	</script>
+<?vsp }?>
+<br/>
+<table class="tableresult">
+  <?vsp
+     if ({?'exec'} is not null)
+       {
+     declare res any;
+     res := xquery_eval ({?'qry'}, xtree_doc ('<dummy/>'), 0);
+     foreach (any elm in res) do
+     {
+  ?>
+     <tr><td><?= elm ?></td></tr>
+  <?vsp
+     }
+       }
+  ?>
+</table>
+</body>
+</html>
+

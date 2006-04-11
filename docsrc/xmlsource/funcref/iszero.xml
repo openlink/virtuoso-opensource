@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_iszero">
+  <refmeta>
+    <refentrytitle>iszero</refentrytitle>
+    <refmiscinfo>type</refmiscinfo>
+    <refmiscinfo>number</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>iszero</refname>
+    <refpurpose>returns true if argument is numeric zero</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_iszero">
+      <funcprototype id="fproto_iszero">
+        <funcdef><function>iszero</function></funcdef>
+        <paramdef><parameter>arg</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_iszero"><title>Description</title>
+			<para>    iszero returns one if its argument is an integer 0, a float 0.0 or a
+    double 0.0 For any other arguments, of whatever type, it will return zero.
+</para>
+			<screen>
+iszero(0)		-&gt; 1 (Yes it is)
+iszero(0.0)		-&gt; 1 (Double precision zero also
+				is a zero)
+iszero(atof('0.0'))	-&gt; 1 (As well as single
+				precision floating point)
+iszero(1)  		-&gt; 0 (No, it's not)
+iszero('Cifra')		-&gt; 0 (neither is this one)
+iszero(NULL)		-&gt; 0 (nor this one)
+</screen>
+
+</refsect1>
+</refentry>
+
+

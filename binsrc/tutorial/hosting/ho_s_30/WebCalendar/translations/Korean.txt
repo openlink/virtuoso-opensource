@@ -1,0 +1,1532 @@
+# Use this as a starting point to translate this application into
+# another language.  The format is "English text: translated text"
+# There cannot be a ":" in the English text.
+# Author: Joonyup Jeon <goodwill@wowbook.com>
+# Last updated: 07 June 2000
+# Translation last updated on 11-30-2002
+
+
+###############################################
+# Page: admin.php
+#
+#
+# << MISSING >>
+# Server URL is required:
+#
+# << MISSING >>
+# Server URL must end with '/':
+Invalid color for document background: 배경 색상 틀림
+Invalid color for document title: 제목 색상 틀림
+Invalid color for table cell background: 테이블 셀 배경색 틀림
+#
+# << MISSING >>
+# Invalid color for table grid:
+#
+# << MISSING >>
+# Invalid color for table header background:
+#
+# << MISSING >>
+# Invalid color for table text background:
+#
+# << MISSING >>
+# Invalid color for event popup background:
+#
+# << MISSING >>
+# Invalid color for event popup text:
+Invalid color for table cell background for today: 오늘 날짜 표시 색상 틀림
+Color format should be '#RRGGBB': 색상 형식은 '#RRGGBB' 이어야 합니다. 예)"#FF0000" (빨강)
+#
+# << MISSING >>
+# System Settings:
+You are not authorized: 권한이 없습니다:
+#
+# << MISSING >>
+# Note:
+#
+# << MISSING >>
+# Your user preferences:
+#
+# << MISSING >>
+# may be affecting the appearance of this page.:
+#
+# << MISSING >>
+# Click here:
+#
+# << MISSING >>
+# to not use your user preferences when viewing this page:
+#
+# << MISSING >>
+# are being ignored while viewing this page.:
+#
+# << MISSING >>
+# to load your user preferences when viewing this page:
+Save: 저장
+Help: 도움말
+Settings: 설정
+#
+# << MISSING >>
+# app-name-help:
+# English text: Specifies the name of the application that will appear in the browser title bar for all pages and on the login page.  The value you specify here will be looked up in the translations file allowing you to provide different titles for different languages.
+#
+#
+# << MISSING >>
+# Application Name:
+#
+# << MISSING >>
+# server-url-help:
+# English text: Specifies the base URL for the application.  This will be included when sending out email reminders and notifications.
+#
+#
+# << MISSING >>
+# Server URL:
+#
+# << MISSING >>
+# language-help:
+# English text: Specifies which language to use.
+#
+Language: 언어
+#
+# << MISSING >>
+# Your browser default language is:
+#
+# << MISSING >>
+# fonts-help:
+# English text: Specifies a list of system fonts to use (such as "Arial, Helvetica")
+#
+#
+# << MISSING >>
+# Fonts:
+#
+# << MISSING >>
+# preferred-view-help:
+# English text: Specifies the default view (Day, Week, Month, or Year).
+#
+#
+# << MISSING >>
+# Preferred view:
+#
+# << MISSING >>
+# Day:
+Week: 주
+Month: 월
+#
+# << MISSING >>
+# Year:
+#
+# << MISSING >>
+# display-weekends-help:
+# English text: Include weekends when viewing a week.
+#
+#
+# << MISSING >>
+# Display weekends in week view:
+Yes: 예
+No: 아니오
+#
+# << MISSING >>
+# date-format-help:
+# English text: Specifies the preferred date format.
+#
+#
+# << MISSING >>
+# Date format:
+December: 12월
+time-format-help: 시간 표시 형식을 명시합니다.<BR><I>12 hour:</I>시간표시가 3am, 8:30pm, 등등으로 표시됨<BR><I>24 hour:</I>시간표시가 300, 2030 등등으로 표시됨
+Time format: 시간 표시 형식
+12 hour: 12 hour
+24 hour: 24 hour
+#
+# << MISSING >>
+# time-interval-help:
+# English text: Specifies how long the time blocks in the week view and day view will be.
+#
+#
+# << MISSING >>
+# Time interval:
+#
+# << MISSING >>
+# hour:
+minutes: 분
+#
+# << MISSING >>
+# auto-refresh-help:
+# English text: When enabled, the day view, week view, month view, and list aunapproved pages will all automatically refresh themselves periodically.
+#
+#
+# << MISSING >>
+# Auto-refresh calendars:
+#
+# << MISSING >>
+# auto-refresh-time-help:
+# English text: If Auto-refresh is enabled, this specifies the time between each refresh.
+#
+#
+# << MISSING >>
+# Auto-refresh time:
+#
+# << MISSING >>
+# require-approvals-help:
+# English text: When enabled, a user must approve an event before it is displayed on their calendar (unless Display unapproved is enabled).  Note setting this to "No" will not turn off approvals for the Public Access calendar (if the Public Access calendar is enabled).
+#
+#
+# << MISSING >>
+# Require event approvals:
+display-unapproved-help: 미승인된 행사가 달력상에 표시될 것인가를 명시합니다. <BR> "Yes"로 설정시 미승인된 행사도 표시됩니다.(다른 색깔로).<BR>"No"로 설정하면 미승인 행사는 승인 후에만 달력에 표시됩니다.
+Display unapproved: 승인안된 행사 표시
+display-week-number-help: 월별 화면과 주별 화면에 몇주차인가(1~52) 표시여부를 명시.
+Display week number: 몇주차인가 표시
+#
+# << MISSING >>
+# display-week-starts-on:
+# English text: Specifies whether the week starts on Sunday or Monday.  If Monday is specified, then week numbers will be ISO week numbers.
+#
+#
+# << MISSING >>
+# Week starts on:
+Sunday: 일요일 
+Monday: 월요일 
+work-hours-help: 일별 화면에서 표시대상시간을 명시
+Work hours: 근무 시간
+From: 시작
+to: 종료
+#
+# << MISSING >>
+# disable-priority-field-help:
+# English text: Selecting "Yes" will remove the "Priority" field from event information pages, providing a simpler interface for novices.
+#
+#
+# << MISSING >>
+# Disable Priority field:
+#
+# << MISSING >>
+# disable-access-field-help:
+# English text: Selecting "Yes" will remove the "Access" field from event information pages, providing a simpler interface for novices.
+#
+#
+# << MISSING >>
+# Disable Access field:
+#
+# << MISSING >>
+# disable-participants-field-help:
+# English text: Selecting "Yes" will remove the "Particpants" field from event information pages, preventing users from adding other users to their events.  If you enable this option, you may want to also disable the "Allow viewing other user's calendars" field also.
+#
+#
+# << MISSING >>
+# Disable Participants field:
+#
+# << MISSING >>
+# disable-repeating-field-help:
+# English text: Selecting "Yes" will remove the "Repeating" field when adding events.  This will provide a simpler interface for novices.
+#
+#
+# << MISSING >>
+# Disable Repeating field:
+#
+# << MISSING >>
+# allow-view-other-help:
+# English text: Specifies whether one user may view another user's calendar.
+#
+#
+# << MISSING >>
+# Allow viewing other user's calendars:
+#
+# << MISSING >>
+# allow-public-access-help:
+# English text: When enabled, the calendar can be used as a read-only public calendar that does not require users to login.
+#
+#
+# << MISSING >>
+# Allow public access:
+#
+# << MISSING >>
+# public-access-view-others-help:
+# English text: When access the system with public access, specifies whether the user can view the calendar of another calendar user.
+#
+#
+# << MISSING >>
+# Public access can view other users:
+#
+# << MISSING >>
+# public-access-can-add-help:
+# English text: When enabled, users that access the system through Public Access will be able to add new events, but they will not show up in the calendar until an administrator approves the new event.
+#
+#
+# << MISSING >>
+# Public access can add events:
+#
+# << MISSING >>
+# public-access-add-requires-approval-help:
+# English text: Specifies whether events added via the public access account require approval before being displayed.
+#
+#
+# << MISSING >>
+# Public access new events require approval:
+# English text: Public access new events require approval:
+#
+#
+# << MISSING >>
+# allow-view-add-help:
+# English text: A '+' icon will be included in views, allowing users to quickly add events to other users' calendars.
+#
+#
+# << MISSING >>
+# Include add event link in views:
+#
+# << MISSING >>
+# allow-external-users-help:
+# English text: Specifies whether a non-calendar user can be added to an event.  This allows non-calendar users to be listed as event participants.
+#
+#
+# << MISSING >>
+# Allow external users:
+#
+# << MISSING >>
+# external-can-receive-notification-help:
+# English text: When external users are enabled and email usage is enabled, external users can receive email notifications when the event is added, updated or delete (if the external user's email address is provided).
+#
+#
+# << MISSING >>
+# External users can receive email notifications:
+#
+# << MISSING >>
+# external-can-receive-reminder-help:
+# English text: When external users are enabled and email usage is enabled, external users can receive email reminders (if the external user's email address is provided).
+#
+#
+# << MISSING >>
+# External users can receive email reminders:
+#
+# << MISSING >>
+# remember-last-login-help:
+# English text: When enabled, the user's login will be filled in for them on the login page (but not the password), and the user's preferences will be loaded (including their preferred colors and language selection).
+#
+#
+# << MISSING >>
+# Remember last login:
+#
+# << MISSING >>
+# conflict-check-help:
+# English text: Check for event conflicts (two events scheduled for the same time for the same person).  If you set this to "Yes", you will still be able to schedule two events at the same time after confirming a warning. If you set this to "No", no checking for conflicts will be done.  You probably want to set this to "Yes", so conflict checking occurs.
+#
+#
+# << MISSING >>
+# Check for event conflicts:
+#
+# << MISSING >>
+# conflict-months-help:
+# English text: If conflict checking is in place ("Check for event conflicts" is set to "No"), this specifies how many months into the future we should check for conflicts.  If you find adding events is taking a long time to process, reduce this number.
+#
+#
+# << MISSING >>
+# Conflict checking months:
+#
+# << MISSING >>
+# conflict-check-override-help:
+# English text: Allows users to override event conflicts and schedule two or more events for the same time.
+#
+#
+# << MISSING >>
+# Allow users to override conflicts:
+#
+# << MISSING >>
+# limit-appts-help:
+# English text: Allows the system administrator to set a system-wide limit on the number of appointments a single user can have on any single day.
+#
+#
+# << MISSING >>
+# Limit number of timed events per day:
+#
+# << MISSING >>
+# limit-appts-number-help:
+# English text: Specifies the maximum number of timed events a user can have in a single day.
+#
+#
+# << MISSING >>
+# Maximum timed events per day:
+#
+# << MISSING >>
+# Plugins:
+#
+# << MISSING >>
+# plugins-enabled-help:
+# English text: Enable plugin applications.
+#
+#
+# << MISSING >>
+# Enable Plugins:
+#
+# << MISSING >>
+# plugins-sort-key-help:
+# English text: Specifies a sort key for the plugin.  This allows the plugins to appear in a specific order.
+#
+#
+# << MISSING >>
+# Plugin:
+#
+# << MISSING >>
+# Groups:
+#
+# << MISSING >>
+# groups-enabled-help:
+# English text: Enables group support, allowing users to select users by groups.
+#
+#
+# << MISSING >>
+# Groups enabled:
+#
+# << MISSING >>
+# user-sees-his-group-help:
+# English text: If enabled, users will not see calendar users that are not in at least one of their groups.
+#
+#
+# << MISSING >>
+# User sees only his groups:
+#
+# << MISSING >>
+# Categories:
+#
+# << MISSING >>
+# categories-enabled-help:
+# English text: Enables support for event categories.
+#
+#
+# << MISSING >>
+# Categories enabled:
+#
+# << MISSING >>
+# Email:
+#
+# << MISSING >>
+# email-enabled-help:
+# English text: Turn on or off all sending of email for notification and reminders.  Set to "no", if your server is not properly setup to send mail.
+#
+#
+# << MISSING >>
+# Email enabled:
+#
+# << MISSING >>
+# email-default-sender:
+# English text: Specifies the email address to specify as the sender when sending out reminders.
+#
+#
+# << MISSING >>
+# Default sender address:
+#
+# << MISSING >>
+# Default user settings:
+#
+# << MISSING >>
+# email-event-reminders-help:
+# English text: Specifies whether or not to send event reminders.
+#
+#
+# << MISSING >>
+# Event reminders:
+#
+# << MISSING >>
+# email-event-added:
+# English text: Specifies whether or not to send email notifications when an event is added to your calendar.
+#
+#
+# << MISSING >>
+# Events added to my calendar:
+#
+# << MISSING >>
+# email-event-updated:
+# English text: Specifies whether or not to send email notifications when an event is updated on your calendar.
+#
+#
+# << MISSING >>
+# Events updated on my calendar:
+#
+# << MISSING >>
+# email-event-deleted:
+# English text: Specifies whether or not to send email notifications when an event is removed from your calendar.
+#
+#
+# << MISSING >>
+# Events removed from my calendar:
+#
+# << MISSING >>
+# email-event-rejected:
+# English text: Specifies whether or not to send email notifications when a participant rejects an event that is on your calendar.
+#
+#
+# << MISSING >>
+# Event rejected by participant:
+colors-help: 모든 색상은 "#RRGGBB" 같은 16진수 형식으로 표시해야 합니다. "RR" 은 적색, "GG"는 녹색, "BB"는 청색의 16진수 값입니다. 
+Colors: 색상
+#
+# << MISSING >>
+# Allow user to customize colors:
+Document background: 배경 색상
+#
+# << MISSING >>
+# Select:
+Document title: 제목 색상
+#
+# << MISSING >>
+# Document text:
+#
+# << MISSING >>
+# Table grid color:
+#
+# << MISSING >>
+# Table header background:
+#
+# << MISSING >>
+# Table header text:
+Table cell background: 테이블 셀 배경 색상
+Table cell background for current day: 오늘 날짜 표시 색상
+#
+# << MISSING >>
+# Table cell background for weekends:
+#
+# << MISSING >>
+# Event popup background:
+#
+# << MISSING >>
+# Event popup text:
+
+
+###############################################
+# Page: activity_log.php
+#
+#
+# << MISSING >>
+# Activity Log:
+#
+# << MISSING >>
+# User:
+#
+# << MISSING >>
+# Calendar:
+Date: 일자
+Time: 시각
+#
+# << MISSING >>
+# Event:
+#
+# << MISSING >>
+# Action:
+#
+# << MISSING >>
+# Event created:
+#
+# << MISSING >>
+# Event approved:
+#
+# << MISSING >>
+# Event rejected:
+#
+# << MISSING >>
+# Event updated:
+#
+# << MISSING >>
+# Event deleted:
+#
+# << MISSING >>
+# Notification sent:
+#
+# << MISSING >>
+# Reminder sent:
+#
+# << MISSING >>
+# Database error:
+#
+# << MISSING >>
+# Next:
+
+
+###############################################
+# Page: add_entry.php
+#
+Invalid entry id: 틀린 항목 아이디
+#
+# << MISSING >>
+# This is a private event and may not be added to your calendar.:
+#
+# << MISSING >>
+# Error adding event:
+
+
+###############################################
+# Page: admin_handler.php
+#
+Error: 오류
+The following error occurred: 다음과 같은 오류 발생:
+
+
+###############################################
+# Page: approve_entry.php
+#
+Error approving event: 행사 승인 중 에러
+
+
+###############################################
+# Page: category.php
+#
+#
+# << MISSING >>
+# Add:
+#
+# << MISSING >>
+# Category Name:
+#
+# << MISSING >>
+# Global:
+Delete: 지우기
+Are you sure you want to delete this entry?: 정말로 이 항목을 지우시겠습니까?
+#
+# << MISSING >>
+# Add New Category:
+
+
+###############################################
+# Page: category_handler.php
+#
+
+
+###############################################
+# Page: colors.php
+#
+
+
+###############################################
+# Page: datesel.php
+#
+#
+# << MISSING >>
+# Previous:
+
+
+###############################################
+# Page: day.php
+#
+#
+# << MISSING >>
+# Assistant mode:
+Generate printer-friendly version: 인쇄용 화면 생성
+Printer Friendly: 인쇄용 화면
+
+
+###############################################
+# Page: del_entry.php
+#
+Hello: 안녕!
+#
+# << MISSING >>
+# An appointment has been canceled for you by:
+#
+# << MISSING >>
+# The subject was:
+Notification: 통보
+
+
+###############################################
+# Page: del_layer.php
+#
+
+
+###############################################
+# Page: edit_entry.php
+#
+You have not entered a Brief Description: 요약 설명을 입력하지 않았습니다.
+You have not entered a valid time of day: 유효한 일자/시각이 아닙니다.
+#
+# << MISSING >>
+# The time you have entered begins before your preferred work hours.  Is this correct?:
+Edit Entry: 항목 편집
+Add Entry: 항목 추가
+brief-description-help: 행사의 간략한 설명(약 20자)입니다. 달력상의 행사를  나타냅니다.
+Brief Description: 요약 설명
+full-description-help: 행사의 자세한 설명입니다. 
+Full Description: 상세 설명
+date-help: 행사일을 나타냅니다. 
+time-help: 행사 시각입니다.<BR><I>이 항목은 비워둘 수 있습니다.</I>
+am: am
+pm: pm
+#
+# << MISSING >>
+# Untimed event:
+#
+# << MISSING >>
+# Timed event:
+#
+# << MISSING >>
+# All day event:
+duration-help: 행사기간 명시(분단위)<BR><I>이 항목은 비워둘 수 있습니다.</I>
+Duration: 기간
+#
+# << MISSING >>
+# hours:
+priority-help: 행사 우선순위 명시. 높은 우선순위의 행사는 굵은 글씨로 표시됩니다.
+Priority: 우선 순위
+Low: 낮음
+Medium: 중간
+High: 높음
+access-help: 행사의 접근 수준을 명시.<BR> <I>공용</I>: 모든 사람이 행사의 세부 내용까지 볼 수 있음.  <BR><I>비밀</I>: 타 사용자는 일자와 시각을 볼 수 있으나 세부 사항은 볼 수 없음.
+Access: 접근
+Public: 공용
+Confidential: 비밀
+#
+# << MISSING >>
+# category-help:
+# English text: Specifies the category of the event.
+#
+#
+# << MISSING >>
+# Category:
+#
+# << MISSING >>
+# days:
+#
+# << MISSING >>
+# before event:
+participants-help: 참가자의 목록 표시.
+Participants: 참가자
+#
+# << MISSING >>
+# external-participants-help:
+# English text: Specifies a list of participants for the event that are not calendar users.  The users should be listed one per line and can include an email address.  If an email address is specified, the user is eligible to receive notications and reminders.
+#
+#
+# << MISSING >>
+# External Participants:
+#
+# << MISSING >>
+# repeat-type-help:
+# English text: Select how often the event should repeat.<I>Monthly (by day)</I> allows an event to repeat on the 1st Monday of the month, 3rd Thursday of the month, etc.  <I>Monthly (by date)</I> allows an event to repeat on the same day of the month.
+#
+#
+# << MISSING >>
+# Repeat Type:
+#
+# << MISSING >>
+# None:
+#
+# << MISSING >>
+# Daily:
+#
+# << MISSING >>
+# Weekly:
+#
+# << MISSING >>
+# Monthly:
+#
+# << MISSING >>
+# by day:
+#
+# << MISSING >>
+# by date:
+#
+# << MISSING >>
+# Yearly:
+#
+# << MISSING >>
+# repeat-end-date-help:
+# English text: Specifies the date the event should repeat until.
+#
+#
+# << MISSING >>
+# Repeat End Date:
+#
+# << MISSING >>
+# Use end date:
+#
+# << MISSING >>
+# repeat-day-help:
+# English text: Specifies which days of the week the event should repeat on.  This is for use only when <I>Repeat Type</I> is set to <I>Weekly</I>.
+#
+#
+# << MISSING >>
+# Repeat Day:
+#
+# << MISSING >>
+# for weekly:
+Tuesday: 화요일
+Wednesday: 수요일
+Thursday: 목요일
+Friday: 금요일
+Saturday: 토요일
+#
+# << MISSING >>
+# repeat-frequency-help:
+# English text: Specifies how often the event should repeat.  The default 1 indicates it should occur every time.  Specifying 2 will make the event occur every other week (if <I>Repeat Type</I> is set to <I>Weekly</I>), every other month (if <I>Repeat Type</I> is set to <I>Monthly</I>), etc.
+#
+#
+# << MISSING >>
+# Frequency:
+Delete entry: 항목 지우기
+You are not authorized to edit this entry: 이 항목을 편집할 권한이 없습니다.
+
+
+###############################################
+# Page: edit_entry_handler.php
+#
+The following conflicts with the suggested time: 다음 사항은 제시된 시간과 겹칩니다.
+Unnamed Event: 이름없는 행사
+#
+# << MISSING >>
+# The description is:
+Title: 웹 캘린더
+A new appointment has been made for you by: 새 약속이 생성되었습니다. 생성자:
+#
+# << MISSING >>
+# An appointment has been updated by:
+The subject is: 주제는
+Please look on: 다음을 살펴볼 것-
+to accept or reject this appointment: 이 약속을 수락하거나 거절
+to view this appointment: 이 약속을 보기
+#
+# << MISSING >>
+# Scheduling Conflict:
+Your suggested time of: 제안한 시간
+conflicts with the following existing calendar entries: 다음과 같은 항목과 겹칩니다.
+#
+# << MISSING >>
+# Cancel:
+
+
+###############################################
+# Page: edit_layer.php
+#
+#
+# << MISSING >>
+# Invalid color:
+#
+# << MISSING >>
+# Edit Layer:
+#
+# << MISSING >>
+# Add Layer:
+#
+# << MISSING >>
+# Source:
+#
+# << MISSING >>
+# Color:
+#
+# << MISSING >>
+# Duplicates:
+#
+# << MISSING >>
+# Show layer events that are the same as your own:
+#
+# << MISSING >>
+# Are you sure you want to delete this layer?:
+#
+# << MISSING >>
+# Delete layer:
+
+
+###############################################
+# Page: edit_layer_handler.php
+#
+#
+# << MISSING >>
+# You cannot create a layer for yourself:
+#
+# << MISSING >>
+# You can only create one layer for each user:
+
+
+###############################################
+# Page: edit_user.php
+#
+Edit User: 사용자 편집
+Add User: 사용자 추가
+#
+# << MISSING >>
+# Username:
+First Name: 이름
+Last Name: 성
+E-mail address: E-mail 주소
+Password: 비밀번호
+again: again
+Admin: 관리
+#
+# << MISSING >>
+# Disabled for demo:
+Change Password: 비밀번호 변경
+New Password: 새 비밀번호
+Set Password: 비밀번호 설정
+
+
+###############################################
+# Page: edit_user_handler.php
+#
+#
+# << MISSING >>
+# Deleting users not supported:
+The passwords were not identical: The passwords were not identical
+You have not entered a password: 암호를 입력하지 않았습니다.
+
+
+###############################################
+# Page: export.php
+#
+#
+# << MISSING >>
+# Export:
+#
+# << MISSING >>
+# Export format:
+#
+# << MISSING >>
+# Palm Pilot:
+#
+# << MISSING >>
+# Export all dates:
+#
+# << MISSING >>
+# Start date:
+#
+# << MISSING >>
+# End date:
+#
+# << MISSING >>
+# Modified since:
+
+
+###############################################
+# Page: export_handler.php
+#
+
+
+###############################################
+# Page: group_edit.php
+#
+#
+# << MISSING >>
+# Unnamed Group:
+#
+# << MISSING >>
+# Add Group:
+#
+# << MISSING >>
+# Edit Group:
+#
+# << MISSING >>
+# Group name:
+Updated: 갱신된
+Created by: 작성자:
+Users: 사용자
+
+
+###############################################
+# Page: group_edit_handler.php
+#
+#
+# << MISSING >>
+# You must specify a group name:
+
+
+###############################################
+# Page: groups.php
+#
+#
+# << MISSING >>
+# Add New Group:
+
+
+###############################################
+# Page: help_admin.php
+#
+
+
+###############################################
+# Page: pref.php
+#
+Preferences: 환경 설정
+#
+# << MISSING >>
+# to modify the preferences for the Public Access calendar:
+#
+# << MISSING >>
+# tz-help:
+# English text: Specifies how many hours to adjust the time from server time to local time.
+#
+#
+# << MISSING >>
+# Timezone Offset:
+#
+# << MISSING >>
+# Add N hours to:
+#
+# << MISSING >>
+# Subtract N hours from:
+#
+# << MISSING >>
+# same as:
+#
+# << MISSING >>
+# server time:
+#
+# << MISSING >>
+# Default Category:
+Sun: 일 
+Mon: 월 
+Tue: 화
+Wed: 수
+Thu: 목
+Fri: 금
+Sat: 토
+Save Preferences: 환경설정 저장
+
+
+###############################################
+# Page: help_bug.php
+#
+#
+# << MISSING >>
+# Report Bug:
+
+
+###############################################
+# Page: help_edit_entry.php
+#
+Adding/Editing Calendar Entries: 달력 항목의 추가/편집
+
+
+###############################################
+# Page: help_index.php
+#
+Help Index: 도움말 목차
+#
+# << MISSING >>
+# Layers:
+
+
+###############################################
+# Page: help_layers.php
+#
+#
+# << MISSING >>
+# Layers are useful for displaying other users' events in your own calendar.  You can specifiy the user and the color the events will be displayed in.:
+#
+# << MISSING >>
+# Add/Edit/Delete:
+#
+# << MISSING >>
+# Clicking the Edit Layers link in the admin section at the bottom of the page will allow you to add/edit/delete layers.:
+#
+# << MISSING >>
+# Specifies the user that you would like to see displayed in your calendar.:
+#
+# << MISSING >>
+# The text color of the new layer that will be displayed in your calendar.:
+#
+# << MISSING >>
+# If checked, events that are duplicates of your events will be shown.:
+#
+# << MISSING >>
+# Disabling:
+#
+# << MISSING >>
+# Press the Disable Layers link in the admin section at the bottom of the page to turn off layers.:
+#
+# << MISSING >>
+# Enabling:
+#
+# << MISSING >>
+# Press the Enable Layers link in the admin section at the bottom of the page to turn on layers.:
+
+
+###############################################
+# Page: help_pref.php
+#
+#
+# << MISSING >>
+# default-category-help:
+# English text: Specifies the category a new event should default to.
+#
+
+
+###############################################
+# Page: week.php
+#
+#
+# << MISSING >>
+# cont.:
+
+
+###############################################
+# Page: index.php
+#
+
+
+###############################################
+# Page: layers.php
+#
+#
+# << MISSING >>
+# to modify the layers settings for the:
+#
+# << MISSING >>
+# Layers are currently:
+#
+# << MISSING >>
+# Enabled:
+#
+# << MISSING >>
+# Disabled:
+#
+# << MISSING >>
+# Disable Layers:
+#
+# << MISSING >>
+# Enable Layers:
+#
+# << MISSING >>
+# Layer:
+#
+# << MISSING >>
+# Edit layer:
+#
+# << MISSING >>
+# Add layer:
+
+
+###############################################
+# Page: layers_toggle.php
+#
+
+
+###############################################
+# Page: list_unapproved.php
+#
+View this entry: 항목 보기
+Approve this entry?: 이 항목을 승인함.
+#
+# << MISSING >>
+# Approve/Confirm:
+#
+# << MISSING >>
+# Reject this entry?:
+#
+# << MISSING >>
+# Reject:
+#
+# << MISSING >>
+# No unapproved events for:
+Unapproved Events: 미승인 행사
+#
+# << MISSING >>
+# Public Access:
+
+
+###############################################
+# Page: login.php
+#
+You must enter a login and password: 아이디와 비밀번호를 입력해야 합니다.
+Save login via cookies so I don't have to login next time: 다음번에 로그인 할 필요가 없도록 로그인 정보 저장.
+Login: 로그인
+#
+# << MISSING >>
+# Access public calendar:
+cookies-note: <B>주:</B> 쿠키를 다룰 수 있는 브라우저가 필요합니다.
+
+
+###############################################
+# Page: view_v.php
+#
+
+
+###############################################
+# Page: month.php
+#
+
+
+###############################################
+# Page: pref_handler.php
+#
+
+
+###############################################
+# Page: reject_entry.php
+#
+#
+# << MISSING >>
+# An appointment has been rejected by:
+
+
+###############################################
+# Page: search.php
+#
+Search: 검색
+#
+# << MISSING >>
+# Advanced Search:
+Keywords: 검색어
+
+
+###############################################
+# Page: search_handler.php
+#
+You must enter one or more search keywords: 검색어를 입력하셔야 합니다.
+Search Results: 검색 결과
+match found: 항목 발견
+matches found: 항목 발견
+No matches found: 찾은 항목 없음
+
+
+###############################################
+# Page: select_user.php
+#
+View Another User's Calendar: 다른 사용자의 달력 보기
+Go: 시작
+
+
+###############################################
+# Page: set_entry_cat.php
+#
+#
+# << MISSING >>
+# You have not added any categories:
+#
+# << MISSING >>
+# Set Category:
+
+
+###############################################
+# Page: users.php
+#
+denotes administrative user: 관리자를 나타냄
+Add New User: 새 사용자 추가
+
+
+###############################################
+# Page: usersel.php
+#
+#
+# << MISSING >>
+# All:
+#
+# << MISSING >>
+# Reset:
+#
+# << MISSING >>
+# Remove:
+#
+# << MISSING >>
+# Ok:
+
+
+###############################################
+# Page: view_entry.php
+#
+#
+# << MISSING >>
+# every:
+#
+# << MISSING >>
+# 1st:
+#
+# << MISSING >>
+# 2nd:
+#
+# << MISSING >>
+# 3rd:
+#
+# << MISSING >>
+# 4th:
+#
+# << MISSING >>
+# 5th:
+Description: 설명
+#
+# << MISSING >>
+# Status:
+#
+# << MISSING >>
+# Waiting for approval:
+#
+# << MISSING >>
+# Deleted:
+#
+# << MISSING >>
+# Rejected:
+#
+# << MISSING >>
+# External User:
+Approve/Confirm entry: 이 항목을 승인/확인함
+#
+# << MISSING >>
+# Reject entry:
+#
+# << MISSING >>
+# Set category:
+#
+# << MISSING >>
+# Edit repeating entry for all dates:
+#
+# << MISSING >>
+# Edit entry for this date:
+This will delete this entry for all users.: 모든 사용자들에서도 이 항목이 지워집니다.
+#
+# << MISSING >>
+# Delete repeating event for all dates:
+#
+# << MISSING >>
+# Delete entry only for this date:
+Edit entry: 항목 편집
+#
+# << MISSING >>
+# This will delete the entry from your calendar.:
+#
+# << MISSING >>
+# Do you want to add this entry to your calendar?:
+#
+# << MISSING >>
+# This will add the entry to your calendar.:
+#
+# << MISSING >>
+# Add to My Calendar:
+#
+# << MISSING >>
+# Email all participants:
+#
+# << MISSING >>
+# Show activity log:
+#
+# << MISSING >>
+# Hide activity log:
+
+
+###############################################
+# Page: view_m.php
+#
+
+
+###############################################
+# Page: view_w.php
+#
+
+
+###############################################
+# Page: views.php
+#
+#
+# << MISSING >>
+# Views:
+#
+# << MISSING >>
+# Add New View:
+
+
+###############################################
+# Page: views_edit.php
+#
+#
+# << MISSING >>
+# Unnamed View:
+#
+# << MISSING >>
+# Add View:
+#
+# << MISSING >>
+# Edit View:
+#
+# << MISSING >>
+# View Name:
+#
+# << MISSING >>
+# View Type:
+
+
+###############################################
+# Page: views_edit_handler.php
+#
+#
+# << MISSING >>
+# You must specify a view name:
+
+
+###############################################
+# Page: week_details.php
+#
+New Entry: 새 항목
+Private: 개인용
+
+
+###############################################
+# Page: week_ssi.php
+#
+
+
+###############################################
+# Page: year.php
+#
+
+
+###############################################
+# Page: assistant_edit.php
+#
+#
+# << MISSING >>
+# Yours assistants:
+#
+# << MISSING >>
+# Assistants:
+
+
+###############################################
+# Page: assistant_edit_handler.php
+#
+
+
+###############################################
+# Page: purge.php
+#
+
+
+###############################################
+# Page: includes/trailer.php
+#
+Go to: 가기
+Back to My Calendar: 내 달력으로 돌아가기
+#
+# << MISSING >>
+# My Calendar:
+#
+# << MISSING >>
+# Logout:
+Another User's Calendar: 다른 사용자 달력
+Add New Entry: 새 항목 추가
+#
+# << MISSING >>
+# Manage Views:
+#
+# << MISSING >>
+# Edit Layers:
+Account: 계정
+Current User: 현 사용자
+#
+# << MISSING >>
+# Manage calendar of:
+
+
+###############################################
+# Page: includes/connect.php
+#
+
+
+###############################################
+# Page: includes/functions.php
+#
+This event is confidential: 이 행사는 비밀항목입니다.
+#
+# << MISSING >>
+# exceeds limit of XXX events per day:
+#
+# << MISSING >>
+# You have XXX unapproved events:
+January: 1월
+February: 2월
+March: 3월
+April: 4월
+May_: 5월
+June: 6월
+July: 7월
+August: 8월
+September: 9월
+October: 10월
+November: 11월
+Jan: 1월
+Feb: 2월
+Mar: 3월
+Apr: 4월
+May: 5월
+Jun: 6월
+Jul: 7월
+Aug: 8월
+Sep: 9월
+Oct: 10월
+Nov: 11월
+Dec: 12월
+
+
+###############################################
+# Page: includes/user.php
+#
+#
+# << MISSING >>
+# Invalid login:
+#
+# << MISSING >>
+# Invalid user login:
+
+
+###############################################
+# Page: includes/site_extras.php
+#
+#
+# << MISSING >>
+# Send Reminder:
+
+
+###############################################
+# Page: includes/translate.php
+#
+
+
+###############################################
+# Page: includes/validate.php
+#
+
+
+###############################################
+# Page: includes/user-ldap.php
+#
+
+
+###############################################
+# Page: includes/user-nis.php
+#
+
+
+###############################################
+# Page: includes/help_trailer.php
+#
+
+
+###############################################
+# Page: includes/config.php
+#
+
+
+###############################################
+# Page: includes/index.php
+#
+
+
+###############################################
+# Page: includes/js.php
+#
+
+
+###############################################
+# Page: includes/php-dbi.php
+#
+
+
+###############################################
+# Page: includes/styles.php
+#
+
+
+###############################################
+# Page: includes/dbtable.php
+#
+
+
+###############################################
+# Page: tools/send_reminders.php
+#
+#
+# << MISSING >>
+# This is a reminder for the event detailed below.:
+#
+# << MISSING >>
+# Reminder:

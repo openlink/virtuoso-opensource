@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_starts_with">
+  <refmeta>
+    <refentrytitle>starts-with</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>starts-with</refname>
+    <refpurpose>Returns true if the first argument string starts with the second argument string, and otherwise returns false.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_starts_with">
+      <funcprototype id="xpf_proto_starts_with">
+        <funcdef>boolean <function>starts-with</function></funcdef>
+	<paramdef><parameter>strg</parameter> string</paramdef>
+	<paramdef><parameter>prefix</parameter> string</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_starts_with"><title>Description</title>
+<para>For two given strings, this function checks if the first string starts with characters of second string.
+If any argument is not a string, it is converted to string using rules for string() XPATH function.
+Thus if the second argument has no string value, the function returns true, because it will
+be converted to an empty string first.</para>
+</refsect1>
+  <refsect1 id="xpf_params_starts_with"><title>Parameters</title>
+    <refsect2><title>strg</title>
+      <para>String whose first characters must be compared</para></refsect2>
+    <refsect2><title>prefix</title>
+      <para>String whose characters must be compared with first characters of <parameter>strg</parameter></para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_starts_with"><title>Return Types</title><para>Boolean</para></refsect1>
+  <refsect1 id="xpf_examples_starts_with"><title>Examples</title>
+    <example id="xpf_ex_starts_with"><title></title>
+      <screen>starts-with('OpenLink Virtuoso', 'OpenLink')</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_starts_with"><title>See Also</title>
+    <para><link linkend="xpf_string">string()</link><link linkend="xpf_contains">contains()</link><link linkend="xpf_ends_with">ends-with()</link></para>
+  </refsect1>
+</refentry>
+

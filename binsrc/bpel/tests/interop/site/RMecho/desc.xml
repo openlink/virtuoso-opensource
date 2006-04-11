@@ -1,0 +1,117 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="echo">
+  <refnamediv>
+      <refname>Echo</refname>
+      <refpurpose>Reliable Asyncronous Echo process</refpurpose>
+  </refnamediv>
+
+<refsect1 id="echoa">
+    <title>Description</title>
+    <para>
+	The process accepts string data as input and echoes it back to client from another TCP channel.
+    </para>
+    <para>
+	The return address (URL) is determined at run time based
+        on the WS-Addressing headers supplied by caller. In addition,
+        the reply is made via the WS-ReliableMessaging (WS-RM) protocol.
+    </para>
+    <para>
+        The caller must supply a valid endpoint to accept the reply.
+        In addition, the caller and process manager must support the <ulink url="http://schemas.xmlsoap.org/ws/2004/03/addressing">WS-Addressing</ulink> protocol.
+    </para>
+    <para>
+	The following are requirments to the caller and process:
+    </para>
+    <itemizedlist mark="bullet">
+	<listitem>Caller must supply a valid WSA header 'ReplyTo' containing a valid response URL.</listitem>
+	<listitem>Process must send a reply from a separate HTTP connection to the endpoint designated by the caller's ReplyTo WSA header using WS-RM.</listitem>
+    </itemizedlist>
+    <para>
+      An example wire dump for input message:
+    </para>
+    <programlisting><![CDATA[
+<SOAP:Envelope
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:SOAP="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/"
+    xmlns:dt="urn:schemas-microsoft-com:datatypes"
+    SOAP:encodingType="http://schemas.xmlsoap.org/soap/encoding/"
+    SOAP:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+  <SOAP:Header>
+    <n0:ReplyTo xmlns:n0="http://schemas.xmlsoap.org/ws/2004/03/addressing">
+      <n0:Address>http://localhost:6666/RMEchoReply</n0:Address>
+    </n0:ReplyTo>
+  </SOAP:Header>
+  <SOAP:Body>
+    <echo>
+      <echoString xsi:type="xsd:string" dt:dt="string">Hello World!</echoString>
+    </echo>
+  </SOAP:Body>
+</SOAP:Envelope>
+	]]></programlisting>
+
+    <para>
+	Sample response message:
+    </para>
+    <programlisting><![CDATA[
+<SOAP:Envelope
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:SOAP="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/"
+    xmlns:wsu="http://schemas.xmlsoap.org/ws/2002/07/utility"
+    xmlns:ns2="http://schemas.xmlsoap.org/ws/2004/03/rm"
+    xmlns:ns1="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+    xmlns:wsa1="http://schemas.xmlsoap.org/ws/2004/03/addressing"
+    xmlns:dt="urn:schemas-microsoft-com:datatypes">
+  <SOAP:Header>
+    <wsa1:From ns1:Id="95CA351A-5336-11D9-830E-C4FB098FB118">
+      <wsa1:Address>http://localhost:6666/BPEL</wsa1:Address>
+    </wsa1:From>
+    <wsa1:MessageID ns1:Id="95CA45F0-5336-11D9-830E-C4FB098FB118"
+	>uuid:95c90cbc-5336-11d9-830e-c4fb098fb118</wsa1:MessageID>
+    <wsa1:To ns1:Id="95CA4DCA-5336-11D9-830E-C4FB098FB118">http://localhost:6666/RMEchoReply</wsa1:To>
+    <wsa1:Action ns1:Id="95CA56D0-5336-11D9-830E-C4FB098FB118"/>
+    <wsa1:ReplyTo ns1:Id="95CA6BAC-5336-11D9-830E-C4FB098FB118">
+      <wsa1:Address>http://localhost:6666/BPELGUI/bpel.vsp?script=RMEcho</wsa1:Address>
+    </wsa1:ReplyTo>
+    <ns2:Sequence ns1:Id="95CA061C-5336-11D9-830E-C4FB098FB118">
+      <wsu:Identifier>uuid:95c9a848-5336-11d9-830e-c4fb098fb118</wsu:Identifier>
+      <ns2:MessageNumber>1</ns2:MessageNumber>
+      <ns2:LastMessage/>
+    </ns2:Sequence>
+  </SOAP:Header>
+  <SOAP:Body>
+    <n0:reply xmlns:n0="urn:echo:echoService">
+      <n0:echoString>Hello World!</n0:echoString>
+    </n0:reply>
+  </SOAP:Body>
+</SOAP:Envelope>
+	]]></programlisting>
+</refsect1>
+</refentry>

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-D-2">
+  <refmeta>
+    <refentrytitle>DAV Maintenance</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DAV Properties</refname>
+    <refpurpose>DAV properties - PROPFIND and PROPPATCH</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-D-2a">
+<title>DAV properties</title>
+<para>Every collection resource has standard (computed) properties, and can have user-defined properties.</para>
+
+</refsect1>
+
+<refsect1 id="VS-D-2b">
+<title>Computed Properties</title>
+<para>The computed properties are set by DAV server. The user-agents do not handle it. The computed resources are
+in the DAV name space. The computed properties are:</para>
+<itemizedlist mark="bullet">
+  <listitem>creationdate (#PCDATA) - when created</listitem>
+  <listitem>getcontentlength (#PCDATA) - length of the content</listitem>
+  <listitem>getcontenttype (#PCDATA) - mime type of the content</listitem>
+  <listitem>getetag (#PCDATA) - Etag of the resource</listitem>
+  <listitem>getlastmodified (#PCDATA) - when the resource is modified</listitem>
+  <listitem>lockdiscovery (activelock)*  - active lock information</listitem>
+  <listitem>resourcetype ANY - type of the resource (applicable only for collections)</listitem>
+  <listitem>supportedlock (lockentry)* - what lock supported</listitem>
+</itemizedlist>
+
+</refsect1>
+
+<refsect1 id="VS-D-2c">
+<title>User Defined Properties</title>
+<itemizedlist mark="bullet">
+  <listitem>For other application specific purposes the PROPPATCH request can be used to set other properties.</listitem>
+  <listitem>The Virtuoso WebDAV server process by special way the following properties.</listitem>
+  <listitem>xml-sql - text of the SQL query to produce an XML document.</listitem>
+  <listitem>xml-sql-root - the root element name of the produced XML document.</listitem>
+  <listitem>xml-stylesheet  - the URL of the associated XSL-T style-sheet.</listitem>
+  <listitem>xml-sql-dtd - the external DTD link or 'on' in case of inline DTD.</listitem>
+  <listitem>xml-sql-schema - the external XMLSchema link.</listitem>
+  <listitem>xper - persistent XML storage.</listitem>
+</itemizedlist>
+
+</refsect1>
+
+<refsect1 id="VS-D-2d">
+<title>Property handling</title>
+<itemizedlist mark="bullet">
+  <listitem>If an XML document has a property xml-stylesheet, then the retrieved content 
+     will be transformed and sent instead of the original document content.</listitem>
+  <listitem>The xml-sql and xml-sql-root work together. If the resource has these properties,
+     and the content length is 0, then WebDAV server will execute the SQL query (see xml_auto()),
+    and the generated XML document will be sent to the user-agent.</listitem>
+  <listitem>If no xml-sql-root is associated, then the root element will be defaulted to the 'document'.</listitem>
+  <listitem>The xper property signals to the server that each member of the collection must be stored as XML persistent.</listitem>
+  <listitem>If the xper property is removed from a collection, then each currently stored persistent XML 
+      document will revert to a normal text/xml at the next update. Each xper property will be removed.</listitem>
+</itemizedlist>
+
+</refsect1>
+
+<refsect1 id="VS-D-2e">
+<title>Example PROPFIND Request</title>
+<programlisting>
+   PROPFIND /DAV/images/davadmin.jpg HTTP/1.1
+   Host: localhost:6666
+   Content-Type: text/xml
+   Depth: 1
+   Content-Length: 269
+   Authorization: 
+
+   &lt;?xml version="1.0" encoding="utf-8"?&gt;
+   &lt;propfind xmlns="DAV:"&gt;&lt;prop&gt;
+   &lt;getcontentlength xmlns="DAV:"/&gt;
+   &lt;getlastmodified xmlns="DAV:"/&gt;
+   &lt;displayname xmlns="DAV:"/&gt;
+   &lt;executable xmlns="http://apache.org/dav/props/"/&gt;
+   &lt;resourcetype xmlns="DAV:"/&gt;
+   &lt;/prop&gt;&lt;/propfind&gt;
+ </programlisting>
+
+</refsect1>
+
+<refsect1 id="VS-D-2f">
+<title>Response</title>
+<programlisting>
+   HTTP/1.1 207 Multi-Status
+   Server: Virtuoso
+   Content-type: text/xml; charset="utf-8"
+   Content-Length: 652
+   
+   &lt;?xml version="1.0" encoding="utf-8"?&gt;
+   &lt;D:multistatus xmlns:D="DAV:"&gt;
+   &lt;D:response xmlns:lp0="DAV:" xmlns:i0="DAV:"&gt;
+   &lt;D:href&gt;/DAV/images/davadmin.jpg&lt;/D:href&gt;
+   &lt;D:propstat&gt;
+   &lt;D:prop&gt;
+   &lt;lp0:getcontentlength&gt;5725&lt;/lp0:getcontentlength&gt;
+   &lt;lp0:getlastmodified&gt;Mon, 14 May 2001 13:26:54 GMT&lt;/lp0:getlastmodified&gt;
+   &lt;D:resourcetype/&gt;
+   &lt;/D:prop&gt;
+   &lt;D:status&gt;HTTP/1.1 200 OK&lt;/D:status&gt;
+   &lt;/D:propstat&gt;
+   &lt;D:propstat&gt;
+   &lt;D:prop&gt;
+   &lt;i0:displayname/&gt;
+   &lt;i0:executable/&gt;
+   &lt;/D:prop&gt;
+   &lt;D:status&gt;HTTP/1.1 404 Not Found&lt;/D:status&gt;
+   &lt;/D:propstat&gt;
+   &lt;/D:response&gt;
+   &lt;/D:multistatus&gt;
+</programlisting>
+
+</refsect1>
+
+<refsect1 id="VS-D-2g">
+<title>Example PROPPATCH Request</title>
+<programlisting>
+   PROPPATCH /bar.html HTTP/1.1
+   Host: www.foo.com
+   Content-Type: text/xml; charset="utf-8"
+   Content-Length: xxxx
+
+   &lt;?xml version="1.0" encoding="utf-8" ?&gt;
+   &lt;D:propertyupdate xmlns:D="DAV:"
+   xmlns:Z="http://www.w3.com/standards/z39.50/"&gt;
+     &lt;D:set&gt;
+          &lt;D:prop&gt;
+               &lt;Z:authors&gt;
+                    &lt;Z:Author&gt;Jim Whitehead&lt;/Z:Author&gt;
+                    &lt;Z:Author&gt;Roy Fielding&lt;/Z:Author&gt;
+               &lt;/Z:authors&gt;
+          &lt;/D:prop&gt;
+     &lt;/D:set&gt;
+     &lt;D:remove&gt;
+          &lt;D:prop&gt;&lt;Z:Copyright-Owner/&gt;&lt;/D:prop&gt;
+     &lt;/D:remove&gt;
+   &lt;/D:propertyupdate&gt;
+</programlisting>
+
+</refsect1>
+
+<refsect1 id="VS-D-2h">
+<title>Response</title>
+<programlisting>
+   HTTP/1.1 207 Multi-Status
+   Content-Type: text/xml; charset="utf-8"
+   Content-Length: xxxx
+
+   &lt;?xml version="1.0" encoding="utf-8" ?&gt;
+   &lt;D:multistatus xmlns:D="DAV:"
+   xmlns:Z="http://www.w3.com/standards/z39.50"&gt;
+     &lt;D:response&gt;
+          &lt;D:href&gt;http://www.foo.com/bar.html&lt;/D:href&gt;
+          &lt;D:propstat&gt;
+               &lt;D:prop&gt;&lt;Z:Authors/&gt;&lt;/D:prop&gt;
+               &lt;D:status&gt;HTTP/1.1 424 Failed Dependency&lt;/D:status&gt;
+          &lt;/D:propstat&gt;
+          &lt;D:propstat&gt;
+               &lt;D:prop&gt;&lt;Z:Copyright-Owner/&gt;&lt;/D:prop&gt;
+               &lt;D:status&gt;HTTP/1.1 409 Conflict&lt;/D:status&gt;
+          &lt;/D:propstat&gt;
+     &lt;/D:response&gt;
+   &lt;/D:multistatus&gt;
+</programlisting>
+</refsect1>
+</refentry>

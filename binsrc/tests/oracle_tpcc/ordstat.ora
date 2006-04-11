@@ -1,0 +1,150 @@
+-- /* File:        ORDSTAT.SQL */
+-- /* Purpose:     Order-Status transaction for Microsoft TPC-C Benchmark Kit */
+
+create or replace procedure ostat (
+       w_id_           in integer,
+       d_id_           in integer,
+       c_c_id_         in integer,
+       c_c_last_       in varchar
+)
+as
+	   type tc_byname is ref cursor;
+            c_balance_     numeric(12,2);
+            c_first_       char(16);
+            c_middle_      char(2);
+            o_id_          integer;
+            o_entry_d_     date;
+            o_carrier_id_  integer;
+            cnt_           integer;
+	    rowcount_	   integer;
+
+	    c_id_         integer;
+	    c_last_       char(16);
+	    c_byname	  tc_byname;
+	    n		  integer;	
+						
+begin
+--  begin tran o
+--  set transaction;
+	c_id_ := c_c_id_;
+	c_last_ := c_c_last_;
+
+    if c_id_ = 0 then
+        /* get customer id and info using last name */
+        select (count(*)+1)/2
+            into cnt_
+            from customer
+            where c_last = c_last_ and
+                  c_w_id = w_id_ and
+                  c_d_id = d_id_;
+
+        rowcount_ := cnt_;
+
+        open c_byname for select c_id,
+               c_balance,
+               c_first,
+               c_last,
+               c_middle
+            from customer
+            where c_last = c_last_ and
+                  c_w_id = w_id_   and
+                  c_d_id = d_id_
+            order by c_w_id, c_d_id, c_last, c_first
+            for update;
+
+			while n <= cnt_ loop
+             fetch c_byname into
+                c_id_,
+                c_balance_,
+                c_first_,
+                c_last_,
+                c_middle_;
+			    
+			   n := n + 1;
+			 end loop;
+		
+        rowcount_ := 0;
+    else
+        /* get customer info by id */
+        select c_balance,
+               c_first,
+               c_middle,
+               c_last
+            into
+                c_balance_,
+                c_first_,
+                c_middle_,
+                c_last_
+            from customer
+            where c_id   = c_id_ and
+                  c_d_id = d_id_ and
+                  c_w_id = w_id_
+            for update;
+
+        cnt_ := sql%rowcount;
+		rowcount_ := cnt_;
+     end if;
+
+    /* if no such customer */
+    if cnt_ = 0 then
+        --raiserror('Customer not found',18,1);
+        goto custnotfound;
+    end if;
+
+--dbms_output.put_line('Start order info');
+--dbms_output.put_line('o_w_id '|| w_id_);
+--dbms_output.put_line('o_d_id '|| d_id_);
+--dbms_output.put_line('o_c_id '|| c_id_);
+    
+    /* get order info */
+/*
+   select o_id,
+           o_entry_d,
+           o_carrier_id
+           into
+           o_id_,
+           o_entry_d_,
+           o_carrier_id_
+        from orders
+        where o_w_id = w_id_ and
+              o_d_id = d_id_ and
+              o_c_id = c_id_
+        for update; 
+*/
+     /* select orderlines for the current order  */
+/*
+	open ord_l_cursor for select	ol_supply_w_id,
+									ol_i_id,
+									ol_quantity,
+									ol_amount,
+									ol_delivery_d
+								from order_line
+								where ol_o_id = oo_id and
+									  ol_d_id = dd_id and
+									  ol_w_id = ww_id
+							    for update;
+	loop 
+		fetch ord_l_cursor into oo_line;
+		exit when ord_l_cursor%NOTFOUND;
+	end loop;
+	close ord_l_cursor; 
+*/
+<<custnotfound>>
+
+    commit;
+
+    /* return data to client */
+/*
+    return( cc_id,
+           cc_last,
+           cc_first,
+           cc_middle,
+           co_entry_d,
+           co_carrier_id,
+           cc_balance,
+           oo_id );
+*/
+
+end ostat;
+/
+

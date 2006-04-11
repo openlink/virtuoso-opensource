@@ -1,0 +1,504 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare resp, inp, outp varchar;
+  declare url varchar;
+  declare op, err, wf varchar;
+
+  declare _host varchar;
+  _host := 'htp://' || http_request_header(lines, 'Host', null, 'localhost:' || server_http_port());
+  url := get_keyword ('url' , params, _host || '/r4/groupI');
+
+  op := {?'op'}; resp := null; err := '';
+
+  declare exit handler for sqlstate '*' {
+    err := __SQL_MESSAGE;
+    goto err;
+  };
+
+  if (isstring (op)) op := atoi (op);
+  if (isstring ({?'wf'})) wf := atoi ({?'wf'});
+
+
+  if (op = 1)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoVoid',
+	    parameters=>vector(),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoVoid"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 2)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoInteger',
+	    parameters=>vector( vector ('inputInteger', 'int'), 128),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoInteger"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 3)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoString',
+	    parameters=>vector( vector ('inputString', 'string'), 'String'),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoString"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 4)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoFloat',
+	    parameters=>vector( vector ('inputFloat', 'float'), 3.1415),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoFloat"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 5)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoBase64',
+	    parameters=>vector( vector ('inputBase64', 'base64Binary'), encode_base64 ('base64')),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoBase64"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 6)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoDate',
+	    parameters=>vector( vector ('inputDate', 'dateTime'), now ()),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoDate"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 7)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoDecimal',
+	    parameters=>vector( vector ('inputDecimal', 'decimal'), 1234567890.99),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoDecimal"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 8)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoBoolean',
+	    parameters=>vector( vector ('inputBoolean', 'boolean'), 1),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoBoolean"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 9)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoHexBinary',
+	    parameters=>vector( vector ('inputHexBinary', 'hexBinary'), '313233'),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoHexBinary"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 10)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoComplexType',
+	    parameters=>vector(
+	      vector ('inputComplexType', 'http://soapinterop.org/xsd:SOAPComplexType'),
+	      soap_box_structure ('varString', 'String', 'varInt', 256, 'varFloat', 3.1415)
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoComplexType"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 11)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoIntegerMultiOccurs',
+	    parameters=>vector(
+	      vector ('inputIntegerMultiOccurs', 'http://soapinterop.org/:ArrayOfInt'),
+	      vector (1,2,3,4,5,6)
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoIntegerMultiOccurs"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 12)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoStringMultiOccurs',
+	    parameters=>vector(
+	      vector ('inputStringMultiOccurs', 'http://soapinterop.org/:ArrayOfString'),
+	      vector ('s1','s2','s3','s4','s5','s6')
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoStringMultiOccurs"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 13)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoFloatMultiOccurs',
+	    parameters=>vector(
+	      vector ('inputFloatMultiOccurs', 'http://soapinterop.org/:ArrayOfFloat'),
+	      vector (pi(), sqrt(2), sqrt(3), sqrt (pi()))
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoFloatMultiOccurs"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 14)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoComplexTypeMultiOccurs',
+	    parameters=>vector(
+	      vector ('inputComplexTypeMultiOccurs', 'http://soapinterop.org/xsd:ArrayOfSOAPComplexType'),
+	      vector (
+	      soap_box_structure ('varString', 'String1', 'varInt', 1256, 'varFloat', 13.1415),
+	      soap_box_structure ('varString', 'String2', 'varInt', 2256, 'varFloat', 23.1415),
+	      soap_box_structure ('varString', 'String3', 'varInt', 3256, 'varFloat', 33.1415)
+		)
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoComplexTypeMultiOccurs"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 15)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoComplexTypeAsSimpleTypes',
+	    parameters=>vector(
+	      vector ('inputComplexType', 'http://soapinterop.org/xsd:SOAPComplexType'),
+	      soap_box_structure ('varString', 'String', 'varInt', 256, 'varFloat', 3.1415)
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoComplexTypeAsSimpleTypes"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 16)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoSimpleTypesAsComplexType',
+	    parameters=>vector(
+	      vector ('inputString', 'string'), 'String',
+	      vector ('inputInteger', 'int'), 245,
+	      vector ('inputFloat', 'float'), 3.1415
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoSimpleTypesAsComplexType"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 17)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoNestedComplexType',
+	    parameters=>vector(
+	      vector ('inputComplexType', 'http://soapinterop.org/xsd:SOAPComplexTypeComplexType'),
+	      soap_box_structure ('varString', 'String', 'varInt', 256, 'varFloat', 3.1415,
+		'varComplexType',
+	      soap_box_structure ('varString', 'String', 'varInt', 256, 'varFloat', 3.1415)
+		)
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoNestedComplexType"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 18)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoNestedMultiOccurs',
+	    parameters=>vector(
+	      vector ('inputComplexType', 'http://soapinterop.org/xsd:SOAPMultiOccursComplexType'),
+	      soap_box_structure ('varString', 'String', 'varInt', 256, 'varFloat', 3.1415,
+		'varMultiOccurs', vector ('s1','s2','s3','s4','s5')
+
+		)
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoNestedMultiOccurs"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 19)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoChoice',
+	    parameters=>vector(
+	      vector ('inputChoice', 'http://soapinterop.org/xsd:ChoiceComplexType'),
+	      soap_box_structure ('name1', 'Name 1')
+
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoChoice"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 20)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoEnum',
+	    parameters=>vector(
+	      vector ('inputEnum', 'http://soapinterop.org/xsd:Enum'),
+	      vector (composite(),'Enum','BitTwo')
+
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoEnum"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 21)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoAnyType',
+	    parameters=>vector(
+	      'inputAnyType', 1234567
+
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoAnyType"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 22)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoAnyElement',
+	    parameters=>vector(
+	      vector('inputAny', 'http://soapinterop.org/:AnyElementType'),
+	      vector (
+		xml_tree_doc ('<string xsi:type="xsd:string" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >any element</string>')
+		)
+	      ),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org/echoAnyElement"',
+	    target_namespace=>'http://soapinterop.org/'
+	    );
+    }
+  else if (op = 23)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoVoidSoapHeader',
+	    parameters=>vector(),
+	    headers=>vector(vector('echoMeStringRequest', 'http://soapinterop.org/:echoMeStringRequest', 1, 'http://schemas.xmlsoap.org/soap/actor/next') ,
+	      vector('String')),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org"',
+	    target_namespace=>'http://soapinterop.org'
+	    );
+    }
+  else if (op = 24)
+    {
+
+      resp :=
+	soap_client (url=>url, operation=>'echoVoidSoapHeader',
+	    parameters=>vector(),
+	    headers=>vector(vector('echoMeComplexTypeRequest', 'http://soapinterop.org/:echoMeComplexTypeRequest', 1, 'http://schemas.xmlsoap.org/soap/actor/next') ,
+	      soap_box_structure ('varString', 'String', 'varInt', 256, 'varFloat', 3.1415)),
+	    style=>23,
+	    soap_action=>'"http://soapinterop.org"',
+	    target_namespace=>'http://soapinterop.org'
+	    );
+    }
+
+err:;
+
+
+?>
+<html>
+ <HEAD>
+ <link rel="stylesheet" type="text/css" href="../demo.css" />
+  <STYLE>
+  .filelist {
+    font-family: Tahoma, sans-serif;
+    background-color: #eeeeee;
+    color: Black;
+    border: 1px #dddddd solid;
+  }
+  </STYLE>
+  </HEAD>
+ <body>
+  <H4>Virtuoso SOAP client, Interop Round 4 Group I</H4>
+  <p><?=err?></p>
+  <form method=post action="<?=http_path()?>">
+  <table class="tableentry">
+  <tr>
+    <td>Enter a Group H Simple RPC endpoint URL</td>
+    <td><input type="text" name="url" value="<?=url?>" size="70%" /></td>
+  </tr>
+  <tr>
+    <td>Choose Method to invoke</td>
+    <td>
+      <select name="op">
+        <option value="1"  <?= case {?'op'} when '1' then 'selected' else '' end ?>>echoVoid</option>
+        <option value="2"  <?= case {?'op'} when '2' then 'selected' else '' end ?>>echoInteger</option>
+        <option value="3"  <?= case {?'op'} when '3' then 'selected' else '' end ?>>echoString</option>
+        <option value="4"  <?= case {?'op'} when '4' then 'selected' else '' end ?>>echoFloat</option>
+        <option value="5"  <?= case {?'op'} when '5' then 'selected' else '' end ?>>echoBase64</option>
+        <option value="6"  <?= case {?'op'} when '6' then 'selected' else '' end ?>>echoDate</option>
+        <option value="7"  <?= case {?'op'} when '7' then 'selected' else '' end ?>>echoDecimal</option>
+        <option value="8"  <?= case {?'op'} when '8' then 'selected' else '' end ?>>echoBoolean</option>
+        <option value="9"  <?= case {?'op'} when '9' then 'selected' else '' end ?>>echoHexBinary</option>
+        <option value="10" <?= case {?'op'} when '10' then 'selected' else '' end ?>>echoComplexType</option>
+        <option value="11" <?= case {?'op'} when '11' then 'selected' else '' end ?>>echoIntegerMultiOccurs</option>
+        <option value="12" <?= case {?'op'} when '12' then 'selected' else '' end ?>>echoStringMultiOccurs</option>
+        <option value="13" <?= case {?'op'} when '13' then 'selected' else '' end ?>>echoFloatMultiOccurs</option>
+        <option value="14" <?= case {?'op'} when '14' then 'selected' else '' end ?>>echoComplexTypeMultiOccurs</option>
+        <option value="15" <?= case {?'op'} when '15' then 'selected' else '' end ?>>echoComplexTypeAsSimpleTypes</option>
+        <option value="16" <?= case {?'op'} when '16' then 'selected' else '' end ?>>echoSimpleTypesAsComplexType</option>
+        <option value="17" <?= case {?'op'} when '17' then 'selected' else '' end ?>>echoNestedComplexType</option>
+        <option value="18" <?= case {?'op'} when '18' then 'selected' else '' end ?>>echoNestedMultiOccurs</option>
+        <option value="19" <?= case {?'op'} when '19' then 'selected' else '' end ?>>echoChoice</option>
+        <option value="20" <?= case {?'op'} when '20' then 'selected' else '' end ?>>echoEnum</option>
+        <option value="21" <?= case {?'op'} when '21' then 'selected' else '' end ?>>echoAnyType</option>
+        <option value="22" <?= case {?'op'} when '22' then 'selected' else '' end ?>>echoAnyElement</option>
+        <option value="23" <?= case {?'op'} when '23' then 'selected' else '' end ?>>echoVoidSoapHeader</option>
+        <option value="24" <?= case {?'op'} when '24' then 'selected' else '' end ?>>echoVoidSoapHeader(2)</option>
+      </select>
+    </td>
+  </tr>
+  <!--tr>
+    <td>whichFail</td>
+    <td>
+      <select name="wf">
+        <option value="1" <?= case {?'wf'} when '1' then 'selected' else '' end ?> >1</option>
+        <option value="2" <?= case {?'wf'} when '2' then 'selected' else '' end ?> >2</option>
+        <option value="3" <?= case {?'wf'} when '3' then 'selected' else '' end ?> >3</option>
+      </select>
+    </td>
+  </tr-->
+  <tr>
+    <td>Start Call</td>
+    <td><input type="submit" name="exec" value="Execute"></td>
+  </tr>
+  </table>
+  </form>
+<?vsp
+  if (resp is not null) {
+  declare inx, oux, atts any;
+  inp := resp[1];
+  outp := resp[2];
+--  dbg_obj_print (inp, outp);
+  atts := resp[4];
+  inx := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (inp), vector ('body', 0));
+  oux := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (outp), vector ('body', 0));
+?>
+  <table>
+  <tr>
+    <td>
+    Request
+    </td>
+  </tr>
+  <tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (inx, null); ?>
+    </div>
+    </td>
+  </tr>
+  <tr>
+  <tr>
+    <td>
+    Response
+    </td>
+  </tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (oux, null); ?>
+    </div>
+    </td>
+  </tr>
+<?vsp
+      if (isarray (atts) and length (atts) > 1)
+	{
+          declare atta any;
+          declare i, l int;
+          l := length (atts); i := 1;
+	  while (i < l)
+	    {
+	      atta := atts [i];
+    ?>
+       <tr>
+	 <td>
+	<table class="tableresult">
+	  <tr> <td>Id</td> <td><?=atta[0] ?></td> </tr>
+	  <tr> <td>Type</td> <td><?=atta[1] ?> </td> </tr>
+	  <tr> <td>Content</td> <td><?=atta[2] ?> </td> </tr>
+	</table>
+	</td>
+	</tr>
+    <?vsp
+	      i := i + 1;
+	    }
+      }
+--    else if (not isarray (atts))
+--      http ('<tr><td>Result is not DIME encoded</td></tr>');
+?>
+  </table>
+<?vsp
+  }
+?>
+ </body>
+</html>

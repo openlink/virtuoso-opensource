@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_sinv_create_key_mapping">
+  <refmeta>
+    <refentrytitle>sinv_create_key_mapping</refentrytitle>
+    <refmiscinfo>sql</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>sinv_create_key_mapping</refname>
+    <refpurpose>Creates a key mapping function &amp; table (as described in the doc section <link linkend="sqlinverse">SQL Inverse Functions</link>).</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_sinv_create_key_mapping">
+      <funcprototype id="fproto_sinv_create_key_mapping">
+        <funcdef><function>sinv_create_key_mapping</function></funcdef>
+	<paramdef>in <parameter>map_name</parameter> varchar</paramdef>
+	<paramdef>in <parameter>part_defs</parameter> any</paramdef>
+	<paramdef>in <parameter>do_drops</parameter> integer := 1</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params_sinv_create_key_mapping">
+    <title>Parameters</title>
+    <refsect2><title>map_name</title>
+      <para><![CDATA[(string) the name of the mapping. This becomes the name of the
+      forward function (from parts to single int value) and participates in the name
+      of the lookup table  (like MAP_<map_name>)]]></para></refsect2>
+    <refsect2><title>part_defs</title>
+      <para><![CDATA[contains an array of name/type pairs describing the parts of the
+      mapping. The types are used in the MAP table as column types and the type names
+      are used in naming the referse functions (one for each part) like :
+      <map_name>_<part_name>]]></para></refsect2>
+    <refsect2><title>do_drops</title>
+      <para>integer (0, 1, 2 : default value 1)</para>
+      <para>this controls how the function will go about dropping the allready existing
+      objects:</para>
+      <simplelist>
+      <member>0 - don't issue any DROP TABLE/PROCEDURE/INVERSE calls, just the CREATE statements</member>
+      <member>1 - do the DROPs before issuing the actual CREATE statements</member>
+      <member>2 - do *only* the DROPs without the CREATEs.</member>
+      </simplelist>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="seealso_sinv_create_key_mapping"><title>See Also</title>
+    <para>
+      <link linkend="fn_sinv_create_inverse"><function>sinv_create_inverse</function></link>,
+      <link linkend="fn_sinv_drop_inverse"><function>sinv_drop_inverse</function></link>
+    </para>
+  </refsect1>
+</refentry>

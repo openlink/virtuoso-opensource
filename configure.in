@@ -1,0 +1,2104 @@
+AC_PREREQ(2.57)
+AC_REVISION($Id$)
+#
+#  configure.in
+#
+#  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+#  project.
+#  
+#  Copyright (C) 1998-2006 OpenLink Software
+#  
+#  This project is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by the
+#  Free Software Foundation; only version 2 of the License, dated June 1991.
+#  
+#  This program is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#  General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+#  
+#  
+
+
+##########################################################################
+##									##
+##  Initializing							##
+##									##
+##########################################################################
+
+AC_INIT([Virtuoso Open Source Edition],
+	[4.5.1],
+	[vos.admin@openlinksw.com],
+	[virtuoso-opensource])
+AC_CONFIG_SRCDIR([libsrc/Dk.h])
+AC_CONFIG_AUX_DIR([binsrc/config])
+AM_CONFIG_HEADER([libsrc/Dk/config.h])
+AM_INIT_AUTOMAKE(AC_PACKAGE_TARNAME, AC_PACKAGE_VERSION)
+AM_MAINTAINER_MODE
+
+
+##########################################################################
+##									##
+##  Check system type							##
+##									##
+##########################################################################
+
+AC_CANONICAL_HOST
+AC_SUBST(host_cpu)
+AC_SUBST(host_vendor)
+AC_SUBST(host_os)
+
+
+##########################################################################
+##									##
+##  Set Layout for Virtuoso						##
+##									##
+##########################################################################
+AC_PREFIX_DEFAULT(/usr/local)
+
+AC_MSG_CHECKING(for Virtuoso installation layout)
+AC_ARG_WITH(layout, [dnl
+AC_HELP_STRING([--with-layout=LAYOUT], [Choose installation layout])dnl
+],
+[ case "${withval}" in
+    yes|no)	VIRTUOSO_LAYOUT=unset ;;
+    *)		VIRTUOSO_LAYOUT=${withval} ;;
+  esac
+], [VIRTUOSO_LAYOUT=unset]) 
+
+
+#
+#  Defaults for Layout
+#
+
+case ${VIRTUOSO_LAYOUT} in
+  unset)					# No Layout set
+	virtuoso_layout="default"
+	inidir=/etc
+	;;
+
+  [[Gg]][[Nn]][[Uu]])				# GNU
+	virtuoso_layout="GNU"
+	test "x$prefix" = xNONE && prefix=/usr/local
+	inidir=${prefix}/etc/virtuoso
+	;;
+
+  [[Dd]][[Ee]][[Bb]][[Ii]][[Aa]][[Nn]])		# Debian
+	virtuoso_layout="Debian"
+	test "x$prefix" = xNONE && prefix=/usr
+	inidir=/etc
+	;;
+
+  [[Gg]][[Ee]][[Nn]][[Tt]][[Oo]][[Oo]])		# Gentoo
+	virtuoso_layout="Gentoo"
+	test "x$prefix" = xNONE && prefix=/usr
+	includedir='${prefix}/include/virtuoso'
+	inidir=/etc/virtuoso
+	;;
+
+  [[Rr]][[Ee]][[Dd]][[Hh]][[Aa]][[Tt]])		# RedHat
+	virtuoso_layout=RedHat
+	test "x$prefix" = xNONE && prefix=/usr
+	inidir=/etc
+	;;
+
+  [[Ff]][[Rr]][[Ee]][[Ee]][[Bb]][[Ss]][[Dd]])	# FreeBSD
+	virtuoso_layout=FreeBSD
+	test "x$prefix" = xNONE && prefix=/usr
+	inidir=/etc
+	;;
+
+  [[Oo]][[Pp]][[Tt]])				# /opt
+	virtuoso_layout=opt
+	test "x$prefix" = xNONE && prefix=/opt/virtuoso
+	inidir=/etc
+	;;
+
+ [[Oo]][[Pp]][[Ee]][[Nn]][[Ll]][[Ii]][[Nn]][[Kk]])	# OpenLink
+ 	virtuoso_layout=openlink
+	prefix=/usr/local/virtuoso
+	inidir=/etc
+	;;
+
+  *)						# UNKNOWN
+  	AC_MSG_RESULT(unknown)
+	echo ""
+	echo "AC_HELP_STRING([Supported layouts:], [Debian FreeBSD GNU OpenLink opt RedHat])"
+	echo ""
+	AC_MSG_ERROR([unable to continue])
+	;;
+esac
+AC_MSG_RESULT([${virtuoso_layout}])
+
+
+##########################################################################
+##									##
+##  Set TOP variable for OpenLink Source Tree				##
+##									##
+##########################################################################
+
+TOP=`pwd`
+LIBDIR=$TOP/lib
+BINDIR=$TOP/bin
+INCDIR=$TOP/include
+#OPLDIR=$TOP/openlink
+AC_SUBST(TOP)
+AC_SUBST(LIBDIR)
+AC_SUBST(BINDIR)
+AC_SUBST(INCDIR)
+#AC_SUBST(OPLDIR)
+
+
+##########################################################################
+##									##
+##  Check C compiler and features					##
+##									##
+##########################################################################
+
+#AC_PROG_CPP
+#actually prefer /lib/cpp : it's to be run on Java
+case $host in 
+    *-darwin*) CPP=/usr/bin/cpp ;;
+    *) CPP=/lib/cpp ;;
+esac
+AC_SUBST(CPP)
+AC_PROG_CC
+AC_PROG_CC_C_O 			dnl this was AC_MINUS_C_MINUS_O
+AC_LANG_C
+AC_PROG_LD
+AC_SUBST(LD)
+
+
+##########################################################################
+##									##
+##  Various UNIX version specific checks				##
+##									##
+##########################################################################
+
+AC_AIX
+AC_ISC_POSIX
+AC_MINIX
+
+##########################STAGING area####################################
+##########################STAGING area####################################
+
+
+##########################################################################
+##									##
+##  Check specific C constructions 					##
+##									##
+##########################################################################
+
+dnl AC_C_CROSS			dnl this has been merged into AC_PROG_CC
+AC_C_BIGENDIAN
+AC_C_CONST 			dnl this used to be AC_CONST
+AC_C_INLINE
+AC_C_CHAR_UNSIGNED
+AC_C_LONG_DOUBLE
+
+
+##########################################################################
+##									##
+##  Check lengths C datatypes	 					##
+##									##
+##########################################################################
+
+AC_CHECK_SIZEOF(char)
+AC_CHECK_SIZEOF(short)
+AC_CHECK_SIZEOF(unsigned)
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(long long)
+AC_CHECK_SIZEOF(float)
+AC_CHECK_SIZEOF(double)
+AC_CHECK_SIZEOF(long double)
+AC_CHECK_SIZEOF(char *)
+AC_CHECK_SIZEOF(void *)
+dnl AC_CHECK_SIZEOF(void(*)())	dnl Could not be checked this way
+dnl OBSOLETE AC_INT_16_BITS	dnl now checked by AC_CHECK_SIZE(int)
+
+
+##########################################################################
+##									##
+##  Check for various programms						##
+##									##
+##########################################################################
+
+##  Force install-sh to be accessed via an absolute path:
+ac_install_sh="$TOP/$ac_install_sh"
+AC_PROG_INSTALL
+
+AC_PROG_MAKE_SET
+AC_PROG_LN_S
+
+## We favor yacc above bizon or byacc, therefor we do not use AC_PROG_YACC
+AC_PROG_YACC
+## AC_CHECK_PROGS(YACC, yacc byacc 'bison -l', yacc)
+
+AM_PROG_LEX
+if test "$LEX" != flex ; then
+ AC_MSG_ERROR(You need to install flex)
+fi
+
+AC_PATH_PROG(GAWK,gawk)
+if test \! -f "$GAWK" ;  then
+    AC_MSG_ERROR(You need to install gawk)
+fi
+AC_PATH_PROG(GPERF,gperf, missing)
+AM_CONDITIONAL(HAVE_GPERF, test "x$GPERF" != "x")
+AC_PATH_PROG(HTMLDOC,htmldoc)
+AM_CONDITIONAL(WITH_HTMLDOC, test "x$HTMLDOC" != "x")
+AC_PATH_PROG(PERL,perl)
+AC_PATH_PROG(PYTHON,python)
+AC_PATH_PROG(RUBY,ruby)
+#AC_DECL_YYTEXT
+
+##########################################################################
+##									##
+##  Use the new LibTool GNU package					##
+##									##
+##########################################################################
+AC_PROG_LIBTOOL
+
+##########################################################################
+##									##
+##  Check various headers						##
+##									##
+##########################################################################
+
+AC_HEADER_STDC 			dnl this used to be AC_STDC_HEADERS
+AC_HEADER_DIRENT		dnl this used to be AC_DIR_HEADER
+AC_HEADER_MAJOR
+AC_HEADER_STAT 			dnl this used to be AC_STAT_MACROS_BROKEN
+AC_HEADER_TIME 			dnl this used to be AC_TIME_WITH_SYS_TIME
+AC_HEADER_SYS_WAIT
+
+AC_CHECK_HEADERS(unistd.h limits.h sys/param.h fcntl.h string.h memory.h \
+		sys/timeb.h sys/sockio.h sys/resource.h \
+		malloc.h sys/select.h sys/time.h wchar.h wctype.h \
+		pwd.h grp.h sys/mman.h)
+
+
+##########################################################################
+##									##
+##  Check various typedefs in include headers				##
+##									##
+##########################################################################
+
+AC_TYPE_MODE_T
+AC_TYPE_OFF_T
+AC_TYPE_PID_T 		dnl this used to be AC_PID_T
+AC_TYPE_SIGNAL		dnl this used to be AC_RETSIGTYPE
+AC_TYPE_SIZE_T 		dnl this used to be AC_SIZE_T
+AC_TYPE_UID_T
+
+
+##########################################################################
+##									##
+##  Check various structs in include headers				##
+##									##
+##########################################################################
+
+AC_STRUCT_ST_BLKSIZE
+AC_STRUCT_ST_BLOCKS
+AC_STRUCT_ST_RDEV
+AC_STRUCT_TM
+dnl AC_STRUCT_TIMEZONE 		dnl this used to be AC_TIMEZONE
+
+
+##########################################################################
+##									##
+##  Check other structs in include headers				##
+##									##
+##########################################################################
+
+#AC_DECL_SYS_SIGLIST
+#AC_EGREP_HEADER(tm_gmtoff, time.h, AC_DEFINE(HAVE_TM_GMTOFF))
+#AC_EGREP_HEADER(tm_tzadj, time.h, AC_DEFINE(HAVE_TM_TZADJ))
+
+AC_CACHE_CHECK([for tm_gmtoff in struct tm], ac_cv_struct_tm_gmtoff,
+[AC_TRY_COMPILE([#include <sys/types.h>
+#include <$ac_cv_struct_tm>], [struct tm tm; tm.tm_gmtoff;],
+  ac_cv_struct_tm_gmtoff=yes, ac_cv_struct_tm_gmtoff=no)])
+if test "$ac_cv_struct_tm_gmtoff" = yes; then
+  AC_DEFINE(HAVE_TM_GMTOFF,1, [Define if struct tm contains tm_gmtoff] )
+fi
+
+AC_CACHE_CHECK([for tm_tzadj in struct tm], ac_cv_struct_tm_tzadj,
+[AC_TRY_COMPILE([#include <sys/types.h>
+#include <$ac_cv_struct_tm>], [struct tm tm; tm.tm_tzadj;],
+  ac_cv_struct_tm_tzadj=yes, ac_cv_struct_tm_tzadj=no)])
+if test "$ac_cv_struct_tm_tzadj" = yes; then
+  AC_DEFINE(HAVE_TM_TZADJ,1, [Define if struct tm contains tm_tzadj] )
+fi
+
+
+##########################################################################
+##									##
+##  Check libraries							##
+##									##
+##########################################################################
+
+# The following three (nsl,inet,socket) are needed on Sequent;
+# the order of checking must be this.  Most SVR4 platforms will
+# need -lsocket and -lnsl.  However on SGI IRIX 5, these exist but
+# broken.  I see no elegant solution (probably CHECK_LIB should be
+# fixed to only add the library if the given entry point is not
+# satisfied without it).
+if test "$ac_sys_system" != IRIX
+then
+AC_CHECK_LIB(nsl, t_open, [VLIBS="-lnsl $VLIBS"]) # SVR4
+AC_CHECK_LIB(inet, gethostbyname, [VLIBS="-linet $VLIBS"], [], -lnsl) # Sequent
+AC_CHECK_LIB(socket, socket, [VLIBS="-lsocket $VLIBS"], [], $VLIBS) # SVR4 sockets
+fi
+AC_CHECK_LIB(m, cos, [VLIBS="-lm $VLIBS"]) # complex math
+
+##########################################################################
+##									##
+##  Check various functions						##
+##									##
+##########################################################################
+
+#AC_FUNC_ALLOCA 			dnl this used to be AC_ALLOCA
+#AC_FUNC_CLOSEDIR_VOID
+#AC_FUNC_GETMNTENT
+#AC_FUNC_GETPGRP
+AC_FUNC_MEMCMP
+#AC_FUNC_MMAP
+AC_FUNC_SETVBUF_REVERSED 	dnl this used to be AC_SETVBUF_REVERSED
+#AC_FUNC_STRCOLL
+#AC_FUNC_STRFTIME
+#AC_FUNC_UTIME_NULL
+#AC_FUNC_VFORK 			dnl this used to be AC_VFORK
+#AC_FUNC_VPRINTF
+#AC_FUNC_WAIT3
+AC_FUNC_CHOWN
+AC_FUNC_STRERROR_R
+dnl not used AC_FUNC_GETLOADAVG
+
+##########################################################################
+##									##
+##  Check other functions						##
+##									##
+##########################################################################
+
+AC_CHECK_FUNCS(getpagesize gettimeofday strtok_r ftruncate fchmod fsync ftime localtime_r syslog)
+AC_CHECK_FUNCS(snprintf vsnprintf)
+AC_CHECK_FUNCS(wcsdup wcscasecmp wcsicmp)
+AC_CHECK_FUNCS(wcscmp wcslen wcsncat wcsnicmp wcsncasecmp wcsncmp wcscpy iswspace iswdigit wcsncpy wtol wtoi wcschr wcsrchr wcsstr wcscat iswlower iswupper towlower towupper)
+AC_CHECK_FUNCS(wprintf fputws putwc swprintf fwprintf swscanf fgetws putwchar putws wfopen cwprintf wperror wexecvp)
+AC_CHECK_FUNCS(wgetenv)
+AC_CHECK_FUNCS(wgetpass wgetpassphrase)
+
+AC_CHECK_FUNCS(getpwnam getgrnam chmod getpwuid getgrgid setuid)
+AC_CHECK_FUNCS(putenv setenv)
+AC_CHECK_FUNCS(strerror)
+
+AC_MSG_CHECKING(for sys_errlist)
+AC_TRY_LINK([
+#include <stdio.h>
+#include <errno.h>
+], [
+ void *err = (void *) sys_errlist; 
+], [ 
+ AC_DEFINE([HAVE_SYS_ERRLIST], 1, [if having SYS_ERRLIST]) 
+ AC_MSG_RESULT(yes)
+], [
+ AC_MSG_RESULT(no)
+])
+##########################################################################
+##									##
+##check for presense of flock & the constants LOCK_EX and LOCK_UN	##
+##									##
+##########################################################################
+
+AC_MSG_CHECKING(for flock in <sys/file.h>)
+AC_TRY_LINK([ 
+#include <sys/file.h> 
+], [ 
+return (flock (0, LOCK_EX) || flock (0, LOCK_UN)); 
+], [
+AC_DEFINE(HAVE_FLOCK_IN_SYS_FILE, 1, [Define to 1 if you have flock defined into <sys/file.h> header file])
+AC_MSG_RESULT(yes)], AC_MSG_RESULT(no))
+
+
+##########################################################################
+##									##
+##  Check OS capabilities						##
+##									##
+##########################################################################
+
+AC_SYS_INTERPRETER
+AC_SYS_LONG_FILE_NAMES
+AC_SYS_RESTARTABLE_SYSCALLS
+
+
+##########################################################################
+##									##
+##  OPENLINK SOFTWARE OWN TESTS						##
+##									##
+##########################################################################
+
+##########################################################################
+##									##
+##  Default C compiler flags						##
+##									##
+##########################################################################
+
+AC_ARG_WITH(debug, [dnl
+AC_HELP_STRING([--with-debug], [debugging code])dnl
+], [ with_debug="$withval" ],
+   [ with_debug="no" ])
+if test "x$with_debug" = "xyes"; then
+    CCOPT="-g"
+    AM_LDFLAGS="-g"
+else
+    CCOPT=""
+    AM_LDFLAGS="-s"
+fi
+
+AC_CHECKING([default compiler values])
+if eval "${CC-cc} $CFLAGS $AM_LDFLAGS -o binsrc/config/ccdefs binsrc/config/ccdefs.c" ; then
+    eval `binsrc/config/ccdefs`
+else
+    CCOPT=-O
+fi
+
+
+#AC_CHECKING(for suspicious C compiler)
+#AC_TRY_COMPILE([ ], [struct { long l; void *d; } *x;
+#  (char *) x += 1; ], [ ] , [CCDEFS="$CCDEFS -DSUSPICIOUS_C_COMPILER"])
+
+AC_SUBST(CCDEBUG)
+AC_SUBST(CCWARN)
+AC_SUBST(CCDEFS)
+AC_SUBST(CCOPT)
+AC_SUBST(CCLIBS)
+
+AC_MSG_CHECKING([for uuid_t])
+AC_TRY_COMPILE(
+[
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif 
+],
+[
+ uuid_t x;
+],
+[
+ AC_DEFINE(UUID_T_DEFINED, 1, [Define to 1 if you have uuid_t defined])
+ AC_MSG_RESULT([yes])
+],
+[
+ AC_MSG_RESULT([no])
+])
+
+
+##########################################################################
+##									##
+##  Configure Virtuoso extensions 					##
+##									##
+##########################################################################
+AC_SUBST(BUILD_OPTS)
+BUILD_OPTS=""
+srvrlibs=""
+clntlibs=""
+
+AC_ARG_ENABLE(xml, [dnl
+AC_HELP_STRING([--enable-xml], [enable XML extension (default)])
+AC_HELP_STRING([--disable-xml], [disable XML extension])dnl
+], [
+     case "${enableval}" in
+       yes)      
+	 with_xml="yes";;
+       no)       ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-xml) ;;
+     esac
+  ],
+  [ with_xml="yes" ]
+)
+if test "$with_xml" = "yes"; then
+    BUILD_OPTS="$BUILD_OPTS xml"
+    AC_DEFINE(BIF_XML, 1, [XML support])
+    libxml_file=$LIBDIR/libxml.la
+    ccincl="$ccincl -I$TOP/libsrc/Xml.new"
+fi
+AC_SUBST(libxml_file)
+
+AC_SUBST(CCOPT)
+
+
+##########################################################################
+#                                                                        #
+# Kerberos client                                                        #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(krb, [dnl
+AC_HELP_STRING([--enable-krb], [enable Kerberos extension])
+AC_HELP_STRING([--disable-krb], [disable Kerberos extension (default)])dnl
+], [
+     case "${enableval}" in
+       yes)      with_krb="yes";;
+       /*)       with_krb="${enableval}";;
+       no)       ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-krb) ;;
+     esac
+  ],
+  [ with_krb="no" ]
+)
+if test "$with_krb" != "no"; then
+    libkrb="-lkrb5 -lcom_err -lgssapi_krb5 -lk5crypto -lkrb5"
+    krbinc=""
+    if test "$with_krb" != "yes"; then
+      libkrb="-L$with_krb/lib $libkrb"
+      krbinc="-I$with_krb/include"
+    fi  
+    AC_CHECK_LIB(krb5,krb5_init_context,
+		 [
+		  with_krb="yes"
+		 ],
+		 [
+		  with_krb="no"
+		 ],
+		 [ $libkrb ])
+fi
+
+if test "$with_krb" != "no"; then
+    ac_saved_CPPFLAGS=$CPPFLAGS
+    CPPFLAGS="$krbinc $CPPFLAGS"
+    AC_CHECK_HEADERS(krb5.h gssapi/gssapi.h gssapi/gssapi_generic.h gssapi/gssapi_krb5.h,,
+		      [
+		       with_krb="no"
+		      ])
+    CPPFLAGS=$ac_saved_CPPFLAGS
+fi
+if test "$with_krb" != "no"; then
+    AC_DEFINE(_KERBEROS, 1, "Kerberos support")
+    AC_DEFINE(GSSAPI, 1, "Kerberos mode")
+    BUILD_OPTS="$BUILD_OPTS krb"
+    if test "$with_krb" != "yes"; then
+      ccincl="$ccincl -I$with_krb/include"
+    fi
+    srvrlibs="$srvrlibs $libkrb"
+fi
+AM_CONDITIONAL(WITH_KERBEROS, test "x$with_krb" != "xno" )
+
+
+##########################################################################
+#                                                                        #
+# OpenSSL                                                                #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(openssl, [dnl
+AC_HELP_STRING([--enable-openssl(=DIR)], [enable the OpenSSL support (default)])
+AC_HELP_STRING([--disable-openssl], [disable the OpenSSL support])dnl
+], [
+     case "${enableval}" in
+       yes)      openssl_dir="/usr" ;;
+       no)       AC_MSG_ERROR(OpenSSL required for Virtuoso) ;;
+       /*)       openssl_dir="${enableval}" ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-openssl) ;;
+     esac
+  ],
+  [ openssl_dir="/usr" ])
+
+if test "x$openssl_dir" = "x/usr"
+then
+    openssl_CFLAGS=""
+    openssl_LDFLAGS="-lssl -lcrypto"
+else
+    openssl_CFLAGS="-I$openssl_dir/include"
+    openssl_LDFLAGS="-L$openssl_dir/lib -lssl -lcrypto"
+fi
+
+
+if test "$with_krb" = "no"
+then
+  openssl_CFLAGS="$openssl_CFLAGS -DOPENSSL_NO_KRB5"
+fi
+
+old_CPPFLAGS="$CPPFLAGS"
+old_LDFLAGS="$LDFLAGS"
+_saved_libs="$LIBS"
+CPPFLAGS="$CPPFLAGS $openssl_CFLAGS"
+LDFLAGS="$LDFLAGS $openssl_LDFLAGS"
+LIBS="$LIBS -lssl -lcrypto"
+case $host in
+*-solaris*)
+	LIBS="$LIBS -lsocket"
+	;;
+
+*-sunos*)
+	LIBS="$LIBS -lsocket"
+	;;
+esac
+AC_MSG_CHECKING([validity of the OpenSSL headers in ${openssl_dir}])
+AC_TRY_COMPILE([
+#include <openssl/rsa.h>
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/bio.h>
+#include <openssl/asn1.h>
+#include <openssl/pkcs12.h>
+#include <openssl/rand.h>
+#include <stdio.h>
+#include <string.h>
+],
+[
+    SSL_METHOD *ssl_server_method = NULL;
+    SSL_CTX *ssl_server_ctx = NULL;
+    unsigned char tmp[1024];
+   
+    SSL_load_error_strings();
+    ERR_load_X509_strings();
+    ERR_load_PKCS12_strings();
+    #ifndef WIN32
+    RAND_bytes (tmp, sizeof(tmp));
+    RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
+    #endif
+    SSLeay_add_ssl_algorithms();
+    PKCS12_PBE_add ();
+
+    ssl_server_method = SSLv23_client_method();
+    ssl_server_ctx = SSL_CTX_new (ssl_server_method);
+
+    if (!ssl_server_ctx)
+    {
+	ERR_print_errors_fp(stderr);
+	return(-1);
+    }
+
+    if (OPENSSL_VERSION_NUMBER < 0x0090700f)
+    {
+	fprintf (stderr, "Wrong SSL version number\n");
+	return (-1);
+    }
+],
+[
+ AC_MSG_RESULT(good)
+],
+[
+ AC_MSG_ERROR([bad. Check config.log for details])
+])
+
+AC_MSG_CHECKING([version and usability of the OpenSSL lib in ${openssl_dir}])
+AC_TRY_RUN([
+#include <openssl/rsa.h>
+#include <openssl/crypto.h>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/bio.h>
+#include <openssl/asn1.h>
+#include <openssl/pkcs12.h>
+#include <openssl/rand.h>
+#include <stdio.h>
+#include <string.h>
+int 
+main ()
+{
+    SSL_METHOD *ssl_server_method = NULL;
+    SSL_CTX *ssl_server_ctx = NULL;
+    unsigned char tmp[1024];
+   
+    SSL_load_error_strings();
+    ERR_load_X509_strings();
+    ERR_load_PKCS12_strings();
+    #ifndef WIN32
+    RAND_bytes (tmp, sizeof(tmp));
+    RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
+    #endif
+    SSLeay_add_ssl_algorithms();
+    PKCS12_PBE_add ();
+
+    ssl_server_method = SSLv23_client_method();
+    ssl_server_ctx = SSL_CTX_new (ssl_server_method);
+
+    if (!ssl_server_ctx)
+    {
+	ERR_print_errors_fp(stderr);
+	return(-1);
+    }
+
+    if (OPENSSL_VERSION_NUMBER < 0x0090700f)
+    {
+	fprintf (stderr, "Wrong SSL version number\n");
+	return (-1);
+    }
+  return 0;  
+}],
+[
+ AC_MSG_RESULT(good)
+ BUILD_OPTS="$BUILD_OPTS ssl"
+ ccincl="$ccincl $openssl_CFLAGS"
+ srvrlibs="$srvrlibs $openssl_LDFLAGS"
+ clntlibs="$clntlibs $openssl_LDFLAGS"
+ AC_DEFINE(_SSL, 1, [OpenSSL])
+],
+[
+ AC_MSG_ERROR([bad. Check the config.log for details])
+])
+LDFLAGS="$old_LDFLAGS"
+CPPFLAGS="$old_CPPFLAGS"
+LIBS="$_saved_libs"
+AC_SUBST(openssl_CFLAGS)
+AC_SUBST(openssl_LDFLAGS)
+
+
+##########################################################################
+#                                                                        #
+# OpenLDAP                                                               #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(openldap, [dnl
+AC_HELP_STRING([--enable-openldap(=DIR)], [enable the OpenLDAP support])
+AC_HELP_STRING([--disable-openldap], [disable the OpenSSL support (default)])dnl
+], [
+     case "${enableval}" in
+       yes)      with_ldap="yes" ;;
+       no)       with_ldap="no" ;;
+       /*)       with_ldap="${enableval}" ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-openldap) ;;
+     esac
+  ],
+  [ with_ldap="yes" ])
+
+if test "x$with_ldap" != "xno"
+then
+    AC_MSG_CHECKING([if OpenLDAP lib usability])
+    old_CPPFLAGS="$CPPFLAGS"
+    old_LDFLAGS="$LDFLAGS"
+    old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    case "$with_ldap" in
+	yes) 
+	   openldap_LDFLAGS="-lldap -llber"
+	   LDFLAGS="$LDFLAGS $openldap_LDFLAGS" ;;
+	*) 
+	   openssl_CFLAGS="-I$with_ldap/include"
+	   openssl_LDFLAGS="-L$with_ldap/lib -lldap -llber"
+	   CPPFLAGS="$CPPFLAGS $openldap_CFLAGS" 
+	   LDFLAGS="$LDFLAGS $openldap_LDFLAGS"
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_ldap/lib" ;;
+    esac
+    AC_TRY_RUN([
+#include <ldap.h>  
+#include <stdio.h>
+#include <string.h>
+int 
+main ()
+{
+  LDAP *ld = ldap_init ("localhost", LDAP_PORT);
+  if (!ld)
+    {
+       fprintf (stderr, "Can't initialize the LDAP lib");
+       return 1;
+    }       
+  return 0;  
+}],
+[
+ AC_MSG_RESULT(good)
+ BUILD_OPTS="$BUILD_OPTS ldap"
+ srvrlibs="$srvrlibs $openldap_LDFLAGS"
+ AC_DEFINE(_LDAP, 1, [OpenLDAP])
+],
+[
+ AC_MSG_RESULT(bad)
+ with_ldap="no"
+])
+    LDFLAGS="$old_LDFLAGS"
+    CPPFLAGS="$old_CPPFLAGS"
+    LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
+fi
+AM_CONDITIONAL(WITH_LDAP, test "x$with_ldap" != "xno" )
+AC_SUBST(openldap_CFLAGS)
+AC_SUBST(openldap_LDFLAGS)
+
+
+##########################################################################
+#                                                                        #
+# POP3/NNTP support --imsg                                               #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(imsg,
+AC_HELP_STRING([--enable-imsg], [enable POP3 and NNTP extension (default)])
+AC_HELP_STRING([--disable-imsg], [disable POP3 and NNTP extension])dnl
+], [
+     case "${enableval}" in
+       yes)      with_imsg="yes" ;;
+       no)       ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-imsg) ;;
+     esac
+  ],
+  [ with_imsg="yes" ]
+)
+if test "$with_imsg" = "yes"; then
+    BUILD_OPTS="$BUILD_OPTS imsg"
+    AC_DEFINE(_IMSG, 1, [POP3 and NNTP extension])
+fi
+AM_CONDITIONAL(WITH_IMSG, test "x$with_imsg" = "xyes")
+
+
+##########################################################################
+#                                                                        #
+# PL Debugger support                                                    #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(pldebug, [dnl
+AC_HELP_STRING([--enable-pldebug], [enable the Virtuoso/PL debugger support (default)])
+AC_HELP_STRING([--disable-pldebug], [disable  the Virtuoso/PL debugger support])dnl
+], [
+     case "${enableval}" in
+       yes)      with_pldebug="yes"      ;;
+       no)       ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-pldebug) ;;
+     esac
+  ],
+  [ with_pldebug="yes" ]
+)
+
+if test "$with_pldebug" = "yes"; then
+    BUILD_OPTS="$BUILD_OPTS pldebug"
+    AC_DEFINE(PLDBG, 1, [Virtuoso/PL debugger])
+fi    
+
+
+##########################################################################
+#                                                                        #
+# Rendezvous                                                             #
+#                                                                        #
+##########################################################################
+with_rvous_dir=""
+AC_ARG_ENABLE(rendezvous, [dnl
+AC_HELP_STRING([--enable-rendezvous], [enable rendezvous extension])
+AC_HELP_STRING([--disable-rendezvous], [disable rendezvous extension (default)])dnl
+], [
+     case "${enableval}" in
+       yes)      with_rvous="yes" ;;
+       no)       ;;
+       *)        with_rvous="yes"; with_rvous_dir="${enableval}" ;;
+     esac
+  ],
+  [ with_rvous="no" ]
+)
+
+if test "$with_rvous" = "yes"; then
+    BUILD_OPTS="$BUILD_OPTS rendezvous"
+    AC_DEFINE(_RENDEZVOUS, 1, [Define to 1 to build with Rendezvous support.])
+    if test -z "$with_rvous_dir"
+    then
+	    librv="-lrendezvous"
+    else
+	    librv="${with_rvous_dir}/build/librendezvous.la"
+	    ccincl="$ccincl -I${with_rvous_dir}/build/tmp -I${with_rvous_dir}/mDNSCore -I${with_rvous_dir}/mDNSPosix"
+    fi
+    srvrlibs="$srvrlibs $librv"
+fi    
+
+
+##########################################################################
+#                                                                        #
+# PHP hosting                                                            #
+#                                                                        #
+##########################################################################
+
+have_php="no"
+AC_ARG_ENABLE(php, [dnl
+AC_HELP_STRING([--enable-php], [enable PHP extension])
+AC_HELP_STRING([--disable-php], [disable PHP extension (default)])dnl
+], [
+     case "${enableval}" in
+       yes)      with_php="yes" ;;
+       no)       with_php="no" ;;
+       /*)       with_php="${enableval}" ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-php) ;;
+     esac
+  ],
+  [ with_php="no" ])
+
+if test "x$with_php" != "xno" 
+then
+    AC_MSG_CHECKING([if libphp4 lib usability])
+    old_CPPFLAGS="$CPPFLAGS"
+    old_LDFLAGS="$LDFLAGS"
+    old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    case "$with_php" in
+	yes) 
+	   php_LDFLAGS="-lphp4"
+	   LDFLAGS="$LDFLAGS $php_LDFLAGS" ;;
+	*) 
+	   php_CFLAGS="-I$with_php/include/php/main -I$with_php/include/php/Zend -I$with_php/include/php/TSRM -I$with_php/include/php"
+	   php_LDFLAGS="-L$with_php/lib -lphp4"
+	   CPPFLAGS="$CPPFLAGS $php_CFLAGS" 
+	   LDFLAGS="$LDFLAGS $php_LDFLAGS"
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_php/lib" 
+	   export LD_LIBRARY_PATH ;;
+    esac
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <php.h>  
+int 
+main ()
+{
+  return 0;  
+}],
+[
+ AC_MSG_RESULT(good)
+ BUILD_OPTS="$BUILD_OPTS php"
+ AC_DEFINE(_PHP, 1, [PHP])
+ have_php="yes"
+],
+[
+ AC_MSG_RESULT(bad)
+ with_php="no"
+])
+    LDFLAGS="$old_LDFLAGS"
+    CPPFLAGS="$old_CPPFLAGS"
+    LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
+fi
+AM_CONDITIONAL(HAVE_PHP, test "x$have_php" != "xno" )
+AC_SUBST(php_CFLAGS)
+AC_SUBST(php_LDFLAGS)
+
+
+##########################################################################
+#                                                                        #
+# Mono .NET Hosting                                                      #
+#                                                                        #
+##########################################################################
+have_mono="no"
+AC_ARG_ENABLE(mono, [dnl
+AC_HELP_STRING[--enable-mono], [enable Mono extension])
+AC_HELP_STRING[--disable-mono], [disable Mono extension (default)])dnl
+], [
+     case "${enableval}" in
+       yes)      BUILD_OPTS="$BUILD_OPTS mono" 
+		 AC_PATH_PROG(WGET,wget)
+                 have_mono="yes"
+		 ;;
+       no)       ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-mono) ;;
+     esac
+  ],
+  [ BUILD_OPTS="$BUILD_OPTS" ]
+)
+AM_CONDITIONAL(HAVE_MONO, test "x$have_mono" = "xyes")
+
+
+##########################################################################
+#                                                                        #
+# BPEL VAD                                                               #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(bpel-vad,
+AC_HELP_STRING([--enable-bpel-vad], [enable BPEL vad])
+AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad (default)])dnl
+], [
+     case "${enableval}" in
+       yes)      with_bpelvad="yes";;
+       no)      with_bpelvad="no";;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-bpel-vad) ;;
+     esac
+  ],
+  [
+   with_bpelvad="yes"
+  ])
+AM_CONDITIONAL(WITH_BPEL_VAD, test "x$with_bpelvad" = "xyes")
+
+
+##########################################################################
+#                                                                        #
+# ImageMagic                                                             #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(imagemagick, [dnl
+AC_HELP_STRING([--enable-imagemagick(=DIR)], [enable the ImageMagick plugin (default)])
+AC_HELP_STRING([--disable-imagemagick], [disable the ImageMagick plugin])dnl
+], [
+     case "${enableval}" in
+       yes)      with_im="yes" ;;
+       no)       with_im="no" ;;
+       /*)       with_im="${enableval}" ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --disable-imagemagick) ;;
+     esac
+  ],
+  [ with_im="yes" ])
+
+if test "x$with_im" != "xno"
+then
+    AC_MSG_CHECKING([if ImageMagick lib usability])
+    old_CPPFLAGS="$CPPFLAGS"
+    old_LDFLAGS="$LDFLAGS"
+    old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    case "$with_im" in
+	yes) 
+	   IM_LDFLAGS="-lMagick -lWand"
+	   LDFLAGS="$LDFLAGS $IM_LDFLAGS" ;;
+	*) 
+	   IM_CFLAGS="-I$with_im/include"
+	   IM_LDFLAGS="-L$with_im/lib -lMagick -lWand"
+	   CPPFLAGS="$CPPFLAGS $IM_CFLAGS" 
+	   LDFLAGS="$LDFLAGS $IM_LDFLAGS"
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_im/lib" 
+	   export LD_LIBRARY_PATH ;;
+    esac
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <wand/magick-wand.h>
+MagickWand *magick_wand;
+int 
+main ()
+{
+  MagickWandGenesis();  
+  return 0;  
+}],
+[
+ AC_MSG_RESULT(good)
+],
+[
+ AC_MSG_RESULT(bad)
+ with_im="no"
+])
+    LDFLAGS="$old_LDFLAGS"
+    CPPFLAGS="$old_CPPFLAGS"
+    LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
+fi
+AM_CONDITIONAL(WITH_IM, test "x$with_im" != "xno" )
+AC_SUBST(IM_CFLAGS)
+AC_SUBST(IM_LDFLAGS)
+
+
+##########################################################################
+#                                                                        #
+# Perl Hosting                                                           #
+#                                                                        #
+##########################################################################
+with_perl="no"
+AC_ARG_ENABLE(perl, [dnl
+AC_HELP_STRING([--enable-perl], [enable PERL hosting])
+AC_HELP_STRING([--disable-perl], [disable PERL hosting (default)])dnl
+], [
+     case "${enableval}" in
+       yes)      with_perl="yes";;
+       no)      with_perl="no";;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-perl) ;;
+     esac
+  ],
+  [
+   with_perl="no"
+  ])
+
+AM_CONDITIONAL(WITH_PERL, test "x$PERL" != "x" -a "x$with_perl" != "xno")
+if test "x$PERL" != "x" -a "x$with_perl" != "xno" ; then
+     PERL_LDFLAGS=`$PERL -MExtUtils::Embed -e ldopts`
+     PERL_CFLAGS=`$PERL -MExtUtils::Embed -e ccopts`
+fi
+AC_SUBST(PERL_CFLAGS)
+AC_SUBST(PERL_LDFLAGS)
+
+
+##########################################################################
+#                                                                        #
+# Python Hosting                                                         #
+#                                                                        #
+##########################################################################
+with_python="no"
+AC_ARG_ENABLE(python, [dnl
+AC_HELP_STRING([--enable-python], [enable PYTHON hosting])
+AC_HELP_STRING([--disable-python], [disable PYTHON hosting (default)])dnl
+], [
+     case "${enableval}" in
+       yes)      with_python="yes";;
+       no)      with_python="no";;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-python) ;;
+     esac
+  ],
+  [
+   with_python="no"
+  ])
+
+AM_CONDITIONAL(WITH_PYTHON, test "x$PYTHON" != "x" -a "x$with_python" != "xno")
+if test "x$PYTHON" != "x"  -a "x$with_python" != "xno" ; then
+    PYLIBS=`$PYTHON -c 'import distutils.sysconfig; print distutils.sysconfig.get_config_var ("LIBS");'`
+    PYSYSLIBS=`$PYTHON -c 'import distutils.sysconfig; print distutils.sysconfig.get_config_var ("SYSLIBS");'`
+    PYLDFLAGS=`$PYTHON -c 'import distutils.sysconfig; print distutils.sysconfig.get_config_var ("LDFLAGS");'`
+    PYLIBPL=`$PYTHON -c 'import distutils.sysconfig; print distutils.sysconfig.get_config_var ("LIBPL");'`
+    PYVERSION=`$PYTHON -c 'import distutils.sysconfig; print distutils.sysconfig.get_config_var ("VERSION");'`
+    PYINC=`$PYTHON -c 'import distutils.sysconfig; print distutils.sysconfig.get_config_var ("INCLUDEPY");'`
+    PYCFLAGS=`$PYTHON -c 'import distutils.sysconfig; print distutils.sysconfig.get_config_var ("CFLAGS");'`
+    PYSO=`$PYTHON -c 'import distutils.sysconfig; print distutils.sysconfig.get_config_var ("SO");'`
+    LIBPYTHON_SO="libpython$PYVERSION$PYSO"
+    PYTHON_CFLAGS="-I$PYINC $PYCFLAGS -DLIBPYTHON_SO=\"$LIBPYTHON_SO\" $PY_ARCH_CFLAGS"
+    PYTHON_LDFLAGS="$PYLIBS $PYSYSLIBS $PYLDFLAGS -L$PYLIBPL -lpython$PYVERSION $PY_ARCH_LDFLAGS"
+fi
+AC_SUBST(PYTHON_CFLAGS)
+AC_SUBST(PYTHON_LDFLAGS)
+
+
+##########################################################################
+#                                                                        #
+# Ruby Hosting                                                           #
+#                                                                        #
+##########################################################################
+with_ruby="no"
+AC_ARG_ENABLE(ruby, [dnl
+AC_HELP_STRING([--enable-ruby], [enable RUBY hosting])
+AC_HELP_STRING([--disable-ruby], [disable RUBY hosting (default)])dnl
+], [
+     case "${enableval}" in
+       yes)      with_ruby="yes";;
+       no)      with_ruby="no";;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-ruby) ;;
+     esac
+  ],
+  [
+   with_ruby="no"
+  ])
+
+if test "x$RUBY" != "x"  -a "x$with_ruby" != "xno" ; then
+    RUBY_ARCHDIR=`$RUBY -e 'require "rbconfig.rb"; puts Config::expand("\$(archdir)")'`
+    RUBY_CFLAGS="-I$RUBY_ARCHDIR"
+    RUBY_LDFLAGS="-lruby"
+    old_CPPFLAGS="$CPPFLAGS"
+    old_LDFLAGS="$LDFLAGS"
+    CPPFLAGS="$CPPFLAGS $RUBY_CFLAGS" 
+    LDFLAGS="$LDFLAGS $RUBY_LDFLAGS"
+
+    AC_MSG_CHECKING([if Ruby lib usability])
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include "ruby.h"
+int 
+main ()
+{
+  ruby_init ();
+  return 0;  
+}],
+[
+ AC_MSG_RESULT(good)
+],
+[
+ AC_MSG_RESULT(bad)
+ with_ruby="no"
+])
+
+    LDFLAGS="$old_LDFLAGS"
+    CPPFLAGS="$old_CPPFLAGS"
+fi
+AM_CONDITIONAL(WITH_RUBY, test "x$RUBY" != "x" -a "x$with_ruby" != "xno")
+AC_SUBST(RUBY_CFLAGS)
+AC_SUBST(RUBY_LDFLAGS)
+
+
+dnl PUT OTHER EXTENSIONS HERE
+
+
+##########################################################################
+##									##
+##  Check out system malloc library					##
+##									##
+##########################################################################
+
+AC_ARG_WITH(malloc-debug, [dnl
+AC_HELP_STRING([--with-malloc-debug], [extra malloc debugging code])],
+    [ with_malloc_debug="$withval" ],
+    [ with_malloc_debug="no" ])
+if test "x$with_malloc_debug" = "xyes"; then
+    BUILD_OPTS="$BUILD_OPTS malloc_debug"
+    CCDEBUG="$CCDEBUG -DMTX_DEBUG -DMALLOC_DEBUG"
+    CCOPT="$CCOPT -g"
+    AM_LDFLAGS="$AM_LDFLAGS -g"
+fi
+
+
+##########################################################################
+##									##
+##  Check out POSIX threads libs    					##
+##									##
+##########################################################################
+
+AC_ARG_WITH(pthreads, [dnl
+AC_HELP_STRING([--with-pthreads], [build pthread implementation if possible])],
+    [ with_pthreads="$withval" ],
+    [ with_pthreads="yes" ])
+if test $with_pthreads = "yes"; then
+    AC_CHECK_LIB(pthreads, pthread_create,
+       [BUILD_OPTS="$BUILD_OPTS pthreads"
+	WITH_PTHREADS="yes"
+	if test "$host_os" = "osf3.2"
+	then
+	  BUILD_OPTS="$BUILD_OPTS old_pthreads"
+	  LIBTHR="-lpthreads -lmach -lc_r"
+	  AC_DEFINE([OLD_PTHREADS], [1], [Old pthreads])
+	else
+	  LIBTHR="-lpthreads"
+	fi
+	AC_DEFINE([_REENTRANT], [1], [use reentrant code])
+	AC_DEFINE([WITH_PTHREADS],
+		  [1],
+		  [pthreads] )
+	],
+       [AC_CHECK_LIB(pthread, pthread_create,
+         [BUILD_OPTS="$BUILD_OPTS pthreads"
+	  WITH_PTHREADS="yes"
+	  LIBTHR="-lpthread"
+	  AC_DEFINE([_REENTRANT], [1], [use reentrant code])
+	  AC_DEFINE([WITH_PTHREADS],
+	            [1],
+		    [pthreads] )])])
+fi
+if test "x$have_mono" = "xyes" ; then
+    AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+    if test "x$PKG_CONFIG" = "xno"; then
+	AC_MSG_ERROR([You need to install pkg-config])
+    fi
+
+    BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
+    BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
+    AC_SUBST(BUILD_GLIB_CFLAGS)
+    AC_SUBST(BUILD_GLIB_LIBS)
+
+    pkg_config_path=
+    AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
+	if test x$with_crosspkgdir = "x"; then
+		if test -s $PKG_CONFIG_PATH; then
+			pkg_config_path=$PKG_CONFIG_PATH
+		fi
+	else
+		pkg_config_path=$with_crosspkgdir
+		PKG_CONFIG_PATH=$pkg_config_path
+		export PKG_CONFIG_PATH
+	fi
+    )
+
+## Versions of dependencies
+    GLIB_REQUIRED_VERSION=1.3.11
+
+    $PKG_CONFIG --atleast-version=$GLIB_REQUIRED_VERSION glib-2.0
+    if test $? -gt 0 ; then
+	AC_MSG_ERROR([You need to install glib-2.0 version $GLIB_REQUIRED_VERSION or greater])
+    fi
+#    PKG_CHECK_MODULES_(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
+
+    GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
+    GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
+    GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
+    GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
+
+    AC_SUBST(GLIB_CFLAGS)
+    AC_SUBST(GLIB_LIBS)
+    AC_SUBST(GMODULE_CFLAGS)
+    AC_SUBST(GMODULE_LIBS)
+fi
+AC_SUBST(LIBTHR)
+_saved_libs="$LIBS"
+LIBS="$LIBTHR $LIBS"
+AC_CHECK_FUNCS(pthread_attr_setstacksize pthread_attr_getstacksize)
+LIBS="$_saved_libs"
+srvrlibs="$srvrlibs $LIBTHR"
+AM_CONDITIONAL(WITH_PTHREADS, test "x$WITH_PTHREADS" = "xyes" )
+
+
+##########################################################################
+##									##
+##  Check out additional libs 						##
+##									##
+##########################################################################
+
+AC_MSG_CHECKING(for --with-libs)
+AC_ARG_WITH(libs, [dnl
+AC_HELP_STRING([--with-libs='lib1 ...'], [link against additional libs])dnl
+], [
+  AC_MSG_RESULT($withval)
+  VLIBS="$withval $VLIBS"
+], AC_MSG_RESULT(no))
+
+
+##########################################################################
+##									##
+##  Check out readline 							##
+##									##
+##########################################################################
+
+AC_MSG_CHECKING(for --with-readline)
+AC_ARG_WITH(readline, [dnl
+AC_HELP_STRING([--with-readline(=DIR)], [use GNU readline library])dnl
+], [
+  AC_MSG_RESULT($withval)
+  AC_DEFINE(WITH_READLINE, 1, [readline])
+  if test -d "$withval"
+  then
+      LDFLAGS="$LDFLAGS -L$withval"
+  fi
+  # first check if we can compile without lib termcap
+  AC_MSG_CHECKING(for -lreadline without -ltermcap)
+  # check if a libreadline exists
+  _save_LIBS=$LIBS
+  LIBS="$LIBS -lreadline"
+  AC_TRY_LINK(extern char *readline();,char *line=readline();,[
+	BUILD_OPTS="$BUILD_OPTS readline"
+	LIBRDL="-lreadline"
+	AC_MSG_RESULT(yes)], [
+	AC_MSG_RESULT(no)
+	AC_CHECKING(for -lreadline that needs -ltermcap)
+	termcap=
+	AC_CHECK_LIB(termcap, tgetent, [termcap=termcap], [
+	AC_CHECK_LIB(termlib, tgetent, [termcap=termlib], [
+	AC_ERROR(no working -ltermcap/termlib found -- do not use --with-readline)])])
+	# Avoid possible conflict between shared libraries termcap and gl
+	# on IRIX 5: both contain a routine called clear.
+	#if test -f /usr/lib/lib$termcap.a
+	#then LIBS="$LIBS /usr/lib/lib$termcap.a"
+	#else LIBS="$LIBS -l$termcap"
+	#fi
+	LIBS="$LIBS -l$termcap"
+	AC_MSG_CHECKING(for -lreadline)
+	AC_TRY_LINK(extern char *readline();, char *line=readline();,[
+	   BUILD_OPTS="$BUILD_OPTS readline"
+	   LIBRDL="-lreadline -lhistory -l$termcap"
+	   AC_MSG_RESULT(yes)], [
+	   LIBRDL=""
+	   AC_ERROR(no working GNU readline library found -- do not use --with-readline)])
+	])
+],
+LIBRDL=""
+AC_MSG_RESULT(no))
+LIBS=$_save_LIBS
+AC_SUBST(LIBRDL)
+
+
+##########################################################################
+##                                                                      ##
+##  Check for dynamic load module                                       ##
+##                                                                      ##
+##########################################################################
+
+LIBDL=""
+AC_CHECK_FUNC(dlopen,
+  [LIBDL=""],
+  [AC_CHECK_LIB(dl, dlopen, [LIBDL="-ldl"])]
+)
+AC_SUBST(LIBDL)
+AC_CHECK_LIB(dl, dlopen, AC_DEFINE(HAVE_LIBDL, 1, [dlopen in -ldl]), ,)
+AC_CHECK_LIB(dld, shl_load, AC_DEFINE(HAVE_SHL_LOAD, 1, [shl_load in dld]), ,)
+
+srvrlibs="$srvrlibs $LIBDL"
+
+
+##########################################################################
+##									##
+##  Check iodbc 							##
+##									##
+##########################################################################
+
+AC_MSG_CHECKING(for iODBC location)
+virt_iodbc_dir="libsrc/odbcsdk"
+virt_do_iodbc="no"
+AC_ARG_WITH(iodbc, [dnl
+AC_HELP_STRING([--with-iodbc(=DIR)], [build with iODBC implementation if possible])dnl
+], [ 
+      case "${withval}" in
+	  yes) 	virt_do_iodbc="yes" ;;
+	  no)	virt_do_iodbc="no"  ;;
+
+	  /*)   virt_iodbc_dir="${withval}" 
+		virt_do_iodbc="yes"
+		;;
+
+	  *)    AC_MSG_ERROR("Invalid value for the --with-iodbc : must be an absolute path") ;;
+      esac	  
+    ],
+    [ 
+     virt_do_iodbc="no" 
+    ])
+
+AC_MSG_RESULT($virt_iodbc_dir) 
+AC_DEFINE(NO_UDBC_SDK,1, [Define if using the new iODBC API])
+
+
+#
+#  Only add path when using iODBC, otherwise the makefiles will 
+#  get the headers from libsrc/odbcsdk/include automatically
+#
+if test "x$virt_do_iodbc" = "xyes"
+then
+    iodbc_CPPFLAGS="-I$virt_iodbc_dir/include"
+
+    saved_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$iodbc_CPPFLAGS $CPPFLAGS"
+    AC_CHECK_HEADERS(sql.h sqlext.h sqlucode.h iodbcext.h odbcinst.h)
+    CPPFLAGS=$saved_CPPFLAGS
+
+    ccincl="$iodbc_CPPFLAGS $ccincl"
+
+    iodbc_LDFLAGS="-L$virt_iodbc_dir/lib -liodbc -liodbcinst $LIBDL" 
+    AC_CHECK_LIB(iodbc, SQLTables,
+		 [
+		  virt_do_iodbc="yes"
+		 ],
+		 [
+		  virt_do_iodbc="no"
+		  iodbc_LDFLAGS=""
+		 ], 
+		 [$iodbc_LDFLAGS])
+
+else
+  #
+  #  we have a copy of these files internally
+  #
+  AC_DEFINE(HAVE_SQL_H, 1)
+  AC_DEFINE(HAVE_SQLEXT_H, 1)
+  AC_DEFINE(HAVE_SQLUCODE_H, 1)
+  AC_DEFINE(HAVE_ODBCINST_H, 1)
+  AC_DEFINE(HAVE_IODBCEXT_H, 1)
+fi
+
+if test "x$virt_do_iodbc" = "xyes"; then
+  BUILD_OPTS="$BUILD_OPTS odbc"
+  AC_MSG_RESULT(Will build the iODBC binaries) 
+fi
+AC_SUBST(iodbc_LDFLAGS)
+AM_CONDITIONAL(WITH_IODBC, test "x$virt_do_iodbc" = "xyes" )
+
+
+##########################################################################
+##									##
+##  Check for java 							##
+##									##
+##########################################################################
+
+AC_MSG_CHECKING(for Java options)
+ac_jdk1_path=""
+AC_ARG_WITH(jdk1, [dnl
+AC_HELP_STRING([--with-jdk1=DIR], [use the Sun JDK 1.1.x at the specified location])dnl
+], [ 
+      if test -d "${withval}" ; then
+	ac_jdk1_path="${withval}"
+      else	
+	AC_MSG_ERROR("Non-existant path specified for --with-jdk1")
+      fi
+    ])
+
+ac_jdk2_path=""
+AC_ARG_WITH(jdk2, [dnl
+AC_HELP_STRING([--with-jdk2=DIR], [use the Sun JDK 1.2.x or 1.3.x at the specified location])dnl
+], [ 
+      if test -d "${withval}" ; then
+	ac_jdk2_path="${withval}"
+      else	
+	AC_MSG_ERROR("Non-existant path specified for --with-jdk2")
+      fi
+    ])
+
+ac_jdk3_path=""
+AC_ARG_WITH(jdk3, [dnl
+AC_HELP_STRING([--with-jdk3=DIR], [use the Sun JDK 1.4.x or 1.4.x at the specified location])dnl
+], [ 
+      if test -d "${withval}" ; then
+	ac_jdk3_path="${withval}"
+      else	
+	AC_MSG_ERROR("Non-existant path specified for --with-jdk3")
+      fi
+    ])
+AC_MSG_RESULT(done)
+
+if test "x$ac_jdk1_path" = "x" -o "x$ac_jdk2_path" = "x" -o "x$ac_jdk3_path" = "x"; then
+  ac_java_path=""
+  ac_java_version=""
+  AC_PATH_PROG(ac_java_path, java)
+  if test "x$ac_java_path" != "x" -a -x "$ac_java_path" ;  then 
+      AC_MSG_CHECKING($ac_java_path version)
+      ac_java_path_has_bin=`echo $ac_java_path | grep '/bin/java'`
+      ac_javac_suffix=c
+      ac_javac_path=$ac_java_path$ac_javac_suffix
+      if test "x$ac_java_path_has_bin" != "x" -a -x "$ac_javac_path" ; then
+	  ac_java_version=`$ac_java_path -version 2>&1 | grep 'java version' | cut -f 2 -d '"'`
+	  ac_java_path_no_bin=`echo $ac_java_path | sed -e 's/\/bin\/java//g'`
+	  ac_java_path="$ac_java_path_no_bin"
+	  ac_java_ver_major=`echo $ac_java_version | cut -f 1 -d .`
+	  ac_java_ver_minor=`echo $ac_java_version | cut -f 2 -d .`
+	  AC_MSG_RESULT([$ac_java_ver_major.$ac_java_ver_minor])
+      else
+	  AC_MSG_RESULT([not found or incompatible])
+	  ac_java_path=""
+	  ac_java_version=""
+      fi
+  else    
+      AC_MSG_RESULT([not found or incompatible])
+      ac_java_path=""
+      ac_java_version=""
+  fi
+
+  AC_MSG_CHECKING(which jdk to enable)
+  if test "x$ac_java_path" != "x" -a "x$ac_java_version" != "x" ; then
+      ac_java_ver_major=`echo $ac_java_version | cut -f 1 -d .`
+      ac_java_ver_minor=`echo $ac_java_version | cut -f 2 -d .`
+      ac_java_ver_rel=`echo $ac_java_version | cut -f 3 -d .`
+      if test "x$ac_java_ver_major" = "x1" ; then
+	  case "x$ac_java_ver_minor" in
+	      x1)   ac_jdk1_path=${ac_jdk1_path:-$ac_java_path}
+		    AC_MSG_RESULT(jdk1)
+		    ;;
+	      x2)   ac_jdk2_path=${ac_jdk2_path:-$ac_java_path}
+		    AC_MSG_RESULT(jdk2)
+		    ;;
+	      x3)   ac_jdk2_path=${ac_jdk2_path:-$ac_java_path}
+		    AC_MSG_RESULT(jdk2) 
+		    ;;
+	      x4)   ac_jdk3_path=${ac_jdk3_path:-$ac_java_path}
+		    AC_MSG_RESULT(jdk3)
+		    ;;
+	      x5)   ac_jdk3_path=${ac_jdk3_path:-$ac_java_path}
+		    AC_MSG_RESULT(jdk3)
+		    ;;
+	      *)    AC_MSG_RESULT(none) ;;
+	  esac
+      else
+        AC_MSG_RESULT(none)	  
+      fi
+  else
+    AC_MSG_RESULT(none)	  
+  fi
+fi
+
+#AC_PROG_JAVA_WORKS (jdk_path, min_acceptable_ver, max_acceptable_ver)
+
+AC_DEFUN([AC_PROG_JAVA_WORKS], [
+ac_jw_jdk="$1"
+ac_jw_min_minor="$2"
+ac_jw_max_minor="$3"
+#echo macro called with ac_jw_jdk="$ac_jw_jdk" ac_jw_min_minor="$ac_jw_min_minor" ac_jw_max_minor="$ac_jw_max_minor"
+if test "x$ac_jw_jdk" != "x" ; then
+  AC_MSG_CHECKING([for working Java 1.$ac_jw_min_minor.x-1.$ac_jw_max_minor.x in $ac_jw_jdk])
+  #echo ac_jw_jdk/bin/java="$ac_jw_jdk/bin/java"
+  ac_java_version=`$ac_jw_jdk/bin/java -version 2>&1 | grep 'java version' | cut -f 2 -d '"'`
+  #echo ac_java_version="$ac_java_version"
+  ac_java_ver_major=`echo $ac_java_version | cut -f 1 -d .`
+  ac_java_ver_minor=`echo $ac_java_version | cut -f 2 -d .`
+  #echo ac_java_ver_major="$ac_java_ver_major"
+  #echo ac_java_ver_minor="$ac_java_ver_minor"
+  if test "x$ac_java_ver_major" != "x1" -o "0$ac_java_ver_minor" -lt "0$ac_jw_min_minor" -o "0$ac_java_ver_minor" -gt "0$ac_jw_max_minor" ; then 
+      AC_MSG_ERROR([wrong version ($ac_java_ver_major.$ac_java_ver_minor)])
+  fi
+  JAVAC=$ac_jw_jdk/bin/javac
+  JAVA=$ac_jw_jdk/bin/java
+  JAVA_TEST=Test.java
+  CLASS_TEST=Test.class
+  TEST=Test
+  changequote(, )dnl
+  cat << \EOF > $JAVA_TEST
+/* [#]line __oline__ "configure" */
+public class Test {
+public static void main (String args[]) {
+  System.exit (0);
+} }
+EOF
+  changequote([, ])dnl
+  if AC_TRY_COMMAND($JAVAC $JAVACFLAGS $JAVA_TEST) && test -s $CLASS_TEST; then
+    :
+  else
+    echo "configure: failed program was:" >&AC_FD_CC
+    cat $JAVA_TEST >&AC_FD_CC
+    AC_MSG_ERROR(The Java compiler $JAVAC failed (see config.log, check the CLASSPATH?))
+  fi
+  if AC_TRY_COMMAND($JAVA $JAVAFLAGS $TEST) >/dev/null 2>&1; then
+    ac_cv_prog_java_works=yes
+  else
+    echo "configure: failed program was:" >&AC_FD_CC
+    cat $JAVA_TEST >&AC_FD_CC
+    AC_MSG_ERROR(The Java VM $JAVA failed (see config.log, check the CLASSPATH?))
+  fi
+  rm -fr $JAVA_TEST $CLASS_TEST Test.uue
+  AC_MSG_RESULT(found)
+fi  
+])
+
+AC_PROG_JAVA_WORKS($ac_jdk1_path, 1, 1)
+AM_CONDITIONAL(JDK1, test "x$ac_cv_prog_java_works" = "xyes")
+AC_SUBST(ac_jdk1_path)
+
+AC_PROG_JAVA_WORKS($ac_jdk2_path, 2, 3)
+AM_CONDITIONAL(JDK2, test "x$ac_cv_prog_java_works" = "xyes")
+AC_SUBST(ac_jdk2_path)
+
+AC_PROG_JAVA_WORKS($ac_jdk3_path, 4, 5)
+AM_CONDITIONAL(JDK3, test "x$ac_cv_prog_java_works" = "xyes")
+AC_SUBST(ac_jdk3_path)
+
+ac_integ_jdk=""
+if test "x$ac_cv_prog_java_works" = "xyes" ; then
+  ac_integ_jdk="$ac_jdk3_path"
+elif test "x$ac_cv_prog_java_works" = "xyes"; then
+  ac_integ_jdk="ac_jdk2_path"
+fi
+
+if test "x$ac_integ_jdk" != "x" ; then
+    integ_jdk_CPPFLAGS=""
+    integ_jdk_LDFLAGS=""
+    ac_save_CPPFLAGS="$CPPFLAGS"
+    #supported jvm hosting platforms : add more here
+    case $host in
+	i?86-*-linux*)
+                CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux"
+        	AC_CHECK_HEADERS(jni.h,
+			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/linux" ], 
+			[ ac_integ_jdk="" ])
+		AC_CHECK_LIB(jvm, JNI_GetDefaultJavaVMInitArgs,
+			[ java_LDFLAGS="-L$ac_integ_jdk/jre/lib/i386/server -ljvm" ],
+			[ ac_integ_jdk="" ],
+			[ "-L$ac_integ_jdk/jre/lib/i386/server"])
+		;;
+	sparc-*-solaris*)
+                CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/solaris"
+        	AC_CHECK_HEADERS(jni.h,
+			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/solaris" ], 
+			[ ac_integ_jdk="" ])
+		AC_CHECK_LIB(jvm, JNI_GetDefaultJavaVMInitArgs,
+			[ java_LDFLAGS="-L$ac_integ_jdk/lib/jre/sparc/server -ljvm" ],
+			[ ac_integ_jdk="" ],
+			[ "-L$ac_integ_jdk/jre/lib/sparc/server"])
+		;;
+	hppa-*-hpux*)
+                CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/hp-ux"
+        	AC_CHECK_HEADERS(jni.h,
+			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/hp-ux" ], 
+			[ ac_integ_jdk="" ])
+		AC_CHECK_LIB(jvm, JNI_GetDefaultJavaVMInitArgs,
+			[ java_LDFLAGS="-L$ac_integ_jdk/jre/lib/PA_RISC/server -ljvm" ],
+			[ ac_integ_jdk="" ],
+			[ "-L$ac_integ_jdk/jre/PA_RISC/sparc/server"])
+		;;
+	hppa2.0-*-hpux*)
+                CPPFLAGS="$CPPFLAGS -I$ac_integ_jdk/include -I$ac_integ_jdk/include/hp-ux"
+        	AC_CHECK_HEADERS(jni.h,
+			[ java_CPPFLAGS="-I$ac_integ_jdk/include -I$ac_integ_jdk/include/hp-ux" ], 
+			[ ac_integ_jdk="" ])
+		AC_CHECK_LIB(jvm, JNI_GetDefaultJavaVMInitArgs,
+			[ java_LDFLAGS="-L$ac_integ_jdk/jre/lib/PA_RISC2.0/server -ljvm" ],
+			[ ac_integ_jdk="" ],
+			[ "-L$ac_integ_jdk/jre/PA_RISC2.0/sparc/server"])
+		;;
+	*-darwin*)
+                CPPFLAGS="$CPPFLAGS -I/System/Library/Frameworks/JavaVM.framework/Headers"
+        	AC_CHECK_HEADERS(jni.h,
+			[ 
+			 java_CPPFLAGS="-I/System/Library/Frameworks/JavaVM.framework/Headers"
+			 java_LDFLAGS="-framework JavaVM"
+			], 
+			[ ac_integ_jdk="" ])
+		;;
+		*)
+		ac_integ_jdk=""
+		;;
+    esac
+    CPPFLAGS="$ac_save_CPPFLAGS"
+fi
+
+if test "x$ac_integ_jdk" != "x" ; then
+  AC_MSG_RESULT([Java JNI C flags="$java_CPPFLAGS"])
+  AC_MSG_RESULT([Java JNI LD flags="$java_LDFLAGS"])
+fi  
+AC_SUBST(java_CPPFLAGS)
+AC_SUBST(java_LDFLAGS)
+AM_CONDITIONAL(INTEG_JDK, test "x$ac_integ_jdk" != "x")
+
+
+##########################################################################
+#                                                                        #
+# JDBC Driver		                                                 #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(jdbc, [dnl
+AC_HELP_STRING([--enable-jdbc], [enable JDBC Driver (default)])
+AC_HELP_STRING([--disable-jdbc], [disable JDBC Driver])dnl
+], [
+     case "${enableval}" in
+       yes)      with_jdbc="yes" ;;
+       no)       ;;
+       *)        AC_MSG_ERROR(bad value ${enableval} for --enable-jdbc) ;;
+     esac
+  ],
+  [ with_jdbc="yes" ]
+)
+AM_CONDITIONAL(WITH_JDBC, test "x$with_jdbc" = "xyes" -a "x$ac_cv_prog_java_works" = "xyes")
+
+
+##########################################################################
+#                                                                        #
+# Default SQL port	                                                 #
+#                                                                        #
+##########################################################################
+
+PORT=1111
+AC_ARG_WITH(port, [dnl
+AC_HELP_STRING([--with-port(=NUMBER)], [SQL port (1111 default)])dnl
+], [ PORT=${withval}])
+AC_SUBST(PORT)
+
+
+##########################################################################
+##									##
+##  Operating System extentions						##
+##									##
+##########################################################################
+
+AC_MSG_CHECKING([for OS specific configuration])
+dnl
+dnl All system specific configuration items go in here
+dnl
+dnl NOTE : PLEASE CHANGE mklic.c WHEN THESE ENTRIES ARE MODIFIED
+dnl
+OPSYS="Unknown"
+
+case $host in
+
+*-sco3.2v4*)
+	OPSYS="SCO UNIX"
+	;;
+
+*-sco*)
+	OPSYS="SCO OpenServer"
+	;;
+
+*-linux*)
+  	OPSYS="Linux"
+	;;
+
+*-aix*)
+	OPSYS="AIX"
+	;;
+
+*-hpux*)
+	OPSYS="HP/UX"
+	;;
+
+*-solaris*)
+	OPSYS="Solaris"
+	;;
+
+*-sunos*)
+	OPSYS="SunOS"
+	;;
+
+*-freebsd*)
+	OPSYS="FreeBSD"
+	;;
+
+*-dgux*)
+	OPSYS="DG/UX"
+	;;
+
+*-irix-5*)
+	OPSYS="IRIX"
+	;;
+
+*-irix*)
+	OPSYS="IRIX"
+	;;
+
+alpha-dec-osf*)
+	OPSYS="Digital Unix (OSF/1)"
+	;;
+
+*-netbsd*)
+	OPSYS="NetBSD"
+	;;
+
+*-freebsd*)
+	OPSYS="FreeBSD"
+	;;
+
+*-nextstep*)
+	OPSYS="NextSTEP"
+	;;
+
+*-ultrix*)
+	OPSYS="Ultrix"
+	;;
+
+*-sni-sysv*)
+	OPSYS="SINIX"
+	;;
+
+*-sequent*)
+	OPSYS="DYNIX/ptx"
+	;;
+
+*-univel-sysv*)
+	#
+	# Actually this is (NOVELL|SCO) NetWare
+	#
+	OPSYS="Generic SYSV"
+	;;
+
+*-unknown-sysv*)
+	OPSYS="Generic SYSV"
+	;;
+
+*-riscos*)
+	OPSYS="RiscOS"
+	;;
+
+*-pc-bsdi*)
+	OPSYS="BSDI"
+	;;
+
+*-darwin*)
+	OPSYS="Darwin"
+	;;
+
+*)
+	OPSYS="UNKNOWN"
+	;;
+
+esac
+AC_MSG_RESULT(($OPSYS))
+
+dnl
+dnl Now substitute all variables back
+dnl
+AC_SUBST(OPSYS)
+
+CCPLATFORMDEFS=""
+case $host in
+
+*-linux*)
+	CCPLATFORMDEFS="-Dlinux -D_GNU_SOURCE -DFILE64 -D_LARGEFILE64_SOURCE"
+        if test "$have_mono" = "yes"
+        then
+	  CCOPT="$CCOPT -DMONO_USE_EXC_TABLES -fexceptions -D_REENTRANT -D_GNU_SOURCE"
+	  VLIBS="-ldl -lrt $VLIBS"
+        fi
+	;;
+
+*-hpux10*)
+	CCPLATFORMDEFS="-DHPUX_10"
+	;;
+
+*-hpux11*)
+	CCPLATFORMDEFS="-DHPUX_11"
+	;;
+
+*-solaris*)
+	CCPLATFORMDEFS="-DSOLARIS -DFILE64 -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
+	case $host in
+	    sparc*)
+ 	    CCPLATFORMDEFS="$CCPLATFORMDEFS -DNEW_HASH_NEED_ALIGN" ;;
+	esac
+	;;
+
+*-aix*)
+	CCPLATFORMDEFS="-DAIX -DFILE64  -D_LARGE_FILE_API"
+	;;
+*)
+	;;
+
+esac
+AC_MSG_CHECKING([for OS specific defines])
+AC_MSG_RESULT(($CCPLATFORMDEFS))
+AC_SUBST(CCPLATFORMDEFS)
+AC_SUBST(CCOPT)
+LIBS="$VLIBS $LIBS"
+AC_MSG_CHECKING([for system libs])
+AC_MSG_RESULT($VLIBS)
+AC_SUBST(LIBS)
+AC_SUBST(AM_LDFLAGS)
+AC_SUBST(ccincl)
+AC_MSG_RESULT(Configured: $BUILD_OPTS)
+
+#AC_CONFIG_SUBDIRS(libsrc/zlib)
+
+AC_DEFINE([VIRTTP], 1, [TP code])
+AC_DEFINE([INC_BACKUP], 1, [Inc backup])
+AC_DEFINE([INPROCESS_CLIENT], 1, [inprocess client])
+AC_DEFINE([BIF_TIDY], 1, [tidy functions])
+AC_DEFINE([REPLICATION_SUPPORT], 1, [replication])
+AC_DEFINE([REPLICATION_SUPPORT2], 1, [replication 2])
+AC_DEFINE([VIRTUAL_DIR], 1, [virtual dirs])
+
+AC_SUBST(srvrlibs)
+AC_SUBST(clntlibs)
+
+
+##########################################################################
+##									##
+##  various destination dirs                      			##
+##									##
+##########################################################################
+virtdatadir=$datadir/virtuoso
+vaddir=$virtdatadir/vad
+docdir=$virtdatadir/doc
+htmldocdir=$docdir/html
+pdfdocdir=$docdir/pdf
+
+virtstatedir=$localstatedir/lib/virtuoso
+demodir=$virtstatedir/demo
+dbdir=$virtstatedir/db
+httprootdir=$virtstatedir/vsp
+
+#AC_SUBST(virtdatadir)
+AC_SUBST(vaddir)
+AC_SUBST(demodir)
+AC_SUBST(dbdir)
+AC_SUBST(htmldocdir)
+AC_SUBST(pdfdocdir)
+AC_SUBST(httprootdir)
+
+
+##########################################################################
+##									##
+##  Flags formerly in Makeconfig					##
+##									##
+##########################################################################
+
+VIRT_AM_CFLAGS="$CCOPT $CCWARN $CCDEBUG $CCDEFS $ccincl $CCPLATFORMDEFS $DEFS $INCL"
+
+AC_SUBST(VIRT_AM_CFLAGS)
+AC_SUBST(SYSLIBS)
+
+
+##########################################################################
+##									##
+##  Generate the files using the above information			##
+##									##
+##########################################################################
+AC_CONFIG_FILES([
+	Makefile
+	binsrc/Makefile
+	docsrc/Makefile
+	libsrc/Makefile
+	binsrc/bpel/Makefile
+	binsrc/cached_resources/Makefile
+	binsrc/driver/Makefile
+	binsrc/hosting/Makefile
+	binsrc/hosting/mono/Makefile
+	binsrc/hosting/mono/tests/Makefile
+	binsrc/hosting/perl/Makefile
+	binsrc/hosting/php4/Makefile
+	binsrc/hosting/python/Makefile
+	binsrc/hosting/ruby/Makefile
+	binsrc/maildrop/Makefile
+	binsrc/mono/Makefile
+	binsrc/samples/demo/Makefile
+	binsrc/samples/docbookview/Makefile
+	binsrc/samples/IBuySpy/Makefile
+	binsrc/samples/image_magick/Makefile
+	binsrc/samples/JDBC/Makefile
+	binsrc/samples/Makefile
+	binsrc/samples/odp/Makefile
+	binsrc/samples/petshop/Makefile
+	binsrc/samples/schemaview/Makefile
+	binsrc/samples/sparql_demo/Makefile
+	binsrc/samples/TPC-W/Makefile
+	binsrc/samples/webapp/Makefile
+	binsrc/samples/wikiv/Makefile
+	binsrc/samples/wikiv/plugin/Makefile
+	binsrc/samples/xpath/Makefile
+	binsrc/samples/xquery/Makefile
+	binsrc/sqldoc/Makefile
+	binsrc/sync/Makefile
+	binsrc/tests/biftest/Makefile
+	binsrc/tests/dav/Makefile
+	binsrc/tests/dotnet/Makefile
+	binsrc/tests/Makefile
+	binsrc/tests/oledb/Makefile
+	binsrc/tests/oracle_tpcc/Makefile
+	binsrc/tests/rdf/Makefile
+	binsrc/tests/suite/Makefile
+	binsrc/tests/tpcrun/Makefile
+	binsrc/tests/wb/Makefile
+	binsrc/tutorial/apps/Makefile
+	binsrc/tutorial/hosting/Makefile
+	binsrc/tutorial/Makefile
+	binsrc/tutorial/services/Makefile
+	binsrc/tutorial/web/Makefile
+	binsrc/tutorial/xml/Makefile
+	binsrc/vad/Makefile
+	binsrc/virtodbc/Makefile
+	binsrc/virtoledb/Makefile
+	binsrc/virtuoso/Makefile
+	binsrc/virtuoso_sink/Makefile
+	binsrc/vsp/Makefile
+	binsrc/vspx/Makefile
+	binsrc/VirtuosoClient.Net/Makefile
+	binsrc/ws/Makefile
+	binsrc/ws/wsrm/Makefile
+	binsrc/xddl/Makefile
+	binsrc/yacutia/Makefile
+	docsrc/chm/Makefile
+	docsrc/docwiki/Makefile
+	docsrc/html_virt/Makefile
+	docsrc/images/Makefile
+	docsrc/pdf/Makefile
+	docsrc/releasenotes/Makefile
+	docsrc/styleguide/Makefile
+	docsrc/stylesheets/Makefile
+	docsrc/xmlsource/Makefile
+	libsrc/Dk/Makefile
+	libsrc/JDBCDriverType4/Makefile
+	libsrc/JDBCDriverType4/testsuite_1.2/Makefile
+	libsrc/JDBCDriverType4/testsuite_2.0/Makefile
+	libsrc/JDBCDriverType4/testsuite_3.0/Makefile
+	libsrc/JDBCDriverType4/virtuoso/Makefile
+	libsrc/JDBCDriverType4/virtuoso/jdbc2/Makefile
+	libsrc/langfunc/Makefile
+	libsrc/odbcsdk/Makefile
+	libsrc/plugin/Makefile
+	libsrc/Thread/Makefile
+	libsrc/Tidy/Makefile
+	libsrc/util/Makefile
+	libsrc/Wi/Makefile
+	libsrc/Xml.new/Makefile
+	libsrc/zlib/Makefile
+])
+
+
+AC_CONFIG_COMMANDS([default], [
+	chmod 755 bin/makever
+])
+
+AC_OUTPUT
+
+
+########################################################################## 
+##									##
+##  Display configuration information					##
+##									##
+##########################################################################
+B=`tput bold 2>/dev/null`
+N=`tput sgr0 2>/dev/null`
+
+echo ""
+echo ""
+echo "${B}${PACKAGE_STRING} configuration summary${N}"
+echo "${PACKAGE_STRING} configuration summary" | sed 's/./=/g'
+echo ""
+echo "${B}Installation variables${N}"
+echo "AC_HELP_STRING(layout,		[${virtuoso_layout}])"
+echo "AC_HELP_STRING(prefix,		[${prefix}])"
+echo "AC_HELP_STRING(exec_prefix,	[${exec_prefix}])"
+echo ""
+echo "${B}Installation paths${N}"
+echo "AC_HELP_STRING(programs,		[${bindir}])"
+echo "AC_HELP_STRING(include files, 	[${includedir}])"
+echo "AC_HELP_STRING(libraries, 	[${libdir}])"
+echo "AC_HELP_STRING(manual pages, 	[${mandir}])"
+echo
+echo "${B}Options${N}"
+echo "AC_HELP_STRING(BUILD_OPTS,	[${BUILD_OPTS}])"
+echo ""

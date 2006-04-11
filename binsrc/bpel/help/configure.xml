@@ -1,0 +1,77 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+<sect1 id="configure">
+    <title>OpenLink BPEL Process Manager Configure</title>
+    <para>This page configures global options.</para>
+    <simplelist>
+      <member><ulink url="i/save_16.png" alt="Save"/> Click to save the changes.</member>
+      <member><ulink url="i/cancl_16.png" alt="Cancel"/> Click to cancel the changes.</member>
+      <member>Click button "Restore defaults" to restore the predefined configuration values.</member>
+    </simplelist>
+    <sect2 id="fields">
+      <title>Form fields</title>
+      <sect3 id="f_oemail">
+          <title>BPEL Operator E-Mail address</title>
+          <para>When specified, this string will be used for the BPEL Operator E-Mail address.</para>
+      </sect3>
+      <sect3 id="f_oss">
+          <title>Outgoing SMTP Server</title>
+          <para>When specified, this server name will be used as an Outgoing SMTP Server.</para>
+      </sect3>
+      <sect3 id="f_eh">
+          <title>Email header for all e-mails</title>
+          <para>When specified, this string will be used for the Email header for all e-mails.</para>
+      </sect3>
+      <sect3 id="f_eh">
+          <title>Subject for error alert mail</title>
+          <para>When specified, this string will be used for the subject for error alert mail.</para>
+      </sect3>
+      <sect3 id="f_ert">
+          <title>E-Mail template for error alerts</title>
+          <para>When specified, this string will be used as an E-Mail template for error alerts.</para>
+      </sect3>
+      <sect3 id="f_sem">
+          <title>Subject for error report mail</title>
+          <para>When specified, this string will be used for the Subject for error report mail.</para>
+      </sect3>
+      <sect3 id="f_sen">
+          <title>E-Mail template for error notifications</title>
+          <para>When specified, this string will be used as an E-Mail template for error notifications.</para>
+      </sect3>
+      <sect3 id="f_sei">
+          <title>Interval for instance expiration (hours)</title>
+          <para>When specified, this nuber will be used for the Interval for instance expiration (hours).</para>
+      </sect3>
+      <sect3 id="f_seg">
+          <title> Global statistics flag</title>
+          <para>If this checkbox is checked, the Statistics gathering will be initiated.</para>
+      </sect3>
+      <sect3 id="f_clr">
+          <title>Directory where .NET CLR assemblies must be stored</title>
+          <para>When specified, then there the .NET CLR assemblies will be stored.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+</HelpTopic>

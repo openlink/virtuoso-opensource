@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="xmltemplates"><title>XML Templates</title>
+
+ <para>Virtuoso XML templates allow execution of queries over HTTP in order to
+ achieve any combination of the following:</para>
+
+ <simplelist>
+  <member>Execution of SQL queries returned in an XML formatted resultset.</member>
+  <member>Execution of XQuery and XPath queries against XML and SQL-XML
+  documents in the Virtuoso WebDAV repository.</member>
+  <member>Use an XML notation (Updategrams) to insert/update/delete SQL data.</member>
+ </simplelist>
+
+  <para>An XML template is an XML file containing a query, optional parameters
+  with default values for the query, a place to specify an XSL stylesheet, and a
+  section for specifying updatagram based syncronization metrics.  They are
+  meant to be executed as an XML described short-cut to an query result, an XML
+  document.  The XML document returned from calling an XML template can be
+  served raw, or transformed using XSLT.</para>
+
+ <para>XML templates can be executed from within Virtuoso procedure language
+ using the <link linkend="fn_xml_template"><function>xml_template()</function></link>
+ function, or published as SOAP compliant XML Web Services, which makes
+ them accessible to any SOAP and WSDL aware environment.</para>
+
+  <para>XML templates provide quick easy access to results from a SQL query
+  as usual, but now this can be saved to a file.  The results are not saved, just
+  the query definition.  You can use this feature to rapidly produce dynamic
+  reports that can potentially be rendered in different ways by providing
+  an alternate stylesheet.  The report can be refined on the fly by providing
+  parameters for the query.  The output is reachable via HTTP directly by
+  providing the URL to the template.</para>
+
+  <para>When XML templates are executed via HTTP, the XSLT transformation
+  will be performed automatically if the "sql:xsl" attribute is specified
+  in the templates root element.  This means that the default XSLT transformation
+  cannot be avoided if the template is executed over HTTP.  However, you have
+  the option whether to apply the transformation or not when using the
+  <function>xml_template()</function> function.  XML templates containing
+  &lt;sql:query&gt; elements return either results or messages regarding
+  the queries.  An XSLT transformation can be made on the result
+  from <function>xml_template()</function> using the returned XSLT
+  sheet URL.  Hence it is conditional in PL programming.  The application
+  developers can choose to either use the style sheet specified in the template,
+  use another style sheet, or skip XSLT transformation entirely.  This feature
+  provides full flexibility for the procedure developer.</para>
+
+  <para>XML templates are intended for execution over HTTP.  The template
+  file can be stored either on the file system, WebDAV repository or stored on
+  another HTTP server being referenced by a URL parameter.  Specifying a
+  template as a URL parameter naturally introduces a new potential security
+  risk associated with the template owners web server.</para>
+
+    <figure id="xmltemplatediagram" float="1"><title>Conceptual View of XML Templates</title>
+    <graphic fileref="xmltemplatediagram.jpg"/></figure>
+
+  <para>Queries and updategrams can be parameterised.  The parameters must be
+  defined in the header element, which consists of zero or more param elements.
+  The default value of the parameter is enclosed within the param element whose
+  values are typically replaced during the execution phases.  When XML templates
+  are executed from the <function>xml_template()</function> function the
+  parameters are specified in a vector as an input parameter.  When XML templates
+  are executed via HTTP the parameters are contained in the URL.
+  <important>All &lt;sql:param&gt; parameter definitions in the template
+  for SQL queries need to be named parameters, and the names must be preceded
+  by a colon i.e. :ParamName (note colon at the front)</important>.  The
+  colon is not required for updategrams.</para>
+
+  <para>If an error occurs as a result of executing a SQL query or updategram,
+  the comment will be included in the result detailing the error.  The
+  subsequent queries and updategrams will still be executed.</para>
+
+  <tip><title>See Also:</title>
+  <para>The <link linkend="expwsmodules">Exposing Persistent Stored Modules as Web
+  Services</link> section as this also describes how XML Templates can be
+  published to web services as a SOAP messages using a PL Wrapper.  This
+  is achieved using the Administrative Interface.</para>
+  <para><link linkend="fn_xml_template"><function>xml_template()</function></link></para>
+  </tip>
+
+  <sect2 id="xmltemplatesyntax"><title>Syntax</title>
+
+  <para>The format of an XML template is shown below, illustrating how SQL
+  queries and updategrams are specified:</para>
+
+  <programlisting><![CDATA[
+<root xmlns:sql="urn:schemas-openlink-com:xml-sql" sql:xsl='xslt url' >
+  <sql:header>
+    <sql:param name=":...">..</sql:param>
+    <sql:param name=":...">..</sql:param>...
+  </sql:header>
+  <sql:query>
+    select ... for xml ..
+  </sql:query>
+  <sql:sync>
+    Update gramm
+  </sql:sync>
+</root>
+]]></programlisting>
+
+  <para>The root element can contain two attributes.  The first is the
+  required namespace declaration of xmlns:sql="urn:schemas-openlink-com:xml-sql",
+  required to identify the XML as an XML template. The second
+  attribute allows the specification of an optional XSLT stylesheet to be
+  applied to the resulting XML document, if applicable.  The XSLT stylesheet
+  file can be specified as either a relative or absolute URL.</para>
+  <para>The following elements can be defined in the "sql" namespace for an
+  XML Template:</para>
+
+  <itemizedlist>
+    <listitem>The <emphasis>"root"</emphasis> tag can be any name, its purpose
+    is to provide the top-level element required for any well-formed XML, and
+    provides the root element for the resulting XML document, if any.</listitem>
+    <listitem><emphasis>&lt;sql:header&gt;</emphasis> This tag is used to hold
+    the parameters for templates execution such as &lt;sql:param&gt; elements.
+    The &lt;sql:header&gt; element allow us to define multiple parameters.</listitem>
+    <listitem><emphasis>&lt;sql:param&gt;</emphasis> This element is used to
+    define a named parameter that is passed to the query and/or updategram
+    inside the template.  Each &lt;xsl:param&gt; element defines one parameter.
+    Multiple &lt;xsl:param&gt; elements can be specified within the
+    &lt;sql:header&gt; element.</listitem>
+    <listitem><emphasis>&lt;sql:query&gt;</emphasis> This element is used to
+    specify SQL/XML queries.  It is possible to specify multiple
+    &lt;sql:query&gt; elements within a single template.</listitem>
+    <listitem><emphasis>&lt;sql:sync&gt;</emphasis> This element is used to
+    contain updategrams.</listitem>
+  </itemizedlist>
+
+  <para>&lt;sql:query&gt; and &lt;sql:sync&gt; entries are executed
+  sequentially in the order they appear as separate transactions.  Therefore, if
+  you have multiple &lt;sql:query&gt; or &lt;sql:sync&gt; elements in the
+  template, if one fails, the others will proceed.</para>
+
+  <para>XML templates can be executed directly from Virtuoso PL using the
+  <link linkend="fn_xml_template"><function>xml_template()</function></link>
+  function.</para>
+
+  <para>To allow XML template execution from a Virtuoso virtual directory and
+  it's descendants the special option: 'xml_templates' must be used in the virtual
+  directory definition.  This option can be set from the
+  <link linkend="httpvirtualdirs">Virtual Directories user interface</link> or from
+  SQL (or ISQL) using the <link linkend="fn_vhost_define"><function>vhost_define(.... , opts=>vector('xml_templates', 'yes'));</function></link> function.  In the usual
+  way, the SQL user specified for VSP execution within the virtual directory
+  definition will be used for executing the templates within such web
+  directories.  If your XML Templates are to run from a DAV directory then
+  you must allow suitable execute permissions for the file and directory.
+  </para>
+
+  <para>When a virtual directory is configured to allow execution of XML templates
+  be aware that this also means that descendant directories inherit this
+  property.  Also be aware that this also allows execution of VSP files in the
+  normal way.  WebDAV also has another layer of security attributes that
+  will need to be set to enable files to be executable.  By default
+  files in DAV do not have execute privileges.</para>
+
+  <para>Explicitly specifying "contenttype=text/html" as a URL parameter
+  will instruct the Virtuoso HTTP server to return the HTML output.</para>
+
+  <tip><title>See Also</title>
+  <para>Functions: <link linkend="fn_xml_template"><function>xml_template()</function></link>,
+    <link linkend="fn_xmlsql_update"><function>xmlsql_update()</function></link>,
+    <link linkend="fn_xml_auto"><function>xml_auto()</function></link>.</para>
+  <para><link linkend="updategrams">UpdateGrams</link>.</para>
+  <para>The <link linkend="forxmlforsql">FOR XML clause</link>.</para>
+  </tip>
+
+  </sect2>
+
+<sect2 id="saveqrytoxmltemplatessql"><title>Saving SQL Queries to XML Template</title>
+
+  <para>Using the Visual Server Administration Interface, we are going to make
+  and save a query to an XML template in WebDav, and then demonstration its
+  use from a browser.</para>
+  <para>First we will make a new WebDAV directory.  From the Menu choose
+  WebDAV/Content Management:</para>
+
+    <figure id="xmltemplate001" float="1"><title>Creating a new directory (collection) in WebDAV</title>
+    <graphic fileref="xmltemplate001.jpg"/></figure>
+
+  <para>Next we need to configure a virtual directory mapping to this so
+  that XML Templates can be executed later:</para>
+
+    <figure id="xmltemplate002" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>
+    <graphic fileref="xmltemplate004.jpg"/></figure>
+
+  <para>Now we go to the Interactive SQL interface and use a simple query.  Here
+  we are assuming that the Demo database is being used, so we will query the
+  Customers table:</para>
+
+    <figure id="xmltemplate003" float="1"><title>A SQL Query with results</title>
+    <graphic fileref="xmltemplate002.jpg"/></figure>
+
+  <para>Next we will press the Save button to go to the Save XML Template page.
+  Here we can supply some "FOR XML" clause, "FOR XML AUTO" being the simplest.
+  We must save the template in the directory we created earlier, and as the user DAV.
+  The filename we have selected is <computeroutput>/DAV/xmlt/sql-template.xml</computeroutput>.</para>
+
+    <figure id="xmltemplate004" float="1"><title>The Save XML Template page and settings</title>
+    <graphic fileref="xmltemplate005.jpg"/></figure>
+
+  <para>Once the template has been saved we can test it.  Point your browser at
+  you newly created file, a URL similar to:
+  <computeroutput>http://myserver/xmlt/sql-template.xml</computeroutput>:</para>
+
+    <figure id="xmltemplate005" float="1"><title>The test results: http://myserver/xmlt/sql-template.xml</title>
+    <graphic fileref="xmltemplate006.jpg"/></figure>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="xmlqtemplates">Exposing XML Templates as Web Services</link>.</para>
+  </tip>
+
+</sect2>
+
+<sect2 id="saveqrytoxmltemplatessql"><title>Saving XQUERY Queries to XML Template</title>
+
+  <para>Using the Visual Server Administration Interface, we are going to make
+  and save a query to an XML template in WebDav, and then demonstration its
+  use from a browser.</para>
+  <para>First we will make a new WebDAV directory.  From the Menu choose
+  WebDAV/Content Management:</para>
+
+    <figure id="xmltemplate011" float="1"><title>Creating a new directory (collection) in WebDAV</title>
+    <graphic fileref="xmltemplate001.jpg"/></figure>
+
+  <para>Next we need to configure a virtual directory mapping to this so
+  that XML Templates can be executed later:</para>
+
+    <figure id="xmltemplate012" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>
+    <graphic fileref="xmltemplate004.jpg"/></figure>
+
+  <para>Now we turn to the XQUERY tool, from the Visual Server Administration
+  Interface menu choose <computeroutput>Query Tools/XQUERY</computeroutput>.</para>
+
+  <para>We will start by testing the following query against the Demo database</para>
+
+<programlisting><![CDATA[
+<bib>
+   {
+   for $b in document("bib.xml")/bib/book
+   where $b/publisher = "Addison-Wesley" and $b/@year > 1991
+   return
+      <book year = {$b/@year}>
+         {$b/title}
+      </book>
+   }
+</bib>
+]]></programlisting>
+
+    <figure id="xmltemplate013" float="1"><title>XQUERY query against the Demo database</title>
+    <graphic fileref="xmltemplate007.jpg"/></figure>
+
+    <para>Now we will save this as an XML template by pressing the Save button.
+    The query we used will be copied to the save XML template page.  We will ensure
+    that the name of the file is
+    <computeroutput>/DAV/xmlt/xquery-template.xml</computeroutput> and
+    that the DAV owner is set to DAV:</para>
+
+    <figure id="xmltemplate014" float="1"><title>Saving the XML template for the Xquery query</title>
+    <graphic fileref="xmltemplate008.jpg"/></figure>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="xmlqtemplates">Exposing XML Templates as Web Services</link>.</para>
+  </tip>
+
+</sect2>
+
+<sect2 id="saveqrytoxmltemplatessql"><title>Saving XPATH Queries to XML Template</title>
+
+  <para>Using the Visual Server Administration Interface, we are going to make
+  and save a query to an XML template in WebDav, and then demonstration its
+  use from a browser.</para>
+  <para>First we will make a new WebDAV directory.  From the Menu choose
+  WebDAV/Content Management:</para>
+
+    <figure id="xmltemplate021" float="1"><title>Creating a new directory (collection) in WebDAV</title>
+    <graphic fileref="xmltemplate001.jpg"/></figure>
+
+  <para>Next we need to configure a virtual directory mapping to this so
+  that XML Templates can be executed later:</para>
+
+    <figure id="xmltemplate022" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>
+    <graphic fileref="xmltemplate004.jpg"/></figure>
+
+    <para>Now we set our sights on the XML files in WebDAV.  We will perform a very
+    simple XPATH query on an XML source file from this documentation.  We will
+    search for the existence of <computeroutput>&lt;title&gt;</computeroutput>
+    tags in <computeroutput>/DAV/docsrc/adminui.xml</computeroutput>:</para>
+
+    <figure id="xmltemplate023" float="1"><title>XPATH query on a file in WebDAV</title>
+    <graphic fileref="xmltemplate009.jpg"/></figure>
+
+    <para>Make a quick mental note of the trivial result.  Now we will save our query
+    as an XML template to be executed over HTTP.  Pressing the Save button takes
+    us to the save XML Template page.  We ensure that the file to save is set to
+    <computeroutput>/DAV/xmlt/xpath-template.xml</computeroutput> and the
+    file owner is set to DAV:</para>
+
+    <figure id="xmltemplate024" float="1"><title></title>
+    <graphic fileref="xmltemplate010.jpg"/></figure>
+
+    <para>Once our query has been saved in an XML template we can test it by
+    pointing a web browser at the URL for the file as we configured our
+    virtual directory for, which will be similar to:
+    <computeroutput>http://myvirtuoso:8890/xmlt/xpath-template.xml</computeroutput>:</para>
+
+    <figure id="xmltemplate025" float="1"><title></title>
+    <graphic fileref="xmltemplate011.jpg"/></figure>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="xmlqtemplates">Exposing XML Templates as Web Services</link>.</para>
+  </tip>
+</sect2>
+
+  <sect2 id="xmltemplatesexamples"><title>Programmatic Examples</title>
+
+<example id="ex_xmltemplatefs"><title>Executing an XML template from the file system</title>
+  <para>First step is to setup the /xmlt directory on file system.  The function
+  <link linkend="fn_vhost_define"><function>vhost_define()</function></link>
+  will be used to enable execution of XML templates.  DBA privileges are required
+  to use this function:</para>
+<programlisting><![CDATA[
+SQL> vhost_define (lpath=>'/xmlt', ppath=>'/xmlt/',
+  vsp_user=>'demo', opts=>vector('xml_templates', 'yes'));
+]]></programlisting>
+
+  <para>Now the following files must be stored as: &lt;www-root&gt;/xmlt/file1.xml</para>
+
+<programlisting><![CDATA[
+<?xml version ='1.0' encoding='UTF-8'?>
+ <root xmlns:sql='urn:schemas-openlink-com:xml-sql' sql:xsl='shippers.xsl'>
+   <!-- XML template example -->
+   <!-- parameters declaration -->
+    <sql:header>
+      <sql:param name=":ShipperID">2</sql:param>
+      <sql:param name=":CompanyName">United Package (you should see me)</sql:param>
+      <sql:param name=":Phone">(503) 555-3199</sql:param>
+    </sql:header>
+   <!-- XML updategram , this will update the second record -->
+    <sql:sync>
+        <sql:before>
+            <Shippers sql:id="1" ShipperID=":ShipperID"/>
+        </sql:before>
+        <sql:after>
+            <Shippers sql:id="1" ShipperID=":ShipperID" CompanyName=":CompanyName" Phone=":Phone"/>
+        </sql:after>
+    </sql:sync>
+   <!-- make a parametrized query -->
+   <sql:query>
+      SELECT ShipperID, CompanyName,Phone FROM Shippers where ShipperID = :ShipperID FOR XML AUTO
+   </sql:query>
+   <!-- make an error to see what happens -->
+   <sql:query>
+      select * from NotExist for xml auto
+   </sql:query>
+</root>
+]]></programlisting>
+
+  <para>Now we want an XSL stylesheet stored as: &lt;www-root&gt;/xmlt/shippers.xslt
+  containing the following:</para>
+
+<programlisting><![CDATA[
+<?xml version="1.0"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+    <xsl:output method="html" indent="yes" />
+
+    <xsl:template match="/">
+	<html>
+	    <head>
+	    <title>Shippers list</title>
+	    </head>
+	    <body>
+	    <xsl:apply-templates/>
+	    </body>
+	</html>
+    </xsl:template>
+
+    <xsl:template match="root">
+	<table>
+	    <tr><td>ID</td><td>Name</td><td>Phone</td></tr>
+	    <xsl:apply-templates/>
+	</table>
+    </xsl:template>
+
+    <xsl:template match="Shippers">
+	<tr>
+	    <td><xsl:value-of select="@ShipperID"/></td>
+	    <td><xsl:value-of select="@CompanyName"/></td>
+	    <td><xsl:value-of select="@Phone"/></td>
+	</tr>
+    </xsl:template>
+</xsl:stylesheet>
+]]></programlisting>
+
+  <para>Point your web browser to: </para>
+  <programlisting>http://[host:port]/xmlt/file1.xml</programlisting>
+  <para>and then at: </para>
+  <programlisting>http://[host:port]/xmlt/file1.xml?:ShipperID=3</programlisting>
+  <para>for the results.</para>
+</example>
+
+<example id="ex_xmltemplatedav"><title>Executing an XML template from WebDAV</title>
+
+  <para>The first step is to create a new DAV collection and configure it to
+  allow XML template execution.  DBA privileges are required for these operations.
+  To create a DAV collection the function <link linkend="fn_dav_api_add">
+  <function>dav_col_create()</function></link> can be used, followed by the
+  <link linkend="fn_vhost_define"><function>vhost_define()</function></link>
+  function to allow XML template execution:</para>
+
+<programlisting><![CDATA[
+SQL> dav_col_create ('/DAV/xmlt/', '110100100', 'dav', 'dav', 'dav', 'dav');
+]]></programlisting>
+
+<programlisting><![CDATA[
+SQL> vhost_define (lpath=>'/DAV/xmlt', ppath=>'/DAV/xmlt/',
+  is_dav=>1, vsp_user=>'demo', opts=>vector('xml_templates', 'yes'));
+]]></programlisting>
+
+  <para>Now, the file can be uploaded.  The same file as in the previous example
+  will be used, copied from the file system location to the DAV location:
+  &lt;www-root&gt;/DAV/xmlt/file1.xml</para>
+
+<programlisting><![CDATA[
+SQL> dav_res_upload ('/DAV/xmlt/file1.xml',
+  file_to_string (concat (http_root(), '/xmlt/file1.xml')), 'text/xml',
+  '111101101N', 'dav', 'dav', 'dav', 'dav');
+]]></programlisting>
+
+  <para>Likewise the XSLT stylesheet from the previous example will also be used
+  in the same way, placing into the DAV location: &lt;www-root&gt;/DAV/xmlt/shippers.xslt</para>
+
+<programlisting><![CDATA[
+SQL> dav_res_upload ('/DAV/xmlt/shippers.xsl',
+  file_to_string (concat (http_root(), '/xmlt/shippers.xsl')),
+  'text/xsl', '110100100N', 'dav', 'dav', 'dav', 'dav');
+]]></programlisting>
+
+  <para>This example can now be demonstrated by trying the following URLs in
+  your web browser: </para>
+  <programlisting>http://[host:port]/DAV/xmlt/file1.xml</programlisting>
+   <para>and</para>
+   <programlisting>http://[host:port]/DAV/xmlt/file1.xml?:ShipperID=3</programlisting>
+</example>
+</sect2>
+
+</sect1>
+
+

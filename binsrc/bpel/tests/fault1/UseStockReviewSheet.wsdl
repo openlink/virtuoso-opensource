@@ -1,0 +1,128 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions name="UseStockReviewSheet"
+        targetNamespace="http://samples.cxdn.com"
+        xmlns:tns="http://samples.cxdn.com"
+        xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+        xmlns="http://schemas.xmlsoap.org/wsdl/"
+        >
+
+ <!-- 
+   Type Definition
+   The default output of the BPELZ wizard uses Strings as input and output to the BPEL Process.
+   But you can define or import any XML Schema type and us them as part of the message types.
+   -->
+        
+    <types> 
+    
+        <schema targetNamespace ="http://samples.cxdn.com/finance"  
+              xmlns = "http://www.w3.org/2001/XMLSchema" >
+            <complexType name="StockReviewSheetType">
+                <sequence>
+                <element name="symbol"       type="string" />
+                <element name="targetPrice"  type="float"  />
+                <element name="currentPrice" type="float"  />
+                <element name="action"       type="string" />
+                <element name="quantity"     type="int"    />
+                </sequence>
+            </complexType>  
+        </schema>
+        
+        <schema attributeFormDefault="qualified" 
+                elementFormDefault="qualified" 
+                targetNamespace="http://samples.cxdn.com" 
+                xmlns="http://www.w3.org/2001/XMLSchema" 
+                xmlns:s1="http://samples.cxdn.com/finance"
+                >
+            <import namespace="http://samples.cxdn.com/finance"/>    
+            <element name="useStockReviewSheetRequest">
+                <complexType>
+                    <sequence>
+                        <element name="symbol" type="string" />
+                        <element name="targetPrice" type="float" />
+                        <element name="currentPrice" type="float" />
+                    </sequence>
+                </complexType>
+            </element>
+            
+            <element name="useStockReviewSheetResult">
+                <complexType>
+                <sequence>
+                    <element name="stockReviewSheet" type="s1:StockReviewSheetType" />
+                </sequence>
+                </complexType>
+            </element>
+            
+        </schema>
+    </types>
+  
+ <!-- 
+   Message Type Definition
+   Definition of the message types used as part of each SOAP interaction
+   -->
+    <message name="UseStockReviewSheetRequestMessage">
+        <part name="parameters" element="tns:useStockReviewSheetRequest"/>
+    </message>
+    
+    <message name="UseStockReviewSheetResultMessage">
+        <part name="parameters" element="tns:useStockReviewSheetResult"/>
+    </message>
+
+<!--
+  PortType definition
+  -->
+
+    <!-- portType implemented by the UseStockReviewSheet BPEL process -->
+    <portType name="UseStockReviewSheet">
+        <operation name="initiate">
+            <input message="tns:UseStockReviewSheetRequestMessage"/>>
+        </operation>
+    </portType>
+
+    <!-- portType implemented by the requester of UseStockReviewSheet BPEL process 
+         for asynchronous callback purposes
+         -->
+    <portType name="UseStockReviewSheetCallback">
+        <operation name="onResult">
+            <input message="tns:UseStockReviewSheetResultMessage"/>
+        </operation>
+    </portType>
+
+
+<!--
+  PartnerLinkType definition
+  -->
+
+    <!-- the UseStockReviewSheet partnerLinkType binds the service and
+         requestor portType into an asynchronous conversation.
+         -->
+    <plnk:partnerLinkType name="UseStockReviewSheet">
+        <plnk:role name="UseStockReviewSheetProvider">
+            <plnk:portType name="tns:UseStockReviewSheet"/>
+        </plnk:role>
+        <plnk:role name="UseStockReviewSheetRequester">
+            <plnk:portType name="tns:UseStockReviewSheetCallback"/>
+        </plnk:role>
+    </plnk:partnerLinkType>   
+</definitions>

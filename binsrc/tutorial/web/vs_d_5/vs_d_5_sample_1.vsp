@@ -1,0 +1,107 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+<H2>Free text index example</H2>
+<?vsp
+ declare md, chkon varchar;
+
+ DAV_COL_CREATE ('/DAV/ft_test/', '110100000R', 'dav', null, 'dav', 'dav');
+
+ if ({?'ins'} = '1')
+   {
+     DAV_RES_UPLOAD ('/DAV/ft_test/ft.txt', 'freetexttest', '', '110100000R', 'dav', null, 'dav', 'dav');
+     http('<p><table class="tableresult" border="0"><tr><th>Insert done</th></tr></table></p>');
+   }
+ else if ({?'idx'} = '1')
+   {
+     WS.WS.VT_INC_INDEX_WS_WS_SYS_DAV_RES ();
+     http('<p><table class="tableresult" border="0"><tr><th>Index checked</th></tr></table></p>');
+   }
+ else if ({?'del'} = '1')
+   {
+     DAV_DELETE ('/DAV/ft_test/ft.txt', 0, 'dav', 'dav');
+     http('<p><table class="tableresult" border="0"><tr><th>Delete done</th></tr></table></p>');
+   }
+
+  if ({?'apply'} = 'yes')
+    {
+      md := upper({?'mode'});
+      if (md is NULL)
+        md := 'OFF';
+      DB.DBA.vt_batch_update ('WS.WS.SYS_DAV_RES', md, 10);
+    }
+
+  md := registry_get ('DELAY_UPDATE_WS_WS_SYS_DAV_RES');
+  if (md <> 'ON')
+    md := 'OFF';
+  else if (md = 'ON')
+    {
+      chkon := 'checked';
+    }
+?>
+
+<form action="<?=http_path()?>" method=POST>
+<table class="tableentry" border=1>
+<tr>
+  <td>Set Free text index Batch Mode:&nbsp;
+      <INPUT TYPE=CHECKBOX NAME=mode onclick='this.form.apply.value="yes";this.form.submit()' <?=chkon?>>
+      <input type=hidden name=apply value="">
+  </td>
+</tr>
+
+
+  <tr><td>Choose an action:
+    <ol>
+      <li>Click <a href="<?=http_path()?>?ins=1">here</a> to insert some new resources containing the word "freetexttest".</li>
+      <li>Click <a href="<?=http_path()?>?src=1">here</a> to search in WebDAV</li>
+      <li>Click <a href="<?=http_path()?>?idx=1">here</a> to evaluate the freetext index log (if the batch mode is off,
+      skip this step) and repeat step 2.</li>
+      <li>Click <a href="<?=http_path()?>?del=1">here</a> to clear the resources, and repeat step 2 and 3</li>
+    </ol></td>
+  </tr>
+</table>
+
+<?vsp
+  if ({?'src'} = '1')
+    {
+      declare fnd integer;
+      fnd := 0;
+      http('<p><table class="tableresult" border="1"><tr><th>Resource</th><th>contains this word</th></tr>');
+      for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where contains (RES_CONTENT, 'freetexttest') do
+	{
+          fnd := 1;
+	  ?>
+            <tr><td><?=RES_FULL_PATH?></td><td>freetexttest</td></tr>
+          <?vsp
+	}
+      if (not fnd)
+	http ('<tr><td colspans="2">No resources found</td></tr>');
+      http ('</table></p>');
+    }
+?>
+
+</form>
+</body>
+</html>

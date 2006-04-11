@@ -1,0 +1,185 @@
+drop view KEY_COLS;
+create view KEY_COLS as select KP_KEY_ID, KP_NTH, internal_type_name(COL_DTP) as type, C.* from SYS_KEY_PARTS, SYS_COLS C where COL_ID = KP_COL;
+
+drop procedure __type_name;
+create procedure __type_name( in type integer )
+{
+  if (type is not null)
+     return internal_type_name(type);
+  else
+     return 'unknown';
+}
+;
+
+--drop procedure __extract_qualif;
+create procedure __extract_qualif( in name integer )
+{
+--  return 'DB';
+  declare v any;
+--dbg_obj_print('split10');
+  v := split_and_decode(name,1,'\0\0.');
+  if (length(v)=3)
+    return aref(v,0);
+  else 
+    return '';
+}
+;
+
+--drop procedure __extract_owner;
+create procedure __extract_owner( in name integer )
+{
+--  return 'DBA';
+  declare v any;
+--dbg_obj_print('split11');
+  v := split_and_decode(name,1,'\0\0.');
+--  dbg_obj_print(v);
+  if (length(v)=3)
+    return aref(v,1);
+  else 
+    return '';
+}
+;
+
+drop view SYS_PROCS;
+create view SYS_PROCS as select __type_name(P_TYPE) as type, * from SYS_PROCEDURES;
+
+drop view SYS_NKEYS;
+create view SYS_NKEYS as select __extract_qualif(KEY_TABLE) as qualif, __extract_owner(KEY_TABLE) as owner, * from SYS_KEYS;
+
+drop xml view "schema";
+create   xml view "schema"   as
+{
+  DB.DBA.SYS_NKEYS k as "table" ("KEY_TABLE" as "name", KEY_ID as "key_id", KEY_TABLE as "table", "QUALIF" as "qualif", OWNER as "owner")
+	on (k.KEY_IS_MAIN = 1 and k.KEY_MIGRATE_TO is null)
+	{ DB.DBA.KEY_COLS  c as "column" (COLUMN as "name", COL_ID as "col_id", TYPE as "type")
+		on (k.KEY_ID = c.KP_KEY_ID)
+		primary key (COL_ID),
+	DB.DBA.SYS_KEYS i as "index" (KEY_NAME as "name", KEY_ID as "key_id", KEY_N_SIGNIFICANT as "n_parts")
+	    on (i.KEY_TABLE = k.KEY_TABLE and i.KEY_IS_MAIN = 0 and i.KEY_MIGRATE_TO is null)
+	  {
+	    DB.DBA.KEY_COLS ic as "column" (COLUMN as "name", COL_ID as "col_id")
+	      on (ic.KP_NTH < i.KEY_N_SIGNIFICANT and ic.KP_KEY_ID = i.KEY_ID)
+	      primary key (COL_ID)
+	      }
+	}
+} public '/schema.xml' owner 'dav';
+
+
+drop xml view "schema_procs";
+create xml view "schema_procs" as
+{
+  DB.DBA.SYS_PROCS p as "procedure" 
+	("P_NAME" as "name", 
+	 "P_COMMENT" as "comment", 
+	 "P_QUAL" as "qualif", 
+	 "P_N_IN" as "n_in", 
+	 "P_N_OUT" as "n_out", 
+	 "P_N_R_SETS" as "n_r_sets", 
+	 "P_MORE" as "more", 
+	 "P_OWNER" as "owner", 
+	 "P_TEXT" as "text", 
+	 "TYPE" as "type")
+} public '/schema_procs.xml' owner 'dav';
+
+
+drop xml view "schema_indexes";
+create xml view "schema_indexes" as
+{
+  DB.DBA.SYS_KEYS i as "index" (KEY_TABLE as "table", KEY_NAME as "name", KEY_ID as "key_id", KEY_N_SIGNIFICANT as "n_parts")
+    on (i.KEY_IS_MAIN = 0 and i.KEY_MIGRATE_TO is null)
+  {
+    DB.DBA.KEY_COLS ic as "column" (COLUMN as "name", COL_ID as "col_id")
+      on (ic.KP_NTH < i.KEY_N_SIGNIFICANT and ic.KP_KEY_ID = i.KEY_ID)
+      primary key (COL_ID)
+  }
+} public '/schema_indexes.xml' owner 'dav';
+
+--drop procedure schema_view_string;
+create procedure schema_view_string ( )
+{
+  declare _body any;
+  declare _pf, _view varchar;
+  _body := string_output ();
+  http ('<schema>', _body);
+  _view := 'schema';
+  _pf := concat ('DB.DBA.http_view_', _view);
+  call (_pf) (_body);
+  _view := 'schema_indexes';
+  _pf := concat ('DB.DBA.http_view_', _view);
+  call (_pf) (_body);
+  _view := 'schema_procs';
+  _pf := concat ('DB.DBA.http_view_', _view);
+  call (_pf) (_body);
+  http ('</schema>', _body);
+
+  return (string_output_string (_body));
+}
+;
+
+--drop procedure schema_view_param3;
+create procedure schema_view_param3 (in v varchar, in xst varchar, in param1 varchar, in param2 varchar, in param3 varchar, in need_http integer)
+{
+  declare str, r varchar;
+  xslt_sheet (xst, xml_tree_doc (xml_tree  (file_to_string (xst))));
+  str := schema_view_string ();
+--  string_to_file('vsp/aa',str,0);
+--http('par1=');
+--http(param1);
+--http(', par2=');
+--http(param2);
+  r := xslt (xst, xml_tree_doc (xml_tree (str)),vector ('param1', param1, 'param2' ,param2, 'param3', param3));
+  declare str any;
+  str := string_output ();
+--  string_to_file('vsp/bb',str,0);
+  http_value (r, 0, str);
+  declare s varchar;
+  s := string_output_string( str);
+  if (need_http)
+    http (s);
+--  string_to_file ('vsp/xslt.out', string_output_string (str), 0);
+  return s;
+}
+;
+
+--drop procedure schema_view_param;
+create procedure schema_view_param (in v varchar, in xst varchar, in param varchar, in need_http integer)
+{
+  return schema_view_param2 (v, xst, param, '', need_http);
+}
+;
+
+--drop procedure schema_view_param2;
+create procedure schema_view_param2 (in v varchar, in xst varchar, in param varchar, in param2 varchar, in need_http integer)
+{
+  return schema_view_param3 (v, xst, param, param2, '', need_http);
+}
+;
+
+--drop procedure schema_view;
+create procedure schema_view (in v varchar, in xst varchar, in need_http integer )
+{
+  return schema_view_param2 (v, xst, '', '', need_http);
+}
+;
+
+--drop procedure html_retrieve_tables_via_xslt;
+create procedure PUMP.DBA.HTML_RETRIEVE_TABLES_VIA_XSLT (	in arr any )
+{
+  declare str varchar;
+  declare owner, qualifier, mask varchar;
+
+  owner := PUMP.DBA.__get_keyword ('owner_mask', arr, '');
+  qualifier := PUMP.DBA.__get_keyword ('qualifier_mask', arr, '');
+  mask := PUMP.DBA.__get_keyword ('tabname', arr, '');
+  if (owner is null)
+    owner := '';
+  if (qualifier is null)
+    qualifier := '';
+  str := PUMP.DBA.schema_view_param3 ('schema', 'admin/dbpump/schema_tables_select.xsl', qualifier, owner, mask, 0);
+--  dbg_obj_print(str);
+  if (str is null)
+    return '';
+  return str;
+}
+;
+

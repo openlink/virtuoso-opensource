@@ -1,0 +1,94 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- $Id$ -->
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+<?vsp
+  declare _action varchar;
+  _action := get_keyword ('action', params, '');
+  if (_action = 'Initial Copy')
+    {
+      declare _server varchar;
+      _server := REPL_SERVER_NAME ('demoserver2');
+      REPL_INIT_SNAPSHOT(_server, 'Demo.demo.Shippers', 2);
+    }
+  else if (_action = 'Do updates')
+    {
+      -- updates on local table
+      insert replacing Demo.demo.Shippers(ShipperID, CompanyName, Phone)
+          values (10, 'Foo Inc.', '(503) 555-XXXX');
+      update Demo.demo.Shippers set Phone = '(503) 555-YYYY'
+          where ShipperID = 3;
+
+      -- updates on remote table
+      if (exists (select 1 from demoserver2.Shippers where ShipperID = 11))
+        {
+          update demoserver2.Shippers
+              set CompanyName = 'Foobar Inc.', Phone = '(503) 555-ZZZZ'
+              where ShipperID = 11;
+        }
+      else
+        {
+          insert into demoserver2.Shippers(ShipperID, CompanyName, Phone)
+              values (11, 'Foobar Inc.', '(503) 555-ZZZZ');
+        }
+      update demoserver2.Shippers set Phone = '(503) 555-WWWW'
+          where ShipperID = 2;
+    }
+  else if (_action = 'Sync')
+    REPL_UPDATE_SNAPSHOT('Demo.demo.Shippers', 2);
+?>
+<form method="post">
+<table align="center">
+<tr>
+<td><input type="submit" name="action" value="Initial Copy"></td>
+<td><input type="submit" name="action" value="Do updates"></td>
+<td><input type="submit" name="action" value="Sync"></td>
+</tr>
+</table>
+</form>
+<p><strong>Demo.demo.Shippers</strong>
+<table class="tableresult" width="85%">
+<tr><th>#</th><th>Company Name</th><th>Phone</th></tr>
+<?vsp
+  for select ShipperID, CompanyName, Phone from Demo.demo.Shippers do {
+?>
+  <tr><td><?=ShipperID?></td><td><?=CompanyName?></td><td><?=Phone?></td></tr>
+<?vsp
+  }
+?>
+</table>
+<p><strong>Demo.demo.Shippers (on demoserver2)</strong>
+<table class="tableresult" width="85%">
+<tr><th>#</th><th>Company Name</th><th>Phone</th></tr>
+<?vsp
+  for select ShipperID, CompanyName, Phone from demoserver2.Shippers do {
+?>
+  <tr><td><?=ShipperID?></td><td><?=CompanyName?></td><td><?=Phone?></td></tr>
+<?vsp
+  }
+?>
+</table>
+</body>
+</html>

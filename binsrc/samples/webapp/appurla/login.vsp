@@ -1,0 +1,48 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp if ({?'uid'})
+{
+  if (exists (select 1 from app_user where ap_id = {?'uid'} and ap_pwd = {?'pwd'}))
+    {
+      session_start_urla (params, '/samples/appurla/default.vsp');
+      return;
+    }
+}
+?>
+<HTML>
+  <head>
+    <title>HTTP session variables sample</title>
+    <meta name="AUTHOR" content="Mitko Iliev (imitko@openlinksw.co.uk), OpenLink Software"> 
+    <meta name="DESCRIPTION" content="HTTP session variables sample">
+  </head>
+  <BODY>
+   <H3><u>HTTP session variables sample</u></H3>
+   <H4>Login as existing member</H4>
+   <FORM method="POST" action="login.vsp">
+   <!--input type="hidden" name="sid" value="<?={?'sid'}?>"--> 
+   <P>User ID  <input type="text" name="uid" value=""></P>
+   <P>Password <input type="password" name="pwd" value=""></P>
+   <P><input type="submit" name="accept" value="Login"> Click <a href="register.vsp">here</a> to register as new </P> 
+   </FORM>
+  </BODY>
+</HTML>  

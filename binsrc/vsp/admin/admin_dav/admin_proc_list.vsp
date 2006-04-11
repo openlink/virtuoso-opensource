@@ -1,0 +1,604 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare this, saved_pars, b64_pars, st, msg, q2 varchar;
+declare _u_id, pos, saved integer;
+declare ix, len, j2 integer;
+
+_u_id := DB.DBA.adm_dav_check_auth (lines);
+if (_u_id <> 1)
+  {
+    adm_tell_unauth_dav (lines);
+    return (0);
+  }
+
+this := http_path();
+q2 := NULL;
+saved := 0;
+--dbg_obj_print (http_path(), ': ', params);
+
+if ({?'host'} is not null)
+  {
+    saved_pars := params;
+    b64_pars := encode_base64 (serialize(params));
+  }
+else
+  {
+    b64_pars := {?'b64_pars'};
+    saved_pars := deserialize (decode_base64 (b64_pars));
+  }
+
+if ({?'q'} = '')
+  {
+     pos := position ('q', params);
+     if (pos > 0)
+       {
+	 aset (params, pos, NULL);
+	 aset (params, pos + 1, NULL);
+       }
+  }
+
+
+if ({?'q'} is not null)
+  {
+    q2 := {?'q'};
+    if ({?'get_proc'} = '1')
+      {
+        q2 := NULL;
+        pos := position ('q', params);
+        if (pos > 0)
+          aset (params, pos, NULL);
+      }
+--  this := 'admin_virt_dir.vsp';
+    this := 'admin_proc_list.vsp';
+  }
+
+
+  if ({?'publish'} = 'Publish' or {?'publish_tmp'} = 'Publish')
+    {
+      declare _mode_p integer;
+
+      _mode_p := 0;
+
+      if ({?'publish_tmp'} = 'Publish')
+	_mode_p := 1;
+
+      -- publish the procedures to a user.
+      declare j, c_soap integer;
+      declare p_name, g_user, qual varchar;
+      g_user := {?'soap'};
+      if (g_user is null or g_user = '__none')
+        {
+	  select max(U_ID) into c_soap from DB.DBA.SYS_USERS;
+          c_soap := c_soap + 1;
+          g_user := sprintf ('SOAP_%d', c_soap);
+          st := '00000';
+          exec (sprintf ('create user %s', g_user), st, msg);
+	  USER_SET_PASSWORD (g_user, md5 (datestring (now())));
+	  USER_SET_QUALIFIER (g_user, g_user);
+          pos := position ('soap', params);
+          if (pos > 0)
+	    aset (params, pos, g_user);
+          else
+            params := vector_concat (params, vector ('soap', g_user));
+	}
+      j := 0;
+      if (_mode_p)
+	{
+	   while (p_name := adm_next_checkbox ('SEL_TM_', params, j))
+	     {
+	       declare n_name, proc_text, c_id, tp_name varchar;
+	       declare e_stat, e_msg varchar;
+
+               n_name := get_keyword (concat ('name', p_name), params);
+               c_id := get_keyword (concat ('_id_r', p_name), params);
+	       tp_name := concat ('"XT"."', g_user, '"."', n_name, '"');
+
+	       proc_text := sprintf ('CREATE PROCEDURE %s ()\n{', tp_name);
+               proc_text := concat (proc_text, 'declare temp, content any;\n temp := string_output ();\n');
+               proc_text := concat (proc_text, '\n if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_ID = ',
+		 c_id ,'))\n   select RES_CONTENT into content from WS.WS.SYS_DAV_RES ',
+	         'where RES_ID = ', c_id, ';\n  else \n  return NULL;\n xml_template (xml_tree_doc (content),',
+		 'vector (), temp); \n',
+	         'return xml_tree_doc (string_output_string (temp)); }\n\n');
+
+--	       dbg_obj_print ('proc_text = ', proc_text);
+
+	       e_stat := '00000';
+	       exec (proc_text, e_stat, e_msg);
+               exec (sprintf ('grant execute on %s to %s', tp_name, g_user));
+	     }
+
+           j := 0;
+	   while (p_name := adm_next_checkbox ('PROC_', params, j))
+	     {
+	        exec (sprintf ('grant execute on "%I"."%I"."%I" to %s',
+		     name_part (p_name,0), name_part (p_name,1), name_part (p_name, 2), g_user), st, msg);
+	     }
+	}
+      else
+	{
+           j := 0;
+	   while (p_name := adm_next_checkbox ('PROC_', params, j))
+	     {
+	        exec (sprintf ('grant execute on "%I"."%I"."%I" to %s',
+		     name_part (p_name,0), name_part (p_name,1), name_part (p_name, 2), g_user), st, msg);
+	     }
+	}
+    }
+?>
+<HTML>
+<HEAD>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+<TITLE>Select Procedure</TITLE>
+</HEAD>
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function getList (qual)
+{
+  document.pform.q.value=qual;
+  document.pform.submit();
+}
+function get_list (hid, ch)
+{
+  if (ch.checked == true)
+    hid.value = 'on';
+  else
+    hid.value = '';
+}
+
+function selectAllCheckboxes1 (form, btn, form1)
+{
+  var i;
+  for (i in form.elements)
+    {
+      var contr = form.elements[i];
+      if (contr != null && contr.type == "checkbox" &&
+	  contr.name.length > 7 && contr.name.substring (0, 7) == "SEL_TM_")
+	{
+	  contr.focus();
+	  if (btn.value == 'Select All')
+	    contr.checked = true;
+	  else
+            contr.checked = false;
+	}
+    }
+  for (i in form1.elements)
+    {
+      var contr = form1.elements[i];
+      if (contr != null && contr.type == "hidden" && contr.name.length > 8
+	  && contr.name.substring (0, 8) == "SEL1_TM_")
+	{
+	  if (btn.value == 'Select All')
+	    contr.value = 'on';
+	  else
+           contr.value = '';
+	}
+    }
+  if (btn.value == 'Select All')
+    btn.value = 'Unselect All';
+  else
+    btn.value = 'Select All';
+  btn.focus();
+}
+
+// -->
+</SCRIPT>
+<?vsp adm_page_header('Virtual Directories: Publishing SQL Stored Procedures and XML Query Templates', 'virtdir'); ?>
+
+<?include ../adm_js_check.vsp ?>
+<form name="pform" method="POST" action="<?=this?>">
+<input type="hidden" name="q" value="<?={?'q'}?>">
+<input type="hidden" name="b64_pars" value="<?=b64_pars?>">
+<?vsp
+if ({?'q'} is not null)
+  {
+    declare ix, len integer;
+    ix := 0; len := length (saved_pars);
+    while (ix < len)
+      {
+	if (not ('Cancel' = get_keyword('no_publish', saved_pars, '') and ( saved_pars[ix] like 'PROC_%' )
+	      and ( saved_pars[ix] like 'SEL1_TM_%' )))
+	  {
+	    if (saved_pars[ix] <> 'b64_pars' and saved_pars[ix] <> 'q' and ( saved_pars[ix] not like 'SEL1_TM_%' ))
+	      {
+?>
+       <input type="hidden" name="<?=saved_pars[ix]?>" value="<?=saved_pars[ix+1]?>">
+<?vsp
+	      }
+	  }
+        ix := ix + 2;
+      }
+    ix := 0; len := length (params);
+    while (ix < len)
+      {
+	if (params[ix] like 'SEL1_TM_%' )
+	  {
+?>
+       <input type="hidden" name="<?=params[ix]?>" value="<?=params[ix+1]?>">
+<?vsp
+	  }
+        ix := ix + 2;
+      }
+     saved := 1;
+  }
+else if ({?'q'} is null)
+  {
+    http ('<H3>Choose Database or Query Template(s)</H3>');
+    for select PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xml-template' and PROP_TYPE = 'R' do {
+    for select RES_NAME, RES_ID, RES_FULL_PATH, length (RES_CONTENT) as rlen from WS.WS.SYS_DAV_RES
+      where RES_ID = PROP_PARENT_ID do {
+
+         http (sprintf('<input type="hidden" name="SEL1_TM_%d" value="">', RES_ID));
+
+      }
+    }
+  }
+?>
+
+  <TABLE BORDER="0" CLASS="genlist" CELLPADDING="0" CELLSPACING="2">
+
+<?vsp
+if ({?'q'} is null)
+  {
+?>
+    <TR><TD CLASS="genhead" COLSPAN="2">Databases</TD></TR>
+    <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<?vsp
+for select distinct name_part (P_NAME, 0) as qual from DB.DBA.SYS_PROCEDURES where P_NAME not like '%.vsp'
+    union
+    select distinct name_part (UT_NAME, 0) as qual from DB.DBA.SYS_USER_TYPES
+do
+   {
+?>
+    <tr><td CLASS="gendata"><a href="#" onClick="getList ('<?=qual?>'); return false"><?=qual?></a></td></tr>
+<?vsp
+   }
+?>
+    </FORM>
+<FORM name="pform3" method="POST" action="admin_virt_dir.vsp">
+<input type="hidden" name="q" value="<?={?'q'}?>">
+<input type="hidden" name="b64_pars" value="<?=b64_pars?>">
+<?vsp
+if (not saved)
+  {
+    declare ix, len integer;
+    ix := 0; len := length (saved_pars);
+    while (ix < len)
+      {
+	if (not ('Cancel' = get_keyword('no_publish', saved_pars, '') and saved_pars[ix] like 'SEL_TM_%'))
+	  {
+?>
+              <input type="hidden" name="<?=saved_pars[ix]?>" value="<?=saved_pars[ix+1]?>">
+<?vsp
+	  }
+        ix := ix + 2;
+      }
+  }
+?>
+<TR><TD>
+<TABLE CLASS="statlist" BORDER="0" CELLPADDING="0">
+   <tr>
+    <th CLASS="genhead" colspan="3">Templates</th>
+    <TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+   </tr>
+   <tr>
+     <th CLASS="genlistheadt"><input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes1(this.form, this, document.pform)"></th>
+     <th CLASS="genlistheadt">Resource</th>
+     <th CLASS="genlistheadt">Export as ...</th>
+   </tr>
+<?vsp
+    declare fnd, _res_id integer;
+    declare c_name, p_name varchar;
+    declare _u_id1, _u_name1 any;
+    _u_id1 := null;
+    _u_name1 := get_keyword ('soap', saved_pars, '__none');
+    --dbg_obj_print (_u_name1);
+    if (_u_name1 <> '__none')
+      _u_id1 := (select top 1 U_ID from DB.DBA.SYS_USERS where U_NAME = _u_name1);
+    fnd := 0;
+    for select PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xml-template' and PROP_TYPE = 'R' do {
+    for select RES_NAME, RES_ID, RES_FULL_PATH, length (RES_CONTENT) as rlen from WS.WS.SYS_DAV_RES
+      where RES_ID = PROP_PARENT_ID do {
+    whenever not found goto nfi;
+nfi:
+
+    _res_id := RES_ID;
+    c_name := WS.WS.STR_TO_URI(RES_FULL_PATH);
+    if (strstr (RES_NAME, '.') is not null)
+      p_name := "LEFT" (RES_NAME, strstr (RES_NAME, '.'));
+    else
+      p_name := RES_NAME;
+    p_name := SYS_ALFANUM_NAME (p_name);
+    fnd := 1;
+    declare p_name1 varchar;
+    p_name1 := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP
+	   where PROP_NAME = 'xml-soap-method' and PROP_TYPE = 'R'
+		   and PROP_PARENT_ID = _res_id), NULL);
+?>
+    <tr>
+      <td CLASS="statdata">
+      <input type="hidden" name="now" value="">
+<?vsp if (_u_id1 is not null
+          and  exists (select 1 from DB.DBA.SYS_GRANTS where G_OBJECT = p_name1
+	  and G_OP = 32 and G_USER = _u_id1)) { ?>
+      <b>*</b>
+<?vsp } else  { ?>
+      <input type="checkbox" name="SEL_TM_<?=c_name?>"
+	   <?vsp
+	     declare _name varchar;
+             _name := sprintf ('SEL1_TM_%d', _res_id);
+	     _name := get_keyword (_name, params, '');
+--	     dbg_obj_print ('_name ', _name);
+	   if (_name = 'on') http ('CHECKED');
+           ?> onClick="get_list (document.pform.SEL1_TM_<?=_res_id?>, this);">
+<?vsp } ?>
+      </td>
+      <td CLASS="statdata"><A HREF="<?=c_name?>" TARGET="_blank"><?=RES_FULL_PATH?></A></td>
+      <td CLASS="statdata">
+<?vsp if (p_name1 is null) { ?>
+      <input type="text" name="name<?=c_name?>" value="<?=p_name?>">
+<?vsp } else { ?>
+      <?=p_name1?>
+      <input type="hidden" name="name<?=c_name?>" value="<?=p_name1?>">
+<?vsp } ?>
+      </td>
+      <input type="hidden" name="_id_r<?=c_name?>" value="<?=PROP_PARENT_ID?>">
+    </tr>
+<?vsp
+      }
+    }
+    if (fnd = 0)
+      http ('<tr><td CLASS="statdata" colspan=4 align=center><b>*** no templates defined ***</b></td></tr>');
+    declare j,k integer;
+    j := 0; k := 0;
+    if ('Next' = {?'publish'} and (adm_next_checkbox ('PROC_', params, j) or adm_next_checkbox ('METH_', params, k)))
+      {
+?>
+   <tr>
+    <th CLASS="genhead" colspan="3">Selected Procedure(s) &amp; User Defined Types</th>
+    <TR><TD CLASS="AdmBorders" COLSPAN="3">
+      <IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+   </tr>
+   <tr>
+     <th CLASS="genlistheadt">
+        <input type="checkbox" name="selectall1" value="Select All1" onClick="selectAllCheckboxes2(this.form, this)"></th>
+     <th CLASS="genlistheadt" colspan=2>Procedure</th>
+   </tr>
+<?vsp
+           j := 0;
+	   while (p_name := adm_next_checkbox ('PROC_', params, j))
+	     {
+?>
+    <tr>
+      <td CLASS="statdata">
+      <input type="checkbox" name="PROC1_<?=p_name?>" CHECKED >
+      </td>
+      <td colspan=2 CLASS="statdata"><?=p_name?></td>
+    </tr>
+<?vsp
+	     }
+?>
+     <th CLASS="genlistheadt">
+        </th>
+     <th CLASS="genlistheadt" colspan=2>User Defined Type</th>
+   </tr>
+<?vsp
+           j := 0;
+	   while (p_name := adm_next_checkbox ('METH_', params, j))
+	     {
+?>
+    <tr>
+      <td CLASS="statdata">
+      <input type="checkbox" name="METH1_<?=p_name?>" CHECKED >
+      </td>
+      <td colspan=2 CLASS="statdata"><?=p_name?></td>
+    </tr>
+<?vsp
+	     }
+?>
+
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function selectAllCheckboxes2 (form, btn)
+{
+  var i;
+  for (i in form.elements)
+    {
+      var contr = form.elements[i];
+//      if (contr != null && contr.name)
+//	alert (contr.name);
+      if (contr != null && contr.type == "checkbox" && contr.name.length > 6 &&
+	  contr.name.substring (0, 6) == "PROC1_")
+	{
+	  contr.focus();
+	  if (btn.value == 'Select All1')
+	    contr.checked = true;
+	  else
+            contr.checked = false;
+	}
+    }
+  if (btn.value == 'Select All1')
+    btn.value = 'Unselect All1';
+  else
+    btn.value = 'Select All1';
+  btn.focus();
+}
+// -->
+</SCRIPT>
+<?vsp
+
+      }
+?>
+<tr><td colspan="2" ALIGN="right">
+  <input type="submit" name="no_publish_tmp" value="Cancel" />
+  <input type="submit" name="publish_tmp" value="Publish" />
+  <td></tr>
+   </table></center>
+<?vsp
+  }
+ if (not q2 is NULL)
+  {
+?>
+
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function selectAllCheckboxes (form, btn)
+{
+  var i;
+  for (i in form.elements)
+    {
+      var contr = form.elements[i];
+      if (contr != null && contr.type == "checkbox")
+	{
+	  contr.focus();
+	  if (btn.value == 'Select All')
+	    contr.checked = true;
+	  else
+            contr.checked = false;
+	}
+    }
+  if (btn.value == 'Select All')
+    btn.value = 'Unselect All';
+  else
+    btn.value = 'Select All';
+  btn.focus();
+}
+// -->
+</SCRIPT>
+
+  <TR>
+    <TD valign="top">
+
+  <TABLE valign="top" border="0">
+
+  <TR><TD CLASS="genhead" COLSPAN="2">Procedures for <?= q2 ?></TD></TR>
+  <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+  <TR>
+    <TH class="genlistheadt"><input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)"></TH>
+    <TH class="genlistheadt">Name</TH>
+  </TR>
+  <input type="hidden" name="get_proc" value="1">
+<?vsp
+    declare sel, _u_name varchar;
+    declare _u_id integer;
+    _u_id := null;
+    _u_name := get_keyword ('soap', saved_pars, '__none');
+    if (_u_name <> '__none')
+      _u_id := (select top 1 U_ID from DB.DBA.SYS_USERS where U_NAME = _u_name);
+    for select P_NAME, name_part(P_NAME,1) as n1 , name_part (P_NAME, 2) as n2 from DB.DBA.SYS_PROCEDURES where name_part (P_NAME, 0) = q2 and P_NAME not like '%.vsp' union select P_NAME, P_OWNER, P_LNAME from BLOG..BLOG_API_PROC_LIST (q) (P_NAME varchar,  P_OWNER varchar, P_LNAME varchar) BLOG_API_PROC_LIST_PT where q = q2
+       do
+      {
+	if (_u_id is not null and
+	    exists (select 1 from DB.DBA.SYS_GRANTS where G_OBJECT = P_NAME and G_OP = 32 and G_USER = _u_id))
+	  {
+?>
+    <tr>
+      <td CLASS="gendata"><b>*</b></td>
+      <td CLASS="gendata"><?=n1?>.<?=n2?></td>
+    </tr>
+<?vsp } else if (_u_id is not null
+          and  exists (select 1 from DB.DBA.SYS_GRANTS where name_part(G_OBJECT, 2) = n2
+	  and G_OP = 32 and G_USER = _u_id)) { ?>
+    <tr>
+      <td CLASS="gendata"><b>**</b></td>
+      <td CLASS="gendata"><?=n1?>.<?=n2?></td>
+    </tr>
+<?vsp
+	  }
+	else
+	  {
+
+?>
+    <tr>
+      <td CLASS="gendata"><input type="checkbox" name="PROC_<?=P_NAME?>"></td>
+      <td CLASS="gendata"><?=n1?>.<?=n2?></td>
+    </tr>
+
+<?vsp
+	  }
+       }
+?>
+    </TABLE>
+    </TD>
+    <TD valign="top">
+    <TABLE valign="top" border="0">
+
+    <TR><TD CLASS="genhead" COLSPAN="2">User Defined Types for <?= q2 ?></TD></TR>
+    <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+    <TR>
+    <TH class="genlistheadt"><input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)"></TH>
+    <TH class="genlistheadt">Name</TH>
+        <?vsp
+	    for select UT_NAME, name_part (UT_NAME, 1) as n1, name_part (UT_NAME,2) as n2 from SYS_USER_TYPES where name_part (UT_NAME, 0) = q2
+		do {
+        ?>
+
+	    <tr>
+	    <td CLASS="gendata"><input type="checkbox" name="METH_<?=UT_NAME?>"></td>
+	    <td CLASS="gendata"><?=n1?>.<?=n2?></td>
+	    </tr>
+        <?vsp
+           }
+        ?>
+    </TABLE>
+    </TR>
+    </TD>
+</TR>
+<?vsp
+  }
+?>
+
+<?vsp if ({?'q'} is not null) { ?>
+<tr><td colspan="2" ALIGN="right">
+  <input type="submit" name="no_publish" value="Cancel" />
+  <input type="submit" name="publish" value="Next" />
+  <td></tr>
+<?vsp } ?>
+
+</table>
+
+<?vsp if ({?'q'} is not null) { ?>
+
+<div style="width: 80%; text-align: left;">
+<small><b>Note:</b> The procedures listed with an asterisk (*) are already published.
+These can be un-published using the UnPublish button from Virtual directory definition
+wizard.<br />The procedures listed with two asterisks (**) can't be published as there is alredy published procedure with the same name.</small></div>
+
+<?vsp
+if (not saved)
+  {
+    ix := 0; len := length (saved_pars);
+    while (ix < len)
+      {
+?>
+       <input type="hidden" name="<?=saved_pars[ix]?>" value="<?=saved_pars[ix+1]?>">
+<?vsp
+        ix := ix + 2;
+      }
+  }
+}
+  adm_page_footer();
+?>
+</FORM>
+</HTML>

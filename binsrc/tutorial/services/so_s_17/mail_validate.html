@@ -1,0 +1,124 @@
+<SCRIPT language="JavaScript">
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+var browsertype;
+if (document.implementation.createDocument)
+{ 
+    browsertype='Mozila';
+   // Mozilla, create a new DOMParser 
+   var parser = new DOMParser();
+   var xsltProcessor = new XSLTProcessor(); 
+
+
+    // load the xslt file
+    var myXMLHTTPRequest = new XMLHttpRequest();
+    myXMLHTTPRequest.open("GET", "mail_validate.xsl", false);
+    myXMLHTTPRequest.send(null);
+    
+    // parse XSLT text to XML DOM(when not local responseXML is set null ???)
+    xslDoc = parser.parseFromString(myXMLHTTPRequest.responseText, "text/xml");
+    xsltProcessor.importStylesheet(xslDoc);
+
+}
+else if (window.ActiveXObject)
+{ 
+  browsertype='IE';
+  var xslDoc = new ActiveXObject("Microsoft.XMLDOM");
+  var xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+  xslDoc.async = false;
+  xmlDoc.async = false;
+  xslDoc.load("mail_validate.xsl");
+
+}
+
+
+function mResultsAjax(result)
+{   try
+    	{
+             if(browsertype=='IE')
+             {
+               xmlDoc.loadXML (result);
+               document.getElementById('divResultContainer').innerHTML = xmlDoc.transformNode(xslDoc.documentElement);
+             }
+             else
+             {  
+               xmlDoc = parser.parseFromString(result, "text/xml");
+
+         			 var resultDocument = xsltProcessor.transformToFragment(xmlDoc, document);
+       				 document.getElementById("divResultContainer").innerHTML='';
+       				 document.getElementById("divResultContainer").appendChild(resultDocument);
+             }   
+ 	    }
+      catch (e)
+	    {
+	        alert('Parser exception:'+e.description);
+	    }
+}
+
+function dWait(dowhat){
+  if(dowhat=='show'){
+    document.getElementById('divWait').style.visibility='visible';
+  }else{
+    document.getElementById('divWait').style.visibility='hidden';
+  }
+}
+
+</SCRIPT>
+
+<html>
+<HEAD>
+  <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
+  <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=email_services/services.wsdl"></script>
+  <link rel="stylesheet" type="text/css" href="../demo.css" />
+</HEAD>
+<body>
+<H3>SOAP client</H3>
+<form method="post" action="mail_validate.vsp">
+<table class="tableentry">
+<tr><td>1. Enter a mail server address</td><td>
+<input type=text name="servera" id="servera" value="mail.openlinksw.com" size="26">
+</td></tr>
+<tr><td>2. Enter a mail server port number</td><td>
+<input type=text name="serverp" id="serverp" value="25" size="4">
+</td></tr>
+<tr><td>3. Enter an email address to Validate</td><td>
+<input type=text name="address" id="address" value="no-such-user@openlinksw.com" size="26">
+</td></tr>
+<tr><td>4. Call emailValidate</td><td><input type="button" name="exec" value="Validate" onClick="ajax.Start(emailValidate,'')"></td></tr>
+</table>
+</form>
+      <script defer="defer" type="text/javascript">
+          var emailValidate = {
+            delay: 200,
+            prepare: function() {dWait('show');return Array(document.getElementById('servera').value +':'+document.getElementById('serverp').value,document.getElementById('address').value);},
+            call: proxies.SOAP.emailValidate,
+            finish: function(p){dWait('hide');mResultsAjax(p);},
+            onException: proxies.alertException
+          }
+      </script>
+ <DIV ID="divWait" style="visibility:hidden;"><font color="red">Please wait...</font></DIV>
+ <DIV ID="divResultContainer"></DIV>
+
+</body>
+</html>
+

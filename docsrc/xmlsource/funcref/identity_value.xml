@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_identity_value">
+  <refmeta>
+    <refentrytitle>identity_value</refentrytitle>
+    <refmiscinfo>sql</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>identity_value</refname>
+    <refpurpose>returns the last assigned identity column value</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_identity_value">
+      <funcprototype id="fproto_identity_value">
+        <funcdef>integer <function>identity_value</function></funcdef>
+        <paramdef />
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_identity_value"><title>Description</title>
+
+  <para>This function returns the value assigned to an identity column
+  by the previous insert statement.  Insert statements that do not
+  assign identity columns do not affect this.  Note that tables that
+  have no primary key have n invisible identity column called _IDN.
+  The scope is the connection.  This function may be called from a
+  client or from a stored procedure and will return the last given
+  identity column value wherever it was given.
+  The value  stays set until overwritten by the next insert  operation.  This value is not 
+  set by rexecute or inserts to remote tables with autoincrement columns declared on the remote database since there is no standard way of getting this information from  remote data sources.</para>
+<para>
+  The same value can be more efficiently  accessed from clients using the SQLGetStmtOption ODBC call with the option SQL_GETLASTSERIAL.  In this case the value is of type SQLINTEGER.
+</para>
+  </refsect1>
+  <refsect1 id="ret_identity_value"><title>Return Types</title>
+    <para>The value assigned to an identity column by the previous insert or 0 if no identity column was assigned.</para>
+  </refsect1>
+  <!--
+  <refsect1 id="errors_identity_value">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+  <refsect1 id="examples_identity_value">
+    <title>Examples</title>
+    <example id="ex_"><title></title>
+      <para></para>
+      <screen><![CDATA[
+]]>
+</screen>
+    </example>
+  </refsect1>
+  -->
+  <!--
+  <refsect1 id="seealso_identity_value">
+    <title>See Also</title>
+    <para><link linkend="fn"><function></function></link></para>
+  </refsect1>  
+  -->
+</refentry>
+
+

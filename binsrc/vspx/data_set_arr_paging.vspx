@@ -1,0 +1,121 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=iso-8859-1"/>
+    <meta name="generator" content="Adobe GoLive 6"/>
+    <title>Welcome to Adobe GoLive 6</title>
+  </head>
+  <body bgcolor="#ffffff">
+    <v:page name="data_set_page" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+      <font color="red">
+        <b>
+          <v:error-summary/>
+        </b>
+      </font>
+      <v:data-source nrows="5" initial-offset="0" name="dss" data='--get_cust()' meta="--get_cust_meta()" expression-type="array">
+      </v:data-source>
+      <v:data-set name="ds" data-source="self.dss" scrollable="1" width="80">
+        <v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
+          <h4>
+            <v:label name="label03" value="'That Is Header - rowset offset : '" format="%s" width="80"/>
+            <v:label name="label_ctr" value="--(control.vc_parent.vc_parent as vspx_data_set).ds_rows_offs" format="%d" width="80"/>
+          </h4>
+          <table width="400" border="2" cellspacing="0" cellpadding="0">
+            <tr>
+              <td align="center">
+                <b>Action</b>
+              </td>
+              <td align="center">
+                <b>
+                  <v:label name="label1" value="'CustomerID'" format="%s" width="80"/>
+                </b>
+              </td>
+              <td align="center" colspan="2">
+                <b>
+                  <v:label name="label2" value="'CompanyName'" format="%s" width="80"/>
+                </b>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+        <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+          <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table width="400" border="2" cellspacing="0" cellpadding="0">
+              <tr>
+                <td align="center" colspan="5">
+                  <b>No rows selected</b>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+          <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
+            <table width="400" border="1" cellspacing="2" cellpadding="0">
+              <tr>
+                <td nowrap="1">
+                  <v:label name="label5ctr" value="--(control.vc_parent as vspx_row_template).te_ctr + (control.vc_parent.vc_parent as vspx_data_set).ds_rows_offs + 1" format="%d" width="80"/>.
+                </td>
+                <td align="left" nowrap="1">
+                  <v:label name="label5" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" width="80"/>
+                </td>
+                <td align="left" nowrap="1" colspan="2">
+                  <v:label name="label6" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+        </v:template>
+        <v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
+          <table width="400" border="1" cellspacing="2" cellpadding="0">
+            <tr>
+              <td>
+        </td>
+              <td align="right">
+                <v:button name="ds_first" action="simple" value="&lt;&lt;&lt;" xhtml:size="10pt"/>
+                <v:button name="ds_prev" action="simple" value="&lt;&lt;" xhtml:size="10pt"/>
+              </td>
+              <td align="left">
+                <v:template name="template_pager" type="page-navigator">
+                  <v:button
+                    name="ds_pager"
+                    style="button"
+                    action="simple"
+                    value="--sprintf('%d',self.ds.ds_data_source.ds_current_pager_idx)"
+                    xhtml_disabled="--case when self.ds.ds_data_source.ds_current_pager_idx = self.ds.ds_data_source.ds_current_page then 'true' else '@@hidden@@' end"
+                    xhtml_style="--case when self.ds.ds_data_source.ds_current_pager_idx = self.ds.ds_data_source.ds_current_page then 'width:24pt;color:red;font-weight:bolder;text-decoration:underline' else 'width:24pt' end"
+                  />
+                </v:template>
+                <v:button name="ds_next" action="simple" value="&gt;&gt;" xhtml:size="10pt"/>
+                <v:button name="ds_last" action="simple" value="&gt;&gt;&gt;" xhtml:size="10pt"/>
+              </td>
+              <td align="right">
+                <v:label name="label4" value="'That is Footer'" format="%s" width="80"/>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+      </v:data-set>
+      <v:include name="include1" url="footer.xml"/>
+    </v:page>
+  </body>
+</html>

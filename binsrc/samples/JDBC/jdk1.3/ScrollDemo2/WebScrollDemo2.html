@@ -1,0 +1,94 @@
+<html>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<head>
+<title>OpenLink JDBC 2.0 Scrollable Cursor Demonstration</title>
+</head>
+
+<body LINK="#0000ff" VLINK="#800080">
+
+<h1>OpenLink JDBC 2.0 Scrollable Cursor Demonstration</h1>
+
+<hr>
+
+<p>&nbsp;This is a demonstration of an applet using OpenLink Software's JDBC(tm) 2.0
+Driver with the JDBC 2.0 specification. </p>
+
+<h2>Starting</h2>
+
+<p>When the Web browser has finished loading the Java applet, a window containing the JDBC
+applet will appear:</p>
+
+<p><img SRC="WebScrollDemo21.gif" width="488" height="232"></p>
+
+<p>&nbsp;</p>
+
+<h2>Running a Query</h2>
+
+<p>When it is running, click on the &quot;Query&quot; button to execute a SQL query
+against the default connection URL. If successful, you should see the first row of the
+resultset filling the applet window:</p>
+
+<p><img SRC="WebScrollDemo22.gif" width="461" height="422"></p>
+
+<p>Click on the &quot;Next&quot; button to retrieve the next row, &quot;Previous&quot; to
+go back a row, &quot;First&quot; to move directly to the first row, and &quot;Last&quot;
+to move to the last row. </p>
+
+<p>Clicking &quot;Delete&quot; will attempt to delete the row from the database. Clicking
+on &quot;Refresh&quot; will now retrieve the latest values from the database to refresh
+the row. However this may or may not be successful dependent on the restrictions place on
+the resultset by the underlying database. </p>
+
+<p>&quot;Insert&quot; will attempt to insert the current values as a new row, and
+&quot;Update&quot; will update the current row with the values in the applet, which again,
+may or may not be successful, dependent on the restrictions of the underlying database. </p>
+
+<p>To move to a particular position in the resultset, enter that position into the edit
+box and click the &quot;Absolute&quot; button.</p>
+
+<p>The &quot;Relative&quot; button wil move the cursor position forwards or backwards by
+the number of rows specified in the edit box. To move backwards, enter a negative number.</p>
+
+<h2>Changing the connection URL</h2>
+
+<p>To change the connection URL, select &quot;File|Set Connection URL..&quot; from the
+menu. A dialog box will appear enabling you to change the connection URL, as well as the
+driver to use:</p>
+
+<p><img SRC="WebScrollDemo23.gif" width="358" height="179"></p>
+
+<p>Please note that due to the applet security restrictions, it is only possible to
+connect to the same server host as the Web server.</p>
+
+<hr>
+
+<p>&nbsp;
+<applet code="WebScrollDemo2.class" archive=../virtjdbc2.jar id="WebScrollDemo2" height="1" width="1">
+  <PARAM name=URL1 value=":1112/UID=demo/PWD=demo">
+  <PARAM name="numParams" value="1">
+</applet>
+</p>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_http_request_header">
+  <refmeta>
+    <refentrytitle>http_request_header</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>http_request_header</refname>
+    <refpurpose>returns array of HTTP request header lines</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_http_request_header">
+      <funcprototype id="fproto_http_request_header">
+        <funcdef>any <function>http_request_header</function></funcdef>
+        <paramdef><optional>in <parameter>array</parameter> any</optional></paramdef>
+        <paramdef><optional>in <parameter>field_name</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>attr-name</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>default_value</parameter> varchar</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_http_request_header"><title>Description</title>
+    <para>
+This function provides access to the HTTP request header lines.</para>
+  </refsect1>
+  <refsect1 id="ret_http_request_header"><title>Return Types</title>
+    <para>
+If no input parameters are supplied then this function returns a copy of
+the lines vector of VSP pages.  If array, field_name and mime_attribute is
+supplied then this function will attempt to extract the associated value,
+if is cannot be found then the default_value input will be returned.  If
+attr-name is supplied then the mime attribute from the field_name will
+be returned.
+</para>
+  </refsect1>
+  <refsect1 id="examples_http_request_header"><title>Examples</title>
+  <example id="ex_http_request_header"><title>Accessing the HTTP request headers</title>
+  <programlisting>
+&lt;p&gt;Your request follows&lt;/p&gt;
+  &lt;?vsp
+    declare header any;
+    declare ix, len integer;
+    declare host varchar;
+    header := http_request_header ();
+    len := length (header);
+    ix := 0;
+    while (ix &lt; len)
+    {
+      http (aref (header, ix));
+		  ix := ix + 1;
+    }
+    host := http_request_header(lines, 'Host', null, '*** NO HOST IN REQUEST ***')
+  ?&gt;
+  </programlisting>
+  </example>
+  </refsect1>
+</refentry>
+
+

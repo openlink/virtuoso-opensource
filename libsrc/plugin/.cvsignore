@@ -1,0 +1,16 @@
+.libs
+.deps
+*.lo
+*.la
+tmp
+export_plugin_msdtc.c
+import_plugin_msdtc.c
+import_plugin_msdtc.h
+export_gate_virtuoso.c
+import_gate_virtuoso.c
+import_gate_virtuoso.h
+export_plugin_lang25.c
+import_plugin_lang25.c
+import_plugin_lang25.h
+Makefile.in
+Makefile

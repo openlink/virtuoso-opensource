@@ -1,0 +1,10 @@
+virt_mail.vers.c
+virt_mail
+udbc_mail.vers.c
+udbc_mail
+odbc_mail
+odbc_mail.vers.c
+.deps
+.libs
+Makefile
+Makefile.in

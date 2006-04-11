@@ -1,0 +1,213 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare _driver, _type, _name, head varchar;
+  declare _desc, _addr, _user, _pass, _database varchar;
+  declare _step, _daylight, _ssl varchar;
+  declare msg, state, _name, _server, _port varchar;
+  declare con_str varchar;
+  declare _param varchar;
+
+  _driver := get_keyword ('driver', params, '');
+  _type := get_keyword ('type', params, '');
+  _name := get_keyword ('name', params, '');
+  _desc := get_keyword ('Description', params, '');
+  _user := get_keyword ('User', params, '');
+  _pass := get_keyword ('Password', params, '');
+  _ssl := get_keyword ('SSL', params, '');
+  _database := get_keyword ('Database', params, '');
+  _daylight := get_keyword ('Daylight', params, '');
+  _server := get_keyword ('Server', params, '');
+  _port := get_keyword ('Port', params, '');
+  _addr := concat (_server, ':', _port);
+
+  _step := get_keyword ('step', params);
+
+  if (not is_empty_or_null (get_keyword ('upd_virt', params)))
+    {
+      _driver := deserialize (decode_base64 (_driver));
+      _param := concat ('DSN=', _name, ';');
+
+      if (not is_empty_or_null (_desc))
+	_param := concat (_param, 'Description=', _desc, ';');
+
+      if (not is_empty_or_null (_addr))
+	_param := concat (_param, 'Address=', _addr, ';');
+
+      if (sys_stat('st_build_opsys_id') = 'Win32')
+        {
+          if (not is_empty_or_null (_user))
+	    _param := concat (_param, 'LastUser=', _user, ';');
+        }
+      else
+       {
+          if (not is_empty_or_null (_user))
+	    _param := concat (_param, 'UserName=', _user, ';');
+       }
+
+      if (not is_empty_or_null (_database))
+	_param := concat (_param, 'Database=', _database, ';');
+
+      if (not is_empty_or_null (_ssl))
+	_param := concat (_param, 'Encrypt=1;');
+
+      if (not is_empty_or_null (_daylight))
+	_param := concat (_param, 'Daylight=Yes;');
+
+      state := '00000';
+      msg := '';
+
+      sql_remove_dsn_from_ini (_name, _type);
+
+      exec ('sql_config_data_sources (?,?,?)', state, msg, vector (_driver, _type, _param));
+
+      if (msg = '')
+	{
+?>
+		  <script language="JavaScript">
+		     location.replace ('admin_dsn.vsp')
+		  </script>
+<?vsp
+	}
+
+    }
+
+
+  if (is_empty_or_null (get_keyword ('remove', params)))
+    head := 'Edit Virtuoso OpenLink Data Source';
+  else
+    head := 'Delete Virtuoso OpenLink Data Source';
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<HTML>
+  <head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Edit Virtuoso OpenLink Data Source</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Edit External DSN into Virtuoso using VSP">
+  </head>
+  <BODY>
+<?vsp
+  adm_page_header(head, NULL);
+  if (not is_empty_or_null (get_keyword ('remove', params)))
+    {
+?>
+      <FORM method="POST" action="admin_dsn.vsp">
+	<TABLE><TR><TD ALIGN="Center" COLSPAN="2"><B>Do you want to delete OpenLink Virtuoso Data Source: </B><I><?=_name?></I></TD></TR>
+	<TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+	<TR><TD ALIGN="Center" COLSPAN="2">
+	<INPUT type="submit" name="remove_" value="OK">
+	<INPUT type="submit" name="cancel_" value="Cancel">
+	<INPUT type="hidden" name="type_dsn" value="<?=_type?>">
+	<INPUT type="hidden" name="name" value="<?vsp =_name ?>">
+	<TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR></TABLE>
+      </FORM>
+<?vsp
+    }
+  else
+    {
+      if (_step = '2')
+	{
+
+	   con_str := concat ('DSN=', _name, ';DATABASE=', _database);
+	   con_str := concat (con_str, ';UID=', _user, ';PWD=', _pass);
+	   con_str := concat (con_str, ';HOST=', _addr);
+	   if (not is_empty_or_null (_ssl))
+	     con_str := concat (con_str, ';Encrypt=1');
+
+	   state := '00000';
+           msg := '';
+
+	   exec ('sql_driver_connect (?)', state, msg, vector (con_str));
+
+	   if (msg = '')
+	     {
+	       http ('<b>Connected successfully</b><BR /><BR />');
+	     }
+	   else
+	     {
+	        http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+		http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Testing DSN %V failed:</TD></TR>', _name));
+		http ('<TR><TD CLASS="admborders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+		http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gen_data">%s</TD></TR>', coalesce (state, '')));
+		http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gen_data">%s</TD></TR>', coalesce (msg, '')));
+		http ('</table>');
+	     }
+
+	}
+      else
+	{
+	  adm_edit_virt (params, _desc, _server, _port, _user, _pass, _database, _daylight, _ssl);
+	  _step := 2;
+	}
+?>
+      <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+      <FORM method="POST" action="admin_dsn_edit_virt.vsp">
+	<TR><TD CLASS="genhead" COLSPAN="3">Edit DSN: <I><?=_name?></I></TD></TR>
+	<TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	<TR><TD ROWSPAN="9" ALIGN="bottom"><IMG SRC="images/virt.gif"></TD></TR>
+
+	<TR><TD CLASS="genlisthead">Description</TD><TD>
+	  <INPUT type="text" name="Description" value="<?=_desc?>" size="25"></TD></TR>
+	<TR><TD CLASS="genlisthead">Server</TD><TD>
+	  <INPUT type="text" name="Server" value="<?=_server?>" size="25"></TD></TR>
+	<TR><TD CLASS="genlisthead">Port</TD><TD>
+	  <INPUT type="text" name="Port" value="<?=_port?>" size="4"></TD></TR>
+	<TR><TD CLASS="genlisthead">User</TD><TD>
+	  <INPUT type="text" name="User" value="<?=_user?>" size="25"></TD></TR>
+	<TR><TD CLASS="genlisthead">Password</TD><TD>
+	  <INPUT type="password" name="Password" value="<?=_pass?>" size="25"></TD></TR>
+	<TR><TD CLASS="genlisthead">Database</TD><TD>
+	  <INPUT type="text" name="Database" value="<?=_database?>" size="25"></TD></TR>
+	<TR><TD CLASS="genlisthead">Automatically adjust clock<BR />for daylight saving changes</TD><TD>
+	  <INPUT type="checkbox" name="Daylight" <?vsp if (_daylight = 'on') http ('CHECKED'); ?>></TD></TR>
+	<TR><TD CLASS="genlisthead">Encrypted</TD><TD>
+	  <INPUT type="checkbox" name="SSL" <?vsp if (_ssl = 'on') http ('CHECKED'); ?>>
+	</TD></TR>
+	<TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="5" ALT=""></TD></TR>
+	    <TR><TD COLSPAN="2" ALIGN="right">
+	      <INPUT type="submit" name="test" value="Update and test">
+	      <INPUT type="submit" name="upd_virt" value="Update">
+	    </TD></TR>
+	<TR><TD COLSPAN="3" ALIGN="right">
+	  <INPUT type="hidden" name="name" value="<?=_name?>">
+	  <INPUT type="hidden" name="type" value="<?=_type?>">
+	  <INPUT type="hidden" name="driver" value="<?=_driver?>">
+	  <INPUT type="hidden" name="step" value="<?=_step?>">
+	  <INPUT type="hidden" name="Address" value="<?=_addr?>">
+      </FORM>
+      <FORM method="POST" action="admin_dsn.vsp">
+	<INPUT type="submit" name="cancel" value="Cancel">
+      </FORM>
+      </TD></TR>
+    </TABLE>
+<?vsp
+    }
+?>
+<?vsp adm_page_footer(); ?>
+</BODY>
+</HTML>

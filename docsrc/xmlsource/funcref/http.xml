@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_http">
+  <refmeta>
+    <refentrytitle>http</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>http</refname>
+    <refpurpose>write to HTTP client or a string output stream</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_http">
+      <funcprototype id="fproto_http">
+        <funcdef><function>http</function></funcdef>
+        <paramdef>in <parameter>val_expr</parameter> any</paramdef>
+        <paramdef><optional>in <parameter>stream</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params_http"><title>Parameters</title>
+    <refsect2><title>val_expr</title>
+      <para>A value expression. May be any scalar expression.</para>
+    </refsect2>
+    <refsect2><title>stream</title>
+      <para>Optional parameter. If omitted or is 0 and the function is
+      executed within a VSP context, the <parameter>val_expr</parameter> will
+      be written to the HTTP client. If present and non-zero,
+      <parameter>val_expr</parameter> will be written to the specified stream.
+      If non-zero, the value must be a valid stream obtained
+      from function
+      <link linkend="fn_string_output"><function>string_output</function>
+      </link></para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="desc_http"><title>Description</title>
+    <para><function>http</function> writes <parameter>val_expr</parameter>
+    to HTTP client or, if parameter <parameter>stream</parameter> is given,
+    to the given string output stream.</para>
+    <para><parameter>val_expr</parameter> may be any scalar object, i.e.
+    <type>string</type>, <type>date</type> or <type>number</type> and will
+    automatically be cast to <type>varchar</type> before further processing.
+    http will print out the string without escapes.
+    <link linkend="fn_http_value"><function>http_value</function></link>
+    uses HTML escapes and
+    <link linkend="fn_http_url"><function>http_url</function></link> URL
+    escapes.</para>
+  </refsect1>
+  <refsect1 id="errors_http"><title>Errors</title>
+    <table><title>Errors signalled by <function>http</function></title>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry>
+	  </row>
+	</thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>HT007</errorcode></entry>
+	    <entry><errorname>An interactive blob can't be passed as argument to http</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>HT008</errorcode></entry>
+	    <entry><errorname>http requires string, blob, or string session as argument 1</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>37000</errorcode></entry>
+	    <entry><errorcode>HT006</errorcode></entry>
+	    <entry><errorname>http output function outside of http context and no stream specified: %s.</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  <para></para>
+  </refsect1>
+  <refsect1 id="examples_http"><title>Examples</title>
+    <example id="ex_http"><title>HTTP output</title>
+      <para>Output of various flavours of http.  See
+      <link linkend="fn_string_output"><function>string_output</function>
+      </link> and
+      <link linkend="fn_string_output_string"><function>string_output_string
+      </function></link> for examples how to use http to write to streams
+      other than the HTTP output.</para>
+      <screen>
+http (&apos; % &lt;b&gt;&apos;)     &apos; &lt;b&gt;
+http_value (&apos; % &lt;b&gt;&apos;)   % &amp;lt;b&amp;gt;
+http_url (&apos; % &lt;b&gt;&apos;)  +%25+&lt;b&gt;
+http_value (12, &apos;li&apos;)  &lt;li&gt;12&lt;/li&gt;
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_http"><title>See Also</title>
+    <para>
+      <link linkend="fn_http_value"><function>http_value</function></link>,
+      <link linkend="fn_http_url"><function>http_url</function></link>,
+      <link linkend="fn_string_output"><function>string_output</function></link>,
+      <link linkend="fn_http_rewrite"><function>http_rewrite</function></link>.
+    </para>
+  </refsect1>
+</refentry>
+
+

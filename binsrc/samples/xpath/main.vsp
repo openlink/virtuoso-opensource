@@ -1,0 +1,116 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _ctr integer;
+  declare _tf any;
+  declare _path varchar;
+  declare _cases any;
+  declare _case_id varchar;
+
+  _tf := "XP"."XP"."LIST_TEST_FILES"();
+
+if ({?'reset'}='Y')
+  {
+    delete from "XP"."XP"."TEST_FILES";
+    delete from "XP"."XP"."TEST_CASES";
+  }
+
+_ctr := 0;
+while (_ctr < length (_tf))
+  {
+    _path := concat ('xpdemo/', aref (aref (_tf, _ctr), 0));
+    if (not exists (select 1 from "XP"."XP"."TEST_FILES" where "NAME" = _path))
+      {
+	insert into "XP"."XP"."TEST_FILES" ("ID", "NAME", "COMMENT")
+	values (sequence_next('_'), _path, aref (aref (_tf, _ctr), 1));
+      }
+    _ctr := _ctr+1;
+  }
+
+--  whenever sqlstate '39000' goto abort_reading;
+--  update "XP"."XP"."TEST_FILES" set "TEXT" = "XP"."XP"."GET_DAV_DATA" ("NAME") where "TEXT" is null;
+  update "XP"."XP"."TEST_FILES" set "TEXT" = file_to_string ( concat ('xpath/', "NAME")) where "TEXT" is null;
+
+--  update "XP"."XP"."TEST_FILES" set "TEXT" = file_to_string ( concat ('G:/binsrc/samples/xpath/', "NAME")) where "TEXT" is null;
+  abort_reading:;
+
+--  whenever sqlstate 'XP101' goto abort_parseing;
+  update "XP"."XP"."TEST_FILES" set "XPER" = xper_doc ("TEXT") where "NAME" like '%xml' and "TEXT" is not null and "XPER" is null;
+  abort_parseing:;
+ ?>
+<HTML>
+<HEAD>
+<TITLE>XPath demo | Intro</TITLE>
+</HEAD>
+<BODY>
+<P>
+Welcome to <A HREF="http://www.w3.org/TR/xpath">XML Path</A> demo.
+At these pages, you can run queries over data from W3C's <A HREF="http://www.w3.org/TR/xmlquery-use-cases">XML Query Use Cases</A>.
+This page is mostly for maintenance purposes only.
+There's much more convenient <A HREF="demo.vsp">public version of this demo</A>.
+</P>
+<P>
+To run all tests in one batch, go <A HREF="deskall.vsp">batch testing page</A>.
+</P>
+<P>
+This demo is powered by <A HREF="http://www.openlinksw.com">OpenLink Virtuoso</A>.
+</P>
+<TABLE>
+<TR><TH>File</TH><TH>Comment</TH><TH>Status</TH></TR>
+<?vsp
+  for select "NAME", "COMMENT", "TEXT", "XPER" from "XP"."XP"."TEST_FILES" order by "ID" do
+    {
+      ?><TR><TD><A HREF="file.vsp?name=<?/ "NAME" ?>"><?= "NAME" ?></A></TD><TD><?= "COMMENT" ?></TD><TD><?vsp if ("TEXT" is null) { ?>not loaded<?vsp } else { if ("XPER" is null) { ?>loaded<?vsp } else { ?>parsed<?vsp } } ?></TD></TR><?vsp
+    }
+ ?>
+</TABLE>
+<P><A HREF="main.vsp?reset=Y">Reset input data</A></P>
+<?vsp
+  for select "NAME" as _use_coll_name, "TEXT" as _text from "XP"."XP"."TEST_FILES" where "NAME"='xpdemo/30010608.xml' and "TEXT" is not null do
+    {
+ ?>
+<TABLE>
+<TR><TH>Id</TH><TH>Description</TH></TR>
+<?vsp
+  for select use_case from "XP"."XP"."TEST_FILES" where "NAME"=_use_coll_name and xpath_contains ("XPER", '//case', use_case) do
+    {
+      _case_id := xpath_eval ('@id', use_case);
+      if ({?'reset'}='Y')
+	{
+	  insert into "XP"."XP"."TEST_CASES" ("ID", "NAME", "DESCR", "ORIGIN", "_XPATH", "ETALON")
+	  values (sequence_next('_'), _case_id, 
+	    xpath_eval ('.//descr', use_case),
+	    xpath_eval ('.//origin', use_case),
+	    xpath_eval ('.//xpath', use_case),
+	    xpath_eval ('.//etalon', use_case) );
+	}
+      ?><TR><TD><A HREF="case.vsp?coll=<?/ _use_coll_name ?>&case=<?/ _case_id ?>"><?= _case_id ?></A></TD><TD><FONT SIZE=-1>
+<?= xpath_eval ('.//descr', use_case) ?></FONT></TD></TR><?vsp
+    }
+?>
+</TABLE>
+<?vsp
+    }
+?>
+</BODY>
+</HTML>

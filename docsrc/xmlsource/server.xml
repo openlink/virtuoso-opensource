@@ -1,0 +1,2455 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="server.xml" id="server">
+	<title>Server Administration</title>
+  <abstract>
+    <para>
+
+This chapter explains the use of the server executables, configuration files and general administration procedures.
+These include backup, server tuning and profiling, installing extension packages etc.  See the Access Interfaces chapter for a discussion of the command line SQL interface.  
+</para>
+  </abstract>
+	<!-- ======================================== -->
+<sect1 id="dbadm"><title>Database</title>
+
+  <sect2 id="srvadminstallreqt"><title>Installation Requirements</title>
+    <para>A typical installation will require a minimum of 400Mb of hard disk
+    space to install the code, samples, documentation and sample database.
+The database will need additional space for data inserted, backups,
+    logs and reports, web pages, etc.
+
+</para>
+    <para>The size of the database .db file will not reduce when data is
+    removed. The spare space will however be reclaimed for later use.</para>
+  </sect2>
+
+  <sect2 id="srvadmopreq"><title>Operational Requirements</title>
+    <para>The Virtuoso database requires a minimum of 64Mb of system memory
+    for each instance to operate in. Each connection will take between 70kb
+    and 130kb of memory.</para>
+    <para>The memory usage is affected by the following parameters in the
+    <link linkend="VIRTINI">Virtuoso configuration file</link>.</para>
+    <simplelist>
+      <member>ServerThreads</member>
+      <member>ServerThreadSize</member>
+      <member>MainThreadSize</member>
+      <member>FutureThreadSize</member>
+      <member>NumberOfBuffers</member>
+    </simplelist>
+    <para>See the following <link linkend="parameters">Parameter section</link>
+    for more details.</para>
+  </sect2>
+
+  <sect2 id="srvadmossupport"><title>Operating System Support</title>
+    <para>Virtuoso runs on the following operating systems:</para>
+    <simplelist>
+      <member>Windows 2000,XP,ME,98,95</member>
+      <member>Linux</member>
+      <member>Unix</member>
+      <member>Mac OS X</member>
+    </simplelist>
+  </sect2>
+
+
+<sect2 id="limitsandparameters">
+<title>Limits</title>
+
+<para>
+The below table lists the most important parameters and limits for a database or a Virtuoso server instance.  For space consumption of individual data types, see <link linkend="SpaceConsump">Space Consumption</link>.
+</para>
+
+
+<table> 
+<tbody>
+<row><entry>Identifier length</entry> <entry>100</entry></row>
+<row><entry>User name and password length</entry> <entry>100</entry></row>
+<row><entry>SQLstmt and proc text</entry> <entry>100K+</entry></row>
+<row><entry>varchar length</entry> <entry>Constrained by max row length when stored into non-LOB column, 10MB inside procedure code.</entry></row>
+<row><entry>Numeric precision</entry> <entry>Max 40 digits</entry></row>
+<row><entry>LOB column length</entry> <entry>2GB</entry></row>
+<row><entry>row length</entry> <entry>4086</entry></row>
+<row><entry>Columns per row</entry> <entry>200</entry></row>
+<row><entry>Database size</entry> <entry>32TB for data, 32TB for temp data </entry></row>
+<row><entry>Page size</entry> <entry>8K</entry></row>
+<row><entry>File size</entry> <entry>64 bit file offsets on supporting OS's</entry></row>
+<row><entry>Files per database</entry> <entry>unlimited</entry></row>
+<row><entry>Table size</entry> <entry>Up to database size </entry></row>
+<row><entry>Tables per database</entry> <entry>64K keys, a table takes 1 key for primary key, 1 key per index and 1 key for each obsolete primary key layout  resulting from adding or dropping columns.</entry></row>
+<row><entry>Indexes per table</entry> <entry>Unlimited, subject to global cap on keys.</entry></row>
+<row><entry>Row in sorting/distinct temp</entry> <entry>4078b, as in tables </entry></row>
+<row><entry>Locks per transaction</entry> <entry>Depends on memory, 16b per row lock, 60b per page with at least one row lock.</entry></row>
+<row><entry>Changes per transaction</entry> <entry>Depends on memory, ini parameter allows cap on  rollback before image.</entry></row>
+<row><entry>Virtual memory></entry> <entry>Depends on OS, 64 bit pointers on 64 bit platforms</entry></row>
+<row><entry>Threads</entry> <entry>Depends on OS, ini files specifies cap for pool for SQL client and web server worker thrread pools.</entry></row>
+<row><entry>Max connections</entry> <entry>Depends on OS fdset size, at least 2048, license can set a limut</entry></row>
+<row><entry>Memory per connection</entry> <entry>22K plus up to 100 cached SQL statement compilations</entry></row>
+</tbody>
+</table>
+
+</sect2>
+
+
+
+  <sect2 id="srvadmsrvinst"><title>Server Instance Creation</title>
+    <para>Multiple Virtuoso server instances  may coexist on a single machine. Each
+    database will need to be assigned a unique TCP port number.
+    On the windows platforms (except 95,98,ME) the Virtuoso can
+    be configured for multiple services. For further details, see the
+    <link linkend="CreatingDeletingServices">Creating and Deleting
+    Virtuoso Services</link> in the <link linkend="installation">
+    Installation chapter.</link></para>
+
+<para>To run Virtuoso on a machine, only the  Virtuoso server executable and a valid virtuoso.ini file are needed.  An empty database file will be created automatically at first startup.  None of the other files in the installation are needed for basic operation.  Client interfaces may additionally need ODBC drivers or the like to be set up in system configuration files or the Windows registry but the server itself does not depend on these. 
+</para>
+  </sect2>
+
+
+  <sect2 id="srvextinst"><title>Installing Application Packages</title>
+    <para>
+Virtuoso comes with optionally installable SQL application packages (VAD packages) for web based admin, on-line documentation, programming tutorials and a BPEL processor.
+The installer typically asks whether to install these into the demo or the default empty database.
+
+Depending on the OS and form of installer, also depending on whether the installation is the commercial or open source one, the package files will be in different locations.  To locate them, look for *.vad. 
+The packages are typically made in two variants, where one keeps the installed items in the DAV repository and the other in the file system.  They are functionally equivalent in most cases, except for some tutorials that will only work in the file system.  Keeping installed resources in DAV has advantages when moving the database or backing up, since the installed items will not have to be treated separately.
+
+To install these on a database, login as dba using the isql utility and issue the SQL command:
+</para>
+
+        <programlisting>
+# at the OS command line prompt, assuming the dba password is dba and the server is at the default port 1111:
+
+$ isql 1111 dba dba 
+
+--  At the SQL prompt:
+SQL&gt; vad_install ('conductor_dav.vad', 0);
+-- The path is relative to the server's working directory. 
+
+        </programlisting>
+<para>
+Since the packages are read from and sometimes the extracted contents are written to the file system, the server must have access to the directories in question.  Checjk OS permissions and set the DirsAllowed parameter in the ini file to allow the needed access.
+</para>
+<para>
+
+After the packages are installed, they can be used by pointing the web
+browser to their start page.  The start pages are listed on the root
+page of the demo database and at the Getting Started section of the
+Open Virtuoso web site.  The start page for the Conductor web admin
+interface is /conductor, the docs are at /doc/html, the tutorials at
+/tutorial, the BPEL admin and demos at /BPELGUI.  All these are directly
+under the default Virtuoso web listener, the port is shown in the
+messages log and read from the HTTP Server section of the virtuoso.ini
+file.
+
+</para>
+
+</sect2>
+
+  <sect2 id="srvadmlicensing"><title>Server Licensing</title>
+    <para>The Virtuoso server requires a valid license file before it will
+    successfully start.  The license file is a file always called
+    <emphasis>virtuoso.lic</emphasis> and must reside in the working directory
+    of the database instance - where the &lt;database-name&gt;.db file resides
+    for the instance.</para>
+    <para>Evaluations versions of Virtuoso come without a license file, however
+    the registration procedure takes your email address, which will be used to
+    email a new license file for you evaluation.</para>
+  </sect2>
+
+  <sect2 id="srvadmlicensing"><title>Server Logging - Detecting Errors</title>
+    <para>Virtuoso provides extensive log information for resolving problems.
+    Should any problems arise Virtuoso logs should always be consulted.</para>
+    <para>The Virtuoso server by default will send log information to two
+    places, the appropriate system log for the operating system and the
+    virtuoso.log file.  On Unix based operating systems, including Linux,
+    this information will appear in the system log files.  On Windows the Virtuoso
+    log information will appear in the Application Event Log.</para>
+    <para>Virtuoso logs information in the system logs before the Virtuoso.log
+    file is open.  This advantageously will log errors that cannot be placed in the
+    virtuoso.log file, such as when the virtuoso.ini file cannot be located during
+    Virtuoso startup.</para>
+    <para>The system log feature can be disabled using the "Syslog" parameter
+    in the [Database] section.  This is described in more detail in the following
+    section.</para>
+  </sect2>
+
+<!-- ======================================== -->
+
+<sect2 id="configsrvstupfiles"><title>Configuring Server Startup Files</title>
+
+	<sect3 id="VIRTINI">
+		<title>Virtuoso Configuration File</title>
+		<para>The virtuoso.ini file is read from the directory that is current at
+server startup.  This file contains an entry for all user settable options in the server.
+It is divided into the following sections:
+</para>
+		<itemizedlist mark="bullet">
+			<listitem><para>[Database] Location of database files</para>
+			</listitem>
+			<listitem><para>[Parameters] Server tuning, options</para>
+			</listitem>
+			<listitem><para>[HTTPServer] Settings in this section control the web server component of the Virtuoso Server.</para>
+			</listitem>
+			<listitem><para>[URIQA] Settings in this optional section control URIQA semantic web enabler.</para>
+			</listitem>
+			<listitem><para>[Replication] The replication section sets the transactional replication parameters for the server. </para>
+			</listitem>
+			<listitem><para>[Mono] The Mono section contains settings pertenent to using the Virtuoso with Mono Runtime CLR support.  </para>
+			</listitem>
+			<listitem><para>[Client] Client default settings</para>
+			</listitem>
+			<listitem><para>[AutoRepair] Corrupted database recovery</para>
+			</listitem>
+			<listitem><para>[Striping] Multi-file / multi-disk databases</para>
+			</listitem>
+			<listitem><para>[VDB] Virtual database functionality related options</para>
+			</listitem>
+			<listitem><para>[Ucms] location of UCM files describing multi-byte encodings such as Far East languages</para>
+			</listitem>
+			<listitem><para>[Zero Config] ZeroConfig related options</para>
+			</listitem>
+			<listitem><para>[Plugins] VSEI plugin modules</para>
+			</listitem>
+		</itemizedlist>
+		<para>Below are the descriptions for each parameter</para>
+		<sect4 id="ini_Database">
+			<title>[Database]</title>
+			<itemizedlist mark="dash">
+				<listitem id="ini_Database_DatabaseFile">
+					<formalpara>
+						<title>DatabaseFile=virtuoso.db</title>
+						<para>For a single file database, this is the relative path of the file
+in the format appropriate to the platform. The path is resolved relative
+to the directory that is current at server startup. All other paths are interpreted similarly.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Database_TransactionFile">
+					<formalpara>
+						<title>TransactionFile=virtuoso.trx</title>
+						<para>This is the transaction log file.  If this parameter is omitted, which should never
+be the case in practice, the database will run without log, meaning that it cannot
+recover transactions committed since last checkpoint if it should abnormally terminate.
+There is always a single log file for one server. The file grows as transactions get committed until a checkpoint is reached at which time the
+transactions are applied to the database file and the trx file is reclaimed, unless CheckpointAuditTrail is enabled.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Database_ErrorLogFile">
+					<formalpara>
+						<title>ErrorLogFile=virtuoso.log</title>
+						<para>This file logs database error messages, e.g. &apos;out of disk&apos;.  By viewing this the
+dba can trace problems and see at which times the server has started,  checkpoints have been made, etc.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Database_ErrorLogLevel">
+					<formalpara>
+						<title>ErrorLogLevel=7</title>
+						<para>This controls what events get logged into the database error log. This should always be 7.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Database_LockFile">
+					<formalpara>
+						<title>LockFile=virtuoso.lck</title>
+						<para>This optional parameter can be used to manually specify the location
+            of the Virtuoso lock (.lck) file.  This can be relative or the full path to the
+            lock file.  Virtuoso, by default, creates a file with the
+            same name as the DatabaseFile but with the extension of .lck.  This file
+            exists when the Virtuoso server is running to prevent it starting multiple
+            times using the same parameters, and should be automatically removed by
+            the server upon exit.  However, not all file systems support file locking,
+            such as NFS, therefore this parameter can be set to keep the lock file
+            on a more appropriate file system.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Database_FileExtend">
+					<formalpara>
+						<title>FileExtend=100</title>
+						<para>This is the size that the database file automatically grows (in 8k pages) when the current file is not large enough. Default = minimum = 100.
+The parameter has no effect if striping is set.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Database_Striping">
+					<formalpara>
+						<title>Striping=0</title>
+						<para>A non-zero value will enable the settings in [Striping] to take effect. If this
+is the case the DatabaseFile parameter is ignored and the files in [striping] are used.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Database_LogSegments">
+					<formalpara>
+						<title>LogSegments</title>
+						<para>If this is non-zero log segmentation is enabled. This
+is only used for crash dumps where several files may be needed to
+accommodate the recovery logs. If non-zero, this will be followed by
+entries of the form Log1=...</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Database_Log">
+					<formalpara>
+						<title>Log1=/tmp/log1.trx 100M</title>
+						<para>The number in Log&lt;n&gt; is the ordinal number of the log, starting at 1. The entry
+consists of the file name and allocated size with an optional size modifier.  Available modifiers are B for blocks of 4k (default if unspecified,
+K for kilobytes, M for megabytes, and G for gigabytes.  The log is filled up to the first
+transaction that exceeds the size.  The log therefore will be longer than the allocated size. If blobs are involved, this amount can be quite substantial.
+It is therefore advisable to have some extra space available on the storage device used for recovery logs.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Database_crashdump">
+					<formalpara>
+						<title>crashdump_start_dp, crashdump_end_dp</title>
+						<para>
+These options make it possible to produce a crash dump of a specified range of disk pages.
+In case the server runs out of disk space during a dump, the error message indicates the page at
+which the next dump should be started after the user has made more space available.
+In this case it is important to rename the already produced crash dump or change the Logx= -entries in virtuoso.ini to avoid overwriting said files. If none of these options are provided, the server will attempt a crash dump of the entire database storage.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Database_TempStorage">
+					<formalpara>
+						<title>TempStorage     = &lt;TempDatabase_Name&gt;</title>
+						<para>The name of a section in the INI file containing temporary
+            database details.  If this parameter is omitted or the section does not
+            exist the default values for temporary storage are used.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Database_Syslog">
+					<formalpara>
+						<title>Syslog = 1/0 (default 1)</title>
+						<para>Virtuoso normally writes log worthy messages to the system log
+            (Unix based operating systems including Linux) or the Windows Event Log (Windows
+            operating systems).  Messages are written in the system/event log
+            before the virtuoso.log file is opened, therefore errors due to
+            absence of virtuoso.ini log are loggable there.
+            This system/event logging can be disabled using this option,
+            by default it is set to 1 meaning on.  </para></formalpara>
+            <para>On Unix/Linux messages are written as "Virtuoso" events.</para>
+            <para>On Windows messages are written in the Application event log.</para>
+				</listitem>
+			</itemizedlist>
+		</sect4>
+    <sect4 id="ini_TempDatabase"><title>[&lt;TempDatabase_Name&gt;]</title>
+     <para>This section name must match the TempStorage parameter in the
+     Database section of the Virtuoso INI file to be of any use.  Otherwise this
+     section will be ignored.</para>
+     <itemizedlist>
+				<listitem id="ini_TempDatabase_DatabaseFile">
+					<formalpara>
+						<title>DatabaseFile = &lt;database file name&gt;.tdb </title>
+						<para>Name of temporary database file.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_TempDatabase_TransactionFile">
+					<formalpara>
+						<title>TransactionFile = &lt;transaction file name&gt;.ttr</title>
+						<para>Name of temporary transaction file.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_TempDatabase_FileExtend">
+					<formalpara>
+						<title>FileExtend = NNN</title>
+						<para>Increment amount by which the database file will dynamically grow.
+            This setting is identical in use and purpose to parameter in the
+            Database section with the same name.</para>
+					</formalpara>
+				</listitem>
+       </itemizedlist>
+    </sect4>
+		<sect4 id="ini_Parameters">
+			<title>[Parameters]</title>
+			<itemizedlist mark="dash">
+				<listitem id="ini_Parameters_SingleCPU">
+					<formalpara>
+						<title>SingleCPU=0</title>
+						<para>This is a Win32 specific option that
+forces Virtuoso to only run on one CPU in a multiprocessor environment.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_ServerPort">
+					<formalpara>
+						<title>ServerPort=[&lt;IP Address&gt;]&lt;port&gt;</title>
+						<para>This is the IP Address and port number where the server will start listening.
+You do not need to specify the listening IP Address but can do in a situation that you want the server to bind to a specific address only.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_ServerThreads">
+					<formalpara>
+						<title>ServerThreads=10</title>
+						<para>This is the maximum number of threads used in the server.  This should be
+close to the number of concurrent connections if heavy usage is expected.
+Different systems have different limitations on threads per process but a value of
+100 should work in most places.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_ServerThreadSize">
+					<formalpara>
+						<title>ServerThreadSize=50000</title>
+						<para>Stack size of thread used for reading client messages and accepting connections.(default : 50 000 bytes)</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_MainThreadSize">
+					<formalpara>
+						<title>MainThreadSize=100000</title>
+						<para>Stack size of the main thread  (default : 100 000 bytes)</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_ThreadCleanupInterval">
+					<formalpara>
+						<title>ThreadCleanupInterval</title>
+						<para>The interval in minutes (default : 0) after which
+threads in the thread pool should be released.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_ThreadThreshold">
+					<formalpara>
+						<title>ThreadThreshold</title>
+						<para>The maximum number of threads (default : 10) to leave in
+the thread queue after thread clean-up interval has expired.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_ResourceCleanupInterval">
+					<formalpara>
+						<title>ResourcesCleanupInterval</title>
+						<para>The interval in minutes (default : 0) after which allocated resources will be flushed..</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_FutureThreadSize">
+					<formalpara>
+						<title>FutureThreadSize=100000</title>
+						<para>Stack size of worker threads.  This is the stack size for serving any client SQL statements or HTTP requests.  This can be increased if the application uses recursive stored procedures or links in external code needing a large stack.   (default 100 000 bytes)</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_TempAllocationPct">
+					<formalpara>
+						<title>TempAllocationPct</title>
+						<para>A Percentage that may be greater than 100%.  This gives a
+            percentage of the main .db file to which the temp db file may grow
+            before starting to reclaim the oldest persistent hash index.
+            Basically if a particular hash index is reusable (i.e. it references
+            only table columns and the values in these columns have not changed)
+            the engine keeps the hash index defined into the temp db for reuse.
+            This parameter allows some control over the temp db file size.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_CheckpointInterval">
+          <formalpara>
+						<title>CheckpointInterval=60</title>
+						<para>This is the interval in minutes at which Virtuoso will
+automatically make a database checkpoint.  The automatic checkpoint will not be made if
+there is less than MinAutoCheckpointSize bytes in the current transaction log.
+A checkpoint interval of 0 means that no periodic automatic checkpoints are made.</para>
+						<para>
+Setting the value to -1 disables also the checkpoints made after a roll forward upon database startup.  This setting should be used when backing up the database file(s).  This guarantees that even if the server dies and restarts during the copy, no checkpoints that would change these files will take place and thus the backup is clean.
+</para>
+						<para>the checkpoint_interval SQL function may be used to change the checkpoint interval value while the database is running.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_CheckpointSyncMode">
+					<formalpara>
+						<title>CheckpointSyncMode=2</title>
+						<para>This controls how the file system is synchronized after a checkpoint.  Once the checkpoint has issued all
+write system calls it needs it can do one of the following depending on this setting:
+</para>
+						<para>0. - Continue, leave the OS to flush buffers when it will.</para>
+						<para>1. - Initiate the flush but do not wait for it to complete.</para>
+						<para>2. - Block until the OS has flushed all writes pertaining to any of the database files.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_NumberOfBuffers">
+					<formalpara>
+						<title>NumberOfBuffers=2000</title>
+						<para>This controls the amount of RAM used by Virtuoso to cache database files. This has a critical
+performance impact and thus the value should be fairly high for large databases.  Exceeding
+physical memory in this setting will have a significant negative impact.  For a database-only
+server about 65% of available RAM could be configured for database buffers.
+</para>
+						<para>Each buffer caches one 8K page of data and occupies approximately 8700 bytes of memory.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_MaxCheckpointRemap">
+					<formalpara>
+						<title>MaxCheckpointRemap=2000</title>
+            <para>Specifies how many pages Virtuoso is allowed to remap.
+            Remapping means that pages can consume the space of two actual pages
+            until checkpoint.  See the
+            <link linkend="checkpointparams">Checkpoint &amp; Page Remapping</link>
+            section in the SQL Reference chapter for more information.</para>
+					</formalpara>
+					<!-- formalpara>
+						<title>UnremapQuota=0</title>
+						<para>Number of remapped pages Virtuoso will consolidate at checkpoint.
+            Default is zero for unlimited.
+            See the <link linkend="checkpointparams">Checkpoint &amp; Page Remapping</link>
+            section in the SQL Reference chapter for more information.</para>
+					</formalpara -->
+				</listitem>
+				<listitem id="ini_Parameters_PrefixResultNames">
+					<formalpara>
+						<title>PrefixResultNames=0</title>
+						<para>This setting should always be 0.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_CaseMode">
+					<formalpara>
+						<title>CaseMode=1</title>
+						<para>This controls the case sensitivity of the Virtuoso SQL interpreter. The following values
+are supported:</para>
+						<itemizedlist spacing="compact">
+							<listitem>
+								<para>0 - SQL is case sensitive and identifiers are stored in the case they are entered in.  This is similar to the Progress or Informix default.</para>
+							</listitem>
+							<listitem>
+								<para>1 - SQL is case sensitive and Unquoted identifiers are converted to upper case when read.
+To use non-upper case identifiers, the identifiers must be quoted with double quotes (&quot;).
+This is similar to Oracle.
+</para>
+							</listitem>
+							<listitem>
+								<para>2 - SQL is case-insensitive and identifiers are stored in the case where first seen.  Unlike the
+  situation in other modes, two identifiers differing only in case cannot exist.
+  This is similar to the MS SQL Server 7 default behavior.
+</para>
+							</listitem>
+						</itemizedlist>
+						<note>
+							<title>Note:</title>
+							<para>Once a database is created in one case mode the case mode should not be
+changed as that may change the interpretation of stored procedures etc.</para>
+						</note>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_MinAutoCheckpointSize">
+					<formalpara>
+						<title>MinAutoCheckpointSize=4000000</title>
+						<para>See CheckpointInterval.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_AutoCheckpointLogSize">
+					<formalpara>
+						<title>AutoCheckpointLogSize</title>
+						<para>This is the size of transaction log in bytes after which an automatic checkpoint is initiated.  If this is non-zero, whenever the transaction log size
+exceeds this size an automatic checkpoint is started.  This will result in approximately
+like sized logs to be generated.  This is useful with the CheckpointAuditTrail option
+for generating a trail of equal sized consecutive logs.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_CheckpointAuditTrail">
+					<formalpara id="checkpointAuditTrail">
+						<title>CheckpointAuditTrail=1</title>
+						<para>If this is non-zero each checkpoint will start a new log and leave the
+old transaction log untouched. A 0 value indicates that the transaction log may
+be reused once the transactions in it have been written in a checkpoint.
+</para>
+						<para>
+If it is important to keep an audit trail of all transactions in the
+database&apos;s life time then this option should be true.  A new log file will
+be generated in the old log file&apos;s directory with a name ending with the
+date and time of the new log file&apos;s creation.  Old log files can be manually
+copied into backup storage or deleted.  Only one log file is active at one time.
+The newest log file may at any time be written to by the server, but that is
+the only log file Virtuoso has open at each time.  Thus reading any logs is safe.
+Writing or deleting the active log file will result in loss of data, and
+possibly referential integrity, in the database.  See the
+<link linkend="backup">Back and Recovery</link> chapter for more information on
+this and related parameters.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_AllowOSCalls">
+					<formalpara>
+						<title>AllowOSCalls=0</title>
+						<para>If non-zero the system SQL function is enabled.  This will allow a dba group user
+to run shell commands through SQL.  This poses a potential security risk and hence the setting should normally be 0.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_MaxStaticCursorRows">
+					<formalpara>
+						<title>MaxStaticCursorRows=5000</title>
+						<para>This is the maximum number of rows returned by a static cursor.  Default = 5000</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_FreeTextBatchSize">
+					<formalpara>
+						<title>FreeTextBatchSize=10000000</title>
+						<para>This is the amount of text data processed in one batch of the free-text
+index when doing a batch update or non-incrementally reindexing the data.
+Default : 10,000,000</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_MullUnspecifiedParams">
+					<formalpara>
+						<title>NullUnspecifiedParams</title>
+						<para>When set to 1, if an
+application prepares a statement with insufficient number of input
+parameters, the unspecified ones are assumed to be NULL.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_Collation">
+					<formalpara>
+						<title>Collation</title>
+						<para>Defines a sorting order according to SYS_COLLATIONS.  The
+            name supplied to this parameter must be in
+            <link linkend="fn_charsets_list"><function>charsets_list(1)</function></link>.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_DirsAllowed">
+					<formalpara id="acliniallowed">
+<title>DirsAllowed=&lt;path&gt; [, &lt;path&gt;]</title>
+<para>&lt;path&gt; := &lt;absolute_path&gt; or &lt;relative_path&gt;
+comma-delimited list of OS directories allowed for file
+operations such as <function>file_to_string()</function>.  The server
+base directory (the directory containing this INI file) must appear on
+this list in order to enable File DSNs to work.
+</para>
+</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_DirsDenied">
+					<formalpara id="aclinidenied">
+						<title>DirsDenied=&lt;path&gt; [, &lt;path&gt;]</title>
+						<para>&lt;path&gt; := &lt;absolute_path&gt; or &lt;relative_path&gt;
+OS directories denied for file operations.  See <link linkend="acl">Virtuoso
+ACL's</link> for information on functions that are restricted.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_SSLServerPort">
+					<formalpara>
+						<title>SSLServerPort</title>
+						<para>Specifies the port on which the server listens for incoming SSL CLI requests.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_SSLCertificate">
+					<formalpara>
+						<title>SSLCertificate</title>
+						<para>The SSL certificate to use (same meaning as the SSLCertificate in HTTPServer section)</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_SSLPrivateKey">
+					<formalpara>
+						<title>SSLPrivateKey</title>
+						<para>The server's private key (same meaning as the SSLCertificate in HTTPServer section)</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_MaxOptimizeLayouts">
+					<formalpara>
+						<title>MaxOptimizeLayouts = 1000</title>
+						<para>This parameter governs the maximum number of partial or full
+            join orders that the Virtuoso SQL Optimized compiler will calculate per
+            select statement.  When MaxOptimizeLayouts has been reached,
+            the best execution plan reached thus far will  be used.  The default
+            value is 1000, specifying 0 will try all possible orders and guarantee that the best plan is reached.</para></formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_TraceOn">
+    		  <formalpara><title>TraceOn = option1 [, option2 [, ..]]</title>
+				<para>This parameter accepts a comma-delimited list of tracing options to
+        activate by default.  Enabled trace options will list there respective
+        errors in the virtuoso.log file when encountered.  Valid options are:</para>
+        <simplelist>
+          <member>user_log</member>
+          <member>failed_log</member>
+          <member>compile</member>
+          <member>ddl_log</member>
+          <member>client_sql</member>
+          <member>errors</member>
+          <member>dsn</member>
+          <member>sql_send</member>
+          <member>transact</member>
+          <member>remote_transact</member>
+          <member>exec</member>
+          <member>soap</member>
+        </simplelist>
+
+        <para>If an invalid option is set then this error will be listed in the
+        virtuoso.log file upon server startup.  Virtuoso will continue to log
+        selected options unless the trace_off() function is called for that item.</para>
+
+        <tip><title>See Also:</title>
+        <para>The functions: <link linkend="fn_trace_on"><function>trace_on()</function></link>
+        and <link linkend="fn_trace_off"><function>trace_off()</function></link>
+        which use the same options and can turn logging options on/off while
+        the server is running.</para></tip>
+
+        <example id="ex_traceoniniopt"><title>Using the TraceOn ini file option</title>
+        <programlisting>
+[Parameters]
+....
+TraceOn = soap, errors
+...
+</programlisting>
+        <para>This will enable logging of additional information regarding
+        SOAP calls and SQL run-time errors into the virtuoso.log file.</para>
+        </example>
+				</formalpara>
+				</listitem>
+        <!--
+				<listitem id="ini_Parameters_DbaExecutables">
+    		  <formalpara><title>DbaExecutables = dbpump</title>
+				<para></para>
+				</formalpara>
+				</listitem>
+        -->
+				<listitem id="ini_Parameters_AllowPasswordEncryption">
+    		  <formalpara><title>AllowPasswordEncryption = 1/0</title>
+				<para>Determines whether Virtuoso encryption should be accepted from
+        client connections.  The default value is 1 - on.  If set to 0 then
+        only clear text and digest authentication will be accepted.</para>
+				</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_JavaClasspath"><formalpara><title>JavaClasspath</title>
+         <para>This parameter is applied to the environment prior to the server's
+         startup.  It is valid only for binaries hosted in the Virtuoso Java VM.
+         This has the same format as the Java CLASSPATH environment variable for
+         the platform being used.</para></formalpara>
+         <para>Virtuoso searches for classes in the following order:</para>
+         <simplelist>
+          <member>The java_vm_create VSE parameter list</member>
+          <member>This "JavaClasspath" in [Parameters] INI section</member>
+          <member>The CLASSPATH environment variable</member>
+          <member>If none of the above the CLASSPATH is the current directory.</member>
+         </simplelist>
+				</listitem>
+				<listitem id="ini_Parameters_JavaVMOption"><formalpara><title>JavaVMOption1..N = &lt;opts&gt;</title>
+         <para>These can be used for setting Java options for the Java runtime
+         hosted in Virtuoso.  These options work as if provided as command
+         line options to the JRE's Java command line.</para></formalpara>
+         <para>More than one line of options can be specified by using
+         consecutively numbered options:</para>
+         <programlisting>
+JavaVMOption1  = -Ddt1=val1
+JavaVMOption2  = -Ddt2=val2
+...
+JavaVMOption5  = -Ddt5=val5
+</programlisting>
+         </listitem>
+        <listitem id="ini_Parameters_PLDebug"><formalpara><title>PLDebug = 0</title>
+         <para>The PLDebug switch controls the type of debugging enabled:</para>
+				 </formalpara>
+ <simplelist>
+  <member><emphasis>PLDebug = 0</emphasis> - default debugging information and
+  test coverage disabled.</member>
+  <member><emphasis>PLDebug = 1</emphasis> - debugging information enabled.</member>
+  <member><emphasis>PLDebug = 2</emphasis> - debugging information enabled, test
+  coverage data will be written to file specified in TestCoverage Virtuoso ini
+  file parameter.</member>
+ </simplelist>
+         </listitem>
+        <listitem id="ini_Parameters_TestCoverage"><formalpara><title>TestCoverage = cov.xml</title>
+         <para></para>
+				 </formalpara>
+         </listitem>
+				<listitem id="ini_Parameters_CallstackOnException">
+					<formalpara>
+						<title>CallstackOnException = 0</title>
+            <para>Controls whether Virtuoso will report call stack on errors.</para>
+            </formalpara>
+						<para>This parameters takes the following values:</para>
+						  <simplelist>
+						    <member>0 (default) - Call stack reporting disabled.</member>
+						    <member>1 - Call stack reporting enabled.</member>
+						  </simplelist>
+				</listitem>
+				<listitem id="ini_Parameters_CompileProceduresOnStartup">
+					<formalpara>
+						<title>CompileProceduresOnStartup = 1</title>
+            <para>This controls whether Virtuoso will recompile all stored
+            procedures listed in SYS_PROCEDURES and internal PL procedures
+            defined during server startup.  By default Virtuoso will recompile all
+            procedures, with this setting set to 0 Virtuoso will defer compilation
+            until procedures' first call.  The benefits of this are that Virtuoso
+            may start up up to 2-3 times faster, also the initial memory consumption
+            will be significantly reduced as it does not need to analyze all
+            the long varchar data allocating memory for execution.
+            This setting is a boolean, either 1 or 0.  This setting does not
+            apply to attached VDB procedures or modules.</para>
+            </formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_FDsPerFile">
+					<formalpara>
+						<title>FDsPerFile = 1</title>
+            <para>Controls the number of file descriptors per file to be
+            obtained from the OS.  The default and minimum value is 1.
+            This parameter only effects databases that use striping.
+			Having multiple FDs per file means that as many concurrent IO operations
+			may simultaneously be pending per file. This allows more flexibility for
+			the OS to schedule the operations, potentially improving file I/O
+			throughput</para>
+            </formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_RecursiveFreeTextUsage">
+					<formalpara>
+						<title>RecursiveFreeTextUsage = 1/0 default 1</title>
+            <para>This option controls the behavior of free-text triggers in
+            super-tables.  If this option is set to 1 then Virtuoso will scan the hierarchy
+            of tables until a free-text index is used to use when compiling
+            SQL statements involving contains, xcontains or xpath_contains.</para>
+            </formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_RecursiveTriggerCalls">
+					<formalpara>
+						<title>RecursiveTriggerCalls = 1/0 default 1</title>
+            <para>This option controls the behavior of super-table triggers.  When this
+            option is set to 1 then triggers in the super-table will be called before
+            its own (sub-table) triggers.  This behavior is recursive and will
+            continue up the branch of recursion, hence the triggers in the top
+            most table in the chain will be called first.</para>
+            </formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_MaxSortedTopRows">
+					<formalpara>
+						<title>MaxSortedTopRows = 10000</title>
+            <para>The TOP select statement clause caches in memory the rows
+			pertinentent to the result.  The number of rows allowed to be cached
+			within memory is limited by this parameter.</para>
+            </formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_DisableUnixSocket">
+					<formalpara>
+						<title>DisableUnixSocket = 0/1 default 0</title>
+            <para>This parameter is only applicable to Unix servers.  Virtuoso
+			clients on the <computeroutput>localhost</computeroutput> of the server
+			can benefit from using Unix Domain sockets to improve connection
+			performance.  By default (DisableUnixSocket = 0) Virtuoso will open a
+			Unix Domain listen socket in addition to the TCP listen socket.  The name of
+			the UD socket is <computeroutput>/tmp/virt-&lt;tcp-listen-port&gt;</computeroutput>.
+			When a client attempts to connect to the Virtuoso server using the
+			specific address <computeroutput>localhost</computeroutput> it will
+			first try connecting to the UD socket, failing that it will silently revert
+			to the TCP socket.  See the
+			<link linkend="accintudsockets">Unix Domain Socket Connections</link>
+			section for more details.</para>
+            </formalpara>
+	</listitem>
+
+	<listitem id="ini_Parameters_TransactionAfterImageLimit">
+	    <formalpara>
+		<title>TransactionAfterImageLimit = N bytes default 50000000</title>
+		<para>When the roll-forward log entry of a transaction  exceeds this size, the transaction is  too large and is  marked as uncommittable. This work as upper limit otherwise infinite (transactions). The default is 50Mb . Then also note that transaction roll-back data takes about 2x of roll-forward data. Hence when the transaction roll-forward data wich is 50Mb the total transient consumption is closer to 150 Mb.
+		</para>
+	    </formalpara>
+	</listitem>
+
+	<listitem id="ini_Parameters_TempSesDir">
+	    <formalpara>
+		<title>TempSesDir</title>
+		<para> Directory for storing temporary  data for large object handled in replication  and HTTP server. Defaults to server home directory.
+		</para>
+	    </formalpara>
+	</listitem>
+	<listitem id="ini_Parameters_DbevEnable">
+	    <formalpara>
+		<title>DbevEnable = 0/1 default 1</title>
+		<para>Enable or disable <link linkend="hooks">Database Event Hooks</link>.
+		</para>
+	    </formalpara>
+	</listitem>
+	<listitem id="ini_Parameters_RunAs">
+	    <formalpara>
+		<title>RunAs</title>
+		<para>Specifies the OS user name to witch the server will switch after opening the listen ports. Has an effect only on the operating systems that support it.
+		</para>
+	    </formalpara>
+	</listitem>
+	<listitem id="ini_TempDBSize">
+	    <formalpara>
+		<title>TempDBSize</title>
+		<para>Controls the acceptable size of the temp database file. If on startup it's size (in MB) is
+		    greater than TempDBSize the file gets deleted and reset. This feature can be turned off by
+		    setting TempDBSize to 0. Note that the temp db file serves as an optimization storage only
+		    and doesn't have any client data that are not in either the main database files or the
+		    corresponding transaction log files.
+		</para>
+	    </formalpara>
+	</listitem>
+
+          </itemizedlist>
+		</sect4>
+  <sect4 id="ini_HTTPServer">
+			<title>[HTTPServer]</title>
+			<para>Settings in this section control the web server component of the
+      Virtuoso Server.</para>
+			<itemizedlist mark="dash">
+				<listitem id="ini_HTTPServer_ServerPort">
+					<formalpara>
+						<title>ServerPort</title>
+						<para>This specifies the initial HTTP listen port for the HTTP server.
+            Once Virtuoso is started it is possible to create multiple listeners
+            using virtual directories.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_HTTPThreadSize">
+	        <formalpara>
+		        <title>HTTPThreadSize = 120000</title>
+						<para>
+The stack size of the HTTP thread used for reading/processing HTTP client
+requests and accepting connections.  The default is 120,000 bytes. This
+parameter cannot have value less than the default; if a smaller value is
+specified the default will be used.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_ServerThreads">
+					<formalpara>
+						<title>ServerThreads</title>
+						<para>
+This specifies the number of concurrently serviced HTTP requests.
+If there are more concurrent requests, accepting the connections
+will be deferred until there is a thread ready to serve each.  If
+an attempt to exceed the number of licensed connections is found.
+the latter will be used.  When the number of threads is low some of the
+tutorials may perform poorly and appear not to work; this is due to the
+demonstration licensing.  When testing Virtuoso with the demonstration
+license it can be quite easy to hit the limits unless remote connections
+and HTTP connections are conserved.  You may wish to either wait for
+previous transactions to finish or restart the server to be sure.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_HTTPThreadSize">
+					<formalpara>
+						<title>HTTPThreadSize = 120000</title>
+						<para>
+The stack size of HTTP thread used for reading/processing HTTP client requests
+and accepting connections.  The default setting, if not supplied, is 120,000 bytes.
+The default value is the minimum; lesser values will be rounded up.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_ServerRoot">
+					<formalpara>
+						<title>ServerRoot = ../vsp</title>
+						<para>
+This is the file system path of the root directory of files served by the Virtuoso
+web server.  The index.html in that directory will be served for the / URI.  If relative,
+the path is interpreted relative to the server&apos;s working directory.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_ServerIdString">
+					<formalpara><title>ServerIdString = Virtuoso</title>
+						<para>String passed as Server: header to HTTP client.  This string is not
+            required, in its absence the above default will be assumed.  This string
+            can be set to anything required.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_ClientIdString">
+					<formalpara><title>ClientIdString = Mozilla/4.0 (compatible; Virtuoso)</title>
+						<para>String passed as User-Agent: header to server by HTTP client.
+            This string is not required, in its absence the above default will be assumed.
+            This string can be set to anything required.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_Charset">
+					<formalpara>
+						<title>Charset = [CHARSET-NAME]</title>
+						<para>Allows you to set the default server
+character set.  If no default is specified then ISO-8859-1 will be used automatically by
+the server.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_EnabledGzipContent">
+				<formalpara><title>EnabledGzipContent = 0</title>
+				<para>This sets the default behavior of HTTP transmission.  If set to 1
+        The Virtuoso HTTP server will send GZipped content to user agents.  Otherwise
+        content will be sent as is.  The function
+        <link linkend="fn_http_enable_gz"><function>http_enable_gz()</function></link>
+        lets you change the server mode on the fly.</para>
+				</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_MaxKeepAlives">
+					<formalpara>
+						<title>MaxKeepAlives = 10</title>
+						<para>
+Connections by HTTP 1.1 clients can remain open after the initial response has been sent.
+This parameters sets a cap on how many socket descriptors will at most be taken by keep alive connections.
+Such connections will be dropped by the server ahead of timeout if this number would be exceeded.
+Thus the maximum number of open sockets for the Virtuoso HTTP server is this number plus the number of threads.
+A keep alive connection is by definition not associated to any pending processing on any thread.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_KeepAliveTimeout">
+					<formalpara>
+						<title>KeepAliveTimeout = 10</title>
+						<para>
+This is a timeout in seconds before Virtuoso closes an idle HTTP 1.1 connection.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_HTTPProxyEnabled">
+				<formalpara><title>HTTPProxyEnabled = 0</title>
+				<para>Setting this to 1 activates Virtuoso proxy service capabilities.  The
+                            default value of 0 deactivates the proxy service.</para>
+				</formalpara>
+        <note><title>Note:</title>
+        <para>Ports on which proxying is enabled should not be presented to the
+        outside world under any situation.</para>
+        </note>
+				</listitem>
+				<listitem id="ini_HTTPServer_MacCachedProxyConnections">
+					<formalpara>
+						<title>MaxCachedProxyConnections = 10</title>
+						<para>
+When Virtuoso is acting as a proxy or HTTP client, as is the case with the http_get or
+the SOAP client functions, it caches connections to HTTP 1.1 servers.  This is the maximum population of said cache.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_ProxyConnectionCacheTimeout">
+					<formalpara>
+						<title>ProxyConnectionCacheTimeout = 15</title>
+						<para>
+This is a timeout in seconds for dropping idle connections to other HTTP servers.
+These result from http_get, SOAP client functions and proxying.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_DavRoot">
+					<formalpara>
+						<title>DavRoot = DAV</title>
+						<para>
+This specifies the root path of DAV resources.  If DAV specific HTTP methods are used on Virtuoso,
+these should only reference resources with paths starting with this.  This is the top level DAV collection.  Other paths can be declared as managed in DAV using the virtual directory mechanism, but this applies to the default virtual directory.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_DAVQuotaEnabled">
+					<formalpara>
+						<title>DAVQuotaEnabled = 1/0</title>
+						<para>The Virtuoso administrator can enforce a quota on
+						all DAV accounts, apart from the "dav" administration user,
+						that restricts that amount of space a DAV
+						user can consume in their DAV home directory.
+						When this parameter is set to one (1) quotas are enabled,
+						when this parameter is set to zero (0), they are disabled.
+						The default quota value is five Megabytes (5MB) but can be
+						uniquely defined for each user.  Every user has a quota except
+						"dav", which is unlimited.
+						Dav quotas are disabled if this parameter is not specified for
+						backwards compatibility.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_DAVChunkedQuota">
+					<formalpara>
+						<title>DAVChunkedQuota = 1000000</title>
+						<para>Virtuoso send resources to from WebDAV to the
+						requesting client in chunked encoding to save memory if
+						the request is in HTTP/1.1 and the files size is greater
+						then the <computeroutput>DAVChunkedQuota</computeroutput>
+						number of bytes.  The default chunked-quota value
+						is approximately one-megabyte.</para>
+					</formalpara>
+				</listitem>
+                <listitem id="ini_HTTPServer_SSLPort">
+					<formalpara>
+						<title>SSLPort=4433</title>
+						<para>this is the port on which SSL HTTPS connections will be accepted.  If unspecified
+then the service will be disabled.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_SSLCertificate">
+					<formalpara>
+						<title>SSLCertificate=./virtuoso_cert.pem</title>
+						<para>the option must point to the file with the server certificate in PEM format.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_SSLPrivateKey">
+					<formalpara>
+						<title>SSLPrivateKey=./virtuoso_key.pem</title>
+						<para>points to the file containing the RSA private key in PEM format.  </para>
+						<para>the certificate/key pair must be valid (eq. certificate is generated on base of key)</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_HTTPServer_POP3Port">
+					<formalpara>
+						<title>POP3Port=1234</title>
+<para>Defines the TCP port number on which the Virtuoso POP3 server will listen.
+The POP3 server will be disabled if this value is 0 or undefined.</para>
+</formalpara>
+</listitem>
+				<listitem id="ini_HTTPServer_NewsServerPort">
+					<formalpara>
+						<title>NewsServerPort=1235</title>
+<para>Defines the TCP port number on which the Virtuoso NNTP server will listen.
+The NNTP server will be disabled if this value is 0 or undefined.</para>
+</formalpara>
+</listitem>
+				<listitem id="ini_HTTPServer_FTPServerPort">
+					<formalpara>
+						<title>FTPServerPort</title>
+<para>The Virtuoso FTP server can be enabled by supplying this parameter with a
+value.  This value will then be the listening port of the FTP server.  The usual
+port for FTP is port 21.</para>
+</formalpara>
+</listitem>
+				<listitem id="ini_HTTPServer_FTPServerMinFreePort">
+					<formalpara>
+						<title>FTPServerMinFreePort = 20000</title>
+<para>The Virtuoso FTP client and server use FTPServerMinFreePort and
+FTPServerMaxFreePort parameters as lower and upper bounds for
+active and passive connections.  This parameters sets the lower bound.</para>
+</formalpara>
+</listitem>
+				<listitem id="ini_HTTPServer_FTPServerMaxFreePort">
+					<formalpara>
+						<title>FTPServerMaxFreePort = 30000</title>
+<para>The Virtuoso FTP client and server use FTPServerMinFreePort and
+FTPServerMacFreePort parameters as lower and upper bounds for
+active and passive connections.  This parameters sets the upper bound.</para>
+</formalpara>
+</listitem>
+				<listitem id="ini_HTTPServer_FTPServerLogFile">
+					<formalpara>
+						<title>FTPServerLogFile = ftpserver</title>
+<para>If specified Virtuoso will produce an FTP server log file with the date
+appended to the name given in the parameter and the files extention as ".log".
+The log file is rotated daily.</para>
+</formalpara>
+<para>It will contain the following information:</para>
+
+<para><computeroutput>ftpserverDDMMYYYY.log</computeroutput> :-</para>
+<simplelist>
+  <member>Client Host Name</member>
+  <member>Authorized User</member>
+  <member>Time</member>
+  <member>User Command</member>
+  <member>Server Response Code</member>
+  <member>Bytes Transferred</member>
+</simplelist>
+
+<para>An example of which is:</para>
+<programlisting><![CDATA[
+hostname anonymous [22/Oct/2003:15:21:43 +0300] "PASS user@domain.com" 230 0
+hostname anonymous [22/Oct/2003:15:23:11 +0300] "LIST" 226 162
+hostname dav [22/Oct/2003:15:25:00 +0300] "PASS <hidden>" 230 0
+]]></programlisting>
+</listitem>
+				<listitem id="ini_HTTPServer_FTPServerAnonymousLogin">
+					<formalpara>
+						<title>FTPServerAnonymousLogin = 0</title>
+<para>Allows the FTP server to be accessable via the "anonymous" user login.
+The anonymous user is not a real user, it has no SQL or DAV login ability.
+The anonymous user can only access collections or resources that are set to public.  </para>
+</formalpara>
+</listitem>
+				<listitem id="ini_HTTPServer_DefaultMailServer">
+					<formalpara>
+						<title>DefaultMailServer=localhost:25</title>
+<para>Default SMTP server name and port, this is used when the first parameter of the smtp_send function is omitted or NULL.</para>
+</formalpara>
+</listitem>
+				<listitem id="ini_HTTPServer_TempASPXDir">
+					<formalpara>
+						<title>TempASPXDir</title>
+<para>Allows you to choose what file system directory to be used for temporary
+storage of ASPX files hosted in DAV.</para>
+</formalpara>
+</listitem>
+				<listitem id="ini_HTTPServer_PersistentHostingModules">
+					<formalpara>
+						<title>PersistentHostingModules = [1/]0</title>
+<para>When set to "1" prevents Virtuoso from removing the plugin interpretters
+from the HTTP threads after each request.  The default setting is "0".</para>
+</formalpara>
+</listitem>
+
+<listitem id="ini_HTTPServer_HttpSessionSize">
+    <formalpara>
+	<title>HttpSessionSize = size in bytes, default 10000000</title>
+	<para>The size threshold for large objects recieved by HTTP server. When this limit  is exceeded
+	    by incoming or outgoing data, this  will be stored in a temp file, see 'TempSesDir' parameter in 'Parameters' section.
+	</para>
+    </formalpara>
+</listitem>
+      </itemizedlist>
+		</sect4>
+		<sect4 id="ini_URIQA">
+			<title>[URIQA]</title>
+			<para>
+The URIQA section sets parameters of both URIQA HTTP extension and URIQA web service.
+Section <link linkend="uriqa">URIQA Semantic Web Enabler</link> contains detailed description of this functionality,
+including more details about <link linkend="uriqainifile">URIQA configuration parameters</link>.
+This section should stay commented out as long as URIQA is not in use.
+</para>
+			<itemizedlist mark="dash">
+<listitem id="ini_URIQA_DefaultHost">
+    <formalpara>
+	<title>DefaultHost = canonical name of the server, used by default for metadata retrieval, no default value</title>
+	<para>The server name, including domain and port if needed, such as &quot;www.example.com&quot; or &quot;www.example.com:8088&quot;.</para>
+    </formalpara>
+</listitem>
+<listitem id="ini_URIQA_LocalHostNames">
+    <formalpara>
+	<title>LocalHostNames = comma-delimited list of names of the server, that can be used for retrieval of metadata, no default value</title>
+	<para>List of various allowed spellings of the server name, such as &quot;www.example.com, mail.example.com, mail, localhost, localhost.localdomain&quot;.</para>
+    </formalpara>
+</listitem>
+<listitem id="ini_URIQA_LocalHostMasks">
+    <formalpara>
+	<title>LocalHostMasks = comma-delimited list of name masks of the server, no default value</title>
+	<para>List of various allowed spellings of the server name in form of pattern strings for SQL &quot;like&quot; operator, not in form of exact strings.</para>
+    </formalpara>
+</listitem>
+<listitem id="ini_URIQA_Fingerprint">
+    <formalpara>
+	<title>Fingerprint = unique fingerprint string of the server or group of identical servers, no default value</title>
+	<para>Do not use this without an explicit need, to let server configure itself. Please refer to <link linkend="uriqainifile">detailed description</link> before use.</para>
+    </formalpara>
+</listitem>
+			</itemizedlist>
+		</sect4>
+		<sect4 id="ini_Replication">
+			<title>[Replication]</title>
+			<para>
+The replication section sets the transactional replication parameters
+for the server.
+</para>
+			<itemizedlist mark="dash">
+				<listitem id="ini_Replication_ServerEnable">
+					<formalpara>
+						<title>ServerEnable=0/1</title>
+						<para>A boolean parameter controlling whether a Virtuoso can or cannot act as a transactional replication publisher.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Replication_ServerName">
+					<formalpara>
+						<title>ServerName = log1</title>
+						<para>
+This identifies the server instance.  The entries in SYS_REPL_ACCOUNTS where SERVER equals
+this name are considered locally published accounts.  This is the value returned by repl_this_server () SQL
+function.
+</para>
+					</formalpara>
+				</listitem>
+<!-- deprecated in favour of above
+				<listitem id="ini_Replication_Server">
+					<formalpara>
+						<title>Server = 1</title>
+						<para>
+This is required in order for this instance to publish transactionally replicated data.
+</para>
+					</formalpara>
+				</listitem>
+-->
+				<listitem id="ini_Replication_QueueMax">
+					<formalpara>
+						<title>QueueMax = 50000</title>
+						<para>
+This controls how much synchronized transactional subscribers may fall behind before
+being disconnected.  This controls how much memory the server will use to buffer undelivered
+replication casts.  If the queue exceeds this byte amount subscribers are disconnected and
+must request re-synchronization.  The byte count refers to the total length of the replay records
+being buffered.  The actual memory usage is somewhat greater.
+</para>
+					</formalpara>
+				</listitem>
+			</itemizedlist>
+		</sect4>
+		<sect4 id="ini_Mono">
+			<title>[Mono]</title>
+			<itemizedlist mark="dash">
+				<listitem id="ini_Mono_MONO_ROOT">
+					<formalpara>
+						<title>MONO_ROOT</title>
+						<para>A path to the directory where the Mono system assemblies are
+located.  Usually it is a compile time setting, but the MONO_ROOT overrides it.
+This ini setting overrides the Mono environment variable of the same name.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Mono_MONO_PATH">
+					<formalpara>
+						<title>MONO_PATH</title>
+						<para>A colon separated list of directories where the assemblies are
+located to be found by Assembly.Load (equivalent to MS.NET Global assembly cache).
+This ini setting overrides the Mono environment variable of the same name.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Mono_MONO_CFG_DIR">
+					<formalpara>
+						<title>MONO_CFG_DIR</title>
+						<para>A path where the 'machine.config' file is to be found while
+            running the ASPX code in Mono.  This ini setting overrides an
+            environment variable of the same name.  This is also usually a Mono
+            compile time default.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Mono_virtclr.dll">
+					<formalpara>
+						<title>virtclr.dll</title>
+						<para>A fully qualified path and filename of the virtclr.dll
+            virtuoso helper assembly.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Mono_MONO_TRACE">
+					<formalpara>
+						<title>MONO_TRACE = Off</title>
+						<para>Mono debug tracing can be enabled by setting this parameter to
+            On.  When tracing is On, Mono debug output with be sent to the Virtuoso
+            debug console.</para>
+					</formalpara>
+				</listitem>
+      </itemizedlist>
+    </sect4>
+		<sect4 id="ini_Client">
+			<title>[Client]</title>
+			<itemizedlist mark="dash">
+				<listitem id="ini_Client_SQL_QUERY_TIMEOUT">
+					<formalpara>
+						<title>SQL_QUERY_TIMEOUT=0</title>
+						<para>This sets the initial value of the SQL_QUERY_TIMEOUT statement option
+in connected clients. The ODBC standard value is 0, meaning indefinite, which is
+impractical in many applications.  This allows overriding the default. The timeout
+is expressed in seconds.  If the client application sets this option in a statement, this default
+is overridden for the statement in question.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Client_SQL_TXN_TIMEOUT">
+					<formalpara>
+						<title>SQL_TXN_TIMEOUT=0</title>
+						<para>This is an ODBC extension option allowing setting a maximum duration
+for a transaction.  0 means that there is no maximum. </para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Client_SQL_PREFETCH_ROWS">
+					<formalpara>
+						<title>SQL_PREFETCH_ROWS=100</title>
+						<para>For a forward only cursor, this option sets the number of rows prefetched at the
+execute and on subsequent fetch requests. A high value will speed up long selects but
+will be a disadvantage if only the first few rows are fetched from a cursor that has a large result set.</para>
+						<para>This should not be confused with the SQL_ROWSET_SIZE setting for scrollable
+cursors.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Client_SQL_PREFETCH_BYTES">
+					<formalpara>
+						<title>SQL_PREFETCH_BYTES=16000</title>
+						<para>This option specifies the maximum number of bytes the server will send as prefetched rows on
+a forward only cursor.  If long rows are being prefetched this will cut off the prefetch after this many
+bytes even if the number of rows is less than SQL_ROWSET_SIZE.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Client_SQL_NO_CHAR_C_ESCAPE">
+					<formalpara>
+						<title>SQL_NO_CHAR_C_ESCAPE=0</title>
+						<para>This options is 0 by default and can be either 1 or 0.  This option controls Virtuoso's interpretation of
+the backslash in PL text which is normal interpreted as escaping rather than literal.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Client_SQL_UTF8_EXECS">
+					<formalpara>
+						<title>SQL_UTF8_EXECS = 0</title>
+<para>Setting SQL_UTF8_EXECS = 1 enables UTF-8 identifier storage and retrieval, whereas
+setting SQL_UTF8_EXECS = 0 disables it. The default setting is 0: disabled for
+backwards compatible.  See the <link linkend="wideidentifiers">Wide Character Identifiers</link>
+section for more information</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Client_SQL_BINARY_TIMESTAMP">
+					<formalpara>
+						<title>SQL_BINARY_TIMESTAMP = 1</title>
+<para>When SQL_BINARY_TIMESTAMP is set to 1 Virtuoso will describe all
+TIMESTAMP columns as SQL_BINARY.  If it is set to 0 then Virtuoso will report the
+TIMESTAMP columns as SQL_TIMESTAMP</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Client_SQL_NO_SYSTEM_TABLES">
+					<formalpara>
+						<title>SQL_NO_SYSTEM_TABLES = 0</title>
+<para>This setting can be used to prevent SQLTables from returning system tables.
+The default value of this setting is 0, which is allow system tables to be
+returned in the normal way.  Setting this to 1 will prevent system tables
+from being returned from SQLTables.  The client can also issue a
+"set SQL_NO_SYSTEM_TABLE = 1/0" statement to set this in-connection.</para>
+					</formalpara>
+				</listitem>
+			</itemizedlist>
+		</sect4>
+		<sect4 id="ini_AutoRepair">
+			<title>[AutoRepair]</title>
+			<itemizedlist mark="dash">
+				<listitem id="ini_AutoRepair_BadParentLinks">
+					<formalpara>
+						<title>BadParentLinks=0</title>
+						<para>As a result of an internal error in the database the physical integrity of references may
+be lost.  Enabling this option causes the database to automatically repair such faults without
+having to go through a crash dump plus restore.  A value of 0 should be normally used.</para>
+					</formalpara>
+				</listitem>
+				<!-- listitem id="ini_AutoRepair_BadDTP">
+					<formalpara>
+						<title>BadDTP=0</title>
+						<para>This option should never be enabled unless instructed by support.</para>
+					</formalpara>
+				</listitem -->
+			</itemizedlist>
+		</sect4>
+		<sect4 id="ini_VDB">
+			<title>[VDB]</title>
+			<itemizedlist mark="dash">
+				<listitem id="ini_VDB_ArrayOptimization">
+					<formalpara>
+						<title>ArrayOptimization=0/1</title>
+						<para>Boolean parameter which allows the Virtuoso VDB to use Array parameters if the remote data source supports these.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_VDB_UseMTS">
+				<formalpara><title>UseMTS = 0</title>
+				<para>This parameter turns on/off MTS support in
+                            Virtuoso. It is applicable to windows multithreaded
+                            version of the Virtuoso server only.</para>
+				</formalpara>
+				</listitem>
+				<listitem id="ini_VDB_NumArrayParameters">
+					<formalpara>
+						<title>NumArrayParameters</title>
+						<para>Specifies a size of the parameter batch used by the VDB (default = 10)</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_VDB_VDBDisconnectTimeout">
+					<formalpara>
+						<title>VDBDisconnectTimeout</title>
+						<para>The time (in seconds) after which a VDB connection is considered timed-out and closed. Default : 1000</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_VDB_VDBOracleCatalogFix">
+					<formalpara>
+						<title>VDBOracleCatalogFix=0/1</title>
+						<para>This setting can be enabled to improve
+compatibility with the MS Oracle Driver which has problems with mixed case table names
+in catalog calls.</para>
+						<para>Boolean parameter : allows a special mode for
+the ORACLE ODBC drivers which do not return correct catalog data for mixed case tables.  When
+this is on and the return from the catalog functions is empty, then a
+Catalog function is issued to take the same catalog data and the result
+is filtered on the client side.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_VDB_AttachInAutoCommit">
+					<formalpara>
+						<title>AttachInAutoCommit</title>
+						<para>An boolean parameter controlling whether the VDB Catalog functions called
+while attaching a table will be called in AutoCommit mode (required by some Sybase drivers).</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_VDB_NumArrayParameters">
+					<formalpara>
+						<title>NumArrayParameters=10</title>
+						<para></para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_VDB_ReconnectOnFailure">
+					<formalpara>
+						<title>ReconnectOnFailure=0 [1|0]</title>
+						<para>The default setting of 0 instructs
+the VDB layer to return underlying DB errors to the client rather than automatically
+reconnecting without reporting the error, which would be setting 1.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_VDB_KeepConnectionOnFixedThread">
+					<formalpara>
+					    <title>KeepConnectionOnFixedThread=1 [0|1|2|4|8]</title>
+					    <para>The default option is 1, this forces the VDB to map
+						a single thread to each ODBC session in the VDB rather than
+						multiple threads.  Some ODBC drivers  expect that calls concerning
+						a particular connection all take place  on one thread.
+						For example, the Oracle 8.xx ODBC driver can produce
+						flaky crashes if this option is not set.
+					    </para>
+					    <para>0 - If a second request comes while a thread
+						is processing the epilogue or previous request  for
+						same connection the second request is scheduled for
+						the same thread. This is called burst mode.
+						Once this mode is active all requests on this connection
+						will be processed in the same thread. until there is a break
+						at delay more than  'PrpcBurstTimeoutMsecs' elapces
+						between ending the last and recieving the next in same
+						connection. This break in activity return the thread to
+						the thread pool. The burst mode optimization saves thread
+						switching time and may improve performance by up to 30% in
+						situations  involving short requests immediately
+						following each other.
+					    </para>
+					    <para>"ForcedFixedThread" mode (4).
+						This is the same as VDBFixedThread mode,
+						except that the thread enters this  state immediately on
+						connection (as opposed to doing that on the first VDB activity).
+						Otherwise the scheduling stays the same as in VDB FixedThread.
+					    </para>
+					    <para>"Forced Burst" mode (8). When a connection is initially
+						made it's added to the select thread for monitoring.
+						When an RPC comes in it causes the
+						select thread to take the connection out of the select thread
+						and assign that connection to designated worker thread.
+						That thread from now on will read the data comming in from that
+						connection directly (not depending on the select thread to
+						detect the incoming data and wake the worker thread up).
+						That mode saves the thread switch done handling each RPC
+						(from the select thread to the worker thread).
+						When the connection terminates the thread is unbound from
+						it and returned to it's default idle state.
+						If an lengthy RPC is being processed the server will
+						switch the thread from burst mode to default mode while
+						running the RPC, so the asyncronous cancelation
+						requests can be processed.</para>
+					    <para>
+						To disable ever  going to burst mode, this  option can be set to 2
+					    </para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_VDB_KeepConnectionOnFixedThread">
+					<formalpara>
+					    <title>PrpcBurstTimeoutMsecs=100 (miliseconds)</title>
+					    <para>RPC burst mode timeout in miliseconds. (see above)</para>
+					</formalpara>
+				    </listitem>
+				<listitem id="ini_VDB_SerializeConnect">
+					<formalpara>
+						<title>SerializeConnect=0 [1|0]</title>
+						<para>When enabled causes Virtuoso to wrap
+SQLAllocConnect/SQLConnect calls sequence in a mutex, thus preventing abnormal program
+exits when there are a large number of connection requests to the VDB.  Certain ODBC drivers have been noted to produce flaky errors when a large number of threads is concurrently inside one of the ODBC connect calls.. </para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_VDB_SkipDMLPrimaryKey">
+					<formalpara>
+						<title>SkipDMLPrimaryKey=0 [1|0]</title>
+						<para>This setting controlls SQL compilation (not execution) for conditions
+            where rows in a local table are used to determine rows of a remote table
+            to be deleted (e.g. delete from rmt1 where rmc1 = 12 and rmc2 in (select lc1 from lt1))
+            where the remote table was linked without a Primary Key primary key
+            specified.  Normally the primary key is used, even when not in the
+            original select select, to identify the rows to be deleted.  When the
+            primary key is false or not available and SkipDMLPrimaryKey = 1
+            then the original where clause will be used instead.</para>
+					</formalpara>
+				</listitem>
+
+				<listitem id="ini_VDB_RemotePKNotUnique">
+					<formalpara>
+						<title>RemotePKNotUnique=0 [1|0]</title>
+						<para>This option controls the SQL compiler ability to do some optimizations
+						when it knows it will receive 1 row from a remote table (using the applicable WHERE clause).
+						In some cases the remote is not providing any info about a primary key (or is providing
+            wrong data for the primary keys and unique indices of a table) through ODBC API and
+            the Virtuoso SQL optimizer may get fooled into thinking that a given SQL query
+            over a remote table will return no more than 1 row.
+            To avoid that turn on the above parameter to stop the compiler from doing that optimizations.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_VDB_UseGlobalPool">
+					<formalpara>
+						<title>UseGlobalPool=0 [1|0]</title>
+						<para>This option controls the aggregation point of the VDB connection pools.
+						    When it is off (=0, the default) the VDB connections that are no longer needed after transaction end
+						    are collected server-side in a per-user connection cache. This (together with the
+						    <link linkend="ini_VDB_KeepConnectionOnFixedThread">KeepConnectionOnFixedThread</link> INI option)
+						    ensures conformance even with older ODBC drivers that require that connections must be used
+						    only within the OS thread that initiated them. This however may result in somewhat low reuse rate
+						    for the pooled connections. That's why when this option is 1 (On) the connections are stored
+						    in a server-side per-DSN connection cache.  Keep in mind that this may not work with all the ODBC
+						    drivers, but it may provide lower ratio between virtuoso client connections and VDB-to-remote DBMS
+						    connections, thus requiring smaller number of active connections on the remotes and faster
+						    execution of VDB operations.</para>
+					</formalpara>
+				</listitem>
+      </itemizedlist>
+  </sect4>
+		<sect4 id="ini_Ucms">
+			<title>[Ucms]</title>
+			<itemizedlist mark="dash">
+				<listitem id="ini_Ucms_UcmPath">
+					<formalpara>
+						<title>UcmPath</title>
+						<para>
+String parameter which specifies the path where UCM files are located.
+If this parameter is not specified, UCM files cannot be loaded.
+</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Ucms_Ucm">
+					<formalpara>
+						<title>Ucm1, Ucm2,... Ucm99</title>
+						<para>
+Every UcmN parameter specifies one UCM file to load.
+The value of UcmN is a pair of comma delimited strings.
+The first string is a name of the UCM file to load, (relative to the path
+specified in UcmPath), the second string is a name of the encoding as it was
+used by the server.  E.g. Ucm1 = java-Cp933-1.3-P.ucm,Cp933 will load the
+encoding from the file java-Cp933-1.3-P.ucm and associate it with the
+identifier 'Cp933'.  You can register one encoding with more than one
+name, if they are delimited by '|' (with no white spaces in the string).
+e.g. Ucm2 = java-Cp949-1.3-P.ucm,Cp949|Korean will load the encoding from
+the file java-Cp949-1.3-P.ucm and associate it with two identifiers,
+'Cp949' and 'Korean'.  See <link linkend="ucmencodings">UCM
+Encodings</link> for more details.</para>
+					</formalpara>
+				</listitem>
+			</itemizedlist>
+  </sect4>
+		<sect4 id="ini_ZeroConfig">
+			<title>[Zero Config]</title>
+			<itemizedlist mark="dash">
+				<listitem id="ini_ZeroConfig_ServerName">
+					<formalpara>
+						<title>ServerName</title>
+						<para>Name used to advertise the Virtuoso ODBC service details in ZeroConfig.
+            This is the name that will be shown to clients amongst other ZeroConfig
+            datasources.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_ZeroConfig_ServerDSN">
+					<formalpara>
+						<title>ServerDSN</title>
+						<para>An ODBC style connect string to preset the values of the
+            parameters when the ODBC service offered by this server is
+            selected by the Virtuoso ZeroConfig enabled clients.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_ZeroConfig_SSLServerName">
+					<formalpara>
+						<title>SSLServerName</title>
+						<para>Name used to advertise the Virtuoso ODBC SSL encrypted
+            service details in ZeroConfig.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_ZeroConfig_SSLServerDSN">
+					<formalpara>
+						<title>SSLServerDSN</title>
+						<para>An ODBC style connect string to preset the values of the
+            parameters when the ODBC SSL encrypted service offered by this
+            server is selected by the Virtuoso ZeroConfig enabled clients.</para>
+					</formalpara>
+				</listitem>
+			</itemizedlist>
+      <tip><title>See Also:</title>
+      <para>The <link linkend="rendezvous">Zero Config</link> section.</para></tip>
+  </sect4>
+
+		<sect4 id="ini_Plugins">
+			<title>[Plugins]</title>
+			<itemizedlist mark="dash">
+				<listitem id="ini_Plugins_LoadPath">
+					<formalpara>
+						<title>LoadPath = /home/virtuoso/hosting</title>
+						<para>The directory containing shared objects/libraries
+						for use as Virtuoso VSEI plugins.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Plugins_Load">
+					<formalpara>
+						<title>Load&lt;number&gt; = &lt;module type&gt;, &lt;module name&gt;</title>
+						<para><computeroutput>&lt;number&gt;</computeroutput> is the
+						module load number, required and starting with 1.
+						<computeroutput>&lt;module type&gt;</computeroutput>
+						specifies the type of module that is to be loaded, and
+						hence how Virtuoso is to use it.  So far only the "Hosting" type exists.
+						<computeroutput>&lt;module name&gt;</computeroutput> is
+						the file name of the modules shared library or object.
+						(e.g. <computeroutput>Load1 = Hosting, hosting_perl.so</computeroutput>)</para>
+					</formalpara>
+				</listitem>
+			</itemizedlist>
+			<tip><title>See Also:</title>
+			  <para><link linkend="vseiplugins">VSEI Plugins</link></para></tip>
+  </sect4>
+
+		<sect4 id="ini_Striping">
+			<title>[Striping]</title>
+
+			<itemizedlist mark="dash">
+				<listitem id="ini_Striping_Segment">
+					<formalpara>
+						<title>Segment&lt;number&gt; = &lt;size&gt;, &lt;stripe file name&gt; [, &lt;stripe file name&gt; .. ]</title>
+						<para>&lt;number&gt; must be ordered from 1 upwards; The &lt;size&gt;
+            is the size of the segment which is equally divided across all stripes comprising
+            the segment.</para>
+					</formalpara>
+        </listitem>
+      </itemizedlist>
+
+      <para>This section is only effective when <computeroutput>Striping = 1</computeroutput> is
+      set in the <computeroutput>[Database]</computeroutput> section.  When
+      striping is enabled the Virtuoso database spans multiple segments where each
+      segment can have multiple stripes.</para>
+
+      <para>Striping can be used to distribute the database across multiple locations
+      of a file system for performance.  Segmentation can be used for expansion or
+      dealing with file size limitations.  To allow for database growth when a file
+      system is near capacity or near the OS file size limitation, new segments can
+      be added on the same or other file systems.</para>
+
+      <para>Striping only has a potential performance benefit when striped across
+      multiple devices.  Striping on the same file system is needless and unlikely to
+      alter performance, however, multiple segments do provide convenience and
+      flexibility as described above.  Striping across partitions on the same device is
+      likely to reduce performance by causing high unnecessary seek times on the
+      physical disk.</para>
+
+      <para>Database segments are pre-allocated as defined.  This can reduce the
+      potential for file fragmentation which could also provide some performance
+      benefit.</para>
+
+      <para>Virtuoso striping alone does not allow for any fault tolerance.  This is
+      best handled at the I/O layer or by the operating system.  File system RAID with
+      fault-tolerant striping defined should be used to host the Virtuoso files if
+      striping based protection is desired.</para>
+
+      <para>The segments are numbered, their segment &lt;number&gt; must
+      be specified in order starting with segment1.</para>
+
+      <para>The &lt;size&gt; is the total size of the segment which is that will be
+      divided equally across all stripes comprising  the segment.  Its specification
+      can be in gigabytes (g), megabytes (m), kilobytes (k) or in
+      database blocks (b) the default.</para>
+
+      <note><title>Note:</title>
+      <para>The segment size must be a multiple of the database page size which
+      is currently 8k.  Also, the segment size must be divisible by the number of
+      stripe files contained in the segment.</para></note>
+
+      <para>Segments can be added to a database, however once defined they
+      should never be altered.  Databases that were created without striping
+      cannot automatically be restarted with striping.  You can convert a non-striping
+      database to striping by dumping the contents of the database to a transaction file
+      and replaying it with striping enabled.  An on-line backup made with backup_online () can be restored on a database with a different striping configuration as long as the total number of pages is no less than the number of pages of the backed up database.
+</para>
+<para>Striping can be useful for the temprary objects database if large hash join temporary spaces or such are expected.    This is enabled by the Striping setting in the Temp Database section of the ini file.
+The stripes will be declared in the TempStriping section.
+</para>
+
+
+      <tip><title>See Also:</title>
+      <para><link linkend="dbrebuild">Rebuilding A Database</link> in the Backup section.</para></tip>
+
+    </sect4>
+</sect3>
+
+<sect3 id="sampleinifile">
+<title>Sample Configuration File (&quot;virtuoso.ini&quot;)</title>
+		<para>Following is the text of the sample virtuoso.ini file that comes with the distribution.
+</para>
+
+		<programlisting>
+;
+;  virtuoso.ini
+;
+;  Configuration file for the OpenLink Virtuoso VDBMS Server
+;
+;
+;  Database setup
+;
+[Database]
+DatabaseFile		= virtuoso.db
+TransactionFile		= virtuoso.trx
+ErrorLogFile		= virtuoso.log
+ErrorLogLevel   	= 7
+FileExtend      	= 200
+Striping        	= 0
+; LogSegments		= 1
+; crashdump_start_dp	= 0
+; crashdump_end_dp	= 0
+; Log1			= log1.trx
+;
+;  Server parameters
+;
+[Parameters]
+ServerPort         	= 1111
+ServerThreads      	= 10
+CheckpointInterval 	= 60
+CheckpointSync 		= 2
+NumberOfBuffers    	= 2000
+MaxDirtyBuffers    	= 1200
+MaxCheckpointRemap 	= 2000
+PrefixResultNames	= 0
+CaseMode           	= 1
+;MinAutoCheckpointSize	= 4000000
+AutoCheckpointLogSize	= 40000000
+CheckpointAuditTrail		= 1
+
+[HTTPServer]
+ServerPort = 1122
+ServerRoot = ../vsp
+ServerThreads = 2
+MaxKeepAlives = 10
+KeepAliveTimeout = 10
+MaxCachedProxyConnections = 10
+ProxyConnectionCacheTimeout = 15
+DavRoot = DAV
+
+[Replication]
+ServerName = log1
+Server = 1
+QueueMax = 50000
+
+[Client]
+SQL_QUERY_TIMEOUT 	= 0
+SQL_TXN_TIMEOUT		  = 0
+SQL_PREFETCH_ROWS		= 100
+SQL_PREFETCH_BYTES	= 16000
+
+[AutoRepair]
+BadParentLinks	    = 0
+BadDTP			        = 0
+
+;[Ucms]
+;UcmPath = /ucm
+;Ucm1 = java-Cp933-1.3-P.ucm,Cp933
+;Ucm2 = java-Cp949-1.3-P.ucm,Cp949|Korean
+;Ucm3 = java-ISO2022KR-1.3-P.ucm,ISO2022KR|ISO2022-KR
+;
+;  Striping setup
+;
+;  These parameters have only effect when Striping is set to 1 in the
+;  [Database] section, in which case the DatabaseFile parameter is ignored.
+;
+;  With striping, the database spans multiple segments
+;  where each segment can have multiple stripes.
+;
+;  Format of the lines below:
+;    Segment&lt;number&gt; = &lt;size&gt;, &lt;stripe file name&gt; [, &lt;stripe file name&gt; .. ]
+;
+;  &lt;number&gt; must be ordered from 1 up.
+;
+;  The &lt;size&gt; is the total size of the segment which is equally divided
+;  across all stripes comprising  the segment. Its specification can be in
+;  gigabytes (g), megabytes (m), kilobytes (k) or in database blocks
+;  (b, the default)
+;
+;  Note that the segment size must be a multiple of the database page size
+;  which is currently 8k. Also, the segment size must be divisible by the
+;  number of stripe files constituting the segment.
+;
+;  The example below creates a 200 meg database striped on two segments
+;  with two stripes of 50 meg and one of 100 meg.
+;
+;  You can always add more segments to the configuration, but once
+;  added, do not change the setup.
+;
+[Striping]
+Segment1	= 100M, db-seg1-1.db, db-seg1-2.db
+Segment2	= 100M, db-seg2-1.db
+</programlisting>
+</sect3>
+</sect2>
+
+	<sect2 id="COMMANDLINE">
+		<title>Server Startup Command Line Options</title>
+		<sect3 id="SERVER">
+			<title>Virtuoso Server</title>
+			<para>
+This section presents the command line switches of the Virtuoso
+server executable.  Depending on the model and virtual database middleware the
+server will have different names, all starting with virtuoso-.  All these however
+have the same options for UNIX systems and slightly different for Windows platform.
+</para>
+
+<para>
+    on Windows platform are available following server command line options:
+</para>
+<programlisting><![CDATA[
+Usage:
+  virtuoso-odbc-t.exe [-clnCbDARf---dSIMKmrd] [+configfile arg] [+licensefile arg]
+                  [+no-checkpoint] [+checkpoint-only] [+backup-dump]
+                  [+crash-dump] [+crash-dump-data-ini arg]
+                  [+restore-crash-dump] [+foreground] [+pwdold arg]
+                  [+pwddba arg] [+pwddav arg] [+debug] [+service arg]
+                  [+instance arg] [+mode arg] [+dumpkeys arg] [+manual]
+                  [+restore-backup arg] [+debug]
+  +configfile            specify an alternate configuration file to use,
+			or a directory where virtuoso.ini can be found
+  +licensefile           specify an alternate license file to use,
+			or a directory where virtuoso.ini can be found
+  +no-checkpoint         do not checkpoint on startup
+  +checkpoint-only       exit as soon as checkpoint on startup is complete
+  +backup-dump           dump database into the transaction log, then exit
+  +crash-dump            dump inconsistent database into the transaction log,
+			then exit
+  +crash-dump-data-ini   specify the DB ini to use for reading the data to dump
+  +restore-crash-dump    restore from a crash-dump
+  +foreground            run in the foreground
+  +pwdold                Old DBA password
+  +pwddba                New DBA password
+  +pwddav                New DAV password
+  +debug                 allocate a debugging console
+  +service               specify a service action to perform
+  +instance              specify a service instance to start/stop/create/delete
+  +mode                  specify mode options for server startup (onbalr)
+  +dumpkeys              specify key id(s) to dump on crash dump (default : all)
+  +manual                specify when create a service to make it for manual startup
+  +restore-backup        restore from online backup
+  +debug                 Show additional debugging info
+
+The argument to the +service option can be one of the following options
+  start         start a service instance
+  stop          stop a service instance
+  create        create a service instance
+  screate       create a service instance without deleting the existing one
+  delete        delete a service instance
+  list          list all service instances
+]]></programlisting>
+<para>
+    The below are switches for server for UNIX platforms:
+</para>
+<programlisting><![CDATA[
+Usage:
+  virtuoso-iodbc-t [-fclnCbDARwMKr---d] [+foreground] [+configfile arg]
+                   [+licensefile arg] [+no-checkpoint] [+checkpoint-only]
+                   [+backup-dump] [+crash-dump] [+crash-dump-data-ini arg]
+                   [+restore-crash-dump] [+wait] [+mode arg] [+dumpkeys arg]
+                   [+restore-backup arg] [+pwdold arg] [+pwddba arg]
+                   [+pwddav arg] [+debug]
+  +foreground            run in the foreground
+  +configfile            use alternate configuration file
+  +licensefile           use alternate license file
+  +no-checkpoint         do not checkpoint on startup
+  +checkpoint-only       exit as soon as checkpoint on startup is complete
+  +backup-dump           dump database into the transaction log, then exit
+  +crash-dump            dump inconsistent database into the transaction log, then exit
+  +crash-dump-data-ini   specify the DB ini to use for reading the data to dump
+  +restore-crash-dump    restore from a crash-dump
+  +wait                  wait for background initialization to complete
+  +mode                  specify mode options for server startup (onbalr)
+  +dumpkeys              specify key id(s) to dump on crash dump (default : all)
+  +restore-backup        restore from online backup
+  +pwdold                Old DBA password
+  +pwddba                New DBA password
+  +pwddav                New DAV password
+  +debug                 Show additional debugging info
+]]></programlisting>
+
+			<para>
+The <emphasis>+crash-dump</emphasis> option will make use of the segmented log
+defined in virtuoso.ini for storing the recovery log.  See
+<link linkend="vdbrecovery">Crash Recovery</link> and virtuoso.ini below for
+more information.  The other options will not use the segmented log.
+</para>
+			<para>
+The <emphasis>+restore-crash-dump</emphasis> option will alter the server
+startup sequence so that the recovery log produced by +crash-dump will
+be re-played correctly.
+</para>
+  <para>
+The <emphasis>+mode</emphasis> option can be a combination of the following letters:
+</para>
+<simplelist>
+<member><emphasis>o</emphasis> - only open the database and define the SYS_KEYS, SYS_COLS, SYS_KEY_PARTS, SYS_CHARSETS AND SYS_COLLATIONS system tables.</member>
+<member><emphasis>n</emphasis> - leaves out the initialization of the system tables.</member>
+<member><emphasis>b</emphasis> - do not process anything except the transaction log and system tables when restoring a crash dump (+restore-crash-dump).</member>
+<member><emphasis>a</emphasis> - leaves out the initialization of the replication, users, compilation or stored and system procedures, as well
+as the caching of the grants.</member>
+<member><emphasis>l</emphasis> - write only the schema tables in the backup or crash dump.</member>
+<member><emphasis>r</emphasis> - don't do the complete initialization (useful for performing a crash dump).</member>
+</simplelist>
+  <para>
+On Unix platforms the executable will detach itself from the console and run in the background
+as a daemon unless the <emphasis>+foreground</emphasis> switch is specified.
+</para>
+			<para>
+For Windows NT and Windows 2000, the Virtuoso server will normally be installed
+as a Windows service and can be started from the Control Panel or
+automatically at system startup.
+</para>
+  <para>
+	Ordinarily the Windows service will be a system process that runs in the background.
+	If you want the Virtuoso service on Windows to allocate a debugging
+	console the you can use the <emphasis>+debug</emphasis> (-d) switch.
+	This switch is only applicable to starting a service.
+	</para>
+	<para>
+	Virtuoso on Windows can be run directly from the command line using the
+	<emphasis>+foreground</emphasis> (-f) switch.  The server will then start in
+	the foreground of the current "cmd" session.  If this switch is not used
+	then the executable on Windows will assume that you are attempting to start
+	a Virtuoso service.
+	</para>
+	<para>
+	Windows services can be created and removed from the system as required.  The
+	default installation under Windows will create a service by the name:
+	<emphasis>OpenLink Virtuoso VDBMS Server</emphasis>, and optionally another
+	service with the name <emphasis>OpenLink Virtuoso VDBMS Server [demo]</emphasis>.
+	The Demo service is a supplied demonstration database that can be installed.
+	</para>
+	<para>
+	The following options are available to the <emphasis>+service</emphasis>
+	switch for configuring Virtuoso services:
+	</para>
+	<simplelist>The argument to the +service option can be one of the following options
+	  <member><emphasis>start</emphasis> start a service instance</member>
+		<member><emphasis>stop</emphasis> stop a service instance</member>
+		<member><emphasis>create</emphasis> create a service instance</member>
+		<member><emphasis>screate</emphasis> create a service instance without deleting the existing one</member>
+		<member><emphasis>delete</emphasis> delete a service instance</member>
+		<member><emphasis>list</emphasis> list all service instances</member>
+	</simplelist>
+	<para>They are used with the <emphasis>+instance &lt;name&gt;</emphasis>
+	where <emphasis>&lt;name&gt;</emphasis> is the instance name to configure a particular instance.  All
+	instances are listed in the services applet, with their name in square brackets.</para>
+	<para><emphasis>+service list</emphasis> can be used to obtain the list
+	if services that are registered with Windows.</para>
+	<para>For each service listed you can start, stop, or delete the service.</para>
+	<para><emphasis>+service create</emphasis> can be used to create a new service.
+	In this case you also need to specify other start up options that would be
+	associated with the new service entry.  If you were using an alternative
+	configuration file this must be specified using <emphasis>+configfile</emphasis>
+	switch.</para>
+  <note><title>Note:</title>
+  <para>Make sure the Services Control Panel is closed, before attempting to
+  modify services from the command line, otherwise locking may occur.</para></note>
+		</sect3>
+	</sect2>
+
+<!-- ======================================== -->
+
+&rendezvous;
+
+<!-- ======================================== -->
+
+<sect2 id="DBSTAT">
+		<title>Server Status Monitoring</title>
+		<para>The database status report is divided into 6 sections:</para>
+		<simplelist>
+			<member>Server</member>
+			<member>Database</member>
+			<member>Locks</member>
+			<member>Clients</member>
+			<member>Replication</member>
+			<member>Index Usage</member>
+		</simplelist>
+		<sect3 id="Server">
+			<title>Server</title>
+			<para>
+This section shows how many connections are open and how many threads
+the process has and how many are running at the present time. This also
+displays the number of requests that have been received but are not yet
+running on any thread.
+</para>
+		</sect3>
+		<sect3 id="Database">
+			<title>Database</title>
+			<screen>
+
+  File size 203161600, 24800 pages, 259 free.
+  7000 buffers, 6987 used, 3884 dirty 8 wired down, repl age 8251 .
+  Disk Usage: 14246 reads avg 6 msec, 74% read last  10 s, 14457 writes,
+    4 read ahead, batch = 5.
+Gate:  2729 2nd in reads, 0 gate write waits, 3372547 in while read 0 busy scrap. 
+Log = wi.log, 9851835 bytes
+14950 pages have been changed since last backup (in checkpoint state)
+Current backup timestamp: 0x0000-0x00-0x00
+Last backup date: unknown
+Clients: 18 connects, max 17 concurrent, 1024 licensed
+RPC: 54441 calls, 17 pending, 17 max until now, 0 queued, 53988 burst reads (99%), 0 second 
+Checkpoint Remap 7646 pages, 0 mapped back. 0 s atomic time.
+    DB master 24800 total 259 free 7646 remap 3415 mapped back
+   temp  200 total 196 free
+
+</screen>
+			<para>
+The status consists of the following items:
+</para>
+			<formalpara>
+				<title>File size:</title>
+				<para>The database file size in bytes or 0 if the database consists
+of statically allocated files. The total number of 8K database pages follows, then
+the number of free pages. The number of buffers shown the total count
+of 8K file cache buffers, followed by the number of used buffers and
+the number of buffers that are dirty at the time. The wired down count
+is normally zero but can be transiently other if pages are wired down
+for processing by threads in the server.
+</para>
+			</formalpara>
+			<formalpara>
+				<title>Disk Usage:</title>
+				<para>Shows the cumulative total number of reads and writes
+and the average length of time spent inside the read system call for
+the database files.</para>
+				<para>
+The percentage is the percentage of the real time spent inside read
+between this status report and the previous status report. This may exceed
+100% if several reads are taking place concurrently on different stripes
+in a multi-file database.
+</para>
+			</formalpara>
+			<formalpara>
+				<title>The Gate:</title>
+				<para>Lists concurrent events. The <emphasis>2nd in read</emphasis> is
+the count of concurrent requests for the same page, the
+<emphasis>gate write waits</emphasis> is the count of times a modify operation had to wait for
+exclusive access to a page being read by another thread, the <emphasis>in while read</emphasis>
+is the count of file cache hits that have taken place while a read system
+call was in progress on another thread.
+</para>
+			</formalpara>
+			<formalpara>
+				<title>Databases</title>
+				<para>
+Thus section shows the count of pages, free pages, checkpoint remap and mapped back for the main database and the space for temporary data such as sort results and hash indices.
+The page count is the total size, the free count is the count of free pages, the  checkpoint remap is the count of pages that occupy two pages in checkpoint space instead of one, the mapped back count is the number of pages that will   return to their original place in checkpint space at the next checkpoint.  Understanding these is not necessary. 
+</para>
+			</formalpara>
+			<tip>
+				<title>See:</title>
+				<para>The Disk Configuration section for a discussion of checkpoint remapping.</para>
+			</tip>
+		</sect3>
+		<sect3 id="Locks">
+			<title>Locks</title>
+			<para>
+The lock section shows various locking statistics accumulated since the
+server was started. The deadlock count is divided into deadlocks caused
+by a situation where several transactions read a page and one wants to
+get write access and all other deadlock situations. The first is called
+2r1w deadlock in the report.
+</para>
+<para>
+
+The lock section also shows the total number of threads running,
+i.e. engaged in performing some operation for a SQL or web client.
+The number of threads waiting is the number of running threads that
+are presently waiting for a lock.  The number of threads in vdb is the
+number of threads engaged in remote database operations or other
+'slow' I/O, such as access to outside HTTP or SOAP services.
+
+</para>
+			<para>
+All locks currently in effect are listed with the owners (a) and possibly
+waiting transactions. The transactions are named after their client. A
+log or replication replay transaction is here named &apos;INTERNAL&apos;.
+</para>
+		</sect3>
+		<sect3 id="Clients">
+			<title>Clients</title>
+			<para>
+Each connected client is listed with the number of bytes sent and received
+from the client. The transaction status is either PENDING for OK or
+BLOWN OFF or DELTA ROLLED BACK for a transaction killed by deadlock or
+timeout. The locks owned by the transaction are listed following the
+status. IE means exclusive and IS shared lock.
+</para>
+		</sect3>
+		<sect3 id="Replication">
+			<title>Replication</title>
+			<para>
+This section shows the server in question and a list of replication
+accounts either provided or received by this server. Accounts where
+the server name (left column) is the same as the server name are those
+provided by this.
+</para>
+			<para>
+The columns are server name, account name, last transaction number and
+status. The status is OFF for a local account or a replicated account
+where the remote is not available. It is SYNCING if a resync is in
+progress, IN SYNC if the account is up to date or REMOTE DISCONNECTED if
+there was a connection to a remote party which subsequently disconnected.
+</para>
+		</sect3>
+		<sect3 id="indexusage">
+			<title>Index Usage</title>
+			<para>
+This part of the report summarizes the database&apos;s access statistics.
+The output is a table with a row for each index in the database. Each
+row is composed of the following columns:</para>
+			<screen>
+Table		The name of the table
+Index		The name of the index. Same as the table for primary key.
+Touches		The number of touches since startup. Each time the database
+		engine looks at an entry of the index is counted as a touch.
+		Not all touched entries are selected. For instance if the
+		engine scans a table with non-indexed selection criteria it
+		will touch each row but might select none.
+Reads		The number of disk reads caused by reading this index.
+%Miss		The percentage of touches that required a read. This can be
+		over 100% since getting one entry may required more than one
+		read if the top levels of the index are not in memory.
+Locks		The number of times a lock is set on an entry of the index.
+Waits		The number of times the engine has to wait for another
+		transaction to finish in order to set a lock on this index.
+%W		The percentage of waits of all locks set.
+</screen>
+			<para>
+In interactive SQL
+</para>
+			<screen>
+SQL&gt; status();
+</screen>
+			<para>Will print out the report.</para>
+		</sect3>
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="oemrelabelling">
+	<title>Re-labelling Server Executable on Win32 Platforms</title>
+	<para>
+The Virtuoso Service name can be altered using the key <emphasis>Win32ServiceName</emphasis> in the
+<emphasis>Parameters</emphasis> section.  The default name is 'OpenLink Virtuoso VDBMS Server'
+</para>
+
+	<para>
+To change the name of services:
+</para>
+
+<simplelist>
+<member>stop the service</member>
+<member>delete the service</member>
+<member>change the name in file virtuoso.ini</member>
+<member>create the service</member>
+<member>start the service</member>
+</simplelist>
+
+<para>Services with old names must be deleted before creating service with the new name, i.e. with the
+Win32ServiceName setting set to the current name of the service.
+</para>
+<para>
+The name displayed in the ODBC Administrator, Setup and Configuration dialogs is taken from the driver section in the ODBCINST.
+This can be directly edited in the registry using the regedt32 Windows utility, or a registry import file can be created which can be
+applied by simply double-clicking the .reg file.  Always exercise extreme caution when making changes to the registry.
+</para>
+</sect2>
+
+<sect2 id="dbsrcsecurity">
+<title>Transport Level Security</title>
+
+<!--
+  <sect3 id="srvadmusrgrpman"><title>User &amp; Groups Management</title>
+  </sect3>
+-->
+
+  <sect3 id="srvadmencryption"><title>Encryption</title>
+
+    <para>
+Virtuoso has the ability to encrypt it's CLI network connections using SSL.
+The server listens on a separate port for SSL CLI connections and handles them just as
+the normal CLI connections, vut now providing transport level security.
+    </para>
+
+  <sect4 id="srvsidesupport"><title>Server-side Support</title>
+
+    <para>
+Server side secure connections utilizes three parameters in the [Parameters] section of the virtuoso.ini:
+  </para>
+
+    <simplelist>
+      <member><emphasis>SSLServerPort</emphasis> - Specifies the port on which the server listens for incoming SSL CLI requests.</member>
+      <member><emphasis>SSLCertificate</emphasis> - The SSL certificate to use (same meaning as the SSLCertificate in HTTPServer section)</member>
+      <member><emphasis>SSLPrivateKey</emphasis> - The server's private key (same meaning as the SSLCertificate in HTTPServer section)</member>
+    </simplelist>
+
+    <para>
+These parameters should be all set in order to enable the SSL CLI server.
+  </para>
+    <para>
+If SSLServerPort is not specified, then the Virtuoso server ignores the other two and does not listen for
+SSL CLI connections.
+  </para>
+    <para>
+If a non-SSL connection is attempted to the SSL server port, the server rejects the connection.
+If an SSL connection is attempted against the non-SSL port the server rejects the connection.
+  </para>
+  </sect4>
+
+  <sect4 id="clisidesupport"><title>Client-side Support</title>
+
+    <para>
+The client does not require any SSL-specific files (like Certificates or Private keys)
+in the SSL connection process.
+  </para>
+
+    <sect5 id="sslnativecli"><title>Native Clients (e.g. ISQL)</title>
+      <para>
+There is an custom ODBC connect option SQL_ENCRYPT_CONNECTION (=5004) supported by the Virtuoso CLI.
+It should be set before issuing the SQLConnect call.  Values are 'NULL' (no encryption - default), '1'
+(encryption with no server X509 certificate checking and no X509 certificate sent to the server) and
+a valid file path to a PKCS#12 certificate file (protected with the same password as the one used
+to log in.  Note that with the iODBC/ODBC clients this connect option is not applicable since the driver
+managers don't cache or pass through the custom ConnectOptions set before connecting to the data source.
+The ISQL has an additional option (-E) to do encrypted connects using the encryption option '1')
+and -X &lt;file&gt; to set the above option to the file supplied.
+    </para>
+    </sect5>
+
+    <sect5 id="sslodbcidbcdrv"><title>ODBC &amp; iODBC Driver</title>
+      <para>
+The drivers support an additional DSN attribute:
+  </para>
+
+<programlisting>
+ENCRYPT=&lt;string&gt;
+</programlisting>
+
+      <para>
+If this attribute is not specified then it defaults to "No".
+    </para>
+      <para>
+It has the same meaning as the SQL_ENCRYPT_CONNECTION  options (see above).
+If this is not specified then it defaults to NULL.
+</para>
+  <para>
+The corresponding iODBC odbc.ini &amp; ODBC Registry DSN attribute name is:
+    </para>
+<programlisting>
+&quot;Encrypt&quot;= &lt;string&gt;
+</programlisting>
+
+      <para>
+The Windows Connect &amp; Setup dialogs have an additional wizard page to configure encryption.
+    </para>
+    </sect5>
+  </sect4>
+  <sect4 id="x509certsupport"><title>X509 Certificate Support</title>
+  <para>
+Virtuoso supports X509 certificate validation: server side for both ODBC and HTTPS
+connections, and client side for the ODBC connections.
+</para>
+  <sect5 id="x509serv"><title>Server Side</title>
+    <para>
+To enable this option there are three new INI file parameters added the HTTPServer section for the HTTPS,
+and the Parameters section for ODBC):
+  </para>
+
+<simplelist>
+  <member><emphasis>X509ClientVerify</emphasis> - Whether the server will require
+X509 certificates from the browsers.  If set to 1 a client should send a X509 certificate which will be
+validated against the server CA list.
+</member>
+
+  <member><emphasis>X509ClientVerifyDepth</emphasis> - Specifies how deep the client certificate
+verification process will traverse the Issuer chain before giving up.  The default value of 0
+means that only verification of the client certificate itself being in the server's CA list is
+performed.  Setting this option to -1 will ignore the depth checks.
+</member>
+
+    <member><emphasis>X509ClientVerifyCAFile</emphasis> - a PEM (base64) file of all the
+X509 certificates of the Certification Authorities (CA) which the server will use for verifying the
+client's client certificate.  A list of these will be sent to the client as a part of the
+SSL handshake so the client will know which certificate to send.
+</member>
+</simplelist>
+</sect5>
+
+  <sect5 id="x509odbcclient"><title>ODBC Client Side</title>
+    <para>
+In order for verification of the server certificate to take place a PKCS#12 file
+should be supplied to the ODBC client.  It will use the CA list in this PKCS#12 to
+verify the server certificate.  It will set the verification depth to -1 (unlimited)
+while performing such a check.
+</para>
+    <para>
+If the server certificate is not verified correctly it will refuse to connect to the server.
+When the ENCRYPT parameter is set to "1" (do SSL without X509 validation) the client will return a
+SQL_SUCCESS_WITH_INFO in SQLConnect/SQLDriverConnect with the Server's certificate subject
+and the verification result as the server will always send it's X509 certificate to the
+client as a part of the SSL connect handshake.
+</para>
+    <para>
+If the PKCS#12 file is supplied the ODBC client will try to open it using the
+login password.  In order for the file to be successfully opened it should be encrypted with
+the same password used for logging in.
+</para>
+    <para>
+Normally when exporting a PKCS#12 file from other programs it will contain only the
+CAs of the Certificate validation chain.  This means that client and server certificates should have
+common CA in their certificate chains in order to be used for ODBC X509 validation.  The
+client certificate from the PKCS#12 file will not take place in the server
+certificate validation process.
+</para>
+
+<tip><title>See Also:</title>
+<para><link linkend="fn_get_certificate_info"><function>get_certificate_info()</function></link></para></tip>
+
+      </sect5>
+    </sect4>
+  </sect3>
+
+<sect3 id="acl"><title>File System Access Control Lists</title>
+	<para>
+Access Control Lists (ACL) are used to restrict file system access.
+</para>
+	<para>
+These lists are maintained in the Virtuoso INI file under the Parameters section with entries such as:
+</para>
+
+<programlisting>
+DirsAllowed = &lt;path&gt; [, &lt;path&gt;]
+DirsDenied = &lt;path&gt; [, &lt;path&gt;]
+
+&lt;path&gt; := &lt;absolute_path&gt; or &lt;relative_path&gt;
+</programlisting>
+
+<note><title>Note:</title>
+<para>A relative path is relative to the servers current working directory.</para></note>
+
+<tip><title>See Also:</title>
+<para><link linkend="VIRTINI">Virtuoso INI File Configuration</link></para></tip>
+
+	<para>
+ACL's work in the following way:
+</para>
+
+<simplelist>
+<member>All paths are converted from relative to absolute paths.</member>
+<member>The path beginning with &lt;http_root&gt; is always allowed.</member>
+<member>All DB files are always access denied (.db, db segments, .trx, log segments, .ini specified in INI file etc.)</member>
+<member>If a path is not allowed or exists as denied then access to the file is rejected. </member>
+<member>If a requested path is allowed and not in denied then access is allowed.</member>
+<member>ACL's are inherited.  If a directory allows access so does its subdirectories.</member>
+</simplelist>
+
+	<para>
+The following functions are restricted by file Access Control Lists (ACL) in the virtuoso.ini file:
+</para>
+
+<simplelist>
+<member><link linkend="fn_file_to_string">file_to_string</link></member>
+<member><link linkend="fn_file_to_string_output">file_to_string_output</link></member>
+<member><!-- link linkend="fn_sys_mkdir" -->sys_mkdir<!-- /link --></member>
+<member><!-- link linkend="fn_sys_dirlist" -->sys_dirlist<!-- /link --></member>
+<member><link linkend="fn_string_to_file">string_to_file</link></member>
+<member><!-- link linkend="fn_cfg_write" -->cfg_write<!-- /link --></member>
+</simplelist>
+
+<note><title>Note:</title>
+<para>the cfg_write function has restrictions against changing file access control lists in ini file</para>
+</note>
+
+</sect3>
+</sect2>
+
+<!-- ########################################### -->
+
+<!-- &dbpump; -->
+
+</sect1>
+
+<!-- ########################################### -->
+
+&vdbconcepts;
+
+&usermodel;
+
+&vad;
+
+&backups;
+
+&ptune;
+
+
+<!-- ########################################### -->
+
+</chapter>

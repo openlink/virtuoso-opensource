@@ -1,0 +1,143 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+declare _f, _id varchar;
+declare _idx, _len integer;
+
+if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+if ('' <> get_keyword ('play', params, ''))
+  {
+    _idx := 0;
+    _len := length (params);
+    while (_idx < _len)
+      {
+        _id := sprintf ('fd%d', _idx);
+        _f := get_keyword (_id, params, '');
+	if (_f <> '')
+	  {
+	    commit work;
+            declare _stat, _msg varchar;
+            set triggers off;
+            if (0 <> exec ('replay (?)', _stat, _msg, vector (_f)))
+              {
+                set triggers on;
+                signal (_stat, _msg);
+              }
+            else
+              set triggers on;
+	  }
+        _idx := _idx + 1;
+      }
+       ?>
+	  <script language="JavaScript">
+	     location.replace ('trx_sub.vsp')
+	  </script>
+   <?vsp
+  }
+
+
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Transactional replication subscription wizard">
+    <title>Image file replay wizard</title>
+  </head>
+<?vsp adm_page_header('Image File Replay', NULL); ?>
+<?include ../adm_js_check.vsp ?>
+
+    <form action="trx_sub_replay.vsp" method=post name="trx">
+    <table border="0" cellpadding="0" cellspacing="2" class="genlist">
+    <tr>
+      <td class=genlisthead>Image file</td>
+      <td class="geninput">
+           <input type="text" name="fd" size=55><INPUT type=button name="DAV" value="Browse..." onclick="window.res = document.trx.fd; window.open ('trx_file.vsp', 'window', 'scrollbars=yes, menubar=no, height=430, width=400')">
+      </td>
+      <td class="geninput"><input type=submit name="add" value="Add To List"></td>
+    </tr>
+    <tr>
+       <td colspan=2>
+
+       <table class=genlist>
+       <tr>
+         <td class=genlisthead>Sel</td>
+         <td class=genlisthead>Image file</td>
+       </tr>
+       <?vsp
+       declare _if, _n, _skp, _ns varchar;
+       declare _ix, _l, _len integer;
+       _ix := 0; _l := 0;
+       _len := length (params);
+       while (_ix < _len)
+         {
+           _n := sprintf ('fd%d', _ix);
+           _ns := sprintf ('CB_fd%d', _ix);
+	   _if := get_keyword (_n, params, '');
+	   _skp := get_keyword (_ns, params, '');
+	   if (_if <> '' and _skp = '')
+	     {
+	       _l := _l + 1;
+       ?>
+       <input type=hidden name="<?=_n?>" value="<?=_if?>">
+       <tr>
+         <td><input type=checkbox name="CB_<?=_n?>"></td>
+         <td class="gendata"><?=_if?></td>
+       </tr>
+       <?vsp
+            }
+	   _ix := _ix + 1;
+        }
+       _ix := 0;
+       _ns := sprintf ('CB_fd%d', _ix);
+       _if := get_keyword ('fd', params, '');
+       _skp := get_keyword (_ns, params, '');
+       if (_if <> '' and _skp = '')
+         {
+           _l := _l + 1;
+           _n := sprintf ('fd%d', _l);
+       ?>
+       <input type=hidden name="<?=_n?>" value="<?=_if?>">
+       <tr>
+         <td><input type=checkbox name="CB_<?=_if?>"></td>
+         <td class="gendata"><?=_if?></td>
+       </tr>
+       <?vsp
+          }
+	if (_l = 0)
+          http ('<tr><td class="gendata" colspan=2>** No file(s) added **</td></tr>');
+       ?>
+       </table>
+       </td>
+    </tr>
+    <tr>
+      <td colspan=2>
+      <input type=submit name=rem value="Remove from list">
+      <input type=submit name=play value="Load">
+      </td>
+    </tr>
+    </table>
+    </form>
+<?vsp adm_page_footer(); ?>
+</html>

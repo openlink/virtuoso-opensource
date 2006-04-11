@@ -1,0 +1,38 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<init>
+    <src load_at_start="" load_to_clean="o100.sql"/>
+    <src start="african_blogs.vsp" link="african_blogs.vsp"/>
+    <src start="blog100.vsp" link="blog100.vsp"/>
+    <src start="blogafrica.vsp" link="blogafrica.vsp"/>
+    <src start="ceo.vsp" link="ceo.vsp"/>
+    <src start="foaf.vsp" link="foaf.vsp"/>
+    <src start="gnomedexers.vsp" link="gnomedexers.vsp"/>
+    <src start="nigerian_bloggers.vsp" link="nigerian_bloggers.vsp"/>
+    <src start="o100.vsp" link="o100.vsp"/>
+    <src start="osc2003.vsp" link="osc2003.vsp"/>
+    <src start="osc2005.vsp" link="osc2005.vsp"/>
+    <src start="status.vsp" link="status.vsp"/>
+    <src start="techcrunch.vsp" link="techcrunch.vsp"/>
+    <src start="web2005.vsp" link="web2005.vsp"/>
+</init>

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="apparelnotes"><title>Release Notes</title>
+<sect2 id="feat30">
+<title>New Features</title>
+<itemizedlist mark="bullet">
+<listitem><para><emphasis>SOAP 1.1 Implementation</emphasis> - this new release includes a wide range of new SOAP features, bringing it up to date with the most recent developments of this rapidly evolving technology :</para></listitem>
+<itemizedlist mark="number">
+<listitem><para>Flexibility in configuring SOAP access points using a WEB based user interface allowing exposure of selected stored procedures as SOAP services. These procedures may be local or linked  from any 3rd party databases.  The effective privileges for running SOAP exposed procedures can also be set at the access point level. </para></listitem>
+<listitem><para>Improved SOAP to Virtuoso/PL Language Binding allowing the receiving and returning of arbitrarily complex arrays and structures, using XML Schema to describe the mapping of Virtuoso internal types to precisely match specification expressed in XML Schema.</para></listitem>
+<listitem><para>Automated generation of WSDL descriptions of SOAP access points -  Simple procedure parameter lists map automatically to SOAP types described in XML Schema.  For complex types, procedures can be annotated with explicit references to XML Schema types.  Thus the developer has complete control over the presentation of web services.
+</para></listitem>
+<listitem><para>Import of WSDL descriptions of outside web services.  Virtuoso automatically generates Virtuoso/PL wrappers based on an outside WSDL file, making all its services transparently callable as stored procedures from Virtuoso/PL.</para></listitem>
+<listitem><para>Virtuoso's SOAP client and server implementations pass the SOAP Interop tests levels 1, 2 and most of 3. </para></listitem>
+<listitem><para>Virtuoso Service Module for XML (VSMX) is a mechanism provided by Virtuoso for testing SOAP messages by automatically generating a test page - a VSMX file - that has the extension .vsmx. The VSMX file is generated at the same time as the WSDL file is generated, giving instant access to your SOAP messages to test they perform as expected. Web Service developers would use VSMX to forego the test bed creation step in light of automatic test page generation. Project managers can easily keep track of their developers progress by checking the test page periodically.</para></listitem>
+</itemizedlist>
+<listitem><para><emphasis>XSLT 1.1 Implementation</emphasis> - support for the XSLT 1.1 Draft Specification has been added.</para></listitem>
+<listitem><para><emphasis>Exposure of  Stored Procedures as Web Services</emphasis> - Stored procedures can be exposed as SOAP services very simply from Virtuoso, whether the procedures are native Virtuoso or on remote data sources. This powerful ability means that any database servers already existing within an organization can easily become a component in an eBusiness solution using Virtuoso.</para></listitem>
+<listitem><para><emphasis>XML Schema</emphasis> -  contains a built-in XML Schema 2001 validator. This is accessible from Virtuoso/PL as a function and is used for SOAP and XQuery where appropriate. </para></listitem>
+<listitem><para><emphasis>XML Templates</emphasis> - Virtuoso XML templates allow execution of SQL/XML queries over HTTP to obtain an XML document in response and/or perform some operation in the database using updategrams. The XML Template file can be stored either on the file system, WebDAV repository or stored on another HTTP server being referenced by a URL parameter.</para></listitem>
+<listitem><para><emphasis>XQuery</emphasis> - Virtuoso provides support for the XQuery 1.0 XML Query Language specification. This specification is currently in the working draft stage at the W3C XML Query Working Group working in collaboration with the W3C XSL Working Group.</para></listitem>
+<listitem><para><emphasis>Web DAV</emphasis> -  support for redirection of resources, using the Web DAV Redirect Reference Resource Protocol draft 02 specification. </para></listitem>
+<listitem><para><emphasis>Remote Stored Procedures</emphasis> - Stored Procedures located in remote databases can now be linked into the Virtuoso Server in the same manner as you would link in tables or views. This enables remote stored procedures to be readily and easily exposed as WEB Services.</para></listitem>
+<listitem><para><emphasis>OLE DB Provider</emphasis> - native OLE DB Provider is now available allowing direct connection from ADO and .Net applications.</para></listitem>
+<listitem><para><emphasis>JDBC Driver</emphasis> - enhanced JDBC support with full compliance with JDBC J2EE standard.</para></listitem>
+<listitem><para><emphasis>Free Text</emphasis> - The full text indexing capability has been extended, giving the developer flexibility in choosing complex, multi-part document id's for application specific sorting of hits, efficient storage of secondary, non-free text data in the free text index for best retrieval performance, options for restarting searches at a specific hit, ascending and descending orders of document id's and more.</para></listitem>
+<listitem><para><emphasis>Free Text Triggers</emphasis> - The free text triggers system allows persisting free text queries into a table, so that when a free text index is updated, the incoming data gets automatically matched against these persisted criteria, generating hits as the index is updated.  This allows very high performance filtering of fast changing text data, e.g. news feeds without having to run periodic query batches and is ideal for creating personalized information feeds.</para></listitem>
+<listitem><para><emphasis>LDAP</emphasis> - support for the Lightweight Directory Access Protocol (LDAP) protocol for accessing online directory services.</para></listitem>
+<listitem><para><emphasis>Enhanced Flexibility of Database and VDB security</emphasis> - New SQL hooks allow the developer to customize password checking at the time of accepting SQL connections into the server.  Another hook allows an application to dynamically determine the login/password to use when connecting to a remote database.  These hooks make it possible for example to consult an LDAP directory for user information when validating logins.</para></listitem>
+<listitem><para><emphasis>File DSN support</emphasis> - with the ability to describe a database connection in a simple disk file, Virtuoso becomes more portable, and no longer dependent on per-machine DSNs.  If you use file DSNs you can move your database file and your connection information to any computer that has the appropriate drivers installed.</para></listitem>
+<listitem><para><emphasis>Scrollable cursor support in the stored Procedure Language (PL)</emphasis> - Virtuoso PL now allows you direct access to all ODBC standard features of scrollable cursors through PL routines.  ODBC calls are still supported but you have a choice of which level to write your code.</para></listitem>
+</itemizedlist>
+</sect2>
+<sect2 id="ptrs30">
+<title>Bugs Fixed</title>
+<itemizedlist mark="bullet">
+<listitem><para><emphasis>Bug 3889</emphasis> Change label of tab "XML Services/Queues".</para></listitem>
+<listitem><para><emphasis>Bug 3891</emphasis> Admin UI Home Page Update for 3.0.</para></listitem>
+<listitem><para><emphasis>Bug 3892</emphasis> Server Startup Information (Branding Info).</para></listitem>
+<listitem><para><emphasis>Bug 3893</emphasis> When v:data-set @nrows = 1 the 'next' and 'prev' buttons do.</para></listitem>
+<listitem><para><emphasis>Bug 3895</emphasis> Segmentation fault after running dbpump from Yacutia.</para></listitem>
+<listitem><para><emphasis>Bug 3907</emphasis> Explain HO-S-4 and HO-S-5 login.</para></listitem>
+<listitem><para><emphasis>Bug 3918</emphasis> Validators can't work inside Data-Set.</para></listitem>
+<listitem><para><emphasis>Bug 3919</emphasis> There is no way to format columns data in editing controls.</para></listitem>
+<listitem><para><emphasis>Bug 3920</emphasis> v:button @style=url or @style=image not working properly.</para></listitem>
+<listitem><para><emphasis>Bug 3921</emphasis> Logical validators error in Data-Set.</para></listitem>
+<listitem><para><emphasis>Bug 3923</emphasis> xslt_format_number doesn’t work properly with value 0.</para></listitem> 
+<listitem><para><emphasis>Bug 3924</emphasis> "Cancel" failed after Edit mode in Data-Set.</para></listitem>
+<listitem><para><emphasis>Bug 3925</emphasis> v:column is not more needed in v:data-set.</para></listitem>
+<listitem><para><emphasis>Bug 3926</emphasis> v:update-field obsoleted.</para></listitem>
+<listitem><para><emphasis>Bug 3931</emphasis> Initializing JAVA Hosting Tutorials hangs server.</para></listitem>
+<listitem><para><emphasis>Bug 3932</emphasis> Position Holding in Tutorial Frames.</para></listitem>
+<listitem><para><emphasis>Bug 3936</emphasis> Virtuoso Unix Installer script.</para></listitem>
+<listitem><para><emphasis>Bug 3943</emphasis> Data-Set don't work properly inside 'if-login' template.</para></listitem>
+<listitem><para><emphasis>Bug 3950</emphasis> PDF Version of Documentation is not match HTML.</para></listitem>
+<listitem><para><emphasis>Bug 3956</emphasis> Tutorial Reorganization.</para></listitem>
+<listitem><para><emphasis>Bug 3969</emphasis> Install.sh text changes.</para></listitem>
+<listitem><para><emphasis>Bug 3972</emphasis> Configs, Makefile and installer are not "unpublished propriety.</para></listitem>
+<listitem><para><emphasis>Bug 3973</emphasis> Virtuoso crashes.</para></listitem>
+<listitem><para><emphasis>Bug 3984</emphasis> Dynamic Generation of Runtime Tutorial Heading.</para></listitem>
+<listitem><para><emphasis>Bug 3998</emphasis> bad xpath_eval with //.</para></listitem>
+<listitem><para><emphasis>Bug 3999</emphasis> Group by clause works wrong.</para></listitem>
+<listitem><para><emphasis>Bug 4000</emphasis> end_result() has wrong side effect when procedure called from procedure view.</para></listitem>
+<listitem><para><emphasis>Bug 4003</emphasis> Some catalogs missing in drop down in SOAP expose.</para></listitem>
+<listitem><para><emphasis>Bug 4004</emphasis> Move Reload button in SOAP expose.</para></listitem>
+<listitem><para><emphasis>Bug 4005</emphasis> Rename Grant and revoke buttons in SOAP expose.</para></listitem>
+<listitem><para><emphasis>Bug 4006</emphasis> SQL Error 22023 SR016 in SOAP endpoint hierarchical list.</para></listitem>
+<listitem><para><emphasis>Bug 4013</emphasis> Install.sh conclusion text needs changing.</para></listitem>
+<listitem><para><emphasis>Bug 4017</emphasis> Installer is broken - uid and password update.</para></listitem>
+<listitem><para><emphasis>Bug 4021</emphasis> Lack of pre_render_ method for most of controls.</para></listitem>
+<listitem><para><emphasis>Bug 4025</emphasis> Service Tray Service Manger About contains a typing mistake.</para></listitem>
+<listitem><para><emphasis>Bug 4026</emphasis> UDDI; typo in Contact details tab "Address".</para></listitem>
+<listitem><para><emphasis>Bug 4030</emphasis> DB - TABLE CREATION : Data entered by user is lost.</para></listitem>
+<listitem><para><emphasis>Bug 4034</emphasis> Absence of the strong KEY column for the UDDI.DESCRIPTION t.</para></listitem>
+<listitem><para><emphasis>Bug 4044</emphasis> style="url" for "Delete" v:button in data-set caused error.</para></listitem>
+<listitem><para><emphasis>Bug 4049</emphasis> V:URL unsuitable.</para></listitem>
+<listitem><para><emphasis>Bug 4054</emphasis> WSDL import uncatched error.</para></listitem>
+<listitem><para><emphasis>Bug 4062</emphasis> Virgin XP installation of Mono Based Server fails to start.</para></listitem>
+<listitem><para><emphasis>Bug 4063</emphasis> Installer does not set CLASSPATH to point to Virtuoso JDBC.</para></listitem>
+<listitem><para><emphasis>Bug 4066</emphasis> Virtuoso Java Based Server fails to start.</para></listitem>
+<listitem><para><emphasis>Bug 4067</emphasis> Linux installer does not present best default Server for install.</para></listitem>
+<listitem><para><emphasis>Bug 4076</emphasis> System Tray Icon doe not get removed.</para></listitem>
+<listitem><para><emphasis>Bug 4078</emphasis> gacutil is missing for RT framework.</para></listitem>
+<listitem><para><emphasis>Bug 4079</emphasis> VSCM toggles the wrong DB.</para></listitem>
+<listitem><para><emphasis>Bug 4084</emphasis> Server Crash - ASP.NET hosting.</para></listitem>
+<listitem><para><emphasis>Bug 4090</emphasis> Retrieve in tables list.</para></listitem>
+<listitem><para><emphasis>Bug 4095</emphasis> Browse button in column name for v:text inspector does not work.</para></listitem>
+<listitem><para><emphasis>Bug 4096</emphasis> v:login + page-decor + buttons failed.</para></listitem>
+<listitem><para><emphasis>Bug 4099</emphasis> Problem with ORDER BY.</para></listitem>
+<listitem><para><emphasis>Bug 4100</emphasis> Problems with using xpath_contains and xquery_eval in SQL statement.</para></listitem>
+<listitem><para><emphasis>Bug 4102</emphasis> Kill foreground process misses php java mono servers.</para></listitem>
+<listitem><para><emphasis>Bug 4106</emphasis> SQL-XML unhandled error.</para></listitem>
+<listitem><para><emphasis>Bug 4109</emphasis> DB hang when running backup with clear backup context checker.</para></listitem>
+<listitem><para><emphasis>Bug 4110</emphasis> SQL-XML Error message upon unsuccessful execution of query.</para></listitem>
+<listitem><para><emphasis>Bug 4111</emphasis> SQL-XML Error attempting to reset the form.</para></listitem>
+<listitem><para><emphasis>Bug 4114</emphasis> Virtuoso service starts even though no valid license found.</para></listitem>
+<listitem><para><emphasis>Bug 4115</emphasis> Installer doesn't alert user of non-started instance.</para></listitem>
+<listitem><para><emphasis>Bug 4118</emphasis> case expression incorrectly works in select statement.</para></listitem>
+<listitem><para><emphasis>Bug 4125</emphasis> eNews fails to display scrolling items.</para></listitem>
+<listitem><para><emphasis>Bug 4126</emphasis> Driver does not display SQLSTATE error messages.</para></listitem>
+<listitem><para><emphasis>Bug 4129</emphasis> Views do not show up via SQLTables call.</para></listitem>
+<listitem><para><emphasis>Bug 4130</emphasis> entity reference &amp;nbsp; breaks XSLT processor.</para></listitem>
+<listitem><para><emphasis>Bug 4159</emphasis> Can't insert date/datetime values as string literals.</para></listitem>
+<listitem><para><emphasis>Bug 4169</emphasis> Page with list of saved SQL->XML queries missing.</para></listitem>
+<listitem><para><emphasis>Bug 4170</emphasis> Successful/unsuccessful messages in SQL->XML.</para></listitem> 
+<listitem><para><emphasis>Bug 4171</emphasis> SQL-XML misplaced option.</para></listitem>
+<listitem><para><emphasis>Bug 4173</emphasis> Missing owner/group params in SQL-XML page.</para></listitem>
+<listitem><para><emphasis>Bug 4174</emphasis> Missing default root element name in SQL-XML execution.</para></listitem>
+<listitem><para><emphasis>Bug 4175</emphasis> SQL-XML execution Apply XSLT?.</para></listitem>
+<listitem><para><emphasis>Bug 4177</emphasis> Button names in Profiling.</para></listitem>
+<listitem><para><emphasis>Bug 4181</emphasis> Can not "manage" the default "db30" instance.</para></listitem>
+<listitem><para><emphasis>Bug 4188</emphasis> Open Demo.openlinksw.com in New Window.</para></listitem>
+<listitem><para><emphasis>Bug 4196</emphasis> Min And Max attributes for v:validator.</para></listitem>
+<listitem><para><emphasis>Bug 4197</emphasis> v:validator with test="sql".</para></listitem>
+<listitem><para><emphasis>Bug 4207</emphasis> Visit the online tutorials links are inconsistent.</para></listitem>
+<listitem><para><emphasis>Bug 4217</emphasis> Declare continue handler for block don't work.</para></listitem>
+<listitem><para><emphasis>Bug 4222</emphasis> ho-s-7 (DataGrid Demo) problems.</para></listitem>
+<listitem><para><emphasis>Bug 4234</emphasis> Tutorial and offline documentation creation failure in demo.</para></listitem>
+<listitem><para><emphasis>Bug 4245</emphasis> .NET client can't work properly with ODBC driver.</para></listitem>
+</itemizedlist>
+</sect2>
+</sect1>

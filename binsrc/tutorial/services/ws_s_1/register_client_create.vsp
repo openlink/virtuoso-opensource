@@ -1,0 +1,147 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare ser, own, iss, fr, en, ki, fp any;
+ser := null;
+if ({?'exec'} is not null)
+  {
+    declare cert, pass any;
+    declare cb int;
+    cert := get_keyword ('cert', params, NULL);
+    pass := get_keyword ('pass', params, NULL);
+    ser := get_certificate_info (1, cert, 2, pass);
+    own := get_certificate_info (2, cert, 2, pass);
+    iss := get_certificate_info (3, cert, 2, pass);
+    fr := get_certificate_info (4, cert, 2, pass);
+    en := get_certificate_info (5, cert, 2, pass);
+    fp := get_certificate_info (6, cert, 2, pass);
+    ki := get_certificate_info (8, cert, 2, pass);
+
+    if ({?'cb'} = 'on' and exists (select 1 from SYS_USERS where U_NAME = 'WSS'))
+      cb := 1;
+    else
+      cb := 0;
+
+    if (ser is not null)
+      {
+	if (cb)
+	  {
+	    set_user_id ('WSS');
+	  }
+	if (not xenc_key_exists ('wss.pfx'))
+	  {
+            USER_KEY_LOAD ('wss.pfx', cert, 'X.509', 'PKCS12', pass, null, 1);
+	  }
+	if (cb)
+	  {
+	    set_user_id ('dba');
+	  }
+      }
+  }
+?>
+<html>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+<body>
+<H3>X.509 certificate import</H3>
+<P>Caution: The following form will be sent to server the certificate and password in un-encrypted form, hence it's usage outside your localhost is dangerous in case of using real certificates!</P>
+
+
+<form method="post" action="<?= http_path () ?>" enctype="multipart/form-data">
+<table class="tableentry">
+<tr><td>1. Specify your client X.509 certificate (PKCS#12)</td><td>
+<input type="file" name="cert" size="70">
+</td></tr>
+<tr><td>2. Enter a password to unlock</td><td>
+<input type="password" name="pass" size="15" value="" />
+</td></tr>
+<tr><td>3. Import a server certificate</td><td>
+<input type="checkbox" name="cb" />
+</td></tr>
+<tr><td>4. Register the certificate</td><td><input type="submit" name="exec" value="Register"></td></tr>
+</table>
+</form>
+<?vsp
+  if (ser is not null)
+    {
+?>
+<table class=tableresult>
+ <tr>
+   <td>
+   Serial #
+   </td>
+   <td>
+   <?=ser?>
+   </td>
+ </tr>
+ <tr>
+   <td>
+   Owner
+   </td>
+   <td>
+   <?= own ?>
+   </td>
+ </tr>
+ <tr>
+   <td>
+   Issuer
+   </td>
+   <td>
+   <?= iss ?>
+   </td>
+ </tr>
+ <tr>
+   <td>
+   Valid from
+   </td>
+   <td>
+   <?=fr?>
+   </td>
+ </tr>
+ <tr>
+   <td>
+   Valid to
+   </td>
+   <td>
+   <?= en ?>
+   </td>
+ </tr>
+ <tr>
+   <td>
+   Fingerprint
+   </td>
+   <td>
+   <?= fp ?>
+   </td>
+ </tr>
+</table>
+<?vsp }
+   else if (ser is null and {?'exec'} is not null)
+     {
+?>
+    <p>The certificate cannot be imported, make sure that password is valid and certificate is exported with private key in PKCS#12 format.</p>
+<?vsp
+     }
+?>
+
+</body>
+</html>

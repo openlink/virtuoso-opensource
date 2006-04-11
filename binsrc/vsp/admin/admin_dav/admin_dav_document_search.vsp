@@ -1,0 +1,821 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*-html-*- -->
+<?vsp adm_pre_page(lines);
+--no_c_escapes-
+  declare _stmt, _u_name, _g_name varchar;
+  declare _maxres integer;
+  declare _qtype varchar;
+  declare _out varchar;
+  declare _style_sheet varchar;
+  declare inx integer;
+  declare _qfrom varchar;
+  declare _root_elem varchar;
+  declare _u_id, _cutat integer;
+  declare _entity any;
+  declare _res_name_sav varchar;
+  declare _out_style_sheet, _no_matches, _trf, _disp_result, _save_as, _own varchar;
+  -- This parameters is needed for WebDAV browser
+  declare _current_uri, _show_browser, _trf_doc, _q_scope, _sty_to_ent, _sid_id, _sys, _mod varchar;
+  declare _dav_result any;
+  declare _e_content any;
+  declare stat, err varchar;
+  declare _no_match, _last_match, _prev_match, _cntr integer;
+
+  err := ''; stat := '00000';
+  _show_browser := null;
+  _dav_result := null;
+  _current_uri := 'admin_dav_document_search.vsp';
+  _trf_doc := '';
+  _trf := get_keyword ('trf', params, 'none');
+  _disp_result := 'yes';
+  if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+    {
+      adm_tell_unauth_dav (lines);
+      return (0);
+    }
+  --_sid_id := adm_get_sesid (params);
+   if ({?'next'} is not null)
+     _last_match := atoi(get_keyword ('last_match', params, '0'));
+   else if ({?'prev'})
+      {
+        _last_match := atoi(get_keyword ('prev_match', params, '0'));
+        if (_last_match < 0) _last_match := 0;
+      }
+   else
+     _last_match := 0;
+
+  if ('' <> get_keyword ('dav_st', params, '')
+      or '' <> get_keyword ('dav_out_st', params, '')
+      or '' <> get_keyword ('dav_qs', params, '')
+      or '' <> get_keyword ('dav_save_as', params, '')
+      )
+    {
+      _show_browser := 'yes';
+      _disp_result := 'no';
+    }
+  ?>
+<?include admin_dav_browse.vsp?>
+  <?vsp
+  if (_show_browser is null)
+    {
+
+      if (not is_empty_or_null (get_keyword ('reset', params)))
+	{
+	  _maxres := 100;
+	  _stmt := '';
+          _out_style_sheet := '';
+          _q_scope := '';
+          _cutat := 500;
+          _qtype := 'freetext';
+	}
+      else
+	{
+	  _maxres := atoi (get_keyword ('maxres', params, '500'));
+	  _cutat := atoi (get_keyword ('cutat', params, '500'));
+          if (_cutat < 1)
+            _cutat := 500;
+	  _stmt := get_keyword ('stmt', params, '');
+	  _out := get_keyword ('out', params, 'xml');
+	  _qtype := get_keyword ('qtype', params, 'freetext');
+	  _style_sheet := get_keyword ('style_sheet', params, '');
+	  _sty_to_ent := get_keyword ('sty_to_ent', params, '');
+          if (_dav_result is not null and '' <> get_keyword ('dav_st', params, ''))
+	    {
+	      _style_sheet := _dav_result;
+              _trf_doc := '';
+	    }
+	  _out_style_sheet := get_keyword ('out_style_sheet', params, '');
+          if (_dav_result is not null and '' <> get_keyword ('dav_out_st', params, ''))
+	    {
+	      _out_style_sheet := _dav_result;
+              _trf_doc := '';
+	    }
+	  _root_elem := get_keyword ('root_elem', params, 'root');
+	  _no_matches := atoi (get_keyword ('no_matches', params, '10'));
+          _trf := get_keyword ('trf', params, 'none');
+          if (_disp_result = 'yes'
+	      and '' = get_keyword ('dav_out_st', params, '')
+	      and '' = get_keyword ('dav_st', params, ''))
+	    _trf_doc := get_keyword ('trf_doc', params, '');
+	  _q_scope := get_keyword ('q_scope', params, '/DAV/');
+          if (_dav_result is not null and '' <> get_keyword ('dav_qs', params, ''))
+	    {
+	      _q_scope := _dav_result;
+              _trf_doc := '';
+	    }
+	  _save_as := get_keyword ('save_as', params, '');
+          if (_dav_result is not null and '' <> get_keyword ('dav_save_as', params, ''))
+	    {
+	      _save_as := _dav_result;
+              _trf_doc := '';
+	    }
+           _own := get_keyword ('dav_own', params, 'dav');
+	}
+  if (_trf_doc <> '' and _disp_result = 'yes')
+    {
+      http_rewrite (0);
+      http_request_status ('HTTP/1.1 200 OK');
+      if (_trf = 'xslt')
+	{
+	  declare _ss_body, _res_content varchar;
+	  declare _x_id integer;
+          _ss_body := coalesce (
+	      (
+	       select blob_to_string (RES_CONTENT)
+	       from WS.WS.SYS_DAV_RES
+	       where RES_FULL_PATH = _out_style_sheet
+	      ), null);
+          _x_id := coalesce (
+	      (
+	       select RES_ID
+	       from WS.WS.SYS_DAV_RES
+	       where RES_FULL_PATH = _trf_doc
+	      ), null);
+
+           if (not exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xper' and PROP_TYPE = 'R' and PROP_PARENT_ID = _x_id))
+	     {
+	       _res_content := coalesce (
+		  (
+		   select blob_to_string (RES_CONTENT)
+		   from WS.WS.SYS_DAV_RES
+		   where RES_FULL_PATH = _trf_doc
+		  ), null);
+                  _res_content := xml_tree_doc (xml_tree (_res_content), concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _trf_doc));
+	     }
+	   else
+	     {
+	       _res_content := coalesce (
+		  (
+		   select xml_persistent (RES_CONTENT)
+		   from WS.WS.SYS_DAV_RES
+		   where RES_FULL_PATH = _trf_doc
+		  ), null);
+	     }
+	  if (_ss_body is not null)
+	    {
+	      declare sesxsl any;
+              sesxsl := string_output ();
+	      http_value (
+	      xslt (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _out_style_sheet),
+		_res_content), 0, sesxsl);
+              sesxsl := string_output_string (sesxsl);
+              if (_save_as <> '')
+		{
+	          declare _err_txt, _perms varchar;
+		  declare _path any;
+                  _path := WS.WS.HREF_TO_ARRAY (_save_as, '');
+                 _err_txt := '';
+	         if (WS.WS.ISCOL (_path))
+	           {
+		     _err_txt := concat ('Invalid WebDAV resource path (', _save_as, ')');
+		     goto disp_err;
+	           }
+	         declare _depth, _coll_len, _nc_id, _r_id, _oid, _gid integer;
+                 declare _coll any;
+                _coll := WS.WS.PARENT_PATH (_path);
+                _coll_len := length (_coll);
+                _depth := WS.WS.FINDCOL (_coll, _col_id);
+                _oid := 0; _gid := 0; _perms := '100100100T';
+		if (_own <> '')
+		  {
+		    whenever not found goto nfu;
+		    select U_ID, U_GROUP, U_DEF_PERMS into _oid, _gid, _perms from WS.WS.SYS_DAV_USER where U_NAME = _own;
+                    nfu:
+		    if (_oid < 1)
+		      {
+		        _err_txt := concat ('Invalid WebDAV user name (', _own, ')');
+		        goto disp_err;
+		      }
+		  }
+		if (_depth < 1)
+		  {
+		    _err_txt := concat ('Invalid WebDAV path (', _save_as, ')');
+		    goto disp_err;
+		  }
+		-- If new collection(s) requested
+		while (_depth < _coll_len)
+		  {
+		    _nc_id := WS.WS.GETID ('C');
+		    insert into WS.WS.SYS_DAV_COL (COL_NAME, COL_ID, COL_PARENT, COL_OWNER, COL_GROUP, COL_PERMS,
+						    COL_MOD_TIME, COL_CR_TIME)
+			   values (aref (_coll, _depth), _nc_id, _col_id, _oid, _gid, _perms, now (), now ());
+		    _col_id := _nc_id;
+		    _depth := _depth + 1;
+		  }
+
+		-- Should test _col_id and other stuff before process
+		if (not exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _save_as))
+		  {
+		    _r_id := WS.WS.GETID ('R');
+		    insert into WS.WS.SYS_DAV_RES
+				(RES_ID, RES_NAME, RES_COL, RES_TYPE, RES_CONTENT, RES_CR_TIME,
+				 RES_MOD_TIME, RES_OWNER, RES_GROUP, RES_PERMS)
+			   values (_r_id, aref (_path, length (_path) - 1), _col_id, 'text/html', sesxsl,
+				   now (), now (), _oid, _gid, _perms);
+		  }
+	        else
+		  {
+		    update WS.WS.SYS_DAV_RES set RES_CONTENT = sesxsl, RES_OWNER = _oid, RES_GROUP = _gid, RES_PERMS = _perms where RES_FULL_PATH = _save_as;
+		  }
+	         _err_txt := sprintf ('Result from XSL-T transformation saved as %s', _save_as);
+		 http_rewrite (0);
+?>
+
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+<meta name="AUTHOR" content="OpenLink Software">
+<meta name="DESCRIPTION" content="Interactive XPATH using Virtuoso VSP">
+<title>WebDAV Document Search</title>
+</head>
+<?vsp adm_page_header('WebDAV Document Search', NULL); ?>
+<P>
+The result of the XSL-T transformation was saved as <A href="<?=WS.WS.STR_TO_URI (_save_as)?>"><b><?=_save_as?></b></A>.</P>
+<?vsp adm_page_footer(); ?>
+</HTML>
+
+<?vsp
+                  return (0);
+disp_err:
+		  http (sprintf ('<SCRIPT LANGUAGE="JavaScript">
+		      <!--
+		      alert("%s");
+		      // -->
+		      </SCRIPT>', _err_txt));
+	          goto next1;
+		}
+	      http (sesxsl);
+	      goto done1;
+	    }
+	  else
+	    {
+	      http ('<p>*** Input style sheet is not valid WebDAV resource ***</p>');
+	      goto done1;
+	    }
+	}
+      else
+	{
+	  http_header ('Content-Type: text/xml\r\n');
+	  if ('xml' = _out and 'browser' = _trf)
+	    {
+	      http ('<?xml version="1.0"?>\r\n');
+	      if ('' <> _out_style_sheet and 'browser' = _trf)
+		{
+		  http (sprintf ('<?xml-stylesheet type="text/xsl" href="%s"?>\r\n', _out_style_sheet));
+		}
+	      http (concat('<', _root_elem, '>\r\n'));
+	      for (select _entity
+		  from WS.WS.SYS_DAV_RES
+		  where RES_FULL_PATH = _trf_doc and
+		  xpath_contains (RES_CONTENT, _stmt, _entity)) do
+		{
+		  http (adm_e_string(_entity));
+		  http ('\r\n');
+		}
+	      http (concat ('</', _root_elem, '>'));
+	    }
+	  else
+	    {
+	      declare _doc_body varchar;
+	      declare my_id integer;
+	      select RES_CONTENT, RES_ID into _doc_body, my_id
+		  from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _trf_doc;
+	      if (not exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xper' and PROP_TYPE = 'R' and PROP_PARENT_ID = my_id))
+		http (_doc_body);
+	      else
+	 	http_value (xml_persistent (xper_cut(_doc_body)));
+	    }
+	}
+done1:
+      return (0);
+    }
+next1:
+?>
+
+<!-- Go Sly! -->
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function send_final (resource)
+  {
+    document.main_form.trf_doc.value = resource;
+    document.main_form.submit ();
+  }
+
+function mf_submit ()
+  {
+    document.main_form.trf_doc.value = '';
+    document.main_form.submit ();
+  }
+// -->
+</SCRIPT>
+
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function savetemplate (what)
+{
+  document.main_form.action = '/admin/admin_dav/admin_xml_template.vsp';
+  document.main_form.load_template.value = what;
+  document.main_form.submit;
+}
+// -->
+</SCRIPT>
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Interactive XPATH using Virtuoso VSP">
+    <title>WebDAV Document Search</title>
+  </head>
+  <?vsp adm_page_header('WebDAV Document Search', concat(_qtype,'search')); ?>
+<?include ../adm_js_check.vsp ?>
+<?vsp
+    if (not is_empty_or_null (get_keyword ('help1', params)))
+      {
+?>
+	<TABLE CLASS="help" BORDER="0" CELLPADDING="0" WIDTH="300">
+	<TR><TD CLASS="help_title">Help: Free Text Search</TD></TR>
+	<TR><TD CLASS="help_borders"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	<TR><TD CLASS="help_text">Use the <STRONG>Search Method</STRONG> drop down to select the
+type query that you wish to make of the WebDAV repository.
+	</TD></TR>
+	<TR><TD CLASS="help_text">Type the words or phrases (contained in double quotes) separated by
+<STRONG>AND</STRONG> or <STRONG>OR</STRONG> keywords into the text area provided that you wish to search the WebDAV repository for.
+	</TD></TR>
+	<TR><TD CLASS="help_text">Press the <STRONG>Execute</STRONG> button to fetch the results of the search.
+	</TD></TR>
+	<TR><TD CLASS="help_text">The results will be returned as a hyper-linked list of search hits.  Press on the links to
+go to the document.
+	</TD></TR>
+	</TABLE>
+
+<?vsp
+      }
+?>
+
+<?vsp
+    if (not is_empty_or_null (get_keyword ('help2', params)))
+      {
+?>
+	<TABLE CLASS="help" BORDER="0" CELLPADDING="0" WIDTH="350">
+	<TR><TD CLASS="help_title">Help: XPATH Search</TD></TR>
+	<TR><TD CLASS="help_borders"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	<TR><TD CLASS="help_text">Use the <STRONG>Search Method</STRONG> drop down to select the
+type query that you wish to make of the WebDAV repository.
+	</TD></TR>
+	<TR><TD CLASS="help_text">XPATH Document Search applies the XPATH expression to every realized XML contained
+within the Query Scope to qualify search hit results.
+	</TD></TR>
+	<TR><TD CLASS="help_text">Type that XPATH query expression into the text area that you wish
+to interrogate your WebDAV XML documents with.  e.g. <STRONG>//*</STRONG> or <STRONG>//title</STRONG>
+	</TD></TR>
+	<TR><TD CLASS="help_text">Choose the <STRONG>Output Type</STRONG> that you wish to obtain.
+<STRONG>XML</STRONG> delivers proper XML content while <STRONG>Entity List</STRONG> delivers
+the results in plain text.
+	</TD></TR>
+	<TR><TD CLASS="help_text">The <STRONG>Root Element</STRONG> field allows you specify the name of the root
+element to contain document element matches for each document found.  This aids stylesheet design.
+	</TD></TR>
+	<TR><TD CLASS="help_text">Choose the <STRONG>Scope of Query</STRONG> from within the WebDAV repository.  You may
+define the scope as either a collection (folder) or XML resource (file).  Use the <STRONG>Browse</STRONG> button to
+browse the contents of WebDAV to make a selection.  The query will then be confined to the selected resource
+or collection and its children.
+	</TD></TR>
+	<TR><TD CLASS="help_text">Choose an <STRONG>Output Style Sheet</STRONG> by either typing its
+URL or using <STRONG>Browse</STRONG> to select an XSL resource from WebDAV.  You only need to
+specify a style sheet if you want to transform your XML results using XSL-T.
+	</TD></TR>
+	<TR><TD CLASS="help_text"><STRONG>XSL-T Transformation</STRONG>:  <STRONG>None</STRONG> will not attempt to
+transform the XML results.  <STRONG>Client</STRONG> will allow the Client UA (User Agent usually a Web Browser) to
+attempt to transform the XML.  The selected output style sheet will be referenced at the top of the output
+using the xml-stylesheet processing instruction.  <STRONG>Server</STRONG> will allow Virtuoso to
+transform the XML file using its own XSL-T transformation engine.
+	</TD></TR>
+	</TABLE>
+
+<?vsp } ?>
+
+    <form name="main_form" method="POST" action="admin_dav_document_search.vsp">
+    <input type=hidden name=trf_doc value="">
+    <!--input type=hidden name=sid value="<?=_sid_id?>"-->
+    <input type=hidden name=qtype value="<?=_qtype ?>">
+
+    <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+		<TR><TD CLASS="AdmBorders"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	    <TR><TD CLASS="genlistheadt">Search Expression</TD></TR>
+	    <TR><TD><textarea name="stmt" rows="5" cols="60"><?= coalesce(_stmt, '') ?></textarea></TD></TR>
+		<TR><TD><TABLE BORDER="0" WIDTH="100%">
+<?vsp
+          if ('freetext' = _qtype)
+            {
+	      _out := '';
+?>
+		<TR><TD COLSPAN="3"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+              <TR><TD CLASS="genlisthead" NOWRAP>Max. no of results</TD>
+					<TD COLSPAN="2"><INPUT TYPE="text" NAME="maxres" value="<?= _maxres ?>"></TD></TR>
+<?vsp       } else { ?>
+		<TR><TD COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD><TD ROWSPAN="3" ALIGN="right">
+<?vsp
+				if ('xml' = _out)
+				{
+?>
+	<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+	<TR><TD CLASS="genlistheadt" COLSPAN="3" NOWRAP>XSL-T Transformation</TD></TR>
+	<TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	<TR>
+		<td CLASS="genlistheadt" align=center width="33%" TITLE="Virtuoso will not transform the XML document or provide any link to the XSL">None</td>
+		<td CLASS="genlistheadt" align=center width="33%" TITLE="Virtuoso will provide a link to the XSL for the Browser to transform">Client</td>
+		<td CLASS="genlistheadt" align=center width="33%" TITLE="Virtuoso will transform the XML using the XSL and serve the results of the transformation only">Server</td>
+	</TR>
+	<TR>
+		<td CLASS="gendata" align=center TITLE="Virtuoso will not transform the XML document or provide any link to the XSL"><input type="radio" name="trf" value="none"   <?=check_if ('none', _trf)?>></td>
+		<td CLASS="gendata" align=center TITLE="Virtuoso will provide a link to the XSL for the Browser to transform"><input type="radio" name="trf" value="browser"  <?=check_if ('browser', _trf)?>></td>
+		<td CLASS="gendata" align=center TITLE="Virtuoso will transform the XML using the XSL and serve the results of the transformation only"><input type="radio" name="trf" value="xslt"  <?=check_if ('xslt', _trf)?>></td>
+	</TR>
+	</TABLE>
+<?vsp
+				} else {
+?>
+		<IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT="">
+<?vsp
+				}
+?>
+		</TD></TR>
+
+              <TR><TD CLASS="genlisthead">Output Type</TD>
+                <TD><SELECT NAME="out" onChange="javascript:mf_submit();">
+						<OPTION value="xml" <?= select_if (_out, 'xml') ?> >XML</OPTION>
+						<OPTION value="ent" <?= select_if (_out, 'ent') ?> >Entity List</OPTION>
+					</SELECT></TD></TR>
+<?vsp
+				if ('xml' = _out)
+				{
+?>
+		<TR>
+		  <TD CLASS="genlisthead">Root element</TD>
+		    <TD><input type="text" name="root_elem" value="<?= _root_elem ?>"></TD>
+		</TR>
+		<TR><TD COLSPAN="3"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+		<TR>
+		  <TD CLASS="genlisthead">Query Scope</TD>
+		    <TD><input type="text" size="30" name="q_scope" value="<?= _q_scope ?>"></TD>
+		    <TD><input type=submit name="dav_qs" value="Browse"></TD>
+		</TR>
+		<TR>
+		  <TD CLASS="genlisthead">Output Stylesheet</TD>
+		    <TD><input type="text" size="30" name="out_style_sheet" value="<?= _out_style_sheet ?>"></TD>
+		    <TD><input type=submit name="dav_out_st" value="Browse"></TD>
+		</TR>
+		<?vsp if (1 or (_out_style_sheet <> '' and _trf = 'xslt')) { ?>
+		<TR>
+		  <TD CLASS="genlisthead">Save result as</TD>
+		    <TD><input type="text" size="30" name="save_as" value="<?= _save_as ?>"></TD>
+		    <TD><input type=submit name="dav_save_as" value="Browse"></TD>
+		</TR>
+		<TR>
+		  <TD CLASS="genlisthead">Effective owner</TD>
+		    <TD><input type="text" size="30" name="dav_own" value="<?= _own ?>"></TD>
+		    <TD><!--input type=submit name="dav_save_as" value="Browse"--></TD>
+		</TR>
+		<?vsp } ?>
+		<TR><TD COLSPAN="3"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+		   <TR><TD CLASS="genlisthead" NOWRAP>Matches per page</TD>
+			<TD COLSPAN="2">
+             <select name="no_matches">
+             <option value="10" <?= select_if (_no_matches, 10) ?>>10</option>
+             <option value="20" <?= select_if (_no_matches, 20) ?>>20</option>
+             <option value="40" <?= select_if (_no_matches, 40) ?>>40</option>
+             <option value="80" <?= select_if (_no_matches, 80) ?>>80</option>
+             </select>
+			</TD></TR>
+                  <?vsp }   ?>
+                  <?vsp if ('ent' = _out) { ?>
+		  <TR><TD CLASS="genlisthead" NOWRAP>Max. no of entities</TD><TD COLSPAN="2"><input type="text" name="maxres" value="<?= _maxres ?>" size="10"></TD></TR>
+                  <?vsp }   ?>
+		   <TR><TD CLASS="genlisthead" NOWRAP>Size of Result Excerpt</TD><TD COLSPAN="2"><input type="text" name="cutat" value="<?= _cutat ?>" size="5"></TD></TR>
+ <?vsp
+		}
+?>
+</TR></TABLE>
+           <TR>
+             <TD ALIGN="center">
+               <input type=hidden name=caller_uri value="/admin/admin_dav/admin_dav_document_search.vsp?qtype=<?=_qtype?>">
+                <input type="hidden" name="load_template" value="">
+               <input type="hidden" name="saved_file" value="<?= get_keyword ('saved_file', params, '') ?>">
+               <input type="submit" name="xecute" value="Execute">
+               <input type="submit" name="save" value="Save" onClick="savetemplate('');">
+<?vsp if (_qtype = 'XPATH') { ?>
+               <input type="submit" name="load" value="Load" onClick="savetemplate('xpath');">
+<?vsp } else { ?>
+               <input type="submit" name="load" value="Load" onClick="savetemplate('text');">
+<?vsp } ?>
+
+               <input type="submit" name="reset" value="Reset">
+             </td>
+           </tr>
+       </TABLE>
+
+<BR />
+
+<?vsp
+         if (not is_empty_or_null (get_keyword ('xecute', params))
+	     or not is_empty_or_null (get_keyword ('next', params))
+	     or not is_empty_or_null (get_keyword ('prev', params)))
+           {
+
+             declare exit handler for sqlstate '*' { stat := __SQL_STATE; err := __SQL_MESSAGE; goto err_exit; };
+	     if (not is_empty_or_null (_stmt))
+	       {
+
+	         if ('freetext' = _qtype)
+		   {
+		     for (select RES_ID, RES_NAME, RES_CONTENT, RES_OWNER, RES_GROUP, RES_TYPE, RES_CR_TIME,
+		                 RES_PERMS, RES_FULL_PATH
+		            from WS.WS.SYS_DAV_RES
+			    where
+			    contains (RES_CONTENT, _stmt)) do
+		       {
+			 if (exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xper' and PROP_TYPE = 'R' and PROP_PARENT_ID = RES_ID))
+			   {
+                             _e_content := string_output ();
+			     http_value (xml_persistent (RES_CONTENT), null, _e_content);
+                             _e_content := string_output_string (_e_content);
+			   }
+			 else
+			   _e_content := RES_CONTENT;
+			 if (inx = _maxres) goto done;
+
+			 if (RES_GROUP is not null and RES_GROUP > 0)
+			   {
+			     select G_NAME into _g_name from WS.WS.SYS_DAV_GROUP where G_ID = RES_GROUP;
+			   }
+			 else
+			   {
+			     _g_name := 'no group';
+			   }
+
+			 if (RES_OWNER is not null and RES_OWNER > 0)
+			   {
+			     select U_NAME into _u_name from WS.WS.SYS_DAV_USER where U_ID = RES_OWNER;
+			   }
+			 else
+			   {
+                             _u_name := 'Public';
+			   }
+
+			 http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR><TD VALIGN="top">');
+			 http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+			 http (concat ('<TR><TD CLASS="genlisthead">Document <A HREF="', RES_FULL_PATH, '">'));
+			 http (concat (RES_NAME, '</A> (', cast (length (RES_CONTENT) as varchar), ' bytes)</TD></TR>'));
+			 http ('<TR><TD CLASS="AdmBorders"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+			 http (concat ('<TR><TD CLASS="genlistheadt" COLSPAN="2">Excerpt </TD></TR>'));
+			 http (concat ('<TR><TD CLASS="gendata" WIDTH="400">', "LEFT" (adm_e_string (_e_content), 200), '</TD></TR>'));
+			 http ('</TABLE></TD>');
+			 http ('<TD CLASS="AdmBorders"><IMG SRC="../images/1x1.gif" WIDTH="2" HEIGHT="1" ALT=""></TD>');
+			 http ('<TD VALIGN="top"><TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+			 http (concat ('<TR><TD CLASS="genlisthead">Type </TD><TD CLASS="gendata">', RES_TYPE, '</TD></TR>'));
+			 http (concat ('<TR><TD CLASS="genlisthead">Owner </TD><TD CLASS="gendata">', _u_name, '</TD></TR>'));
+			 http (concat ('<TR><TD CLASS="genlisthead">Group </TD><TD CLASS="gendata">', _g_name, '</TD></TR>'));
+			 http (concat ('<TR><TD CLASS="genlisthead">Permissions </TD><TD CLASS="gendata">', adm_dav_format_perms(RES_PERMS), '</TD></TR>'));
+			 http (concat ('<TR><TD CLASS="genlisthead">Creation Date </TD><TD CLASS="gendata">', adm_date_fmt (RES_CR_TIME), '</TD></TR>'));
+			 http ('</TABLE></TD></TR></TABLE>');
+			 http ('<TABLE><TR><TD><IMG SRC="../images/1x1.gif" WIDTH="2" HEIGHT="10" ALT=""></TD></TR></TABLE>');
+
+			 inx := inx + 1;
+		       }
+		   }
+
+		 if ('XPATH' = _qtype)
+                   {
+		     declare _result_sheet_body, _default_style, _used_result_sheet varchar;
+		     declare _ses any;
+                     _no_match := 0; _cntr := 0;
+
+
+		     for (select _entity, RES_ID, RES_NAME, RES_CONTENT, RES_OWNER,
+			        RES_GROUP, RES_CR_TIME, RES_PERMS, RES_FULL_PATH
+		                from WS.WS.SYS_DAV_RES
+			        where RES_TYPE = 'text/xml' and
+                                  RES_FULL_PATH like concat (_q_scope, '%') and
+			          xpath_contains (RES_CONTENT, _stmt, _entity)) do
+		       {
+		         _u_name := adm_dav_u_name (RES_OWNER);
+			 _g_name := adm_dav_g_name (RES_GROUP);
+			 if (exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xper' and PROP_TYPE = 'R' and PROP_PARENT_ID = RES_ID))
+			   {
+                             _e_content := string_output ();
+			     http_value (xper_cut (xml_persistent (RES_CONTENT)), null, _e_content);
+                             _e_content := string_output_string (_e_content);
+			   }
+			 else
+			   _e_content := RES_CONTENT;
+
+		         inx := inx + 1;
+			 if ('ent' = _out)
+			   {
+                             _ses := string_output ();
+			     if (RES_FULL_PATH <> _res_name_sav)
+			       {
+			         _res_name_sav := RES_FULL_PATH;
+
+			 http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR><TD VALIGN="top">');
+			 http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+
+
+			 if (_trf <> 'none')
+			   {
+			     ?>
+			    <TR>
+			      <TD CLASS="genlisthead">
+                            Document <A HREF="#" onClick="send_final('<?=RES_FULL_PATH?>'); return false"><?=RES_NAME?></A>(<?=length (RES_CONTENT) ?> bytes)
+			      </TD>
+			    </TR>
+			     <?vsp
+			   }
+			 else
+			   {
+			     ?>
+			     <TR><TD CLASS="genlisthead">Document <A HREF="<?=RES_FULL_PATH?>"><?=RES_NAME?></A> (<?=length (RES_CONTENT)?> bytes)</TD></TR>
+			     <?vsp
+			   }
+
+
+			 http ('<TR><TD CLASS="AdmBorders"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+			 http (concat ('<TR><TD CLASS="genlistheadt" COLSPAN="2">Excerpt </TD></TR>'));
+			 http (concat ('<TR><TD CLASS="gendata" WIDTH="400">', "LEFT" (adm_e_string (_e_content), 200), '</TD></TR>'));
+			 http ('</TABLE></TD>');
+			 http ('<TD CLASS="AdmBorders"><IMG SRC="../images/1x1.gif" WIDTH="2" HEIGHT="1" ALT=""></TD>');
+			 http ('<TD VALIGN="top"><TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+			 http (concat ('<TR><TD CLASS="genlisthead">Owner </TD><TD CLASS="gendata">', _u_name, '</TD></TR>'));
+			 http (concat ('<TR><TD CLASS="genlisthead">Group </TD><TD CLASS="gendata">', _g_name, '</TD></TR>'));
+			 http (concat ('<TR><TD CLASS="genlisthead">Permissions </TD><TD CLASS="gendata">', adm_dav_format_perms(RES_PERMS), '</TD></TR>'));
+			 http (concat ('<TR><TD CLASS="genlisthead">Creation Date </TD><TD CLASS="gendata">', adm_date_fmt (RES_CR_TIME), '</TD></TR>'));
+			 http ('</TABLE></TD></TR></TABLE>');
+-- here
+                               }
+			    if (_sty_to_ent <> '')
+			      {
+				http_value (
+			            xslt (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:',
+					_out_style_sheet),
+			        _entity), 0, _ses);
+			        http (string_output_string (_ses));
+			      }
+			    else
+			      {
+			        http_value (adm_e_string(_entity), 0, _ses);
+			        http (substring (string_output_string (_ses),1, _cutat));
+			      }
+			 http ('<BR />');
+
+-- there
+			 http ('<TABLE><TR><TD><IMG SRC="../images/1x1.gif" WIDTH="2" HEIGHT="10" ALT=""></TD></TR></TABLE>');
+
+			     if (inx = _maxres) goto done;
+			   }
+			 if ('xml' = _out)
+			   {
+			     if (RES_NAME <> _res_name_sav)
+			       {
+                                 _cntr := _cntr + 1;
+			         _res_name_sav := RES_NAME;
+				 if (_cntr >= _last_match)
+				   {
+                                 _no_match := _no_match + 1;
+			         if (_no_match > _no_matches)
+				   {
+                                     _no_match := _no_match - 1;
+				     goto done;
+				   }
+				 declare ses_result any;
+                                 ses_result := string_output ();
+			         -- http ('<hr>');
+
+			 http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR><TD VALIGN="top">');
+			 http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+			 if (_trf <> 'none')
+			   {
+			     if (_save_as <> '' and _trf = 'xslt')
+			       {
+			     ?>
+			    <TR>
+			      <TD CLASS="genlisthead"><?=_cntr?>.&nbsp;
+                            Document <b><?=RES_NAME?></b>&nbsp;(<?=length (RES_CONTENT) ?> bytes)&nbsp;&nbsp;&nbsp;
+			      <A HREF="#" onClick="send_final('<?=RES_FULL_PATH?>'); return false"><small>save result</small></A>
+			      </TD>
+			    </TR>
+			     <?vsp
+			       }
+			     else
+			       {
+			     ?>
+			    <TR>
+			      <TD CLASS="genlisthead"><?=_cntr?>.&nbsp;
+                            Document <A HREF="#" onClick="send_final('<?=RES_FULL_PATH?>'); return false"><?=RES_NAME?></A>&nbsp;(<?=length (RES_CONTENT) ?> bytes)
+			      </TD>
+			    </TR>
+			     <?vsp
+			       }
+			   }
+			 else
+			   {
+			     ?>
+			     <TR><TD CLASS="genlistheadt"><?=_cntr?>.&nbsp;Document <A HREF="<?=RES_FULL_PATH?>"><?=RES_NAME?></A>&nbsp;(<?=length (RES_CONTENT)?> bytes)</TD></TR>
+			     <?vsp
+			   }
+
+			 http ('<TR><TD CLASS="AdmBorders"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+			 http (concat ('<TR><TD CLASS="genlistheadt" COLSPAN="2">Excerpt </TD></TR>'));
+			 http ('<TR><TD CLASS="gendata" WIDTH="500">');
+
+			 http_value (blob_to_string (_e_content), 0, ses_result);
+			 -- no more than 500 chars
+                         ses_result := string_output_string (ses_result);
+			 http (substring (ses_result, 1, _cutat));
+                         ses_result := null;
+
+			 http('</TD></TR>');
+			 http ('</TABLE></TD>');
+			 http ('<TD CLASS="AdmBorders"><IMG SRC="../images/1x1.gif" WIDTH="2" HEIGHT="1" ALT=""></TD>');
+			 http ('<TD VALIGN="top"><TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+			 http (concat ('<TR><TD CLASS="genlisthead">Owner </TD><TD CLASS="gendata">', _u_name, '</TD></TR>'));
+			 http (concat ('<TR><TD CLASS="genlisthead">Group </TD><TD CLASS="gendata">', _g_name, '</TD></TR>'));
+			 http (concat ('<TR><TD CLASS="genlisthead">Permissions </TD><TD CLASS="gendata">', adm_dav_format_perms(RES_PERMS), '</TD></TR>'));
+			 http (concat ('<TR><TD CLASS="genlisthead">Creation Date </TD><TD CLASS="gendata">', adm_date_fmt (RES_CR_TIME), '</TD></TR>'));
+			 http ('</TABLE></TD></TR></TABLE>');
+			 http ('<TABLE><TR><TD><IMG SRC="../images/1x1.gif" WIDTH="2" HEIGHT="10" ALT=""></TD></TR></TABLE>');
+
+				   }
+				}
+			   }
+		       }
+
+                   }
+	       done:
+	         if (0 = inx)
+		   {
+                     http ('<p>*** Nothing matches the query ***</p>');
+                   }
+		 else
+                   {
+		     if ('xml' = _out)
+		       http (sprintf ('<p>displayed %d document(s) matching your query</p>', _no_match));
+		     else
+		       http (sprintf ('<p>displayed %d entities matching your query</p>', inx));
+                   }
+	       }
+	   }
+err_exit:
+ if (stat <> '00000')
+   {
+     http_rewrite ();
+?>
+
+<?include error.vsp ?>
+
+<?vsp
+   }
+  if (_cntr > 0) {
+?>
+     <input type=hidden name=last_match value="<?=_cntr?>">
+     <input type=hidden name=prev_match value="<?=_last_match-_no_matches?>">
+      <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+           <TR>
+             <TD ALIGN="left">
+	      <?vsp if (_last_match-_no_matches > 0) { ?>
+               <input type="submit" name="prev" value="&lt; Previous">
+	      <?vsp } ?>
+	       </td><td align="right">
+	      <?vsp if (_no_match >= _no_matches) { ?>
+               <input type="submit" name="next" value="Next &gt;">
+	      <?vsp } ?>
+             </td>
+           </tr>
+       </TABLE>
+
+<?vsp } ?>
+    </FORM>
+<?vsp adm_page_footer(); ?>
+</html>
+<?vsp } ?>

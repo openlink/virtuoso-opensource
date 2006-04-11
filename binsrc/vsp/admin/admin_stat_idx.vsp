@@ -1,0 +1,78 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+
+  declare _q, _state, _msg, _stmt varchar;
+  declare err integer;
+
+  if (not adm_check_auth (lines))
+    {
+      adm_tell_unauth (lines);
+      return (0);
+    }
+
+  _q := get_keyword ('q', params, '');
+
+  if ('' = _q)
+    _q := 'db';
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Virtuoso VDBMS Index Statistics</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Index statistics">
+  </head>
+  <BODY>
+<?vsp adm_page_header('Index Statistics', NULL); ?>
+
+      <table CLASS="statlist" border="0" cellpadding="0">
+        <tr>
+	  <th CLASS="statlistheadt">Table</th>
+	  <th CLASS="statlistheadt">Index name</th>
+	  <th CLASS="statlistheadt">Landed</th>
+	  <th CLASS="statlistheadt">Consecutive</th>
+	  <th CLASS="statlistheadt">Right Edge</th>
+	  <th CLASS="statlistheadt">Lock Escalation</th>
+        </tr>
+      <?vsp for select KEY_TABLE, INDEX_NAME, LANDED, CONSEC, RIGHT_EDGE, LOCK_ESC from DB.DBA.SYS_K_STAT where LANDED > 0 order by LANDED desc, KEY_TABLE, INDEX_NAME do { ?>
+	<tr>
+	  <td CLASS="statdata"><?= KEY_TABLE ?></td>
+	  <td CLASS="statdata"><?= INDEX_NAME ?></td>
+	  <td CLASS="statdata"><?= LANDED ?></td>
+	  <td CLASS="statdata"><?= CONSEC ?></td>
+	  <td CLASS="statdata"><?= RIGHT_EDGE ?></td>
+	  <td CLASS="statdata"><?= LOCK_ESC ?></td>
+	</tr>
+      <?vsp } ?>
+    </table>
+<?vsp adm_page_footer(); ?>
+
+    </body>
+</html>

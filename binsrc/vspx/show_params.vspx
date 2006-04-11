@@ -1,0 +1,80 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+
+<head>
+<meta http-equiv="content-type" content="text/html;charset=iso-8859-1"/>
+<meta name="generator" content="Adobe GoLive 6"/>
+<title>Welcome to Adobe GoLive 6</title>
+</head>
+
+<body bgcolor="#ffffff">
+<v:page name="vpage1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+<font color="green">
+<v:label name="vlabel1" value="--http_client_ip()" format="Client IP: %s" width="284" height="24"/>
+</font>
+
+<p>
+<i>
+<font color="red">
+  <v:label name="vlabel2" value="--http_path()" format="HTTP Path: %s" width="284" height="24"/>
+</font>
+</i>
+</p>
+
+<p>
+<b>
+<font color="navy">
+  <v:label name="vlabel3" value="--http_physical_path()" format="HTTP Physical Path: %s" width="284" height="24"/>
+</font>
+</b>
+</p>
+
+<p>
+<font size="5" color="red">
+  <v:label name="vlabel4" value="--(length(e.ve_params)/2)" format="HTTP Parameters Count: %d" width="284" height="24"/>
+</font>
+</p>
+
+<p>
+<?vsp
+declare i integer;
+i := 0;
+while(i < length(params)) {
+  http(sprintf('%s=%s<br>', aref(params, i), aref(params, i+1))); i := i + 2; }
+?>
+</p>
+
+<v:form name="vform1" type="simple" method="POST" action="">
+  <input type="submit" name="submitButtonName" value="Submit" border="0"/>
+</v:form>
+
+<v:include url="footer.xml"/>
+
+</v:page>
+
+</body>
+</html>

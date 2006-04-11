@@ -1,0 +1,490 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare _dsn, _dsns, _ldsn, _user, _pass, _step, _stat, _msg, _acct, _srv, _hi, _hi2,  _hip, _repl_addr varchar;
+declare _res, _item any;
+if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+_res := null;
+_item := null;
+_dsn := _user := _pass := '';
+_step := get_keyword ('step', params, '1');
+_dsn := get_keyword ('dsn', params, '');
+_repl_addr := get_keyword ('repl_addr', params, '');
+_ldsn := get_keyword ('ldsn', params, '');
+_dsns := get_keyword ('dsns', params, '');
+
+_user := get_keyword ('user', params, '');
+_pass := get_keyword ('pass', params, '');
+
+if (_step = '1' and '' = get_keyword ('lst', params, ''))
+  {
+    _dsn := get_keyword ('dsns', params, '');
+    if (_user = '')
+      {
+	whenever not found goto nfdsn;
+	select DS_UID, pwd_magic_calc (DS_UID, DS_PWD, 1) into _user, _pass from DB.DBA.SYS_DATA_SOURCE
+	    where DS_DSN = _dsn;
+        nfdsn:;
+      }
+  }
+
+if (_step = '1' and 'ldsn' = get_keyword ('box', params, '') )
+  {
+    _dsn := get_keyword ('ldsn', params, '');
+    _user := ''; _pass := '';
+  }
+
+if (_dsn <> '' and exists (select 1 from DB.DBA.SYS_DATA_SOURCE where DS_DSN = _dsn) and user = '')
+  {
+    whenever not found goto nfu;
+    select DS_UID, pwd_magic_calc (DS_UID, DS_PWD, 1) into _user, _pass from DB.DBA.SYS_DATA_SOURCE where DS_DSN = _dsn;
+nfu:;
+  }
+
+_acct := get_keyword ('acct', params, '');
+_srv := get_keyword ('srv', params, '');
+
+if ('' <> get_keyword ('lst', params, ''))
+  {
+    _stat := '00000'; _msg := '';
+    if (_dsn <> '')
+      {
+	-- if (not exists (select 1 from SYS_DATA_SOURCE where DS_DSN = _dsn))
+	exec ('vd_remote_data_source (?,?,?,?)',_stat,_msg, vector (_dsn, '', _user, _pass));
+	if (_stat = '00000')
+	  {
+            declare s_ver varchar;
+            s_ver := sys_stat ('st_dbms_ver');
+            s_ver := substring (s_ver, strrchr (s_ver, '.') + 2, length (s_ver));
+            if (atoi (s_ver) > 1937)
+	      {
+		declare idn, o_idn any;
+		idn := identify_self ();
+		rexecute (_dsn, 'select aref(identify_self (), 0), aref(identify_self (), 1), aref(identify_self (), 2), aref(identify_self (), 3)', _stat, _msg,
+		    null, null, null, _res);
+		if (_stat = '00000')
+		  {
+		    if (_res is not null and __tag (_res) = 193)
+		      {
+			o_idn := aref(_res, 0);
+			if (o_idn is not null and length (o_idn) > 3)
+			  {
+			    if ((aref (o_idn, 0) = aref (idn, 0))
+				and (aref (o_idn, 1) = aref (idn, 1))
+				and (aref (o_idn, 2) = aref (idn, 2))
+				and (aref (o_idn, 3) = aref (idn, 3)))
+			      {
+				http ('<H4>Cannot subscribe into the same server</H4>');
+				return (0);
+			      }
+			  }
+		      }
+		  }
+	      }
+            _res := null;
+	    _stat := '00000'; _msg := '';
+	    rexecute (_dsn, 'select sys_connected_server_address (1)', _stat, _msg,
+		null, null, null, _res);
+	    if (_stat = '00000')
+	      {
+		if (_res is not null)
+		  _repl_addr := aref (aref (_res, 0), 0);
+	      }
+
+            _stat := '00000'; _msg := '';
+	    rexecute (_dsn, 'select ACCOUNT from DB.DBA.SYS_REPL_ACCOUNTS where
+		SERVER = repl_this_server () and ACCOUNT <> repl_this_server ()', _stat, _msg,
+		null, null, null, _res);
+	    if (_stat = '00000' and _res is not null)
+	      _step := '2';
+	    else
+	      http ('<p><strong>*** Replication cannot be found on selected Data Source ***</strong></p>');
+	  }
+	else
+	  http (concat ('<p>***', _msg, '***</p>'));
+      }
+    else
+      http ('<p>*** DSN should be supplied ***</p>');
+  }
+if ('' <> get_keyword ('publ', params, ''))
+  {
+    _acct := get_keyword ('pub', params, '');
+    if (_acct <> '')
+      {
+        _stat := '00000'; _msg := '';
+	rexecute (_dsn, 'select TI_ITEM, TI_TYPE from DB.DBA.SYS_TP_ITEM where
+	    TI_SERVER = repl_this_server () and TI_ACCT = ?', _stat, _msg, vector (_acct), null, null, _item);
+
+	if (_stat = '00000')
+	  {
+	    _step := '3';
+            _stat := '00000'; _msg := '';
+            rexecute (_dsn, 'select distinct (SERVER) from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = repl_this_server ()',
+		 _stat, _msg, null, null, null, _srv);
+	    if (_stat = '00000')
+	     _srv := aref (aref (_srv, 0), 0);
+	  }
+      }
+  }
+if ('' <> get_keyword ('add_sub', params, ''))
+  {
+    declare dav_u, dav_g varchar;
+    dav_u := get_keyword ('dav_own', params);
+    if (dav_u = '')
+      dav_u := NULL;
+    dav_g := get_keyword ('dav_grp', params);
+    if (dav_g = '')
+      dav_g := NULL;
+    if (_srv <> '' and _acct <> '' and _repl_addr <> '')
+      {
+	declare errors any;
+	declare _intl integer;
+	REPL_SERVER (_srv, _dsn, _repl_addr);
+	-- update SYS_SERVERS set REPL_ADDRESS = _repl_addr where SERVER = _srv;
+	-- DB..vd_remote_data_source (_dsn, '', _user, _pass);
+	-- repl_changed ();
+        declare _sync_user varchar;
+        _sync_user := get_keyword ('sync_user', params);
+        REPL_SUBSCRIBE (_srv, _acct, dav_u, dav_g, _user, _pass, _sync_user);
+
+        commit work;
+	if ('' <> get_keyword ('load_data', params, ''))
+	  {
+	    http_rewrite ();
+	    http_request_status ('HTTP/1.1 302 Found');
+            http_header (sprintf ('Location: trx_sub_copy_stat.vsp?srv=%s&acct=%s\r\n', _srv, _acct));
+            registry_set (sprintf ('repl_%s_%s_state', _srv, _acct), serialize (vector ('0', '')));
+	    http_flush ();
+	    errors := REPL_INIT_COPY (_srv, _acct, 1);
+	  }
+        _intl := atoi (get_keyword ('sched_int', params, '0'));
+	DB.DBA.SUB_SCHEDULE (_srv, _acct, _intl);
+        if ('' <> get_keyword ('load_data', params, ''))
+          return ;
+
+	if (isarray (errors))
+	  {
+            http_rewrite ();
+?>
+
+<?include sub_error.vsp ?>
+
+<?vsp
+            return ;
+	  }
+        else
+	  {
+?>
+	  <script language="JavaScript">
+	     location.replace ('trx_sub.vsp')
+	  </script>
+
+<?vsp
+	  }
+      }
+    else
+      {
+	http ('<p><strong>*** The DSN and replication server address is mandatory ***</strong></p>');
+      }
+  }
+if (_step = '1')
+  {
+    _hi := 'text';
+    _hip := 'password';
+  }
+else
+  {
+    _hi := 'hidden';
+    _hip := 'hidden';
+  }
+if (_step = '2')
+  _hi2 := 'text';
+else
+  _hi2 := 'hidden';
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="New Transactional Replication subscription wizard">
+    <title>New Transactional Replication subscription wizard</title>
+  </head>
+<?vsp adm_page_header('Transactional Replication Subscription', NULL); ?>
+<?include ../adm_js_check.vsp ?>
+  <!--BODY CLASS="adm_pages_body">
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING=0 CELLSPACING=0>
+<TR><TD CLASS="adm_pages_title" COLSPAN="2"><H2>New Transactional Replication Subscription</H2></TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"-->
+
+<?vsp if (_step = '1') { ?>
+    <p class=helptext>Enter DSN of the source Virtuoso server, username and password or select from existing connected DSN's</p>
+    <p class=helptext>Next, click on <b>Publications list</b> to view all published account at target</p>
+<?vsp } else if (_step = '2') { ?>
+    <p class=helptext>Choose publication from list and click at <b>List items</b> to view all items on publication</p>
+    <p class=helptext>If <b>Replication address</b> is empty fill with valid host&amp;port</p>
+<?vsp } else if (_step = '3') { ?>
+    <p class=helptext>Click on <b>Subscribe</b> to create local schema and sync with source server</p>
+    <p class=helptext>To load data after subscription check <b>Load data</b> box or load data manually from main menu using <b>Load image</b> button</p>
+    <p class=helptext>To define scheduled synchronization after subscription input interval in minutes in <b>Sync every</b> box (zero "0" means no schedule)  or define manually using subscription properties menu</p>
+<?vsp } ?>
+    <hr>
+    <form name=link_form method=post action="trx_sub_new.vsp">
+    <input type=hidden name=step value="<?=_step?>">
+    <input type=hidden name=box>
+    <table border=0>
+<?vsp if (_step = '1') { ?>
+      <tr>
+        <td colspan=2 class="widgettitle" valign="top">1. Select existing or define new data source</td>
+      </tr>
+      <tr>
+        <td><b><small>Connected DSNs</small></b></td><td>&nbsp;</td>
+      </tr>
+    <tr><td>
+    <select name=dsns onChange="javascript:document.link_form.box.value='dsns'; document.link_form.submit();" size=5 >
+    <?vsp for select DS_DSN from DB.DBA.SYS_DATA_SOURCE order by DS_DSN do { ?>
+      <option <?= select_if (_dsns, DS_DSN) ?>><?=DS_DSN?></option>
+    <?vsp } ?>
+    </select>
+    </td>
+ <?vsp } ?>
+    <td>
+	  <table border=0>
+	    <tr>
+<?vsp if (_step = '1') { ?>
+	      <td class="widgettitle">DSN</td>
+<?vsp } ?>
+	      <td><input type="<?=_hi?>" name="dsn" value="<?= _dsn ?>"></td>
+	    </tr>
+	    <tr>
+<?vsp if (_step = '1') { ?>
+	      <td class="widgettitle">username</td>
+<?vsp } ?>
+	      <td><input type="<?=_hi?>" name="user" value="<?= _user ?>"></td>
+	    </tr>
+	    <tr>
+<?vsp if (_step = '1') { ?>
+	      <td class="widgettitle">password</td>
+<?vsp } ?>
+	      <td><input type="<?=_hip?>" name="pass" value="<?= _pass ?>"></td>
+	    </tr>
+	  </table>
+          <!--input type="<?=_hi?>" name="repl_addr"-->
+<?vsp if (_step = '1') { ?>
+       <tr><td colspan=2  align=right>
+       <input type=submit name=lst value="Publications list">
+      </td></tr>
+      <tr>
+        <td><b><small>Predefined DSNs</small></b></td><td>&nbsp;</td>
+      </tr>
+      <tr>
+        <td>
+	  <select name="ldsn" size=5 onChange="javascript:document.link_form.box.value='ldsn'; document.link_form.submit();">
+	   <?vsp adm_lt_dsn_options(_ldsn); ?>
+	  </select>
+        </td>
+      </tr>
+<?vsp } ?>
+      </td>
+<?vsp if (_step = '2') { ?>
+	    <tr>
+	      <td class="widgettitle">2.a. Replication address (host:port)</td>
+<?vsp } ?>
+	      <td><input type="<?=_hi2?>" name="repl_addr" value="<?= _repl_addr ?>"></td>
+<?vsp if (_step = '2') { ?>
+	    </tr>
+      <tr>
+        <td colspan=2 class="widgettitle" valign="top">2. Choose publication</td>
+      </tr>
+       <tr>
+	   <td colspan=2>
+<?vsp
+         declare _len integer;
+         if (__tag (_res) = 193) { ?>
+            <select name=pub m-ultiple size=5>
+            <?vsp
+	    declare _ix integer;
+            declare _pub varchar;
+	    declare _pubs any;
+            _pubs := _res;
+            _ix := 0;
+            _len := length (_pubs);
+	    while (_ix < _len)
+	      {
+	        if (__tag (aref (_pubs, _ix)) = 193)
+	          _pub := aref (aref (_pubs, _ix), 0);
+		else
+		  _pub := aref (_pubs, _ix);
+	    ?>
+            <option value="<?=_pub?>" "<?=_pub?>"><?=_pub?></option>
+            <?vsp
+	         _ix := _ix + 1;
+	       }
+	    if (_len = 0)
+              http ('<option>** publications does not exist **</option>');
+	    ?>
+            </select>
+   <?vsp } ?>
+	   </td>
+       </tr>
+
+
+
+       <tr><td colspan=2 align=right>
+       <?vsp if (_len > 0) { ?>
+       <input type=submit name=publ value="List items">
+       <?vsp } else { ?>
+       <input type=button name=publ value="Cancel" onClick="location.replace('trx_sub.vsp')">
+       <?vsp } ?>
+
+       </td></tr>
+<?vsp } ?>
+<?vsp if (_step = '3') { ?>
+      <tr>
+        <td class="widgettitle" valign="top">3. Confirm subscription</td>
+      </tr>
+      <tr>
+        <td>
+	<table class=tablelist>
+	<tr>
+	<td class=tablelisthead>Item</td>
+	<td class=tablelisthead>Type</td>
+	</tr>
+	<?vsp
+	       declare _idx, _ilen, _itp integer;
+               declare _iname, _itype varchar;
+               _idx := 0;
+
+	       if (_item is not null)
+	         _ilen := length (_item);
+	       else
+		 _ilen := 0;
+               while (_idx < _ilen)
+		 {
+                   _itp := aref (aref (_item, _idx), 1);
+                   _iname := aref (aref (_item, _idx), 0);
+	           if (_itp = 1)
+                     _itype := 'DAV Collection';
+		   else if (_itp = 2)
+                     _itype := 'Table';
+		   else if (_itp = 3)
+                     _itype := 'PL/SQL Procedure';
+        ?>
+                  <tr><td><?=_iname?></td><td><?=_itype?></td></tr>
+        <?vsp
+	           _idx := _idx + 1;
+		 }
+	?>
+	</table>
+        </td>
+      </tr>
+      <tr>
+         <td>
+	  <input type=checkbox name="load_data">
+	  <b>Load data</b>
+         </td>
+      </tr>
+      <tr>
+         <td>
+	  <b>Synchronize subscription every </b>
+	  <input type=text name="sched_int" value="10" size=4 align=right>
+	  <b> min</b>
+         </td>
+      </tr>
+      <tr>
+         <td>
+	  <b>Run sync process as </b>
+	  <select name="sync_user">
+          <?vsp
+            for select U_NAME from DB.DBA.SYS_USERS
+                where U_IS_ROLE = 0 and U_DAV_ENABLE = 0
+                order by U_NAME do
+              {
+                declare _sel varchar;
+                if (U_NAME = 'dba')
+                  _sel := ' selected';
+                else
+                  _sel := '';
+          ?>
+	    <option value=<?=U_NAME?><?=_sel?>><?=U_NAME?></option>
+	  <?vsp
+              }
+          ?>
+	  </select>
+         </td>
+      </tr>
+      <tr>
+         <td>
+	 <table class="tablelist">
+
+         <tr><td  class="tablelisthead" colspan="2">Permissions</td></tr>
+
+	 <tr>
+         <!--TR CLASS="adm_borders"><TD COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="1" ALT=""></TD></TR-->
+
+	 <td  nowrap class="gen_listheadt" >WebDAV owner</td>
+
+	  <td>
+	   <select name=dav_own>
+	   <option value="">nobody</option>
+            <?vsp for select U_NAME, U_ID from WS.WS.SYS_DAV_USER do { ?>
+	     <option value=<?=U_NAME?>><?=U_NAME?></option>
+	    <?vsp } ?>
+	   </select>
+	  </td>
+
+	  </tr>
+
+	  <tr>
+	  <td  nowrap class="gen_listheadt" >WebDAV group</td>
+
+	  <td>
+	  <select name=dav_grp>
+	   <option value="">nogroup</option>
+          <?vsp for select G_NAME, G_ID from WS.WS.SYS_DAV_GROUP do { ?>
+	    <option value=<?=G_NAME?>><?=G_NAME?></option>
+	   <?vsp } ?>
+	  </select>
+	  </td>
+	  </tr>
+	  </table>
+         </td>
+      </tr>
+      <tr>
+         <td>
+	  <input type=hidden name=acct value="<?=_acct?>">
+	  <input type=hidden name=srv value="<?=_srv?>">
+	  <input type=submit name=add_sub value="Subscribe">
+         </td>
+      </tr>
+<?vsp } ?>
+
+      </table>
+    </form>
+</TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD>
+</TABLE>
+<?include ../admin_footer.vsp ?>
+</body>
+</html>

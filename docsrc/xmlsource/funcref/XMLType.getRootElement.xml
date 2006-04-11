@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_XMLType.getRootElement">
+  <refmeta>
+    <refentrytitle>XMLType.getRootElement</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XMLType.getRootElement</refname>
+    <refpurpose>Returns top-level element of the given instance (NULL for fragment)</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_XMLType.getRootElement">
+      <funcprototype id="fproto_XMLType.getRootElement">
+        <funcdef><function>XMLType.getRootElement</function></funcdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_XMLType.getRootElement">
+    <title>Description</title>
+    <para>If the given instance is well-formed then this function will return 
+	the top-level element of the document that is stored within the instance.
+    If the given instance is a fragment then NULL will be returned because there 
+	may be no top-level elements or too many of them.</para>
+    <para>Note that inspite of this functions name this function actually 
+	returns the a top-level node rather than not a root node.   According to the 
+	W3C XPATH standards, the root element is an implicit node whose children are top-level
+    elements, comments, processing instructions and maybe text nodes.  E.g. if 
+	a correct HTML document is started by tag <computeroutput>&lt;HTML></computeroutput> 
+	and ended by corresponding <computeroutput>&lt;/HTML></computeroutput> tag 
+	then the only top-level node is the &quot;<computeroutput>HTML</computeroutput>&quot; 
+	element node and this node is a single child of the root node.</para>
+    <para>If the given instance is well-formed then the function returns a 
+	top-level element of the document that is stored in the instance.  If the 
+	given instance is fragment then NULL is returned, because there may be 
+	no top-level elements or too many of them.</para>
+    <para>If the given instance is schema-based then the returned 
+	instance is based on the same schema.</para>
+  </refsect1>
+  <refsect1 id="ret_XMLType.getRootElement"><title>Return Types</title>
+    <para>The function returns an XMLType instance.</para>
+  </refsect1>
+  <refsect1 id="examples_XMLType.getRootElement">
+    <title>Examples</title>
+    <example id="ex_XMLType.getRootElement"><title>A table with an XMLType column</title>
+      <para>First select statement lists well-formed documents; second one lists the only fragment in the table.</para>
+      <screen><![CDATA[
+create table TEST_XMLS  (I integer primary key, XMLVAL XMLType);
+insert into TEST_XMLS  values (1, XMLType('<emp><empno>221</empno><ename>John</ename></emp>'));
+insert into TEST_XMLS  values (2, XMLType('<po><pono>331</pono><poname>PO_1</poname></po>'));
+insert into TEST_XMLS  values (3, XMLType('<oil-rig id="14a" water="0.413"/><oil-rig id="14b" water="0.402"/>'));
+
+select e.I, e.XMLVAL.getRootElement().getClobVal()
+  from TEST_XMLS as e
+  where e.XMLVAL.getRootElement() is not null
+I                 callret
+INTEGER NOT NULL  NVARCHAR
+_______________________________________________________________________________
+
+1                 <emp><empno>221</empno><ename>John</ename></emp>
+2                 <po><pono>331</pono><poname>PO_1</poname></po>
+
+2 Rows. -- 00000 msec.
+
+select e.I, e.XMLVAL.getClobVal()
+  from TEST_XMLS as e
+  where e.XMLVAL.getRootElement() is null
+I                 callret
+INTEGER NOT NULL  NVARCHAR
+_______________________________________________________________________________
+
+3                 <oil-rig id="14a" water="0.413" /><oil-rig id="14b" water="0.402" />
+
+1 Rows. -- 00000 msec.
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_XMLType.getRootElement">
+    <title>See Also</title>
+    <para><link linkend="fn_XMLType.isFragment"><function>XMLType.isFragment()</function></link></para>
+  </refsect1>
+</refentry>

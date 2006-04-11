@@ -1,0 +1,198 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*-html-*- -->
+<?vsp adm_pre_page(lines);
+
+  declare _have integer;
+  declare _ip1, _ip2, _ip3, _ip4, d_ip, _u_id integer;
+  declare _access integer;
+  declare _ip varchar;
+  declare _vec any;
+  declare _vec_o any;
+
+if (1 <> (_u_id := adm_dav_check_auth (lines)))
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+          'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+
+
+  _ip1 := get_keyword ('ip1', params, '%');
+  _ip2 := get_keyword ('ip2', params, '%');
+  _ip3 := get_keyword ('ip3', params, '%');
+  _ip4 := get_keyword ('ip4', params, '%');
+  d_ip := get_keyword ('d_ip', params, '%');
+
+  _access := get_keyword ('access', params, '');
+
+  if (_access = '_a')
+    _access := 0;
+  else
+    _access := 1;
+
+  if (get_keyword ('add_f', params, '') = '1' and get_keyword ('_add', params, '') <> '')
+    {
+      declare ord integer;
+      _ip := concat (_ip1, '.', _ip2, '.', _ip3, '.', _ip4);
+      ord := coalesce ((select max (HA_ORDER) from DB.DBA.HTTP_ACL where upper(HA_LIST) = 'PROXY'), 0);
+      ord := ord + 1;
+      insert into DB.DBA.HTTP_ACL (HA_DEST_IP, HA_CLIENT_IP, HA_FLAG, HA_LIST, HA_ORDER)
+      	 values (d_ip, _ip, _access, 'PROXY', ord);
+    }
+
+  if (get_keyword ('_upd', params, '') <> '')
+    {
+      _ip := concat (_ip1, '.', _ip2, '.', _ip3, '.', _ip4);
+       _vec_o :=  deserialize (decode_base64 (get_keyword ('vec_o', params, '')));
+
+      update DB.DBA.HTTP_PROXY_ACL set HP_DEST = d_ip, HP_SRC = _ip, HP_FLAG = _access
+      	 where HP_DEST = _vec_o [0] and HP_SRC = _vec_o [1] and HP_FLAG = _vec_o [2];
+    }
+
+  if (get_keyword ('DEL', params, '') <> '')
+    {
+       _vec :=  deserialize (decode_base64 (get_keyword ('DEL', params, '')));
+
+       delete from DB.DBA.HTTP_PROXY_ACL where
+	   HP_DEST = _vec [0] and
+	   HP_SRC = _vec [1] and
+       	   HP_FLAG = _vec [2];
+    }
+
+  if (get_keyword ('EDIT', params, '') <> '')
+    {
+       _vec_o := get_keyword ('EDIT', params, '');
+       _vec :=  deserialize (decode_base64 (_vec_o));
+
+       d_ip := _vec[0];
+       _ip := _vec[1];
+       _access := _vec [2];
+
+       _ip1 := "LEFT" (_ip, strstr (_ip, '.'));
+       _ip := subseq (_ip,  strstr (_ip, '.') + 1);
+       _ip2 := "LEFT" (_ip, strstr (_ip, '.'));
+       _ip := subseq (_ip,  strstr (_ip, '.') + 1);
+       _ip3 := "LEFT" (_ip, strstr (_ip, '.'));
+       _ip4 := subseq (_ip,  strstr (_ip, '.') + 1);
+    }
+
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Access Control List Page Virtuoso HTTP Proxy Server">
+    <title>Internet News Search</title>
+  </head>
+<?vsp adm_page_header('HTTP Proxy Access Control List Manager', ''); ?>
+
+    <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+    <FORM name="main_form" method="POST" action="<?=http_path ()?>">
+     <TR><TD COLSPAN="6" CLASS="genhead">Access Control List</TD></TR>
+     <TR><TD CLASS="AdmBorders" COLSPAN="6"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	<TR>
+	   <TD CLASS="genlistheadt">Destination</TD>
+	   <TD CLASS="genlistheadt">Client IP</TD>
+	   <TD CLASS="genlistheadt">Access</TD>
+	   <TD CLASS="genlistheadt" COLSPAN="2">Action</TD>
+	</TR>
+<?vsp
+	_have := 0;
+
+	for (select * from DB.DBA.HTTP_PROXY_ACL) do
+	  {
+	     _vec := encode_base64 (serialize (vector (HP_DEST, HP_SRC, HP_FLAG)));
+
+	     _have := _have + 1;
+
+	     http (sprintf ('<TR><TD class="statdata">%s</TD><TD class="statdata">%s</TD><TD class="statdata">', HP_DEST, HP_SRC));
+
+	     if (HP_FLAG)
+	       http ('<b><font color=ff0020>deny</font></b>');
+	     else
+	       http ('<b><font color="green">allow</font></b>');
+
+	     http ('</TD><TD>');
+
+	     http ('</TD>');
+?>
+          <TD CLASS="statdata"><a CLASS="tablelistaction" href="adm_proxy_acl.vsp?DEL=<?=_vec?>">remove</a>
+          <a CLASS="tablelistaction" href="adm_proxy_acl.vsp?EDIT=<?=_vec?>">edit</a></TD>
+ 	</TR>
+<?vsp
+	  }
+
+	if (_have = 0)
+    	   http ('<TR><TD  CLASS="gendata" COLSPAN="6"><sTRong>Empty access list</sTRong><br /> click \'Add\' to new restriction</TD></TR>');
+
+	if (get_keyword ('_add', params, '') <> '' or
+	    get_keyword ('EDIT', params, '') <> '')
+	  {
+?>
+	<TR><TD COLSPAN="6">
+	<input type="hidden" name="add_f" value="1" />
+	<TABLE BORDER="0" WIDTH="100%">
+	   <TR><TD COLSPAN="2"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+           <TR>
+             <TD CLASS="genlisthead">Destination</TD><TD>
+	       <INPUT type="text" name="d_ip" value="<?=d_ip?>" size="15">
+	     </TD></TR>
+	     <TR><TD CLASS="genlisthead">Client IP</TD>
+	     <TD>
+	       <INPUT type="text" name="ip1" value="<?=_ip1?>" size="3">.
+	       <INPUT type="text" name="ip2" value="<?=_ip2?>" size="3">.
+	       <INPUT type="text" name="ip3" value="<?=_ip3?>" size="3">.
+	       <INPUT type="text" name="ip4" value="<?=_ip4?>" size="3">
+	     </TD></TR>
+	     <TR><TD CLASS="genlisthead">Access</TD>
+	     <TD>
+	       <SELECT NAME="access">
+	         <OPTION VALUE="_d" <?vsp if (_access) http ('SELECTED'); ?>>Deny</OPTION>
+	         <OPTION VALUE="_a" <?vsp if (not _access) http ('SELECTED'); ?>>Allow</OPTION>
+	       </SELECT>
+	     </TD></TR>
+       </TABLE>
+<?vsp
+	  }
+?>
+	<TR><TD ALIGN="right" COLSPAN="6">
+<?vsp
+	 if (get_keyword ('EDIT', params, '') <> '')
+	   {
+	     http ('<INPUT TYPE="submit" NAME="_upd" VALUE="Update">');
+	     http (sprintf ('<INPUT TYPE="hidden" NAME="vec_o" VALUE="%s">', _vec_o));
+	   }
+	 else
+	   http ('<INPUT TYPE="submit" NAME="_add" VALUE="Add">');
+?>
+	</TD></TR>
+    </TABLE>
+
+<?vsp adm_page_footer(); ?>
+</html>
+

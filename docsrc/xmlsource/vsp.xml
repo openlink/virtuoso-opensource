@@ -1,0 +1,1154 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="vsp1"><title>Virtuoso Server Pages (VSP)</title>
+
+<para>The Virtuoso Server Pages subsystem is an integral part of the Virtuoso server.
+A VSP page is a file system or DAV resident resource that contains Virtuoso/PL code intermixed with HTML or other static content.</para>
+
+  <figure id="vspconcept" float="1"><title>VSP Conceptual Diagram</title>
+   <graphic fileref="vspconcept.jpg" format="jpeg"></graphic></figure>
+
+<para>Virtuoso can serve Web pages to HTTP 1.0 and HTTP 1.1 clients.  The
+HTTP document root is set by the ServerRoot parameter in the [HTTPServer]
+section of the Virtuoso INI file.  By default this is set to <computeroutput>vsp</computeroutput>
+sub-directory of the installation.  If this parameter is not set, then the default
+document root will be the server's working directory.  </para>
+
+<formalpara><title>Executing VSP Pages</title>
+<para>Directories under the ServerRoot directory, including the root itself are
+not automatically allowed to execute dynamic pages such as VSP.  A virtual
+directory must first be created with an appropriate VSP user assigned to
+permit execution of dynamic pages. After this, Virtuoso will execute files
+with a "<computeroutput>.vsp</computeroutput>" extension as a VSP page.]
+</para></formalpara>
+
+<formalpara><title>The VSP Stored Procedure</title>
+<para>Each VSP page constitutes a Virtuoso stored procedure named after the
+URI of the page by taking the URI and pre-pending the WS.WS. qualifier and owner.
+Hence the page <computeroutput>/test.vsp</computeroutput> becomes the procedure
+<computeroutput>"WS"."WS"."/test.vsp"</computeroutput>.  This is automatically performed
+when a page is first requested.  Subsequent requests to the page will not
+reference the file.  The VSP engine will check for changes in the
+<computeroutput>.vsp</computeroutput> source file before calling the
+procedure and re-compile as required.
+The <link linkend="fn_ws_proc_def">ws_proc_def()</link> SQL function
+can be used to explicitly update the procedure if the .vsp file is changed.
+</para></formalpara>
+
+<formalpara id="httphandleclidisconnect"><title>The VSP Transaction</title>
+<para>Each URL is executed in its own transaction.  All SQL statements in a page
+procedure, whether on local or remote data, make up one transaction, unless
+transaction control statements are explicitly used to divide the page into
+multiple transactions.  If the page procedure returns through completing execution
+or through a return statement or as a result of a 'no data found' condition, the
+transaction is implicitly committed.  If this commit fails, the output is discarded
+and the error message indicating the commit failure is sent to the HTTP client.
+If a VSP procedure returns as a result of an error the transaction is rolled
+back and the output discarded.  The client gets the SQL error message as the
+HTML body of the reply.  A VSP procedure can commit or roll back explicitly with
+the <computeroutput>commit work</computeroutput> or
+<computeroutput>rollback work</computeroutput> PL statements.
+</para>
+<para>If the client closes the connection to the server while server-side processing
+    is taking place this will be detected by the server and the transaction will be
+    eventually interrupted and rolled back in the same way as if an ODBC client
+    had disconnected. To control the server reacting or not on the HTTP client
+    disconnecting the SET HTTP_IGNORE_DISCONNECT = ON/OFF should be used.</para>
+ </formalpara>
+
+<para>Each VSP page-procedure is called with three arguments:</para>
+
+<simplelist>
+ <member><emphasis>path</emphasis> - the URI path of the VSP page itself.</member>
+ <member><emphasis>params</emphasis> - the parameters from a previous POST to the server.</member>
+ <member><emphasis>lines</emphasis> - the complete set of headers received from the calling client.</member>
+</simplelist>
+
+<para>Each VSP procedure runs in a context that implicitly contains the
+stream to the HTTP client.  The arguments of the VSP page procedure are
+represented as arrays of strings. For example, GETing the URL: </para>
+
+  <programlisting>
+http://www.test.net/x/y.vsp?arg1=1&amp;arg2=2
+</programlisting>
+  <para>would cause the following arguments to be given to the page-procedure
+  <computeroutput>WS.WS./x/y.vsp</computeroutput>:</para>
+
+  <programlisting>
+path     ('x', 'y.vsp')
+params   ('arg1', '1', 'arg2', '2')
+lines    ('GET /x/y.vsp?arg1=1&amp;arg2=2 HTTP/1.1', 'Host: www.test.net', ...)
+</programlisting>
+
+<para>Arrays are marked in parentheses with elements separated by commas.
+The page procedure is called as a result of either a GET or POST request in
+either HTTP/1.0 or HTTP/1.1. In the event of a POST request the params contains
+the post data.</para>
+
+<para>Virtuoso can be configured to proxy certain requests to another web
+server.  This allows using another web server for running cgi-bin's, Java
+servelets or other web server functions.  Virtuoso, however, is capable of
+hosting many other dynamic engines also, such as PHP, JSP and ASP.Net.</para>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="vspconf">HTTP Server Base Configuration</link></para>
+  <para><link linkend="httpvirtualdirs">Virtual Directory Administration UI</link></para>
+  <para><link linkend="fn_vhost_define">vhost_define()</link>, <link linkend="fn_vhost_remove">vhost_remove()</link></para>
+  <para><link linkend="virtproxy">Virtuoso as a Proxy</link></para>
+  </tip>
+
+<sect2 id="vspmarkup"><title>VSP Markup &amp; Basic Functions</title>
+
+<para>All VSP specific markup is represented as a processing instruction (&lt;? ... ?&gt;).</para>
+
+<programlisting><![CDATA[
+<?vsp
+  statement ;
+  statement ;
+  ...
+ ?>
+]]></programlisting>
+
+<para>This markup introduces Virtuoso PL code to a VSP page, which otherwise
+may normally contain HTML markup.  The code enclosed must begin
+and end at a statement boundary but a compound statement may begin in one
+&lt;?vsp tag and end in another.  Code outside of these blocks is ignored
+by Virtuoso and placed directly on the HTTP stream to be sent to the client.</para>
+
+<tip><title>See Also:</title>
+<para>The <link linkend="sqlprocedures">SQL Procedure Language Guide</link> chapter.</para></tip>
+
+<para>Several functions exist to allow VSP code to send data to the HTTP stream.
+They are basically the same but offer different escaping mechanisms to suit different purposes:</para>
+
+<para><link linkend="fn_http"><function>http (in <parameter>value</parameter> varchar, in <parameter><optional>stream</optional></parameter> any);</function></link></para>
+<para><link linkend="fn_http_value"><function>http_value ( in <parameter>value</parameter> any, in <parameter>tag</parameter> varchar, in <parameter>tag</parameter> varchar, in <parameter><optional>stream</optional></parameter> any);</function></link></para>
+<para><link linkend="fn_http_url"><function>http_url ( in <parameter>value</parameter> any, in <parameter>tag</parameter> varchar, in <parameter><optional>stream</optional></parameter> any);</function></link></para>
+
+<para>These functions output their <parameter>value</parameter> argument
+to the specified stream with varying escaping. The value argument may be any
+scalar object, i.e. string, date or number and will automatically be cast to
+varchar before further processing.</para>
+
+<para><function>http()</function> will print out the contents of <parameter>value</parameter>
+cast to string without any modification.</para>
+
+<para><function>http_value()</function> will use HTML escapes such that
+'<computeroutput>&lt;</computeroutput>' will be output as
+'<computeroutput>&amp;lt;</computeroutput>'.</para>
+
+<para>The <function>http_url()</function> function will use URL escapes
+such that '+' replaces spaces and hex escapes like %25 will replace '%'.
+If <function>http_value()</function> gets an XML entity returned by a
+path expression it outputs the serialization of the entity, including children.
+This is not the string value since this has the entity start and end tags and
+other markup.  The tag argument allows specifying a tag in which the value
+is to be enclosed.  A non-string value, e.g. 0 or null will cause no tag to be
+put around the value.</para>
+
+<para>The stream argument may be omitted, in which case it defaults to the HTTP
+client of the calling procedure.  If present, a value of integer 0 will mean the
+http client.  If non-0 the value must be an object returned by
+<link linkend="fn_string_output">string_output()</link>.</para>
+
+<para>These HTTP functions are commonly combined with <function>sprintf()</function>
+which allows string composition based on a template.  When
+using <link linkend="fn_sprintf">sprintf()</link> to compose data
+to send to the user agent the %V and %U letters can be used to introduce escapes
+similar to http_value and http_url, respectively.
+</para>
+
+<example id="ex_httpfunctions"><title>HTTP Functions</title>
+<programlisting>
+http (' % &lt;b&gt;')          ' % &lt;b&gt;'
+http_value (' % &lt;b&gt;')    ' % &amp;lt;b&amp;gt;'
+http_url (' % &lt;b&gt;')      '+%25+&lt;b&gt;'
+http_value (12, 'li')    '&lt;li&gt;12&lt;/li&gt;'
+</programlisting>
+</example>
+
+<sect3 id="vspmarkupshort"><title>Markup Short-hands</title>
+
+<para>VSP markup short-hands exist for the <function>http_value()</function> and
+<function>http_url()</function> functions to perform the same task outside of
+a VSP code block.  This can improve readability of VSP pages.</para>
+
+<programlisting>
+&lt;?= expression ?&gt;  equiv.  http_value()
+</programlisting>
+  <programlisting>
+&lt;?/ expression ?&gt;  equiv.  http_url()
+</programlisting>
+
+<para>These markups are shorthand for substituting values of expressions into
+the output.  The <computeroutput>&lt;?= </computeroutput>tag accepts a SQL
+expression and casts the value into a string, which is sent to the output.  The
+<computeroutput>&lt;?/ </computeroutput> markup sends the value of the
+expression to the client with HTTP URL escapes.</para>
+
+<example id="vspmkup"><title>VSP Markup</title>
+<para>Here is a very simple example of making a two column HTML table
+from the results of a "select" SQL statement.  First using normal functions:</para>
+<programlisting><![CDATA[
+<html>
+<h2>List of Users</h2>
+<table>
+<?vsp
+  for (select u_name, u_password from sys_users ) do {
+    http('<tr><td>');
+    http (u_name);
+    http('</td><td>');
+    http (u_password);
+    http('</td></tr>');
+  }
+?>
+      </table>
+</html>
+]]></programlisting>
+
+<para>This fragment outputs a table of user names and passwords.  We have
+chosen to not end the code block until the end of the result so we have repeatedly
+used the <function>http()</function> function to output parts of the table also.</para>
+
+<para>Now the same code but including shorthands:</para>
+
+<programlisting><![CDATA[
+<html>
+<h2>List of Users</h2>
+<table>
+<?vsp for (select u_name, u_password from sys_users ) do { ?>
+  <tr>
+    <td><?=u_name ?></td>
+    <td><?=u_password ?></td></tr>
+      <?vsp } ?>
+      </table>
+</html>
+]]></programlisting>
+</example>
+</sect3>
+</sect2>
+
+<sect2 id="accessrequestinfo"><title>Access Request Information</title>
+
+  <para>Request information, resulting from an HTTP POST, is available via
+  the <parameter>params</parameter> vector.  The params vector is always
+  available for the purpose in a VSP context.  Similarly the <parameter>lines</parameter>
+  and <parameter>path</parameter> vectors are available for the HTTP headers and
+  URL path respectively.</para>
+
+  <para>Parameters stored in the params vector are stored in keyword-value
+  pairs, such that keywords are stored in the even elements, values in the odd
+  numbered elements.  Vectors and arrays can be accessed using the
+  <function>aref()</function> and <function>aset()</function> functions,
+  however, the exact position of parameters is seldom known.  The
+  <function>get_keyword()</function> function can be used to return the value of a
+  given parameter.  You can specify a default value to return in case the
+  parameter you are looking for is not found.</para>
+
+  <para><function>get_keyword (<parameter>'param_name'</parameter>, <parameter>vector</parameter> [, <parameter>opt_default_value'</parameter>]);</function></para>
+
+  <para>If a default value other than '' (empty-string) is not required then a
+  short-hand can be used instead.</para>
+
+<programlisting>{?'param_name'}</programlisting>
+
+<para>is equivalent to <function>get_keyword (<parameter>'param_name'</parameter>, <parameter>'params'</parameter>);</function></para>
+
+
+
+  <para>Since <function>get_keyword()</function> returns only strings, you will
+  find that <computeroutput>cast</computeroutput>ing or conversion functions
+  such as <function>atoi()</function> are very useful here.</para>
+
+  <example id="ex_usingparamsvector"><title>Reading the params Vector</title>
+  <para>Consider retrieving the following page by means of the URL: </para>
+
+  <programlisting>
+http://myvirtuoso/test.vsp?arg1=1&amp;arg2=test
+</programlisting>
+
+<programlisting><![CDATA[
+<html>
+ <body>
+  <h1>Test Params</h1>
+  <?vsp
+  declare _arg1 integer; --   the underscore helps to differentiate from
+  declare _arg2 varchar; --   the keyword name, whereas the varliable names
+  declare _arg3 varchar; --   help use remember which is which.
+
+  _arg1 := atoi(get_keyword('arg1', params));
+  _arg2 := {?'arg2'};
+  _arg3 := get_keyword('arg3', params, 'was empty'};
+
+  ?>
+  <p>values returned:</p>
+  <p>arg1: <?=_arg1?></p>
+  <p>arg2: <?=_arg2?></p>
+  <p>arg3: <?=_arg3?></p>
+ </body>
+</html>
+]]></programlisting>
+</example>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="fn_get_keyword"><function>get_keyword()</function></link></para>
+  <para><link linkend="fn_atoi"><function>atoi()</function></link></para>
+  <para><link linkend="fn_aref"><function>aref()</function></link></para>
+  <para><link linkend="fn_aset"><function>aset()</function></link></para>
+  <para><link linkend="dtcasting">cast</link></para></tip>
+
+  <note><title>Note:</title>
+    <para>Sometimes a POST can supply a large amount of data, such as from
+    an &lt;INPUT type="file"&gt;.  When the length of the parameter data
+    exceeds 5,000,000 octets the result is stored as a string session in the
+    params array.  In these cases the value should not be copied or converted
+    to a string, it is likely to be truncated.  The value should be stored as a
+    BLOB or an external file.  When processing possibly large input fields in a
+    form either the fourth parameter to <function>get_keyword()/get_keyword_ucase()</function>
+    should be set to 1 or they should be accessed
+    through <function>aref_set_0()</function>.</para></note>
+
+</sect2>
+
+<sect2 id="errorsinpage"><title>Errors in Page Procedures</title>
+  <para>
+VSP pages can declare handlers for errors using the normal handler declaration or whenever ... goto construct.
+Any unhandled error causes the procedure to be terminated and the error
+message to be sent to the HTTP client instead of the output.  Because terminating
+the page output at an arbitrary point would probably result in not well formed output
+all the output up to the point of the error is discarded.
+</para>
+
+<para>If the SQL state signaled with the error is VSPRT the output
+generated up to the point where the error was signaled is sent as
+such to the user agent.  This special SQL state is useful together
+with the http_rewrite function for things like sending a redirect based
+on a condition detected in the middle of page processing.  The
+http_rewrite function will clear all output buffered so far and
+signaling VSPRT will make sure that whatever output is generated
+after http_rewrite goes unmodified to the user agent.</para>
+
+</sect2>
+
+<sect2 id="inlinefile"><title>/INLINEFILE HTTP Server Pseudo-Directory</title>
+
+  <para>This pseudo directory provides a way for a VSP page to have full
+  control over the data sent to the client user-agent, for example to send files to
+  it and to handle the HTTP response attributes.</para>
+  <para>URIs starting with
+  /INLINEFILE are handled through a VSP procedure instead of
+  being searched for in the HTTP root directory.  This special URI has the
+  following syntax:</para>
+
+<programlisting><![CDATA[
+/INLINEFILE/some_file_name?VSP=some_vsp&arg1=x&arg2=y.....
+]]></programlisting>
+
+  <para>Upon receipt of such a URI, Virtuoso will execute the "some_vsp"
+  VSP page with the parameters following the VSP parameter.  The VSP page
+  can adjust the HTTP response header attributes using the
+  <function>http_header()</function> function to reflect the content of the
+  HTTP body, such as specifying the encoding through "Content-Encoding" attribute,
+  or a MIME type through "Content-Type" attribute).</para>
+
+<example id="ex_inlinefile"><title>Using /INLINEFILE</title>
+<para>Here is a simple example  for showing JPEG images stored in DAV.
+The page will list the first ten images found in the DAV resources table as hyper-links.
+Clicking on them will fetch the content and display using
+/INLINEFILE.</para>
+
+<programlisting><![CDATA[
+<?vsp
+  if ({?'getfile'} <> '')
+    {
+      http_header ('Content-type: image/jpg\t\n');         -- set the header to jpg
+      declare image any;
+      select RES_CONTENT into image from WS..SYS_DAV_RES
+        where RES_ID = atoi({?'id'});                      -- download image from WebDAV
+      http(image);                                         -- table and display
+      return;
+    }
+  ?>
+<html>
+ <body>
+ <h1>Using /INLINEFILE to display images from the database</h1>
+
+ <table>
+  <tr>
+   <td>
+
+<?vsp for (select top 10 RES_ID, RES_NAME from WS..SYS_DAV_RES where right(RES_NAME, 3) = 'jpg') do {?>
+ <a href="?id=<?=RES_ID?>"><?=RES_NAME?></a><br>
+<?vsp } ?>
+
+   </td>
+   <td>
+    <p><img src="/INLINEFILE/picture.jpg?VSP=<?/http_path()?>&getfile=yes&id=<?={?'id'}?>"></p>
+    <p><a href="/INLINEFILE/picture.jpg?VSP=<?/http_path()?>&getfile=yes&id=<?/{?'id'}?>">download</a></p>
+   </td>
+  </tr>
+ </table>
+ </body>
+</html>
+]]></programlisting>
+
+<note><title>Note:</title>
+  <para>Note the use of the <function>http_path()</function> function to find the
+  full path of the originating VSP file.</para>
+  <para>Also note the call to <function>http_header()</function> to set the appropriate
+  content type for the returned data.  When Virtuoso retrieves files normally, it will
+  consult the system table <computeroutput>WS.WS.SYS_DAV_RES_TYPES</computeroutput>
+  for types based on the file extension.  We do not need to refer to the table in our
+  example because we are making sure that only JPEGs are being returned.</para>
+  </note>
+</example>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="fn_http_header"><function>http_header()</function></link></para>
+  <para><link linkend="fn_http_path"><function>http_path()</function></link></para></tip>
+
+</sect2>
+
+
+<sect2 id="furthervsp"><title>Beyond Basics</title>
+
+<para>All output from VSP page procedures is buffered into a local string
+stream before being sent out.  This is done so as to support the HTTP/1.1 required
+content length and to allow recovery from errors.</para>
+
+<para><link linkend="fn_http_rewrite"><function>http_rewrite ( in <parameter>stream</parameter> any);</function></link></para>
+
+  <para>This clears any previous output to the stream.  If the stream is
+  omitted or 0 the stream is the HTTP client stream of the calling procedure.</para>
+
+<para><link linkend="fn_http_file"><function>http_file ( in <parameter>path</parameter> varchar);</function></link></para>
+
+  <para>This function sends a file to the HTTP client as a response to the
+  current request.  Any other output that may have been generated by the calling
+  procedure will be discarded and the contents of the file will be the exclusive
+  response to the current HTTP request together with appropriate headers.
+  The file will only be sent after the procedure handling the current HTTP
+  request has returned.  The file name is thus not validated until the calling
+  procedure has returned.</para>
+
+<para><link linkend="fn_http_get"><function>http_get( in <parameter>uri</parameter> varchar,
+out <parameter>headers</parameter> varchar);</function></link></para>
+
+  <para>This function retrieves the document specified by the URI by HTTP and
+  returns the data of the response.  The header output parameter is set to be
+  an array with an element for each line of the response's HTTP header.  Each
+  line is a varchar object in the containing array.  The header parameter is optional.</para>
+
+  <para>The URI is of the form <computeroutput>host[:port]&lt;path&gt;</computeroutput>, e.g
+  '<computeroutput>www.openlinksw.com:80/index.html</computeroutput>'.  The
+  port, if omitted, defaults to 80.  The data following the headers is not
+  processed in any way.  No content transfer encodings are decoded but an
+  eventual content transfer encoding header can be found in the header array.</para>
+
+<para><link linkend="fn_http_flush"><function>http_flush();</function></link></para>
+  <para>This function generates a response header, flushes a stream and
+  disconnects the client, however, the server will continue with the execution
+  of the PL code in VSP page.  The final result will never be sent to the client.
+  This is useful when a page makes a long transaction and we do not wish the
+  client to wait until its end, which may result in a time-out.   Suppose we have the
+  retrieval of news from many targets, each a thousand messages.  We start from
+  a VSP page process, inside it we put into the internal stream (using http,
+  http_value etc.) redirect code and call http_flush.  The client can read the
+  response and go to a status page that can display number of messages retrieved,
+  which may need refreshing a few times.</para>
+
+  <para><link linkend="fn_http_proxy">
+ <function>http_proxy (in <parameter>host_and_port</parameter> varchar,
+            in <parameter>header_lines</parameter> any,
+	    in <parameter>post_parameters</parameter> any)</function></link></para>
+
+  <para>
+The function http_proxy() is used to send request in header_lines and post_parameters
+to the host_and_port, read the response and send it back to the client.
+The http_proxy() function can be used inside a VSP page to send a request to
+an external web server and automatically route the reply sent by this remote server
+to the client of the VSP page calling http_proxy().
+The output which can generated (with http functions, etc.) before and after http_proxy
+is called will be discarded before sending the result of link retrieval to the user-agent.
+</para>
+
+<example id="virtpxy"><title>Virtuoso Proxy</title>
+
+<programlisting>
+...
+&lt;?vsp
+  http ('this never be displayed');
+  http_proxy ('www.foo.com', vector ('GET / HTTP/1.0'), NULL);
+  http ('and this also');
+?&gt;
+...
+</programlisting>
+</example>
+
+<sect3 id="httpcharsettings"><title>Virtuoso HTTP Server Character Set Settings</title>
+  <para>When the HTTP server returns the HTTP header to the client it appends charset=xxxx to
+the Content-Type: HTTP header fields.  This informs the client user agent, the web browser,
+as to the character set of the content to be displayed correctly.  It uses the Web server
+charset to correctly format values resulting from the <function>http_value()</function> function
+or the VSP equivalent &lt;?= ...&gt;.  Wide values and XML entities, resulting from any XML
+processing functions like xpath_contains, get represented using
+the &quot;HTML/XML transformation&quot;.</para>
+  <para>The default web server charset is governed by the <emphasis>Charset</emphasis>
+setting defined in the <link linkend="VIRTINI">Virtuoso INI file</link>.  If no default
+charset is specified then Virtuoso will use ISO-8859-1.</para>
+  <para>The HTTP character set can be changed during an HTTP session using:
+  <emphasis>set http_charset='charset_name';</emphasis>.</para>
+  <para>The XSLT output encoding can also be specified to over ride the server
+  default setting.</para>
+</sect3>
+
+<sect3 id="sesmanvars"><title>Session Management and State Variables</title>
+
+  <para>
+The Virtuoso HTTP session management consists of functions for session
+variables manipulation and hooks for saving and restoring session variables.
+</para>
+  <para>Session management must be enable by setting the flag for persistent
+  session variables in the virtual directory mapping.  Virtual directory mappings use
+  the <emphasis>persistent_session_variables</emphasis> flag, which when
+specified, session variables can be used in a post-process function to determine
+if the session variables content must be stored on to the session table or not.
+</para>
+  <para>
+The post-processing function hook can be any user-defined Virtuoso/PL procedure,
+it will be executed every time after processing of the active page.
+</para>
+
+<tip><title>See Also:</title>
+<para><link linkend="fn_connection_get"><function>connection_get()</function></link></para>
+<para><link linkend="fn_connection_set"><function>connection_set()</function></link></para>
+<para><link linkend="fn_connection_vars"><function>connection_vars()</function></link></para>
+<para><link linkend="fn_connection_vars_set"><function>connection_vars_set()</function></link></para>
+<para><link linkend="fn_connection_is_dirty"><function>connection_is_dirty()</function></link></para>
+</tip>
+
+</sect3>
+
+<!-- sect3 id="uainfo"><title>User Agent Information</title>
+
+getting UA info
+seting the ini file stuff
+is this vsp?? cookies
+</sect3>
+-->
+
+</sect2>
+
+<sect2 id="longhttptrans"><title>Long HTTP Transactions</title>
+
+  <para>Long running tasks may be invoked by web clients. In such a case,
+  the server should return a page for the user agent much before the tasks's completion
+  in order to provide feedback and avoid timeouts. Also the long running task should not be
+  interrupted by the user agent disconnecting. The <function>http_flush()</function> function will
+  send the reply accumulated thus far to the user agent and then disconnect it.
+  In effect, this is a generic mechanism for starting an asynchroneous thread.</para>
+
+  <para>Starting long running tasks may lead to denial of service.
+  To prevent this we can use status and stop functions to check processes and
+  kill them if necessary.</para>
+
+  <para>We can retrieve the URL, client IP-address, and process status code
+  for all currently running VSP requests, then use this information to isolate
+  and eliminate a process.</para>
+
+  <para><link linkend="fn_http_pending_req"><function>http_pending_req()</function></link>
+  Lists the processes.</para>
+
+  <para><link linkend="fn_http_kill">http_kill()</link> can be used to kill them.</para>
+
+</sect2>
+
+<sect2 id="httpchunkedoutput"><title>Using chunked encoding in HTTP 1.1</title>
+
+  <para>It is sometimes desirable to use the HTTP 1.1 chunked encoding to send
+  data to HTTP clients. Examples of such include status pages or streaming
+  applications. Note that the possiblity of using chunked encoding depends on
+  external factors such as whether the client browser supports chunked
+  encoding. So a server page can request turning on the chunked encoding, but should
+  handle the case should it not be available.</para>
+  <para>Note that in order to successfully turn on the chunked encoding the
+  page should not be using the <function>http_xslt()</function>. Also
+  all reply headers set by the <function>http_header()</function> are silently
+  ignored after the mode is set.</para>
+  <para>The <function>http_flush()</function> (with 1 as a value for it&quot;s optional
+  argument) is used to request turning on the chunked encoding. If the client&quot;s
+  user agent supports the encoding, then the data accumulated so far in the
+  server&quot;s output buffer are sent to the client as the first chunk, the
+  request is put in special "chunked mode" and the <function>http_flush()</function>
+  returns a non-zero integer. When in that mode a new chunk is sent
+  to the client either when the internal 4k buffer is filled up or when the client
+  calls <function>http_flush()</function> again to flush the buffer and send it as a chunk.
+	  The client disconnection is handled as <link linkend="httphandleclidisconnect">usual</link>.</para>
+</sect2>
+
+<sect2 id="mksimpledynapages"><title>Making Simple Dynamic Web Pages</title>
+  <para>
+The directory where the pages reside must be marked as executable.
+Use the <link linkend="fn_vhost_define">vhost_define</link> function or
+the <link linkend="httpvirtualdirs">Administration Interface</link> to do this:
+</para>
+<programlisting>
+vhost_define (lpath=&gt;'/example_location', ppath=&gt;'/example_location/', vsp_user=&gt;'demo');
+</programlisting>
+
+  <para>
+The usual way to make an Dynamic page is to make a HTML skeleton and insert
+Virtuoso/PL code in appropriate places to fill in the rest dynamically.  Consider
+the following example as a demonstration of such technique.  Note that the
+example is made in four steps but in practice this can be one.
+</para>
+  <para>
+Suppose we have a table Demo.demo.Shippers (from the Demo database of the
+standard distribution).  We can make a simple page for editing it.
+</para>
+
+<orderedlist>
+  <listitem>
+    <formalpara><title>Building The HTML Skeleton</title>
+      <para>
+We define one form for editing and adding entries and a table for listing the existing shippers.
+    </para>
+    <programlisting>
+&lt;HTML&gt;
+  &lt;BODY&gt;
+
+    &lt;!-- edit form --&gt;
+    &lt;FORM name="ShippersForm" method="POST" action="shippers.vsp"&gt;
+       &lt;INPUT type="hidden" name="ShipperID" value=""&gt;
+       &lt;TABLE&gt;
+         &lt;TR&gt;
+	   &lt;TD&gt;Company Name&lt;/TD&gt;
+	   &lt;TD&gt;&lt;input type="text" name="CompanyName" value=""&gt;&lt;!-- CompanyName --&gt;&lt;/TD&gt;
+	 &lt;/TR&gt;
+         &lt;TR&gt;
+	   &lt;TD&gt;Phone&lt;/TD&gt;
+    	   &lt;TD&gt;&lt;INPUT type="text" name="Phone" value=""&gt;&lt;!-- Phone number --&gt;&lt;/TD&gt;
+	 &lt;/TR&gt;
+         &lt;TR&gt;&lt;TD colspan="2"&gt;&lt;input type="submit" name="accept" value="Accept"&gt;&lt;/TD&gt;&lt;/TR&gt;
+       &lt;/TABLE&gt;
+    &lt;/FORM&gt;
+    &lt;!-- end of form --&gt;
+
+    &lt;!-- list of entries --&gt;
+    &lt;TABLE&gt;
+       &lt;TR&gt;&lt;TD&gt;Company Name&lt;/TD&gt;&lt;TD&gt;Phone #&lt;/TD&gt;&lt;TD colspan="2"&gt;Action&lt;/TD&gt;&lt;/TR&gt;
+       &lt;!--TR&gt;&lt;TD&gt;CompanyName&lt;/TD&gt;&lt;TD&gt;Phone&lt;/TD&gt;&lt;TD&gt;Edit URI&lt;/TD&gt;&lt;TD&gt;Delete URI&lt;/TD&gt;&lt;/TR--&gt;
+    &lt;/TABLE&gt;
+    &lt;!-- end of list --&gt;
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+    </programlisting>
+  </formalpara>
+</listitem>
+<listitem>
+  <formalpara><title>Filling a List of Entries</title>
+    <para>
+We have added in part 'list of entries' one active part (for select ...).
+And using &lt;?=...?&gt; shortcut we have made for each row in database table
+one row in table defined in step 1.  Also we have added two useful links
+'Edit' and 'Delete' with URL parameter 'EDIT' and 'DELETE' whose value
+is equal to the primary key value of the row;
+    </para>
+    <programlisting>
+&lt;HTML&gt;
+  &lt;BODY&gt;
+
+    &lt;!-- edit form --&gt;
+    &lt;FORM name="ShippersForm" method="POST" action="shippers.vsp"&gt;
+       &lt;INPUT type="hidden" name="ShipperID" value=""&gt;
+       &lt;TABLE&gt;
+         &lt;TR&gt;
+	   &lt;TD&gt;Company Name&lt;/TD&gt;
+	   &lt;TD&gt;&lt;input type="text" name="CompanyName" value=""&gt;&lt;!-- CompanyName --&gt;&lt;/TD&gt;
+	 &lt;/TR&gt;
+         &lt;TR&gt;
+	   &lt;TD&gt;Phone&lt;/TD&gt;
+    	   &lt;TD&gt;&lt;INPUT type="text" name="Phone" value=""&gt;&lt;!-- Phone number --&gt;&lt;/TD&gt;
+	 &lt;/TR&gt;
+         &lt;TR&gt;&lt;TD colspan="2"&gt;&lt;input type="submit" name="accept" value="Accept"&gt;&lt;/TD&gt;&lt;/TR&gt;
+       &lt;/TABLE&gt;
+    &lt;/FORM&gt;
+    &lt;!-- end of form --&gt;
+
+    &lt;!-- list of entries --&gt;
+    &lt;TABLE&gt;
+       &lt;TR&gt;&lt;TD&gt;Company Name&lt;/TD&gt;&lt;TD&gt;Phone #&lt;/TD&gt;&lt;TD colspan="2"&gt;Action&lt;/TD&gt;&lt;/TR&gt;
+       &lt;!--TR&gt;&lt;TD&gt;CompanyName&lt;/TD&gt;&lt;TD&gt;Phone&lt;/TD&gt;&lt;TD&gt;Edit URI&lt;/TD&gt;&lt;TD&gt;Delete URI&lt;/TD&gt;&lt;/TR--&gt;
+       &lt;?vsp
+         for select ShipperID, CompanyName, Phone from Demo.demo.Shippers do
+          {
+       ?&gt;
+       &lt;TR&gt;
+         &lt;TD&gt;&lt;?=CompanyName?&gt;&lt;/TD&gt;
+	 &lt;TD&gt;&lt;?=Phone?&gt;&lt;/TD&gt;
+	 &lt;TD&gt;&lt;a href="shippers.vsp?EDIT=&lt;?=ShipperID?&gt;"&gt;Edit&lt;/a&gt;&lt;/TD&gt;
+	 &lt;TD&gt;&lt;a href="shippers.vsp?DELETE=&lt;?=ShipperID?&gt;"&gt;Delete&lt;/a&gt;&lt;/TD&gt;
+       &lt;/TR&gt;
+       &lt;?vsp
+          }
+       ?&gt;
+    &lt;/TABLE&gt;
+    &lt;!-- end of list --&gt;
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+    </programlisting>
+  </formalpara>
+</listitem>
+<listitem>
+  <formalpara><title>Retrieving Parameters and Filling in The Form</title>
+    <para>We must retrieve the parameters 'Delete' and 'Edit' from the URL and fill in
+the form elements
+</para>
+    <para>
+We have added a section to the top of the page that we use to recognize what operation to perform
+and do the appropriate action in the database.  In the case of editing we use the values
+input on the form.
+    </para>
+
+    <programlisting>
+&lt;?vsp
+declare company_name, phone_number varchar;
+declare shipper_id, operation integer;
+declare shipper_info
+  cursor for select CompanyName, Phone
+    from Demo.demo.Shippers where ShipperID = shipper_id;
+
+company_name := '';
+phone_number := '';
+operation := 0;
+
+shipper_id := atoi (get_keyword ('EDIT', params, '0'));
+
+if (shipper_id &gt; 0)
+  {
+    whenever not found goto not_found_any;
+    open shipper_info (prefetch 1);
+    fetch shipper_info into company_name, phone_number;
+not_found_any:
+    close shipper_info;
+    goto display_page;
+  }
+
+shipper_id := atoi (get_keyword ('DELETE', params, '0'));
+
+if (shipper_id &gt; 0)
+  {
+    delete from Demo.demo.Shippers where ShipperID = shipper_id;
+    goto display_page;
+  }
+
+display_page:
+
+?&gt;
+
+&lt;HTML&gt;
+  &lt;BODY&gt;
+
+    &lt;!-- edit form --&gt;
+    &lt;FORM name="ShippersForm" method="POST" action="shippers.vsp"&gt;
+       &lt;INPUT type="hidden" name="ShipperID" value="&lt;?=shipper_id?&gt;"&gt;
+       &lt;TABLE&gt;
+         &lt;TR&gt;
+	   &lt;TD&gt;Company Name&lt;/TD&gt;
+	   &lt;TD&gt;&lt;input type="text" name="CompanyName" value="&lt;?=company_name?&gt;"&lt;/TD&gt;
+	 &lt;/TR&gt;
+         &lt;TR&gt;
+	   &lt;TD&gt;Phone&lt;/TD&gt;
+    	   &lt;TD&gt;&lt;INPUT type="text" name="Phone" value="&lt;?=phone_number?&gt;"&lt;/TD&gt;
+	 &lt;/TR&gt;
+         &lt;TR&gt;&lt;TD colspan="2"&gt;&lt;input type="submit" name="accept" value="Accept"&gt;&lt;/TD&gt;&lt;/TR&gt;
+       &lt;/TABLE&gt;
+    &lt;/FORM&gt;
+    &lt;!-- end of form --&gt;
+
+
+    &lt;!-- list of entries --&gt;
+    &lt;TABLE&gt;
+       &lt;TR&gt;&lt;TD&gt;Company Name&lt;/TD&gt;&lt;TD&gt;Phone #&lt;/TD&gt;&lt;TD colspan="2"&gt;Action&lt;/TD&gt;&lt;/TR&gt;
+       &lt;!--TR&gt;&lt;TD&gt;CompanyName&lt;/TD&gt;&lt;TD&gt;Phone&lt;/TD&gt;&lt;TD&gt;Edit URI&lt;/TD&gt;&lt;TD&gt;Delete URI&lt;/TD&gt;&lt;/TR--&gt;
+       &lt;?vsp
+         for select ShipperID, CompanyName, Phone from Demo.demo.Shippers do
+          {
+       ?&gt;
+       &lt;TR&gt;
+         &lt;TD&gt;&lt;?=CompanyName?&gt;&lt;/TD&gt;
+	 &lt;TD&gt;&lt;?=Phone?&gt;&lt;/TD&gt;
+	 &lt;TD&gt;&lt;a href="shippers.vsp?EDIT=&lt;?=ShipperID?&gt;"&gt;Edit&lt;/a&gt;&lt;/TD&gt;
+	 &lt;TD&gt;&lt;a href="shippers.vsp?DELETE=&lt;?=ShipperID?&gt;"&gt;Delete&lt;/a&gt;&lt;/TD&gt;
+       &lt;/TR&gt;
+       &lt;?vsp
+          }
+       ?&gt;
+    &lt;/TABLE&gt;
+    &lt;!-- end of list --&gt;
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+    </programlisting>
+  </formalpara>
+</listitem>
+<listitem>
+  <formalpara><title>Editing Form Logic</title>
+    <para>
+We have a logic in the same initialization part of the page that retrieves
+a 'ShipperID' parameter, so if this parameter exists in the params array then
+the operation is to perform an insert, otherwise we must update a record.
+    </para>
+
+    <programlisting>
+&lt;?vsp
+declare company_name, phone_number varchar;
+declare shipper_id integer;
+declare shipper_info
+  cursor for select CompanyName, Phone
+    from Demo.demo.Shippers where ShipperID = shipper_id;
+
+company_name := '';
+phone_number := '';
+
+shipper_id := atoi (get_keyword ('EDIT', params, '0'));
+-- If the current operation is edit then we retrieve the Company Name and Phone
+if (shipper_id &gt; 0)
+  {
+    whenever not found goto not_found_any;
+    open shipper_info (prefetch 1);
+    fetch shipper_info into company_name, phone_number;
+not_found_any:
+    close shipper_info;
+    goto display_page;
+  }
+
+shipper_id := atoi (get_keyword ('DELETE', params, '0'));
+
+-- If the operation is delete then delete it (if any error
+-- occurred then HTTP server will handle it)
+if (shipper_id &gt; 0)
+  {
+    delete from Demo.demo.Shippers where ShipperID = shipper_id;
+    shipper_id := 0; -- reset it to prevent submission of wrong shipper id
+    goto display_page;
+  }
+
+-- If pressed button Accept then we can recognize the operation
+if ('' &lt;&gt; get_keyword ('accept', params, ''))
+  {
+    shipper_id := atoi (get_keyword ('ShipperID', params, '0'));
+    company_name := get_keyword ('CompanyName', params, 'unknown');
+    phone_number := get_keyword ('Phone', params, 'N/A');
+    -- the old entry going edited
+    if (shipper_id &gt; 0)
+        update Demo.demo.Shippers set CompanyName = company_name, Phone = phone_number
+	    where ShipperID = shipper_id;
+    else -- this is an new entry
+      {
+        shipper_id := coalesce ((select max(ShipperID) from Demo.demo.Shippers), 0) + 1;
+        insert into Demo.demo.Shippers (ShipperID,CompanyName,Phone)
+	    values (shipper_id,company_name,phone_number);
+      }
+    company_name := ''; -- we clear all entered data
+    phone_number := '';
+    shipper_id := 0; -- to prevent setting of wrong shipper id in form
+  }
+
+display_page:
+
+?&gt;
+
+&lt;HTML&gt;
+  &lt;BODY&gt;
+    &lt;H3&gt;Editing a shipment companies&lt;/H3&gt;
+    &lt;!-- edit form --&gt;
+    &lt;FORM name="ShippersForm" method="POST" action="shippers.vsp"&gt;
+       &lt;INPUT type="hidden" name="ShipperID" value="&lt;?=shipper_id?&gt;"&gt;
+       &lt;TABLE&gt;
+         &lt;TR&gt;
+	   &lt;TD&gt;Company Name&lt;/TD&gt;
+	   &lt;TD&gt;&lt;input type="text" name="CompanyName" value="&lt;?=company_name?&gt;"&lt;/TD&gt;
+	 &lt;/TR&gt;
+         &lt;TR&gt;
+	   &lt;TD&gt;Phone&lt;/TD&gt;
+    	   &lt;TD&gt;&lt;INPUT type="text" name="Phone" value="&lt;?=phone_number?&gt;"&lt;/TD&gt;
+	 &lt;/TR&gt;
+         &lt;TR&gt;&lt;TD colspan="2"&gt;&lt;input type="submit" name="accept" value="Accept"&gt;&lt;/TD&gt;&lt;/TR&gt;
+       &lt;/TABLE&gt;
+    &lt;/FORM&gt;
+    &lt;!-- end of form --&gt;
+
+
+    &lt;!-- list of entries --&gt;
+    &lt;TABLE&gt;
+       &lt;TR&gt;&lt;TD&gt;Company Name&lt;/TD&gt;&lt;TD&gt;Phone #&lt;/TD&gt;&lt;TD colspan="2"&gt;Action&lt;/TD&gt;&lt;/TR&gt;
+       &lt;!--TR&gt;&lt;TD&gt;CompanyName&lt;/TD&gt;&lt;TD&gt;Phone&lt;/TD&gt;&lt;TD&gt;Edit URI&lt;/TD&gt;&lt;TD&gt;Delete URI&lt;/TD&gt;&lt;/TR--&gt;
+       &lt;?vsp
+         for select ShipperID, CompanyName, Phone from Demo.demo.Shippers do
+          {
+       ?&gt;
+       &lt;TR&gt;
+         &lt;TD&gt;&lt;?=CompanyName?&gt;&lt;/TD&gt;
+	 &lt;TD&gt;&lt;?=Phone?&gt;&lt;/TD&gt;
+	 &lt;TD&gt;&lt;a href="shippers.vsp?EDIT=&lt;?=ShipperID?&gt;"&gt;Edit&lt;/a&gt;&lt;/TD&gt;
+	 &lt;TD&gt;&lt;a href="shippers.vsp?DELETE=&lt;?=ShipperID?&gt;"&gt;Delete&lt;/a&gt;&lt;/TD&gt;
+       &lt;/TR&gt;
+       &lt;?vsp
+          }
+       ?&gt;
+    &lt;/TABLE&gt;
+    &lt;!-- end of list --&gt;
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+    </programlisting>
+  </formalpara>
+</listitem>
+<listitem>
+  <formalpara><title>Final Remarks</title>
+    <para>
+The page for shippers does not have any specific error-handling.  If there are any
+SQL errors produced the HTTP server will display the error number and the server
+error message. For example, if we trying to delete an record of a predefined
+shippers we would have a foreign key violation to which the server would respond:
+    </para>
+    <screen>
+'SQL Error S1000 DELETE statement conflicted with
+  COLUMN REFERENCE constraint "Orders_Shippers_ShipVia_ShipperID"'
+    </screen>
+    <para>
+We can, however, add PL code to handle errors and display a different page.
+    </para>
+  </formalpara>
+</listitem>
+</orderedlist>
+</sect2>
+
+<sect2 id="xmlthtmloutmd"><title>Generation of non-HTML output</title>
+    <para>
+	VSP pages are not restricted to generating  only HTML markup.
+	In order  to generate non-HTML markup the VSP page MUST conform to the target  format specification,
+	for example if XML output is needed, the markup MUST follow XML syntax rules.  The output sent to the user agent is entirely controlled by the scripting on the page, no constant headers beyond the required HTTP ones are added by the serber.
+    </para>
+    <para>
+	Also it is important when output is not HTML that the HTTP header field
+	'Content-Type'  be set to appropriate MIME type (for example 'text/xml', 'text/plain' etc)
+	using <function>http_header()</function>.
+    </para>
+    <example><title>XML generation</title>
+	<para>The following example shows how an XML document can be generated using a VSP page</para>
+	<programlisting><![CDATA[
+	    <?vsp
+	        -- source of the xmldemo.vsp
+	        declare txt varchar;
+		http_header ('Content-Type: text/xml\r\n');
+		txt := 'this is a XML test';
+   	    ?><?xml version="1.0" ?>
+	    <document>
+		<para><?= txt ?></para>
+	    </document>
+	    ]]></programlisting>
+    </example>
+    <example><title>WML generation</title>
+	<para>The following example shows how a WML page can be generated using a VSP page</para>
+	<programlisting><![CDATA[
+	    <?vsp
+	    	-- source of the wmldemo.vsp
+	        declare txt varchar;
+	    	http_header ('Content-type: text/vnd.wap.wml\r\n');
+		txt := 'this is a WML test';
+	    ?><?xml version="1.0" ?>
+	    <!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+	    <wml>
+		<card>
+		    <p><?= txt ?></p>
+		</card>
+	    </wml>
+	    ]]></programlisting>
+    </example>
+    <tip><title>See Also:</title>
+	<para><ulink url="/tutorial/wap/index.vsp">WML Tutorials</ulink></para>
+    </tip>
+
+</sect2>
+
+
+  <sect2 id="xmlthtmloutmd"><title>Post VSP XSLT Transformation Mode</title>
+
+  <para>
+The Virtuoso server can perform server-side XSLT transformations on the
+internal stream data.  Suppose we have an XML document, we can tell the
+HTTP server to invoke XSLT processor before sending the reply to the user agent.
+We do this by making a call to the <link linkend="fn_http_xslt">http_xslt()</link> function
+inside VSP or any procedure called from it and pass the URL of the stylesheet
+and probably some parameters.</para>
+
+<para><link linkend="fn_http_xslt">
+  <function>http_xslt(in <parameter>style_sheet_URI</parameter> varchar [, in <parameter>parameters</parameter> any])</function></link></para>
+
+  <para>The VSP page will produce an XML document,
+  rather than HTML. The XSL stylesheet will then produce the required
+  output for the user-agent, which could be more XML or HTML.</para>
+
+  <para>The XSL stylesheet could also be generated using VSP.</para>
+
+<example><title>In Server Transformation of XML</title>
+<programlisting>
+&lt;?vsp
+declare ses any;
+ses := string_output ();
+xml_auto ('select ShipperID, CompanyName, Phone from Demo.demo.Shippers
+  for xml auto element', '', ses);
+
+http ('&lt;list&gt;');
+http (string_output_string (ses));
+http ('&lt;/list&gt;');
+http_xslt ('file:/samples/xslt/shippers.xsl');
+?&gt;
+</programlisting>
+
+<para>Where shippers.xsl will have the following content:</para>
+<programlisting>
+&lt;?xml version="1.0"?&gt;
+&lt;xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"&gt;
+&lt;xsl:output method="html"/&gt;
+&lt;xsl:template match="/"&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;title&gt;Shippers list&lt;/title&gt;
+&lt;/head&gt;
+&lt;body link="#0000b4" vlink="#0000b4" bgcolor="#ffffff"&gt;
+&lt;xsl:apply-templates/&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="list"&gt;
+&lt;table&gt;
+&lt;tr&gt;&lt;td&gt;ID&lt;/td&gt;&lt;td&gt;Name&lt;/td&gt;&lt;td&gt;Phone&lt;/td&gt;&lt;/tr&gt;
+&lt;xsl:apply-templates/&gt;
+&lt;/table&gt;
+&lt;/xsl:template&gt;
+&lt;xsl:template match="Shippers"&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;xsl:value-of select="ShipperID"/&gt;&lt;/td&gt;
+&lt;td&gt;&lt;xsl:value-of select="CompanyName"/&gt;&lt;/td&gt;
+&lt;td&gt;&lt;xsl:value-of select="Phone"/&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/xsl:template&gt;
+&lt;/xsl:stylesheet&gt;
+</programlisting>
+</example>
+</sect2>
+
+<sect2 id="xmlforproducingvsp"><title>XML &amp; XSLT Generated VSP Pages</title>
+  <para>
+The Virtuoso HTTP server provides a special case for producing VSP pages.
+For this purpose the extensions .vxml and .vxsl are reserved.  If the
+requested document is named dummy.vxml then the HTTP server will try to locate
+dummy.vxsl.  If the dummy.vxsl exists then it will perform an XSLT transformation
+using .vxml as a target XML document and .vxsl as a XSLT stylesheet.  After
+successful transformation it will compile a result from it in the usual way
+and then perform execute.</para>
+<para>The requirements are: XML document with extension .vxml,
+XSLT sheet with the same name, location but extension .vxsl.  The
+location of these files must be set to allow execution
+(see <link linkend="virtdir">Virtual Directories Support and Execution Privileges</link>).
+</para>
+<example id="ex_vxsl1"><title>Executable (V)XSL</title>
+<para>
+Source of portfolio.vxml
+</para>
+<programlisting>
+&lt;?xml version="1.0"?&gt;
+&lt;?xml-stylesheet type="text/xsl" href="portfolio.xsl"?&gt;
+&lt;portfolio xmlns:dt="urn:schemas-microsoft-com:datatypes" xml:space="preserve"&gt;
+&lt;stock exchange="nyse"&gt;
+&lt;name&gt;zacx corp&lt;/name&gt;
+&lt;symbol&gt;ZCXM&lt;/symbol&gt;
+&lt;price dt:dt="number"&gt;28.875&lt;/price&gt;
+&lt;/stock&gt;
+&lt;stock exchange="nasdaq"&gt;
+&lt;name&gt;zaffymat inc&lt;/name&gt;
+&lt;symbol&gt;ZFFX&lt;/symbol&gt;
+&lt;price dt:dt="number"&gt;92.250&lt;/price&gt;
+&lt;/stock&gt;
+&lt;stock exchange="nasdaq"&gt;
+&lt;name&gt;zysmergy inc&lt;/name&gt;
+&lt;symbol&gt;ZYSZ&lt;/symbol&gt;
+&lt;price dt:dt="number"&gt;20.313&lt;/price&gt;
+&lt;/stock&gt;
+&lt;/portfolio&gt;
+</programlisting>
+
+<para>
+Source of portfolio.vxsl
+</para>
+<programlisting>
+&lt;?xml version='1.0'?&gt;
+&lt;xsl:stylesheet xmlns:xsl="http://www.w3.org/TR/WD-xsl"&gt;
+&lt;xsl:template match="/"&gt;
+&lt;HTML&gt;
+&lt;BODY&gt;
+&lt;TABLE BORDER="2"&gt;
+&lt;TR&gt;
+&lt;TD&gt;Symbol&lt;/TD&gt;
+&lt;TD&gt;Name&lt;/TD&gt;
+&lt;TD&gt;Price&lt;/TD&gt;
+&lt;/TR&gt;
+&lt;xsl:for-each select="portfolio/stock"&gt;
+&lt;TR&gt;
+&lt;TD&gt;&lt;xsl:value-of select="symbol"/&gt;&lt;/TD&gt;
+&lt;TD&gt;&lt;xsl:value-of select="name"/&gt;&lt;/TD&gt;
+&lt;TD&gt;&lt;xsl:value-of select="price"/&gt;&lt;/TD&gt;
+&lt;/TR&gt;
+&lt;/xsl:for-each&gt;
+&lt;/TABLE&gt;
+&lt;/BODY&gt;
+&lt;/HTML&gt;
+&lt;/xsl:template&gt;
+&lt;/xsl:stylesheet&gt;
+</programlisting>
+
+<para>
+The result of retrieving portfolio.vxml
+</para>
+<programlisting>
+&lt;HTML&gt;
+&lt;BODY&gt;
+&lt;TABLE BORDER="2"&gt;
+&lt;TR&gt;&lt;TD&gt;Symbol&lt;/TD&gt;&lt;TD&gt;Name&lt;/TD&gt;&lt;TD&gt;Price&lt;/TD&gt;&lt;/TR&gt;
+&lt;TR&gt;&lt;TD&gt;ZCXM&lt;/TD&gt;&lt;TD&gt;zacx corp&lt;/TD&gt;&lt;TD&gt;28.875&lt;/TD&gt;&lt;/TR&gt;
+&lt;TR&gt;&lt;TD&gt;ZFFX&lt;/TD&gt;&lt;TD&gt;zaffymat inc&lt;/TD&gt;&lt;TD&gt;92.250&lt;/TD&gt;&lt;/TR&gt;
+&lt;TR&gt;&lt;TD&gt;ZYSZ&lt;/TD&gt;&lt;TD&gt;zysmergy inc&lt;/TD&gt;&lt;TD&gt;20.313&lt;/TD&gt;&lt;/TR&gt;
+&lt;/TABLE&gt;
+&lt;/BODY&gt;
+&lt;/HTML&gt;
+</programlisting>
+</example>
+
+    		<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -->
+	</sect2>
+
+	<!-- ################### ~~~~~~~~~~ ################### -->
+
+</sect1>

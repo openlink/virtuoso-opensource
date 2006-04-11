@@ -1,0 +1,222 @@
+<?xml version="1.0"?>
+<!DOCTYPE schema SYSTEM "XMLSchema.dtd" [
+<!ENTITY % schemaAttrs "
+	xmlns:tbl	CDATA	#IMPLIED
+">
+]>
+<!-- Copyright 2000, Norman Walsh, Sun Microsystems.  Schema
+     derived from DocBook DTD Copyright 1992-2000 HaL Computer....  -->
+<schema xmlns='http://www.w3.org/2001/XMLSchema'
+        targetNamespace='http://www.oasis-open.org/tables/exchange/1.0'
+        xmlns:tbl='http://www.oasis-open.org/tables/exchange/1.0'
+        elementFormDefault='qualified'>
+
+<simpleType name='yesorno'>
+  <restriction base='string'>
+    <enumeration value='0'/>
+    <enumeration value='1'/>
+  </restriction>
+</simpleType>
+
+<attributeGroup name='table.att'/>
+<attributeGroup name='tgroup.att'/>
+<attributeGroup name='colspec.att'/>
+<attributeGroup name='thead.att'/>
+<attributeGroup name='tbody.att'/>
+<attributeGroup name='row.att'/>
+<attributeGroup name='entry.att'/>
+
+<complexType name="tableType">
+  <attribute name='frame'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='top'/>
+        <enumeration value='bottom'/>
+        <enumeration value='topbot'/>
+        <enumeration value='all'/>
+        <enumeration value='sides'/>
+        <enumeration value='none'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+  <attribute name='colsep' type='tbl:yesorno'/>
+  <attribute name='rowsep' type='tbl:yesorno'/>
+  <attributeGroup ref='tbl:table.att'/>
+</complexType>
+
+<complexType name='tgroup'>
+  <sequence>
+    <element ref='tbl:colspec' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='tbl:thead' minOccurs='0' maxOccurs='1'/>
+    <element ref='tbl:tbody'/>
+  </sequence>
+  <attribute name='cols' type='integer' use='required'/>
+  <attribute name='colsep' type='tbl:yesorno'/>
+  <attribute name='rowsep' type='tbl:yesorno'/>
+  <attribute name='align'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='left'/>
+        <enumeration value='right'/>
+        <enumeration value='center'/>
+        <enumeration value='justify'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+  <attributeGroup ref='tbl:tgroup.att'/>
+</complexType>
+
+<complexType name='colspec'>
+  <!-- EMPTY -->
+  <complexContent>
+    <restriction base='xsd:anyType'>
+      <attribute name='colnum' type='integer'/>
+      <attribute name='colname' type='NMTOKEN'/>
+      <attribute name='colwidth' type='string'/>
+      <attribute name='colsep' type='tbl:yesorno'/>
+      <attribute name='rowsep' type='tbl:yesorno'/>
+      <attribute name='align'>
+        <simpleType>
+          <restriction base='string'>
+            <enumeration value='left'/>
+            <enumeration value='right'/>
+            <enumeration value='center'/>
+            <enumeration value='justify'/>
+            <enumeration value='char'/>
+          </restriction>
+        </simpleType>
+      </attribute>
+      <attribute name='char' type='string'/>
+      <attribute name='charoff' type='NMTOKEN'/>
+      <attributeGroup ref='tbl:colspec.att'/>
+    </restriction>
+  </complexContent>
+</complexType>
+
+<complexType name='thead'>
+  <choice>
+    <element ref='tbl:row' minOccurs='1' maxOccurs='unbounded'/>
+  </choice>
+  <attribute name='valign'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='top'/>
+        <enumeration value='middle'/>
+        <enumeration value='bottom'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+  <attributeGroup ref='tbl:thead.att'/>
+</complexType>
+
+<complexType name='tbody'>
+  <choice>
+    <element ref='tbl:row' minOccurs='1' maxOccurs='unbounded'/>
+  </choice>
+  <attribute name='valign'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='top'/>
+        <enumeration value='middle'/>
+        <enumeration value='bottom'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+  <attributeGroup ref='tbl:tbody.att'/>
+</complexType>
+
+<complexType name='row'>
+  <choice>
+    <element ref='tbl:entry' minOccurs='1' maxOccurs='unbounded'/>
+  </choice>
+  <attribute name='rowsep' type='tbl:yesorno'/>
+  <attribute name='valign'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='top'/>
+        <enumeration value='middle'/>
+        <enumeration value='bottom'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+  <attributeGroup ref='tbl:row.att'/>
+</complexType>
+
+<complexType name="entryType">
+  <attribute name='colname' type='NMTOKEN'/>
+  <attribute name='namest' type='NMTOKEN'/>
+  <attribute name='nameend' type='NMTOKEN'/>
+  <attribute name='morerows' type='integer'/>
+  <attribute name='colsep' type='tbl:yesorno'/>
+  <attribute name='rowsep' type='tbl:yesorno'/>
+  <attribute name='align'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='left'/>
+        <enumeration value='right'/>
+        <enumeration value='center'/>
+        <enumeration value='justify'/>
+        <enumeration value='char'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+  <attribute name='char' type='string'/>
+  <attribute name='charoff' type='NMTOKEN'/>
+  <attribute name='valign'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='top'/>
+        <enumeration value='middle'/>
+        <enumeration value='bottom'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+  <attributeGroup ref='tbl:entry.att'/>
+</complexType>
+
+<!--
+<complexType name='entry' mixed='true'>
+  <choice>
+    <any namespace='##other' minOccurs='0' maxOccurs='unbounded'/>
+  </choice>
+
+  <attribute name='colname' type='NMTOKEN'/>
+  <attribute name='namest' type='NMTOKEN'/>
+  <attribute name='nameend' type='NMTOKEN'/>
+  <attribute name='morerows' type='integer'/>
+  <attribute name='colsep' type='tbl:yesorno'/>
+  <attribute name='rowsep' type='tbl:yesorno'/>
+  <attribute name='align'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='left'/>
+        <enumeration value='right'/>
+        <enumeration value='center'/>
+        <enumeration value='justify'/>
+        <enumeration value='char'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+  <attribute name='char' type='string'/>
+  <attribute name='charoff' type='NMTOKEN'/>
+  <attribute name='valign'>
+    <simpleType>
+      <restriction base='string'>
+        <enumeration value='top'/>
+        <enumeration value='middle'/>
+        <enumeration value='bottom'/>
+      </restriction>
+    </simpleType>
+  </attribute>
+  <attributeGroup ref='tbl:entry.att'/>
+</complexType>
+-->
+
+<element name='tgroup' type='tbl:tgroup'/>
+<element name='colspec' type='tbl:colspec'/>
+<element name='thead' type='tbl:thead'/>
+<element name='tbody' type='tbl:tbody'/>
+<element name='row' type='tbl:row'/>
+<element name='entry' type='tbl:entryType'/>
+
+</schema>

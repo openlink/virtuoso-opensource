@@ -1,0 +1,53 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+    <s:schema elementFormDefault="qualified" targetNamespace="http://soapinterop.org/echoheader/"
+       xmlns:s="http://www.w3.org/2001/XMLSchema" 
+       xmlns:s1="http://soapinterop.org/xsd" 
+       xmlns:s0="http://soapinterop.org/" 
+       xmlns:s3="http://soapinterop.org/echoheader/" 
+       xmlns:s2="http://soapinterop.org" >
+      <s:complexType name="echoMeComplexTypeRequest">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="varString" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="varInt" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="varFloat" type="s:float" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="echoMeStringRequest">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="varString" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="echoMeComplexTypeResponse">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="varString" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="varInt" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="varFloat" type="s:float" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="echoMeStringResponse">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="varString" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+    </s:schema>

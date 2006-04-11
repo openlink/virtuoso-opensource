@@ -1,0 +1,58 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+<sect1 id="processes_list">
+    <title>OpenLink BPEL Process Manager Processes list</title>
+    <para>This page shows information about BPEL processes deployed on this server.</para>
+    <simplelist>
+      <member><ulink url="i/find_16.png" alt="Filter"/> Click to filter the processes list.</member>
+      <member><ulink url="i/cancl_16.png" alt="Clear"/> Click to clear process filter form. This will go to the page showing information for the uploaded BPEL processes.</member>
+      <member>To view the process info page click the name of the process in the listing. This will go to a page showing the state of the process, possible actions for the process and a list of instances. </member>
+      <member>To enable Auditing for the process check the Audit checkbox in the listing. This will cause all events on all instances to be recorded in an instance-specific audit trail.</member>
+      <member>To enable debugging for the process check the Debug checkbox in the listing. This will cause all instances of the process to run in single-step mode, pausing at each send or receive of a message.  The debug console allows interacting with instances in this mode.</member>
+      <member>To view the structure of the process click the graph link on the process' row in the processes list. This wil go to a page showing all the activities for the process.</member>
+      <member>To view WSDL source content of the process click "WSDL" link on the Properties's row in the listing. This will go to a page showing the wsdl content of the process. If there is defined virtual directory for the process, the page will show the wsdl content with additional elements for Bindings, etc, otherwise will be shown the content of the wsdl for the process.</member>
+      <member>To view the BPEL source  code of the process click "BPEL" link in the listing. This will go to a page showing content of the bpel file for the process.</member>
+      <member>To Change the process definition, click "Redefine" link in the listing.  This will go to a page where new BPEL and WSDL files may be specified.</member>
+      <member>To test the process click "Test" in the listing.  This goes to a page allowing you to enter a start message for creating a new instance of this process.</member>
+      <member>To view partner links for the process click "Partner Links" in the listing.</member>
+      <member>To sort by Process Name click the "Name" column heading in the "Processes List" section.</member>
+      <member>To sort by State click the "State" column heading in the "Processes List" section.</member>
+      <member>To sort by Upload Date click the "Upload Date" column heading in the "Processes List" section.</member>
+      <member>To sort by Audit click the "Audit" column heading in the "Processes List" section.</member>
+      <member><ulink url="i/first_16.png" alt="First"/><ulink url="i/previous_16.png" alt="Previous"/><ulink url="i/next_16.png" alt="Next"/><ulink url="i/last_16.png" alt="Last"/> Click to navigate among the list of processes.</member>
+    </simplelist>
+    <sect2 id="fields">
+      <title>Form fields</title>
+      <sect3 id="f_name">
+        <title>Name contains</title>
+        <para>When specified, only processes whose name contains this string will be listed.</para>
+      </sect3>
+      <sect3 id="f_version">
+        <title>Current version only</title>
+        <para>If this checkbox is checked, only the current versions of processes will be included in the listing.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+</HelpTopic>

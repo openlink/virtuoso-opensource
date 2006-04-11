@@ -1,0 +1,128 @@
+<h2>xmla.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>XML for Analysis methods.</p>
+<hr/>
+
+<h3>Functions</h3>
+<ul>
+	<li><a href="#discover">Xmla.discover(callback)</a></li>
+	<li><a href="#dbschema">Xmla.dbschema(callback)</a></li>
+	<li><a href="#tables">Xmla.tables(catalog, callback)</a></li>
+	<li><a href="#columns">Xmla.columns(catalog, schema, table, callback)</a></li>
+	<li><a href="#execute">Xmla.execute(callback)</a></li>
+	
+	<li><a href="#discover_array">Xmla.discover_array(data)</a></li>
+	<li><a href="#dbschema_array">Xmla.dbschema_array(data)</a></li>
+	<li><a href="#tables_array">Xmla.tables_array(data)</a></li>
+	<li><a href="#columns_array">Xmla.columns_array(data)</a></li>
+	<li><a href="#execute_array">Xmla.execute_array(data)</a></li>
+</ul>
+
+
+<h3>Properties</h3>
+<ul>
+	<li>Xmla.endpoint</li>
+	<li>Xmla.dsn</li>
+	<li>Xmla.user</li>
+	<li>Xmla.password</li>
+	<li>Xmla.query</li>
+</ul>
+
+<hr/>
+
+<h3><a name="discover">Xmla.discover(callback)</a></h3>
+<p>Sends a 'discover datasources' request, then performs <em>callback</em>. 
+<code>Xmla.endpoint</code> should be set before calling this function.</p>
+
+<h3><a name="dbschema">Xmla.dbschema(callback)</a></h3>
+<p>Sends a 'dbschema_catalogs' request, then performs <em>callback</em>.
+<code>Xmla.endpoint</code> and <code>Xmla.dsn</code> should be set before calling this function.</p></p>
+
+<h3><a name="tables">Xmla.tables(catalog, callback)</a></h3>
+<p>Sends a 'dbschema_tables' request with <em>catalog</em> restriction, then performs <em>callback</em>.
+<code>Xmla.endpoint</code> and <code>Xmla.dsn</code> should be set before calling this function.</p></p>
+
+<h3><a name="columns">Xmla.columns(catalog, schema, table, callback)</a></h3>
+<p>Sends a 'dbschema_columns' request with <em>catalog</em>, <em>schema</em> and <em>table</em> restrictions, then performs <em>callback</em>.
+<code>Xmla.endpoint</code> and <code>Xmla.dsn</code> should be set before calling this function.</p></p>
+
+<h3><a name="execute">Xmla.execute(callback)</a></h3>
+<p>Sends a query for execution. 
+<code>Xmla.endpoint</code>, <code>Xmla.dsn</code> and <code>Xmla.query</code> should be set before calling this function.</p></p>
+
+<h3><a name="discover_array">Xmla.discover_array(data)</a></h3>
+<p>Converts data recieved from <code>Xmla.discover</code> into readable array. Example:</p>
+<p class="code">
+var callback = function(data); {<br/>
+ var arr = Xmla.discover_array(data);<br/>
+ alert(arr); // array of DSNs<br/>
+}<br/>
+Xmla.discover(callback);
+</p>
+
+
+<h3><a name="dbschema_array">Xmla.dbschema_array(data)</a></h3>
+<p>Converts data recieved from <code>Xmla.dbschema</code> into readable array. Example:</p>
+<p class="code">
+var callback = function(data); {<br/>
+ var arr = Xmla.dbschema_array(data);<br/>
+ alert(arr); // array of catalogs<br/>
+}<br/>
+Xmla.dbschema(callback);
+</p>
+
+<h3><a name="tables_array">Xmla.tables_array(data)</a></h3>
+<p>Converts data recieved from <code>Xmla.tables</code> into readable array. Example:</p>
+<p class="code">
+var callback = function(data); {<br/>
+ var arr = Xmla.tables_array(data);<br/>
+ alert(arr[0]); // array of table names<br/>
+ alert(arr[1]); // array of table schemas<br/>
+}<br/>
+Xmla.tables(callback);
+</p>
+
+<h3><a name="columns_array">Xmla.columns_array(data)</a></h3>
+<p>Converts data recieved from <code>Xmla.columns</code> into readable array. Example:</p>
+<p class="code">
+var callback = function(data); {<br/>
+ var arr = Xmla.columns_array(data);<br/>
+ // arr is an array of objects <br/>
+ alert(arr[0].name); // name of first column<br/>
+}<br/>
+Xmla.columns(callback);
+</p>
+
+<h3><a name="execute_array">Xmla.execute_array(data)</a></h3>
+<p>Converts data recieved from <code>Xmla.execute</code> into readable array. Example:</p>
+<p class="code">
+var callback = function(data); {<br/>
+ var arr = Xmla.execute_array(data);<br/>
+ var header = arr[0]; <br/>
+ var data = arr[1]; <br/>
+ alert(header.length); // count of columns in result<br/>
+ alert(data.length); // count of rows in result<br/>
+}<br/>
+Xmla.execute(callback);
+</p>

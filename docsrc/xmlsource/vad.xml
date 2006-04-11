@@ -1,0 +1,771 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="VAD"><title>VAD - Virtuoso Application Distribution</title>
+
+<para>VAD provides a package distribution framework for installation, management, 
+dependency checking and un-installation of Virtuoso applications.  A VAD package 
+contains all required Virtuoso components, which would constitute an application or 
+hosted solution, within a single distributable file.  A VAD package cannot contain any 
+system parts independent of Virtuoso thus excluding operating system executables, 
+shared objects, installers or settings.  </para>
+<para>Virtuoso and VAD provide the following abilities:  </para>
+<simplelist>
+  <member>List all installed VAD packages.</member>
+  <member>List all completed operations over VAD packages.</member>
+  <member>Dependency checking - Check preconditions for installation of a package.</member>
+  <member>Install a VAD package.</member>
+  <member>Verification of installed package, compare to distribution state with ability 
+  to build of list of locally changed parts of the package.</member>
+  <member>Check preconditions for un-installation of a package.</member>
+  <member>Uninstall a VAD package.</member>
+</simplelist>
+
+<sect2 id="vadpackcomposition"><title>VAD Package Composition</title>
+
+<para>A VAD package has no developer tie-ins; it is built in a development environment 
+from source code that can be managed and versioned in the developers system of preference. </para>
+<para>The VAD package is described by an XML structure called the 'VAD Sticker'.  The 
+VAD sticker describes items to deploy, procedures to execute at install and uninstall time 
+and all conditions to be checked to ensure correct installation.  The VAD Sticker consists 
+of the following: </para>
+
+<itemizedlist>
+  <listitem>VAD package meta data 
+  <itemizedlist>
+    <listitem>Names of package, developer, copyright holder etc. </listitem>
+    <listitem>Version number of package, build date, build number, build type (e.g. 
+	sort of optimization performed). </listitem>
+    <listitem>Dependency information: minimal/maximal allowed version numbers of 
+	Virtuoso server and depending VAD packages.  Every required package may
+	include hint-text that may help the administrator determine (a) why the dependent 
+	package is required, and (b) how to obtain the required package.</listitem>
+    <listitem>Information regarding known conflicts between packages; conflicting 
+	package names and version number, with optional troubleshooting hints.</listitem>
+    <listitem>Ability to uninstall, a flag and list of reasons why it may be impossible 
+	to uninstall the package.</listitem>
+    <listitem>Custom configuration data to be placed in the VAD Registry </listitem>
+    </itemizedlist>
+  </listitem>
+  <listitem>Locations of SQL files containing main and installation code: 
+  <itemizedlist>
+    <listitem>Pre-install code, used to check application-specific installation preconditions.</listitem>
+    <listitem>Application specific table and view definitions.</listitem>
+    <listitem>Application specific stored procedure and trigger definitions. </listitem>
+    <listitem>Post-install (initialization) code, such as initial contents of tables.</listitem>
+    <listitem>Pre-uninstall code, used to check that it is safe to uninstall a package. </listitem>
+    <listitem>Post-uninstall code, used for removal of cached resources unusable or
+	meaningless without the package.</listitem>
+    </itemizedlist>
+  </listitem>
+  <listitem>Locations of Resources: 
+  <itemizedlist>
+    <listitem>Documentation files. </listitem>
+    <listitem>Samples data for demonstration or package sanity check.</listitem>
+    <listitem>VSP/VSPX pages, related graphics, Java scripts, stylesheets, other 
+	web content. </listitem>
+    <listitem>XML docs, XSLT sheets, DTDs and Schemas. </listitem>
+    </itemizedlist>
+  </listitem>
+</itemizedlist>
+
+</sect2>
+
+<sect2 id="vadpackversion"><title>Package Versioning</title>
+
+<para>All required packages should be listed in the VAD sticker.  Known conflict 
+may be listed in either of the conflicting VAD packages stickers, hence VAD stickers 
+of all installed packages should be checked. </para>
+<para>Later versions of a package may be installed replacing earlier versions 
+of the same package.  This however can be prohibited by listing either version 
+(or limit) as a known conflict in either VAD package sticker in the usual way.  
+Furthermore, it is possible to prevent re-installation of a package by stating that it 
+conflicts with itself.  This provides some security against exploits involving attempts 
+to upgrade, downgrade or re-install a package, in the hope that the administrator 
+may corrupt the existing installation by installing new packages and working through 
+installing their dependencies. </para>
+<para>Packages may differ in language and encoding of documentation and resource 
+files, even though the version number remains the same.  If a package is sensitive to 
+internationalization issues, the developer should either assign different names to 
+various localizations of the package, or divide it into kernel package for any 
+language-independent parts and set of language-specific packages, with some 
+dependency between them.  </para>
+
+</sect2>
+
+<sect2 id="vadprocessres"><title>Processing of Resources</title>
+
+<para>During creation of a VAD package, the "location" mentioned above may be 
+name of a file in file system or URI or DAV path.  Upon package-time, URIs will be
+resolved and resources under them will be copied into the package.  The resulting 
+sticker will thus contain the location of resource within the package, the resource 
+itself, and the target location. </para>
+<para>All SQL files have a specific order of loading.  Tables, views etc. must be 
+defined before being referenced.  </para>
+
+</sect2>
+
+<sect2 id="vadunsupportfeat"><title>Unsupported Features of VAD</title>
+
+<para>The VAD specification explicitly does not define the following: </para>
+
+<formalpara><title>Method of development or environment</title>
+  <para>There are no specific restrictions for the schema or Virtuoso/PL code of the 
+  package. The VAD system does not make assumptions on the method of 
+  software development. </para>
+  </formalpara>
+<formalpara><title>Method of source code control or versioning</title>
+  <para>Version numbers used in the sticker have nothing common with tag labels 
+  in a developers versioning system.  Procedures edited directly within the 
+  database using a web interface or CASE tools should be exported to a file for 
+  inclusion in a VAD package.  If the application developer uses some script to 
+  export such code, this script is not usually part of sticker or the resulting package.  </para>
+  </formalpara>
+<formalpara><title>Shipping/Deployment the VAD package from vendor to user</title>
+  <para>VAD provides no methods for downloading dependent packages, or check 
+  for package updates etc. </para>
+  </formalpara>
+<formalpara><title>Concurrent running of multiple versions of the same VAD 
+package on a single server</title>
+  <para>There can be no guarantee that pre- or post-installation checks will 
+  provide valid results if more than one VAD is being processed at the same 
+  time.  VAD does however guarantee that a package installation will be 
+  either entirely successful or entirely rolled back. </para>
+  </formalpara>
+<formalpara><title>Installation or maintenance of non-Virtuoso hosted components</title>
+  <para>Unlike Virtuoso-based packages, these components are usually operating 
+  system specific, they may require some complex tuning, and their usage from 
+  within Virtuoso applications may even require changes in virtuoso.ini configuration 
+  file.  VAD packages may contain test calls in pre-installation SQL procedures 
+  to check that required external executables are available and provide 
+  the functionality required. </para>
+  </formalpara>
+<formalpara><title>Data migration</title>
+  <para>Some installations may require several days to complete migration/conversion 
+  of stored data.  Whilst it may be possible to provide a restricted service 
+  during such time, VAD contains no tools to simplify such a process, this is 
+  left to the administrator or developer.  VAD completes its work right after 
+  the execution of the post-installation code.  </para>
+  </formalpara>
+<formalpara><title>Synchronous installation of a package on all hosts of a distributed system or cluster</title>
+  <para>VAD has no standardized metadata regarding replication issues, hence 
+  package-specific code may be required.  Similarly, if a cluster uses 
+  "round-robin" or a "director" loading management system and the server should 
+  be stopped for VAD installation, the administrator should explicitly inform the 
+  cluster manager about this event. </para>
+  </formalpara>
+
+</sect2>
+
+<sect2 id="vadsecurity"><title>Security</title>
+
+<para>Since VAD packages are run by an administrator as the database DBA user, 
+care must be taken to ensure the package comes from a safe source.  Any new package 
+installed may violate the security regulations of the target database and may even 
+inflict damage to files under the web-root of the Virtuoso Server or in directories 
+specified in the “DirsAllowed” parameter of the virtuoso.ini.  If the 
+virtuoso.ini parameter “AllowOsCalls” is enabled then the installation procedures 
+of the package may call operating executables.  It is the responsibility of the 
+database administrator to control this via the “AllowOsCalls”, "SafeExecutables" 
+and "DbaExecutables" parameters of the virtuoso.ini.</para>
+<para>VAD packages do not offer any automatic protection against unauthorized 
+modifications.  Although ever VAD package contains a checksum, its purpose 
+is to guard against data transfer errors, it may not be sufficient to detect 
+unwanted modification.</para>
+
+</sect2>
+
+<sect2 id="vadbuildingvadpacks"><title>Building VAD Packages</title>
+
+<para>Initially, the VAD sticker and resources may reside in the file system, 
+DAV directory and or other locations available through the 
+<function>DB.DBA.HTTP_URI_GET()</function> function.  </para>
+<para>The VAD creation operation parses the VAD sticker’s XML description 
+and constructs the VAD file. </para>
+
+<para><function>DB.DBA.VAD_PACK 
+  <paramdef>in <parameter>sticker_uri</parameter> varchar</paramdef>
+  <paramdef>in <parameter>base_uri_of_resources</parameter> varchar</paramdef>
+  <paramdef>in <parameter>package_uri</parameter> varchar</paramdef> returns varchar</function></para>
+
+<para>This function reads the VAD sticker identified by the <parameter>sticker_uri</parameter> which 
+contains the <computeroutput>vad:package</computeroutput> root element.  
+Then the resources identified in the 
+sticker are retrieved.  All resource URIs are interpreted in the context of the 
+<parameter>base_uri_of_resources</parameter> and are parsed and checked 
+to be syntactically correct.  Resources are appended to generated package that will 
+be stored at the <parameter>package_uri</parameter>.  <function>Vad_pack()</function> 
+returns a human readable log of error and warning messages, it will signal 
+errors if any resource or database objects are unavailable at build time.</para>
+<para>By convention, VAD package files have the extension <computeroutput>'.vad'</computeroutput>. </para>
+
+</sect2>
+
+<sect2 id="vadutils"><title>VAD Utilities</title>
+
+<para>An optional VAD package named VADutils provides various tools for capturing 
+changes made in the database after some point in time.  The result of a capture consists of:</para>
+
+<itemizedlist>
+  <listitem>Database object additions whose names match given patterns (e.g. 
+  all tables and procedures within a particular catalog/qualifier).</listitem>
+  <listitem>Resource additions under particular locations.</listitem>
+  <listitem>Post-install local customizations of selected packages.</listitem>
+</itemizedlist>
+
+<para>The capture results may be useful for the following purposes: </para>
+
+<itemizedlist>
+  <listitem>Archival of changes for replaying later.</listitem>
+  <listitem>Creating a special package of the changes for applying against a 
+  fresh installation of the package. </listitem>
+  <listitem>Creating a new complete package containing both the original and 
+  changes that will be included in the package sticker.</listitem>
+</itemizedlist>
+
+<para>These mechanisms provide good support for centralized development and custom 
+deployment methodology.  If a site is localized to contain local links, graphics, 
+custom layout and such, then VAD capabilities offer help to the developer to 
+define the specific overlay of customizations over another VAD package.  When 
+the underlying VAD package is updated the local customizations will be overwritten. 
+Being saved in a VAD package, customizations can be reapplied over the 
+updated base package. </para>
+
+</sect2>
+
+<sect2 id="vadadminrspnslts"><title>VAD Administrator Responsibilities</title>
+
+<para>VAD package installation, upgrade and uninstallation requires a 
+temporary break of service.  The package checks may be performed on the 
+fly if it can be guaranteed that the resources being inspected will not be 
+altered by any users.  The package check is a read-only process and operates 
+solely within the VAD Registry using read-only functions. </para>
+<para>All VAD operations are logged in the server event log.  All completed 
+operations are reflected in the <computeroutput>DB.DBA.VAD_HISTORY</computeroutput>
+system table. </para>
+<para>The optional VADutils package provides some additional administrative tools, 
+mostly for troubleshooting. These include special installation and de-installation 
+functions that can ignore error signals, and provide an interactive editor for 
+the VAD Registry etc. </para>
+<para>All operations described below require DBA access to the database.</para>
+
+<para>Check if a VAD package may be installed</para>
+<para><function>DB.DBA.VAD_CHECK_INSTALLABILITY
+  <paramdef>in <parameter>package_uri</parameter> varchar</paramdef>
+  <paramdef>in <parameter>is_dav</parameter> integer</paramdef>
+  returns varchar</function></para>
+
+<para>Checks the presence and correct versions of required packages and of the 
+Virtuoso platform. It does not executes any pre-install Virtuoso/PL code from the 
+package, so there's no guarantee that installation will be successful if the 
+check found no error. If <parameter>package_uri</parameter> is DAV 
+path, <parameter>is_dav=1</parameter>, else <parameter>is_dav=0</parameter>.</para>
+
+<para>VAD Package Installation</para>
+
+<para><function>DB.DBA.VAD_INSTALL 
+  <paramdef>in <parameter>package_uri</parameter> varchar</paramdef>
+  <paramdef>in <parameter>is_dav</parameter> integer</paramdef> returns varchar</function></para>
+
+<para>If <parameter>package_uri</parameter> is DAV path, 
+<parameter>is_dav=1</parameter>, else <parameter>is_dav=0</parameter>.</para>
+
+<para>The administrator performs the following operations when installing: </para>
+
+<itemizedlist>
+  <listitem>Invoke the install procedure from the web user interface or interactive SQL.  This will perform the following: 
+  <itemizedlist>
+    <listitem>Install documentation files.</listitem>
+    <listitem>Check for version and prerequisite package compatibility.</listitem>
+    <listitem>Disconnect SQL users and terminate web processing.</listitem>
+    <listitem>Make a database checkpoint.</listitem>
+    <listitem>Run the pre-install SQL script. </listitem>
+    <listitem>Load SQL code in the VAD package, in the order specified by the developer.</listitem>
+    <listitem>Copy web resources (VSP, VSPX, XSLT, etc…) into their designated places in WebDAV or file system Web root.</listitem>
+    <listitem>Run any post-install SQL code.</listitem></itemizedlist>
+	</listitem>
+  <listitem>If the installation was successful, the server will come back on-line. </listitem>
+  <listitem>If the installation was unsuccessful, e.g., mid-install failure due 
+  to running out of disk space, or some other serious unrecoverable database error, 
+  the Virtuoso server will exit.  The administrator should consult the Virtuoso log 
+  file to see what caused the failure.  The installation can be completely undone 
+  manually by halting the server (if not already stopped), and removing the 
+  transaction log file (.trx).  Upon Virtuoso restart, the server will continue from 
+  the last checkpoint, made prior to install, as if the installation never took place.</listitem>
+</itemizedlist>
+<para>The return value of the <function>VAD_INSTALL()</function> function is 
+usually a sum of messages from pre- and post-installation procedures of the 
+package.  It should normally contain at least the following:</para>
+
+<itemizedlist>
+  <listitem>any errors and/or warnings encountered.</listitem>
+  <listitem>created users and catalogs/qualifiers </listitem>
+  <listitem>root VSP page for accessing the application, if applicable.</listitem>
+  <listitem>path to installed documentation files.</listitem>
+  <listitem>performance optimization hints.</listitem>
+</itemizedlist>
+
+<para>The VAD packages should be tested to install on an empty Virtuoso database, 
+after any required VAD packages.  Installing a package on an empty server is 
+useful for determining that no other procedures or components were missed.  
+Since the application would normally run on the development machine where 
+the VAD package was built, it can be easy to overlook some components.  
+The completeness of the source archive of the application and its independence 
+from any ad hoc SQL objects is important, this is the only way the package can 
+be reliably versioned, tracked or uninstalled. </para>
+
+<para>Check if a VAD package may be uninstalled</para>
+
+<para><function>DB.DBA.VAD_CHECK_UNINSTALLABILITY 
+  <paramdef>in <parameter>package_name</parameter> varchar</paramdef>
+  returns varchar</function></para>
+
+<para>Performs a preliminary read-only checks to see whether the package given can 
+be uninstalled.  This does not execute any pre-uninstall Virtuoso/PL code from within the 
+package at this stage.  Hence, the success of this function does not guarantee 
+that uninstallation will be successful.  </para>
+
+<para>VAD Package Uninstallation </para>
+
+<para><function>DB.DBA.VAD_UNINSTALL 
+  <paramdef>in <parameter>package_name</parameter> varchar</paramdef>
+  returns varchar</function></para>
+
+<para>The administrator will perform the following operations for the uninstallation process: </para>
+
+<itemizedlist>
+  <listitem>Invoke the uninstall procedure from the web user interface or 
+  interactive SQL.  This will initiate the following:
+  <itemizedlist>
+    <listitem>Check that no other packages are using the package to be uninstalled. </listitem>
+    <listitem>disconnect SQL users and terminate web processing.</listitem>
+    <listitem>Make a database checkpoint.</listitem>
+    <listitem>Run the pre-uninstall SQL script.</listitem>
+    <listitem>Remove web resources installed by the package (all VSP , VSPX, 
+	XSLT, etc files) in WebDAV or the filesystem under the web root.</listitem>
+    <listitem>Drop all SQL procedures and data.  This is performed in reverse order to the install.  </listitem>
+    <listitem>Run any post-uninstall SQL code.</listitem>
+    <listitem>Remove documentation files explicitly marked as removable.  Usually 
+	documentation would not be deleted as part of package uninstallation incase it is 
+	needed e.g. if a set of documents is distributed as VAD package) </listitem>
+  </itemizedlist>
+  </listitem>
+  <listitem>If uninstallation was successful the server will come back on-line. </listitem>
+  <listitem>If uninstallation was unsuccessful, the server will exit.  Uninstallation could 
+  fail due to lack of disk space or some other serious unrecoverable database error.  
+  The failed uninstallation attempt can be manually reversed by halting the 
+  server (if not already) and deleting the transaction log file (.trx).  Upon 
+  server restart Virtuoso will continue from the last checkpoint, made prior to 
+  uninstallation, as if the uninstallation was never attempted.  The 
+  administrator should consult the log file for clues to the failure. </listitem>
+</itemizedlist>
+
+<para>Check the state of VAD package installation</para>
+
+<para><function>DB.DBA.VAD_CHECK 
+  <paramdef>in <parameter>package_uri</parameter> varchar</paramdef>
+ returns varchar</function></para>
+
+<para>This checks to see if the elements of the package are as they are defined 
+in the original distribution. A list of differing elements is returned.  Differences 
+revealed may not indicate a corruption, such changes could have been made 
+intentionally by another package, possibly a later version or upgrade that added 
+some columns to tables, and some resources may be customized by the user 
+post-installation. </para>
+<para>This will check for the prior existence of tables, views etc owned by 
+other applications that are not compatible with this application.  Any such 
+schema objects found are listed, the installation will not continue.  These 
+may be dropped by the DBA to help the installation to succeed.  Some such 
+elements may not be part of some other package, hence no package uninstall 
+would be available leading the DBA to drop them with the appropriate 
+SQL commands.</para>
+
+</sect2>
+
+<sect2 id="vadpackageoverlap"><title>Package Overlap</title>
+
+<para>Each package contains full definitions of all tables and indices.  
+Upon installing the following outcomes can occur: </para>
+
+<itemizedlist>
+  <listitem>If a table already exists with the same primary key as the new 
+  definition, additional columns are added to the table.  If the primary keys 
+  differ, the installation automatically fails.  Note that a pre-install SQL script can 
+  be defined to explicitly alter tables if consecutive versions of an application 
+  use different primary keys. </listitem>
+  <listitem>Existing indexes are left untouched.  New indices are added as specified 
+  in the package.  If indices should be modified or dropped, the pre-install 
+  script is a reasonable place for dropping these.</listitem>
+</itemizedlist>
+
+<para>Thus the same SQL schema can be loaded twice without ill effect. </para>
+<para>The post install script should be used to populate tables and such.  
+Inserts should be executed using the insert soft statement so that attempts to 
+insert duplicate are silently ignored without causing the installation to fail.  The 
+post install script can perform any application level data format changes. </para>
+<para>Packages should define their own distinct catalog or qualifier.  They 
+should not overwrite another package unless upgrading a prior version.  
+Sometimes a package will require the use of another package's tables.  This 
+should be achieved via grants issued in a pre-install script.  A schema 
+element such as a table, view or procedure will always have at most one 
+owner package even though it may be referenced or even modified with additional 
+columns by another package installed later.  These elements will only be 
+dropped when the owner package is dropped.  Tables created ad-hoc from 
+interactive SQL do not have any owner package.  </para>
+
+</sect2>
+<sect2 id="vadsticker"><title>VAD Sticker</title>
+
+<para>The VAD Sticker contains meta-data and descriptions of resources contained, 
+or to be contained, within a VAD package.  Like any XML documents, the target 
+VAD package sticker can be sourced from more than one source file, which can 
+aid maintenance and development.</para>
+
+<sect3 id="vadstickerdtd"><title>VAD Sticker DTD</title>
+
+<para>The namespace vad, used below, represents the URI 
+<computeroutput>http://www.openlinksw.com/urn/vad</computeroutput>. </para>
+<para>The top level element of a VAD Sticker is &lt;sticker&gt;.  It must contain a 
+&lt;caption&gt; element and may contain &lt;dependencies&gt;, 
+&lt;procedures&gt;, &lt;ddls&gt; and &lt;resources&gt; elements.</para>
+
+<programlisting><![CDATA[
+<!--<<top>>-->
+<!ENTITY % vad.source_sticker "INCLUDE">
+<!ENTITY % vad.package_sticker "IGNORE">
+<!ENTITY % vad.ecm.group_content "(dependencies | procedures | ddls | resources | registry)" >
+<![%vad.source_sticker;[
+  <!ENTITY % vad.ecm.sticker "(caption, (group | %vad.ecm.group_content;)*)">
+  <!ELEMENT group ((group | %vad.ecm.group_content;)*) >
+  ]]>]]&gt;<![CDATA[
+<![%vad.package_sticker;[
+  <!ENTITY % vad.ecm.sticker "(caption, %vad.ecm.group_content;)">
+  ]]>]]&gt;<![CDATA[
+<!ELEMENT sticker %vad.ecm.sticker; >
+<!ATTLIST sticker
+  version     NMTOKEN #REQUIRED
+  xml:lang    CDATA   #REQUIRED
+  >
+    <!--<</top>>-->
+
+    <!--<<caption>>-->
+<!ELEMENT caption (name, version)>
+<!ELEMENT name ((prop)*)>
+<!ATTLIST name
+  package NMTOKEN #REQUIRED
+  >
+<!ELEMENT version ((prop)*)>
+<!ATTLIST version
+  package NMTOKEN #REQUIRED
+  >
+<!ELEMENT prop EMPTY>
+<!ATTLIST prop
+  name NMTOKEN #REQUIRED
+  value CDATA #REQUIRED
+  >
+    <!--<</caption>>-->
+]]></programlisting>
+
+<para>The caption contains one name and one version element.  These elements 
+have a package attribute for keeping requisites used by VAD procedures.  
+Other prop-s are for keeping admin-readable info, but they will not affect the 
+installer's behavior. Typical names of properties here are Vendor, Copyright, 
+Release+Date, Build, Language, Encoding, but any (even non-unique) names 
+are acceptable. </para>
+
+<para>Sticker's elements for dependencies</para>
+
+<programlisting><![CDATA[
+<!--<<dependencies>>-->
+<!ELEMENT dependencies ((require | allow | conflict)*) >
+<!ATTLIST dependencies>
+<!ENTITY % vad.ecm.version_list "((version | versions_earlier | versions_later)*)">
+<!ELEMENT require (name, %vad.ecm.version_list;) >
+<!ELEMENT allow (name, %vad.ecm.version_list;) >
+<!ELEMENT conflict (name, %vad.ecm.version_list;) >
+<!ATTLIST require
+  group NMTOKEN #IMPLIED
+  >
+<!ELEMENT versions_earlier ((prop)*)>
+<!ATTLIST versions_earlier
+  package NMTOKEN #REQUIRED
+  >
+<!ELEMENT versions_later ((prop)*)>
+<!ATTLIST versions_later
+  package NMTOKEN #REQUIRED
+  >
+    <!--<</dependencies>>-->
+]]></programlisting>
+
+<para>Element dependencies contains an list of packages related to given one. 
+For every version or range of versions of every package, developer may specify 
+whether the given version is required for the package, or allowed but not 
+required, or will cause some sort of troubles. </para>
+<para>More precisely, to find information about some particular version of a 
+package, the list of children of dependencies element will be scanned from top 
+to bottom. If the first matching record is in conflict group, not in require or 
+allow, then installation is impossible. From other side, there must be at least 
+one installed package for every require section. </para>
+<para>Element require may be labeled with optional group attribute. As an 
+exception from common rule, there must be at least one installed package for 
+every group of require sections with identical name. E.g. If an installation of 
+package B requires either of two interchangeable packages A1 and A2, sticker 
+should contain a pair of nodes in the same group: </para>
+
+<programlisting><![CDATA[
+<require group="G">
+  <name package="A1">...</name>
+</require>
+]]></programlisting>
+<para>...</para>
+<programlisting><![CDATA[
+<require group="G">
+  <name package="A2">...</name>
+</require>
+]]></programlisting>
+
+<note><title>Note:</title>
+  <para>There are no methods to specify that exactly one package, either A1 or 
+  A2, should be installed. It must be done by placing proper conflict 
+  descriptions in stickers of A1 and/or A2, but not in the sticker of B.</para></note> 
+
+<para>Sticker's elements for procedures</para>
+<programlisting><![CDATA[
+<!--<<procedures>>-->
+<!ELEMENT procedures ((sql)*)>
+<!ATTLIST procedures
+  uninstallation (supported | prohibited) #REQUIRED
+  >
+<![%vad.source_sticker;[
+  <!ENTITY % vad.sql.include "include CDATA #IMPLIED">
+  ]]>]]&gt;<![CDATA[
+<![%vad.package_sticker;[
+  <!ENTITY % vad.sql.include "">
+  ]]>]]&gt;<![CDATA[
+<!ELEMENT sql (#PCDATA)>
+<!ATTLIST sql
+  purpose (install-check | pre-install | post-install | uninstall-check | pre-uninstall | post-uninstall) #REQUIRED
+  %vad.sql.include;
+  >
+    <!--<</procedures>>-->
+]]></programlisting>
+
+<para>Element procedures contains an list of Virtuoso/PL fragments, and every fragment 
+is tagged by one of four values of the purpose attribute. At every stage of install 
+or uninstall VAD procedure, a whole list of procedures will be scanned from the 
+beginning to the end, and all procedures of appropriate sort will be executed in 
+the same order as they are listed. In source sticker files, include attribute may 
+be used to insert text of some external file instead of having SQL code written 
+inside the element. </para>
+
+<para>Sticker's elements for ddls</para>
+
+<programlisting><![CDATA[
+<!--<<ddls>>-->
+<!ELEMENT ddls ((sql)*)>
+<!ATTLIST ddls
+  >
+    <!--<</ddls>>-->
+]]></programlisting>
+
+<para>Element ddls is very similar to procedures and contains an list of 
+Virtuoso/PL fragments to create schemas etc. </para>
+
+<para>Sticker's elements for resources</para>
+
+<programlisting><![CDATA[
+<!--<<resources>>-->
+<!ELEMENT resources ((file | location)*)>
+<!ATTLIST resources >
+<![%vad.source_sticker;[
+  <!ENTITY % vad.file.source_uri "source_uri CDATA #IMPLIED">
+  ]]>]]&gt;<![CDATA[
+<![%vad.package_sticker;[
+  <!ENTITY % vad.file.source_uri "">
+  ]]>]]&gt;<![CDATA[
+<!ELEMENT file EMPTY>
+<!ATTLIST file
+  type (doc | http | dav | code | special) #REQUIRED
+  source (http) "http"
+  target_uri CDATA #REQUIRED
+  makepath (yes | no | abort) "abort"
+  overwrite (yes | no | abort | equal | expected) "equal"
+  package_id CDATA #IMPLIED
+  location IDREF #IMPLIED
+  dav_owner CDATA #IMPLIED
+  dav_grp CDATA #IMPLIED
+  dav_perm CDATA #IMPLIED
+  %vad.file.source_uri;
+  >
+<!ELEMENT location ((prop)*) >
+<!ATTLIST location
+  id ID #REQUIRED
+  default_target_uri CDATA #REQUIRED
+  >
+    <!--<</resources>>-->
+]]></programlisting>
+
+<para>Element resources lists all files to be copied onto target box. For every 
+file, source and target URIs should be specified, and suggested behavior for 
+cases when a directory should be created or file should be overwritten. Target 
+URI may be relative to one of roots: for documentation, web-resources, DAV, 
+SQL code (it's where virtuoso.ini is located) and one of special locations, 
+additionally specified by location elements. (Installer may query administrator 
+to allow changing of locations' roots; in such case, information from 
+location's properties will be shown to the administrator.) By default, the 
+value of <parameter>package_id</parameter> is a space delimited list of 
+type, location ID (if any) and target URI. </para>
+
+<simplelist>
+  <member>dav_owner - DAV owner for file (used if type="dav", ignored if "filesystem");</member>
+  <member>dav_grp - DAV group for file (used if type="dav", ignored if "filesystem");</member>
+  <member>dav_perm - DAV permissions for file (used if type="dav", ignored if "filesystem").</member>
+</simplelist>
+
+<example id="ex_vadstickfile"><title>VAD installable file descriptions</title>
+
+<para>To install files into DAV:</para>
+
+<programlisting><![CDATA[
+<file type="dav" source="http" target_uri="yacutia/yacutia_style.css" dav_owner='dav' dav_grp='administrators' dav_perm='111101101N' makepath="yes"/>
+<file type="dav" source="http" target_uri="yacutia/yacutia_vdir_style.css"  dav_owner='dav' dav_grp='administrators' dav_perm='111101101N' makepath="yes"/>
+]]></programlisting>
+
+<para>To install files into file system:</para>
+
+<programlisting><![CDATA[
+<file type="http" source="http" target_uri="yacutia/yacutia_style.css" makepath="yes"/>
+<file type="http" source="http" target_uri="yacutia/yacutia_vdir_style.css" makepath="yes"/>
+]]></programlisting>
+</example>
+
+<para>Sticker's elements for registry</para>
+
+<programlisting><![CDATA[
+<!--<<registry>>-->
+      <!ELEMENT registry ((record)*)>
+      <!ATTLIST registry >
+      <!ELEMENT record ANY>
+      <!ATTLIST record
+        key CDATA #REQUIRED
+        type (STRING | INTEGER | KEY | URL | XML) #REQUIRED
+        overwrite (yes | no | abort | equal | expected) "equal"
+        >
+    <!--<</registry>>-->
+]]></programlisting>
+
+<para>Element registry lists all branches to be defined in the VAD Registry. Every 
+record element contain data of one record. The first children of record element 
+(either a text or an element) will be serialized and stored as a value of 
+<parameter>DB.DBA.VAD_REGISTRY.R_VALUE</parameter> cell. To prevent errors, 
+it is recommended to keep comments to the data outside the record element: 
+being in the wrong place inside, they may be stored in the registry instead 
+of actually needed data. </para>
+
+<example id="ex_vadstickers"><title>Sample Stickers</title>
+
+<para>A package that contains only some commonly useful ("exported") functions, 
+one table for internal purposes, a small sample VSP application, and small 
+set of documentation files. </para>
+
+<programlisting><![CDATA[
+<?xml version="1.0" encoding="ASCII" ?>
+<!DOCTYPE sticker SYSTEM "vad_sticker.dtd">
+<sticker version="1.0.010505A" xml:lang="en-UK">
+ <!-- Name and version; common data about the package -->
+ <caption>
+  <name package="rdf_lib">
+   <prop name="Title" value="RDF Support Library" />
+   <prop name="Developer" value="OpenLink Software" />
+   <prop name="Copyright" value="(C) 2003 OpenLink Software" />
+   <prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
+   <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
+  </name>
+  <version package="3.14">
+   <prop name="Release+Date" value="2003-05-05" />
+   <prop name="Build" value="Release, optimized" />
+  </version>
+ </caption>
+ <!-- This package requires no other packages,
+but it conflicts with package virtodp of versions
+from 1.00 to 2.17, inclusive -->
+ <dependencies>
+  <allow>
+   <name package="virtodp"></name>
+   <versions_earlier package="1.00"></versions_earlier>
+  </allow>   
+  <conflict>
+   <name package="virtodp">
+    <prop name="Title" value="Virtuoso ODP Sample" />
+   </name>
+   <versions_earlier package="2.17">
+    <prop name="Date" value="2001-01-26" />
+    <prop name="Comment" 
+	  value="An incompatible version of RDF library is included in some old versions of virtodp " />
+   </versions_earlier>
+  </conflict>
+ </dependencies>
+ <!-- There are no installation procedures, other than DDLs -->
+ <procedures uninstallation="supported"></procedures>
+ <!-- There are some procedures, which may be re-applying and (maybe) reverted automatically -->
+ <ddls>
+  <sql purpose="pre-install">
+   "DB"."DBA"."VAD_CREATE_TABLE" ('DB', 'DBA', 'RDF_SCHEDULED_IMPORTS',
+      'ID integer, 
+	   URI varchar, 
+	   CALLBACK varchar, 
+	   VERSION varchar, 
+	   REPORT long varchar, 
+	   primary key (ID)');
+  </sql>
+  <sql purpose="post-install">
+   "DB"."DBA"."VAD_LOAD_RESOURCE" ('rdf_functions');
+  </sql>
+ </ddls>
+ <!-- Resources include... -->
+ <resources>
+  <!-- ...documentation, ... -->
+  <file type="doc" target_uri="rdf_lib/1.1/intro.dxt" />
+  <file type="doc" target_uri="rdf_lib/1.1/interface.dxt" />
+  <file type="doc" target_uri="rdf_lib/1.1/implementation.dxt" />
+  <file type="doc" target_uri="rdf_lib/1.1/sample_app.dxt" />
+  <!-- ...the file of commonly-useful functions, ... -->
+  <file package_id="rdf_functions"
+    type="code" target_uri="rdf_lib/1.1/rdf_lib.sql" />
+  <!-- ...pages of the sample application, named rdf_edit, ... -->
+  <file type="http" target_uri="rdf_lib/rdf_edit/default.htm" />
+  <file type="http" target_uri="rdf_lib/rdf_edit/browse.vsp" />
+  <file type="http" target_uri="rdf_lib/rdf_edit/edit.vsp" />
+  <!-- ...a DAV resource with sample RDF data, ... -->
+  <file type="dav" target_uri="rdf_lib/sample_odp_structure.rdf" />
+  <!-- ...two files of sample application's functions. -->
+  <file type="code" target_uri="rdf_lib/1.1/rdf_edit/content_level.sql" />
+  <file type="code" target_uri="rdf_lib/1.1/rdf_edit/view_level.sql" />
+ </resources>
+ <!-- There are no application-specific registry items in this package -->
+</sticker>
+]]></programlisting>
+</example>
+</sect3>
+</sect2>
+</sect1>

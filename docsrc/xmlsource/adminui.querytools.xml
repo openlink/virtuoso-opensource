@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="querytools"><title>Query Tools</title>
+	<sect2 id="sqlqueries"><title>Relational Data using SQL</title>
+	<para>
+This interface allows you to quickly and directly query Virtuoso using SQL.  
+This interface has <emphasis>Save</emphasis> and <emphasis>Load</emphasis> 
+facilities which allow SQL queries to be saved as an XML template, and read 
+back later.  With a query in the SQL Statement box click on the 
+<emphasis>Execute</emphasis> for the results which will appear on the 
+bottom of the page.  The <emphasis>Reset</emphasis> clears the SQL Statement 
+text box.</para>
+
+        <figure float="1"><title>Querying Relational Database Using SQL</title>
+          <graphic fileref="ui/qry_sql_01.jpg" width="505px" depth="274px"/></figure>
+
+<para>Save a SQL query using the <emphasis>Save</emphasis> button, you will then 
+be presented with the Save as XML Template interface.</para>
+
+        <figure float="1"><title>Saving SQL in an XML Template</title>
+          <graphic fileref="ui/qry_sql_02.jpg" width="541px" depth="281px"/></figure>
+
+<para>This page allows you to define the XML template based on the SQL Query.  
+Specify a <emphasis>Root Element</emphasis> that will contain the 
+resulting XML tree.  Specify the file name and location of the XML Template, 
+this can be any place in the WebDAV repository - use the <emphasis>Browse</emphasis> 
+button to find a suitable location graphically.  In the same way you can optionally 
+provide an XSLT stylesheet.  The stylesheet, if provided will be used as the 
+default transformation for the XML result if the XML Template is executed 
+directly from WebDAV later.  Provide a description as necessary.  Change 
+the permissions that will be applied to the saved template before saving it.</para>
+
+  </sect2>
+<sect2 id="xqueryqueries"><title>XML Data Using XQuery</title>
+<para>
+The Virtuoso Interactive XQuery facility allows you to create,
+execute, save and reload queries using the evolving <ulink
+url="http://www.w3.org/TR/xquery/">W3C XML Query (XQuery) Language</ulink>.  
+Virtuoso currently supports the 1.0 version of this language.
+</para>
+<para>
+This language uses XPath-like expressions, as well as a set of
+functions and operators, to permit effective parallel searching of a
+set of XML documents.  Where XPath works with one XML &quot;tree&quot;, 
+XQuery searches a &quot;forest&quot;.  The result is an XML document.
+</para>
+<para>
+In order to create an XQuery you must both create the query statement
+&ndash; by typing or pasting it into the text box &ndash; and specify
+the document context.  Since Virtuoso's XQuery implementation operates
+over XML data in relational tables, this means the tables and columns
+that are to be searched.
+</para>
+<para>
+Note that the XQuery language also allows a query to specify all or
+part of the document context for the query.  In the example below we
+will see how these can interact.  The user interface form permits you to 
+select a table &ndash; either one of the XQuery test data tables that come 
+with Virtuoso, or the WS.WS.SYS_DAV_RES table, which stores Virtuoso's WebDAV
+Repository content.
+</para>
+<para>
+The form specifies a <parameter>Key Column</parameter> and a
+<parameter>Data Column</parameter>.  For the sample tables, the values
+for these are filled in for you.  The <parameter>Path</parameter> is
+prepended to any <function>document()</function> function specified in
+the query text to find Key column values of XML trees against which
+the query is to be run.
+</para>
+<para>
+Once a query has been written and debugged, it can be saved by
+pressing the Save button.  This brings you to the form for saving a
+query as an XML Template in the DAV repository.
+</para>
+<para>
+Pressing the Execute button causes the query result (an XML tree) to
+be shown on the page below the Statement type-in box.
+</para>
+<example id="ex_xqtool"><title>XQuery Test File Example</title>
+<para>
+In this example, we will query the table XQuery test files table, with
+&quot;name&quot; as the key column and &quot;text&quot; as the data
+column.
+</para>
+<para>The query text, shown below, is a sample query from the W3C's
+XML Query Use Cases document (<ulink
+url="http://www.w3.org/TR/xmlquery-use-cases">http://www.w3.org/TR/xmlquery-use-cases</ulink>).
+This query contains a document() call specifying a document named
+&quot;bib.xml&quot;.  In order to have the query run properly, we
+first set the Path form value to &quot;xqdemo/&quot;.  This causes the
+query to find all rows in the table XQ.XQ.TEST_FILES that have the
+value &quot;xqdemo/bib.xml&quot; in their Name column.</para>
+<programlisting><![CDATA[
+<bib>
+   {
+   for $b in document("bib.xml")/bib/book
+   where $b/publisher = "Addison-Wesley" and $b/@year > 1991
+   return
+      <book year = {$b/@year}>
+         {$b/title}
+      </book>
+   }
+</bib>
+]]></programlisting>
+</example>
+</sect2>
+</sect1>

@@ -1,0 +1,102 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<!-- HelloWorld BPEL Process -->
+<process name="HelloWorld"
+         targetNamespace="http://samples.cxdn.com"
+         suppressJoinFailure="yes"
+         xmlns:tns="http://samples.cxdn.com"
+         xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+         >
+         
+    <!-- List of services participating in this BPEL process -->    
+    <partnerLinks>
+        <!--
+        The 'client' role represents the requester of this service. It is 
+        used for callback. The location and correlation information associated
+        with the client role are automatically set using WS-Addressing.
+        -->
+        <partnerLink name="client"
+                     partnerLinkType="tns:HelloWorld"
+                     myRole="HelloWorldService"
+                     partnerRole="HelloWorldRequester"
+                     />
+    </partnerLinks>
+  
+    <!-- List of messages and XML documents used as part of this 
+         BPEL process 
+         -->    
+    <variables>
+        <!-- Reference to the message passed as input during initiation -->
+        <variable name="input"
+                  messageType="tns:initiateHelloWorldSoapRequest"/>
+                  
+        <!-- Reference to the message that will be sent back to the 
+             requestor during callback
+             -->
+        <variable name="output"
+                  messageType="tns:onHelloWorldResultSoapRequest"/>
+    </variables>
+
+    <!-- Orchestration Logic -->
+    
+    <sequence>
+        <!-- Receive input from requestor. 
+             Note: This maps to operation defined in HelloWorld.wsdl 
+             -->
+
+	<scope>
+        <receive name="receiveInput" partnerLink="client"
+                 portType="tns:HelloWorld"
+                 operation="initiate" variable="input"
+                 createInstance="yes"/>
+
+        
+        <!-- Generate content of output message based on the content of the
+             input message.
+             -->
+        <assign>
+            <copy>
+                <from expression="concat('Hello ',bpws:getVariableData('input', 'parameters','//name'))"/>
+                <to variable="output" part="parameters" query="/onHelloWorldResult/result"/>
+            </copy>
+        </assign>
+
+        <!-- Asynchronous callback to the requester.
+             Note: the callback location and correlation id is transparently handled 
+             using WS-addressing.
+             -->
+        <invoke name="replyOutput" 
+                partnerLink="client"
+                portType="tns:HelloWorldCallback"
+                operation="onResult" 
+                inputVariable="output"
+                />
+	<receive name="receiveInput" partnerLink="client"
+                 portType="tns:HelloWorld"
+                 operation="initiate" variable="input"
+                 createInstance="yes"/>
+	</scope>
+    </sequence>
+</process>
+

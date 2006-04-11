@@ -1,0 +1,109 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-34">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Research Service for the Microsoft Office 2003</refname>
+    <refpurpose>Creating Research Service for the Microsoft Office 2003 Research Library</refpurpose>
+</refnamediv>
+
+
+
+
+<refsect1 id="SO-S-34a">
+
+    <title>Overview</title>
+
+    <para>Microsoft Office 2003 provides a new tool called "The Research Library", which
+    is available from the task pane in all of the Microsoft Office Suite including
+    Microsoft Office Excel 2003, Microsoft Office PowerPoint 2003, Microsoft Office
+    Word 2003, and Microsoft Office Outlook 2003.</para>
+
+<para>By default, the Research Library allows to search for terms using several
+    built-in resources. The Research Library is also extensible: users can add their
+    own research service by creating a Web service that follows schemas defined for
+    Microsoft research services.</para> 
+
+<title>Prerequisites</title>
+
+<para>The following prerequisites are needed to ensure that you can experience this
+    demonstration.</para>
+
+<itemizedlist>
+    <listitem>Virtuoso 3.5 or above</listitem>
+    <listitem>Microsoft Office 2003 or higher</listitem> 
+</itemizedlist>
+
+<title>Tutorial Example</title>
+
+<para>The following demonstration creates a service which exposes two methods:
+    "Registration" and "Query". </para>
+
+<para>The first method allows Microsoft Office to discover the Query service; also it
+    could be extended to log the registration info for specific application
+    purposes. The "Query" service is used to make a Free-text search within WebDAV
+    repository by a given set of keywords entered by user in task panel. 
+    The demo script also creates a virtual directory which forces 
+    "Document/Literal" encoding of SOAP messages, which  is another way to expose
+    Virtuoso PL stored procedures without having special SOAP user-defined data-types. </para>
+
+<para>Please follow the steps below to maximize the value of this tutorial: </para>
+
+<para>Step 1: Run the following sql script to set up so_s_34.sql.  </para>
+
+<para>Step 2: After executing the initial setup above, add the service using a
+    "Research" task pane by selecting "Research Options" and then "Add Services".  
+    Note: To access this Research Task pane, select Research from the Tools menu, or
+    by pressing Ctrl+F1 and choosing Research from the Other Task Panes drop-down list.</para>
+
+<para>Step 3:  In the presented text entry for the Address , type the URL to the demo
+    service http://host:port/VRes/ and press "Add", then "Continue" and finally
+    "Install" (in that step "Virtuoso FTi Search (PL)" should be displayed). 
+    Once you have installed the demo service, you can query it with typing search
+    keywords in "Search for" text entry and selecting the "Virtuoso FTi Search (PL)"
+    from drop-down box. On success a list of top 10 public readable items from
+    WebDAV matching the "AND" of keywords will be displayed.</para> 
+
+<title>Additional Information:</title>
+
+<para>For More details regarding the Microsoft Research Library for Microsoft Office
+    2003 see
+    <ulink url="http://www.microsoft.com/office/editions/prodinfo/technologies/research.mspx">http://www.microsoft.com/office/editions/prodinfo/technologies/research.mspx</ulink></para>
+
+<para>For More details regarding WebDAV see 
+    <ulink url="http://docs.openlinksw.com/virtuoso/qswebdav.html#qswebdav">http://docs.openlinksw.com/virtuoso/qswebdav.html#qswebdav</ulink></para>
+
+<para>For More details regarding Free-Text Search see
+    <ulink url="http://docs.openlinksw.com/virtuoso/freetext.html#freetext">http://docs.openlinksw.com/virtuoso/freetext.html#freetext</ulink></para>
+
+
+
+
+
+    
+</refsect1>
+</refentry>

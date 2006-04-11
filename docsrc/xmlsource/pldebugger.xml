@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="pldebugger"><title>Procedure Language Debugger</title>
+
+ <para>Virtuoso has step by step PL debugging capabilities and a call stack trace
+ option.  When Virtuoso is running with a console or with stdout going somewhere like a file   you can print debug
+ messages directly to that using
+ <link linkend="fn_dbg_printf"><function>dbg_printf()</function></link> and
+ <link linkend="fn_dbg_obj_print"><function>dbg_obj_print()</function></link>
+ functions.</para>
+ <para>Procedure source code can be written to an ASCII file using any text/programming
+ editor.  This file can be loaded into <link linkend="isql">ISQL</link>
+ using the load command or directly from the command line using the
+ ISQL batch mode: </para>
+ <programlisting>isql data-source user password file</programlisting>
+ <para>ISQL can then be used to test the procedures functionality.  Procedures
+ can return result sets to ISQL for data debugging purposes too.  When dealing
+ with results sets in ISQL remember to call procedures using the
+ <computeroutput>CALL</computeroutput> keyword to ensure that ISQL outputs
+ all result sets:</para>
+ <programlisting>CALL procedure(arguments);</programlisting>
+ <para>The PL procedure debugger allows you to execute procedures step-by step,
+ or stop execution based upon a predefined condition within Virtuoso/PL
+ procedure(s).  This feature is not intended for SQL statements debugging.  SQL
+ statements are treated as atomic units of execution, it is not possible to step
+ into these.  It is possible to step over a procedure which loops over  a cursor,
+ though.  Procedures are  compiled with extra information for debugging, thus
+ the speed of execution may be somewhat reduced.  It is possible to step
+ in or step over statements, however this does not apply to SQL statements.  In
+ order to start debugging on some event, breakpoints are required.  The
+ breakpoints can be global or temporary.  The global breakpoint means the
+ process will stop with or without a debug session.  The temporary breakpoints
+ are to stop execution only in the current debug session.</para>
+
+ <para>Procedure debugging can be activated in two ways.  You can instruct
+ Virtuoso to enable debugging information for all procedures using the
+ PLDebug parameter in the Virtuoso INI file, or for selected procedures by
+ including a special comment "<computeroutput>--pl_debug+</computeroutput>"
+ at the top of the procedure.  Debug information is visible only from a debugging
+ tool such as ISQL</para>
+
+ <para>ISQL can be used as a procedure debugging tool.  ISQL is started in
+ debug mode using the -D switch:</para>
+
+ <programlisting>isql &lt;host:port&gt; dba &lt;dba-password&gt; -D</programlisting>
+
+ <para>Debugging of the server is restricted to  dba privileged accounts for security reasons. The summary of the debug commands available can be viewed  from
+ typing help in the debugger.  The following list will be shown:</para>
+
+<screen><![CDATA[
+DEBUG> help
+OpenLink Interactive PL Debugger (Virtuoso).
+
+Available commands:
+    BREAK procedure_name [line number] - Set breakpoint at specified line or PL function
+    NEXT  - Step program, proceeding through PL subroutine calls.
+    INFO (THREAD|CLIENT|BREAK) - Generic command for showing things about the program/process being debugged.
+	    THREAD - Running threads
+	    CLIENT - Connected SQL/ODBC clients
+	    BREAK - Active breakpoints
+    ATTACH thread_id|client_id - Attach to a running process.
+    STEP  - Step PL program until it reaches a different source line.
+    LIST [procedure name] [line number] - List specified procedure or line.
+    WHERE  - Print backtrace of all stack frames.
+    CONTINUE  - Continue PL program being debugged after breakpoint.
+    PRINT variable_name - Print value of variables or arguments.
+    SET variable_name new_value - Assign a specified value to a variable.
+    DELETE ([breakpoint_number]|[procedure_name] [line_number]) - Delete some breakpoints.
+    FRAME frame_number - Select and print a stack frame.
+    FINISH  - Execute until returns.
+    UNTIL line_number - Execute until the program reaches a source line greater than the current.
+]]></screen>
+
+
+ <para>There are two debug modes: local, for issuing local breakpoints and step commands;
+ global, for making global breakpoints.</para>
+
+ <para>There are two console or screen modes to debug/attach-to.  These are:
+ the global console, which allows you to issue the INFO, ATTACH, BREAK, DELETE commands;
+ the local console, which once attached (using the ATTACH command) via the
+ global console becomes local and all possible commands are available.</para>
+
+ <para>There are two syntaxes for specifying breakpoint locations,
+ <computeroutput>BREAK FFFF NNN</computeroutput> and <computeroutput>BREAK FFFF</computeroutput>
+ where FFFF is a name of a procedure. </para>
+
+ <para>Local breakpoints will interupt execution only if there is a connected
+ debug session.  Global break points will cause the process to stop regardless.</para>
+
+ <para>The source identification and line number output can be controlled with a
+ special comment in the PL code.  This can be useful when you want to alter
+ the compilers notion of the current file and line number.
+ <computeroutput>--src FILENAME:LINENUMBER</computeroutput> can be used to reset the
+ counters to the specified filename and line number.  This is also useful for
+ handling test coverage output - see the next section.</para>
+
+
+
+<example id="pldbgexample"><title>Debugging simple procedures</title>
+
+<para>Consider the following PL procedures:</para>
+
+<programlisting><![CDATA[
+create procedure
+db.dba.test_proc1 (in b varchar)
+{
+  --pl_debug+
+   declare c integer;
+   c := 0;
+   for select u_id, u_name from sys_users do
+     {
+       c := u_id;
+     }
+
+   c := vector (1);
+
+   c := test_proc2 ();
+
+   return c;
+};
+
+create procedure
+db.dba.test_proc2 ()
+{
+  --pl_debug+
+  declare x, y any;
+  x := 1;
+  if (x = 1)
+     {
+       y := x + 1;
+     }
+   else
+     {
+       y := 2;
+     }
+   return y;
+};
+]]></programlisting>
+
+<para>Here is a simple debugging session on the above procedures:</para>
+
+<programlisting><![CDATA[
+$ isql localhost:1111 dba dba -D
+Debug session established to localhost:1111
+]]></programlisting>
+
+<para>Display the test procedures to familiourise yourself with the lines and
+their line numbers.</para>
+
+<programlisting><![CDATA[
+DEBUG> list db.dba.test_proc1;
+1 create procedure
+2 test_proc1 (in b varchar)
+3 {
+4   --pl_debug+
+5   declare c integer;
+6   c := 0;
+7   for select u_id, u_name from sys_users do
+8     {
+9       c := u_id;
+10     }
+
+DEBUG> list db.dba.test_proc1 11;
+11
+12   c := vector (1);
+13
+14   c := test_proc2 ();
+15
+16   return c;
+17 }
+18
+19
+20
+]]></programlisting>
+
+<para>put a break after for select statement.</para>
+
+<programlisting><![CDATA[
+DEBUG> break db.dba.test_proc1 11
+Breakpoint at: procedure DB.DBA.test_proc1, line 11
+]]></programlisting>
+
+<para>Now, start another ISQL session to Virtuoso and run the
+procedure that we are debugging, DB.DBA.test_proc1(''), and wait for it
+to hit the breakpoint.  Back to the debug ISQL, get the list of breakpoints:</para>
+
+<programlisting><![CDATA[
+DEBUG> info thre
+@1111:4 in DB.DBA.test_proc1 () at 11
+]]></programlisting>
+
+<para>attach to thread of interest:</para>
+
+<programlisting><![CDATA[
+DEBUG> attach @1111:4
+1111:4
+]]></programlisting>
+
+<para>Find out where it stopped:</para>
+
+<programlisting><![CDATA[
+DEBUG> where
+#0 DB.DBA.test_proc1 () at 11
+#1 ?? () at 0
+]]></programlisting>
+
+<para>print the value of 'c' now, and continue step by step </para>
+
+<programlisting><![CDATA[
+DEBUG> print c
+$25 "c" INTEGER (189) 4
+DEBUG> next
+11
+DEBUG> print c
+$25 "c" INTEGER (189) 4
+DEBUG> next
+12   c := vector (1);
+DEBUG> print c
+$25 "c" ARRAY_OF_POINTER (193) (1 )
+DEBUG> next
+13
+]]></programlisting>
+
+<para>step into the test_proc2 procedure:</para>
+
+<programlisting><![CDATA[
+DEBUG> step
+14   c := test_proc2 ();
+]]></programlisting>
+
+<para>examine the stack</para>
+
+<programlisting><![CDATA[
+DEBUG> where
+#0 DB.DBA.test_proc2 () at 4
+#1 DB.DBA.test_proc1 () at 14
+#2 ?? () at 0
+]]></programlisting>
+
+<para>step through the test_proc2 procedure</para>
+
+<programlisting><![CDATA[
+DEBUG> next
+7   x := 1;
+DEBUG> next
+8   if (x = 1)
+DEBUG> next
+10       y := x + 1;
+DEBUG> next
+11     }
+DEBUG> print y
+$25 "y" INTEGER (189) 2
+]]></programlisting>
+
+<para>set the 'y' to be 100</para>
+
+<programlisting><![CDATA[
+DEBUG> set y 100
+The 'y' is set to '100'.
+DEBUG> next
+16   return y;
+DEBUG> print c
+$25 "c" INTEGER (189) 100
+]]></programlisting>
+
+<para>continue the execution</para>
+
+<programlisting><![CDATA[
+DEBUG> cont
+Execution resumed
+DEBUG>
+]]></programlisting>
+</example>
+
+<sect2 id="pldbgplcoverage"><title>Branch Coverage</title>
+
+ <!-- what is branch coverage, how is it useful? -->
+
+ <para>The Virtuoso ini file contains a parameter in [Parameters] section called
+ TestCoverage whose value is the name of an XML file that will accumulate
+ test coverage data.</para>
+
+ <para>The PLDebug switch controls the type of debugging enabled:</para>
+
+ <simplelist>
+  <member><emphasis>PLDebug = 0</emphasis> - default debugging information and
+  test coverage disabled.</member>
+  <member><emphasis>PLDebug = 1</emphasis> - debugging information enabled.</member>
+  <member><emphasis>PLDebug = 2</emphasis> - debugging information enabled, test
+  coverage data will be written to file specified in TestCoverage Virtuoso ini
+  file parameter.</member>
+ </simplelist>
+
+ <para>If the test coverage file is specified the initial state of the
+ accumulation is read from the coverage file if one exists.  If the file
+ does not exist then coverage starts from scratch.</para>
+
+ <para>The format of the file for store/restore of coverage data is:</para>
+
+<programlisting><![CDATA[
+<pl_stats>
+  <proc name="xxx" calls="nn" file="ff" >
+    <line no="xx" ctr="nn" /> ..
+    <caller name="nnn" ct="nn" /> ..
+  </proc>
+  ...
+</pl_stats>
+]]></programlisting>
+
+<para>An example of file:</para>
+
+<programlisting><![CDATA[
+<pl_stats>
+  <proc name="DB.DBA.pop_get_command" calls="00000133" file="pop3_svr.sql" >
+    <line no="000152" ctr="000133" />
+    <line no="000153" ctr="000133" />
+    <line no="000156" ctr="000133" />
+    <caller name="DB.DBA.POP_IF_COMMAND" ct="000070" />
+    <caller name="WS.WS.NN_SRV" ct="000063" />
+  </proc>
+</pl_stats>
+]]></programlisting>
+
+
+ <para>For the purpose of making a Coverage report the format is extended.
+ The lct attribute of the &lt;proc&gt; element contains a total number of lines for
+ the  procedure.  The CDATA sections of the &lt;line&gt; element contain the excerpt of
+ the line in question up to a maximum of 50 characters.</para>
+
+ <para>An example of the extended file format (made with cov_store ('ccc.xml', 1)) is:</para>
+
+<programlisting><![CDATA[
+<proc name="DB.DBA.pop_is_ok_" calls="00000034" file="pop3_svr.sql" lct="22" >
+ <line no="000239" ctr="000034"><![CDATA[6    _idx := pop_atoi (num); ]]]]>&gt;<![CDATA[</line>
+ <line no="000240" ctr="000034"><![CDATA[7    _all := length (_stat); ]]]]>&gt;<![CDATA[</line>
+ <line no="000242" ctr="000034"><![CDATA[9    if ((_idx < 1) or (_idx > _all - 1)) ]]]]>&gt;<![CDATA[</line>
+ <line no="000247" ctr="000034"><![CDATA[14    if (pop_is_deleted (_idx, _stat)) ]]]]>&gt;<![CDATA[</line>
+ <line no="000253" ctr="000034"><![CDATA[20    return 1; ]]]]>&gt;<![CDATA[</line>
+ <caller name="DB.DBA.POP_DELE" ct="000011" />
+ <caller name="DB.DBA.POP_RETR" ct="000023" />
+</proc>
+]]></programlisting>
+
+<para>The comment <computeroutput>--src xxxx:yyy</computeroutput> indicates
+the file xxx and line yyy.  This comment will be added at the end line of each
+procedure when loading a file via isql or when generating SQL procedure constants
+for C code from sql files.  These files and lines will be used for annotating
+the coverage report.</para>
+
+<para>The function <function>cov_load()</function> is used to cumulatively load
+a test coverage file into a running system.  Repeatedly calling this allows
+making a union of multiple separately obtained coverage files which will all
+show in the ultimate report.</para>
+
+<para>The function <function>cov_store (in out_file varchar, in
+add_comments integer := 0) </function> is used to make an XML file for further
+XSL-T processing with <function>cov_report()</function> (see below) or to
+make a snapshot of current coverage statistics.  The add_comments parameter is
+used to add a line info and count, usually it takes 1 for making the report,
+so internally it is used with add_comments equal to 0 to store the cumulative
+report in the TestCovarage file.</para>
+
+<para>The function <function>cov_report (in file varchar, in  outdir varchar)</function>
+makes the full coverage report based on the current state and writes it out.</para>
+
+<para>The report consists of a summary file called profile.prof, containing execution counts and times for individual functions, sortedf by self time as well as by time including called functions. 
+For each distinct file mentioned in loaded
+procedures there is a file called &lt;outdir&gt;/&lt;orgname&gt;.sql.cov under
+the server's working directory.  This file contains listings of all procedures
+from the file, annotated with line numbers at the start of each line.  Each line
+with executable code will have an execution count.  The line number field has
+six leading characters, the exec count is the next six characters, the line
+follows.  The lines that are not executed are denoted with ## on place of exec
+count number.</para>
+
+<para>Procedures that do not have source info associated are listed in name
+order in the file unnamed.sql.cov in the same directory.</para>
+
+<para>An example of files generated by cov_report ('ccc.xml', 'cov/') are:</para>
+
+<programlisting><![CDATA[
+---->>> begin <<<----
+Lines: 806
+TotalLines: 2741
+Coverage: 29 %
+
+[times called] [proc name]
+    6250 : WS.WS.FINDPARAM
+    --- code info
+    [line in file] : [how many times executed] : [offset from beginning] [line excerpt]
+       664 :   6250 : 5    if (pkey is null)
+       665 :     ## : 6      pkey := '';
+       666 :  12500 : 7    i := 0; l := length (params);
+       667 :   6250 : 8    pkey := rtrim (pkey,': ');
+       668 :   6250 : 9    while (i < l)
+       670 :  35966 : 11        ret := http_request_header (vector (para
+       671 :  35966 : 12        if (ret is not null)
+       672 :   3014 : 13          return ret;
+       673 :  32952 : 14        i := i + 1;
+       675 :   3236 : 16    return '';
+
+    -- caller information
+    [time called] [from proc]
+         6 : WS.WS.MOVE
+         9 : WS.WS.COPY
+       267 : WS.WS.UNLOCK
+       269 : WS.WS.GET
+       982 : WS.WS.PUT
+      1028 : WS.WS.LOCK
+      3689 : WS.WS.ISLOCKED
+..... more sections follow .....
+]]></programlisting>
+
+</sect2>
+
+<sect2 id="pldcovfunctions"><title>Coverage Functions</title>
+
+    <para><link linkend="fn_cov_load"><function>cov_load()</function></link></para>
+    <para><link linkend="fn_cov_store"><function>cov_store()</function></link></para>
+    <para><link linkend="fn_cov_report"><function>cov_report()</function></link></para>
+    <para><link linkend="fn_pldbg_stats"><function>pldbg_stats()</function></link></para>
+    <para><link linkend="fn_pldbg_stats_load"><function>pldbg_stats_load()</function></link></para>
+
+</sect2>
+</sect1>
+
+
+
+

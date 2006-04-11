@@ -1,0 +1,30 @@
+--- install-datebook.c.orig	Wed Jan 13 23:29:31 1999
++++ install-datebook.c	Thu Jun 22 12:47:10 2000
+@@ -129,7 +129,7 @@
+ 	} else {
+ 	  appointment.event = 0;
+ 	}
+-	if (fields[0][0] == '\0') {
++	if (fields[0][0] != '\0') {
+ 	  time_t t;
+ 	  appointment.event = 0;
+ 	  t = parsedate(fields[0]);
+@@ -139,7 +139,7 @@
+ 	  }
+ 	  appointment.begin = *localtime(&t);
+ 	}
+-	if (fields[1][0] == '\0') {
++	if (fields[1][0] != '\0') {
+ 	  time_t t;
+ 	  t = parsedate(fields[1]);
+ 	  if (t == -1) {
+@@ -177,6 +177,9 @@
+ 	Appointment_size = pack_Appointment(&appointment, Appointment_buf,
+ 					    sizeof(Appointment_buf));
+ 	printf("desc: %s\n", appointment.description); 
++        printf("date: %d/%d/%d %d:%02d\n", appointment.begin.tm_mon + 1,
++          appointment.begin.tm_mday, appointment.begin.tm_year + 1900,
++          appointment.begin.tm_hour, appointment.begin.tm_min );
+ 	dlp_WriteRecord(sd, db, 0, 0, 0, Appointment_buf, Appointment_size, 0);
+ 	fields[fieldno++] = cPtr;
+       } else {

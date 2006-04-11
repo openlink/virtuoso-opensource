@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_complete_table_name">
+  <refmeta>
+    <refentrytitle>complete_table_name</refentrytitle>
+    <refmiscinfo>sql</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>complete_table_name</refname>
+    <refpurpose>Returns a fully qualified table name.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_complete_table_name">
+      <funcprototype id="fproto_complete_table_name">
+        <funcdef>varchar <function>complete_table_name</function></funcdef>
+	<paramdef>in <parameter>tablename</parameter> varchar</paramdef>
+	<paramdef>in <parameter>mode</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_complete_table_name">
+    <title>Description</title>
+    <para>The <function>complete_table_name()</function> can be used to make a
+    fully qualified table name from non-qualified one, i.e. the qualifier and
+    owner will be added if they are missing.</para>
+  </refsect1>
+  <refsect1 id="params_complete_table_name">
+    <title>Parameters</title>
+    <refsect2><title>tablename</title>
+      <para>The table name to be retrieved.</para></refsect2>
+    <refsect2><title>mode</title>
+      <para>If this mode parameter is set to 1 this function will first look-up
+      the supplied tablename for a match in the system tables.  If a match is found
+      the full name will be returned, if the table is not found the function
+      will continue as if the mode were set to 0.</para>
+      <para>When the mode parameter is 0 the result will be generated using
+      the current qualifier and current SQL user account names.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret_complete_table_name"><title>Return Types</title>
+    <para>A string will be returned containing the fully qualified table name.
+    </para>
+  </refsect1>
+  <refsect1 id="errors_complete_table_name">
+    <title>Errors</title>
+    <table>
+      <title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead>
+         <row>
+           <entry>SQLState</entry>
+           <entry>Error Code</entry>
+           <entry>Error Text</entry>
+           <entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>SR014</errorcode></entry>
+	    <entry><errorname>Function complete_table_name needs a string as argument 1,
+      not an arg of type [type]</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>SR008</errorcode></entry>
+	    <entry><errorname>Function complete_table_name needs an integer as argument 2,
+      not an arg of type [type]</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="examples_complete_table_name">
+    <title>Examples</title>
+    <example id="ex_complete_table_name"><title>Using the complete_table_name() function</title>
+      <para>This simple example shows retrieval of a fully qualified table name
+      using the complete_table_name() function from ISQL.  In the first case
+      the table name supplied is a system table, in the second case the table does
+      not exist and the result is generated based on the users details:</para>
+      <screen><![CDATA[
+SQL> use WS;
+
+Done. -- 4 msec.
+SQL> select complete_table_name('SYS_DAV_RES', 1);
+callret
+VARCHAR
+_______________________________________________________________________________
+
+WS.WS.SYS_DAV_RES
+
+1 Rows. -- 1 msec.
+
+SQL> select complete_table_name('SYS_DAV_RES__', 1);
+callret
+VARCHAR
+_______________________________________________________________________________
+
+WS.DBA.SYS_DAV_RES__
+
+1 Rows. -- 1 msec.
+]]></screen>
+    </example>
+  </refsect1>
+</refentry>

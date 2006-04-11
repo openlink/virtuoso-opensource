@@ -1,0 +1,59 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-U-5">
+  <refmeta>
+    <refentrytitle>Maintaining Session State in a VSP Application</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Basics</refname>
+    <refpurpose>SSL example</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-U-5a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+  <listitem>The Virtuoso Web server can be set up for HTTPS listening, for increased security.</listitem>
+  <listitem>Passing the session id as a cookie or a URL parameter over HTTP connection is not secure.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-U-5b">
+<title>Example</title>
+<para>This example uses the most common URL poisoning over SSL connection.</para>
+
+<itemizedlist>
+  <listitem>This example repeats the example <ulink url="../vs_u_2/vs_u_2.vsp">VS-U-2</ulink>, but result of VSP pages is transferred over SSL.</listitem>
+  <listitem>Make sure that files containing server
+  certificate/key data exists in the server working directory. The
+  following files are required for the example:
+  <orderedlist>
+    <listitem>virtuoso_cert.pem - server certificate </listitem>
+    <listitem>virtuoso_key.pem - server private key </listitem>
+  </orderedlist>
+  </listitem>
+  <listitem>The example script defines and starts a HTTPS server on port 4333.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_namespace_uri">
+  <refmeta> 
+    <refentrytitle>namespace-uri</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>namespace-uri</refname> 
+    <refpurpose>Returns the namespace URI of the extended name of the given node</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_namespace_uri">
+      <funcprototype id="xpf_proto_namespace_uri">
+        <funcdef>string <function>namespace-uri</function></funcdef>
+	<paramdef><parameter>node_obj</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_namespace_uri"><title>Description</title>
+<para>If given argument is a node, the function returns the URI string of the
+namespace specified in the name of node.
+If the argument is node-set, first node of the node-set will be considered.
+Empty string is returned if the argument is an empty node-set, a node without
+name or if the argument is not a node.</para>
+<para>If the argument is omitted, context node is used instead as if it is a node-set of one element.</para>
+</refsect1>
+  <refsect1 id="xpf_params_namespace_uri"><title>Parameters</title>
+    <refsect2><title>node_obj</title>
+      <para>Node whose namespace URI is to be returned.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_namespace_uri"><title>Return Types</title><para>String</para></refsect1>
+  <refsect1 id="xpf_examples_namespace_uri"><title>Examples</title>
+    <example id="xpf_ex_namespace_uri"><title></title>
+      <para>Find all elements whose namespace URIs contain &quot;html&quot; substring</para>
+      <screen>//*[contains(namespace-uri(),'html')]</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_namespace_uri"><title>See Also</title>
+    <para><link linkend="xpf_local_name">local-name()</link><link linkend="xpf_name">name()</link></para>
+  </refsect1>
+</refentry>
+

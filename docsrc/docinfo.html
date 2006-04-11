@@ -1,0 +1,63 @@
+<HTML>
+<HEAD>
+	<TITLE>Virtuoso Documentation Project</TITLE>
+<LINK REL="stylesheet" TYPE="text/css" HREF="html/virtdoc.css">
+</HEAD>
+<BODY>
+<DIV CLASS="chapter">
+<H1>The Virtuoso Documentation Project</H1>
+
+<DIV CLASS="para">The Virtuoso documentation was written completely in XML against the DocBook DTD 
+with the intention of being able to render it in any format required.  XSL was used to 
+transform the documentation in HTML.  PDF and PS versions were generated from 
+the HTML version.  At this time we are unable to produce a PDF directly from XML.
+</DIV>
+
+<H2>XML and XSL Source File Development</H2>
+
+<DIV CLASS="para">The XML and XSL source files were crafted by hand using straight text editor.  </DIV>
+
+<DIV CLASS="para">As the XML and XSL development progressed MS IE5.x was initially used as a reference for 
+XML well formedness and XSL previewing.  Using MSIE5.x makes development fairly quick and easy 
+since you are able to drag and drop XML files straight into the browser.  The default IE 
+stylesheet produces a hierarchical tree of the documents elements and should a parse error 
+be detected will attempt to display the significant line number where the error occured and 
+normally works well.  If an XSL stylesheet is referenced using the <xsl:stylesheet> tag then IE 
+will render the document using that stylesheet instead.  This makes development as simple as 
+change the document in a text editor, save, hit refresh in IE and see what happens.  </DIV>
+
+<DIV CLASS="para">When the XSL became fairly complex and made use of various methods for tracking positions 
+and element counts IE started having some problems.  At this point we moved to using XT from 
+the <A HREF="http://www.jclark.com/xml/">James Clark XML site</A>.  This was a very late 
+decision because in earlier days we found that the James Clark version was causing all the problems.  
+Unfortunetaly the transition was not completely painless, IE and XT have different ideas about how 
+to render entities which was initially very misleading.  There also appears to be some problem with 
+the stylesheet declaration.  I think that IE actually has the bug this time.  As a result the MS version 
+has not been refined as much as the XT one.  XT is primarily a Java program but a Win32 
+binary is also available.</DIV>
+
+<DIV CLASS="para">An example of XT being used to render the Virtuoso Docs from the command line from the 
+documentation root directory is:</DIV>
+<PRE CLASS="programlisting">
+	xt xmlsource\virtdocs.xml stylesheets\html_xt.xsl html\virtdocs_xt.html
+</PRE>
+
+<DIV CLASS="para">The XML sources are validated against the 
+<A HREF="http://www.oasis-open.org/docbook/xml/">DocBook DTD for XML</A> 
+maintained by Norman Walsh.  The DocBook site contains extensive documentation 
+and support regarding the project.  You can also find an extensive collection of sample 
+XSL for DocBook documents that render using James Clark's XT. </DIV>
+
+<DIV CLASS="para">Note that the WebDAV resource of the demo database currently hosts a copy of the 
+XML documentation sources.  Currently IE sometimes seems to have a problem downloading 
+the complete content of the DTD via HTTP.  If you experience this then you may have to 
+remove this reference.</DIV>
+
+<DIV CLASS="para"><A HREF="http://www.easysw.com/htmldoc">HTMLDOC</A>
+ was used to generate the PDF and PS version of the Virtuoso documentation from the HTML 
+generated documents.  HTMLDOC is copyright 1997-2000 by Easy Software Products and is free software 
+under GNU.
+</DIV>
+<DIV CLASS="para">See also: <A HREF="readme.html">Simple Readme for the Virtuoso Documentation Project</A></DIV>
+</DIV>
+</BODY>

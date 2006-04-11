@@ -1,0 +1,58 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-18">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>SOAP &amp; WSDL service</refname>
+    <refpurpose>Consuming Third-Party Services via WSDL URLs</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-18a">
+<title>Example overview</title>
+<para>
+This example demonstrates usage of the WSDL_IMPORT_UDT() function.
+The result from calling of the WSDL_IMPORT_UDT() is the creation of a 
+User Defined Type (UDT) which represents the SOAP service. Each method in the UDT
+represents an operation available from this SOAP service (proxy UDT).</para>
+<para>
+After successful retrieval of the WSDL, and UDT creation, the function
+returns UDT definition as string.</para>
+<para>
+    The example also defines one test endpoint where it exposes the 
+    imported UDTs are own methods. Therefore it's easy to test using 
+    VSMX file for the demo endpoint. 
+</para>
+<para>
+    To cleanup the endpoint, use 'Clear cache' button. This would 
+    unpublish the SOAP proxy UDTs from the demo test endpoint.
+</para>
+<para>
+    To setup and run, the initial script must be loaded.
+</para>
+</refsect1>
+
+</refentry>

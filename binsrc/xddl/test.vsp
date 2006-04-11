@@ -1,0 +1,52 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+	  declare src_xml, src_xslt,res, path, vspx  varchar;
+	  declare xml_tree,xslt_tree,pars, xml_tree_doc, xml_tree_doc2 any;
+
+	  	 dbg_obj_print('This is the start!!!');
+
+	  xml_tree := xml_tree (file_to_string (concat(http_root(),'/fragment.xml')));
+	 xml_tree_doc:= xml_tree_doc (xml_tree);
+if (0) {
+	 dbg_obj_print('The fragment1 is ',xml_tree);
+	  src_xslt := file_to_string (concat(http_root(),'/xddl_diff.xsl'));
+	 dbg_obj_print('The xslt is ',src_xslt);
+	  xslt_sheet(src_xslt, xml_tree_doc (src_xslt));
+	dbg_obj_print('afer sheet');
+	xml_tree_doc2 := xml_tree_doc (xml_tree (file_to_string (concat(http_root(),'/demo.xml'))));
+	 pars  := vector('fragment', xml_tree_doc, 'database', xml_tree_doc2);
+	 dbg_obj_print('The fragment is ',xml_tree_doc);
+	 dbg_obj_print('The database is ',xml_tree_doc2);
+	 res := xslt (src_xslt, xml_tree_doc,pars);
+} else {
+	 res :=   xddl_diff (xml_tree_doc);
+}
+--	 dbg_obj_print('The hot result is ',res);
+	vspx:= string_output();
+
+	 http_value(res, 0, vspx);
+	 dbg_obj_print('The xml is ',vspx);
+	http(vspx);
+	http(xddl_to_ddl(res));
+?>

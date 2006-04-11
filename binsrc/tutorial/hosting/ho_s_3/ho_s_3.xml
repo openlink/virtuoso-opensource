@@ -1,0 +1,87 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="HO-S-3">
+  <refmeta>
+    <refentrytitle>3rd Party Runtime Hosting</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Sending an SMS message through an ASP .NET SOAP Client to update a table </refname>
+    <refpurpose>Demonstrating the use of C# to create Virtuoso hosted Stored 
+    Procedures and Triggers. In this demo the database events trigger SMS 
+    messages that are relayed via C# based SOAP Client.</refpurpose>
+  </refnamediv>
+
+    <refsect1 id="HO-S-3a_overview">
+    <title>Overview</title>
+    <para>The following tutorial demonstrates how a C# based Managed SOAP 
+    Client is used to create SMS based database notification services inside 
+    Virtuoso. This demo executes a database trigger every time a new Supplier 
+    record is added, updated or deleted. In this example a C# class acts as a
+    SOAP client to a 3rd party XML Web Service that provides the SMS (Short Message 
+    Services) delivery to mobile phones. Note, this demo will work with any phone 
+    that is capable of receiving SMS (TEXT) messages.</para>
+    </refsect1>
+
+    <refsect1 id="HO-S-3a_prerequisites">
+    <title>Prerequisites</title>
+    <para>This demo currently works only on a Virtuoso server running under Microsoft Windows with following components installed:</para>
+    <itemizedlist>
+      <listitem>Windows
+        <itemizedlist>
+          <listitem>.NET Runtime and Frameworks</listitem>
+          <listitem>.Net Runtime and Framework SDK (if you seek to write your own Objects for integration with Virtuoso)</listitem>
+          <listitem>Virtuoso Universal Server for Windows with .NET CLR Hosting.</listitem>
+        </itemizedlist>
+      </listitem>
+    </itemizedlist>
+    </refsect1>
+
+    <refsect1 id="HO-S-3a">
+    <title>Tutorial Example</title>
+
+  <para>Please follow the steps below to maximize the value of this tutorial:</para>
+  <orderedlist>
+   <listitem>Click on the "Set Initial State" link which registers the "redcoalsmssvc" service with Virtuoso. Click on the "ho_s_3.sql" link to see the code behind this step</listitem>
+   <listitem>Click on the "Run" links to actually experience the demo</listitem>
+  </orderedlist>
+
+  <para>Demo Breakdown</para>
+  <orderedlist>
+   <listitem>"ho_s_3.sql" performs the following steps
+  <orderedlist>
+     <listitem>Registers the "redcoalsmssvc" class with Virtuoso. Click on the "redcoalsms.cs" and "redcoalsmsref.cs" links to see the C# source code. Note that the class "redcoalsmssvc" is part of an assembly that has the namespace "redcoalsms"</listitem>
+     <listitem>Creates the "Suppliers" table </listitem>
+     <listitem>Creates a stored procedure "redcoal_send_sms" which demonstrates the syntax for creating an instance variable which includes the assembly namespace in the type reference. Specifically, note the use of an underscore instead of a dot when making this assignment </listitem>
+     <listitem>Creates a Trigger named "send_sms_to_mgr_new_supp" that sends an SMS message each time a new "Supplier" table record is inserted</listitem>
+     <listitem>Creates a Trigger named "send_sms_to_mgr_mod_supp" that sends an SMS message each time a "Supplier" record is updated</listitem>
+     <listitem>Creates a Trigger named "send_sms_to_mgr_mod_supp" that sends an SMS message each time a supplier record is deleted</listitem>
+  </orderedlist></listitem>
+  <listitem>"setup_sms.vsp" sets up all of the base data and verifies that SMS service connectivity required by this demo is available.</listitem>
+   <listitem>"handler.vsp" is the actual interface through which you add or delete supplier records which result in SMS notifications being sent to your mobile phone.</listitem>
+  </orderedlist>
+
+
+   </refsect1>
+</refentry>

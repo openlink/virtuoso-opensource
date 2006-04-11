@@ -1,0 +1,24 @@
+HKCR
+{
+	VirtuosoSink.SMTP.1 = s 'SMTP Class'
+	{
+		CLSID = s '{C9C50651-AE52-11D4-8986-00E018001CA1}'
+	}
+	VirtuosoSink.SMTP = s 'SMTP Class'
+	{
+		CLSID = s '{C9C50651-AE52-11D4-8986-00E018001CA1}'
+		CurVer = s 'VirtuosoSink.SMTP.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {C9C50651-AE52-11D4-8986-00E018001CA1} = s 'SMTP Class'
+		{
+			ProgID = s 'VirtuosoSink.SMTP.1'
+			VersionIndependentProgID = s 'VirtuosoSink.SMTP'
+			ForceRemove 'Programmable'
+			LocalServer32 = s '%MODULE%'
+			val AppID = s '{C9C50643-AE52-11D4-8986-00E018001CA1}'
+			'TypeLib' = s '{C9C50642-AE52-11D4-8986-00E018001CA1}'
+		}
+	}
+}

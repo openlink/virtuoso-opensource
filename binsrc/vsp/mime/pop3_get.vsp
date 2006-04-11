@@ -1,0 +1,216 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+
+declare _u_id integer;
+declare _server, _port, _pop_user, _pop_pass, loc_user, mess, _u_name varchar;
+declare all_mess, new_mess, _u_id, inx, len integer;
+declare res any;
+declare _err_code, _err_message varchar;
+declare sid varchar;
+declare seen_before, _m_ins integer;
+
+_err_code := '';
+_m_ins := 0;
+sid := adm_get_sesid (params);
+_u_id := DB.DBA.adm_dav_check_auth (lines, 1);
+seen_before := adm_get_ses_var (sid, 'seen_before', 0);
+
+--dbg_obj_print (params, seen_before, sid, _u_id);
+
+if (_u_id > 0 and seen_before and '' <> get_keyword ('new_login', params, ''))
+{
+  _u_id := 0;
+  adm_set_ses_var (sid, 'seen_before', 0);
+}
+
+if (_u_id < 1)
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    DB.DBA.vsp_auth_get ('virtuoso_dav_admin', '/mime',
+		md5 (datestring (now ())),
+		md5 ('FloppyBootStompedOntoTheGround'),
+		'false', lines, 1);
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	'<HTML><HEAD>',
+	'<TITLE>401 Unauthorized</TITLE>',
+	'</HEAD><BODY><H1>Unauthorized</H1>',
+	'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+else
+  select U_NAME into _u_name from WS.WS.SYS_DAV_USER where U_ID = _u_id;
+
+adm_set_ses_var (sid, 'seen_before', _u_id);
+
+declare exit handler for sqlstate '*' { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error; };
+
+  _server := get_keyword ('server', params, '');
+  _port := get_keyword ('port', params, '110');
+  _pop_user := get_keyword ('user', params, _u_name);
+  _pop_pass := get_keyword ('pass', params, '');
+  loc_user := get_keyword ('_dav_user', params, '');
+
+  if ({?'server'} is null and {?'port'} is null and {?'user'} is null)
+    {
+      _server := coalesce (USER_GET_OPTION (_u_name, 'POP3Server'), '');
+      _port := coalesce (USER_GET_OPTION (_u_name, 'POP3ServerPort'), '110');
+      _pop_user := coalesce (USER_GET_OPTION (_u_name, 'POP3User'), _u_name);
+    }
+
+  if ('' <> get_keyword ('get_mail', params))
+    {
+      declare vis any;
+      declare elm varchar;
+      vis := vector ();
+      if (_server = '')
+        signal ('     ', 'The POP3 server address cannot be empty');
+
+      USER_SET_OPTION (_u_name, 'POP3Server', _server);
+      USER_SET_OPTION (_u_name, 'POP3ServerPort', _port);
+      USER_SET_OPTION (_u_name, 'POP3User', _pop_user);
+
+--    pop3_get (server:port, user, password, buffer size, option (delete from server after download))
+      if ('' <> get_keyword ('_del', params))
+	  res := pop3_get (concat (_server,':',_port), _pop_user, _pop_pass, 999999999, 'DELETE');
+      else
+	  res := pop3_get (concat (_server,':',_port), _pop_user, _pop_pass, 999999999);
+      inx := 0;
+      len := length (res);
+
+      for select blob_to_string(MM_BODY) MM_BODY from DB.DBA.MAIL_MESSAGE where MM_OWN = loc_user and MM_FLD = 'Inbox' do
+	{
+          elm := mail_header (MM_BODY, 'Message-Id');
+          vis := vector_concat (vis, vector (elm, 'y'));
+	}
+
+      while (inx < len )
+	{
+	  mess := aref (aref (res, inx), 1);
+          elm := mail_header (mess, 'Message-Id');
+          if (get_keyword (elm, vis) is null)
+	    {
+	      _m_ins := _m_ins + 1;
+	      NEW_MAIL (loc_user, mess);
+	    }
+	  inx := inx + 1;
+	}
+    }
+error:
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+  <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <title>Virtuoso Mail</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Get messages from remove host">
+  </head>
+<?vsp adm_page_header('Virtuoso Mail', NULL); ?>
+<?vsp if (_err_code <> '') { ?>
+              <TABLE class="genlist" BORDER="0" CELLPADDING="0" align=left WIDTH="60%">
+              <TR class="errorhead"><TD COLSPAN="2">Error</TD></TR>
+	      <TR><TD class="genlisthead">SQL State</TD><TD class="gendata"><?=_err_code?></TD></TR>
+	      <TR><TD class="genlisthead">Error Message</TD><TD class="gendata"><?=_err_message?></TD></TR>
+	      </TABLE>
+<?vsp } ?>
+
+   </td>
+ </tr>
+ <TR CLASS="CtrlMain"><TD COLSPAN="2" ALIGN="middle">
+
+<?vsp
+  if ('' <> get_keyword ('get_mail', params) and _err_code = '')
+    {
+?>
+
+  <FORM method="POST"  name="pop3_get_ok" action="mime_plain.vsp">
+<?vsp
+      if (len > 0 )
+	{
+	  if (_m_ins > 0)
+	    {
+    ?>
+    <P>You have <?=_m_ins?> new messages in your inbox. </p>
+                <INPUT type="submit" name="_go" value="View mail">
+    <?vsp
+	    }
+	  else
+	    {
+	    ?>
+		<P>There are no new messages on the server.</p>
+                <INPUT type="submit" name="_go" value="View mail">
+ 	   <?vsp
+	    }
+	}
+      else
+	{
+          http ('No messages.');
+        }
+      http ('</FORM></TD></TR>');
+    }
+  else
+    {
+?>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" WIDTH="60%">
+  <FORM method="POST"  name="mail_auth_form" action="pop3_get.vsp">
+    <TR><TD CLASS="genhead" COLSPAN ="2">Authorization</TD></TR>
+    <TR CLASS="AdmBorders"><TD COLSPAN="2"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+    <TR><TD CLASS="genlisthead">POP3 Server</TD><TD>
+    <input type="text" name="server" value="<?=_server?>" size="30">
+    </TD></TR>
+    <TR><TD CLASS="genlisthead">Port</TD><TD>
+    <input type="text" name="port" value="<?=_port?>" size="5">
+    </TD></TR>
+    <TR><TD CLASS="genlisthead">Username</TD><TD>
+    <input type="text" name="user" value="<?=_pop_user?>" size="15">
+    </TD></TR>
+    <TR><TD CLASS="genlisthead">Password</TD><TD>
+      <input type="password" name="pass" value="<?=_pop_pass?>" size="15">
+    </TD></TR>
+    <TR><TD CLASS="genlisthead">Delete After Retrieval</TD><TD>
+      <input type="checkbox" name="_del">
+    </TD></TR>
+    <TR>
+     <td colspan=2 align=right nowrap>
+       <b>If "<?=_u_name?>" is not your ID, click here: </b><INPUT type=submit name="new_login" value="Re-login">
+     </td>
+     </tr>
+     <tr>
+      <TD COLSPAN="2" ALIGN="right">
+       <input type="submit" name="get_mail" value="Fetch Mail">
+       <input type="hidden" name="_dav_user" value="<?=_u_name?>">
+       <input type="hidden" name="sid" value="<?=sid?>">
+       <input type="hidden" name="_step" value="1">
+     </TD>
+    </tr>
+  </FORM>
+</TABLE>
+<?vsp
+    }
+?>
+<?vsp adm_page_footer(); ?>
+</HTML>

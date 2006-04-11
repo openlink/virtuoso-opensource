@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_contains">
+  <refmeta>
+    <refentrytitle>contains</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>contains</refname>
+    <refpurpose>Returns true if the first argument string contains the second argument string, and otherwise returns false.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_contains">
+      <funcprototype id="xpf_proto_contains">
+        <funcdef>boolean <function>contains</function></funcdef>
+	<paramdef><parameter>haystack</parameter> string</paramdef>
+	<paramdef><parameter>needle</parameter> string</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_contains"><title>Description</title>
+<para>
+For two given strings, this function checks if the first string conctains the second string.
+If any argument is not a string, it is converted to string using rules from string() XPATH function.
+Thus if the second argument has no string value, the function returns true, because it will
+be converted to an empty string first.</para>
+</refsect1>
+  <refsect1 id="xpf_params_contains"><title>Parameters</title>
+    <refsect2><title>haystack</title>
+      <para>String where the search is performed</para></refsect2>
+    <refsect2><title>needle</title>
+      <para>String to search</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_contains"><title>Return Types</title><para>Boolean</para></refsect1>
+  <refsect1 id="xpf_examples_contains"><title>Examples</title>
+    <example id="xpf_ex_contains"><title></title>
+      <screen>contains ('OpenLink Virtuoso', 'Link')</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_contains"><title>See Also</title>
+    <para><link linkend="xpf_string">string()</link><link linkend="xpf_starts_with">starts-with()</link><link linkend="xpf_ends_with">ends-with()</link></para>
+  </refsect1>
+</refentry>
+

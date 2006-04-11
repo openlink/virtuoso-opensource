@@ -1,0 +1,53 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XS-S-6">
+  <refmeta>
+    <refentrytitle>XML Examples</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XPATH interpreter</refname>
+    <refpurpose>Applying the XPATH expression</refpurpose>
+  </refnamediv>
+
+<refsect1 id="XS-S-6a">
+<title>Example</title>
+<itemizedlist mark="bullet">
+  <listitem>This example allows a selection from a document formed by
+   <ulink url="../xs_s_1/xs_s_1.vsp">XS-S-1</ulink>, and applies a user-written XPATH expression to it.</listitem>
+   <listitem><para>The page has selectable sample expressions including:</para>
+   <itemizedlist mark="bullet">
+    <listitem>Count of all titles</listitem>
+    <listitem>Sum of the length of sect2 titles</listitem>
+    <listitem>All first paragraphs of sect2's.</listitem>
+   </itemizedlist></listitem>
+  <listitem>The example uses xpath_eval, and iterates on the results if an array is produced.</listitem>
+  <listitem>A single element of the XS-S-1 data is picked as the context node.</listitem>
+  <listitem>A special button applies the operation on all rows with xpath_contains, showing the result set
+   with doc name and result.</listitem>
+  <listitem>This shows how one row can make multiple results with xpath_contains,
+   but will return an array with xpath_eval.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

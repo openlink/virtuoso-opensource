@@ -1,0 +1,2201 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<cases>
+
+<case id="1.1.9.1">
+<descr>List books published by Addison-Wesley after 1991, including their year and title.</descr>
+<xquery><![CDATA[
+<bib>
+   {
+--   FOR $b IN document("http://www.bn.com")/bib/book
+   FOR $b IN document("virt://XQ.XQ.TEST_FILES.NAME.TEXT:data/bib.xml")/bib/book
+   WHERE $b/publisher = "Addison-Wesley" AND $b/@year > 1991
+   RETURN
+      <book year = {$b/@year}>
+	 {$b/title}
+      </book>
+   }
+</bib>
+]]></xquery>
+<etalon>
+<bib>
+    <book year="1994">
+	<title>TCP/IP Illustrated</title>
+    </book>
+    <book year="1992">
+	<title>Advanced Programming in the Unix environment</title>
+    </book>
+</bib>
+</etalon>
+</case>
+
+<case id="1.1.9.1a">
+<descr>List books, including their year and title.</descr>
+<xquery><![CDATA[
+<bib>
+   {
+   FOR $b IN document("virt://XQ.XQ.TEST_FILES.NAME.TEXT:data/bib.xml")/bib/book
+   RETURN
+      <book year = {$b/@year}>
+	 {$b/title}
+      </book>
+   }
+</bib>
+]]></xquery>
+<etalon>
+<bib>
+...
+</bib>
+</etalon>
+</case>
+
+<case id="1.1.9.1b">
+<descr>List books, including their title.</descr>
+<xquery><![CDATA[
+<bib>
+   {
+   FOR $b IN document("virt://XQ.XQ.TEST_FILES.NAME.TEXT:data/bib.xml")/bib/book
+   RETURN
+      <book>
+	 {$b/title}
+      </book>
+   }
+</bib>
+]]></xquery>
+<etalon>
+<bib>
+...
+</bib>
+</etalon>
+</case>
+
+<case id="1.1.9.2">
+<descr>Create a flat list of all the title-author pairs, with each pair enclosed in a "result" element.</descr>
+<xquery><![CDATA[
+<results>
+   {
+--   FOR $b IN document("http://www.bn.com")/bib/book,
+   FOR $b IN document("virt://XQ.XQ.TEST_FILES.NAME.TEXT:data/bib.xml")/bib/book,
+       $t IN $b/title,
+       $a IN $b/author
+   RETURN
+      <result>
+	 { $t }
+	 { $a }
+      </result>
+   }
+</results>
+]]></xquery>
+<etalon>
+<results>
+	<result>
+	       <title>TCP/IP Illustrated</title>
+	       <author><last>Stevens</last><first>W.</first></author>
+	</result>
+	<result>
+	       <title>Advanced Programming in the Unix environment</title>
+	       <author><last>Stevens</last><first>W.</first></author>
+	</result>
+	<result>
+	       <title>Data on the Web</title>
+	       <author><last>Abiteboul</last><first>Serge</first></author>
+	</result>
+	<result>
+	       <title> Data on the Web</title>
+	       <author><last>Buneman</last><first>Peter</first></author>
+	</result>
+	<result>
+	       <title>Data on the Web</title>
+	       <author><last>Suciu</last><first>Dan</first></author>
+	</result>
+</results>
+</etalon>
+</case>
+
+<case id="1.1.9.3">
+<descr>For each book in the bibliography, list the title and authors, grouped inside a "result" element.</descr>
+<xquery><![CDATA[
+<results>
+   {
+   FOR $b IN document("http://www.bn.com")/bib/book
+   RETURN
+      <result>
+	 { $b/title }
+	 {
+	 FOR $a IN $b/author
+	 RETURN $a
+	 }
+      </result>
+   }
+</results>
+]]></xquery>
+<etalon>
+<results>
+    <result>
+	<title>TCP/IP Illustrated</title>
+	<author><last>Stevens</last><first>W.</first></author>
+    </result>
+
+    <result>
+	<title>Advanced Programming in the Unix environment</title>
+	<author><last>Stevens</last><first>W.</first></author>
+    </result>
+
+    <result>
+	<title>Data on the Web</title>
+	<author><last>Abiteboul</last><first>Serge</first></author>
+	<author><last>Buneman</last><first>Peter</first></author>
+	<author><last>Suciu</last><first>Dan</first></author>
+    </result>
+</results>
+</etalon>
+</case>
+
+<case id="1.1.9.4">
+<descr>For each author in the bibliography, list the author's name and the titles of all books by that author, grouped inside a "result" element.</descr>
+<xquery><![CDATA[
+<results>
+   {
+   FOR $a IN distinct(document("http://www.bn.com")//author)
+   RETURN
+      <result>
+	 { $a }
+	 {
+	      FOR $b IN document("http://www.bn.com")/bib/book[author = $a]
+	      RETURN $b/title
+	 }
+      </result>
+   }
+</results>
+]]></xquery>
+<etalon>
+<results>
+    <result>
+	<author><last>Stevens</last><first>W.</first></author>
+	<title>TCP/IP Illustrated</title>
+	<title>Advanced Programming in the Unix environment</title>
+    </result>
+
+    <result>
+	<author><last>Abiteboul</last><first>Serge</first></author>
+	<title>Data on the Web</title>
+    </result>
+
+    <result>
+	<author><last>Buneman</last><first>Peter</first></author>
+	<title>Data on the Web</title>
+    </result>
+
+    <result>
+	<author><last>Suciu</last><first>Dan</first></author>
+	  <title>Data on the Web</title>
+    </result>
+</results>
+</etalon>
+</case>
+
+<case id="1.1.9.5">
+<descr>For each book found at both bn.com and amazon.com, list the title of the book and its price from each source.</descr>
+<xquery><![CDATA[
+<books-with-prices>
+   FOR $b IN document("www.bn.com/bib.xml")//book,
+       $a IN document("www.amazon.com/reviews.xml")//entry
+   WHERE $b/title = $a/title
+   RETURN
+      <book-with-prices>
+	 $b/title,
+	 <price-amazon> $a/price/text() </price-amazon>,
+	 <price-bn> $b/price/text() </price-bn>
+      </book-with-prices>
+</books-with-prices>
+]]></xquery>
+<etalon>
+<books-with-prices>
+    <book-with-prices>
+      <title>TCP/IP Illustrated</title>
+      <price-amazon>65.95</price-amazon>
+      <price-bn>65.95</price-bn>
+    </book-with-prices>
+
+    <book-with-prices>
+      <title>Advanced Programming in the Unix environment</title>
+      <price-amazon>65.95</price-amazon>
+      <price-bn>65.95</price-bn>
+    </book-with-prices>
+
+    <book-with-prices>
+      <title>Data on the Web</title>
+      <price-amazon>34.95</price-amazon>
+      <price-bn>39.95</price-bn>
+    </book-with-prices>
+</books-with-prices>
+</etalon>
+</case>
+
+<case id="1.1.9.6">
+<descr>For each book that has at least one author, list the title and first two authors, and an empty "et-al" element if the book has additional authors.</descr>
+<xquery><![CDATA[
+<bib>
+   FOR $b IN document("www.bn.com/bib.xml")//book
+   WHERE count($b/author) > 0
+   RETURN
+      <book>
+	 $b/title,
+	 FOR $a IN $b/author[RANGE 1 TO 2] RETURN $a,
+	 IF count($b/author) > 2 THEN <et-al/> ELSE [ ]
+      </book>
+</bib>
+]]></xquery>
+<etalon>
+<bib>
+    <book>
+	<title>TCP/IP Illustrated</title>
+	<author><last>Stevens</last><first>W.</first></author>
+    </book>
+
+    <book>
+	<title>Advanced Programming in the Unix environment</title>
+	<author><last>Stevens</last><first>W.</first></author>
+    </book>
+
+    <book>
+	<title>Data on the Web</title>
+	    <author><last>Abiteboul</last><first> Serge</first></author>
+	    <author><last>Buneman</last><first>Peter</first></author>
+	    <et-al/>
+    </book>
+</bib>
+</etalon>
+</case>
+
+<case id="1.1.9.7">
+<descr>List the titles and years of all books published by Addison-Wesley after 1991, in alphabetic order.</descr>
+<xquery><![CDATA[
+<bib>
+   FOR $b IN document("www.bn.com/bib.xml")//book
+      [publisher = "Addison-Wesley" AND @year > "1991"]
+   RETURN
+      <book>
+	 $b/@year,
+	 $b/title
+      </book> SORTBY (title)
+</bib>
+]]></xquery>
+<etalon>
+<bib>
+    <book year="1992">
+	<title>Advanced Programming in the Unix environment</title>
+    </book>
+    <book year="1994">
+	<title>TCP/IP Illustrated</title>
+   </book>
+</bib>
+</etalon>
+</case>
+
+<case id="1.1.9.8">
+<descr>Find books in which some element has a tag ending in "or" and the same element contains the string "Suciu" (at any level of nesting). For each such book, return the title and the qualifying element.</descr>
+<xquery><![CDATA[
+FOR $b IN document("www.bn.com/bib.xml")//book,
+    $e IN $b/*[contains(string(.), "Suciu")]
+WHERE ends_with(name($e), "or")
+RETURN
+   <book>
+      $b/title,
+      $e
+   </book>
+]]></xquery>
+<etalon>
+<book>
+    <title> Data on the Web </title>
+    <author> <last> Suciu </last> <first> Dan </first> </author>
+</book>
+</etalon>
+</case>
+
+<case id="1.1.9.9">
+<descr>
+In the document "books.xml", find all section or chapter titles that contain
+the word "XML", regardless of the level of nesting.</descr>
+<xquery><![CDATA[
+<results>
+   FOR $t IN document("books.xml")//chapter/title
+	     UNION document("books.xml")//section/title
+   WHERE contains($t/text(), "XML")
+   RETURN $t
+</results>
+]]></xquery>
+
+<etalon>
+
+<results>
+	<title>XML</title>
+	<title>XML and Semistructured Data</title>
+</results>
+</etalon>
+</case>
+
+<case id="1.1.9.10">
+<descr>
+In the document "prices.xml", find the minimum price for each book, in the
+form of a "minprice" element with the book title as its title attribute.</descr>
+<xquery><![CDATA[
+<results>
+   LET $doc := document("prices.xml")
+   FOR $t IN distinct($doc/book/title)
+   LET $p := $doc/book[title = $t]/price
+   RETURN
+      <minprice title = $t/text()>
+	 min($p)
+      </minprice>
+</results>
+]]></xquery>
+<etalon>
+
+<results>
+    <minprice title="Advanced Programming in the Unix environment"> 65.95 </minprice>
+    <minprice title="TCP/IP Illustrated"> 65.95 </minprice>
+    <minprice title="Data on the Web"> 34.95 </minprice>
+</results>
+</etalon>
+</case>
+
+<case id="1.1.9.11">
+<descr>
+For each book with an author, return the book with its title and authors. For
+each book with an editor, return a reference with the book title and the
+editor's affiliation. </descr>
+<xquery><![CDATA[
+<bib>
+   FOR $b IN document("www.bn.com/bib.xml")//book[author]
+   RETURN
+      <book>
+	 $b/title,
+	 $b/author
+      </book>,
+   FOR $b IN document("www.bn.com/bib.xml")//book[editor]
+   RETURN
+      <reference>
+	 $b/title,
+	 <org> $b/editor/affiliation/text() </org>
+      </reference>
+</bib>
+]]></xquery>
+<etalon>
+
+<bib>
+	<book>
+	       <title>TCP/IP Illustrated</title>
+	       <author><last> Stevens </last> <first> W.</first></author>
+	</book>
+
+	<book>
+	       <title>Advanced Programming in the Unix environment</title>
+	       <author><last>Stevens</last><first>W.</first></author>
+	</book>
+
+	<book>
+	       <title>Data on the Web</title>
+	       <author><last>Abiteboul</last><first>Serge</first></author>
+	       <author><last>Buneman</last><first>Peter</first></author>
+	       <author><last>Suciu</last><first>Dan</first></author>
+	</book>
+
+	<reference>
+		<title>The Economics of Technology and Content for Digital TV</title>
+		<org>CITI</org>
+	</reference>
+</bib>
+</etalon>
+</case>
+
+<case id="1.1.9.12">
+<descr>
+Find pairs of books that have different titles but the same set of authors
+(possibly in a different order).</descr>
+<xquery><![CDATA[
+<bib>
+   FOR $book1 IN document("www.bn.com/bib.xml")//book,
+       $book2 IN document("www.bn.com/bib.xml")//book
+   WHERE $book1/title/text() > $book2/title/text()
+   AND unordered($book1/author) = unordered($book2/author)
+   RETURN
+      <book-pair>
+	 $book1/title,
+	 $book2/title
+      </book-pair>
+</bib>
+]]></xquery>
+<etalon>
+<bib>
+       <book-pair>
+	       <title> TCP/IP Illustrated </title>
+	       <title> Advanced Programming in the Unix environment </title>
+       </book-pair>
+</bib>
+</etalon>
+</case>
+<case id="1.2.4.1">
+<descr>
+Prepare a (nested) table of contents for Book1, listing all the sections and
+their titles. Preserve the original attributes of each &lt;section&gt; element,
+if any.</descr>
+<xquery><![CDATA[
+<toc>
+   LET $b := document("book1.xml")
+   RETURN filter($b,
+       $b//section | $b//section/title | $b//section/title/text())
+</toc>
+]]></xquery>
+<etalon>
+<toc>
+  <section id="intro" difficulty="easy">
+    <title>Introduction</title>
+    <section>
+      <title>Audience</title>
+    </section>
+    <section>
+      <title>Web Data and the Two Cultures</title>
+    </section>
+  </section>
+  <section id="syntax" difficulty="medium">
+    <title>A Syntax For Data</title>
+    <section>
+      <title>Base Types</title>
+    </section>
+    <section>
+      <title>Representing Relational Databases</title>
+    </section>
+    <section>
+      <title>Representing Object Databases</title>
+    </section>
+  </section>
+</toc>
+</etalon>
+</case>
+
+<case id="1.2.4.2">
+<descr>
+Prepare a (flat) figure list for Book1, listing all the figures and their
+titles. Preserve the original attributes of each &lt;figure&gt; element, if
+any.</descr>
+<xquery><![CDATA[
+<figlist>
+   FOR $f IN document("book1.xml")//figure
+   RETURN
+      <figure>
+	 $f/@*,
+	 $f/title
+      </figure>
+</figlist>
+]]></xquery>
+<etalon>
+<figlist>
+  <figure height="400" width="400">
+    <title>Traditional client/server architecture</title>
+  </figure>
+  <figure height="200" width="500">
+    <title>Graph representations of structures</title>
+  </figure>
+  <figure height="250" width ="400">
+    <title>Examples of Relations</title>
+  </figure>
+</figlist>
+</etalon>
+</case>
+<case id="1.2.4.3">
+<descr>
+How many sections are in Book1, and how many figures? </descr>
+<xquery><![CDATA[
+[
+  <section_count>
+     count(document("book1.xml")//section)
+  </section_count> ,
+  <figure_count>
+     count(document("book1.xml")//figure)
+  </figure_count>
+]
+]]></xquery>
+<etalon>
+<section_count> 7 </section_count>
+<figure_count> 3 </figure_count>
+</etalon>
+</case>
+
+
+<case id="1.2.4.4">
+<descr>
+How many top-level sections are in Book1? </descr>
+<xquery><![CDATA[
+<top_section_count>
+   count(document("book1.xml")/book/section)
+</top_section_count>
+]]></xquery>
+<etalon>
+<top_section_count> 2 </top_section_count>
+</etalon>
+</case>
+
+<case id="1.2.4.5">
+<descr>
+Make a flat list of the section elements in Book1. In place of its original
+attributes, each section element should have two attributes, containing the
+title of the section and the number of figures immediately contained in the
+section. </descr>
+<xquery><![CDATA[
+<section_list>
+   FOR $s IN document("book1.xml")//section
+   LET $f := $s/figure
+   RETURN
+      <section title = $s/title/text() figcount = count($f)> </section>
+</section_list>
+]]></xquery>
+<etalon>
+<section_list>
+  <section title="Introduction" figcount="0"> </section>
+  <section title="Audience" figcount="0"> </section>
+  <section title="Web Data and the Two Cultures" figcount="1"> </section>
+  <section title="A Syntax for Data" figcount="1"> </section>
+  <section title="Base Types" figcount="0"> </section>
+  <section title="Representing Relational Databases" figcount="1"> </section>
+  <section title="Representing Object Databases" figcount="0"> </section>
+</section_list>
+</etalon>
+</case>
+<case id="1.2.4.6">
+<descr>
+Make a nested list of the section elements in Book1, preserving their
+original attributes and hierarchy. Inside each section element, include the
+title of the section and an element that includes the number of figures
+immediately contained in the section. </descr>
+<xquery><![CDATA[
+FUNCTION section_summary(element $s) RETURNS element
+  {
+    <section>
+       $s/@*,
+       $s/title,
+       <figcount> count($s/figure) </figcount>,
+       FOR $ss IN $s/section
+       RETURN section_summary($ss)
+    </section>
+  }
+
+<toc>
+   FOR $s IN document("book1.xml"/section)
+   RETURN section_summary($s)
+</toc>
+]]></xquery>
+<etalon>
+<section_summary>
+  <section id="intro" difficulty="easy">
+    <title>Introduction</title>
+    <figcount> 0 </figcount>
+    <section>
+      <title>Audience</title>
+      <figcount> 0 </figcount>
+    </section>
+    <section>
+      <title>Web Data and the Two Cultures</title>
+      <figcount> 1 </figcount>
+    </section>
+  </section>
+  <section id="syntax" difficulty="medium">
+    <title>A Syntax For Data</title>
+    <figcount> 1 </figcount>
+    <section>
+      <title>Base Types</title>
+      <figcount> 0 </figcount>
+    </section>
+    <section>
+      <title>Representing Relational Databases</title>
+      <figcount> 1 </figcount>
+    </section>
+    <section>
+      <title>Representing Object Databases</title>
+      <figcount> 0 </figcount>
+    </section>
+  </section>
+</section_summary>
+</etalon>
+</case>
+
+<case id="1.3.4.1">
+<descr>
+In the Procedure section of Report1, what Instruments were used in the second
+Incision? </descr>
+<xquery><![CDATA[
+FOR $s IN document("report1.xml")//section[section.title = "Procedure"]
+RETURN ($s//incision)[2]/instrument
+]]></xquery>
+<etalon>
+<result>
+  <instrument>electrocautery</instrument>
+</result>
+</etalon>
+</case>
+
+<case id="1.3.4.2">
+<descr>
+In the Procedure section of Report1, what are the first two Instruments to be
+used? </descr>
+<xquery><![CDATA[
+FOR $s IN document("report1.xml")//section[section.title = "Procedure"]
+RETURN ($s//instrument)[RANGE 1 TO 2]
+]]></xquery>
+<etalon>
+<result>
+  <instrument>using electrocautery.</instrument>
+  <instrument>electrocautery</instrument>
+</result>
+</etalon>
+</case>
+
+<case id="1.3.4.3">
+<descr>
+In Report1, what Instruments were used in the first two Actions after the
+second Incision? </descr>
+<xquery><![CDATA[
+LET $i2 := (document("report1.xml")//incision)[2]
+FOR $a IN (document("report1.xml")//action AFTER $i2)[RANGE 1 TO 2]
+RETURN $a//instrument
+]]></xquery>
+<etalon>
+<result>
+  <instrument>Hasson trocar</instrument>
+  <instrument>trocar</instrument>
+</result>
+</etalon>
+</case>
+
+<case id="1.3.4.4">
+<descr>
+In Report1, find "Procedure" sections where no Anesthesia element occurs
+before the first Incision</descr>
+<xquery><![CDATA[
+FOR $proc IN document("report1")//section[section.title="Procedure"]
+WHERE EVERY $a IN $proc//anesthesia SATISFIES $a AFTER $proc//incision[1]
+RETURN $proc
+]]></xquery>
+<etalon>
+<result />
+(No sections satisfy Q4)
+</etalon>
+</case>
+
+<case id="1.3.4.5">
+<descr>
+In Report1, what happened between the first Incision and the second Incision?
+</descr>
+<xquery><![CDATA[
+FOR $proc IN document("report1.xml")//section[section.title="Procedure"],
+    $bet  IN $proc//* AFTER ($proc//incision)[1] BEFORE ($proc//incision)[2]
+RETURN $bet
+]]></xquery>
+<etalon>
+<result>
+<action>#2 0 Maxon stay sutures were placed on each side of the midline.</action>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.1">
+<descr>
+List the item number and description of all bicycles that currently have an
+auction in progress, ordered by item number.</descr>
+<xquery><![CDATA[
+<result>
+   FOR   $i IN document("items.xml")//item_tuple
+   WHERE $i/start_date <= date()
+     AND $i/end_date >= date()
+     AND contains($i/description, "Bicycle")
+   RETURN
+      <item_tuple>
+	 $i/itemno,
+	 $i/description
+      </item_tuple> SORTBY (itemno)
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <item_tuple>
+    <itemno> 1003 </itemno>
+    <description> Old Bicycle </description>
+  </item_tuple>
+  <item_tuple>
+    <itemno> 1007 </itemno>
+    <description> Racing Bicycle </description>
+  </item_tuple>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.2">
+<descr>
+For all bicycles, list the item number, description, and highest bid (if
+any), ordered by item number.</descr>
+<xquery><![CDATA[
+<result>
+   FOR $i IN document("items.xml")//item_tuple
+   LET $b := document("bids.xml")//bid_tuple[itemno = $i/itemno]
+   WHERE contains($i/description, "Bicycle")
+   RETURN
+      <item_tuple>
+	 $i/itemno ,
+	 $i/description ,
+	 <high_bid> max($b/bid) </high_bid>
+      </item_tuple> SORTBY (itemno)
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <item_tuple>
+    <itemno> 1001 </itemno>
+    <description> Red Bicycle </description>
+    <high_bid> 55 </high_bid>
+  </item_tuple>
+  <item_tuple>
+    <itemno> 1003 </itemno>
+    <description> Old Bicycle </description>
+    <high_bid> 20 </high_bid>
+  </item_tuple>
+  <item_tuple>
+    <itemno> 1007 </itemno>
+    <description> Racing Bicycle </description>
+    <high_bid> 225 </high_bid>
+  </item_tuple>
+  <item_tuple>
+    <itemno> 1008 </itemno>
+    <description> Broken Bicycle </description>
+  </item_tuple>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.3">
+<descr>
+Find cases where a user with a rating worse (alphabetically, greater) than
+"C" is offering an item with a reserve price of more than 1000.</descr>
+<xquery><![CDATA[
+<result>
+   FOR $u IN document("users.xml")//user_tuple,
+       $i IN document("items.xml")//item_tuple
+   WHERE $u/rating > "C"
+     AND $i/reserve_price > 1000
+     AND $i/offered_by = $u/userid
+   RETURN
+      <warning>
+	 $u/name ,
+	 $u/rating ,
+	 $i/description ,
+	 $i/reserve_price
+      </warning>
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <warning>
+    <user_name> Dee Linquent </user_name>
+    <user_rating> D </user_rating>
+    <item_description> Helicopter </item_description>
+    <reserve_price> 50000 </reserve_price>
+  </warning>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.4">
+<descr>
+List item numbers and descriptions of items that have no bids.</descr>
+<xquery><![CDATA[
+<result>
+   FOR $i IN document("items.xml")//item_tuple
+   WHERE NOT
+      SOME $b IN document("bids.xml")//bid_tuple
+	 SATISFIES $b/itemno = $i/itemno
+   RETURN
+      <no_bid_item>
+	 $i/itemno ,
+	 $i/description
+      </no_bid_item>
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <no_bid_item>
+    <itemno> 1005 </itemno>
+    <description> Tennis Racket </description>
+  </no_bid_item>
+  <no_bid_item>
+    <itemno> 1006 </itemno>
+    <description> Helicopter </description>
+  </no_bid_item>
+  <no_bid_item>
+    <itemno> 1008 </itemno>
+    <description> Broken Bicycle </description>
+  </no_bid_item>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.5">
+<descr>
+For bicycle(s) offered by Tom Jones, list the item number, description,
+highest bid (if any), and name of the highest bidder, ordered by item
+number.</descr>
+<xquery><![CDATA[
+<result>
+   FOR $seller  IN document("users.xml")//user_tuple,
+       $buyer   IN document("users.xml")//user_tuple,
+       $item    IN document("items.xml")//item_tuple,
+       $highbid IN document("bids.xml")//bid_tuple
+   WHERE $seller/name = "Tom Jones"
+     AND $seller/userid = $item/offered_by
+     AND contains($item/description, "Bicycle")
+     AND $item/itemno = $highbid/itemno
+     AND $highbid/userid = $buyer/userid
+     AND $highbid/bid =
+	   max(document("bids.xml")//bid_tuple
+			    [itemno = $item/itemno]/bid)
+   RETURN
+      <jones_bike>
+	 $item/itemno ,
+	 $item/description ,
+	 <high_bid> $highbid/bid </high_bid> ,
+	 <high_bidder> $buyer/name </high_bidder>
+      </jones_bike> SORTBY (itemno)
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <auction_item>
+    <itemno> 1001 </itemno>
+    <description> Red Bicycle </description>
+    <high_bid> 55 </high_bid>
+    <bidder> Mary Doe </bidder>
+  </auction_item>
+  <auction_item>
+    <itemno> 1008 </itemno>
+    <description> Broken Bicycle </description>
+  </auction_item>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.6">
+<descr>
+For each item whose highest bid is more than twice its reserve price, list
+the item number, description, reserve price, and highest bid.</descr>
+<xquery><![CDATA[
+<result>
+   FOR $item IN document("items.xml")//item_tuple
+   LET $b := document("bids.xml")//bid_tuple
+		   [itemno = $item/itemno]
+   WHERE $item/reserve_price < 2 * max($b/bid)
+   RETURN
+      <successful_item>
+	 $item/itemno ,
+	 $item/description ,
+	 $item/reserve_price,
+	 <high_bid> max($b/bid) </high_bid>
+      </successful_item>
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <successful_item>
+    <itemno> 1002 </itemno>
+    <description> Motorcycle </description>
+    <reserve_price> 500 </reserve_price>
+    <high_bid> 1200 </high_bid>
+  </successful_item>
+  <successful_item>
+    <itemno> 1004 </itemno>
+    <description> Tricycle </description>
+    <reserve_price> 15 </reserve_price>
+    <high_bid> 40 </high_bid>
+  </successful_item>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.7">
+<descr>
+Find the highest bid ever made for a bicycle or tricycle.</descr>
+<xquery><![CDATA[
+LET $allbikes := document("items.xml")//item_tuple
+		   [ contains(description, "Bicycle")
+		     OR contains(description, "Tricycle") ],
+    $bikebids := document("bids.xml")//bid_tuple
+		   [ itemno = $allbikes/itemno ]
+RETURN
+  <high_bid>
+     max($bikebids/bid)
+  </high_bid>
+]]></xquery>
+<etalon>
+<high_bid> 225 </high_bid>
+</etalon>
+</case>
+
+<case id="1.4.4.8">
+<descr>
+How many items were actioned (auction ended) in March 1999?</descr>
+<xquery><![CDATA[
+LET $item := document("items.xml")//item_tuple
+       [end_date >= date("1999-03-01")
+	AND end_date <= date("1999-03-31")]
+RETURN
+   <item_count>
+      count($item)
+   </item_count>
+]]></xquery>
+<etalon>
+<item_count> 3 </item_count>
+</etalon>
+</case>
+
+<case id="1.4.4.9">
+<descr>
+List the number of items auctioned each month in 1999 for which data is
+available, ordered by month.</descr>
+<xquery><![CDATA[
+<result>
+   LET $end_dates := document("items.xml")//item_tuple/end_date
+      FOR $m IN distinct( month($end_dates) )
+      LET $item := document("items.xml")
+	     //item_tuple[year(end_date) = 1999 AND month(end_date) = $m]
+      RETURN
+	 <monthly_result>
+	    <month> $m </month> ,
+	    <item_count> count($item) </item_count>
+	 </monthly_result> SORTBY (month)
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <monthly_result>
+    <month> 1 </month>
+    <item_count> 1 </item_count>
+  </monthly_result>
+  <monthly_result>
+    <month> 2 </month>
+    <item_count> 2 </item_count>
+  </monthly_result>
+  <monthly_result>
+    <month> 3 </month>
+    <item_count> 3 </item_count>
+  </monthly_result>
+  <monthly_result>
+    <month> 4 </month>
+    <item_count> 1 </item_count>
+  </monthly_result>
+  <monthly_result>
+    <month> 5 </month>
+    <item_count> 1 </item_count>
+  </monthly_result>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.10">
+<descr>
+For each item that has received a bid, list the item number, the highest bid,
+and the name of the highest bidder, ordered by item number.</descr>
+<xquery><![CDATA[
+<result>
+   FOR $highbid IN document("bids.xml")//bid_tuple,
+       $user IN document("users.xml")//user_tuple
+   WHERE $user/userid = $highbid/userid
+     AND $highbid/bid =
+	    max(document("bids.xml")//bid_tuple
+		   [itemno = $highbid/itemno]/bid)
+   RETURN
+     <high_bid>
+	$highbid/itemno ,
+	$highbid/bid ,
+	<bidder> $user/name/text() </bidder>
+     </high_bid> SORTBY (itemno)
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <high_bid>
+    <itemno> 1001 </itemno>
+    <bid> 55 </bid>
+    <bidder> Mary Doe </bidder>
+  </high_bid>
+  <high_bid>
+    <itemno> 1002 </itemno>
+    <bid> 1200 </bid>
+    <bidder> Mary Doe </bidder>
+  </high_bid>
+  <high_bid>
+    <itemno> 1003 </itemno>
+    <bid> 20 </bid>
+    <bidder> Jack Sprat </bidder>
+  </high_bid>
+  <high_bid>
+    <itemno> 1004 </itemno>
+    <bid> 40 </bid>
+    <bidder> Tom Jones </bidder>
+  </high_bid>
+  <high_bid>
+    <itemno> 1007 </itemno>
+    <bid> 225 </bid>
+    <bidder> Roger Smith </bidder>
+  </high_bid>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.11">
+<descr>
+List the item number and description of the item(s) that received the highest
+bid ever recorded, and the amount of that bid.</descr>
+<xquery><![CDATA[
+LET $highbid := max(document("bids.xml")//bid_tuple/bid)
+RETURN
+<result>
+   FOR $item IN document("items.xml")//item_tuple,
+       $b IN document("bids.xml")//bid_tuple[itemno = $item/itemno]
+   WHERE $b/bid = $highbid
+   RETURN
+      <expensive_item>
+	 $item/itemno ,
+	 $item/description ,
+	 <high_bid> $highbid </high_bid>
+      </expensive_item>
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <expensive_item>
+    <itemno> 1002 </itemno>
+    <description> Motorcycle </description>
+    <high_bid> 1200 </high_bid>
+  </expensive_item>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.12">
+<descr>
+List the item number and description of the item(s) that received the largest
+number of bids, and the number of bids it (or they) received.</descr>
+<xquery><![CDATA[
+FUNCTION bid_summary() RETURNS LIST(element)
+   {
+   FOR $i IN distinct( document("bids.xml")//itemno )
+   LET $b := document("bids.xml")//bid_tuple[itemno = $i]
+   RETURN
+      <bid_count>
+	 $i ,
+	 <nbids> count($b) </nbids>
+      </bid_count>
+   }
+<result>
+   FOR $item IN document("items.xml")//item_tuple,
+       $bc   IN bid_summary()/bid_count[itemno = $item/itemno]
+   WHERE $bc/nbids = max(bid_summary()//nbids)
+   RETURN
+      <popular_item>
+	 $item/itemno ,
+	 $item/description ,
+	 <bid_count> $bc/nbids/text() </bid_count>
+      </popular_item>
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <popular_item>
+    <itemno> 1001 </itemno>
+    <description> Red Bicycle </description>
+    <bid_count> 5 </bid_count>
+  </popular_item>
+  <popular_item>
+    <itemno> 1002 </itemno>
+    <description> Motorcycle </description>
+    <bid_count> 5 </bid_count>
+  </popular_item>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.13">
+<descr>
+For each user who has placed a bid, give the userid, name, number of bids,
+and average bid, in order by userid.</descr>
+<xquery><![CDATA[
+<result>
+   FOR $uid IN distinct( document("bids.xml")//userid ),
+       $u IN document("users.xml")//user_tuple[userid = $uid]
+   LET $b := document("bids.xml")//bid_tuple[userid = $uid]
+   RETURN
+      <bidder>
+	 $u/userid ,
+	 $u/name ,
+	 <bidcount> count($b) </bidcount> ,
+	 <avgbid> avg($b/bid) </avgbid>
+      </bidder> SORTBY (userid)
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <bidder>
+    <userid> U01 </userid>
+    <name> Tom Jones </name>
+    <bidcount> 2 </bidcount>
+    <avgbid> 220 </avgbid>
+  </bidder>
+  <bidder>
+    <userid> U02 </userid>
+    <name> Mary Doe </name>
+    <bidcount> 5 </bidcount>
+    <avgbid> 387 </avgbid>
+  </bidder>
+  <bidder>
+    <userid> U03 </userid>
+    <name> Dee Linquent </name>
+    <bidcount> 2 </bidcount>
+    <avgbid> 475 </avgbid>
+  </bidder>
+  <bidder>
+    <userid> U04 </userid>
+    <name> Roger Smith </name>
+    <bidcount> 5 </bidcount>
+    <avgbid> 266 </avgbid>
+  </bidder>
+  <bidder>
+    <userid> U05 </userid>
+    <name> Jack Sprat </name>
+    <bidcount> 1 </bidcount>
+    <avgbid> 200 </avgbid>
+  </bidder>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.14">
+<descr>
+List item numbers and average bids for items that have received three or more
+bids, in descending order by average bid.</descr>
+<xquery><![CDATA[
+<result>
+   FOR $i IN distinct( document("bids.xml")//itemno )
+   LET $b := document("bids.xml")//bid_tuple[itemno = $i]
+   WHERE count($b) >= 3
+   RETURN
+      <popular_item>
+	 $i ,
+	 <avgbid> avg($b/bid) </avgbid>
+      </popular_item> SORTBY (avgbid DESCENDING)
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <popular_item>
+    <itemno> 1002 </itemno>
+    <avgbid> 800 </avgbid>
+  </popular_item>
+  <popular_item>
+    <itemno> 1007 </itemno>
+    <avgbid> 200 </avgbid>
+  </popular_item>
+  <popular_item>
+    <itemno> 1001 </itemno>
+    <avgbid> 45 </avgbid>
+  </popular_item>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.15">
+<descr>
+List names of users who have placed multiple bids of at least $100 each.</descr>
+<xquery><![CDATA[
+<result>
+   FOR $u IN document("users.xml")//user_tuple
+   LET $b := document("bids.xml")//bid_tuple
+		[userid = $u/userid AND bid >= 100]
+   WHERE count($b) > 1
+   RETURN <big_spender> $u/name/text() </big_spender>
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <big_spender> Mary Doe </big_spender>
+  <big_spender> Dee Linquent </big_spender>
+  <big_spender> Roger Smith </big_spender>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.16">
+<descr>
+List all registered users in order by userid; for each user, include the
+userid, name, and an indication of whether the user is active (has at least one
+bid on record) or inactive (has no bid on record).</descr>
+<xquery><![CDATA[
+<result>
+   FOR $u IN document("users.xml")//user_tuple
+   LET $b := document("bids.xml")//bid_tuple[userid = $u/userid]
+   RETURN
+      <user>
+	 $u/userid,
+	 $u/name,
+	 IF empty($b) THEN <status> "inactive" </status>
+	 ELSE <status> "active" </status>
+      </user> SORTBY (userid)
+</result>
+]]></xquery>
+<etalon>
+<result>
+   <user>
+      <userid> U01 </userid>
+      <name> Tom Jones </name>
+      <status> active </status>
+   </user>
+   <user>
+      <userid> U02 </userid>
+      <name> Mary Doe </name>
+      <status> active </status>
+   </user>
+   <user>
+      <userid> U03 </userid>
+      <name> Dee Linquent </name>
+      <status> active </status>
+   </user>
+   <user>
+      <userid> U04 </userid>
+      <name> Roger Smith </name>
+      <status> active </status>
+   </user>
+   <user>
+      <userid> U05 </userid>
+      <name> Jack Sprat </name>
+      <status> active </status>
+   </user>
+   <user>
+      <userid> U06 </userid>
+      <name> Rip Van Winkle </name>
+      <status> inactive </status>
+   </user>
+</result>
+</etalon>
+</case>
+
+<case id="1.4.4.17">
+<descr>
+List the names of users, if any, who have bid on every item.</descr>
+<xquery><![CDATA[
+<frequent_bidder>
+   FOR $u IN document("users.xml")//user_tuple
+   WHERE
+      EVERY $item IN document("items.xml")//item_tuple SATISFIES
+	 SOME $b IN document("bids.xml")//bid_tuple SATISFIES
+	    ($item/itemno = $b/itemno AND $u/userid = $b/userid)
+   RETURN
+      $u/name
+</frequent_bidder>
+]]></xquery>
+<etalon>
+<frequent_bidder />
+(No users satisfy Q17.)<!--</P>-->
+</etalon>
+</case>
+
+<case id="1.4.4.18">
+<descr>
+List all users in alphabetic order by name. For each user, include
+descriptions of all the items (if any) that were bid on by that user, in
+alphabetic order. </descr>
+<xquery><![CDATA[
+<result>
+   FOR $u IN document("users.xml")//user_tuple
+   RETURN
+      <user>
+	 $u/name,
+	 FOR $b IN document("bids.xml")//bid_tuple[userid = $u/userid],
+	     $i IN document("items.xml")//item_tuple[itemno = $b/itemno]
+	 RETURN
+	    <bid_on_item>
+	       $i/description/text()
+	    </bid_on_item> SORTBY (.)
+      </user> SORTBY (name)
+</result>
+]]></xquery>
+<etalon>
+<result>
+   <user>
+      <name> Dee Linquent </name>
+      <bid_on_item> Motorcycle </bid_on_item>
+      <bid_on_item> Racing Bicycle </bid_on_item>
+   </user>
+   <user>
+      <name> Jack Sprat </name>
+      <bid_on_item> Old Bicycle </bid_on_item>
+      <bid_on_item> Racing Bicycle </bid_on_item>
+   </user>
+   <user>
+      <name> Mary Doe </name>
+      <bid_on_item> Motorcycle </bid_on_item>
+      <bid_on_item> Red Bicycle </bid_on_item>
+   </user>
+   <user>
+      <name> Rip Van Winkle </name>
+   </user>
+   <user>
+      <name> Roger Smith </name>
+      <bid_on_item> Motorcycle </bid_on_item>
+      <bid_on_item> Old Bicycle </bid_on_item>
+      <bid_on_item> Racing Bicycle </bid_on_item>
+      <bid_on_item> Red Bicycle </bid_on_item>
+   </user>
+   <user>
+      <name> Tom Jones </name>
+      <bid_on_item> Motorcycle </bid_on_item>
+      <bid_on_item> Tricycle </bid_on_item>
+   </user>
+</result>
+</etalon>
+</case>
+
+<case id="1.5.4.1">
+<descr>
+Locate all paragraphs in the report (all "para" elements occurring anywhere
+within the "report" element).</descr>
+<xquery><![CDATA[
+<result>
+   //report//para
+</result>
+]]></xquery>
+<etalon>Elements whose start-tags are on lines 6, 11, 20, 27, 34, 39, 46, 53, 56, 62, 67, 71, 76, 83, 90, 94</etalon>
+</case>
+
+<case id="1.5.4.2">
+<descr>
+Locate all paragraph elements in an introduction (all "para" elements
+directly contained within an "intro" element). </descr>
+<xquery><![CDATA[
+<result>
+   //intro/para
+</result>
+]]></xquery>
+<etalon>Elements whose start-tags are on lines 6, 11, 20, 27, 53, 56, 62, 90, 94</etalon>
+</case>
+
+<case id="1.5.4.3">
+<descr>
+Locate all paragraphs in the introduction of a section that is in a chapter
+that has no introduction (all "para" elements directly contained within an
+"intro" element directly contained in a "section" element directly contained in
+a "chapter" element. The "chapter" element must not directly contain an "intro"
+element). </descr>
+<xquery><![CDATA[
+<result>
+   FOR $c IN //chapter
+   WHERE empty($c/intro)
+   RETURN $c/section/intro/para
+</result>
+]]></xquery>
+<etalon>Elements whose start-tags are on lines 90, 94</etalon>
+</case>
+
+<case id="1.5.4.4">
+<descr>
+Locate the second paragraph in the third section in the second chapter (the
+second "para" element occurring in the third "section" element occurring in the
+second "chapter" element occurring in the "report"). </descr>
+<xquery><![CDATA[
+<result>
+   (((//chapter)[2]//section)[3]//para)[2]
+</result>
+]]></xquery>
+<etalon>Element whose start-tag is on line 67</etalon>
+</case>
+
+<case id="1.5.4.5">
+<descr>
+Locate all classified paragraphs (all "para" elements whose "security"
+attribute has the value "c").</descr>
+<xquery><![CDATA[
+<result>
+   //para[@security = "c"]
+</result>
+]]></xquery>
+<etalon>Element whose start-tag is on line 94</etalon>
+</case>
+
+<case id="1.5.4.6">
+<descr>
+List the short titles of all sections (the values of the "shorttitle"
+attributes of all "section" elements, expressing each short title as the value
+of a new element.) </descr>
+<xquery><![CDATA[
+<result>
+   FOR $s IN //section/@shorttitle
+   RETURN <stitle> $s </stitle>
+</result>
+]]></xquery>
+<etalon>Attribute values in start-tags on lines 23, 50, 59</etalon>
+</case>
+
+<case id="1.5.4.7">
+<descr>
+Locate the initial letter of the initial paragraph of all introductions (the
+first character in the content [character content as well as element content] of
+the first "para" element contained in an "intro" element). </descr>
+<xquery><![CDATA[
+<result>
+   FOR $i IN //intro/para[1]
+   RETURN
+      <first_letter>
+	 substring(string($i),1,1)
+      </first_letter>
+</result>
+]]></xquery>
+<etalon>Character after start-tag on lines 6, 20, 27, 53, 62, 90</etalon>
+</case>
+
+<case id="1.5.4.8">
+<descr>
+Locate all sections with a title that has "is SGML" in it (all "section"
+elements that contain a "title" element that has the consecutive characters "is
+SGML" in its content). The string can be interrupted by sub-elements. </descr>
+<xquery><![CDATA[
+<result>
+   //section[contains(string(.//title), "is SGML")]
+</result>
+]]></xquery>
+<etalon>Elements whose start-tags are on lines 51, 60</etalon>
+</case>
+
+<case id="1.5.4.9">
+<descr>
+Same as (Q8a), but the string cannot be interrupted by sub-elements. </descr>
+<xquery><![CDATA[
+<result>
+   //section[contains(.//title/text(), "is SGML")]
+</result>
+]]></xquery>
+<etalon>Element whose start-tag is on line 60</etalon>
+</case>
+
+<case id="1.5.4.10">
+<descr>
+Locate all the topics referenced by a cross-reference anywhere in the report
+(all the "topic" elements whose "topicid" attribute value is the same as an
+"xrefid" attribute value of any "xref" element). </descr>
+<xquery><![CDATA[
+<result>
+   FOR $id IN document("input.xml")//xref/@xrefid
+   RETURN //topic[@topicid = $id]
+</result>
+]]></xquery>
+<etalon>Element whose start-tag is on line 65</etalon>
+</case>
+
+<case id="1.5.4.11">
+<descr>
+Locate the closest title preceding the cross-reference ("xref") element whose
+"xrefid" attribute is "top4" (the "title" element that would be touched last
+before this "xref" element when touching each element in document order).</descr>
+<xquery><![CDATA[
+<result>
+   LET $x := //xref[@xrefid = "top4"],
+       $t := //title BEFORE $x
+   RETURN $t[last()]
+</result>
+]]></xquery>
+<etalon>Given xref on line 79, element whose start-tag is on line 75</etalon>
+</case>
+
+<case id="1.6.4.1">
+<descr>
+Find all news items where the name "Foobar Corporation" appears in the title.
+</descr>
+<xquery><![CDATA[
+//news_item/title[contains(./text(), "Foobar Corporation")]
+]]></xquery>
+<etalon>Expected Results: The expected results are the news item elements with the
+following titles: <!--</P>-->
+<!--<UL>-->
+  <!--<LI>-->
+  Foobar Corporation releases its new line of Foo products today<!--</P>-->
+  <!--<LI>-->
+  Foobar Corporation is suing Gorilla Corporation for patent
+  infringement<!--</P>--><!--</LI>--><!--</UL>-->
+</etalon>
+</case>
+
+<case id="1.6.4.2">
+<descr>
+Find news items where the Foobar Corporation and one or more of its partners
+are mentioned in the same paragraph and/or title. List each news item by its
+title and date. </descr>
+<xquery><![CDATA[
+LET $foobar_partners := //company[name = "Foobar Corporation"]//partner
+FOR $item IN //news_item
+WHERE
+   SOME $t IN $item//title SATISFIES
+      (contains($t/text(), "Foobar Corporation")
+       AND SOME $partner IN $foobar_partners SATISFIES
+	     contains($t/text(), $partner/text())
+      )
+   OR SOME $par IN $item//par SATISFIES
+      (contains($par/text(), "Foobar Corporation")
+       AND SOME $partner IN $foobar_partners SATISFIES
+	     contains($par/text(), $partner/text())
+      )
+RETURN
+   <news_item>
+      $item/title,
+      $item/date
+   </news_item>
+]]></xquery>
+<etalon>
+<news_item>
+   <title>Gorilla Corporation acquires YouNameItWeIntegrateIt.com</title>
+   <date>1-20-2000</date>
+</news_item>
+<news_item>
+   <title>Foobar Corporation releases its new line of Foo products today</title>
+   <date>1-20-2000</date>
+</news_item>
+<news_item>
+   <title>Foobar Corporation is suing Gorilla Corporation for patent infringement</title>
+   <date>1-20-2000</date>
+</news_item>
+</etalon>
+</case>
+
+<case id="1.6.4.3">
+<descr>
+Find titles of news items where Foobar Corporation and one or more of its
+partners are mentioned in the same sentence, but none of its competitors are
+mentioned in the news item. (The "." character designates the end of a
+sentence.) </descr>
+<xquery><![CDATA[
+LET $foobar_partners := //company[name = "Foobar Corporation"]//partner,
+    $foobar_competitors := //company[name = "Foobar Corporation"]//competitor
+FOR $item IN //news_item
+WHERE SOME $partner IN $foobar_partners SATISFIES
+   contains_in_same_sentence(string($item/content),
+      "Foobar Corporation", $partner/text())
+AND NOT SOME $competitor IN $foobar_competitors SATISFIES
+   contains( string($item/content), $competitor/text() )
+RETURN $item/title
+]]></xquery>
+<etalon>
+<title>Foobar Corporation releases its new line of Foo products today </title>
+</etalon>
+</case>
+
+<case id="1.6.4.4">
+<descr>
+Find news items where a company and one of its partners is mentioned in the
+same news item and the news item is not authored by the company itself. </descr>
+<xquery><![CDATA[
+FOR $item IN //news_item,
+    $c IN //company
+LET $partners := $c//partner
+WHERE contains( string($item), $c/name/text() )
+  AND SOME $p IN $partners SATISFIES contains( string($item), $p/text() )
+  AND $item/news_agent != $c/name
+RETURN $item
+]]></xquery>
+<etalon>The expected results are the news item elements with the
+following titles: <!--</P>-->
+<!--<UL>-->
+  <!--<LI>-->
+  Gorilla Corporation acquires YouNameItWeIntegrateIt.com <!--</P>-->
+  <!--<LI>-->
+  Foobar Corporation is suing Gorilla Corporation for patent
+  infringement<!--</P>--><!--</LI>--><!--</UL>-->
+</etalon>
+</case>
+
+<case id="1.6.4.5">
+<descr>
+For each news item that is relevant to the Gorilla Corporation, create an
+"item summary" element. The content of the item summary is the content of the
+title, date, and first paragraph of the news item, separated by periods. A news
+item is relevant if the name of the company is mentioned anywhere within the
+content of the news item. </descr>
+<xquery><![CDATA[
+FOR $item IN //news_item
+WHERE contains( string($item/content), "Gorilla Corporation" )
+RETURN
+   <item_summary>
+      $item/title/text(),
+      ".",
+      $item/date/text(),
+      ".",
+      string( ($item//par)[1] )
+   </item_summary>
+]]></xquery>
+<etalon>
+<item_summary>
+   Gorilla Corporation acquires YouNameItWeIntegrateIt.com. 1-20-2000.
+   Today, Gorilla corparation announced that it will purchase
+   YouNameItWeIntegrateIt.com. The shares of YouNameItWeIntegrateIt.com
+   dropped $3.00 as a result of this announcement.
+</item_summary>
+<item_summary>
+   Foobar Corporation is suing Gorilla Corporation for patent infringement.
+   1-20-2000. In surprising developments today, Foobar Corporation announced
+   that it is suing Gorilla Corporation for patent infringement. The patents
+   that were mentioned as part of the lawsuit are considered to be the
+   basis of Foobar Corporation's <quote>Wireless Foo</quote> line of products.
+</item_summary>
+</etalon>
+</case>
+
+<case id="1.6.4.6">
+<descr>
+Find news items where two company names and some form of the word "acquire"
+appear in the title or in the same sentence in one of the paragraphs. A company
+name is defined as the content of a &lt;name&gt;, &lt;partner&gt;, or
+&lt;competitor&gt; element within a &lt;company&gt; element. </descr>
+<xquery><![CDATA[
+LET $companies := distinct( //company/name/text()
+		      UNION //company//partner/text()
+		      UNION //company//competitor/text() )
+FOR $item IN //news_item,
+    $item_title IN $item/title,
+    $item_para IN $item//para,
+    $c1 IN $companies,
+    $c2 IN $companies
+WHERE $c1 != $c2
+  AND contains_stems_in_same_sentence($item_title/text(), $c1, $c2, "acquire")
+   OR contains_stems_in_same_sentence($item_para/text(), $c1, $c2, "acquire")
+RETURN distinct($item)
+]]></xquery>
+<etalon>The expected results are the news item elements with the
+following titles: <!--</P>-->
+<!--<UL>-->
+  <!--<LI>-->
+  Gorilla Corporation acquires YouNameItWeIntegrateIt.com <!--</P>-->
+  <!--<LI>-->
+  Foobar Corporation is suing Gorilla Corporation for patent infringement
+  <!--</P>--><!--</LI>--><!--</UL>-->
+</etalon>
+</case>
+
+<case id="1.7.4.1">
+<descr>List all unique namespaces used in the sample data.</descr>
+<xquery><![CDATA[
+<Q1>
+   FOR $n IN distinct(namespace_uri(//*))
+   RETURN $n + newline()
+</Q1>
+]]></xquery>
+<etalon>
+<Q1>
+  http://www.AuctionMediatorCompany.com/AuctionWatch
+  http://www.w3.org/1999/xlink
+  http://www.AuctionMediatorCompany.com/auctioneers#anyzone
+  http://www.AuctionMediatorCompany.com/auctioneers#eachbay
+  http://www.AuctionMediatorCompany.com/auctioneers#yabadoo
+  http://www.w3.org/1999/XMLSchema-datatypes
+  http://www.musicdatabase.org/music/records
+</Q1>
+</etalon>
+</case>
+
+<case id="1.7.4.2">
+<descr>
+Select the title of each record that is for sale.</descr>
+<xquery><![CDATA[
+NAMESPACE music = "http://www.musicdatabase.org/music/records"
+<Q2>
+   //music:title
+</Q2>
+]]></xquery>
+<etalon>
+<Q2 xmlns:music="http://www.musicdatabase.org/music/records">
+  <music:title>In a Silent Way</music:title>
+  <music:title>Think of One ...</music:title>
+</Q2>
+</etalon>
+</case>
+
+<case id="1.7.4.3">
+<descr>
+Select all elements using datatypes from "XML Schema: Part 2" datatypes.</descr>
+<xquery><![CDATA[
+NAMESPACE dt = "http://www.w3.org/1999/XMLSchema-datatypes"
+<Q3>
+   //* [@dt:*]
+</Q3>
+]]></xquery>
+<etalon>
+<Q3 xmlns:dt="http://www.w3.org/1999/XMLSchema-datatypes"
+	xmlns:ma="http://www.AuctionMediatorCompany.com/AuctionWatch"
+>
+  <ma:Open dt:type="timeInstant">2000-03-21:07:41:34-05:00</ma:Open>
+  <ma:Close dt:type="timeInstant">2000-03-23:07:41:34-05:00</ma:Close>
+  <ma:Open dt:type="timeInstant">2000-03-19:17:03:00-04:00</ma:Open>
+  <ma:Close dt:type="timeInstant">2000-03-29:17:03:00-04:00</ma:Close>
+</Q3>
+</etalon>
+</case>
+
+<case id="1.7.4.4">
+<descr>
+List the target URI's of all XLinks in the document.</descr>
+<xquery><![CDATA[
+NAMESPACE xlink = "http://www.w3.org/1999/xlink"
+<Q4>
+   FOR $hr IN //@xlink:href
+   RETURN $hr + newline()
+</Q4>
+]]></xquery>
+<etalon>
+<Q4>
+  http://auction.anyzone.com/item/0321K372910
+  http://auction.eachbay.com/members?get=RecordsRUs
+  http://auction.anyzone.com/members/VintageRecordFreak
+  http://auctions.yabadoo.com/auction/13143816
+  http://auction.eachbay.com/showRating/user=VintageRecordFreak
+  http://auction.eachbay.com/showRating/user=StarsOn45
+</Q4>
+</etalon>
+</case>
+
+<case id="1.7.4.5">
+<descr>
+Select all records that have a remark in German.</descr>
+<xquery><![CDATA[
+NAMESPACE music = "http://www.musicdatabase.org/music/records"
+<Q5>
+   //music:record[music:remark/xml:lang = "de"]
+</Q5>
+]]></xquery>
+<etalon>
+<Q5 xmlns:music="http://www.musicdatabase.org/music/records">
+<music:record>
+    <music:artist>Wynton Marsalis</music:artist>
+    <music:title>Think of One ...</music:title>
+    <music:recorded>1983</music:recorded>
+    <music:label>Columbia Records</music:label>
+    <music:remark xml:lang="en">
+	Columbia Records 12" 33-1/3 rpm LP, #FC-38641, Stereo. The record is
+	still clean and shiny and looks unplayed (looks like NM condition).
+	The cover has very light surface and edge wear.
+    </music:remark>
+    <music:remark xml:lang="de">
+	Columbia Records 12" 33-1/3 rpm LP, #FC-38641, Stereo. Die Platte
+	ist noch immer sauber und gl&#19386;end und sieht ungespielt aus
+	(NM Zustand). Das Cover hat leichte Abnutzungen an Oberfl&#18664;e und Ecken.
+    </music:remark>
+</music:record>
+</Q5>
+</etalon>
+</case>
+
+<case id="1.7.4.6">
+<descr>
+Select the closing time elements of all AnyZone auctions currently monitored.
+</descr>
+<xquery><![CDATA[
+NAMESPACE ma = "http://www.AuctionMediatorCompany.com/AuctionWatch"
+NAMESPACE anyzone="http://www.AuctionMediatorCompany.com/auctioneers#anyzone"
+<Q6>
+   //ma:Auction[@anyzone:ID]/ma:Schedule/ma:Close
+</Q6>
+]]></xquery>
+<etalon xmlns:ma = "http://www.AuctionMediatorCompany.com/AuctionWatch">
+<Q6 xmlns:dt="http://www.w3.org/1999/XMLSchema-datatypes">
+  <ma:Close dt:type="timeInstant">2000-03-23:07:41:34-05:00</ma:Close>
+</Q6>
+</etalon>
+</case>
+
+<case id="1.7.4.7">
+<descr>
+Select the homepage of all auctions where both seller and high bidder are
+registered at the same auctioneer.</descr>
+<xquery><![CDATA[
+NAMESPACE ma = "http://www.AuctionMediatorCompany.com/AuctionWatch"
+<Q7>
+   FOR $a IN //ma:Auction
+   LET $seller_id := $a/ma:Trading_Partners/ma:Seller/*:ID,
+       $buyer_id  := $a/ma:Trading_Partners/ma:High_Bidder/*:ID
+   WHERE namespace_uri($seller_id) = namespace_uri($buyer_id)
+   RETURN $a/ma:AuctionHomepage
+</Q7>
+]]></xquery>
+<etalon>
+<Q7 xmlns:xlink="http://www.w3.org/1999/xlink"
+    xmlns:ma="http://www.AuctionMediatorCompany.com/AuctionWatch" >
+  <ma:AuctionHomepage xlink:type="simple"
+		      xlink:href="http://auctions.yabadoo.com/auction/13143816" />
+</Q7>
+</etalon>
+</case>
+
+<case id="1.7.4.8">
+<descr>
+Select all traders (either seller or high bidder) without negative
+comments</descr>
+<xquery><![CDATA[
+NAMESPACE ma = "http://www.AuctionMediatorCompany.com/AuctionWatch"
+<Q8>
+   FOR $s IN //ma:Trading_Partners/ma:Seller
+   WHERE $s/*:NegativeComments = 0
+   RETURN $s
+UNION
+   FOR $b IN //ma:Trading_Partners/ma:High_Bidder
+   WHERE $b/*:NegativeComments = 0
+   RETURN $b
+</Q8>
+]]></xquery>
+<etalon>
+<Q8 xmlns:ma="http://www.AuctionMediatorCompany.com/AuctionWatch"
+	xmlns:eachbay="http://www.AuctionMediatorCompany.com/auctioneers#eachbay"
+	xmlns:xlink="http://www.w3.org/1999/xlink" >
+<ma:High_Bidder>
+  <eachbay:ID>VintageRecordFreak</eachbay:ID>
+  <eachbay:PositiveComments>232</eachbay:PositiveComments>
+  <eachbay:NeutralComments>0</eachbay:NeutralComments>
+  <eachbay:NegativeComments>0</eachbay:NegativeComments>
+  <ma:MemberInfoPage xlink:type="simple"
+		     xlink:href="http://auction.eachbay.com/showRating/user=VintageRecordFreak"
+		     xlink:role="ma:MemberInfoPage" />
+</ma:High_Bidder>
+</Q8>
+</etalon>
+</case>
+
+<case id="1.8.4.1">
+<descr>Convert the sample document from "partlist" format to "parttree" format (see
+DTD section for definitions). In the result document, part containment is
+represented by containment of one &lt;part&gt; element inside another. Each part
+that is not part of any other part should appear as a separate top-level element
+in the output document. </descr>
+<xquery><![CDATA[
+FUNCTION one_level(element $p) RETURNS element
+   {
+   <part>
+      $p/@partid,
+      $p/@name,
+      FOR $s IN /part[@partid = $p/@partof]
+      RETURN one_level($s)
+   </part>
+   }
+
+<parttree>
+   FOR $p IN /part[NOT @partof]
+   RETURN one_level($p)
+</parttree>
+]]></xquery>
+<etalon>
+<parttree>
+  <part partid="0" name="car">
+    <part partid="1" name="engine">
+      <part partid="3" name="piston"/>
+    </part>
+    <part partid="2" name="door">
+      <part partid="4" name="window"/>
+      <part partid="5" name="lock"/>
+    </part>
+  </part>
+  <part partid="10" name="skateboard">
+    <part partid="11" name="board"/>
+    <part partid="12" name="wheel"/>
+  </part>
+  <part partid="20" name="canoe"/>
+</parttree>
+</etalon>
+</case>
+
+<case id="1.9.4.1">
+<descr>
+Find Martha's spouse. </descr>
+<xquery><![CDATA[
+<result>
+   FOR $m IN document("census.xml")//person[name="Martha"]
+   RETURN shallow($m/@spouse -> person)
+</result>
+]]></xquery>
+<etalon>
+<person name="Joe" job="Painter" spouse="Martha" />
+</etalon>
+</case>
+
+<case id="1.9.4.2">
+<descr>Find Joe's children.</descr>
+<xquery><![CDATA[
+FUNCTION children(element $p) RETURNS LIST(element)
+   {
+   shallow($p/person) UNION shallow($p/@spouse -> person/person)
+   }
+<result>
+   FOR $j IN document("census.xml")//person[name = "Joe"]
+   RETURN children($j)
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <person name="Sam" job="Nurse" />
+  <person name="Karen" job="Doctor" spouse="Steve" />
+  <person name="Dave" job="Athlete" spouse="Susan" />
+</result>
+</etalon>
+</case>
+
+<case id="1.9.4.3">
+<descr>
+Find parents of athletes. </descr>
+<xquery><![CDATA[
+<result>
+   FOR $p IN document("census.xml")//person,
+       $s IN $p/@spouse -> person
+   WHERE $p/person/job = "Athlete"
+      OR $s/person/job = "Athlete"
+   RETURN shallow($p)
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <person name="Joe" job="Painter" spouse="Martha" />
+  <person name="Martha" job="Programmer" spouse="Joe" />
+  <person name="John" job="Artist" />
+</result>
+</etalon>
+</case>
+
+<case id="1.9.4.4">
+<descr>
+Find people who have the same job as one of their parents. </descr>
+<xquery><![CDATA[
+<result>
+   FOR $p IN document("census.xml")//person,
+       $c IN $p/person
+   WHERE $p/job = $c/job
+      OR $p/@spouse -> person/job = $c/job
+   RETURN shallow($c)
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <person name="Susan" job="Pilot" spouse="Dave" />
+  <person name="Jane" job="Doctor" spouse="Fred" />
+</result>
+</etalon>
+</case>
+
+<case id="1.9.4.5">
+<descr>
+List names of parents and children who have the same job, and their jobs.</descr>
+<xquery><![CDATA[
+<result>
+   FOR  $p IN document("census.xml")//person,
+	$c IN $p/person[job = $p/job]
+   RETURN <match
+	     parent = $p/name
+	     child = $c/name
+	     job = $c/job
+	  /> ,
+   FOR  $p IN document("census.xml")//person,
+	$c IN $p/@spouse -> person/person[job = $p/job]
+   RETURN <match
+	     parent = $p/name
+	     child = $c/name
+	     job = $c/job
+	  />
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <match parent="Mary" child="Susan" job="Pilot" />
+  <match parent="Karen" child="Jane" job="Doctor" />
+</result>
+</etalon>
+</case>
+
+<case id="1.9.4.6">
+<descr>
+Find Bill's grandchildren. </descr>
+<xquery><![CDATA[
+<result>
+   FOR $b IN document("census.xml")//person[name = "Bill"] ,
+       $c IN $b/person | $b/@spouse -> person/person ,
+       $g IN $c/person | $c/@spouse -> person/person
+   RETURN
+       shallow($g)
+</result>
+]]></xquery>
+<etalon>
+
+<result>
+  <person name="Sam" job="Nurse" />
+  <person name="Karen" job="Doctor" spouse="Steve" />
+  <person name="Susan" job="Pilot" spouse="Dave" />
+  <person name="Dave" job="Athlete" spouse="Susan" />
+</result>
+</etalon>
+</case>
+
+<case id="1.9.4.7">
+<descr>
+List name-pairs of grandparents and grandchildren. </descr>
+<xquery><![CDATA[
+<result>
+{
+--   FOR $b IN document("census.xml")//person ,
+   FOR $b IN document("virt://XQ.XQ.TEST_FILES.NAME.TEXT:data/census.xml")//person ,
+       $c IN $b/person | $b/@spouse -> person/person ,
+       $g IN $c/person | $c/@spouse -> person/person
+   RETURN
+       <grandparent
+	  name = {$b/name}
+	  grandchild = {$g/name}
+       />
+}
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <grandparent name="Bill" grandchild="Sam" />
+  <grandparent name="Bill" grandchild="Karen" />
+  <grandparent name="Bill" grandchild="Susan" />
+  <grandparent name="Bill" grandchild="Dave" />
+  <grandparent name="Frank" grandchild="Dave" />
+  <grandparent name="Frank" grandchild="Helen" />
+  <grandparent name="Frank" grandchild="Steve" />
+  <grandparent name="Frank" grandchild="Sam" />
+  <grandparent name="Frank" grandchild="Karen" />
+  <grandparent name="Joe" grandchild="Fred" />
+  <grandparent name="Joe" grandchild="Jane" />
+  <grandparent name="Martha" grandchild="Fred" />
+  <grandparent name="Martha" grandchild="Jane" />
+  <grandparent name="John" grandchild="Jane" />
+</result>
+</etalon>
+</case>
+
+<case id="1.9.4.8">
+<descr>
+Find Dave's parents-in-law (parents of his spouse, if any). </descr>
+<xquery><![CDATA[
+<result>
+   FOR $s IN document("census.xml")//person[name = "Dave"]/@spouse -> person,
+       $sp IN $s/.. | $s/../@spouse -> person
+   RETURN shallow($sp)
+</result>
+]]></xquery>
+<etalon>
+<result>
+  <person name="Mary" job="Pilot" />
+</result>
+</etalon>
+</case>
+
+<case id="1.9.4.9">
+<descr>
+Find people with no children.</descr>
+<xquery><![CDATA[
+<result>
+   FOR $p IN document("census.xml")//person
+   WHERE empty(children($p))
+   RETURN shallow($p)
+</result>
+<!-- See Q2 for definition of children function. -->
+]]></xquery>
+<etalon>
+
+<result>
+  <person name="Fred" job="Senator" spouse="Jane" />
+  <person name="Susan" job="Pilot" spouse="Dave" />
+  <person name="Dave" job="Athlete" spouse="Susan" />
+  <person name="Helen" job="Athlete" />
+  <person name="Jane" job="Doctor" spouse="Fred" />
+</result>
+</etalon>
+</case>
+
+<case id="1.9.4.10">
+<descr>
+Find single parents (people with children but no spouse) </descr>
+<xquery><![CDATA[
+<result>
+   FOR $p IN document("census.xml")//person[person]
+   WHERE empty($p/@spouse -> person)
+   RETURN shallow($p)
+</result>
+]]></xquery>
+<etalon>
+
+<result>
+  <person name="Bill" job="Teacher" />
+  <person name="Sam" job="Nurse" />
+  <person name="Mary" job="Pilot" />
+  <person name="Frank" job="Writer" />
+  <person name="John" job="Artist" />
+</result>
+</etalon>
+</case>
+
+<case id="1.9.4.11">
+<descr>
+List the names of all Joe's descendants. Show each descendant as an element
+with the descendant's name as content and his or her marital status and number
+of children as attributes. Sort the descendants in descending order by number of
+children, and secondarily in alphabetical order by name. </descr>
+<xquery><![CDATA[
+FUNCTION descrip(element $e) RETURNS element
+   {
+   LET $kids := $e/* UNION $e/@spouse -> person/* ,
+       $mstatus := IF $e[@spouse] THEN "Yes" ELSE "No"
+   RETURN
+      <person married = $mstatus nkids = count($kids)>
+	 $e/@name/text()
+      </person>
+   }
+
+FUNCTION descendants(element $e) RETURNS LIST(element)
+   {
+   IF empty($e/* UNION $e/@spouse -> person/*)
+   THEN $e
+   ELSE $e UNION descendants($e/* UNION $e/@spouse -> person/*)
+   }
+
+descrip(descendants(//person[name = "Joe"]))
+   SORTBY (@nkids DESCENDING, .)
+]]></xquery>
+<etalon>
+<result>
+  <descendant married="Yes" kids="1">Karen</descendant>
+  <descendant married="No" kids="1">Sam</descendant>
+  <descendant married="Yes" kids="0">Dave</descendant>
+  <descendant married="Yes" kids="0">Fred</descendant>
+  <descendant married="Yes" kids="0">Jane</descendant>
+</result>
+</etalon>
+</case>
+
+</cases>
+

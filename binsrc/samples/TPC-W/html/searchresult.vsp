@@ -1,0 +1,121 @@
+<?vsp
+    declare shopping_id numeric(20);
+    shopping_id:=atoi(get_keyword('Shopping_Id',params,'0'));
+    declare cid numeric(10);
+    cid:=atoi(get_keyword('C_ID',params,'0'));
+    declare subjects varchar;
+    declare search_type varchar(10);
+    declare search_string varchar(20);
+    subjects:=vector ('ARTS','BIOGRAPHIES','BUSINESS','CHILDREN',
+	'COMPUTERS','COOKING','HEALTH','HISTORY',
+	'HOME','HUMOR','LITERATURE','MYSTERY',
+	'NON-FICTION','PARENTING','POLITICS','REFERENCE',
+	'RELIGION','ROMANCE','SELF-HELP','SCIENCE-NATURE',
+	'SCIENCE-FICTION','SPORTS','YOUTH','TRAVEL');
+    search_string := get_keyword('title_field', params, '?');
+    search_type := get_keyword ('search', params, '?');
+    --if (('' <> get_keyword ('Search', params, '')) or ('' <> get_keyword ('Search.x', params, '')))
+    --    {
+    --	search_type := get_keyword ('search', params, '?');
+    --        search_string:= case when search_type = 'author' then DigSyl(NURand(get_A_items(),1, get_num_items()/10),7) 
+    --                         when search_type = 'title'  then DigSyl(NURand(get_A_items(),1, get_num_items()/5),7) 
+    --                         when search_type = 'subject' then aref (subjects,rnd(24))
+    --                         else 'Error' end;
+    --  }
+    --  else search_string:='0';  
+?>
+
+<HTML>
+  <HEAD><TITLE>Search Result</TITLE></HEAD>
+  <BODY>
+    <H1 ALIGN="CENTER">TPC Web Commerce Benchmark (TPC-W)</H1>
+    <H2 ALIGN="CENTER"><IMG SRC="images/tpc_logo.jpg" ALIGN="BOTTOM" BORDER="0" WIDTH="288" HEIGHT="67"></H2>
+    <H2 ALIGN="CENTER">Search Results - <?=search_type?> : <?=search_string?></H2>
+    <TABLE ALIGN="CENTER" BORDER="0" WIDTH="660">
+      <TR ALIGN="CENTER" VALIGN="top">
+        <TD COLSPAN="5"><B><FONT COLOR="#ff0000" SIZE="+1">Click on one of our latest books to find out more !</FONT></B></TD>
+      </TR>
+      <TR ALIGN="CENTER" VALIGN="top">
+<?vsp
+  declare item numeric(10);
+  declare rel numeric(10);
+  item := rnd(get_num_items())+1;
+  select I_RELATED1 into rel from ITEM where I_ID=item;  
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&Shopping_Id=<?/shopping_id?>&C_ID=<?/cid?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+  select I_RELATED2 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&Shopping_Id=<?/shopping_id?>&C_ID=<?/cid?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+  select I_RELATED3 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&Shopping_Id=<?/shopping_id?>&C_ID=<?/cid?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp	 
+  select I_RELATED4 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&Shopping_Id=<?/shopping_id?>&C_ID=<?/cid?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+  select I_RELATED5 into rel from ITEM where I_ID=item;
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&Shopping_Id=<?/shopping_id?>&C_ID=<?/cid?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+      </TR>
+    </TABLE>
+    <TABLE BORDER="1" CELLPADDING="1" CELLSPACING="1" ALIGN="CENTER">
+      <TR>
+         <TD><FONT SIZE="+1">Author</FONT></TD>
+         <TD><FONT SIZE="+1">Title</FONT></TD>
+      </TR>
+<?vsp
+    if (search_type = 'author') 
+	for select top 50 a.A_LNAME as _a_lname,a.A_FNAME as _a_fname,
+	    i.I_TITLE as _i_title, i.I_ID as _i_id  from AUTHOR a, ITEM i
+    	    where (a.A_ID=i.I_A_ID) and (a.A_LNAME like concat(search_string,'%'))
+            order by i.I_TITLE asc
+	do
+	{
+?>
+      <TR>
+         <TD><I><?=_a_fname?> <?=_a_lname ?></I></TD>
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/ _i_id ?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><?=_i_title?></A></TD>
+      </TR>
+<?vsp
+    ;}
+    else if (search_type = 'title') 
+	for select top 50 a.A_LNAME as _a_lname,a.A_FNAME as _a_fname,
+	    i.I_TITLE as _i_title, i.I_ID as _i_id  from AUTHOR a, ITEM i
+    	    where (a.A_ID=i.I_A_ID) and (i.I_TITLE like concat(search_string,'%'))
+            order by i.I_TITLE asc
+	do
+	{
+?>
+      <TR>
+         <TD><I><?=_a_fname?> <?= _a_lname ?></I></TD>
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/ _i_id ?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><?=_i_title?></A></TD>
+      </TR>
+<?vsp
+	;}
+    else if (search_type = 'subject') 
+        for select top 50 a.A_LNAME as _a_lname,a.A_FNAME as _a_fname,
+	    i.I_TITLE as _i_title, i.I_ID as _i_id  from AUTHOR a, ITEM i
+            where (a.A_ID=i.I_A_ID) and (i.I_SUBJECT=search_string)
+    	    order by i.I_TITLE asc
+	do
+	{
+?>
+      <TR>
+         <TD><I><?=_a_fname?> <?= _a_lname ?></I></TD>
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/ _i_id ?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><?=_i_title?></A></TD>
+      </TR>
+<?vsp
+	;}
+?>
+    </TABLE>
+<P ALIGN="CENTER">
+ <A HREF="shoppingcart.vsp?ADD_FLAG=N&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>">
+	<IMG SRC="images/cart.jpg" ALT="Shopping Cart" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+ <A HREF="searchrequest.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>">
+        <IMG SRC="images/search.jpg" ALT="Search" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+ <A HREF="index.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>">
+           <IMG SRC="images/home.jpg" ALT="Home" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+</P>

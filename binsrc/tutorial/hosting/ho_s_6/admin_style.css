@@ -1,0 +1,82 @@
+<!--
+  -- StyleSheet for the browser
+  --
+  -- Here we could check which browser we have. Different DOMs...
+-->
+
+<style type="text/css">
+
+<!--
+
+BODY {
+  font-family: Verdana,Arial,Helvetica,sans-serif; 
+  background-color: white;
+}
+
+TD {font-family: Verdana,Arial,Helvetica,sans-serif;}
+TH {font-family: Verdana,Arial,Helvetica,sans-serif;}
+
+.rescolname { 
+  font-family: Verdana,Arial,Helvetica,sans-serif; 
+  font-weight: bold; 
+  float: left;
+  background-color: black;
+  color: white; 
+}
+
+.rescoltype { 
+  background-color: gray;
+  color: blue; 
+  font-family: Verdana,Arial,Helvetica,sans-serif; 
+  font-style: italic; 
+  font-size: x-small; 
+  float: left; 
+}
+
+.rescolstr {
+  font-family: Verdana,Arial,Helvetica,sans-serif;
+}
+
+.rescolnum {
+  font-family: Verdana,Arial,Helvetica,sans-serif;
+}
+
+BODY.lmenu {
+  background-color: black;
+}
+
+P.lmenu {
+  background-color: black;
+  margin-left: 10pt;
+}
+
+.lmenuitem { 
+  color: white; 
+  font-family: Verdana,Arial,Helvetica,sans-serif; 
+  font-size: x-small; 
+}
+
+P.helptext {
+  font-style: italic;
+  font-size: small;
+}
+
+.widgettitle {
+  font-weight: bold;
+  font-size: small;
+}
+
+.footer {
+  font-size: x-small;
+}
+
+.sectiontitle {
+  font-size: medium;
+  font-weight: bold;
+}
+
+-->
+
+</style>
+
+

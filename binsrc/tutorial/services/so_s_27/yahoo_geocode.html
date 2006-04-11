@@ -1,0 +1,114 @@
+<html>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<head>
+     <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
+     <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=/SOAP_SO_S_27/services.wsdl"></script>
+     <link rel="stylesheet" type="text/css" href="/tutorial/services/demo.css">
+
+<SCRIPT language="JavaScript">
+function ResultsAjax(result)
+{
+  document.getElementById('resContainer').innerHTML=result;
+};
+
+</SCRIPT>
+</head>
+<body>
+<H3>Yahoo GeoCode API demo</H3>
+<form method=post>
+<table border=0 class="tableentry">
+<tbody>
+  <tr>
+    <th>Parameter</th>
+    <th>Value</th>
+    <th>Description</th>
+  </tr>
+  <tr valign="top">
+    <td>appid</td>
+    <td><input type="text" name="appid" id="appid" value="YahooDemo"/></td>
+    <td>The application ID. See <a href="/faq/index.html#appid">Application IDs</a> for more information.</td>
+  </tr>
+  <tr valign="top">
+    <td>street</td>
+    <td><input type="text" name="street" id="street" value="10 Mall Rd"/></td>
+    <td>Street name. The number is optional.</td>
+  </tr>
+  <tr valign="top">
+    <td>city</td>
+    <td><input type="text" name="city" id="city" value="Burlington"/></td>
+    <td>City name.</td>
+  </tr>
+  <tr valign="top">
+    <td>state</td>
+    <td><input type="text" name="state" id="state" value="MA"/></td>
+    <td>The United States state. You can spell out the full state name or you can use the <a href="http://en.wikipedia.org/wiki/State_codes">two-letter abbreviation</a>.</td>
+  </tr>
+  <tr valign="top">
+    <td>zip</td>
+    <td><input type="text" name="zip" id="zip" value="01803"/></td>
+    <td>The five-digit zip code, or the five-digit code plus four-digit
+extension. If this location contradicts the city and state specified,
+the zip code will be used for determining the location and the city and
+state will be ignored. </td>
+  </tr>
+  <tr valign="top">
+    <td>location</td>
+    <td><input type="text" name="location" id="location"/></td>
+    <td>
+      <p>This free field lets users enter any of the following:</p>
+      <ul>
+        <li>city, state</li>
+        <li>city, state, zip</li>
+        <li>zip</li>
+        <li>street, city, state</li>
+        <li>street, city, state, zip</li>
+        <li>street, zip</li>
+      </ul>
+      <p>If location is specified, it will take priority over the individual fields
+in determining the location for the query. City, state and zip will be
+ignored.</p>
+    </td>
+  </tr>
+</tbody>
+</table>
+<input type="button" onclick="ajax.Start(doYahooGeoGeocode,'')" value="Invoke"/>
+</form>
+      <script defer="defer" type="text/javascript">
+          var doYahooGeoGeocode = {
+            delay: 200,
+            prepare: function() {return Array(document.getElementById('appid').value,
+                                              document.getElementById('street').value,
+                                              document.getElementById('city').value,
+                                              document.getElementById('state').value,
+                                              document.getElementById('zip').value,
+                                              document.getElementById('location').value);},
+            call: proxies.SOAP.YAHOO_GEOCODE_PROXY,
+            finish: function(p){ResultsAjax(p);},
+            onException: proxies.alertException
+          }
+      </script>
+</table>
+<div id="resContainer"></div>
+</body>
+</html>

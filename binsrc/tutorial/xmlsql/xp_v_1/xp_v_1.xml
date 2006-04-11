@@ -1,0 +1,186 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XP-V-1">
+  <refmeta>
+    <refentrytitle>Using XPath queries to XML views</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Genaral</refname>
+    <refpurpose>Using XPath queries to XML views. Overview.</refpurpose>
+  </refnamediv>
+
+<refsect1 id="XP-V-1a">
+<title>XPATH Implementation and SQL</title>
+<para>
+Virtuoso offers XPATH as a query language for XML views. The statement is there converted into SQL in the context 
+of the mapping defined by the __view XPATH option, which is mandatory. An XPATH query string is a valid top 
+level SQL statement. This is interpreted as a single select or union of selects with the result columns 
+being specified by various XPATH options. 
+The basic query string 
+</para>
+<programlisting><![CDATA[
+XPATH [__view "xmlview_name"] /xpath_query
+]]></programlisting>
+<para>
+The same functionality can be got by the following query:
+</para>
+<programlisting><![CDATA[
+select * from (XPATH '[__view "xmlview_name"]/xpath_query')n
+]]></programlisting>
+<para>Xml view can be created by two methods:</para>
+<itemizedlist mark="bullet">
+  <listitem> using CREATE XML VIEW statement </listitem>
+  <listitem> using Annotated XSD Schemas</listitem>
+</itemizedlist>
+<para>
+  The second method is described in &apos;Using Annotated XSD Schemas for Creating XML View&apos; chapter 
+  of this tutorial.
+</para>
+</refsect1>
+<refsect1 id="XP-V-1b">
+<title>CREATE XML VIEW statement</title>
+<para>
+The XML view declaration establishes a 'virtual document' a context within which XML hierarchy relationships 
+can be translated into arbitrary joins. The virtual document can be then materialized into an actual set of persistent 
+XML elements or used to generate SQL from XPATH. 
+The XML view declaration corresponds to the grammar rules described in XML Support chapter, Virtuoso XML Services section.
+</para>
+			<para>
+Each table in the declaration generates an element into the result
+document. SQL views can be used as tables to accommodate for hidden joins, sub-queries, ordering and
+aggregates. If a view is used, which by nature has no primary key, the primary key
+clause should be used to define a uniquely identifying set of view columns.
+	</para>
+			<para>
+Each level of the hierarchy is declared as a list of child elements. Each such element maps
+one table or view into an entity according to a join condition.  The join conditions
+can reference columns from the associated table and columns from tables in parent elements.
+The join condition can also have scalar filtering conditions. A top element&apos;s join
+condition may only specify scalar conditions.  
+</para>
+			<para>
+Each set of sibling child nodes is delimited by braces {}.  The top 
+level of the view typically consists of one element in the outermost braces.  This element 
+has itself a child list delimited by braces.  Each such list can have more than 
+one different element. 
+</para>
+			<para>
+Each element specifies:
+</para>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>SQL table</para>
+				</listitem>
+				<listitem>
+					<para>Correlation name for use in subsequent joins for this table</para>
+				</listitem>
+				<listitem>
+					<para>XML element name to use for delimiting a row of this table</para>
+				</listitem>
+				<listitem>
+					<para>List of columns, with optional XML element or attribute names</para>
+				</listitem>
+				<listitem>
+					<para>join condition - will relate rows of this table to rows of the table in the enclosing element.
+  If this element is at the top level, this can only consist of scalar conditions</para>
+				</listitem>
+				<listitem>
+					<para>Optional PRIMARY KEY clause, needed if the table in this element is a view, does not 
+  have a primary key or if a non-primary key unique identity is desired</para>
+				</listitem>
+				<listitem>
+					<para>Optional ELEMENT flag</para>
+				</listitem>
+				<listitem>
+					<para>Optional list of child elements, delimited by braces</para>
+				</listitem>
+			</itemizedlist>
+			<para>
+The column list can mention a single column or a single column renamed into an
+XML attribute of a different name. If a column of a table is referenced in a subsequent join
+condition it must appear in the output columns list.  Expressions are not directly allowed
+but a view with expression columns can be used.
+	</para>
+			<para>
+The opt_public clause, when present, offers a shorthand for calling xml_view_publish 
+at the same time as making the definition.  This makes a DAV resource reflecting the contents 
+of the view.  The contents may either be generated on demand or persisted as a DAV accessible XML document.
+In the latter case the document may be regenerated at a fixed interval. The interval is 
+expressed in minutes.
+	</para>
+			<para>
+The path is expressed as an absolute path from the root collection of the DAV server.
+	</para>
+
+</refsect1>
+<refsect1 id="XP-V-1c">
+				<title>Examples</title>
+				<programlisting>
+create xml view &quot;cat&quot; as
+{
+  &quot;Demo&quot;.&quot;demo&quot;.&quot;Categories&quot; &quot;C&quot; as &quot;category&quot;
+	(&quot;CategoryID&quot;, &quot;Description&quot; as &quot;description&quot;)
+    {
+      &quot;Demo&quot;.&quot;demo&quot;.&quot;Products&quot; &quot;P&quot; as &quot;product&quot;  (&quot;ProductName&quot;)
+	on (&quot;P&quot;.&quot;CategoryID&quot; = &quot;C&quot;.&quot;CategoryID&quot;)
+    }
+}
+</programlisting>
+				<para>
+This declares a two level hierarchy with a category node for each category
+and a product child node for each product in the category.
+</para>
+				<programlisting><![CDATA[
+create xml view "cats_e" as
+  select "category"."CategoryID", "CategoryName", 
+    "ProductName", "ProductID"
+    from "Demo".."Categories" "category", "Demo".."Products" as "product" 
+    where "product"."CategoryID" = "category"."CategoryID" element;
+]]></programlisting>
+				<para>Here is a similar example, this time using the element option.</para>
+<programlisting><![CDATA[
+create xml view "product" as
+{
+  "Demo"."demo"."Products" p as "product" 
+      ("ProductID", "ProductName" as "product_name","UnitPrice" as "price", "SupplierID","CategoryID")
+    {
+      "Demo"."demo"."Suppliers" s as "supplier"  ("CompanyName")
+	on (s."SupplierID" = p."SupplierID")
+       ,
+      "Demo"."demo"."Categories_aux" c as "category"  ("Description")
+	on (c."CategoryID" = p."CategoryID")
+
+    }
+}
+]]></programlisting>
+<para>
+This declares a two level hierarchy with a product node for each product
+and a supplier and category children node for each supplier and category in the product.
+
+</para>
+</refsect1>
+
+</refentry>
+

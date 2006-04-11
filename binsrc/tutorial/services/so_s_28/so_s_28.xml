@@ -1,0 +1,57 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-28">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>SOAP services</refname>
+    <refpurpose>Google Maps API demo</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-28a">
+<title>Overview</title>
+<para>
+  This example demonstrates how to implement Google Maps API using XML and Asynchronous RPC ("AJAX").</para>
+  <para>For more information on Google Maps API visit: 
+  <ulink url="http://www.google.com/apis/maps/documentation/">http://www.google.com/apis/maps/documentation/</ulink>
+  </para>
+</refsect1>
+
+<refsect1 id="SO-S-28b">
+  <title>Breakdown</title>
+  <para>In the Initial state we will extend the Demo.demo.Customers 
+  table with some new fields (Longitude and Latitude). Then we will use 
+  Yahoo GeoCode API to find Longitude, Latitude values for the customers addresses 
+  and store the values in the database. The data_xml.vsp page generates 
+  XML from that table similar to the one described in 
+  <ulink url="http://www.google.com/apis/maps/documentation/#Using_XML_and_Asynchronous_RPC">Google Maps API Documentation</ulink>. 
+  We have extend it a little bit to have information for the Customer Name and Address.
+  Click on the 'googlemaps.vsp' Run link to see the generated Google Map. You can click on the markers to 
+  view additional information.
+  </para>
+</refsect1>
+
+</refentry>

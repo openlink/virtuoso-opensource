@@ -1,0 +1,131 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<body>
+<v:page name="pagecal1" xmlns:v="http://www.openlinksw.com/vspx/">
+
+<H3>Simple page to demonstrate VSPX calendar control</H3>
+
+<v:form name="form1" type="simple" action="cal.vspx" >
+<table border="0" cellpadding="0" cellspacing="0">
+<tr>
+  <td colspan="2">
+    <v:calendar name="cal1" initial-date="--now()">
+      <v:on-post>
+        <v:script>
+          <![CDATA[
+            dbg_obj_print(self.cal1.cal_selected);
+            self.selected_date.ufl_value := cast(self.cal1.cal_selected as varchar);
+            self.selected_date.vc_data_bound := 1;
+          ]]>
+        </v:script>
+      </v:on-post>
+      <v:template type="simple" name="chead1" name-to-remove="table" set-to-remove="bottom">
+      <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+         <td align="center">
+	  <v:button name="pmon" value="<" action="simple" style="url">
+	    <!--v:before-render>
+	    declare cal vspx_calendar;
+	    cal := control.vc_parent.vc_parent;
+	    control.ufl_value := substring (monthname (dateadd ('month', -1, cal.cal_date)), 1, 3);
+	    </v:before-render-->
+	    <v:on-post>
+	    declare cal vspx_calendar;
+	    declare ctrl vspx_control;
+	    cal := control.vc_parent.vc_parent;
+	    cal.cal_date := dateadd ('month', -1, cal.cal_date);
+	    ctrl := cal;
+	    ctrl.vc_data_bind (e);
+	    </v:on-post>
+	  </v:button>
+	 </td>
+ 	 <td colspan="5" align="center">
+           <?V monthname((control.vc_parent as vspx_calendar).cal_date) ?>
+	   <?V year((control.vc_parent as vspx_calendar).cal_date) ?>
+	 </td>
+         <td align="center">
+	  <v:button name="nmon" value=">" action="simple" style="url">
+	    <!--v:before-render>
+	    declare cal vspx_calendar;
+	    cal := control.vc_parent.vc_parent;
+	    control.ufl_value := substring (monthname (dateadd ('month', 1, cal.cal_date)), 1, 3);
+	    </v:before-render-->
+	    <v:on-post>
+	    declare cal vspx_calendar;
+	    declare ctrl vspx_control;
+	    cal := control.vc_parent.vc_parent;
+	    cal.cal_date := dateadd ('month', 1, cal.cal_date);
+	    ctrl := cal;
+	    ctrl.vc_data_bind (e);
+	    </v:on-post>
+	  </v:button>
+	 </td>
+	 </tr>
+        <tr><td>Sun</td><td>|Mon</td><td>|Tue</td><td>|Wed</td><td>|Thu</td><td>|Fri</td><td>|Sat</td></tr>
+      </table>
+      </v:template>
+      <v:template type="repeat" name="cbody1" name-to-remove="" set-to-remove="">
+      <v:template type="browse" name="crow1" name-to-remove="table" set-to-remove="both">
+      <table>
+      <tr>
+       <td align="center"><v:button style="url" action="simple" name="b1" value="--cal_icell(control, 0)" /></td>
+       <td align="center"><v:button style="url" action="simple" name="b2" value="--cal_icell(control, 1)" /></td>
+       <td align="center"><v:button style="url" action="simple" name="b3" value="--cal_icell(control, 2)" /></td>
+       <td align="center"><v:button style="url" action="simple" name="b4" value="--cal_icell(control, 3)" /></td>
+       <td align="center"><v:button style="url" action="simple" name="b5" value="--cal_icell(control, 4)" /></td>
+       <td align="center"><v:button style="url" action="simple" name="b6" value="--cal_icell(control, 5)" /></td>
+       <td align="center"><v:button style="url" action="simple" name="b7" value="--cal_icell(control, 6)" /></td>
+      </tr>
+      </table>
+      </v:template>
+      </v:template>
+      <v:template type="simple" name="cbott1" name-to-remove="table" set-to-remove="top">
+      <table>
+      </table>
+      </v:template>
+      <v:before-render>
+        dbg_vspx_control (control);
+      </v:before-render>
+    </v:calendar>
+  </td>
+</tr>
+<tr>
+  <td align="center">
+  </td>
+  <td align="center">
+  </td>
+</tr>
+<tr>
+  <td>
+    <v:label name="selected_date" format="--'Selected Date: %s'" value="--(cast(self.cal1.cal_selected as varchar))"/>
+  </td>
+</tr>
+</table>
+</v:form>
+
+<v:include url="footer.xml"/>
+</v:page>
+</body>
+</html>
+

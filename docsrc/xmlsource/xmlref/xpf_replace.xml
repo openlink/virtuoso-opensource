@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_replace">
+  <refmeta> 
+    <refentrytitle>replace()</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>replace()</refname> 
+    <refpurpose>Searches for an substring and replace its occurences with other substring.</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv> 
+    <funcsynopsis id="xpf_syn_replace"> 
+      <funcprototype id="xpf_proto_replace">
+        <funcdef>string <function>replace()</function></funcdef> 
+	<paramdef><parameter>txt</parameter> string</paramdef>
+	<paramdef><parameter>search_strg</parameter> string</paramdef>
+	<paramdef><parameter>replace_strg</parameter> string</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_replace"><title>Description</title>
+<para>
+The function searches for all occurences of a <parameter>search_strg</parameter> in
+<parameter>txt</parameter> and replaces every occurence with <parameter>replace_strg</parameter>.
+An error is signalled if <parameter>search_strg</parameter> is empty.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_replace"><title>Parameters</title>
+    <refsect2><title>txt</title>
+      <para>Text to process.</para></refsect2>
+    <refsect2><title>search_strg</title>
+      <para>Substring to search for <parameter>txt</parameter>.</para></refsect2>
+    <refsect2><title>replace_strg</title>
+      <para>Substring to replace <parameter>search_strg</parameter> in <parameter>txt</parameter>.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_replace"><title>Return Types</title><para>String.</para></refsect1>
+  <refsect1 id="xpf_errors_replace"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPF08</errorcode></entry>
+	    <entry><errorname>Empty string passed as argument 2 to XPATH function replace()</errorname></entry>
+	    <entry>It is impossible to search for an empty substring.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPF14</errorcode></entry>
+	    <entry><errorname>The result of XPATH function replace() is too long</errorname></entry>
+	    <entry>If the function replaces short substring with longer one, the result is longer than the original string and may exceed 10Mb limit.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="xpf_examples_replace"><title>Examples</title>
+    <example id="xpf_ex_replace"><title></title>
+      <para>Replace all occurences of 'http://www.example.com/' with '/webrobot/'</para>
+      <screen>replace(
+  '&lt;A HREF="http://www.example.com/index.html"&gt;Home&lt;/A&gt;',
+  'http://www.example.com/', '/webrobot/' )</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_replace"><title>See Also</title>
+    <para><link linkend="xpf_translate">translate</link></para>
+  </refsect1>
+</refentry>
+

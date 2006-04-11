@@ -1,0 +1,12 @@
+  <!ELEMENT report (section*)>
+  <!ELEMENT section (section.title, section.content)>
+  <!ELEMENT section.title  (#PCDATA )>
+  <!ELEMENT section.content  (#PCDATA | anesthesia | prep 
+                            | incision | action | observation )*>
+  <!ELEMENT anesthesia (#PCDATA)>
+  <!ELEMENT prep ( (#PCDATA | action)* )>
+  <!ELEMENT incision ( (#PCDATA | geography | instrument)* )>
+  <!ELEMENT action ( (#PCDATA | instrument )* )>
+  <!ELEMENT observation (#PCDATA)>
+  <!ELEMENT geography (#PCDATA)>
+  <!ELEMENT instrument (#PCDATA)>

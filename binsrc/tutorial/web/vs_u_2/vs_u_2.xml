@@ -1,0 +1,104 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-U-2">
+  <refmeta>
+    <refentrytitle>Maintaining Session State in a VSP Application</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Basics</refname>
+    <refpurpose>Url poisoning example</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-U-2a">
+<title>The default URL poisoning scheme</title>
+<itemizedlist mark="bullet">
+  <listitem>There is an authentication function that restores the session variables from a session table.</listitem>
+  <listitem>There is a post processing function to save the session variables into a session table.</listitem>
+  <listitem>An authentication function will try to get a URL parameter named "sid", if there is a session table row corresponding to it.</listitem>
+  <listitem>The state of session variables is read into memory with connection_vars_set().</listitem>
+  <listitem>The post processing function updates the session table, saving all session variables available with connection_vars().</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-U-2b">
+<title>Example Description</title>
+<itemizedlist mark="bullet">
+  <listitem>Using the built-in session table this web application saves the state between sessions.</listitem>
+  <listitem>It has a front page with a two links "register" and "login".</listitem>
+  <listitem>The register page will ask for the user id and for a password.</listitem>
+  <listitem>The login page will ask for user id and password which are checked against an application dependant users table.</listitem>
+  <listitem>Both pages will do a redirect message with the newly generated session id, to the default application page.</listitem>
+  <listitem>The application pages (except front, login and register pages) can be placed under a separate directory.</listitem>
+  <listitem>The directory containing the VSP application must be setup as executable with authentication and post processing hooks defined.</listitem>
+  <listitem>The redirection to the application pages is made with URL parameter "sid" (the session id).</listitem>
+  <listitem>The session id must be transferred between pages for the restoration of session variables.</listitem>
+  <listitem>Each load of the default application page will restore the session variables, and will display the number increased by one.</listitem>
+  <listitem>If the session expires, a redirect to the login page will be performed.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-U-2c">
+<title>Step by step overview</title>
+<para>
+The following sections describe the complete set of steps to make the application work.
+Most of this details also apply to the cookie and digest examples.
+</para>
+</refsect1>
+
+<refsect1 id="VS-U-2d">
+<title>Authentication hook</title>
+<itemizedlist mark="bullet">
+  <listitem>The authentication hook will get the 'sid' parameter using the get_keyword().</listitem>
+  <listitem>If there is no row in the session table, it redirects to the login page.</listitem>
+  <listitem>If a row exists, then increase the expiry time, and restore the session variables with connection_vars_set().</listitem>
+  <listitem>If the authentication hook gets a 'logoff', then the session record is removed from the session table.
+  The browser is redirected to the login page.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-U-2e">
+<title>Post processing function</title>
+<itemizedlist mark="bullet">
+  <listitem>The 'sid' is read from session variables using connection_get(), as this is faster than from the URL parameters.</listitem>
+ <listitem>Check for change of the session variables with connection_is_dirty().</listitem>
+  <listitem>If there is a change then serialize and store them into the session table. All variables are read with connection_vars().</listitem>
+  <listitem>At the end of the post-processing hook clear the in-memory variables to avoid reading from other HTTP client by using connection_vars_set(null).</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-U-2f">
+<title>Login, Default &amp; Registration pages</title>
+<itemizedlist mark="bullet">
+  <listitem>The login page will check user &amp; password against user-defined table (APP_USER) and if it matches, the new session will be created.</listitem>
+  <listitem>When starting a new session, the 'sid' connection variable is also setup to be available in the post-processing hook.</listitem>
+  <listitem>After a new session is done, there is a redirect using the header 'Location' to the default page.</listitem>
+  <listitem>Note the Location URL contains the 'sid' parameter' (see line 61 of <b>vs_u_2.sql</b>)</listitem>
+  <listitem>When the default page is called the authentication hook is already executed and session variables are in memory.</listitem>
+  <listitem>Therefore it is only necessary to get with connection_get() and set (if needed) with connection_set().</listitem>
+  <listitem>In this example, there is a 'ctr' variable that is a counter. It increases with each page reload.</listitem>
+  <listitem>The logout link passes another URL parameter 'logoff', this is also handled in the authentication hook.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

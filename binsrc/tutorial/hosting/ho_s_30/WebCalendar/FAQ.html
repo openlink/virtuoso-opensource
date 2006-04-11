@@ -1,0 +1,303 @@
+<HTML>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<HEAD>
+<TITLE>WebCalendar FAQs</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+
+<H2>FAQs</H2>
+
+<UL>
+<LI><A HREF="#version">How do I get the latest development version of WebCalendar?</A>
+<LI><A HREF="#cvs">How do I get more info on CVS?</A>
+<LI><A HREF="#login">When I try to login, I get sent back to the login page with no error.</A>
+<LI><A HREF="#windows">Does WebCalendar work under Windows?</A>
+<LI><A HREF="#php4">Does it work with PHP 4?</A>
+<LI><A HREF="#php3">Does it work with PHP 3?</A>
+<LI><A HREF="#apache">How do I install Apache with PHP and MySQL?</A>
+<LI><A HREF="#quotes">Why do quotations not enter into the database properly?</A>
+<LI><A HREF="#layers">What are layers?</A>
+<LI><A HREF="#reminders">Why do my reminders get sent later than I think they should be sent?</A>
+<LI><A HREF="#public">How do I setup a public calendar?</A>
+<LI><A HREF="#translate">I'd like to translate WebCalendar into another language.  What do I do?</A>
+<LI><A HREF="#translateupdate">I'd like to update a translation for WebCalendar. What do I do?</A>
+<LI><A HREF="#binhex">I get an error about binhex() being an unsupported function.  What</A>
+<LI><A HREF="#sessions">Why aren't you using PHP4 sessions or PHPLIB sessions?</A>
+<LI><A HREF="#adodb">Why aren't you using ADODB for database access?</A>
+<LI><A HREF="#demo">Is there an online demo?</A>
+<LI><A HREF="#bugs">Where do I report bugs? </A>
+<LI><A HREF="#help">Where do I get help?</A>
+<LI><A HREF="#license">What license is WebCalendar distributed under?</A>
+</UL>
+
+
+<HR>
+
+<A NAME="version">How do I get the latest development version of WebCalendar?</A>
+<BLOCKQUOTE>
+   The latest code snapshot is always available through CVS on
+   SourceForge.  If you're not comfortable with CVS, then stick to
+   public releases.  In order to get the files from CVS, use the
+   following command to login to CVS for the first time:
+   <P>
+
+     <TT>cvs -d:pserver:anonymous@cvs.webcalendar.sourceforge.net:/cvsroot/webcalendar login</TT>
+   <P>
+
+   (If you get a connection refused error, make sure you set your
+   CVS_RSH environment variable to ssh.)
+   Then, to get the files for the first time, use the following command:
+   <P>
+
+     <TT>cvs -z8 -d:pserver:anonymous@cvs.webcalendar.sourceforge.net:/cvsroot/webcalendar co webcalendar</TT>
+   <P>
+
+   This should create a new webcalendar directory in the current directory.
+   After you've done this, you can get the latest code with:
+   <P>
+
+     <TT>cvs update</TT>
+
+   <P>
+   You can find these instructions online at:
+   <P>
+     <A HREF="http://sourceforge.net/cvs/?group_id=3870">http://sourceforge.net/cvs/?group_id=3870</A>
+
+</BLOCKQUOTE>
+
+<A NAME="cvs">How do I get more info on CVS?</A>
+<BLOCKQUOTE>
+     You can start at the SourceForge CVS HOWTO:
+     <P>
+     <A HREF="http://sourceforge.net/docman/display_doc.php?docid=763&group_id=1">http://sourceforge.net/docman/display_doc.php?docid=763&group_id=1</A>
+</BLOCKQUOTE>
+
+<A NAME="login">When I try to login, I get sent back to the login page with no error.</A>
+<BLOCKQUOTE>
+   Make sure that you built PHP with <TT>--enable-track-vars</TT> during the
+   <TT>configure</TT> step.  Make sure your browser has cookies enabled.  Either
+   of these can cause this problem.
+</BLOCKQUOTE>
+
+<A NAME="windows">Does WebCalendar work under Windows?</A>
+<BLOCKQUOTE>
+   Yes, it will work unders MS Windows.
+   <P>
+
+   If you don't have PHP setup yet on your Windows machine, you
+   may want to take a look at
+   <A HREF="http://sourceforge.net/projects/foxserv/">FoxServ</A>.
+   This nifty tool installs
+   a PHP server environment (PHP, MySQL, and Apache) on Windows
+   for you.
+</BLOCKQUOTE>
+
+<A NAME="php4">Does it work with PHP 4?</A>
+<BLOCKQUOTE>
+Yep.
+</BLOCKQUOTE>
+
+<A NAME="php3">Does it work with PHP 3?</A>
+<BLOCKQUOTE>
+Yep.
+</BLOCKQUOTE>
+
+<A NAME="apache">How do I install Apache with PHP and MySQL?</A>
+<BLOCKQUOTE>
+There are many online guides to doing this.  Start with the PHP.net
+pages first.
+<P>
+<A HREF="http://www.php.net/manual/en/faq.obtaining.php">http://www.php.net/manual/en/faq.obtaining.php</A>
+</BLOCKQUOTE>
+
+<A NAME="quotes">Why do quotations not enter into the database properly?</A>
+<BLOCKQUOTE>
+   The system is designed to work with PHP's magic quotes feature
+   that automatically adds backslashes for you.  (This is configurable
+   in <TT>php.ini</TT>.)
+</BLOCKQUOTE>
+
+<A NAME="layers">What are layers?</A>
+<BLOCKQUOTE>
+   Using layers allows you to overlay another user's calendar onto
+   your calendar.  Each calendar of another user that you overlay
+   onto your calendar is called a layer (for lack of a better word).
+</BLOCKQUOTE>
+
+<A NAME="reminders">Why do my reminders get sent later than I think they should be sent?</A>
+<BLOCKQUOTE>
+   If you setup a reminder to be sent 15 minutes before an event (like
+   a meeting), you must run the send_reminders.php script frequently
+   enough so that it will run after the reminder should be sent and
+   before the actual event.  (Meaning it needs to be run more frequently
+   than every 15 minutes.  Maybe every 5 minutes would work well in this
+   situation.)
+</BLOCKQUOTE>
+
+<A NAME="public">How do I setup a public calendar?</A>
+<BLOCKQUOTE>
+   There are two answers... depending on whether your are using WebCalendar's
+   web-based authentication (the default) or HTTP-based authentication
+   (configured in your web server).
+   <P>
+
+   <B>For web-based auth:</B>
+   Simply go to the "System Settings" page (link is on the bottom of all
+   pages if you login as a user that is an Administrator).  From there,
+   change "Public Access" to "Yes", and you're done.  Logout by clicking
+   on the "Login/Logout" link, and a "Public Access" link will appear
+   on the login page.
+   <P>
+
+   <B>For HTTP-based auth:</B>
+   This is more complicated and will depend on what web server you are using.
+   Below are instructions for Apache.  Use the following in your
+   <TT>.htaccess</TT> file in your WebCalendar directory.
+   alias to the WebCalendar installation for public access and one for
+   restricted access (requires login).  In Apache's conf directory, edit
+   <TT>httpd.conf</TT> and add the following:
+
+<PRE>
+   AuthUserFile "users.txt"
+   AuthName "WebCalendar"
+   AuthType  "Basic"
+   &lt;Limit GET&gt;
+   Satisfy any
+   &lt;/Limit&gt;
+   &lt;Files login.php&gt;
+   &lt;Limit GET&gt;
+   require valid-user
+   Satisfy all
+   &lt;/Limit&gt;
+   &lt;/Files&gt;</PRE>
+
+   The file <TT>users.txt</TT> is managed by Apache's htpasswd
+   program and is simply a listing of users and encrypted passwords.
+   You should place this is in Apache's server root directory and NOT
+   in the WebCalendar directory.  To create <TT>users.txt</TT>, you would do
+   something like this:
+   <P>
+   	<TT>htpasswd -c users.txt myfirstuser</TT>
+   <P>
+   Where "myfirstuser" is the first username you want to add.  See
+   the Apache installation instructions for more on using htpasswd.
+   <P>
+
+   Also, don't forget to go to the WebCalendar "System Settings" page
+   and enable "Public Access".
+</BLOCKQUOTE>
+
+<A NAME="translate">I'd like to translate WebCalendar into another language.  What do I do?</A>
+<BLOCKQUOTE>
+   It's a fairly simple process.  If you've ever translated a C-based app
+   that used GNU's gettext tool, then you'll have no problem.  The I18N
+   support was based on GNU's <A HREF="http://www.gnu.org/software/gettext/gettext.html">gettext</A>.  Here's what you need to do.
+   <OL>
+   <LI> look in the "translations" directory
+   <LI> copy the <TT>English-US.txt</TT> file into what you'd like to call your
+     language data file.  (e.g. <TT>cp English-US.txt French.txt</TT>)
+   <LI> Now translate all the text to the _right_ of the ":" into the
+     new language.  Do <i>not</i> alter the text to the left of the ":".
+   <LI> When you're done making changes, move into the "tools" directory.
+     Run the <TT>check_translation.pl</TT> script on your new data file to make
+     sure you have all the needed translations.
+     (e.g. <TT>perl check_translation.pl French</TT>)
+   <LI> Add the new language to both the $languages array and the
+     $browser_languages arrays defined in <TT>includes/config.php</TT>.
+   <LI> Test it out...
+   <LI> Email a copy of the new .txt data file to <A HREF="mailto:cknudsen@radix.net" SUBJECT="WebCalendar Translation">cknudsen@radix.net</A>.
+   </OL>
+</BLOCKQUOTE>
+
+<A NAME="translateupdate">I'd like to update a translation for WebCalendar.  What do I do?</A>
+<BLOCKQUOTE>
+   Just open up the translation file in the <TT>translations</TT> directory
+   with your favorite text editor (like vi, vim, emacs, pico, Notepad, etc.).
+   In particular look for places where missing translations are indicated.
+   All missing translations should be marked with a
+   <NOBR>"<&lt;&lt; MISSING &gt;&gt;"</NOBR> note, and typically the English version
+   of the translation will also be included on the following line.
+   <P>
+   When you're done making changes, move into the <TT>tools</TT> directory.
+     Run the <TT>check_translation.pl</TT> script on your new data file to make
+     sure you have all the needed translations.
+     (e.g. <TT>perl check_translation.pl French</TT>)
+   <P>Don't forget to contribute the updated translation back to the project!
+</BLOCKQUOTE>
+
+<A NAME="binhex">I get an error about binhex() being an unsupported function.  What</A>
+   does that mean?
+<BLOCKQUOTE>
+   The <TT>binhex()</TT> function was not in the early PHP 3.0.X releases.  You
+   need to upgrade to a more recent PHP3 (or use PHP4).
+</BLOCKQUOTE>
+
+<A NAME="sessions">Why aren't you using PHP4 sessions or PHPLIB sessions?</A>
+<BLOCKQUOTE>
+   It would really be overkill for what the application needs.  It also
+   simplifies installation by not requiring PHPLIB or PHP4.  A future
+   version might switch to PHP4 if PHP4 is detected.
+</BLOCKQUOTE>
+
+<A NAME="adodb">Why aren't you using ADODB for database access?</A>
+<BLOCKQUOTE>
+   Again, this would be overkill for what we need.  ADODB is almost
+   as big as WebCalendar itself, so I'm partial to my leaner php-dbi.php
+   solution.
+</BLOCKQUOTE>
+
+<A NAME="demo">Is there an online demo?</A>
+<BLOCKQUOTE>
+   Yes, there is.  Use "demo" for login and "demo" for password at:
+   <P>
+   <A HREF="http://webcalendar.sourceforge.net/demo/">http://webcalendar.sourceforge.net/demo/</A>
+   <P>
+   Don't be surprised if it appears in a language other than English.
+   Changing the language setting seems to be a favorite.
+</BLOCKQUOTE>
+
+<A NAME="bugs">Where do I report bugs? </A>
+<BLOCKQUOTE>
+   You can report bugs on SourceForge at:
+   <A HREF="http://sourceforge.net/bugs/?group_id=3870">http://sourceforge.net/bugs/?group_id=3870</A>
+</BLOCKQUOTE>
+
+
+<A NAME="help">Where do I get help?</A>
+<BLOCKQUOTE>
+   Try the Forums on SourceForge:
+   <P>
+   <A HREF="http://sourceforge.net/forum/?group_id=3870">http://sourceforge.net/forum/?group_id=3870</A>
+   <P>
+   Someone has even posted some links for problems setting up PHP and MySQL.
+</BLOCKQUOTE>
+
+<A NAME="license">What license is WebCalendar distributed under?</A>
+<BLOCKQUOTE>
+	WebCalender is distrubuted under the GPL.  (See <A HREF="GPL.html">GPL.html</A> file included
+   with the distribution.)
+</BLOCKQUOTE>
+
+</BODY>
+</HTML>

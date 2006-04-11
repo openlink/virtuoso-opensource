@@ -1,0 +1,1690 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<chapter label="VII" id="chapter7">
+<title>Virtuoso SQL Functions Guide</title>
+<bridgehead>Virtuoso SQL Functions Guide</bridgehead>
+
+<abstract>
+Virtuoso SQL Functions Guide
+</abstract>
+
+
+<!-- ======================================== -->
+<sect1 id="STRINGFUNCTIONS">
+<title>String Functions</title>
+
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara>
+<title>Length</title>
+
+<funcsynopsis>
+<funcdef>integer <function>length</function></funcdef>
+<paramdef><parameter>arg </parameter>string or object id or array or blob or NULL</paramdef>
+</funcsynopsis>
+
+<para>
+Returns the length of its argument.
+</para><para>
+With ordinary strings the length of the string without the terminating zero byte is returned.
+</para><para>
+With object ids, the length of whole object id is returned, including the four byte class specifier.
+</para><para>
+If the argument is NULL, zero is returned.
+</para><para>
+If the argument is a blob and its length is known, then that length is returned. If the length of the blob is not yet known (e.g. it is supplied
+directly from the client with SQLPutData) effects are unpredictable (for example an eternal loop), or zero is returned.
+</para>
+
+<screen xml:space='preserve'>
+length(&apos;Abacus&apos;) -&gt; 6
+length(&apos;&apos;) -&gt; 0
+length(NULL) -&gt; 0
+select max(length(CHARCOL)) from TEST;
+</screen>
+</formalpara>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>aref</title>
+
+<funcsynopsis>
+<funcdef> <function>aref</function></funcdef>
+<paramdef><parameter>arg </parameter>array or string</paramdef>
+<paramdef><parameter>nth </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>aref returns nth element of an array or string, where nth is a zero-
+    based index. If the first argument is a string, the ascii value of the
+    nth character is returned as an integer. If the first argument is an
+    array of other elements, then the corresponding element is returned.
+</para>
+<screen>aref(&apos;Abacus&apos;,0) -&gt; 65
+aref(vector(&apos;Primero&apos;,2,3.333),2) -&gt; 3.333000
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Aset</title>
+
+<funcsynopsis>
+<funcdef> <function>aset</function></funcdef>
+<paramdef><parameter>arg </parameter>string</paramdef>
+<paramdef><parameter>nth </parameter>integer</paramdef>
+<paramdef><parameter>elem </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>    aset sets the nth element of a string, where nth is a zero-based
+    index. If the first argument is a string, the nth character of
+    string is replaced with the ascii value given in the third argument elem.
+</para>
+<para>    Currently the first argument should be a string, not any other type
+    of an array. This will be changed in future releases, when it will be
+    possible to modify arrays also (created for example with vector).
+</para>
+<para>    aset returns back the elem inserted, which indeed is quite
+    unnecessary, but is required by the current implementation.
+</para>
+<screen>create procedure revstr(in str varchar)
+{ -- E.g. revstr(&apos;repaid&apos;) -&gt; &apos;diaper&apos;
+  -- does this in place and modifies str!
+    declare len,inx1,inx2,tmp integer;
+    if(str is null) return(str);
+    len := length(str);
+    if(len &lt; 2) return(str); -- Remains same.
+    inx1 := 0;     -- Index from the left.
+    inx2 := len-1; -- Index from the right.
+    len  := len/2; -- Upper limit for inx1.
+    while(inx1 &lt; len)
+     {
+       tmp := aref(str,inx1);
+       aset(str,inx1,aref(str,inx2));
+       aset(str,inx2,tmp);
+       inx1 := inx1 + 1;
+       inx2 := inx2 - 1;
+     }
+    return(str);
+};
+
+select revstr(CHARCOL) from TEST;
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Ascii</title>
+
+<funcsynopsis>
+<funcdef> <function>ascii</function></funcdef>
+<paramdef><parameter>arg </parameter>string or object id</paramdef>
+</funcsynopsis>
+
+<para>    ascii returns the ascii value of the first character of a string or an
+    object id.  If an empty string is given, then zero is returned.
+</para>
+<screen>ascii(&apos;Zardoz&apos;) -&gt; 90
+</screen>
+</formalpara>
+<note><title>Note:</title><para>
+    ascii(str) is equal to aref(str,0)
+</para></note>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>chr</title>
+
+<funcsynopsis>
+<funcdef> <function>chr</function></funcdef>
+<paramdef><parameter>asciivalue </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>    chr returns a new one character long string, with the character whose
+    ascii value is asciivalue as its first character and only character.
+</para>
+<screen>chr(33) -&gt; &apos;!&apos;
+</screen>
+</formalpara>
+<note><title>Note:</title><para>
+   ascii(chr(val)) is equal to val.</para></note>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Repeat</title>
+
+<funcsynopsis>
+<funcdef> <function>repeat</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><parameter>count </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>
+    repeat returns a new string, composed of the string str repeated count
+    times. If count is zero, an empty string &apos;&apos; is returned.
+</para>
+<screen>
+repeat(&apos;bar&apos;,2) -&gt; &apos;barbar&apos;
+</screen></formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>space</title>
+
+<funcsynopsis>
+<funcdef> <function>space</function></funcdef>
+<paramdef><parameter>count </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>    space returns a new string, composed of  count spaces. If count is zero,
+    an empty string &apos;&apos; is returned.
+</para>
+<screen>space(5) -&gt; &apos;     &apos;
+</screen>
+</formalpara>
+<note><title>Note:</title><para>   space(count) is equal to repeat(&apos; &apos;,count),
+    and space(1) is equal to chr(32).</para></note>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>make_string</title>
+
+<funcsynopsis>
+<funcdef> <function>make_string</function></funcdef>
+<paramdef><parameter>count </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>    make_string returns a new string of length count, filled with zeros.
+</para><para>
+    If count is zero, an empty string &apos;&apos; is returned.
+</para></formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Concat</title>
+
+<funcsynopsis>
+<funcdef> <function>concat</function></funcdef>
+<paramdef><parameter>str1 </parameter>string</paramdef>
+<paramdef><parameter>str2 </parameter>string</paramdef>
+<paramdef><parameter>... </parameter></paramdef>
+<paramdef><parameter>strn </parameter>string</paramdef>
+</funcsynopsis>
+
+<para>    concat returns a new string, concatenated from a variable number of
+    strings given as arguments.
+</para><para>
+    concat(str) just copies the string str.
+</para><para>
+    concat() returns an empty string.
+</para>
+<screen>concat(&apos;Muuli&apos;,&apos;aasi&apos;) -&gt; &apos;Muuliaasi&apos;
+</screen></formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Sprintf</title>
+
+<funcsynopsis>
+<funcdef> <function>sprintf</function></funcdef>
+<paramdef><parameter>format </parameter>string</paramdef>
+<paramdef><parameter>arg1 </parameter>anything</paramdef>
+<paramdef><parameter>... </parameter></paramdef>
+<paramdef><parameter>arg8 </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    sprintf returns a new string formed by "printing" a variable number (max.
+    eight) of arguments arg1 - arg8 according to the format string format,
+    that is, exactly the same way as with "sprintf" function of C language.
+</para>
+<screen>sprintf(&apos;Int=%d/%o/%x, String=%s, Character=%c&apos;,
+    42798,42798,42798,&apos;la cadena&apos;,65)
+ -&gt; &apos;Int=42798/123456/a72e, String=la cadena, Character=A&apos;
+</screen>
+</formalpara>
+<note><title>Note:</title><para>    Currently, if sprintf detects that the internal temporary buffer of
+    two thousand characters has overflowed it will shutdown the whole
+    Virtuoso. As this is a little bit too drastic it will be certainly
+    changed in the future releases.
+</para><para>
+    The floats and doubles are not sprintfed correctly (i.e. %f and %g).
+</para></note>
+<tip><title>See Also:</title><para>dbg_printf in debugging functions.</para></tip>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>String_output</title>
+
+<funcsynopsis>
+<funcdef> <function>string_output</function></funcdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>string_output_string</function></funcdef>
+<paramdef><parameter>in string_out </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>These functions provide a means for buffering output into a string output
+stream.  Output can be appended to the stream with the http output functions.
+</para><para>
+The output accumulated into the stream can be retrieved as one string by
+the string_output_string returns the accumulated data as a single varchar.  The
+function http_rewrite can be used to empty the data from a string output stream.
+The same string can be obtained several times with string_output_string.
+</para><para>
+If a string output stream is passed to the result function the text stored in it is
+sent to the client.
+</para><para>
+The string output object cannot be copied. It cannot therefore be assigned
+between two variables or passed as a value (IN) parameter. It can be passed as a
+reference (OUT, INOUT) parameter.
+</para>
+</formalpara>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Strchr, Strrchr</title>
+
+<funcsynopsis>
+<funcdef> <function>strchr</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><parameter>char </parameter>string or integer</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>strrchr</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><parameter>char </parameter>string or integer</paramdef>
+</funcsynopsis>
+
+<para>
+    strchr returns a zero-based index to the point of string str where the
+    character char occurs first time. If char is not found from the string the
+    NULL is returned. char can be given either as an integer ascii value or a
+    string, in which case the first character of that string is searched for
+    from str.
+</para><para>
+    strrchr is otherwise similar, except that it returns an index to the last
+    occurrence of char.
+</para>
+<screen>
+strchr(&apos;AbracadabrA&apos;,&apos;A&apos;)
+		 -&gt;  0 (Found as the first character).
+strrchr(&apos;AbracadabrA&apos;,65)
+		 -&gt; 10 (Found as the eleventh character)
+</screen></formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Strchr, Strcasestr</title>
+
+<funcsynopsis>
+<funcdef> <function>strstr</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><parameter>sub </parameter>string</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>strcasestr</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><parameter>sub </parameter>string</paramdef>
+</funcsynopsis>
+
+<para>
+    strstr returns a zero-based index to the point of string str where the
+    substring sub occurs first time. If sub is not found from the string the
+    NULL is returned.
+</para><para>
+    strcasestr is otherwise similar, except that it performs the
+    case-insensitive substring search.
+</para>
+<screen>strstr(&apos;AbracadabrA&apos;,&apos;abrA&apos;)
+    -&gt; 7 (Found from the eighth character onwards)
+strcasestr(&apos;AbracadabrA&apos;,&apos;abrA&apos;)
+    -&gt; 0 (Found from the beginning of string)
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>subseq</title>
+
+<funcsynopsis>
+<funcdef> <function>subseq</function></funcdef>
+<paramdef><parameter>str </parameter>string or object id</paramdef>
+<paramdef><parameter>from </parameter>integer</paramdef>
+<paramdef><OPTIONAL><parameter>to </parameter>integer or NULL</OPTIONAL></paramdef>
+</funcsynopsis>
+
+<para>    subseq returns a copy of subsequence of string str using zero-based
+    indices from (inclusive) and to (exclusive) to delimit the substring
+    extracted.
+</para><para>
+    If to is omitted or is NULL, then it equals by default to the length of
+    str, i.e. everything from from to the end of str is returned.
+</para><para>
+    If to and from are equal, an empty string &apos;&apos; is returned.
+</para><para>
+    If from is greater than to or length of str an error is generated.
+</para><para>
+    If str itself is given as NULL then NULL is returned.
+</para>
+<screen>
+subseq(&apos;AbracadabrA&apos;,0,4) -&gt; &apos;Abra&apos;
+subseq(&apos;AbracadabrA&apos;,4,8) -&gt; &apos;cada&apos;
+subseq(&apos;AbracadabrA&apos;,7)    -&gt; &apos;abrA&apos;
+subseq(string,0,strchr(string,&apos;/&apos;))
+</screen>
+<para>
+The last one returns a copy of the string cut from the first slash,
+leaving it and everything following out, and in the case where there
+are no slashes present, returns a copy of the whole string.
+</para>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Substring</title>
+
+<funcsynopsis>
+<funcdef> <function>substring</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><parameter>from </parameter>integer</paramdef>
+<paramdef><parameter>sublen </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>
+    substring returns a copy of subsequence of string str using one-based
+    index from, and substring length sublen to delimit the substring
+    extracted.
+</para><para>
+    This function is provided for the compatibility with more standard SQL
+    dialects.
+</para>
+<screen>
+substring(&apos;AbracadabrA&apos;,1,4) -&gt; &apos;Abra&apos;
+substring(&apos;AbracadabrA&apos;,5,4) -&gt; &apos;cada&apos;
+substring(&apos;AbracadabrA&apos;,8,4) -&gt; &apos;abrA&apos;
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Left, Right</title>
+
+<funcsynopsis>
+<funcdef> <function>left</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><parameter>count </parameter>integer</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>right</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><parameter>count </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>    left returns a subsequence of string str, taking count characters from the
+    beginning of string.
+</para><para>
+    right returns a subsequence of string str, taking count characters from the
+    end of string.
+</para><para>
+    If count is zero an empty string &apos;&apos; is returned.
+</para><para>
+    If length of str is less than count then a copy of the whole str is
+    returned.
+</para>
+<screen>left(&apos;AbracadabrA&apos;,4) -&gt; &apos;Abra&apos;
+right(&apos;AbracadabrA&apos;,4) -&gt; &apos;abrA&apos;
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>ltrim, rtrim, trim</title>
+
+<funcsynopsis>
+<funcdef> <function>ltrim</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><OPTIONAL><parameter>trimchars </parameter>string</OPTIONAL></paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>Rtrim</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><OPTIONAL><parameter>trimchars </parameter>string</OPTIONAL></paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>trim</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><OPTIONAL><parameter>trimchars </parameter>string</OPTIONAL></paramdef>
+</funcsynopsis>
+
+<para>    ltrim returns a copy of subsequence of string str with all the characters
+    present in trimchars trimmed off from the beginning. If the second
+    argument is omitted, it is a space &apos; &apos; by default.
+</para><para>
+    rtrim is similar except that it trims from the right.
+</para><para>
+    trim trims from both ends.
+</para>
+<screen>concat(&apos;*&apos;,trim(&apos;   SIMURG   &apos;),&apos;*&apos;) -&gt; &apos;*SIMURG*&apos;
+ltrim(&apos;AbracadabrA&apos;,&apos;bAr&apos;)  -&gt; &apos;acadabrA&apos;
+rtrim(&apos;AbracadabrA&apos;,&apos;bAr&apos;)  -&gt; &apos;Abracada&apos;
+trim(&apos;AbracadabrA&apos;,&apos;bAr&apos;)    -&gt; &apos;acada&apos;
+</screen>
+
+</formalpara>
+<note><title>Note:</title><para>
+    The trimming functions never modify the original string given as their
+    argument, instead, they always return a new copy of the string.
+</para></note>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Lcase, Lower</title>
+
+<funcsynopsis>
+<funcdef> <function>lcase</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>lower</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+</funcsynopsis>
+
+<para>
+    lcase returns a copy of string str with all the uppercase alphabetical
+    characters converted to corresponding lowercase letters. This includes
+    also the diacritic letters present in the ISO 8859/1 standard in range
+    192 - 222 decimal, excluding the character 223, german double-s which
+    stays the same.
+</para><para>
+    lower is just an alias for lcase.
+</para>
+<screen>lcase(&apos;AbracadabrA&apos;)  -&gt; &apos;abracadabra&apos;
+</screen></formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Ucase, Upper</title>
+
+<funcsynopsis>
+<funcdef> <function>ucase</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>upper</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+</funcsynopsis>
+
+<para>    ucase returns a copy of string str with all the lowercase alphabetical
+    characters converted to corresponding uppercase letters. This includes
+    also the diacritic letters present in the ISO 8859/1 standard in range
+    224 - 254 decimal, excluding the character 255, y diaeresis, which is not
+    converted to a german double-s.
+</para><para>
+    upper is just an alias for ucase.
+</para>
+<screen>ucase(&apos;AbracadabrA&apos;)  -&gt; &apos;ABRACADABRA&apos;
+</screen></formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>initcap</title>
+
+<funcsynopsis>
+<funcdef> <function>initcap</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+</funcsynopsis>
+
+<para>    initcap returns a copy of string str with the first character, if it is a
+    lowercase letter, converted to the corresponding uppercase letter.
+    Otherwise, an identical copy of the string is returned. Notes about ucase
+    apply also here.
+</para>
+<screen>initcap(&apos;simurg!&apos;)  -&gt; &apos;Simurg!&apos;
+</screen>
+
+</formalpara>
+<note><title>Note:</title><para>    The case conversion functions initcap, lcase (lower) and ucase (upper)
+    never modify the original string given as their argument, instead, they
+    always return a new copy of the string.
+</para><para>
+    These functions work equally well with all the standard ISO 8859/x Baltic,
+    Central European, Greek and Turkish characters sets, as well as with the
+    Cyrillic set, except in the last case the last character of the cyrillic
+    alphabet, &apos;JA&apos;, is left unconverted.  Also, in the Turkish character set
+    the dotted and dotless letter I&apos;s and i&apos;s are not converted correctly.
+</para>
+</note>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>matches_like</title>
+
+<funcsynopsis>
+<funcdef> <function>matches_like</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+<paramdef><parameter>pattern </parameter>string</paramdef>
+</funcsynopsis>
+
+<para>    matches_like returns either one or zero, depending whether string str
+    matches with the pattern. The test performed is the same as done with the
+    query operand str LIKE pattern.
+</para>
+<screen>
+matches_like(&apos;AbracadabrA&apos;,&apos;%ca[ld]a%&apos;)
+		-&gt; 1 (matches)
+matches_like(&apos;AbracadabrA&apos;,&apos;%%abraca&apos;)
+		-&gt; 1 (matches)
+</screen>
+
+</formalpara>
+<tip><title>See Also:</title>
+<para>See the section LIKE Predicate and Wild Cards in Virtuosoman.doc to learn all the intricacies of the pattern matching.</para>
+</tip></listitem>
+
+</itemizedlist>
+</sect1>
+
+<!-- ======================================== -->
+
+<sect1 id="GENCOMPAREFUNCTIONS">
+<title>Generic Comparison Functions</title>
+
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara>
+<title>lt, lte, ge, gte, equ, neq</title>
+
+<funcsynopsis>
+<funcdef> <function>lt</function></funcdef>
+<paramdef><parameter>arg1 </parameter>numeric or string</paramdef>
+<paramdef><parameter>arg2 </parameter>numeric or string</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>lte</function></funcdef>
+<paramdef><parameter>arg1 </parameter>numeric or string</paramdef>
+<paramdef><parameter>arg2 </parameter>numeric or string</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>ge</function></funcdef>
+<paramdef><parameter>arg1 </parameter>numeric or string</paramdef>
+<paramdef><parameter>arg2 </parameter>numeric or string</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>gte</function></funcdef>
+<paramdef><parameter>arg1 </parameter>numeric or string</paramdef>
+<paramdef><parameter>arg2 </parameter>numeric or string</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>equ</function></funcdef>
+<paramdef><parameter>arg1 </parameter>numeric or string</paramdef>
+<paramdef><parameter>arg2 </parameter>numeric or string</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>neq</function></funcdef>
+<paramdef><parameter>arg1 </parameter>numeric or string</paramdef>
+<paramdef><parameter>arg2 </parameter>numeric or string</paramdef>
+</funcsynopsis>
+
+<para>    lt returns either one or zero, depending whether its first argument is
+    less than its second argument. The arguments can be of types integer,
+    float, double precision, varchar or NULL. If they are not same of the same
+    type, then an appropriate type coercion is done for them before
+    comparison.
+</para><para>
+    Similarly work the functions lte (less than or equivalent),
+    gt (greater than), gte (greater than or equivalent), equ (equivalent) and
+    neq (not equivalent). Indeed, these correspond to SQL query
+    operators &lt;, &lt;=, &gt;, &gt;=, = and &lt;&gt; and would be totally
+    unnecessary if the syntax allowed the latter operators to be used also on
+    the left side of from keyword in select statement.
+</para>
+<screen>
+lt(&apos;pata&apos;,&apos;pato&apos;)	-&gt; 1 (Yes, &apos;pata&apos; is less than &apos;pato&apos;)
+gt(&apos;barbar&apos;,&apos;bar&apos;)	-&gt; 1 (Yes, &apos;barbar&apos; is greater than &apos;bar&apos;)
+equ(17,17)		-&gt; 1 (seventeen is seventeen)
+equ(17,17.0)		-&gt; 1 (regardless of number format)
+equ(atof(&apos;17.0&apos;),17.0))	-&gt; 1 (as it seems be)
+equ(atof(&apos;17.1&apos;),17.1))	-&gt; 0 (But not always! Beware!)
+gte(1234,NULL)		-&gt; 0 (No, 1234 is not "greater"
+				than or equal to NULL)
+lt(1234,NULL)		-&gt; 1 (Instead, it is "less" than NULL)
+</screen>
+</formalpara>
+<note><title>Note:</title><para>    SQL NULL is equal to another NULL, greater than everything else, and
+    everything else is less than NULL. Strings are compared to each other as
+    they were composed of unsigned bytes, that is, words beginning with
+    diacritic letters (in the end of ISO-8859/1 character range) "come later"
+    than words beginning with "normal" ascii letters.
+</para></note>
+<tip><title>See Also:</title>
+<para>matches_like in string functions.</para></tip>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>iszero</title>
+
+<funcsynopsis>
+<funcdef> <function>iszero</function></funcdef>
+<paramdef><parameter>arg </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    iszero returns one if its argument is an integer 0, a float 0.0 or a
+    double 0.0 For any other arguments, of whatever type, it will return zero.
+</para>
+<screen>
+iszero(0)		-&gt; 1 (Yes it is)
+iszero(0.0)		-&gt; 1 (Double precision zero also
+				is a zero)
+iszero(atof(&apos;0.0&apos;))	-&gt; 1 (As well as single
+				precision floating point)
+iszero(1)  		-&gt; 0 (No, it&apos;s not)
+iszero(&apos;Cifra&apos;)		-&gt; 0 (neither is this one)
+iszero(NULL)		-&gt; 0 (nor this one)
+</screen>
+</formalpara></listitem>
+
+</itemizedlist>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="TYPEFUNCTIONS">
+<title>Type Functions</title>
+
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara>
+<title>Isinteger</title>
+
+<funcsynopsis>
+<funcdef> <function>isinteger</function></funcdef>
+<paramdef><parameter>arg </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    isinteger returns one if its argument is of type integer, zero otherwise.
+</para>
+<screen>
+isinteger(0)  		-&gt; 1 (Yes it is)
+</screen></formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Isfloat</title>
+
+<funcsynopsis>
+<funcdef> <function>isfloat</function></funcdef>
+<paramdef><parameter>arg </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    isfloat returns one if its argument is of type single float, zero otherwise.
+</para>
+<screen>
+isfloat(0.0)  		-&gt; 0 (No it is not, because decimal
+				literals are by default
+				converted to double precision
+				numbers)
+isfloat(atof(&apos;0.0&apos;))	-&gt; 1 (Only with explicit atof we get
+				a single float)
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>isdouble</title>
+
+<funcsynopsis>
+<funcdef> <function>isdouble</function></funcdef>
+<paramdef><parameter>arg </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    isdouble returns one if its argument is of type double precision float,
+    zero otherwise.
+</para>
+<screen>
+isdouble(0.0)  		-&gt; 1 (Decimal literals are by
+				default converted to
+				double precision numbers)
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>isnumeric</title>
+
+<funcsynopsis>
+<funcdef> <function>isnumeric</function></funcdef>
+<paramdef><parameter>arg </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    isnumeric returns one if its argument is of type integer, single float or
+    double precision floating point number, zero otherwise.
+</para>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>isnull</title>
+
+<funcsynopsis>
+<funcdef> <function>isnull</function></funcdef>
+<paramdef><parameter>arg </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    isnull returns one if its argument is NULL, zero otherwise.
+</para>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>isstring</title>
+
+<funcsynopsis>
+<funcdef> <function>isstring</function></funcdef>
+<paramdef><parameter>arg </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    isstring returns one if its argument is of type VARCHAR, zero otherwise.
+</para>
+<screen>
+isstring(&apos;Cadena de los patos negros&apos;)
+		-&gt; 1 (Yes it is a string)
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>isblob</title>
+
+<funcsynopsis>
+<funcdef> <function>isblob</function></funcdef>
+<paramdef><parameter>arg </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    isblob returns one if its argument is a handle to an object of the type
+    LONG VARCHAR, zero otherwise.
+</para>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>either</title>
+
+<funcsynopsis>
+<funcdef> <function>either</function></funcdef>
+<paramdef><parameter>condition </parameter>anything</paramdef>
+<paramdef><parameter>then </parameter>anything</paramdef>
+<paramdef><parameter>else </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    either returns either a copy of then if its first argument is anything
+    else than an integer zero, or a copy of else if its first argument is 0.
+</para>
+<screen>
+either(mod(X,2),&apos;odd&apos;,&apos;even&apos;)  	-&gt; (Where X is an integer)
+either(isnull(strstr(&apos;Simurg&apos;,&apos;imu&apos;)),
+	&apos;there is no imu&apos;,&apos;imu is there&apos;)
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>internal_type</title>
+
+<funcsynopsis>
+<funcdef> <function>internal_type</function></funcdef>
+<paramdef><parameter>arg </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    internal_type returns an integer value representing the internal type of
+    its argument. These values are the same as what Virtuoso uses in the
+    column COL_DTP of the system table SYS_COLS for keeping the track of the
+    default types of each column of each table.
+</para>
+<screen>
+internal_type(space(5))		-&gt; 182 (A long string)
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>internal_to_sql_type</title>
+
+<funcsynopsis>
+<funcdef> <function>internal_to_sql_type</function></funcdef>
+<paramdef><parameter>internal_type </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>    internal_to_sql_type returns an integer value representing the standard
+    SQL type converted from internal_type given as its argument.
+</para>
+<screen>
+internal_to_sql_type(182)	-&gt; 12 (VARCHAR)
+</screen>
+</formalpara>
+<note><title>Note:</title>
+<para>    There is no one-to-one mapping between internal Virtuoso types and
+    external SQL types used by SQL/CLI and ODBC APIs.  E.g. Virtuoso uses two
+    types of strings, short string (181) and long string (182) for storing the
+    character data, and these both types are always presented as VARCHAR (12)
+    data for the clients.</para></note>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>internal_type_name</title>
+
+<funcsynopsis>
+<funcdef> <function>internal_type_name</function></funcdef>
+<paramdef><parameter>internal_type </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>    internal_type_name returns a string which is a human-readable name for an
+    internal_type integer given as its argument.
+</para>
+<screen>
+internal_type_name(internal_type(&apos;kumikala&apos;))
+		-&gt; &apos;SHORT_STRING&apos;
+select internal_type_name(COL_DTP) from SYS_COLS;
+</screen>
+</formalpara>
+<note><title>Note:</title><para>    Many of these names differ from the names of the corresponding SQL types,
+    e.g. we got BLOB instead of LONG VARCHAR, SHORT_STRING or LONG_STRING
+    instead of VARCHAR, etc, and not even Virtuoso will understand these
+    names in table definitions. That is, currently they are just for
+    human consumption. However, this might be changed in future releases.</para></note>
+</listitem>
+
+</itemizedlist>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="ARITHMETICFUNCTIONS">
+<title>Arithmetic Functions</title>
+
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara>
+<title>atof</title>
+
+<funcsynopsis>
+<funcdef> <function>atof</function></funcdef>
+<paramdef><parameter>arg </parameter>string</paramdef>
+</funcsynopsis>
+
+<para>    atof returns a single precision floating point which it has converted from
+    the string given as its argument. It returns 0.0 if the string doesn&apos;t
+    contain a valid floating point number.
+</para>
+<screen>
+atof(&apos;1.23456789&apos;)	-&gt; 1.234568
+atof(&apos;Cadena de los patos negros&apos;)
+			-&gt; 0.0 (It is a string not a float)
+</screen>
+</formalpara></listitem>
+
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>abs</title>
+
+<funcsynopsis>
+<funcdef> <function>abs</function></funcdef>
+<paramdef><parameter>num </parameter>numeric</paramdef>
+</funcsynopsis>
+
+<para>    abs returns the absolute value of its numeric argument, that is, gives a
+    value negated to positive if the argument is negative.
+</para>
+<screen>
+abs(-12)			-&gt; 12
+abs(0)				-&gt; 0
+abs(910)			-&gt; 910
+abs(atof(&apos;-1.23456789&apos;))	-&gt; 1.234568
+abs(-0.1)			-&gt; 0.1
+</screen>
+</formalpara>
+<note><title>Note:</title><para>abs(x) is equivalent to (x * sign(x)).</para></note>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>sign</title>
+
+<funcsynopsis>
+<funcdef> <function>sign</function></funcdef>
+<paramdef><parameter>num </parameter>numeric</paramdef>
+</funcsynopsis>
+
+<para>    sign returns either -1, 0 or 1 depending whether its numeric argument is
+    negative, zero or positive.
+</para>
+<screen>
+sign(-12)			-&gt; -1
+sign(0)				-&gt; 0
+sign(910)			-&gt; 1
+sign(atof(&apos;-1.23456789&apos;))	-&gt; -1
+sign(0.0)			-&gt; 0
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>mod</title>
+
+<funcsynopsis>
+<funcdef> <function>mod</function></funcdef>
+<paramdef><parameter>dividend </parameter>integer</paramdef>
+<paramdef><parameter>divisor </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>    mod returns the modulus (i.e. remainder) of the division dividend/divisor.
+    If the divisor is zero the SQL error 22012 "Division by zero" is generated.
+</para>
+<screen>
+mod(35,3)			-&gt; 2
+mod(35,-3)			-&gt; 2
+mod(-35,3)			-&gt; -2
+mod(-35,-3)			-&gt; -2
+mod(3,35)			-&gt; 3
+mod(0,7)			-&gt; 0
+mod(60,3)			-&gt; 0
+</screen>
+</formalpara></listitem>
+</itemizedlist>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="OBJECTIDFUNCTIONS">
+<title>Object ID Functions</title>
+
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara>
+<title>make_oid</title>
+
+<funcsynopsis>
+<funcdef> <function>make_oid</function></funcdef>
+<paramdef><parameter>string_part </parameter>string</paramdef>
+<paramdef><parameter>class_specifier </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>    make_oid returns an object id formed from the string string_part and the
+    four-byte integer class_specifier, by concatenating the latter in binary
+    format to the end of the former.
+</para></formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>oid_class_spec</title>
+
+<funcsynopsis>
+<funcdef> <function>oid_class_spec</function></funcdef>
+<paramdef><parameter>oid  </parameter>object id</paramdef>
+</funcsynopsis>
+
+<para>    oid_class_spec returns as an integer the four-byte integer class specifier
+    from the end of its object id argument.
+</para>
+</formalpara></listitem>
+</itemizedlist>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="DATETIMEFUNCTIONS">
+<title>Date and Time Functions</title>
+
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara>
+<title>now</title>
+
+<funcsynopsis>
+<funcdef> <function>now</function></funcdef>
+</funcsynopsis>
+
+<para>    now returns the timestamp associated with the current transaction in the
+    internal date time format. Use datestring to convert it to human-readable
+    string.
+</para>
+<screen>
+datestring(now())	-&gt; &apos;1997.02.23 02:28.33 000000&apos;
+update TABLE_X set TIME_CHANGED = now();
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>get_timestamp</title>
+
+<funcsynopsis>
+<funcdef> <function>get_timestamp</function></funcdef>
+</funcsynopsis>
+
+<para>    get_timestamp is merely an alias for now and is provided for backward
+    compatibility.
+</para></formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>dateadd</title>
+
+<funcsynopsis>
+<funcdef> <function>dateadd</function></funcdef>
+<paramdef><parameter>unit </parameter>string</paramdef>
+<paramdef><parameter>number </parameter>integer</paramdef>
+<paramdef><parameter>date </parameter>timestamp</paramdef>
+</funcsynopsis>
+
+<para>    dateadd adds a positive or negative quantity of units to a date (in the
+    internal date time format), and returns a new date so formed.  The unit is
+    specified as a string and can be one of the following: &apos;second&apos;, &apos;minute&apos;,
+    &apos;hour&apos;, &apos;day&apos;, &apos;month&apos;, or &apos;year&apos;. Use datestring to convert the result to
+    a human-readable string.
+</para>
+<screen>
+datestring(dateadd(&apos;day&apos;, 10, stringdate (&apos;1996.10.10&apos;)))
+				-&gt; &apos;1996.10.20 0:0.0 000000&apos;
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>datediff</title>
+
+<funcsynopsis>
+<funcdef> <function>datediff</function></funcdef>
+<paramdef><parameter>unit </parameter>string</paramdef>
+<paramdef><parameter>date1 </parameter>timestamp</paramdef>
+<paramdef><parameter>date2 </parameter>timestamp</paramdef>
+</funcsynopsis>
+
+<para>    datediff subtracts date1 from date2 and returns the difference as an
+    integer in the specified units. The unit is specified as a string and can
+    be one of the following: &apos;second&apos;, &apos;minute&apos;, &apos;hour&apos;, &apos;day&apos;, &apos;month&apos;, or
+    &apos;year&apos;.
+</para>
+<screen>
+datediff (&apos;hour&apos;,  stringdate (&apos;1996.10.10&apos;),
+		stringdate (&apos;1996.10.11&apos;))	-&gt; 24
+</screen>
+</formalpara>
+<note><title>Note:</title><para>Beware of the daylight saving time.</para>
+</note>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>Datestring</title>
+
+<funcsynopsis>
+<funcdef> <function>datestring</function></funcdef>
+<paramdef><parameter>date </parameter>timestamp</paramdef>
+</funcsynopsis>
+
+<para>    datestring converts timestamps from the internal to external date- time
+    representations.  The internal representation is an 8 byte binary string
+    (of the special type TIMESTAMP_OBJ, documented elsewhere) and the external
+    representation is a human-readable ASCII string of up to 30 characters.
+</para><para>
+    The external format is: YYYY.MM.DD  hh:mm.ss uuuuuu where uuuuuu
+    represents the number of microseconds.
+</para>
+<screen>
+datestring(now())	-&gt; &apos;1997.02.23 02:28.33 000000&apos;
+</screen>
+</formalpara>
+<note><title>Note:</title><para>    If you are using select in isql and if you don&apos;t explicitly convert dates
+    and timestamps to strings with datestring they may be converted to strings
+    by the ODBC driver/SQL CLI interface, in which case the format is a little
+    bit different. This will be harmonized in the future releases.
+</para></note>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>stringdate</title>
+
+<funcsynopsis>
+<funcdef> <function>stringdate</function></funcdef>
+<paramdef><parameter>str </parameter>string</paramdef>
+</funcsynopsis>
+
+<para>    stringdate converts dates and timestamps from the external to internal
+    date-time representations.
+</para><para>
+    The external format is: YYYY.MM.DD  hh:mm.ss uuuuuu
+    where uuuuuu represents the number of microseconds.
+</para><para>
+    If trailing parts are omitted from the string given to stringdate,
+    they are assumed to be zero. The three first parts are mandatory.
+</para>
+<screen>
+update XX set DATE_COL = stringdate (&apos;1996.10.20 14:55.00&apos;);
+</screen>
+</formalpara>
+<note><title>Note:</title><para>    The internal time is the GMT system time. The local system timezone is
+    taken into account when converting dates to strings and vice versa.
+</para></note>
+</listitem>
+</itemizedlist>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="VECTORFUNCTIONS">
+<title>Vector Functions</title>
+
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara>
+<title>vector</title>
+
+<funcsynopsis>
+<funcdef> <function>vector</function></funcdef>
+<paramdef><parameter>elem1 </parameter>anything</paramdef>
+<paramdef><parameter>elem2 </parameter>anything</paramdef>
+<paramdef><parameter>... </parameter></paramdef>
+<paramdef><parameter>elem-n </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    vector returns a new vector (one-dimensional array) constructed of the
+    variable number of arguments given.
+</para>
+<screen>dbg_obj_print(vector (1, 2.34, &apos;A string&apos;, atof(&apos;3.14&apos;)))
+length(vector (&apos;Abracadabra&apos;, NULL, now())) -&gt; 3
+</screen>
+</formalpara>
+<note><title>Note:</title><para>    Currently you cannot directly use in the client the value returned by
+    vector. If you type e.g. select vector(col1,col2,col3) from test; in isql
+    you will get unpredictable or spurious results.  However, this will
+    change in the future releases when we will publish more sophisticated
+    client interfaces than just standard SQL CLI/ODBC libraries.
+</para></note>
+</listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>get_keyword</title>
+
+<funcsynopsis>
+<funcdef> <function>get_keyword</function></funcdef>
+<paramdef><parameter>item </parameter>anything</paramdef>
+<paramdef><parameter>vector </parameter>vector</paramdef>
+<paramdef><parameter>default </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    get_keyword seeks item from each even position of vector, and if it finds
+    it from there then returns the corresponding value from the right of the
+    said item (from odd position). Otherwise, if item is not found returns
+    default.
+</para>
+<screen>get_keyword(2,vector(1,&apos;primero&apos;,2,&apos;segundo&apos;,
+	3,&apos;tercero&apos;),NULL)		-&gt; segundo
+get_keyword(&apos;tercero&apos;,vector(&apos;primero&apos;,1,&apos;segundo&apos;,
+	2,&apos;tercero&apos;,3), &apos;NOT FOUND!&apos;))	-&gt; 3
+</screen>
+</formalpara></listitem>
+</itemizedlist>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="DEBUGGINGFUNCTIONS">
+<title>Debugging Functions</title>
+
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara>
+<title>dbg_obj_print</title>
+
+<funcsynopsis>
+<funcdef> <function>dbg_obj_print</function></funcdef>
+<paramdef><parameter>arg1 </parameter>anything</paramdef>
+<paramdef><parameter>arg2 </parameter>anything</paramdef>
+<paramdef><parameter>... </parameter></paramdef>
+<paramdef><parameter>argn </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    dbg_obj_print prints a variable number of arguments to the system console
+    of Virtuoso server, each argument in its own native format, on the same
+    line, which is followed by one newline.
+</para><para>
+    Note that zero is sometimes printed as NULL. This is probably a bug, not a
+    feature.
+<!--
+***  DO WE WANT TO SAY THAT?  ***
+-->
+</para>
+<screen>
+</screen>
+</formalpara></listitem>
+
+<!-- #~#~# -->
+<listitem>
+<formalpara>
+<title>dbg_printf</title>
+
+<funcsynopsis>
+<funcdef> <function>dbg_printf</function></funcdef>
+<paramdef><parameter>format </parameter>string</paramdef>
+<paramdef><parameter>arg1 </parameter>anything</paramdef>
+<paramdef><parameter>... </parameter></paramdef>
+<paramdef><parameter>arg8 </parameter>anything</paramdef>
+</funcsynopsis>
+
+<para>    dbg_printf prints a variable number (max. eight) of arguments to the
+    system console of Virtuoso server, each argument formatted in C "printf"
+    style, according to the format string specified in the first argument.
+</para></formalpara>
+<tip><title>See Also:</title><para>sprintf in string functions.</para></tip>
+</listitem>
+
+</itemizedlist>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="BACKUPFUNC">
+<title>Back Up Functions</title>
+
+<para>
+These functions allow making a full or selective backup of a database
+without obstructing on-line operations or causing locks.
+The database state seen in the backup is the database state after the last
+transaction to commit before the last checkpoint.  The first transaction not
+seen in the backup is the first transaction in the current transaction log.
+</para><para>
+These functions produce a file in the transaction log format. A backup can be restored by
+replaying a backup file as a transaction log.
+</para><para>
+A database can be fully restored up to the last committed transaction by
+taking the file produced by the backup function and any transaction logs
+created since the backup was taken, inclusing the one current at the time of the backup.
+</para><para>
+If the database file or files are lost, the database server can be started with no
+database files. This will create the file or files specified in the configuration. To restore the
+backup, one can log into the fresh database and use the replay function to first replay the backup and
+then successive transaction logs in the order of creation.
+</para><para>
+If no backup has been made but the complete history of transaction logs exists, the
+logs can be replayed for recreating the database.
+</para>
+
+<note><title>Note:</title><para>Files generated by the +crashdump command line switch are in a format similar to those created by
+the backup functions or the backup command and thus all points mentioned here apply to these as well.</para>
+</note>
+
+<note><title>Note:</title><para>Only the first crash dump file contains the schema, hence it must be the first to be replayed.</para>
+</note>
+
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara>
+<title>backup, replay, backup_prepare, backup_row, backup_flush, backup_close</title>
+
+<funcsynopsis>
+<funcdef> <function>backup</function></funcdef>
+<paramdef>in <parameter>file </parameter>varchar</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>backup_prepare</function></funcdef>
+<paramdef>in <parameter>file </parameter>varchar</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>backup_row</function></funcdef>
+<paramdef>in <parameter>row </parameter>varchar</paramdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>backup_flush</function></funcdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>backup_close</function></funcdef>
+</funcsynopsis>
+
+<funcsynopsis>
+<funcdef> <function>replay</function></funcdef>
+<paramdef>in <parameter>file </parameter>varchar</paramdef>
+</funcsynopsis>
+
+<para>
+All backup files, whether complete (created with backup) or partial (created with bakup_prepare and backup_row
+of selected rows), begin with the complete schema that was effective at the time of the backup.
+</para><para>
+Backup and log files contain assumptions about the schema and row layout of the database. Hence
+it is not possible to use these for transferring data between databases. Attempt to do so
+will result in unpredictable results.  Thus a log or backup may only be replayed on
+the same database, an empty database or a copy of the database which has had no schema changed since
+it was made.
+</para><para>
+The backup function takes a file name as argument. The file in in the log format and will
+recreate the database as it was at the time of the last checkpoint when replayed on an empty
+database. Such a file cannot be replayed on anything except an empty database. Logs made after
+the backup can be replayed over the database resulting from the bakup file&apos;s replay.  No schema operations are
+allowed between replays.
+</para><para>
+The backup_prepare, backup_row and backup_close operations allow making
+specific partial backups.
+</para><para>
+backup_prepare initiates the backup. This must be the first statement to execute in its transactjion. The
+rest of the transaction will be a read only snapshot view of the state as of the last checkpoint.
+Checkpoints are disabled for the time between backup_prepare and backup_close.  The backup transaction being
+lock-free, it cannot die of deadlock and hence will stay open for the duration of the backup.
+</para><para>
+The backup_close function terminates the backup and closes the file.  The transaction remains
+a read only snapshot of the last checkpoint but checkpoints are now re-enabled.  The transaction should
+be committed or rolled back after backup_close.
+</para><para>
+backup_row writes the row given as parameter into the backup file that was associated to
+the current transaction by a prior backup_prepare. The row can be anything obtained
+by selecting the pseudo column _ROW from any table.
+</para><para>
+The backup_flush function will insert a transaction boundary into the backup log.  All rows
+backup up between two backup_flush calls will be replayed as a single transaction by replay.  Having
+long intervals between backup_flush calls will cause significant memory consumption at replay time for
+undo logs.
+</para><para>
+backup_close will terminate the backup transaction and re-enable checkpoints.
+</para>
+</formalpara>
+
+<note><title>Note:</title><para>Any client-server SQL operation following a backup prepare in the same transaction will see the
+last checkpoint state and will be lock free but will not be allowed to updated the database.</para>
+</note>
+
+</listitem>
+</itemizedlist>
+
+<example><title>Example:</title>
+<programlisting>
+create procedure t1_back (in f varchar)
+{
+  declare c integer;
+  backup_prepare (f);
+  select count (*) into c from T1 where backup_row (_ROW) = 0;
+  backup_flush ();
+  backup_close ();
+  return c;
+}
+
+This procedure writes the contents of the T1
+table into a backup log.
+</programlisting>
+</example>
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="MISCFUNC">
+<title>Miscellaneous Functions</title>
+
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara>
+<title>disconnect_user</title>
+
+<funcsynopsis>
+<funcdef> <function>disconnect_user</function></funcdef>
+<paramdef><parameter>username_pattern </parameter>string</paramdef>
+</funcsynopsis>
+
+<para>    disconnect_user disconnects the connections of all those clients whose
+    username matches to the username_pattern string given as an argument, and
+    returns an integer value giving the number of clients disconnected.
+    This can be used after DELETE USER or REVOKE statement to make sure that
+    the affected user has no open connections.
+</para>
+<screen>
+disconnect_user(&apos;smith&apos;)	-&gt; Disconnects user smith&apos;s clients.
+disconnect_user(&apos;@smith&apos;)	-&gt; Disconnects all users whose name
+				vaguely resembles &apos;smith&apos;
+disconnect_user(&apos;%&apos;)		-&gt; Disconnects all users including
+				the administrator itself (dba).
+</screen>
+</formalpara>
+<tip><title>See Also:</title><para>Users and Security section in Administration Manual</para></tip>
+</listitem>
+
+<listitem>
+<formalpara>
+<title>exec SQL function</title>
+
+<funcsynopsis>
+<funcdef> <function>exec</function></funcdef>
+<paramdef><parameter>in string </parameter>varchar</paramdef>
+<paramdef><parameter>out state </parameter>varchar</paramdef>
+<paramdef><parameter>out message </parameter>varchar</paramdef>
+<paramdef><parameter>in params </parameter>any</paramdef>
+<paramdef><parameter>in maxrows </parameter>integer</paramdef>
+<paramdef><parameter>out metadata </parameter>any</paramdef>
+<paramdef><parameter>out rows </parameter>any</paramdef>
+</funcsynopsis>
+
+<para>
+This function provides dynamic SQL capabilities in Virtuoso PL.
+The first argument is an arbitrary SQL string, which may use parameters.
+The function returns in output parameters a SQL state, error message and
+columns descriptions and result set rows if the statement is a select.
+</para>
+
+<itemizedlist mark="bullet">
+<listitem><formalpara><title>string</title><para>An arbitrary SQL string, using ?&apos;s for parameter markers.</para></formalpara></listitem>
+<listitem><formalpara><title>state</title><para>The 5 character SQL state, if an error occurs. If there is no error, this argument is not set.</para></formalpara></listitem>
+<listitem><formalpara><title>message</title><para>The SQL error message associated with a possible error. If there is no error this is not set.</para></formalpara></listitem>
+<listitem><formalpara><title>params</title><para>A vector of parameters, element 0 corresponding to the first ? etc.</para></formalpara></listitem>
+<listitem><formalpara><title>maxrows</title><para>The maximum number of rows to retrieve in the case of a select statement.</para></formalpara></listitem>
+<listitem><formalpara><title>metadata</title><para>A descroption of the statement, including column names and types. See comments.</para></formalpara></listitem>
+<listitem><formalpara><title>rows</title><para>An array with one element per result row of a select statement. Each element is an array with the leftmost column at index 0 and so on.</para></formalpara></listitem>
+</itemizedlist>
+
+<para>
+Comments
+</para><para>
+The metadata is an array with the following elements:
+</para>
+
+<itemizedlist>
+<listitem><para>0	columns - This is an array with one element per result column. </para>
+</listitem>
+</itemizedlist>
+
+<para>
+Each column is described as an array with:
+</para>
+
+<itemizedlist>
+<listitem><para>0	name</para></listitem>
+<listitem><para>1	type</para></listitem>
+<listitem><para>2	scale</para></listitem>
+<listitem><para>3	precision</para></listitem>
+<listitem><para>4	nullable</para></listitem>
+<listitem><para>5	updatable</para></listitem>
+<listitem><para>6	searchable.</para></listitem>
+</itemizedlist>
+
+<para>
+1 type of statement, 1 means select, 0 means DML.
+</para><para>
+Other elements may appear as trailing elements.
+</para><para>
+The type codes are internal, corresponding but not equal to the ODBC SQL type codes.
+</para><para>
+A stored procedure can be invoked by exec but a procedure&apos;s result set
+will not be received in the rows output parameter but rather sent to the client.
+</para>
+
+<example><title>Examples:</title>
+<programlisting>
+To write a procedure that checks if a given table is empty:
+
+create procedure tb_is_empty (in tb varchar)
+{
+  declare state, msg, 1, descs, ros any;
+  state := &apos;00000&apos;;
+  exec (sprintf (&apos;select 1 from %s&apos;, tb), state,
+		msg, vector (), 1, descs, rows);
+
+  if (state &lt;&gt; &apos;00000&apos;)
+    signal (state, msg);
+
+  if (length (rows) = 0)
+    return 1;
+
+  else
+    return 0;
+}
+</programlisting>
+</example>
+<para>
+if there is an error, e.g. timeout or deadlock, the error is reported
+back to the caller as an exception. exec always returns, no matter the
+type of exception. Thus exec is also useful as a universal error catcher.
+</para>
+</formalpara>
+</listitem>
+
+<listitem>
+<formalpara>
+<title>explain SQL function</title>
+
+<funcsynopsis>
+<funcdef> <function>explain</function></funcdef>
+<paramdef><parameter>in text </parameter>varchar</paramdef>
+<paramdef>[<parameter>in cursor_type </parameter>integer]</paramdef>
+</funcsynopsis>
+
+<para>
+The explain function compiles a SQL statement and returns
+a description of the compilation as a result set. The set consists
+of one culumn, a varchar, which corresponds to each line of the description but may be long,
+several hundred characters.
+</para><para>
+The explain output is mostly useful for determining join order or the
+splitting of a distributed VDB query over the different data sources.
+</para><para>
+The output is not a complete disassembly of the query graph but is detailed
+enough to show the join order, subquery structure and the order of evaluation
+of predicates.
+</para><para>
+The optional cursor type can be one of the SQL_CURSOR_&lt;xx&gt; constants.
+The default is 0, for forward only. If the statement is a SELECT and
+the cursor type is not forward only, the auxiliary SQL statements used by the
+cursor implementation are shown.
+</para>
+</formalpara>
+</listitem>
+
+<listitem>
+<formalpara>
+<title>txn_killall function</title>
+
+<funcsynopsis>
+<funcdef> <function>txn_killall </function></funcdef>
+<paramdef><parameter>in code </parameter>integer</paramdef>
+</funcsynopsis>
+
+<para>
+Thus function kills all pending transactions.  This is usefyl for resetting
+stuck states sych as procedures in infinite loops.
+</para><para>
+Once any SQL statement or procedure notices that its transaction is dead,
+e.g. deadlocked, it signals the error and takes appropriate action, which is typically
+to signal the error to the caller and ultimately to the client.
+</para>
+<example><title>Examples:</title>
+<programlisting>
+txn_killall (1);
+</programlisting>
+</example>
+<para>
+-- kills all transactions with the S1T00 &apos;timed out&apos; error.
+</para>
+</formalpara>
+</listitem>
+</itemizedlist>
+</sect1>
+
+</chapter>

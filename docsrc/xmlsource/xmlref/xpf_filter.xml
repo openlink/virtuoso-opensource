@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_filter">
+  <refmeta> 
+    <refentrytitle>filter</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>filter</refname> 
+    <refpurpose>Composes trees of shallow copies of given XML entities.</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv> 
+    <funcsynopsis id="xpf_syn_filter"> 
+      <funcprototype id="xpf_proto_filter">
+        <funcdef>node-set <function>filter</function></funcdef> 
+	<paramdef><parameter>selection</parameter> sequence</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_filter"><title>Description</title>
+<para>The function takes a single parameter which can be any expression.
+The function evaluates its argument and returns a shallow copy of the nodes that are selected by the argument,
+preserving any relationships that exist among these nodes. Duplicate nodes are removed before the processing.
+</para>
+<para>The structure of the resulting node-set may be explained in the following way.
+First of all, all input entities are grouped by their documents, so we have a set of distinct documents and
+for every document we have a list of entities that refers to various nodes of the document.
+After that, every such document is processed separately, and the result of processing is a node-set;
+the union of these node-sets will be returned as the result of the call of filter() function.
+A copy of the document is made, and a &quot;color&quot; is assigned to every node of the copy:
+it's &quot;black if the original node is listed in the <parameter>selection</parameter> sequence,
+otherwise it's &quot;white&quot;. Then &quot;white&quot; nodes are removed from the copy, node after node:
+if a &quot;white&quot; node may be found, it is replaced with list of its children. Finally, we have a list of
+one or more &quot;black&quot; nodes whose descendants are all &quot;black&quot;, too, and this list is
+added into the resulting node-set.
+</para>
+<para>(The actual algorithm is much faster and much more complicated than the described one, but the result is identical.)
+</para>
+<para>Note that this function is defined in XQuery standard, not in XPath, but in Virtuoso it may be used freely in expression of any kind.</para>
+</refsect1>
+  <refsect1 id="xpf_params_filter"><title>Parameters</title>
+    <refsect2><title>selection</title>
+      <para>The sequence of nodes that should be included into the result</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_filter"><title>Return Types</title><para>Node-set</para></refsect1>
+  <refsect1 id="xpf_errors_filter"><title>Errors</title>
+    <table><title>Errors signalled by filter()</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFB0</errorcode></entry>
+	    <entry><errorname>The argument of XQUERY function filter() must be a sequence of XML entities</errorname></entry>
+	    <entry>According to the XQuery standard, the function should signal an error if input contains values other than XML entity.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="xpf_examples_filter"><title>Examples</title>
+    <example id="xpf_ex_filter"><title>Composing table of contents</title>
+      <para>The following example is from the XQuery standard and it
+illustrates how filter() might be used to compute a table of contents
+for a document that contains many levels of nested sections.
+The query filters the document, retaining only section elements,
+title elements nested directly inside section elements,
+and the text of those title elements.
+Other elements, such as paragraphs and figure titles, are eliminated, leaving only the "skeleton" of the document.
+The example generates a table of contents for a document named &quot;cookbook.xml&quot;.</para>
+<screen>
+&lt;toc&gt;
+   {
+   filter(document("cookbook.xml") //
+      (section | section/title | section/title/text()))
+   }
+&lt;/toc&gt;
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_filter"><title>See Also</title>
+    <para><link linkend="xpf_shallow">shallow()</link></para>
+  </refsect1>
+</refentry>
+

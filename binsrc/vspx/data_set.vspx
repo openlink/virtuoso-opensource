@@ -1,0 +1,195 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=iso-8859-1"/>
+    <meta name="generator" content="Adobe GoLive 6"/>
+    <title>Welcome to Adobe GoLive 6</title>
+  </head>
+  <body bgcolor="#ffffff">
+    <v:page name="data_set_page" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" fast-render="1">
+      <font color="red">
+        <b>
+          <v:error-summary/>
+        </b>
+      </font>
+      <v:data-set name="ds" sql="select CustomerID, CompanyName, Phone from Demo.demo.Customers" nrows="10" scrollable="1" cursor-type="keyset" edit="1" width="80">
+        <v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
+          <h4>
+            <v:label name="label03" value="--self.ds.ds_rows_offs" format="ds_rows_offs : %d" width="80"/>
+            <br/>
+            <v:label name="label13" value="''" format="ds_current_row : %s" width="80">
+              <v:before-render>
+                control.ufl_value := case when self.ds.ds_current_row is null then 'NULL' else 'Defined' end;
+              </v:before-render>
+            </v:label>
+          </h4>
+          <table width="400" border="2" cellspacing="0" cellpadding="0">
+            <tr>
+              <td align="center">
+                <b>Action</b>
+              </td>
+              <td align="center">
+                <b>
+                  <v:label name="label1" value="'CustomerID'" format="%s" width="80"/>
+                </b>
+              </td>
+              <td align="center">
+                <b>
+                  <v:label name="label2" value="'CompanyName'" format="%s" width="80"/>
+                </b>
+              </td>
+              <td align="center">
+                <b>
+                  <v:label name="label3" value="'Phone'" format="%s" width="80"/>
+                </b>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+        <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+          <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table width="400" border="2" cellspacing="0" cellpadding="0">
+              <tr>
+                <td align="center" colspan="5">
+                  <b>No rows selected</b>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+          <v:hidden width="0" height="0">
+            <v:template name="template5" type="edit" name-to-remove="" set-to-remove="">
+              <v:form name="upf" type="update" table="Demo.demo.Customers" if-not-exists="insert">
+                <v:key column="CustomerID" value="--self.ds.ds_current_row.te_rowset[0]" default="null"/>
+                <v:template name="template6" type="simple" name-to-remove="table" set-to-remove="both">
+                  <table width="400" border="1" cellspacing="2" cellpadding="0">
+                    <tr>
+                      <td nowrap="nowrap">
+                        <v:button name="upd_button" action="submit" value="Update"/>
+                        <input type="submit" name="ds_cancel" value="Cancel"/>
+                      </td>
+                      <td nowrap="nowrap">
+                        <v:update-field name="c_id" column="CustomerID" error-glyph="*">
+                          <v:validator name="c_id_len" test="length" min="5" max="5" message="The CustomerID should be 5 chars long."/>
+                        </v:update-field>
+                      </td>
+                      <td>
+                        <v:update-field name="c_name" column="CompanyName"/>
+                      </td>
+                      <td>
+                        <v:update-field name="c_phone" column="Phone"/>
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+              </v:form>
+            </v:template>
+          </v:hidden>
+          <v:template name="template8" type="add" name-to-remove="" set-to-remove="">
+            <v:form name="add" type="update" table="Demo.demo.Customers" if-not-exists="insert">
+              <v:key column="CustomerID" value="--''" default="null"/>
+              <v:template name="template9" type="simple" name-to-remove="table" set-to-remove="both">
+                <table width="400" border="1" cellspacing="2" cellpadding="0">
+                  <tr>
+                    <td nowrap="nowrap">
+                      <v:button name="add_button" action="submit" value="Add"/>
+                    </td>
+                    <td nowrap="nowrap">
+                      <v:update-field name="c_id2" column="CustomerID" error-glyph="*">
+                        <v:validator name="c_id_len2" test="length" min="5" max="5" message="The CustomerID should be 5 chars long."/>
+                      </v:update-field>
+                    </td>
+                    <td>
+                      <v:update-field name="c_name2" column="CompanyName"/>
+                    </td>
+                    <td>
+                      <v:update-field name="c_phone2" column="Phone" default_value="<type phone here>" />
+                    </td>
+                  </tr>
+                </table>
+              </v:template>
+            </v:form>
+          </v:template>
+          <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
+            <table width="400" border="1" cellspacing="2" cellpadding="0">
+              <tr>
+                <td nowrap="1">
+                  <v:button name="ds_edit" action="simple" value="Edit"/>
+                  <v:button name="ds_delete" action="simple" value="Delete">
+                    <v:on-post>
+                      <v:script><![CDATA[
+                    {
+                      delete from Demo.demo.Customers where CustomerID = self.ds.ds_current_row.te_rowset[0];
+                      self.ds.vc_data_bind(e);
+                    }
+                  ]]></v:script>
+                    </v:on-post>
+                  </v:button>
+                </td>
+                <td align="left" nowrap="1">
+                  #<v:label name="label5ctr" value="--(control.vc_parent as vspx_row_template).te_ctr + self.ds.ds_rows_offs + 1" format="%d" width="80"/>.
+                  <v:label name="label5" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" width="80"/>
+                </td>
+                <td align="left" nowrap="1">
+                  <v:label name="label6" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
+                </td>
+                <td align="left" nowrap="1">
+                  <v:label name="label7" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s" width="80"/>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+        </v:template>
+        <v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
+          <table width="400" border="1" cellspacing="2" cellpadding="0">
+            <tr>
+              <td>
+        </td>
+              <td align="right">
+                <v:button name="ds_prev" action="simple" value="&lt;&lt;" xhtml:size="10pt"/>
+              </td>
+              <td align="left">
+                <v:button name="ds_next" action="simple" value="&gt;&gt;" xhtml:size="10pt"/>
+              </td>
+              <td align="right">
+                <v:label name="label4" value="'That is Footer'" format="%s" width="80"/>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+      </v:data-set>
+      <p>
+      <v:form name="form1" method="POST" type="simple">
+        <v:button action="simple" name="reset" value="Reset">
+	 <v:on-post>
+	  self.ds.ds_last_bookmark := null;
+	  self.ds.ds_prev_bookmark := null;
+	  self.ds.vc_data_bind (e);
+	 </v:on-post>
+	</v:button>
+      </v:form>
+      </p>
+      <v:include name="include1" url="footer.xml"/>
+    </v:page>
+  </body>
+</html>

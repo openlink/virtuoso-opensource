@@ -1,0 +1,57 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="RE-XB-2">
+  <refmeta>
+    <refentrytitle>Bidirectional Transactional Replication Setup</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Creating a publication</refname>
+    <refpurpose>Adding tables to publication</refpurpose>
+  </refnamediv>
+
+<refsect1 id="RE-XB-2a">
+<title>To add a table to publication execute the following steps:</title>
+<orderedlist>
+  <listitem>Login to the Conductor UI using the dba account.</listitem>
+  <listitem>Go to the "Replication" tab, then go to the "Transactional" tab and then go the "Publications" sub-tab.</listitem>
+  <listitem>From the publications list select the link with the name of your publication ("repldemo").</listitem>
+  <listitem>Press the "Add Tables" button.</listitem>
+  <listitem>Select a database, then a table or multiple tables
+            (select "Demo.demo.Orders"), and then
+            press "Add to Publication" button.</listitem>
+</orderedlist>
+</refsect1>
+
+<refsect1 id="RE-XB-2b">
+<title>Equivalent SQL commands to above</title>
+<orderedlist>
+  <listitem>Connect to the Virtuoso server via ISQL utility as DBA user.</listitem>
+  <listitem>Add table "Demo.demo.Orders" to publication "repldemo"
+  <programlisting>
+SQL&gt; repl_pub_add('repldemo', 'Demo.demo.Orders', 2, 1, 0);
+  </programlisting></listitem>
+</orderedlist>
+</refsect1>
+</refentry>

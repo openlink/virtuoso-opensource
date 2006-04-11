@@ -1,0 +1,194 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="default.css" type="text/css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+    <title>OpenLink BPEL Process Manager QuickStart</title>
+    <style>
+      body { margin-left: 5pt; margin-right: 5pt; }
+    </style>
+  </head>
+  <body>
+    <div class="page_head">
+      <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="page_head">
+        <tr>
+          <td><img src="i/bpelheader350.jpg" alt="" name="" width="350" height="75"/></td>
+        </tr>
+      </table>
+    </div>
+    <table id="MT" width="100%">
+      <tbody>
+        <tr>
+          <td id="LB" width="10%" class="left_nav" valign="top">
+            <table id="NT" width="100%">
+              <tbody>
+                <tr>
+                  <td>
+                    <table class="lnav_container">
+                      <tr><td><a href="/BPELGUI">OpenLink BPEL Process Manager</a></td></tr>
+                      <tr><td><a href="/doc/docs.vsp">Check<br>Documentation</br></a></td></tr>
+                      <tr><td><a href="/BPELDemo/">Virtuoso BPEL Tutorials</a></td></tr>
+                      <tr><td class="system_info"><a href="http://www.openlinksw.com">OpenLink Software</a></td></tr>
+                      <tr><td class="system_info"><a href="http://www.openlinksw.com/virtuoso">Virtuoso Web Site</a></td></tr>
+                      <tr><td class="system_info">Server version: <?V sys_stat('st_dbms_ver') ?></td></tr>
+                      <tr><td class="system_info">Server build: <?V sys_stat('st_build_date') ?></td></tr>
+                      <tr><td class="system_info">BPEL4WS version: <?V registry_get('_bpel4ws_version_') ?></td></tr>
+                      <tr><td class="system_info">BPEL4WS build date: <?V registry_get('_bpel4ws_build_') ?></td></tr>
+                      <tr><td class="system_info"><a href="http://www.openlinksw.com/virtuoso"><img alt="Powered by OpenLink Virtuoso Universal Server" src="i/PoweredByVirtuoso.gif" border="0" /></a></td></tr>
+                    </table>
+                  </td>
+                </tr>
+            </tbody>
+            </table>
+          </td>
+          <td id="RT" width="90%" valign="top">
+            <table width="100%" border="0" cellpadding="2" cellspacing="2" id = "content">
+              <h2>OpenLink BPEL Process Manager QuickStart</h2>
+              <tr>
+                <td>
+                  <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content_header">
+                    <tr>
+	              <td class="paragraph">
+                         The Quick Start BPEL examples below demonstrate several aspects associated with BPEL including invocation
+                         of Web services including WS-RM and WS-Security, working with fault handlers as well as .NET CLR
+                         and Java integration and processing of SQL and XQuery. These examples provide a quick introduction
+                         by guiding you through some basic tasks using OpenLink BPEL Process Manager.
+                         All of these samples be viewed under the Virtuoso Conductors WebDAV Repository in the DAV/VAD/bpeldemo directory.
+                         These examples are also included under the Web Services section in the Virtuoso Tutorials that is
+                         packaged with the Demo Database installation and are available under BPELDemo directory located on http://host:port/BPELDemo.
+	              </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <th class="info">Working with the BPEL examples</th>
+              </tr>
+              <tr>
+                <td class="home">
+                  <ul>
+                    <li>
+                      Every example's directory includes a deployment file, named 'bpel.xml'.
+                      When using this file, you must include the full URI (as shown in the Deployment File Column in the Table below) in
+                      the OpenLink BPEL Process Manager when importing the example's definitions.
+                    </li>
+                    <li>
+                      After you have compiled the BPEL process and it is ready to run, you can run the process by selecting the 'Test'
+                      link beside each process in 'Process' page from the user interface.
+                    </li>
+                    <li>
+                      Important: some of these examples require a SQL script, which need to be executed before you can define any
+                      of the remote services. If the directory includes a list of SQL scripts, then execute the SQL first by invoking
+                      the Interactive SQL utility (ISQL) from the OS or from Virtuoso Admin User Interface Conductor before importing
+                      the deployment file (noted under Requirements).
+                    </li>
+                  </ul>
+                </td>
+              </tr>
+              <tr>
+                <th class="info">BPEL Examples</th>
+              </tr>
+              <tr>
+                <td>
+                  <table width="100%" id="content" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <th>BPEL Example</th>
+                      <th>Description</th>
+                      <th>Deployment File</th>
+                      <th>Requirements</th>
+                    </tr>
+                    <tr bgcolor="#fefefe">
+                      <td>Echo (ECHO)</td>
+                      <td>Example Echo Process that include the core BPEL concepts for building services.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/echo/bpel.xml</td>
+                      <td>&nbsp;</td>
+                    </tr>
+                    <tr bgcolor="#efefef">
+                      <td>Fibonacci function (FI)</td>
+                      <td>Example Process that used a Fibonacci function service.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/fi/bpel.xml</td>
+                      <td>&nbsp;</td>
+                    </tr>
+                    <tr bgcolor="#fefefe">
+                      <td>Loan Flow (LOANFLOW)</td>
+                      <td>Example LoanFlow Process, which includes services for Credit Rating, United Loan and Star Loan.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/LoanFlow/bpel.xml</td>
+                      <td><b>LoanFlow.sql</b></td>
+                    </tr>
+                    <tr bgcolor="#efefef">
+                      <td>SECLOAN</td>
+                      <td>Example LoanFlow Process using the WS-Security protocol.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/SecLoan/bpel.xml</td>
+                      <td><b>LoanFlowDemo.sql</b></td>
+                    </tr>
+                    <tr bgcolor="#fefefe">
+                      <td>RMLOAN</td>
+                      <td>Example LoanFlow Process using the WS-ReliableMessaging (WS-RM) protocol.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/RMLoan/bpel.xml</td>
+                      <td><b>LoanFlowDemo.sql</b><br/> Depends from the SecLoan example.</td>
+                    </tr>
+                    <tr bgcolor="#efefef">
+                      <td>SECRMLOAN</td>
+                      <td>Example LoanFlow Process using a combination of the WS-Security and WS-RM protocols.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/SecRMLoan/bpel.xml</td>
+                      <td><b>LoanFlowDemo.sql</b><br/> Depends from the SecLoan and the RMLoan examples.</td>
+                    </tr>
+                    <tr bgcolor="#fefefe">
+                      <td>SQLEXEC</td>
+                      <td>Example process that uses SQL bindings and SQLX to generate requests process.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/sqlexec/bpel.xml</td>
+                      <td><b>store.sql</b></td>
+                    </tr>
+                    <tr bgcolor="#efefef">
+                      <td>USECASES</td>
+                      <td>Example process that includes Technical Use Cases defined in the OASIS MS01 document.</td>
+                      <td>
+                        http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/UseCases/MS01-1.xml<br/>
+                        http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/UseCases/MS01-2.xml<br/>
+                        http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/UseCases/MS01-3.xml<br/>
+                        http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/UseCases/MS01-4.xml<br/>
+                        http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/UseCases/MS01-5.xml<br/>
+                        http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/UseCases/MS01-6.xml<br/>
+                      </td>
+                      <td><b>MS01.sql</b></td>
+                    </tr>
+                    <tr bgcolor="#fefefe">
+                      <td>JAVA-EXEC</td>
+                      <td>Example that demonstrates how the Java code can be embedded in a BPEL process.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/java_exec/bpel.xml</td>
+                      <td>&nbsp;</td>
+                    </tr>
+                    <tr bgcolor="#efefef">
+                      <td>CLR-EXEC</td>
+                      <td>Example that demonstrates how the C# code can be embedded in a BPEL process.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/clr_exec/bpel.xml</td>
+                      <td>CLR Assemblies directory must be set. <br/> Requires Demo Database.</td>
+                    </tr>
+                    <tr bgcolor="#fefefe">
+                      <td>PROCESSXSLT</td>
+                      <td>Example that demonstrates how the XSLT styles can be used in a BPEL process.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/processXSLT/bpel.xml</td>
+                      <td><b>processXSLT.sql</b>, <BR/>process.xslt, <BR/>InvToPO.xslt, <BR/>XSLTSample.xslt</td>
+                    </tr>
+                    <tr bgcolor="#efefef">
+                      <td>PROCESSXQUERY</td>
+                      <td>Example that demonstrates how the XQuery program can be used in a BPEL process.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/processXQuery/bpel.xml</td>
+                      <td>invoice.xq, <BR/>books.xq</td>
+                    </tr>
+                    <tr bgcolor="#fefefe">
+                      <td>PROCESSXSQL</td>
+                      <td>Example that demonstrates how the XSQL scripts can be used in a BPEL process.</td>
+                      <td>http://<?= http_request_header (lines, 'Host') ?>/BPELDemo/processXSQL/bpel.xml</td>
+                      <td><b>processXSQL_ini.sql</b>, <BR/>selectProduct.xsql</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="copyright">Copyright &copy; 1999-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</div>
+  </body>
+</html>

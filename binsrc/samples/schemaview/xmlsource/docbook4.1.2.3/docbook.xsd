@@ -1,0 +1,35 @@
+<!DOCTYPE xsd:schema SYSTEM
+  "XMLSchema.dtd" [
+
+<!ENTITY % p 'xsd:'>
+<!ENTITY % s ':xsd'>
+<!ENTITY % schemaAttrs "
+	xmlns:db	CDATA	#IMPLIED
+	xmlns:xml	CDATA	#IMPLIED
+	xmlns:tbl	CDATA	#IMPLIED
+">
+]>
+<!-- ...................................................................... -->
+<!-- DocBook XML Schema V4.1.2.3........................................... -->
+<!-- ...................................................................... -->
+
+<!-- Copyright 2000 HaL Computer Systems, Inc.,
+     O'Reilly & Associates, Inc., ArborText, Inc., Fujitsu Software
+     Corporation, Sun Microsystems, Inc, and the Organization for the
+     Advancement of Structured Information Standards (OASIS).
+
+     $Id$
+-->
+
+<xsd:schema xmlns:xsd='http://www.w3.org/2001/XMLSchema'
+            targetNamespace='http://www.oasis-open.org/docbook/xmlschema/4.1.2'
+            xmlns:db='http://www.oasis-open.org/docbook/xmlschema/4.1.2'
+            xmlns:tbl='http://www.oasis-open.org/tables/exchange/1.0'
+            xmlns:xml='http://www.w3.org/XML/1998/namespace'
+            elementFormDefault='qualified'>
+
+<xsd:include schemaLocation="dbnotn.xsd"/>
+<xsd:include schemaLocation="dbpool.xsd"/>
+<xsd:include schemaLocation="dbhier.xsd"/>
+
+</xsd:schema>

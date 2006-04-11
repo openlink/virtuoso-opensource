@@ -1,0 +1,179 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+
+	<head>
+		<title>SMS Messages setup interface</title>
+	</head>
+
+	<body>
+           <v:page name="setup_sms" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+		<h2>SMS Messages setup interface</h2>
+		<p>
+		    <v:login name="loginc" realm="vspx" mode="url" user-password="sql_user_password" user-password-check="sql_user_password_check" >
+		    <v:template type="if-no-login" redirect="ho_s_5.vspx">
+		    </v:template>
+
+		    <v:login-form name="loginf" required="1" title="Login" user-title="User Name" password-title="Password" submit-title="Login" >
+		    </v:login-form>
+
+		    <v:template type="if-login">
+		      <P>
+			SID: <?vsp http (self.sid); ?>
+		      </P>
+		      <P>
+			UID: <?vsp http_value (connection_get ('vspx_user')); ?>
+		      </P>
+
+<P>
+
+
+		<?vsp
+  declare _ClientSerialNo, _SMSKey, _SenderName, _SenderEmail, _Recepient, _msg varchar;
+  declare _test_sms, _set_value integer;
+
+  declare params any;
+  params := (self.vc_event).ve_params;
+
+  _test_sms := trim (get_keyword ('test_sms', params, ''));
+  _set_value := trim (get_keyword ('set_values', params, ''));
+  _ClientSerialNo := trim (get_keyword ('_ClientSerialNo', params, connection_get ('ho_s_3.Redcoal.ClientSerialNo')));
+  _SMSKey := trim (get_keyword ('_SMSKey', params, connection_get ('ho_s_3.Redcoal.SMSKey')));
+  _SenderName := 'Virtuoso Server';
+  _SenderEmail := trim (get_keyword ('_SenderEmail', params, connection_get ('ho_s_3.Redcoal.SenderEmail')));
+  _recepient := trim (get_keyword ('_recepient', params, connection_get ('ho_s_3.MGRPhone')));
+  _msg := trim (get_keyword ('message', params, ''));
+
+  declare exit handler for sqlstate '*' {
+?>
+		<hr />
+		<table>
+			<tr>
+				<td>SQL State</td>
+				<td><?V __SQL_STATE ?></td>
+			</tr>
+			<tr>
+				<td>SQL Message</td>
+				<td><?V __SQL_MESSAGE ?></td>
+			</tr>
+		</table>
+		<hr />
+		<?vsp
+  };
+
+  if (_set_value <> '')
+    {
+      connection_set ('ho_s_3.Redcoal.ClientSerialNo', _ClientSerialNo);
+      connection_set ('ho_s_3.Redcoal.SMSKey', _SMSKey);
+      connection_set ('ho_s_3.Redcoal.SenderEmail', _SenderEmail);
+      connection_set ('ho_s_3.MGRPhone', _recepient);
+?>
+		<hr />
+		<?vsp
+  if (isstring (_ClientSerialNo) and isstring (_SMSKey) and isstring (_recepient) and
+      length (_ClientSerialNo) > 0 and length (_SMSKey) > 0 and length (_recepient) > 0)
+    {
+?>
+		<p>SMS will be sent on insert/update/delete</p>
+		<?vsp
+    } else {
+?>
+		<p>SMS will NOT be sent on insert/update/delete</p>
+		<?vsp
+    }
+?>
+		<hr />
+		<?vsp
+    }
+  if (_test_sms <> '')
+    {
+      declare reply varchar;
+      declare svc CLR1..redcoalsms_dom_redcoalsmssvc;
+      svc := new CLR1..redcoalsms_dom_redcoalsmssvc (_ClientSerialNo, _SMSKey, _SenderName, _SenderEmail);
+      reply :=  svc.sendSms (_recepient, _msg);
+?>
+		<hr />
+		<p>Sending SMS to : <b><?V _recepient ?></b>.</p>
+		<p>Status : <b><?V reply ?></b></p>
+		<hr />
+		<?vsp
+    }
+?>
+		<v:form name="send_sms" action="setup_sms.vspx" method="POST">
+			<table>
+				<tr>
+					<td>
+						<table>
+							<tr>
+								<td><b>SMS Client Serial No</b></td>
+								<td><input type="text" name="_ClientSerialNo" value="<?V _ClientSerialNo ?>" size="24" /></td>
+								<td><i>Blank to not send SMS. Usually : 1F917E73-6838-4371-0017-E063369AF100</i></td>
+							</tr>
+							<tr>
+								<td><b>SMS Key</b></td>
+								<td><input type="text" name="_SMSKey" value="<?V _SMSKey ?>" /></td>
+								<td><i>Go to <a href="http://redcoal.com/">http://redcoal.com/</a> for your SMS key, Password</i></td>
+							</tr>
+							<tr>
+								<td><b>Recepient's Phone</b></td>
+								<td><input type="text" name="_recepient" value="<?V _recepient ?>" /></td>
+								<td><i>Using the international convension.Example :+35987123456</i></td>
+							</tr>
+							<tr>
+								<td>Sender's name</td>
+								<td><?V _SenderName ?></td>
+							</tr>
+							<tr>
+								<td>Sender's e-mail</td>
+								<td colspan="2"><input type="text" name="_SenderEmail" value="<?V _SenderEmail ?>" size="40" /></td>
+							</tr>
+							<tr>
+								<td>Message text</td>
+								<td colspan="2"><input type="text" name="message" value="<?V _msg ?>" size="80" maxlength="120" /></td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<td align="left">
+					<table>
+						<tr align="left">
+							<td align="left" nowrap="nowrap"><v:url name="handler_url" value="--'Proceed to Database Driven SMS Demo'" format="%s" url="--'handler.vspx'" /></td>
+							<td align="left"><input type="submit" name="test_sms" value="Send SMS" /></td>
+							<td align="left"><input type="submit" name="set_values" value="Save values" /></td>
+						</tr>
+					</table>
+				</td>
+			</table>
+		</v:form>
+
+</P>
+
+		    </v:template>
+
+		    </v:login>
+
+		</p>
+</v:page>
+	</body>
+
+</html>

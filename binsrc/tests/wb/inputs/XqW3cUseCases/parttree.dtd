@@ -1,0 +1,5 @@
+<!ELEMENT parttree (part*)>
+<!ELEMENT part (part*)>
+<!ATTLIST part
+          partid  CDATA  #REQUIRED
+          name    CDATA  #REQUIRED>

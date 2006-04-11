@@ -1,0 +1,57 @@
+<!-- $Id$ -->
+<v:page xmlns:v="http://www.openlinksw.com/vspx/" name="message_page" on-deadlock-retry="3">
+  <v:variable name="endpurl" type="varchar" default="null" param-name="wsdl"/>
+  <v:variable name="loc" type="any" default="null" persist="session"/>
+  <v:variable name="wsdl" type="any" default="null" persist="session"/>
+  <html>
+    <head>
+      <link rel="stylesheet" href="default.css" type="text/css"/>
+    </head>
+    <body>
+      <v:login name="l1" realm="vsmx" mode="url" user-password-check="vsmx_user_check"/>
+      <v:form name="f1" type="simple" method="POST">
+	<div class="head1"><h1>Web Services Test Page (VSMX)</h1></div>
+	<p style="color:red"><v:error-summary/></p>
+	<table>
+	  <tr>
+	    <td>Enter the WSDL URL</td>
+	    <td>
+	      <v:text name="wsdluri" value="" xhtml_size="80" error-glyph="*">
+		<v:validator test="regexp" regexp="^[a-zA-z:/_0-9?#&~\.-]+$" message="The URL must be supplied">
+		</v:validator>
+		<v:before-data-bind>
+		  if (self.endpurl is not null)
+		    {
+		      self.wsdl := DB.DBA.XML_URI_GET (self.endpurl, '');
+		      self.loc := self.endpurl;
+		      self.vc_redirect ('oper.vspx');
+		    }
+		</v:before-data-bind>
+	      </v:text>
+	    </td>
+	    <td>
+	      <v:button action="simple" name="wget" value="Retreive">
+		<v:on-post>
+		  if (not self.vc_is_valid)
+		    return;
+		  declare exit handler for sqlstate '*'
+		  {
+		    self.vc_is_valid := 0;
+		    self.vc_error_message := __SQL_MESSAGE;
+		    return;
+	          };
+		  self.wsdl := DB.DBA.XML_URI_GET (self.wsdluri.ufl_value, '');
+		  self.loc := self.wsdluri.ufl_value;
+		  self.vc_redirect ('oper.vspx');
+	        </v:on-post>
+	      </v:button>
+	    </td>
+	  </tr>
+	</table>
+      </v:form>
+      <div class="foot">
+	<span class="foot">Virtuoso Universal Server <?V sys_stat('st_dbms_ver')?> - Copyright&copy; 1999-2005 OpenLink Software.</span>
+      </div>
+    </body>
+  </html>
+</v:page>

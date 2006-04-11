@@ -1,0 +1,508 @@
+--
+--  tupdate.sql
+--
+--  $Id$
+--
+--  Update tests
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+
+echo BOTH "STARTED: UPDATE TEST (this might take long)\n";
+
+CONNECT;
+
+-- Timeout to two hours.
+SET TIMEOUT 7200;
+set DEADLOCK_RETRIES = 200;
+load revstr.sql;
+load succ.sql;
+drop table words;
+create table words(word varchar, revword varchar, len integer, primary key(word));
+create index revword on words(revword);
+create index len on words(len);
+foreach line in words.esp
+ insert into words(word,revword,len) values(?,revstr(?1),length(?1));
+
+select count(*) from words;
+ECHO BOTH $IF $EQU $LAST[1] 86061 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Table word contains count(*) " $LAST[1] " lines\n";
+
+alter table words add word2 varchar;
+
+-- Why this is done twice? Is it typo or is there some point in it?
+update words set word2 = word;
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word2 = word; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+--- ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
+--- ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+update words set word2 = word;
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word2 = word; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+update words set word2 = concat (word2, '-');
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word2 = concat (word2, '-'); STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+-- Was: update words set word2 = subseq (word2, 0, length (word2) - 1);
+-- This is more to standard:
+update words set word2 = LEFT (word2, length (word2) - 1);
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word2 = left(word2,length(word2)-1); STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+select count (*) from words where word2 <> word;
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": select count(*) from words; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH  $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH  ": " $LAST[1] " words where word2 <> word\n";
+
+update words set word2 = 'q' where revword between 'a' and 'b';
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word2 = 'q' where revword between 'a' and 'b'; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 28810 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+update words set word2 = word where revword between 'a' and 'b';
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word2 = word where revword between 'a' and 'b'; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 28810 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+update words set word = concat ('-', word);
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word = concat('-',word); STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+select count (*) from words where word2 = word;
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": select count (*) from words; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH  $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH  ": " $LAST[1] " words where word2 = word\n";
+
+checkpoint;
+
+update words set word = word2 where word like '-%';
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word = word2 where word like '-%'; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+select count (*) from words where word <> word2;
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": select count (*) from words; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH  $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH  ": " $LAST[1] " words where word2 <> word\n";
+
+update words set word = concat ('-', word) where revword between 'a' and 'ad';
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word = concat('-',word) where ...; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $ROWCNT " rows updated\n";
+
+update words set word = subseq (word, 1, length (word)) where aref (word, 0) = aref ('-', 0);
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word = subseq (word, 1, length(word)) where ...; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $ROWCNT " rows updated\n";
+
+update words set word = subseq (word, 1, length (word)) where word like '-%';
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word = subseq (word, 1, length(word)) where ...; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $ROWCNT " rows updated\n";
+
+update words set word = word, word2 = word2;
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": update words set word = word, word2 = word2; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+-- Set ROWCNT to some different value, so that we see whether the next
+-- update statements have any effect:
+SET ROWCNT -12345;
+
+-- The next two produce error messages like these:
+-- *** Error .....: Ruling part too long on words.
+
+update words set word = word, word2 = make_string (10000) where word = 'a';
+-- ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH "update words set word = word, word2 = make_string(10000) where word = 'a'; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $ROWCNT " rows updated\n";
+
+update words set word2 = make_string (10000) where word = 'a';
+-- ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH "update words set word2 = make_string(10000) where word = 'a'; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $ROWCNT " rows updated\n";
+
+select count (*) from words where word <> word2;
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": select count (*) from words; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH  $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " words where word2 <> word\n";
+
+checkpoint;
+
+update words set len = 'qqqq' where word = 'a';
+ECHO BOTH $IF $EQU $STATE 22005 "PASSED" "***FAILED";
+ECHO BOTH ": update type error " $STATE $MESSAGE "\n";
+
+update words set word = 'qqqq', len = 'qqqq' where word = 'a';
+ECHO BOTH $IF $EQU $STATE 22005 "PASSED" "***FAILED";
+ECHO BOTH ": update type error " $STATE $MESSAGE "\n";
+
+
+insert into T1 (ROW_NO, FI2, FREAL, FDOUBLE) values (1, 1, 2, 3);
+select FI2, FREAL, FDOUBLE from T1 where ROW_NO = 1;
+
+insert into T1 (ROW_NO, FI2, FREAL, FDOUBLE) values (2, convert (real, 1), convert (real, 1), convert (real, 1));
+select FI2, FREAL, FDOUBLE from T1 where ROW_NO = 2;
+
+insert into T1 (ROW_NO, FI2, FREAL, FDOUBLE) values (3, 1.1, 2.2, 3.3);
+select FI2, FREAL, FDOUBLE from T1 where ROW_NO = 3;
+
+select distinct internal_type (FI2), internal_type (FREAL), internal_type (FDOUBLE) from T1 where ROW_NO < 4;
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+ECHO BOTH ": error in numeric type conversion.\n";
+
+-- type error in update_quick w/ new len = old en and new_len > old_len.
+update T1 set FDOUBLE = 'abcdefg' where ROW_NO < 4;
+update T1 set FDOUBLE = 'abcdefghij' where ROW_NO < 4;
+update T1 set FREAL = 12.12, FDOUBLE = 'abd' where ROW_NO < 4;
+
+
+select * from T1 where ROW_NO < 4;
+delete from T1 where ROW_NO < 4;
+
+--
+-- Overflows
+--
+create table u_test (pkstring varchar, skstring varchar, dstring varchar,
+	primary key (pkstring));
+
+create index sk on u_test (skstring);
+
+insert into u_test values (repeat ('p', 500), repeat ('k', 500), repeat ('d', 500));
+
+--- XXX: for some reason the upd_recompose_row allows 8K rows, whereas insert_node_run allows only for 4K (half page)
+update u_test set dstring = make_string (8000);
+update u_test set skstring = skstring, dstring = make_string (8000);
+update u_test set skstring = skstring, dstring = make_string (10000);
+
+update u_test set dstring = repeat ('d', 100);
+
+insert into u_test values (repeat ('p', 3000) , repeat ('k', 2000) , 'dd');
+
+select length (pkstring), length (skstring), length (dstring) from u_test;
+select count (*) from u_test;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in u_test\n";
+
+select count (*) from u_test where length (pkstring) = 500 and length (skstring) = 500;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in u_test, meets unchanged by errorbeiys updates\n";
+
+select count (*) from u_test where length (pkstring) = 500 and length (skstring) = 500 order by skstring;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in u_test, meets unchanged by errorbeiys updates, key 2\n";
+
+
+drop table tl;
+create table tl (str varchar);
+insert into tl values (make_string (300));
+insert into tl values (make_string (300));
+insert into tl values (make_string (300));
+insert into tl values (make_string (300));
+insert into tl values (make_string (300));
+insert into tl values (make_string (300));
+insert into tl values (make_string (300));
+
+update tl set str = '----------';
+select sum (length (str)) from tl;
+
+drop table LOCK_TT;
+set lock_escalation_pct = 10;
+create table LOCK_TT (ID int identity not null primary key, CTR int);
+create procedure LOCK_TT_FILL (in N int)
+{
+  declare _CTR int;
+  _CTR := 0;
+  while (_CTR < N)
+    {
+      insert into LOCK_TT (CTR) values (_CTR);
+      _CTR := _CTR + 1;
+    }
+}
+
+
+select tc_stat ('tc_pl_split_while_wait');
+echo both " tc_pl_split_while_wait=" $last[1] "\n";
+
+
+drop table trb;
+create table trb (id int, st varchar, primary key (id));
+
+insert into trb values (1, make_string (250));
+
+select length (cast (_ROW as varchar)),aref (cast (_ROW as varchar), 0) from trb;
+
+update trb set st = make_string (234);
+
+create procedure trb ()
+{
+	update trb set st = make_string (235);
+	rollback work;
+}
+
+trb ();
+
+select length (cast (_ROW as varchar)),aref (cast (_ROW as varchar), 0) from trb;
+
+
+create procedure u2 ()
+{
+  declare deadlock_retry_count integer;
+
+  deadlock_retry_count := 100;
+  declare exit handler for sqlstate '40001'
+    {
+      rollback work;
+      if (deadlock_retry_count > 0)
+	{
+	  deadlock_retry_count := deadlock_retry_count - 1;
+	  goto again;
+	}
+      else
+	resignal;
+    };
+
+again:
+  update words set word2 = '';
+  rollback work;
+
+  update words set word2 = concat (word2, '----------');
+  update words set word2 = '';
+  update words set word2 = word;
+  commit work;
+  update words set word2 = 'q';
+  rollback work;
+  delete from words;
+  rollback work;
+}
+
+u2 ();
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+ECHO BOTH ": u2 (); STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+-- suite for bug #1778
+drop table BUG1778..TEST;
+create table BUG1778..TEST (ID integer not null,
+                        VAL LONG VARBINARY,
+                        primary key(ID));
+
+create procedure BUG1778..TEST(in op integer){
+
+ declare TEST any;
+
+ if (op = 1)
+   {
+     INSERT INTO BUG1778..TEST (ID,VAL) values(2,TEST);
+   }
+ else if (op = 2)
+   {
+     INSERT INTO BUG1778..TEST (ID,VAL) values(1,null);
+     UPDATE BUG1778..TEST SET VAL = TEST WHERE ID = 1;
+   }
+};
+
+call BUG1778..TEST(1);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "*** FAILED";
+ECHO BOTH ": BUG 1778: set a blob to 0 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+call BUG1778..TEST(2);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "*** FAILED";
+ECHO BOTH ": BUG 1778-2: set a blob to 0 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table B3600_T;
+
+CREATE TABLE B3600_T(
+  ID               INTEGER        NOT NULL,
+  FIELD    	       NVARCHAR       NULL,
+
+  PRIMARY KEY(ID)
+
+);
+
+create procedure B3600_P(){
+  if (1 = 2)
+    return 'test';
+};
+
+INSERT into B3600_T values (1, B3600_P());
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
+ECHO BOTH ": BUG 3600: set NVARCHAR to 0 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+--suite for bug #3597
+drop table B3597;
+
+CREATE TABLE B3597(
+    ACCOUNTNO	       NVARCHAR       NOT NULL,
+    COMPANY	         NVARCHAR       NULL,
+    CONTACT	         NVARCHAR       NULL,
+    LASTNAME	       NVARCHAR       NULL,
+    DEPARTMENT	     NVARCHAR       NULL,
+    TITLE	           NVARCHAR       NULL,
+    SECR	           NVARCHAR       NULL,
+    PHONE1	         NVARCHAR       NULL,
+    PHONE2	         NVARCHAR       NULL,
+    PHONE3	         NVARCHAR       NULL,
+    FAX	             NVARCHAR       NULL,
+    EXT1	           NVARCHAR       NULL,
+    EXT2	           NVARCHAR       NULL,
+    EXT3	           NVARCHAR       NULL,
+    EXT4	           NVARCHAR       NULL,
+    ADDRESS1	       NVARCHAR       NULL,
+    ADDRESS2	       NVARCHAR       NULL,
+    CITY	           NVARCHAR       NULL,
+    STATE	           NVARCHAR       NULL,
+    ZIP	             NVARCHAR       NULL,
+    COUNTRY	         NVARCHAR       NULL,
+    DEAR	           NVARCHAR       NULL,
+    SOURCE	         NVARCHAR       NULL,
+    KEY1	           NVARCHAR       NULL,
+    KEY2	           NVARCHAR       NULL,
+    KEY3	           NVARCHAR       NULL,
+    KEY4	           NVARCHAR       NULL,
+    KEY5	           NVARCHAR       NULL,
+    STATUS	         NVARCHAR       NULL,
+    NOTES	           LONG NVARCHAR  NULL,
+    CREATEBY	       NVARCHAR   	  NULL,
+    OWNER	           NVARCHAR   	  NULL,
+    LASTUSER	       NVARCHAR   	  NULL,
+    LASTDATE	       DATETIME	      NULL,
+    LASTTIME	       NVARCHAR       NULL,
+    RECID	           NVARCHAR       NULL,
+
+PRIMARY KEY(ACCOUNTNO)
+    );
+
+INSERT INTO B3597
+    (ACCOUNTNO,
+     COMPANY,
+     CONTACT,
+     LASTNAME,
+     DEPARTMENT,
+     TITLE,
+     SECR,
+     PHONE1,
+     PHONE2,
+     PHONE3,
+     FAX,
+     EXT1,
+     EXT2,
+     EXT3,
+     EXT4,
+     ADDRESS1,
+     ADDRESS2,
+     CITY,
+     STATE,
+     ZIP,
+     COUNTRY,
+     DEAR,
+     SOURCE,
+     KEY1,
+     KEY2,
+     KEY3,
+     KEY4,
+     KEY5,
+     STATUS,
+     NOTES,
+     CREATEBY,
+     OWNER,
+     LASTUSER,
+     LASTDATE,
+     LASTTIME,
+     RECID)
+     VALUES
+     ('ACCOUNTNO',
+      'COMPANY',
+      'CONTACT',
+      'LASTNAME',
+      'DEPARTMENT',
+      'TITLE',
+      'SECR',
+      'PHONE1',
+      'PHONE2',
+      'PHONE3',
+      'FAX',
+      'EXT1',
+      'EXT2',
+      'EXT3',
+      'EXT4',
+      'ADDRESS1',
+      'ADDRESS2',
+      'CITY',
+      'STATE',
+      'ZIP',
+      'COUNTRY',
+      'DEAR',
+      'SOURCE',
+      'KEY1',
+      'KEY2',
+      'KEY3',
+      'KEY4',
+      'KEY5',
+      'STATUS',
+      'NOTES',
+      'CREATEBY',
+      'OWNER',
+      'LASTUSER',
+      now(),
+      'LASTTIME',
+      'RECID');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
+ECHO BOTH ": BUG 3597: more than 20 casts STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table B7752_TB;
+create table B7752_TB (K varchar primary key, V varchar);
+
+create procedure B7752_P()
+  {
+    declare i integer;
+    i := 0;
+    while (i < 20000)
+      {
+	insert into B7752_TB values (cast (i as varchar), cast (space(i) as varchar));
+	i := i+1;
+      }
+  };
+
+B7752_P ();
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "*** FAILED";
+ECHO BOTH ": BUG 7752: wrong max row len check STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+echo BOTH "COMPLETED: UPDATE TEST\n";

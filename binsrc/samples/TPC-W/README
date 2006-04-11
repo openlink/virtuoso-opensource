@@ -1,0 +1,45 @@
+
+TPC-W test installation (short instrucations)
+
+There are some instructions for installation and using tpcw test:
+Test is not fully ready and fully tested. So it has errors. But main TPC-W behaviour is implemenated.
+The latest versions of files are in CVS.
+
+I. Installuction for installation server:
+
+0. run Virtuoso server;
+1. create synlink for /binsrc/samples/TPC-W in the directory from you run server.
+2. you need 2 TPC-W generation tools tpcw and tpcwIMG for generation random titles and images
+(Linux binaries in cvs). You can get them from tpcw site http://www.tpc.org/tpcw/default.asp
+Compile if you don't have them, and put into the /binsrc/samples/TPC-W folder.
+3. modify the path in function get_path() in file tpcw.sql
+4. run isql from /binsrc/samples/TPC-W folder
+5. load setup.isql - it should create and load databases -> server ready for work.
+    you can modify procedure init_3_1000() in setup.isql:
+    NUM_ITEMS - number of items in shop;
+    NUM_EBs - numer of emulated browsers.
+
+Running client:
+you could run client in the same Virtuoso where server or run new server:
+
+1. run isql
+2. load /binsrc/samples/TPC-W/client/tpcw_eb.sql
+3. run runShopping(NUM_ITEMS, NUM_EBs) function
+    NUM_ITEMS - number of items in shop;
+    NUM_EBs - numer of emulated browsers
+ - it will emulate user browseing in web shop.
+
+If you run M2 with  then in console will be some debug information for error detection.
+
+
+II. Instructions for automatic load and run:
+there are two shell scripts in TPC-W directory:
+tpcw.sh - server installation (should be run from tpcw folder)
+client/tpcw_eb.sh - client installation and running (should be run from tpcw/client folder)
+
+Before running these scripts run .profile.
+tpcw.sh - load virtuoso server and setup test tables
+client/tpcw_eb.sh - load new virtuoso server and setup test procedures and functions
+"tpc_eb.sh load" - load virtuoso and create procedures and functions
+"tpc_eb.sh run" - run test
+P.S. you should correct HTTP variable for set remote server in client/tpcw_eb.sh

@@ -1,0 +1,1540 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+  $Id$
+  (C)Copyright 2005 OpenLink Software
+-->
+<chapter label="tpcc.xml" id="tpcc">
+	<title>TPC C Benchmark Kit</title>
+	<abstract>
+	<para>
+The Virtuoso TPC C Kit is a database benchmark written in C and SQL stored
+procedures using the CLI or ODBC API. It is modeled after the industry
+standard Transaction Processing Performance Council (TPC) C benchmark
+and can be used as a component in an official benchmark but does not in
+itself constitute a complete test driver.
+</para>
+<tip><title>See Also:</title>
+	<para>
+A complete description of the benchmark and its metric can be found
+at <ulink url="http://www.tpc.org/">the TPC Web Site</ulink>.
+This document assumes the reader is familiar with the general content of the
+benchmark.
+</para>
+</tip>
+	<para>
+The C and SQL source of the benchmark is contained in the sample directory
+of the Virtuoso tree. The tpcc executable is built by running make after
+choosing the target (see makefile).
+</para>
+</abstract>
+
+
+<sect1 id="tpcctestdb">
+<title>Building the Test Database</title>
+	<para>
+To build a 1 warehouse test database (approximately 100 MB), go through
+the following procedure:
+</para>
+	<para>
+Start the database server.
+</para>
+	<para>
+Assuming the server is listening at the default port of 1111 on the
+local host execute:
+</para>
+<screen>
+isql 1111 dba dba tpccddk.sql
+tpcc 1111 dba dba I 1
+</screen>
+	<para>
+to create a 1 warehouse database. This may take some time. As long as
+the file gets longer everything is OK. You may follow the progress with
+interactive SQL.
+</para>
+	<para>
+Once the tpcc program exits you can load the stored procedures used by
+the benchmark. Assuming the server is listening at the default port of
+1111 and that the dba password is the default `dba', type:
+</para>
+<screen>
+../isql 1111 dba dba tpcc.sql
+</screen>
+	<para>
+This will exit when the procedures are loaded, typically a few seconds.
+</para>
+	<para>
+To complete the initialization make a checkpoint to freeze the initial
+database state:
+</para>
+<screen>
+./isql 1111
+SQL&gt; checkpoint;
+Done.
+SQL&gt; exit;
+</screen>
+	<para>
+The database is now ready for use.
+</para>
+</sect1>
+
+<sect1 id="tpccusingtestprg">
+<title>Using the Test Program</title>
+
+	<para>
+The tpcc program simulates one user making random transactions according
+to the specified mix of:
+</para>
+
+<screen>
+10 new order transactions, each with 10 order lines
+10 payment transactions, 60% by name
+1 delivery transaction
+1 stock level transaction
+1 order status transaction, 60% by name.
+</screen>
+
+	<para>
+Each instance of the test program has a home warehouse on which it does
+most of its operations. If there are more than one operation the test
+program will give a supply warehouse different from the local warehouse
+to 10% of new order lines.
+</para>
+	<para>
+The test is started with:
+</para>
+<screen>
+tpcc &lt;database&gt; &lt;username&gt; &lt;password&gt; r
+	&lt;n-10-new-order-sets&gt; &lt;local warehouse&gt; &lt;n warehouses&gt;
+</screen>
+
+<para>
+e.g.
+</para>
+
+<screen>
+./tpcc 1111 dba dba r 10
+</screen>
+
+	<para>
+for 10 sets of the transaction mix on warehouse 1 in a 1 warehouse
+database or,
+</para>
+
+<screen>
+./tpcc 1111 r 100 12 100
+</screen>
+
+	<para>
+to perform 100 sets of transactions on warehouse 12 in a 100 warehouse
+database.
+</para>
+	<para>
+The program reports a tpmC rate after performing each set of 10 new orders
+and the related support transactions. A statistic will be printed every
+10 sets of 10 new orders showing the time spent on each of the benchmark
+transactions done during the last run of 100 new orders, 100 payments
+10 deliveries, stock levels and order status queries.
+</para>
+	<para>
+The throughput will increase during the first minutes of the run to
+level off at the attained rate.
+</para>
+</sect1>
+
+<sect1 id="tpcctuningparams4users">
+<title>Tuning Parameters and Number of Users</title>
+<para>
+You may run several instances of tpcc, each representing one user. You
+will see CPU utilization improve as users are added since there are more
+possibilities of interleaving I/O and CPU.
+</para>
+	<para>
+The amount of RAM (number_of_buffers: in wi.cfg) is the single most
+important factor influencing throughput. Setting this to about half the system RAM is usually good. 
+One will remember that each buffer takes
+8.5K of actual RAM. One should be careful not to cause the server process
+to swap.
+</para>
+<para>
+Striping should be used if there are multiple independent disks, one stripe per physically independent volume.  Each stripe should have its own IO queue.   If there is a RAID, then striping is less beneficial.  Also one should have multiple handles per files, see FDSPerFile in the configuration file. 
+</para>
+</sect1>
+
+<sect1 id="omissionsexcp">
+<title>Omissions, Exceptions from the Definition</title>
+	<para>
+Running the benchmark by the book is a complex and costly process which
+requires hardware and software that is not commonly available.
+</para>
+	<para>
+To measure tpmC rates that are directly comparable with published figures
+the benchmark must comply with the scaling rule of a maximum of 12.5 tpmC
+per warehouse. Therefore to measure 1250 tpmC, one must have a database
+of 100 warehouses, approximately 10 GB.
+</para>
+	<para>
+Obtaining a good figure will require the maximum RAM configuration of
+the platform in question.
+</para>
+	<para>
+One will further remember the 180 day rule which states that the
+disk configuration quoted in the pricing section must be large enough
+to accommodate 180 8 hour days worth of new orders coming in at the
+reported rate.
+</para>
+	<para>
+The number of users will also be large, e.g. 1000 users for the 1200
+tpmC result, based on 10 terminals per warehouse.
+</para>
+	<para>
+Almost all published results have been obtained with a transaction
+monitor, typically Tuxedo.
+</para>
+	<para>
+Note that the driver in this kit initiates a new transaction as soon
+as the previous one is completed. The correct behavior is to generate
+transactions at a basically constant rate, load being increased by adding
+clients and a new warehouse every 10 clients.
+</para>
+<tip><title>See Also:</title>
+	<para>
+The complete benchmark specification is available
+at <ulink url="http://www.tpc.org/">the TPC Web Site</ulink>.
+</para>
+</tip>
+</sect1>
+
+<sect1 id="sampleconf">
+<title>Sample Configuration</title>
+	<para>
+This section describes how to set up disks and I/O for a sample run. 
+To begin with, the scaling rule is 12.5 tpmC per warehouse. This
+means that in order to measure 1000 tpmC you must have a 1000 / 12.5 =
+81 warehouses. These take about 100 MB apiece.
+</para>
+	<para>
+The benchmark's working set consists of the STOCK and CUSTOMER tables
+of each warehouse and of the ITEM table of the database. Other tables
+are accessed more or less sequentially, i.e. inserts to end or deletes
+from start. There is a particular distribution of hits for the STOCK
+and CUSTOMER rows of each warehouse, leading to a specific working set
+within each.
+</para>
+	<para>
+The 160 day rule requires a disk configuration sufficient for accumulating
+160 days worth of transactions at the reported rate. For practical
+reasons we will ignore this rule here. To just run the benchmark for
+the required 20 minutes we will need about twice the space of the initial
+data. Let's assume we have an initial database of 8 GB and have another
+16 GB for working space, a total of 24 GB. This is 6 4 GB disks or 12
+2 GB ones.
+</para>
+	<para>
+Let's now look at the relationship between CPU and disk usage. The New
+Order transaction, which mostly defines the benchmark's working set
+consists of an average of 10 updates to the STOCK table, which mostly
+cause disk reads, 10 reads of the ITEM table which is always in cache,
+10 ascending ORDER_LINE inserts, 1 ascending ORDERS insert and 1 CUSTOMER
+read plus a DISTRICT update and WAREHOUSE read.
+</para>
+	<para>
+If this happens entirely in RAM this takes about 10 milliseconds on a
+200 MHz Pentium Pro, 13 on an Ultra SPARC and so on. Which is roughly
+as long a one random disk seek takes.
+</para>
+	<para>
+Because the scaling rule limits RAM to cover only 10% to 20% of the
+working set, the STOCK updates will miss the cache most of the time.
+This with a transaction mix of New Orders only, we would need about
+8 disk seeks to be in progress concurrently in order to feed one CPU.
+The other transactions are either more local or repeat the New Order
+access profile. Thus we end up needing about 5 concurrent 10 msec disks
+for one Power PC 604 and almost double for a 200 MHz Pentium Pro.
+</para>
+	<para>
+For our 24 GB configuration we may as well divide it over as many stripes
+as we have disks. For 6 4 GB disks, we would have:
+</para>
+
+<screen>
+[Striping]
+Segment1 = 24G,  /disk1/tpcc-1-1.db q1, /disk2/tpcc-1-2.db q2,  /disk3/tpcc-1-3.db q3,  /disk4/tpcc-1-4.db q4,  /disk5/tpcc-1-5.db q5,  /disk6/tpcc-1-6.db q6
+</screen>
+
+	<para>
+Assuming we have file systems.  Note the IO queue names q1...q6, meaning that each stripe gets processed on a separate thread for IO.
+</para>
+<tip><title>See</title>
+<para>Disk Configuration for more on this.</para>
+</tip>
+	<para>Your Virtuoso may or may not support raw devices.  If it does, they
+are specified here.
+</para>
+	<para>
+For the other configuration parameters, we will have sufficient
+RAM configured for the DBMS, counting 8.5K of RAM for each buffer.  For
+512 MB of RAM, we would have about 25000 buffers. The maximum dirty
+parameter is more tricky.  A low number causes unnecessary writing and a
+high value causes the number of clean buffers at any time being too low,
+causing an imperfect match of the read working set.  The read-only set is
+only the ITEM table, about 20 MB.
+</para>
+<note><title>Note:</title>
+<para>Note that about half of the available RAM can efficiently be allocated to the database,
+allocating all RAM may result in swapping due to the OS's disk caching.
+In terms of kernel tuning, if one can decrease the OS cache, one may increase the RAM
+utilizable by the DBMS without the OS's disk cache getting in the way.
+</para></note>
+	<para>
+The Stock Level transaction reads lines written by recent New Order
+transactions, which are likely to be in RAM and still dirty. The reads
+and updates of CUSTOMER are random and generally speaking what is read
+is also likely to be or have been updated. We could start with a guess
+of 70% maximum dirty, i.e. a value of 70000 for 100000 buffers.
+</para>
+	<para>
+The checkpoint remap should be as large as possible and the unremap quota
+should be small. The benchmark does practically no sequential reads and
+therefore does not care about disk locality. No limit on remapping means
+that a checkpoint can be made in the time it takes to flush the disk
+cache. This is done in the background, so that the atomic checkpoint
+time is limited to the time it takes to write out those buffers that
+became dirty while the first sweep was in progress.
+</para>
+	<para>
+Thus we could have:
+</para>
+
+<screen>
+MaxCheckpointRemap = 2000000
+UnremapQuota = 3000
+</screen>
+</sect1>
+
+<sect1 id="otherfactors">
+<title>Other Factors</title>
+	<para>
+Benchmarks are run with a transaction monitor, usually Tuxedo.
+This has not been discussed here. Multiprocessor questions have not
+been addressed either. Virtuoso off the box should scale to about 4 CPU's
+on any appropriate multithreaded, multiprocessor OS. Past 4 CPU's the
+returns will diminish.
+</para>
+	<para>
+Operating systems have different caching policies which must be taken into
+account. If an OS does read ahead, that's OK. Generally OS intelligence
+is harmful and should be turned off. For example, AIX reacts to its
+disk write queue being full by turning off the writing process until it
+has flushed enough of its own file cache. This instead of blocking the
+writing thread and leaving the rest of the process to run.
+</para>
+	<para>
+We may release more information on OS tuning in the future.
+</para>
+</sect1>
+
+<!-- ################################################ -->
+
+<sect1  id="tpccprocs">
+<title>TPC C Procedures</title>
+
+<sect2 id="intro">
+<title>Introduction</title>
+
+<para>
+This document goes through the TPC C sample and explains how and why
+the transaction procedures are written as they are.
+</para>
+	<para>
+This describes the five transactions in the benchmark and points out
+how the procedures are written and which features of the language are
+used where. See the sample/tpcc.sql and sample/tpcctrx.c files along
+with this commentary.
+</para>
+<tip><title>See Also:</title>
+	<para>
+For a formal benchmark definition, see the documentation
+at <ulink url="http://www.tpc.org/">the TPC Web Site</ulink>.
+</para>
+</tip>
+</sect2>
+
+<sect2 id="neworder">
+<title>New Order</title>
+
+<itemizedlist mark="bullet">
+<listitem><para>Passing parameters</para></listitem>
+<listitem><para>Using positioned operations</para></listitem>
+<listitem><para>Using read for update</para></listitem>
+<listitem><para>Order of locking</para></listitem>
+<listitem><para>Application-defined SQL STATE</para></listitem>
+</itemizedlist>
+
+<para>
+The new_order procedure implements this transaction. It accepts the
+warehouse, district and customer data and the item, quantity and supply
+warehouse id for up to ten order lines.
+</para>
+	<para>
+The transaction profile requires this to update the stock level for each
+order line, add a row to ORDERS and NEW_ORDER and a row to ORDER_LINE
+for each order line. This also reads the customer, updates the district
+and reads the warehouse. This all needs to take place as one transaction
+with a high integrity requirement.
+</para>
+	<para>
+The procedure begins by updating the stock levels. This is the part
+with lowest locality and thus most likely to cause IO and least likely
+to cause lock contention. Most of the transaction's real time will be
+spent inside ol_stock. If the order lines are sorted in order of item id,
+new order transactions will never deadlock on the stock level part. This
+will maximize the number of concurrent new orders on one warehouse.
+</para>
+
+<programlisting>
+	CREATE PROCEDURE OL_STOCK (
+		INOUT	OL_I_ID		INTEGER,
+		IN	OL_SUPPLY_W_ID	INTEGER,
+		IN	OL_QTY		INTEGER,
+		OUT	AMOUNT		FLOAT)
+	{
+	    IF (OL_I_ID = -1) RETURN;
+
+	    DECLARE S_DATA,
+		S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05,
+		S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10 VARCHAR;
+	    DECLARE S_QUANTITY INTEGER;
+	    DECLARE I_PRICE FLOAT;
+
+	    WHENEVER NOT FOUND GOTO NO_ITEM;
+
+	    SELECT I_PRICE INTO I_PRICE FROM ITEM WHERE I_ID = OL_I_ID;
+
+	    DECLARE S_CUR CURSOR FOR
+		SELECT
+		    S_QUANTITY, S_DATA,
+		    S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05,
+		    S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10
+		FROM
+		    STOCK
+		WHERE
+		      S_I_ID = OL_I_ID
+		  AND S_W_ID = OL_SUPPLY_W_ID;
+
+	    WHENEVER NOT FOUND GOTO NO_STOCK;
+
+	    OPEN S_CUR (EXCLUSIVE);
+
+	    FETCH S_CUR INTO
+		S_QUANTITY, S_DATA,
+		S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05,
+		S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10;
+
+	    IF (S_QUANTITY &lt; OL_QTY)
+		S_QUANTITY := S_QUANTITY - OL_QTY + 91;
+	    ELSE
+		S_QUANTITY := S_QUANTITY - OL_QTY;
+
+	    UPDATE STOCK SET S_QUANTITY = S_QUANTITY WHERE CURRENT OF S_CUR;
+
+	    AMOUNT := OL_QTY * I_PRICE;
+
+	    RETURN;
+
+    NO_STOCK: SIGNAL ('NOSTK', 'NO STOCK ROW FOUND.');
+    NO_ITEM:  SIGNAL ('NOITM', 'NO ITEM ROW FOUND.');
+    }
+</programlisting>
+
+<para>
+This procedure first reads the I_PRICE from ITEM and update the S_QUANTITY
+in STOCK. The price of the order line is returned as output parameter
+amount.
+</para>
+
+<note>
+<title>Note</title>
+
+<itemizedlist>
+<listitem><para>
+Use inout parameters if possible. The inout (call by reference) is the
+fastest way of passing parameters.</para></listitem>
+<listitem><para>
+When reading a table with the intention of updating the row afterwards,
+use a cursor and positioned update.</para></listitem>
+<listitem><para>
+Use the EXCLUSIVE option in opening the cursor. This causes the read to
+put an exclusive lock on the row, which eliminates deadlocks caused by
+a shared read followed by an update. This deadlocks if there are more
+than one readers at the time of the update.</para></listitem>
+<listitem><para>
+Use `whenever not found' and signal to signal exceptions (no item or
+stock line).</para></listitem>
+</itemizedlist>
+</note>
+
+	<para>
+When the stock level for all order lines has been updated this reads
+the customer data.
+</para>
+	<para>
+The bottleneck in terms of serialization is the read-update of the
+district, where the order gets an O_ID. This must be done as late as
+possible but has to precede the inserts, since these will use the O_ID.
+Note the exclusive cursor again.
+</para>
+	<para>
+To finish the transaction new_order insert ORDERS, NOW_ORDER and
+ORDER_LINE. These are basically in ascending order for each district
+and have high locality. Note the call by reference (inout) for ol_insert.
+</para>
+</sect2>
+
+<sect2 id="payment">
+<title>Payment</title>
+<para>
+The payment transaction reads and updates the customer. The customer may
+either be identified by its last name or its C_ID. In the case the last
+name this chooses the middle row of the set of customers sharing the same
+last name, ordered by first name. Note the select count and the cursor.
+</para>
+	<para>
+The transaction profile does not offer possibilities of optimization.
+</para>
+</sect2>
+
+<sect2 id="delivery">
+<title>Delivery</title>
+<para>
+The delivery transaction reads and deletes a line from NEW_ORDER and
+updated the corresponding ORDERS and ORDER_LINE rows. The rules allow
+committing the transaction after processing each order. The client
+calls this procedure ten times with a different d_id parameter once every
+ten new orders. It is better to have the 1 to 10 loop in the client in
+order to keep locks on for the least time possible.
+</para>
+	<para>
+We use a cursor to read NEW_ORDER. Note the open no_cur (exclusive,
+prefetch 1). The prefetch 1 means we only intend to get one row. This
+prevents the cursor from prefetching more rows, which would be useless
+here.
+</para>
+	<para>
+Otherwise the transaction does not leave room for optimization.
+</para>
+</sect2>
+
+<sect2 id="status">
+<title>Order Status</title>
+<para>
+This transaction picks the last order of a given customer. It uses a
+select in descending order to locate it.
+</para>
+	<para>
+This is a read only transaction. Note the use of SQL_CONCURRENCY in the
+client code for specifying historical read mode. This eliminates locking.
+</para>
+
+<note><title>Note</title>
+<para>The ORDER BY clause must list all key parts of the index to be
+used, all with either ASC or DESC ordering in order to specify that index.
+</para>
+</note>
+
+	<para>
+This transaction could be implemented in principle using the ORDERS
+primary key, O_W_ID, O_D_ID, O_ID. This would read in descending order
+until finding a row with a given C_IC. There being 3000 customers per
+district this could cause an average 1500 lines to check before finding
+the right one. Since the distribution of O_C_ID is not even the above is
+not entirely correct but close enough. The other possibility is having
+a separate index, O_W_ID, O_D_ID, O_C_ID, O_ID for this transaction. The
+trade-off being 1500 serial reads against 10 random insert (10 new order
+per one order status) we choose to have the extra index.
+</para>
+</sect2>
+
+<sect2 id="stocklevel">
+<title>Stock Level</title>
+	<para>
+This is a complex read-only transaction. This finds all distinct items
+which have been ordered within the last n orders from a district having
+a stock level lower than a given threshold. The SQL statement:
+</para>
+
+<programlisting>
+	SELECT
+	    COUNT (DISTINCT S_I_ID) INTO N_ITEMS
+	FROM
+	    ORDER_LINE, STOCK
+	WHERE
+	        OL_W_ID = W_ID
+	    AND OL_D_ID = D_ID
+	    AND OL_O_ID &lt; LAST_O
+	    AND OL_O_ID &gt;= LAST_O - 20
+	    AND S_W_ID = W_ID
+	    AND S_I_ID = OL_I_ID
+	    AND S_QUANTITY &lt; THRESHOLD;
+</programlisting>
+
+	<para>
+is the fastest way of getting this. Note that the ORDER_LINE is the
+driving table of join (leftmost in FROM). Also not the use of historical
+read in the client (SQL_CONCURRENCY option).
+</para>
+</sect2>
+</sect1>
+
+<sect1 id="ddlstmt">
+<title>DDL Statements</title>
+
+<programlisting>
+CREATE TABLE WAREHOUSE (
+    W_ID		INTEGER,
+    W_NAME		CHARACTER (10),
+    W_STREET_1		CHARACTER (20),
+    W_STREET_2		CHARACTER (20),
+    W_CITY		CHARACTER (20),
+    W_STATE		CHARACTER (2),
+    W_ZIP		CHARACTER (9),
+    W_TAX		NUMERIC,
+    W_YTD		NUMERIC,
+    PRIMARY KEY (W_ID)
+);
+
+CREATE TABLE DISTRICT (
+    D_ID		INTEGER,
+    D_W_ID		INTEGER,
+    D_NAME		CHARACTER (10),
+    D_STREET_1		CHARACTER (20),
+    D_STREET_2		CHARACTER (20),
+    D_CITY		CHARACTER (20),
+    D_STATE		CHARACTER (2),
+    D_ZIP		CHARACTER (9),
+    D_TAX		NUMERIC,
+    D_YTD		NUMERIC,
+    D_NEXT_O_ID		INTEGER,
+    PRIMARY KEY (D_W_ID, D_ID)
+);
+
+CREATE TABLE CUSTOMER (
+    C_ID		INTEGER,
+    C_D_ID		INTEGER,
+    C_W_ID		INTEGER,
+    C_FIRST		CHARACTER (16),
+    C_MIDDLE		CHARACTER (2),
+    C_LAST		VARCHAR,
+    C_STREET_1		CHARACTER (20),
+    C_STREET_2		CHARACTER (20),
+    C_CITY		CHARACTER (20),
+    C_STATE		CHARACTER (2),
+    C_ZIP		CHARACTER (9),
+    C_PHONE		CHARACTER (16),
+    C_SINCE		VARCHAR,
+    C_CREDIT		CHARACTER (2),
+    C_CREDIT_LIM	NUMERIC,
+    C_DISCOUNT		NUMERIC,
+    C_BALANCE		NUMERIC,
+    C_YTD_PAYMENT	NUMERIC,
+    C_CNT_PAYMENT	NUMERIC,
+    C_CNT_DELIVERY	NUMERIC,
+    C_DATA_1		CHARACTER (250),
+    C_DATA_2		CHARACTER (250),
+    PRIMARY KEY (C_W_ID, C_D_ID, C_ID)
+);
+
+CREATE INDEX C_BY_LAST ON CUSTOMER (C_W_ID, C_D_ID, C_LAST, C_FIRST);
+
+CREATE TABLE HISTORY (
+    H_C_ID		INTEGER,
+    H_C_D_ID		INTEGER,
+    H_C_W_ID		INTEGER,
+    H_D_ID		INTEGER,
+    H_W_ID		INTEGER,
+    H_DATE		DATE,
+    H_AMOUNT		NUMERIC,
+    H_DATA		CHARACTER (24),
+    PRIMARY KEY (H_DATE, H_C_ID)
+);
+
+CREATE TABLE NEW_ORDER (
+    NO_O_ID		INTEGER,
+    NO_D_ID	 	INTEGER,
+    NO_W_ID		INTEGER,
+    PRIMARY KEY (NO_W_ID, NO_D_ID, NO_O_ID)
+);
+
+CREATE TABLE ORDERS (
+    O_ID		INTEGER,
+    O_D_ID		INTEGER,
+    O_W_ID		INTEGER,
+    O_C_ID		INTEGER,
+    O_ENTRY_D		DATE,
+    O_CARRIER_ID	INTEGER,
+    O_OL_CNT		INTEGER,
+    O_ALL_LOCAL		NUMERIC,
+    PRIMARY KEY (O_W_ID, O_D_ID, O_ID)
+);
+
+CREATE INDEX O_BY_C_ID ON ORDERS (O_W_ID, O_D_ID, O_C_ID, O_ID)
+
+CREATE TABLE ORDER_LINE (
+    OL_O_ID		INTEGER,
+    OL_D_ID		INTEGER,
+    OL_W_ID		INTEGER,
+    OL_NUMBER		INTEGER,
+    OL_I_ID		INTEGER,
+    OL_SUPPLY_W_ID	INTEGER,
+    OL_DELIVERY_D	DATE,
+    OL_QUANTITY		NUMERIC,
+    OL_AMOUNT		NUMERIC,
+    OL_DIST_INFO	CHARACTER (24),
+    PRIMARY KEY (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER)
+);
+
+CREATE TABLE ITEM (
+    I_ID		INTEGER,
+    I_IM_ID		INTEGER,
+    I_NAME		CHARACTER (24),
+    I_PRICE		NUMERIC,
+    I_DATA		CHARACTER (50),
+    PRIMARY KEY (I_ID)
+);
+
+CREATE TABLE STOCK (
+    S_I_ID		INTEGER,
+    S_W_ID		INTEGER,
+    S_QUANTITY		NUMERIC,
+    S_DIST_01		CHARACTER (24),
+    S_DIST_02		CHARACTER (24),
+    S_DIST_03		CHARACTER (24),
+    S_DIST_04		CHARACTER (24),
+    S_DIST_05		CHARACTER (24),
+    S_DIST_06		CHARACTER (24),
+    S_DIST_07		CHARACTER (24),
+    S_DIST_08		CHARACTER (24),
+    S_DIST_09		CHARACTER (24),
+    S_DIST_10		CHARACTER (24),
+    S_YTD		NUMERIC,
+    S_CNT_ORDER		NUMERIC,
+    S_CNT_REMOTE	NUMERIC,
+    S_DATA		CHARACTER (50),
+    PRIMARY KEY (S_I_ID, S_W_ID)
+);
+</programlisting>
+</sect1>
+
+<sect1 id="storedprocs">
+<title>Stored Procedures</title>
+
+<programlisting>
+--
+--  tpcc.sql
+--
+--  Implementation of the TPC C Benchmark transactions as stored procedures.
+--
+--  These are for use with the tpcc test driver (tpcc) in the Virtuoso sample
+--  directory.  See TPCC.DOC in the virtuoso documentation bundle for comments
+--  and instructions.
+--
+--  (C)Copyright 1998 OpenLink Software.
+--  All Rights Reserved.
+--
+--  The copyright above and this notice must be preserved in all
+--  copies of this source code.  The copyright above does not
+--  evidence any actual or intended publication of this source code.
+--
+--  This is unpublished proprietary trade secret of OpenLink Software.
+--  This source code may not be copied, disclosed, distributed, demonstrated
+--  or licensed except as authorized by OpenLink Software.
+--
+
+
+--  slevel - The transaction procedure for the Stock Level transaction.
+--
+--  This is executed as an autocommitting history read transaction. The number
+--  of STOCK rows where quantity is below th threshold.  The rows are taken
+--  from the last 20 orders on a warehouse / district combination.
+
+CREATE PROCEDURE SLEVEL (
+    IN W_ID		INTEGER,
+    IN D_ID		INTEGER,
+    IN THRESHOLD	INTEGER)
+{
+    DECLARE LAST_O, N_ITEMS INTEGER;
+
+    SELECT D_NEXT_O_ID INTO LAST_O
+    FROM DISTRICT
+    WHERE
+	    D_W_ID = W_ID
+	AND D_ID = D_ID;
+
+
+    SELECT COUNT (DISTINCT S_I_ID)
+    INTO N_ITEMS
+    FROM ORDER_LINE, STOCK
+    WHERE
+	    OL_W_ID = W_ID
+	AND OL_D_ID = D_ID
+	AND OL_O_ID &lt; LAST_O
+	AND OL_O_ID &gt;= LAST_O - 20
+	AND S_W_ID = W_ID
+	AND S_I_ID = OL_I_ID AND S_QUANTITY &lt; THRESHOLD;
+
+    RESULT_NAMES (N_ITEMS);
+
+    RESULT (N_ITEMS);
+}
+
+--
+-- c_by_name, call_c_by_name
+-- Examples on retrieving CUSTOMER by last name.
+-- Functionality open coded in actual transaction procedures.
+--
+
+CREATE PROCEDURE C_BY_NAME (
+    IN  W_ID 		INTEGER,
+    IN  D_ID 		INTEGER,
+    IN  NAME 		VARCHAR,
+    OUT ID 		INTEGER)
+{
+    DECLARE N, C_COUNT INTEGER;
+
+    DECLARE C_CUR CURSOR FOR
+    SELECT C_ID
+    FROM CUSTOMER
+    WHERE
+	    C_W_ID = W_ID
+	AND C_D_ID = D_ID
+	AND C_LAST = NAME
+    ORDER BY C_W_ID, C_D_ID, C_LAST, C_FIRST;
+
+    SELECT COUNT (*) INTO C_COUNT
+    FROM CUSTOMER
+    WHERE
+	    C_W_ID = W_ID
+	AND C_D_ID = D_ID
+	AND C_LAST = NAME;
+
+    N := 0;
+    OPEN C_CUR;
+    WHENEVER NOT FOUND GOTO NOTFOUND;
+
+    WHILE (N &lt;= C_COUNT / 2) {
+	FETCH C_CUR INTO ID;
+	N := N + 1;
+    }
+    RETURN;
+
+NOTFOUND:
+    SIGNAL ('CNF', 'CUSTOMER NOT FOUND BY NAME');
+    RETURN;
+}
+
+
+CREATE PROCEDURE CALL_C_BY_NAME (
+    IN W_ID		INTEGER,
+    IN D_ID 		INTEGER,
+    IN C_LAST		VARCHAR)
+{
+    DECLARE C_ID INTEGER;
+
+    C_BY_NAME (W_ID, D_ID, C_LAST, C_ID);
+}
+
+--
+-- payment
+-- This procedure implements the Payment transaction.
+--
+
+CREATE PROCEDURE BC_C_DATA (
+    INOUT C_NEW		VARCHAR,
+    INOUT C_DATA 	VARCHAR)
+{
+    RETURN (
+	CONCATENATE (C_NEW, SUBSEQ (C_DATA, LENGTH (C_NEW), LENGTH (C_DATA))));
+}
+
+CREATE PROCEDURE PAYMENT (
+    IN _W_ID		INTEGER,
+    IN _C_W_ID		INTEGER,
+    IN H_AMOUNT		FLOAT,
+    IN _D_ID		INTEGER,
+    IN _C_D_ID		INTEGER,
+    IN _C_ID		INTEGER,
+    IN _C_LAST		VARCHAR)
+{
+    DECLARE
+	_C_DATA, _C_FIRST, _C_MIDDLE, _C_STREET_1,  _C_STREET_2, _C_CITY,
+	_C_STATE, _C_ZIP, _C_PHONE, _C_CREDIT, _C_CREDIT_LIM, _C_DISCOUNT,
+	_C_BALANCE, _C_SINCE, _C_DATA_1, _C_DATA_2 VARCHAR;
+
+    DECLARE
+	N, _W_YTD, _D_YTD, _C_CNT_PAYMENT INTEGER;
+
+    DECLARE
+	_D_STREET_1, _D_STREET_2, _D_CITY, _D_STATE, _D_ZIP, _D_NAME VARCHAR;
+
+    DECLARE
+	_W_STREET_1, _W_STREET_2, _W_CITY, _W_STATE, _W_ZIP, _W_NAME,
+	SCREEN_DATA VARCHAR;
+
+    IF (_C_ID = 0) {
+	DECLARE NAMECNT INTEGER;
+	WHENEVER NOT FOUND GOTO NO_CUSTOMER;
+
+	SELECT COUNT(C_ID) INTO NAMECNT
+	FROM CUSTOMER
+	WHERE
+		C_LAST = _C_LAST
+	    AND C_D_ID = _D_ID
+	    AND C_W_ID = _W_ID;
+
+	DECLARE C_BYNAME CURSOR FOR
+	SELECT C_ID
+	FROM CUSTOMER
+	WHERE
+		C_W_ID = _C_W_ID
+	    AND C_D_ID = _C_D_ID
+	    AND C_LAST = _C_LAST
+	ORDER BY
+	    C_W_ID, C_D_ID, C_LAST, C_FIRST;
+
+	OPEN C_BYNAME (EXCLUSIVE);
+
+	N := 0;
+	WHILE (N &lt;= NAMECNT / 2) {
+	    FETCH C_BYNAME   INTO _C_ID;
+	    N := N + 1;
+	}
+
+	CLOSE C_BYNAME;
+    }
+
+    DECLARE C_CR CURSOR FOR
+    SELECT
+	C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2, C_CITY,
+	C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, C_DISCOUNT,
+	C_BALANCE, C_SINCE, C_DATA_1, C_DATA_2, C_CNT_PAYMENT
+    FROM
+	CUSTOMER
+    WHERE
+	    C_W_ID = _C_W_ID
+	AND C_D_ID = _C_D_ID
+	AND C_ID = _C_ID;
+
+    OPEN C_CR (EXCLUSIVE);
+
+    FETCH C_CR INTO
+	_C_FIRST, _C_MIDDLE, _C_LAST,
+	_C_STREET_1, _C_STREET_2, _C_CITY, _C_STATE, _C_ZIP,
+	_C_PHONE, _C_CREDIT, _C_CREDIT_LIM,
+	_C_DISCOUNT, _C_BALANCE, _C_SINCE, _C_DATA_1, _C_DATA_2,
+	_C_CNT_PAYMENT;
+
+    _C_BALANCE := _C_BALANCE + H_AMOUNT;
+
+    IF (_C_CREDIT = 'BC') {
+	UPDATE CUSTOMER
+	SET C_BALANCE = _C_BALANCE,
+	    C_DATA_1 = BC_C_DATA (
+		SPRINTF ('%5d%5d%5d%5d%5d%9f',
+		    _C_ID, _C_D_ID, _C_W_ID, _D_ID, _W_ID, H_AMOUNT),
+		_C_DATA_1),
+	    C_CNT_PAYMENT = _C_CNT_PAYMENT + 1
+	WHERE CURRENT OF C_CR;
+	SCREEN_DATA := SUBSEQ (_C_DATA_1, 1, 200);
+    } ELSE {
+	UPDATE CUSTOMER
+	SET C_BALANCE = _C_BALANCE, C_CNT_PAYMENT = _C_CNT_PAYMENT + 1
+	WHERE CURRENT OF C_CR;
+	SCREEN_DATA := ' ';
+    }
+
+    DECLARE D_CUR CURSOR FOR
+    SELECT D_STREET_1, D_STREET_2, D_CITY, D_STATE, D_ZIP, D_NAME, D_YTD
+    FROM DISTRICT
+    WHERE
+	    D_W_ID = _W_ID
+	AND D_ID = _D_ID;
+
+    OPEN D_CUR (EXCLUSIVE);
+
+    FETCH D_CUR INTO
+	_D_STREET_1,  _D_STREET_2, _D_CITY, _D_STATE, _D_ZIP,  _D_NAME, _D_YTD;
+
+    UPDATE DISTRICT SET D_YTD = _D_YTD + H_AMOUNT WHERE CURRENT OF D_CUR;
+
+    CLOSE D_CUR;
+
+    DECLARE W_CUR CURSOR FOR
+    SELECT  W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP, W_NAME, W_YTD
+    FROM WAREHOUSE
+    WHERE W_ID = _W_ID;
+
+    OPEN W_CUR (EXCLUSIVE);
+    FETCH  W_CUR INTO
+	_W_STREET_1, _W_STREET_2, _W_CITY, _W_STATE, _W_ZIP, _W_NAME, _W_YTD;
+
+    UPDATE WAREHOUSE SET W_YTD = _W_YTD + H_AMOUNT;
+
+    DECLARE H_DATA VARCHAR;
+    H_DATA := _W_NAME;
+
+    INSERT INTO HISTORY
+	(H_C_D_ID, H_C_W_ID, H_C_ID, H_D_ID, H_W_ID, H_DATE, H_AMOUNT, H_DATA)
+    VALUES
+	(_C_D_ID, _C_W_ID, _C_ID, _D_ID, _W_ID, NOW (), H_AMOUNT, H_DATA);
+
+    RESULT (
+	_C_ID, _C_LAST, NOW (), _W_STREET_1, _W_STREET_2, _W_CITY, _W_STATE,
+	_W_ZIP, _D_STREET_1, _D_STREET_2, _D_CITY, _D_STATE, _D_ZIP,
+	_C_FIRST, _C_MIDDLE, _C_STREET_1, _C_STREET_2, _C_CITY, _C_STATE,
+	_C_ZIP, _C_PHONE, _C_SINCE, _C_CREDIT, _C_CREDIT_LIM, _C_DISCOUNT,
+	_C_BALANCE, SCREEN_DATA);
+
+    RETURN;
+
+NO_CUSTOMER:
+    SIGNAL ('NOCUS', 'NO CUSTOMER IN PAYMENT.');
+}
+
+-- ol_stock - Part of the New Order transaction - Set the stock level for
+-- an order line.  Compute the price and return it in amount.
+--
+-- Note - Open the cursor on STOCK as exclusive to avoid deadlocks.
+-- Use positioned update on STOCK for speed.
+--
+-- Fetch the s_dist_01 - 10 columns from STOCK even though they are not used.
+-- The test specification requires this. The operation is measurably faster if these
+-- are omitted.-- The ORDER LINE is inserted later for better lock concurrency.
+
+
+CREATE PROCEDURE OL_STOCK (
+    IN    _W_ID			INTEGER,
+    IN    D_ID			INTEGER,
+    INOUT _OL_I_ID		INTEGER,
+    IN    _OL_SUPPLY_W_ID	INTEGER,
+    IN    QTY			INTEGER,
+    OUT   AMOUNT		FLOAT,
+    INOUT S_DIST_01		VARCHAR,
+    INOUT S_DIST_02		VARCHAR,
+    INOUT S_DIST_03		VARCHAR,
+    INOUT S_DIST_04		VARCHAR,
+    INOUT S_DIST_05		VARCHAR,
+    INOUT S_DIST_06		VARCHAR,
+    INOUT S_DIST_07		VARCHAR,
+    INOUT S_DIST_08		VARCHAR,
+    INOUT S_DIST_09		VARCHAR,
+    INOUT S_DIST_10		VARCHAR,
+    INOUT DIST_INFO		VARCHAR)
+{
+    IF (_OL_I_ID = 0) RETURN;
+
+    DECLARE _S_DATA VARCHAR;
+    DECLARE _S_QUANTITY, _S_CNT_ORDER, _S_CNT_REMOTE INTEGER;
+
+    WHENEVER NOT FOUND GOTO NO_ITEM;
+
+    DECLARE _I_NAME VARCHAR;
+
+    SELECT
+	I_PRICE, I_NAME
+    INTO
+	AMOUNT, _I_NAME
+    FROM
+	ITEM
+    WHERE I_ID = _OL_I_ID;
+
+    DECLARE S_CUR CURSOR FOR
+    SELECT
+	S_QUANTITY, S_DATA, S_CNT_ORDER, S_CNT_REMOTE,
+	S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05,
+	S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10
+    FROM STOCK
+    WHERE
+	    S_I_ID = _OL_I_ID
+	AND S_W_ID = _OL_SUPPLY_W_ID;
+
+    WHENEVER NOT FOUND GOTO NO_STOCK;
+
+    OPEN S_CUR (EXCLUSIVE);
+
+    FETCH S_CUR INTO
+	_S_QUANTITY, _S_DATA, _S_CNT_ORDER, _S_CNT_REMOTE,
+	S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05,
+	S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10;
+
+    IF (_S_QUANTITY &lt; QTY)
+	_S_QUANTITY := _S_QUANTITY - QTY + 91;
+    ELSE
+	_S_QUANTITY := _S_QUANTITY - QTY;
+
+    IF (_W_ID &lt;&gt; _OL_SUPPLY_W_ID)
+	_S_CNT_REMOTE := _S_CNT_REMOTE + 1;
+
+    UPDATE STOCK
+    SET
+	S_QUANTITY = _S_QUANTITY,
+	S_CNT_ORDER = _S_CNT_ORDER + 1,
+	S_CNT_REMOTE = _S_CNT_REMOTE
+    WHERE CURRENT OF S_CUR;
+
+    IF (D_ID = 1)       DIST_INFO := S_DIST_01;
+    ELSE IF (D_ID = 2)  DIST_INFO := S_DIST_02;
+    ELSE IF (D_ID = 3)  DIST_INFO := S_DIST_03;
+    ELSE IF (D_ID = 4)  DIST_INFO := S_DIST_04;
+    ELSE IF (D_ID = 5)  DIST_INFO := S_DIST_05;
+    ELSE IF (D_ID = 6)  DIST_INFO := S_DIST_06;
+    ELSE IF (D_ID = 7)  DIST_INFO := S_DIST_07;
+    ELSE IF (D_ID = 8)  DIST_INFO := S_DIST_08;
+    ELSE IF (D_ID = 9)  DIST_INFO := S_DIST_09;
+    ELSE IF (D_ID = 10) DIST_INFO := S_DIST_10;
+
+    RESULT (_I_NAME, _S_QUANTITY, 'G', AMOUNT, AMOUNT * QTY);
+
+    AMOUNT := QTY * AMOUNT;
+
+    RETURN;
+
+NO_STOCK:
+    SIGNAL ('NOSTK', 'NO STOCK ROW FOUND.');
+NO_ITEM:
+    SIGNAL ('NOITM', 'NO ITEM ROW FOUND.');
+}
+
+--
+-- ol_insert - Pasrt of New Order transaction. Insert an ORDER LINE.
+--
+-- Note use of inout parameters even though they are not modified here.
+-- This saves copying the values.
+
+CREATE PROCEDURE OL_INSERT (
+    INOUT W_ID			INTEGER,
+    INOUT D_ID			INTEGER,
+    INOUT O_ID			INTEGER,
+    IN    OL_NUMBER		INTEGER,
+    INOUT OL_I_ID		INTEGER,
+    INOUT OL_QTY		INTEGER,
+    INOUT OL_AMOUNT		FLOAT,
+    INOUT OL_SUPPLY_W_ID	INTEGER,
+    INOUT OL_DIST_INFO		VARCHAR,
+    INOUT TAX_AND_DISCOUNT	FLOAT)
+{
+    IF (OL_I_ID = -1) RETURN;
+
+    OL_AMOUNT := OL_AMOUNT * TAX_AND_DISCOUNT;
+
+    INSERT INTO ORDER_LINE (
+	OL_O_ID, OL_D_ID, OL_W_ID, OL_NUMBER, OL_I_ID, OL_SUPPLY_W_ID,
+	OL_QUANTITY, OL_AMOUNT, OL_DIST_INFO)
+    VALUES (
+	O_ID, D_ID, W_ID, OL_NUMBER, OL_I_ID, OL_SUPPLY_W_ID,
+	OL_QTY, OL_AMOUNT, OL_DIST_INFO);
+}
+
+--
+-- cust_info - part of New Order transaction. Return customer info.
+--
+--
+
+CREATE PROCEDURE CUST_INFO (
+    IN    W_ID INTEGER,
+    IN    D_ID INTEGER,
+    INOUT _C_ID INTEGER,
+    INOUT _C_LAST VARCHAR,
+    OUT    _C_DISCOUNT FLOAT,
+    OUT    _C_CREDIT VARCHAR)
+{
+    WHENEVER NOT FOUND GOTO ERR;
+
+    SELECT
+	C_LAST, C_DISCOUNT, C_CREDIT INTO _C_LAST, _C_DISCOUNT, _C_CREDIT
+    FROM
+	CUSTOMER
+    WHERE
+	    C_W_ID = W_ID
+	AND C_D_ID = D_ID
+	AND C_ID = _C_ID;
+    RETURN;
+ERR:
+    SIGNAL ('NOCUS', 'NO CUSTOMER');
+}
+
+
+-- new_order - Top level procedure of New Order transaction.
+-- Take a fixed 10 order lines as individually named parameters
+-- to stay easily portable.
+
+
+CREATE PROCEDURE NEW_ORDER (
+    IN _W_ID 		INTEGER,
+    IN _D_ID 		INTEGER,
+    IN _C_ID 		INTEGER,
+    IN O_OL_CNT 	INTEGER,
+    IN O_ALL_LOCAL 	INTEGER,
+    IN I_ID_1 		INTEGER,
+    IN S_W_ID_1 	INTEGER,
+    IN QTY_1 		INTEGER,
+    IN I_ID_2 		INTEGER,
+    IN S_W_ID_2 	INTEGER,
+    IN QTY_2 		INTEGER,
+    IN I_ID_3 		INTEGER,
+    IN S_W_ID_3 	INTEGER,
+    IN QTY_3 		INTEGER,
+    IN I_ID_4 		INTEGER,
+    IN S_W_ID_4 	INTEGER,
+    IN QTY_4 		INTEGER,
+    IN I_ID_5 		INTEGER,
+    IN S_W_ID_5 	INTEGER,
+    IN QTY_5 		INTEGER,
+    IN I_ID_6 		INTEGER,
+    IN S_W_ID_6 	INTEGER,
+    IN QTY_6 		INTEGER,
+    IN I_ID_7 		INTEGER,
+    IN S_W_ID_7 	INTEGER,
+    IN QTY_7 		INTEGER,
+    IN I_ID_8 		INTEGER,
+    IN S_W_ID_8 	INTEGER,
+    IN QTY_8 		INTEGER,
+    IN I_ID_9 		INTEGER,
+    IN S_W_ID_9 	INTEGER,
+    IN QTY_9 		INTEGER,
+    IN I_ID_10 		INTEGER,
+    IN S_W_ID_10 	INTEGER,
+    IN QTY_10 		INTEGER)
+{
+    DECLARE
+	OL_A_1, OL_A_2, OL_A_3, OL_A_4, OL_A_5,
+	OL_A_6, OL_A_7, OL_A_8, OL_A_9, OL_A_10 INTEGER;
+    DECLARE _C_DISCOUNT, _D_TAX, _W_TAX, TAX_AND_DISCOUNT FLOAT;
+    DECLARE DATETIME DATE;
+    DECLARE  _C_LAST, _C_CREDIT VARCHAR;
+    DECLARE _O_ID INTEGER;
+
+    DECLARE
+	I_NAME, S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05,
+	S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10 VARCHAR;
+    DECLARE
+	DISTI_1, DISTI_2, DISTI_3, DISTI_4, DISTI_5,
+	DISTI_6, DISTI_7, DISTI_8, DISTI_9, DISTI_10 VARCHAR;
+
+    DATETIME := NOW ();
+
+    -- DECLARE RESULT ROW FROM OL_STOCK. OPTIONAL.;
+    RESULT_NAMES (I_NAME, QTY_1, DISTI_1, OL_A_1, OL_A_2);
+
+    OL_STOCK (
+	_W_ID, _D_ID, I_ID_1, S_W_ID_1, QTY_1, OL_A_1, S_DIST_01, S_DIST_02,
+	S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08,
+	S_DIST_09, S_DIST_10, DISTI_1);
+    OL_STOCK (
+	_W_ID, _D_ID, I_ID_2, S_W_ID_2, QTY_2, OL_A_2, S_DIST_01, S_DIST_02,
+	S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08,
+	S_DIST_09, S_DIST_10, DISTI_2);
+    OL_STOCK (
+	_W_ID, _D_ID, I_ID_3, S_W_ID_3, QTY_3, OL_A_3, S_DIST_01, S_DIST_02,
+	S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08,
+	S_DIST_09, S_DIST_10, DISTI_3);
+    OL_STOCK (
+	_W_ID, _D_ID, I_ID_4, S_W_ID_4, QTY_4, OL_A_4, S_DIST_01, S_DIST_02,
+	S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08,
+	S_DIST_09, S_DIST_10, DISTI_4);
+    OL_STOCK (
+	_W_ID, _D_ID, I_ID_5, S_W_ID_5, QTY_5, OL_A_5, S_DIST_01, S_DIST_02,
+	S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08,
+	S_DIST_09, S_DIST_10, DISTI_5);
+    OL_STOCK (
+	_W_ID, _D_ID, I_ID_6, S_W_ID_6, QTY_6, OL_A_6, S_DIST_01, S_DIST_02,
+	S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08,
+	S_DIST_09, S_DIST_10, DISTI_6);
+    OL_STOCK (
+	_W_ID, _D_ID, I_ID_7, S_W_ID_7, QTY_7, OL_A_7, S_DIST_01, S_DIST_02,
+	S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08,
+	S_DIST_09, S_DIST_10, DISTI_7);
+    OL_STOCK (
+	_W_ID, _D_ID, I_ID_8, S_W_ID_8, QTY_8, OL_A_8, S_DIST_01, S_DIST_02,
+	S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08,
+	S_DIST_09, S_DIST_10, DISTI_8);
+    OL_STOCK (
+	_W_ID, _D_ID, I_ID_9, S_W_ID_9, QTY_8, OL_A_9, S_DIST_01, S_DIST_02,
+	S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08,
+	S_DIST_09, S_DIST_10, DISTI_9);
+    OL_STOCK (
+	_W_ID, _D_ID, I_ID_10, S_W_ID_10, QTY_10, OL_A_10, S_DIST_01,
+	S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07,
+	S_DIST_08, S_DIST_09, S_DIST_10, DISTI_10);
+
+    CUST_INFO (_W_ID, _D_ID, _C_ID, _C_LAST, _C_DISCOUNT, _C_CREDIT);
+
+    DECLARE  D_CUR CURSOR FOR
+    SELECT
+	D_TAX, D_NEXT_O_ID
+    FROM
+	DISTRICT
+    WHERE
+	    D_W_ID = _W_ID
+	AND D_ID = _D_ID;
+
+    WHENEVER NOT FOUND GOTO NOWARE;
+
+    OPEN D_CUR (EXCLUSIVE);
+    FETCH D_CUR INTO _D_TAX, _O_ID;
+    UPDATE DISTRICT SET D_NEXT_O_ID = _O_ID + 1 WHERE CURRENT OF D_CUR;
+    CLOSE D_CUR;
+
+    INSERT INTO ORDERS
+	(O_ID, O_D_ID, O_W_ID, O_C_ID, O_ENTRY_D, O_OL_CNT, O_ALL_LOCAL)
+    VALUES (_O_ID, _D_ID, _W_ID, _C_ID, DATETIME, O_OL_CNT, O_ALL_LOCAL);
+
+    INSERT INTO NEW_ORDER
+	(NO_O_ID, NO_D_ID, NO_W_ID)
+    VALUES (_O_ID, _D_ID, _W_ID);
+
+    SELECT W_TAX INTO _W_TAX FROM WAREHOUSE WHERE W_ID = _W_ID;
+
+    TAX_AND_DISCOUNT := (1 + _D_TAX + _W_TAX) * (1 - _C_DISCOUNT);
+
+    OL_INSERT (
+	_W_ID, _D_ID, _O_ID, 1, I_ID_1, QTY_1, OL_A_1,  S_W_ID_1, DISTI_1,
+	TAX_AND_DISCOUNT);
+    OL_INSERT (
+	_W_ID, _D_ID, _O_ID, 2, I_ID_2, QTY_2, OL_A_2,  S_W_ID_2, DISTI_2,
+	TAX_AND_DISCOUNT);
+    OL_INSERT (
+	_W_ID, _D_ID, _O_ID, 3, I_ID_3, QTY_3, OL_A_3,  S_W_ID_3, DISTI_3,
+	TAX_AND_DISCOUNT);
+    OL_INSERT (
+	_W_ID, _D_ID, _O_ID, 4, I_ID_4, QTY_4, OL_A_4,  S_W_ID_4, DISTI_4,
+	TAX_AND_DISCOUNT);
+    OL_INSERT (
+	_W_ID, _D_ID, _O_ID, 5, I_ID_5, QTY_5, OL_A_5,  S_W_ID_5, DISTI_5,
+	TAX_AND_DISCOUNT);
+    OL_INSERT (
+	_W_ID, _D_ID, _O_ID, 6, I_ID_6, QTY_6, OL_A_6,  S_W_ID_6, DISTI_6,
+	TAX_AND_DISCOUNT);
+    OL_INSERT (
+	_W_ID, _D_ID, _O_ID, 7, I_ID_7, QTY_7, OL_A_7,  S_W_ID_7, DISTI_7,
+	TAX_AND_DISCOUNT);
+    OL_INSERT (
+	_W_ID, _D_ID, _O_ID, 8, I_ID_6, QTY_8, OL_A_8,  S_W_ID_8, DISTI_8,
+	TAX_AND_DISCOUNT);
+    OL_INSERT (
+	_W_ID, _D_ID, _O_ID, 9, I_ID_9, QTY_9, OL_A_9,  S_W_ID_9, DISTI_9,
+	TAX_AND_DISCOUNT);
+    OL_INSERT (
+	_W_ID, _D_ID, _O_ID, 10, I_ID_10, QTY_10, OL_A_10,  S_W_ID_10, DISTI_10,
+	TAX_AND_DISCOUNT);
+
+    END_RESULT ();
+    RESULT (_W_TAX, _D_TAX, _O_ID, _C_LAST, _C_DISCOUNT, _C_CREDIT);
+    RETURN;
+
+NOWARE:
+    SIGNAL ('NOWRE', 'WAREHOUSE OR DISTRICTNOT FOUND.');
+}
+
+
+-- delivery_1 - Top level procedure for the Delivery transaction
+--
+-- This is called 10 times by the client in each delivery transaction.
+-- The rules allow Delivery to be implemented as up to 10 separately committed
+-- transactions. This is done to minimize lock duration.
+
+CREATE PROCEDURE DELIVERY_1 (
+    IN W_ID		INTEGER,
+    IN CARRIER_ID 	INTEGER,
+    IN D_ID 		INTEGER)
+{
+    DECLARE NO_CUR CURSOR FOR
+    SELECT
+	NO_O_ID
+    FROM
+	NEW_ORDER
+    WHERE
+	    NO_W_ID = W_ID
+	AND NO_D_ID = D_ID;
+
+    DECLARE DATETIME DATE;
+    DECLARE _O_ID, _C_ID INTEGER;
+    DECLARE OL_TOTAL FLOAT;
+    DATETIME := NOW ();
+
+    OPEN NO_CUR (EXCLUSIVE, PREFETCH 1);
+    FETCH NO_CUR INTO _O_ID;
+    DELETE FROM NEW_ORDER WHERE CURRENT OF NO_CUR;
+    CLOSE NO_CUR;
+
+    DECLARE O_CUR CURSOR FOR
+    SELECT
+	O_C_ID
+    FROM
+	ORDERS
+    WHERE
+	    O_W_ID = W_ID
+	AND O_D_ID = D_ID
+    AND O_ID = _O_ID;
+
+    OPEN O_CUR (EXCLUSIVE);
+    FETCH O_CUR INTO _C_ID;
+    UPDATE ORDERS SET O_CARRIER_ID = CARRIER_ID WHERE CURRENT OF O_CUR;
+    CLOSE O_CUR;
+
+    DECLARE OL_CUR CURSOR FOR
+    SELECT
+	OL_AMOUNT
+    FROM
+	ORDER_LINE
+    WHERE
+	    OL_W_ID = W_ID
+	AND OL_D_ID = D_ID
+	AND OL_O_ID = _O_ID;
+
+    WHENEVER NOT FOUND GOTO LINES_DONE;
+    OL_TOTAL := 0.0;
+    OPEN OL_CUR (EXCLUSIVE);
+    WHILE (1) {
+	DECLARE TMP INTEGER;
+	FETCH OL_CUR INTO TMP;
+	OL_TOTAL := OL_TOTAL + TMP;
+	UPDATE ORDER_LINE SET OL_DELIVERY_D = DATETIME WHERE CURRENT OF OL_CUR;
+    }
+LINES_DONE:
+    UPDATE CUSTOMER
+    SET
+	C_BALANCE = C_BALANCE + OL_TOTAL,
+	C_CNT_DELIVERY = C_CNT_DELIVERY + 1
+    WHERE
+	    C_W_ID = W_ID
+	AND C_D_ID = D_ID
+	AND C_ID = _C_ID;
+
+    RETURN _O_ID;
+}
+
+
+
+-- ostat - Top level procedure for the Order Status transaction.
+--
+--
+
+CREATE PROCEDURE OSTAT (
+    IN _W_ID		INTEGER,
+    IN _D_ID		INTEGER,
+    IN _C_ID		INTEGER,
+    IN _C_LAST		VARCHAR)
+{
+    DECLARE _C_FIRST, _C_MIDDLE, _C_BALANCE VARCHAR;
+    DECLARE
+	_O_ID, _OL_I_ID, _OL_SUPPLY_W_ID, _OL_QUANTITY, _O_CARRIER_ID,
+	N INTEGER;
+    DECLARE _OL_AMOUNT FLOAT;
+    DECLARE _OL_DELIVERY_D, _O_ENTRY_D VARCHAR;
+
+    IF (_C_ID = 0) {
+	DECLARE NAMECNT INTEGER;
+	WHENEVER NOT FOUND GOTO NO_CUSTOMER;
+
+	SELECT COUNT (*)
+	INTO NAMECNT
+	FROM CUSTOMER
+	WHERE
+	    	C_LAST = _C_LAST
+	    AND C_D_ID = _D_ID
+	    AND C_W_ID = _W_ID;
+
+	DECLARE C_BYNAME CURSOR FOR
+	SELECT
+	    C_BALANCE, C_LAST, C_MIDDLE, C_ID
+	FROM CUSTOMER
+	WHERE
+		C_W_ID = _W_ID
+	    AND C_D_ID = _D_ID
+	    AND C_LAST = _C_LAST
+	ORDER BY
+	    C_W_ID, C_D_ID, C_LAST, C_FIRST;
+
+	OPEN C_BYNAME;
+
+	N := 0;
+	WHILE (N &lt;= NAMECNT / 2) {
+	    FETCH C_BYNAME INTO _C_BALANCE, _C_FIRST, _C_MIDDLE, _C_ID;
+	    N := N + 1;
+	}
+
+	CLOSE C_BYNAME;
+    }  ELSE {
+	SELECT
+	    C_BALANCE, C_FIRST, C_MIDDLE, C_LAST
+	INTO
+	    _C_BALANCE, _C_FIRST, _C_MIDDLE, _C_LAST
+	FROM
+	    CUSTOMER
+	WHERE
+		C_W_ID = _W_ID
+	    AND C_D_ID = _D_ID
+	    AND C_ID = _C_ID;
+    }
+
+    WHENEVER NOT FOUND GOTO NO_ORDER;
+    SELECT
+	O_ID, O_CARRIER_ID, O_ENTRY_D
+    INTO
+	_O_ID, _O_CARRIER_ID, _O_ENTRY_D
+    FROM
+	ORDERS
+    WHERE
+	    O_W_ID = _W_ID
+	AND O_D_ID = _D_ID
+	AND O_C_ID = _C_ID
+    ORDER BY
+	O_W_ID DESC, O_D_ID DESC, O_C_ID DESC, O_ID DESC;
+
+    DECLARE O_LINE CURSOR FOR
+    SELECT
+	OL_I_ID, OL_SUPPLY_W_ID, OL_QUANTITY, OL_AMOUNT, OL_DELIVERY_D
+    FROM
+	ORDER_LINE
+    WHERE
+	    OL_W_ID = _W_ID
+	AND OL_D_ID = _D_ID
+	AND OL_O_ID = _O_ID;
+
+    WHENEVER NOT FOUND GOTO LINES_DONE;
+
+    OPEN O_LINE;
+    RESULT_NAMES (
+	_OL_SUPPLY_W_ID, _OL_I_ID, _OL_QUANTITY, _OL_AMOUNT, _OL_DELIVERY_D);
+    WHILE (1 = 1) {
+	FETCH O_LINE INTO
+	    _OL_I_ID, _OL_SUPPLY_W_ID, _OL_QUANTITY, _OL_AMOUNT,
+	    _OL_DELIVERY_D;
+
+	RESULT (
+	    _OL_SUPPLY_W_ID, _OL_I_ID, _OL_QUANTITY, _OL_AMOUNT,
+	    _OL_DELIVERY_D);
+    }
+
+LINES_DONE:
+    END_RESULT ();
+
+    RESULT_NAMES  (
+	_C_ID, _C_LAST, _C_FIRST, _C_MIDDLE, _O_ENTRY_D, _O_CARRIER_ID,
+	_C_BALANCE, _O_ID);
+
+    RESULT (
+	_C_ID, _C_LAST, _C_FIRST, _C_MIDDLE, _O_ENTRY_D, _O_CARRIER_ID,
+	_C_BALANCE, _O_ID);
+
+    RETURN;
+
+NO_CUSTOMER:
+    SIGNAL ('NOCUS', 'NO CUSTOMER IN ORDER STATUS');
+
+NO_ORDER:
+    RETURN 0;
+}
+</programlisting>
+
+</sect1>
+</chapter>

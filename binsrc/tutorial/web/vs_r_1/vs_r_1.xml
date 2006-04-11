@@ -1,0 +1,146 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-R-1">
+  <refmeta>
+    <refentrytitle>Importing Web Content</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Importing Web Content</refname>
+    <refpurpose>Importing Web Content</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-R-1a">
+<title>Importing Web Content</title>
+Default traversal algorithm of the web robot.
+<orderedlist>
+  <listitem>Keep into the queue only the start link</listitem>
+  <listitem>Get the oldest entry from the queue (for the given target) and mark as 'pending'</listitem>
+  <listitem>Retrieve the link</listitem>
+  <listitem>Parse the page and extract the URLs</listitem>
+  <listitem>Apply the "Traverse and do not traverse" rules</listitem>
+  <listitem>Insert the new entries in the queue</listitem>
+  <listitem>Mark queue entry as 'retrieved'</listitem>
+  <listitem>Repeat from step 2, if there are more 'waiting' entries, otherwise finish</listitem>
+</orderedlist>
+
+Traverse and do not traverse links
+<orderedlist>
+  <listitem>Traverse - this is a semicolon separated string which contains the path masks
+    (the like predicate chars are applicable). Any link that matches any of these
+    masks will be added to the queue for processing, but only if it doesn't match the
+    do not traverse masks.</listitem>
+   
+  <listitem>Do not traverse - the format of the string is the same (semicolon separated),
+    but the masks mean the opposite. If any link matches the rule it will be skipped from processing.</listitem>
+</orderedlist>
+</refsect1>
+
+<refsect1 id="VS-R-1b">
+<title>Tables of the Web Robot</title>
+<programlisting>
+-- Target site definition
+create table WS.WS.VFS_SITE (
+    VS_DESCR    varchar,    -- human readable description
+    VS_HOST     varchar,    -- target host name
+    VS_URL      varchar,    -- start URL path
+    VS_INX      varchar (5),-- reserved
+    VS_OWN      integer,    -- local WebDAV owner of the retrieved content
+    VS_ROOT     varchar,    -- local WebDAV collection destination
+    VS_NEWER    datetime,   -- update only newer than (this date)
+    VS_DEL      varchar,    -- delete local resource if removal on target detected
+    VS_FOLLOW   varchar,    -- walk on this links
+    VS_NFOLLOW  varchar,    -- do not walk on this links
+    VS_SRC      varchar,    -- retrieve images
+    VS_OPTIONS  varchar,    -- if target wants authentication the uid/pwd are stored
+    VS_METHOD   varchar,    -- use WebDAV or traditional HTTP method
+    VS_OTHER    varchar,    -- walk on foreign links
+    primary key (VS_HOST, VS_ROOT));
+create index VS_HOST_ROOT on WS.WS.VFS_SITE (VS_HOST, VS_URL, VS_ROOT)
+;
+
+-- Queue table
+create table WS.WS.VFS_QUEUE (
+    VQ_HOST     varchar,    -- target host name
+    VQ_TS       datetime,    -- date and time of adding into the queue
+    VQ_URL      varchar,    -- target URL path
+    VQ_ROOT     varchar,    -- local WebDAV folder destination
+    VQ_STAT     varchar (15),    -- status
+    VQ_OTHER    varchar,    -- retrieved from other site
+    primary key (VQ_HOST, VQ_URL, VQ_ROOT));
+create index VQ_HOST_ROOT_STAT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_STAT);
+create index VQ_HOST_ROOT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT);
+create index VQ_HOST_TIME on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_TS);
+create index VQ_TS on VFS_QUEUE (VQ_TS)
+;
+
+
+-- Retrieved URLs table
+create table WS.WS.VFS_URL (
+    VU_HOST     varchar,    -- target host name
+    VU_URL      varchar,    -- retrieved URL path
+    VU_ROOT     varchar,    -- local WebDAV folder destination
+    VU_CHKSUM   varchar,    -- content checksum
+    VU_ETAG     varchar,    -- target's ETag
+    VU_CPTIME   datetime,   -- retrieval date and time
+    VU_OTHER    varchar,    -- retrieved from other site
+    primary key (VU_HOST, VU_URL, VU_ROOT));
+create index VU_HOST_ROOT on WS.WS.VFS_URL (VU_HOST, VU_ROOT)
+;
+</programlisting>
+</refsect1>
+
+<refsect1 id="VS-R-1c">
+<title>Hooks for Parametizing the Web Robot</title>
+<para>
+The custom queue hook can be used to extract next entry from the robot's queue and
+follow a custom algorithm. The prototype of the hook is:
+</para>
+<programlisting>
+create procedure
+DB.DBA.VFS_HOOK (in host varchar, in collection varchar, out url varchar, in data any)
+{
+  -- choose an entry from queue (may use the user-specific date passed as 'data' variable)
+  -- mark as 'pending'
+  -- set the 'url' from the chosen entry
+  -- return 1 on success or 0 if no more entries
+}
+;
+</programlisting>
+</refsect1>
+
+<refsect1 id="VS-R-1d">
+<title>Web Index Example</title>
+<itemizedlist mark="bullet">
+  <listitem>Example does a breadth first traversal of all reachable sites.</listitem>
+  <listitem>To actually get some links retrieved change all the occurences of www.foo.bar to a site of your choice.</listitem>
+  <listitem>The site to process are separately maintained in an 'interesting sites' list.</listitem>
+  <listitem>The example runs on multiple threads.</listitem>
+  <listitem>The interface can start n threads running the robot.</listitem>
+  <listitem>There is a web page showing the running status, e.g. number of pages fetched in the last minute.</listitem>
+  <listitem>A stop button will kill http threads running the web robot.</listitem>
+  <listitem>Important: The example requires a license to run, due to multiple web threads.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

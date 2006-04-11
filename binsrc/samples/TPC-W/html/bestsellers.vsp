@@ -1,0 +1,90 @@
+<?vsp
+    declare shopping_id numeric(20);
+    shopping_id:=atoi(get_keyword('Shopping_Id',params,'0'));
+    declare cid numeric(10);
+    cid:=atoi(get_keyword('C_ID',params,'0'));
+    declare subject_string varchar(60);
+    subject_string := get_keyword ('subject', params, '?');
+?>
+<HTML>
+  <HEAD><TITLE>Best Sellers Page - Subject: <?=subject_string?></TITLE></HEAD>
+  <BODY BGCOLOR="#ffffff">
+    <H1 ALIGN="center">TPC Web Commerce Benchmark (TPC-W)</H1>
+    <P ALIGN="center"><IMG ALIGN="bottom" BORDER="0" HEIGHT="67" SRC="images/tpc_logo.jpg" WIDTH="288"></P>
+    <P></P>
+    <H2 ALIGN="center">Best Sellers Page - Subject: <?=subject_string?></H2>
+    <TABLE ALIGN="CENTER" BORDER="0" WIDTH="660">
+      <TR ALIGN="CENTER" VALIGN="top">
+        <TD COLSPAN="5"><B><FONT COLOR="#ff0000" SIZE="+1">Click on one of our latest books to find out more !</FONT></B></TD>
+      </TR>
+      <TR ALIGN="CENTER" VALIGN="top">
+<?vsp
+  declare item numeric(10);
+  declare rel numeric(10);
+  item := rnd(get_num_items())+1;
+  select I_RELATED1 into rel from ITEM where I_ID=item;
+?>
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+  select I_RELATED2 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+  select I_RELATED3 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp	 
+  select I_RELATED4 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+  select I_RELATED5 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/rel?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+      </TR>
+    </TABLE>
+
+<TABLE BORDER="1" CELLPADDING="1" CELLSPACING="1" ALIGN="CENTER">
+<TR>
+<TD><FONT SIZE="+1">Author</FONT></TD>
+<TD><FONT SIZE="+1">Title</FONT></TD></TR>
+<?vsp
+    declare _i_id, _i_a_id1 numeric(10);
+    
+	for
+	  select top 50
+	    a.A_LNAME as _a_lname,a.A_FNAME as _a_fname,
+            items1._i_title1 as _i_title, items1._i_id1 as _i_id
+	  from
+	    (select i.I_ID as _i_id1, 
+                    i.I_TITLE as _i_title1, i.I_A_ID as _i_a_id1
+	      from
+		(select top 3333 O_ID from ORDERS) ordrs1,
+		ORDER_LINE ol,
+		ITEM i
+		where ((ol.OL_O_ID = ordrs1.O_ID) and (ol.OL_I_ID = i.I_ID)
+		      and (i.I_SUBJECT = subject_string))
+		group by i.I_ID, i.I_TITLE, i.I_A_ID
+            ) items1,
+	    AUTHOR a
+	    where a.A_ID = items1._i_a_id1
+	do
+        {
+?>
+  <TR>
+         <TD><I><?=_a_fname?> <?=_a_lname?></I></TD>
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/_i_id?>&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><?=_i_title?></A></TD>
+  </TR>
+<?vsp ;}
+?>
+</TABLE>
+    <P ALIGN="center">
+      <A HREF="shoppingcart.vsp?ADD_FLAG=N&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>">
+         <IMG ALT="Shopping Cart" BORDER="0" HEIGHT="30" SRC="images/cart.jpg" WIDTH="120"></A>
+      <A HREF="searchrequest.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>">
+        <IMG ALT="Search" BORDER="0" HEIGHT="30" SRC="images/search.jpg" WIDTH="120"></A>
+      <A HREF="index.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>">
+         <IMG ALT="Home" BORDER="0" HEIGHT="30" SRC="images/home.jpg" WIDTH="120"></A>
+    </P>
+</BODY>
+</HTML>

@@ -1,0 +1,81 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<title>OpenLink BPEL Process Manager View
+  <?vsp
+  declare name varchar;
+  name := {?'role'} ;
+  if ({?'mode'} = 'show')
+    http_value(' variable message');
+  else if (name ='bpel' or name = 'wsdl')
+    http_value(concat('file for ',{?'role'}));
+  else
+    http_value(concat('wsdl file for the partnerlink ',{?'role'}));
+?>
+</title>
+<v:page name="view_page" decor="bpel_decor.vspx"  style="bpel_style_new.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:on-init>
+    set isolation='committed';
+  </v:on-init>
+  <vm:pagewrapper>
+    <vm:pagetitle>s</vm:pagetitle>
+    <vm:pagebody>
+      <div style="font-size:15px;">
+        <form>
+           <a href="#" onclick="window.close (); return false;"><img title="Close" alt="Close" src="i/close_16.png" border="0" /></a>
+           <a href="#" onclick="window.close (); return false;"> Close</a>
+        </form>
+      </div>
+      <?vsp
+      if ({?'id'} is not null) {
+        if ({?'role'} is not null) {
+
+      		for select bsrc_text from BPEL.BPEL.script, BPEL..script_source
+      			where bsrc_script_id = bs_id and bsrc_script_id = {?'id'} and bsrc_role = {?'role'}
+      		do {
+                              http_value (xslt (BPEL.BPEL.res_base_uri () || 'bpel4ws/1.0/raw.xsl', bsrc_text));return;
+      		}
+        };
+
+        if ({?'mode'} = 'show'){
+          declare aXml any;
+          if ( {?'txt'} = '1') {
+            aXml := BPEL.BPEL.get_assign({?'id'},{?'in'},1 );
+            if (not(isentity(aXml))){
+              http_value(aXml);return;
+            };
+            http_value (xslt (BPEL.BPEL.res_base_uri () || 'bpel4ws/1.0/raw.xsl', aXml ));return;
+          }
+          else if ( {?'v'} <> '' and {?'v'} is not null) {
+            aXml := BPEL..get_var ({?'v'}, {?'id'}, 0);
+            if (not(isentity(aXml))){
+              http_value(aXml);return;
+            };
+            http_value (xslt (BPEL.BPEL.res_base_uri () || 'bpel4ws/1.0/raw.xsl', aXml ));return;
+          };
+        };
+
+      };
+      ?>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

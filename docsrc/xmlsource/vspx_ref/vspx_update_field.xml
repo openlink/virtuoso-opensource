@@ -1,0 +1,142 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_update_field">
+<refmeta>
+  <refentrytitle>vspx_update_field</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_update_field</refname>
+  <refpurpose>data bind input to individual columns of a table</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_update_field">
+    <funcprototype id="proto_vspx_update_field">
+      <funcdef>
+        <function>update-field</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>column (required) </attribute>
+        <attribute>title (optional) </attribute>
+        <attribute>error-glyph (optional) </attribute>
+      </attributes>
+      <childs>
+        <child>after-data-bind</child>
+        <child>after-data-bind-container</child>
+        <child>before-data-bind</child>
+        <child>before-data-bind-container</child>
+        <child>on-post</child>
+        <child>on-post-container</child>
+        <child>before-render</child>
+        <child>before-render-container</child>
+        <child>validator</child>
+      </childs>
+      <class>
+        <screen><![CDATA[
+				
+			    create type vspx_update_field under vspx_field
+			      temporary self as ref
+			      constructor method vspx_update_field (name varchar, parent vspx_control),
+			      overriding method vc_render () returns any,
+			      overriding method vc_pre_render () returns any,
+			      overriding method vc_view_state (stream any) returns any
+			    ;
+				
+			    ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_update_field">
+  <title>Description</title>
+  <para>
+    <function>vspx_update_field</function>The vspx:update-field is used to bind to individual columns of a table.
+It may appear only inside the vspx:form of type &#39;update&#39;.
+At posting time the post message is
+addressed to the button first, then to the fields then to the form.
+Validators can appear as children of the form.
+The field validation is invoked before the form gets control.
+For the form, all validators are evaluated first and if successful the post
+processing of the form continues.
+</para>
+</refsect1>
+<refsect1 id="attrs_vspx_update_field">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>column</title>
+    <para>The name of the column bound.
+If nothing else is specified, the column meta data sets the field&#39;s attributes.
+</para>
+  </refsect2>
+  <refsect2>
+    <title>title</title>
+    <para>NOT YET IMPLEMENTED! The title of the field.</para>
+  </refsect2>
+  <refsect2>
+    <title>error-glyph</title>
+    <para>A mark to be displayed near the input field if the validation of the input detects error in this field.</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_update_field">
+  <title>Children</title>
+  <refsect2>
+    <title>validator</title>
+    <para>validator that is applied to user input.
+the validator objects are invoked when the element&#39;s control gets posted. the validator elements only make sense inside field or form types of controls.  the validators are invoked in the order given, and the first one to fail stops the invocation chain, so that no later ones are attempted.
+furthermore the vc_is_valid member of the containing page class will be reset to false (0) to stop further processing. see also error-summary element and error-glyph attribute of field element.
+</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="examples_vspx_update_field">
+  <title>Examples</title>
+  <example id="ex_vspx_update_field">
+    <title>Simple example</title>
+    <para>A part of update form
+			    </para>
+    <screen><![CDATA[
+				
+      <v:update-field name="c_id" column="CustomerID"  error-glyph="*" >
+        <v:validator test="length" min="5" max="5" message="5 chars exactly" />
+      </v:update-field>
+				
+			    ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

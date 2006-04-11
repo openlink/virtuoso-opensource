@@ -1,0 +1,900 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+declare _res, _res1, _type, _perms, one, _idx, _coll, _cpath, _cupath, _colname, _resname, _mime_type varchar;
+declare _col, _own, _grp, _pl, _ix, _iix, res_id integer;
+declare _path, prop_arr any;
+declare usr, gname, perms, zero, _drop, _cmp_perm, _ses_id, ch_prop, ch_prop_val, new_prop, new_prop_val varchar;
+declare _u_id, _recurse, _target_col, _len, to_remove_prop, not_found integer;
+
+declare n_items int;
+declare n_item_user, n_item_group varchar;
+
+-- dbg_obj_print ('admin_dav_cols.vsp: ', params);
+_drop := get_keyword ('drop', params, '');
+if (1 <> (_u_id := adm_dav_check_auth (lines)))
+    {
+      http_request_status ('HTTP/1.1 401 Unauthorized');
+      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	    '<HTML><HEAD>',
+	    '<TITLE>401 Unauthorized</TITLE>',
+	    '</HEAD><BODY><H1>Unauthorized</H1>',
+	    'Access to page is forbidden.</BODY></HTML>'));
+      return (0);;
+    }
+--dbg_obj_print ('admin_dav_cols.vsp: ', params);
+_ses_id := adm_get_sesid (params);
+_res := get_keyword ('res', params, '');
+_coll := get_keyword ('coll', params, '1');
+_cpath := get_keyword ('cpath', params, '1');
+_cupath := WS.WS.STR_TO_URI (_cpath);
+not_found := 1;
+n_items := 0;
+
+prop_arr := get_keyword ('prop_names', params, '');
+if (prop_arr <> '')
+  prop_arr := deserialize (decode_base64 (prop_arr));
+
+if (not isarray (prop_arr) or prop_arr = '')
+  -- the second should be xper for XML persistent property
+  prop_arr := vector ('*** NONE ***', 0, 'xml-sql', 0, 'xml-sql-root', 0, 'xml-sql-dtd', 0, 'xml-sql-schema', 0, 'xml-stylesheet', 0, 'xper', 0);
+
+if ('' <> get_keyword ('chmod', params, '') or _drop <> '')
+  {
+    _ix := 0;
+    while (_resname := adm_next_checkbox ('CBC_', params, _ix))
+      {
+        for select PROP_NAME from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C'
+	  and PROP_PARENT_ID = (select COL_ID from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) = _resname) do {
+	    if ('' = get_keyword (PROP_NAME, prop_arr, ''))
+              prop_arr := vector_concat (prop_arr, vector (PROP_NAME, 0));
+	  }
+        not_found := 0;
+      }
+    _ix := 0;
+    while (_resname := adm_next_checkbox ('CBR_', params, _ix))
+      {
+        for select PROP_NAME from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R'
+	  and PROP_PARENT_ID = (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _resname) do {
+	    if ('' = get_keyword (PROP_NAME, prop_arr, ''))
+              prop_arr := vector_concat (prop_arr, vector (PROP_NAME, 0));
+	  }
+        not_found := 0;
+      }
+  }
+
+    --dbg_obj_print ('prop array: ', prop_arr);
+
+one := ascii ('1');
+zero := ascii ('0');
+if ('' <> get_keyword ('edit', params, ''))
+  {
+    declare _ind, _tp varchar;
+    declare _user, _group, _pc integer;
+    declare _sperm, _rperm, _operm varchar;
+
+    _mime_type := get_keyword ('mime_type', params, '');
+    _pc := 0;
+
+    _sperm := '000000000N'; _rperm := '000000000N';
+
+    if ('' <> get_keyword ('recurse', params, ''))
+      _recurse := 1;
+    else
+      _recurse := 0;
+
+    if ({?'perm_ur'} = 'on') { aset (_sperm, 0, one); _pc := _pc + 1; }
+    if ({?'perm_uw'} = 'on') { aset (_sperm, 1, one); _pc := _pc + 1; }
+    if ({?'perm_ux'} = 'on') { aset (_sperm, 2, one); _pc := _pc + 1; }
+    if ({?'perm_gr'} = 'on') { aset (_sperm, 3, one); _pc := _pc + 1; }
+    if ({?'perm_gw'} = 'on') { aset (_sperm, 4, one); _pc := _pc + 1; }
+    if ({?'perm_gx'} = 'on') { aset (_sperm, 5, one); _pc := _pc + 1; }
+    if ({?'perm_or'} = 'on') { aset (_sperm, 6, one); _pc := _pc + 1; }
+    if ({?'perm_ow'} = 'on') { aset (_sperm, 7, one); _pc := _pc + 1; }
+    if ({?'perm_ox'} = 'on') { aset (_sperm, 8, one); _pc := _pc + 1; }
+
+    if ({?'rperm_ur'} = 'on') { aset (_rperm, 0, one); _pc := _pc + 1; }
+    if ({?'rperm_uw'} = 'on') { aset (_rperm, 1, one); _pc := _pc + 1; }
+    if ({?'rperm_ux'} = 'on') { aset (_rperm, 2, one); _pc := _pc + 1; }
+    if ({?'rperm_gr'} = 'on') { aset (_rperm, 3, one); _pc := _pc + 1; }
+    if ({?'rperm_gw'} = 'on') { aset (_rperm, 4, one); _pc := _pc + 1; }
+    if ({?'rperm_gx'} = 'on') { aset (_rperm, 5, one); _pc := _pc + 1; }
+    if ({?'rperm_or'} = 'on') { aset (_rperm, 6, one); _pc := _pc + 1; }
+    if ({?'rperm_ow'} = 'on') { aset (_rperm, 7, one); _pc := _pc + 1; }
+    if ({?'rperm_ox'} = 'on') { aset (_rperm, 8, one); _pc := _pc + 1; }
+
+    _ind := get_keyword ('idx', params, '');
+    _tp := substring (get_keyword ('idx', params, '*'), 1, 1);
+
+    declare uname, _g_name varchar;
+    declare gid, suid integer;
+    _g_name := '';
+    uname := '';
+    _user := 0;
+    _group := 0;
+    gid := 0;
+    _g_name := get_keyword ('grp', params, '');
+    uname := get_keyword ('own', params, '');
+    if (uname <> '')
+      _user := coalesce ((select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uname), 0);
+    if (_g_name <> '')
+      _group := coalesce ((select top 1 G_ID from WS.WS.SYS_DAV_GROUP where G_NAME = _g_name), 0);
+    gid := _group;
+    suid := _user;
+    if (gid is null)
+      gid := 0;
+   if (gid = 0 and _g_name <> 'public' and _g_name <> '')
+     {
+       http ( concat ('Error: The DAV group ', _g_name, ' doesn''t exist'));
+     }
+    if (_user = 0 and uname <> 'public' and uname <> '')
+     {
+       http ( concat ('Error: The DAV user ', uname, ' doesn''t exist'));
+     }
+
+   -- Changing or adding properties
+   ch_prop        := get_keyword ('ch_prop', params, '');
+   ch_prop_val    := get_keyword ('ch_prop_val', params, '');
+   new_prop       := get_keyword ('add_prop_name', params, '');
+   new_prop_val   := get_keyword ('add_prop_val', params, ch_prop_val);
+   to_remove_prop := get_keyword ('ch_prop_del', params, '');
+
+   if (ch_prop = '*** NONE ***')
+     ch_prop := '';
+
+   if (to_remove_prop = 'on' and ch_prop <> '')
+     to_remove_prop := 1;
+   else
+     to_remove_prop := 0;
+   if (length (ch_prop_val))
+    {
+    declare exit handler for sqlstate '*' { goto parser_error; };
+    if (isarray (xml_tree (ch_prop_val, 0)))
+      ch_prop_val := serialize (xml_tree (ch_prop_val));
+
+    if (isarray (xml_tree (new_prop_val, 0)))
+      new_prop_val := serialize (xml_tree (new_prop_val));
+    }
+parser_error:
+
+   _iix := 0;
+   while (_resname := adm_next_keyword ('colname', params, _iix))
+     {
+        _operm := '000000000N';
+
+	WS.WS.FINDCOL (WS.WS.HREF_TO_ARRAY (_resname, ''), _col);
+	select COL_PERMS, COL_OWNER, COL_GROUP into _operm, _own, _grp
+	    from WS.WS.SYS_DAV_COL where COL_ID = _col;
+        _cmp_perm := _operm;
+
+	if (gid = 0 and _g_name <> 'public')
+          _group := _grp;
+	else if (_g_name = 'public')
+	  _group := 0;
+
+        if (suid = 0 and uname <> 'public')
+          _user := _own;
+	else if (uname = 'public')
+	  _user := 0;
+
+	_ix := 0;
+	while (_ix < 10)
+	  {
+	    if (aref (_sperm, _ix) = one)
+	      aset (_operm, _ix, one);
+	    if (aref (_rperm, _ix) = one)
+	      aset (_operm, _ix, zero);
+	    _ix := _ix + 1;
+	  }
+	if (_tp <> '*')
+	 aset (_operm, 9, ascii (_tp));
+	update WS.WS.SYS_DAV_COL set COL_PERMS = _operm,
+				     COL_OWNER = _user,
+				     COL_GROUP = _group
+				where  COL_ID = _col;
+        if (_recurse)
+	  {
+            _target_col := WS.WS.COL_PATH (_col);
+            declare cur_type, cur_perms varchar;
+            declare res_cur cursor for select RES_PERMS, RES_TYPE from WS.WS.SYS_DAV_RES
+		where substring (RES_FULL_PATH, 1, length (_target_col)) = _target_col;
+
+	    -- Only if permissions have changed (prevent free text reindexing)
+	    whenever not found goto next_one;
+	    open res_cur (prefetch 1, exclusive);
+	    while (1)
+	      {
+		fetch res_cur into cur_type, cur_perms;
+		update WS.WS.SYS_DAV_RES set RES_OWNER = _user, RES_GROUP = _group where current of res_cur;
+		if (cur_perms <> _operm)
+		  update WS.WS.SYS_DAV_RES set RES_PERMS = _operm where current of res_cur;
+		if (_mime_type <> '' and cur_type <> _mime_type)
+		  update WS.WS.SYS_DAV_RES set RES_TYPE = _mime_type where current of res_cur;
+		commit work;
+	      }
+next_one:
+	    close res_cur;
+
+            update WS.WS.SYS_DAV_COL
+	       set COL_PERMS = _operm,
+	           COL_OWNER = _user,
+	           COL_GROUP = _group
+	       where  COL_ID <> _col
+	              and substring (WS.WS.COL_PATH (COL_ID), 1, length (_target_col)) = _target_col;
+	  }
+
+       if (ch_prop <> '' and to_remove_prop = 0)
+	insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
+	    values (WS.WS.GETID ('P'), ch_prop, ch_prop_val, _col, 'C');
+       else if (ch_prop <> '' and to_remove_prop = 1)
+	 delete from WS.WS.SYS_DAV_PROP where PROP_NAME = ch_prop and PROP_PARENT_ID = _col and PROP_TYPE = 'C';
+
+       if (new_prop <> '')
+	insert soft WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
+	    values (WS.WS.GETID ('P'), new_prop, new_prop_val, _col, 'C');
+
+     }
+   _iix := 0;
+   while (_resname := adm_next_keyword ('resname', params, _iix))
+     {
+        declare _res_id integer;
+	_operm := '000000000N';
+	select RES_ID, RES_PERMS, RES_OWNER, RES_GROUP into _res_id, _operm, _own, _grp
+	    from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _resname;
+
+        _cmp_perm := _operm;
+	if (gid = 0 and _g_name <> 'public')
+          _group := _grp;
+	else if (_g_name = 'public')
+	  _group := 0;
+        if (suid = 0 and uname <> 'public')
+          _user := _own;
+	else if (uname = 'public')
+	  _user := 0;
+
+	_ix := 0;
+	while (_ix < 10)
+	  {
+	    if (aref (_sperm, _ix) = one)
+	      aset (_operm, _ix, one);
+	    if (aref (_rperm, _ix) = one)
+	      aset (_operm, _ix, zero);
+	    _ix := _ix + 1;
+	  }
+	if (_tp <> '*')
+	 aset (_operm, 9, ascii (_tp));
+       -- Only if permissions have changed (prevent free text reindexing)
+	 {
+	   declare cur_type1, cur_perms1 varchar;
+	   declare res_cur1 cursor for select RES_PERMS, RES_TYPE from WS.WS.SYS_DAV_RES
+	       where RES_FULL_PATH  = _resname;
+
+	   whenever not found goto next_one1;
+	   open res_cur1 (prefetch 1, exclusive);
+	   while (1)
+	     {
+	       fetch res_cur1 into cur_type1, cur_perms1;
+	       --dbg_obj_print ('updating owner/group...');
+	       update WS.WS.SYS_DAV_RES set RES_OWNER = _user, RES_GROUP = _group where current of res_cur1;
+	       if (cur_perms1 <> _operm)
+		 {
+	           --dbg_obj_print ('updating perms...');
+		   update WS.WS.SYS_DAV_RES set RES_PERMS = _operm where current of res_cur1;
+		 }
+	       if (_mime_type <> '' and cur_type1 <> _mime_type)
+		 {
+	           --dbg_obj_print ('updating type...');
+		   update WS.WS.SYS_DAV_RES set RES_TYPE = _mime_type where current of res_cur1;
+		 }
+	       commit work;
+	     }
+next_one1:
+	   close res_cur1;
+	 }
+
+       if (ch_prop <> '' and to_remove_prop = 0)
+	insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
+	    values (WS.WS.GETID ('P'), ch_prop, ch_prop_val, _res_id, 'R');
+       else if (ch_prop <> '' and to_remove_prop = 1)
+	 delete from WS.WS.SYS_DAV_PROP where PROP_NAME = ch_prop and PROP_PARENT_ID = _res_id and PROP_TYPE = 'R';
+
+       if (new_prop <> '')
+	insert soft WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
+	    values (WS.WS.GETID ('P'), new_prop, new_prop_val, _res_id, 'R');
+
+     }
+?>
+
+<script language="JavaScript">
+location.replace ('admin_dav_documents.vsp?col=<?=_coll?>&name=<?=_cupath?>&sid=<?=_ses_id?>');
+</script>
+
+<?vsp
+    return (0);
+  }
+
+if ('' <> get_keyword ('drop1', params, ''))
+  {
+   _iix := 0;
+   while (_resname := adm_next_keyword ('resname', params, _iix))
+     {
+       delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _resname;
+     }
+
+   _iix := 0;
+   declare _root_parent_id integer;
+   _root_parent_id := (select min(COL_PARENT) from WS.WS.SYS_DAV_COL);
+   while (_resname := adm_next_keyword ('colname', params, _iix))
+     {
+       if (_resname = '/' or
+         trim(_resname, '/') = (select COL_NAME from WS.WS.SYS_DAV_COL
+                              where COL_PARENT = _root_parent_id))
+	 goto root_error;
+       DB.DBA.DAV_COL_D (_resname, 1);
+     }
+?>
+
+<script language="JavaScript">
+location.replace ('admin_dav_documents.vsp?col=<?=_coll?>&name=<?=_cupath?>&sid=<?=_ses_id?>');
+</script>
+
+<?vsp
+
+    return (0);
+root_error:
+    rollback work;
+    http ('<H3>*** Cannot delete root collection ***</H3>');
+    return (0);
+  }
+
+_type := '';
+_perms := '000000000N';
+_own := 0;
+_grp := 0;
+
+?>
+
+
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="author" content="Openlink Software">
+    <meta name="description" content="WebDAV resource edit">
+<title>WebDAV Resource Edit <?=_res?></title>
+</head>
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+
+
+function chkbx( bx1, bx2)
+{
+  if (bx1.checked == true && bx2.checked == true)
+    {
+      bx2.checked = false;
+    }
+}
+
+function goaway (param)
+{
+  document.mform.submit ();
+  location.replace (param);
+}
+
+function cxper (bx1)
+{
+  var found = false;
+  if (bx1.checked == true)
+    {
+
+      for (var i = 0; i < document.mform.ch_prop.length; i++)
+	{
+	  if (document.mform.ch_prop.options[i].value == 'xper')
+	    {
+	      document.mform.ch_prop.options[i].selected = true;
+	      document.mform.ch_prop.options[0].selected = false;
+	      found = true;
+	    }
+	}
+
+      if (!found)
+	{
+	  document.mform.add_prop_name.value = 'xper';
+	  document.mform.ch_prop.options[0].selected = true;
+	}
+
+      document.mform.ch_prop_val.value = '<comment>Store content as persistent XML</comment>';
+      document.mform.ch_prop_del.checked = false;
+    }
+  else
+    {
+      for (var i = 0; i < document.mform.ch_prop.length; i++)
+	{
+	  if (document.mform.ch_prop.options[i].value == 'xper')
+	    {
+	      document.mform.ch_prop.options[i].selected = false;
+	    }
+	}
+
+      document.mform.ch_prop.options[0].selected = true;
+      document.mform.add_prop_name.value = '';
+      document.mform.ch_prop_val.value = '';
+    }
+}
+
+// -->
+</SCRIPT>
+<?vsp adm_page_header('Resource Properties', 'davbrowseproperties'); ?>
+<?include ../adm_js_check.vsp ?>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="stathead" COLSPAN="5">WebDAV Permissions</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+<tr>
+<td CLASS="genlistheadt">Path</td>
+<td CLASS="genlistheadt">Permissions</td>
+<td CLASS="genlistheadt">Owner</td>
+<td CLASS="genlistheadt">Group</td>
+<td CLASS="genlistheadt">Type</td>
+</tr>
+
+
+<?vsp
+_iix := 0;
+_colname := '';
+_resname := '';
+while (_colname := adm_next_keyword ('colname', params, _iix))
+ {
+    WS.WS.FINDCOL (WS.WS.HREF_TO_ARRAY (_colname, ''), _col);
+    select COL_OWNER, COL_GROUP, COL_PERMS
+	into _own, _grp, _perms
+	from WS.WS.SYS_DAV_COL where COL_ID = _col;
+    usr := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _own), 'none');
+    gname := coalesce ((select top 1 G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = _grp), 'none');
+    n_item_user := usr; n_item_group := gname;
+    n_items := n_items + 1;
+_ix := 0;
+perms := '';
+   while (_ix < 9)
+     {
+       if (aref (_perms, _ix) = ascii ('1'))
+	 {
+	   if (_ix = 0 or _ix = 3 or _ix = 6)
+             perms := concat (perms, 'R');
+	   else if (_ix = 1 or _ix = 4 or _ix = 7)
+             perms := concat (perms, 'W');
+	   else
+             perms := concat (perms, 'X');
+	 }
+       else
+         perms := concat (perms, '-');
+       _ix := _ix + 1;
+     }
+perms := concat (perms, substring (_perms, 10, 1));
+perms := lower (perms);
+?>
+    <tr>
+    <td CLASS="gendata"><?=_colname?></td>
+    <td CLASS="gendata"><?=perms?></td>
+    <td CLASS="gendata"><?=usr?></td>
+    <td CLASS="gendata"><?=gname?></td>
+    <td CLASS="gendata">collection</td>
+    </tr>
+<?vsp
+ }
+
+_iix := 0;
+
+declare  m_type varchar;
+while (_resname := adm_next_keyword ('resname', params, _iix))
+ {
+    select RES_OWNER, RES_GROUP, RES_PERMS, RES_TYPE
+	into _own, _grp, _perms, m_type
+	from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _resname;
+    usr := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _own), 'none');
+    gname := coalesce ((select top 1 G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = _grp), 'none');
+    n_item_user := usr; n_item_group := gname;
+    n_items := n_items + 1;
+_ix := 0;
+perms := '';
+   while (_ix < 9)
+     {
+       if (aref (_perms, _ix) = ascii ('1'))
+	 {
+	   if (_ix = 0 or _ix = 3 or _ix = 6)
+             perms := concat (perms, 'R');
+	   else if (_ix = 1 or _ix = 4 or _ix = 7)
+             perms := concat (perms, 'W');
+	   else
+             perms := concat (perms, 'X');
+	 }
+       else
+         perms := concat (perms, '-');
+       _ix := _ix + 1;
+     }
+perms := concat (perms, substring (_perms, 10, 1));
+perms := lower (perms);
+    if (not isstring(m_type))
+      m_type := 'application/octet-stream';
+?>
+
+
+    <tr>
+    <td CLASS="gendata"><?=_resname?></td>
+    <td CLASS="gendata"><?=perms?></td>
+    <td CLASS="gendata"><?=usr?></td>
+    <td CLASS="gendata"><?=gname?></td>
+    <td CLASS="gendata"><?=m_type?></td>
+    </tr>
+
+<?vsp }
+_type := '';
+_perms := '000000000N';
+_own := 0;
+_grp := 0;
+?>
+
+
+
+
+<?vsp
+_iix := 0;
+_colname := '';
+_resname := '';
+while (_colname := adm_next_checkbox ('CBC_', params, _iix))
+ {
+    WS.WS.FINDCOL (WS.WS.HREF_TO_ARRAY (_colname, ''), _col);
+    select COL_OWNER, COL_GROUP, COL_PERMS
+	into _own, _grp, _perms
+	from WS.WS.SYS_DAV_COL where COL_ID = _col;
+    usr := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _own), 'none');
+    gname := coalesce ((select top 1 G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = _grp), 'none');
+    n_item_user := usr; n_item_group := gname;
+    n_items := n_items + 1;
+_ix := 0;
+perms := '';
+   while (_ix < 9)
+     {
+       if (aref (_perms, _ix) = ascii ('1'))
+	 {
+	   if (_ix = 0 or _ix = 3 or _ix = 6)
+             perms := concat (perms, 'R');
+	   else if (_ix = 1 or _ix = 4 or _ix = 7)
+             perms := concat (perms, 'W');
+	   else
+             perms := concat (perms, 'X');
+	 }
+       else
+         perms := concat (perms, '-');
+       _ix := _ix + 1;
+     }
+perms := concat (perms, substring (_perms, 10, 1));
+perms := lower (perms);
+?>
+    <tr>
+    <td CLASS="gendata"><?=_colname?></td>
+    <td CLASS="gendata"><?=perms?></td>
+    <td CLASS="gendata"><?=usr?></td>
+    <td CLASS="gendata"><?=gname?></td>
+    <td CLASS="gendata">collection</td>
+    </tr>
+<?vsp
+ }
+
+_iix := 0;
+
+while (_resname := adm_next_checkbox ('CBR_', params, _iix))
+ {
+    select RES_OWNER, RES_GROUP, RES_PERMS, RES_TYPE, RES_ID
+	into _own, _grp, _perms, m_type, res_id
+	from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _resname;
+    usr := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _own), 'none');
+    gname := coalesce ((select top 1 G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = _grp), 'none');
+    n_item_user := usr; n_item_group := gname;
+    n_items := n_items + 1;
+_ix := 0;
+perms := '';
+   while (_ix < 9)
+     {
+       if (aref (_perms, _ix) = ascii ('1'))
+	 {
+	   if (_ix = 0 or _ix = 3 or _ix = 6)
+             perms := concat (perms, 'R');
+	   else if (_ix = 1 or _ix = 4 or _ix = 7)
+             perms := concat (perms, 'W');
+	   else
+             perms := concat (perms, 'X');
+	 }
+       else
+         perms := concat (perms, '-');
+       _ix := _ix + 1;
+     }
+perms := concat (perms, substring (_perms, 10, 1));
+perms := lower (perms);
+    if (not isstring(m_type))
+      m_type := 'application/octet-stream';
+
+    if (m_type = 'application/octet-stream')
+      {
+	declare _mime_type1 varchar;
+
+	_mime_type1 := coalesce ((select blob_to_string(PROP_VALUE) from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = res_id and PROP_TYPE = 'R' and PROP_NAME = 'redirectref'), NULL);
+
+	if (_mime_type1 is not null)
+	   m_type := concat ('link:', _mime_type1);
+      }
+?>
+
+
+    <tr>
+    <td CLASS="gendata"><?=_resname?></td>
+    <td CLASS="gendata"><?=perms?></td>
+    <td CLASS="gendata"><?=usr?></td>
+    <td CLASS="gendata"><?=gname?></td>
+    <td CLASS="gendata"><?=m_type?></td>
+    </tr>
+
+<?vsp }
+_type := '';
+_perms := '000000000N';
+_own := 0;
+_grp := 0;
+
+if (not_found) http ('<tr><td colspan=4>*** the target list is not specified ***</td></tr>');
+
+?>
+</table>
+<?vsp if (_drop = '' and not_found = 0) { ?>
+<form method=post action="admin_dav_cols.vsp" name="mform" >
+  <input type=hidden name=sid value="<?=_ses_id?>">
+  <input type=hidden name=prop_names value="<?=encode_base64 (serialize (prop_arr))?>">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="4">Resource Settings</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="4"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+<tr>
+	<td CLASS="genlisthead">Owner</td>
+	<td>
+		<select name="own">
+		  <option value="">DON'T CHANGE</option>
+		  <option value="public">public</option>
+ 		<?vsp
+ 		  for (select U_ID, U_NAME from WS.WS.SYS_DAV_USER) do {
+		    declare sel varchar;
+	            sel := '';
+                    if (n_items = 1 and n_item_user = U_NAME)
+                      sel := 'SELECTED';
+		?>
+		  <option value="<?V U_NAME ?>" <?V sel ?>><?V U_NAME ?></option>
+ 		<?vsp
+                  }
+		?>
+		</select>
+	</td></tr>
+<tr>
+	<td CLASS="genlisthead">Group</td>
+	<td>
+		<select name="grp">
+		  <option value="">DON'T CHANGE</option>
+		  <option value="public">public</option>
+ 		<?vsp
+ 		  for (select G_ID, G_NAME from WS.WS.SYS_DAV_GROUP) do {
+		    declare sel varchar;
+	            sel := '';
+                    if (n_items = 1 and n_item_group = G_NAME)
+                      sel := 'SELECTED';
+		?>
+		  <option value="<?V G_NAME ?>" <?V sel ?>><?V G_NAME ?></option>
+ 		<?vsp
+                  }
+		?>
+		</select>
+	</td></tr>
+<tr>
+    <td CLASS="genlisthead" valign="top">Set Permissions</td>
+	 <td colspan="3">
+	   <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+	     <tr>
+               <td CLASS="genlistheadt" colspan="3">User</td>
+               <td CLASS="genlistheadt" colspan="3">Group</td>
+               <td CLASS="genlistheadt" colspan="3">Other</td>
+             </tr>
+	     <tr>
+              <td CLASS="genlistheadt">r</td><td CLASS="genlistheadt">w</td>
+				<td CLASS="genlistheadt">x</td><td CLASS="genlistheadt">r</td>
+				<td CLASS="genlistheadt">w</td><td CLASS="genlistheadt">x</td>
+				<td CLASS="genlistheadt">r</td><td CLASS="genlistheadt">w</td>
+				<td CLASS="genlistheadt">x</td>
+             </tr>
+	     <tr>
+	<td><input type="checkbox" onclick="chkbx(this,rperm_ur);" name="perm_ur" <?vsp if (one = aref (_perms, 0)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,rperm_uw);" name="perm_uw" <?vsp if (one = aref (_perms, 1)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,rperm_ux);" name="perm_ux" <?vsp if (one = aref (_perms, 2)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,rperm_gr);" name="perm_gr" <?vsp if (one = aref (_perms, 3)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,rperm_gw);" name="perm_gw" <?vsp if (one = aref (_perms, 4)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,rperm_gx);" name="perm_gx" <?vsp if (one = aref (_perms, 5)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,rperm_or);" name="perm_or" <?vsp if (one = aref (_perms, 6)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,rperm_ow);" name="perm_ow" <?vsp if (one = aref (_perms, 7)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,rperm_ox);" name="perm_ox" <?vsp if (one = aref (_perms, 8)) { http ('checked');} ?> ></td>
+	     </tr>
+	   </table>
+	 </td>
+
+</tr>
+<tr>
+
+         <td CLASS="genlisthead" valign="top">Remove Permissions</td>
+	 <td colspan="3">
+	   <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+	     <tr>
+               <td CLASS="genlistheadt" colspan="3">User</td>
+               <td CLASS="genlistheadt" colspan="3">Group</td>
+               <td CLASS="genlistheadt" colspan="3">Other</td>
+             </tr>
+	     <tr>
+              <td CLASS="genlistheadt">r</td><td CLASS="genlistheadt">w</td>
+				<td CLASS="genlistheadt">x</td><td CLASS="genlistheadt">r</td>
+				<td CLASS="genlistheadt">w</td><td CLASS="genlistheadt">x</td>
+				<td CLASS="genlistheadt">r</td><td CLASS="genlistheadt">w</td>
+				<td CLASS="genlistheadt">x</td>
+             </tr>
+	     <tr>
+	<td><input type="checkbox" onclick="chkbx(this,perm_ur);" name="rperm_ur" <?vsp if (one = aref (_perms, 0)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,perm_uw);" name="rperm_uw" <?vsp if (one = aref (_perms, 1)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,perm_ux);" name="rperm_ux" <?vsp if (one = aref (_perms, 2)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,perm_gr);" name="rperm_gr" <?vsp if (one = aref (_perms, 3)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,perm_gw);" name="rperm_gw" <?vsp if (one = aref (_perms, 4)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,perm_gx);" name="rperm_gx" <?vsp if (one = aref (_perms, 5)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,perm_or);" name="rperm_or" <?vsp if (one = aref (_perms, 6)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,perm_ow);" name="rperm_ow" <?vsp if (one = aref (_perms, 7)) { http ('checked');} ?> ></td>
+	<td><input type="checkbox" onclick="chkbx(this,perm_ox);" name="rperm_ox" <?vsp if (one = aref (_perms, 8)) { http ('checked');} ?> ></td>
+	     </tr>
+	   </table>
+	 </td>
+
+</tr>
+<tr>
+<td CLASS="genlisthead">Free Text Indexing</td>
+<td>
+   <select name="idx">
+     <?vsp
+      _idx := '';
+      _idx := substring (_perms, 10, 1);
+      http('<option value="*" selected>DON''T CHANGE</option>');
+      http('<option value="N">OFF</option>');
+      http('<option value="T">DIRECT MEMBERS</option>');
+      http('<option value="R">RECURSIVELY</option>');
+     ?>
+   </select>
+</td>
+</tr>
+<tr>
+	<td CLASS="genlisthead">Resource Type</td>
+	<td><input type=text name="mime_type"><small></small></td></tr>
+<tr>
+        <td CLASS="genlisthead">Recursive</td>
+	<td><input type=checkbox name=recurse></td>
+</tr>
+<tr>
+        <td class="genlisthead">Store content as persistent XML</td>
+	<td><input type=checkbox name=xper onclick="cxper(this);">
+<?vsp if (get_keyword ('xper', prop_arr, NULL) is not null) { ?>
+   	<i>Note:</i> <small>to remove this property select 'xper' from list bellow and check 'remove selected'</small>
+<?vsp } ?>
+	</td>
+</tr>
+<tr>
+        <td CLASS="genlisthead">Property Update</td>
+	<TD>
+	    <table class="genlist" border="0" cellpadding="0" cellspacing="2"><tr>
+          <td class="genlisthead">Name</td>
+	 <td class="genselect">
+	  <table border="0" cellpadding="0" cellspacing="2">
+	  <tr>
+	   <td class="genselect">
+	   <select name="ch_prop">
+	   <?vsp
+	   _ix := 0;
+           _len := length (prop_arr);
+           while (_ix < _len)
+	     {
+	       http (sprintf ('<option value="%s">%s</option>', aref (prop_arr, _ix), aref (prop_arr, _ix)));
+               _ix := _ix + 2;
+	     }
+	   ?>
+	   </select> <small>*select from predefined, or enter it in box bellow</small>
+	    </td>
+	   </tr>
+	   <tr>
+	     <td class="genselect"><input  class="geninput" type=text name=add_prop_name>
+	     </td>
+	   </tr>
+	   </table>
+	   </td></tr><tr>
+	    <td class="genlisthead">Value</td>
+	   <td><input type=text name="ch_prop_val" value=""></td></tr><tr>
+	   <td class="genlisthead">Remove</td>
+         <td class="geninput"><input type=checkbox name="ch_prop_del"></td>
+	 </tr></table>
+	</td>
+</tr>
+<!--tr>
+        <td CLASS="genlisthead">Property Add</td>
+	<TD>
+	    <table class="genlist" border="0" cellpadding="0" cellspacing="2"><tr>
+          <td class="genlisthead">Name</td>
+	    <td class="geninput"><input type=text name=add_prop_name></td></tr><tr>
+	    <td class="genlisthead">Value</td>
+	    <td class="geninput"><input type=text name=add_prop_val></td>
+	  </tr></table>
+</TD>
+</tr-->
+<tr>
+	<td colspan="4" align="right">
+		<input type="button" value="Cancel" name="cancel" onclick="location.replace ('admin_dav_documents.vsp?col=<?=_coll?>&sid=<?=_ses_id?>');">
+		<input type=submit name=edit value="Accept" ></td>
+</tr>
+</table>
+
+<?vsp _iix := 0; while (_resname := adm_next_checkbox ('CBC_', params, _iix)) { ?>
+<input type=hidden name=colname value="<?=_resname?>">
+<?vsp }
+_iix := 0; while (_resname := adm_next_checkbox ('CBR_', params, _iix)) { ?>
+<input type=hidden name=resname value="<?=_resname?>">
+<?vsp }
+_iix := 0; while (_resname := adm_next_keyword ('colname', params, _iix)) { ?>
+<input type=hidden name=colname value="<?=_resname?>">
+<?vsp }
+_iix := 0; while (_resname := adm_next_keyword ('resname', params, _iix)) { ?>
+<input type=hidden name=resname value="<?=_resname?>">
+<?vsp } ?>
+<input type=hidden name=coll value="<?=_coll?>">
+<input type=hidden name=cpath value="<?=_cpath?>">
+</form>
+<?vsp } else { ?>
+
+<form name=drop_form action=admin_dav_cols.vsp method=post>
+<?vsp _iix := 0; while (_resname := adm_next_checkbox ('CBC_', params, _iix)) { ?>
+<input type=hidden name=colname value="<?=_resname?>">
+<?vsp }
+_iix := 0; while (_resname := adm_next_checkbox ('CBR_', params, _iix)) { ?>
+<input type=hidden name=resname value="<?=_resname?>">
+<?vsp }
+_iix := 0; while (_resname := adm_next_keyword ('colname', params, _iix)) { ?>
+<input type=hidden name=colname value="<?=_resname?>">
+<?vsp }
+_iix := 0; while (_resname := adm_next_keyword ('resname', params, _iix)) { ?>
+<input type=hidden name=resname value="<?=_resname?>">
+<?vsp } ?>
+<input type=hidden name=coll value="<?=_coll?>">
+<input type=hidden name=cpath value="<?=_cpath?>">
+<input type=button value="Cancel" name="cancel" onclick="location.replace ('admin_dav_documents.vsp?col=<?=_coll?>&sid=<?=_ses_id?>')">
+<?vsp if (not_found = 0) { ?>
+<input type=submit value="Drop" name="drop1">
+<?vsp } ?>
+</form>
+<?vsp } ?>
+<?vsp adm_page_footer(); ?>
+</html>

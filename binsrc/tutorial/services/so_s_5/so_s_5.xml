@@ -1,0 +1,76 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-5">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Collaboration with other clients</refname>
+    <refpurpose>Consuming a Virtuoso Web Service from Microsoft VB.NET</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-5a">
+<title>VB.NET</title>
+<para>Virtuoso is able to interact with the Microsoft .NET by providing a
+WSDL description of all the stored procedures exposed as a SOAP operation
+within a given virtual directory. The WSDL description is an XML document
+available at http://&lt;server_http_host_and_port&gt;/SOAP/services.wsdl
+on any Virtuoso HTTP server.</para>
+
+
+<para>This allows for easy creation of .NET clients.
+</para>
+
+</refsect1>
+
+<refsect1 id="SO-S-5b">
+<title>fishselect example</title>
+<para>
+The following .NET VBA routine calls the fishselect stored procedure, and prints the results
+on the console.
+</para>
+<itemizedlist mark="bullet">
+<listitem>
+Open a new VB.NET project for Console Application.</listitem>
+<listitem>
+Add a web reference to the Virtuoso WSDL end point (http://host:port/SOAP/services.wsdl).</listitem>
+<listitem>
+Drag and drop the VirtuosoSOAP() from Class wizard in routine code.</listitem>
+</itemizedlist>
+
+<programlisting>
+Module Module1
+
+ Sub Main()
+   Dim s As New [drop here the VirtuosoSOAP() method from Class wizard]
+   Dim r As String
+   r = s.fishselect("G%")
+   System.Console.WriteLine(r)
+ End Sub
+
+End Module
+</programlisting>
+</refsect1>
+</refentry>

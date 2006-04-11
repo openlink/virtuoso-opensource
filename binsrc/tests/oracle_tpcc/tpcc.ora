@@ -1,0 +1,846 @@
+/*
+ *  tpcc.ora
+ *
+ *  $Id$
+ *
+ *  TPC-C Transactions stored procedures
+ *
+ *  (C)Copyright 1998 OpenLink Software.
+ *  All Rights Reserved.
+ *
+ *  The copyright above and this notice must be preserved in all
+ *  copies of this source code.  The copyright above does not
+ *  evidence any actual or intended publication of this source code.
+ *
+ *  This is unpublished proprietary trade secret of OpenLink Software.
+ *  This source code may not be copied, disclosed, distributed, demonstrated
+ *  or licensed except as authorized by OpenLink Software.
+ */
+ 
+create or replace procedure new_order_proc (
+       w_id_         in integer,
+       d_id_         in integer,
+       c_id_         in integer,
+       o_ol_cnt_     in integer,
+       o_all_local_  in integer,
+       i_id1_   in integer, s_w_id1_   in integer, ol_qty1_   in integer,
+       i_id2_   in integer, s_w_id2_   in integer, ol_qty2_   in integer,
+       i_id3_   in integer, s_w_id3_   in integer, ol_qty3_   in integer,
+       i_id4_   in integer, s_w_id4_   in integer, ol_qty4_   in integer,
+       i_id5_   in integer, s_w_id5_   in integer, ol_qty5_   in integer,
+       i_id6_   in integer, s_w_id6_   in integer, ol_qty6_   in integer,
+       i_id7_   in integer, s_w_id7_   in integer, ol_qty7_   in integer,
+       i_id8_   in integer, s_w_id8_   in integer, ol_qty8_   in integer,
+       i_id9_   in integer, s_w_id9_   in integer, ol_qty9_   in integer,
+       i_id10_  in integer, s_w_id10_  in integer, ol_qty10_  in integer 
+)
+as
+  w_tax_	numeric(4,4);
+  d_tax_	numeric(4,4);
+  c_last_	char(16);
+  c_credit_	char(2);
+  c_discount_	numeric(4,4);
+  i_price_	numeric(5,2);
+  i_name_	char(24);
+  i_data_	char(50);
+  o_entry_d_	date;
+  remote_flag_	integer;
+  s_quantity_	integer ;
+  s_data_	char(50);
+  s_dist_	char(24);
+  li_no_	integer;
+  o_id_		integer;
+  commit_flag_	integer;
+  li_id_	integer;
+  li_s_w_id_	integer;
+  li_qty_	integer;
+  ol_number_	integer;
+  c_id_local_	integer;
+  dif_qty_	integer;
+  s_cnt_remote_	integer;
+  s_dist_01_	char(24);
+  s_dist_02_	char(24);
+  s_dist_03_	char(24);
+  s_dist_04_	char(24);
+  s_dist_05_	char(24);
+  s_dist_06_	char(24);
+  s_dist_07_	char(24);
+  s_dist_08_	char(24);
+  s_dist_09_	char(24);
+  s_dist_10_	char(24);
+  s_s_quantity_	integer;
+begin
+--	  set transaction;
+      /* get district tax and next available order id and update */
+	  /* plus initialize local variables */
+      update district
+             set d_next_o_id  = d_next_o_id + 1
+             where d_w_id = w_id_ and d_id = d_id_ 
+			 returning
+			 d_tax,
+			 d_next_o_id,
+			 sysdate,
+			 0,
+			 1
+			 into
+			 d_tax_,
+			 o_id_,
+			 o_entry_d_,
+			 li_no_,
+			 commit_flag_;
+
+      /* process orderlines */
+      while li_no_ < o_ol_cnt_ loop
+
+         /* Set i_id, s_w_id and qty for this lineitem */
+                li_no_ := li_no_+1;
+
+                if li_no_ = 0  then li_id_ := i_id1_;  li_s_w_id_ := s_w_id1_;  li_qty_ := ol_qty1_; 
+                elsif li_no_ = 1  then li_id_ := i_id2_;  li_s_w_id_ := s_w_id2_;  li_qty_ := ol_qty2_;
+                elsif li_no_ = 2  then li_id_ := i_id3_;  li_s_w_id_ := s_w_id3_;  li_qty_ := ol_qty3_;
+                elsif li_no_ = 3  then li_id_ := i_id4_;  li_s_w_id_ := s_w_id4_;  li_qty_ := ol_qty4_;
+                elsif li_no_ = 4  then li_id_ := i_id5_;  li_s_w_id_ := s_w_id5_;  li_qty_ := ol_qty5_;
+                elsif li_no_ = 5  then li_id_ := i_id6_;  li_s_w_id_ := s_w_id6_;  li_qty_ := ol_qty6_;
+                elsif li_no_ = 6  then li_id_ := i_id7_;  li_s_w_id_ := s_w_id7_;  li_qty_ := ol_qty7_;
+                elsif li_no_ = 7  then li_id_ := i_id8_;  li_s_w_id_ := s_w_id8_;  li_qty_ := ol_qty8_;
+                elsif li_no_ = 8  then li_id_ := i_id9_;  li_s_w_id_ := s_w_id9_;  li_qty_ := ol_qty9_;
+                elsif li_no_ = 9  then li_id_ := i_id10_; li_s_w_id_ := s_w_id10_; li_qty_ := ol_qty10_;
+				end if;
+
+         /* get item data (no one updates item) */
+         select i_price, i_name, i_data
+                into i_price_, i_name_, i_data_
+                from item
+                where i_id = li_id_ for update;
+
+         /* if there actually is an item with this id, go to work */
+         if sql%rowcount > 0 then
+          begin
+           if li_s_w_id_ = w_id_ then s_cnt_remote_ := 0; 
+		      else
+				s_cnt_remote_ := 1;
+		   end if;
+
+		   select s_quantity into s_s_quantity_ from stock where s_i_id = li_id_ and s_w_id = li_s_w_id_ for update;
+		   if s_s_quantity_ - li_qty_ < 10 then dif_qty_ := 91; else dif_qty_ := 0; end if;
+
+           update stock set s_ytd        = s_ytd + li_qty_,
+                            s_quantity   = s_quantity - li_qty_ + dif_qty_,
+                            s_cnt_order  = s_cnt_order + 1,
+                            s_cnt_remote = s_cnt_remote + s_cnt_remote_
+                  where s_i_id = li_id_ and s_w_id = li_s_w_id_
+				  returning
+					s_quantity,
+                    s_data,
+					s_dist_01,
+					s_dist_02,
+					s_dist_03,
+					s_dist_04,
+					s_dist_05,
+					s_dist_06,
+					s_dist_07,
+					s_dist_08,
+					s_dist_09,
+					s_dist_10
+				  into
+                    s_quantity_,
+					s_data_,
+					s_dist_01_,
+					s_dist_02_,
+					s_dist_03_,
+					s_dist_04_,
+					s_dist_05_,
+					s_dist_06_,
+					s_dist_07_,
+					s_dist_08_,
+					s_dist_09_,
+					s_dist_10_;
+
+                    if d_id_ = 1  then s_dist_ := s_dist_01_;
+                    elsif d_id_ = 2  then s_dist_ := s_dist_02_;
+                    elsif d_id_ = 3  then s_dist_ := s_dist_03_;
+                    elsif d_id_ = 4  then s_dist_ := s_dist_04_;
+                    elsif d_id_ = 5  then s_dist_ := s_dist_05_;
+                    elsif d_id_ = 6  then s_dist_ := s_dist_06_;
+                    elsif d_id_ = 7  then s_dist_ := s_dist_07_;
+                    elsif d_id_ = 8  then s_dist_ := s_dist_08_;
+                    elsif d_id_ = 9  then s_dist_ := s_dist_09_;
+                    elsif d_id_ = 10 then s_dist_ := s_dist_10_;
+					end if;
+
+
+           /* insert order_line data (using data from item and stock) */
+           insert into order_line
+                  values(o_id_,					/* from district update */
+                         d_id_,					/* input param          */
+                         w_id_,					/* input param          */
+                         li_no_,				/* orderline number     */
+                         li_id_,				/* lineitem id          */
+                         li_s_w_id_,			/* lineitem warehouse   */
+                         '31-DEC-80',			/* constant             */
+                         li_qty_,				/* lineitem qty         */
+                         i_price_ * li_qty_,	/* ol_amount        */
+                         s_dist_);				/* from stock           */
+
+
+           /* send line-item data to client */
+
+/*
+           select i_name_, s_quantity_,
+                  b_g = if ((instr('ORIGINAL',i_data_) > 0) and
+                                   (instr('ORIGINAL',s_data_) > 0))
+                        then 'B' else 'G' end if,
+                  i_price_,
+                  i_price_ * li_qty_;
+*/
+
+          end;  -- /* condition: if (@@rowcount > 0) */
+         else
+           /* no item found - triggers rollback condition */
+--           select '', '',0;
+           commit_flag_ := 0;
+        end if;
+       end loop; -- /* of orderlines loop while(@li_no < @o_ol_cnt) */
+      /* get customer last name, discount, and credit rating */
+      select c_last,
+             c_discount,
+             c_credit,
+             c_id
+             into
+             c_last_,
+             c_discount_,
+             c_credit_,
+             c_id_local_
+          from customer
+          where c_id    = c_id_ and
+                c_w_id  = w_id_ and
+                c_d_id  = d_id_ for update;
+      /* insert fresh row into orders table */
+      insert into orders values(o_id_, d_id_, w_id_, c_id_local_,
+                                o_entry_d_, 0, o_ol_cnt_, o_all_local_);
+      /* insert corresponding row into new-order table */
+      insert into new_order values (o_id_, d_id_, w_id_);
+      /* select warehouse tax */
+      select w_tax into w_tax_
+             from warehouse
+             where w_id = w_id_ for update;
+
+      if commit_flag_ = 1 then
+          commit;
+      else
+          /* all that work for nuthin!!! */
+          rollback;
+	  end if;
+
+      /* return order data to client */
+/*
+      select w_tax_,
+             d_tax_,
+             o_id_,
+             c_last_,
+             c_discount_,
+             c_credit_,
+             o_entry_d_,
+             commit_flag_ 
+*/
+end new_order_proc;
+/
+
+-- /* File:        DELIVERY.SQL */
+-- /* Purpose:     Delivery transaction for Microsoft TPC-C Benchmark Kit */
+ 
+create or replace procedure delivery  ( w_id_ in integer, o_carrier_id_ in integer )
+as
+            d_id_		integer;
+            o_id_		integer;
+            c_id_		integer;
+            total_		numeric(12,2);
+            oid1_		integer;
+            oid2_		integer;
+            oid3_		integer;
+            oid4_		integer;
+            oid5_		integer;
+            oid6_		integer;
+            oid7_		integer;
+            oid8_		integer;
+            oid9_		integer;
+            oid10_		integer;
+			ol_total_	numeric(12,2);
+begin
+        d_id_ := 0;
+--set transaction;
+        while d_id_ < 10 loop
+            d_id_  := d_id_ + 1;
+            total_ := 0;
+            o_id_  := 0;
+
+            select min(no_o_id)
+				   into o_id_
+                   from new_order
+                   where no_w_id = w_id_ and no_d_id = d_id_; -- for update;
+
+--			dbms_output.put_line(o_id_);
+
+            if(sql%rowcount <> 0) then
+         
+--              /* claim the order for this district */
+                delete from new_order
+                       where no_w_id = w_id_ and no_d_id = d_id_
+                         and no_o_id = o_id_;
+--              /* set carrier_id on this order (and get customer id) */
+                update orders
+                       set o_carrier_id = o_carrier_id_
+                       where o_w_id = w_id_ and o_d_id = d_id_
+                             and o_id = o_id_ returning o_c_id into c_id_;
+
+--      /* set date in all lineitems for this order (and sum amounts) */
+
+				ol_total_ := 0;
+                update order_line
+                       set ol_delivery_d = sysdate
+                       where ol_w_id = w_id_ and
+                             ol_d_id = d_id_ and
+                             ol_o_id = o_id_;
+
+				select sum(ol_amount) into ol_total_
+					   from order_line  
+                       where ol_w_id = w_id_ and
+                       ol_d_id = d_id_ and
+                       ol_o_id = o_id_;
+
+							 
+--				returning ol_amount into ol_total_;
+				total_ := total_ + ol_total_;
+--      /* accumulate lineitem amounts for this order into customer */
+
+                update customer
+                       set c_balance      = c_balance + total_,
+                           c_cnt_delivery = c_cnt_delivery + 1
+                       where c_w_id = w_id_ and
+                             c_d_id = d_id_ and
+                             c_id = c_id_;
+
+            end if;
+
+
+			if d_id_ = 1  then oid1_ := o_id_; 
+			elsif d_id_ = 2  then oid2_ := o_id_; 
+			elsif d_id_ = 3  then oid3_ := o_id_; 
+			elsif d_id_ = 4  then oid4_ := o_id_; 
+			elsif d_id_ = 5  then oid5_ := o_id_; 
+			elsif d_id_ = 6  then oid6_ := o_id_; 
+			elsif d_id_ = 7  then oid7_ := o_id_; 
+			elsif d_id_ = 8  then oid8_ := o_id_; 
+			elsif d_id_ = 9  then oid9_ := o_id_; 
+			elsif d_id_ = 10 then oid10_ := o_id_; end if;
+
+--			goto end_case_
+--			<<end_case_>>
+
+        end loop;
+
+    commit;
+
+/*    select oid1_,
+           oid2_,
+           oid3_,
+           oid4_,
+           oid5_,
+           oid6_,
+           oid7_,
+           oid8_,
+           oid9_,
+           oid10_ */
+end delivery;
+/
+-- /* File:        PAYMENT.SQL */
+-- /* Purpose:     Payment transaction for Microsoft TPC-C Benchmark Kit */
+
+
+create or replace procedure payment (
+       w_id_         in integer,
+       c_w_id_       in integer,
+       h_amount_     in float,
+       d_id_         in integer,
+       c_d_id_       in integer,
+       c_c_id_       in integer,
+       c_c_last_     in varchar )
+as
+      type tc_byname is ref cursor;
+			w_street_1_    char(20);
+            w_street_2_    char(20);
+            w_city_        char(20);
+            w_state_       char(2);
+            w_zip_         char(9);
+            w_name_        char(10);
+            d_street_1_    char(20);
+            d_street_2_    char(20);
+            d_city_        char(20);
+            d_state_       char(2);
+            d_zip_         char(9);
+            d_name_        char(10);
+            c_first_       char(16);
+            c_middle_      char(2);
+            c_street_1_    char(20);
+            c_street_2_    char(20);
+            c_city_        char(20);
+            c_state_       char(2);
+            c_zip_         char(9);
+            c_phone_       char(16);
+            c_since_       date;
+            c_credit_      char(2);
+            c_credit_lim_  float;
+            c_balance_     float;
+            c_ytd_payment_ float;
+            c_discount_    float;
+            data1_         char(250);
+            data2_         char(250);
+            c_data_1_      char(250);
+            c_data_2_      char(250);
+--            datetime_      date;
+            w_ytd_         float;
+            d_ytd_         float;
+            cnt_           integer ;
+            val_           integer ;
+            screen_data_   char(200);
+            d_id_local_    integer ;
+            w_id_local_    integer ;
+            c_id_local_    integer;
+			rowcount_	   integer;
+			c_id_		   integer;
+			c_last_		   varchar(50);
+			n			   integer;
+			c_byname	   tc_byname;
+begin
+    screen_data_ := '';
+	c_id_ := c_c_id_;
+	c_last_ := c_c_last_;
+
+--set transaction;
+
+    /* get payment date */
+--    datetime_ := sysdate;
+
+    if c_id_ = 0 then
+        /* get customer id and info using last name */
+        select count(*)
+			into cnt_
+            from customer
+            where c_last = c_last_ and
+                  c_w_id = c_w_id_ and
+                  c_d_id = c_d_id_;
+
+        val_ := (cnt_ + 1) / 2;
+        rowcount_ := val_;
+
+        open c_byname for select   c_id
+							from customer
+							where c_last = c_last_ and
+							c_w_id = c_w_id_ and
+							c_d_id = c_d_id_
+							order by c_w_id, c_d_id, c_last, c_first for update;
+
+		while n <= cnt_/2 loop
+			fetch c_byname into c_id_;
+			n := n + 1;
+		end loop;
+
+		close c_byname;
+
+        rowcount_ := 0;
+     end if;
+
+    /* get customer info and update balances */
+
+    update customer set
+        c_balance  = c_balance_,
+        c_cnt_payment    = c_cnt_payment + 1
+       where c_id   = c_id_   and
+             c_w_id = c_w_id_ and
+             c_d_id = c_d_id_
+		returning
+		c_balance - h_amount_,
+        c_ytd_payment + 10.0,
+        c_first,
+        c_middle,
+        c_last,
+        c_street_1,
+        c_street_2,
+        c_city,
+        c_state,
+        c_zip,
+        c_phone,
+        c_credit,
+        c_credit_lim,
+        c_discount,
+        c_since,
+        c_data_1,
+        c_data_2,
+        c_id
+		into
+		c_balance_,
+        c_ytd_payment_,
+        c_first_,
+        c_middle_,
+        c_last_,
+        c_street_1_,
+        c_street_2_,
+        c_city_,
+        c_state_,
+        c_zip_,
+        c_phone_,
+        c_credit_,
+        c_credit_lim_,
+        c_discount_,
+        c_since_,
+        data1_,
+        data2_,
+        c_id_local_;
+
+    /* if customer has bad credit get some more info */
+
+    if c_credit_ = 'BC' then
+        /* compute new info (Kublissa on myos substring) */
+        c_data_2_ := substr(data1_,209,42) || substr(data2_,1,208);
+
+        c_data_1_ := to_char( c_id_ ) ||  -- 5
+                     to_char( c_d_id_) || -- 4
+                     to_char( c_w_id_) || -- 5 
+                     to_char( d_id_) || -- 4
+                     to_char( w_id_) || -- 5
+                     to_char( h_amount_) || -- 19
+                     substr(data1_, 1, 208);
+
+        /* update customer info */
+        update customer set
+               c_data_1 = c_data_1_,
+               c_data_2 = c_data_2_
+            where c_id   = c_id_ and
+                  c_w_id = c_w_id_ and
+                  c_d_id = c_d_id_;
+
+
+        screen_data_ := substr(c_data_1_,1,200);
+
+     end if;
+
+
+    /* get district data and update year-to-date */
+
+    update district
+        set		d_ytd   = d_ytd + h_amount_
+        where	d_w_id	= w_id_ and
+				d_id	= d_id_
+	    returning 
+            d_street_1,
+            d_street_2,
+            d_city,
+            d_state,
+            d_zip,
+            d_name,
+            d_id
+			into
+			d_street_1_,
+            d_street_2_,
+            d_city_,
+            d_state_,
+            d_zip_,
+            d_name_,
+            d_id_local_;
+
+    /* get warehouse data and update year-to-date */
+
+    update warehouse
+        set		w_ytd   = w_ytd + h_amount_
+        where	w_id	= w_id_
+		returning
+            w_street_1,
+            w_street_2,
+            w_city,
+            w_state,
+            w_zip,
+            w_name,
+            w_id
+		into
+            w_street_1_,
+            w_street_2_,
+            w_city_,
+            w_state_,
+            w_zip_,
+            w_name_,
+            w_id_local_;
+
+    /* create history record */
+
+    insert into history
+        values(c_id_local_,
+               c_d_id_,
+               c_w_id_,
+               d_id_local_,
+               w_id_local_,
+               sysdate,
+               h_amount_,
+               w_name_ || '    ' || d_name_); /* 10 + 4 + 10 = 24 */
+
+    commit;
+
+    /* return data to client */
+
+/*    select c_id_,
+           c_last_,
+           datetime_,
+           w_street_1_,
+           w_street_2_,
+           w_city_,
+           w_state_,
+           w_zip_,
+           d_street_1_,
+           d_street_2_,
+           d_city_,
+           d_state_,
+           d_zip_,
+           c_first_,
+           c_middle_,
+           c_street_1_,
+           c_street_2_,
+           c_city_,
+           c_state_,
+           c_zip_,
+           c_phone_,
+           c_since_,
+           c_credit_,
+           c_credit_lim_,
+           c_discount_,
+           c_balance_,
+           screen_data_ */
+end payment;
+/
+
+-- /* File:        ORDSTAT.SQL */
+-- /* Purpose:     Order-Status transaction for Microsoft TPC-C Benchmark Kit */
+
+create or replace procedure ostat (
+       w_id_           in integer,
+       d_id_           in integer,
+       c_c_id_         in integer,
+       c_c_last_       in varchar
+)
+as
+	   type tc_byname is ref cursor;
+            c_balance_     numeric(12,2);
+            c_first_       char(16);
+            c_middle_      char(2);
+            o_id_          integer;
+            o_entry_d_     date;
+            o_carrier_id_  integer;
+            cnt_           integer;
+	    rowcount_	   integer;
+
+	    c_id_         integer;
+	    c_last_       char(16);
+	    c_byname	  tc_byname;
+	    n		  integer;	
+						
+begin
+--  begin tran o
+--  set transaction;
+	c_id_ := c_c_id_;
+	c_last_ := c_c_last_;
+
+    if c_id_ = 0 then
+        /* get customer id and info using last name */
+        select (count(*)+1)/2
+            into cnt_
+            from customer
+            where c_last = c_last_ and
+                  c_w_id = w_id_ and
+                  c_d_id = d_id_;
+
+        rowcount_ := cnt_;
+
+        open c_byname for select c_id,
+               c_balance,
+               c_first,
+               c_last,
+               c_middle
+            from customer
+            where c_last = c_last_ and
+                  c_w_id = w_id_   and
+                  c_d_id = d_id_
+            order by c_w_id, c_d_id, c_last, c_first
+            for update;
+
+			while n <= cnt_ loop
+             fetch c_byname into
+                c_id_,
+                c_balance_,
+                c_first_,
+                c_last_,
+                c_middle_;
+			    
+			   n := n + 1;
+			 end loop;
+		
+        rowcount_ := 0;
+    else
+        /* get customer info by id */
+        select c_balance,
+               c_first,
+               c_middle,
+               c_last
+            into
+                c_balance_,
+                c_first_,
+                c_middle_,
+                c_last_
+            from customer
+            where c_id   = c_id_ and
+                  c_d_id = d_id_ and
+                  c_w_id = w_id_
+            for update;
+
+        cnt_ := sql%rowcount;
+		rowcount_ := cnt_;
+     end if;
+
+    /* if no such customer */
+    if cnt_ = 0 then
+        --raiserror('Customer not found',18,1);
+        goto custnotfound;
+    end if;
+
+--dbms_output.put_line('Start order info');
+--dbms_output.put_line('o_w_id '|| w_id_);
+--dbms_output.put_line('o_d_id '|| d_id_);
+--dbms_output.put_line('o_c_id '|| c_id_);
+    
+    /* get order info */
+/*
+   select o_id,
+           o_entry_d,
+           o_carrier_id
+           into
+           o_id_,
+           o_entry_d_,
+           o_carrier_id_
+        from orders
+        where o_w_id = w_id_ and
+              o_d_id = d_id_ and
+              o_c_id = c_id_
+        for update; 
+*/
+     /* select orderlines for the current order  */
+/*
+	open ord_l_cursor for select	ol_supply_w_id,
+									ol_i_id,
+									ol_quantity,
+									ol_amount,
+									ol_delivery_d
+								from order_line
+								where ol_o_id = oo_id and
+									  ol_d_id = dd_id and
+									  ol_w_id = ww_id
+							    for update;
+	loop 
+		fetch ord_l_cursor into oo_line;
+		exit when ord_l_cursor%NOTFOUND;
+	end loop;
+	close ord_l_cursor; 
+*/
+<<custnotfound>>
+
+    commit;
+
+    /* return data to client */
+/*
+    return( cc_id,
+           cc_last,
+           cc_first,
+           cc_middle,
+           co_entry_d,
+           co_carrier_id,
+           cc_balance,
+           oo_id );
+*/
+
+end ostat;
+/
+
+
+create or replace procedure slevel (
+    w_id  in integer,
+    d_id_  in integer,
+    threshold  in integer
+	 )
+as
+  last_o integer; 
+  n_items integer;
+begin
+  set transaction isolation level read committed;
+
+  select d_next_o_id into last_o
+    from district
+    where d_w_id = w_id and d_id = d_id_; 
+
+  select count (distinct s_i_id) into n_items
+    from order_line, stock
+    where ol_w_id = w_id
+      and ol_d_id = d_id_
+      and ol_o_id < last_o
+      and ol_o_id >= last_o - 20
+      and s_w_id = w_id
+      and s_i_id = ol_i_id
+      and s_quantity < threshold; 
+
+	commit;
+  --dbms_output.put_line(to_char(n_items));
+  --result_names (n_items);
+  --result (n_items);
+end slevel;
+/
+create or replace procedure oldord (
+    to_del  in integer
+	 )
+as
+type tord_c is ref cursor;
+  first_o integer; 
+  total integer;
+  o_id_ integer;
+  o_d_id_ integer;
+  o_w_id_ integer;
+  cord  tord_c;  
+  n integer;
+  to_del_ integer;
+  cc integer;
+begin
+  if to_del < 1 then 
+   to_del_ := 30;
+else 
+   to_del_ := to_del;
+   end if;
+   
+  select count(*) into total from orders;
+  if total < to_del_ then 
+    goto exit_p; 
+  end if;
+
+open cord for select o_id,o_w_id,o_d_id from orders;
+
+n := 0;
+while n <= to_del_ loop
+fetch cord into o_id_, o_w_id_, o_d_id_;
+ delete from orders where o_id = o_id_ and o_w_id = o_w_id_ and o_d_id = o_d_id_;
+ delete from order_line where ol_o_id = o_id_ and ol_w_id = o_w_id_ and ol_d_id = o_d_id_;
+n := n + 1;
+cc := cc + 1;
+if cc = 100 then 
+commit;
+cc := 0;
+end if;
+
+end loop;
+<<exit_p>>	
+	commit;
+end oldord;
+/
+exit

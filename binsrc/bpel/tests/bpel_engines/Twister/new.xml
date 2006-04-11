@@ -1,0 +1,377 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<process name="new"
+    targetNamespace="http://www.smartcomps.org/twister/samples/new/process/"
+    xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+    xmlns:lns="http://www.smartcomps.org/twister/samples/new/definition/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:ns0="http://soaptd.org/"
+    xmlns:ns1="http://soapdb.org/"
+    suppressJoinFailure="yes"
+    >
+
+    <correlationSets>
+      <correlationSet properties="lns:OrderID" name="CorrOrder"/>
+    </correlationSets>
+
+    <partnerLinks>
+      <partnerLink name="newer" partnerLinkType="lns:newLinkType" myRole="newProvider" partnerRole="newRequester"/>
+      <partnerLink name="db" partnerLinkType="ns1:DBDriver" partnerRole="DBDriverProvider"/>
+      <partnerLink name="TestDrive" partnerLinkType="ns0:TestDriverA" partnerRole="TestDriverProvider"/>
+    </partnerLinks>
+
+    <variables>
+      <variable name="input" messageType="lns:OrderRequest"/>
+    <variable name="DeliveryS" messageType="lns:DeliveryRequestMessage"/>
+    <variable name="varOrderLine" messageType="ns1:orderLineRequest"/>
+    <variable name="varOrderLineCancel" messageType="ns1:orderCancelRequest"/>
+    <variable name="varOrderLineFinalz" messageType="ns1:orderFinalRequest"/>
+    <variable name="varOrderLineAll" messageType="ns0:orderInitiateRequest"/>
+    <variable name="OLineRequest" messageType="ns1:orderLineRequest"/>
+    <variable name="OLineResponse" messageType="ns1:orderLineResponse"/>
+    <variable name="OLineCancelRequest" messageType="ns1:orderCancelRequest"/>
+    <variable name="OLineCancelResponse" messageType="ns1:orderCancelResponse"/>
+    <variable name="OLineFinalzRequest" messageType="ns1:orderFinalRequest"/>
+    <variable name="OLineFinalzResponse" messageType="ns1:orderFinalResponse"/>
+   <variable name="OrderSuccessRequest" messageType="ns0:orderSuccessRequest"/>
+    <variable name="OrderFaultRequest" messageType="ns0:orderFaultRequest"/>
+    <variable name="OOrderDeliveredRequest" messageType="ns0:orderDeliveredRequest"/>
+    <variable name="OOrderDeliveredResponse" messageType="ns0:orderDeliveredResponse"/>
+    <variable name="PaymentRequest" messageType="ns1:paymentRequest"/>
+    <variable name="PaymentResponse" messageType="ns1:paymentResponse"/>
+    <variable name="iterator" type="xsd:integer"/>
+    <variable name="count" type="xsd:integer"/>
+    <variable name="orderReceiptReply" messageType="ns0:orderReceiptRequest"/>
+    </variables>
+
+    <sequence>
+      <receive partnerLink="newer" portType="lns:newServicePT" operation="order_initiate"
+        variable="input" createInstance="yes">
+        <correlations>
+          <correlation set="CorrOrder" initiate="true"/>
+        </correlations>
+      </receive>
+
+      <sequence name="getini">
+      <assign name="setAttributes">
+        <copy>
+          <from expression="1"/>
+          <to variable="iterator"/>
+        </copy>
+        <copy>
+          <from part="payload" variable="input" query="count(//lines/line)"/>
+          <to variable="count"/>
+        </copy>
+<!-- here we initialize all variables that are messages and are supposed to be
+      use further ; these that are input from I/O we do not need to initialize
+      -->
+        <copy>
+          <from>
+            <orderLine xmlns="">
+              <orderId/>
+              <customerID/>
+              <itemID/>
+              <quantity/>
+              <orderLineID/>
+            </orderLine>
+          </from>
+          <to variable="varOrderLine" part="parameters"/>
+        </copy>
+        <copy>
+          <from>
+            <orderCancel xmlns="">
+              <orderId/>
+              <customerID/>
+              <itemID/>
+              <quantity/>
+              <orderLineID/>
+            </orderCancel>
+          </from>
+          <to variable="varOrderLineCancel" part="parameters"/>
+        </copy>
+        <copy>
+          <from>
+            <orderFault xmlns="">
+              <result/>
+            </orderFault>
+          </from>
+          <to variable="OrderFaultRequest" part="parameters"/>
+        </copy>
+        <copy>
+          <from>
+            <orderFinal xmlns="">
+              <orderId/>
+              <customerID/>
+              <lineTotal/>
+            </orderFinal>
+          </from>
+          <to variable="OLineFinalzRequest" part="parameters"/>
+        </copy>
+        <copy>
+          <from>
+            <orderSuccess xmlns="">
+              <result/>
+            </orderSuccess>
+          </from>
+          <to variable="OrderSuccessRequest" part="parameters"/>
+        </copy>
+        <copy>
+          <from>
+            <orderDelivered xmlns="">
+              <orderID/>
+              <districtID/>
+              <cost/>
+              <customerID/>
+            </orderDelivered>
+          </from>
+          <to variable="OOrderDeliveredRequest" part="parameters"/>
+        </copy>
+        <copy>
+          <from>
+            <payment xmlns="">
+              <customerID/>
+              <amount/>
+              <orderID/>
+            </payment>
+          </from>
+          <to variable="PaymentRequest" part="parameters"/>
+        </copy>
+        <copy>
+          <from>
+            <orderReceipt xmlns="">
+              <result/>
+            </orderReceipt>
+          </from>
+          <to variable="orderReceiptReply" part="parameters"/>
+        </copy>
+      </assign>
+<!-- Receive input from client -->
+
+      <while condition="bpws:getVariableData('count') &gt;= bpws:getVariableData('iterator') and bpws:getVariableData('iterator') &gt; 0" name="xloop">
+        <sequence name="byLine">
+          <assign name="byLineSet">
+            <copy>
+              <from variable="input" part="payload" query="//orderID/node()"/>
+              <to variable="varOrderLine" part="parameters" query="/orderLine/orderId"/>
+            </copy>
+            <copy>
+              <from variable="input" part="payload" query="//customerID/node()"/>
+              <to variable="varOrderLine" part="parameters" query="/orderLine/customerID"/>
+            </copy>
+            <copy>
+              <from variable="input" part="payload" query="//lines/line[position() = bpws:getVariableData('iterator')]"/>
+              <to variable="varOrderLineAll" part="parameters"/>
+            </copy>
+            <copy>
+              <from variable="varOrderLineAll" part="parameters" query="//itemID/node()"/>
+              <to variable="varOrderLine" part="parameters" query="/orderLine/itemID"/>
+            </copy>
+            <copy>
+              <from variable="varOrderLineAll" part="parameters" query="//orderLineID/node()"/>
+              <to variable="varOrderLine" part="parameters" query="/orderLine/orderLineID"/>
+            </copy>
+            <copy>
+              <from variable="varOrderLineAll" part="parameters" query="//quantity/node()"/>
+              <to variable="varOrderLine" part="parameters" query="/orderLine/quantity"/>
+           </copy>
+          </assign>
+<!-- Invoke DB Order Line Endpoint -->
+
+          <invoke name="invoke" partnerLink="db" portType="ns1:DatabaseServiceDocLiteralPortType" operation="orderLine" inputVariable="varOrderLine" outputVariable="OLineResponse"/>
+          <switch>
+            <case condition="bpws:getVariableData('OLineResponse', 'parameters','//result/node()') = '-1'">
+              <sequence name="OrderLineFault">
+                <assign>
+                  <copy>
+                    <from expression="-1"/>
+                    <to variable="iterator"/>
+                  </copy>
+                </assign>
+              </sequence>
+            </case>
+            <otherwise>
+              <sequence name="OrderLineSuccess">
+                <assign>
+                  <copy>
+                    <from expression="bpws:getVariableData('iterator') + 1"/>
+                    <to variable="iterator"/>
+                  </copy>
+                </assign>
+              </sequence>
+            </otherwise>
+          </switch>
+        </sequence>
+      </while>
+
+<!-- Cancel All Order Lines -->
+       <switch>
+        <case condition="bpws:getVariableData('iterator') = -1">
+          <sequence name="CancelOrderLine">
+            <assign name="CancelOrderLineAss">
+              <copy>
+                <from expression="1"/>
+                <to variable="iterator"/>
+              </copy>
+            </assign>
+            <while condition="bpws:getVariableData('count') &gt;= bpws:getVariableData('iterator') and bpws:getVariableData('iterator') &gt; 0" name="xloop">
+              <sequence name="CancelByLine">
+                <assign name="b">
+                  <copy>
+                    <from variable="input" part="payload" query="//orderID/node()"/>
+                    <to variable="varOrderLineCancel" part="parameters" query="/orderCancel/orderId"/>
+                  </copy>
+                  <copy>
+                    <from variable="input" part="payload" query="//customerID/node()"/>
+                    <to variable="varOrderLineCancel" part="parameters" query="/orderCancel/customerID"/>
+                  </copy>
+                  <copy>
+                    <from variable="input" part="payload" query="//lines/line[position() = bpws:getVariableData('iterator')]"/>
+                    <to variable="varOrderLineAll" part="parameters"/>
+                  </copy>
+                  <copy>
+                    <from variable="varOrderLineAll" part="parameters" query="//itemID/node()"/>
+                    <to variable="varOrderLineCancel" part="parameters" query="/orderCancel/itemID"/>
+                  </copy>
+                  <copy>
+                    <from variable="varOrderLineAll" part="parameters" query="//orderLineID/node()"/>
+                    <to variable="varOrderLineCancel" part="parameters" query="/orderCancel/orderLineID"/>
+                  </copy>
+                  <copy>
+                    <from variable="varOrderLineAll" part="parameters" query="//quantity/node()"/>
+                    <to variable="varOrderLineCancel" part="parameters" query="/orderCancel/quantity"/>
+                  </copy>
+                </assign>
+<!-- Invoke DB Order Line Cancelation -->
+                <invoke name="invokeOrderLineCancel" partnerLink="db" portType="ns1:DatabaseServiceDocLiteralPortType" operation="orderCancel" inputVariable="varOrderLineCancel" outputVariable="OLineCancelResponse"/>
+                <assign>
+                  <copy>
+                    <from expression="bpws:getVariableData('iterator') + 1"/>
+                    <to variable="iterator"/>
+                  </copy>
+                </assign>
+              </sequence>
+            </while>
+<!--Send Order Cancelation Message to Test Driver -->
+            <assign>
+              <copy>
+                <from expression="1"/>
+                <to variable="OrderFaultRequest" part="parameters" query="/orderFault/result"/>
+              </copy>
+            </assign>
+<!--Send the TestDriver Order Fault Confirm msg -->
+            <invoke name="OrderCancelConfirm" partnerLink="TestDrive" portType="ns0:TestDriverServiceDocLiteralPortType" operation="orderFault" inputVariable="OrderFaultRequest"/>
+          </sequence>
+        </case>
+<!-- Finalize Order -->
+        <otherwise>
+          <sequence name="FinalizeOrder">
+            <assign name="FinalizeOrderAss">
+              <copy>
+                <from expression="bpws:getVariableData('count')"/>
+                <to variable="OLineFinalzRequest" part="parameters" query="/orderFinal/lineTotal"/>
+              </copy>
+              <copy>
+                <from variable="input" part="payload" query="//orderID/node()"/>
+                <to variable="OLineFinalzRequest" part="parameters" query="/orderFinal/orderId"/>
+              </copy>
+              <copy>
+                <from variable="input" part="payload" query="//customerID/node()"/>
+                <to variable="OLineFinalzRequest" part="parameters" query="/orderFinal/customerID"/>
+              </copy>
+            </assign>
+<!--Order Finalized operation invoke from the Database -->
+            <invoke name="invokeOrderFin" partnerLink="db" portType="ns1:DatabaseServiceDocLiteralPortType" operation="orderFinal" inputVariable="OLineFinalzRequest" outputVariable="OLineFinalzResponse"/>
+<!--Send Order Confirmation Message for Succeded Order to Test Driver -->
+            <assign>
+              <copy>
+                <from expression="1"/>
+                <to variable="OrderSuccessRequest" part="parameters" query="/orderSuccess/result"/>
+              </copy>
+            </assign>
+<!--Send the TestDriver Order Confirm msg -->
+            <invoke name="OrderSuccessConfirm" partnerLink="TestDrive" portType="ns0:TestDriverServiceDocLiteralPortType" operation="orderSuccess" inputVariable="OrderSuccessRequest"/>
+          </sequence>
+        </otherwise>
+      </switch>
+<!-- Receive Delivery from DB -->
+      <receive name="getDelivery" partnerLink="client" portType="lns:newServicePT" operation="delv" variable="DeliveryS">
+        <correlations>
+          <correlation set="Order" initiate="no"/>
+        </correlations>
+      </receive>
+      <assign>
+        <copy>
+          <from variable="DeliveryS" part="payload" query="//ID/node()"/>
+          <to variable="OOrderDeliveredRequest" part="parameters" query="/orderDelivered/orderID"/>
+        </copy>
+        <copy>
+          <from variable="DeliveryS" part="payload" query="//cID/node()"/>
+          <to variable="OOrderDeliveredRequest" part="parameters" query="/orderDelivered/customerID"/>
+        </copy>
+        <copy>
+          <from variable="DeliveryS" part="payload" query="//price/node()"/>
+          <to variable="OOrderDeliveredRequest" part="parameters" query="/orderDelivered/cost"/>
+        </copy>
+      </assign>
+<!--Announce the TestDriver for Delivery and get Payment Request -->
+      <invoke name="sendDelivery" partnerLink="TestDrive" portType="ns0:TestDriverServiceDocLiteralPortType" operation="orderDelivered" inputVariable="OOrderDeliveredRequest" outputVariable="OOrderDeliveredResponse"/>
+      <assign>
+        <copy>
+          <from variable="OOrderDeliveredResponse" part="parameters" query="//customerID/node()"/>
+          <to variable="PaymentRequest" part="parameters" query="/payment/customerID"/>
+        </copy>
+        <copy>
+          <from variable="OOrderDeliveredResponse" part="parameters" query="//amount/node()"/>
+          <to variable="PaymentRequest" part="parameters" query="/payment/amount"/>
+        </copy>
+        <copy>
+          <from variable="OOrderDeliveredResponse" part="parameters" query="//orderID/node()"/>
+          <to variable="PaymentRequest" part="parameters" query="/payment/orderID"/>
+        </copy>
+      </assign>
+<!--Send to db the payment to start the transaction -->
+      <invoke name="sendPayment" partnerLink="db" portType="ns1:DatabaseServiceDocLiteralPortType" operation="payment" inputVariable="PaymentRequest" outputVariable="PaymentResponse"/>
+      <switch>
+        <case condition="bpws:getVariableData('PaymentResponse','parameters','//CallReturn') = 1">
+          <sequence>
+            <assign>
+              <copy>
+                <from expression="1"/>
+                <to variable="orderReceiptReply" part="parameters" query="/orderReceipt/result"/>
+              </copy>
+            </assign>
+<!--Send the TestDriver receipt order-->
+         <invoke name="sendReceipt" partnerLink="TestDrive" portType="ns0:TestDriverServiceDocLiteralPortType" operation="orderReceipt" inputVariable="orderReceiptReply"/>
+          </sequence>
+        </case>
+        <otherwise><empty/></otherwise>
+      </switch>
+    </sequence>
+
+
+
+
+    </sequence>
+
+</process>

@@ -1,0 +1,102 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+<head>
+  <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
+  <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=services/services.wsdl&xslt_type=simple"></script>
+  <link rel="stylesheet" type="text/css" href="../demo.css">
+</head>
+<body>
+<H3>Manipulating Orders with SOAP call</H3>
+<form action="so_s_2_sample_1.vsp" method="post">
+<table class="tableentry" border="0">
+
+<tr><td>1. Pick Customer</td>
+    <td>
+    <select name="CustomerID" id="CustomerID">
+    <?vsp for select CompanyName, CustomerID from Demo.demo.Customers do { ?>
+    <option value="<?=CustomerID?>"><?=CompanyName?></option>
+    <?vsp } ?>
+    </select>
+    </td>
+</tr>
+
+<tr><td>2. Pick Employee</td>
+    <td>
+    <select name="EmployeeID" id="EmployeeID">
+    <?vsp for select FirstName, LastName, EmployeeID from Demo.demo.Employees do { ?>
+    <option value="<?=EmployeeID?>"><?=LastName?> <?=FirstName?></option>
+    <?vsp } ?>
+    </select>
+    </td>
+</tr>
+
+<tr><td>3. Required by Date</td><td><input type=text size=26 name="RequiredDate" id="RequiredDate" value="<?=now()?>"></td></tr>
+
+<tr><td>4. ShipVia</td>
+    <td>
+    <select name="ShipVia" id="ShipVia">
+    <?vsp for select ShipperID, CompanyName from Demo.demo.Shippers do { ?>
+    <option value="<?=ShipperID?>"><?=CompanyName?></option>
+    <?vsp } ?>
+    </select>
+    </td>
+</tr>
+
+<tr>
+    <td>5. ProductID</td>
+    <td>
+     <select name="ProductID" id="ProductID">
+     <?vsp for select ProductID, ProductName from Demo.demo.Products do { ?>
+     <option value="<?=ProductID?>"><?=ProductName?></option>
+     <?vsp } ?>
+     </select>
+    </td>
+</tr>
+<tr>
+    <td>6. Quantity</td>
+    <td><input type=text name="Quantity" id="Quantity" size="5" value="0"></td>
+</tr>
+<tr>
+    <td>7. Discount</td>
+    <td><input type=text name="Discount" id="Discount" value="0.00" size="5"></td>
+</tr>
+
+<tr><td>8. Execute new_order() SOAP method</td>
+    <td><input type=button name=exec value="Execute" onClick="ajax.Start(sendorderSoap,'')" ></td>
+</tr>
+
+</table>
+</form>
+      <script defer="defer" type="text/javascript">
+          var sendorderSoap = {
+            delay: 200,
+            prepare: function() {return Array(document.getElementById('CustomerID').value,document.getElementById('EmployeeID').value,document.getElementById('ShipVia').value,document.getElementById('RequiredDate').value,document.getElementById('ProductID').value,document.getElementById('Quantity').value,document.getElementById('Discount').value);},
+            call: proxies.SOAP.new_order,
+            finish: function (p) {alert('SOAP call sucsessful! Inserted record id: '+p +'.');},
+            onException: proxies.alertException
+          }
+      </script>
+
+</body>
+</html>

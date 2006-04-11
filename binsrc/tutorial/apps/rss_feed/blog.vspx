@@ -1,0 +1,258 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<head>
+<style type="text/css">
+<![CDATA[
+body { margin-top: 20px; margin-left: 0px; margin-right: 0px; margin-bottom: 20px; }
+body, td, p { font-family: verdana, sans-serif; font-size: 12px; }
+h2 { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 24px; font-weight: bold }
+.header { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 40px; font-weight: bold }
+.small { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 10px; }
+.realsmall { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 9px; width: 19px; height: 10px; }
+]]>
+</style>
+</head>
+<body>
+<v:page name="pagecal1" xmlns:v="http://www.openlinksw.com/vspx/">
+<v:variable name="fordate" type="date" default="NULL"/>
+<v:variable name="uname" type="varchar" default="''" persist="temp"/>
+<v:variable name="act" type="any" default="null" />
+<v:variable name="rssfeed" type="any" default="null" />
+<v:variable name="enabled" type="int" default="1" />
+
+
+<v:on-init>
+  self.rssfeed := 'http://' || HTTP_GET_HOST () || '/tutorial/apps/rss_feed/rss.vsp';
+  if (not e.ve_is_post)
+    {
+  self.fordate :=
+    coalesce ((select top 1 B_TS from RSS_FEEDS where B_RSS_URL = self.rssfeed order by B_TS desc), now ());
+  declare cal vspx_calendar;
+  cal := self.vc_find_descendant_control ('cal1');
+  cal.cal_date := self.fordate;
+    }
+  self.uname := coalesce ((select top 1 B_USER_ID from RSS_FEEDS where B_RSS_URL = self.rssfeed), self.uname);
+  if (self.uname = '')
+    self.enabled := 0;
+  self.act := bs_get_days (self.fordate, self.rssfeed);
+</v:on-init>
+
+<div align="center">
+<v:form name="form1" type="simple" action="blog.vspx" >
+<table border="0" cellpadding="0" cellspacing="0" width="80%">
+<tr>
+  <td valign="top">
+  <table border="0" cellpadding="0" cellspacing="0" width="70%">
+    <tr>
+      <td>
+      Enter a URL to RSS2 source: <v:text name="rssf" value="--self.rssfeed" xhtml_size="70%" />
+      </td>
+      <td>
+      <v:button action="simple" name="exec" value="Fetch" >
+        <v:on-post>
+	  declare t vspx_field;
+	  declare ctrl vspx_control;
+          declare cal vspx_calendar;
+	  t := control.vc_parent.vc_find_control ('rssf');
+	  self.rssfeed := t.ufl_value;
+	  rss_feed (t.ufl_value);
+
+          self.fordate :=
+	     coalesce ((select top 1 B_TS from RSS_FEEDS where B_RSS_URL = self.rssfeed order by B_TS desc),
+		 now ());
+
+          ctrl := self.vc_find_descendant_control ('ds');
+	  self.enabled := 1;
+	  ctrl.vc_enabled := 1;
+	  ctrl.vc_data_bind (e);
+          self.act := bs_get_days (self.fordate, self.rssfeed);
+          ctrl := self.vc_find_descendant_control ('cal1');
+
+          cal := ctrl;
+          cal.cal_date := self.fordate;
+          self.uname := coalesce ((select top 1 B_USER_ID from RSS_FEEDS where B_RSS_URL = self.rssfeed),
+	      self.uname);
+	  ctrl.vc_data_bind (e);
+	</v:on-post>
+        </v:button>
+      </td>
+    </tr>
+    <tr>
+      <td>
+       <!-- DATASET -->
+      <v:data-set name="ds" data='--bbs_get (dt, url)' meta="--bbs_meta (dt, url)" nrows="10" scrollable="0" initial-enable="--self.enabled">
+        <v:param name="dt" value="--self.fordate"/>
+        <v:param name="url" value="--self.rssfeed"/>
+        <v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
+          <div align="left" style="margin-left: px;"><H2><?V self.uname ?></H2></div>
+          <table border="0" cellspacing="1" cellpadding="5">
+	    <tr><td align="center">
+	         <b>
+	         <v:label name="label03" value="--bs_tit_fmt (self.fordate)" format="%s"/>
+		 </b>
+	        </td>
+  	    </tr>
+          </table>
+        </v:template>
+        <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+          <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table>
+              <tr bgcolor="FFFFFF">
+                <td align="center">
+                  No postings
+                </td>
+              </tr>
+            </table>
+          </v:template>
+          <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
+            <table>
+              <tr bgcolor="FFFFFF">
+                <td align="left">
+                  <v:label name="label5" value="--cal_icell (control, 0)" format="%s"/>
+                </td>
+              </tr>
+	      <tr>
+                <td align="left" nowrap="1" colspan="1" style="color: #A0A0A0;" >
+                  <v:label name="label6" value="--cal_icell (control, 1)" format="%s" fmt-function="bs_date_fmt"/>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+        </v:template>
+        <v:template name="template8" type="simple" name-to-remove="table" set-to-remove="top">
+            <table>
+            </table>
+        </v:template>
+      </v:data-set>
+       <!-- END DATASET -->
+      </td>
+    </tr>
+  </table>
+  </td>
+  <td valign="top" width="130">
+    <v:calendar name="cal1" initial-date="--coalesce (self.fordate, now())">
+      <!--v:before-data-bind>
+        dbg_obj_print ('cal bddb', control.cal_date);
+      </v:before-data-bind-->
+      <v:after-data-bind>
+       if (control.cal_date is not null)
+         self.fordate := control.cal_date;
+	 --dbg_obj_print ('cal afdb', control.cal_date);
+      </v:after-data-bind>
+      <v:template type="simple" name="chead1" name-to-remove="table" set-to-remove="bottom">
+      <table border="0" cellpadding="1" cellspacing="0" bgcolor="#EEEEEE">
+        <tr>
+         <td align="center">
+	  <v:button name="pmon" value="&amp;lt;" action="simple" style="url">
+	    <v:on-post>
+	    declare cal vspx_calendar;
+	    declare ctrl vspx_control;
+	    cal := control.vc_parent.vc_parent;
+	    cal.cal_date := dateadd ('month', -1, cal.cal_date);
+            self.act := bs_get_days (cal.cal_date, self.rssfeed);
+	    ctrl := cal;
+	    ctrl.vc_data_bind (e);
+            ctrl := self.vc_find_descendant_control ('ds');
+	    ctrl.vc_data_bind (e);
+	    --dbg_obj_print ('cal prev', cal.cal_date);
+	    </v:on-post>
+	  </v:button>
+	 </td>
+ 	 <td colspan="5" align="center"><B>
+           <?V monthname((control.vc_parent as vspx_calendar).cal_date) ?>
+	   <?V year((control.vc_parent as vspx_calendar).cal_date) ?>
+	   </B>
+	 </td>
+         <td align="center">
+	  <v:button name="nmon" value="&amp;gt;" action="simple" style="url">
+	    <v:on-post>
+	    declare cal vspx_calendar;
+	    declare ctrl vspx_control;
+	    cal := control.vc_parent.vc_parent;
+	    cal.cal_date := dateadd ('month', 1, cal.cal_date);
+            self.act := bs_get_days (cal.cal_date, self.rssfeed);
+	    ctrl := cal;
+	    ctrl.vc_data_bind (e);
+            ctrl := self.vc_find_descendant_control ('ds');
+	    ctrl.vc_data_bind (e);
+	    --dbg_obj_print ('cal next', cal.cal_date);
+	    </v:on-post>
+	  </v:button>
+	 </td>
+	 </tr>
+        <tr><td class="realsmall">Sun</td><td class="realsmall">Mon</td><td class="realsmall">Tue</td><td class="realsmall">Wed</td><td class="realsmall">Thu</td><td class="realsmall">Fri</td><td class="realsmall">Sat</td></tr>
+      </table>
+      </v:template>
+      <v:template type="repeat" name="cbody1" name-to-remove="" set-to-remove="">
+      <v:template type="browse" name="crow1" name-to-remove="table" set-to-remove="both">
+      <table>
+      <tr>
+       <td align="center" class="realsmall" style="<?V bs_style(control, 'b1') ?>" >
+         <v:button style="url" action="simple" name="b1" value="--cal_icell(control, 0)" xhtml_style="text-decoration: none;" active="--bs_active (cal_icell(control, 0), self.act)" /></td>
+       <td align="center" class="realsmall"  style="<?V bs_style(control, 'b2') ?>"  >
+         <v:button style="url" action="simple" name="b2" value="--cal_icell(control, 1)"  xhtml_style="text-decoration: none;"  active="--bs_active (cal_icell(control, 1), self.act)"/></td>
+       <td align="center" class="realsmall"  style="<?V bs_style(control, 'b3') ?>" >
+         <v:button style="url" action="simple" name="b3" value="--cal_icell(control, 2)"  xhtml_style="text-decoration: none;"  active="--bs_active (cal_icell(control, 2), self.act)"/></td>
+       <td align="center" class="realsmall"  style="<?V bs_style(control, 'b4') ?>" >
+         <v:button style="url" action="simple" name="b4" value="--cal_icell(control, 3)"  xhtml_style="text-decoration: none;"  active="--bs_active (cal_icell(control, 3), self.act)"/></td>
+       <td align="center" class="realsmall"  style="<?V bs_style(control, 'b5') ?>" >
+         <v:button style="url" action="simple" name="b5" value="--cal_icell(control, 4)"  xhtml_style="text-decoration: none;"  active="--bs_active (cal_icell(control, 4), self.act)"/></td>
+       <td align="center" class="realsmall"  style="<?V bs_style(control, 'b6') ?>" >
+         <v:button style="url" action="simple" name="b6" value="--cal_icell(control, 5)"  xhtml_style="text-decoration: none;"  active="--bs_active (cal_icell(control, 5), self.act)"/></td>
+       <td align="center" class="realsmall"  style="<?V bs_style(control, 'b7') ?>" >
+         <v:button style="url" action="simple" name="b7" value="--cal_icell(control, 6)"  xhtml_style="text-decoration: none;"  active="--bs_active (cal_icell(control, 6), self.act)"/></td>
+      </tr>
+      </table>
+      </v:template>
+      </v:template>
+      <v:template type="simple" name="cbott1" name-to-remove="table" set-to-remove="top">
+      <table>
+      </table>
+      </v:template>
+    </v:calendar>
+    <div align="center" style="margin-top: 50px;">
+    <v:url name="rss1" value="XML" url="--self.rssfeed" />
+    </div>
+  </td>
+</tr>
+</table>
+      <v:on-post>
+      declare cal vspx_calendar;
+      cal := control.vc_find_control ('cal1');
+      if (cal.vc_focus and cal.cal_selected is not null)
+       {
+	 --dbg_obj_print ('cal post', cal.cal_selected);
+         declare ctrl vspx_control;
+	 self.fordate := cal.cal_selected;
+         ctrl := control.vc_find_control ('ds');
+         ctrl.vc_data_bind (e);
+       }
+      </v:on-post>
+</v:form>
+</div>
+
+</v:page>
+</body>
+</html>
+

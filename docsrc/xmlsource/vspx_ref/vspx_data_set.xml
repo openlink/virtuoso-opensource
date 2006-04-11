@@ -1,0 +1,209 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_data_set">
+<refmeta>
+  <refentrytitle>vspx_data_set</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_data_set</refname>
+  <refpurpose>scrollable, multi-row data bound grid</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_data_set">
+    <funcprototype id="proto_vspx_data_set">
+      <funcdef>
+        <function>data-set</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>sql (required) </attribute>
+        <attribute>nrows (required) </attribute>
+        <attribute>scrollable (required) </attribute>
+        <attribute>cursor-type (optional) </attribute>
+        <attribute>edit (optional) </attribute>
+      </attributes>
+      <childs>
+        <child>after-data-bind</child>
+        <child>after-data-bind-container</child>
+        <child>before-data-bind</child>
+        <child>before-data-bind-container</child>
+        <child>on-post</child>
+        <child>on-post-container</child>
+        <child>before-render</child>
+        <child>before-render-container</child>
+        <child>radio-button</child>
+        <child>button</child>
+        <child>check-box</child>
+        <child>select-list</child>
+        <child>textarea</child>
+        <child>text</child>
+        <child>update-field</child>
+        <child>key</child>
+        <child>variable</child>
+        <child>label</child>
+        <child>url</child>
+        <child>data-grid</child>
+        <child>data-set</child>
+        <child>data-list</child>
+        <child>tab</child>
+        <child>tree</child>
+        <child>include</child>
+        <child>error-summary</child>
+        <child>radio-button</child>
+        <child>button</child>
+        <child>check-box</child>
+        <child>select-list</child>
+        <child>textarea</child>
+        <child>text</child>
+        <child>update-field</child>
+        <child>key</child>
+        <child>node</child>
+        <child>form</child>
+        <child>template</child>
+        <child>login</child>
+        <child>login-form</child>
+        <child>column</child>
+        <child>param</child>
+        <child>key</child>
+      </childs>
+      <class>
+        <screen><![CDATA[
+				
+create type vspx_data_set under vspx_form
+as (
+    ds_nrows int,			-- how many rows to show on single page
+    ds_scrollable int,			-- scroll on form is enabled
+    ds_editable int default 1,          -- disable edit/add on whole grid
+    ds_row_meta any,			-- metadata
+    ds_current_row vspx_row_template,   -- current row template
+    ds_rowno_edit int default null,	-- last edited row in result set, to re-display the edit box on error
+    ds_rows_fetched int default 0,	-- these are to keep state for scrolling
+    ds_prev_bookmark any default null,
+    ds_last_bookmark any default null,
+    ds_rows_cache any			-- internal use only
+   ) temporary self as ref		 
+  method vc_templates_clean () returns any,
+  overriding method vc_view_state (stream any) returns any
+;
+				
+			    ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_data_set">
+  <title>Description</title>
+  <para>
+    <function>vspx_data_set</function>A container for displaying and/or editing the content of a resultset.</para>
+</refsect1>
+<refsect1 id="attrs_vspx_data_set">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>sql</title>
+    <para>The select statement that gets the data.
+Parameters to the statement MUST be specified as named ones (ie. with leading colon).
+These get bound to the values of data bound for vspx:param children by name.</para>
+  </refsect2>
+  <refsect2>
+    <title>nrows</title>
+    <para>The maximum number of replicas of the row template to be made for rows selected.
+It is like the rowset size for a scrollable cursor.
+KNOWN BUG: It should be an SQL expression but now only a constant value is supported.</para>
+  </refsect2>
+  <refsect2>
+    <title>scrollable</title>
+    <para>The setting controls whether next and previous page buttons are presented.  This can be on even if the cursor is not scrollable as such.</para>
+  </refsect2>
+  <refsect2>
+    <title>cursor-type</title>
+    <para>
+This defines the type of scrollable cursor used.  In all cases, the
+cursor is reopened at each invocation of the page and a
+bookmark is used to position it.  The dynamic type is
+recommended for performance, however this is efficient only if
+the table is being read in the order of some index.
+These must be fixed values, no data binding.</para>
+    <para>
+         &#39;static&#39; : </para>
+    <para>
+         &#39;dynamic&#39; : </para>
+    <para>
+         &#39;keyset&#39; : </para>
+  </refsect2>
+  <refsect2>
+    <title>edit</title>
+    <para>Flags whether editing features are enabled on data grid control</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_data_set">
+  <title>Children</title>
+  <refsect2>
+    <title>column</title>
+    <para>
+A column marker for use in v:data-set.
+This element should exist for each selected column of the SQL expression of the data set.
+If this is specified uder data-set or data-grid controls, this must be the exact same columns as in SQL statement to be evaluated. If those element is ommited in data-set or data-grid, the columns will be extracted from compilation of the SQL statement.
+However, it will be always required for calls of stored procedures that return resultsets.
+</para>
+  </refsect2>
+  <refsect2>
+    <title>param</title>
+    <para>Named parameter for execution of the cursor select statement. This must be name of parameter for SQL statement specified, but without leading colon.</para>
+  </refsect2>
+  <refsect2>
+    <title>key</title>
+    <para>Defines a key value of the vspx:form of type &#39;update&#39;.
+All the vspx:key children together should select one or zero rows from the table.
+</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="examples_vspx_data_set">
+  <title>Examples</title>
+  <example id="ex_vspx_data_set">
+    <title>Simple example</title>
+    <para>
+			    </para>
+    <screen><![CDATA[
+				
+				
+			    ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

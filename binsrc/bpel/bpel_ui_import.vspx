@@ -1,0 +1,109 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:template name="import" type="simple" xmlns:v="http://www.openlinksw.com/vspx/" title="Import process">
+  <tr>
+    <td>&nbsp; </td>
+    <td nowrap="1">
+      <font color="Red">*</font> All bpel and  wsdl files referenced by the file at this URL will be loaded and will be ready to compile.
+    </td>
+  </tr>
+  <tr>
+    <td>&nbsp; </td>
+    <td>
+      <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="right"><v:url name="rdAuth" xhtml_class="m_e" value="Authentication" url="--sprintf('help.vspx?id=process_redefine&name=pu_fields_authen')" xhtml_target="_blank"/></td>
+          <td>
+            <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+              <tr>
+                <td nowrap="1" align="right"><label for="login_user">User</label></td>
+                <td>
+                  <v:text name="usern" value="--connection_get('HTTP_CLI_UID')" null-value="''" xhtml_maxlength="30" xhtml_size="20" xhtml_id="login_user"/>
+                </td>
+              </tr>
+              <tr>
+                <td align="right"><label for="login_pwd">Password</label></td>
+                <td>
+                  <v:text name="pass" value="--connection_get('HTTP_CLI_PWD')" null-value="''" xhtml_size="20" xhtml_maxlength="30" type="password" xhtml_id="login_pwd"/>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td align="left">&nbsp;</td>
+    <td>
+      <table width="100%"  border="2" id="subcontent" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="left" width="15%" nowrap="1"><b><v:url name="rdDESCR" xhtml_class="m_e" value="Load Deployment Descriptor from:" url="--sprintf('help.vspx?id=process_redefine&name=pu_fields_descr')" xhtml_target="_blank"/></b></td>
+          <td>
+            <font style="color: red"><v:error-summary match="imp_url" /></font>
+            <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+               <tr>
+                 <td align="right">URL</td>
+                 <td nowrap="1">
+                   <v:text name="imp_url" value="''" xhtml_size="60%"/><br/>
+                 </td>
+               </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td/>
+          <td>
+            <v:button action="simple" value="Import Process" xhtml_class="m_e" name="importB">
+              <v:on-post>
+                if (not self.vc_is_valid)
+                  return;
+
+                if ( trim(self.bpel_name.ufl_value, ' ') = '')
+                {
+                  self.bpel_name.vc_error_message := 'Please, enter valid process name.';
+                  self.vc_is_valid := 0;
+                  return 0;
+                };
+
+                if (not length (self.imp_url.ufl_value))
+                {
+                  self.imp_url.vc_error_message := 'Please, enter correct URL for Deployment Descriptor.';
+                  self.vc_is_valid := 0;
+                  return 0;
+                };
+                self.impu:=trim(self.imp_url.ufl_value,' ');
+
+                BPEL.BPEL.set_uri_connection(self.usern.ufl_value, self.pass.ufl_value);
+                self.vc_data_bind(e);
+                BPEL.BPEL.import_script(self.impu,self.bpel_name.ufl_value,self.id);
+                self.do_redirect (sprintf ('upload_new.vspx?id=%d', self.id));
+              </v:on-post>
+            </v:button>
+            <font style="color: red"><v:error-summary match="imp_second" /></font>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</v:template>

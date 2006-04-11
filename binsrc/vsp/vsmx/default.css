@@ -1,0 +1,342 @@
+BODY
+{
+    MARGIN-TOP: 0px;
+    FONT-SIZE: 80%;
+    MARGIN-LEFT: 0em;
+    COLOR: #0a0a0a;
+    MARGIN-RIGHT: 0em;
+    font-family: Arial, Helvetica, Helv, sans-serif;
+    BACKGROUND-COLOR: #f0f0f0
+}
+.head1
+{
+    PADDING-BOTTOM: 5px;
+    COLOR: #191970;
+    LINE-HEIGHT: normal;
+    MARGIN-RIGHT: 0em;
+    PADDING-TOP: 5px;
+    font-family: Arial, Helvetica, Helv, sans-serif;
+    TEXT-ALIGN: right
+}
+
+DIV.foot
+{
+  /*clear: both;*/
+  font-size: x-small;
+  text-align: right;
+  margin-right: 5px;
+  border-top: 1px solid silver;
+}
+ 
+H1
+{
+    PADDING-RIGHT: 3em;
+    MARGIN-TOP: 5px;
+    FONT-SIZE: 185%;
+    MARGIN-BOTTOM: 5px;
+    MARGIN-LEFT: 0em
+}
+.info
+{
+    FONT-SIZE: 12px;
+    LINE-HEIGHT: normal;
+    FONT-FAMILY: Verdana, Arial, Helvetica, Lucida, Sans-Serif;
+    TEXT-ALIGN: left 
+}
+.subinfo
+{
+    FONT-SIZE: 12px;
+    FONT-WEIGHT: bold;
+    LINE-HEIGHT: normal;
+    FONT-FAMILY: Verdana, Arial, Helvetica, Lucida, Sans-Serif;
+    TEXT-ALIGN: left 
+}
+A
+{
+    COLOR: blue;
+    TEXT-DECORATION: none
+}
+A:hover
+{
+    TEXT-DECORATION: underline
+}
+.operation
+{
+    PADDING-RIGHT: 10px;
+    PADDING-LEFT: 30px;
+    PADDING-BOTTOM: 10px;
+    PADDING-TOP: 10px;
+    VERTICAL-ALIGN: top;
+}
+.soaplist
+{
+    VERTICAL-ALIGN: top;
+    PADDING-RIGHT: 5px;
+    PADDING-LEFT: 25px;
+    PADDING-BOTTOM: 10px;
+    MARGIN: 0px;
+    WIDTH: 225px;
+    PADDING-TOP: 10px;
+    BACKGROUND-COLOR: gainsboro
+}
+.soapdesc
+{
+    FONT-SIZE: 90%;
+    FONT-FAMILY: Tahoma
+}
+INPUT
+{
+    BORDER-RIGHT: silver 1px solid;
+    BORDER-TOP: silver 1px solid;
+    BORDER-LEFT: silver 1px solid;
+    BORDER-BOTTOM: silver 1px solid;
+    FONT-FAMILY: Tahoma
+}
+.btns
+{
+    TEXT-ALIGN: right
+}
+TABLE.service
+{
+    BORDER-RIGHT: #ebebeb 1px solid;
+    BORDER-TOP: #ebebeb 1px solid;
+    BORDER-LEFT: #ebebeb 1px solid;
+    BORDER-BOTTOM: #ebebeb 1px solid;
+    FONT-FAMILY: Tahoma
+}
+TH.service
+{
+    BACKGROUND-COLOR: silver;
+    TEXT-ALIGN: left
+}
+H2
+{
+    FONT-SIZE: 150%;
+}
+H3
+{
+    FONT-SIZE: 120%;
+    MARGIN-BOTTOM: 0px;
+}
+.soapli
+{
+    PADDING-BOTTOM: 5px;
+    TEXT-INDENT: -20px
+}
+TD.service
+{
+    BACKGROUND-COLOR: #f0f0f0
+}
+.response
+{
+    BORDER-RIGHT: #f0f0f0 1px solid;
+    PADDING-RIGHT: 2px;
+    BORDER-TOP: #f0f0f0 1px solid;
+    PADDING-LEFT: 2px;
+    PADDING-BOTTOM: 2px;
+    BORDER-LEFT: #f0f0f0 1px solid;
+    PADDING-TOP: 2px;
+    BORDER-BOTTOM: #f0f0f0 1px solid
+}
+.details
+{
+    PADDING-RIGHT: 2px;
+    PADDING-LEFT: 30px;
+    PADDING-BOTTOM: 2px;
+    PADDING-TOP: 10px;
+    BACKGROUND-COLOR: #f0f0f0;
+    TEXT-ALIGN: left
+}
+.level1
+{
+    COLOR: blue
+}
+.level2
+{
+    COLOR: red
+}
+.level3
+{
+    COLOR: green
+}
+.level4
+{
+    COLOR: teal
+}
+.attribname
+{
+    TEXT-ALIGN: right;
+}
+.attrib
+{
+    COLOR: #990000
+}
+
+.textElement { font-family: Arial; font-size: 10pt; color: #800000; }
+.textAttr { font-family: Arial; font-size: 10pt; color: #FF0000; }
+.textContents { font-family: Arial; font-size: 10pt; color: #000000; }
+.textOperator { font-family: Arial; font-size: 10pt; color: #0000FF; }
+.schemaHeader { font-family: Arial; font-size: 11pt; font-style: italic; color: #000000; }
+.schemaHeader2 { font-family: Arial; font-size: 11pt; font-weight: bold; color: #000000;  margin-right: 5px; }
+.elementHeader { font-family: Arial; font-size: 11pt; color: #000000; }
+.elementHeader2 { font-family: Arial; font-size: 11pt; font-weight: bold; color: #000000; }
+.schemaName { font-family: Arial; font-size: 10pt; font-weight: bold; color: #000000; }
+.schemaSubTitle { font-family: Arial; font-size: 10pt; color: #000000; }
+.schemaSubData { font-family: Arial; font-size: 10pt; color: #000000; }
+pre { margin-bottom: 0 }
+
+
+table.listing
+{
+        width: 100%;
+        background-color: white;
+}
+ 
+table.listing th
+{
+  border-color: #FFFFFF;
+  border-style: solid;
+  border-width: 0px 0px 0px 1px;
+  padding: 2px;
+}
+ 
+ 
+tr.listing_header_row
+{
+  background-image: url(stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
+ 
+tr.listing_header_row th
+{
+  white-space: nowrap;
+}
+ 
+.page_tab
+{
+        font-size: 11px;
+        text-align: left;
+        white-space: nowrap;
+        padding: 2px 4px;
+        background-image: url(slvnav.jpg);
+        border-top: 1px solid #999999;
+        border-right: 1px solid #999999;
+        border-bottom: 1px solid #CCCCCC;
+        border-left: 1px solid #FFFFFF;
+        background-repeat: repeat-x;
+        background-color: #FFFFFF;
+}
+ 
+.page_tab_empty
+{
+    white-space: nowrap;
+    border-bottom:1px solid #CCCCCC;
+    border-left:1px solid #CCCCCC;
+    border-right:0;
+    border-top:0;
+    width: 100%;
+}
+ 
+.page_tab_selected
+{
+        white-space: nowrap;
+        font-size: 11px;
+        background-color: white;
+        text-align: left;
+        padding: 2px 7px;
+        border-top:1px solid #999999;
+        border-left:1px solid #CCCCCC;
+        border-right:1px solid #CCCCCC;
+        border-bottom:0;
+        font-family: Verdana, Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        line-height: 1.5em;
+}
+
+.close_btn a, 
+.close_btn a:hover, 
+.close_btn a:visited 
+{
+  text-decoration: none;
+}
+
+ 
+.page_tab a
+{
+  color: black;
+  text-decoration: none;
+}
+ 
+.page_tab_selected a
+{
+  color: black;
+  text-decoration: none;
+}
+ 
+.page_tab a:hover
+{
+  color: black;
+  text-decoration: underline;
+}
+ 
+table.page_tab_row
+{
+   width: 100%;
+}
+
+.scroll_area
+{
+  background-color: white;
+  height: 30em;
+  width: auto;
+  margin-right:12px;
+  overflow: auto;
+}
+
+.tab_page
+{
+    font-size: 11px;
+    border-left: 1px solid #CCCCCC;
+    border-right: 1px solid #CCCCCC;
+    border-bottom: 1px solid #CCCCCC;
+    background-color: white;
+    padding-left: 10px;
+    padding-right: 10px;
+    color: black;
+    width: 100%;
+}
+
+tr.listing_row_even
+{
+}
+ 
+tr.listing_row_odd
+{
+        background-color: #f0f0f0;
+}
+ 
+td.listing_column
+{
+}
+ 
+td.listing_col_label
+{
+  font-weight: bold;
+}
+ 
+td.listing_col
+{
+}
+ 
+td.listing_col_num
+{
+  text-align: right;
+}
+
+img.dialog_icon
+{
+  float: left;
+  padding: 0px 10px 0px 10px;
+  margin-top: 5px;
+  margin-left: 5px;
+}

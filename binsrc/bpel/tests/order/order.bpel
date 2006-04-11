@@ -1,0 +1,204 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<process name="order"
+         targetNamespace="services.wsdl"
+         suppressJoinFailure="yes"
+         xmlns:tns="services.wsdl"
+         xmlns:svc="services.wsdl"
+         xmlns:dl="http://temp.uri"
+	 xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+         xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/">
+
+  <partnerLinks>
+    <partnerLink name="client"
+             partnerLinkType="tns:Order"
+             myRole="OrderProvider"
+             partnerRole="OrderRequester"/>
+             
+    <partnerLink name="OrderService"
+             partnerLinkType="svc:OrderService"
+             myRole="OrderServiceRequester"
+             partnerRole="OrderServiceProvider"/>
+  </partnerLinks>
+
+  <variables>
+    <variable name="input" messageType="tns:OrderRequestMessage"/>
+    <variable name="output" messageType="tns:OrderResultMessage"/>               
+    <variable name="item1in" messageType="svc:orderItemRequest"/>	
+    <variable name="item2in" messageType="svc:orderItemRequest"/>	
+    <variable name="item3in" messageType="svc:orderItemRequest"/>	
+    <variable name="item1out" messageType="svc:orderItemResponse"/>	
+    <variable name="item2out" messageType="svc:orderItemResponse"/>	
+    <variable name="item3out" messageType="svc:orderItemResponse"/>	
+  </variables>
+
+  <sequence>
+    
+    <receive name="receiveInput" partnerLink="client"
+             portType="tns:Order"
+             operation="initiate" 
+	     variable="input"
+             createInstance="yes"/>
+             
+    <assign>
+      <copy>
+         <from variable="input" part="payload" query="/orderItems/orderItem[1]"/>
+         <to variable="item1in" part="parameters"/>
+      </copy>
+      <copy>
+         <from variable="input" part="payload" query="/orderItems/orderItem[2]"/>
+         <to variable="item2in" part="parameters"/>
+      </copy>
+      <copy>
+         <from variable="input" part="payload" query="/orderItems/orderItem[3]"/>
+         <to variable="item3in" part="parameters"/>
+      </copy>
+    </assign>             
+
+    <flow>
+	<scope>
+  	  <variables>
+		<variable name="var1" type="xsd:string"/>
+	  </variables>		
+	  <!-- add correlation set -->
+	  <correlationSets>
+	     <correlationSet name="ItemNo1" properties="tns:ItemNo"/>
+	  </correlationSets>
+	  <invoke name="order_item_1"
+		partnerLink="OrderService" 
+		portType="svc:OrderServiceDocLiteralPortType" 
+		operation="orderItem" 
+		inputVariable="item1in"
+		>
+		<correlations>
+		    <correlation set="ItemNo1" initiate="yes" pattern="out"/>
+		</correlations>
+	  </invoke>
+	  <receive name="order_item_1_resp"
+		partnerLink="OrderService" 
+		portType="svc:OrderServiceDocLiteralPortType" 
+		operation="onResult" 
+		variable="item1out"
+		>
+		<correlations>
+		    <correlation set="ItemNo1" initiate="no"/>
+		</correlations>
+	  </receive>
+	</scope>
+	<scope>
+	  <correlationSets>
+	     <correlationSet name="ItemNo2" properties="tns:ItemNo"/>
+	  </correlationSets>
+	  <invoke name="order_item_2"
+		partnerLink="OrderService" 
+		portType="svc:OrderServiceDocLiteralPortType" 
+		operation="orderItem" 
+		inputVariable="item2in"
+		>
+		<correlations>
+		    <correlation set="ItemNo2" initiate="yes" pattern="out"/>
+		</correlations>
+	  </invoke>
+	  <receive name="order_item_2_resp"
+		partnerLink="OrderService" 
+		portType="svc:OrderServiceDocLiteralPortType" 
+		operation="onResult" 
+		variable="item2out"
+		>
+		<correlations>
+		    <correlation set="ItemNo2" initiate="no"/>
+		</correlations>
+	  </receive>
+	</scope>
+	<scope>
+	  <correlationSets>
+	     <correlationSet name="ItemNo3" properties="tns:ItemNo"/>
+	  </correlationSets>
+	  <invoke name="order_item_3"
+		partnerLink="OrderService" 
+		portType="svc:OrderServiceDocLiteralPortType" 
+		operation="orderItem" 
+		inputVariable="item3in"
+		>
+		<correlations>
+		    <correlation set="ItemNo3" initiate="yes" pattern="out"/>
+		</correlations>
+	  </invoke>
+	  <receive name="order_item_3_resp"
+		partnerLink="OrderService" 
+		portType="svc:OrderServiceDocLiteralPortType" 
+		operation="onResult" 
+		variable="item3out"
+		>
+		<correlations>
+		    <correlation set="ItemNo3" initiate="no"/>
+		</correlations>
+	  </receive>
+	</scope>
+        <!-- make thread to hang for 10 seconds to simulate 
+	     message arrival before rest of script is done
+	 -->
+        <wait for="PT10S"/>	
+    </flow>
+
+    <assign>
+	<copy>
+	  <from>
+	      <orderItemsResponse xmlns="http://temp.uri">	
+		<orderItemResponse />
+		<orderItemResponse />
+		<orderItemResponse />
+	      </orderItemsResponse> 	
+	  </from>
+	  <to variable="output" part="payload"/>
+	</copy>
+	<copy>
+	  <from variable="item1out" part="payload"/>
+	  <to variable="output" part="payload" query="/orderItemsResponse/orderItemResponse[1]"/>
+	</copy>
+	<copy>
+	  <from variable="item2out" part="payload"/>
+	  <to variable="output" part="payload" query="/orderItemsResponse/orderItemResponse[2]"/>
+	</copy>
+	<copy>
+	  <from variable="item3out" part="payload"/>
+	  <to variable="output" part="payload" query="/orderItemsResponse/orderItemResponse[3]"/>
+	</copy>
+    </assign>
+
+    
+    <!--invoke name="replyOutput" 
+            partnerLink="client"
+            portType="tns:OrderCallback"
+            operation="onResult" 
+	    inputVariable="output"/-->
+
+   <reply name="replyOutput" partnerLink="client"
+            portType="tns:Order"
+            operation="initiate" variable="output"/>
+  
+
+  </sequence>
+
+</process>
+

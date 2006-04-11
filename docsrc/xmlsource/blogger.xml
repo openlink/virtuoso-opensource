@@ -1,0 +1,2234 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="blogger"><title>Blogging &amp; Weblogs</title>
+
+<para>Weblogs, or Blog, are web pages or sites organized by date.
+The content of a typical blog page contains short messages listed in
+chronological order. The blog messages are typically excerpts of HTML markup,
+since they typically appear on web sites and expect web browsers as clients.</para>
+<para>In the rest of this document we will use interchangeable the terms "blog"
+and "weblog", and refer to the users that have a blog as "bloggers".</para>
+<para>The following terms are also commonly used in this section:</para>
+
+<simplelist>
+    <member><emphasis>RSS/OCS/OPML/RDF/Atom</emphasis> - file formats, XML based to represent
+  data or list of files containing a data</member>
+  <member><emphasis>Channels</emphasis> - a public source containing data in any of
+  XML/text/HTML format, usually in RSS format.  </member>
+  <member><emphasis>Post/Article(message)</emphasis> - this is a piece of information
+  describing something in a human readable format, in some language. This can be have
+  satellite parts as title, excerpt, publication data etc.</member>
+  <member><emphasis>PermaLink</emphasis> - a URL that uniquely designates a
+  single article in blog-space and time.</member>
+</simplelist>
+
+<para>The Virtuoso Blog system comprises a native Web-based interface
+for publishing and blog administration, but can also be interacted with using
+an XML-RPC API.  The Virtuoso server supports the following XML-RPC APIs for
+blogging purposes:</para>
+
+<simplelist>
+  <member>Blogger API</member>
+  <member>MetaWeblog API</member>
+  <member>Movable Type</member>
+</simplelist>
+
+<para>In addition to the blogger APIs Virtuoso supports:</para>
+
+<simplelist>
+  <member><emphasis>xmlStorageSystem</emphasis> - this allows blogging clients
+  to upload static (ready to go) content onto a Weblog server.</member>
+  <member><emphasis>Weblogs ping API</emphasis> - to allow cross-server
+  notification for the latest updated sites/blogs</member>
+  <member><emphasis>Pingback and Trackback API</emphasis> - to allow bloggers
+  to notify each other.</member>
+  <member><emphasis>Subscription Harmonizer</emphasis> - to allow bloggers to
+  keep their subscriptions in-sync.</member>
+</simplelist>
+
+<tip><title>See Also:</title>
+  <para>The <link linkend="bloggersystables">Blogger System Tables</link>
+  that are used to keep Weblog data.</para></tip>
+
+<tip><title>See Also: Reference Material on the Internet:</title>
+  <para>Blogger API:</para>
+  <para><ulink url="http://xmlrpc.free-conversant.com/docs/bloggerAPI">xmlrpc.free-conversant.com</ulink></para>
+  <para><ulink url="http://plant.blogger.com/api/index.html">plant.blogger.com</ulink></para>
+  <para>Movable Type API (extensions for blogger API):</para>
+  <para><ulink url="http://www.movabletype.org/docs/mtmanual_programmatic.html">www.movabletype.org</ulink></para>
+  <para>MetaWeblog API (extension of blogger API with RSS2 elements):</para>
+  <para><ulink url="http://www.xmlrpc.com/metaWeblogApi">www.xmlrpc.com</ulink></para>
+  <para>Other:</para>
+  <para><ulink url="http://www.soapware.org/xmlStorageSystem">xmlStorageSystem API (SOAP/XML-RPC based Internet file system)</ulink></para>
+  <para><ulink url="http://www.opml.org/spec">OPML (Outline Processor Markup Language)</ulink></para>
+  <para><ulink url="http://internetalchemy.org/ocs/directory.html">OCS (Open Content Syndication directory)</ulink></para>
+</tip>
+
+<sect2 id="blogvirtblogapp"><title>The Virtuoso Blogging Application</title>
+
+<para>Blogs provide their authors with a location on the Internet or Intranet
+to receive their thoughts, experiences, idea, or simply anything they have
+a desire to write about.  For this most part, audience is neither expected
+nor required, however comments and feedback are common place.  </para>
+
+<para>Blogs originated as a form of public diary.  Their exploitation has seen them
+as a useful tool for finding personal reviews to products, situtations or
+general news as guidance for their readers.  These can be viewed quicker and
+more informative than regular journalism.</para>
+
+<para>Corporate blogs, or use of blogging can be a valuable source of company
+information propagation.  Members of the company can blog about the activities
+or findings with no particular audience in mind.  This provides a continual
+journal or account of the company's undertakings that is really
+self-documenting for every other employee how they fit into the overall
+picture.  Over time a searchable knowledge base will unravel itself, people
+may need information about a product or some aspect of internal support that
+took place possibly years prior, otherwise forgotten, stored within the blog.</para>
+
+<para>Virtuoso implements the three major APIs for blogging which makes instantly
+attractive to any standard blog application.  Virtuoso provides blog authoring
+applications of its own.  On a personal level, your blogs can be stored or
+exposed using the most appropriate server, authored using the most appealing
+client and everything held in right places by Virtuoso.  On a community level
+you get the same but scaled upwards for each member individually,
+and further more, centrally.  Virtuoso can generate and automatically maintain
+a blog site specially for blog collaboration within a community suitable
+for a corporate need.  All members are listed on the front page and have
+the opertunity to contribute (publish) to the main blog view.  All blogs
+are fully free text searchable - a simple exploit of the Virtuoso
+free-text engine. </para>
+
+<para>Virtuoso can provide the blog client, server or relay for blogs or any
+RSS or XML-feed based channel or information.</para>
+
+        <figure id="blog001" float="1"><title>Virtuoso Blogging Conceptual Diagram</title>
+          <graphic fileref="VirtuosoBlog.jpg" width="746px" depth="522px"/></figure>
+
+<sect3 id="blogsyndicateyourblog"><title>Syndication to your Blog - RSS &amp; RDF</title>
+
+<para>The default Virtuoso blog implementation maintains a "blog/gems" subdirectory
+for each blog account.  Within this is an RDF file and an RSS file.
+These provide direct access to the blog informations in XML.  Other
+bloggers or news syndicators can read just the site contents, appart from
+the web interface that Virtuoso provides, potentially applying an
+XSLT transformations suitable to their application or circumstance, for
+example reading the blog from a PDA or mobile device.</para>
+
+<para>Rich Site Summary (RSS) is a lightweight XML format designed for
+sharing headlines and other Web content. Think of it as a distributable
+"What's New" for your site.  Each RSS text file contains both static
+information about your site, plus dynamic information about your new blog
+entries.  Each entry is defined by an &lt;item&gt; tag, which contains a
+headline TITLE, URL, and DESCRIPTION. For example: </para>
+
+<programlisting><![CDATA[
+...
+<item>
+  <title>RSS Resources</title>
+  <link>http://www.webreference.com/authoring/languages/xml/rss/</link>
+  <description>Defined in XML, the Rich Site Summary (RSS) format has
+  quietly become a dominant format for distributing headlines on the Web.
+  Our list of links gives you the tools, tips and tutorials you need to get
+  started using RSS. 0323</description>
+</item>
+...
+]]></programlisting>
+
+<para>The Resource Description Framework (RDF) integrates a variety of
+applications from library catalogs and world-wide directories to syndication
+and aggregation of news, software, and content to personal collections
+of music, photos, and events using XML as an interchange syntax.  The
+RDF specifications provide a lightweight ontology system to support the
+exchange of knowledge on the Web. </para>
+</sect3>
+
+<sect3 id="blogchannels"><title>Channels - OCS &amp; OPML</title>
+
+<para>The default Virtuoso blog implementation maintains a "blog/gems" subdirectory
+for each blog account.  Within this are an OCS file and an OPML file.
+Both files provide an outline or hierarchical list of RSS feeds
+linked to the blog account in these two popular formats designed for
+channel/list exchange.  The files are varibly accessible following:</para>
+
+<programlisting><![CDATA[
+http://virtserv/DAV/myaccount/blog/gems/index.ocs
+http://virtserv/DAV/myaccount/blog/gems/index.opml
+]]></programlisting>
+
+<para>Open Content Syndication (OCS), an application of XML, is an
+RDF description of all external RSS feeds linked to the blog site.  </para>
+
+<para>The OCS Directory format is designed to enable channel listings to
+be constructed for use by portal sites, client based headline software
+and other similar applications.</para>
+
+<para>Outline Processor Markup Language (OPML) is a very simple XML
+format for storing information in outline format.  XML being
+inherently hierarchical, OPML constrains XML so that a wide
+variety of applications can build in OPML support with the
+comfort of knowing it will work with any other OPML tool.
+Type of information stored in such hierarchies are web browser
+bookmarks, web directories, collaborative outlines, song playlists,
+and even web-site content, OPML is a great balance between the
+wide open freedom of raw XML and the feeling of security of a
+formal vocabulary.</para>
+
+<para>The OCS RDF file is an XML of nested &lt;rdf:descriptions&gt; tags
+losely defined as follows:</para>
+
+<programlisting><![CDATA[
+<rdf:RDF>
+  <rdf:description>
+      This contains a description of this RDF originator
+    <rdf:description>
+        Description of a link RSS blog or news feed
+       <rdf:description>
+         Description of the URL containing the above described
+         RSS feed and details about its format, update frequency
+         and when the link for established.
+       </rdf:description>
+    </rdf:description>
+      more RSS descriptions may follow, one for each
+      linked.
+  </rdf:description>
+</rdf:RDF>
+]]></programlisting>
+
+<para>Here is an example of the contents of the index.ocs file describing
+a single linked RSS news feed.</para>
+
+<programlisting><![CDATA[
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:ocs="http://InternetAlchemy.org/ocs/directory#"
+    xmlns:dc="http://purl.org/metadata/dublin_core#">
+  <rdf:description about="">
+  <dc:title>My Blog</dc:title>
+  <dc:creator>blog@openlinksw.com</dc:creator>
+  <dc:description />
+  <rdf:description about="http://msdn.microsoft.com/">
+    <dc:title>MSDN Just Published</dc:title>
+    <dc:creator />
+    <dc:description />
+    <dc:subject />
+    <dc:image />
+    <rdf:description about="http://msdn.microsoft.com/rss.xml">
+      <dc:language>us-en</dc:language>
+      <ocs:format />
+      <ocs:updatePeriod>hourly</ocs:updatePeriod>
+      <ocs:updateFrequency>1</ocs:updateFrequency>
+      <ocs:updateBase>1999-05-30T00:00</ocs:updateBase>
+    </rdf:description>
+  </rdf:description>
+</rdf:RDF>
+]]></programlisting>
+
+<para>The OPML file is more simple, the corresponding index.opml would be
+as follows:</para>
+
+<programlisting><![CDATA[
+<opml>
+  <body>
+    <outline
+      title="MSDN Just Published"
+      htmlUrl="http://msdn.microsoft.com/"
+      xmlUrl="http://msdn.microsoft.com/rss.xml" />
+    more outline tags for each description...
+  </body>
+</opml>
+]]></programlisting>
+
+<tip><title>See Also:</title>
+  <para><ulink url="http://internetalchemy.org/">internetalchemy.org</ulink></para>
+  <para><ulink url="http://www.opml.org/">www.opml.org</ulink></para></tip>
+</sect3>
+
+<sect3 id="blogpersonalblog"><title>Personal Blog Sites</title>
+
+<para>Every WebDAV account with a home directory has the option to create a
+default personal blog site.  The default blog pages contains a call to
+a function that produces XML data containing a list of messages, calendar
+for archive navigation and channels that the owner has subscribed to.
+This blog directory and pages are generated upon initial sign-in of the
+user. Each WebDAV account with a blog directory will thus have the following:</para>
+
+<programlisting><![CDATA[
+http://<host:port>/DAV/<uname>/blog/
+]]></programlisting>
+
+<para>containing the following:</para>
+
+  <simplelist>
+   <member><emphasis>index.vspx</emphasis> - The default blog home page using VSPX controls.</member>
+   <member><emphasis>gems/rss.xml</emphasis> - The RSS v2.0 file presenting the user's blog data.</member>
+   <member><emphasis>gems/rss92.xml</emphasis> - The RSS v0.92 file presenting the user's blog data.</member>
+   <member><emphasis>gems/rss91.xml</emphasis> - The RSS v0.91 file presenting the user's blog data.</member>
+   <member><emphasis>gems/index.rdf</emphasis> - the user's blog data in RDF format.</member>
+   <member><emphasis>gems/index.ocs</emphasis> - the user's channels represented in OCS format.</member>
+
+   <member><emphasis>gems/rsd.xml</emphasis> - Really Simple Discovery file for the blog. This helps client software to find the services needed to read, edit, post etc.</member>
+   <member><emphasis>gems/atom.xml</emphasis> - Atom feed file. It's simialr to the RSS file but in different format.</member>
+   <member><emphasis>gems/backlog.xml</emphasis> - RSS v2.0 file containing all posts in user's blog.</member>
+   <member><emphasis>gems/foaf.xml</emphasis> - 'Friend Of Friend' file. This is to provide in a machine-processable format, about blogger, his/she interests, location, friends etc.</member>
+   <member><emphasis>gems/index.opml</emphasis> - the user's channels represented in OPML format.</member>
+   <member><emphasis>gems/ocs.xml</emphasis> - the user's channels represented in OCS format.</member>
+   <member><emphasis>gems/opml.xml</emphasis> - the user's channels represented in OPML format.</member>
+
+   <member><emphasis>comments.vsp</emphasis> - a VSP page for posting a comment to the user's blog.</member>
+   <member><emphasis>default.xsl</emphasis> - an XSL-T style sheet providing the default HTML view of the blog XML data.</member>
+   <member><emphasis>comments.vsp</emphasis> - pop-up for blog comments (obsoleted)</member>
+   <member><emphasis>default.css</emphasis>  - CSS for pages</member>
+   <member><emphasis>main.xsl</emphasis> - VSPX controls for index.vspx</member>
+   <member><emphasis>calendar.xsl</emphasis> - calendar control</member>
+   <member><emphasis>trackback.xsl</emphasis> - pop-up for trackbacks (obsoleted)</member>
+   <member><emphasis>rss_feeds/</emphasis> - folder containing channel RSS feeds in XML format </member>
+  </simplelist>
+
+  <para>The <computeroutput>rss.xml</computeroutput>, <computeroutput>index.rdf</computeroutput>,
+  <computeroutput>index.ocs</computeroutput> files are dynamic SQL-XML resources,
+  they are not static files and must not be deleted.  Their content is
+  generated in real-time per request.</para>
+
+  <para>Blog users may edit the <computeroutput>default.xsl</computeroutput> in
+  order to change the appearance of the default page of their Blog.</para>
+
+<example id="ex_defaultbloghome"><title>Default blog home (index.vspx) page</title>
+<para>The following is source of default blog home page. It's built using a VSPX and macro expansion.
+All page components are represented with &lt;vm:* /&gt; this makes page more simpler and allows users to
+change it's appearance using custom VSPX components.
+</para>
+<programlisting><![CDATA[
+<v:page xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  style="main.xsl" name="blog-home-page"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page id="<UID>">
+    <vm:header>
+      <vm:title/>
+      <vm:disco-rss-link/>
+      <vm:disco-pingback-link/>
+      <vm:meta-author/>
+      <vm:meta-description/>
+      <vm:meta-keywords/>
+      <vm:style url="default.css" />
+    </vm:header>
+    <vm:body>
+      <div id="header">
+        <img src="/blog/blogs/images/bloglogo.jpg" alt="OpenLink Virtuoso Blog"/>
+        <h1><vm:blog-title/></h1>
+        <h2><vm:blog-about/></h2>
+      </div>
+      <div id="navbartop">
+        <div>Entries: [ <vm:entry-list /> ]</div>
+      </div>
+      <table id="pagecontainer" cellspacing="10" cellpadding="0" border="0" width="100%">
+        <tr>
+          <td class="box">
+	     <div class="box">
+                  <div class="roll" style="border: none; border">
+                    <div align="center" style="margin-bottom: 3px;">
+                      <b>Personal Details</b>
+                    </div>
+		    <div style="margin-bottom: 3px;"><vm:site-home>Home</vm:site-home></div>
+		    <vm:if test="contact">
+                    <div>
+		      <vm:e-mail> Contact</vm:e-mail>
+		    </div>
+		    </vm:if>
+		    <div>
+		      <vm:photo width="64" />
+		    </div>
+                  </div>
+		  <vm:if test="login">
+                  <div class="roll" >
+                    <div align="center" style="margin-bottom: 3px;">
+                      <b>Configuration</b>
+                    </div>
+                    <vm:configpages />
+                  </div>
+		  </vm:if>
+                  <div class="roll">
+                  <div align="center" style="margin-bottom: 3px;">
+                    <b>Syndicate This Blog</b>
+                  </div>
+                    <vm:rss-link/>
+                    <vm:rdf-link/>
+                    <vm:ocs-link/>
+                    <vm:opml-link/>
+                  </div>
+                  <div align="left" class="roll">
+                    <p class="caption">Keyword search:</p>
+                    <vm:search/>
+                  </div>
+                  <div class="roll">
+                    <div align="center" style="margin-bottom: 3px;">
+                      <b>Post Categories</b>
+                    </div>
+		    <vm:login />
+                    <vm:categories/>
+                  </div>
+		<vm:if test="subscribe">
+                <div align="left" class="roll">
+                  <p class="caption">Subscribe</p>
+		  <vm:subscribe/>
+		</div>
+		</vm:if>
+		<div align="left" class="roll">
+		   <vm:last-messages />
+		</div>
+	      </div>
+          </td>
+          <td id="texttd">
+	     <div id="text">
+	          <vm:post-form />
+                  <vm:posts trackback="discovery" />
+		  <vm:if test="comments">
+		  <vm:comments-view>
+		    <vm:trackbacks />
+		    <vm:comments />
+		    <vm:post-comment />
+		  </vm:comments-view>
+		  </vm:if>
+             </div>
+          </td>
+          <td class="box">
+	    <div class="box">
+                  <vm:calendar/>
+		  <vm:if test="blog">
+                  <div class="roll">
+                    <div align="center">
+                      <b>Blog Roll</b>
+                    </div>
+                    <vm:rss/>
+                  </div>
+		  </vm:if>
+		  <vm:if test="channels">
+                  <div class="roll">
+                    <div align="center">
+                      <b>Channel Roll</b>
+                    </div>
+                    <vm:channels/>
+                  </div>
+		  </vm:if>
+		  <vm:if test="ocs">
+                  <div class="roll">
+                    <div align="center" style="margin-bottom: 3px;">
+                      <b>OCS Links</b>
+                    </div>
+                    <vm:ocs/>
+                  </div>
+		  </vm:if>
+		  <vm:if test="opml">
+                  <div class="roll">
+                    <div align="center" style="margin-bottom: 3px;">
+                      <b>OPML Links</b>
+                    </div>
+                    <vm:opml/>
+                  </div>
+		  </vm:if>
+	      </div>
+          </td>
+        </tr>
+      </table>
+      <div id="powered">
+        <vm:powered-by/>
+      </div>
+      <div class="disclaimer">
+      <vm:disclaimer/>
+        </div>
+      <div class="copy">
+        <vm:copyright/>
+      </div>
+    </vm:body>
+  </vm:page>
+</v:page>
+]]>
+</programlisting>
+</example>
+
+<example id="ex_bloghome"><title>Blog home (index.vsp) page</title>
+
+<para>The XML Schema representing the XML data for blog home page is represented below.
+Following this fragment is the <computeroutput>default.xsl</computeroutput> XSL
+style sheet that would be used to transform XML document valid to this into the default web page for public
+consumption on the Internet or Intranet.</para>
+
+<programlisting><![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="about">
+    <xs:complexType/>
+  </xs:element>
+  <xs:element name="blog">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="title"/>
+        <xs:element ref="about"/>
+        <xs:element ref="email"/>
+        <xs:element ref="items"/>
+        <xs:element ref="navigation"/>
+        <xs:element ref="copy"/>
+        <xs:element ref="disclaimer"/>
+      </xs:choice>
+      <xs:attribute name="base" type="xs:anyURI"/>
+      <xs:attribute name="category" type="xs:string"/>
+      <xs:attribute name="category-name" type="xs:string"/>
+      <xs:attribute name="post" type="xs:string"/>
+      <xs:attribute name="trackback-url" type="xs:anyURI"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="blogroll">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="link"/>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:boolean" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="calendar">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="week" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="monthname" type="xs:string" use="required"/>
+      <xs:attribute name="year" type="xs:short" use="required"/>
+      <xs:attribute name="month" type="xs:byte" use="required"/>
+      <xs:attribute name="day" type="xs:byte" use="required"/>
+      <xs:attribute name="prev" type="xs:string" use="required"/>
+      <xs:attribute name="prev-label" type="xs:string" use="required"/>
+      <xs:attribute name="next" type="xs:string" use="required"/>
+      <xs:attribute name="next-label" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="categories">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="category" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="category">
+    <xs:complexType>
+      <xs:attribute name="id" use="required" type="xs:NMTOKEN" />
+      <xs:attribute name="name" use="required" type="xs:string" />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="comments" type="xs:boolean"/>
+  <xs:element name="copy" type="xs:string"/>
+  <xs:element name="day">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute name="active" use="required">
+            <xs:simpleType>
+              <xs:restriction base="xs:NMTOKEN">
+                <xs:enumeration value="0"/>
+                <xs:enumeration value="1"/>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:attribute>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="description" type="xs:string"/>
+  <xs:element name="disclaimer" type="xs:string"/>
+  <xs:element name="email" type="xs:string"/>
+  <xs:element name="id" type="xs:string" />
+  <xs:element name="item">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="description"/>
+        <xs:element ref="pubDate"/>
+        <xs:element ref="id"/>
+        <xs:element ref="comments"/>
+        <xs:element ref="trackbacks"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="items">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="item" maxOccurs="unbounded"/>
+        <xs:element ref="last"/>
+      </xs:sequence>
+      <xs:attribute name="search" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="last">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="message" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="link">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="blog"/>
+      </xs:sequence>
+      <xs:attribute name="href" type="xs:anyURI" use="required"/>
+      <xs:attribute name="rss" type="xs:anyURI" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="message">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="id"/>
+        <xs:element ref="title"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="navigation">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="calendar"/>
+        <xs:element ref="blogroll"/>
+        <xs:element ref="categories"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="pubDate" type="xs:string"/>
+  <xs:element name="title">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute name="blogid" type="xs:byte"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="trackbacks" type="xs:boolean"/>
+  <xs:element name="week">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="day" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
+]]></programlisting>
+
+<para>The XML data as following XML Schema above will be transformed using the following XSL-T style sheet, default.xsl:</para>
+<programlisting><![CDATA[
+<?xml version="1.0"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  version="1.0"
+    xmlns:vb="http://www.openlinksw.com/weblog/"
+    xmlns:vtb="http://www.openlinksw.com/weblog/tb/" >
+  <xsl:output method="xml" doctype-public="-//W3C//DTD XHTML 1.0 Transitional//EN"
+    doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+	indent="yes" encoding="UTF-8" omit-xml-declaration="yes" media-type="text/html"/>
+  <xsl:template match="/">
+    <html>
+      <head>
+        <title>
+          <xsl:value-of select="//title[1]"/>
+        </title>
+        <link rel="alternate" type="application/rss+xml" title="RSS" href="{/blog/@base}gems/rss.xml"/>
+        <link rel="stylesheet" type="text/css" href="default.css"/>
+      </head>
+      <body>
+        <div id="header">
+          <img src="/blog/blogs/images/bloglogo.jpg" alt="OpenLink Virtuoso Blog"/>
+          <h1>
+            <xsl:value-of select="/blog/title"/>
+          </h1>
+	  <xsl:if test="/blog/about != ''">
+          <h2><xsl:value-of select="/blog/about"/></h2>
+          </xsl:if>
+        </div>
+        <div id="navbartop">
+          <div>Entries: [ <xsl:call-template name="entrylist"/> ]</div>
+        </div>
+        <table id="pagecontainer" cellspacing="10" cellpadding="0" border="0" width="100%">
+          <tr>
+            <td class="box">
+              <div class="box">
+                <div align="left" class="roll" style="border: none; border">
+                    <div align="center" style="margin-bottom: 3px;">
+                      <b>Personal Details</b>
+                    </div>
+		  <div>
+                  <a>
+ 		    <xsl:attribute name="href">mailto:<xsl:value-of select="/blog/email" /></xsl:attribute>
+ 		  <img src="/blog/blogs/images/mailto.gif" border="0" alt="mailto"/>
+		  </a> Contact
+ 		  </div>
+		</div>
+                <div class="roll">
+                  <div align="center" style="margin-bottom: 3px;">
+                    <b>Syndicate This Blog</b>
+                  </div>
+                  <div>
+                    <a href="gems/rss.xml">
+                      <img src="/blog/blogs/images/xml.gif" border="0" alt="rss"/>
+                      RSS</a>
+                  </div>
+                  <div>
+                    <a href="gems/index.rdf">
+                      <img src="/blog/blogs/images/rdf48.gif" border="0" alt="rdf"/>
+                      RDF</a>
+                  </div>
+                  <div>
+                    <a href="gems/index.ocs"><img src="/blog/blogs/images/xml.gif" border="0" alt="ocs"/>OCS</a>
+                  </div>
+                  <div>
+                    <a href="gems/index.opml"><img src="/blog/blogs/images/xml.gif" border="0" alt="opml"/>OPML</a>
+                  </div>
+                </div>
+                <div align="left" class="roll">
+                  <p class="caption">Keyword search</p>
+                  <form method="post" action="index.vsp">
+                    <div>
+                      <input type="text" name="txt" value="" size="10"/>
+                      <input type="submit" name="GO" value="GO"/>
+                    </div>
+                    <div>
+                      <input type="radio" name="srch_where" value="blog" checked="checked"/>&#160;My Blog</div>
+                    <div>
+                      <input type="radio" name="srch_where" value="web"/>&#160;The Web</div>
+                  </form>
+                </div>
+                <xsl:apply-templates select="/blog/navigation/categories"/>
+                <div align="left" class="roll">
+ 		  <xsl:for-each select="/blog/items/last/message">
+ 		    <div>
+		      <a>
+                        <xsl:attribute name="href">index.vsp?id=<xsl:value-of select="id" /></xsl:attribute>
+	   		<xsl:value-of select="title" />
+		      </a>
+ 		    </div>
+ 		  </xsl:for-each>
+ 		</div>
+              </div>
+            </td>
+            <td id="texttd">
+              <xsl:apply-templates select="/blog/items"/>
+            </td>
+            <td class="box">
+              <div class="box">
+                <xsl:apply-templates select="/blog/navigation/calendar"/>
+                <xsl:apply-templates select="/blog/navigation/blogroll"/>
+                <xsl:apply-templates select="/blog/navigation/channelroll"/>
+                <xsl:apply-templates select="/blog/navigation/ocs"/>
+                <xsl:apply-templates select="/blog/navigation/opml"/>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  </xsl:template>
+  <xsl:template match="title|navigation"/>
+  <xsl:template name="entrylist">
+    <xsl:for-each select="/blog/items/item">
+      <a href="#{id}">
+        <xsl:number level="multiple" format=" 1 " count="item"/>
+      </a>
+      <xsl:if test="following-sibling::item"> | </xsl:if>
+    </xsl:for-each>
+  </xsl:template>
+  <xsl:template match="items">
+    <div id="text">
+      <xsl:if test="/blog/@category-name != ''">
+        <h3>Category: "<xsl:value-of select="/blog/@category-name"/>"</h3>
+      </xsl:if>
+      <xsl:apply-templates select="item"/>
+      <xsl:if test="/blog/@post != ''">
+      <div><a name="tb" /><h3>TrackBacks</h3>
+      <div class="tb-url">TrackBack URL for this entry:<br/><b><xsl:value-of select="/blog/@trackback-url"/><xsl:value-of select="/blog/@post"/></b><br />
+      PingBack URL for this entry:<br/>
+      <b><xsl:value-of select="/blog/@pingback-url"/></b>
+      </div>
+      <xsl:apply-templates select="trackbacks"/>
+      </div>
+      <div><a name="comments" /><h3>Comments</h3>
+      <xsl:if test="not post-comments">
+      <div>No comments posted yet</div>
+      </xsl:if>
+      <xsl:apply-templates select="post-comments"/>
+      <div>
+        <form method="post" action="index.vsp">
+        <input type="hidden" name="id">
+	    <xsl:attribute name="value"><xsl:value-of select="/blog/@post" /></xsl:attribute>
+        </input>
+	<table border="0">
+        <tr><td>Name</td><td><input type="text" name="name" value="" size="50"/></td></tr>
+        <tr><td>Email</td><td><input type="text" name="email" value=""  size="50"/></td></tr>
+        <tr><td>Web Site</td><td><input type="text" name="url" value=""  size="50"/></td></tr>
+        <tr><td colspan="2">Comment</td></tr>
+        <tr><td colspan="2"><textarea name="comment" rows="15" cols="50">&#160;</textarea></td></tr>
+        <tr><td colspan="2"><input type="submit" name="submit" value="Submit" /></td></tr>
+        </table>
+        </form>
+      </div>
+      </div>
+      </xsl:if>
+      <xsl:choose>
+        <xsl:when test="not item and @search != ''">
+  No messages found containing "<xsl:value-of select="@search"/>".
+  </xsl:when>
+        <xsl:when test="not item and /blog/@category != ''">
+  No messages found for category  "<xsl:value-of select="/blog/@category-name"/>".
+  </xsl:when>
+        <xsl:when test="not item and @search = '' and /blog/@cat = ''">
+          <div class="message">
+  This is a placeholder for your new weblog.
+  There are no posts currently.
+  </div>
+        </xsl:when>
+      </xsl:choose>
+      <div id="powered">
+        <a href="http://www.openlinksw.com/virtuoso">
+          <img src="/blog/blogs/images/PoweredByVirtuoso.gif" border="0" alt="powered by" />
+        </a>
+      </div>
+      <div class="disclaimer">
+        <xsl:value-of  select="/blog/disclaimer" disable-output-escaping="yes" />
+      </div>
+      <div class="copy">
+        <xsl:value-of select="/blog/copy" disable-output-escaping="yes" />
+      </div>
+    </div>
+  </xsl:template>
+  <xsl:template match="item">
+    <a name="{id}"/>
+    <div class="message">
+      <xsl:apply-templates select="pubDate"/>
+      <xsl:apply-templates select="description"/>
+      <xsl:if test="function-available('vb:mt_track_back_discovery')">
+	<xsl:value-of select="vb:mt_track_back_discovery (id)" disable-output-escaping="yes" />
+      </xsl:if>
+      <div class="comment">
+        <a href="#">
+	  <xsl:attribute name="href">index.vsp?id=<xsl:value-of select="id"/>#comments</xsl:attribute>
+	Comments [<xsl:value-of select="comments"/>]
+   </a> | <a href="#">
+	  <xsl:attribute name="href">index.vsp?id=<xsl:value-of select="id"/>#tb</xsl:attribute>
+ 	TrackBack [<xsl:value-of select="trackbacks"/>]
+        </a>
+      </div>
+    </div>
+  </xsl:template>
+  <xsl:template match="post-comments">
+    <div class="message">
+      <xsl:apply-templates select="posted"/>
+      <a><xsl:attribute name="href"><xsl:value-of select="home"/></xsl:attribute><b><xsl:apply-templates select="name"/></b></a>
+      <div class="desc">
+        <xsl:value-of select="vb:tidy_xhtml (comment, '*default*')" disable-output-escaping="yes"/>
+      </div>
+    </div>
+  </xsl:template>
+  <xsl:template match="trackbacks">
+    <div class="message">
+      <xsl:apply-templates select="posted"/>
+      <a><xsl:attribute name="href"><xsl:value-of select="url"/></xsl:attribute><b><xsl:apply-templates select="blog-name"/></b></a>
+      <div class="desc">
+      <b><xsl:apply-templates select="title"/></b>
+        <xsl:value-of select="vb:tidy_xhtml (excerpt, '*default*')" disable-output-escaping="yes"/>
+      </div>
+    </div>
+  </xsl:template>
+  <xsl:template match="description">
+    <div class="desc">
+      <xsl:choose>
+      <xsl:when test="function-available('vb:tidy_xhtml')">
+        <xsl:value-of select="vb:tidy_xhtml (., '*default*')" disable-output-escaping="yes"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="." disable-output-escaping="yes"/>
+      </xsl:otherwise>
+      </xsl:choose>
+    </div>
+  </xsl:template>
+  <xsl:template match="pubDate">
+    <div class="pubdate">
+      <xsl:value-of select="."/>
+    </div>
+  </xsl:template>
+  <xsl:template match="posted">
+    <div class="pubdate">
+      <xsl:value-of select="."/>
+    </div>
+  </xsl:template>
+  <xsl:template match="blogroll">
+    <div class="roll">
+      <div align="center">
+        <b>Blog Roll</b>
+      </div>
+      <xsl:apply-templates/>
+    </div>
+  </xsl:template>
+  <xsl:template match="channelroll">
+    <div class="roll">
+      <div align="center">
+        <b>Channel Roll</b>
+      </div>
+      <xsl:apply-templates/>
+    </div>
+</xsl:template>
+  <xsl:template match="opml">
+    <div class="roll">
+      <div align="center" style="margin-bottom: 3px;">
+        <b>OPML Links</b>
+      </div>
+      <xsl:for-each select="link">
+        <a>
+          <xsl:attribute name="href"><xsl:value-of select="@rss"/></xsl:attribute>
+          <b>
+            <xsl:value-of select="blog"/>
+          </b>
+        </a>
+        <div style="margin-left:1em;">
+          <xsl:apply-templates select="link"/>
+        </div>
+      </xsl:for-each>
+    </div>
+  </xsl:template>
+  <xsl:template match="ocs">
+    <div class="roll">
+      <div align="center" style="margin-bottom: 3px;">
+        <b>OCS Links</b>
+      </div>
+      <xsl:for-each select="link">
+        <a>
+          <xsl:attribute name="href"><xsl:value-of select="@rss"/></xsl:attribute>
+          <b>
+            <xsl:value-of select="blog"/>
+          </b>
+        </a>
+        <div style="margin-left:1em;">
+          <xsl:apply-templates select="link"/>
+        </div>
+      </xsl:for-each>
+    </div>
+  </xsl:template>
+  <xsl:template match="categories[category]">
+    <xsl:variable name="dt" select="concat(//calendar/@year, '-', //calendar/@month, '-', //calendar/@day)"/>
+    <div class="roll">
+      <div align="center" style="margin-bottom: 3px;">
+        <b>Post Categories</b>
+      </div>
+      <div>
+        <a>
+          <xsl:attribute name="href">index.vsp?date=<xsl:value-of select="$dt"/>&amp;cat=</xsl:attribute>
+          <b>All</b>
+        </a>
+      </div>
+      <xsl:for-each select="category">
+        <div>
+          <a >
+            <xsl:attribute name="href">/blog/rss_cat.xml?:cid=<xsl:value-of select="@id"/>&amp;:bid=<xsl:value-of select="/blog/title/@blogid"/></xsl:attribute>
+	    <img src="/blog/blogs/images/mxml.gif" border="0" alt="rss"/>
+          </a>
+          <a>
+            <xsl:attribute name="href">index.vsp?date=<xsl:value-of select="$dt"/>&amp;cat=<xsl:value-of select="@id"/></xsl:attribute>
+            <b>
+              <xsl:value-of select="@name"/>
+            </b>
+          </a>
+        </div>
+      </xsl:for-each>
+    </div>
+  </xsl:template>
+  <xsl:template match="link">
+    <div>
+      <xsl:if test="@rss != ''">
+        <a>
+          <xsl:attribute name="href"><xsl:value-of select="@rss"/></xsl:attribute>
+          <img src="/blog/blogs/images/mxml.gif" border="0" alt="rss"/>
+        </a>
+      </xsl:if>
+      <a>
+        <xsl:attribute name="href"><xsl:value-of select="@href"/></xsl:attribute>
+        <xsl:value-of select="." disable-output-escaping="yes" />
+      </a>
+    </div>
+  </xsl:template>
+  <xsl:template match="calendar">
+    <table id="calendar">
+      <caption>
+        <xsl:value-of select="@monthname"/>
+        <xsl:text> </xsl:text>
+        <xsl:value-of select="@year"/>
+      </caption>
+      <tr>
+        <th>Sun</th>
+        <th>Mon</th>
+        <th>Tue</th>
+        <th>Wed</th>
+        <th>Thu</th>
+        <th>Fri</th>
+        <th>Sat</th>
+      </tr>
+      <xsl:apply-templates/>
+      <tr>
+        <td colspan="3">
+          <xsl:if test="@prev != ''">
+            <a>
+              <xsl:attribute name="href">index.vsp?date=<xsl:value-of select="@prev"/>&amp;cat=<xsl:value-of select="/blog/@category"/></xsl:attribute>
+              <xsl:value-of select="@prev-label"/>
+            </a>
+          </xsl:if>&#160;
+        </td>
+        <td>&#160;</td>
+        <td colspan="3">
+          <xsl:if test="@next != ''">
+        &#160;
+        <a>
+              <xsl:attribute name="href">index.vsp?date=<xsl:value-of select="@next"/>&amp;cat=<xsl:value-of select="/blog/@category"/></xsl:attribute>
+              <xsl:value-of select="@next-label"/>
+            </a>
+          </xsl:if>
+        </td>
+      </tr>
+    </table>
+  </xsl:template>
+  <xsl:template match="week">
+    <tr>
+      <xsl:apply-templates/>
+    </tr>
+  </xsl:template>
+  <xsl:template match="day">
+    <xsl:variable name="dt" select="concat(ancestor::calendar/@year, '-', ancestor::calendar/@month, '-')"/>
+    <td>
+      <xsl:choose>
+        <xsl:when test="boolean(number(@active))">
+          <xsl:attribute name="class">calactive</xsl:attribute>
+          <a>
+            <xsl:attribute name="href">index.vsp?date=<xsl:value-of select="$dt"/><xsl:value-of select="."/>&amp;cat=<xsl:value-of select="/blog/@category"/></xsl:attribute>
+            <xsl:apply-templates/>
+          </a>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:apply-templates/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </td>
+  </xsl:template>
+</xsl:stylesheet>
+]]></programlisting>
+</example>
+ <para>
+The XML Schema for RSS v2.0 file (rss.xml)
+</para>
+<programlisting><![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="channel">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="title"/>
+        <xs:element ref="link"/>
+        <xs:element ref="description"/>
+        <xs:element ref="managingEditor"/>
+        <xs:element ref="pubDate"/>
+        <xs:element ref="generator"/>
+        <xs:element ref="webMaster"/>
+        <xs:element ref="image"/>
+        <xs:element ref="cloud"/>
+        <xs:element ref="item" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="cloud">
+    <xs:complexType>
+      <xs:attribute name="domain" type="xs:string" use="required"/>
+      <xs:attribute name="port" type="xs:short" use="required"/>
+      <xs:attribute name="path" type="xs:string" use="required"/>
+      <xs:attribute name="registerProcedure" type="xs:string" use="required"/>
+      <xs:attribute name="protocol" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="comments" type="xs:anyURI"/>
+  <xs:element name="description" type="xs:string"/>
+  <xs:element name="generator" type="xs:string"/>
+  <xs:element name="guid" type="xs:anyURI"/>
+  <xs:element name="height" type="xs:int"/>
+  <xs:element name="image">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="title"/>
+        <xs:element ref="url"/>
+        <xs:element ref="link"/>
+        <xs:element ref="description"/>
+        <xs:element ref="width"/>
+        <xs:element ref="height"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="item">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="title"/>
+        <xs:element ref="guid"/>
+        <xs:element ref="comments"/>
+        <xs:element ref="pubDate"/>
+        <xs:element ref="description"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="link" type="xs:anyURI"/>
+  <xs:element name="managingEditor" type="xs:string"/>
+  <xs:element name="pubDate" type="xs:string"/>
+  <xs:element name="rss">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="channel" minOccurs="1" maxOccurs="1"/>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:string" use="required" fixed="2.0"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="title" type="xs:string"/>
+  <xs:element name="url" type="xs:anyURI"/>
+  <xs:element name="webMaster" type="xs:string"/>
+  <xs:element name="width" type="xs:int"/>
+</xs:schema>
+]]></programlisting>
+</sect3>
+</sect2>
+
+<sect2 id="bloggerclientcompatibility"><title>Blogger Clients Compatibility</title>
+
+  <para>The Virtuoso Blog server implementation has been tested against the
+  following blog client applications:</para>
+
+  <simplelist>
+      <member><ulink url="http://radio.userland.com/download">Radio Userland</ulink> (Manila Blogger Bridge tool and Upstreaming), avalable for MS Windows and MacOS X
+      </member>
+      <member><ulink url="http://www.newzcrawler.com/downloads.shtml">NewzCrawler</ulink>, available for MS Windows
+      </member>
+      <member><ulink url="http://wbloggar.com/download/">w.bloggar</ulink>, available for MS Windows
+      </member>
+      <member><ulink url="http://blogbuddy.sourceforge.net/">blogBuddy</ulink>, available for MS Windows
+      </member>
+      <member><ulink url="http://www.zempt.com/download/">Zempt</ulink>, available for MS Windows
+      </member>
+      <member><ulink url="http://www.farook.org/BlogMan.htm">BlogMan</ulink>, available for MS Windows
+      </member>
+      <member><ulink url="http://www.myelin.co.nz/thinblog/">thinblog</ulink>, Java based client
+      </member>
+  </simplelist>
+
+  <para>The steps required to allow third-party clients to operate with Virtuoso are:</para>
+
+  <orderedlist>
+    <listitem>Create a WebDAV account using the Server Administration Interface
+	making sure that the home 	directory is created as /DAV/&lt;username&gt;/</listitem>
+    <listitem>Enable the XML-RPC bridge on a SOAP endpoint (see "XML-RPC
+	  endpoint configuration" section above)</listitem>
+    <listitem>Most client tools accept a username and password, enter the
+	credentials and URI for XML-RPC endpoint.</listitem>
+    <listitem>Allow the client tool time to refresh the Blog data.</listitem>
+    <listitem>Post a simple message, verify its creating using the Server Administration Interface's Weblog link.</listitem>
+  </orderedlist>
+
+  <formalpara><title>Interoperability Notes</title>
+  <para>The "Zempt" application will report an error upon startup saying that
+  "mt.supportedTextFilters" are not supported, however it it will continue to work
+  with the Virtuoso's blogging server.</para></formalpara>
+</sect2>
+
+<sect2 id="bloggermanagementui"><title>Blogs Management User Interface</title>
+
+  <para>The Server Administration Interface provides a way to manage existing
+  blogs.  The Blog user interface is accessible from the Web Services &gt;&gt; Weblogs
+  menu.  The page will show existing blogs on the server and will allow you to
+  erase, edit existing, or make new blog sites.  </para>
+  <para>Blog channels and categories are also configurable from this interface.</para>
+
+</sect2>
+
+<sect2 id="blogcommunityblog"><title>Community Blog Site</title>
+
+<para>The community blog site feature pools all blog efforts into one page
+providing a blog community portal.  No personal blogs are altered,
+the community site provides a super-set for all blogs.</para>
+
+<para>The community blog site is activated by enabling blogging capabilities on
+the DAV administrator account "dav".  This can be achieved at two places,
+on the Users Administration interface or the Web Services >> Weblogs interface
+in the Server Administration Interface menu.</para>
+</sect2>
+
+<sect2 id="bloggerapi"><title>Blogger API</title>
+
+<para>The Virtuoso server supports the following methods available via XML-RPC
+for Weblog management and operation:</para>
+
+      <para><link linkend="fn_blogger.newPost"><function>blogger.newPost()</function></link></para>
+      <para><link linkend="fn_blogger.editPost"><function>blogger.editPost()</function></link></para>
+      <para><link linkend="fn_blogger.deletePost"><function>blogger.deletePost()</function></link></para>
+      <para><link linkend="fn_blogger.getRecentPosts"><function>blogger.getRecentPosts()</function></link></para>
+      <para><link linkend="fn_blogger.getUsersBlogs"><function>blogger.getUsersBlogs()</function></link></para>
+      <para><link linkend="fn_blogger.getTemplate"><function>blogger.getTemplate()</function></link></para>
+      <para><link linkend="fn_blogger.setTemplate"><function>blogger.setTemplate()</function></link></para>
+      <para><link linkend="fn_blogger.getUserInfo"><function>blogger.getUserInfo()</function></link></para>
+
+
+<note><title>Note:</title>
+  <para>First name is the Movable Type "username" up to the first
+      space character, and last name is the "username" after the first
+      space character.</para></note>
+</sect2>
+
+<sect2 id="bloggermetaweblog"><title>MetaWeblog API</title>
+
+      <para><link linkend="fn_metaWeblog.newPost"><function>metaWeblog.newPost()</function></link></para>
+      <para><link linkend="fn_metaWeblog.editPost"><function>metaWeblog.editPost()</function></link></para>
+      <para><link linkend="fn_metaWeblog.getPost"><function>metaWeblog.getPost()</function></link></para>
+      <para><link linkend="fn_metaWeblog.getRecentPosts"><function>metaWeblog.getRecentPosts()</function></link></para>
+
+</sect2>
+
+<sect2 id="bloggermovabletype"><title>Movable Type API</title>
+
+      <para><link linkend="fn_mt.getRecentPostTitles"><function>mt.getRecentPostTitles()</function></link></para>
+      <para><link linkend="fn_mt.getCategoryList"><function>mt.getCategoryList()</function></link></para>
+      <para><link linkend="fn_mt.setPostCategories"><function>mt.setPostCategories()</function></link></para>
+      <para><link linkend="fn_mt.getPostCategories"><function>mt.getPostCategories()</function></link></para>
+      <para><link linkend="fn_mt.getTrackbackPings"><function>mt.getTrackbackPings()</function></link></para>
+      <para><link linkend="fn_mt.publishPost"><function>mt.publishPost()</function></link></para>
+      <para><link linkend="fn_mt.supportedMethods"><function>mt.supportedMethods()</function></link></para>
+
+<note><title>Note:</title>
+  <para>the value of "appkey" is ignored by Movable Type in all of the
+  Blogger XML-RPC methods.</para></note>
+
+</sect2>
+
+&blog_atom;
+
+<sect2 id="bloggerendpointconf"><title>XML-RPC Endpoint Configuration</title>
+
+  <para>The Virtuoso blog server can be contacted directly by SOAP XML-RPC.
+      A virtual directory can be created with blogger APIs (Blogger, MetaWeblog, MoveableType, Atom) ability,
+      which requires
+  a mapping to the SOAP endpoint and grants to use the blogger API.
+  This can be done in two ways:</para>
+
+  <orderedlist>
+    <listitem><formalpara><title>Using the graphical Server Administration Interface</title>
+	<para>You can use your web browser to configure a virtual directory based on the "XML-RPC link"
+	template and with bloggerAPI enabled:</para></formalpara>
+
+	<orderedlist>
+	  <listitem>Open a web browser on the Administration User Interface and navigate to: Internet Domains; HTTP Virtual Directories; Edit URL mappings.</listitem>
+	  <listitem>Create a new virtual directory.</listitem>
+	  <listitem>Select the template for "XML-RPC link".</listitem>
+	  <listitem>Check the option 'bloggerAPI' is enabled, this will expose all available blogger APIs to the endpoint (Blogger, MetaWeblog, MoveableType, Atom).</listitem>
+	  <listitem>Configure the logical path.</listitem>
+	  <listitem>Click Add to save the definition.</listitem>
+      </orderedlist>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="httpvirtualdirs">Virtual Directory Administration UI</link></para>
+  <para><link linkend="fn_vhost_define">vhost_define()</link>, <link linkend="fn_vhost_remove">vhost_remove()</link></para>
+  </tip>
+
+	<para>The new logical path now will support XML-RPC and will support blogger API requests.</para>
+  </listitem>
+
+  <listitem><formalpara><title>Programmatical: Script &amp; ISQL</title>
+  <para>This method gives you full control, you must perform all steps to
+  allow full support for the blogger API on a virtual directory.  Below is a
+  template list of commands that could be in a script.</para></formalpara>
+
+  <para>Using a script, <computeroutput>blogserver.sql</computeroutput>, with following contents:</para>
+
+<programlisting><![CDATA[
+vhost_define (
+  lpath=>'/RPC2',
+  ppath=>'/SOAP/',
+  soap_user=>'$U{usr}',
+  soap_opts=>vector ('XML-RPC', 'yes')
+  );
+
+grant execute on "blogger.newPost" to $U{usr};
+grant execute on "blogger.editPost" to $U{usr};
+grant execute on "blogger.deletePost" to $U{usr};
+grant execute on "blogger.getPost" to $U{usr};
+grant execute on "blogger.getRecentPosts" to $U{usr};
+grant execute on "blogger.getUsersBlogs" to $U{usr};
+grant execute on "blogger.getTemplate" to $U{usr};
+grant execute on "blogger.setTemplate" to $U{usr};
+grant execute on "blogger.getUserInfo" to $U{usr};
+grant execute on "metaWeblog.newPost" to $U{usr};
+grant execute on "metaWeblog.editPost" to $U{usr};
+grant execute on "metaWeblog.getPost" to $U{usr};
+grant execute on "metaWeblog.getRecentPosts" to $U{usr};
+grant execute on "mt.getRecentPostTitles" to $U{usr};
+grant execute on "mt.getCategoryList" to $U{usr};
+grant execute on "mt.setPostCategories" to $U{usr};
+grant execute on "mt.getPostCategories" to $U{usr};
+grant execute on "mt.getTrackbackPings" to $U{usr};
+grant execute on "mt.publishPost" to $U{usr};
+grant execute on "mt.supportedMethods" to $U{usr};
+]]></programlisting>
+
+  <para>One can start ISQL using the following parameters:</para>
+
+<programlisting><![CDATA[
+$ isql 1111 dba dba -u usr="<SQL user for execution>" blog_server.sql
+]]></programlisting>
+
+  <para>Where "&lt;SQL user for execution&gt;" is an existing SQL user account other than dba.</para>
+
+  <note><title>Note:</title>
+    <para>If you specify the "dba" as user for SOAP execution in a virtual directory,
+  the grant statements will not be needed and this will open a security hole.  So this
+  approach is not recommended.  It is always better to have a separate user for
+  SOAP execution with limited rights.</para></note>
+
+  </listitem>
+  </orderedlist>
+</sect2>
+
+<sect2 id="bloggerhooks"><title>Blog Hooks - Customizing the Blog Server</title>
+
+<para>Virtuoso provides the default system for blogging using one of the
+supported .  Virtuoso
+provides several PL hooks to customize the blog server.
+The following hooks are available for definition:</para>
+
+<simplelist>
+ <member>authenticate_&lt;appkey&gt; (in req blogRequest)</member>
+ <member>newPost_&lt;appkey&gt; (in req blogRequest)</member>
+ <member>editPost_&lt;appkey&gt; (in req blogRequest)</member>
+ <member>deletePost_&lt;appkey&gt; (in req blogRequest)</member>
+ <member>getPost_&lt;appkey&gt; (in req blogRequest)</member>
+ <member>getRecentPosts_&lt;appkey&gt; (in req blogRequest, in numberOfPosts int)</member>
+</simplelist>
+
+<tip><title>See Also:</title>
+  <para><link linkend="xmlrpc">XML-RPC section</link></para></tip>
+
+<para>blogRequest is a UDT defined as follows:</para>
+
+<programlisting><![CDATA[
+create type "blogPost" as (
+ 			  "content" varchar,		-- message
+			  "dateCreated" datetime,	-- timestamp
+			  "postid" varchar,		-- message ID
+			  "userid" int			-- creator
+			) temporary self as ref
+;
+
+create type "blogRequest" under "blogPost"
+			as
+			(
+			  user_name varchar,		-- user name
+			  passwd varchar,		-- credentials
+		          appkey varchar,		-- application key
+			  blogid varchar,		-- web log ID
+		          postId varchar,		-- message ID
+			  auth_userid integer,		-- user ID
+                          publish smallint,		-- not used, but still in API
+			  struct DB.DBA.MWeblogPost 	-- used in WebMetaLog
+			) temporary self as ref
+
+constructor method blogRequest (
+			  appkey varchar,
+			  blogid varchar,
+			  postId varchar,
+			  user_name varchar,
+			  passwd varchar
+			  )
+;
+]]></programlisting>
+
+
+<example id="ex_customblog"><title>Customizing the BLOG Server</title>
+
+<programlisting><![CDATA[
+-- SIMPLE BLOG APPLICATION
+-- application key: 0123456789
+--
+-- the following UDTs are used in API calls
+--
+-- single message
+-- create type "blogPost" as (
+-- 			  "content" varchar,
+--			  "dateCreated" datetime,
+--			  "postid" varchar,
+--			  "userid" int
+--			) temporary self as ref
+--
+--
+-- a blog request
+-- create type "blogRequest" under "blogPost"
+--			as
+--			(
+--			  user_name varchar,
+--			  passwd varchar,
+--		          appkey varchar,
+--			  blogid varchar,
+--		          postId varchar,
+--			  auth_userid integer,
+--                        publish smallint
+--			) temporary self as ref
+--
+-- as metaWeblog API not not have appkey, we are assuming 'META_WEBLOG' for it.
+
+drop table BLOG;
+
+create table BLOG (
+			B_APPKEY varchar,
+			BLOG_ID varchar,
+			B_CONTENT long varchar,
+			B_POST_ID varchar,
+			B_TS timestamp,
+			B_USER_ID integer,
+			primary key (B_APPKEY, BLOG_ID, B_POST_ID)
+);
+
+
+-- APPLICATION LEVEL HOOKS
+create procedure authenticate_app (inout req blogRequest)
+{
+    declare pwd varchar;
+    declare id int;
+    dbg_obj_print ('auth');
+    whenever not found goto nf;
+    select U_PWD, U_ID into pwd, id from WS.WS.SYS_DAV_USER where U_NAME = req.user_name;
+    if (isstring (pwd))
+      {
+        if ((pwd[0] = 0 and pwd_magic_calc (req.user_name, req.passwd) = pwd)
+                            or (pwd[0] <> 0 and pwd = req.passwd))
+          {
+            req.auth_userid := id;
+            return;
+          }
+      }
+  nf:
+    signal ('42000', 'Access denied');
+}
+;
+
+create procedure
+authenticate_0123456789 (in req blogRequest)
+{
+  authenticate_app (req);
+}
+;
+
+create procedure
+newPost_0123456789 (in req blogRequest)
+{
+   req.postId := cast (sequence_next ('blogger.postid') as varchar);
+   insert into BLOG (B_APPKEY, BLOG_ID, B_CONTENT, B_POST_ID, B_USER_ID)
+       values (req.appkey, req.blogid, req.content, req.postId, req.auth_userid);
+}
+;
+
+create procedure
+editPost_0123456789 (in req blogRequest)
+{
+   update BLOG set B_CONTENT = req.content where B_APPKEY = req.appkey and B_POST_ID = req.postId;
+}
+;
+
+
+create procedure
+deletePost_0123456789  (in req blogRequest)
+{
+  delete from BLOG where B_APPKEY = req.appkey and B_POST_ID = req.postId;
+}
+;
+
+
+create procedure
+getPost_0123456789  (in req blogRequest)
+{
+      declare content, datecreated, userid any;
+      declare post blogPost;
+
+      whenever not found goto nf;
+      select sprintf ('%V', blob_to_string (B_CONTENT)), B_TS, B_USER_ID into content, datecreated, userid
+	    from BLOG where B_APPKEY = req.appkey and B_POST_ID = req.postId;
+
+      post := new blogPost ();
+      post."content" := content;
+      post."dateCreated" := datecreated;
+      post."postid" := req.postId;
+      post."userid" := userid;
+      dbg_obj_print ('getPost', post);
+      return post;
+    nf:
+      signal ('22023', 'Cannot find a post with Id = ' || req.postId);
+}
+;
+
+
+create procedure
+getRecentPosts_0123456789  (in req blogRequest, in numberOfPosts int)
+{
+  declare ret, elm any;
+  declare post blogPost;
+
+  ret := vector ();
+  for select sprintf ('%V', blob_to_string (B_CONTENT)) as B_CONTENT, B_TS, B_USER_ID, B_POST_ID
+	from BLOG where B_APPKEY = req.appkey and BLOG_ID = req.blogId order by B_TS desc do
+   {
+     post := new blogPost ();
+     post."content" := B_CONTENT;
+     post."dateCreated" := B_TS;
+     post."postid" := B_POST_ID;
+     post."userid" := B_USER_ID;
+     ret := vector_concat (ret, vector (post));
+     numberOfPosts := numberOfPosts - 1;
+     if (numberOfPosts <= 0)
+       goto endg;
+   }
+endg:
+  return ret;
+}
+;
+]]></programlisting>
+</example>
+</sect2>
+
+<sect2 id="bloggerclientapi"><title>Blogger Client API</title>
+
+<para><funcdef>varchar <function>blogger.new_Post
+  <paramdef>in <parameter>uri</parameter> varchar,
+   in <parameter>req</parameter> "blogRequest",
+   in <parameter>content</parameter> varchar</paramdef></function></funcdef></para>
+
+<para><funcdef>boolean <function>blogger.delete_Post
+  (in <parameter>uri</parameter> varchar,
+   in <parameter>req</parameter> "blogRequest")</function></funcdef></para>
+
+<para><funcdef>boolean <function>blogger.edit_Post
+  (in <parameter>uri</parameter> varchar,
+   in <parameter>req</parameter> "blogRequest",
+   in <parameter>content</parameter> varchar)</function></funcdef></para>
+
+<para><funcdef>blogPost <function>blogger.get_Post
+  (in <parameter>uri</parameter> varchar,
+   in <parameter>req</parameter> "blogRequest")</function></funcdef></para>
+
+<para><funcdef>vector <function>blogger.get_Recent_Posts
+  (in <parameter>uri</parameter> varchar,
+   in <parameter>req</parameter> "blogRequest",
+   in <parameter>lim</parameter> int)</function></funcdef></para>
+
+
+<example id="ex_bloggerclient"><title>The Blogging Client</title>
+
+<para>Create a new message.</para>
+<programlisting><![CDATA[
+SQL> select blogger.new_Post ('http://localhost:6666/RPC2',
+    blogRequest ('0123456789', 'home', '', 'dav', 'dav'),'test');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+6
+
+1 Rows. -- 267 msec.
+]]></programlisting>
+
+<para>Edit a message created with previous step:</para>
+<programlisting><![CDATA[
+SQL> select blogger.edit_Post ('http://localhost:6666/RPC2',
+    blogRequest ('0123456789', 'home', '6', 'dav', 'dav'), 'test edited');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 194 msec.
+]]></programlisting>
+
+<para>Get the message, result will be in a blogPost UDT:</para>
+<programlisting><![CDATA[
+SQL>  dbg_obj_print (blogger.get_Post ('http://localhost:6666/RPC2',
+      blogRequest ('0123456789', 'home', '6', 'dav', 'dav')));
+
+Done. -- 120 msec.
+]]></programlisting>
+
+<programlisting><![CDATA[
+---- server console ----
+{
+        REF:[ref:0xa0deb00 obj:0xa1ed168 DB.DBA.blogPost]
+        content=N"test edited"
+        dateCreated={ts 2003-04-08 15:34:13.000000}
+        postid=N"6"
+        userid=2
+}
+------------------------
+]]></programlisting>
+
+<para>get list of messages, in our case the result will be a vector with one
+element of blogPost UDT.</para>
+
+<programlisting><![CDATA[
+SQL> dbg_obj_print (blogger.get_Recent_Posts ('http://localhost:6666/RPC2', blogRequest ('0123456789', 'home', '', 'dav', 'dav'), 10));
+
+Done. -- 124 msec.
+
+---- server console ----
+({
+        REF:[ref:0xa2426a8 obj:0xa20af40 DB.DBA.blogPost]
+        content=N"test edited"
+        dateCreated={ts 2003-04-08 15:34:13.000000}
+        postid=N"6"
+        userid=2
+}
+ )
+------------------------
+
+<programlisting><![CDATA[
+SQL> select blogger.delete_Post ('http://localhost:6666/RPC2',
+    blogRequest ('0123456789', 'home', '6', 'dav', 'dav'));
+callret
+VARCHAR
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 337 msec.
+]]></programlisting>
+</example>
+
+<para>There are more examples on using the API in the tutorials.</para>
+</sect2>
+
+
+<sect2 id="xmlstoragesystem"><title>xmlStorageSystem API</title>
+
+<para>xmlStorageSystem is an Web storage system for documents that are
+programmable over XML-RPC and SOAP 1.1.  Uploaded files are accessible via
+HTTP.  xmlStorageSystem has methods that allow users to register with the
+service; upload a set of files; query the server to find out its capabilities;
+and to register a notification request.</para>
+
+<tip><title>See Also:</title>
+  <para><link linkend="xmlrpc">XML-RPC section</link></para></tip>
+
+<!-- para>The SOAP message wire dumps contains just SOAP:Body content,
+ the Envelope and namespace are omitted, however they are SOAP 1.1 RPC
+ compliant messages.</para -->
+
+ <para>The API methods are:</para>
+ <simplelist>
+  <member><link linkend="fn_xmlStorageSystem.registerUser"><function>xmlStorageSystem.registerUser()</function></link></member>
+  <member><link linkend="fn_xmlStorageSystem.mailPasswordToUser"><function>xmlStorageSystem.mailPasswordToUser()</function></link></member>
+  <member><link linkend="fn_xmlStorageSystem.getServerCapabilities"><function>xmlStorageSystem.getServerCapabilities()</function></link></member>
+  <member><link linkend="fn_xmlStorageSystem.deleteMultipleFiles"><function>xmlStorageSystem.deleteMultipleFiles()</function></link></member>
+  <member><link linkend="fn_xmlStorageSystem.saveMultipleFiles"><function>xmlStorageSystem.saveMultipleFiles()</function></link></member>
+  <member><link linkend="fn_xmlStorageSystem.requestNotification"><function>xmlStorageSystem.requestNotification()</function></link></member>
+ </simplelist>
+
+<sect3 id="xssreltodav">><title>Relation to the WebDAV Repository</title>
+
+ <para>The xmlStorageSystem stores uploaded files in the WebDAV repository.
+ Upon user registration a "blog" sub-folder will be created in the user-account
+ home directory, into which these files will be uploaded and stored using the
+ xmlStorageSystem API.</para>
+
+<formalpara><title>Authentication</title>
+  <para>The XML Storage System uses WebDAV enabled accounts to authenticate.
+  The passwords sent via the xmlStorageSystem API (except registerUser,
+  see below) must be an MD5 hash of the real user password.  In this way
+  clear text password cannot be captured from network sniffers.</para></formalpara>
+
+<formalpara><title>Cloud notification services</title>
+<para>
+The aggregators scan for changes in an interval, but in some situations we want to know when a channel has changed immediately. Notification makes it possible to always be in sync with bandwidth conservation and unneded loops.
+This is possible to register an aggregator using a xmlStorageSystem.requestNotification function, also to make aggregator to know about such service it's parameters are exposed in &lt;cloud&gt; sub-element of &lt;channel&gt; of the RSS files. The notification works as follows: aggregator gets registered via xmlStorageSystem.requestNotification; Then if a registered link changes, the aggregator will be notifed via specified protocol and method. The aggregator needs to register itself every 24 hour, otherwise the registration will expire. For full explantion of the cloud element of RSS file see reference at "http://backend.userland.com/rss#ltcloudgtSubelementOfLtchannelgt".
+</para>
+</formalpara>
+
+</sect3>
+
+<sect3 id="xssenabledvirtdir"><title>Enabling XML Storage System in a Virtual Directory</title>
+
+  <para>The XML Storage System can be enabled by creating a virtual directory
+  as a SOAP enabled directory, where the SOAP users is set to DBA or any
+  other user granted execute permissions to the xmlStorageSystem methods.</para>
+
+  <example id="ex_xssvirtdir"><title>Enabling an xmlStorageSystem Virtual Directory</title>
+
+  <para>via ISQL tool:</para>
+
+<programlisting><![CDATA[
+  SQL> vhost_define (lpath=>'/xmlStorageSystem', ppath=>'/SOAP/',
+      soap_user=>'dba');
+]]></programlisting>
+</example>
+  <para>The xmlStorageSystem takes into account the following user options:</para>
+
+  <simplelist>
+    <member>maxFileSize, integer - maximum file length allowed for upload</member>
+    <member>maxBytesPerUser, integer - maximum total bytes</member>
+  </simplelist>
+
+  <para>These are set upon initial registration to 1Mb/40Mb respectively
+  and can be changed via the Visual Server Administration Interface -> WebDAV ->
+  WebDAV users -> Options link.</para>
+  </sect3>
+  </sect2>
+
+  <sect2 id="xmlstoragesystem"><title>User's Blog quota</title>
+<para>
+In reality blog users are going to consume data space via weblog posts.
+For maximum flexibility to blog host administrators the following quotas are
+available:
+</para>
+<para>
+"Post Quotas": A maximum number of posts
+"Cummulative Post Size": A threshold that is based on a cumulative size of
+posts.
+These are settable to a user which may do a blog posts via WebDAV - User accounts UI.
+</para>
+  </sect2>
+
+  <sect2 id="xmlstoragesystem"><title>Posting a message in to the Blog</title>
+<para>
+To post a message to the blog usually is used various tools implementing a blogger APIs as clients.
+These are standalone tools running on a PC or other platform, but not in all cases one have
+these tolls on hand. Therefore a web interface is needed. The default home page (index.vspx) implements authentication schema and allows blog owners to post to their blogs. To login to that page blogger should go to the site home page and when supply valid credentials will be authenticated and thus possible to make posts/edit existing etc.
+For authenticated user in that case is also  possible to change details, settings channel subscriptions.
+</para>
+  </sect2>
+
+  <sect2 id="xmlstoragesystem"><title>Multi-author blogging</title>
+<para>
+In many cases many people needs authoring in common blog. For that case
+web admin have to create a blog which is owned by "group" (not by web user) and then granting this role to
+users which are authors will give them access to post on that blog. As group cannot be authenticated, thus it's not possible to login as group and post on behalf of it; the post's author have to be a valid web user account. This feature does not contradict with possibility authors to have their own blogs, they can have own and post to many "group" blogs.
+Granting access to a "group" blog can be done via WebDAV users UI, or with GRANT statement via ISQL tool.
+</para>
+  </sect2>
+
+  <sect2 id="xmlstoragesystem"><title>Posting a comments</title>
+<para>
+The blog is a something that one person or group of persons (authors) exposing to the public. So in some cases this material may need commentary from other people than authors. This is a option to the blog settings, when it's enabled (default) the home page of the blog (via permaLink) will offer a post form to make a comment.
+When making a comment the author's details can be recorded and re-used based on cookie; comment poster may control that option. Once comment is posted it can be read in same place (permaLink) as in discussion group.
+</para>
+  </sect2>
+
+  <sect2 id="xmlstoragesystem"><title>Blog Post Upstreaming (bridging)</title>
+<para>The blog upstreaming allows bloggers to keep in sync their blogs on different servers.
+It is possible for blogger to define a routing target, where his/her posts will be sent
+after local post is made, updated or deleted. This feature using blogger APIs (Blogger, MetaWeblog, MovableType)
+to pass messages to the remote. Therefore the target server must support one of these APIs.
+</para>
+<para>The upstreaming works in following manner:</para>
+<para>The blogger defines a routing job, which is of type "Upstream".
+To do this can be used Weblog Bridge UI following the steps: enter the XML-RPC endpoint, username and password valid there; hit "Fetch" to retrieve blogs on that host where the account can post; select desired account ; specify a time interval for update and which categories of posts to exclude; press "add" button.
+</para>
+<para>This is is a equivalent of executing a simple insert statement : </para>
+<programlisting>
+<![CDATA[
+SQL> INSERT INTO DB.DBA.SYS_ROUTING
+	(
+	R_JOB_ID,
+	R_TYPE_ID,
+	R_PROTOCOL_ID,
+	R_DESTINATION,
+	R_DESTINATION_ID,
+	R_AUTH_USER,
+	R_AUTH_PWD,
+	R_ITEM_ID,
+	R_FREQUENCY,
+	R_EXCEPTION_ID)
+	VALUES
+	(
+	1,	-- unique for job
+	1,	-- Upstreaming job
+	1,	-- Blogger API (2 for metaWeblog, 3 from mt)
+	'http://localhost:80/RPC2', -- target endpoint
+	'home',	-- target BlogID
+	'visitor', -- user
+	'secret',  -- secret
+	'128',	   -- local Blog ID (which to replicate)
+	60,	   -- hourly update
+	'0;1;'	   -- exclude posts within categories with ID 0 and 1
+	);
+]]>
+</programlisting>
+<para>This will make so when post is added/edited/deleted to make entry(es) in SYS_BLOGS_ROUTING_LOG table.
+Then on specified R_FREQUENCY a scheduled job will make blogger XML-RPC requests to the target server using API as specified in R_PROTOCOL_ID field.
+If target server is down the entries will be kept for next job round.
+</para>
+<para>The upstreeming feature can be extended easily to make another form of routing. The e-mail notification services in blogging is just one of them.</para>
+<para>The following shows how this feature can be triggered with simple insert command:</para>
+<programlisting>
+<![CDATA[
+INSERT INTO DB.DBA.SYS_ROUTING
+	(R_JOB_ID,R_TYPE_ID,R_PROTOCOL_ID,R_DESTINATION,R_ITEM_ID,R_FREQUENCY,R_EXCEPTION_ID)
+	VALUES(
+	2,  -- unique for job
+	2,  -- Email notification
+	4,  -- STMP protocol
+	'mail.domain.com:25', -- mail server
+	'128', -- local Blog ID
+	10,     -- scan every 10 minutes
+	'0;1;'  -- exclude posts within categories with ID 0 and 1
+	);
+]]>
+</programlisting>
+<para>The same can be done via Weblog UI - Notification setup</para>
+  </sect2>
+
+  <sect2 id="xmlstoragesystem"><title>Weblogs API</title>
+<para>This API consists of "weblogUpdates.ping" XML-RPC call and server-side implementation.</para>
+<para>The blog owner may enable weblogs pings as option in the blog settings. Then when it's blog gets updated a ping request will be sent on periodic basis to the "http://rpc.weblogs.com/weblogUpdates" server.</para>
+<para>The server also implements weblogUpdates.ping method. If this method is exposed on a XML-RPC enabled endpoint, other parties may use it for notification.
+</para>
+<para>
+The server implementation consist of :
+weblogUpdates.ping (in weblogname varchar, in weblogurl varchar, out Result struct). The party sends a ping with blog name and url and receive a common for blogger API response as struct (flError boolean, message varchar).
+Also a public accessible http://host:port/blog/weblogs.xml file is available for aggregators to track the latest additions made via Weblogs ping call. Please note that this file generates during on weblog site setup. hence we will have this file only if community  blog pages are generated.
+</para>
+<para>
+The weblogs.xml file follows the XMLSchema below:</para>
+<programlisting>
+<![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="weblog">
+    <xs:complexType>
+      <xs:attribute name="name" type="xs:string" use="required"/>
+      <xs:attribute name="url" type="xs:string" use="required"/>
+      <xs:attribute name="when" type="xs:int" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="weblogUpdates">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="weblog" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:string" use="required" fixed="1"/>
+      <xs:attribute name="updated" type="xs:string" use="required"/>
+      <xs:attribute name="count" type="xs:int" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
+]]>
+</programlisting>
+
+  </sect2>
+
+  <sect2 id="xmlstoragesystem"><title>Subscriptions</title>
+<para>
+Every blogger read and link to it's blog a many other sources, which are usually RSS feeds or other Web content.
+As RSS feeds (doesn't matter in which format RSS/RDF) are common practice to offer XML data from blogs, this is
+preferable source for most of the bloggers. The utilities for collecting such data are known as aggregators.
+</para>
+<para>
+The blogging support implements a own channel/blog aggregator, so bloggers may import RSS as specifying a
+URL to it, or using a directory formats as OCS and OPML. Secondly the channel feeds requested by blogger will be refreshed on a periodic basis (depending of channel parameters) and will feed the data locally. Once the channel is
+refreshed a blogger may do "BlogThis!" when browsing the local copy of the channel. This function is available via Admin UI - Weblog UI, or via "Channels" on blog home page when owner is authenticated.
+</para>
+  </sect2>
+
+  <sect2 id="xmlstoragesystem"><title>Trackback API</title>
+<para>
+The TrackBack provides a method of notification between websites: it is a method of person A saying to person B, "This is something you may be interested in." To do that, person A sends a TrackBack ping to person B.
+TrackBack ping call: this is a small message sent from one webserver to another via HTTP POST or GET.
+There are few situations where track back is useful:
+*As a form of remote comments rather than posting the comment directly on person B's weblog, person A posts it on his own weblog, then sends a TrackBack ping to notify person B.
+*Person A has written a post that group of people are interested in; then it sends a trackback to a community server and there visitors can show it.
+</para>
+<para>
+The implementation consist of :
+* the "trackback" method which can be invoked via REST(HTTP POST)
+* auto-discovery of the trackback URL in default blog home page
+</para>
+<para>
+trackback (varchar id, varchar url, varchar title, varchar excerpt, varchar blog_name, varchar __mode)
+the method can be invoked via REST and returns a XML response.
+</para>
+<para>
+A typical trackback post request look-like as :
+</para>
+<programlisting>
+<![CDATA[
+POST /mt-tb/Http/trackback?id=1
+Content-Type: application/x-www-form-urlencoded
+title=Some+Title&url=http://www.some.domain/&excerpt=An+excerpt&blog_name=foo
+]]>
+</programlisting>
+<para>
+A successful trackback response :
+</para>
+<programlisting>
+<![CDATA[
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<response>
+  <error>0</error>
+</response>
+]]>
+</programlisting>
+<para>
+When "__mode"  parameter is specified via GET request, then trackback method returns
+a RSS v0.91 XML data for given post enclosed in response element.
+</para>
+<para>
+A sample request and response follows:
+</para>
+<programlisting>
+<![CDATA[
+http://host:port/mt-tb/Http/trackback?id=3&__mode=rss
+
+<response>
+<error>0</error>
+<rss version="0.91">
+<channel>
+  <title/>
+  <link> http://....  </link>
+  <description> Description text ....  </description>
+</channel>
+</rss>
+</response>
+
+]]>
+</programlisting>
+  </sect2>
+
+  <sect2 id="xmlstoragesystem"><title>Pingback API</title>
+<para>
+The Pingback is another form of trackback, just protocol and parameters are different.
+In Pingback is used XML-RPC instead of REST model. Also the requester sends his own and
+target url as part of request.
+</para>
+<para>
+The implementation consists of "pingback.ping" XML-RPC method and auto-discovery
+in blog home page.
+</para>
+<para>
+"pingback.ping" (in sourceURI varchar, in targetURI varchar) return varchar
+</para>
+<para>
+The sourceURI is URL for page of requester; targetURI is page on the target server.
+The pingback.ping method will retrieve sourceURI and will record the data as trackback
+it targetURI exists on same server and it's valid permaLink.  On success it returns a
+string 'Success' otherwise XML-RPC error code. See also external reference "http://www.hixie.ch/specs/pingback/pingback" .
+</para>
+  </sect2>
+
+  <sect2 id="xmlstoragesystem"><title>E-mail Notifications</title>
+<para>The blog implementation offers a two kind of notifications: notify via e-mail a blog owner when a comment is posted; or  one could subscribe to receive blog posts via e-mail. Both notifications are disabled by default and can be turned on using Weblog UI. When this flag is on a scheduled job will send e-mail to the blogger for every new comment posted to the given blog.</para>
+<para>The blog owner notification can be turned on as setting BI_COMMENTS_NOTIFY to 1 in table SYS_BLOG_INFO for corresponding blog entry. Other way is to use Weblog settings UI.</para>
+<para>If blog owner decide, can define a notification route. To do that he can add a routing job
+of type SMTP to the routing table. See "Blog Upstreaming" discussed earlier in this chapter how to do that.
+Also it's possible via Weblog settings UI to add such route via "Notification" link.
+Note that when define such route , better practice is to designate a category which to be considered as
+for subscription.
+</para>
+<para>
+Once such routing job is defined for given blog, users can subscribe and therefore receive e-mails for
+posts which blogger assign to a category for notification.
+</para>
+  </sect2>
+  <sect2 id="blognotifcomments"><title>Comments tracking options</title>
+      <para>
+	  When a blogger enable E-mail Notification for comments on his/her
+	  blog, the following options are available: </para>
+      <para>HTML - the notification will be sent in HTML format, the message
+	  will contain URLs to the post and comment API. Reply to this
+	  mail will add new comment, if mail-gateway is enabled by Web
+	  administrator.</para>
+      <para>HTML Form - this option will send an email contianing comment and
+	  form, which could be used to invoke directly comment API from mail
+	  agent (if it supports posting a form)</para>
+      <para>Text - this option is same as first, but uses plain text instead
+	  of HTML encoding.</para>
+      <para>combined : combines all of the above as attachments.</para>
+  </sect2>
+
+  <sect2 id="xmlstoragesystem"><title>Subscription Harmonizer API</title>
+<para>Considering situation where blogger have many subscribed channels and wish these to be in sync
+on different places it usually subscribe/unsubscribe in home, work public blog.
+To be easiest for one to keep all mirrored blog instances (see Upstreaming discussed above) to have
+same channel subscription can be used Subscription Harmonizer API.
+This API consist of four methods available via XML-RPC , so developers can use them to put in sync
+blogger channel subscriptions.
+</para>
+<para>"subsHarmonizer.setup" (in username varchar, in "password" varchar, in array any)
+This is used to setup on server channels which are subscribed locally. The user authenticates
+using name and password and sends to server list of RSS URLs  in "array" parameter.
+This action is usually performed once , on initial subscription.
+</para>
+<para>"subsHarmonizer.subscribe" (in username varchar, in "password" varchar, in array any)
+This is used when in local blog instance blogger makes new subscription(s), the "array" will contains only
+entries have been added since last call to that or subsHarmonizer.setup call.
+The target server will resolve URL list and will make records in SYS_BLOG_CHANNEL and SYS_BLOG_CHANNEL_INFO tables.
+</para>
+<para>"subsHarmonizer.unsubscribe" (in username varchar, in "password" varchar, in array any)
+This function is opposite of subsHarmonizer.setup , it is used when blogger unsubscribe from some channels.
+The server action is to remove channel subscriptions from blog instance. Note that in this case server keeps
+channel definition , so it can be re-used when another user get subscribed to it, this is to minimize bandwidth consumption for channel characteristics retrieval.
+</para>
+<para>All of the above returns boolean.</para>
+<para>"subsHarmonizer.startup" (in username varchar, in "password" varchar)
+This function is used from blog application to get from server list of
+subscriptions which are currently registered. In that case blog application
+uses the array of URLs returned to set it's local list of channels.
+</para>
+  </sect2>
+
+  <sect2 id="moblog"><title>Mobile Blogging (Moblog)</title>
+    <para>The Mobile blogging (moblog) is synonym of messages containing images made via mobile devices
+    (such as mobile telephones etc.) with ability to record a image and send them via SMTP.</para>
+
+    <para>Moblog&#39;&#39;ing has become popular as means for users to easily, automatically and immediately
+     post text and images back to their blog site what ever their location.</para>
+
+    <para>The Virtuoso server can act as mail server (see Storing Email in Virtuoso chapter,
+    and howto configure mail servers in same chapter). Thus it&#39;&#39;s possible to capture
+    mails sent via mobile devices and expose in a Blog. But main problem remains: SMTP have no
+    authentication. So this functionality is achieved via UI which shows all existing mail messages
+    sent via mobile devices and containing a images, allowing to the blog owner to decide which image
+    to go to his/her blog. As an alternative post can be automatic if blogger check this option. </para>
+
+    <para>Mobile blogging (Moblog) can be coonfigured via the Virtuoso blog UI by selecting the
+    Moblog link under the Configuration section as indicated in the diagram below: </para>
+
+    <figure><title>Blog page</title>
+      <graphic fileref="moblog.gif" width="633px" depth="513px" /></figure>
+
+    <para>The Moblog configuration page enables the details of the POP3 server from
+    which messages are to be retrieved from is located  as inidcated in the diagrram below:</para>
+
+    <figure><title>Blog page</title>
+      <graphic fileref="moblogconfig.gif" width="633px" depth="513px" /></figure>
+
+
+    <itemizedlist mark="bullet" spacing="compact">
+          <listitem><emphasis>Server Address and Port </emphasis>- Hostname and port number of  the POP3 Mail Server.</listitem>
+          <listitem><emphasis>Account Username</emphasis> - username of POP3 Mail server account.</listitem>
+          <listitem><emphasis>Account Password </emphasis>- username of POP3 Mail server account.</listitem>
+          <listitem><emphasis>Enable Automatic Moblogging</emphasis> - enabled automatic posting of messages to Blog site.</listitem>
+          <listitem><emphasis>Allowed MIME types</emphasis> - mime type of messages to be retrieved form POP3 server, which can be of type image, vidoe or audio.</listitem>
+          <listitem><emphasis>Set</emphasis> - this button sets the POP3 mail server setting entered above.</listitem>
+          <listitem><emphasis>Fetch</emphasis> -  this button retrieves available moblog messages from the POP3 mail server.</listitem>
+    </itemizedlist>
+
+    <para>Moblog can handle different types of attachments, this depends of list of MIME type
+    patterns (SQL like syntax), which blogger specifies in Moblog UI. Further any new incoming
+    message containing attachment matching any of that list will be exposed in the UI for posting,
+    or it will be posted automatically if &#39;&#39;Automatic post&#39;&#39; option is checked. </para>
+
+    <para>Note: feeding a mail box can also be done via &quot;Mail&quot;, &quot;Get Mail with
+    POP3&quot; Admin UI utility. In this case blogger authenicates in this utility, and feeds
+    it&#39;&#39;s local mailbox from some POP3 server. The consecuential actions to put a message
+    as blog message are same as described above. </para>
+
+    <para>As alternative to feeding via own POP3 account, Moblog message can be sent to special
+    mail-gateway account. Such account can be set from Web admin only and can be used from all
+    bloggers to pass Moblog messages to their blogs. Only requirment in that case is blogger to
+    include &#39;&#39;@@blogId@@=[blog Id]&#39;&#39; string as a single line whenever in the
+    message body. Further mail-gateway processing will detect such rule and will expose the
+    message in the Moblog UI, or automatic post will be performed. </para>
+
+  </sect2>
+  <sect2 id="blogxmltemplate"><title>Posting a dynamic content</title>
+      <para>
+	  The Virtuoso blogging system allows to insert into a post a result from SQL, XPATH or XQuery expressions.
+	  The way this can be done is to have a SQL access enabled for the Web user making the post,
+	  so shuch blogger can insert into a post body (note that this is not available for title) a XMLTemplate.
+	  (see "XML Templates" for reference)
+	  Then at the render time the template will be executed on behalf of the blogger who is made the post
+	  and result will be shown. There is no limitation how many XML Templates can be included in a single post.
+	  Please note that bloggers without SQL access cannot do such posts. Also the SQL granting rules
+	  will be applied when XML Tempalte is executed.
+      </para>
+      <para>
+	  The following will render a simple table containing list of Demo.demo.Shippers table from Demo database.
+      </para>
+<programlisting><![CDATA[
+	    <table border="1">
+		<sql:query xmlns:sql="urn:schemas-openlink-com:xml-sql" >
+		    select 1 as tag , null as parent, CompanyName as [tr!1!td!element]
+		    from Demo.demo.Shippers
+		    for xml explicit
+		</sql:query>
+	    </table>
+	    ]]></programlisting>
+	<para>
+	    The following post will render a table containing a names of people
+	    which is organized in simple OPML file (located in the tutorial system)
+	    using XQuery.
+	    (See also the tutorial demo BLOG_QUERY)
+	</para>
+<programlisting><![CDATA[
+	    <div>
+		<sql:xquery  xmlns:sql="urn:schemas-openlink-com:xml-sql"
+		    sql:context="http://localhost:8890/tutorial/apps/blog_query/">
+		    ]]>&lt;![CDATA[<![CDATA[
+		    <table border="1">
+			{ for $o in document ("opml.xml")//outline
+			   return <tr><td>{ string ($o/@text) }</td></tr>
+			}
+		    </table>
+		    ]]>]]&gt;<![CDATA[
+		</sql:xquery>
+	    </div>
+]]></programlisting>
+  </sect2>
+  <sect2 id="blognotifservices"><title>Notification Services</title>
+      <para>
+	  This UI is used to define a mail routing job.
+	  So it is used for notification of blog visitors
+	  for post updates. If administratior define a mail
+	  target and refresh interval; visitors to the
+	  given blog can subscribe to the 'mailing list' for
+	  blog updates.
+	  Once visitor have subsribed, on every new post
+	  an email will be sent to he/she.
+
+	  If the mail tragte is deleted, the mailing list for blog update
+	  notification will be canceled.
+      </para>
+  </sect2>
+  <sect2 id="blogwaprender"><title>Rendering the RSS feed in WML format</title>
+      <para>
+	  The user's blog RSS file could be rendered in WML format
+	  for accessing with mobile devices. To do that
+	  built-in PL post-processing hook for blog virtual directory is
+	  introduced  (DB.DBA.BLOG_RSS2WML_PP). It working together with
+	  a XSL-T style-sheet which converts the RSS in WML format.
+      </para>
+      <para>
+	  To enable this functionality the blogger shoul enter '*wml-default*' as
+	  RSSFilter option on settings page. Or if he/she has an own XSL-T
+	  filter for WML can enter its URL instead.
+      </para>
+      <para>
+	  The  DB.DBA.BLOG_RSS2WML_PP post-processing hook:
+      </para>
+<programlisting><![CDATA[
+create procedure DB.DBA.BLOG_RSS2WML_PP ()
+  {
+    declare accept, upar, pars any;
+    declare lines any;
+    lines := http_request_header ();
+    accept := http_request_header (lines, 'Accept');
+    if (not isstring (accept))
+      accept := '';
+    upar := http_request_get ('QUERY_STRING');
+    if (regexp_match ('text/vnd\.wap\.wml', accept))
+      {
+	if (http_path () like '%/rss.xml')
+	  {
+	    declare opts, filt, bid any;
+	    whenever not found goto exitp;
+	    select top 1 BI_BLOG_ID into bid from SYS_BLOG_INFO where
+	    http_path () like BI_HOME || '%' order by length (BI_HOME) desc;
+	    select deserialize (blob_to_string (BI_OPTIONS)) into opts from SYS_BLOG_INFO where BI_BLOG_ID = bid;
+
+	    if (not isarray(opts))
+	      opts := vector ();
+
+	    filt := get_keyword ('RSSFilter', opts, '');
+
+	    if (filt = '*wml-default*')
+	      filt := 'http://local.virt/rss2wml.xsl';
+
+	    if (not isstring (filt) or not xslt_is_sheet (filt))
+	      goto exitp;
+
+	    if (length (upar) = 0)
+	      {
+                http_xslt (filt);
+	      }
+	    else
+	      {
+		declare rss, xt, xsl any;
+		rss := http_get_string_output ();
+		xt := xml_tree_doc (rss);
+		http_rewrite ();
+		xsl := xslt (filt, xt, vector ('id', upar));
+		http_value (xsl, null);
+	      }
+	    http_header ('Content-Type: text/vnd.wap.wml\r\n');
+	    exitp:;
+	  }
+      }
+    return;
+  }
+;
+]]></programlisting>
+      <para>
+	  The rss2wml.xsl style sheet:
+      </para>
+<programlisting><![CDATA[
+<?xml version='1.0'?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
+  xmlns:vb="http://www.openlinksw.com/weblog/">
+  <xsl:output method="xml" indent="yes" doctype-public="-//WAPFORUM//DTD WML 1.1//EN" doctype-system="http://www.wapforum.org/DTD/wml_1.1.xml" media-type="text/xml"/>
+  <xsl:param name="id" />
+  <xsl:template match="/">
+    <wml>
+      <card id="card1">
+	<xsl:apply-templates />
+      </card>
+    </wml>
+  </xsl:template>
+  <xsl:template match="item">
+    <xsl:choose>
+      <xsl:when test="boolean($id!='')">
+	<xsl:if test="substring-after(link,'?') = $id">
+	  <p>
+	    <xsl:value-of select="vb:tidy_xhtml (string (description), '*default*')"
+	      disable-output-escaping="yes"/>
+	    <br/>
+	    <xsl:if test="preceding-sibling::item">
+	      <a>
+		<xsl:attribute name="href">rss.xml?<xsl:value-of select="substring-after(preceding-sibling::item/link,'?')"/></xsl:attribute>PREVIOUS</a><br />
+	    </xsl:if>
+	    <xsl:if test="following-sibling::item">
+	      <a>
+		<xsl:attribute name="href">rss.xml?<xsl:value-of select="substring-after(following-sibling::item/link,'?')"/></xsl:attribute>NEXT</a>
+	    </xsl:if>
+	  </p>
+	</xsl:if>
+      </xsl:when>
+      <xsl:otherwise>
+	<p>
+	  <a>
+	    <xsl:attribute name="href">rss.xml?<xsl:value-of select="substring-after(link,'?')"/></xsl:attribute>
+	    <xsl:value-of select="title"/>
+	  </a>
+	</p>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+  <xsl:template match="text()"/>
+</xsl:stylesheet>
+]]></programlisting>
+  </sect2>
+
+  </sect1>
+

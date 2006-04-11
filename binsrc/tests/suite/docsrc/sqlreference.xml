@@ -1,0 +1,2289 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<chapter label="VI" id="chapter6">
+<title>SQL Reference</title>
+<bridgehead>SQL Reference</bridgehead>
+
+<abstract>
+SQL Reference.
+</abstract>
+
+<!-- ======================================== -->
+<sect1 id="DATATYPES">
+<title>Datatypes</title>
+
+<variablelist>
+<varlistentry>
+<term>CHARACTER</term>
+<listitem><para>CHARACTER</para></listitem>
+<listitem><para>VARCHAR</para></listitem>
+<listitem><para>VARCHAR&apos;(&apos;INTNUM&apos;)&apos;</para></listitem>
+<listitem><para>CHAR&apos;(&apos;INTNUM&apos;)&apos;</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>NUMERIC</term>
+<listitem><para>NUMERIC</para></listitem>
+<listitem><para>NUMERIC&apos;(&apos;INTNUM&apos;)&apos;</para></listitem>
+<listitem><para>NUMERIC&apos;(&apos;INTNUM&apos;,&apos;INTNUM&apos;)&apos;</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>DECIMAL</term>
+<listitem><para>DECIMAL</para></listitem>
+<listitem><para>DECIMAL&apos;(&apos;INTNUM&apos;)&apos;</para></listitem>
+<listitem><para>DECIMAL&apos;(&apos;INTNUM&apos;,&apos;INTNUM&apos;)&apos;</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>INTEGER</term>
+<listitem><para>INTEGER</para></listitem>
+<listitem><para>SMALLINT</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>FLOAT</term>
+<listitem><para>FLOAT</para></listitem>
+<listitem><para>FLOAT&apos;(&apos;INTNUM&apos;)&apos;</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>REAL</term>
+<listitem><para>REAL</para></listitem>
+<listitem><para>DOUBLE PRECISION</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>LONG VARCHAR</term>
+</varlistentry>
+
+<varlistentry>
+<term>VARBINARY ( precision )</term>
+<listitem><para>LONG VARBINARY</para></listitem>
+</varlistentry>
+
+<varlistentry>
+<term>TIMESTAMP</term>
+<listitem><para>TIMESTAMP</para></listitem>
+<listitem><para>DATETIME</para></listitem>
+<listitem><para>TIME</para></listitem>
+<listitem><para>DATE</para></listitem>
+</varlistentry>
+
+</variablelist>
+
+</sect1>
+
+
+<!-- ======================================== -->
+<sect1 id="IDENTCASE">
+<title>Identifier Case</title>
+
+<sect2 id="idscaselitsescs"><title>Identifiers, Case, Literals and Escape</title>
+<para>
+Virtuoso can operate with different identifier case conventions.
+The CaseMode setting in the virtuoso.ini file controls this, see virtuoso.ini
+documentation.
+</para><para>
+The default files supplied with Virtuoso specify a CaseMode of 2,
+which is a case insensitive
+mode that preserves the declaration case of identifiers.
+</para><para>
+A CaseMode of 1 specifies the upper case mode, which is most
+commonly used in SQL databases, e.g. Oracle.
+In the upper case mode, all unquoted identifiers are converted to upper
+case by the SQL parser. If identifiers are not quoted, the case in which
+they are entered is irrelevant.
+</para><para>
+The identifier quote character is the double quote (&quot;).  Quoted
+identifiers are processed in the case they are written in and are thus
+case sensitive.
+</para><para>
+SQL reserved words are case insensitive in all case modes.
+</para><para>
+If CaseMode is 0 , identifiers will be treated as case sensitive in all situations,
+whether quoted or not.
+</para><para>
+If an identifier&apos;s name is equal to a SQL reserved word, e.g. TABLE,
+it must be quoted (&quot;TABLE&quot;) in order to be used as an identifier.
+</para><para>
+If an identifier contains non-alphanumeric characters, e.g. space, &apos;-&apos; etc. it
+must be quoted regardless of CaseMode.
+</para><para>
+Although CaseMode can be changed at any time it should only be set at database
+creation.  Changing the CaseMode may result in view or procedure code becoming invalid
+if it relies on specific case conventions.
+</para>
+</sect2>
+
+<sect2 id="litsbraceescs">
+<title>Literals, Brace Escapes</title>
+<sect3 id="strings">
+<title>Strings</title>
+<para>
+String literals are delimited with single quotes.  A double single
+quote is an escape notation for a single quote character inside a
+string literal.  Additionally, standard C language escapes are supported.
+</para>
+<screen xml:space='preserve'>
+Literal			meaning
+&apos;&apos;			&lt;empty&gt;
+&apos;&apos;&apos;&apos;			&apos;
+&apos;&apos;&apos;&apos;&apos;&apos;			&apos;&apos;
+&apos;\t\r\n\\&apos;		tab, carriage return, newline, backslash
+&apos;\012&apos;			Character 012 octal, i.e. newline
+</screen>
+</sect3>
+
+<sect3 id="numbers">
+<title>Numbers</title>
+<para>
+An integer constant consist of an optional minus sign followed by
+decimal digits.  Integer literals are of the C type long, 32 bit.
+</para><para>
+Numeric literals with a decimal point  literals are internally of the DECIMAL SQL type, a variable
+length decimal floating point type.
+The  Following are examples of decimal literals:
+</para>
+<screen>
+123.456
+-16.0
+</screen>
+<para>
+Numeric literals which specify an exponent , e.g. 1.2e11 or
+2e-3 are read as C doubles, (64 bit IEEE binary floating point). This
+is potentially less precise than the DECIMAL SQL type.
+</para>
+</sect3>
+
+<sect3 id="odbcbraceesc">
+<title>ODBC Brace Escapes</title>
+<para>
+The Virtuoso SQL parser supports the following ODBC brace escape notations:
+</para>
+
+<screen>
+{fn function (argument, ..) }		fm (arguments .)
+call procedure a1, ... }
+
+{d &apos;yyyy.mm.dd&apos;}
+
+{t &apos;hh:mm.ss&apos; }
+
+{ts &apos;yyyy.mm.dd hh:mm.s fraction&apos; }
+
+[oj  }		-- outer join
+</screen>
+</sect3>
+</sect2>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="QUALIFIEDNAMES">
+<title>Qualified Names</title>
+
+<sect2 id="qual_owners">
+<title>Qualifiers and Owners</title>
+<para>
+Virtuoso supports multiple namespaces for tables and procedures.  A table
+or procedure is uniquely identified by a three part name consisting of
+qualifier, owner and name separated by dots.
+</para><para>
+Each connection has a current qualifier which is used as the default
+qualifier for if a name doesnot specify a qualifier.  The owner can
+be omitted from a name if the qualifier and name uniquely identify the
+object, e.g.  DB..SYS_KEYS.
+</para><para>
+Initially, all system objects have the qualifier DB ando owner DBA.
+</para><para>
+The default current qualifier of all connections is DB unless otherwise
+specified using db.dba.user_set_qualifier.
+</para><para>
+A user can be assigned a default qualifier set as current qualifier upon
+login.  This is done with the stored procedure db.dba.user_set_qualifier.
+</para>
+<screen>
+user_set_qualifier  (in user varchar, in qualifier varchar)
+</screen>
+</sect2>
+
+<sect2 id="defaultqualifers">
+<title>Default Qualifiers</title>
+<para>
+The default qualifier of the user is set to be the qualifier.  The names
+are strings and thus case sensitive.
+</para>
+<para>Example:</para>
+<programlisting>
+db..user_set_qualifier (&apos;U1&apos;, &apos;U1DATA&apos;);
+</programlisting>
+</sect2>
+
+<sect2 id="userstmtid">
+<title>USE Statement, USE identifier</title>
+<para>
+This sets the default qualifier for the connection in question.  The
+identifier is an identifier and canot be an expression. The identifier
+is subject to whatever case conversions may be in effect. See case_mode
+configuration parameter.   A quoted identifier will always pass in the
+case it is entered. An unquoted identifier will by converted to upper
+case if case_mode so specifies.
+</para>
+</sect2>
+
+<sect2 id="idcaselits">
+<title>Identifiers, Case, Literals and Escape</title>
+<para>
+There is a case sensitive and a case insensitive mode of operation. This
+is controlled by the case_mode: entry in the wi.cfg configuration file.
+The default files supplied with Virtuoso specify the standard, upper case
+convention (case_mode: 1).
+</para><para>
+In the upper case mode, all unquoted identifiers are converted to upper
+case by the SQL parser. If identifiers are not quoted, the case in which
+they are entered is irrelevant.
+</para><para>
+The identifier quote character is the double quote (&quot;).  Quoted
+identifiers are processed in the case they are written in and are thus
+case sensitive.
+</para><para>
+SQL reserved words are case insensitive in all case modes.
+</para><para>
+If case_mode is zero or absent from the virtuoso.ini configuration
+file. identifiers will be treated as case sensitive in all situations,
+whether quoted or not.
+</para><para>
+If an identifier&apos;s name is equal to a SQL reserved word, e.g. TABLE,
+it must be quoted (&quot;TABLE&quot;) in order to be used as an identifier.
+</para>
+</sect2>
+
+</sect1>
+
+
+<!-- ======================================== -->
+<sect1 id="ASDEC">
+<title>AS Declaration - Column Aliasing</title>
+<para>
+Virtuoso supports the AS operator in the selection list of a SELECT
+statement. This notation allows declaring a name and optionally a type
+and precision for a statement&apos;s output column.
+</para>
+<para>
+The syntax is:
+</para>
+<screen>
+as_exp:
+Scalar_exp AS NAME opt_data_type
+</screen>
+<para>
+For instance, one can write:
+</para>
+<programlisting>
+SELECT COUNT (*) AS NUMBEROFROWS FROM XX;
+SELECT COUNT (*) AS NUMBEROFROWS INTEGER (2) FROM XX;
+SELECT CONCATENATE (COL1, COL2) AS RESULTSTRING VARCHAR (50) FROM XX;
+</programlisting>
+<para>
+The AS expression tells the client to return specified values in the
+SQLDescribeCol, SQLColAttribute or equivalent calls. The semantics of
+statements is not otherwise affected.   An AS expression can appear
+anywhere a scalar expression can but the only place where it has an
+effect is the selection list of a SELECT statement.
+</para><para>
+If a data type is given and contains a precision, that precision is
+returned to the client as the precision of the column in question.
+</para>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="AUTOINC_SEQ">
+<title>Autoincrement &amp; Sequence Objects</title>
+
+<sect2 id="seqobj">
+<title>Sequence Objects</title>
+<para>
+Virtuoso supports sequence objects. These can be used to generate sequential
+numbers which can be used as unique identifiers.  A sequence object is
+guaranteed never to give the same number twice.  Each sequence has a
+name and a state. The state of a sequence is stored in the database at
+checkpoint time. Between checkpoints sequence states are logged so that
+a possible roll forward recovery will not lose information.
+</para><para>
+The SQL functions sequence_next and sequence_set are used to access
+and set the state of sequences.  These take the name of the sequence as
+argument.  This is a server/wide unique string. There are no restrictions
+on the length or character set of the sequence
+</para><para>
+Sequences do not have to be separately created.  A sequence object
+will automatically be generated when first referenced by sequence_next
+or sequence_set.
+</para>
+<programlisting>sequence_next (in name varchar) returns integer
+</programlisting>
+<programlisting>sequence_set (in name varchar, in state integer, in mode integer)
+		returns integer
+</programlisting>
+
+<para>
+Sequence_next returns the current state of the specified sequence and
+atomically increments it by one.  The next call will thus return a
+number one greater than the previous. The sequence is shared between
+all connections and all transactions.  Using a sequence never involves
+locking.
+</para><para>
+Sequence_set sets and returns the state of a sequence object.  The next
+call to sequence_next will return this same number.  If mode equals 0,
+the state is set regardless of the previous state. If mode is non-zero,
+the state is set only if the new state is greater then the previous
+state.  Calling sequence_set (&apos;sequence&apos;&apos; , 0, 1) will always return
+the sequence&apos;s state without changing it.
+</para>
+</sect2>
+
+<sect2 id="autoinccols">
+<title>Autoincrement Columns</title>
+<para>
+Virtuoso supports autoincrement or identity columns using sequences.
+The IDENTITY column option given in a CREATE TABLE statement specifies
+a column to be autoincremented.  An autoincrement column may or may not
+be part of the primary key or of any index.
+</para>
+<programlisting>
+    CREATE TABLE AI (
+	AI INTEGER IDENTITY,
+	XX VARCHAR,
+	PRIMARY KEY (AI))
+</programlisting>
+<para>
+Creates a table with an autoincremented primary key AI.  The name of
+To each autoincrement column corresponds an internal sequence object.
+the name of the  sequence object is&apos;DB.DBA.&apos; plus  the concatenation of the table&apos;s qualifier,
+owner, table name and column name, e.g. &apos;DB.DBA.db.dba.AI.AI&apos; ..  The user
+does not normally have to know about the sequence associated with an
+autoincrement column.  It is however possible to set the next value of
+an autoincrement column with sequence_set using this nane.
+</para><para>
+For example
+</para>
+<programlisting>sequence_set (&apos;DB.DBA.DB.DBA.AI.AI&apos;, 11, 0);</programlisting>
+<para>
+will cause the next row to be inserted into AI to have the AI column equal to 11.
+</para>
+</sect2>
+
+<sect2 id="defaultpkey">
+<title>Default Primary Key</title>
+<para>
+Virtuoso supports tables with no explicit primary key.  ALWAYS DECLARE A
+PRIMARY KEY USING THE PRIMARY KEY TABLE CONSTRAINT.  THIS IS ALWAYS
+FASTER THAN THE DEFAULT PRIMARY KEY DESCRIBED BELOW.
+</para><para>
+If a table definition has no PRIMARY KEY clause, the system generates
+a default primary key column.
+</para>
+<programlisting>
+    CREATE TABLE SAMPLE (
+    	THING VARCHAR);
+</programlisting>
+
+is expanded into:
+
+<programlisting>
+    CREATE TABLE SAMPLE (
+    	THING VARCHAR,
+	_IDN INTEGER IDENTITY,
+	PRIMARY KEY (_IDN));
+</programlisting>
+<para>
+The table will appear just as if it has no primary key.   The _IDN column
+does not appear in the ODBC catalog calls SQLColumns, SQLStatistics,
+SQLPrimaryKeys, SQLColumnPrivileges.  The column can be references in
+SQL statements just as any other.  The SQL select * syntax omits the
+_IDN column.  The insert into table values (.) syntax does not expect
+a value for the _IDN column.
+</para><para>
+SQLSpecialColumns with the SQL_BEST_ROWID option is the only catalog
+function that returns the _IDN column.
+</para>
+</sect2>
+</sect1>
+
+
+<!-- ======================================== -->
+<sect1 id="GRAMMER">
+<title>SQL Grammer</title>
+
+<programlisting>
+    sql_list
+	    : sql &apos;;&apos;&#10;
+	    | sql_list sql &apos;;&apos;&#10;
+	    ;
+
+    sql
+	    : schema_element_list
+	    | view_def
+	    ;
+
+    schema_element_list
+	    : schema_element
+	    | schema_element_list schema_element
+	    ;
+
+    schema_element
+	    : base_table_def
+	    | create_index_def
+	    | drop_table
+	    | drop_index
+	    | add_column
+	    | table_rename
+	    | privilege_def
+	    | privilege_revoke
+	    | create_user_statement
+	    | delete_user_statement
+	    | set_pass
+	    | set_group_stmt
+	    ;
+
+    base_table_def
+	    : CREATE TABLE new_table_name &apos;(&apos; base_table_element_commalist &apos;)&apos;&#10;
+	    ;
+
+    base_table_element_commalist
+	    : base_table_element
+	    | base_table_element_commalist &apos;,&apos; base_table_element
+	    ;
+
+    base_table_element
+	    : column_def
+	    | table_constraint_def
+	    ;
+
+    column_def
+	    : column data_type column_def_opt_list
+	    ;
+
+    references
+	    : REFERENCES q_table_name opt_column_commalist
+	    ;
+
+    column_def_opt_list
+	    : /* empty */
+	    | column_def_opt_list column_def_opt
+	    ;
+
+    column_def_opt
+	    : NOT NULLX
+	    | IDENTITY
+	    | NOT NULLX PRIMARY KEY opt_index_option_list
+	    | DEFAULT literal
+	    | references
+	    ;
+
+    table_constraint_def
+	    : UNDER q_table_name
+	    | PRIMARY KEY &apos;(&apos; index_column_commalist &apos;)&apos; opt_index_option_list
+	    | FOREIGN KEY &apos;(&apos; column_commalist &apos;)&apos; references
+	    ;
+
+    column_commalist
+	    : column
+	    | column_commalist &apos;,&apos; column
+	    ;
+
+    index_column_commalist
+	    : column opt_asc_desc
+	    | index_column_commalist &apos;,&apos; column opt_asc_desc
+	    ;
+
+    index_option
+	    : CLUSTERED
+	    | UNIQUE
+	    | OBJECT_ID
+	    ;
+
+    index_option_list
+	    : index_option
+	    | index_option_list index_option
+	    ;
+
+    opt_index_option_list
+	    : /* empty */
+	    | index_option_list
+	    ;
+
+    create_index_def
+	    : CREATE opt_index_option_list INDEX index
+		    ON new_table_name &apos;(&apos; index_column_commalist &apos;)&apos;&#10;
+	    ;
+
+    drop_index
+	    : DROP INDEX NAME opt_table
+	    ;
+
+    opt_table
+	    : /* empty */
+	    | q_table_name
+	    ;
+
+    drop_table
+	    : DROP TABLE q_table_name
+	    ;
+
+    add_column
+	    : ALTER TABLE q_table_name ADD column_def
+	    | ALTER TABLE q_table_name DROP column
+	    ;
+
+    table_rename
+	    : ALTER TABLE q_table_name RENAME new_table_name
+	    ;
+
+    view_def
+	    : CREATE VIEW new_table_name opt_column_commalist
+		    AS query_exp opt_with_check_option
+	    ;
+
+    opt_with_check_option
+	    : /* empty */
+	    | WITH CHECK OPTION
+	    ;
+
+    opt_column_commalist
+	    : /* empty */
+	    | &apos;(&apos; column_commalist &apos;)&apos;&#10;
+	    ;
+
+    priv_opt_column_commalist
+	    : /* empty */
+	    | &apos;(&apos; column_commalist &apos;)&apos;&#10;
+	    ;
+
+    privilege_def
+	    : GRANT ALL PRIVILEGES TO grantee
+	    | GRANT privileges ON table TO grantee_commalist opt_with_grant_option
+	    ;
+
+    privilege_revoke
+	    : REVOKE ALL PRIVILEGES FROM grantee_commalist
+	    | REVOKE privileges ON table FROM grantee_commalist
+	    ;
+
+    opt_with_grant_option
+	    : /* empty */
+	    | WITH GRANT OPTION
+	    ;
+
+    privileges
+	    : ALL PRIVILEGES
+	    | ALL
+	    | operation_commalist
+	    ;
+
+    operation_commalist
+	    : operation
+	    | operation_commalist &apos;,&apos; operation
+	    ;
+
+    operation
+	    : SELECT priv_opt_column_commalist
+	    | INSERT
+	    | DELETE
+	    | UPDATE priv_opt_column_commalist
+	    | EXECUTE
+	    ;
+
+    grantee_commalist
+	    : grantee
+	    | grantee_commalist &apos;,&apos; grantee
+	    ;
+
+    grantee
+	    : PUBLIC
+	    | user
+	    ;
+
+    set_pass
+	    : SET PASSWORD NAME NAME
+	    ;
+
+    create_user_statement
+	    : CREATE USER user
+	    ;
+
+    delete_user_statement
+	    : DELETE USER user
+	    ;
+
+    set_group_stmt
+	    : SET USER GROUP user user
+	    ;
+
+    cursor_def
+	    : DECLARE NAME CURSOR FOR query_spec
+	    ;
+
+    opt_order_by_clause
+	    : /* empty */
+	    | ORDER BY ordering_spec_commalist
+	    ;
+
+    ordering_spec_commalist
+	    : ordering_spec
+	    | ordering_spec_commalist &apos;,&apos; ordering_spec
+	    ;
+
+    ordering_spec
+	    : INTNUM opt_asc_desc
+	    | column_ref opt_asc_desc
+	    | function_ref opt_asc_desc
+	    ;
+
+    opt_asc_desc
+	    : /* empty */
+	    | ASC
+	    | DESC
+	    ;
+
+    sql
+	    : manipulative_statement
+	    ;
+
+    manipulative_statement
+	    : query_exp
+	    | update_statement_positioned
+	    | update_statement_searched
+	    | insert_statement
+	    | delete_statement_positioned
+	    | delete_statement_searched
+	    | call_statement
+	    | admin_statement
+	    | use_statement
+	    ;
+
+    use_statement
+	    : USE NAME
+	    ;
+
+    close_statement
+	    : CLOSE cursor
+	    ;
+
+    delete_statement_positioned
+	    : DELETE FROM table WHERE CURRENT OF cursor
+	    ;
+
+    delete_statement_searched
+	    : DELETE FROM table opt_where_clause
+	    ;
+
+    fetch_statement
+	    : FETCH cursor INTO target_commalist
+	    ;
+
+    insert_mode
+	    : INTO
+	    | REPLACING
+	    | SOFT
+
+    insert_statement
+	    : INSERT insert_mode table priv_opt_column_commalist values_or_query_spec
+	    ;
+
+    values_or_query_spec
+	    : VALUES &apos;(&apos; insert_atom_commalist &apos;)&apos;
+	    | query_spec
+	    ;
+
+    insert_atom_commalist
+	    : insert_atom
+	    | insert_atom_commalist &apos;,&apos; insert_atom
+	    ;
+
+    insert_atom
+	    : scalar_exp
+	    ;
+
+    cursor_option
+	    : EXCLUSIVE
+	    | PREFETCH INTNUM
+	    ;
+
+    cursor_options_commalist
+	    : cursor_option
+	    | cursor_options_commalist &apos;,&apos; cursor_option
+	    ;
+
+    opt_cursor_options_list
+	    : /* empty */
+	    | &apos;(&apos; cursor_options_commalist &apos;)&apos;&#10;
+	    ;
+
+    open_statement
+	    : OPEN cursor opt_cursor_options_list
+	    ;
+
+    with_opt_cursor_options_list
+	    : /* empty */
+	    | WITH opt_cursor_options_list
+	    ;
+
+    select_statement
+	    : SELECT opt_all_distinct selection table_exp
+	    | SELECT opt_all_distinct selection
+	    	INTO target_commalist table_exp with_opt_cursor_options_list
+	    ;
+
+    opt_all_distinct
+	    : /* empty */
+	    | ALL
+	    | DISTINCT
+	    ;
+
+    update_statement_positioned
+	    : UPDATE table SET assignment_commalist WHERE CURRENT OF cursor
+	    ;
+
+    assignment_commalist
+	    : /* empty */
+	    | assignment
+	    | assignment_commalist &apos;,&apos; assignment
+	    ;
+
+    assignment
+	    : column COMPARISON scalar_exp
+	    ;
+
+    update_statement_searched
+	    : UPDATE table SET assignment_commalist opt_where_clause
+	    ;
+
+    target_commalist
+	    : target
+	    | target_commalist &apos;,&apos; target
+	    ;
+
+    target
+	    : column_ref
+	    ;
+
+    opt_where_clause
+	    : /* empty */
+	    | where_clause
+	    ;
+
+    query_exp
+	    : query_term
+	    | query_exp UNION query_term
+	    | query_exp UNION ALL query_term
+	    ;
+
+    query_term
+	    : query_spec
+	    | &apos;(&apos; query_exp &apos;)&apos;&#10;
+	    ;
+
+    query_spec
+	    : SELECT opt_all_distinct selection table_exp
+	    ;
+
+    selection
+	    : scalar_exp_commalist
+	    ;
+
+    table_exp
+	    : from_clause opt_where_clause opt_group_by_clause opt_having_clause
+		    opt_order_by_clause opt_lock_mode
+	    ;
+
+    from_clause
+	    : FROM table_ref_commalist
+	    ;
+
+    table_ref_commalist
+	    : table_ref
+	    | table_ref_commalist &apos;,&apos; table_ref
+	    ;
+
+    table_ref
+	    : table
+	    | &apos;(&apos; query_exp &apos;)&apos; NAME
+	    | joined_table
+	    ;
+
+    table_ref_nj
+	    : table
+	    | subquery NAME
+	    ;
+
+    opt_outer
+	    : /* empty */
+	    | OUTER
+	    ;
+
+    jtype
+	    : LEFT
+	    ;
+
+    joined_table
+	    : table_ref jtype opt_outer JOIN table_ref_nj ON search_condition
+	    | BEGIN_OJ_X table_ref jtype opt_outer JOIN table_ref_nj
+	      ON search_condition ENDX
+	    ;
+
+    where_clause
+	    : WHERE search_condition
+	    ;
+
+    opt_group_by_clause
+	    : /* empty */
+	    | GROUP BY ordering_spec_commalist
+	    ;
+
+    opt_having_clause
+	    : /* empty */
+	    | HAVING search_condition
+	    ;
+
+    opt_lock_mode
+	    : /* empty */
+	    | FOR UPDATE
+	    ;
+
+    search_condition
+	    : /* empty */
+	    | search_condition OR search_condition
+	    | search_condition AND search_condition
+	    | NOT search_condition
+	    | &apos;(&apos; search_condition &apos;)&apos;&#10;
+	    | predicate
+	    ;
+
+    predicate
+	    : comparison_predicate
+	    | between_predicate
+	    | like_predicate
+	    | test_for_null
+	    | in_predicate
+	    | all_or_any_predicate
+	    | existence_test
+	    | scalar_exp_predicate
+	    ;
+
+    scalar_exp_predicate
+	    : scalar_exp
+	    ;
+
+    comparison_predicate
+	    : scalar_exp COMPARISON scalar_exp
+	    | scalar_exp COMPARISON subquery
+	    ;
+
+    between_predicate
+	    : scalar_exp NOT BETWEEN scalar_exp AND scalar_exp
+	    | scalar_exp BETWEEN scalar_exp AND scalar_exp
+	    ;
+
+    like_predicate
+	    : scalar_exp NOT LIKE scalar_exp opt_escape
+	    | scalar_exp LIKE scalar_exp opt_escape
+	    ;
+
+    opt_escape
+	    : /* empty */
+	    | ESCAPE atom
+	    | BEGINX ESCAPE atom ENDX
+	    ;
+
+    test_for_null
+	    : column_ref IS NOT NULLX
+	    | column_ref IS NULLX
+	    ;
+
+    in_predicate
+	    : scalar_exp NOT IN subquery
+	    | scalar_exp IN subquery
+	    | scalar_exp NOT IN &apos;(&apos; scalar_exp_commalist &apos;)&apos;&#10;
+	    | scalar_exp IN &apos;(&apos; scalar_exp_commalist &apos;)&apos;&#10;
+	    ;
+
+    all_or_any_predicate
+	    : scalar_exp COMPARISON any_all_some subquery
+	    ;
+
+    any_all_some
+	    : ANY
+	    | ALL
+	    | SOME
+	    ;
+
+    existence_test
+	    : EXISTS subquery
+	    ;
+
+    subquery
+	    : &apos;(&apos; SELECT opt_all_distinct selection table_exp &apos;)&apos;&#10;
+	    ;
+
+    scalar_exp
+	    : scalar_exp &apos;+&apos; scalar_exp
+	    | scalar_exp &apos;-&apos; scalar_exp
+	    | scalar_exp &apos;*&apos; scalar_exp
+	    | scalar_exp &apos;/&apos; scalar_exp
+	    | &apos;+&apos; scalar_exp %prec UMINUS
+	    | &apos;-&apos; scalar_exp %prec UMINUS
+	    | atom
+	    | column_ref
+	    | function_ref
+	    | &apos;(&apos; scalar_exp &apos;)&apos;&#10;
+	    | &apos;(&apos; scalar_exp &apos;,&apos; scalar_exp_commalist &apos;)&apos;&#10;
+	    | function_call
+	    | as_expression
+	    | assignment_statement
+	    | cvt_exp
+	    ;
+
+    cvt_exp
+	    : CONVERT &apos;(&apos; data_type &apos;,&apos; scalar_exp &apos;)&apos;&#10;
+	    ;
+
+    as_expression
+	    : scalar_exp AS NAME data_type
+	    | scalar_exp AS NAME
+	    ;
+
+    opt_scalar_exp_commalist
+	    : /* empty */
+	    | scalar_exp_commalist
+	    ;
+
+    function_call
+	    : q_table_name &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos;&#10;
+	    | BEGIN_FN_X NAME &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos; ENDX
+	    | BEGIN_FN_X USER &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos; ENDX
+	    | BEGIN_FN_X CHARACTER &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos; ENDX
+	    | CALL &apos;(&apos; scalar_exp &apos;)&apos; &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos;&#10;
+	    ;
+
+    obe_literal
+	    : BEGINX NAME atom ENDX
+	    ;
+
+    scalar_exp_commalist
+	    : scalar_exp
+	    | scalar_exp_commalist &apos;,&apos; scalar_exp
+	    ;
+
+    atom
+	    : parameter_ref
+	    | literal
+	    | USER
+	    | obe_literal
+	    ;
+
+    parameter_ref
+	    : parameter
+	    | parameter parameter
+	    | parameter INDICATOR parameter
+	    ;
+
+    function_ref
+	    : AMMSC &apos;(&apos; &apos;*&apos; &apos;)&apos;&#10;
+	    | AMMSC &apos;(&apos; DISTINCT scalar_exp &apos;)&apos;&#10;
+	    | AMMSC &apos;(&apos; ALL scalar_exp &apos;)&apos;&#10;
+	    | AMMSC &apos;(&apos; scalar_exp &apos;)&apos;&#10;
+	    ;
+
+    literal
+	    : STRING
+	    | INTNUM
+	    | APPROXNUM
+	    | NULLX
+	    ;
+
+    q_table_name
+	    : NAME
+	    | NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos; NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos;  &apos;.&apos; NAME
+	    ;
+
+    new_table_name
+	    : NAME
+	    | NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos; NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos;  &apos;.&apos; NAME
+	    ;
+
+    table
+	    : q_table_name
+	    | q_table_name AS NAME
+	    | q_table_name NAME
+	    ;
+
+    column_ref
+	    : NAME
+	    | NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos; NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos; NAME &apos;.&apos; NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos; &apos;.&apos; NAME &apos;.&apos; NAME
+	    | &apos;*&apos;
+	    | NAME &apos;.&apos; &apos;*&apos;
+	    | NAME &apos;.&apos; NAME &apos;.&apos; &apos;*&apos;&#10;
+	    | NAME &apos;.&apos; NAME &apos;.&apos; NAME &apos;.&apos; &apos;*&apos;&#10;
+	    | NAME &apos;.&apos; &apos;.&apos; NAME &apos;.&apos; &apos;*&apos;&#10;
+	    ;
+
+    data_type
+	    : CHARACTER
+	    | VARCHAR
+	    | VARCHAR &apos;(&apos; INTNUM &apos;)&apos;&#10;
+	    | CHARACTER &apos;(&apos; INTNUM &apos;)&apos;&#10;
+	    | NUMERIC
+	    | NUMERIC &apos;(&apos; INTNUM &apos;)&apos;&#10;
+	    | NUMERIC &apos;(&apos; INTNUM &apos;,&apos; INTNUM &apos;)&apos;&#10;
+	    | DECIMAL
+	    | DECIMAL &apos;(&apos; INTNUM &apos;)&apos;&#10;
+	    | DECIMAL &apos;(&apos; INTNUM &apos;,&apos; INTNUM &apos;)&apos;&#10;
+	    | INTEGER
+	    | SMALLINT
+	    | FLOAT
+	    | FLOAT &apos;(&apos; INTNUM &apos;)&apos;&#10;
+	    | REAL
+	    | DOUBLE PRECISION
+	    | LONG VARCHAR
+	    | LONG VARBINARY
+	    | TIMESTAMP
+	    | DATETIME
+	    | TIME
+	    | DATE
+	    | OWNER
+	    ;
+
+    column
+	    : NAME
+	    ;
+
+    index
+	    : NAME
+	    ;
+
+    cursor
+	    : NAME
+	    ;
+
+    parameter
+	    : PARAMETER
+	    ;
+
+    user
+	    : NAME
+	    ;
+
+    opt_log
+	    : /* empty */
+	    | scalar_exp
+	    ;
+
+    comma_opt_log
+	    : /* empty */
+	    | &apos;,&apos; scalar_exp
+	    ;
+
+    admin_statement
+	    : CHECKPOINT opt_log
+	    | SHUTDOWN opt_log
+	    | COMPACT opt_log
+	    | SYNC REPLICATION opt_log comma_opt_log
+	    | SET REPLICATION atom
+	    | DISCONNECT REPLICATION opt_log
+	    | LOG OFF
+	    | LOG ON
+	    ;
+
+    sql
+	    : routine_declaration
+	    | trigger_def
+	    | drop_trigger
+	    ;
+
+    routine_declaration
+	    : CREATE routine_head new_table_name rout_parameter_list
+		opt_return compound_statement
+	    ;
+
+    routine_head
+	    : FUNCTION
+	    | PROCEDURE
+	    ;
+
+    opt_return
+	    : /* empty */
+	    | RETURNS data_type
+	    ;
+
+    rout_parameter_list
+	    : &apos;(&apos; parameter_commalist &apos;)&apos;&#10;
+	    ;
+
+    parameter_commalist
+	    : rout_parameter
+	    | parameter_commalist &apos;,&apos; rout_parameter
+	    ;
+
+    rout_parameter
+	    : parameter_mode column_ref data_type
+	    ;
+
+    parameter_mode
+	    : IN
+	    | OUT
+	    | INOUT
+	    ;
+
+    routine_statement
+	    : select_statement
+	    | update_statement_positioned
+	    | update_statement_searched
+	    | insert_statement
+	    | delete_statement_positioned
+	    | delete_statement_searched
+	    | close_statement
+	    | fetch_statement
+	    | open_statement
+	    | commit_statement
+    */
+	    | &apos;;&apos;&#10;
+	    ;
+
+    compound_statement
+	    : BEGINX statement_list ENDX
+	    ;
+
+    statement_list
+	    : statement_in_cs
+	    | statement_list statement_in_cs
+	    ;
+
+    statement_in_cs
+	    : local_declaration &apos;;&apos;&#10;
+	    | compound_statement
+	    | routine_statement &apos;;&apos;&#10;
+	    | control_statement
+	    | NAME &apos;:&apos; statement
+	    ;
+
+    statement
+	    : routine_statement &apos;;&apos;&#10;
+	    | control_statement
+	    | compound_statement
+	    ;
+
+    local_declaration
+	    : cursor_def
+	    | variable_declaration
+	    | handler_declaration
+	    ;
+
+    variable_declaration
+	    : DECLARE variable_list data_type
+	    ;
+
+    variable_list
+	    : NAME
+	    | variable_list &apos;,&apos; NAME
+	    ;
+
+    condition
+	    : NOT FOUND
+	    | SQLSTATE STRING
+	    ;
+
+    handler_declaration
+	    : WHENEVER condition GOTO NAME
+	    | WHENEVER condition GO TO NAME
+	    ;
+
+    control_statement
+	    : call_statement &apos;;&apos;&#10;
+	    | return_statement &apos;;&apos;&#10;
+	    | assignment_statement &apos;;&apos;&#10;
+	    | if_statement
+	    | goto_statement &apos;;&apos;&#10;
+	    | while_statement
+	    ;
+
+    assignment_statement
+	    : lvalue EQUALS scalar_exp
+	    ;
+
+    lvalue
+	    : column_ref
+	    ;
+
+    if_statement
+	    : IF &apos;(&apos; search_condition &apos;)&apos; statement opt_else
+	    ;
+
+    opt_else
+	    : /* empty */
+	    | ELSE statement
+	    ;
+
+    call_statement
+	    : CALL q_table_name &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos;&#10;
+	    | function_call
+	    ;
+
+    goto_statement
+	    : GOTO NAME
+	    | GO TO NAME
+	    ;
+
+    return_statement
+	    : RETURN scalar_exp
+	    | RETURN
+	    ;
+
+    while_statement
+	    : WHILE &apos;(&apos; search_condition &apos;)&apos; statement
+	    ;
+
+    trigger_def
+	    : CREATE TRIGGER NAME action_time event ON q_table_name
+			    opt_old_ref compound_statement
+	    ;
+
+    action_time
+	    : BEFORE
+	    | AFTER
+	    ;
+
+    event
+	    : INSERT
+	    | UPDATE
+	    | DELETE
+	    ;
+
+    opt_old_ref
+	    : /* empty */
+	    | REFERENCING old_commalist
+	    ;
+
+    old_commalist
+	    : old_alias
+	    | old_commalist &apos;,&apos; old_alias
+	    ;
+
+    old_alias
+	    : OLD NAME AS NAME
+	    ;
+
+    drop_trigger
+	    : DROP TRIGGER q_table_name
+	    ;
+</programlisting>
+
+</sect1>
+
+
+<!-- ======================================== -->
+<sect1 id="STMTBYNAME">
+<title>Statements by Name</title>
+
+<!--
+
+*** Contents not yet defined or found ***
+
+-->
+
+</sect1>
+
+
+<!-- ======================================== -->
+<sect1 id="SELECTSTMT">
+<title>SELECT statement</title>
+
+<sect2 id="syntax">
+<title>Syntax</title>
+<para></para>
+<programlisting>
+&lt; select statement: single row &gt; ::= SELECT [ &lt; set quantifier &gt; ] &lt; select list &gt;&#10;
+      INTO &lt; select target list &gt;&#10;
+      &lt; table expression &gt;&#10;
+
+&#10;&lt; select target list &gt; ::=
+      &lt; target specification &gt; [ { &lt; comma &gt; &lt; target specification &gt; }... ]
+
+&#10;&lt; query expression &gt; ::=
+      &lt; non-join query expression &gt;&#10;
+    | &lt; joined table &gt;&#10;
+
+&#10;&lt; non-join query expression &gt; ::=
+      &lt; non-join query term &gt;&#10;
+    | &lt; query expression &gt; UNION  [ ALL ]
+          [ &lt; corresponding spec &gt; ] &lt; query term &gt;&#10;
+    | &lt; query expression &gt; EXCEPT [ ALL ]
+          [ &lt; corresponding spec &gt; ] &lt; query term &gt;&#10;
+
+&#10;&lt; non-join query term &gt; ::=
+      &lt; non-join query primary &gt;&#10;
+    | &lt; query term &gt; INTERSECT [ ALL ]
+          [ &lt; corresponding spec &gt; ] &lt; query primary &gt;&#10;
+
+&#10;&lt; non-join query primary &gt; ::=
+      &lt; simple table &gt;&#10;
+    | &lt; left parent &gt; &lt; non-join query expression &gt; &lt; right parent &gt;&#10;
+
+&#10;&lt; simple table &gt; ::=
+      &lt; query specification &gt;
+    | &lt; table value constructor &gt;
+    | &lt; explicit table &gt;
+
+&#10;&lt; query specification &gt; ::=
+    SELECT [ &lt; set quantifier &gt; ] &lt; select list &gt; &lt; table expression &gt;
+
+&#10;&lt; select list &gt; ::=
+      &lt; asterisk &gt;
+    | &lt; select sublist &gt; [ { &lt; comma &gt; &lt; select sublist &gt; }... ]
+
+&#10;&lt; select sublist &gt; ::=
+      &lt; derived column &gt;
+    | &lt; qualifier &gt; &lt; period &gt; &lt; asterisk &gt;
+
+&#10;&lt; derived column &gt; ::= &lt; value expression &gt; [ &lt; as clause &gt; ]
+
+&#10;&lt; as clause &gt; ::= [ AS ] &lt; column name &gt;
+
+&#10;&lt; table expression &gt; ::=
+    &lt; from clause &gt;
+    [ &lt; where clause &gt; ]
+    [ &lt; group by clause &gt; ]
+    [ &lt; having clause &gt; ]
+
+&#10;&lt; from clause &gt; ::= FROM &lt; table reference &gt;
+    [ { &lt; comma &gt; &lt; table reference &gt; }... ]
+
+&#10;&lt; table reference &gt; ::=
+      &lt; table name &gt; [ [ AS ] &lt; correlation name &gt;
+          [ &lt; left parent &gt; &lt; derived column list &gt; &lt; right parent &gt; ] ]
+    | &lt; derived table &gt; [ AS ] &lt; correlation name &gt;
+          [ &lt; left parent &gt; &lt; derived column list &gt; &lt; right parent &gt; ]
+    | &lt; joined table &gt;
+
+&#10;&lt; derived column list &gt; ::= &lt; column name list &gt;
+
+&#10;&lt; derived table &gt; ::= &lt; table subquery &gt;
+
+&#10;&lt; table subquery &gt; ::= &lt; subquery &gt;
+
+&#10;&lt; joined table &gt; ::=
+      &lt; cross join &gt;
+    | &lt; qualified join &gt;
+    | &lt; left parent &gt; &lt; joined table &gt; &lt; right parent &gt;
+
+&#10;&lt; cross join &gt; ::=
+    &lt; table reference &gt; CROSS JOIN &lt; table reference &gt;
+
+&#10;&lt; qualified join &gt; ::=
+    &lt; table reference &gt; [ NATURAL ] [ &lt; join type &gt; ] JOIN
+      &lt; table reference &gt; [ &lt; join specification &gt; ]
+
+&#10;&lt; join type &gt; ::=
+      INNER
+    | &lt; outer join type &gt; [ OUTER ]
+    | UNION
+
+&#10;&lt; outer join type &gt; ::=
+      LEFT
+    | RIGHT
+    | FULL
+
+&#10;&lt; join specification &gt; ::=
+&#10;      &lt; join condition &gt;
+    | &lt; named columns join &gt;
+
+&#10;&lt; join condition &gt; ::= ON &lt; search condition &gt;
+
+&#10;&lt; named columns join &gt; ::=
+    USING &lt; left parent &gt; &lt; join column list &gt; &lt; right parent &gt;
+
+&#10;&lt; join column list &gt; ::= &lt; column name list &gt;
+
+&#10;&lt; where clause &gt; ::= WHERE &lt; search condition &gt;
+
+&#10;&lt; group by clause &gt; ::=
+    GROUP BY &lt; grouping column reference list &gt;
+
+&#10;&lt; grouping column reference list &gt; ::=
+&#10;    &lt; grouping column reference &gt;
+        [ { &lt; comma &gt; &lt; grouping column reference &gt; }... ]
+
+&#10;&lt; grouping column reference &gt; ::=
+&#10;    &lt; column reference &gt; [ &lt; collate clause &gt; ]
+</programlisting>
+<para>
+</para>
+</sect2>
+
+<sect2 id="descrip">
+<title>Description</title>
+<para>
+The SELECT statement is the principal means of information retrieval in SQL.
+A SELECT can retrieve information from one or more tables with arbitraru search criteria.
+SELECT's can also be nested to have the output of one serve as an input or search condition for another.
+Several SELECT's can be combined into one query with the UNION, INTERSECTION and EXCEPT operators.
+</para><para>
+The SELECT syntax consists of the following parts:
+</para>
+
+<programlisting>
+SELECT [DISTINCT] scalar_exp {, scalar_exp}
+	FROM table {, table}
+	WHERE &lt; search condition &gt;
+	GROUP BY &lt; column list &gt;
+	HAVING &lt; search condition &gt;
+	ORDER BY &lt; ordering spec list &gt;
+	FOR UPDATE
+</programlisting>
+
+<para>
+All parts except the FROM clause are optional. If one or more of the other clauses
+appear they must appear in the above order.  All parts do not need to be specified,
+e.g. SELECT A FROM T FOR UPDATE is valid but SELECT A FROM T ORDER BY a WHERE &lt; &lt; 10 is not.
+</para><para>
+A table reference in the FROM clause can eithrer be a simple table name, another SELECT
+expression of the form described above or a join expression.
+A SELECT inside a FROM is called a derived table. This means that the rows selected by
+the derived table expression are treated as if they constituted a table. This is similar to a
+VIEW reference and a derived table can be thought of as an unmnamed in-line VIEW declaration.
+</para><para>
+A join expression combines tables references, which are either sinplem, derived or joined tables
+themselves into different joins.
+</para><para>
+A join is an operation which retrieves for each row of one table zero
+or more rows from another table. The join condition specifies how the rows are matched.
+The result of a join is a set of rows containing selected columns from both joined tables.
+Joins are by default so called INNER joins, which means that for a row to be in the result
+there must be a row matching the left table in the right table as specified by the join
+condition. An OUTER join is a join which will produce an result row even if there is no row
+in the right table for the row in the left table. The columns that would have come from the
+right table are then just set to NULL's.
+</para>
+
+<programlisting>
+table_ref ::=
+	&lt; table name &gt; [&lt; correlation name &gt;]
+  |	/ query expression ) &lt; correlation name &gt;
+  |	&lt; table ref &gt; &lt; [NATURAL] join &gt; &lt; table ref &gt; &lt; join condition &gt;
+
+join ::=
+  	&lt; empty &gt;
+  |	CROSS
+  |	INNER
+  | 	LEFT [OUTER]
+  | 	RIGHT [OUTER]
+
+join condition ::=
+	&lt; empty &gt;
+  |	ON &lt; search condition &gt;
+  |	USING &apos;(&apos; &lt; column &gt; {, column} &apos;)&apos;
+</programlisting>
+
+<para>
+The &lt; correlation name &gt; is an identifier that is used to identify the table in a column
+reference if the same table appears many times in the query expression, e.g. is joined
+with itself.
+</para><para>
+The CROSS join has no join condition. This means that for each row in the left table all
+rows in the right table are included in the result.
+</para>
+</sect2>
+
+<sect2 id="joinexamples">
+<title>Join examples</title>
+<para>
+The following three statements produce an identical result.
+</para>
+
+<programlisting>
+select Orders.OrderID, ProductID
+    from Orders natural join Order_Details using (OrderID)
+select Orders.OrderID, ProductID
+    from Orders join Order_Details on Orders.OrderID = Order_Details.OrderID
+select Orders.OrderID, ProductID
+    from Orders,  Order_Details where Orders.OrderID = Order_Details.OrderID
+</programlisting>
+
+<note><title>Note:</title><para>In all these cases if there exists no Order_Details row matching the Orders row there
+will no no result row corresponding to the Orders row.  An outer join can can be used to also
+retrieve left table records for which there is no matching right table record.
+</para></note>
+
+<programlisting>
+select Orders.OrderID, ProductID
+    from Orders natural left outer join Order_Details using (OrderID)
+</programlisting>
+
+<para>will produce a result identical to the above sample if for each Orders row there is at least
+one Order_Details row. If there is none however, the OrderID column from Orders will appear
+together with a NULL ProductID from the non-existent Order_Details.
+</para><para>
+A right outer join is like a left outer join with the left and right tables reversed.
+</para>
+</sect2>
+
+<sect2 id="ordergrping">
+<title>Ordering and Grouping</title>
+<para>
+The result rows of a query can be ordered based on their column values.
+The ORDER BY phrase allows specifying an ascending or descrnding sort order for a
+any column. The SQL interpreter will use an index if there is an index whose order
+reflects the order in the ORDER BY clause. If there is no appropriate index or if
+ascending and descending order is combined for columns of the same table the SQL
+interpreter will first evaluate the query and then sort the results before returning
+them. See 'Optimizations' below for more information.
+</para>
+
+<programlisting>
+ select * from Employees order by DirthData;
+</programlisting>
+
+<para>
+will list all employees, oldest first, in ascending order of birth date.
+</para><para>
+The GROUP BY clause allows computing functions over repeating groups. Withouth
+the GROUP by clause set functions (AVG, MIN, MAX, SUM, COUNT) may not be mixed
+with normal columns in a selection list.
+If set functions ans columns are mixed, all the columns myst appear in the GROUP BY section.
+Such a query will produce as many rows as there are distinct value combinations of the grouping columns.
+The set functions will be computed for each distinct column combination.
+</para>
+
+<programlisting>
+select OrderID, sum (UnitPrice * Quantity)
+   from Order_Details group by OrderID
+   having sum (UnitPrice * Quantity) &gt; 5000  order by 2 desc;
+</programlisting>
+
+<para>
+Produces the OrderID and total value of the order in decreasing order of order value.
+The HAVING clause specifies that only orders with a value &gt; 5000 will be counted. Note
+that the sum expression in having must be written identically to the same expression
+in the SELECT left.
+</para><para>
+The 2 in the ordert by referes to the second column of the select, which has no name,
+it being a function reference.
+</para>
+</sect2>
+
+<sect2 id="derivedtables">
+<title>Derived Tables</title>
+<para>
+A SELECT expression may be used in the place of a table in a FROM clause.
+This provides control over where DISTRINCT and ORDER BY operations are evaluated.
+</para>
+
+<programlisting>
+select ProductName, UnitsInStock
+    from (select distinct ProductID from Order_Details) O,
+        Products where Products.ProductID = O.ProductID;
+</programlisting>
+
+<para>
+This retrieves the name and quantity of products that have been ordered..
+</para><para>
+An equivalent phrasing would be
+</para>
+
+<programlisting>
+select distinct ProductName, UnitsInStock
+   from Order_Details O, Products where Products.ProductID = O.ProductID;
+</programlisting>
+
+<para>
+The difference is that the latter retrieves a Products row for each order line which
+as the first retrieves a priducts row for each distinct product is in the order lines.
+The first is therefore faster to evaluate. Also not that the rows in the DISTINCT buffer
+in the first example only consists of the product id whereas they are much longer in the
+second example.
+</para><para>
+Note that a correlation name is required for derived tables since the derived table is as
+such anonymous.
+</para>
+</sect2>
+
+<sect2 id="qryexpressions">
+<title>Query Expressions</title>
+<programlisting>
+&lt; non-join query expression &gt; ::=
+      &lt; non-join query term &gt;
+    | &lt; query expression &gt; UNION  [ ALL ]
+          [ &lt; corresponding spec &gt; ] &lt; query term &gt;
+    | &lt; query expression &gt; EXCEPT [ ALL ]
+          [ &lt; corresponding spec &gt; ] &lt; query term &gt;
+
+&lt; corresponding spec &gt; ::=
+    CORRESPONDING [ BY &lt; left parent &gt;
+        &lt; corresponding column list &gt; &lt; right parent &gt; ]
+</programlisting>
+
+<para>
+Queries can be combined by set operators UNION, INTERSECTION and EXCEPT (set difference).
+The ALL keyword will allow duplicate rows in the result set. The CORRESPONDING BY clause
+allows specifying which columns will be used to determine the equality of rows from the
+left and right operands.
+</para>
+
+<programlisting>
+ select OrderID from Orders except
+    corresponding by (OrderID) select OrderID from Order_Details
+</programlisting>
+
+<para>
+will produce the OrderID's of orders that have no Order_Details. This is equivalent to:
+select OrderID from Orders a where not exists (select 1 from Order_Details b where a.OrderID = b.OrderID)
+</para><para>
+Note that the queries, although to a similar effect are executed quite differently.
+There may be significant differences in performance.
+</para>
+</sect2>
+
+</sect1>
+
+
+<!-- ======================================== -->
+<sect1 id="ALTERTABLE">
+<title>ALTER TABLE statement</title>
+
+<programlisting>
+alter_table
+	: ALTER TABLE q_table_name ADD column_def
+
+	| ALTER TABLE q_table_name DROP column
+
+	| ALTER TABLE q_table_name RENAME new_table_name
+	;
+</programlisting>
+<para>
+The ALTER TABLE statement adds or drops columns and renames tables.
+</para><para>
+Adding or dropping a column of a table will create a new version of the
+table's schema entry. The rows of the altered table will be changed to
+conform to the new definition when next updated. All newly inserted rows
+will be in the new row layout.  This means that ALTER TABLE itself executes in
+fixed time without locking the table. The time to update the actual data will be spread over
+subsequent updates.
+</para><para>
+An added column will have a NULL value on those rows where the
+new column has not been set.  A possible default will only apply to newly
+inserted rows.
+</para><para>
+When dropping a column one can execute a statement of the form
+UPDATE &lt;table&gt; SET &lt;key&gt; = &lt;key&gt; to force the physical change, causing
+space associated with the dropped column to be freed.
+</para><para>
+The column_def in the ADD clayse may specify any column options, except
+PRIMARY KEY.
+</para><para>
+If the table name is not fully qualified it is completed as in any table
+reference. The new name in the RENAME clause is defaulted to the current
+qualifier and user account, as in a CREATE TABLE.
+</para><para>
+ALTER TABLE cannot be applied to an attached table.
+</para>
+
+<example><title>Example:</title>
+<programlisting>
+ALTER TABLE DISTRICT
+    add D_SALES_MGR integer not null references EMPLOYEES (E_ID);
+</programlisting>
+</example>
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="COMMIT_ROLLBACK">
+<title>COMMIT WORK, ROLLBACK WORK statement</title>
+
+<para>
+These statements reset the current transaction.  COMMIT WORK leaves all the changes made
+by the current transaction in effect whereas ROLLBACK work reverses them.
+</para><para>
+In both cases, the transaction will be in a fresh state, having no locks and
+no changes that could ne rolled back.  The rollback operation always succeeds, as any
+chnge is always reversible until committed.  COMMIT WORK may fail if the
+transaction had been marked to be canceled before the COMMIT WORK operation started.  A failed
+commit has the effect of a rollback but it will signal a SQL STATE descriptive of
+the error, e.g. 40001 (deadlock).
+</para><para>
+These operations are typically not needed, since the SQLTransact ODBC call and the ODBC
+autocommit mode are used instead for transaction control.  The only use for
+these statements is within stored procedures, where it may be practical to break
+a long sequence of operations into several transactions to reduce lock contention.
+</para><para>
+These can also be used together with the WHENEVER declaration to automate
+retry ypon deadlock inside stored procedures.
+</para><para>
+Triggers should not normally use these statements.  The exception is the case where
+ a trigger detects a state violating application consistency rules and decides to
+abort the transaction. This can be done by ROLLBACK WORK, typically collowed by a call to
+the signal function for notifying the application.
+</para>
+
+<example><title>Examples:</title>
+<programlisting>
+create procedure retry (in x integer)
+{
+  whenever sql state '40001' goto deal;
+ again:
+  -- action
+  return;
+ deadl:
+   rollback work;
+   goto again;
+}
+
+create trigger sal_negative on "Employee" after update ("Salary")
+{
+  if ("Salary" &lt; 0) {
+    rollback work;
+    signal ('A0001', 'Salary cannot be negative');
+  }
+}
+</programlisting>
+</example>
+
+<tip><title>See Also:</title><para>txn_error, txn_killall, signal</para></tip>
+</sect1>
+
+
+<!-- ======================================== -->
+<sect1 id="CHECKPOINT">
+<title>CHECKPOINT, SHUTDOWN statement</title>
+
+<programlisting>
+admin_statement
+	: SHUTDOWN opt_log
+	| CHECKPOINT opt_log
+	| BACKUP opt_log
+	;
+</programlisting>
+
+<para>
+The checkpoint is a point in the history of a database where all
+the state is written on disk as a single, consistent image that contains all
+the state committed so far and no uncommitted state.  A transaction log starts after a checkpoint
+and contains the information allowing recreating the effect of transactions committed since the checkpoint.
+The checkpoint state and the transaction log together allow recovering the database
+up to the last committed transaction.
+</para><para>
+The CHECKPOINT statement forces a checkpoint to be made. Making the checkpoint allows starting a new transaction log.
+If no new log name is specified the old log is truncated to length 0 and reused
+for logging transactions. If the CheckpointAuditTrail option is enabled in
+virtuoso.ini a new log will be started even if no new log is specified in the checkpoint
+or shutdown statement.
+</para><para>
+The SHUTDOWN statement is like CHECKPOINT, except that it causes the server to terminate after completing
+the checkpoint.
+</para><para>
+BACKUP is an alternate notation for backup ().
+</para>
+
+<example><title>Examples:</title>
+<programlisting>
+checkpoint 'new.log';
+backup 'bk.log';
+shutdown 'new2.log';
+</programlisting>
+</example>
+<para>
+The above sequence of commands makes a checkpoint and starts logging subsequent
+transactions into new.log.  The backup statement makes bak.log, which represents the state
+prior to starting new.log.  The shutdown statement makes a new checkpoint and marks new2.log as the log
+file to be used for logging transactions after the database restarts. The database server exits at the completion of the
+SHUTDOWN statement.
+</para>
+<programlisting>
+replay ('bak.log');
+replay ('new.log');
+</programlisting>
+<para>
+These statements executed on an empty database will recreate the state in effect after the last transaction
+to commit before the SHUTDOWN statement of the previous example.
+</para>
+
+<sect2 id="checkpointparams">
+<title>Checkpoint Parameters</title>
+<para>
+In concept, making a checkpoint consists of writing the last committed
+state of a page on the read-only pre-checkpoint state. This in case
+the page existed before the previous checkpoint. If the page was
+created after the last checkpoint, making the checkpoint consists of
+just writing it to disk. Now if the number of pages modified between
+checkpoints largely exceeds the amount of RAM, the checkpoint will be a
+disk-to-disk copy process which takes a time proportional to the number
+of modified pages.   This can take a long time. Virtuoso, starting from
+G11d8 offers a mechanism called checkpoint remap. This allows making
+a committed state persistent, i.e. safe, without copying all the delta
+collected since the last checkpoint over the pre-checkpoint state.
+</para><para>
+The checkpoint remap mechanism means that a page, say number 12 get
+remapped to 15 when updated. Suppose now that the page were written
+to disk.  Now we have the pre-checkpoint page on 12 and the committed
+post checkpoint state on 15. If a checkpoint now takes place, instead
+of copying 15 over 12, which may involve reading the page, we just write
+that 12 is actually on 15. This speeds up the checkpoint but causes one
+page to take the space of 2. Now suppose 12 were modified again. Now we
+would see that the pre checkpoint page is 15 and that the original 12
+is free. The page now gets mapped to 12.  The next checkpoint now will
+mark that 12 is 12, which was the original condition and 15 is free.
+</para><para>
+The mechanism is actually more complex but this is the basic idea. By
+allowing page to occupy two pages in some situations we dramatically
+cut down on atomic  checkpoint time and improve availability.
+</para><para>
+Now we may argue that this destroys locality since pages that were
+created contiguous are no longer that after an update.	This is why
+there is also mechanism called unremap. and there is an upper limit
+to checkpoint remaps. If every page were updated between checkpoints,
+they would alternately be in their original place or in a remote place
+from which the next update-checkpoint combination would return them to
+the original. Now this is not always the case.	Also there is not always
+enough space to keep up to three copies of each page.  Therefore there
+is not an unremap mechanism and an upper limit to checkpoint remaps.
+</para><para>
+The max_checkpoint_remap: parameter in wi.cfg controls how may pages may
+be stored on a page other than their logical page. The unremap_quota:
+parameter in wi.cfg controls how many previously remapped pages are
+unremapped each time a checkpoint is made.
+</para><para>
+Having an unlimited max_checkpoint_remap and zero unremap_quota will cause
+making a checkpoint to exclusively consist of a flush of dirty buffers.
+The downside is that a page can take the space of two for an unlimited
+period of time and that original locality is not maintained. Setting
+the maximum checkpoint remap to zero in such a situation causes the next
+checkpoint to unremap all checkpoint remapped pages, restoring physical
+sequence and freeing disk space.
+</para>
+</sect2>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="CREATETABLE">
+<title>CREATE TABLE statement</title>
+
+<sect2 id="syntax">
+<title>Syntax</title>
+
+<programlisting>
+base_table_def
+	: CREATE TABLE new_table_name
+			&apos;(&apos; base_table_element {, base_table_element} &apos;)&apos;
+	;
+
+base_table_element
+	: column_def
+	| table_constraint_def
+	;
+
+column_def
+	: column data_type column_def_opt_list
+	;
+
+references
+	: REFERENCES q_table_name opt_column_commalist
+	;
+
+column_def_opt_list
+	: /* empty */
+	| column_def_opt_list column_def_opt
+	;
+
+column_def_opt
+	: NOT NULLX
+	| IDENTITY
+	| NOT NULLX PRIMARY KEY opt_index_option_list
+	| DEFAULT literal
+	| references
+	;
+
+table_constraint_def
+	: UNDER q_table_name
+	| PRIMARY KEY &apos;(&apos; index_column_commalist &apos;)&apos; opt_index_option_list
+	| FOREIGN KEY &apos;(&apos; column_commalist &apos;)&apos; references
+	;
+
+column_commalist
+	: column
+	| column_commalist &apos;,&apos; column
+	;
+
+index_column_commalist
+	: column opt_asc_desc
+	| index_column_commalist &apos;,&apos; column opt_asc_desc
+	;
+
+index_option
+	: CLUSTERED
+	| UNIQUE
+	| OBJECT_ID
+	;
+
+index_option_list
+	: index_option
+	| index_option_list index_option
+	;
+
+opt_index_option_list
+	: /* empty */
+	| index_option_list
+	;
+</programlisting>
+
+<para>
+CREATE TABLE creates a new table. The table is identified by a new_table_name, which consists of an optional
+qualifier, an optional owner and the name. The qualifier defaults to the current qualifier and the owmer to the login
+name of the user issuing the statement.
+</para><para>
+Following the name is a list of table elements which are either column definitions or table constraints.
+</para><para>
+A column has a name unique within the table and possible supertables. The only necessary attribyte of a column is a data type.
+</para>
+
+<sect3 id="notnull">
+<title>NOT NULL</title>
+<para>
+Optionally a column can be declared NOT NULL.</para>
+</sect3>
+
+<sect3 id="id">
+<title>IDENTITY</title>
+<para>
+The IDENTITY keyword causes the columns to be autoincrement,
+meaning that each successive insert into the table will automatically assign a value greater than on any previous row of the table. The
+assigned values are normally consecutive integers. There may be gaps in the sequence if some transactions that reserve a number
+fail to commit.  It is possible to resert the IDENTITY counter for a column with the sequence_set function. </para>
+<tip><title>See:</title><para>sequence_set for more details.</para></tip>
+</sect3>
+
+<sect3 id="default">
+<title>DEFAULT</title>
+<para>
+This option specifies a constant default value given to the column by an INSERT which does not specify a value for the column.
+The constant must be compatible with the column's data type. An IDENTITY or TIMESTAMP  column cannot have a default.
+</para>
+</sect3>
+
+<sect3 id="notnullpkey">
+<title>NOT NULL PRIMARY KEY</title>
+<para>
+This is a shorthand for the PRIMARY KEY (column) table constraint.
+</para>
+</sect3>
+
+</sect2>
+
+<sect2 id="tabconstaints">
+<title>Table Constraints</title>
+
+<sect3 id="pkey">
+<title>PRIMARY KEY</title>
+<para>
+This declares a column combination which will uniquely identify each row in the table.
+This automatically defines an index on these columns and clusters the physical rows of the table
+tpgether with the index entry for this primary key index. ALWAYS SPECIFY A PRIMARY KEY if there is an uniquely
+identifying column combination on the table. This is the case for any normalized database. Hence virtually ALL TABLES SHALL
+HAVE THE PRIMARY KEY constraint.  This is substantially more efficient than defining the primary key
+as a unique index with CREATE INDEX. See CREATE INDEX for the index options.
+</para><para>
+This option may not coexist with UNDER, since a subtable always inherits the supertable's primary key.
+</para>
+</sect3>
+
+<sect3 id="under">
+<title>UNDER</title>
+<para>
+This allows specifying that the created table will be a subtable of an existing table.
+A subtable will inherit all columns and constraints of the supertable, most importantly the primary key.
+Primary keys shall be unique in the set of rows belonging to any direct or indirect subtable of
+one supertable. A select from a supertable will see rows of subtanles but not vice verse.
+</para>
+</sect3>
+
+<sect3 id="fkeys">
+<title>FOREIGN KEY</title>
+<para>A FOREIGN KEY is a combination of columns used to retrieve a related row from a related table. This declaration
+served as a comment and can be retrieved using the SQLForeignKeys API function, which is used
+by some tools to display dependencies between tables.
+</para><para>
+Forward references are not permitted in FOREIGN KEY. Also a table referenced in a foreign
+key constraint of another table cannot be dropped. It is possible to
+list the columns in the referenced table corresponding to the columns in the referencing table.
+If this list is omitted, the default is the set of primary key columns of the referenced table.
+The referenced and referencing column lists must be of equal length.
+</para>
+</sect3>
+</sect2>
+
+<para>
+Example
+</para>
+<programlisting>
+CREATE TABLE Order_Details(
+  OrderID INTEGER,
+  ProductID INTEGER,
+  UnitPrice DOUBLE PRECISION,
+  Quantity SMALLINT,
+  Discount REAL,
+  PRIMARY KEY (OrderID, ProductID),
+  FOREIGN KEY (OrderID) REFERENCES Orders,
+  FOREIGN KEY (ProductID) REFERENCES Products);
+</programlisting>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="CREATEVIEW">
+<title>CREATE VIEW statement</title>
+
+<programlisting>
+&lt;view definition&gt; ::=
+    CREATE VIEW &lt;table name&gt; [ &lt;left paren&gt; &lt;view column list&gt;
+                                  &lt;right paren&gt; ]
+      AS &lt;query expression&gt;
+</programlisting>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="DROPINDEX">
+<title>DROP INDEX statement</title>
+
+<programlisting>
+drop_index
+	: DROP INDEX NAME opt_table
+	;
+
+opt_table
+	: /* empty */
+	| q_table_name
+	;
+</programlisting>
+
+<para>
+This drops an index. dba privileges or table ownership are required.
+A tavle's primary key which has the same name as the table can not be dropped.
+</para><para>
+Optionally, a table name can be given if the index name is not unique. The table
+name may be qualified.
+</para>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="DROPTABLE">
+<title>DROP TABLE statement</title>
+
+<programlisting>
+drop_table
+	: DROP TABLE q_table_name
+	;
+</programlisting>
+
+<para>
+Thus statement drops a table. This requires dba privileges or ownership of the
+table.  Any subtables are automatically dropped. Supertables are not affected.
+</para>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="GRANT">
+<title>GRANT, REVOKE statement</title>
+
+<programlisting>
+privilege_def
+	: GRANT ALL PRIVILEGES TO grantee
+	| GRANT privileges ON table TO grantee_commalist opt_with_grant_option
+	;
+
+privilege_revoke
+	: REVOKE ALL PRIVILEGES FROM grantee_commalist
+
+	| REVOKE privileges ON table FROM grantee_commalist
+	;
+
+opt_with_grant_option
+	: /* empty */
+	| WITH GRANT OPTION
+	;
+
+privileges
+	: ALL PRIVILEGES
+	| ALL
+	| operation_commalist
+	;
+
+operation_commalist
+	: operation
+	| operation_commalist ',' operation
+	;
+
+operation
+	: SELECT priv_opt_column_commalist
+	| INSERT
+	| DELETE
+	| UPDATE priv_opt_column_commalist
+/*	| REFERENCES opt_column_commalist */
+	| EXECUTE
+	;
+
+grantee_commalist
+	: grantee
+	| grantee_commalist ',' grantee
+
+	;
+
+grantee
+	: PUBLIC
+	| user
+	;
+
+user
+	: IDENTIFER
+</programlisting>
+
+<para>
+The GRANT and REVOKE statements are used to define privileges on objects to
+users and user groups.  An object is a table, view or stored procedure. A grantee
+can be PUBLIC, meaning any present or future user accounts or a user name.  Granting
+a privilege to a user name means that this user AND any users which have this user as their
+user group have the privilege.
+</para><para>
+Only a granted privilege can be revoked. The sequence
+</para>
+<programlisting>
+grant select on employee to public;
+revoke select (e_review) from joe;
+</programlisting>
+<para>
+Is invalid because the privilege being revoked was not granted, instead
+it was implied by the select on all column to public.
+</para><para>
+The term 'effective privilege of a user' means the set of privileges
+given to a user by virtue of 1. granting them to public 2. granting them to the
+user which is the group of the user or 3. granting them, to the specific user.
+The dba user and all users whose group is 'dba' have all privileges.
+</para><para>
+The phrase
+</para>
+<programlisting>
+GRANT ALL PRIVILEGES TO user;
+</programlisting>
+<para>
+is synonymous with setting the user's group to 'dba'.
+</para><para>
+The effective privilegs inside a trigger are those of the owner of the
+table whose trigger is executing. The privilege of executing a trigger is derived from the
+privilege of performing the trigger action, e.g. update of a specific column.
+</para><para>
+The effective privilege inside a stored procedure is that of the owner of the procedure.
+The privilege to execute a given procedure is granted with the
+EXECUTE clause.
+</para><para>
+Note that the grantee nanes are identifiers. This means that their case
+can be converted to upper case unless they are quoted. The identifier case
+conversion depends on the global CaseMode setting.
+</para><para>
+A user may grant or revoke privileges on objects of which he/she is the owner.
+A user with effective dba privileges may manipulate any privileges.
+</para>
+
+<example><title>Examples:</title>
+<programlisting>
+grant update ("Salary") on "Employees" to "Manager";
+
+grant execute on "SalesReport" to "Accounting";
+</programlisting>
+</example>
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="SET">
+<title>SET statement</title>
+
+<sect2 id="isolation"><title>ISOLATION</title>
+<para>
+This allows setting a transaction isolation in a stored procedure or trigger body.
+The values are 'uncommitted', 'committed', 'repeatable' and 'serializable'. These are strings, mating is
+case insensitive.
+</para><para>
+This takes effect dynamically until replaced by another SET ISOLATION setting.
+The effect never persists over the return of the containing procedure or trigger. The effect
+does extend into procedures or triggers called from after executing the SET ISOLATION
+statement.
+</para><para>
+The initial isolation comes from the SQL_TXN_ISOLATION statement option in
+the ODBC API (SQLSetConnectOption). The default isolation is repeatable read.
+</para>
+</sect2>
+
+<sect2 id="lockescalation">
+<title>LOCK_ESCALATION_PCT</title>
+<para>
+The controls the escalation from row locking to pafe locking. A set of
+row locks can be converted into one page lock if 1. all the row locks on the page
+velong to the same transaction 2. no other transaction waits for any of these locks.
+The value of this parameter is the percentage of rows on a page that must be held by
+the transaction before the locking goes to page level. The default is 50, meaning that
+for a page of 120 rows the 61st row lock will escalate the lock if all the previous
+locks belong to the same transaction and there is no wait pending on any.
+A value of -1 means that locking is always at page level if there is more
+than one lock on the page.  A value in excess of 100 causes
+lock escalation to be turned off. The effect of this setting is global and
+persists until the server is restarted. This setting does not affect the semantic of
+locking.
+</para>
+</sect2>
+
+<sect2 id="parambatch">
+<title>PARAM_BATCH</title>
+<para>
+This sets the batch size used by the virtual database
+array parameter optimization batch size.  This causes several
+consecutive executes of the same statement to be grouped as a single ODBC operation
+with array parameters. This optimized joins of tables on different servers and serarched
+updates, indests and deletes on attached tables.  Most ODBC drivers
+do not support array parameters.  A value of 1 or 0 disables
+the optimization. This should be done if there is a driver which falsely
+claims to dupport array parameters.  If a given driver returns an error when setting
+array parameters the VDB will detect this and will not try to use them.
+</para><para>
+The effect of this setting is global and persists until the server is restarted.
+The default value comes from the ArrayParameters configuration parameter.
+</para>
+</sect2>
+
+</sect1>
+
+</chapter>

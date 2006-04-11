@@ -1,0 +1,1097 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="vspx"><title>Virtuoso Server Pages for XML (VSPX)</title>
+
+<para>VSPX is an XML vocabulary for server generated HTML and XHTML pages
+that may or may not be bound to native or third-party data sources.
+VSPX is a framework for building and deploying dynamic web content atop
+Virtuoso.  VSPX offers a widget set and event model which is similar to that of
+GUI tool kits, providing the developer with much automation for common web
+development tasks.  Many controls are tightly integrated with the Virtuoso
+database, providing seamless data binding to local or remote relational and XML
+data.  Server side scripting in VSPX is performed in Virtuoso/PL.  The VSPX
+source code consists of HTML or XML with interspersed VSPX specific XML elements
+which describe the UI control hierarchy of the page. </para>
+
+<para>VSPX covers the following areas:</para>
+
+<simplelist>
+  <member>Rich set of controls, covering all basic HTML plus complex composite
+  controls like data grids and tree browsers.</member>
+  <member>Session management - Transparent session and session state handling
+  using cookies, URL poisoning or digest authentication.</member>
+  <member>Form entry validation server and client side.</member>
+  <member>Single and multi-row controls for viewing and directly updating SQL
+  tables, including scrolling through long result sets.</member>
+  <member>Repeating and conditional instantiation of UI elements based on run
+  time choices.</member>
+  <member>Event model for HTTP request handling, providing distinct phases for
+  creating the controls, retrieving data, processing posted data,
+  preserving state and rendering for a user agent.</member>
+  <member>Object oriented architecture, allowing easy definition of subclasses
+  of existing controls for new functionality.  It suffices to implement a
+  new SQL class with a few predefined methods and to implement an XSLT
+  rule for generating the code based on the external XML syntax for the
+  new control.</member>
+  <member>Easy automatic generation of VSPX pages.  The pages being XML, it is
+  simple to automate generating pages based on other data, such as
+  automatically making table maintenance pages based on a SQL table
+  definition.</member>
+</simplelist>
+
+<para>The VSPX development cycle consists of editing .vspx resources in the
+file system or Virtuoso DAV.  The editing can take place using a
+regular text editor or a supporting HTML editor.</para>
+
+
+<sect2 id="vspxprocmodel"><title>Processing Model</title>
+
+ <para>A VSPX page describes a web page in terms of static XHTML plus XML
+ elements in the VSPX namespace,
+ <computeroutput>"http://www.openlinksw.com/vspx/"</computeroutput>.  This
+ namespace is abbreviated as <computeroutput>v:</computeroutput> in the rest
+ of this document.</para>
+
+ <para>Elements in the <computeroutput>v</computeroutput> namespace introduce
+ VSPX elements, options or controls.  Some of these may in turn have HTML
+ children.  VSPX elements with HTML children are called templates, as these
+ will process their HTML contents at run time, typically modifying these
+ based on run time data.</para>
+
+  <figure id="vspxconcept" float="1"><title>VSPX Conceptual Diagram</title>
+   <graphic fileref="vspxconcept.jpg" format="jpeg"></graphic></figure>
+
+ <para>When the page is requested, the system checks whether it is already
+ compiled and compiles it if the compilation is absent or older than
+ the source.  The VSPX compilation has two phases: pre-processing and compilation.
+ The first phase expands included files and applies the external macro XSL-T sheet.
+ The result of which is a single page encapsulating all related components which
+ will be stored in a .vspx-m intermediary file.  The result of second phase, compilation
+ is a single .vspx-sql file containing class and method definitions for a
+ subclass of the generic VSPX page class.  All code directly derived from the
+ pre-processed page will be found in this file.  The file can of course refer
+ to outside Virtuoso/PL code.</para>
+
+ <para>The results of compilation process are stored usually in an OS dependant
+ temporary directory.  This would be the $TMPDIR for UNIXes or %TMP% for
+ Windows platforms.  If these environment variables are not available it will
+ be some default system specific location, such as <computeroutput>/var/tmp</computeroutput>
+ or <computeroutput>/tmp</computeroutput> on Unix's.  Note that this temporary
+ storage applies to the VSPX pages that are stored within the file system, for the
+ WebDAV repository the product of compilation is stored as described below.
+ For  development purposes the use of temporary storage can be turned off
+ by executing:</para>
+
+ <programlisting>registry_set ('__no_vspx_temp', '1')</programlisting>
+
+ <para>from ISQL.  In this case both file-system and WebDAV repository
+ will contain .vspx-m and .vspx-sql files in the same place and with the same
+ name as the VSPX source file.  VSPX temporary storage can be re-enabled in
+ the same way but using the string value '0' instead of '1'.  Note that this is
+ a string rather than a number. </para>
+ <para>Any VSPX page invocation, whether through the GET or POST HTTP request,
+ consists of the following steps:</para>
+
+<itemizedlist>
+  <listitem><formalpara><title>Instantiation</title>
+  <para>The tree of widgets is built according to the page
+  description.  The possibly saved state of controls is restored when
+  instantiating these, if there was a persistent state vector as part of
+  the post request or stored on the server.</para>
+  </formalpara></listitem>
+  <listitem><formalpara><title>Data Binding</title>
+  <para>The tree is traversed and attributes or subtrees
+  depending on SQL expressions are set or instantiated.</para>
+  </formalpara></listitem>
+  <listitem><formalpara><title>Post Processing</title>
+  <para>If this was a POST request, the control that was
+  mentioned in the POST gets a post event, as well as any enclosing
+  controls or input controls affected by the posted data.  The subtree
+  containing the submit button originating the POST gets the post
+  event to all its nodes, children before parents.  Post data server
+  side validation takes place during this phase.  Any database
+  updating takes place during this processing, typically inside the
+  post handler of the form element, after the post handling of each
+  individual field is complete.</para>
+  </formalpara></listitem>
+  <listitem><formalpara><title>Before Render</title>
+  <para>The control tree is now assumed to be in a state
+  reflecting the operation intended by the POST or GET.  This pass
+  typically collects the page state to be persisted.  Other application
+  dependent finalization operations can be added here.</para>
+  </formalpara></listitem>
+  <listitem><formalpara><title>Render</title>
+  <para>This pass is a depth first traversal of the control tree and
+  is responsible for generating the text to be sent to the user agent.
+  This will typically be straight HTML, but can also be something else,
+  such as XML for post processing in a style sheet.</para>
+  </formalpara></listitem>
+</itemizedlist>
+<para>
+    Just as with VSP pages the code of the page make call http_xslt(), this has the
+    effect of applying the specific stylesheet to the HTML text produced by the render phase.
+    Since output contains HTML tags generated by VSPX controls, the
+    style-sheet should have these as a general rule to leave these unchanged.
+    The http_xslt () is more useful with VSP pages producing XML than with VSPX pages.
+</para>
+</sect2>
+
+<sect2 id="vspxobjectmodel"><title>Object Model</title>
+
+ <para>VSPX controls are SQL user defined type instances, or objects.  The
+ SQL object system is substantially similar to any other single
+ inheritance object system, such as that of Java or C#.  The XML source
+ code of the VSPX page is processed to generate SQL for instantiating the
+ VSPX control tree.  The XML elements and classes may have similar names
+ but are not one to one identical.</para>
+
+ <para>All controls, including pages, are instances of a subclass of
+ <computeroutput>vspx_control</computeroutput>.  To each VSPX source
+ file corresponds a class named after the file, which inherits the common
+ superclass <computeroutput>vspx_page</computeroutput>.
+ Normally, all code, regardless of which specific control on the page
+ it pertains to, runs inside a method of the page, thus the <emphasis>self</emphasis>
+ (like 'this' in Java or C++) refers to the page instance.  By
+ convention, the variable <emphasis>control</emphasis> references the object
+ representing the control which declares the particular code snippet.  The variable
+ <computeroutput>e</computeroutput> represents the event which is at the
+ root of the code being invoked.  The event is normally an event object
+ representing a GET or POST HTTP request, but it can also be a user
+ defined event sent to the page by other code on the page or elsewhere.</para>
+
+ <para>The page has a data member <computeroutput>vc_children</computeroutput>
+ which contains an array of all top level VSPX controls on the page.
+ Each control in turn has this same variable for referring to subordinate
+ controls, if any.</para>
+
+ <para>Each processing pass allows the developer to specify arbitrary SQL code
+ to run in the context of the pass.  The code runs in the context of a method
+ of the page object, where the local variable <emphasis>control</emphasis>
+ references the control that declares the code in question.</para>
+
+ <para>Controls may be enabled or disabled, thus supporting conditional
+ activation and rendering of page parts.  Parts may be enabled in
+ function of a page state, for example a search result control is only
+ on after the search text has been posted.  Another example is that
+ some controls may only be enabled if a user is logged in.</para>
+
+ <para>Code inside a control may locate other controls on the page by name,
+ either starting from the control itself or at the page.  Note that
+ when repeating control groups are involved, it is best to start at the
+ leaf and work upwards in the tree, since there can be several
+ identically named children of the page.  All controls have a name
+ which is unique in terms of the VSPX source file.  Additionally, all
+ controls, including members of repeating groups, have a name which is
+ generated to be unique at run time.  The latter is not however
+ constant.  The <computeroutput>vc_parent</computeroutput> data member
+ references the parent.  <computeroutput>vc_name</computeroutput> is
+ the name as appears in the name attribute of the corresponding XML
+ element.  <computeroutput>vc_instance_name</computeroutput>  is a page-wide
+ unique name, generated to be different for each possible repetition of the
+ control.  The <computeroutput>find_control</computeroutput> method of
+ <computeroutput>vspx_control</computeroutput> can be used to look for a
+ child with a specific <computeroutput>vc_name</computeroutput>.</para>
+ </sect2>
+
+ <sect2 id="vspxpageandsessionstate"><title>Keeping Page and Session State</title>
+
+ <para>VSPX does not require any particular session management to be in
+ effect to operate.  It is in its default form entirely stateless on
+ the server side.  There is a mechanism called view state for keeping
+ track of data between consecutive post backs of a single page.  This is
+ simply an automatically maintained hidden field which will keep the
+ state of controls which have a state that may be persisted.  The
+ view state mechanism does not however safeguard data across different
+ pages but is fine for remembering entered form data or a bookmark in a
+ scrolled list across page reloads.</para>
+
+ <para>To keep real sessions and session variables, a
+ <computeroutput>v:login</computeroutput> control is offered.</para>
+ </sect2>
+
+ <sect2 id="vspxappcode"><title>Application Code</title>
+
+ <para>Most VSPX controls will support XML children specifying SQL code to
+ run at various points of the page processing cycle.  The elements are:</para>
+
+ <simplelist>
+  <member>v:before-data-bind</member>
+  <member>v:after-data-bind</member>
+  <member>v:before-post</member>
+  <member>v:before-render</member>
+ </simplelist>
+
+ <para>These elements will have a script tag as unique child, most often
+ containing a CDATA section for escaping the SQL text.</para>
+
+ <para>Additionally, most attributes of VSPX elements can have a SQL expression
+ evaluated at initialization, pre data bind or after data bind time, as
+ the case may be, depending on the attribute and its value.
+ An attribute value beginning with <computeroutput>"--"</computeroutput>
+ indicates evaluation on the initialization or the descending edge of the data
+ bind pass.  An attribute value indicating <computeroutput>"--after"</computeroutput>
+ specifies that the value is calculated on the returning edge of recursion of the data bind pass.</para>
+
+ <para>Arbitrary HTML text may contain attributes with a data bound value.  The
+ attributes should be in the XHTML namespace and have a text beginning with
+ <computeroutput>"--"</computeroutput>.  The expression will be evaluated at
+ render time, where the <emphasis>control</emphasis> variable refers to the
+ enclosing VSPX template control, e.g. the page instance when at top level.</para>
+
+  <sect3 id="vspxvspcompatinlinesql"><title>VSP Compatibility and In-Line SQL</title>
+
+  <para>Arbitrary HTML text may contain &lt;?vsp ?&gt;, &lt;?V ?&gt; (equivalent of &lt;?= VSP notation) and
+  &lt;?U ?&gt; (equivalent of &lt;?/ VSP notation) processing instructions.
+  The code in question will be evaluated
+  during the render pass, with control set to the closest enclosing VSPX
+  control.
+  Please note that the &lt;?= and &lt;?/ VSP shortcuts cannot be used inside VSPX pages as they are not valid processing-instructions.
+  </para>
+
+  <para>VSPX maintains backward compatibility with VSP through supporting the
+  same processing instructions, but additionally requires the page source to be
+  well formed XML.  VSP pages which are well formed in XML terms will run as
+  such under with the VSPX extension, with the addition of the
+  <computeroutput>v:page</computeroutput> top level element.</para>
+
+  <para>The &lt;?vsp ?&gt; processing instruction expects a SQL statement.  The
+  statement can be a compound statement ending in another &lt;?vsp ?&gt;
+  processing instruction at the same nesting level under the same parent tag.
+  The other pi's &lt;?V and &lt;?U  expect a SQL expression. </para>
+
+  <note><title>Note:</title>
+    <para>&lt;?V ?&gt; is not permitted inside attributes without quotation,
+    as this is not well formed XML.  When quoted, this notation in attributes
+    has no special effect, hence the convention about the leading
+    <computeroutput>"--"</computeroutput> and the <computeroutput>XHTML</computeroutput>
+    namespace for HTML attributes with a computed value.</para></note>
+
+  </sect3>
+ </sect2>
+
+ <sect2 id="vspxexamples"><title>A Simple Example</title>
+
+ <example id="ex_vspxsimplepage"><title>Simple VSPX Page</title>
+
+ <para>The fragment below shows us a VSPX page with a few labels.  A label is a
+ simple control that renders as HTML text, using a data bindable attribute to
+ specify a value and a C printf style format string for the format.
+ Note the use of the &lt;?vsp ?&gt; processing instruction.  This could just
+ as well have been an HTML literal.</para>
+
+ <programlisting><![CDATA[
+<html>
+  <body>
+    <v:page name="demo_label" xmlns:v="http://www.openlinksw.com/vspx/">
+      <p>
+        <?vsp http ('<H3>Simple page to demonstrate simple VSPX controls</H3>'); ?>
+      </p>
+      <p> An integer <v:label name="label1" value="--(1 + 2)" format="--'%d'"/> </p>
+      <p> A string <v:label name="label2" value="'123'" format="%s"/> </p>
+      <p> A string with default format <v:label name="label3" value="String"/> </p>
+      <p>
+      An url <v:url name="url1" value="--'OpenLink Software Ltd.'" format="%s" url="--'http://openlinksw.com/'"/>
+      <br/>
+      An url (default format) <v:url name="url2" value="OpenLink Software Ltd." url="http://openlinksw.com/" />
+      </p>
+      <v:include url="footer.xml"/>
+    </v:page>
+  </body>
+</html>
+]]></programlisting>
+ </example>
+</sect2>
+
+ <sect2 id="vspxeventpars"><title>VSPX Event Handler Parameters</title>
+ <para>
+ The user-defined event handlers always accept a 'control' parameter whose type
+ is the same as that of the control it belongs to.  For example the on-post event
+ of 'button' has a parameter 'control' of type vspx_button; after-data-bind of
+ a 'label' has a parameter 'control' of type 'vspx_label' etc. </para>
+
+ <para>The event handlers for before-data-bind, after-data-bind and on-post
+ have an additional parameter: 'e' which is of type vspx_event.  The parameter
+ ('e') keeps the HTTP request as post data, request header and path just like the
+ global variables 'path', 'params' and 'lines' on a VSP page. In addition to that,
+ the vspx_event (e) keeps a reference to the button pressed (if any) and a flag
+ indicating the request type: POST or GET.  It may thus be used in a complex
+ form to detect when to trigger an event depending of event data or to directly
+ access parameters of the HTTP request, etc.</para>
+
+ <programlisting><![CDATA[
+create type vspx_event
+as (
+    ve_params any,      	-- name value pairs of post data
+    ve_lines  any,      	-- HTTP header lines
+    ve_path   any,      	-- requested path , parsed as vector
+    ve_button vspx_control,     -- which active control originated the event.
+    ve_is_post int default 0    -- 0 for GET 1 for POST
+   )  temporary self as ref
+;]]></programlisting>
+
+</sect2>
+
+ <sect2 id="vspxeventhandlers"><title>Registering a VSPX Event Callbacks</title>
+     <para>
+	The event handlers mechanism can be extended with callbacks.
+	This means registering a page method(s) which will be invoked after
+	event scrips are processed. The page methods used in this case can
+	be either defined using 'method' declaration inside VSPX page or
+	using page subclass defined in code-behind script(s) (see 'code-file' below).
+	To register a callback vc_add_handler (name, method_name) method must be invoked
+	in any script preceeding the handler stage.
+	Parameters to the vc_add_handler are: name - name of event where callback to be executed
+	(before-data-bind, after-data-bind, on-post, before-render),
+	method_name - name of a page class method to be registered to the event.
+     </para>
+
+     <programlisting><![CDATA[
+	 <html>
+	     <body>
+		 <v:page name="handler_demo" xmlns:v="http://www.openlinksw.com/vspx/">
+		     <v:form name="sf" type="simple" action="form.vspx" method="POST">
+			 <v:text name="txt" />
+			 <v:button name="submit2" action="simple" value="OK" />
+			 <v:on-init>
+			     control.vc_add_handler ('on-post', 'user_post');
+			 </v:on-init>
+		     </v:form>
+		     <v:method name="user_post" arglist="inout control vspx_control">
+			 dbg_printf ('Invoked: user post method');
+		     </v:method>
+		 </v:page>
+	     </body>
+	 </html>
+	 ]]></programlisting>
+</sect2>
+
+&vspxdoc;
+
+<sect2 id="vspxxforms"><title>XForms rendering</title>
+    <para>
+	The VSPX form controls such as form, button, select-list, text etc.
+	can be rendered as XForms analogues using a special connection
+        variable 'RenderXForms' set to true (integer 1).
+	Also XML post data comming from XFroms capable agents
+	will be parsed and provided to the VSPX page methods in usual form (name/value
+	array).
+	The HTML form elements substitution to the XForms is as follows:
+	input type="text" - xforms:input;
+	input type="password" - xforms:secret;
+	textarea - xforms:textarea;
+	select - xforms:select1;
+	select multiple - xforms:select;
+	checkbox - xforms:input (of datatype boolean);
+	input type="radio" - xforms:select1 appearance="full";
+	input type="submit" - xforms:submit;
+	form - xforms:model.
+	Furthermore validators which belongs to a input elements (not to a containers)
+	will enforce XMLSchema types of the XForms model.
+	Note that some XForms agents may need special object registering or a special
+	Content-Type reported, so as this varies from agent to agent the application
+	logic is responsible for setting them properly.
+</para>
+
+<programlisting><![CDATA[
+    <v:page xmlns:v="http://www.openlinksw.com/vspx/" name="xform_demo">
+	<v:on-init>
+	    -- enable XForms rendering
+	    connection_set ('RenderXForms', 1);
+	</v:on-init>
+	... page content follows ...
+    </v:page>
+]]></programlisting>
+
+</sect2>
+
+ <sect2 id="vspxschema"><title>XMLSchema for VSPX page</title>
+ <programlisting><![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema targetNamespace="http://www.openlinksw.com/vspx/" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <xs:simpleType name="CalculateableValue" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:whiteSpace value="preserve"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ButtonStyle" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="submit"/>
+      <xs:enumeration value="url"/>
+      <xs:enumeration value="image"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ButtonAction" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="simple"/>
+      <xs:enumeration value="submit"/>
+      <xs:enumeration value="delete"/>
+      <xs:enumeration value="browse"/>
+      <xs:enumeration value="return"/>
+      <xs:enumeration value="logout"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SqlName" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1" fixed="false"/>
+      <xs:maxLength value="32" fixed="false"/>
+      <xs:pattern value="[A-Za-z0-9_]{1,32}"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SqlTableQname" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z0-9_]{1,32}\.[A-Za-z0-9_]{0,32}\.[A-Za-z0-9_]{1,32}"/>
+      <xs:pattern value="[A-Za-z0-9_]{1,32}"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SqlCode" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:whiteSpace value="preserve"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="LoginMode" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="digest"/>
+      <xs:enumeration value="url"/>
+      <xs:enumeration value="cookie"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Unused" final="restriction">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:simpleType name="TreeOrientation" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="horizontal"/>
+      <xs:pattern value="vertical"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="PlCursorType" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="static"/>
+      <xs:enumeration value="dynamic"/>
+      <xs:enumeration value="keyset"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:attributeGroup name="HtmlGenAttributes">
+    <xs:anyAttribute processContents="strict"/>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="SqlGenAttributes">
+    <xs:attribute name="name" type="v:SqlName" use="required"/>
+    <xs:attribute name="annotation" type="xs:string" use="optional"/>
+    <xs:attribute name="initial-enable" type="v:CalculateableValue" use="optional"/>
+    <xs:attribute name="enabled" type="v:CalculateableValue" use="optional"/>
+    <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+    <xs:anyAttribute namespace="##other" processContents="skip"/>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="SqlColumn">
+    <xs:attribute name="column" type="v:SqlName" use="optional"/>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="UserInputAttributes">
+    <xs:attribute name="error-glyph" type="xs:string" use="optional"/>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="LoginParams">
+    <xs:attribute name="realm" type="xs:NMTOKEN" use="required"/>
+    <xs:attribute name="mode" type="v:LoginMode" use="required"/>
+    <xs:attribute name="user-password" type="xs:NMTOKEN" use="required"/>
+    <xs:attribute name="user-password-check" type="xs:NMTOKEN" use="required"/>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="BrowseButtonParams">
+    <xs:attribute name="child-window-options" type="xs:string" use="optional"/>
+    <xs:attribute name="browser-current" type="xs:int" use="optional" default="0"/>
+    <xs:attribute name="browser-filter" type="xs:string" use="optional" default="*"/>
+    <xs:attribute name="browser-list" type="xs:string" use="optional" default="1"/>
+    <xs:attribute name="browser-mode" type="xs:string" use="optional" default="RES"/>
+    <xs:attribute name="browser-type" type="xs:string" use="optional"/>
+    <xs:attribute name="browser-xfer" type="xs:string" use="optional" fixed="DOM"/>
+    <xs:attribute name="selector" type="xs:anyURI" use="optional"/>
+  </xs:attributeGroup>
+  <xs:group name="AnyHtmlContent">
+    <xs:choice>
+      <xs:element ref="v:style"/>
+      <xs:element ref="v:placeholder"/>
+      <xs:any namespace="##other" processContents="skip"/>
+    </xs:choice>
+  </xs:group>
+  <xs:complexType name="EventHandler" mixed="true">
+    <xs:choice minOccurs="0">
+      <xs:element ref="v:script"/>
+    </xs:choice>
+  </xs:complexType>
+  <xs:element name="after-data-bind" type="v:EventHandler"/>
+  <xs:element name="before-data-bind" type="v:EventHandler"/>
+  <xs:element name="on-post" type="v:EventHandler"/>
+  <xs:element name="before-render" type="v:EventHandler"/>
+  <xs:element name="on-init" type="v:EventHandler"/>
+  <xs:group name="EventTarget">
+    <xs:choice>
+      <xs:element ref="v:after-data-bind"/>
+      <xs:element ref="v:before-data-bind"/>
+      <xs:element ref="v:on-post"/>
+      <xs:element ref="v:before-render"/>
+      <xs:element ref="v:on-init"/>
+    </xs:choice>
+  </xs:group>
+  <xs:element name="page">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:any/>
+      </xs:choice>
+      <xs:attribute name="name" type="v:SqlName" use="required"/>
+      <xs:attribute name="decor" type="xs:anyURI" use="optional"/>
+      <xs:attribute name="style" type="xs:anyURI" use="optional"/>
+      <xs:attribute name="on-error-redirect" type="xs:anyURI" use="optional"/>
+      <xs:attribute name="on-deadlock-retry" type="xs:integer" use="optional" default="0"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="include">
+    <xs:complexType>
+      <xs:attribute name="url" type="xs:anyURI" use="required"/>
+      <xs:attribute name="name" type="v:Unused" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="template">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="type" type="v:TemplateType" use="optional"/>
+      <xs:attribute name="redirect" type="xs:anyURI" use="optional"/>
+      <xs:attribute name="condition" type="v:SqlCode" use="optional"/>
+      <xs:attribute name="name-to-remove" type="xs:QName" use="optional"/>
+      <xs:attribute name="set-to-remove" type="v:TemplateSetToRemove" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="TemplateType" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="simple"/>
+      <xs:enumeration value="repeat"/>
+      <xs:enumeration value="row"/>
+      <xs:enumeration value="frame"/>
+      <xs:enumeration value="if-exists"/>
+      <xs:enumeration value="if-not-exists"/>
+      <xs:enumeration value="add"/>
+      <xs:enumeration value="browse"/>
+      <xs:enumeration value="edit"/>
+      <xs:enumeration value="if-login"/>
+      <xs:enumeration value="if-not-login"/>
+      <xs:enumeration value="tree-node"/>
+      <xs:enumeration value="tree-leaf"/>
+      <xs:enumeration value="input"/>
+      <xs:enumeration value="result"/>
+      <xs:enumeration value="error"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TemplateSetToRemove" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none"/>
+      <xs:enumeration value="top"/>
+      <xs:enumeration value="bottom"/>
+      <xs:enumeration value="both"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="form">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:FormSpecificContent"/>
+        <xs:group ref="v:FormNonSpecificContent"/>
+        <xs:group ref="v:UserInputTarget"/>
+        <xs:group ref="v:AnyHtmlContent"/>
+        <xs:element ref="v:template"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="type" type="v:FormType" use="optional"/>
+      <xs:attribute name="action" type="xs:string" use="optional"/>
+      <xs:attribute name="method" type="v:FormMethod" use="optional" default="POST"/>
+      <xs:attribute name="table" type="v:SqlTableQname" use="optional"/>
+      <xs:attribute name="if-not-exists" type="v:FormUpdateIfNotExists" use="optional"/>
+      <xs:attribute name="concurrency" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="FormType" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="simple"/>
+      <xs:enumeration value="update"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="FormMethod" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="GET"/>
+      <xs:enumeration value="POST"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="VariableStorage" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="session"/>
+      <xs:enumeration value="pagestate"/>
+      <xs:enumeration value="temp"/>
+      <xs:enumeration value="0"/>
+      <xs:enumeration value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="FormUpdateIfNotExists" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="insert"/>
+      <xs:enumeration value="nothing"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="tab">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyHtmlContent"/>
+        <xs:element ref="v:template"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="initial-active" type="v:SqlName" use="optional"/>
+      <xs:attribute name="style" type="xs:string" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="script">
+    <xs:complexType mixed="true">
+      <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:any namespace="##any"/>
+      </xs:sequence>
+      <xs:attribute name="language" type="v:SqlName" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="variable">
+    <xs:complexType mixed="true">
+      <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:any namespace="##any"/>
+      </xs:sequence>
+      <xs:attribute name="name" type="v:SqlName" use="required"/>
+      <xs:attribute name="type" type="v:SqlName" use="required"/>
+      <xs:attribute name="default" type="v:SqlCode" use="optional"/>
+      <xs:attribute name="persist" type="v:VariableStorage" use="optional" default="pagestate"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="validator">
+    <xs:complexType>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="test" type="xs:string" use="required"/>
+      <xs:attribute name="min" type="xs:string" use="optional"/>
+      <xs:attribute name="max" type="xs:string" use="optional"/>
+      <xs:attribute name="regexp" type="xs:string" use="optional"/>
+      <xs:attribute name="empty-allowed" type="xs:boolean" use="optional"/>
+      <xs:attribute name="message" type="xs:string" use="required"/>
+      <xs:attribute name="runat" type="v:ValidatorType" use="optional" default="server"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="ValidatorType" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="server"/>
+      <xs:enumeration value="client"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:group name="UserInputTarget">
+    <xs:choice>
+      <xs:element ref="v:validator"/>
+    </xs:choice>
+  </xs:group>
+  <xs:element name="field">
+    <xs:complexType>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="button">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:element ref="v:field"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attribute name="action" type="v:ButtonAction" use="required"/>
+      <xs:attribute name="value" type="v:CalculateableValue" use="required"/>
+      <xs:attribute name="style" type="v:ButtonStyle" use="optional"/>
+      <xs:attribute name="active" type="v:CalculateableValue" use="optional"/>
+      <xs:attributeGroup ref="v:BrowseButtonParams"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="radio-button">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+      <xs:attribute name="group-name" type="xs:NCName" use="required"/>
+      <xs:attribute name="value" type="v:CalculateableValue" use="required"/>
+      <xs:attribute name="initial-checked" type="xs:integer" use="optional" default="0"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="check-box">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+      <xs:attribute name="value" type="v:CalculateableValue" use="required"/>
+      <xs:attribute name="group-name" type="v:SqlName" use="optional"/>
+      <xs:attribute name="initial-checked" type="xs:integer" use="optional" default="0"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="text">
+    <xs:complexType mixed="false">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:UserInputTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+      <xs:attribute name="type" type="v:TextInputType" use="optional" default="plain"/>
+      <xs:attribute name="default" type="v:CalculateableValue" use="optional"/>
+      <xs:attribute name="value" type="v:CalculateableValue" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="textarea">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:UserInputTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+      <xs:attribute name="type" type="v:TextInputType" use="optional" default="plain"/>
+      <xs:attribute name="default" type="v:CalculateableValue" use="optional"/>
+      <xs:attribute name="value" type="v:CalculateableValue" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="TextInputType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="plain"/>
+      <xs:enumeration value="password"/>
+      <xs:enumeration value="hidden"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="item">
+    <xs:complexType>
+      <xs:attribute name="name" type="v:SqlCode" use="required"/>
+      <xs:attribute name="value" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="select-list">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:element ref="v:item"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="key">
+    <xs:complexType>
+      <xs:attribute name="column" type="v:SqlName" use="required"/>
+      <xs:attribute name="value" type="v:CalculateableValue" use="required"/>
+      <xs:attribute name="default" type="v:CalculateableValue" use="optional" default="null"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="FormSpecificContent">
+    <xs:choice>
+      <xs:element ref="v:button"/>
+      <xs:element ref="v:radio-group"/>
+      <xs:element ref="v:radio-button"/>
+      <xs:element ref="v:check-box"/>
+      <xs:element ref="v:select-list"/>
+      <xs:element ref="v:data-list"/>
+      <xs:element ref="v:textarea"/>
+      <xs:element ref="v:text"/>
+      <xs:element ref="v:key"/>
+      <xs:element ref="v:error-summary"/>
+      <xs:element ref="v:calendar"/>
+    </xs:choice>
+  </xs:group>
+  <xs:element name="label">
+    <xs:complexType>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attribute name="value" type="v:CalculateableValue" use="required"/>
+      <xs:attribute name="format" type="xs:string" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="url">
+    <xs:complexType>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attribute name="value" type="v:CalculateableValue" use="required"/>
+      <xs:attribute name="format" type="xs:string" use="optional"/>
+      <xs:attribute name="url" type="v:CalculateableValue" use="required"/>
+      <xs:attribute name="active" type="v:CalculateableValue" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="data-list">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attribute name="table" type="v:SqlTableQname" use="required"/>
+      <xs:attribute name="key" type="v:SqlName" use="required"/>
+      <xs:attribute name="value" type="v:SqlName" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="node">
+    <xs:complexType>
+      <xs:attribute name="void" type="xs:string" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="tree">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:element ref="v:template"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="show-root" type="xs:boolean" use="required"/>
+      <xs:attribute name="multi-branch" type="xs:boolean" use="required"/>
+      <xs:attribute name="orientation" type="v:TreeOrientation" use="required"/>
+      <xs:attribute name="root-function" type="v:SqlName" use="required"/>
+      <xs:attribute name="child-function" type="v:SqlName" use="required"/>
+      <xs:attribute name="start-path" type="v:CalculateableValue" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="error-summary">
+    <xs:complexType>
+      <xs:attribute name="match" type="xs:string" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="FormNonSpecificContent">
+    <xs:choice>
+      <xs:element ref="v:variable"/>
+      <xs:element ref="v:label"/>
+      <xs:element ref="v:url"/>
+      <xs:element ref="v:data-grid"/>
+      <xs:element ref="v:data-set"/>
+      <xs:element ref="v:tab"/>
+      <xs:element ref="v:tree"/>
+      <xs:element ref="v:include"/>
+      <xs:element ref="v:isql"/>
+    </xs:choice>
+  </xs:group>
+  <xs:element name="login-form">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="required" type="xs:boolean" use="required"/>
+      <xs:attribute name="title" type="xs:string" use="required"/>
+      <xs:attribute name="user-title" type="xs:string" use="required"/>
+      <xs:attribute name="password-title" type="xs:string" use="required"/>
+      <xs:attribute name="submit-title" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="login">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:FormNonSpecificContent"/>
+        <xs:group ref="v:FormSpecificContent"/>
+        <xs:element ref="v:template"/>
+        <xs:element ref="v:login-form"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="realm" type="xs:string" use="required"/>
+      <xs:attribute name="mode" type="xs:string" use="required"/>
+      <xs:attribute name="user-password" type="xs:string" use="optional"/>
+      <xs:attribute name="user-password-check" type="xs:string" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="AnyVspxPageContent">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:group ref="v:FormSpecificContent"/>
+      <xs:group ref="v:FormNonSpecificContent"/>
+      <xs:group ref="v:AnyHtmlContent"/>
+      <xs:element ref="v:node"/>
+      <xs:element ref="v:form"/>
+      <xs:element ref="v:template"/>
+      <xs:element ref="v:hidden"/>
+      <xs:element ref="v:login"/>
+      <xs:element ref="v:login-form"/>
+    </xs:choice>
+  </xs:group>
+  <xs:element name="column">
+    <xs:complexType>
+      <xs:attribute name="name" type="v:SqlName" use="required"/>
+      <xs:attribute name="label" type="v:CalculateableValue" use="optional"/>
+      <xs:attribute name="input-format" type="xs:string" use="optional"/>
+      <xs:attribute name="output-format" type="xs:string" use="optional"/>
+      <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="data-set">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:element ref="v:column"/>
+        <xs:element ref="v:param"/>
+        <xs:element ref="v:key"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="sql" type="v:SqlCode" use="optional"/>
+      <xs:attribute name="data-source" type="v:CalculateableValue" use="optional"/>
+      <xs:attribute name="nrows" type="v:CalculateableValue" use="required"/>
+      <xs:attribute name="scrollable" type="xs:boolean" use="required"/>
+      <xs:attribute name="cursor-type" type="v:PlCursorType" use="optional" default="dynamic"/>
+      <xs:attribute name="edit" type="xs:boolean" use="optional" default="false"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="param">
+    <xs:complexType>
+      <xs:attribute name="name" type="v:SqlName" use="required"/>
+      <xs:attribute name="value" type="v:CalculateableValue" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="data-grid">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:element ref="v:column"/>
+        <xs:element ref="v:param"/>
+        <xs:element ref="v:key"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="data" type="v:CalculateableValue"/>
+      <xs:attribute name="meta" type="v:CalculateableValue"/>
+      <xs:attribute name="nrows" type="v:CalculateableValue"/>
+      <xs:attribute name="sql" type="v:SqlCode" use="required"/>
+      <xs:attribute name="scrollable" type="xs:boolean"/>
+      <xs:attribute name="cursor-type" type="v:PlCursorType"/>
+      <xs:attribute name="edit" type="xs:boolean"/>
+      <xs:anyAttribute namespace="##any"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="isql">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:element ref="v:template"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="isolation" type="v:IsqlIsolation" use="optional"/>
+      <xs:attribute name="timeout" type="v:CalculateableValue" use="optional"/>
+      <xs:attribute name="maxrows" type="v:CalculateableValue" use="optional"/>
+      <xs:attribute name="user" type="v:CalculateableValue" use="optional"/>
+      <xs:attribute name="password" type="v:CalculateableValue" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="IsqlIsolation">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="committed"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="radio-group">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="row-template">
+    <xs:complexType>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="tree-node">
+    <xs:complexType>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="hidden">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="style">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:NMTOKEN" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="placeholder">
+    <xs:complexType/>
+  </xs:element>
+  <xs:element name="calendar">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:element ref="v:param"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="inital-date" type="v:CalculateableValue"/>
+      <xs:anyAttribute namespace="##any"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="expression">
+    <xs:complexType mixed="true">
+      <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:any namespace="##any"/>
+      </xs:sequence>
+      <xs:attribute name="language" type="v:SqlName" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="data-source">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:element ref="v:column"/>
+        <xs:element ref="v:param"/>
+        <xs:element ref="v:expression"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="expression-type" type="xs:string" use="required"/>
+      <xs:attribute name="nrows" type="v:CalculateableValue" use="required"/>
+      <xs:attribute name="initial-offset" type="v:CalculateableValue" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
+ ]]></programlisting>
+ </sect2>
+</sect1>

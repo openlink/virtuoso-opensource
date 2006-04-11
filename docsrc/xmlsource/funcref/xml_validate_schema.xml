@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_xml_validate_schema">
+  <refmeta>
+    <refentrytitle>xml_validate_schema</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xml_validate_schema</refname>
+    <refpurpose>returns a string with list of errors detected by DTD and XML 
+    Schema validator on reading given XML document.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_xml_validate_schema"> 
+      <funcprototype id="fproto_xml_validate_schema">
+        <funcdef><function>xml_validate_schema</function></funcdef>
+        <paramdef>in <parameter>document</parameter> varchar</paramdef>
+        <paramdef>in <parameter>parser_mode</parameter> integer</paramdef>
+        <paramdef>in <parameter>base_uri</parameter> varchar</paramdef>
+        <paramdef>in <parameter>content_encoding</parameter> varchar</paramdef>
+        <paramdef>in <parameter>content_language</parameter> varchar</paramdef>
+        <paramdef>in <parameter>dtd_validator_config</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>
+This parses the argument, which is expected to be an XML 
+fragment (possibly with syntax errors, violations of validity conditions etc.)
+and returns a human-readable list of errors as a string.
+If there is a "schemaLocation" attribute in root element,
+XML Schema declaration will be loaded and partial
+schema validation will be performed.  If this attribute does not exist and 
+the Validation option below is not set to DISABLED, then an error will be 
+returned: ('FATAL  : Schema declaration is not loaded').</para>
+    <para>
+The XML Schema validation routines are tightly coupled with DTD validator.
+If the document contains both Schema and DTD information then both validations are
+made in the same time in order to provide as accurate diagnostics as possible.
+However, it is impossible to check whether the declared DTD matches or contradicts to the declared Schema,
+so the parser performs two independent validations to every item of source data.
+E.g. if DTD contradicts to the schema in description of some particular element and
+data in the document does not contain this element then no errors is reported; but if
+sun an element occurs in the document then either DTD validator or Schema validator will log an error.
+    </para>    
+ 	</refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>document</title>
+      <para>XML or HTML document to check</para></refsect2>
+    <refsect2><title>parser_mode</title>
+      <para>0 or 1; 0 - XML parser mode 1 - HTML parser mode</para></refsect2>
+    <refsect2><title>base_uri</title>
+      <para>in HTML parser mode change all absolute references to relative from given base_uri (http://&lt;host&gt;:&lt;port&gt;/&lt;path&gt;)</para></refsect2>
+    <refsect2><title>content_encoding</title>
+      <para>string with content encoding type of &lt;document&gt;; valid are 'ASCII', 'ISO', 'UTF8', 'ISO8859-1', 'LATIN-1' etc., defaults are 'UTF-8' for XML mode and 'LATIN-1' for HTML mode</para></refsect2>
+    <refsect2><title>content_language</title>
+      <para>string with language tag of content of &lt;document&gt;; valid names are listed in IETF RFC 1766, default is 'x-any' (it means 'mix of words from various human languages)</para></refsect2>
+    <refsect2><title>dtd_validator_config</title>
+      <para>configuration string of the validator, default is empty string meaning that DTD validator should be fully disabled and only critical errors should be reported.
+It is very probable that this is not the best choice for your application, so please      
+refer <link linkend="dtd_config">Configuration Options of the DTD Validator</link> to find out
+how to let validator to do better job.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret"><title>Return Types</title><para>Human readable list of errors if applicable as a varchar.</para></refsect1>
+  <refsect1 id="examples"><title>Validating XML Against a DTD</title>
+    <example id="ex_xml_validate_schema"><title></title>
+<programlisting>
+declare _result varchar;  
+_result := xml_validate_schema (
+  _text, 0, 'http://localhost.localdomain/xmlrepository', 'UTF-8', 'x-any',
+  'Validation=SGML FsaBadWs=IGNORE BuildStandalone=ENABLE MaxErrors=100');
+
+if (_res = '') _res := 'NO ERRORS DETECTED'; 
+</programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_xml_validate_dtd">xml_validate_dtd</link></para>
+    <para><link linkend="fn_xml_view_dtd">xml_view_dtd</link></para>
+    <para><link linkend="fn_xml_view_schema">xml_view_schema</link></para>
+    <para><link linkend="fn_xtree_doc">xtree_doc</link></para>
+    <para><link linkend="fn_xper_doc">xper_doc</link></para>
+  </refsect1>
+</refentry>
+

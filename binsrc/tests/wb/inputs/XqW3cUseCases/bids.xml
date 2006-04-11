@@ -1,0 +1,42 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE bids SYSTEM "bids.dtd">
+<bids>
+<bid_tuple><userid>U02</userid><itemno>1001</itemno><bid>35</bid><bid_date>99-01-07</bid_date></bid_tuple>
+<bid_tuple><userid>U04</userid><itemno>1001</itemno><bid>40</bid><bid_date>99-01-08</bid_date></bid_tuple>
+<bid_tuple><userid>U02</userid><itemno>1001</itemno><bid>45</bid><bid_date>99-01-11</bid_date></bid_tuple>
+<bid_tuple><userid>U04</userid><itemno>1001</itemno><bid>50</bid><bid_date>99-01-13</bid_date></bid_tuple>
+<bid_tuple><userid>U02</userid><itemno>1001</itemno><bid>55</bid><bid_date>99-01-15</bid_date></bid_tuple>
+<bid_tuple><userid>U01</userid><itemno>1002</itemno><bid>400</bid><bid_date>99-02-14</bid_date></bid_tuple>
+<bid_tuple><userid>U02</userid><itemno>1002</itemno><bid>600</bid><bid_date>99-02-16</bid_date></bid_tuple>
+<bid_tuple><userid>U03</userid><itemno>1002</itemno><bid>800</bid><bid_date>99-02-17</bid_date></bid_tuple>
+<bid_tuple><userid>U04</userid><itemno>1002</itemno><bid>1000</bid><bid_date>99-02-25</bid_date></bid_tuple>
+<bid_tuple><userid>U02</userid><itemno>1002</itemno><bid>1200</bid><bid_date>99-03-02</bid_date></bid_tuple>
+<bid_tuple><userid>U04</userid><itemno>1003</itemno><bid>15</bid><bid_date>99-01-22</bid_date></bid_tuple>
+<bid_tuple><userid>U05</userid><itemno>1003</itemno><bid>20</bid><bid_date>99-02-03</bid_date></bid_tuple>
+<bid_tuple><userid>U01</userid><itemno>1004</itemno><bid>40</bid><bid_date>99-03-05</bid_date></bid_tuple>
+<bid_tuple><userid>U03</userid><itemno>1007</itemno><bid>175</bid><bid_date>99-01-25</bid_date></bid_tuple>
+<bid_tuple><userid>U05</userid><itemno>1007</itemno><bid>200</bid><bid_date>99-02-08</bid_date></bid_tuple>
+<bid_tuple><userid>U04</userid><itemno>1007</itemno><bid>225</bid><bid_date>99-02-12</bid_date></bid_tuple>
+</bids>

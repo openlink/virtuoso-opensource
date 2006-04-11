@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_collection">
+  <refmeta> 
+    <refentrytitle>fn:collection</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>fn:collection</refname> 
+    <refpurpose>Returns parsed documents contained in given collections.</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_collection"> 
+      <funcprototype id="xpf_proto_collection">
+        <funcdef>node()* <function>fn:collection</function></funcdef> 
+	<paramdef><optional><parameter>uri</parameter> anyURI</optional></paramdef>
+	<paramdef><optional><parameter>base_uri</parameter> string</optional></paramdef>
+	<paramdef><optional><parameter>recursive_mode</parameter> int</optional></paramdef>
+	<paramdef><optional><parameter>parser_mode</parameter> int</optional></paramdef>
+	<paramdef><optional><parameter>encoding</parameter> string</optional></paramdef>
+	<paramdef><optional><parameter>language</parameter> string</optional></paramdef>
+	<paramdef><optional><parameter>dtd_config</parameter> string</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_collection"><title>Description</title>
+	  <para>
+		  This function takes one or more collection URI's and returns the parsed documents contained in these  collections as a sequence. </para>
+    <para>
+      If no uri is  specified, the function returns the sequence of the nodes in the default collection in the dynamic context. The default collection is a home DAV collection. If user does not have default DAV collection, an  error is signaled.</para>
+    <refsect2 id="xpf_collection_types"><title>Local DAV collections</title>
+      <para> 
+	Local DAV collections can be accessed either by providing "http://local.virt/DAV/" or "http://localhost:PORT/" URI. The "http://local.virt/DAV/" can be used even if the local http server is not enabled.
+ The "http://localhost:PORT" URI is less efficient and takes the data over HTTP, so "http://local.virt/DAV/" is preffered.
+      </para>
+      <note>
+	<title>Note:</title>
+	<para>
+When using  http://local.virt/DAV/ URI the effective account calling fn:collection must have read access to the resources in question as defined by DAV permissions.  For the http mode of acccess, the server may request authentication, which the function will supply from the dynamic context, see below.
+	</para>
+      </note>
+    </refsect2>
+    <refsect2 id="xpf_collection_types"><title>Table Collections</title>
+      <para>
+	fn:collection specially recognizes URI's which beginning  with "virt://". Such a  URI relates to a local table, the content of a specified column is returned   as   the collection (table collection). The URI contains three parts: table name, id column name, xml content column name. For instance, if the table definition is: 
+      </para>
+<screen>
+create table XML_EXAMPLE (
+	XE_ID int primary key,
+	XE_ENTITY any
+)
+;
+</screen>
+      <para>then the URI for accessing all documents stored in XE_ENTITY column and referenced by XE_ID is: </para>
+<screen>
+virt://DB.DBA.XML_EXAMPLE.XE_ID.XE_ENTITY
+</screen>
+      </refsect2>
+    <refsect2 id="xpf_collection_types2"><title>Home path in local DAV collections</title>
+      <para>
+	fn:collection also supports UNIX style home paths. If URI begins with ~ the next term will treated as user name and is will be substituted by path to home DAV collection. For instance, ~john/test/test2/ can be parsed as http://local.virt/DAV/home/john/test/test2 URI.
+      </para>
+    </refsect2>
+    <refsect2 id="xpf_collection_types3"><title>Remote DAV collections, WEB collections</title>
+      <para>
+
+	Any other URI which begins with "http://" refers to remote DAV
+	collections. The function uses the PROPFIND DAV method to get
+	the list of documents contained in the collection. If the
+	remote server does not support this method the function tries
+	to do a HTML GET with the uri and returns all documents
+	referenced from the result (WEB collection). In this case the
+	function makes two http requests.
+
+      </para>
+    </refsect2>
+    <refsect2 id="xpf_collection_impl1">
+      <para>
+	When a web page is scanned for document reference by fn:collection it searches &lt;a href=...> tags and returns downloaded and parsed documents referenced in href. If href contains relative reference it is resolved using web page address as base uri.
+      </para>
+      <note>
+	<title>Note:</title>
+	<para>
+	  There is no way to narrow set of resolved references on HTML web page. So, fn:collection call over remote server which does not support PROPFIND method can be very expensive. The engine tries to download all documents referenced on the page, even it does not relates to the collection.
+	</para>
+      </note>
+    </refsect2>
+    <refsect2 id="xpf_collection_impl2">
+      <para>
+	In this release fn:collection does not support any collections except DAV collections, WEB collections, table collections.
+      </para>
+      <para>
+	The collection function returns parsed documents.  If the collection in question contains non xml documents the function will fail. In order to skip such documents html mode can be set by parser_mode argument.
+      </para>
+    </refsect2>
+    <para>
+      The recursive_mode arguments sets the mode for processing sub-collection. If recursive_mode is set to 0 all sub-collections are ignored. fn:collection collects documents recursively if the argument is set to 1. The recursive mode is the default.
+    </para>
+    <para>
+      Recursive collecting is not supported for WEB collections and table collections.
+    </para>
+    <para>
+      Rest of optional arguments (encoding, language, dtd_config) are passed to internal XML parser. They are equal to optinal argument of <link linkend="xtree_doc">xtree_doc()</link>.
+    </para>
+    <refsect2 id="xpf_collection_auth"><title>Authentication</title>
+      <para>
+	Remote DAV and WEB collections may need authentication information. fn:collection supports two ways of providing authentication information. First one is to provide user name and password by setting appropriate connection variables:
+      </para>
+      <screen>
+connection_set ('HTTP_CLI_UID', 'loginhere');
+connection_set ('HTTP_CLI_PWD', 'passwordhere');
+      </screen>
+      <para> it can be used if fn:collection collects documents from source which demands only one username and password. </para>
+      <para> If the remote collection references documents from different sources which need different authentication information then instead of providing single username/password pair the authentication callback function can be used. The engine gets (if HTTP_CLI_UID is not set to NULL) name of the callback function from HTTPAuthManager connection variable. The function must take URI of the resource as argument and return array of username and password for the resource. For instance, here is an example of authentication function which allows to get needed credentials for two home DAV collections: </para>
+      <screen><![CDATA[
+create procedure DB.DBA.AUTHINFO (in _uri varchar)
+{
+  if (_uri like 'http://localhost%/DAV/home/john/%')
+    return vector ('john', 'cat!filt_NY');
+  else if (_uri like 'http://localhost%/DAV/home/sam/%')
+    return vector ('sam', 'doggy1913');
+  return vector (null, null);
+}
+;
+
+connection_set ('HTTPAuthManager', 'DB.DBA.AUTHINFO');
+select xquery_eval ('
+  <result> John's test cases: 
+    { 
+      for \044a in collection ("http://localhost:8080/DAV/home/john/test-cases/", ., 1, 2) 
+	return <res> { document-uri (\044a) }</res> 
+    }
+   </result>', xtree_doc ('<a/>'));
+select xquery_eval ('
+  <result> All test cases: 
+    { 
+      for \044a in collection ("http://localhost:8080/DAV/home/", ., 1, 2) 
+        return <res> { document-uri (\044a) }</res> 
+    } 
+  </result>', xtree_doc ('<a/>'));
+      ]]></screen>
+    </refsect2>
+</refsect1>
+  <refsect1 id="xpf_params_collection"><title>Parameters</title>
+    <refsect2><title>uri</title>
+	    <para>collection URI. If the <parameter>uri</parameter> is a relative xs:anyURI, it is resolved against the value of the base-URI property from the static context or from <parameter>base_uri</parameter>. </para></refsect2>
+    <refsect2><title>base_uri</title>
+      <para>If <parameter>uri</parameter> is an relative URI string, not an absolute one then <parameter>base_uri</parameter> is used to make it absolute.
+      </para>
+    </refsect2>
+    <refsect2><title>parser_mode</title>
+      <para>Sets the mode for parsing documents in collection (0 - XML parser mode, 1 - HTML parser mode, 2 - 'dirty HTML' mode (with quiet recovery after any syntax error).</para></refsect2>
+    <refsect2><title>encoding</title>
+      <para>string with content encoding type of &lt;document&gt;; valid are 'ASCII', 'ISO', 
+	'UTF8', 'ISO8859-1', 'LATIN-1' etc., defaults are 'UTF-8' for XML mode and 'LATIN-1' for 
+	HTML mode.</para></refsect2>
+    <refsect2><title>language</title>
+      <para>string with language tag of content of &lt;document&gt;; valid names are listed in 
+	IETF RFC 1766, default is 'x-any' (it means 'mix of words from various human languages')</para></refsect2>
+    <refsect2><title>dtd_config</title>
+      <para>configuration string for DTD validator, default is empty string meaning that DTD 
+	validator should be fully disabled.
+	See <link linkend="dtd_config">Configuration Options of the DTD Validator</link> for details.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_collection"><title>Return Types</title><para>node*</para></refsect1>
+  <refsect1 id="xpf_examples_collection"><title>Examples</title>
+    <example id="xpf_ex1_collection">
+      <para>Example of using remote DAV collection:</para>
+      <screen>
+&lt;result>
+  { for $a in fn:collection ( "http://www.somdavservice.com:8081/DAV/test1/" )
+        return
+	        <res>{ $a/value/text() }</res>
+  }
+&lt;/result></screen>
+    </example>
+    <example id="xpf_ex2_collection">
+      <para>Example of using relative URI:</para>
+      <screen>
+xquery_eval('
+ &lt;pre>
+    { for \044n in fn:collection("/docs", ., 2) 
+          return (document-get-uri(\044n), " - ", name (\044n/*[1]), "\n")
+    }
+ &lt;/pre> ', xtree_doc ('&lt;stub/>', 0, 'http://www.somdavservice.com:8081/') );
+      </screen>
+    </example>
+    <example id="xpf_ex3_collection">
+      <para>Example of using default collection:</para>
+      <screen>
+xquery_eval('
+ &lt;div>
+    { for \044anchor in fn:collection()//a
+          return <b> { \044anchor } </b> 
+    }
+ &lt;/div> ', xtree_doc ('&lt;stub/>') );
+      </screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_doc"><title>See Also</title>
+    <para><link linkend="xpf_document">document()</link></para>
+    <para><link linkend="xpf_doc">doc()</link></para>
+    <para><link linkend="fn_xtree_doc">xtree_doc()</link></para>
+    <para><link linkend="fn_xml_uri_get">xml_uri_get()</link></para>
+  </refsect1>
+</refentry>

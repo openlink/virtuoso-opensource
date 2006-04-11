@@ -1,0 +1,116 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+
+  declare _flt, _del_uri varchar;
+  declare cnt integer;
+
+  if (not adm_check_auth(lines))
+    return(0);
+
+--  dbg_obj_print(params);
+
+  _del_uri := get_keyword('DEL', params);
+
+  if (not is_empty_or_null(_del_uri))
+    {
+      xml_doc_delete(_del_uri);
+    }
+
+  if (not is_empty_or_null(get_keyword('add', params)))
+    {
+      xml_doc_get(get_keyword('adduri', params));
+    }
+
+  adm_param_default (_flt, 'flt', params, '%');
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+  <link rel="stylesheet" type="text/css" href="admin_style.html">
+    <title>XML Documents</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="XML view mgmt using Virtuoso VSP">
+  </head>
+  <body>
+    <h2>XML Documents</h2>
+    <table>
+      <form method="GET" name="filter_form" action="admin_xml_documents_main.vsp">
+      <tr>
+        <td>
+          <span class="widgettitle">Document name filter</span>
+          <input type="text" name="flt" onChange="javascript:document.filter_form.submit();" value="<?vsp http_value(_flt); ?>">
+        </td>
+      </tr>
+      </form>
+    </table>
+    <hr>
+    <form method="POST" name="add_form" action="admin_xml_documents_main.vsp">
+    <table>
+      <tr>
+        <td class="sectiontitle">Add document</td>
+      </tr>
+      <tr>
+        <td>
+	  <span class="widgettitle">Fetch from URI</span>
+	  <input type="text" name="adduri" value="">
+	  <input type="submit" name="add" value="Load">
+	</td>
+      </tr>
+    </table>
+    </form>
+    <hr>
+    <table>
+      <tr>
+        <td class="sectiontitle">XML documents matching the filter in DB</td>
+      </tr>
+      <tr>
+<?vsp
+        for (select e_id, d_uri from vxml_document where d_uri like _flt) do
+          {
+            cnt := cnt + 1;
+              if (cnt = 1)
+                {
+?>
+                  <tr>
+                    <td><strong>Document URI</strong></td>
+	          </tr>
+<?vsp
+                }
+?>
+            </tr>
+	    <tr>
+              <td><a href="admin_xml_documents_view.vsp?eid=<?vsp http(bh(e_id)); ?>"><?= d_uri ?></a></td>
+	      <td><a href="admin_xml_documents_main.vsp?DEL=<?= d_uri ?>">Remove</a></td>
+            </tr>
+<?vsp
+          }
+?>
+    </table>
+<?include admin_footer.vsp ?>
+  </body>
+</html>

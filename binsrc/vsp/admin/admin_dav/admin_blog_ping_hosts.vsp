@@ -1,0 +1,168 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+  declare id, proto, des, endp varchar;
+  declare userid int;
+  declare _duplicate int;
+
+  adm_pre_page(lines);
+  _duplicate := 0;
+
+if (http_dav_uid () <> (userid := adm_dav_check_auth (lines, 1)))
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+          'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+
+  if ({?'cncl'} = 'Back')
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: admin_blog.vsp\r\n');
+      return;
+    }
+
+  id := atoi(coalesce ({?'id'}, '-1'));
+  des := coalesce ({?'desc'}, '');
+  proto := coalesce ({?'proto'}, '');
+  endp := coalesce ({?'endp'}, '');
+
+  if ({?'delete'} is not null)
+    {
+      delete from SYS_BLOG_WEBLOG_HOSTS where WH_ID = id;
+      id := -1;
+    }
+  if ({?'edit'} is not null)
+    {
+      select WH_URL, WH_PROTO, WH_NAME into endp, proto, des  from SYS_BLOG_WEBLOG_HOSTS where WH_ID = id;
+    }
+  else if ({?'post'} = 'Save' and endp <> '')
+    {
+      if (id = -1)
+        {
+	  insert soft SYS_BLOG_WEBLOG_HOSTS (WH_URL, WH_PROTO, WH_NAME) values (endp, proto, des);
+          if (row_count () < 1)
+            _duplicate := 1;
+        }
+      else
+	update SYS_BLOG_WEBLOG_HOSTS set WH_URL = endp, WH_PROTO = proto, WH_NAME = des where WH_ID = id;
+      if (not _duplicate)
+        {
+	  id := -1;
+	  endp := '';
+	  des := '';
+        }
+    }
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>BLOG Administration</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="BLOG Management for Virtuoso DB">
+  </head>
+<?vsp adm_page_header('BLOG Administration', ''); ?>
+
+    <H4>Weblog ping configuration</H4>
+<?vsp if (_duplicate) { ?>
+        <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+  	      <TR><TD CLASS="errorhead" COLSPAN="2"><font color="red">Non-unique endpoint URL</font></TD></TR>
+        </TABLE>
+<?vsp } ?>
+
+    <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+      <TR><TD class="genhead" COLSPAN="2">Weblog ping host</TD></TR>
+      <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+      <form method="POST" action="admin_blog_ping_hosts.vsp">
+      <input type="hidden" name="id" value="<?=id?>">
+      <tr>
+        <td class="geninput">Description</td>
+        <td class="geninput"><input type="text" name="desc" size="70%" value="<?= des ?>" />
+	</td>
+      </tr>
+      <tr>
+        <td class="geninput">Endpoint</td>
+        <td class="geninput"><input type="text" name="endp" size="70%" value="<?= endp ?>" />
+	</td>
+      </tr>
+      <tr>
+        <td class="geninput">Protocol</td>
+        <td class="geninput">
+	<select name="proto" >
+	 <option value="xml-rpc" <?= select_if ('xml-rpc', proto) ?>>XML-RPC
+	 <option value="soap" <?= select_if ('soap', proto) ?>>SOAP
+	 </select>
+	</td>
+      </tr>
+
+      <tr>
+        <td class="geninput" COLSPAN="2">
+	<input type="submit" name="post" value="Save" />
+	<input type="submit" name="cncl" value="Back" />
+	</td>
+      </tr>
+      </form>
+    </TABLE>
+
+<?vsp adm_page_break(); ?>
+
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="5">Configured Weblog.ping hosts</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+            <tr>
+		<th class="genlistheadt">Description</th>
+		<th class="genlistheadt">Protocol</th>
+		<th class="genlistheadt">Action</th>
+             </tr>
+<?vsp
+    for select WH_URL, WH_NAME, WH_PROTO, WH_ID from SYS_BLOG_WEBLOG_HOSTS do
+      {
+?>
+	   <?vsp if (WH_NAME <> 'disabled') { ?>
+       <TR>
+         <TD class="gendata"><?= WH_NAME ?></TD>
+         <TD class="gendata"><?= WH_PROTO ?></TD>
+         <TD class="gendata">
+	   <a href="admin_blog_ping_hosts.vsp?id=<?=WH_ID?>&edit">Edit</a>
+	   <a href="admin_blog_ping_hosts.vsp?id=<?=WH_ID?>&delete">Delete</a>
+	 </TD>
+       </TR>
+	   <?vsp } ?>
+<?vsp
+      }
+?>
+
+</TABLE>
+<?vsp adm_page_footer(); ?>
+</html>
+

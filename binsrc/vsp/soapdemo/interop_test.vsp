@@ -1,0 +1,84 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+
+  declare _pass, _no_pass, _all integer;
+  declare _is_empty integer;
+
+  if (exists (select 1 from RESULTS))
+    _is_empty := 0;
+  else
+    _is_empty := 1;
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<HTML>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Interop test page</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Interop Results page">
+  </head>
+  <BODY>
+  <H1>OpenLink SOAP Client 1.1</H1>
+  <P><H3>View results by tests</H3>
+  <P>&nbsp;
+  <TABLE>
+<?vsp
+   if (_is_empty) http ('<TR><TD>The result table is empty.</TD></TR>');
+   for (select R_SERVICE_GROUP as service_group from RESULTS group by R_SERVICE_GROUP order by R_SERVICE_GROUP) do
+     {
+        http ('<P><TABLE><TR><TD><H2>' || service_group || '</H2></TD></TR>');
+	for (select R_SERVICE_NAME as service_name from RESULTS where R_SERVICE_GROUP = service_group
+	    group by R_SERVICE_NAME order by R_SERVICE_NAME) do
+	  {
+	    select count (*) into _all from RESULTS
+		where R_SERVICE_NAME = service_name and R_SERVICE_GROUP = service_group;
+	    select count (*) into _pass from RESULTS where R_SERVICE_NAME = service_name and
+		R_SERVICE_GROUP = service_group and R_SERVICE_RESULT = 'Passed';
+
+        _no_pass := _all - _pass;
+?>
+        <TR>
+	  <TD>
+	    <A href="interop_test2.vsp?SRCN=<?=service_name?>&GRPN=<?=service_group?>"><?=service_name?></A>
+          </TD>
+	  <TD> <?vsp if (_no_pass) http ('<font style="color:red">');?>
+	    <?=_pass?>
+          </TD>
+	  <TD>
+	    / <?=_all?>
+          </TD>
+	</TR>
+<?vsp
+	  }
+        http ('</TABLE>');
+     }
+?>
+  </TABLE>
+  </BODY>
+</HTML>
+

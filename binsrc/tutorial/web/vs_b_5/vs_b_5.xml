@@ -1,0 +1,80 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-B-5">
+  <refmeta>
+    <refentrytitle>Basic VSP Programming</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Controlling the Response Header</refname>
+    <refpurpose>How to control the HTTP response from VSP</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-B-5a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+<listitem>The behavior of the user-agents (Eg. browser) depends on the server's HTTP response.</listitem>
+<listitem>The HTTP responses are: positive (2xx), informative (1xx), redirection(3xx), client error(4xx), server error(5xx).</listitem>
+<listitem>The Virtuoso Web server automatically generates positive, client error and server error codes.</listitem>
+<listitem><para>The http_request_status() function overwrites the default response. Example:</para>
+<programlisting>http_request_status ('HTTP/1.1 404 Not found');</programlisting></listitem>
+<listitem>Note that the response line MUST begin with "HTTP/1.1 ", and numeric code MUST be one described in RFC2616.</listitem>
+<listitem>Some responses require additional information in the HTTP response header.</listitem>
+<listitem><para>The functions for setting the additional lines in a response header are:</para>
+ <orderedlist>
+ <listitem>http_header() - accept a response header line(s) as string. If more than one line is supplied, they must be
+ separated with &lt;CR&gt;&lt;LF&gt; characters. Note that the string must always finish with &lt;CR&gt;&lt;LF&gt; chars. Subsequent calls of this function replace the old response.</listitem>
+ <listitem>http_header_get() - returns the HTTP response header currently defined. It is useful when you need to append
+ more lines.</listitem>
+ </orderedlist></listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-B-5b">
+<title>Redirection example</title>
+<para>The first example demonstrates a redirection to another page. It uses http_request_status() and http_header()
+functions to set redirection code 'HTTP/1.1 302 Found' and 'Location:' header line in the response.</para>
+<para>
+If a document has moved to another url, it's possible to redirect using a meta tag within the &lt;head&gt;
+of a page. However using the method in this example, the redirection can be dynamic and conditional.
+</para>
+</refsect1>
+
+<refsect1 id="VS-B-5c">
+<title>Load random Images</title>
+<para>The second example demonstrates loading random images onto a page.
+Three images are loaded into the page by calling the vsp to generate each image.
+Each image URL is made unique by including a pic parameter. This does not imply the images will
+be different, however it stops the browser from reusing one image three times.</para>
+<para>
+The image content is made by setting the 'Content-Type' header field of the response to the 'image/gif',
+then returning a randomly chosen block of Gif data.</para>
+<para>A real world use for a random image, is to show an advertising banner graphic.
+Rather than change the url for the banner, the actual image content is controlled.
+This technique might also be useful for changing an appearance of a web page based on some
+criteria such as if the user has membership access or the time of day is either day or night to show
+a sun or moon image.
+</para>
+</refsect1>
+</refentry>

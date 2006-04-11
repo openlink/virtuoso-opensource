@@ -1,0 +1,242 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="../demo.css"/>
+</head>
+<body>
+<v:page name="pageset1" xmlns:v="http://www.openlinksw.com/vspx/">
+<v:variable name="blogid" type="varchar" default="'home'" persist="1"/>
+    <!-- LOGIN -->
+    <v:login name="login1" realm="blog" mode="url"
+	     user-password-check="BLOG..blog_user_password_check">
+      <v:template type="if-no-login" redirect="login.vspx" />
+      <v:template type="if-login" />
+    </v:login>
+    <!-- END LOGIN -->
+
+<div align="center">
+<div align="left" style="margin-left: 100px;"><H2>Weblog bridge setup</H2></div>
+<p style="color: red;"><v:error-summary /></p>
+<v:form name="form1" type="simple" action="bridge.vspx" >
+<table border="0" cellpadding="0" cellspacing="0" width="80%">
+<tr>
+  <td valign="top">
+  <!-- DATASET -->
+      <v:data-set name="ds" sql="select bb_blog_id, bb_endpoint, bb_type, bb_user, bb_pwd, bb_self_id
+      	from blog_bridge where bb_self_id = :thisblogid" nrows="10" scrollable="1" cursor-type="keyset" edit="1" width="80">
+	<v:param name="thisblogid" value="--self.blogid" />
+        <v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
+          <table width="400" cellspacing="0" cellpadding="0" class="tableresult">
+            <tr>
+              <th align="center">
+                <b>Action</b>
+              </th>
+              <th align="center">
+                <b>
+                  <v:label name="label1" value="'Endpoint'" format="%s" width="80"/>
+                </b>
+              </th>
+              <th align="center">
+                <b>
+                  <v:label name="label2" value="'BlogID'" format="%s" width="80"/>
+                </b>
+              </th>
+              <th align="center">
+                <b>
+                  <v:label name="label3" value="'Type'" format="%s" width="80"/>
+                </b>
+              </th>
+              <th align="center">
+                <b>
+                  <v:label name="label4" value="'User'" format="%s" width="80"/>
+                </b>
+              </th>
+              <th align="center">
+                <b>
+                  <v:label name="label5" value="'Password'" format="%s" width="80"/>
+                </b>
+              </th>
+            </tr>
+          </table>
+        </v:template>
+        <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+          <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table width="400" border="2" cellspacing="0" cellpadding="0">
+              <tr>
+                <td align="center" colspan="5">
+                  <b>No rows selected</b>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+            <v:template name="template5" type="edit" name-to-remove="" set-to-remove="">
+              <v:form name="upf" type="update" table="blog_bridge" if-not-exists="insert">
+              <v:key column="bb_endpoint" value="--self.ds.ds_current_row.te_rowset[1]" default="null"/>
+              <v:key column="bb_blog_id" value="--self.ds.ds_current_row.te_rowset[0]" default="null"/>
+              <v:key column="bb_self_id" value="--self.ds.ds_current_row.te_rowset[5]" default="null"/>
+                <v:template name="template6" type="simple" name-to-remove="table" set-to-remove="both">
+                  <table width="400" border="1" cellspacing="2" cellpadding="0">
+                    <tr>
+                      <td nowrap="nowrap">
+                        <v:button name="upd_button" action="submit" value="Update"/>
+                        <input type="submit" name="ds_cancel" value="Cancel"/>
+                      </td>
+                    <td nowrap="nowrap">
+                      <v:text name="b_endpoint1" column="bb_endpoint" xhtml_size="50%"/>
+                    </td>
+                    <td>
+                      <v:text name="b_blogid1" column="bb_blog_id"/>
+                    </td>
+                    <td>
+                     <v:data-list name="b_type1"
+		     	column="bb_type" table="blog_types" key-column="bt_name" value-column="bt_name"/>
+                    </td>
+                    <td>
+                      <v:text name="b_user1" column="bb_user"/>
+                    </td>
+                    <td>
+                      <v:text name="b_pwd1" column="bb_pwd" type="password"/>
+                      <v:text name="b_self1" column="bb_self_id" type="hidden"/>
+                    </td>
+                    </tr>
+                  </table>
+                </v:template>
+	    <v:validator name="vv1" test="sql" message="the specified blog does not exists (update)">
+ 		;
+	    </v:validator>
+              </v:form>
+            </v:template>
+          <v:template name="template8" type="add" name-to-remove="" set-to-remove="">
+            <v:form name="add" type="update" table="blog_bridge" if-not-exists="insert">
+              <v:key column="bb_endpoint" value="--''" default="null"/>
+              <v:key column="bb_blog_id" value="--''" default="null"/>
+              <v:key column="bb_self_id" value="--self.blogid" default="null"/>
+              <v:template name="template9" type="simple" name-to-remove="table" set-to-remove="both">
+                <table width="400" border="1" cellspacing="2" cellpadding="0">
+                  <tr>
+                    <td nowrap="nowrap">
+                      <v:button name="add_button" action="submit" value="Add"/>
+                    </td>
+                    <td nowrap="nowrap">
+                      <v:text name="b_endpoint" column="bb_endpoint" xhtml_size="50%"/>
+                    </td>
+                    <td nowrap="nowrap">
+                      <v:text name="b_blogid" column="bb_blog_id"/>
+		      <v:browse-button name="get_blogs" value="Fetch" selector="get_blogs.vspx"
+		        child-window-options="scrollbars=yes, menubar=no, height=100, width=600">
+		      	<v:field name="b_endpoint" />
+		        <v:field name="b_user" />
+		        <v:field name="b_pwd" />
+		        <v:field name="b_blogid" />
+		      </v:browse-button>
+                    </td>
+                    <td>
+                     <v:data-list name="b_type"
+		     	column="bb_type" table="blog_types" key-column="bt_name" value-column="bt_name"/>
+                    </td>
+                    <td>
+                      <v:text name="b_user" column="bb_user"/>
+                    </td>
+                    <td>
+                      <v:text name="b_pwd" column="bb_pwd" type="password"/>
+		      <v:text name="b_self" column="bb_self_id" type="hidden" value="--self.blogid" />
+                    </td>
+                  </tr>
+                </table>
+              </v:template>
+	    <v:validator name="vv2" test="sql" message="the specified blog does not exists (insert)">
+	         if (control.vc_focus)
+    		   {
+		     ;
+		   }
+	    </v:validator>
+            </v:form>
+          </v:template>
+          <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
+            <table width="400" border="1" cellspacing="2" cellpadding="0">
+              <tr>
+                <td nowrap="1">
+                  <v:button name="ds_edit" action="simple" value="Edit"/>
+                  <v:button name="ds_delete" action="simple" value="Delete">
+                    <v:on-post>
+                      <v:script><![CDATA[
+                    {
+                      delete from blog_bridge where
+			  bb_endpoint = self.ds.ds_current_row.te_rowset[1] and
+			  bb_blog_id = self.ds.ds_current_row.te_rowset[0] and
+			  bb_self_id = self.ds.ds_current_row.te_rowset[5];
+                      self.ds.vc_data_bind(e);
+                    }
+                  ]]></v:script>
+                    </v:on-post>
+                  </v:button>
+                </td>
+                <td align="left" nowrap="1">
+                  <v:label name="label51" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
+                </td>
+                <td align="left" nowrap="1">
+                  <v:label name="label61" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" width="80"/>
+                </td>
+                <td align="left" nowrap="1">
+                  <v:label name="label71" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s" width="80"/>
+                </td>
+                <td align="left" nowrap="1">
+                  <v:label name="label81" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" format="%s" width="80"/>
+                </td>
+                <td align="left" nowrap="1">
+                  <v:label name="label91" value="--'*****'" format="%s" width="80"/>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+        </v:template>
+        <v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
+          <table width="400" border="1" cellspacing="2" cellpadding="0">
+            <tr>
+              <td>
+              </td>
+              <td align="right">
+                <v:button name="ds_prev" action="simple" value="&lt;&lt;" xhtml:size="10pt"/>
+              </td>
+              <td align="left">
+                <v:button name="ds_next" action="simple" value="&gt;&gt;" xhtml:size="10pt"/>
+              </td>
+              <td align="right">
+              </td>
+            </tr>
+          </table>
+        </v:template>
+      </v:data-set>
+  <!-- END DATASET -->
+  </td>
+</tr>
+</table>
+</v:form>
+<v:url name="work" url="blog.vspx" value="Home" />
+</div>
+
+</v:page>
+</body>
+</html>
+

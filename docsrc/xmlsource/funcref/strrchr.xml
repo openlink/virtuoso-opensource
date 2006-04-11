@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_strrchr">
+  <refmeta>
+    <refentrytitle>strrchr</refentrytitle>
+    <refmiscinfo>string</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>strrchr</refname>
+    <refpurpose>returns a zero-based index to the last occurrence of the char in str.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_strrchr">
+      <funcprototype id="fproto_strrchr">
+        <funcdef><function>strrchr</function></funcdef>
+        <paramdef><parameter>str</parameter> string</paramdef>
+        <paramdef><parameter>char</parameter> string or integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+<para>
+    strchr returns a zero-based index to the last occurrence of  char in string. If char is not found
+    NULL is returned. char can be given either as an integer ASCII value or a
+    string, in which case the first character of that string is searched for
+    in  str.
+</para>
+<screen>
+strchr('AbracadabrA','A')
+		 -&gt;  0 (Found as the first character).
+strrchr('AbracadabrA',65)
+		 -&gt; 10 (Found as the eleventh character)
+</screen>
+</refsect1>
+</refentry>
+
+

@@ -1,0 +1,99 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<HTML>
+<BODY TEXT="#000000" LINK="#0000CC" VISITED="#3300CC" BGCOLOR="#EEEEEE" TOPMARGIN=0>
+<H2>OpenLink Software SPARQL Demo</H2>
+<H3>What it is and how it works</H3>
+
+<P>SPARQL is a query language for access to RDF stores.
+It is designed to meet the requirements and design objectives described in 
+<A HREF="http://www.w3.org/TR/rdf-dawg-uc/">RDF Data Access Use Cases and Requirements</A>.
+Like SQL for relational databases and XQuery for XML data sources, SPARQL will become a system-independent standard,
+applicable across all sorts of RDF data.
+SPARQL is under design by the <A HREF="http://www.w3.org/2001/sw/DataAccess/">RDF Data Access Working Group</A> of W3C.
+Links to the standard and the official use cases are on the left.</P>
+
+<P>The standard is still in development, but the basic functionality
+is documented, so we're adding a first version of SPARQL support into
+our Openlink Virtuoso Server.
+This demo is powered by a Virtuoso installation and 
+demonstrates some basic SPARQL functionality.
+Information about OpenLink and the Virtuoso server are also
+available from the links on the left.</P>
+
+<P>In this demo, the RDF documents are stored
+within the Virtuoso server's database.  This server provides documents
+over URLs via the Distributed Authoring and Versioning protocol <a
+href="http://asg.web.cmu.edu/rfc/rfc2518.html" target="_blank">WebDAV</a> (RFC 2518).</P>
+
+<H3>Limitations and differences in the demo</H3>
+
+<P>The SPARQL compiler is under development.
+It is incomplete and probably contain much more errors than the whole rest of Virtuoso.
+Please re-visit this page later to see this demo in better shape.
+</P>
+<!--
+<P>The XQuery standard is a &quot;work in progress;&quot; hence any
+XQuery demo is &quot;work in progress.&quot; For some queries you
+will see <em>not yet implemented</em> diagnostic messages.
+
+<P>With the XQuery draft the W3C proposed a list of
+built-in XQuery functions ("xf-functions").  These functions are only
+partly implemented in this demo.</P>
+
+<P>Virtuoso's XQUERY implementation allows application of XQUERY to persisted
+and dynamically generated XML data.
+Virtuoso SQL offers a special XQUERY predicate for filtering/transforming XML
+data stored in or generated on the fly from homogeneous
+and heterogeneous ODBC data sources.
+This implementation is an integrated part of a suite of XML-oriented features
+that allow storing, processing, generating, and serving of XML content.
+This includes XSL-T, SQL to XML transformations (via FOR XML ... clauses),
+and XPATH capabilities.</P>
+
+<LI>The content of sample data files is almost identical to listings
+in the W3C SPARQL DAWG Use Cases draft.</LI>
+</UL>
+-->
+<H3>Is there any technical support for this demo?</H3>
+
+<P>Unlike other products of OpenLink Software, this demo is not
+supported by our 24x7 help service.  Feel free to contact the authors
+of this demo directly: <A
+href="mailto:xquery@openlinksw.com">xquery@openlinksw.com</A>.  All
+feedback is appreciated.</P>
+<!--
+<P>This demo has no safety limitations on time and memory consumption,
+so it is easy to hang the demo computer by simultaneous asking for
+dozen of terabyte-long results.  If you are unable to view the query
+page, please retry a bit later.</P>
+-->
+<HR/>
+<FONT SIZE="-1">The activity of users on this site is logged.
+We log only texts of queries asked,
+to collect statistics about frequency of various errors made in queries.<BR/>
+We do not collect any personal information about users.
+</FONT>
+</BODY>
+</HTML>
+

@@ -1,0 +1,126 @@
+<?vsp
+    declare oid, obilladdrid, oshipaddrid numeric(10);
+    declare odate, oshipdate date;
+    declare osubtotal, otax, ototal numeric(15, 2);
+    declare oshiptype varchar(10);
+    declare ostatus, fname, lname varchar(15);
+    declare phone varchar(16);
+    declare email,country1, country2 varchar(50);
+    declare shopping_id numeric(20);
+    declare cid numeric(10); 
+    declare uname varchar(20);
+    declare passwd, _c_passwd varchar(20);
+    declare addrstreet11, addrstreet12, addrstreet21, addrstreet22 varchar(40);
+    declare city1, city2 varchar(30);
+    declare state1, state2 varchar(20);
+    declare zip1, zip2 varchar(10);
+    declare co1, co2 numeric(4);
+    declare cctype varchar(10);
+    declare ccauth char(15);
+    shopping_id:=atoi(get_keyword('Shopping_Id',params,'0'));
+    cid:=atoi(get_keyword('C_ID',params,'0'));
+    uname := get_keyword('username', params, '');
+    passwd := get_keyword('password', params, '');
+    select C_PASSWD into _c_passwd from customer where C_UNAME=uname;
+    select C_ID, C_FNAME, C_LNAME, C_PHONE, C_EMAIL
+	into cid, fname, lname, phone, email from CUSTOMER where C_UNAME=uname;
+    select O_ID, O_DATE, O_SUB_TOTAL, O_TAX, O_TOTAL, O_SHIP_TYPE, 
+	O_SHIP_DATE, O_BILL_ADDR_ID, O_SHIP_ADDR_ID, O_STATUS
+	into oid, odate, osubtotal, otax, ototal, oshiptype,
+	oshipdate, obilladdrid, oshipaddrid, ostatus from ORDERS where O_C_ID=cid;
+    select addr_street1, addr_street2, addr_city, addr_state, addr_zip, addr_co_id
+	into addrstreet11, addrstreet12, city1, state1, zip1, co1
+	from address where addr_id=obilladdrid;
+    select CO_NAME into country1 from country where co_ID=co1;
+    select addr_street1, addr_street2, addr_city, addr_state, addr_zip, addr_co_id
+	into addrstreet21, addrstreet22, city2, state2, zip2, co2
+	from address where addr_id=oshipaddrid;
+    select CO_NAME into country2 from country where co_ID=co2;
+    select CX_TYPE, CX_AUTH_ID into cctype, ccauth from CC_XACTS where CX_O_ID=oid;
+?>
+<HTML>
+<HEAD>
+<TITLE>TPC-W Order Display Page</TITLE></HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<H1 ALIGN="CENTER">TPC Web Commerce Benchmark (TPC-W)</H1>
+<HR WIDTH="700" COLOR="#202020">
+<H2 ALIGN="CENTER">Order Display Page</H2>
+<BLOCKQUOTE>
+<BLOCKQUOTE>
+<BLOCKQUOTE>
+<BLOCKQUOTE>
+<HR>
+<P>Order ID: <?= oid?><BR>Authorization ID: <?=ccauth?><BR>Order Placed on = <?= left(cast(odate as varchar),10)?><BR>Shipping
+Type: <?=oshiptype?><BR>Ship Date: <?=left(cast(oshipdate as varchar), 10)?><BR>Order Subtotal: $<?=osubtotal?>
+<BR>Order Tax: $<?=otax?>
+<BR>Order Total: $<?=ototal?>
+<BR></P>
+<TABLE BORDER="0" WIDTH="80%">
+<TR>
+<TD><B>Bill To:</B></TD>
+<TD><B>Ship To:</B></TD></TR>
+<TR>
+<TD COLSPAN="2">
+<H4><?=fname?> <?=lname?></H4></TD></TR>
+<TR>
+<TD WIDTH="50%"><ADDRESS><?=addrstreet11?><BR><?=addrstreet12?><BR><?=city1?><BR><?=zip1?><BR><?=country1?><BR><BR>Email: <?=email?><BR>Phone: <?=phone?></ADDRESS><BR>
+<P>Credit Card Type: <?=cctype?><BR>Order Status: <?=ostatus?></P></TD>
+<TD VALIGN="TOP" WIDTH="50%"><ADDRESS><?=addrstreet21?><BR><?=addrstreet22?><BR><?=city2?><BR><?=zip2?><BR><?=country2?></ADDRESS></TD></TR></TABLE></BLOCKQUOTE></BLOCKQUOTE></BL=
+OCKQUOTE></BLOCKQUOTE>
+<CENTER>
+<TABLE BORDER="1" CELLPADDING="5" CELLSPACING="0">
+<TR>
+<TD>
+<H4>Item #</H4></TD>
+<TD>
+<H4>Title</H4></TD>
+<TD>
+<H4>Cost</H4></TD>
+<TD>
+<H4>Qty</H4></TD>
+<TD>
+<H4>Discount</H4></TD>
+<TD>
+<H4>Comment</H4></TD></TR>
+<?vsp
+declare oliid numeric(10);
+declare olqty numeric(3);
+declare oldiscount numeric(3,2);
+declare olcomments varchar(100);
+declare ititle, ipublisher varchar(60);
+declare icost numeric(15,2);
+    for
+	select ol.OL_I_ID as oliid, ol.OL_QTY as olqty, ol.OL_DISCOUNT as oldiscount,
+	    ol.OL_COMMENTS as olcomments, i.I_TITLE as ititle,
+	    i.I_PUBLISHER as ipublisher, i.I_COST as icost
+	    from order_line ol, ITEM i where ol.ol_o_id=oid and i.i_id=ol.OL_I_ID
+    do
+    {
+?>
+<TR>
+<TD>
+<H4><?=oliid?></H4></TD>
+<TD VALIGN="top">
+
+<H4>Title: <?=ititle?>. =
+Arms<BR>Publisher:
+<?=ipublisher?></H4></TD>
+<TD>
+<H4>$<?=icost?></H4></TD>
+<TD>
+<H4><?=olqty?></H4></TD>
+<TD>
+<H4><?=oldiscount?> %</H4></TD>
+<TD>
+<H4><?=olcomments?></H4></TD></TR>
+<TR>
+<TD>
+<?vsp
+    }
+?>
+</TABLE><BR>
+<A HREF="searchrequest.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/search.jpg" ALT="Search" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+<A HREF="index.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/home.jpg" ALT="Home" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+</CENTER>
+</BODY>
+</HTML>

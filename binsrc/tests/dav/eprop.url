@@ -1,0 +1,2 @@
+localhost 6666
+1 PROPFIND /DAV/Dav_Coll/ HTTP/1.0

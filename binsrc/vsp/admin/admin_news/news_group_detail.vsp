@@ -1,0 +1,89 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+  declare _ng_up_int, _ng_clear_int, _page_in integer;
+  declare _ng_up_mess, _ng_pass, _ns_id integer;
+  declare _up_group, gr_name, _ng_server, _name varchar;
+
+  _up_group := get_keyword ('ngproperties', params, '');
+  _ns_id := get_keyword ('expand', params, '');
+  _page_in := atoi (get_keyword ('page', params, ''));
+
+  if ('' <> get_keyword ('save', params, ''))
+    update  DB.DBA.NEWS_SERVERS set
+	NS_PORT = atoi (get_keyword ('port', params, '')),
+	NS_USER =  get_keyword ('user', params, ''),
+	NS_PASS =  get_keyword ('pass', params, '')
+	where NS_ID = atoi (get_keyword ('server_id', params, ''));
+
+  select NG_NAME, NG_SERVER, NG_UP_INT, NG_PASS
+    into gr_name, _ng_server, _ng_up_int, _ng_pass
+      from DB.DBA.NEWS_GROUPS where (NG_GROUP = atoi (_up_group));
+  select NS_SERVER into _name from DB.DBA.NEWS_SERVERS where NS_ID = _ng_server;
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Virtuoso News</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Virtuoso news server administration VSP">
+  </head>
+<?vsp adm_page_header('Newsgroup Properties', 'nntpprops'); ?>
+<?include ../adm_js_check.vsp ?>
+
+<?vsp
+     http ('<FORM method="POST" name="details_form" action="news_server_list.vsp">');
+?>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+  <TR><TD CLASS="genhead" COLSPAN="2"><?=gr_name?></TD></TR>
+  <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+  <TR><TD CLASS="genlistheadt">Server:</TD>
+  <TD CLASS="gendata"><a href="news_server_config.vsp?nsproperties=<?=_ng_server?>"><?=_name?></a></TD></TR>
+
+  <TR><TD CLASS="genlistheadt">Update Interval (min.):</TD><TD>
+  <input type="text" name="ngupint" value="<?=_ng_up_int?>" size="5"></TD></TR>
+
+  <TR><TD CLASS="genlistheadt">Messages for one pass<BR />(0 - all available)</TD><TD>
+  <input type="text" name="ngupmess" value="<?=_ng_pass?>" size="5"></TD></TR>
+
+  </TABLE>
+
+  </TD></TR>
+  <TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+  <TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT="">
+  <INPUT type="submit" name="_detail", value="Save">
+  <INPUT type="button" name="back", value="Cancel" onClick="document.location='news_server_list.vsp?expand=<?=_ns_id?>';">
+  <INPUT type="hidden" name="ngproperties", value="<?=_up_group?>"></TD></TR>
+  <INPUT type="hidden" name="ngprop_name", value="<?=gr_name?>"></TD></TR>
+  <INPUT type="hidden" name="expand", value="<?=_ns_id?>"></TD></TR>
+
+</FORM>
+<?vsp adm_page_footer(); ?>
+</HTML>

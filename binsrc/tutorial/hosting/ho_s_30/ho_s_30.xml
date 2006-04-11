@@ -1,0 +1,68 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="HO-S-30">
+  <refmeta>
+    <refentrytitle>PHP-script Hosting</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>PHP ODBC Hosting Demo</refname>
+    <refpurpose>Use of ODBC from within a PHP script hosted in Virtuoso</refpurpose>
+  </refnamediv>
+
+    <refsect1 id="HO-S-30">
+    <title>PHP script calling ODBC</title>
+
+  <para>
+  This demo shows simple ODBC functions being used in a PHP script:
+odbc_connect(), odbc_exec(), odbc_result_all() and odbc_tables().
+  </para>
+
+<para>
+The WebCalendar application is an <ulink
+url="http://www.opensource.org/">Open-Source</ulink> implementation of
+a multi-user web-calendar in PHP, released under the terms of the
+<ulink
+url="http://www.opensource.org/licenses/gpl-license.php">GPL</ulink>;
+the project <ulink
+url="http://webcalendar.sourceforge.net/">homepage</ulink> is hosted
+on <ulink url="http://sf.net/">SourceForge.net</ulink>. We include it
+here as an example of how to take an existing PHP application designed
+to run with Apache against mysql, postgresql or ODBC database
+backends, and host it within Virtuoso.
+</para>
+<para>
+The default username and password are admin/admin.
+</para>
+<para>The "Set the initial state" SQL files must be executed prior to running the demo.
+The file create_local_dsn.sql will create a local DSN named "Local Virtuoso Tutorial HO-S-30", which will be used 
+for connecting the database.
+</para>
+
+  <para>
+  For troubleshooting please read the "Environment Setup" section in "Runtime hosting" chapter from documentation.
+  </para>
+  
+  </refsect1>
+</refentry>

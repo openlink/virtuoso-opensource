@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_every">
+  <refmeta>
+    <refentrytitle>every</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>every</refname>
+    <refpurpose>Returns true if all items of given sequence matches given criterion.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_every">
+      <funcprototype id="xpf_proto_every">
+        <funcdef>boolean <function>every</function></funcdef>
+	<paramdef><parameter>varname</parameter> string</paramdef>
+	<paramdef><parameter>test_set</parameter> sequence</paramdef>
+	<paramdef><parameter>test_expn</parameter> boolean</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_every"><title>Description</title>
+<para>
+The function creates a temporary local variable, whose name is specified by
+<parameter>varname</parameter> argument.
+Then, for every item of <parameter>test_set</parameter> sequence it
+calculates the <parameter>test_expn</parameter> boolean expression
+having set the created variable to that &quot;current&quot; item.
+If the value of expression is false, the function immediately returns
+false without processing the rest of <parameter>test_set</parameter> sequence.
+If all items of the sequence are probed without getting false,
+true is returned. (So if the sequence is empty, the function returns true).
+</para>
+<para>
+In any case, temporary variable is destroyed on return.
+</para>
+<para>
+This function is used in the implementation of
+&quot;EVERY&quot; logical operator in XQUERY, so you will probably use that operator
+in XQUERY expessions, not the function.
+This function may be useful in XPATH expressions and in XSLT stylesheets.
+It is not a part of library of standard XQUERY 1.0 functions.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_every"><title>Parameters</title>
+    <refsect2><title>varname</title>
+      <para>Name of temporary variable</para></refsect2>
+    <refsect2><title>test_set</title>
+      <para>Sequence of items; these items will be tested by <parameter>test_expn</parameter></para></refsect2>
+    <refsect2><title>test_expn</title>
+      <para>Boolean expression which should be calculated for items of <parameter>test_set</parameter>.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_every"><title>Return Types</title><para>Boolean</para></refsect1>
+  <refsect1 id="xpf_examples_every"><title>Examples</title>
+    <example id="xpf_ex_every"><title></title>
+      <para>This expression returns true if all reports have positive incomes recorded.</para>
+      <screen>every('income_value', /report/income, $income_value &gt; 0)</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_every"><title>See Also</title>
+    <para><link linkend="xpf_some">some()</link></para>
+  </refsect1>
+</refentry>
+

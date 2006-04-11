@@ -1,0 +1,80 @@
+<h2>ajax.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>Provides basic asynchronous xml call (Ajax) routines.</p>
+<hr/>
+
+<h3>Functions</h3>
+<ul>
+	<li><a href="#command">Ajax.command(method, target, data_func, return_func)</a></li>
+	<li><a href="#manage">Ajax.manage(element, event, method, target, data_func, return_func)</a></li>
+	<li><a href="#setstart">Ajax.setStart(callback)</a></li>
+	<li><a href="#setend">Ajax.setEnd(callback)</a></li>
+	<li><a href="#setcancel">Ajax.setCancel(element)</a></li>
+</ul>
+
+<h3>Constants</h3>
+
+<ul>
+	<li>Ajax.GET</li>
+	<li>Ajax.POST</li>
+	<li>Ajax.SOAP</li>
+	<li>Ajax.PUT</li>
+	<li>Ajax.AUTH_BASIC</li>
+	<li>Ajax.AUTH_DIGEST</li>
+</ul>
+
+<hr/>
+
+<h3><a name="command">Ajax.command(method, target, data_func, return_func)</a></h3>
+<p>Sends a HTTP request to a page <em>target</em>. Use predefined constants to specify request type (in argument <em>method</em>):</p>
+<ul>
+	<li>Ajax.GET - HTTP GET</li>
+	<li>Ajax.POST - HTTP POST</li>
+	<li>Ajax.SOAP - HTTP GET with header specifying a SOAP request</li>
+	<li>Ajax.PUT - HTTP PUT</li>
+	<li>Ajax.AUTH_BASIC - add this constant to any request type to perform Basic http authentication</li>
+	<li>Ajax.AUTH_DIGEST - not implemented</li>
+</ul>
+<p>Argument <em>data_func</em> specifies a callback to function which returns data to be sent. When response arrives, 
+<em>return_func</em>(data) will be called. Example:</p>
+<p class="code">
+Ajax.user = "username";<br/>
+Ajax.password = "top_secret";<br/>
+var callback = function(data) { alert(data); };<br/>
+Ajax.command(Ajax.GET + Ajax.AUTH_BASIC, "http://www.securesite.com/", function(){}, callback);
+</p>
+
+<h3><a name="manage">Ajax.manage(element, event, method, target, data_func, return_func)</a></h3>
+<p>Attaches Ajax call (with arguments <em>method</em>, <em>target</em>, <em>data_func</em> and <em>return_func</em>) 
+to <em>event</em> fired on <em>element</em>.</p>
+
+<h3><a name="setstart">Ajax.setStart(callback)</a></h3>
+<p>Specifies a function to be called when asynchronous request is being called (i.e. some user alert etc.).</p>
+
+<h3><a name="setend">Ajax.setEnd(callback)</a></h3>
+<p>Specifies a function to be called when last response is recieved.</p>
+
+<h3><a name="setcancel">Ajax.setCancel(element)</a></h3>
+<p>Marks <em>element</em> as an interruptor - when user clicks it, all Ajax calls are interrupted. 
+Only one element can be marked this way.</p>

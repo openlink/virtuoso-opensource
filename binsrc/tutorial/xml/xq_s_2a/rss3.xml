@@ -1,0 +1,311 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+﻿<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:msdn="http://msdn.microsoft.com/aboutmsdn/rss/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:msdndomain="http://msdn.microsoft.com/aboutmsdn/rss/domains" version="2">
+  <channel>
+    <title>MSDN: Visual C#</title>
+    <link>http://msdn.microsoft.com/vcsharp/</link>
+    <description>The latest information for developers on Visual C#.</description>
+    <language>en-us</language>
+    <pubDate>Fri, 20 May 2005 17:26:36 GMT</pubDate>
+    <lastBuildDate>Fri, 20 May 2005 17:26:36 GMT</lastBuildDate>
+    <generator>MSDN RSS Service 1.1.0.0</generator>
+    <ttl>1440</ttl>
+    <item>
+      <title>Introducing Windows Mobile 5.0</title>
+      <description>Get ready for next generation Windows Mobile-based devices. Learn about technologies for native and managed application developers, and download tools to start building Windows Mobile 5.0 applications.</description>
+      <link>http://msdn.microsoft.com/mobility/windowsmobile/howto/windowsmobile5/default.aspx</link>
+      <dc:creator>ericeng</dc:creator>
+      <category domain="msdndomain:ContentType">Link only</category>
+      <category domain="msdndomain:DevLangVers">C#</category>
+      <category domain="msdndomain:DevLangVers">embedded Visual Basic</category>
+      <category domain="msdndomain:DevLangVers">embedded Visual C++</category>
+      <category domain="msdndomain:DevLangVers">Visual Basic</category>
+      <category domain="msdndomain:ProductVers">Visual Studio</category>
+      <category domain="msdndomain:Subject">Mobility</category>
+      <category domain="msdndomain:TechnologyVers">.NET Compact Framework</category>
+      <category domain="msdndomain:TechnologyVers">Pocket PC</category>
+      <category domain="msdndomain:TechnologyVers">Pocket PC 2003</category>
+      <category domain="msdndomain:TechnologyVers">Smart Client</category>
+      <category domain="msdndomain:TechnologyVers">Smartphone</category>
+      <category domain="msdndomain:TechnologyVers">Smartphone 2003</category>
+      <msdn:developmentLanguage>C#</msdn:developmentLanguage>
+      <msdn:developmentLanguage>embedded Visual Basic</msdn:developmentLanguage>
+      <msdn:developmentLanguage>embedded Visual C++</msdn:developmentLanguage>
+      <msdn:developmentLanguage>Visual Basic</msdn:developmentLanguage>
+      <msdn:technology>.NET Compact Framework</msdn:technology>
+      <msdn:technology>Pocket PC</msdn:technology>
+      <msdn:technology>Pocket PC 2003</msdn:technology>
+      <msdn:technology>Smart Client</msdn:technology>
+      <msdn:technology>Smartphone</msdn:technology>
+      <msdn:technology>Smartphone 2003</msdn:technology>
+      <msdn:product>Visual Studio</msdn:product>
+      <msdn:headlineImage>http://msdn.microsoft.com/msdn-online/shared/graphics/icons/offsite.gif</msdn:headlineImage>
+      <msdn:contentType>Link only</msdn:contentType>
+      <msdn:simpleDate>May 11</msdn:simpleDate>
+      <guid isPermaLink="false">Iliad_7786</guid>
+      <pubDate>Wed, 11 May 2005 07:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Table of Contents: GridView Examples for ASP.NET 2.0</title>
+      <description>Accomplish a number of common tasks with the Microsoft ASP.NET 2.0 GridView control. Each task is accompanied by a description of the new concepts covered.</description>
+      <link>http://msdn.microsoft.com/asp.net/default.aspx?pull=/library/en-us/dnaspp/html/GridViewEx.asp</link>
+      <dc:creator>Scott Mitchell</dc:creator>
+      <category domain="msdndomain:ContentType">Technical Article w/Code Sample</category>
+      <category domain="msdndomain:DevLangVers">C#</category>
+      <category domain="msdndomain:DevLangVers">Visual Basic</category>
+      <category domain="msdndomain:ProductVers">Visual Studio.NET</category>
+      <category domain="msdndomain:Subject">.NET development</category>
+      <category domain="msdndomain:TechnologyVers">.NET Framework</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET 2.0</category>
+      <msdn:developmentLanguage>C#</msdn:developmentLanguage>
+      <msdn:developmentLanguage>Visual Basic</msdn:developmentLanguage>
+      <msdn:technology>.NET Framework</msdn:technology>
+      <msdn:technology>ASP.NET</msdn:technology>
+      <msdn:technology>ASP.NET 2.0</msdn:technology>
+      <msdn:product>Visual Studio.NET</msdn:product>
+      <msdn:headlineImage>http://msdn.microsoft.com/msdn-online/shared/graphics/icons/article1.gif</msdn:headlineImage>
+      <msdn:contentType>Technical Article w/Code Sample</msdn:contentType>
+      <msdn:simpleDate>May 5</msdn:simpleDate>
+      <guid isPermaLink="false">Iliad_7757</guid>
+      <pubDate>Thu, 05 May 2005 07:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>GridView Examples for ASP.NET 2.0: Working with TemplateFields</title>
+      <description>GridView examples</description>
+      <link>http://msdn.microsoft.com/asp.net/default.aspx?pull=/library/en-us/dnaspp/html/GridViewEx07.asp</link>
+      <dc:creator>Scott Mitchell</dc:creator>
+      <category domain="msdndomain:ContentType">Technical Article</category>
+      <category domain="msdndomain:DevLangVers">C#</category>
+      <category domain="msdndomain:DevLangVers">Visual Basic</category>
+      <category domain="msdndomain:ProductVers">Visual Studio</category>
+      <category domain="msdndomain:ProductVers">Visual Studio.NET</category>
+      <category domain="msdndomain:Subject">.NET development</category>
+      <category domain="msdndomain:TechnologyVers">.NET Framework</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET 2.0</category>
+      <msdn:developmentLanguage>C#</msdn:developmentLanguage>
+      <msdn:developmentLanguage>Visual Basic</msdn:developmentLanguage>
+      <msdn:technology>.NET Framework</msdn:technology>
+      <msdn:technology>ASP.NET</msdn:technology>
+      <msdn:technology>ASP.NET 2.0</msdn:technology>
+      <msdn:product>Visual Studio</msdn:product>
+      <msdn:product>Visual Studio.NET</msdn:product>
+      <msdn:headlineImage>http://msdn.microsoft.com/msdn-online/shared/graphics/icons/article1.gif</msdn:headlineImage>
+      <msdn:contentType>Technical Article</msdn:contentType>
+      <msdn:simpleDate>May 5</msdn:simpleDate>
+      <guid isPermaLink="false">Iliad_7769</guid>
+      <pubDate>Thu, 05 May 2005 07:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>GridView Examples for ASP.NET 2.0: Paging and Sorting the GridView's Data</title>
+      <description>GridView examples</description>
+      <link>http://msdn.microsoft.com/asp.net/default.aspx?pull=/library/en-us/dnaspp/html/GridViewEx05.asp</link>
+      <dc:creator>Scott Mitchell</dc:creator>
+      <category domain="msdndomain:ContentType">Technical Article</category>
+      <category domain="msdndomain:DevLangVers">C#</category>
+      <category domain="msdndomain:DevLangVers">Visual Basic</category>
+      <category domain="msdndomain:ProductVers">Visual Studio</category>
+      <category domain="msdndomain:ProductVers">Visual Studio.NET</category>
+      <category domain="msdndomain:Subject">.NET development</category>
+      <category domain="msdndomain:TechnologyVers">.NET Framework</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET 2.0</category>
+      <msdn:developmentLanguage>C#</msdn:developmentLanguage>
+      <msdn:developmentLanguage>Visual Basic</msdn:developmentLanguage>
+      <msdn:technology>.NET Framework</msdn:technology>
+      <msdn:technology>ASP.NET</msdn:technology>
+      <msdn:technology>ASP.NET 2.0</msdn:technology>
+      <msdn:product>Visual Studio</msdn:product>
+      <msdn:product>Visual Studio.NET</msdn:product>
+      <msdn:headlineImage>http://msdn.microsoft.com/msdn-online/shared/graphics/icons/article1.gif</msdn:headlineImage>
+      <msdn:contentType>Technical Article</msdn:contentType>
+      <msdn:simpleDate>May 5</msdn:simpleDate>
+      <guid isPermaLink="false">Iliad_7767</guid>
+      <pubDate>Thu, 05 May 2005 07:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>GridView Examples for ASP.NET 2.0: Improvements in Data Access and Display</title>
+      <description>GridView examples</description>
+      <link>http://msdn.microsoft.com/asp.net/default.aspx?pull=/library/en-us/dnaspp/html/GridViewEx01.asp</link>
+      <dc:creator>Scott Mitchell</dc:creator>
+      <category domain="msdndomain:ContentType">Technical Article</category>
+      <category domain="msdndomain:DevLangVers">C#</category>
+      <category domain="msdndomain:DevLangVers">Visual Basic</category>
+      <category domain="msdndomain:ProductVers">Visual Studio</category>
+      <category domain="msdndomain:ProductVers">Visual Studio.NET</category>
+      <category domain="msdndomain:Subject">.NET development</category>
+      <category domain="msdndomain:TechnologyVers">.NET Framework</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET 2.0</category>
+      <msdn:developmentLanguage>C#</msdn:developmentLanguage>
+      <msdn:developmentLanguage>Visual Basic</msdn:developmentLanguage>
+      <msdn:technology>.NET Framework</msdn:technology>
+      <msdn:technology>ASP.NET</msdn:technology>
+      <msdn:technology>ASP.NET 2.0</msdn:technology>
+      <msdn:product>Visual Studio</msdn:product>
+      <msdn:product>Visual Studio.NET</msdn:product>
+      <msdn:headlineImage>http://msdn.microsoft.com/msdn-online/shared/graphics/icons/article1.gif</msdn:headlineImage>
+      <msdn:contentType>Technical Article</msdn:contentType>
+      <msdn:simpleDate>May 5</msdn:simpleDate>
+      <guid isPermaLink="false">Iliad_7763</guid>
+      <pubDate>Thu, 05 May 2005 07:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>GridView Examples for ASP.NET 2.0: Formatting the GridView</title>
+      <description>GridView examples</description>
+      <link>http://msdn.microsoft.com/asp.net/default.aspx?pull=/library/en-us/dnaspp/html/GridViewEx03.asp</link>
+      <dc:creator>Scott Mitchell</dc:creator>
+      <category domain="msdndomain:ContentType">Technical Article</category>
+      <category domain="msdndomain:DevLangVers">C#</category>
+      <category domain="msdndomain:DevLangVers">Visual Basic</category>
+      <category domain="msdndomain:ProductVers">Visual Studio</category>
+      <category domain="msdndomain:ProductVers">Visual Studio.NET</category>
+      <category domain="msdndomain:Subject">.NET development</category>
+      <category domain="msdndomain:TechnologyVers">.NET Framework</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET 2.0</category>
+      <msdn:developmentLanguage>C#</msdn:developmentLanguage>
+      <msdn:developmentLanguage>Visual Basic</msdn:developmentLanguage>
+      <msdn:technology>.NET Framework</msdn:technology>
+      <msdn:technology>ASP.NET</msdn:technology>
+      <msdn:technology>ASP.NET 2.0</msdn:technology>
+      <msdn:product>Visual Studio</msdn:product>
+      <msdn:product>Visual Studio.NET</msdn:product>
+      <msdn:headlineImage>http://msdn.microsoft.com/msdn-online/shared/graphics/icons/article1.gif</msdn:headlineImage>
+      <msdn:contentType>Technical Article</msdn:contentType>
+      <msdn:simpleDate>May 5</msdn:simpleDate>
+      <guid isPermaLink="false">Iliad_7765</guid>
+      <pubDate>Thu, 05 May 2005 07:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>GridView Examples for ASP.NET 2.0: Drilling Down into Detailed Data</title>
+      <description>GridView examples</description>
+      <link>http://msdn.microsoft.com/asp.net/default.aspx?pull=/library/en-us/dnaspp/html/GridViewEx08.asp</link>
+      <dc:creator>Scott Mitchell</dc:creator>
+      <category domain="msdndomain:ContentType">Technical Article</category>
+      <category domain="msdndomain:DevLangVers">C#</category>
+      <category domain="msdndomain:DevLangVers">Visual Basic</category>
+      <category domain="msdndomain:ProductVers">Visual Studio</category>
+      <category domain="msdndomain:ProductVers">Visual Studio.NET</category>
+      <category domain="msdndomain:Subject">.NET development</category>
+      <category domain="msdndomain:TechnologyVers">.NET Framework</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET 2.0</category>
+      <msdn:developmentLanguage>C#</msdn:developmentLanguage>
+      <msdn:developmentLanguage>Visual Basic</msdn:developmentLanguage>
+      <msdn:technology>.NET Framework</msdn:technology>
+      <msdn:technology>ASP.NET</msdn:technology>
+      <msdn:technology>ASP.NET 2.0</msdn:technology>
+      <msdn:product>Visual Studio</msdn:product>
+      <msdn:product>Visual Studio.NET</msdn:product>
+      <msdn:headlineImage>http://msdn.microsoft.com/msdn-online/shared/graphics/icons/article1.gif</msdn:headlineImage>
+      <msdn:contentType>Technical Article</msdn:contentType>
+      <msdn:simpleDate>May 5</msdn:simpleDate>
+      <guid isPermaLink="false">Iliad_7770</guid>
+      <pubDate>Thu, 05 May 2005 07:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>GridView Examples for ASP.NET 2.0: Displaying Master/Detail Data in a GridView</title>
+      <description>GridView examples</description>
+      <link>http://msdn.microsoft.com/asp.net/default.aspx?pull=/library/en-us/dnaspp/html/GridViewEx04.asp</link>
+      <dc:creator>Scott Mitchell</dc:creator>
+      <category domain="msdndomain:ContentType">Technical Article</category>
+      <category domain="msdndomain:DevLangVers">C#</category>
+      <category domain="msdndomain:DevLangVers">Visual Basic</category>
+      <category domain="msdndomain:ProductVers">Visual Studio</category>
+      <category domain="msdndomain:ProductVers">Visual Studio.NET</category>
+      <category domain="msdndomain:Subject">.NET development</category>
+      <category domain="msdndomain:TechnologyVers">.NET Framework</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET 2.0</category>
+      <msdn:developmentLanguage>C#</msdn:developmentLanguage>
+      <msdn:developmentLanguage>Visual Basic</msdn:developmentLanguage>
+      <msdn:technology>.NET Framework</msdn:technology>
+      <msdn:technology>ASP.NET</msdn:technology>
+      <msdn:technology>ASP.NET 2.0</msdn:technology>
+      <msdn:product>Visual Studio</msdn:product>
+      <msdn:product>Visual Studio.NET</msdn:product>
+      <msdn:headlineImage>http://msdn.microsoft.com/msdn-online/shared/graphics/icons/article1.gif</msdn:headlineImage>
+      <msdn:contentType>Technical Article</msdn:contentType>
+      <msdn:simpleDate>May 5</msdn:simpleDate>
+      <guid isPermaLink="false">Iliad_7766</guid>
+      <pubDate>Thu, 05 May 2005 07:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>GridView Examples for ASP.NET 2.0: Displaying Images in a GridView Column</title>
+      <description>GridView examples</description>
+      <link>http://msdn.microsoft.com/asp.net/default.aspx?pull=/library/en-us/dnaspp/html/GridViewEx06.asp</link>
+      <dc:creator>Scott Mitchell</dc:creator>
+      <category domain="msdndomain:ContentType">Technical Article</category>
+      <category domain="msdndomain:DevLangVers">C#</category>
+      <category domain="msdndomain:DevLangVers">Visual Basic</category>
+      <category domain="msdndomain:ProductVers">Visual Studio</category>
+      <category domain="msdndomain:ProductVers">Visual Studio.NET</category>
+      <category domain="msdndomain:Subject">.NET development</category>
+      <category domain="msdndomain:TechnologyVers">.NET Framework</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET 2.0</category>
+      <msdn:developmentLanguage>C#</msdn:developmentLanguage>
+      <msdn:developmentLanguage>Visual Basic</msdn:developmentLanguage>
+      <msdn:technology>.NET Framework</msdn:technology>
+      <msdn:technology>ASP.NET</msdn:technology>
+      <msdn:technology>ASP.NET 2.0</msdn:technology>
+      <msdn:product>Visual Studio</msdn:product>
+      <msdn:product>Visual Studio.NET</msdn:product>
+      <msdn:headlineImage>http://msdn.microsoft.com/msdn-online/shared/graphics/icons/article1.gif</msdn:headlineImage>
+      <msdn:contentType>Technical Article</msdn:contentType>
+      <msdn:simpleDate>May 5</msdn:simpleDate>
+      <guid isPermaLink="false">Iliad_7768</guid>
+      <pubDate>Thu, 05 May 2005 07:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>GridView Examples for ASP.NET 2.0: Accessing Data with the DataSource Controls</title>
+      <description>GridView examples</description>
+      <link>http://msdn.microsoft.com/asp.net/default.aspx?pull=/library/en-us/dnaspp/html/GridViewEx02.asp</link>
+      <dc:creator>Scott Mitchell</dc:creator>
+      <category domain="msdndomain:ContentType">Technical Article</category>
+      <category domain="msdndomain:DevLangVers">C#</category>
+      <category domain="msdndomain:DevLangVers">Visual Basic</category>
+      <category domain="msdndomain:ProductVers">Visual Studio</category>
+      <category domain="msdndomain:ProductVers">Visual Studio.NET</category>
+      <category domain="msdndomain:Subject">.NET development</category>
+      <category domain="msdndomain:TechnologyVers">.NET Framework</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET</category>
+      <category domain="msdndomain:TechnologyVers">ASP.NET 2.0</category>
+      <msdn:developmentLanguage>C#</msdn:developmentLanguage>
+      <msdn:developmentLanguage>Visual Basic</msdn:developmentLanguage>
+      <msdn:technology>.NET Framework</msdn:technology>
+      <msdn:technology>ASP.NET</msdn:technology>
+      <msdn:technology>ASP.NET 2.0</msdn:technology>
+      <msdn:product>Visual Studio</msdn:product>
+      <msdn:product>Visual Studio.NET</msdn:product>
+      <msdn:headlineImage>http://msdn.microsoft.com/msdn-online/shared/graphics/icons/article1.gif</msdn:headlineImage>
+      <msdn:contentType>Technical Article</msdn:contentType>
+      <msdn:simpleDate>May 5</msdn:simpleDate>
+      <guid isPermaLink="false">Iliad_7764</guid>
+      <pubDate>Thu, 05 May 2005 07:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

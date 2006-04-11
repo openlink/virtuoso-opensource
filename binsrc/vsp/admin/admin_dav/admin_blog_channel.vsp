@@ -1,0 +1,660 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+  declare akey, bid, id varchar;
+  declare userid int;
+  declare tit, rss, home varchar;
+  declare format, upd_per, upd_freq, lang, src_uri, src_tit, dir_uri, chan_cat, new_chan_cat, email varchar;
+  declare channels, links any;
+  declare hide_list, cis_blog, edit, c_cat_id, f_is_blog, f_cat_id int;
+
+  adm_pre_page(lines);
+
+if (http_dav_uid () <> (userid := adm_dav_check_auth (lines, 1)))
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+          'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+
+  bid := {?'bid'};
+
+  if (bid is null or bid = '' or {?'cncl'} = 'Back')
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: admin_blog.vsp\r\n');
+      return;
+    }
+
+  declare exit handler for sqlstate '*'
+  {
+   declare stat, err varchar;
+   stat := '22023';
+   err := __SQL_MESSAGE;
+   ?>
+<?include error.vsp ?>
+   <?vsp
+   return;
+  };
+
+  id := coalesce ({?'id'}, '');
+  declare blog_name varchar;
+  blog_name := coalesce ((select BI_TITLE from SYS_BLOG_INFO where BI_BLOG_ID = bid), bid);
+
+  -- OCS channels
+  channels := null;
+  -- OPML links
+  links := null;
+  -- a single file XML or HTML properties
+  rss := null; home := null; tit := null; hide_list := 0; cis_blog := 1; edit := 0;
+  chan_cat := get_keyword ('chan_cat', params, '');
+  new_chan_cat := get_keyword ('new_chan_cat', params, '');
+  if (new_chan_cat = '')
+    new_chan_cat := chan_cat;
+
+  if (new_chan_cat <> '' and not exists (select 1 from SYS_BLOG_CHANNEL_CATEGORY where BCC_NAME = new_chan_cat and BCC_BLOG_ID = bid))
+    {
+      f_is_blog := 0;
+      if (strstr (lower (new_chan_cat), 'blog roll') is not null)
+	f_is_blog := 1;
+      insert into SYS_BLOG_CHANNEL_CATEGORY (BCC_BLOG_ID, BCC_NAME, BCC_IS_BLOG)
+		values (bid, new_chan_cat, f_is_blog);
+      chan_cat := new_chan_cat;
+    }
+
+  src_uri := {?'src_uri'};
+  if ({?'url'} <> '')
+    src_uri := {?'url'};
+  src_tit := {?'src_tit'};
+
+  if ({?'edit'} is not null)
+    {
+      select BCD_CHANNEL_URI, BCD_HOME_URI, BCD_TITLE, BCD_FORMAT, BCD_UPDATE_PERIOD,
+	  BCD_LANG, BCD_UPDATE_FREQ, BCD_IS_BLOG, BCD_SOURCE_URI, BC_CAT_ID into
+	  rss, home, tit, format, upd_per, lang, upd_freq, cis_blog, dir_uri, c_cat_id
+	      from SYS_BLOG_CHANNEL_INFO, SYS_BLOG_CHANNELS where BCD_CHANNEL_URI = id and BC_CHANNEL_URI = BCD_CHANNEL_URI and BC_BLOG_ID = bid;
+      edit := 1;
+      chan_cat := (select BCC_NAME from SYS_BLOG_CHANNEL_CATEGORY where BCC_ID = c_cat_id and BCC_BLOG_ID = bid);
+    }
+  else if ({?'delete'} is not null)
+    {
+      delete from SYS_BLOG_CHANNELS where BC_BLOG_ID = bid and BC_CHANNEL_URI = id;
+      if (not exists (select 1 from SYS_BLOG_CHANNELS where BC_CHANNEL_URI = id))
+	delete from SYS_BLOG_CHANNEL_INFO where BCD_CHANNEL_URI = id;
+      if (exists (select 1 from SYS_BLOG_CHANNEL_INFO where BCD_SOURCE_URI = id))
+	update SYS_BLOG_CHANNEL_INFO set BCD_SOURCE_URI = null where BCD_SOURCE_URI = id;
+    }
+  else if ({?'import'} is not null)
+   {
+     for select BCD_CHANNEL_URI, BCD_FORMAT, BCD_TAG from SYS_BLOG_CHANNEL_INFO
+         where BCD_CHANNEL_URI = id do
+	   {
+	     declare tag varchar;
+             tag := '';
+	     BLOG_FEED_URI (BCD_CHANNEL_URI, BCD_FORMAT, tag);
+	   }
+   }
+  else if ({?'post'} = 'Retrieve' and {?'url'} <> '')
+    {
+      hide_list := 1;
+      declare cont varchar;
+      declare xt, ct any;
+      declare hp, proto any;
+      declare low int;
+
+      low := 0;
+
+      hp := WS.WS.PARSE_URI ({?'url'});
+      proto := lower(hp[0]);
+
+      if (proto <> 'http')
+        cont := XML_URI_GET ({?'url'}, '');
+      else
+       {
+	 declare ur, ou, hdr varchar;
+         ur := {?'url'}; ou := ur;
+       try_again:
+         cont := http_get (ur, hdr);
+	 if (hdr[0] like 'HTTP/1._ 30_ %')
+           {
+             ur := http_request_header (hdr, 'Location');
+	     if (ur <> ou)
+	       {
+		 ou := ur;
+                 goto try_again;
+	       }
+	   }
+	 if (hdr[0] like 'HTTP/1._ 4__ %' or hdr[0] like 'HTTP/1._ 5__ %')
+           signal ('.....', hdr[0]);
+       }
+
+      {
+	declare exit handler for sqlstate '*' { goto htmlp; };
+	xt := xml_tree_doc (xml_tree (cont, 0));
+	goto donep;
+      }
+
+     htmlp:;
+
+     xt := xml_tree_doc (xml_tree (cont, 2));
+     low := 1;
+
+     donep:;
+
+      -- HTML feed
+      if (xpath_eval ('/html', xt, 1) is not null)
+	{
+          tit := cast (xpath_eval ('//title[1]/text()', xt, 1) as varchar);
+          rss := cast (xpath_eval ('//head/link[ @rel="alternate" and @type="application/rss+xml" ]/@href', xt, 1) as varchar);
+          home := {?'url'};
+          format := '';
+          lang := '';
+          upd_per := '';
+          upd_freq := 1;
+	}
+      -- RSS feed
+      else if (xpath_eval ('/rss|/RDF/channel', xt, 1) is not null)
+	{
+          xt := xml_cut (xpath_eval ('/rss/channel[1]|/RDF/channel[1]', xt, 1));
+          tit := cast (xpath_eval ('/channel/title/text()', xt, 1) as varchar);
+          home := cast (xpath_eval ('/channel/link/text()', xt, 1) as varchar);
+          email := cast (xpath_eval ('/channel/managingEditor/text()', xt, 1) as varchar);
+          rss := {?'url'};
+          format := 'http://my.netscape.com/rdf/simple/0.9/';
+          lang := cast (xpath_eval ('/channel/language/text()', xt, 1) as varchar);
+          upd_per := 'hourly';
+          upd_freq := 1;
+	}
+      -- ATOM feed
+      else if (xpath_eval ('/feed', xt, 1) is not null)
+	{
+          tit := cast (xpath_eval ('/feed/title/text()', xt, 1) as varchar);
+          home := cast (xpath_eval ('/feed/link[@rel="alternate"]/@href', xt, 1) as varchar);
+          email := cast (xpath_eval ('/feed/author/email/text()', xt, 1) as varchar);
+          rss := {?'url'};
+          format := 'http://purl.org/atom/ns#';
+          lang := cast (xpath_eval ('/feed/@lang', xt, 1) as varchar);
+          upd_per := 'hourly';
+          upd_freq := 1;
+	}
+      -- OCS directory
+      else if (xpath_eval ('[ xmlns:ocs="http://alchemy.openjava.org/ocs/directory#" xmlns:ocs1="http://InternetAlchemy.org/ocs/directory#" ] /RDF//ocs:format|/RDF//ocs1:format', xt, 1) is not null)
+        {
+          tit := '';
+	  declare cnls any;
+	  declare ns varchar;
+	  declare i, l int;
+          ns := '[ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ' ||
+		 ' xmlns:ocs="http://alchemy.openjava.org/ocs/directory#" ' ||
+		 ' xmlns:ocs1="http://InternetAlchemy.org/ocs/directory#" ' ||
+		 ' xmlns:dc="http://purl.org/metadata/dublin_core#" ] ';
+          cnls := xpath_eval (ns || '/rdf:RDF/rdf:description[1]/rdf:description', xt, 0);
+          src_tit := xpath_eval (ns || '/rdf:RDF/rdf:description[1]/dc:title/text()', xt, 1);
+          i := 0; l := length (cnls);
+          channels := vector ();
+          while (i < l)
+            {
+	      declare title, about varchar;
+	      declare formats any;
+              tit := xpath_eval (ns||'/rdf:description/dc:title/text()', xml_cut (cnls[i]), 1);
+              about := xpath_eval (ns||'/rdf:description/@about', xml_cut (cnls[i]), 1);
+              formats := xpath_eval (ns||'/rdf:description/rdf:description[ocs:format or ocs1:format]',
+			   xml_cut (cnls[i]), 0);
+              channels := vector_concat (channels, vector (tit, about, formats));
+	      i := i + 1;
+	    }
+	}
+      -- OPML file
+      else if (xpath_eval ('/opml', xt, 1) is not null)
+	{
+          tit := '';
+          src_tit := xpath_eval ('/opml/head/title/text()', xt, 1);
+          if (low)
+            links := xpath_eval ('/opml/body/outline[ @htmlurl and @xmlurl ]', xt, 0);
+          else
+            links := xpath_eval ('/opml/body/outline[ @htmlUrl and @xmlUrl ]', xt, 0);
+	}
+      else
+	{
+	  --dbg_obj_print (xt);
+	  signal ('.....', 'Unknown format');
+	}
+    }
+  else if ({?'post'} = 'Save')
+    {
+      declare channels, links any;
+      channels := get_keyword ('channels', params);
+      channels := deserialize (decode_base64 (channels));
+      links := get_keyword ('links', params);
+      links := deserialize (decode_base64 (links));
+      -- OCS file
+      if (isarray (channels))
+	{
+	  declare i, l int;
+          i := 0; l := length (channels);
+	  while (i < l)
+	    {
+	      declare j, k, is_blog int;
+	      declare xmluri, htmluri, title, format, upd_per, upd_freq, lang any;
+	      declare elm any;
+              title := channels[i];
+              htmluri := channels[i+1];
+              elm := channels[i+2];
+              j := 0; k := length (elm);
+
+              chan_cat := get_keyword (sprintf ('cb_%d_is_blog', i), params, '');
+
+              if (not exists (select 1 from SYS_BLOG_CHANNEL_CATEGORY where BCC_BLOG_ID = bid and BCC_NAME = chan_cat))
+		{
+		  f_is_blog := 0;
+		  if (strstr (lower (chan_cat), 'blog roll') is not null)
+		    f_is_blog := 1;
+		  insert into SYS_BLOG_CHANNEL_CATEGORY (BCC_BLOG_ID, BCC_NAME, BCC_IS_BLOG)
+			    values (bid, chan_cat, f_is_blog);
+		}
+
+	      for select BCC_ID, BCC_IS_BLOG from SYS_BLOG_CHANNEL_CATEGORY where BCC_BLOG_ID = bid and BCC_NAME = chan_cat do
+		{
+		  is_blog := BCC_IS_BLOG;
+		  f_cat_id := BCC_ID;
+		}
+
+
+              while (j < k)
+		{
+		  if (get_keyword (sprintf ('cb_%d_%d', i, j), params) is not null)
+		    {
+		      declare xt any;
+                      xt := xml_tree_doc (elm[j]);
+                      xmluri := xpath_eval ('/description/@about', xt, 1);
+                      format := xpath_eval ('/description/format/text()', xt, 1);
+                      lang := xpath_eval ('/description/language/text()', xt, 1);
+                      upd_per := xpath_eval ('/description/updatePeriod/text()', xt, 1);
+                      upd_freq := coalesce (xpath_eval ('/description/updateFrequency/text()', xt, 1), '1');
+                      upd_freq := atoi (cast (upd_freq as varchar));
+		      insert replacing SYS_BLOG_CHANNELS (BC_CHANNEL_URI, BC_BLOG_ID, BC_CAT_ID) values (xmluri, bid, f_cat_id);
+		      insert replacing SYS_BLOG_CHANNEL_INFO
+			  (BCD_TITLE, BCD_HOME_URI, BCD_CHANNEL_URI, BCD_FORMAT, BCD_UPDATE_PERIOD,
+			   BCD_LANG, BCD_UPDATE_FREQ, BCD_SOURCE_URI, BCD_IS_BLOG)
+			      values (title, htmluri, cast (xmluri as varchar), cast (format as varchar),
+				  cast(upd_per as varchar), cast (lang as varchar), upd_freq, src_uri, is_blog);
+		    }
+                  j := j + 1;
+		}
+
+              i := i + 3;
+	    }
+	-- source itself
+        insert replacing SYS_BLOG_CHANNELS (BC_CHANNEL_URI, BC_BLOG_ID, BC_CAT_ID) values (src_uri, bid, -3);
+	insert replacing SYS_BLOG_CHANNEL_INFO (BCD_TITLE, BCD_CHANNEL_URI, BCD_FORMAT, BCD_IS_BLOG) values (src_tit, src_uri, 'OCS', 0);
+  	}
+      -- OPML file
+      else if (isarray (links))
+	{
+	  declare i, l int;
+          i := 0; l := length (links);
+	  while (i < l)
+	    {
+	      declare j, k, is_blog int;
+	      declare xmluri, htmluri, title, format, upd_per, upd_freq, lang any;
+	      declare elm any;
+
+              chan_cat := get_keyword (sprintf ('cb_%d_is_blog', i), params, '');
+
+              if (not exists (select 1 from SYS_BLOG_CHANNEL_CATEGORY where BCC_BLOG_ID = bid and BCC_NAME = chan_cat))
+		{
+		  f_is_blog := 0;
+		  if (strstr (lower (chan_cat), 'blog roll') is not null)
+		    f_is_blog := 1;
+		  insert into SYS_BLOG_CHANNEL_CATEGORY (BCC_BLOG_ID, BCC_NAME, BCC_IS_BLOG)
+			    values (bid, chan_cat, f_is_blog);
+		}
+
+	      for select BCC_ID, BCC_IS_BLOG from SYS_BLOG_CHANNEL_CATEGORY where BCC_BLOG_ID = bid and BCC_NAME = chan_cat do
+		{
+		  is_blog := BCC_IS_BLOG;
+		  f_cat_id := BCC_ID;
+		}
+
+	      if (get_keyword (sprintf ('cb_%d', i), params) is not null)
+		{
+		  declare xt any;
+                  xt := xml_tree_doc (links[i]);
+                  xmluri := xpath_eval ('/outline/@xmlUrl|/outline/@xmlurl', xt, 1);
+                  htmluri := xpath_eval ('/outline/@htmlUrl|/outline/@htmlurl', xt, 1);
+                  lang := xpath_eval ('/outline/@language', xt, 1);
+                  title := xpath_eval ('/outline/@text|/outline/@title', xt, 1);
+                  format := 'http://my.netscape.com/rdf/simple/0.9/';
+                  upd_per := 'daily';
+                  upd_freq := 1;
+		  insert replacing SYS_BLOG_CHANNELS (BC_CHANNEL_URI, BC_BLOG_ID, BC_CAT_ID) values (xmluri, bid, f_cat_id);
+		  insert replacing SYS_BLOG_CHANNEL_INFO
+		      (BCD_TITLE, BCD_HOME_URI, BCD_CHANNEL_URI, BCD_FORMAT, BCD_UPDATE_PERIOD,
+		       BCD_LANG, BCD_UPDATE_FREQ, BCD_SOURCE_URI, BCD_IS_BLOG)
+		      values (title, htmluri, cast (xmluri as varchar), cast (format as varchar),
+			  cast(upd_per as varchar), cast (lang as varchar), upd_freq, src_uri, is_blog);
+
+		}
+              i := i + 1;
+	    }
+	-- source itself
+        insert replacing SYS_BLOG_CHANNELS (BC_CHANNEL_URI, BC_BLOG_ID, BC_CAT_ID) values (src_uri, bid, -3);
+	insert replacing SYS_BLOG_CHANNEL_INFO (BCD_TITLE, BCD_CHANNEL_URI, BCD_FORMAT, BCD_IS_BLOG) values (src_tit, src_uri, 'OPML', 0);
+	}
+      -- XML or HTML file
+      else
+	{
+	  declare home, dir_uri, xml_uri, xml_format varchar;
+          declare ask int;
+          ask := 0;
+	  home := {?'home'};
+	  if ({?'format'} in ('OCS', 'OPML'))
+            home := null;
+
+          dir_uri := {?'dir_uri'};
+          if (dir_uri = '')
+	    dir_uri := null;
+
+          xml_uri := coalesce ({?'rss'}, {?'rss_1'});
+          xml_format := coalesce ({?'format'}, {?'format_1'});
+
+          f_is_blog := (select BCC_IS_BLOG from SYS_BLOG_CHANNEL_CATEGORY where BCC_BLOG_ID = bid and BCC_NAME = chan_cat);
+          c_cat_id := (select BCC_ID from SYS_BLOG_CHANNEL_CATEGORY where BCC_BLOG_ID = bid and BCC_NAME = chan_cat);
+
+	  if (not exists (select 1 from SYS_BLOG_CHANNELS where BC_CHANNEL_URI = xml_uri and BC_BLOG_ID = bid))
+	    {
+	       if (f_is_blog)
+	          ask := 1;
+	    }
+
+	  insert replacing SYS_BLOG_CHANNELS (BC_CHANNEL_URI, BC_BLOG_ID, BC_CAT_ID)
+	      values (xml_uri, bid, c_cat_id);
+
+	  insert replacing SYS_BLOG_CHANNEL_INFO
+  		(BCD_TITLE, BCD_HOME_URI, BCD_CHANNEL_URI,
+		 BCD_FORMAT, BCD_UPDATE_PERIOD, BCD_LANG, BCD_UPDATE_FREQ, BCD_IS_BLOG, BCD_SOURCE_URI)
+	      values ({?'tit'}, home, xml_uri, xml_format,
+		      {?'upd_per'}, {?'lang'}, atoi({?'upd_freq'}),
+		      f_is_blog, dir_uri);
+	  if (ask)
+	    {
+	      http_rewrite ();
+              http_request_status ('HTTP/1.1 302 Found');
+	      http_header (
+	sprintf ('Location: admin_blog_cont.vsp?bid=%U&name=%U&nick=&mbox=%U&homepage=%U&weblog=%U&rss=%U&import\r\n',
+			bid,{?'tit'},{?'email'},home, home, xml_uri)
+		);
+	    }
+	}
+    }
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>BLOG Administration</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="BLOG Management for Virtuoso DB">
+  </head>
+<?vsp adm_page_header('BLOG Administration', ''); ?>
+
+    <H4><?=blog_name?></H4>
+    <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+      <TR><TD class="genhead" COLSPAN="3">BLOG Channel</TD></TR>
+      <TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+      <form method="POST" action="admin_blog_channel.vsp">
+      <input type="hidden" name="bid" value="<?=bid?>">
+      <input type="hidden" name="id" value="<?=id?>">
+      <input type="hidden" name="src_uri" value="<?=src_uri?>">
+      <input type="hidden" name="src_tit" value="<?=src_tit?>">
+      <input type="hidden" name="email" value="<?=email?>">
+      <input type="hidden" name="channels" value="<?= encode_base64 (serialize(channels))?>" />
+      <input type="hidden" name="links" value="<?= encode_base64 (serialize(links))?>" />
+      <input type="hidden" name="dir_uri" value="<?=dir_uri?>" />
+<?vsp if (tit is null) { ?>
+      <tr>
+        <td class="geninput">Channel URL</td>
+        <td class="geninput"><input type="text" name="url" size="70%" />
+	</td>
+      </tr>
+<?vsp } else if (channels is null and links is null) { ?>
+      <tr>
+        <td class="geninput">Title</td>
+        <td class="geninput"><input type="text" name="tit" size="70%" value="<?=tit?>" />
+	</td>
+      </tr>
+      <tr>
+        <td class="geninput">Home</td>
+        <td class="geninput"><input type="text" name="home" size="70%" value="<?=home?>" <?= case when format in ('OCS', 'OPML') then 'disabled' else '' end ?>/>
+	</td>
+      </tr>
+      <tr>
+        <td class="geninput">XML URI</td>
+        <td class="geninput">
+		<input type="text" name="rss" size="70%" value="<?=rss?>" <?= case when edit then 'disabled' else '' end ?> />
+		<input type="hidden" name="rss_1" value="<?=rss?>" />
+	</td>
+      </tr>
+      <tr>
+        <td class="geninput">Format</td>
+        <td class="geninput">
+		<input type="text" name="format" size="70%" value="<?=format?>" <?= case when edit then 'disabled' else '' end ?>/>
+		<input type="hidden" name="format_1" value="<?=format?>" />
+	</td>
+      </tr>
+      <tr>
+        <td class="geninput">Language</td>
+        <td class="geninput"><input type="text" name="lang" size="70%" value="<?=lang?>" />
+	</td>
+      </tr>
+      <tr>
+        <td class="geninput">Update Period</td>
+        <td class="geninput"><input type="text" name="upd_per" size="70%" value="<?=upd_per?>" />
+	</td>
+      </tr>
+      <tr>
+        <td class="geninput">Update Frequency</td>
+        <td class="geninput"><input type="text" name="upd_freq" size="70%" value="<?=upd_freq?>" />
+	</td>
+      </tr>
+      <?vsp if (format not in ('OCS', 'OPML')) { ?>
+      <tr>
+        <td class="geninput">Category</td>
+        <td class="geninput"><!--input type="text" name="chan_cat" size="70%" value="<?=chan_cat?>" /-->
+	    <select name="chan_cat" <?= case when format in ('OCS', 'OPML') then 'disabled' else '' end ?>>
+		<?vsp
+		for select BCC_NAME from SYS_BLOG_CHANNEL_CATEGORY where BCC_BLOG_ID = bid
+		union select 'Blog Roll' BCC_NAME from SYS_BLOG_INFO where BI_BLOG_ID = bid
+		union select 'Channel Roll' BCC_NAME from SYS_BLOG_INFO where BI_BLOG_ID = bid
+		order by 1 do {
+		?>
+		<option value="<?=BCC_NAME?>" <?=select_if (BCC_NAME,chan_cat)?>><?=BCC_NAME?></option>
+		<?vsp
+		}
+		?>
+	    </select>
+	    <input type="text" name="new_chan_cat" size="40%" value="" />
+	</td>
+      </tr>
+      <?vsp } ?>
+      <!--tr>
+        <td class="geninput">Is Blog</td>
+        <td class="geninput"><input type="checkbox" name="is_blog" <?= case when cis_blog then 'checked' else '' end ?>  <?= case when format in ('OCS', 'OPML') then 'disabled' else '' end ?> />
+	</td>
+      </tr-->
+<?vsp
+      }
+    else if (isarray (channels) )
+      {
+	    declare i, l int;
+	    declare j, k int;
+            i := 0; l := length (channels);
+	    while (i < l)
+	      {
+		declare elm any;
+		declare formats any;
+		declare title varchar;
+                title := channels[i];
+                elm := channels[i+2];
+?>
+      <tr>
+        <td class="gendata" colspan="1">
+	  <a href="<?=channels[i+1]?>"><?= title ?></a>
+	  </td><td><small><i>Category</i></small> <!--input type="checkbox" name="cb_<?=i?>_is_blog" /-->
+	    <select name="cb_<?=i?>_is_blog">
+		<?vsp
+		for select BCC_NAME from SYS_BLOG_CHANNEL_CATEGORY where BCC_BLOG_ID = bid
+		union select 'Blog Roll' BCC_NAME from SYS_BLOG_INFO where BI_BLOG_ID = bid
+		union select 'Channel Roll' BCC_NAME from SYS_BLOG_INFO where BI_BLOG_ID = bid
+		order by 1 do {
+		?>
+		<option value="<?=BCC_NAME?>" <?=select_if (BCC_NAME,'Channel Roll')?>><?=BCC_NAME?></option>
+		<?vsp
+		}
+		?>
+	    </select>
+	</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+	  <table>
+	<?vsp
+	   j := 0; k := length (elm);
+           while (j < k)
+	     {
+	       declare f, u, xu varchar;
+               f := xpath_eval ('/description/format/text()', xml_cut (elm[j]), 1);
+               xu := xpath_eval ('/description/@about', xml_cut (elm[j]), 1);
+               u := channels[i+1];
+	?>
+	    	<tr>
+			<td class="geninput"><input type="checkbox" name="cb_<?=i?>_<?=j?>" /></td>
+			<td class="gendata">format<?=j?>  <small>(<?=f?>)</small></td>
+		</tr>
+	<?vsp
+		j := j + 1;
+	     }
+	?>
+	  </table>
+	</td>
+      </tr>
+<?vsp
+	         i := i + 3;
+	      }
+	 }
+       else if (isarray (links))
+         {
+	   declare i, l int;
+	   declare u, xu, lang, title varchar;
+           i := 0; l := length (links);
+	   while (i < l) {
+           u := xpath_eval ('/outline/@htmlUrl|/outline/@htmlurl', xml_cut (links[i]), 1);
+           xu := xpath_eval ('/outline/@xmlUrl|/outline/@xmlurl', xml_cut (links[i]), 1);
+           lang := xpath_eval ('/outline/@language', xml_cut (links[i]), 1);
+           title := xpath_eval ('/outline/@text|/outline/@title', xml_cut (links[i]), 1);
+?>
+    	<tr>
+	  <td><input type="checkbox" name="cb_<?=i?>" /></td>
+	  <td class="gendata"><a href="<?=u?>"><?=title?></a></td>
+	  <td><small><i>Category</i></small> <!--input type="checkbox" name="cb_<?=i?>_is_blog" /-->
+	    <select name="cb_<?=i?>_is_blog">
+		<?vsp
+		for select BCC_NAME from SYS_BLOG_CHANNEL_CATEGORY where BCC_BLOG_ID = bid
+		union select 'Blog Roll' BCC_NAME from SYS_BLOG_INFO where BI_BLOG_ID = bid
+		union select 'Channel Roll' BCC_NAME from SYS_BLOG_INFO where BI_BLOG_ID = bid
+		order by 1 do {
+		?>
+		<option value="<?=BCC_NAME?>"><?=BCC_NAME?></option>
+		<?vsp
+		}
+		?>
+	    </select></td>
+	</tr>
+
+<?vsp
+	     i:=i+1;
+	   }
+	 }
+?>
+      <tr>
+        <td class="geninput" COLSPAN="2">
+<?vsp if (tit is null) { ?>
+	<input type="submit" name="post" value="Retrieve" />
+<?vsp } else { ?>
+	<input type="submit" name="post" value="Save" />
+<?vsp } ?>
+	<input type="submit" name="cncl" value="Back" />
+	</td>
+      </tr>
+      </form>
+    </TABLE>
+
+<?vsp adm_page_break(); if (not hide_list) { ?>
+
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="5">Channels</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+            <tr>
+		<th class="genlistheadt">Title</th>
+		<th class="genlistheadt">Type</th>
+		<th class="genlistheadt">RSS file</th>
+		<th class="genlistheadt">Cached</th>
+		<th class="genlistheadt">Action</th>
+             </tr>
+<?vsp
+    for select BCD_TITLE as BC_TITLE, BCD_HOME_URI as BC_HOME_URI, BC_CHANNEL_URI as BC_RSS_URI, BCD_IS_BLOG, BCD_FORMAT, BC_CAT_ID from SYS_BLOG_CHANNELS, SYS_BLOG_CHANNEL_INFO where BC_BLOG_ID = bid and BC_CHANNEL_URI = BCD_CHANNEL_URI order by BC_TITLE do
+      {
+	declare cnt int;
+	declare cat_name varchar;
+	select count(*) into cnt from SYS_BLOG_CHANNEL_FEEDS where CF_CHANNEL_URI = BC_RSS_URI;
+	cat_name := (select BCC_NAME from SYS_BLOG_CHANNEL_CATEGORY where BCC_BLOG_ID = bid and BCC_ID = BC_CAT_ID);
+?>
+       <TR>
+         <TD class="gendata"><a href="<?= BC_HOME_URI ?>"><?= BC_TITLE ?></a></TD>
+	 <TD class="gendata"><?= case when BCD_FORMAT in ('OCS', 'OPML') then BCD_FORMAT else cat_name end ?></TD>
+         <TD class="gendata"><a href="<?= BC_RSS_URI ?>"><?= substring (BC_RSS_URI,1,40) ?></a></TD>
+         <TD class="gendata"><?=cnt?></TD>
+         <TD class="gendata">
+	   <a href="admin_blog_channel.vsp?bid=<?=bid?>&id=<?/BC_RSS_URI?>&edit">Edit</a>
+	   <a href="admin_blog_channel.vsp?bid=<?=bid?>&id=<?/BC_RSS_URI?>&delete">Delete</a>
+	   <a href="admin_blog_channel.vsp?bid=<?=bid?>&id=<?/BC_RSS_URI?>&import">Fetch</a>
+	   <a href="admin_blog_channel_items.vsp?bid=<?=bid?>&id=<?/BC_RSS_URI?>">Posts</a>
+	 </TD>
+       </TR>
+<?vsp
+      }
+?>
+
+</TABLE>
+<?vsp } adm_page_footer(); ?>
+</html>
+

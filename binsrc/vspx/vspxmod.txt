@@ -1,0 +1,83 @@
+
+
+
+VSPX Dispatch 
+
+The vspx dispatch is invoked when the web server gets a post or get with a resource with the extension vspx.
+The vspx file is an XML file describing the page processing.  The up to date check is like for vsp, where there is a procedure made for the name of the resource and nothing is compiled if the procedure is newer than the corresponding file.  The procedure in this case will just call:
+
+vspx_dispatch (in resource_name varchar, inout path any, inout params any, inout lines any);
+
+Which will do the processing.
+
+
+H1 Compiling the VSPX
+
+The vspx file will be a well formed XML (XHTML) file which will check against
+the XML schema for the supported version of vspx controls and html.
+The processing will make a SQL user defined type for each such file.
+The type will encapsulate all the diverse methods, user defined as
+well as generated which pertain to the page in question.  Calling
+outside code is not restricted, at it as in vsp's.
+
+The class and method definitions and such will be in a file where .vspx is replaced with .sql as the extension.  The SQL file is generated, hence is not really editable.
+
+
+H1 VSPX Dispatch 
+
+The vspx dispatcher will do the following when receiving a GET
+
+- Make an instance of the page class.
+- There will be no viewstate in this case, so the vc_set_viewstate method is not by default called.  Instead controls are left to their default state.  
+subcontrols of a control that is not in the enabled state are not created. 
+
+- Call vc_data_bind on all, have the event be the get event 
+- Call vc_pre_render on all
+- Call vc_render on all, making the output.
+
+
+For a POST 
+- Make the instance 
+- Call vc_data_bind 
+- Call vc_post on the button that was the submit and for all fields which got a value.
+- Call vc_post for the form which contained the button.
+
+Call vc_pre_render on all
+Call vc_render on all
+
+Send the result to the client or apply extra xslt to it first.
+
+
+The prerender pass will call vc_get_view_state for all controls.  This
+sets the page vc_view_state member.  All vspx:form's will
+automatically make an invisible field (named <page_class_name>_view_state) which contains this value, so as
+to allow preserving a session state (a fileds named ).
+
+
+Interspersed HTML and Templates 
+
+When there is HTML and PI's interspersed between controls, the result is that these will be printed literally between invoking the render methods of the controls.   When there is HTML embedded inside a template type thing, then it is the template's on render event handler that gets made and wil have the stuff inside itself.  The normal vsp pi's go into the render phase. 
+For any repeating thing there will be a template or more that will get copied for repetitions.
+
+Note that the stuff that is to be printed by the template of the
+repeater is in a different function.Now the way it works is that the
+render gets generated similarly to a vsp page, with ?> introducing the
+html literal and <?vsp introducing the code.  All vspx controls will
+get replaced with <?vsp self.vc_render (control); ?>
+
+
+Event Model
+
+There is an open-ended set of events which may variously be raised and handled by controls. 
+The vspx_control class specifies the member vc_event_handlers which is an array of event handler arrays.
+Each handler array is an array of any whose first element is the name of the condition and the rest are names of methods that are handlers.
+The handlers are names of methods which should be implemented by the enclosing page class.  These will have the signature:
+
+create method handle_xxx (inout handling_control vspx_control,  inout originating_control vspx_control, e vspx_event) returns int for vspx_page_xxx;
+ 
+The handlers are called in sequence.  If at least one returns a non-zero value the condition is considered handled and is not propagated further.  If they all return 0 then the processing continues with the parent of the control defining the handlers until we are at the top level.
+
+
+
+
+

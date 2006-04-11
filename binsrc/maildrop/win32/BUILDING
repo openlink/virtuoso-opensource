@@ -1,0 +1,26 @@
+This directory contains the source code for the maildrop.dll
+
+Rebuilding it is a bit tricky.
+In order to do that, you will need to have a recent Platform SDK online.
+
+This is my environment setup script:
+
+  @echo off
+
+  set VC=F:\WINAPPS\VC98
+  set SDK=E:\SDK
+
+  set INCLUDE=%SDK%\INCLUDE;%VC%\INCLUDE;%VC%\MFC\INCLUDE;%VC%\ATL\INCLUDE
+  set LIB=%SDK%\LIB;%VC%\LIB;%VC%\MFC\LIB;%VC%\ATL\LIB
+  set Path=%systemroot%\system32;%systemroot%;%VC%\BIN
+
+  set SDK=
+  set VC=
+
+First make sure your INCLUDE contains the SDK include directory before
+the standard VC include directories.
+
+Run the generate.bat from this directory. This will popule the ./gen
+directory.
+
+Then, enable the maildrop target in your project.prj, and run mkmk and nmake.

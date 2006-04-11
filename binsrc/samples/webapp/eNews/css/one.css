@@ -1,0 +1,20 @@
+.headline
+{
+     font-family: verdana, helvetica, sans-serif;
+     font-size: 11px;
+}
+
+.harvest
+{
+     font-family: verdana, helvetica, sans-serif;
+     font-size: 10px;
+}
+
+td.heading
+{
+     font-family: verdana, helvetica, sans-serif;
+     font-size: 13px;
+     color: #FFFFFF;
+     background-color: #808080;
+     text-align: center;
+}

@@ -1,0 +1,164 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_data_grid">
+<refmeta>
+  <refentrytitle>vspx_data_grid</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_data_grid</refname>
+  <refpurpose>scrollable multi-row control, databound</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_data_grid">
+    <funcprototype id="proto_vspx_data_grid">
+      <funcdef>
+        <function>data-grid</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>data</attribute>
+        <attribute>meta</attribute>
+      </attributes>
+      <childs />
+      <class>
+        <screen><![CDATA[
+				
+			    -- Scrollable, Multi-Row data grid Class
+			    create type vspx_data_grid under vspx_form
+			    as (
+				dg_nrows int,			    -- how many rows to show on single page
+				dg_scrollable int,		    -- scroll on form is enabled
+				dg_editable int default 1,          -- disable edit/add on whole grid
+				dg_row_meta any,		    -- metadata
+				dg_current_row vspx_row_template,   -- current row template
+				dg_rowno_edit int default null,	    -- last edited row in result set, 
+								    --	to re-display the edit box on error
+				dg_rows_fetched int default 0,	    -- these are to keep state for scrolling
+				dg_prev_bookmark any default null,
+				dg_last_bookmark any default null
+			       ) temporary self as ref
+			      method vc_templates_clean () returns any,
+			      constructor method vspx_data_grid (name varchar, parent vspx_control),
+			      overriding method vc_view_state (stream any) returns any
+			    ;
+				
+			    ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_data_grid">
+  <title>Description</title>
+  <para>
+    <function>vspx_data_grid</function>
+This is the generic multi-row database view control.
+			</para>
+</refsect1>
+<refsect1 id="attrs_vspx_data_grid">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>data</title>
+    <para>Expression which returns an array of rowset data, this is an alternative to have SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>meta</title>
+    <para>This works with combination of data attribute, this expression must return an array of ro metadata. This will be assigned to dg_row_meta of vspx_data_grid UDT class.</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_data_grid">
+  <title>Children</title>
+</refsect1>
+<refsect1 id="examples_vspx_data_grid">
+  <title>Examples</title>
+  <example id="ex_vspx_data_grid">
+    <title>Simple example</title>
+    <para>A simple table of select statement, displays customers beggining with &#39;L&#39;.
+			    </para>
+    <screen><![CDATA[
+				
+<v:data-grid name="dg" 
+             nrows="5" 
+	     sql="select CustomerID, CompanyName from Demo.demo.Customers where CompanyName like :mask" 
+	     scrollable="1" cursor-type="dynamic" edit="0">
+<v:param name="mask" value="--'L%'" />
+
+<v:template name="dg_frame" type="frame">
+<p>
+<font style="color:red"><v:error-summary /></font>
+</p>
+<table>
+  <tr>
+    <th>
+      Customer ID
+    </th>
+    <th>
+      Company Name
+    </th>
+  </tr>
+  <v:rowset />
+  <tr>
+    <td><v:button name="dg_prev" action="simple" value="&lt;&lt;" /></td>
+    <td><v:button name="dg_next" action="simple" value="&gt;&gt;" /></td>
+  </tr>
+</table>
+</v:template> 
+
+<v:template name="dg_rows" type="row">
+<tr>
+  <td nowrap="nowrap">
+      <v:label name="label1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+  </td>
+  <td nowrap="nowrap">
+    <v:label name="label2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
+  </td>
+</tr>
+</v:template> 
+
+<v:template name="dg_empty" type="if-not-exists">
+<tr>
+  <td colspan="2">No rows selected</td>
+</tr>
+</v:template> 
+</v:data-grid>
+				
+			    ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

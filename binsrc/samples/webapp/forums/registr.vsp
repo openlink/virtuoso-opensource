@@ -1,0 +1,77 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare url,name,fname,k,email,subm,e,nick,_ac,m_aut_id,pswd,verf,sid varchar;
+  declare id, tid, fid integer;
+     
+  
+  sid   := get_keyword('sid',params,'0');
+  url   := get_keyword('url',params,'');
+  id    := get_keyword('id',params,'');
+  fid   := get_keyword('fid',params,'');
+  tid   := get_keyword('tid',params,'');
+  subm  := get_keyword('submit',params,'');
+  nick  := get_keyword('nick',params,'');
+  name  := get_keyword('name',params,'');
+  fname := get_keyword('fname',params,'');
+  email := get_keyword('mail',params,'');
+  pswd  := get_keyword('pswd',params,'');
+  verf  := get_keyword('verf',params,'');
+  k     := get_keyword('k', params, '');
+   
+   
+  if (nick <> '' and pswd <> '' and subm <> '')
+    {
+      if (pswd <> verf)
+        k := '2';
+      else
+	{
+	  if (email = '')
+	    k := '3';	
+	  else
+	    { 	 
+              _ac := INSERT_USERS( nick,email,name,fname,pswd );
+              if ( _ac = 'Yes' )
+		{
+                  sid := SESS_CREATE(nick, pswd, http_client_ip ());
+                  MISC_REDIRECT(sprintf('%s?sid=%s&url=%s&id=%s&tid=%s&fid=%s','confirm.vsp',
+		     sid, url, id, tid, fid));
+                  return;
+                } 
+	      else
+		{
+		  MISC_REDIRECT(sprintf('%s?url=%s&id=%s&tid=%s&fid=%s','error.vsp',url,id,tid,fid));
+		  return;
+		};   
+	    }; 
+	};
+    };
+  http_xslt (sprintf ('file:%s/registr.xsl', registry_get ('app_forums_xslt_location')));  
+?>
+
+<?xml version="1.0"?>
+<page>
+<fform sid="<?=sid?>" url="<?=url?>" id="<?=id?>" tid="<?=tid?>" fid="<?=fid?>" k="<?=k?>">
+</fform>             
+</page>
+   

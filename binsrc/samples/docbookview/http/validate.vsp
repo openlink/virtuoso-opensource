@@ -1,0 +1,42 @@
+<?vsp
+declare _fullname varchar;
+declare _path varchar;
+declare _grp varchar;
+declare _prefx varchar;
+declare _base varchar;
+declare _text varchar;
+declare _res varchar;
+_fullname := {?'name'};
+DBV.DBV.LOAD_TEXT (_fullname);
+select PATH,GRP into _path, _grp from DBV.DBV.SOURCE where FULLNAME=_fullname;
+select cast (ORIG_TEXT as varchar) into _text from DBV.DBV.SOURCE where FULLNAME=_fullname;
+
+_prefx := '';
+if (_grp = 'Chapters')
+  _prefx := '<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.0//EN" "../DocBook/docbookx.dtd">';
+if (_grp = 'Functions')
+  _prefx := '<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.0//EN" "../DocBook/docbookx.dtd">';
+if (_grp = 'XPFs')
+  _prefx := '<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.0//EN" "../DocBook/docbookx.dtd">';
+
+_base := DBV.DBV.GETCFG ('DBV/Validation/BaseUri');
+
+  if (_path <> '')
+    _base := concat (_base, '/', _path);
+  else
+    _base := concat (_base, _path);
+  _base := cast (_base as varchar);
+
+  _res := xml_validate_dtd ( concat (_prefx, _text),  0, _base, 'UTF-8', 'x-any', 'Validation=SGML FsaBadWs=IGNORE BuildStandalone=ENABLE MaxErrors=10000 MaxWarnings=10000');
+  if (_res = '')
+    _res := concat ('NO ERRORS DETECTED');
+
+?>
+<?vsp DBV.DBV.VSP_HEADER (path,params,lines, concat(_fullname, ' | SGML validation')); ?>
+<H3>SGML validation log of file <?= _fullname ?> from group <?= _grp ?></H3>
+</P>
+<PRE>
+<?= _res ?>
+</PRE>
+<?vsp DBV.DBV.VSP_FOOTER (path,params,lines); ?>
+

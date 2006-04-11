@@ -1,0 +1,438 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines);
+--no_c_escapes-
+declare col, pcol, _u_id, _ix, have_prop, _res_id integer;
+declare name, uname, usr, gname, perms, _mod, _def, _ses_id, _grp, _user_name, _seen_before, is_auto_gen varchar;
+set isolation='uncommitted';
+have_prop := 0;
+--dbg_obj_print (lines);
+--dbg_obj_print ('admin_dav_documents.vsp: ', params);
+_def := get_keyword ('def', params, '');
+_ses_id := adm_get_sesid (params);
+_u_id := DB.DBA.adm_dav_check_auth (lines, 1);
+_seen_before := adm_get_ses_var (_ses_id, 'seen_before', 0);
+if (_u_id > 0 and _seen_before and '' <> get_keyword ('new_login', params, ''))
+ {
+   _u_id := 0;
+   adm_set_ses_var (_ses_id, 'seen_before', 0);
+ }
+if (_u_id < 1)
+  {
+    DB.DBA.vsp_auth_get ('virtuoso_dav_admin', '/admin/admin_dav',
+                md5 (datestring (now ())),
+                md5 ('FloppyBootStompedOntoTheGround'),
+                'false', lines, 1);
+
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+          '<HTML><HEAD>',
+          '<TITLE>401 Unauthorized</TITLE>',
+          '</HEAD><BODY><H1>Unauthorized</H1>',
+          '<p>You do not have the necessary access rights to access this WebDAV service.<br>
+          Please click <a href="admin_dav_documents.vsp">here</a> to login as a different user.<p></BODY></HTML>'));
+    return (0);
+  }
+
+if (get_keyword('save', params, '') = 'Save')
+{
+   declare _rcontent varchar;
+   _rcontent := get_keyword('davcontent', params, '');
+   _res_id := atoi(get_keyword('resid', params, '-1'));
+   if (_res_id <> -1)
+   {
+     update WS.WS.SYS_DAV_RES
+        set RES_CONTENT = _rcontent, RES_MOD_TIME = now()
+        where RES_ID = _res_id;
+   }
+}
+
+adm_set_ses_var (_ses_id, 'seen_before', _u_id);
+_grp := coalesce ((select top 1 U_GROUP from WS.WS.SYS_DAV_USER where U_ID = _u_id), 0);
+_user_name := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _u_id), 'anonymous');
+
+col := atoi (get_keyword('col',params,'0'));
+if (col < 1)
+  col := atoi (get_keyword('coll', params, '0'));
+
+if (col < 1)
+  col := atoi (adm_get_ses_var (_ses_id, 'dav_mgmt_col', '1'));
+
+if (not exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = col))
+  col := 1;
+
+name := null;
+whenever not found goto def_coll;
+select COL_PARENT, WS.WS.COL_PATH (COL_ID) into pcol, name from WS.WS.SYS_DAV_COL
+       where COL_ID = col and (COL_OWNER = _u_id or COL_OWNER = 0 or _u_id = http_dav_uid () or (COL_GROUP = _grp and COL_PERMS like '___1%') or (COL_GROUP = 0 and COL_PERMS like '______1%'));
+def_coll:
+if (pcol = 0 or pcol is null)
+  pcol := 1;
+
+
+adm_set_ses_var (_ses_id, 'dav_mgmt_col', cast (col as varchar));
+
+  if ('' <> get_keyword ('definition', params, ''))
+    {
+      declare def_body, res_path, _res_type, xml_view_data, xml_view_name varchar;
+      res_path := get_keyword ('definition', params, '');
+      select RES_TYPE into _res_type from WS.WS.SYS_DAV_RES where RES_FULL_PATH = res_path;
+      if (_res_type = 'xml/view')
+        {
+          def_body := '';
+          whenever not found goto nfxmlv;
+          xml_view_data :=
+                     coalesce ((select RES_CONTENT from  WS.WS.SYS_DAV_RES where RES_FULL_PATH = res_path), '');
+          if (strstr (xml_view_data, '{view_name}') is not null)
+            xml_view_name := substring (xml_view_data, 1, strstr (xml_view_data, '{view_name}'));
+          else
+            xml_view_name := xml_view_data;
+          select coalesce (V_TEXT, blob_to_string (V_EXT)) into def_body
+              from DB.DBA.SYS_VIEWS
+              where V_NAME = xml_view_name;
+          nfxmlv:;
+        }
+      else if (_res_type = 'xml/persistent-view')
+        {
+          def_body := coalesce ((select V_TEXT
+              from DB.DBA.SYS_VIEWS
+              where strstr (V_TEXT, subseq (res_path, 4, length (res_path))) is not null), '*** cannot find definition ***');
+        }
+      if (res_path like '%.vsp')
+        {
+          def_body := coalesce ((select blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_FULL_PATH = res_path), '*** cannot find definition ***');
+        }
+disp:
+      http_rewrite (0);
+      http_header ('Content-Type: text/html\r\n');
+      http ('<html>\n<head>
+          <link rel="stylesheet" type="text/css" href="/admin/admin_style.css">
+          <meta name="AUTHOR" content="OpenLink Software">
+          <meta name="DESCRIPTION" content="WebDAV explorer">
+          </head>');
+      http (sprintf ('<body CLASS="adm_pages_body">\n<H3>Definition of "%s"</H3>\n<hr color=black>\n<pre>', res_path));
+      http_value (def_body);
+      http (sprintf ('</pre>\n<hr>\n<p><a href="admin_dav_documents.vsp?sid=%s">Click here</a> to return back</p>\n
+<?vsp adm_page_footer(); ?>
+\n</html>', _ses_id));
+      return (0);
+    }
+
+  -- use URL encoded links
+  -- then try most shortest path to the resource if there is mapping
+  declare vh, lh, short_path_to_dav varchar;
+  vh := http_map_get('vhost');
+  lh := http_map_get('lhost');
+  short_path_to_dav := coalesce ((select min(HP_PPATH) from DB.DBA.HTTP_PATH
+   where HP_STORE_AS_DAV = 1 and HP_HOST = vh and HP_LISTEN_HOST = lh and strstr (name, HP_PPATH) = 0), NULL);
+  uname := null;
+  if (short_path_to_dav is not null and strstr (name, short_path_to_dav) is not null)
+    {
+      declare chunk, log_path varchar;
+      select HP_LPATH into log_path from DB.DBA.HTTP_PATH
+	  where HP_STORE_AS_DAV = 1 and HP_HOST = vh and HP_LISTEN_HOST = lh and HP_PPATH = short_path_to_dav;
+      if (log_path[length(log_path) - 1] <> ascii ('/'))
+	log_path := concat (log_path,'/');
+      chunk := replace (name, short_path_to_dav, log_path, 1);
+      uname := WS.WS.STR_TO_URI (chunk);
+    }
+?>
+
+
+
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="WebDAV explorer">
+    <meta HTTP-EQUIV="Pragma" CONTENT="no-cache">
+<title>Content of <?=name?></title>
+</head>
+
+<SCRIPT LANGUAGE="JavaScript">
+
+<!--
+
+function returnres( inres )
+{
+          window.open("admin_dav_edit.vsp", 'window', 'scrollbars=yes, menubar=no, height=100, width=100');
+          window.close();
+}
+
+function show_defs ()
+{
+  if (document.def_form.def.value == 'checked')
+    document.def_form.def.value = '';
+  else
+    document.def_form.def.value = 'checked';
+  document.def_form.submit ();
+}
+
+// -->
+
+</SCRIPT>
+
+<?vsp adm_page_header(concat('Content of ',name, ' <small>logged in as "',_user_name, '"</small>'), 'davbrowse'); ?>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<form method=post action="admin_dav_new.vsp">
+   <td colspan=6></td>
+   <td colspan=4 align=right>
+      <input type=hidden name=sid value="<?=_ses_id?>">
+      <input type=hidden name=coll value="<?=col?>">
+      <input type=submit name=new_folder value="Create Folder">
+      <input type=submit name=new_content value="Upload File">
+      <input type=submit name=new_link value="Create Link">
+   </td>
+</form>
+<form action="admin_dav_cols.vsp" method=post>
+<input type=hidden name=sid value="<?=_ses_id?>">
+<TR><TD CLASS="AdmBorders" COLSPAN="10"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<tr>
+        <th CLASS="genlistheadt"></th>
+        <th CLASS="genlistheadt"></th>
+        <th CLASS="genlistheadt">Name</th>
+        <th CLASS="genlistheadt">Permissions</th>
+        <th CLASS="genlistheadt">User</th>
+        <th CLASS="genlistheadt">Group</th>
+        <th CLASS="genlistheadt">Size</th>
+        <th CLASS="genlistheadt">Type</th>
+        <th CLASS="genlistheadt">Last Modified</th>
+        <th CLASS="genlistheadt">Actions</th>
+</tr>
+<tr>
+        <td CLASS="geninput"><input type=checkbox name="CBC_<?=name?>"></td>
+        <td class="davicon"><img src="/images/dir.gif"></td>
+        <?vsp if (col = 1) { ?>
+        <td CLASS="gendata" colspan=8><a href="admin_dav_documents.vsp?col=<?=col?>&sid=<?=_ses_id?>">&lt;root&gt;</a></td>
+        <?vsp } else { ?>
+        <td CLASS="gendata" colspan=8><a href="admin_dav_documents.vsp?col=<?=col?>&sid=<?=_ses_id?>">.</a></td>
+        <?vsp } ?>
+</tr>
+        <?vsp if (col > 1) { ?>
+        <tr>
+          <td>
+          </td>
+          <td><img src="/images/dir.gif"></td>
+          <td CLASS="gendata" colspan=8><a href="admin_dav_documents.vsp?col=<?=pcol?>&sid=<?=_ses_id?>">..</a></td>
+        </tr>
+        <?vsp } ?>
+<?vsp for select COL_ID, COL_NAME, COL_PERMS as perm, COL_OWNER as own, COL_GROUP as grp,
+                 COL_MOD_TIME as mod
+
+      from WS.WS.SYS_DAV_COL where COL_PARENT = col and (COL_OWNER = _u_id or COL_OWNER = 0 or _u_id = http_dav_uid () or (COL_GROUP = _grp and COL_PERMS like '___1%') or (COL_GROUP = 0 and COL_PERMS like '______1%')) do {
+    if (exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_PARENT_ID = COL_ID))
+      have_prop := 1;
+    else
+      have_prop := 0;
+usr := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = own), 'none');
+gname := coalesce ((select top 1 G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = grp), 'none');
+_ix := 0;
+perms := '';
+   while (_ix < 9)
+     {
+       if (aref (perm, _ix) = ascii ('1'))
+         {
+           if (_ix = 0 or _ix = 3 or _ix = 6)
+             perms := concat (perms, 'R');
+           else if (_ix = 1 or _ix = 4 or _ix = 7)
+             perms := concat (perms, 'W');
+           else
+             perms := concat (perms, 'X');
+         }
+       else
+         perms := concat (perms, '-');
+       _ix := _ix + 1;
+     }
+perms := concat (perms, substring (perm, 10, 1));
+perms := lower (perms);
+_mod := substring (cast (mod as varchar) , 1, 19);
+?>
+<tr>
+        <td CLASS="geninput"><input type=checkbox name="CBC_<?=name?><?=COL_NAME?>/"></td>
+        <td class="davicon">
+        <?vsp if (have_prop) { ?>
+        <a href="dav_prop_edit.vsp?sid=<?=_ses_id?>&id=<?=COL_ID?>&tp=C"><img src="/images/dir_prop.gif"></a>
+        <?vsp } else { ?>
+        <img src="/images/dir.gif">
+        <?vsp } ?>
+        </td>
+        <td CLASS="gendata"><a href="admin_dav_documents.vsp?col=<?=COL_ID?>&sid=<?=_ses_id?>"><?=COL_NAME?></a></td>
+        <td CLASS="gendata"><?=perms?></td>
+        <td CLASS="gendata"><?=usr?></td>
+        <td CLASS="gendata"><?=gname?></td>
+        <td CLASS="gendata">&nbsp;</td>
+        <td CLASS="gendata">collection</td>
+        <td CLASS="gendata"><?=_mod?></td>
+        <td CLASS="gendata">&nbsp;</td>
+</tr>
+
+<?vsp } ?>
+<?vsp
+  declare redirect_ref_id, _in_loop integer;
+  declare _mime_type varchar;
+  for select RES_ID, RES_NAME, RES_PERMS as perm, RES_OWNER as own, RES_GROUP as grp,
+                 RES_TYPE as type, length (RES_CONTENT) as len, RES_MOD_TIME as mod
+      from WS.WS.SYS_DAV_RES where RES_COL = col
+      and (RES_OWNER = _u_id or RES_OWNER = 0 or _u_id = http_dav_uid () or (RES_GROUP = _grp and RES_PERMS like '___1%')
+          or ((RES_GROUP = 0 or RES_GROUP is null) and RES_PERMS like '______1%'))
+    do {
+_res_id := RES_ID;
+_mime_type := type;
+usr := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = own), 'none');
+gname := coalesce ((select top 1 G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = grp), 'none');
+if ( exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R' and PROP_PARENT_ID = RES_ID))
+  have_prop := 1;
+else
+  have_prop := 0;
+
+_in_loop := 0;
+
+redirect_ref_id := _res_id;
+  {
+    declare this_id, redirect_ref_id1 integer;
+    declare visited any;
+    visited := vector ();
+    redirect_ref_id1 := redirect_ref_id;
+    while (redirect_ref_id1 is not null)
+      {
+        declare dummy any;
+        this_id := redirect_ref_id;
+        visited := vector_concat (visited, vector (redirect_ref_id1));
+        redirect_ref_id1 := null;
+	whenever not found goto no_redirect;
+	select a.RES_ID, blob_to_string(PROP_VALUE) into redirect_ref_id1, dummy
+	from WS.WS.SYS_DAV_PROP, WS.WS.SYS_DAV_RES a where
+	     PROP_TYPE = 'R' and PROP_PARENT_ID = this_id and PROP_NAME = 'redirectref'
+	     and blob_to_string(PROP_VALUE) = a.RES_FULL_PATH;
+        redirect_ref_id := redirect_ref_id1;
+	no_redirect:;
+        if (position (redirect_ref_id1, visited))
+	  {
+            _in_loop := 1;
+	    goto end_loop1;
+	  }
+      }
+end_loop1:;
+  }
+declare _mime_type1 varchar;
+
+_mime_type1 := coalesce ((select blob_to_string(PROP_VALUE) from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = _res_id and PROP_TYPE = 'R' and PROP_NAME = 'redirectref'), NULL);
+
+if (_mime_type1 is not null)
+  _mime_type := concat ('link:', _mime_type1);
+
+is_auto_gen := 0;
+if (len = 0 and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R' and PROP_PARENT_ID = redirect_ref_id and PROP_NAME = 'xml-sql'))
+  is_auto_gen := 1;
+
+_ix := 0;
+perms := '';
+   while (_ix < 9)
+     {
+       if (aref (perm, _ix) = ascii ('1'))
+         {
+           if (_ix = 0 or _ix = 3 or _ix = 6)
+             perms := concat (perms, 'R');
+           else if (_ix = 1 or _ix = 4 or _ix = 7)
+             perms := concat (perms, 'W');
+           else
+             perms := concat (perms, 'X');
+         }
+       else
+         perms := concat (perms, '-');
+       _ix := _ix + 1;
+     }
+perms := concat (perms, substring (perm, 10, 1));
+perms := lower (perms);
+_mod := substring (cast (mod as varchar) , 1, 19);
+?>
+<tr>
+        <td CLASS="geninput"><input type=checkbox name="CBR_<?=name?><?=RES_NAME?>"></td>
+        <td class="davicon">
+        <?vsp if (have_prop) { ?>
+        <a href="dav_prop_edit.vsp?sid=<?=_ses_id?>&id=<?=RES_ID?>&tp=R"><img src="/images/prop.gif"></a>
+        <?vsp } else if (type = 'text/xml') { ?>
+        <a href="dav_prop_edit.vsp?sid=<?=_ses_id?>&id=<?=RES_ID?>&tp=R"><img src="/images/generic.gif"></a>
+        <?vsp } else { ?>
+        <img src="/images/generic.gif">
+        <?vsp } ?>
+        </td>
+<?vsp if ((_def = '') or (type not like 'xml/%' and RES_NAME not like '%.vsp')) { ?>
+        <td CLASS="gendata">
+	    <?vsp if (uname is not null) { ?>
+	     <a href="<?=uname?><?=WS.WS.STR_TO_URI(RES_NAME)?>"><?=RES_NAME?></a>
+	    <?vsp } else { ?>
+             <?=RES_NAME?>
+	    <?vsp } ?>
+	</td>
+<?vsp } else { ?>
+        <td CLASS="gendata"><a href="admin_dav_documents.vsp?definition=<?=name?><?=RES_NAME?>&sid=<?=_ses_id?>"><?=RES_NAME?></a></td>
+<?vsp } ?>
+        <td CLASS="gendata"><?=perms?></td>
+        <td CLASS="gendata"><?=usr?></td>
+        <td CLASS="gendata"><?=gname?></td>
+        <td CLASS="gendata" align=right><?=len?></td>
+        <td CLASS="gendata"><?=_mime_type?></td>
+        <td CLASS="gendata"><?=_mod?></td>
+<?vsp declare _lres varchar;
+      _lres := lower(RES_NAME);
+      if (not is_auto_gen and not _in_loop and (_lres like '%.vsp' or _lres like '%.xsl' or _lres like '%.js' or _lres like '%.txt'
+          or _lres like '%.html' or _lres like '%.htm' or _lres like '%.sql' or getxmltype(_res_id) = -1
+	  or type like 'text/%')) { ?>
+      <td CLASS="gendata"><a CLASS="tablelistaction" href="admin_dav_editor.vsp?col=<?=col?>&sid=<?=_ses_id?>&resid=<?=redirect_ref_id?>">Edit</a></td>
+<?vsp } else { ?>
+      <td CLASS="gendata">&nbsp;</td>
+<?vsp } ?>
+</tr>
+<?vsp } ?>
+<tr>
+<td colspan=3 align=left>
+<b>Show definition</b><input type=checkbox name=CB_def"  onclick="show_defs()" <?=_def?>>
+</td>
+<td colspan="6" align="right">
+        <input type=hidden name=coll value="<?=col?>">
+        <input type=hidden name=cpath value="<?=name?>">
+        <input type=submit name=drop value="Drop">
+        <input type=submit name=chmod value="Properties">
+</td>
+</form>
+<form method=post action="admin_dav_documents.vsp" name=n_login_form>
+<td align="right">
+        <input type=hidden name=nlogin value="<?=_u_id?>">
+        <input type=hidden name=sid value="<?=_ses_id?>">
+        <input type=submit name=new_login value="Login">
+</td>
+</form>
+</tr>
+<tr>
+</td>
+</tr>
+</table>
+
+<form method=post action="admin_dav_documents.vsp" name=def_form>
+        <input type=hidden name=def value="<?=_def?>">
+        <input type=hidden name=sid value="<?=_ses_id?>">
+        <input type=hidden name=col value="<?=col?>">
+</form>
+<?vsp adm_page_footer(); ?>
+</html>

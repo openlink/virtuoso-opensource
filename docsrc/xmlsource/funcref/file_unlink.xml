@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_file_unlink">
+  <refmeta>
+    <refentrytitle>file_unlink</refentrytitle>
+    <refmiscinfo>file</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>file_unlink</refname>
+    <refpurpose>Delete a file from the file system</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_file_unlink">
+      <funcprototype id="fproto_file_unlink">
+        <funcdef><function>file_unlink</function></funcdef>
+	<paramdef>in <parameter>path</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+</refsynopsisdiv>
+
+  <refsect1 id="desc_file_unlink"><title>Description</title>
+    <para>This function requires dba privileges.</para>
+      <para>
+    This function deletes a file from the file system.  sys_unlink is a synonum of this function. 
+
+      </para>
+  </refsect1>
+
+  <refsect1 id="params_file_unlink"><title>Parameters</title>
+    <refsect2><title>path</title>
+	<para>Path name of the file to delete.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_file_unlink"><title>Return Types</title>
+      <para>
+	On success returns zero. Otherwise signalls an error.
+  </para>
+</refsect1>
+
+  <refsect1 id="errors_set_row_count"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>FA003</errorcode></entry>
+	    <entry><errorname>Access to %s is denied due to access control in ini file</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>FA004</errorcode></entry>
+	    <entry><errorname>Access to %s is denied due to access control in ini file</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>SR426</errorcode></entry>
+	    <entry><errorname>Permission is denied for the file '%s' in sys_unlink()</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>SR427</errorcode></entry>
+	    <entry><errorname>Path name '%s' too long in sys_unlink()</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>SR428</errorcode></entry>
+	    <entry><errorname>A directory component in '%s' does not exist or is a dangling symbolic link in sys_unlink()</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>SR429</errorcode></entry>
+	    <entry><errorname>A component used as a directory in '%s' is not, in fact, a directory in sys_unlink()</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>SR430</errorcode></entry>
+	    <entry><errorname>'%s' refers to a directory in sys_unlink()</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>SR431</errorcode></entry>
+	    <entry><errorname>Insufficient kernel memory was available in sys_unlink()</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>SR432</errorcode></entry>
+	    <entry><errorname>'%s' refers to a file on a read-only filesystem in sys_unlink()</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>SR433</errorcode></entry>
+	    <entry><errorname>Too many symbolic links were encountered in translating '%s' in sys_unlink()</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>SR434</errorcode></entry>
+	    <entry><errorname>An I/O error occurred in sys_unlink()</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+
+<!--
+  <refsect1 id="examples_file_unlink"><title>Examples</title>
+    <example id="ex_file_unlink"><title></title>
+      <para></para>
+      <screen></screen>
+    </example>
+  </refsect1>
+-->
+  <refsect1 id="seealso_file_unlink"><title>See Also</title>
+    <para>
+      <link linkend="fn_file_delete">file_delete</link>
+      <link linkend="fn_file_mkdir">file_mkdir</link>
+      <link linkend="fn_file_mkpath">file_mkpath</link>
+      <link linkend="fn_file_stat">file_stat</link>
+    </para>
+  </refsect1>
+</refentry>

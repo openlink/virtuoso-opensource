@@ -1,0 +1,102 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _catid integer;
+  declare _r_id varchar;
+  declare _is_first integer;
+  _catid := {?'catid'};
+  if (_catid is null)
+    {
+      if ({?'r_id'} is not null)
+        _r_id := {?'r_id'};
+      else
+        _r_id := 'Top';
+      whenever not found goto nf_error;
+      select CATID into _catid from ODP.ODP.TOPIC_CONTENT where R_ID = _r_id;
+    }
+  whenever not found goto nf_error;
+?>
+<?vsp ODP.ODP.VSP_HEADER(path,params,lines,concat (_r_id ' | Edit')); ?>
+<H3><?vsp ODP.ODP.VSP_TOPIC_PATH_HREFS(path,params,lines,_r_id); ?></H3>
+<?vsp
+  for
+    select
+      _frag, _tag, _resource
+    from (
+      select
+        _frag, _tag, _resource, substring(_tag,3,1) as _tag_typ
+      from (
+        select
+          _frag,
+          xpath_eval('local-name()',_frag) as _tag,
+          xpath_eval('@resource',_frag) as _resource
+        from ODP.ODP.TOPIC_STRUCTURE
+        where CATID=_catid and xpath_contains(XPER,'/Topic/*[@resource]',_frag)
+        ) _frags1
+      ) _frags2
+    where (_tag <> 'editor')
+    order by _tag_typ desc, _resource asc
+  do
+    {
+      ODP.ODP.VSP_SUBTOPIC_HREF(path,params,lines,_resource,_tag); ?><BR><?vsp
+    }
+?>
+<?vsp
+  for
+    select
+      _frag,
+      xpath_eval('local-name()',_frag) as _tag,
+      xpath_eval('@resource',_frag) as _resource
+    from ODP.ODP.TOPIC_CONTENT where CATID=_catid and xpath_contains(XPER,'/Topic/*[@resource]',_frag)
+  do { 
+    ?><?= _tag ?><A HREF="<?= _resource ?>"><?= _resource ?></A><BR><?vsp
+    }
+?>
+<TABLE ALIGN=RIGHT BORDER=0><TR><TD><FONT SIZE=-1>Editors:
+<?vsp
+  _is_first := 1;
+  for
+    select
+      _frag, _resource
+    from (
+      select
+        _frag,
+        xpath_eval('@resource',_frag) as _resource
+      from ODP.ODP.TOPIC_STRUCTURE
+      where CATID=_catid and xpath_contains(XPER,'/Topic/editor',_frag)
+      ) _frags1
+    order by _resource asc
+  do
+    {
+      if (_is_first = 0) { ?>,<?vsp }
+      _is_first := 0;
+      ?> <?vsp ODP.ODP.VSP_EDITOR_HREF(path,params,lines,_resource);
+    }
+?>
+</FONT></TD></TR></TABLE><BR>
+<?vsp ODP.ODP.VSP_FOOTER(path,params,lines); ?>
+<?vsp
+  return;
+nf_error:
+  return ODP.ODP.VSP_ERROR(path,params,lines,'Database contains no topic matching you request');
+?>  

@@ -1,0 +1,643 @@
+<!-- Page Layout -->
+BODY
+{
+    PADDING-RIGHT: 0px;
+    PADDING-BOTTOM: 0px;
+    PADDING-LEFT: 0px;
+    PADDING-TOP: 0px;
+    MARGIN-RIGHT: 0px;
+    MARGIN-BOTTOM: 0px;
+    MARGIN-LEFT: 0px;
+    MARGIN-TOP: 0px;
+    FONT-SIZE: 100%;
+    FONT-FAMILY: Verdana, Helvetica, Helv, sans-serif
+}
+INPUT, TEXTAREA
+{
+    PADDING-RIGHT: 0px;
+    PADDING-BOTTOM: 0px;
+    PADDING-LEFT: 0px;
+    PADDING-TOP: 0px;
+    MARGIN-RIGHT: 0px;
+    MARGIN-BOTTOM: 0px;
+    MARGIN-LEFT: 0px;
+    MARGIN-TOP: 0px;
+    FONT-FAMILY: Verdana, Helvetica, Helv, sans-serif;
+    FONT-SIZE: 80%;
+}
+TABLE
+{
+    FONT-FAMILY: Verdana, Helvetica, Helv, sans-serif
+}
+
+TD
+{
+    FONT-FAMILY: Verdana, Helvetica, Helv, sans-serif
+}
+
+TH
+{
+    FONT-FAMILY: Verdana, Helvetica, Helv, sans-serif
+}
+
+.AdmPagesTitle
+{
+    BACKGROUND-COLOR: SkyBlue;
+}
+.AdmBorders
+{
+    BACKGROUND-COLOR: navy
+}
+.CtrlMain
+{
+    BACKGROUND-COLOR: gainsboro;
+    TEXT-ALIGN: center
+}
+.Footer
+{
+    FONT-SIZE: x-small
+}
+.CopyrightBorder
+{
+    BACKGROUND-COLOR: lightslategray
+}
+.Copyright
+{
+    PADDING-RIGHT: 2px;
+    FONT-SIZE: 10px;
+    PADDING-BOTTOM: 1px;
+    TEXT-ALIGN: right
+}
+A
+{
+}
+A:hover
+{
+    TEXT-DECORATION: underline
+}
+H1
+{
+    COLOR: navy;
+}
+H2
+{
+    PADDING-RIGHT: 30px;
+    MARGIN-TOP: 0px;
+    MARGIN-BOTTOM: 0px;
+    COLOR: midnightblue;
+    LINE-HEIGHT: normal;
+    PADDING-TOP: 5px;
+    PADDING-BOTTOM: 3px;
+    TEXT-ALIGN: right
+}
+P
+{
+    FONT-SIZE: 85%
+}
+.tablelistaction
+{
+    COLOR: Red;
+    FONT-SIZE: 90%
+}
+.tablelistaction:link
+{
+    COLOR: Red;
+}
+.tablelistaction:visited
+{
+    COLOR: Red;
+}
+.tablelistaction:active
+{
+    COLOR: Red;
+}
+.tablelistaction:hover
+{
+    COLOR: red;
+    BACKGROUND-COLOR: yellow;
+}
+
+<!-- General Tables -->
+.genlist
+{
+    BACKGROUND-COLOR: #d7d7d7;
+}
+.genhead
+{
+    FONT-WEIGHT: bolder;
+    COLOR: white;
+    BACKGROUND-COLOR: steelblue;
+    PADDING-BOTTOM: 1px;
+    PADDING-TOP: 1px
+}
+.genlisthead
+{
+    PADDING-RIGHT: 2px;
+    PADDING-LEFT: 2px;
+    FONT-SIZE: 90%;
+    BACKGROUND-COLOR: silver;
+    TEXT-ALIGN: right
+}
+.gendata
+{
+    PADDING-RIGHT: 2px;
+    PADDING-LEFT: 2px;
+    FONT-SIZE: 85%;
+    BACKGROUND-COLOR: white
+}
+.geninput
+{
+}
+.genlistheadt
+{
+    PADDING-RIGHT: 2px;
+    PADDING-LEFT: 2px;
+    FONT-SIZE: 90%;
+    BACKGROUND-COLOR: silver;
+    TEXT-ALIGN: left
+}
+.gendesc
+{
+    FONT-SIZE: 60%;
+    WIDTH: 150px;
+    COLOR: navy;
+    BACKGROUND-COLOR: white
+}
+.genradio
+{
+    FONT-SIZE: 80%;
+	TEXT-ALIGN: right;
+}
+
+<!-- Error Tables -->
+
+.errorhead
+{
+    FONT-WEIGHT: bolder;
+    PADDING-BOTTOM: 1px;
+    COLOR: yellow;
+    PADDING-TOP: 3px;
+    BACKGROUND-COLOR: red
+}
+
+<!-- Statistic Tables -->
+
+.statlist
+{
+    BACKGROUND-COLOR: #d7d7d7
+}
+.stathead
+{
+    FONT-WEIGHT: bolder;
+    COLOR: white;
+    BACKGROUND-COLOR: #039080;
+    PADDING-BOTTOM: 1px;
+    PADDING-TOP: 1px
+}
+.statlisthead
+{
+    PADDING-RIGHT: 2px;
+    PADDING-LEFT: 2px;
+    FONT-SIZE: 90%;
+    BACKGROUND-COLOR: silver;
+    TEXT-ALIGN: right
+}
+.statdata
+{
+    PADDING-RIGHT: 2px;
+    PADDING-LEFT: 2px;
+    FONT-SIZE: 80%;
+    BACKGROUND-COLOR: white
+}
+.statinput
+{
+    FONT-SIZE: 90%;
+}
+.statlistheadt
+{
+    PADDING-RIGHT: 2px;
+    PADDING-LEFT: 2px;
+    FONT-SIZE: 90%;
+    BACKGROUND-COLOR: silver;
+    TEXT-ALIGN: left
+}
+.statheaderror
+{
+    FONT-WEIGHT: bolder;
+    PADDING-BOTTOM: 1px;
+    COLOR: yellow;
+    PADDING-TOP: 3px;
+    BACKGROUND-COLOR: red
+}
+
+<!-- Result Tables -->
+.rescolname
+{
+    FLOAT: left;
+    COLOR: black;
+    FONT-SIZE: 70%;
+    FONT-FAMILY: Tahoma, Verdana, Arial, Helvetica, Helv, sans-serif;
+    BACKGROUND-COLOR: silver
+}
+.rescoltype
+{
+    CLEAR: left;
+    FONT-SIZE: 60%;
+    COLOR: blue;
+    FONT-STYLE: italic;
+    FONT-FAMILY: Tahoma, Verdana, Arial, Helvetica, Helv, sans-serif;
+    TEXT-ALIGN: center
+}
+.rescolstr
+{
+    FONT-FAMILY: Verdana,Arial,Helvetica,Helv,sans-serif
+}
+.rescolnum
+{
+    FONT-FAMILY: Verdana,Arial,Helvetica,Helv,sans-serif
+}
+.restitle
+{
+    BORDER-TOP: lightblue 1px solid;
+    FONT-SIZE: 80%;
+    COLOR: white;
+    BORDER-BOTTOM: midnightblue 1px solid;
+    FONT-FAMILY: Verdana;
+    BACKGROUND-COLOR: steelblue
+}
+.resheader
+{
+    COLOR: black;
+    BACKGROUND-COLOR: silver
+}
+.resfooter
+{
+    BORDER-TOP: lightblue 1px solid;
+    FONT-SIZE: 70%;
+    COLOR: white;
+    BORDER-BOTTOM: midnightblue 1px solid;
+    FONT-FAMILY: Verdana;
+    BACKGROUND-COLOR: steelblue
+}
+.resdata
+{
+    FONT-SIZE: 60%;
+    FONT-FAMILY: Tahoma, Verdana, Arial;
+    BACKGROUND-COLOR: white
+}
+
+<!-- status colors -->
+
+.status_ok
+{
+    FONT-SIZE: 80%;
+    COLOR: green
+}
+.status_wip
+{
+    FONT-SIZE: 80%;
+    COLOR: orange
+}
+.status_err
+{
+    FONT-SIZE: 80%;
+    COLOR: red
+}
+
+<!-- help -->
+
+.helptitle
+{
+    PADDING-RIGHT: 2px;
+    PADDING-LEFT: 2px;
+    FONT-WEIGHT: bolder;
+    FONT-SIZE: x-small;
+    COLOR: white;
+    FONT-FAMILY: Verdana, Helvetica;
+    BACKGROUND-COLOR: darkcyan
+}
+.help
+{
+    BACKGROUND-COLOR: wheat
+}
+.helpsubtitle
+{
+    COLOR: white;
+    BACKGROUND-COLOR: mediumaquamarine
+}
+.helpborders
+{
+    BACKGROUND-COLOR: darkgreen
+}
+
+<!-- Left Menu Classes -->
+.AdmLeftMenu
+{
+    PADDING-RIGHT: 0px;
+    PADDING-LEFT: 0px;
+    MARGIN-LEFT: 0px;
+    MARGIN-RIGHT: 0px;
+    BACKGROUND-COLOR: SteelBlue;
+}
+.lmenuitem
+{
+    PADDING-RIGHT: 0px;
+    PADDING-LEFT: 0px;
+    FONT-SIZE: 70%;
+    PADDING-BOTTOM: 0px;
+    MARGIN: 0px;
+    COLOR: white;
+    PADDING-TOP: 0px;
+    TEXT-DECORATION: None;
+    FONT-FAMILY: Comic Sans MS, Tahoma, Verdana, Helvetica, sans-serif
+}
+.lmenuitem:hover
+{
+    COLOR: red;
+}
+
+<!-- start page -->
+
+.startcell
+{
+    BACKGROUND-COLOR: #d7d7d7
+}
+.starttitle
+{
+    FONT-WEIGHT: bolder;
+    COLOR: white;
+    FONT-FAMILY: Verdana, Helvetica;
+	TEXT-ALIGN: center;
+    BACKGROUND-COLOR: Steelblue
+}
+.startinfo
+{
+    FONT-SIZE: 80%;
+    COLOR: Navy;
+    FONT-FAMILY: Tahoma, Helvetica;
+}
+.StartPageTitle
+{
+    BACKGROUND-COLOR: Steelblue;
+    COLOR: gainsboro;
+}
+
+<!-- features page -->
+
+.demo
+{
+    FONT-FAMILY: Verdana, Helvetica;
+    BACKGROUND-COLOR: #d9ffd9
+}
+.demodesc
+{
+    FONT-SIZE: 75%;
+}
+.feature
+{
+    BACKGROUND-COLOR: lightgoldenrodyellow
+}
+.featuretext
+{
+    FONT-SIZE: 75%;
+    FONT-FAMILY: Verdana, Helvetica;
+    TEXT-ALIGN: justify
+}
+.demomain
+{
+}
+.demolinkdisabled
+{
+    FONT-SIZE: 80%;
+    FONT-FAMILY: Verdana, Helvetica;
+    COLOR: #707070;
+    TEXT-DECORATION: none
+}
+
+<!-- ################################################### -->
+
+
+BODY.lmenu
+{
+    BACKGROUND-COLOR: #000000
+}
+P.lmenu
+{
+    MARGIN-LEFT: 10pt;
+    BACKGROUND-COLOR: black
+}
+.help_text
+{
+    BORDER-RIGHT: thin;
+    PADDING-RIGHT: 2px;
+    BORDER-TOP: thin;
+    PADDING-LEFT: 2px;
+    FONT-SIZE: x-small;
+    PADDING-BOTTOM: 2px;
+    BORDER-LEFT: thin;
+    WIDTH: 70%;
+    COLOR: black;
+    PADDING-TOP: 2px;
+    BORDER-BOTTOM: thin;
+    FONT-FAMILY: Tahoma, Helvetica;
+    BACKGROUND-COLOR: #ffffc4;
+    TEXT-ALIGN: justify
+}
+.widgettitle
+{
+    FONT-WEIGHT: bold;
+    FONT-SIZE: small;
+    BACKGROUND-COLOR: white
+}
+TD.widgettitle
+{
+    FONT-WEIGHT: bold;
+    FONT-SIZE: small;
+    BACKGROUND-COLOR: white
+}
+.sectiontitle
+{
+    FONT-WEIGHT: bold;
+    FONT-SIZE: medium
+}
+.warntitle
+{
+    FONT-WEIGHT: bold;
+    FONT-SIZE: large;
+    BACKGROUND: yellow
+}
+.tabletext
+{
+    MARGIN-TOP: 2em;
+    FONT-WEIGHT: bold;
+    BACKGROUND: lightgrey;
+    margin_bottom: 4em
+}
+TABLE.tablelist
+{
+    FONT-SIZE: 80%;
+    BACKGROUND: lightgrey;
+    FONT-FAMILY: Verdana, Arial, Helvetica, Helv, sans-serif
+}
+TD.tablelistaction
+{
+    BACKGROUND: lightgrey;
+    font_size: small
+}
+TD.tablelisthead
+{
+    COLOR: white;
+    FONT-FAMILY: Verdana, Arial, Helvetica, Helv, sans-serif;
+    BACKGROUND-COLOR: black
+}
+TD.tablelistbutton
+{
+    FONT-WEIGHT: bold;
+    FONT-SIZE: small;
+    FONT-FAMILY: Verdana, Arial, Helvetica, Helv, sans-serif;
+    BACKGROUND: white
+}
+.dochdr
+{
+    FONT-WEIGHT: bold;
+    FONT-SIZE: small
+}
+.docbody
+{
+    FONT-SIZE: small
+}
+.admlistname
+{
+    FONT-SIZE: 90%;
+    COLOR: black;
+}
+.admlistdesc
+{
+    FONT-SIZE: 75%;
+    WIDTH: 100pt;
+    COLOR: navy;
+}
+.bbartitle
+{
+    FONT-SIZE: 90%;
+    WIDTH: 100%;
+;
+    TEXT-ALIGN: left
+}
+.ctrltitle
+{
+    BORDER-RIGHT: thin;
+    PADDING-RIGHT: 0px;
+    BORDER-TOP: thin;
+    PADDING-LEFT: 0px;
+    FONT-SIZE: 120%;
+    PADDING-BOTTOM: 0px;
+    MARGIN: 0px;
+    BORDER-LEFT: thin;
+    COLOR: purple;
+    PADDING-TOP: 0px;
+    BORDER-BOTTOM: black thin solid;
+    FONT-FAMILY: Verdana, Arial;
+    BACKGROUND-COLOR: lightskyblue;
+    TEXT-ALIGN: right
+}
+.ctrltable
+{
+    BORDER-RIGHT: 0px;
+    PADDING-RIGHT: 0px;
+    BORDER-TOP: 0px;
+    PADDING-LEFT: 0px;
+    PADDING-BOTTOM: 0px;
+    MARGIN: 0px;
+    BORDER-LEFT: 0px;
+    PADDING-TOP: 0px;
+    BORDER-BOTTOM: 0px
+}
+.adm_bb_border1
+{
+    BACKGROUND-COLOR: powderblue
+}
+.adm_bb_border2
+{
+    BACKGROUND-COLOR: midnightblue
+}
+.adm_buttonbar
+{
+    WIDTH: 100%;
+    COLOR: white;
+    BACKGROUND-COLOR: steelblue;
+    TEXT-ALIGN: center
+}
+.adm_bb_text
+{
+    PADDING-RIGHT: 2px;
+    PADDING-LEFT: 2px;
+    PADDING-BOTTOM: 1px;
+    COLOR: white;
+    PADDING-TOP: 1px;
+    TEXT-ALIGN: right
+}
+.adm_bb_btns
+{
+    PADDING-RIGHT: 1px;
+    PADDING-LEFT: 1px;
+    PADDING-BOTTOM: 1px;
+    PADDING-TOP: 1px;
+    TEXT-ALIGN: left
+}
+
+.adm_left_tree
+{
+    BACKGROUND-COLOR: slategray
+}
+.adm_left_btop
+{
+    BACKGROUND-COLOR: silver
+}
+.adm_left_bbot
+{
+    BACKGROUND-COLOR: #4b4d4d
+}
+.adm_sql_colstitle
+{
+}
+th.srvglance
+{
+    COLOR: silver;
+	TEXT-ALIGN: right;
+	VERTICAL-ALIGN: top;
+}
+td.srvglance
+{
+    COLOR: white;
+	TEXT-ALIGN: left;
+	VERTICAL-ALIGN: top;
+	PADDING-BOTTOM: 5px;
+}
+table.srvglance
+{	FONT-SIZE: 70%;
+}
+caption.srvglance
+{
+    COLOR: white;
+	FONT-WEIGHT: bolder;
+}
+HR
+{	WIDTH: 75%;
+	HEIGHT: 1px;
+	SIZE: 1px;
+	COLOR: silver;
+	TEXT-ALIGN: center;
+}
+UL
+{	PADDING-TOP: 0px;
+	PADDING-BOTTOM: 0px;
+	MARGIN-TOP: 0px;
+	MARGIN-BOTTOM: 0px;
+	MARGIN-LEFT: 25px;
+	FONT-SIZE: 90%;
+}
+LI
+{	PADDING-TOP: 0px;
+	PADDING-BOTTOM: 0px;
+}

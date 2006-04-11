@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_uuencode">
+  <refmeta>
+    <refentrytitle>uuencode</refentrytitle>
+    <refmiscinfo>encoding</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>uuencode</refname>
+    <refpurpose>Encodes string or string session into sequence of printable characters, suitable for transfer via "ASCII-only" data channels</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_uuencode">
+      <funcprototype id="fproto_uuencode">
+        <funcdef><function>uuencode</function></funcdef>
+	<paramdef>in <parameter>input</parameter> string or string session</paramdef>
+	<paramdef>in <parameter>mode</parameter> integer</paramdef>
+	<paramdef>in <parameter>maxlines</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_uuencode"><title>Description</title>
+    <para>
+There are many protocols, like classic UNIX uuencode,
+which are used to transmit binary files
+over transmission mediums that do not support other than
+simple ASCII data. The epoch of physical lines of such sort is
+in past but file attachments in most popular mail systems still
+follow old regulations.
+    </para>
+    <para>
+Encoded data are transmitted as a sequence of one or more "sections".
+They may be stored or sent as independent documents.
+Every section contains some range of original document's data.
+They may be decoded one after another, and original
+document may be composed by concatenation of decoded fragments.
+If the document is small (or if there's no limit on the size of message),
+it may be sent as single section.
+    </para>
+    <para>
+Every section has some header and footer and a set of
+lines with data between them. Headers and especially footers are
+usually optional and may vary from system to system whereas
+data lines are described by standards. Data lines of any two
+consequent sections may be concatenated together, if needed, to
+create longer section.
+    </para>
+    <para>
+<function>uuencode</function> creates a vector of strings, where
+every string contains some number of data lines, without headers or
+footers. A Virtuoso/PL stored procedure may be used to create some output
+stream(s) and put there sections of appropriate format with
+data lines from vector.
+Every item of the created vector will contain up to
+<parameter>maxlines</parameter> lines of data,
+usually 60 to 80 bytes per line; <parameter>maxlines</parameter>
+may vary from 10 to 120000 so section may be 0.8Kb to 10Mb long
+depending on your choice.
+Last section may be shorter than other, if only partially filled.
+10Mb limit may be bypassed by sending of sections one after another
+without intermediate footers or headers, but please keep in
+mind that you cannot concatenate two strings in memory if
+the sum of their lengths exceeds system-wide 10Mb.
+    </para>
+    <para>
+RFC 2045,
+(N. Borenstein, N. Freed.
+MIME (Multipurpose Internet Mail Extensions) Part One:
+The Format of Internet Message Bodies),
+contains detailed description of most important encodings used by mail
+systems.
+Older RFC 1521 is now obsoleted.
+    </para>
+    <para>
+Currently, eight conventions are used for mail attachments.
+In Virtuoso, they are enumerated by integer IDs.
+    </para>
+    <table><title>Unicode-like standards, supported by Virtuoso</title>
+      <tgroup cols="3">
+       <thead><row><entry>ID</entry><entry>Standard</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry>1</entry><entry>"Native" UUencode</entry>
+	    <entry>
+Optional header is one line started by "begin " or "&lt;pre&gt;begin " keyword, with some system-specific data after it.
+Optional footer is one line started by "end" keyword.
+	    </entry>
+	  </row>
+	  <row>
+	    <entry>2</entry><entry>Base-64, UNIX version</entry>
+	    <entry>
+There are no agreements about headers or footers.
+	    </entry>
+	  </row>
+	  <row>
+	    <entry>3</entry><entry>Base-64, MIME version</entry>
+	    <entry>
+This standard is very similar to "Base-64, UNIX version".
+Virtuoso, like all modern mail clients,
+feel no difference between them when decode sections, because
+the only difference is in the number of data bytes per line.
+	    </entry>
+	  </row>
+	  <row>
+	    <entry>4</entry><entry>XXencode</entry>
+	    <entry>
+This standard is an obsolete standard, similar to Unicode,
+but not compatible.
+There are no agreements about headers or footers.
+	    </entry>
+	  </row>
+	  <row>
+	    <entry>5</entry><entry>BinHex</entry>
+	    <entry>
+There are no header or footer lines, but first line of every
+section should be prefixed by colon (':') character.
+Application should place colon before data lines of every section.
+(this function will prepare only data lines without this prefix).
+	    </entry>
+	  </row>
+	  <row>
+	    <entry>6-9</entry><entry>reserved</entry>
+	    <entry>
+More standards may be used in the future. It is unsafe to
+assume that all existing standards are listed here.
+Real application will often receive messages with unknown or
+misspelled encodings' names, syntax errors in data etc.
+	    </entry>
+	  </row>
+	  <row>
+	    <entry>10</entry><entry>MIME Plain-Text</entry>
+	    <entry>
+This "encoding" is suitable only for texts.
+They are stored "as is", but line ends will not be preserved.
+	    </entry>
+	  </row>
+	  <row>
+	    <entry>11</entry><entry>MIME Quoted-Printable (for texts)</entry>
+	    <entry>
+This encoding is suitable for any sort of textual data,
+because ASCII printable characters are stored
+"as is" and only nonprintable characters are encoded.
+UNIX linefeeds (LF chars) will be encoded as "hard breaks", so decoding
+side may convert them into its own system-specific "line end" chars, e.g.
+in CRLF sequence.
+	    </entry>
+	  </row>
+	  <row>
+	    <entry>12</entry><entry>MIME Quoted-Printable (for binaries)</entry>
+	    <entry>
+This encoding is suitable for any sort of data but it is especially
+useful for textual data, because ASCII printable characters are stored
+"as is" and only nonprintable characters are encoded.
+No "hard breaks" will be used for UNIX linefeeds (LF chars) of source file,
+so the file will be decoded exactly as it was encoded, no matter which
+character sequence is used for "line end" in the decoder's OS.
+When in trouble, whether the data encoded are text or binary, use
+this variant ("for binaries"): text may be easily recovered by recipient
+if linefeeds are wrong whereas binary data will become unusable if encoded as text.
+	    </entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="params_uuencode"><title>Parameters</title>
+    <refsect2><title>input</title>
+      <para>String or string-output session with data to be encoded.</para></refsect2>
+    <refsect2><title>mode</title>
+      <para>Integer ID of encoding to be used.</para></refsect2>
+    <refsect2><title>maxlines</title>
+      <para>Number of data lines per section. Should be in range 10 to 120000,
+otherwise nearest suitable value will be used without reporting any error.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret_uuencode"><title>Return Types</title><para>
+Vector of strings, where every string contains all data lines of a section.
+</para></refsect1>
+  <refsect1 id="errors_uuencode"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>UUE01</errorcode></entry>
+	    <entry><errorname>Function uuencode needs a string output or a string as argument 1, not an arg of type ... (...)</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>UUE02</errorcode></entry>
+	    <entry><errorname>Unsupported type of UU-encoding (...)</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="examples_uuencode"><title>Examples</title>
+    <example id="ex_uuencode"><title>BinHex</title>
+      <para>This function displays BinHex result of uuencode as a result-set of sections.</para>
+      <screen>
+-- Line 4:
+create procedure BINHEX_ENCODE (in txt varchar, in lines_per_section integer)
+{
+  declare SECTION varchar;
+  declare sections any;
+  result_names (SECTION);
+  sections := uuencode (txt, 5, lines_per_section);
+  foreach (varchar sect in sections) do
+    result (':' || sect);
+}
+
+
+Done. -- 00000 msec.
+
+BINHEX_ENCODE ('Hello', 10)
+SECTION
+VARCHAR
+_______________________________________________________________________________
+
+:5'9XE'm:
+
+
+1 Rows. -- 00000 msec.
+
+BINHEX_ENCODE (repeat ('Hello', 100), 10)
+SECTION
+VARCHAR
+_______________________________________________________________________________
+
+:5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[
+5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[
+5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[
+5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[
+5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[
+5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[
+5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[
+5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[
+5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[
+5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[
+
+:5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[5'9XE'p)C@aXEdKPE'a[
+5'9XE'm:
+
+
+2 Rows. -- 00000 msec.</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_uuencode"><title>See Also</title>
+    <para>
+      <link linkend="fn_uudecode">uudecode</link>,
+      <link linkend="fn_uudecode">uuvalidate</link>
+    </para>
+  </refsect1>
+</refentry>

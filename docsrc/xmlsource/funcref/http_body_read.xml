@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_http_body_read">
+  <refmeta>
+    <refentrytitle>http_body_read</refentrytitle>
+    <refmiscinfo>soap</refmiscinfo>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>http_body_read</refname>
+    <refpurpose>Reads the HTTP body from the client HTTP connection and returns it as a string.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_http_body_read">
+      <funcprototype id="fproto_http_body_read">
+        <funcdef>string <function>http_body_read</function></funcdef>
+	<paramdef />
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_http_body_read"><title>Description</title>
+    <para>
+This function reads the HTTP body from the client HTTP connection and returns it as a string output.
+This is suitable for processing POST requests with bodies encoded differently than <literal>multipart/*</literal> and
+<literal>application/x-www-form-urlencoded</literal> as in SOAP requests where the POST body is encoded as <literal>text/xml</literal>).
+  </para>
+  </refsect1>
+
+  <refsect1 id="examples_http_body_read"><title>Example</title>
+    <example id="ex_http_body_read_1"><title>Reading a HTTP request entity body</title>
+     <para>Suppose we have the following HTTP request</para>
+      <screen><![CDATA[
+POST /foo/bar.vsp HTTP/1.1
+Content-Type: text/xml
+Content-Length: ...
+
+<document>abc</document>
+]]></screen>
+     <para>The following VSP page will read the content and return an XML document back to the browser.</para>
+      <screen><![CDATA[
+<?vsp
+declare ses any;
+ses := http_body_read ();
+http_header ('Content-Type: text/xml\r\n');
+http (string_output_string (ses));
+?>
+]]></screen>
+    </example>
+  </refsect1>
+
+</refentry>
+

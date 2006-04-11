@@ -1,0 +1,44 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="secloan">
+  <refnamediv>
+      <refname>LoanFlow</refname>
+      <refpurpose>Secure Loan Flow process</refpurpose>
+  </refnamediv>
+
+<refsect1 id="echoa">
+    <title>Description</title>
+    <itemizedlist mark="bullet">
+	<listitem>Caller send in asyncronous way a loan application data</listitem>
+	<listitem>Process invoke the syncronous Credit rating service</listitem>
+	<listitem>If SSN is not a number or zero the  Credit rating service generates a fault, otherwise send a positive 100 as a rating</listitem>
+	<listitem>process must be able to handle fault and set the rating as a -1000</listitem>
+	<listitem>process do a two asyncronous invokation of two different loan services in a paralel flow</listitem>
+	<listitem>process must be able to receive from both services the loan approval messages</listitem>
+	<listitem>The Star loan service in case of negative credit rating must return greater APR than United loan service</listitem>
+	<listitem>process must choose the best offer (lower APR) and make asyncronous invoke to the caller's endpoint</listitem>
+	<listitem>All outbound messages must be signed and encrypted in same way as in SecEcho test</listitem>
+    </itemizedlist>
+</refsect1>
+</refentry>

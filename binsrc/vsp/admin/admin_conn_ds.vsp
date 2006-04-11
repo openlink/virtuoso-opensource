@@ -1,0 +1,206 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare _dsns, _tables, _tbl_type, _tbl_qual,
+          _tbl_name, _tbl_user, _tblv varchar;
+  declare _user, _pass, _pass_o, _pass_n1, _pass_n2 varchar;
+  declare _cnt integer;
+  declare _dsn, state, msg, m_dta, res varchar;
+
+  if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+
+  _user := get_keyword ('user', params, '');
+  _pass_o := get_keyword ('pass_o', params, '');
+  _pass_n1 := get_keyword ('pass_n1', params, '');
+  _pass_n2 := get_keyword ('pass_n2', params, '');
+  _dsn := get_keyword ('cds_dsns', params, '');
+  if ({?'cncl'} is not null)
+    _dsn := '';
+
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<script>
+function ch_url()
+{
+  document.cds_form.action = 'admin_conn_ds_add.vsp';
+  document.cds_form.submit();
+}
+
+</script>
+
+<html>
+  <head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+  <script language="javascript" src="admin_link_tables.js"></script>
+    <title>Connected data sources</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Change connected data source properties in Virtuoso using VSP">
+  </head>
+  <BODY>
+<?vsp adm_page_header('Connected Data Sources', NULL); ?>
+<?include adm_js_check.vsp ?>
+    <form method="POST" name="cds_form" action="admin_conn_ds.vsp">
+
+<?vsp
+-- Do startup checks to see where form came from and act accordingly or respond
+
+  if (not is_empty_or_null(get_keyword ('save', params, '')))
+    {
+	  select pwd_magic_calc (ds_uid, ds_pwd, 1) into _pass from sys_data_source where ds_dsn = _dsn;
+
+  	  if (_pass_n1 <> _pass_n2)
+	    {
+	      http ('<strong>The two passwords you entered did not match.</strong><BR /><BR />');
+	      goto next;
+	    }
+  	  if (_pass <> _pass_o)
+	    {
+	      http ('<strong>You did not enter your old password correctly.</strong><BR /><BR />');
+	      goto next;
+	    }
+	  state := '00000';
+	  msg := 'none';
+	  exec ('vd_remote_data_source(?,?,?,?)',
+	       state, msg, vector (_dsn, '', _user, _pass_n1), m_dta, res);
+
+	  if ('00000' <> state)
+            {
+  	      http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+  	      http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Connection to %s failed:</TD></TR>', _dsn));
+  	      http ('<TR><TD CLASS="adm_borders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+ 	      http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (state, '')));
+ 	      http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (msg, '')));
+  	      http ('</TABLE>');
+	    }
+	  else
+	    {
+	      http ('<strong>Your changes have been saved.</strong><BR /><BR />');
+      	      _dsn := '';
+	    }
+    }
+  else if (not is_empty_or_null(get_keyword ('refresh', params, '')))
+    {
+	  select
+	      pwd_magic_calc (ds_uid, ds_pwd, 1),
+	      ds_uid
+	      into
+	      _pass,
+	      _user
+	  from sys_data_source where ds_dsn = _dsn;
+
+	  state := '00000';
+	  msg := 'none';
+	  exec ('vd_remote_data_source(?,?,?,?)',
+	       state, msg, vector (_dsn, '', _user, _pass), m_dta, res);
+
+	  if ('00000' <> state)
+            {
+  	      http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+  	      http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Connection to %s failed:</TD></TR>', _dsn));
+  	      http ('<TR><TD CLASS="adm_borders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+ 	      http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (state, '')));
+ 	      http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (msg, '')));
+  	      http ('</TABLE>');
+	    }
+	  else
+	    {
+	      http ('<strong>The DSN''s cached data have been updated.</strong><BR /><BR />');
+      	      _dsn := '';
+	    }
+    }
+next:
+?>
+       <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+        <TR>
+
+<?vsp
+	if (is_empty_or_null (_dsn))
+          {
+?>
+          <TD CLASS="genselect">
+	  <select name="cds_dsns">
+<?vsp
+	    for (select ds_dsn from sys_data_source) do
+	      {
+	        _cnt := _cnt + 1;
+?>
+	        <option <?= select_if (_dsn, ds_dsn) ?>><?= ds_dsn ?></option>
+<?vsp
+              }
+	    if (0 = _cnt)
+              {
+?>
+                <option>No Data Sources</option>
+<?vsp
+              }
+?>
+	  </select>
+</TD>
+<?vsp
+              }
+
+        if (not is_empty_or_null (_dsn))
+	  {
+	    select ds_uid into _user from sys_data_source where ds_dsn = _dsn;
+?>
+	<TD VALIGN="top" ALIGN="right">
+		<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+		<TR><TD CLASS="genhead" COLSPAN ="2">Data Source <?= _dsn ?></TD></TR>
+		<TR><TD CLASS="genlisthead">UserName</TD><TD CLASS="geninput"><input type="text" name="user" value="<?= _user ?>"></TD></TR>
+		<TR><TD CLASS="genlisthead">Old password</TD><TD CLASS="geninput"><input type="password" name="pass_o" value=""></TD></TR>
+		<TR><TD CLASS="genlisthead">New password</TD><TD CLASS="geninput"><input type="password" name="pass_n1" value=""></TD></TR>
+		<TR><TD CLASS="genlisthead">Re-enter new Password</TD><TD CLASS="geninput"><input type="password" name="pass_n2" value=""></TD></TR>
+		<TR><TD COLSPAN="2" ALIGN="center">
+		<input type="submit" name="save" value="Change">
+		<input type="submit" name="cncl" value="Cancel">
+		</TD></TR>
+		<input type="hidden" name="cds_dsns" value="<?= _dsn ?>">
+		</table>
+	</TD>
+<?vsp
+          }
+	else
+          {
+?>
+	<TD VALIGN="bottom" ALIGN="right">
+              <input type="submit" name="edit" value="Edit"></td>
+	<TD VALIGN="bottom" ALIGN="right">
+              <input type="submit" name="refresh" value="Refresh"></td>
+	<TD VALIGN="bottom" ALIGN="right">
+              <input type="submit" name="addn" value="Add New" onClick="ch_url();"></td>
+	</TD>
+
+<?vsp
+          }
+?>
+      </TR>
+       </TABLE>
+    </form>
+
+<?vsp adm_page_footer(); ?>
+  </body>
+</html>

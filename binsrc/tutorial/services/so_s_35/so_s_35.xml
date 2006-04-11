@@ -1,0 +1,54 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-35">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Route Planner Demo</refname>
+    <refpurpose>Using a MS MapPoint service for route planning</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-35a">
+    <title>Example</title>
+
+    <para>There are several mapping services available today, but they only provide point
+	to point services. </para>
+
+    <para>
+    Once such service is from Microsoft, which has a SOAP-based MapPoint service
+    that allows location searching and distance calculations.   The following
+    demonstration uses the Microsoft MapPoint services to resolve addresses and to
+    calculate the distance between two points.   The demonstration will also
+    calculate an optimized round-trip from a given start point to the destinations
+    specified. </para>
+
+<para>
+    In order to run the demonstration a MapPoint username and password are needed. 
+    Evaluation accounts from Microsoft are available 
+	<ulink url="http://www.microsoft.com/mappoint/enterprise/webservice/eval.aspx">here</ulink>.
+</para>
+</refsect1>
+</refentry>

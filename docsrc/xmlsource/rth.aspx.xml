@@ -1,0 +1,675 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+  <sect1 id="rthwritaspxapps"><title>Writing ASP.Net Web Applications</title>
+
+ <para>Virtuoso is a CLR host.  It is responsible for initializing the runtime,
+ defining the application domain (its runtime boundaries, security settings, etc),
+ and executing user code within such domains.  Windows can be used
+ as the development platform, a very developer friendly environment with
+ a rich set of tools, but you  will not be restricted to Windows, .NET
+ and IIS to run the assemblies produced.  Where .NET is not readily available
+ or desired Virtuoso contains Mono, an open source re-implementation of
+ Microsoft .NET, a vehicle taking .NET cross-platform.  </para>
+
+ <para>The CLR run-time is a part of the Virtuoso process.  The Mono run time may be
+run either as in-process or as out-of-process.  Hosted applications can make use of
+the regular Virtuoso .Net data provider to access Virtuoso SQL data and procedures.
+ Microsoft ASPX files can also be run directly from Virtuoso either from
+ the file system or WebDAV.  Each of these capabilities releases you from
+ the Microsoft platforms without compromising your development platform.</para>
+
+ <para>The Virtuoso CLR hosting is implemented using the VSEI.</para>
+
+
+<figure id="http_handler_aspx" float="1"><title>The HTTP ASP.Net handler</title>
+  <graphic fileref="http_handler_aspx.jpg" format="jpeg"></graphic></figure>
+
+<tip><title>See Also:</title>
+  <para><link linkend="rthclrenvsetdotnet">CLR Host Environment Setup</link></para>
+  <para><link linkend="cinterface">VSEI</link></para>
+  <para><link linkend="inprocess">In-Process Data Access Client</link></para></tip>
+
+   <sect2 id="rthprogramming"><title>Programming Concepts</title>
+
+   <para>ASP.Net Web Forms are divided into two sections: the user interface
+   and the application logic.  The user interface comprises HTML markup and
+   ASP.Net web controls whereas the application logic contains all the
+   programming code that allows the controls to interact with themselves and
+   the server back-end.  This provides the level of abstractions required
+   for dynamic efficient Web application design.  The interface can be altered
+   without any backward or forward dependence on the code (logic).
+   The Web Form interface should be created with the .aspx extension.  The
+   application logic can be contained in-line within the ASPX application, but
+   developers should strive to keep the code in a separate location known as
+   the "CodeBehind".  This is a file that contains the logic (code) for the Web
+   Form which should end in an extension appropriate for the programming
+   language used, such as .vb for Visual Basic or .cs for C#.  The
+   CodeBehind can be written in any language for which there is a .Net
+   compiler for.  The compiler generates bytecode that can be deployed
+   anywhere the .Net runtime exists.</para>
+
+   <para>The ASPX Web Form is compiled into an object that takes its place on a
+   tree of controls and classes.  The CodeBehind is compiled into an object on
+   this tree when the page is requested.  The Web Form must inherit from a
+   "base-class" defined in the CodeBehind class file.</para>
+
+  <figure id="rthwriteaspx001" float="0"><title>ASPX Web Form class hierarchy</title>
+    <graphic fileref="rth/writeaspx001.jpg" /></figure>
+
+    <para>Now we will create a new Web Form containing an HTML
+    heading and an ASP.Net DataGrid control that will display results from
+    the local Virtuoso server.  </para>
+
+<example id="ex_VirtTest.aspx"><title>Sample .Net Web Application: VirtTest.aspx</title>
+<programlisting><![CDATA[
+<%@ Page Language="vb" Inherits="VirtTest" Src="VirtTest.aspx.vb" %>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+	<head>
+		<title>Virtuoso Provider to DataGrid in VB</title>
+	</head>
+	<body>
+	<h1>Simple VB Virtuoso DataBinding Demo</h1>
+		<form id="Form1" method="post" runat="server">
+			<asp:DataGrid id=DataGrid1 runat="server" DataMember="Customers"
+				BorderColor="silver"
+				BorderWidth="1"
+				CellPadding="2"
+				Font-Name="Tahoma"
+				Font-Size="10pt">
+			  <HeaderStyle BackColor="#2222ff" ForeColor="yellow"/>
+			  <PagerStyle Mode="NextPrev" />
+			</asp:DataGrid>
+		</form>
+	<hr>
+	</body>
+</html>
+]]></programlisting>
+</example>
+
+<para>On the first line of the file we use the
+<computeroutput>@ page</computeroutput> directive to inherit the
+CodeBehind class we will create in the CodeBehind file.  The source of which can be
+optionally declared here with the <computeroutput>Src=</computeroutput>
+attribute.  Visual Studio makes use of
+<computeroutput>CodeBehind=</computeroutput> for tracking associated
+source code instead.  If either of these two attributes are specified then
+the .Net runtime will attempt to compile the code into an assembly
+(DLL) upon first execution if it does not already exist or seems out-of-date.
+The following code fragment is the CodeBehind, VirtTest.aspx.vb.</para>
+
+<para>Now we want some logic behind the Web Form.  We have placed a
+DataGrid control on a web page but we need to supply data to it now:</para>
+
+<example id="ex_VirtTest.aspx.vb"><title>Sample .Net Web Application CodeBehind: VirtTest.aspx.vb</title>
+<programlisting><![CDATA[
+imports System
+imports System.Web
+imports System.Web.UI
+imports System.Web.UI.WebControls
+imports System.Web.UI.HtmlControls
+imports System.Data
+
+imports OpenLink.Data.VirtuosoClient
+
+Public Class VirtTest
+    Inherits Page
+
+    Protected WithEvents myConnection As OpenLink.Data.VirtuosoClient.VirtuosoConnection
+    Protected WithEvents myCommand As OpenLink.Data.VirtuosoClient.VirtuosoDataAdapter
+    Protected WithEvents DataGrid1 As System.Web.UI.WebControls.DataGrid
+    Protected WithEvents ds As System.Data.DataSet
+
+    Private Sub Page_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Dim myConnection As new VirtuosoConnection("HOST=noodle:1112;UID=dba;PWD=dba;Database=Demo")
+        Dim myCommand As new VirtuosoDataAdapter("select * from Demo..Customers", myConnection)
+
+	    Dim ds As new DataSet()
+        myCommand.Fill(ds, "Customers")
+
+        DataGrid1.DataSource=ds.Tables("Customers")
+        DataGrid1.DataBind()
+
+    End Sub
+
+End Class
+]]></programlisting>
+</example>
+
+<para>This file is compiled using the following command (split across
+lines for readability and would otherwise all be on one line):</para>
+
+<programlisting>
+E:\myweb\myapp>
+  vbc /target:library
+    /r:System.dll
+    /r: System.Web.dll
+    /r:System.Data.dll
+    /r:OpenLink.Data.VirtuosoClient.dll
+    /r:System.Xml.dll
+    /out:bin\VirtTest.dll
+    VirtTest.aspx.vb
+</programlisting>
+
+<para>Once compiled, the resulting DLL library should be in the bin subdirectory
+of the application root.  When the assembly is available in this way the .aspx
+file does not need to contain the <computeroutput>Src=</computeroutput>
+attribute since there will be no need to compile the CodeBehind.  If the
+<computeroutput>Src=</computeroutput> attribute is specified in the .aspx file
+but the CodeBehind file is not located on the server then an error will be signaled
+indicating that a required resource cannot be found, because the CodeBehind
+class is compiled on demand.</para>
+  </sect2>
+
+   <sect2 id="rthasp.netdeploymentconf"><title>ASP.Net Deployment &amp; Configuration</title>
+
+   <para>ASP.Net allows multiple Web applications to run on the same machine
+   independently of each other.  Web applications have their own directory
+   for components (the ".\bin" directory) and its own XML-based
+   configuration file (the ".config" file).  This allows us to develop robust applications
+   using custom configurations and components (or different versions of
+   components) for each one.</para>
+
+   <note><title>Note:</title>
+   <para>The ASP.Net machine-wide configuration is held in
+   machine.config found in the
+   <computeroutput>(C:\Winnt\Microsoft.NET\)Framework\[version number]\CONFIG directory</computeroutput>
+    depending on your installation.
+   Applications hosting or making use of .Net may have an application
+   configuration [App Name].config.  Web applications store
+   their individual configurations in Web.config stored in the Web
+   application root directory.</para>
+   </note>
+
+   <para>Each ASP.Net application uses a local assembly cache to hold application
+   specific logic (assemblies, contained in compiled DLLs).  The \bin directory located
+   in the application root is the local assembly cache for Web applications.
+   This directory is denied access directly from browsers.  This prevents users from
+   downloading or executing any DLLs contained within.</para>
+
+   <para>When a Web application is started the .Net Framework constructs a
+   new instance of the <computeroutput>System.AppDomain</computeroutput>
+   class.  When the instance is constructed it creates in-memory shadow copies
+   of the DLLs in the \bin directory.  The .Net Framework keeps an in-memory
+   cache (shadow) of all assemblies used so that the actual files (.DLLs)
+   are not locked.  The .Net Framework will monitor the original DLL for
+   changes.  When changes occur the in-memory cache is updated.
+   Applications already loaded and running with calls in-progress
+   to the old library will continue using the old version so there is no
+   interruption.  All new calls to library will be effected, and use the
+   new library.  This means that you are free to replace the DLL with
+   new versions as required.  Previously with ASP you were required to
+   stop IIS, register the DLL with RegServ32.exe and restart the Web server.  </para>
+
+   <para>When new libraries are added to the .Net Framework for use in any
+   application system wide, such as the Virtuoso Data Provider, these need
+   to be added to the Global Assembly Cache (GAC).  This is achieved using the
+   <computeroutput>gacutil.exe</computeroutput> utility found in the
+   <computeroutput>Framework\[version number]</computeroutput>
+   directory.  The <computeroutput>gacutil.exe</computeroutput> tool
+   registers the DLL along with its version.  One of .Net's strengths is its
+   ability to maintain multiple versions of DLLs for multiple applications.
+   This prevents "DLL-hell"; new DLLs breaking old applications.
+   Applications can also maintain their own local versions of
+   DLLs in their \bin directory.</para>
+
+   <programlisting>gacutil.exe /i &lt;full path and file name&gt;.dll</programlisting>
+
+   <para>Registers assemblies with the Global Assembly Cache.</para>
+
+   <programlisting>gacutil.exe /l</programlisting>
+
+   <para>Can be used to list registered assemblies.</para>
+
+   <para>After registering assemblies using the
+   <computeroutput>gacutil.exe</computeroutput> tool you must add an
+   <computeroutput>&lt;add assembly="..." /&gt;</computeroutput> entry
+   into the <computeroutput>&lt;configuration&gt;&lt;system.web&gt;&lt;compilation&gt;&lt;assemblies&gt; </computeroutput>
+   section of the machine.config.</para>
+
+<para>The application given in the previous section can be deployed to Virtuoso
+in the WebDAV repository or directly on file system under the VSPRoot directory.
+You should copy the directory structure as defined, applications in the root of the
+new directory and DLLs in a bin subdirectory.  A virtual directory must be configured
+with execute permissions enabled.  The application can be tested with a Web browser.</para>
+
+    </sect2>
+
+    <sect2 id="rthaspvsmono"><title>The Mono Project</title>
+
+    <para>The Mono Project is an open source version of the Microsoft.NET
+    development platform.  Incorporating key .NET compliant components, including
+    a C# compiler, a Common Language Runtime just-in-time compiler, and a
+    full suite of class libraries, the Mono Project will enable developers to
+    create .NET applications and run them on Windows or any Mono-supported
+    platform.  Besides greatly improving the efficiency of development in the open
+    source world, the Mono Project will allow the creation of
+    operating-system-independent programs.  Although primarily developed on
+    Linux, Mono is being ported to as many operating systems as possible.</para>
+
+    <para>Microsoft.NET development tools, which include the C# compiler and
+    Common Language Infrastructure (CLI), let programs written in C# and other
+    languages run on non-Windows operating systems.   The Mono Project
+    development platform provides open source developers with a true
+    "build once, deploy anywhere" tool-set taking advantage
+    of the myriad of services enabled by Microsoft.NET.</para>
+
+    <para>The Mono Project will provide three key elements in a development
+    framework designed to allow developers to quickly create, deploy and run
+    .NET compatible applications on non-Windows platform.  A C# compiler extending
+    the GNOME development platform will allow Linux developers to create .NET
+    compatible applications. These developers will also be able to build upon a
+    complete implementation of class libraries compatible with the Microsoft CLI,
+    enabling developers to create end-user applications as well as powerful web
+    services using the database functionality available on open source systems.
+    Portation of Mono yields versions of the Microsoft Common Language
+    Run-Time (CLR)  just-in-time (JIT) run-time engine will allow non-Windows
+    systems to run .NET applications built on Windows, Linux or UNIX platforms.</para>
+
+    <para>The example
+    in the previous section can be run using the CLR hosting ability of Virtuoso, but
+    only with the precompiled assembly which has to be deployed into the Mono/lib
+    directory of the Mono installation.</para>
+
+    <para>The Virtuoso installer on non-Windows platforms for which there is a
+    port of Mono available installs the latest Mono CLR.  This is required for the
+    Virtuoso server to host .Net applications on non-Windows platforms.</para>
+
+    <para>Only a compiler for C#.  Inline ASPX code using C# is a safe way to write and
+    experience ASPX hosted from Virtuoso.  Although this goes completely against
+    the programming practice guidelines for .Net</para>
+
+    <para>The only permissible Application Domain is the Mono application.  ASP.Net
+    applications should have their own self containable Application Domain - the
+    ./bin directory.  Mono does not support this as of yet.  The work around is
+    to place all assemblies into the Mono domain.</para>
+    </sect2>
+
+<sect2 id="rthaspxwalk">
+ <title>Migrating ASP.Net Applications to Virtuoso</title>
+
+ <sect3 id="rthaspxnew"><title>Creating a Simple Data Bound Application</title>
+ <para>This section will describe how to use the MS Visual Studio to create an
+ application using as much drag and drop as possible.  We want to
+ create a table of data in a web page from a database.</para>
+
+ <orderedlist>
+  <listitem><formalpara><title>Launch Microsoft's Visual Studio</title>
+    <para>Once Visual Studio has been launch it present you with the start
+    page that lets you create a New Project.</para></formalpara>
+    <figure id="rthvs001"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs001.jpg" width="600px" depth="400px"/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Create a new <menuchoice><guimenu>Empty Web Project</guimenu></menuchoice></title>
+    <para>From the templates select a new Empty Web Project  found in the
+    Visual Basic Projects type.  You must also select a location on an IIS web server.
+    </para></formalpara>
+    <figure id="rthvs002"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs002.jpg" width="" depth=""/></figure>
+  </listitem>
+
+   <listitem><formalpara><title>Wait for IIS application to be set-up</title>
+    <para>You will be shown a progress dialogue as Visual Studio
+    contacts your web server creating a new web application there.</para></formalpara>
+    <figure id="rthvs003"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs003.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Add New Web Form</title>
+    <para>When the application-space has been configued on the web server
+    you will be returned to the main Visual Studio windows.  Now we must create our
+    page.  Right-click on the project name in the Solution Explorer and
+    select Add New Web Form. </para></formalpara>
+    <figure id="rthvs004"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs004.jpg" width="600px" depth="400px"/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>New Web Form</title>
+    <para>The <menuchoice><guimenu>Add New Item</guimenu></menuchoice>
+    option will appear, automatically selecting the "Web Form" item to add.  Supply
+    a name for the page and click Open to begin.</para></formalpara>
+    <figure id="rthvs005"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs005.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Add a SqlDataAdapter Control</title>
+    <para>With the fresh "Web Form" we can start.
+    From the <menuchoice><guimenu>ToolBox </guimenu></menuchoice>
+    double-click on the <menuchoice><guimenu>SqlDataAdapter</guimenu></menuchoice>
+    in the <menuchoice><guimenu>Data</guimenu></menuchoice> panel.  This will
+    start the <menuchoice><guimenu>Data Adapter Configuration Wizard</guimenu></menuchoice>.
+    After reading the description on the first panel click on the Next button.
+    You will be asked to choose your connection.  Assuming that you have access
+    to a Northwind database hosted in MS SQLServer you can either make use
+    of an existing connection to it or configure a new one using the
+    <menuchoice><guibutton>New Connection</guibutton></menuchoice> button.
+    Pressing the <menuchoice><guibutton>New Connection</guibutton></menuchoice>
+    button will present the normal OLEDB dialogues for creating a new datasource.
+    Once a data connection has been selected press Next to continue.</para></formalpara>
+    <figure id="rthvs006"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs006.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Choose a Query Type</title>
+    <para>The next panel will ask how the data adapter should access the database.
+For simplicity we will stick with the default of Use SQL Statements.  Press Next.</para></formalpara>
+    <figure id="rthvs007"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs007.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Generate SQL Statements</title>
+    <para>At this point you can either type a SQL statement if you know exactly
+    what you are looking to get back from the database, or you can use the
+    <menuchoice><guibutton>Query Builder</guibutton></menuchoice> to
+    point-and-click to your data.  In our case we will retrieve everything from
+    the Customers table using a simple query:<computeroutput>select * from
+    Customers</computeroutput>.</para></formalpara>
+    <figure id="rthvs008"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs008.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Adanced Options</title>
+    <para>Click on the Advanced Options button.  Unselect the top checkbox.
+    This will also unselect the other two automatically.  We will not be performing
+    any updates in this example.  OK the advanced options, upon return to the
+    main dialogue press the Next button to continue onwards. </para></formalpara>
+    <figure id="rthvs009"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs009.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>View Wizard Results</title>
+    <para>The next panel confirms all the options selected leaving us to simply
+    complete the wizard.</para></formalpara>
+    <figure id="rthvs010"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs010.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Back to the main window...</title>
+    <para>When the wizard finishes and returns you to the main Visual Studio
+    window you will see that two controls have been added to the Web Form.
+    The connection control has been automatcally generated to support
+    the Data Adapter.</para></formalpara>
+    <figure id="rthvs011"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs011.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Generate Dataset</title>
+    <para>Before we can display anything on the page we need to
+    form a Dataset.  Right-click on the SQLDataAdapter1 control you previously
+    added and select Generate Dataset.  Defaults on the displayed dialog are
+    all sufficient.  After verifying them click the OK button
+    to generate the dataset.</para></formalpara>
+    <figure id="rthvs015"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs015.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Add a DataGrid Control</title>
+    <para>Now we need to show the dataset that we are fetching from the
+    database.  We will use a simple DataGrid for this.  Open the toolbox in the
+    Web Forms panel and double-click on the DataGrid control.  This add the
+    control to the page and will display a table on the web page view.
+    </para></formalpara>
+    <figure id="rthvs012"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs012.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Table Properties</title>
+    <para>Configure the DataGrid control by right-clicking on the table and selecting
+    <menuchoice><guimenu>Property Builder</guimenu></menuchoice>.</para></formalpara>
+    <figure id="rthvs013"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs013.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>DataGrid Properties</title>
+    <para>You can adjust most properties of the table such as colours,
+    fonts, borders, etc.  You can control paging aspects that will be taken care
+    of automatically by the control, you only need specify the number of
+    results per page.  For now we only want to adjust the most important
+    aspects of the table, where the data comes from.  </para></formalpara>
+    <figure id="rthvs014"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs014.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>DataGrid Bindings</title>
+    <para>From the first <menuchoice><guimenu>General</guimenu></menuchoice>
+    properties panel you must select the DataSource, DataMember, and select the
+    Data key field (especially important for updatable tables).  These properties
+    may be selected via the drop-downs on the panel, allowing you to
+    select the now-familiar controls configured earlier.  Once configured, press the
+    OK button to save the changes.</para></formalpara>
+    <figure id="rthvs016"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs016.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Preview</title>
+    <para>Once the details have been saved the view of the table in the page
+    will be updated to reflect the dataset details.</para></formalpara>
+    <figure id="rthvs017"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs017.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Page Initialization</title>
+    <para>We are very nearly finished.  The controls are all ready to be
+    used, however, the final touch is to edit our Page_Load function.
+    Double-click on the empty part of the web page view in Visual Studio
+    and the associated <computeroutput>.vb</computeroutput> file will be
+    opened.  This is the file containing the actual code.  You will be
+    automatically placed at the Page_Load function.  This is the page
+    initialization section where will need to instruct the DataAdapter to
+    fill with data, and then instruct the DataGrid to bind to that data.</para></formalpara>
+    <para>These lines of code need to be added by hand:</para>
+<programlisting><![CDATA[
+SqlDataAdapter1.Fill(DataSet11)
+DataGrid1.DataBind()
+]]></programlisting>
+
+    <para>You will find that Visual Studio will offer some assistance in the
+    form of intellisence command-completion while you are typing.</para>
+
+    <figure id="rthvs018"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs018.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>The End Result</title>
+    <para>Next we will set the project's initial start-page by right-clicking
+    on the form name in solution explorer and selecting
+    <menuchoice><guimenu>Set as Start Page</guimenu></menuchoice>
+    option.  Finally we can run the project using the start button at the top.
+    The project will automatically be built and a browser window launched
+    automatically.  Admire your results.  When finished, on closing the browser
+    windows you will automatically return to Visual Studio.</para></formalpara>
+    <figure id="rthvs019"><title>Databound Examples using MS Visual Studio</title>
+      <graphic fileref="rth/vs019.jpg" width="" depth=""/></figure>
+  </listitem>
+
+</orderedlist>
+
+
+ </sect3>
+
+ <sect3 id="rthaspxmigratevirt"><title>Migrating ASP.Net Applications to Virtuoso</title>
+    <para>The previous section showed us how to build a very basic web
+    application using an ASPX data-bound control.  Now we will host this same
+    application in Virtuoso demonstrating that IIS is no longer required for
+    ASPX application deployment.</para>
+
+    <orderedlist>
+  <listitem><formalpara><title>Locating your ASPX application</title>
+    <para>Use explorer to locate the ASPX application you want to move
+    away from IIS and re-deploy under Virtuoso.  The previous section created
+    the application in the IIS virtual directory represented by
+    <computeroutput>http://ash:8888/aspxdemo1/</computeroutput> which was
+    physically located in
+    <computeroutput>c:\inetpub\wwwroot\aspxdemo1\</computeroutput>.  We
+    can simply copy this directory and place it somewhere under either the
+    VSP root directory or WebDAV.  We will copy the application to a
+    location in WebDAV for a local Virtuoso server.</para></formalpara>
+    <figure id="rthmig001"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig001.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Add a Network Place to DAV</title>
+    <para>From My Network Places in explorer or Network Neighborhood
+    double-click on the <menuchoice><guibutton>Add Network Place</guibutton></menuchoice>
+    shortcut to start the wizard.</para></formalpara>
+    <figure id="rthmig002"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig002.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Network service provider</title>
+    <para>Select the default option.  Click next to continue.</para></formalpara>
+    <figure id="rthmig003"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig003.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Internet or Network Address</title>
+    <para>Here you specify the URL of DAV on the Virtuoso server.  We
+    are using Virtuoso on the local machine but this could be anywhere on
+    the Internet.  Click next to continue.</para></formalpara>
+    <figure id="rthmig004"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig004.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Name the Network Place</title>
+    <para>Provide the network place with a meaningful name so we
+    can easily find this location in the future.
+    Click on next to continue.</para></formalpara>
+    <figure id="rthmig005"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig005.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Open the Network Place</title>
+    <para>On the final panel of the wizard there is a checkbox to
+    "Open this network place when I click Finish" that we will leave checked.
+    Click Finish to continue and open the DAV directory.</para></formalpara>
+    <figure id="rthmig006"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig006.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Connect to DAV</title>
+    <para>When you attempt to connect to DAV you will be prompted for a User name and
+    Password.  These will be whatever you entered during the installation, possibly
+    both dav, in which case type dav in both fields and press the OK
+    button to continue.</para></formalpara>
+    <figure id="rthmig007"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig007.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Copy the ASPX application to DAV</title>
+    <para>Once the explorer opens up on the DAV network place we can
+    copy the <computeroutput>aspxdemo1</computeroutput> application
+    directory to it.</para></formalpara>
+    <figure id="rthmig008"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig008.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Configure Virtual Directory</title>
+    <para>Now we have to configure a Virtuoso virtual directory.  Launch a
+    web browser and go to the Virtuoso server, which would be
+    <computeroutput>http://localhost/</computeroutput> for this example, and
+    select Administration.  You will be prompted for the DBA user name and password
+    to administor Virtuoso.  These will be whatever you entered during the installation,
+    possibly both dba.  When the menu appears select
+    <menuchoice><guimenu>Web Services</guimenu></menuchoice> followed by
+    <menuchoice><guimenu>HTTP Virtual Directories</guimenu></menuchoice>.
+    You will see the default site listed, we will want to Edit URL mappings for
+    this site.  Click on the action link to continue.</para></formalpara>
+    <figure id="rthmig009"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig009.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Add Virtual Directory</title>
+    <para>The next page will list all mappings currently present for the Virtuoso
+    server.  Scroll down the page to the Add Virtual Directory button and click it.</para></formalpara>
+    <figure id="rthmig010"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig010.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Select DAV Domain template</title>
+    <para>On the next page select the DAV Domain template.</para></formalpara>
+    <figure id="rthmig011"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig011.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>Configure the Virtual Directory parameters</title>
+    <para>We must supply a logical path, <computeroutput>/aspxdemo1</computeroutput>,
+    in this case.  We must also supply the physical path that this represents,
+    we can either type in the DAV location or use the Browse button to the find
+    the directory under DAV.  The WebDAV checkbox will correctly already be checked.
+    For now we will also set to Allow Directory Browsing, and Override execution
+    permissions in WebDAV.  Finally we must set the VSP Execution user to
+    <computeroutput>dba</computeroutput> using the drop down.
+    To save the changes click on the Add button at the bottom of the page.</para></formalpara>
+    <figure id="rthmig012"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig012.jpg" width="" depth=""/></figure>
+  </listitem>
+
+  <listitem><formalpara><title>View the ASPX page hosted in Virtuoso DAV</title>
+    <para>With the virtual directory configured we have only to test that it works
+    as expected.  On opening a browser at:
+    <computeroutput>http://localhost/aspxdemo1/WebForm1.aspx</computeroutput>,
+    we will see the same output as before.</para></formalpara>
+    <figure id="rthmig013"><title>Migrating ASP.Net Applications to Virtuoso</title>
+      <graphic fileref="rth/mig013.jpg" width="" depth=""/></figure>
+  </listitem>
+ </orderedlist>
+
+ <note><title>Note:</title>
+ <para>If ASPX hosting is attempted on a machine that never had IIS installed
+ it is possible that ASP.NET is not configured, although required.  The
+ Virtuoso installer will take care of this for you in most cases but if you run into
+ problems you may want to confirm that ASP.NET is configured correctly.
+ You will have to use the regedit utility to edit the registry, changing a
+ search-path so System.Web.dll can find aspnet_asapi.dll.  Always exercise caution
+ whenever editing the registry as invalid data can prevent your machine
+ from operating properly.</para>
+ <para>You will first need to find out what version of the
+ <computeroutput>aspnet_isapi.dll</computeroutput> library you have.  The
+ simplest way to determine this is by locating the file and right-clicking properties
+ on it from explorer.</para>
+ <para>Assuming the version is 1.0.3705.288, we should enter the following
+ details into the registry if the
+ <computeroutput>HKLM\Microsoft\ASP.NET</computeroutput> key
+ is missing (if your version differs change it accordingly):</para>
+ <programlisting><![CDATA[
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\ASP.NET]
+     "RootVer"="1.0.3705.288"
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\ASP.NET\1.0.3705.288]
+     "Path"="C:\WINDOWS\Microsoft.NET\Framework\v1.0.3705"
+     "DllFullPath"="C:\WINDOWS\Microsoft.NET\Framework\v1.0.3705\aspnet_isapi.dll"
+]]></programlisting>
+ </note>
+
+ </sect3>
+
+ </sect2>
+
+
+ <!-- sect2 id="rthaspxmigratevirtlinux"><title>Migrating ASP.Net Application to Virtuoso on Other Platforms</title>
+ </sect2 -->
+
+
+</sect1>

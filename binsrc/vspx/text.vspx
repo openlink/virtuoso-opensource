@@ -1,0 +1,54 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=iso-8859-1"/>
+    <meta name="generator" content="Adobe GoLive 6"/>
+    <title>Welcome to Adobe GoLive 6</title>
+  </head>
+  <body bgcolor="#ffffff">
+    <v:page name="page1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+      <v:form name="form1" type="simple" method="POST" action="--'text.vspx'">
+        <v:text name="vtext1" value="--('AA')" format="%s" xhtml_width="247" xhtml_height="24" type="--''">
+          <v:before-data-bind>
+            <v:script>
+              <![CDATA[
+                -- declare necessary variable
+                declare var varchar;
+                -- set some value
+                var := 'Test String';
+                -- set value for 'text' control
+                control.ufl_value := var;
+                -- mark that 'text' control is programmically assigned
+                control.vc_data_bound := 1;
+              ]]>
+            </v:script>
+          </v:before-data-bind>
+        </v:text>
+      </v:form>
+    </v:page>
+  </body>
+</html>

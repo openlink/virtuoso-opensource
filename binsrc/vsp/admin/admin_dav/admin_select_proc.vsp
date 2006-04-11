@@ -1,0 +1,121 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _step integer;
+  declare _qual varchar;
+
+  _step := atoi (get_keyword ('step', params, '1'));
+  _qual := get_keyword ('_q', params, '');
+
+?>
+
+<HTML>
+<HEAD>
+    <LINK REL="stylesheet" TYPE="text/css" HREF="../admin_style.css">
+<TITLE>Select Procedure</TITLE>
+</HEAD>
+<SCRIPT LANGUAGE="JavaScript">
+
+<!--
+function setres() {
+      this.res = opener.res;
+}
+
+function returnres( inres )
+{
+  res.value = inres;
+  window.opener.focus();
+  window.close();
+}
+// -->
+
+</SCRIPT>
+<BODY CLASS="adm_pages_body" TOPMARGIN="0" LEFTMARGIN="0" RIGHTMARGIN="0" BOTTOMMARGIN="0" ONLOAD="setres( )">
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+<TR><TD CLASS="AdmPagesTitle"><H2>Web Server Virtual Directories: choose a PL function hook</H2></TD><TD>&nbsp;</TD></TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD CLASS="CtrlMain" COLSPAN="2" ALIGN="middle"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR><TD CLASS="CtrlMain" COLSPAN="2" ALIGN="middle">
+<?include ../adm_js_check.vsp ?>
+
+
+
+<!--?vsp
+ we cannot use this functio because we need to set up the ONLOAD event in BODY
+adm_page_header('Web Server Virtual Directories: choose a PL function hook', ''); ?-->
+
+<?vsp if (_step = 1) { ?>
+<TABLE>
+<?vsp  for (select distinct name_part(P_NAME,0) as P_QUAL from SYS_PROCEDURES) do { ?>
+<TR>
+	<TD><a href="admin_select_proc.vsp?step=2&_q=<?=P_QUAL?>"><?=P_QUAL?></a></TD>
+</TR>
+<?vsp } ?>
+</TABLE>
+
+<?vsp } else { ?>
+<TABLE>
+<?vsp
+
+  if (_qual = 'DB')
+    {
+       http('<TR><TD>&nbsp</TD><TD><b>Built-in PL Authentication functions</b></TD></TR>');
+
+       http('<TR><TD>&nbsp</TD><TD><a href="#" onClick="returnres(\'DB.DBA.HP_AUTH_SQL_USER\')"
+	   >DB.DBA.HP_AUTH_SQL_USER</a></TD></TR>');
+
+       http('<TR><TD>&nbsp</TD><TD><a href="#" onClick="returnres(\'DB.DBA.HP_AUTH_DAV_ADMIN\')"
+	   >DB.DBA.HP_AUTH_DAV_ADMIN</a></TD></TR>');
+
+       http('<TR><TD>&nbsp</TD><TD><a href="#" onClick="returnres(\'DB.DBA.HP_AUTH_DAV_PROTOCOL\')"
+	   >DB.DBA.HP_AUTH_DAV_PROTOCOL</a></TD></TR>');
+
+       http('<TR><TD COLSPAN="2">&nbsp</TD></TR>');
+
+       http('<TR><TD>&nbsp</TD><TD><b>User-defined PL functions</b></TD></TR>');
+    }
+
+  if (_qual = 'WS')
+    {
+       http('<TR><TD>&nbsp</TD><TD><b>Built-in PL Authentication functions</b></TD></TR>');
+
+       http('<TD>&nbsp</TD><TD><a href="#" onClick="returnres(\'WS.WS.DIGEST_AUTH\')"
+	   >WS.WS.DIGEST_AUTH</a></TD>');
+
+       http('<TR><TD COLSPAN="2">&nbsp</TD></TR>');
+
+       http('<TR><TD>&nbsp</TD><TD><b>User-defined PL functions</b></TD></TR>');
+    }
+
+  for (select P_NAME from SYS_PROCEDURES where name_part(P_NAME, 0) = _qual and P_NAME not like '%.%./%' order by P_NAME) do { ?>
+
+  <TR>
+	<TD>&nbsp;</TD>
+	<TD><a href="#" onClick="returnres('<?=P_NAME?>')"><?=P_NAME?></a></TD>
+  </TR>
+<?vsp } ?>
+</TABLE>
+<?vsp } ?>
+</TD></TR>
+<?vsp adm_page_footer(); ?>
+</HTML>

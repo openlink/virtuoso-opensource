@@ -1,0 +1,66 @@
+<h2>panelbar.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>So-called 'panelbar' widget.</p>
+<hr/>
+
+<h3>Objects</h3>
+<ul>
+	<li><a href="#panelbar">Panelbar(fadeDelay)</a></li>
+</ul>
+
+<h3>Methods</h3>
+<ul>
+	<li><a href="#addpanel">Panelbar::addPanel(clicker, element)</a></li>
+	<li><a href="#go">Panelbar::go(index)</a></li>
+</ul>
+
+<h3>CSS classes</h3>
+<ul>
+	<li>.panelbar</li>
+	<li>.panelbar_option</li>
+	<li>.panelbar_option_selected</li>
+	<li>.panelbar_option_upper</li>
+	<li>.panelbar_option_lower</li>
+	<li>.panelbar_content</li>
+</ul>
+
+<hr/>
+
+<h3><a name="panelbar">Panelbar(fadeDelay)</a></h3>
+<p>Creates a panelbar. Its div is accessible as <code>panelbar.div</code>. 
+Fading speed can be controlled via <em>fadeDelay</em>.</p>
+
+<h3><a name="addpanel">Panelbar::addPanel(clicker, element)</a></h3>
+<p>Adds a new panel, contained in <em>element</em>. It will be shown after clicking on <em>clicker</em>.</p>
+
+<h3><a name="go">Panelbar::go(index)</a></h3>
+<p>Swiches to appropriate panel.</p>
+
+<p class="code">
+var header = Dom.create("div"); <br/>
+var body = Dom.create("div"); <br/>
+var panelbar = new Panelbar(10); <br/>
+panelbar.addPanel(header, body); <br/>
+panelbar.go(0);
+</p>

@@ -1,0 +1,121 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!-- $Id$ -->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="home_page" decor="bpel_decor.vspx" style="bpel_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<v:on-init>
+    set isolation='committed';
+</v:on-init>
+<vm:pagewrapper>
+  <v:variable persist="temp" name="r_count" type="integer" default="0"/>
+  <vm:pagetitle>OpenLink BPEL Process Manager Home</vm:pagetitle>
+  <vm:pagebody>
+    <table width="100%" border="0" cellpadding="2" cellspacing="2">
+      <tr>
+        <td>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content_header">
+            <tr>
+	      <td class="paragraph">
+	        Virtuoso Universal Server BPEL Process Manager includes a native BPEL 1.1. engine and deployment platform that
+                provides a number of advanced BPEL features including support for asynchronous business process, long-running
+                transactions, tight integration with Virtuosos Web Services including WS-RM and WS-Security, as well as compensation,
+                fault and event handling.  For more details on these features check out our on-line documentation or tutorials
+                links provided in the Info section below.
+	      </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+            <tr>
+              <th class="info" colspan="5">Tasks</th>
+            </tr>
+            <tr>
+              <td class="home" width="5%">&nbsp;</td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="process.vspx?sid=%s&realm=%s\r\n"><img alt="View Process" title="View Process" src="i/srch_24.png" border="0" /></a>', self.sid ,self.realm));?>
+                <?vsp http(sprintf('<a class="homelinks" href="process.vspx?sid=%s&realm=%s\r\n">View Process</a>', self.sid ,self.realm));?>
+              </td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="incoming.vspx?sid=%s&realm=%s\r\n"><img alt="Debug Process" title="Debug Process" src="i/confg_24.png" border="0" /></a>', self.sid ,self.realm));?>
+                <?vsp http(sprintf('<a class="homelinks" href="incoming.vspx?sid=%s&realm=%s\r\n">Debug Process</a>', self.sid ,self.realm));?>
+              </td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="reports.vspx?sid=%s&realm=%s\r\n"><img alt="View Reports" title="View Reports" src="i/srch_24.png" border="0" /></a>', self.sid ,self.realm));?>
+                <?vsp http(sprintf('<a class="homelinks" href="reports.vspx?sid=%s&realm=%s\r\n">View Reports</a>', self.sid ,self.realm));?>
+              </td>
+              <td class="home" width="5%">&nbsp;</td>
+            </tr>
+            <tr><td class="home" colspan="5">&nbsp;</td></tr>
+            <tr>
+              <td class="home" width="5%">&nbsp;</td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="upload_new.vspx?sid=%s&realm=%s\r\n"><img alt="Upload Process" title="Upload Process" src="i/open_24.png" border="0" /></a>', self.sid ,self.realm));?>
+                <?vsp http(sprintf('<a class="homelinks" href="upload_new.vspx?sid=%s&realm=%s\r\n">Upload Process</a>', self.sid ,self.realm));?>
+              </td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="instances.vspx?sid=%s&realm=%s\r\n"><img alt="View Instances" title="View Instances" src="i/srch_24.png" border="0" /></a>', self.sid ,self.realm));?>
+                <?vsp http(sprintf('<a class="homelinks" href="instances.vspx?sid=%s&realm=%s\r\n">View Instances</a>', self.sid ,self.realm));?>
+              </td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="configure.vspx?sid=%s&realm=%s\r\n"><img alt="Configure System" title="Configure System" src="i/opts_24.png" border="0" /></a>', self.sid ,self.realm));?>
+                <?vsp http(sprintf('<a class="homelinks" href="configure.vspx?sid=%s&realm=%s\r\n">Configure System</a>', self.sid ,self.realm));?>
+              </td>
+              <td class="home" width="5%">&nbsp;</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+            <tr>
+              <th class="info" colspan="5">Info</th>
+            </tr>
+            <tr>
+              <td class="home" width="5%">&nbsp;</td>
+              <td class="home" width="30%">
+                <!--<?vsp http(sprintf('<a class="homelinks" href="http://demo.openlinksw.com/BPELDemo/"><img alt="View On-Line BPEL Tutorials" title="View On-Line BPEL Tutorials" src="i/favs_24.png" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="http://demo.openlinksw.com/BPELDemo/">View On-Line BPEL Tutorials</a>'));?>-->
+                <?vsp http(sprintf('<a class="homelinks" href="/BPELDemo/"><img alt="View On-Line BPEL Tutorials" title="View On-Line BPEL Tutorials" src="i/favs_24.png" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="/BPELDemo/">View On-Line BPEL Tutorials</a>'));?>
+              </td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="/doc/html/bpel.html#bpel"><img alt="BPEL Process Manager Reference Guide" title="BPEL Process Manager Reference Guide" src="i/about_24.png" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="/doc/html/bpel.html#bpel">BPEL Process Manager Reference Guide</a>'));?>
+              </td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="http://demo.usnet.private:8891/bpel4ws/interop"><img alt="BPEL Interop Web site" title="BPEL Interop Web site" src="i/web_24.png" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="http://demo.usnet.private:8891/bpel4ws/interop">BPEL Interop Web site</a>'));?>
+              </td>
+              <td class="home" width="5%">&nbsp;</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

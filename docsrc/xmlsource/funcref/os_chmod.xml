@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_os_chmod">
+    <refmeta>
+	<refentrytitle>os_chmod</refentrytitle>
+	<refmiscinfo>file</refmiscinfo>
+    </refmeta>
+    <refnamediv>
+	<refname>os_chmod</refname>
+	<refpurpose>changes the file access mode of a file</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+	<funcsynopsis id="fsyn_os_chmod">
+	    <funcprototype id="fproto_os_chmod">
+		<funcdef><function>os_chmod</function></funcdef>
+		<paramdef>in <parameter>path</parameter> varchar</paramdef>
+		<paramdef>in <parameter>new_mod</parameter> integer</paramdef>
+	    </funcprototype>
+	</funcsynopsis>
+    </refsynopsisdiv>
+    <refsect1 id="params"><title>Parameters</title>
+	<refsect2><title>path</title>
+	    <para><type>varchar</type> relative path.</para>
+	</refsect2>
+	<refsect2><title>new_mod</title>
+	    <para><type>integer</type> new mode for the file.</para>
+	</refsect2>
+    </refsect1>
+    <refsect1 id="desc"><title>Description</title>
+	<para><function>os_chmod</function> set the file mode bits
+	    by calling the system function chmod() with the arguments supplied.</para>
+	<para>Not all the host OSes support all the file modes. That's why the function
+	    will not throw an SQL error if the function fails.</para>
+	<para>It will return DB NULL value when the function was called succsessfully
+	    and the error message as a string if it failed.</para>
+	<para>In most OSes the mode is a bitmask, so one would usually use the
+	    <function>file_stat</function> to get the current mode and
+	    <function>bit_or</function>/<function>bit_xor</function> to make the new
+	    mode.</para>
+	<para>Typical bit layout (from Linux 'man 2 chmod') is :
+        <simplelist>
+	    <member>bit 0 (mask 1) - execute/search by others </member>
+	    <member>bit 1 (mask 2) - write by others </member>
+	    <member>bit 2 (mask 4) - read by others </member>
+	    <member>bit 3 (mask 8) - execute/search by group </member>
+	    <member>bit 4 (mask 16) - write by group </member>
+	    <member>bit 5 (mask 32) - read by group </member>
+	    <member>bit 6 (mask 64) - execute/search by owner </member>
+	    <member>bit 7 (mask 128) - write by owner </member>
+	    <member>bit 8 (mask 256) - read by owner </member>
+	    <member>bit 9 (mask 512) - sticky bit </member>
+	    <member>bit 10 (mask 1024) - set group ID on execution </member>
+	    <member>bit 12 (mask 2048) - set user ID on execution </member>
+	</simplelist>
+	</para>
+
+	<para>The DirsAllowed and DirsDenied lists in Parameters section of the
+	    virtuoso configuration file (virtuoso.ini by default) are used to control
+	    disk access. </para>
+    </refsect1>
+    <refsect1 id="examples"><title>Examples</title>
+	<example id="ex_os_chmod"><title>Simple example</title>
+	    <para>Make the virtuoso INI file readable by the others</para>
+	    <screen>
+SQL>select os_chmod (virtuoso_ini_path(), bit_or (cast (file_stat (virtuoso_ini_path(), 2) as integer), 4));
+callret
+VARCHAR
+_______________________________________________________________________________
+
+NULL
+	    </screen>
+	</example>
+    </refsect1>
+    <refsect1 id="seealso"><title>See Also</title>
+	<para><link linkend="fn_file_delete"><function>file_delete</function></link></para>
+	<para><link linkend="fn_file_stat"><function>file_stat</function></link></para>
+	<para><link linkend="fn_os_chown"><function>os_chown</function></link></para>
+	<para><link linkend="fn_virtuoso_ini_path"><function>virtuoso_ini_path</function></link></para>
+	<para><link linkend="fn_bit_or"><function>bit_or</function></link></para>
+	<para><link linkend="fn_bit_xor"><function>bit_xor</function></link></para>
+    </refsect1>
+</refentry>

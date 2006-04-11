@@ -1,0 +1,1707 @@
+/*
+ *  log.c
+ *
+ *  $Id$
+ *
+ *  Transaction log write and recovery
+ *  
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *  
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *  
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  
+ *  
+*/
+
+#include "sqlnode.h"
+#include "sqlfn.h"
+#include "log.h"
+#include "repl.h"
+/* IvAn/XperUpdate/000904 Xper support added. */
+#include "xmltree.h"
+
+#ifdef WIN32
+# include "wiservic.h"
+#endif
+
+#ifdef VIRTTP
+#define LOG_MTS_2PC_PREPARE	0x0E
+#define LOG_VIRT_2PC_PREPARE	0x0F
+#define LOG_XA_2PC_PREPARE	0x10
+#define LOG_2PC_COMMIT		0x01
+#define LOG_2PC_ABORT		0x02
+#define LOG_MTS_ENABLED		0x03
+#define LOG_2PC_DISABLED	0x04
+
+#define LOG_2PC_COMMIT_S	"\001"
+#define LOG_2PC_ABORT_S		"\002"
+
+#include "2pc.h"
+#include "msdtc.h"
+
+int virt_tp_recover (box_t recovery_data);
+
+int log_2pc_count=0;
+#endif
+
+
+caddr_t list (long n, ...);
+void tcpses_set_fd (session_t * ses, int fd);
+int tcpses_get_fd (session_t * ses);
+
+int is_old_log_type = 0;
+
+int _xa_log_ctr = 0;
+
+
+void
+err_log_error (caddr_t err)
+{
+  if (err == (caddr_t) SQL_NO_DATA_FOUND)
+    log_error ("SQL Error: No data found");
+  else
+    {
+      log_error ("SQL Error: %s : %s",
+          ((caddr_t *) err)[1], ((caddr_t *) err)[2]);
+    }
+}
+
+void
+log_set_byte_order_check(int in_txn)
+{
+  char tmp[255];
+  caddr_t * cbox;
+  dk_session_t * ses;
+  caddr_t box;
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  caddr_t trx_string;
+
+  if (!dbs->dbs_log_session)
+    return;
+
+  sprintf (tmp, "byte_order_check (%d)", DB_SYS_BYTE_ORDER);
+  cbox = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * LOG_HEADER_LENGTH,
+				   DV_ARRAY_OF_POINTER);
+  ses = strses_allocate();
+  CATCH_WRITE_FAIL (dbs->dbs_log_session)
+    {
+
+      session_buffered_write_char (LOG_TEXT, ses);
+      box = box_string (tmp);
+      print_object (box, ses, NULL, NULL);
+      dk_free_box (box);
+
+      trx_string = strses_string (ses);
+
+      memset (cbox, 0, sizeof (caddr_t) * LOG_HEADER_LENGTH);
+      cbox[LOGH_TIME] = 0;
+      cbox[LOGH_2PC] = box_num(LOG_2PC_DISABLED);
+      cbox[LOGH_USER] = box_string ("");
+      cbox[LOGH_BYTES] = box_num (strses_length (ses));
+
+      print_object ((caddr_t) cbox, dbs->dbs_log_session, NULL, NULL);
+      session_buffered_write (dbs->dbs_log_session, trx_string, strses_length (ses));
+      dk_free_box (trx_string);
+      strses_free (ses);
+      dk_free_tree ((caddr_t*) cbox);
+    }
+  END_WRITE_FAIL (dbs->dbs_log_session);
+}
+
+int
+log_enable_segmented (int rewrite)
+{
+  int fd;
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  log_segment_t *ls = dbs->dbs_log_segments;
+  if (!ls)
+    return LTE_OK;
+  dbs->dbs_current_log_segment = ls;
+  dbs->dbs_log_name = box_string (ls->ls_file);
+  fd = fd_open (ls->ls_file, OPEN_FLAGS);
+  if (fd < 0)
+    return LTE_LOG_FAILED;
+  if (!dbs->dbs_log_session)
+    {
+      dbs->dbs_log_session = dk_session_allocate (SESCLASS_TCPIP);
+    }
+  else
+    {
+      close (tcpses_get_fd (dbs->dbs_log_session->dks_session));
+    }
+  tcpses_set_fd (dbs->dbs_log_session->dks_session, fd);
+  if (rewrite)
+    {
+    FTRUNCATE (fd, 0);
+      log_set_byte_order_check(1);
+    }
+  return LTE_OK;
+}
+
+
+void
+srv_report_errno_trx_error (lock_trx_t *lt, const char *text, const char *name, int eno)
+{
+  LT_ERROR_DETAIL_SET (lt,
+        box_sprintf (300,
+	"%.30s %.160s : %.100s", text, name, virt_strerror (eno)));
+}
+
+
+int
+log_change_if_needed (lock_trx_t * lt, int rewrite)
+{
+  int old_fd;
+  int new_fd;
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  log_segment_t *ls = dbs->dbs_current_log_segment;
+  if (lt->lt_backup)
+    return LTE_OK;
+  if (!ls || !dbs->dbs_log_session)
+    return LTE_OK;
+  if (dbs->dbs_log_length > ls->ls_bytes)
+    {
+      old_fd = tcpses_get_fd (dbs->dbs_log_session->dks_session);
+      ls = ls->ls_next;
+      if (!ls)
+	{
+	  LT_ERROR_DETAIL_SET (lt, box_dv_short_string ("No more log segments"));
+	  return LTE_LOG_FAILED;
+	}
+      dbs->dbs_current_log_segment = ls;
+      new_fd = fd_open (ls->ls_file, OPEN_FLAGS);
+      if (new_fd < 0)
+	{
+	  srv_report_errno_trx_error (lt, "Error opening the log segment file",
+	      ls->ls_file, errno);
+	  return LTE_LOG_FAILED;
+	}
+      close (old_fd);
+      tcpses_set_fd (dbs->dbs_log_session->dks_session, new_fd);
+      dbs->dbs_log_length = 0;
+      dbs->dbs_log_name = box_string (ls->ls_file);
+      if (rewrite)
+	{
+	FTRUNCATE (new_fd, 0);
+	  log_set_byte_order_check(1);
+	}
+    }
+  return LTE_OK;
+}
+
+
+int
+log_commit (lock_trx_t * lt)
+{
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  volatile OFF_T prev_length;
+  dk_session_t * volatile log_ses;
+  long bytes = strses_length (lt->lt_log);
+  caddr_t *cbox;
+  if (lt->lt_replicate == REPL_NO_LOG
+      || !bytes)
+    return LTE_OK;
+  prev_length = dbs->dbs_log_length;
+  log_ses = dbs->dbs_log_session;
+  if (!dbs->dbs_log_session)
+    {
+      OFF_T off;
+      int fd;
+      file_set_rw (dbs->dbs_log_name);
+      fd = fd_open (dbs->dbs_log_name, OPEN_FLAGS);
+      off = LSEEK (fd, 0, SEEK_END);
+      if (strchr (wi_inst.wi_open_mode, 'D') && off)
+	{
+	  log_error ("There is a non-zero length log when starting crash dump.  Please move this log away, complete  the crash dump and recovery and then replay this log, using the -R or +restore-crash-dump command line option.  Exiting.\n");
+	  exit (1);
+	}
+      log_ses = dbs->dbs_log_session = dk_session_allocate (SESCLASS_TCPIP);
+      tcpses_set_fd (dbs->dbs_log_session->dks_session, fd);
+    }
+
+  cbox = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * LOG_HEADER_LENGTH,
+				   DV_ARRAY_OF_POINTER);
+  memset (cbox, 0, sizeof (caddr_t) * LOG_HEADER_LENGTH);
+  cbox[LOGH_TIME] = 0;
+  if (lt->lt_client->cli_user)
+    cbox[LOGH_USER] = box_string (lt->lt_client->cli_user->usr_name);
+  else
+    cbox[LOGH_USER] = box_string ("");
+
+
+#ifdef VIRTTP
+  if ((LT_PREPARE_PENDING == lt->lt_status) &&
+      lt->lt_2pc._2pc_log)
+    {
+      log_2pc_count++;
+      if (lt->lt_2pc._2pc_type == TP_VIRT_TYPE)
+	cbox[LOGH_2PC] = box_num(LOG_VIRT_2PC_PREPARE);
+      else if (lt->lt_2pc._2pc_type == TP_MTS_TYPE)
+	cbox[LOGH_2PC] = box_num(LOG_MTS_2PC_PREPARE);
+      else if (lt->lt_2pc._2pc_type == TP_XA_TYPE)
+	cbox[LOGH_2PC] = box_num(LOG_XA_2PC_PREPARE);
+      else
+	GPF_T1 ("unknown type of distributed transaction");
+      cbox[LOGH_BYTES] = box_num (bytes + box_length(lt->lt_2pc._2pc_log)+2);
+      /* log_info ("box.l=%d", box_length (lt->lt_2pc._2pc_log)); */
+    } else
+      {
+	cbox[LOGH_2PC] = box_num(LOG_2PC_DISABLED);
+	cbox[LOGH_BYTES] = box_num (bytes);
+      }
+#else
+    cbox[LOGH_BYTES] = box_num (bytes);
+#endif
+
+  if (lt->lt_backup)
+    {
+      log_ses = lt->lt_backup;
+      prev_length = lt->lt_backup_length;
+    }
+  log_ses->dks_bytes_sent = 0;
+  CATCH_WRITE_FAIL (log_ses)
+  {
+    print_object ((caddr_t) cbox, log_ses, NULL, NULL);
+#ifdef VIRTTP
+    if (LT_PREPARE_PENDING == lt->lt_status)
+      {
+	lt->lt_2pc._2pc_logged = prev_length + log_ses->dks_bytes_sent
+	    + log_ses->dks_out_fill - 1;
+	if (lt->lt_2pc._2pc_log)
+	  print_object ((caddr_t) lt->lt_2pc._2pc_log, log_ses, NULL, NULL);
+	dk_free_box(lt->lt_2pc._2pc_log);
+	lt->lt_2pc._2pc_log = 0;
+	if (lt->lt_2pc._2pc_type == TP_XA_TYPE)
+	  {
+	    mutex_enter (global_xa_map->xm_mtx);
+	    txa_from_trx (lt, dbs->dbs_log_name);
+	    mutex_leave (global_xa_map->xm_mtx);
+	  }
+      }
+#endif
+    strses_write_out (lt->lt_log, log_ses);
+    session_flush_1 (log_ses);
+  }
+  END_WRITE_FAIL (log_ses);
+  if (lt->lt_blob_log)
+    {
+#if 0 /*GK: unused*/
+      lt->lt_blob_log_start = log_ses->dks_bytes_sent + dbs->dbs_log_length;
+#endif
+      lt_write_blob_log (lt, log_ses);
+    }
+#if 0 /*GK: unused*/
+  else
+    {
+      lt->lt_blob_log_start = 0;
+    }
+#endif
+
+  if (!lt->lt_backup)
+    {
+      dk_free_tree ((caddr_t) cbox);
+    }
+  else
+    dk_free_tree ((caddr_t) cbox);
+  lt->lt_replicate = NULL;
+
+  if (!DKSESSTAT_ISSET (log_ses, SST_OK))
+    {
+      FTRUNCATE (tcpses_get_fd (log_ses->dks_session), prev_length);
+      log_error ("Out of disk space for log");
+      LT_ERROR_DETAIL_SET (lt, box_dv_short_string ("Out of disk space for log"));
+      return LTE_LOG_FAILED;
+    }
+
+  {
+      if (!lt->lt_backup)
+	dbs->dbs_log_length += log_ses->dks_bytes_sent;
+      else
+	lt->lt_backup_length += log_ses->dks_bytes_sent;
+      if (autocheckpoint_log_size > 0 &&
+	  dbs->dbs_log_length >= autocheckpoint_log_size &&
+	  !auto_cpt_scheduled)
+      {
+	auto_cpt_scheduled = 1;
+	semaphore_leave(background_sem);
+      }
+#ifndef VIRTTP
+      return (log_change_if_needed (lt, 1));
+#else
+      if (!log_2pc_count)
+	return (log_change_if_needed (lt, 1));
+      else
+	{
+	  log_audit_trail = 0;
+	  return LTE_OK;
+	}
+#endif
+    }
+}
+
+#ifdef VIRTTP
+int
+log_final_transact(lock_trx_t* lt, int is_commit)
+{
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  if (lt->lt_2pc._2pc_logged) {
+      struct stat st;
+      int fd = tcpses_get_fd(dbs->dbs_log_session->dks_session);
+      fstat(fd,&st);
+      LSEEK(fd,lt->lt_2pc._2pc_logged,SEEK_SET);
+      write(fd,is_commit ? LOG_2PC_COMMIT_S : LOG_2PC_ABORT_S ,1);
+      LSEEK(fd,0,SEEK_END);
+      lt->lt_2pc._2pc_logged = 0;
+      if (!--log_2pc_count)
+        return log_change_if_needed (lt, 1);
+  };
+  return log_change_if_needed (lt, 1);
+}
+#endif
+
+void
+log_rollback (lock_trx_t * lt)
+{
+  /* Free ext. storage, ie.e temp files, if any. */
+}
+
+
+void
+itc_log_prime_key (it_cursor_t * it, db_buf_t page, dk_session_t * log,
+		   dbe_key_t * key)
+{
+  db_buf_t row = page + it->itc_position;
+  db_buf_t row_data = row + IE_FIRST_KEY;
+  int end = 0, inx;
+  int len = IE_FIRST_KEY + key->key_length_area;
+  int n_vars = key->key_key_n_vars;
+  if (n_vars)
+    {
+      dbe_col_loc_t * last_v;
+      last_v = &key->key_key_var[n_vars - 1];
+      len += n_vars * sizeof (short);
+      if (CL_FIRST_VAR == last_v->cl_fixed_len)
+	end = SHORT_REF (row_data + key->key_length_area);
+      else
+	end = SHORT_REF ((row_data - last_v->cl_fixed_len) + 2);
+      len += end - key->key_row_var_start;
+    }
+  if (len > 255)
+    {
+      session_buffered_write_char (DV_LONG_STRING, log);
+      print_long (len, log);
+    }
+  else
+    {
+      session_buffered_write_char (DV_SHORT_STRING_SERIAL, log);
+      session_buffered_write_char (len, log);
+    }
+  session_buffered_write (log, (const char *) row, key->key_length_area + IE_FIRST_KEY);
+
+  if (n_vars)
+    {
+      short tmp;
+      for (inx = 0; inx < n_vars; inx++)
+	{
+	  tmp = SHORT_REF (row_data + key->key_length_area + (inx * sizeof (short)));
+	  tmp -= key->key_row_var_start - key->key_key_var_start;
+	  session_buffered_write_char (((dtp_t*)&tmp)[0], log);
+	  session_buffered_write_char (((dtp_t*)&tmp)[1], log);
+	}
+      session_buffered_write (log, (const char *) (row_data + key->key_row_var_start),
+	  end - key->key_row_var_start);
+    }
+}
+
+
+long txn_after_image_limit = 50000000L;
+#define TXN_CHECK_LOG_IMAGE(lt) \
+  if (txn_after_image_limit > 0 && lt->lt_log->dks_bytes_sent > (OFF_T) txn_after_image_limit) \
+    { \
+      (lt)->lt_status = LT_BLOWN_OFF; \
+      (lt)->lt_error = LTE_LOG_IMAGE; \
+    }
+
+void
+log_insert (lock_trx_t * lt, dbe_key_t * key, db_buf_t row, int flag)
+{  dk_session_t *log;
+  long l;
+  lt_hi_row_change (lt, key->key_super_id, LOG_INSERT, row);
+  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+    return;
+  log = lt->lt_log;
+  l = row_length (row, key);
+  mutex_enter (lt->lt_log_mtx);
+  if (flag == INS_REPLACING)
+    session_buffered_write_char (LOG_INSERT_REPL, lt->lt_log);
+  else if (flag == INS_SOFT)
+    session_buffered_write_char (LOG_INSERT_SOFT, lt->lt_log);
+  else
+    session_buffered_write_char (LOG_INSERT, lt->lt_log);
+
+  if (l < 256)
+    {
+      session_buffered_write_char (DV_SHORT_STRING_SERIAL, log);
+      session_buffered_write_char ((dtp_t) l, log);
+    }
+  else
+    {
+      session_buffered_write_char (DV_LONG_STRING, log);
+      print_long (l, log);
+    }
+  session_buffered_write (log, (char *) row, l);
+
+  TXN_CHECK_LOG_IMAGE (lt);
+  mutex_leave (lt->lt_log_mtx);
+}
+
+
+void
+log_delete (lock_trx_t * lt, it_cursor_t * it, db_buf_t page, int pos)
+{
+  int old_pos = it->itc_position;
+  lt_hi_row_change (lt, it->itc_row_key->key_super_id, LOG_DELETE, NULL);
+  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+    return;
+  mutex_enter (lt->lt_log_mtx);
+
+  session_buffered_write_char (LOG_DELETE, lt->lt_log);
+  it->itc_position = pos;
+  itc_log_prime_key (it, page, lt->lt_log, it->itc_row_key);
+  it->itc_position = old_pos;
+  mutex_leave (lt->lt_log_mtx);
+}
+
+
+void
+log_text (lock_trx_t * lt, char *text)
+{
+  caddr_t box;
+  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+    return;
+  mutex_enter (lt->lt_log_mtx);
+
+  session_buffered_write_char (LOG_TEXT, lt->lt_log);
+  box = box_string (text);
+  print_object (box, lt->lt_log, NULL, NULL);
+  dk_free_box (box);
+  TXN_CHECK_LOG_IMAGE (lt);
+  mutex_leave (lt->lt_log_mtx);
+}
+
+
+void
+log_text_array (lock_trx_t * lt, caddr_t box)
+{
+  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+    return;
+  mutex_enter (lt->lt_log_mtx);
+  session_buffered_write_char (LOG_TEXT, lt->lt_log);
+  print_object (box, lt->lt_log, NULL, NULL);
+  TXN_CHECK_LOG_IMAGE (lt);
+  mutex_leave (lt->lt_log_mtx);
+}
+
+
+void
+log_sequence (lock_trx_t * lt, char *text, long count)
+{
+  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+    return;
+  mutex_enter (lt->lt_log_mtx);
+  session_buffered_write_char (LOG_SEQUENCE, lt->lt_log);
+  print_object (text, lt->lt_log, NULL, NULL);
+  print_long (count, lt->lt_log);
+  TXN_CHECK_LOG_IMAGE (lt);
+  mutex_leave (lt->lt_log_mtx);
+}
+
+
+void
+log_sequence_remove (lock_trx_t * lt, char *text)
+{
+  log_text_array (lt, list (2,
+	box_string ("sequence_remove (?)"),
+	box_dv_short_string (text)));
+}
+
+
+void
+log_update (lock_trx_t * lt, it_cursor_t * it, db_buf_t page,
+    update_node_t * upd, caddr_t * qst)
+{
+  int inx;
+  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+    return;
+  mutex_enter (lt->lt_log_mtx);
+  session_buffered_write_char (LOG_UPDATE, lt->lt_log);
+  itc_log_prime_key (it, page, lt->lt_log, it->itc_row_key);
+
+  if (upd->upd_cols_param)
+    {
+      caddr_t vals = qst_get (qst, upd->upd_values_param);
+      caddr_t cols = qst_get (qst, upd->upd_cols_param);
+      print_object (cols, lt->lt_log, NULL, NULL);
+      print_object (vals, lt->lt_log, NULL, NULL);
+    }
+  else
+    {
+      state_slot_t **vals = upd->upd_values;
+      print_object ((caddr_t) upd->upd_col_ids, lt->lt_log, NULL, NULL);
+
+      session_buffered_write_char (DV_ARRAY_OF_POINTER, lt->lt_log);
+      print_int (BOX_ELEMENTS (vals), lt->lt_log);
+
+      for (inx = 0; ((uint32) inx) < BOX_ELEMENTS (vals); inx++)
+	{
+	  caddr_t data = qst_get (qst, vals[inx]);
+	  switch (DV_TYPE_OF (data))
+	    {
+	    case DV_BLOB_HANDLE:
+	    case DV_BLOB_WIDE_HANDLE:
+	      {
+		int from_c = ((blob_handle_t *) data)->bh_ask_from_client;
+		((blob_handle_t *) data)->bh_ask_from_client = 1;
+		print_object (data, lt->lt_log, NULL, NULL);
+		((blob_handle_t *) data)->bh_ask_from_client = from_c;
+		break;
+	      }
+/* IvAn/XperUpdate/000904 Xper support added.
+   For trees, log update uses plain serialization xte_serialize(), file xmltree.c.
+   For Xper, special handler (xp_log_update(), file bif_xper) needed, because
+   it's necessary to record only the blob itself.
+   */
+            case DV_XML_ENTITY:
+              {
+                ((xml_entity_t *)data)->_->xe_log_update(((xml_entity_t *)data),lt->lt_log);
+                break;
+              }
+	    default:
+	      if (IS_BOX_POINTER (data))
+		print_object (data, lt->lt_log, NULL, NULL);
+	      else
+		print_int ((long) (ptrlong) data, lt->lt_log);
+	    }
+	}
+    }
+  TXN_CHECK_LOG_IMAGE (lt);
+  mutex_leave (lt->lt_log_mtx);
+}
+
+
+void log_sc_change_1 (lock_trx_t * lt)
+{
+  session_buffered_write_char (LOG_SC_CHANGE_1, lt->lt_log);
+}
+void log_sc_change_2 (lock_trx_t * lt)
+{
+  session_buffered_write_char (LOG_SC_CHANGE_2, lt->lt_log);
+}
+
+void
+log_dd_change (lock_trx_t * lt, char * tb)
+{
+  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+    return;
+
+  if (tb)
+    {
+      caddr_t tmp = box_string (tb);
+      caddr_t tree = list (2, box_string ("__ddl_changed (?)"), tmp);
+      box_tag_modify (tree, DV_ARRAY_OF_POINTER);
+      log_text_array (lt, tree);
+      dk_free_tree (tree);
+    }
+  else
+    session_buffered_write_char (LOG_DD_CHANGE, lt->lt_log);
+}
+
+
+void
+log_dd_type_change (lock_trx_t * lt, char * udt_name, caddr_t tree)
+{
+  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+    return;
+
+  if (tree)
+    {
+      caddr_t tmp = box_string (udt_name);
+      caddr_t tmp2 = box_copy_tree (tree);
+      caddr_t tree = list (3, box_string ("__ddl_type_changed (?, ?)"), tmp, tmp2);
+      box_tag_modify (tree, DV_ARRAY_OF_POINTER);
+      log_text_array (lt, tree);
+      dk_free_tree (tree);
+    }
+  else if (udt_name)
+    {
+      caddr_t tmp = box_string (udt_name);
+      caddr_t tree = list (2, box_string ("__ddl_type_changed (?)"), tmp);
+      box_tag_modify (tree, DV_ARRAY_OF_POINTER);
+      log_text_array (lt, tree);
+      dk_free_tree (tree);
+    }
+  else
+    GPF_T;
+}
+
+
+/*
+   LOG REPLAY
+ */
+
+
+query_t *ins_replay;
+query_t *s_ins_replay;
+query_t *r_ins_replay;
+
+
+char *ins_replay_text = "(seq (row_insert :PL replacing) (end))";
+char *s_ins_replay_text = "(seq (row_insert :PL soft) (end))";
+char *r_ins_replay_text = "(seq (row_insert :PL replacing) (end))";
+
+caddr_t
+log_replay_insert (lock_trx_t * lt, dk_session_t * in, int flag)
+{
+  query_t *st;
+  caddr_t err;
+  db_buf_t row = (db_buf_t) scan_session (in);
+
+  if (!ins_replay)
+    {
+      ins_replay = eql_compile (ins_replay_text, bootstrap_cli);
+      s_ins_replay = eql_compile (s_ins_replay_text, bootstrap_cli);
+      r_ins_replay = eql_compile (r_ins_replay_text, bootstrap_cli);
+    }
+  if (flag == LOG_INSERT_SOFT)
+    st = s_ins_replay;
+  else if (flag == LOG_INSERT_REPL)
+    st = r_ins_replay;
+  else
+    st = ins_replay;
+  err = qr_quick_exec (st, lt->lt_client, "x", NULL, 1,
+		       ":PL", row, QRP_RAW);
+  return err;
+}
+
+
+resource_t *del_rc;
+char *del_replay_text = "(seq (row_deref :PL place P)(delete P) (end))";
+
+resource_t *upd_rc;
+char *upd_replay_text = "(seq (row_deref :PL place P)(update_ind P :COLS :VALS) (end))";
+
+
+#define LOG_REPL_OPTIONS(opts) \
+  char opts##_buf[sizeof(stmt_options_t) + 8]; \
+  caddr_t opts_ptr; \
+  stmt_options_t *opts; \
+  BOX_AUTO(opts_ptr, opts##_buf, sizeof(stmt_options_t), DV_ARRAY_OF_LONG); \
+  opts = (stmt_options_t *)opts_ptr; \
+  memset (opts, 0, sizeof (stmt_options_t)); \
+  opts->so_concurrency = SQL_CONCUR_LOCK;
+
+caddr_t
+log_replay_delete (lock_trx_t * lt, dk_session_t * in)
+{
+  db_buf_t row = (db_buf_t) scan_session (in);
+
+  query_t *qr = (query_t *) resource_get (del_rc);
+  caddr_t err;
+  LOG_REPL_OPTIONS (opts);
+
+  if (!qr)
+    qr = eql_compile (del_replay_text, lt->lt_client);
+  err = qr_rec_exec (qr, lt->lt_client, NULL, CALLER_LOCAL, opts, 1,
+		     ":PL", row, QRP_RAW);
+  resource_store (del_rc, (void *) qr);
+
+  if (err != SQL_SUCCESS)
+    {
+      err_log_error (err);
+    }
+  return err;
+}
+
+
+caddr_t
+log_replay_update (lock_trx_t * lt, dk_session_t * in)
+{
+  db_buf_t row = (db_buf_t) scan_session (in);
+  caddr_t cols = (caddr_t) scan_session (in);
+  caddr_t vals;
+
+  query_t *qr = (query_t *) resource_get (upd_rc);
+  caddr_t err;
+  LOG_REPL_OPTIONS (opts);
+
+  vals = (caddr_t) scan_session (in);
+  if (!qr)
+    qr = eql_compile (upd_replay_text, lt->lt_client);
+  err = qr_rec_exec (qr, lt->lt_client, NULL, CALLER_LOCAL, opts, 3,
+		     ":PL", row, QRP_RAW,
+		     ":COLS", cols, QRP_RAW,
+		     ":VALS", vals, QRP_RAW);
+  resource_store (upd_rc, (void *) qr);
+
+  if (err != SQL_SUCCESS)
+    {
+      err_log_error (err);
+    }
+  return err;
+}
+
+
+caddr_t
+log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback)
+{
+  int n_args = 0;
+  caddr_t *entry = (caddr_t *) scan_session (in);
+  dtp_t dtp = DV_TYPE_OF (entry);
+  caddr_t text = DV_ARRAY_OF_POINTER == dtp ? entry[0] : (caddr_t) entry;
+  caddr_t err = NULL;
+  caddr_t stmt_id = box_dv_short_string ("repl_stmt");
+  query_t *qr;
+  srv_stmt_t * sst;
+  int inx;
+  caddr_t *arr = NULL;
+  LOG_REPL_OPTIONS (opts);
+
+  if (!is_pushback)
+    {
+      if (dtp == DV_ARRAY_OF_POINTER)
+        n_args = BOX_ELEMENTS (entry) - 1;
+    }
+  else
+    {
+      /*
+       * do conflict resolution
+       */
+      int n_cols;     /* number of additional params in log record */
+      int n_cr_args;  /* number of cr args */
+      int i;
+
+      char *p, *q, *table_name;
+      static char cr_prefix[] = "\"replcr_";
+      static char insert_stmt[] = "insert replacing ";
+      static char update_stmt[] = "update ";
+      static char delete_stmt[] = "delete from ";
+      int cr_type;
+      int dot;
+      int in_quot;
+
+      caddr_t stmt;
+      local_cursor_t * lc = NULL;
+      caddr_t *proc_ret;
+      int retc = 0;
+      LOG_REPL_OPTIONS (cr_opts);
+
+      if (!strncmp (text, insert_stmt, sizeof(insert_stmt) - 1))
+        {
+          cr_type = 'I';
+          table_name = text + sizeof (insert_stmt) - 1;
+        }
+      else if (!strncmp (text, update_stmt, sizeof(update_stmt) - 1))
+        {
+          cr_type = 'U';
+          table_name = text + sizeof (update_stmt) - 1;
+        }
+      else if (!strncmp (text, delete_stmt, sizeof(delete_stmt) - 1))
+        {
+          cr_type = 'D';
+          table_name = text + sizeof (delete_stmt) - 1;
+        }
+      else
+        {
+          dbg_printf_1 (("log_replay_text: '%s': unknown statement type, skipping conflict resolution",
+              text));
+          goto cr_done;
+        }
+
+      if (dtp != DV_ARRAY_OF_POINTER)
+        {
+          dk_free_box ((box_t) entry);
+          return srv_make_new_error ("42000", "TR083",
+              "log_replay_text: dtp is not DV_ARRAY_OF_POINTER (%d)", dtp);
+        }
+      n_args = BOX_ELEMENTS(entry) - 1;
+      n_cols = 0;
+
+      /*
+       * 'I': stmt, all new cols
+       * 'U': stmt, all new cols, old pk, all old cols, num
+       * 'D': stmt, old pk, all old cols, num
+       */
+      if (cr_type == 'I')
+        n_cols = n_args;
+      else
+        {
+          /*
+           * get n_cols
+           */
+          if ((dtp = DV_TYPE_OF(entry [n_args])) != DV_LONG_INT)
+            {
+              dk_free_tree ((box_t) entry);
+              return srv_make_new_error ("42000", "TR084",
+                 "log_replay_text: n_cols is not DV_LONG_INT (%d)", dtp);
+            }
+          n_cols = (int) unbox (entry [n_args]);
+          if (n_cols <= 0)
+            {
+              dk_free_tree ((box_t) entry);
+              return srv_make_new_error ("42000", "TR085",
+                  "log_replay_text: invalid n_cols (%d)", n_cols);
+            }
+          n_args -= n_cols + 1;
+          if (n_args < 0)
+            {
+              dk_free_tree ((box_t) entry);
+              return srv_make_new_error ("42000", "TR086",
+                  "log_replay_text: n_cols (%d) + 1 > n_args (%d)",
+                  n_cols, n_args);
+            }
+        }
+      if (cr_type == 'U')
+        n_cr_args = n_cols + n_cols + 1;
+      else
+        n_cr_args = n_cols + 1;
+#if 0
+      dbg_printf_1 (("cr_type: '%c', n_cols: %d, n_args: %d, n_cr_args: %d",
+          cr_type, n_cols, n_args, n_cr_args));
+#endif
+
+      /*
+       * 3                   -- for '_X"'
+       * 1                   -- for opening brace '('
+       * (3 * n_cr_args - 2) -- for '?, ' (last arg does not have ', ')
+       * 1                   -- for closing brace ')'
+       * trailing NUL is counted in sizeof(cr_prefix);
+       */
+      if ((q = strchr (table_name, ' ')) == NULL)
+        q = strchr (table_name, '\0');
+      stmt = dk_alloc_box (
+          sizeof(cr_prefix) + (q - table_name) * 2 +
+          3 + 1 + (3 * n_cr_args - 2) + 1, DV_LONG_STRING);
+      /* first two name parts */
+      q = stmt;
+      dot = 0;
+      for (p = table_name; *p != ' ' && *p != '\0'; p++)
+        {
+          *q++ = *p;
+          if (*p == '.' && ++dot == 2)
+            break;
+        }
+      /* cr_prefix */
+      strcpy_size_ck (q, cr_prefix, box_length (stmt) - (q - stmt));
+      q += sizeof (cr_prefix) - 1;
+      /* table name */
+      in_quot = 0;
+      for (p = table_name; *p != '\0'; p++)
+        {
+          if (*p == '"')
+            {
+              if (!in_quot)
+                {
+                  in_quot = 1;
+                  continue;
+                }
+
+              if (*(p + 1) != '"')
+                {
+                  in_quot = 0;
+                  continue;
+                }
+
+              *q++ = *p++;
+              *q++ = *p;
+              continue;
+            }
+
+          if (*p == ' ' && !in_quot)
+            break;
+          if (*p == '.')
+            {
+              *q++ = '_';
+              continue;
+            }
+          *q++ = *p;
+        }
+      *q++ = '_';
+      *q++ = cr_type;
+      *q++ = '"';
+      *q++ = '(';
+      *q++ = '\0';
+      for (inx = 0; inx < n_cr_args; inx++)
+        {
+          if (inx)
+            strcat_box_ck (stmt, ", ");
+          strcat_box_ck (stmt, "?");
+        }
+      strcat_box_ck (stmt, ")");
+#if 0
+      log_debug ("stmt: '%s'", stmt);
+#endif
+
+      /*
+       * execute conflict resolving procedure
+       */
+      qr = sql_compile (stmt, lt->lt_client, &err, SQLC_DEFAULT);
+      if (!qr)
+        {
+          dk_free_box (stmt);
+          dk_free_tree ((box_t) entry);
+          return err;
+        }
+      arr = (caddr_t *) dk_alloc_box (
+          n_cr_args * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      inx = 0;
+      if (cr_type == 'I' || cr_type == 'U')
+        {
+          /* copy all new cols */
+          for (i = 0; i < n_cols; i++, inx++)
+	    arr [inx] = box_copy (entry [1 + i]);
+        }
+      if (cr_type == 'D' || cr_type == 'U')
+        {
+          /* copy all old cols */
+          for (i = 0; i < n_cols; i++, inx++)
+            arr[inx] = box_copy (entry [1 + n_args + i]);
+        }
+      arr [inx++] = box_copy (lt->lt_replica_of);
+      err = qr_exec (
+          lt->lt_client, qr, CALLER_LOCAL, NULL, NULL, &lc,
+          arr, cr_opts, 0);
+      dk_free_box ((box_t) arr);
+      qr_free (qr);
+      dk_free_box (stmt);
+
+      if (err != NULL)
+        {
+          dk_free_tree ((box_t) entry);
+          return err;
+        }
+      if (!lc)
+        {
+          dk_free_tree ((box_t) entry);
+          return srv_make_new_error ("42000", "TR087",
+              "log_replay_text: NULL lc");
+        }
+      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (lc->lc_proc_ret))
+        {
+          dk_free_tree ((box_t) entry);
+          lc_free (lc);
+          return srv_make_new_error ("42000", "TR088",
+              "log_replay_text: invalid lc type");
+        }
+      proc_ret = (caddr_t *) lc->lc_proc_ret;
+      if (BOX_ELEMENTS(proc_ret) < 2)
+        {
+          dk_free_tree ((box_t) entry);
+          lc_free (lc);
+          return srv_make_new_error ("42000", "TR089",
+              "log_replay_text: lc too short (want %d, have %ld)",
+              2, (long)(BOX_ELEMENTS(proc_ret)));
+        }
+      retc = (int) unbox (proc_ret[1]);
+#if 0
+      log_debug ("server %s: Conflict resolver returned %d", db_name, retc);
+#endif
+
+      switch (retc)
+        {
+          case 2: /* copy out, apply, change origin */
+            dk_free_tree (lt->lt_replica_of);
+            lt->lt_replica_of = box_copy_tree (db_name);
+            /* FALLTHROUGH */
+
+          case 1: /* copy out, apply */
+            if (cr_type == 'I' || cr_type == 'U')
+              {
+                /*
+                 * copy out parameters
+                 */
+                if (BOX_ELEMENTS_INT(proc_ret) < 2 + n_cols)
+                  {
+                    dk_free_tree ((box_t) entry);
+                    lc_free (lc);
+                    return srv_make_new_error ("42000", "TR090",
+                        "log_replay_text: lc too short (want %d, have %ld)",
+                        2 + n_cols, (long)(BOX_ELEMENTS(proc_ret)));
+                  }
+
+                for (inx = 0; inx < n_cols; inx++)
+                  {
+                    dk_free_box (entry [1 + inx]);
+                    entry [1 + inx] = proc_ret[2 + inx];
+                    proc_ret[2 + inx] = NULL;
+                  }
+              }
+
+            lc_free(lc);
+            break;
+
+          case 4: /* reject */
+            lc_free(lc);
+            dk_free_tree ((box_t) entry);
+            return srv_make_new_error ("42000", "TR091",
+                "log_replay_text: conflict resolver returned %d (reject)",
+
+                retc);
+            /* NOTREACHED */
+
+          case 5: /* ignore */
+            lc_free(lc);
+            dk_free_tree ((box_t) entry);
+            return SQL_SUCCESS;
+            /* NOTREACHED */
+
+          default:
+            lc_free(lc);
+            dk_free_tree ((box_t) entry);
+            return srv_make_new_error ("42000", "TR092",
+                "log_replay_text: conflict resolver returned %d (unknown)",
+                retc);
+            /* NOTREACHED */
+        }
+    }
+
+cr_done:
+  sst = cli_get_stmt_access (lt->lt_client, stmt_id, GET_EXCLUSIVE);
+  err = stmt_set_query (sst, lt->lt_client, text, opts);
+  LEAVE_CLIENT (lt->lt_client);
+  if (err != NULL)
+    {
+      if (DV_ARRAY_OF_POINTER == dtp)
+        entry[0] = NULL;
+      dk_free_tree ((box_t) entry);
+      if (is_pushback)
+        return err;
+      err_log_error (err);
+      return ((caddr_t) SQL_SUCCESS);
+    }
+  qr = sst->sst_query;
+  if (n_args > 0)
+    {
+      arr = (caddr_t *) dk_alloc_box (n_args * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      for (inx = 0; inx < n_args; inx ++)
+	arr [inx] = entry [inx + 1];
+    }
+  err = qr_exec (lt->lt_client, qr, CALLER_LOCAL, NULL, NULL, NULL, arr, opts, 0);
+  if (arr != NULL)
+    dk_free_box ((box_t) arr);
+
+  if (dtp == DV_ARRAY_OF_POINTER)
+    dk_free_box ((box_t) entry);  /* free top, params freed by exec, text kept in client stmt cache */
+  if (IS_BOX_POINTER (err)) /* err != SQL_SUCCESS */
+    {
+      if (is_pushback)
+        return err;
+      err_log_error (err);
+    }
+  return ((caddr_t) SQL_SUCCESS);
+}
+
+
+caddr_t
+log_replay_sequence (lock_trx_t * lt, dk_session_t * in)
+{
+  caddr_t text = (caddr_t) scan_session (in);
+  long count = read_long (in);
+  sequence_set (text, count, SET_IF_GREATER, OUTSIDE_MAP);
+  dk_free_box (text);
+  return ((caddr_t) SQL_SUCCESS);
+}
+
+
+caddr_t
+log_replay_entry (lock_trx_t * lt, dtp_t op, dk_session_t * in, int is_pushback)
+{
+  switch (op)
+    {
+    case LOG_INSERT:
+    case LOG_INSERT_SOFT:
+    case LOG_INSERT_REPL:
+      return (log_replay_insert (lt, in, op));
+
+    case LOG_DELETE:
+      return (log_replay_delete (lt, in));
+    case LOG_UPDATE:
+      return (log_replay_update (lt, in));
+    case LOG_DD_CHANGE:
+      if (!f_read_from_rebuilt_database)
+	{
+	  log_error ("Database must be started with -R to load a crashdump log");
+	  exit (-1);
+	}
+      isp_read_schema (lt);
+      break;
+    case LOG_SC_CHANGE_1:
+      if (!f_read_from_rebuilt_database)
+	{
+	  log_error ("Database must be started with -R to load a crashdump/backup log."
+	     " Remove the (empty) database file and try replaying.");
+	  exit (-1);
+	}
+      break;
+    case LOG_SC_CHANGE_2:
+      isp_read_schema (lt);
+      break;
+    case LOG_TEXT:
+      return (log_replay_text (lt, in, is_pushback));
+    case LOG_SEQUENCE:
+      return (log_replay_sequence (lt, in));
+    }
+  return SQL_SUCCESS;
+}
+
+
+long rfwd_ctr = 0;
+
+
+caddr_t
+repl_origin (caddr_t * header)
+{
+  if (header)
+    {
+      caddr_t * repl = (caddr_t*) header[LOGH_REPLICATION];
+      if (!repl)
+	return NULL;
+      return (repl[REPL_ORIGIN]);
+    }
+  else
+    return NULL;
+}
+
+void
+repl_cycle_message (caddr_t * header)
+{
+  caddr_t * repl = (caddr_t *) header[LOGH_REPLICATION];
+  if (tc_repl_cycle < 5)
+    {
+      caddr_t srv = repl[REPLH_SERVER];
+      caddr_t acct = repl[REPLH_ACCOUNT];
+      if (!srv)
+	srv = "<unknown>";
+      if (!acct)
+	acct = "<unknown>";
+      log_info ("Replication cycle, (only 5 first occurrences reported)"
+		":: server %s account %s transaction %ld has this server for origin.",
+		srv, acct, unbox (repl[REPLH_LEVEL]));
+    }
+}
+
+
+int
+log_replay_trx (dk_session_t * in, client_connection_t * cli,
+    caddr_t repl_header, int is_repl, int is_pushback)
+{
+  caddr_t volatile org = repl_origin ((caddr_t*) repl_header);
+  int rc;
+  caddr_t err;
+  dtp_t op;
+  lock_trx_t *lt;
+
+try_again:
+
+  rfwd_ctr++;
+  IN_TXN;
+  lt = cli_set_new_trx (cli);
+  lt_threads_set_inner (lt, 1);
+  lt->lt_replicate = is_repl ? REPL_LOG : REPL_NO_LOG;
+  lt->lt_repl_is_raw = 1;
+  LEAVE_TXN;
+#ifdef VIRTTP
+  if (!is_repl)
+    {
+      long st_2pc = (long) unbox(((caddr_t*)repl_header)[LOGH_2PC]);
+      if ((LOG_VIRT_2PC_PREPARE == st_2pc) ||
+	  (LOG_MTS_2PC_PREPARE == st_2pc))
+	{
+	  box_t recov_data = (box_t) read_object(in);
+	  int recovery_res;
+	  if (LOG_VIRT_2PC_PREPARE == st_2pc)
+	    recovery_res = virt_tp_recover (recov_data);
+	  else if (MSDTC_IS_LOADED)
+	    recovery_res = mts_recover (recov_data);
+	  else
+	    {
+	      log_error ("MS DTC unfinished transaction has been found, but no MS DTC support had been loaded. Either remove log file, or load MS DTC support plugin. exit");
+	      call_exit (1);
+	    }
+	  if (SQL_ROLLBACK == recovery_res)
+	    {
+	      caddr_t trash = (caddr_t) dk_alloc(in->dks_in_fill - in->dks_in_read);
+	      session_buffered_read(in,trash,in->dks_in_fill - in->dks_in_read);
+	      dk_free(trash,-1);
+	      dk_free_box(recov_data);
+	      IN_TXN;
+	      lt_leave (lt);
+	      LEAVE_TXN;
+	      return LTE_OK;
+	    }
+	  dk_free_box(recov_data);
+	}
+      else if (LOG_XA_2PC_PREPARE == st_2pc)
+	{
+	  caddr_t xid = (caddr_t) read_object (in);
+	  caddr_t transact = dk_alloc_box (in->dks_in_fill - in->dks_in_read, DV_BIN);
+	  _2pc_printf (("log: found xid [%s]\n", xid_bin_encode (xid)));
+	  session_buffered_read(in,transact,in->dks_in_fill - in->dks_in_read);
+	  id_hash_set (global_xa_map->xm_log_xids, (caddr_t) & xid, (caddr_t) & transact);
+	  _xa_log_ctr++;
+	}
+      else if (LOG_2PC_DISABLED != st_2pc)
+	  dk_free_box((box_t) read_object(in));
+    }
+#endif
+  if (org && box_equal (org, db_name))
+    {
+      /* if a txn originated here comes back by repl we just record the level but don't do the action */
+      TC (tc_repl_cycle);
+      repl_cycle_message ((caddr_t *)repl_header);
+    }
+  else
+    {
+      lt->lt_replica_of = box_copy_tree (org);
+      CATCH_READ_FAIL (in)
+	{
+	  while (1)
+	    {
+	      if (in->dks_in_read == in->dks_in_fill)
+		break;
+	      op = session_buffered_read_char (in);
+
+	      err = log_replay_entry (lt, op, in, is_pushback);
+	      if (err == SQL_SUCCESS)
+		continue;
+
+              if (err != (caddr_t) SQL_NO_DATA_FOUND)
+                {
+                  if (0 == strcmp ("40001", ((caddr_t *) err)[1]))
+                    {
+                      /* deadlock */
+		      break;
+                    }
+                  if (is_pushback && 0 == strcmp("TR091", ((caddr_t *) err)[2]))
+                    {
+                      dk_free_tree (err);
+		      IN_TXN;
+		      lt_leave (lt);
+		      LEAVE_TXN;
+                      return LTE_REJECT;
+                    }
+                }
+
+	      IN_TXN;
+              err_log_error (err);
+              dk_free_tree (err);
+	      lt_rollback (lt, TRX_CONT);
+	      lt_leave (lt);
+	      LEAVE_TXN;
+	      return is_pushback ? LTE_SQL_ERROR : LTE_OK;
+	    }
+	}
+      FAILED
+	{
+	  /* bad log record */
+	  IN_TXN;
+	  lt_rollback (lt, TRX_CONT);
+	  lt_leave (lt);
+	  LEAVE_TXN;
+	  log_error ("Bad log record encountered during replay");
+	  return LTE_SQL_ERROR;
+	}
+    }
+  IN_TXN;
+  if (!is_pushback)
+    logh_set_level (lt, (caddr_t *) repl_header);
+  rc = lt_commit (lt, TRX_CONT);
+  lt_leave (lt);
+  LEAVE_TXN;
+  if (LTE_LOG_FAILED == rc)
+    {
+      return rc;
+    }
+  if (LTE_DEADLOCK == rc)
+    {
+      dbg_printf (("Log Recovery Deadlocked. Retrying.\n"));
+      in->dks_in_read = 0;
+      goto try_again;
+    }
+  return rc;
+}
+
+
+int level_print = 0;
+
+void
+logh_set_level (lock_trx_t * lt, caddr_t * logh)
+{
+#if REPLICATION_SUPPORT
+  if (logh && logh[LOGH_REPLICATION])
+    {
+      caddr_t *replh = (caddr_t *) logh[LOGH_REPLICATION];
+      repl_acct_t *ra;
+      ra = ra_find (replh[REPLH_SERVER], replh[REPLH_ACCOUNT]);
+      if (level_print)
+	dbg_printf ((" Rfwd level %s %s %ld\n", replh [REPLH_SERVER], replh [REPLH_ACCOUNT] ? replh [REPLH_ACCOUNT] : "-", unbox (replh [REPLH_LEVEL])));
+      if (!ra)
+	{
+	  ra = ra_add (replh[REPLH_SERVER], replh[REPLH_ACCOUNT], 1, 0, 0);
+	}
+
+      if (replh[REPLH_LEVEL])
+	{
+	  caddr_t log_array;
+#ifdef UNIX
+	  gettimeofday (&ra->ra_last_txn, NULL);
+#else
+	  ra->ra_last_txn.tv_sec = (long) time (NULL);
+#endif
+	  log_array = list (4, box_string ("sequence_set (?, ?, ?)"),
+		box_string (ra->ra_sequence),
+		box_num (unbox (replh[REPLH_LEVEL])), box_num (SET_ALWAYS));
+	  ASSERT_IN_TXN;
+	  sequence_set (ra->ra_sequence, (long) unbox (replh[REPLH_LEVEL]), SET_ALWAYS, INSIDE_MAP);
+	  log_text_array (lt, log_array);
+	  dk_free_tree (log_array);
+	  /* having replayed a replication record, log its level as a sequence set in the roll forward
+	   * log of this txn since the replication feed record itself will not be logged */
+	}
+      else
+	{
+	  /* A zero level on an account means the replicator is now synced */
+	  ra->ra_synced = RA_IN_SYNC;
+	  log_info ("Replication Account %s %s IN sync, level %ld.\n",
+		    ra->ra_server, ra->ra_account, sequence_set (ra->ra_sequence, 0, SEQUENCE_GET, INSIDE_MAP));
+	}
+    }
+#endif
+}
+
+
+int
+log_check_header (caddr_t * header)
+{
+  if (!IS_BOX_POINTER (header) || box_tag ((caddr_t) header) != DV_ARRAY_OF_POINTER)
+    return 0;
+  if (BOX_ELEMENTS (header) != LOG_HEADER_LENGTH)
+    {
+#ifdef VIRTTP
+      if (BOX_ELEMENTS(header) == LOG_HEADER_LENGTH_OLD)
+        {
+	  if (!is_old_log_type)
+	    {
+	      log_info ("Old type of log is detected");
+	      is_old_log_type = 1;
+	    }
+	  return 1;
+	}
+#endif
+      return 0;
+    }
+  return 1;
+}
+
+#define B_LOG_CK(n) \
+  c = fgetc (f); \
+  pos ++; \
+  if (c < 0) break; \
+  if (c != n) continue
+
+
+static int
+log_replay_search_next_log_rec (dk_session_t *file_in)
+{
+  volatile OFF_T pos = file_in->dks_bytes_received -
+       (file_in->dks_in_fill - file_in->dks_in_read);
+  int fd = tcpses_get_fd (file_in->dks_session);
+  FILE * f;
+  int c = 0;
+
+  log_error ("Searching for the next valid header signature starting at " OFF_T_PRINTF_FMT,
+      (OFF_T_PRINTF_DTP) pos);
+
+  f = fdopen (dup (fd), "r");
+  if (!f)
+    {
+      log_error ("Failed duplicating the file descriptior : %m");
+      return 0;
+    }
+
+  for (;;)
+    {
+      B_LOG_CK (193);
+      B_LOG_CK (188);
+      B_LOG_CK (5);
+      B_LOG_CK (188);
+      B_LOG_CK (0);
+      pos -= 5;
+      log_error ("Valid looking header found at offset " OFF_T_PRINTF_FMT ".",
+	  (OFF_T_PRINTF_DTP) pos);
+      break;
+    }
+
+  fclose (f);
+
+  if (c < 0)
+    {
+      log_error ("No valid looking header found.");
+      return 0;
+    }
+  else
+    {
+      file_in->dks_bytes_received = pos;
+      file_in->dks_in_fill = file_in->dks_in_read = 0;
+      if (((OFF_T)-1) == LSEEK (fd, -5, SEEK_CUR))
+        {
+          log_error ("File error seeking in the log file : %m");
+          return 0;
+        }
+      else
+	return 1;
+    }
+}
+
+
+#define REPORT_PROGRESS \
+do { \
+  if (total_size_bytes) \
+    log_info ("    %ld transactions, " OFF_T_PRINTF_FMT " bytes replayed (%ld %%)", \
+	rfwd_ctr, \
+	(OFF_T_PRINTF_DTP) file_in->dks_bytes_received, \
+	(int) (file_in->dks_bytes_received * 100 / total_size_bytes)); \
+  else \
+    log_info ("    %ld transactions, " OFF_T_PRINTF_FMT " bytes replayed", \
+	rfwd_ctr, \
+	(OFF_T_PRINTF_DTP) file_in->dks_bytes_received); \
+} while (0)
+
+
+void
+log_replay_file (int fd)
+{
+  int rc;
+  volatile OFF_T log_rec_start = 0;
+  client_connection_t *cli = client_connection_create ();
+  dk_session_t *file_in = dk_session_allocate (SESCLASS_TCPIP);
+  dk_session_t trx_ses;
+  scheduler_io_data_t trx_sio;
+  dk_session_t *str_in = &trx_ses;
+  caddr_t trx_string;
+#ifdef VIRTTP
+  int is_2pc;
+#endif
+  OFF_T total_size_bytes;
+
+  total_size_bytes = LSEEK (fd, 0, SEEK_END);
+  if (total_size_bytes == (OFF_T) -1)
+    total_size_bytes = 0;
+  else
+    {
+      if (0 != LSEEK (fd, 0, SEEK_SET))
+	{
+	  log_error ("Error seeking into the log file : %m");
+	  call_exit (-1);
+	}
+    }
+
+  tcpses_set_fd (file_in->dks_session, fd);
+  rfwd_ctr = 0;
+
+  log_info ("Roll forward started");
+  dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED); /* This is to GPF if already out of memory */
+  dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_DISABLED); /* This is to GPF on out-of-memory instead of trying to recover */
+  memset (&trx_ses, 0, sizeof (trx_ses));
+  memset (&trx_sio, 0, sizeof (trx_sio));
+  SESSION_SCH_DATA (&trx_ses) = &trx_sio;
+  cli->cli_session = file_in;
+  cli->cli_is_log = 1;
+  cli->cli_replicate = REPL_NO_LOG;
+  while (DKSESSTAT_ISSET (file_in, SST_OK))
+    {
+      int bytes;
+      caddr_t *header;
+      log_rec_start = file_in->dks_bytes_received - (file_in->dks_in_fill - file_in->dks_in_read);
+read_again:
+      header = (caddr_t *) read_object (file_in);
+      if (!DKSESSTAT_ISSET (file_in, SST_OK))
+	{
+	  break;
+	}
+      if (!log_check_header (header))
+	{
+	  log_error ("Invalid log entry in replay. Delete tranasction log %.500s or truncate at point of error."
+		     " Valid data may exist after this record. A log record begins with bytes 193 188 5 188 0."
+                     " Error at offset " OFF_T_PRINTF_FMT,
+	      wi_inst.wi_master->dbs_log_name ? wi_inst.wi_master->dbs_log_name : "",
+	      (OFF_T_PRINTF_DTP) log_rec_start);
+          if (!log_replay_search_next_log_rec (file_in))
+	    {
+	      call_exit (-1);
+	    }
+          else
+	    {
+	      goto read_again;
+	    }
+	}
+      bytes = (int) unbox (header[LOGH_BYTES]);
+      trx_string = (char *) dk_alloc (bytes + 1);
+
+#ifdef WIN32
+      wisvc_send_wait_hint (WISVC_SEND_WAIT_HINT_EVERY_N_MSEC, 2);
+#endif
+
+      CATCH_READ_FAIL (file_in)
+	session_buffered_read (file_in, trx_string, bytes);
+      FAILED
+      {
+	log_error ("Log reading error in replay. The log replay may be incomplete."
+		   " Error at offset " OFF_T_PRINTF_FMT,
+	    (OFF_T_PRINTF_DTP) log_rec_start);
+	END_READ_FAIL (file_in);
+	break;
+      }
+      END_READ_FAIL (file_in);
+      str_in->dks_in_buffer = trx_string;
+      str_in->dks_in_read = 0;
+      str_in->dks_in_fill = bytes;
+#ifdef VIRTTP
+      is_2pc = is_old_log_type ? LOG_2PC_DISABLED : (int) unbox(header[LOGH_2PC]);
+      if (LOG_2PC_ABORT != is_2pc)
+#endif
+        if (LTE_OK != (rc = log_replay_trx (str_in, cli, (caddr_t) header, 0, 0)))
+	  {
+	    log_error ("Roll forward txn error %d. Record between bytes "
+		OFF_T_PRINTF_FMT " and " OFF_T_PRINTF_FMT " in transaction log",
+	      rc,
+	      (OFF_T_PRINTF_DTP) log_rec_start,
+	      (OFF_T_PRINTF_DTP) file_in->dks_bytes_received);
+	  };
+      dk_free (trx_string, bytes + 1);
+      dk_free_tree ((caddr_t) header);
+
+      if (0 == rfwd_ctr % 1000)
+	REPORT_PROGRESS;
+    }
+  if (rfwd_ctr)
+    REPORT_PROGRESS;
+  PrpcSessionFree (file_in);
+  client_connection_free (cli);
+  log_info ("Roll forward complete");
+  dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED);
+}
+
+
+void
+log_checkpoint (dbe_storage_t * dbs, char *new_log)
+{
+  if (!new_log)
+    {
+      if (dbs->dbs_log_session)
+	{
+	  LSEEK (tcpses_get_fd (dbs->dbs_log_session->dks_session), 0, SEEK_SET);
+	  FTRUNCATE (tcpses_get_fd (dbs->dbs_log_session->dks_session), (OFF_T) (0));
+	  log_set_byte_order_check(1);
+	  log_info ("Checkpoint made, log reused");
+	}
+      else
+	{
+	  log_info ("Checkpoint made, log off");
+	}
+    }
+  else
+    {
+      if (dbs->dbs_log_session)
+	{
+	  int new_fd;
+	  file_set_rw (new_log);
+	  new_fd = fd_open (new_log, OPEN_FLAGS);
+	  if (-1 == new_fd)
+	    {
+	      log_error ("Cannot change to log file %s", new_log);
+	      call_exit (1);
+	    }
+	  fd_close (tcpses_get_fd (dbs->dbs_log_session->dks_session),
+		    dbs->dbs_log_name);
+	  tcpses_set_fd (dbs->dbs_log_session->dks_session, new_fd);
+	  dk_free_tree (dbs->dbs_log_name);
+	  dbs->dbs_log_name = box_string (new_log);
+	}
+      else
+	{
+	  dk_free_tree (dbs->dbs_log_name);
+	  dbs->dbs_log_name = box_string (new_log);
+	}
+      cfg_replace_log (new_log);
+      log_set_byte_order_check(1);
+      log_info ("Checkpoint made, new log is %s", new_log);
+    }
+  dbs->dbs_log_length = 0;
+}
+
+int in_log_replay = 0;
+
+void
+log_init (dbe_storage_t * dbs)
+{
+  del_rc = resource_allocate (10, NULL, NULL, NULL, 0);
+  upd_rc = resource_allocate (10, NULL, NULL, NULL, 0);
+  if (dbs->dbs_log_name)
+    {
+      int log_fd;
+      file_set_rw (dbs->dbs_log_name);
+      log_fd = fd_open (dbs->dbs_log_name, OPEN_FLAGS);
+      if (log_fd == -1)
+	{
+	  log_error ("Can't open log : %m");
+	  call_exit (1);
+	}
+      in_log_replay = 1;
+      log_replay_file (log_fd);
+      in_log_replay = 0;
+      dbs->dbs_log_session = dk_session_allocate (SESCLASS_TCPIP);
+      tcpses_set_fd (dbs->dbs_log_session->dks_session, log_fd);
+      dbs->dbs_log_length = LSEEK (log_fd, 0, SEEK_END);
+      if (!dbs->dbs_log_length)
+	log_set_byte_order_check(0);
+    }
+  if (f_read_from_rebuilt_database)
+    {
+      log_segment_t *ls = dbs->dbs_log_segments;
+
+      while (ls)
+	{
+	  int log_fd;
+
+	  dbs->dbs_current_log_segment = ls;
+	  log_info ("Processing log segment %s", ls->ls_file);
+	  file_set_rw (ls->ls_file);
+	  log_fd = fd_open (ls->ls_file, OPEN_FLAGS);
+	  if (log_fd == -1)
+	    {
+	      log_error ("Can't open log segment : %m");
+	      call_exit (1);
+	    }
+	  in_log_replay = 1;
+	  log_replay_file (log_fd);
+	  in_log_replay = 0;
+	  close (log_fd);
+
+	  ls = ls->ls_next;
+	}
+      dbs->dbs_current_log_segment = NULL;
+    }
+}

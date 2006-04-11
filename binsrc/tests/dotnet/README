@@ -1,0 +1,25 @@
+The ``harness'' subdirectory contains a general purpose testing harness
+for .NET. Run the following comands to build it:
+
+  cd harness
+  make
+
+The result of this is two files:
+
+OpenLink.Testing.dll
+ConsoleTestRunner.exe
+
+The ``VirtuosoClientSuite'' subdirectory contains a test suite for .NET
+data provider for Virtuoso. Run the following comands to build it:
+
+  cd VirtuosoClientSuite
+  make
+
+The result of this is one file:
+
+VirtuosoClientSuite.dll
+
+To run the tests use the following command:
+
+  ../harness/ConsoleTestRunner /host:<HOST> VirtuosoClientSuite.dll
+

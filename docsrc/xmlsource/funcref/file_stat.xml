@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_file_stat">
+    <refmeta>
+	<refentrytitle>file_stat</refentrytitle>
+	<refmiscinfo>file</refmiscinfo>
+    </refmeta>
+    <refnamediv>
+	<refname>file_stat</refname>
+	<refpurpose>get various OS statistics about a file</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+	<funcsynopsis id="fsyn_file_stat">
+	    <funcprototype id="fproto_file_stat">
+		<funcdef><function>file_stat</function></funcdef>
+		<paramdef>in <parameter>path</parameter> varchar</paramdef>
+		<paramdef>in <parameter>what</parameter> integer</paramdef>
+	    </funcprototype>
+	</funcsynopsis>
+    </refsynopsisdiv>
+    <refsect1 id="params"><title>Parameters</title>
+	<refsect2><title>path</title>
+	    <para><type>varchar</type> relative path.</para>
+	</refsect2>
+	<refsect2><title>what</title>
+	    <para><type>integer</type> info to be returned.</para>
+	    <simplelist>
+		<member>0 - (default) file modification time (st_mtime) </member>
+		<member>1 - file size (st_size, bytes) </member>
+		<member>2 - file mode (st_mode, as integer) </member>
+		<member>3 - file modification time for directories only (st_mtime) </member>
+		<member>4 - file owner (user name corresponding to st_uid) </member>
+		<member>5 - file group (group name corresponding to st_gid) </member>
+	    </simplelist>
+	</refsect2>
+    </refsect1>
+    <refsect1 id="desc"><title>Description</title>
+	<para><function>file_stat</function> returns various information for
+	    an OS file by calling stat () system call and converting the
+	    relevant value to a <type>varchar</type>. The path is relative
+	    to the server's working directory. The what is an integer value
+	    selecting what information to return. If you don't supply second
+	    argument to the function it defaults to mode = 0.</para>
+	<para>The DirsAllowed and DirsDenied lists in Parameters section of the
+	    virtuoso configuration file (virtuoso.ini by default) are not used to control
+	    disk access. </para>
+    </refsect1>
+    <refsect1 id="examples"><title>Examples</title>
+	<example id="ex_file_stat"><title>Simple example</title>
+	    <para>Get the size of the virtuoso INI file</para>
+	    <screen>
+SQL>select file_stat (virtuoso_ini_path(), 1);
+callret
+VARCHAR
+_______________________________________________________________________________
+
+958
+	    </screen>
+	</example>
+    </refsect1>
+    <refsect1 id="seealso"><title>See Also</title>
+	<para><link linkend="fn_file_delete"><function>file_delete</function></link></para>
+	<para><link linkend="fn_os_chmod"><function>os_chmod</function></link></para>
+	<para><link linkend="fn_os_chown"><function>os_chown</function></link></para>
+	<para><link linkend="fn_virtuoso_ini_path"><function>virtuoso_ini_path</function></link></para>
+    </refsect1>
+</refentry>

@@ -1,0 +1,214 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+  adm_pre_page(lines);
+  declare uid, stat, err varchar;
+  declare opts any;
+  declare i, l int;
+
+  if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+    {
+      adm_tell_unauth_dav (lines);
+      return (0);
+    }
+  uid := {?'uid'};
+  --dbg_obj_print (params);
+
+  stat := ''; err := '';
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    stat := __SQL_STATE; err := __SQL_MESSAGE;
+    goto err;
+  };
+
+  if ({?'set'} = 'OK')
+    {
+      declare nam, tp, val, nval varchar;
+      opts := coalesce ((select deserialize(U_OPTS) from SYS_USERS where U_NAME = uid), vector ());
+      i := 0; l := length (opts);
+      while (i < l)
+	{
+          nam := opts[i];
+          if (get_keyword (nam, params) is not null)
+	    {
+              val := get_keyword (nam, params);
+              tp := get_keyword ('__tp_'||nam, params);
+	      if (tp = 'INTEGER')
+                nval := cast (val as integer);
+	      else if (tp = 'DATETIME')
+                nval := cast (val as datetime);
+	      else if (tp = 'NUMERIC')
+                nval := cast (val as numeric);
+	      else
+		nval := val;
+	      USER_SET_OPTION (uid, nam, nval);
+	    }
+          i := i + 2;
+	}
+      if ({?'new_opt'} <> '')
+	{
+          nam := trim ({?'new_opt'});
+          val := {?'new_val'};
+          tp := get_keyword ('__tp_new_opt', params);
+	  if (tp = 'INTEGER')
+            nval := cast (val as integer);
+	  else if (tp = 'DATETIME')
+            nval := cast (val as datetime);
+	  else if (tp = 'NUMERIC')
+            nval := cast (val as numeric);
+	  else
+	    nval := val;
+	  USER_SET_OPTION (uid, nam, nval);
+	}
+    }
+  else if ({?'DEL'} is not null)
+   {
+      opts := coalesce ((select deserialize(U_OPTS) from SYS_USERS where U_NAME = uid), vector ());
+      update SYS_USERS set U_OPTS = NULL where U_NAME = uid;
+      i := 0; l := length (opts);
+      while (i < l)
+	{
+	  declare nam, val varchar;
+          nam := opts[i];
+          val := get_keyword (nam, opts);
+          if (nam <> {?'DEL'})
+            USER_SET_OPTION (uid, nam, val);
+          i := i + 2;
+	}
+    }
+  else if ({?'cncl'} = 'Cancel')
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: admin_dav_users.vsp\r\n');
+    }
+err:
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>WebDAV User Account Options</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="WebDAV User Account Options">
+  </head>
+<?vsp
+  adm_page_header('User Account Options for "' || uid || '"', 'davuseradm');
+
+
+  opts := coalesce ((select deserialize(U_OPTS) from SYS_USERS where U_NAME = uid), vector ());
+
+  ?>
+
+  <TABLE BORDER="0" CELLPADDING="0">
+  <TR>
+   <td>
+  <?vsp
+  if (err <> '')
+    {
+  ?>
+    	   <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" align=left WIDTH="60%">
+	   <TR><TD CLASS="errorhead" COLSPAN="2">Error</TD></TR>
+	   <TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata"><?=stat?></TD></TR>
+	   <TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata"><?=err?></TD></TR>
+	   </TABLE>
+  <?vsp
+    }
+  ?>
+   </td>
+  </TR>
+  <TR>
+  <TD>
+  <form action="admin_dav_user_opts.vsp" method="POST">
+  <input type="hidden" name="uid" value="<?=uid?>" />
+  <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+  <TR>
+     <TD CLASS="genhead" COLSPAN="1">Name</TD>
+     <TD CLASS="genhead" COLSPAN="1">Value</TD>
+     <TD CLASS="genhead" COLSPAN="1">Action</TD>
+  </TR>
+  <TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<?vsp
+  i := 0; l := length (opts);
+  while (i < l)
+    {
+      declare nam, val, tp any;
+      nam := opts[i];
+      val := get_keyword_ucase (nam, opts, '');
+      tp := dv_type_title (__tag (val));
+      if (upper(nam) not in ('PASSWORD_MODE', 'PASSWORD_MODE_DATA', 'GET_PASSWORD', 'SQL_ENABLE', 'DAV_ENABLE',
+	    'LOGIN_QUALIFIER', 'PRIMARY_GROUP', 'E-MAIL', 'FULL_NAME', 'HOME', 'PERMISSIONS', 'DISABLED'))
+	{
+?>
+    <tr>
+      <td CLASS="gendata"><?=nam?></td>
+      <td CLASS="gendata" align="right">
+        <?vsp
+	if (tp in ('INTEGER', 'VARCHAR', 'DATETIME', 'NUMERIC'))
+	  {
+	?>
+        <input type="text" name="<?=nam?>" value="<?=val?>" size="70%"/>
+        <input type="hidden" name="__tp_<?=nam?>" value="<?=tp?>"/>
+	<?vsp
+	  }
+        else
+	  http_value ('*NOT PRINTABLE*');
+	?>(<small><small><?=tp?></small></small>)
+      </td>
+      <td class="gendata" >
+        <a class="tablelistaction" href="admin_dav_user_opts.vsp?uid=<?=uid?>&DEL=<?=nam?>">Delete</a>
+      </td>
+    </tr>
+<?vsp
+	}
+      i := i + 2;
+    }
+?>
+
+    <tr>
+      <td CLASS="gendata"><input type="text" name="new_opt" value=""/></td>
+      <td CLASS="gendata"><input type="text" name="new_val" value="" size="70%"/></td>
+      <td CLASS="gendata">
+        <small><small>
+        <select name="__tp_new_opt">
+	  <option>VARCHAR</option>
+	  <option>INTEGER</option>
+	  <option>DATETIME</option>
+	  <option>NUMERIC</option>
+	</select>
+	</small></small>
+      </td>
+    </tr>
+    <tr>
+      <td CLASS="gendata" colspan="3">
+        <input type="submit" name="set" value="OK"/>
+        <input type="submit" name="cncl" value="Cancel"/>
+      </td>
+    </tr>
+  </TABLE>
+  </FORM>
+  </TD>
+  </TR>
+  </TABLE>
+<?vsp adm_page_footer(); ?>
+</html>

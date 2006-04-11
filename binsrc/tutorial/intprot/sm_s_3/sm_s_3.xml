@@ -1,0 +1,45 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SM-S-3">
+  <refmeta>
+    <refentrytitle>SMTP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Text triggers notification</refname>
+    <refpurpose>Using the SMTP client function for free-text triggers notification</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SM-S-3a">
+<title>Example</title>
+<itemizedlist mark="bullet">
+  <listitem>The SMTP client function can be used for automatic responses and notifications for DB events.</listitem>
+  <listitem>The example shows mail delivery code for the hit notifications on the text triggers in DAV.</listitem>
+  <listitem>When a free-text trigger query is defined to make an email notification, the trigger will have an email address stored in the column TTH_NOTIFY of the HITS table.</listitem>
+  <listitem>The notification is a separate procedure that opens a cursor over the hits table. For every non-empty recipient, a message is sent.</listitem>
+  <listitem>Note that in this example the mail server passed to the smtp_send() is null.
+  This means that the default mail server from virtuoso.ini will be used for making the SMTP connection.</listitem>
+</itemizedlist> 
+</refsect1>
+</refentry>

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_xte_nodebld_final">
+  <refmeta>
+    <refentrytitle>xte_nodebld_final</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xte_nodebld_final</refname>
+    <refpurpose>Corrects input vector</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_xte_nodebld_final">
+      <funcprototype id="fproto_xte_nodebld_final">
+        <funcdef><function>xte_nodebld_final</function></funcdef>
+        <paramdef>inout <parameter>arg</parameter> any</paramdef>
+        <paramdef><optional>in <parameter>head </parameter>any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_xte_nodebld_final"><title>Description</title>
+    <para>
+    By default this function reduces all last empty items from the first argument and returns it, 
+    but supplyed a second argument 
+    it also replaces the first item of the first argument by the second argument,
+    but does not commit the return.
+    </para>
+  </refsect1>
+  <refsect1 id="xte_nodebld_final"><title>Parameters</title>
+    <refsect2><title>arg</title>
+      <para>The vector created by the xte_nodebld_init() and filled by  xte_nodebld_acc() function</para>
+    </refsect2>
+    <refsect2><title>head</title>
+      <para>A vector returned by xte_head() function</para>
+    </refsect2>
+  </refsect1>
+
+  <refsect1 id="errors_xte_nodebld_final">
+    <title>Errors</title>
+    <table><title>Errors signalled by <function>xte_nodebld_final</function></title>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry>
+	  </row>
+	</thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>22003</errorcode></entry>
+	    <entry><errorcode>SR347</errorcode></entry>
+	    <entry><errorname>Too few arguments for xte_nodebld_final</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22003</errorcode></entry>
+	    <entry><errorcode>SR348</errorcode></entry>
+	    <entry><errorname>The first argument of xte_node_nodebld_final is not made by xte_nodebld_init() function</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  <para></para>
+  </refsect1>
+  <refsect1 id="xte_nodebld_final"><title>Examples</title>
+    <example id="ex_xte_nodebld_final"><title>xte_nodebld_final() with a single argument. </title>
+      <para>Before the xte_nodebld_final() call the length of the vector acc is equal to 16, after the call the length is 3.
+            The vector acc does not correspond to a xml document - there is no a root tag. The result of the xte_nodebld_final()
+            may be used as argument for xte_node_from_nodebld() to get a vector corresponding to complete xml document.
+      </para>
+      <screen>create procedure test1_nodebld()
+              {
+                declare acc any;
+                xte_nodebld_init (acc);
+                xte_nodebld_acc (acc,'string1', string2');
+		xte_nodebld_acc(acc, 'string3',xte_node(xte_head ('supplier', 'CompanyName','Seller')));
+        	acc:=xte_nodebld_final(acc);
+	         	    . . . 
+	      } 
+       </screen>
+    </example>
+    <example id="ex_xte_nodebld_final"><title>xte_nodebld_final() with two arguments. </title>
+      <para>The vector acc below is corresponding to the following XML element:  </para>
+      <para>&lt;product&gt;string1string2string3</para>
+      <para>     &lt;supplier CompanyName="Seller"&gt;&lt;/supplier&gt;</para>
+      <para> &lt;/product&gt;</para>
+      <screen>create procedure test2_nodebld()
+              {
+                declare acc any;
+                declare "Res" any;
+                declare "ResLen" integer;
+                result_names ("ResLen", "Res");
+                xte_nodebld_init (acc);
+                xte_nodebld_acc (acc,'string1', 'string2');
+                xte_nodebld_acc(acc, 'string3',xte_node(xte_head ('supplier', 'CompanyName','Seller')));
+        	xte_nodebld_final(acc, xte_head('product'));
+		result (length(acc), xml_tree_doc (acc));
+	      }
+test_nodebld()
+ResLen      Res
+INTEGER     VARCHAR
+_______________________________________________________________________________
+ 
+3           &lt;product&gt;string1string2string3&lt;supplier CompanyName="Seller" /&gt;&lt;/product&gt;
+      </screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_xte_nodebld_final"><title>See Also</title>
+    <para><link linkend="fn_xte_head">xte_head()</link></para>
+    <para><link linkend="fn_xte_node">xte_node()</link></para>
+    <para><link linkend="fn_xte_node_from_nodebld">xte_node_from_nodebld()</link></para>
+    <para><link linkend="fn_xte_nodebld_acc">xte_nodebld_acc()</link></para>
+    <para><link linkend="fn_xte_nodebld_init">xte_nodebld_init()</link></para>
+  </refsect1>
+
+</refentry>
+

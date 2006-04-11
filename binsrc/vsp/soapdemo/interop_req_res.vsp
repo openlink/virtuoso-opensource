@@ -1,0 +1,62 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+
+  declare _end_point, _s_name, _req, _resp, _time, _error any;
+
+  _end_point := get_keyword ('ENDP', params, '');
+  _s_name := get_keyword ('SVCN', params, '');
+
+  select R_SERVICE_REQ, R_SERVICE_RESP, "LEFT" (datestring (R_TIME), 19), R_SERVICE_ERROR
+  	into _req, _resp, _time, _error from RESULTS
+  	where R_END_POINT = _end_point and R_SERVICE_NAME = _s_name;
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<HTML>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>User Accounts</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Interop Results page">
+  </head>
+  <BODY>
+  <H1>OpenLink SOAP Client 1.1</H1>
+  <P><H3>Test Time: <?=_time?></H3>
+  <?vsp
+    if (_error <> '')
+      http ('<P><B>Error:</B> ' || '<i>' || _error || '</i>');
+    else
+      http ('<P><B>This test is OK</B>');
+  ?>
+  <P><B>Request:</B>
+  <P><TEXTAREA name=request rows=15 cols=100><?=_req?></TEXTAREA>
+  <P><B>Responce:</B>
+  <P><TEXTAREA name=responce rows=15 cols=100><?=_resp?></TEXTAREA>
+
+  </BODY>
+</HTML>
+

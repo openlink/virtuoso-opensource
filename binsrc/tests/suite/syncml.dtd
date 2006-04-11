@@ -1,0 +1,100 @@
+<!ELEMENT SyncML (SyncHdr, SyncBody)>
+<!ELEMENT SyncHdr (VerDTD, VerProto, SessionID, MsgID, Target, Source, RespURI?, NoResp?, Cred?, Meta?)>
+<!ELEMENT SyncBody ((Alert | Atomic | Copy | Exec | Get | Map | Put | Results | Search | Sequence | Status | Sync | Add | Replace | Delete)+, Final?)>
+<!ELEMENT Archive EMPTY>
+<!ELEMENT Cmd (#PCDATA)>
+<!ELEMENT Chal (Meta)>
+<!ELEMENT CmdID (#PCDATA)>
+<!ELEMENT CmdRef (#PCDATA)>
+<!ELEMENT Cred (Meta?, Data)>
+<!ELEMENT Final EMPTY>
+<!ELEMENT Lang (#PCDATA)>
+<!ELEMENT LocName (#PCDATA)>
+<!ELEMENT LocURI (#PCDATA)>
+<!ELEMENT MoreData EMPTY>
+<!ELEMENT MsgID (#PCDATA)>
+<!ELEMENT MsgRef (#PCDATA)>
+<!ELEMENT NoResp EMPTY>
+<!ELEMENT NoResults EMPTY>
+<!ELEMENT NumberOfChanges (#PCDATA)>
+<!ELEMENT RespURI (#PCDATA)>
+<!ELEMENT SessionID (#PCDATA)>
+<!ELEMENT SftDel EMPTY>
+<!ELEMENT Source (LocURI, LocName?)>
+<!ELEMENT SourceRef (#PCDATA)>
+<!ELEMENT Target (LocURI, LocName?)>
+<!ELEMENT TargetRef (#PCDATA)>
+<!ELEMENT VerDTD (#PCDATA)>
+<!ELEMENT VerProto (#PCDATA)>
+<!ELEMENT Item (Target?, Source?, Meta?, Data?, MoreData?)>
+<!ELEMENT Meta ANY>
+<!ELEMENT Data ANY>
+<!ELEMENT Add (CmdID, NoResp?, Cred?, Meta?, Item+)>
+<!ELEMENT Alert (CmdID, NoResp?, Cred?, Data?, Item*)>
+<!ELEMENT Atomic (CmdID, NoResp?, Meta?, (Add | Replace | Delete | Copy | Atomic | Map | Sequence | Sync | Get | Exec | Alert)+)>
+<!ELEMENT Copy (CmdID, NoResp?, Cred?, Meta?, Item+)>
+<!ELEMENT Delete (CmdID, NoResp?, Archive?, SftDel?, Cred?, Meta?, Item+)>
+<!ELEMENT Exec (CmdID, NoResp?, Cred?, Meta?, Item)>
+<!ELEMENT Get (CmdID, NoResp?, Lang?, Cred?, Meta?, Item+)>
+<!ELEMENT Map (CmdID, Target, Source, Cred?, Meta?, MapItem+)>
+<!ELEMENT MapItem (Target, Source)>
+<!ELEMENT Put (CmdID, NoResp?, Lang?, Cred?, Meta?, Item+)>
+<!ELEMENT Replace (CmdID, NoResp?, Cred?, Meta?, Item+)>
+<!ELEMENT Results (CmdID, MsgRef?, CmdRef, Meta?, TargetRef?, SourceRef?, Item+)>
+<!ELEMENT Search (CmdID, NoResp?, NoResults?, Cred?, Target?, Source+, Lang?, Meta, Data)>
+<!ELEMENT Sequence (CmdID, NoResp?, Meta?, (Add | Replace | Delete | Copy | Atomic | Map | Sync | Get | Alert | Exec)+)>
+<!ELEMENT Status (CmdID, MsgRef, CmdRef, Cmd, TargetRef*, SourceRef*, Cred?, Chal?, Data, Item*)>
+<!ELEMENT Sync (CmdID, NoResp?, Cred?, Target?, Source?, Meta?, NumberOfChanges?, (Add | Atomic | Copy | Delete | Replace | Sequence)*)>
+
+<!ELEMENT MetInf (Format?, Type?, Mark?, Size?, Anchor?, Version?, NextNonce?, MaxMsgSize?, MaxObjSize?, EMI*, Mem?)>
+<!ELEMENT Format (#PCDATA)>
+<!ELEMENT Type (#PCDATA)>
+<!ELEMENT Mark (#PCDATA)>
+<!ELEMENT Size (#PCDATA)>
+<!ELEMENT Anchor (Last?, Next)>
+<!ELEMENT Last (#PCDATA)>
+<!ELEMENT Next (#PCDATA)>
+<!ELEMENT Version (#PCDATA)>
+<!ELEMENT NextNonce (#PCDATA)>
+<!ELEMENT MaxMsgSize (#PCDATA)>
+<!ELEMENT MaxObjSize (#PCDATA)>
+<!ELEMENT EMI (#PCDATA)>
+<!ELEMENT Mem (SharedMem?, FreeMem, FreeID)>
+<!ELEMENT FreeID (#PCDATA)>
+<!ELEMENT FreeMem (#PCDATA)>
+<!ELEMENT SharedMem EMPTY>
+
+<!ELEMENT DevInf (VerDTD, Man?, Mod?, OEM?, FwV?, SwV?, HwV?, DevID, DevTyp, UTC?, SupportLargeObjs?, SupportNumberOfChanges?, DataStore*, CTCap*, Ext*)>
+<!ELEMENT Man (#PCDATA)>
+<!ELEMENT Mod (#PCDATA)>
+<!ELEMENT OEM (#PCDATA)>
+<!ELEMENT FwV (#PCDATA)>
+<!ELEMENT SwV (#PCDATA)>
+<!ELEMENT HwV (#PCDATA)>
+<!ELEMENT DevID (#PCDATA)>
+<!ELEMENT DevTyp (#PCDATA)>
+<!ELEMENT DataStore (SourceRef, DisplayName?, MaxGUIDSize?, Rx-Pref, Rx*, Tx-Pref, Tx*, DSMem?, SyncCap)>
+<!ELEMENT MaxGUIDSize (#PCDATA)>
+<!ELEMENT Rx-Pref (CTType, VerCT)>
+<!ELEMENT Rx (CTType, VerCT)>
+<!ELEMENT Tx-Pref (CTType, VerCT)>
+<!ELEMENT Tx (CTType, VerCT)>
+<!ELEMENT DSMem (SharedMem?, MaxMem?, MaxID?)>
+<!ELEMENT DisplayName (#PCDATA)>
+<!ELEMENT CTCap ((CTType, (PropName, (ValEnum+ | (DataType, Size?))?,DisplayName?, (ParamName, (ValEnum+ | (DataType, Size?))?,DisplayName?)*)+)+)>
+<!ELEMENT CTType (#PCDATA)>
+<!ELEMENT DataType (#PCDATA)>
+<!ELEMENT PropName (#PCDATA)>
+<!ELEMENT ValEnum (#PCDATA)>
+<!ELEMENT ParamName (#PCDATA)>
+<!ELEMENT SyncCap (SyncType+)>
+<!ELEMENT SyncType (#PCDATA)>
+<!ELEMENT Ext (XNam,XVal*)>
+<!ELEMENT XNam (#PCDATA)>
+<!ELEMENT XVal (#PCDATA)>
+<!ELEMENT MaxMem (#PCDATA)>
+<!ELEMENT MaxID (#PCDATA)>
+<!ELEMENT VerCT (#PCDATA)>
+<!ELEMENT UTC EMPTY>
+<!ELEMENT SupportLargeObjs EMPTY>
+<!ELEMENT SupportNumberOfChanges EMPTY>

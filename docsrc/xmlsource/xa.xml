@@ -1,0 +1,384 @@
+<?xml version="1.0" ?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<chapter label="xa.xml" id="xa">
+<title>Using Virtuoso with Tuxedo</title>
+<abstract>
+	<para>
+		BEA Tuxedo provides the framework, or middleware, for building scalable multi-tier client/server 
+		applications in heterogeneous (dissimilar), distributed environments that extend from the Web to 
+		the Enterprise. Using BEA Tuxedo, users can develop, manage, and deploy distributed applications 
+		independently of the underlying hardware, operating system, network, and database environment.
+	</para>
+	<para>
+		The current document covers linkage between Virtuoso server and Tuxedo by ATMI (Application-to-Transaction
+		Monitor Interface) only.
+	</para>
+	<para>
+		In contrast to classic 2-tier client/server configuration of SQL servers, the Tuxedo brings 3-tier paradigm
+		(clients, services, resource managers).
+	</para>
+	<para>
+		At the foundation of BEA Tuxedo ATMI is a proven, reliable transaction processor, also known as 
+		a transaction processing (TP) monitor. A transaction processor is an example of a 3-tier client/server
+		architecture, where the transaction processor supports the application logic (represented by "services"
+		between the GUI front-end and the back-end resource managers. Examples of resource managers are SQL 
+		databases, message queues, legacy applications, and other back-end services.
+	</para>
+	<para>
+		This document explains how to build support binaries for Tuxedo and Virtuoso and how to write services which
+		use the Virtuoso as resource manager.
+	</para>
+</abstract>
+<sect1 id="xaBuildTMS">
+	<title>Building the Transaction Manager Server</title>
+	<para>
+		First of all, the administrator needs to build Virtuoso Transaction Manager Server application in order 
+		to use Virtuoso server as Resource Manager of global transactions operated by Tuxedo.
+	</para>
+	<para>
+		Then, the following line needs to be put in the $TUXDIR/udataobj/RM file:
+		<programlisting>
+			Virtuoso:virt_xa_switch: libvirtxa.a -L${HOME}/lib  -lwic -ldk1t -lthrp -lutil2 -L${SSLDIR}/lib -lssl -lcrypto
+		</programlisting>
+		The libvirtxa.a library could be found in tuxedo/lib directory.
+	</para>
+	<para>
+		This allows to build TP monitor with Virtuoso support (VirtTMS) and services wich could use Virtuso as resource manager.
+		libvirtxa.a and other libraries must be accessible by the compiler. The following command builds the VirtTMS:
+		<programlisting>
+			buildtms -o ${TUXDIR}/bin/VirtTMS -r Virtuoso
+		</programlisting>
+	</para>
+</sect1>
+<sect1 id="xaUBBconf">
+	<title>Configuration</title>
+	<para>
+		In order to use Virtuoso as resource manager the UBB config file (Tuxedo main configuration file) must contain reference
+		to VirtTMS. The following example of UBB config file configures two services and two virtuoso servers (resouce managers)
+		behind them.
+	</para>
+		<programlisting><![CDATA[*RESOURCES
+IPCKEY          52617
+DOMAINID        qsample
+MASTER          NODE
+MODEL           SHM
+#
+*MACHINES
+#
+NODE
+        LMID = NODE
+        TUXDIR = "TUXEDODIR"
+        TUXCONFIG = "SERVDIR/tuxconfig"
+        TLOGDEVICE ="SERVDIR/tuxconfig"
+        TLOGSIZE=10
+        APPDIR = "SERVDIR"
+        ULOGPFX = "SERVDIR/ULOG"
+*GROUPS
+
+DEFAULT:        TMSNAME=VirtTMS TMSCOUNT=2 LMID=NODE
+GROUP1  GRPNO=1 OPENINFO = "Virtuoso:dba:dba@NODE:1111"
+GROUP2  GRPNO=2 OPENINFO = "Virtuoso:dba@NODE:1112"
+
+*SERVERS
+#
+DEFAULT:        CLOPT="-A"
+VirtRMtest      SRVGRP=GROUP1 SRVID=1
+# VirtRMtest    SRVGRP=GROUP2 SRVID=1
+
+
+# VirtRMtest2   SRVGRP=GROUP1 SRVID=2
+VirtRMtest2     SRVGRP=GROUP2 SRVID=2
+
+#server         SRVGRP=GROUP1 SRVID=1
+*SERVICES
+DEFAULT:        LOAD=50
+VRMTEST         PRIO=50
+VRMTEST2        PRIO=50
+]]></programlisting>
+</sect1>
+
+<sect1 id="xaServices">
+	<title>Services</title>
+	<sect2 id="xaServicesAbstract">
+		<title>Introduction</title>
+		<para>
+			The services (in the Tuxedo's term) are special programs which implement business logic. The services could
+			be in the context of a global XA transaction, in this case 2PC control will be set in motion. 
+			Each service which uses Virtuoso as resource manager has hdbc connection to 
+			the Virtuoso server. This connection is automatically opened when service activated. The connection string (OPENINFO)
+			to the Virtuoso server is the connection string of the group of the service (see GROUPS section 
+			in the sample config file). The OPENINFO has the following format: "Virtuoso:user:password@NODENAME:port".
+			The user,password and port are optional.
+		</para>
+	</sect2>
+	<sect2 id="xaServicesVQL">
+		<title>VQL functions</title>
+		<para>
+			VQL functions are used to receive access to hdbc for further work with the Virtuoso server.
+			Only HDBCs received by the VQL functions are operated in
+			the context of the distributed transactions.
+		</para>
+		<para>
+			<programlisting>
+				int vql_get_connection (HDBC * hdbc, int type);
+			</programlisting>
+			returns result of setting hdbc to current hdbc connection. "type" argument indicates 
+			which hdbc is to select, currently only VQL_CTX_TYPE  is supported, other values are 
+			reserved.
+		</para>
+		<para>
+			<programlisting>
+			int vql_get_env (HENV * env);
+			</programlisting>
+			returns result of setting current ODBC environment.
+		</para>
+		<para>Header: vql_client.h</para>
+		<para>Library: libvirtxa.a</para>
+	</sect2>
+	<sect2 id="xaServCon">
+		<title>Services concept</title>
+		<para>
+			Each service has an entry point (some function), which is supposed to perform the application task. The result of
+			whole transaction depends on result of the service's entry function. The scenario of typical workflow is as
+			follows:
+			<itemizedlist mark="bullet" spacing="compact">
+				<listitem>client begins global transaction by ATMI tpbegin() call,</listitem>
+				<listitem>client calls the service N1 to update some tables on the first Virtuoso server (resource manager),</listitem>
+				<listitem>client calls the service N2 to update some tables on the second Virtuoso server (resource manager),</listitem>
+				<listitem>client finishes global transaction by either tpcommit() or tpabort() call of ATMI.</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			The tx_* functions also could be used, See TUXEDO TxRPC related or ORACLE XA documentation.
+			<itemizedlist mark="bullet" spacing="compact">
+				<listitem>tx_begin()</listitem>
+				<listitem>tx_commit()</listitem>
+				<listitem>tx_open()</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			Services can be built with the following command:
+			<programlisting>buildserver -v -f virt_service1.o -o VirtService1 -r Virtuoso -s VService1</programlisting>
+			where "virt_service1.o" is the service object file which contains VService1 entry function.
+			"-r Virtuoso" indicates that service must be assembled with Virtuoso XA support library.
+		</para>
+	</sect2>
+	<sect2 id="xaServOpeninfo">
+		<title>OPENINFO</title>
+		<para>
+			OPENINFO is necessary for services to connect to the certain Virtuoso server.
+			OPENINFO for the services (see GROUPS section in the example) consists of 2 parts: 
+			"Virtuoso" term and connection string. Connection string provides the service name, 
+			password, server and port of Virtuoso server. Common format of connection string is
+			[USER[:PASSWORD]]@SERVER[:PORT].
+			Only the SERVER name is required, the others are optional.
+		</para>
+	</sect2>
+</sect1>
+<sect1 id="xaClients">
+	<title>Clients</title>
+	<para>
+		There are no special requirenments for the clients of services which use Virtuoso as resource manager.
+		See Tuxedo 8.x documentation
+	</para>	
+</sect1>
+<sect1 id="xaServExample">
+	<title>Service example</title>
+<programlisting><![CDATA[#include <stdio.h>
+#include <time.h>
+
+
+#include <xa.h>
+#include <atmi.h>
+#include <userlog.h>
+
+#include "vql_client.h"
+
+#include <libudbc.h>
+#ifndef SQL_SUCCEEDED
+#define SQL_SUCCEEDED(rc) (((rc)&(~1))==0)
+#endif
+
+#define MAXNAME SQL_MAX_DSN_LENGTH
+
+int sql_exec (HDBC hdbc, char* text);
+
+
+/* VirtRM test service */
+int
+tpsvrinit(int argc, char *argv[])
+{
+  if (tpopen () == -1)
+    {
+      userlog ("tpsrvinit: could not open RM, %s\n", tpstrerror (tperrno));
+      return -1;
+    }
+  /* userlog writes to the central TUXEDO message log */
+  userlog("Welcome to the VirtRMtest server");
+  return 0;
+}
+
+int
+tpsrvdone()
+{
+  if (tpclose () == -1)
+    {
+      userlog ("tpsrvinit: could not close RM, %s\n", tpstrerror (tperrno));
+      return -1;
+    }
+  /* userlog writes to the central TUXEDO message log */
+  userlog("By!! the VirtRMtest server");
+  return 0;
+}
+
+static void
+DoSQLError (HDBC hdbc, HSTMT hstmt);
+
+#define CHECK_RC(rc) \
+	if (!SQL_SUCCEEDED (rc)) { DoSQLError (hdbc, stmt); return -1; };
+
+int sql_exec (HDBC hdbc, char* text)
+{
+  RETCODE rc;
+  HSTMT stmt;
+
+  rc = SQLAllocStmt (hdbc, &stmt);
+  CHECK_RC(rc);
+
+  rc = SQLExecDirect (stmt, text, SQL_NTS);
+  CHECK_RC(rc);
+  
+  SQLFreeStmt (stmt, SQL_DROP);
+  return 0;
+}
+
+
+void
+VRMTEST(TPSVCINFO *rqst)
+{
+  HDBC hdbc;
+  int rc;
+
+  rc = vql_get_connection (&hdbc, VQL_CTX_TYPE);
+  if (rc != VQL_SUCCESS)
+    {
+#ifdef TMS_TRACE
+      userlog ("AP[%d]: vql_get_connection error %d\n", getpid(), rc);
+#endif
+      goto _fail;
+    }
+  rc = sql_exec (hdbc, "UPDATE sal set amount = amount + 10 where name = 'jfk'");
+  if (rc == -1)
+    {
+#ifdef TMS_TRACE
+      userlog ("AP[%d]: vql_get_connection error %d\n", getpid(), rc);
+#endif
+      goto _fail;
+    }
+
+  userlog ("AP[%d]: exec sql succ.\n", getpid());
+  
+  tpreturn(TPSUCCESS, 0, rqst->data, 0L, 0);
+  return;
+
+ _fail:
+  userlog ("FAILED: exec sql.\n");
+  tpreturn(TPFAIL, 0, rqst->data, 0L, 0);
+  return;
+}
+
+
+void
+VRMTEST2(TPSVCINFO *rqst)
+{
+  HDBC hdbc;
+  int rc;
+
+
+  rc = vql_get_connection (&hdbc, VQL_CTX_TYPE);
+  if (rc != VQL_SUCCESS)
+    goto _fail;
+
+  rc = sql_exec (hdbc, "UPDATE sal set amount = amount - 10 where name = 'jfk'");
+  if (rc == -1)
+    goto _fail;
+
+  userlog ("AP[%d]: exec sql succ.\n", getpid());
+  
+  tpreturn(TPSUCCESS, 0, rqst->data, 0L, 0);
+  return;
+
+ _fail:
+  userlog ("AP[%d]: service #2 error %d\n", getpid(), rc);
+  tpreturn(TPFAIL, 0, rqst->data, 0L, 0);
+  return;
+
+
+  tpreturn(TPSUCCESS, 0, rqst->data, 0L, 0);
+}
+
+
+#define MSG_BUF_SIZE 300
+
+static void
+DoSQLError (HDBC hdbc, HSTMT hstmt)
+{
+  UCHAR szSqlState[MSG_BUF_SIZE];
+  UCHAR szErrorMsg[MSG_BUF_SIZE];
+
+  SQLINTEGER fNativeError = 0;
+  SWORD cbErrorMsg = MSG_BUF_SIZE;
+  RETCODE rc;
+  HENV env;
+  
+#ifndef TMS_TRACE
+  return;
+#else
+  vql_get_env (&env);
+
+  rc = SQLError (env,
+      hdbc,
+      hstmt,
+      szSqlState, &fNativeError, szErrorMsg, MSG_BUF_SIZE, &cbErrorMsg);
+
+  if (rc != SQL_NO_DATA_FOUND || rc != SQL_ERROR)
+    {
+      if (fNativeError != 0x1645)	// ignore change database to master context message
+	{
+	  userlog ("SqlState: %s, fNativeError: %x m=%s\n", szSqlState,
+		   fNativeError, szErrorMsg);
+	}
+    }
+  else
+    {
+      userlog ("SQLError() failed: %x, NO_DATA_FOUND OR SQL_ERROR\n", rc);
+    }
+  return;
+#endif
+}]]>
+</programlisting>
+</sect1>
+</chapter>
+

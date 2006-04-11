@@ -1,0 +1,77 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare _id,_displayname,email,edits,_output any;
+declare id_num integer;
+
+id_num:=cast (get_keyword('id',params) as integer);
+        
+declare cur_name cursor for select cast (displayname as varchar) from odp.odp.profile 
+    where id = id_num and
+        xpath_contains(xper,'//displayname',displayname);
+declare cur_email cursor for select cast (email as varchar) from odp.odp.profile 
+    where id = id_num and
+        xpath_contains(xper,'//email',email);
+declare cur_edits cursor for select cast (xpath_eval('@resource',edits) as varchar) from odp.odp.profile 
+    where id = id_num and
+        xpath_contains(xper,'//edits',edits);
+declare cur_id cursor for select cast (xpath_eval('@id',prof) as varchar) from odp.odp.profile 
+    where id = id_num and
+        xpath_contains(xper,'//Profile',prof);
+    open cur_name;
+    open cur_email;
+    open cur_edits;
+    open cur_id;
+?>
+
+<HTML>
+<TITLE> hello </TITLE>
+
+<?vsp whenever not found goto page_done_; 
+?>
+<P ALIGN="LEFT">NAME: <A HREF= <?vsp fetch cur_email into _output; http_value(_output); ?> >
+                         <?vsp fetch cur_name into _output; http_value(_output); ?> 
+                         (<?vsp fetch cur_id into _output; http_value(_output); ?>)   </A>
+</P>
+  <P ALIGN = LEFT>                       
+    <TABLE BORDER=0 WIDTH=500>
+    
+<?vsp whenever not found goto table_done_; ?>
+    <TR> <TD> EDITS: </TD> <TD><?vsp  fetch cur_edits into _output; http_value(_output); ?></TD></TR>
+    
+    <?vsp while (1) 
+    { 
+        fetch cur_edits into _output; ?>
+    <TR> <TD>  </TD> <TD><?vsp   http_value(_output); ?></TD></TR>
+    <?vsp } 
+table_done_:  
+    ?>
+    </TABLE>
+  </P>
+<?vsp
+page_done_:
+?>
+ 
+
+</HTML>
+

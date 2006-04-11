@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!-- NOT INCLUDED -->
+<refentry id="fn_row_deref">
+  <refmeta>
+    <refentrytitle>row_deref</refentrytitle>
+    <refmiscinfo>object</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>row_deref</refname>
+    <refpurpose>Given an object ID or a row identity string returned by row_identity, 
+retrieves the actual row</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_row_deref">
+      <funcprototype id="fproto_row_deref">
+        <funcdef><function>row_deref</function></funcdef>
+        <paramdef>in <parameter>id </parameter>varchar</paramdef>
+        <paramdef>in <parameter>is_exclusive </parameter>integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_row_deref"><title>Description</title>
+<para>
+Given an object ID or a row identity string returned by row_identity, 
+retrieves the actual row.
+</para>
+<para>
+id:	A row identity string or object ID object.
+</para>
+<para>
+Is_exclusive:	If non-zero, the row retrieved is locked exclusively. 
+This is useful when intending to delete or update the row in the same transaction.
+</para>
+<note>
+<title>Note:</title>
+<para>NULL if returned if there is no row referenced. This can happen 
+if the identity was retrieved in a previous transaction and  the 
+row was deleted afterwards. 
+</para>
+</note>
+<example id="ex_row_deref">
+	<title>Example:</title>
+	<programlisting>
+select row_deref (row_identity (_ROW), 0) from T1;
+is equivalent to
+select _ROW from T1;
+</programlisting>
+</example>
+
+</refsect1>
+</refentry>
+
+

@@ -1,0 +1,117 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+
+  declare _q varchar;
+  declare _vw varchar;
+  declare _vw_cols varchar;
+  declare _stmt, _v_body varchar;
+
+  if (not adm_check_auth (lines))
+    return 0;
+
+  _q := get_keyword ('q', params, '');
+
+  if ('' = _q)
+    _q := 'db';
+
+  _vw := get_keyword ('vw', params, '');
+
+  _vw_cols := get_keyword ('vw_cols', params, '');
+
+  select coalesce(v_text, blob_to_string (v_ext)) into _stmt from sys_views where v_name=_vw;
+  _v_body := _stmt;
+  if (lower(_stmt) like 'create% view% %(%)%as%' and lower(_stmt) not like 'create% xml% view%')
+    {
+      declare left_inx, right_inx, select_kw integer;
+      select_kw := strstr (lower(_stmt), 'select');
+      left_inx := strchr (_stmt, '(');
+      right_inx := strchr (_stmt, ')');
+      if (right_inx < select_kw)
+	{
+	  _vw_cols := subseq (_stmt, left_inx + 1, right_inx);
+	  _stmt := concat (subseq (_stmt, 0, left_inx), ' ', subseq (_stmt, right_inx + 1, length (_stmt)));
+	}
+    }
+
+  if (-1 = _stmt := adm_get_view_body(_stmt))
+    {
+      _stmt := '';
+      _vw := '';
+      _vw_cols := '';
+    }
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <!--script language="javascript" src="admin_tables.js"></script-->
+    <title>Edit view <?= _vw ?></title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Scheduled events mgmt using Virtuoso VSP">
+  </head>
+  <BODY>
+
+<?vsp adm_page_header(concat('Edit View ', _vw), NULL); ?>
+
+<?vsp adm_views_action (params); ?>
+
+    <form method="POST" action="admin_views.vsp">
+    <input type="hidden" name="q" value="<?= _q ?>">
+
+<TABLE BORDER="0">
+<?vsp if (lower (_v_body) like 'create% xml% view% as%') { ?>
+<TR><TD COLSPAN="3"><P>CREATE XML VIEW</P></TD></TR>
+<input type="hidden" name="xml_view" value="<?= _vw ?>">
+<?vsp } else { ?>
+<TR><TD COLSPAN="3"><P>CREATE VIEW</P></TD></TR>
+<?vsp } ?>
+<TR><TD></TD><TD COLSPAN="2"><P><STRONG>
+		<?vsp if ('' <> _vw) { ?>
+			<?= _vw ?><input type="hidden" name="vw" value="<?= _vw ?>">
+		<?vsp } else { ?>
+		  <input type="text" name="vw" value="<?= _vw ?>">
+		<?vsp } ?>
+		  (<input type="text" name="vw_cols" value="<?= _vw_cols ?>">)
+
+
+</P></TD></TR>
+<TR><TD COLSPAN="2"></TD><TD><P>AS</P></TD></TR>
+<TR><TD COLSPAN="3">
+	        <textarea name="stmt" rows="20" cols="64"><?= coalesce (_stmt, '') ?></textarea>
+</TD></TR>
+<TR><TD COLSPAN="3" ALIGN="right">
+		<input type="submit" name="save" value="Save">
+		<input type="submit" name="save" value="Cancel"></TD>
+</TR>
+
+</TABLE>
+    </form>
+<?vsp adm_page_footer(); ?>
+  </body>
+</html>

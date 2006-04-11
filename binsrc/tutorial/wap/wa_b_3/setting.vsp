@@ -1,0 +1,110 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+
+   declare _user_name, _login_ok varchar;
+  declare _sid varchar;
+  declare _err long varchar;
+  declare _passold, _passnew1, _passnew2, _to_do varchar;
+  declare _random1 integer;
+
+  _random1 := rnd(9999999);
+  _sid := '';
+  _sid := get_keyword('SESS', params);
+
+   _login_ok := 'NO';
+
+ if (_sid   <> '')
+ {
+  for select _username, _userpass from wapsession where sid = _sid  do
+  {
+   _login_ok := 'YES';
+   _user_name := _username;
+   update wapsession set _time_last_active = datestring ( now() ) where  sid = _sid;
+  }
+  }else{
+    _login_ok := 'NO';
+  }
+
+?>
+
+<?vsp
+if (_login_ok = 'YES')
+{ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="setting" title="Setting" >
+   <onevent type="onenterforward">
+          <refresh>
+   <setvar name="sid" value="<?=_sid?>"/>
+   <setvar name="popserver1" value=""/>
+   <setvar name="popusername1" value=""/>
+   <setvar name="popport1" value=""/>
+   <setvar name="poppassword1" value=""/>
+   <setvar name="passold" value=""/>
+   <setvar name="passnew1" value=""/>
+   <setvar name="passnew2" value=""/>
+   <setvar name="new_folder1" value=""/>
+   <setvar name="oldfoldername" value=""/>
+          </refresh>
+   </onevent>
+  <do type="options" label="Options">
+   <go href="#opt"/>
+  </do>
+    <p>Settings</p>
+
+   <p><a href="password.vsp?SESS=<?=_sid?>&amp;REF=<?=_random1?>">Change Password</a></p>
+   <p><a href="pop3account.vsp?SESS=<?=_sid?>&amp;REF=<?=_random1?>">Pop3 Account</a></p>
+   <p><a href="personal.vsp?SESS=<?=_sid?>&amp;REF=<?=_random1?>">Personal Data</a></p>
+   <p><a href="handset.vsp?SESS=<?=_sid?>&amp;REF=<?=_random1?>">Handset/Display</a></p>
+  </card>
+
+  <card id="opt">
+     <do type="options" label="Exit">
+     <go href="#setting"></go>
+   </do>
+     <?vsp
+      http(sprintf('<p><a href="checkmail.vsp?SESS=%s&amp;OPEN=Inbox&amp;REFRESH=%d">Top Menu</a></p>', _sid, _random1));
+      http(sprintf('<p><a href="#setting">Exit</a></p>',_sid));
+     ?>
+  </card>
+</wml>
+<?vsp
+}else{ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="P1" title="Wrong" >
+    <p mode="nowrap">
+   Wrong Login
+    </p>
+  </card>
+</wml>
+<?vsp
+}
+?>

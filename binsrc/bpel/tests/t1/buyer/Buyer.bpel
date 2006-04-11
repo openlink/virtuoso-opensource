@@ -1,0 +1,93 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<process name="Buyer"
+         targetNamespace="http://samples.cxdn.com/buyer"
+         suppressJoinFailure="yes"
+         xmlns:buyer="http://samples.cxdn.com/buyer"
+         xmlns:seller="http://samples.cxdn.com/seller"
+         xmlns:cor="http://samples.cxdn.com/supplyCorrelation"
+         xmlns:smsg="http://samples.cxdn.com/supplyMessages"
+         xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/">
+
+  <partnerLinks>
+    <partnerLink name="Customer"
+                partnerLinkType="buyer:Buyer"
+                myRole="BuyerProvider"
+                partnerRole="CustomerRequester"/>
+    <partnerLink name="Seller"
+                partnerLinkType="seller:Seller"
+                myRole="BuyerRequester"
+                partnerRole="SellerProvider"/>
+  </partnerLinks>
+
+  <variables>
+    <variable name="input" messageType="smsg:POMessage"/>
+    <variable name="output" messageType="smsg:POResponse"/>
+  </variables>
+
+  <correlationSets>
+    <correlationSet name="PurchaseOrder"
+        properties="cor:customerID cor:orderNumber"/>
+    <correlationSet name="Invoice"
+        properties="cor:vendorID cor:invoiceNumber"/>
+  </correlationSets>
+
+  <sequence>
+  
+  
+    <!-- receive PO from customer-->
+    <receive partnerLink="Customer" portType="buyer:Buyer"
+           operation="purchase"
+           variable="input"
+           createInstance="yes">
+      <correlations>
+        <correlation set="PurchaseOrder" initiate="yes"/>
+      </correlations>
+    </receive>
+ 
+    <!-- send PO to seller-->
+    <invoke partnerLink="Seller" portType="seller:Seller"
+         operation="AsyncPurchase" inputVariable="input">
+      <correlations>
+        <correlation set="PurchaseOrder" initiate="no" pattern="out"/>
+      </correlations>
+    </invoke>
+
+    <!-- receive POResponse from seller-->
+    <receive partnerLink="Seller" portType="seller:Buyer"
+           operation="AsyncPurchaseResponse"
+           variable="output">
+      <correlations>
+        <correlation set="PurchaseOrder" initiate="no"/>
+        <correlation set="Invoice" initiate="yes"/>
+      </correlations>
+    </receive>
+
+    <!-- send INV to buyer-->
+    <invoke partnerLink="Customer" portType="buyer:Customer"
+         operation="onResult" inputVariable="output">
+    </invoke>
+
+  </sequence>
+
+</process>

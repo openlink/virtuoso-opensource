@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="perlhosting"><title>Perl Hosting</title>
+
+<para>Virtuoso functionality can be enhanced through external libraries by
+loading shared objects or DLLs.  The new functions are written in a language of the developer's
+choice and compiled to produce a shared library appropriate to the operating
+system.  The path to the shared library must be declared in the Virtuoso INI
+file and the server restarted before it can be used.</para>
+
+<para>The Perl language is hosted within Virtuoso in this way.  hosting_perl.so
+is the library used.</para>
+
+<para>The Virtuoso INI file uses a [Plugins] configuration section for listing
+shared libraries for the server to load upon startup.  An example of this is:</para>
+
+<programlisting><![CDATA[
+[Plugins]
+LoadPath = /home/virtuoso/hosting
+Load1 = Hosting, hosting_perl.so
+..
+]]></programlisting>
+
+<para>The "Hosting" type defines the entry points for initialization of the runtime
+hosting environment, destruction of the user environment and execution of a
+file or string containing commands in the hosted language.  It also returns a
+list of file extensions that it is capable of processing.  Virtuoso
+dynamically defines memory-resident (no disk image) HTTP server handlers for
+each specified type. </para>
+
+<para>The Perl hosting plugin supports 'pl' extension.  Hence, upon
+initialization of the hosting plugin, Virtuoso defines the
+<function>__http_handler_pl(..)</function>  function according to the API for
+file type handlers in the Virtuoso HTTP server.  With this handler in place,
+each hit on a .pl file (file system or WebDAV) with appropriate execute
+permissions will cause the HTTP server to execute the code within it and return
+the result instead of simply the file's contents.</para>
+
+<para>The handler will call the __hosting_http_handler VSE with a special set
+of parameters to represent the HTTP environment correctly.</para>
+
+<para>Virtuoso will normally call the plugin to memory as required, and expel
+it when finished.  This behavior can be controlled by the INI file parameter:</para>
+
+<programlisting><![CDATA[
+[HTTPServer]
+PersistentHostingModules = 1/0 default 0
+]]></programlisting>
+
+<para>Setting <computeroutput>PersistentHostingModules</computeroutput> to "1"
+prevents Virtuoso from removing the interpreters from the HTTP threads after
+each request.</para>
+
+<tip><title>See Also:</title>
+  <para><link linkend="vseplugins">VSEI Plugins</link></para></tip>
+
+<example id="ex_hostingsharedobjects"><title>Using the Perl Plugin</title>
+
+<para>Executing Perl code directly:</para>
+
+<programlisting><![CDATA[
+select __hosting_http_handler ('pl', 'print "hello world"; ', '', vector (), 'helloworld.pl');
+]]></programlisting>
+
+<programlisting><![CDATA[
+returns : hello world
+]]></programlisting>
+
+<para>Executing a perl script file (perl/test_print.pl in the Virtuoso
+working directory):</para>
+
+<programlisting><![CDATA[
+/perl/test_print.pl
+-------------------
+#!/usr/bin/perl
+print "hello world file";
+]]></programlisting>
+
+<programlisting><![CDATA[
+select __hosting_http_handler ('pl', 'perl/test_print.pl');
+]]></programlisting>
+
+<programlisting><![CDATA[
+returns : hello world file
+]]></programlisting>
+</example>
+
+<note><title>Note:</title>
+  <para>The hosting_perl hosting module uses the perl <function>tie()</function>
+  function to "tie" up the STDIN, STDOUT, STDERR, exit()  and %ENV perl objects.
+  Untying any of these may lead to unpredictable results.</para></note>
+
+</sect1>

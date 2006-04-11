@@ -1,0 +1,135 @@
+<?vsp
+    declare shopping_id numeric(20);
+    shopping_id:=atoi(get_keyword('Shopping_Id',params,'0'));
+    declare cid numeric(10);
+    cid:=atoi(get_keyword('C_ID',params,'0'));
+    declare iid1 numeric(10);
+    declare iid numeric(10);
+    declare title varchar(60);
+    declare fname varchar(20);
+    declare lname varchar(20);
+    declare pubdate date;
+    declare publisher varchar(60);
+    declare subject varchar(60);
+    declare description varchar(500);
+    declare image varbinary;
+    declare thumbnail varbinary;
+    declare srp numeric(15,2);
+    declare cost numeric(15,2);
+    declare isbn character(13);
+    declare page integer;
+    declare backing varchar(15);
+    declare dimension varchar(25);
+    declare discount numeric(15,2);
+    declare item5 any;
+    declare i,j,k integer;
+    declare book_info
+	cursor for select I_ID,I_TITLE,A_FNAME, A_LNAME,I_PUB_DATE,I_PUBLISHER,
+	I_SUBJECT,I_DESC,I_IMAGE,I_SRP,I_COST,
+	I_ISBN,I_PAGE,I_BACKING,I_DIMENSIONS 
+	from ITEM i, AUTHOR a 
+        where I_ID=iid and I_A_ID=A_ID;
+    declare new_item
+	cursor for select top 5 ol.OL_I_ID as _ol_i_id, sum(OL_QTY) as ol_qty_sum
+	    from (select distinct os.O_C_ID as _c_id
+	    from (select top 10000 *
+	    from ORDERS order by O_DATE desc) os,
+            ORDER_LINE ol1 where (ol1.OL_O_ID = os.O_ID) and (ol1.OL_ID=iid)) c,
+	    (select top 10000 * from ORDERS) o, --- order by O_DATE desc) o,
+	    ORDER_LINE ol
+	    where o.O_C_ID = c._c_id and ol.OL_O_ID = o.O_ID
+            --group by ol.OL_I_ID
+	    order by ol_qty_sum desc;
+    item5:=make_array(5,'long');
+    i:=0;
+    iid := atoi(get_keyword('I_ID', params, '0'));
+    if (iid > 0)
+    {
+	whenever not found goto not_found_any;
+	open book_info (prefetch 1);
+	fetch book_info into iid1, title, fname,lname, pubdate, publisher, 
+    	    subject, description, image, srp, cost, 
+            isbn, page, backing, dimension;
+	close book_info;
+	goto further;
+not_found_any:
+	close book_info;
+	goto display_page;
+    }
+further:
+    if (iid > 0)
+    {
+	whenever not found goto not_found_select;
+	open new_item(prefetch 1);
+	while (i < 5)
+	{
+ 	    fetch new_item into j,k;
+	    aset(item5, i, j);
+	    if (aref(item5, i) <> iid)
+		i := i + 1;
+	}
+	close new_item;
+	goto further1;
+not_found_select:
+	close new_item;
+	goto display_page;
+    }
+further1:      
+---------------update-------------
+   if (('' <> get_keyword ('Submit Changes', params, '')) or ('' <> get_keyword ('Submit Changes.x', params, '')))
+   {
+     cost:=srp-rnd(6)/10.0*srp;
+     image:=file_to_string(concat(get_path(),'/html/imagegen/i_',cast(rnd(get_num_items())+1 as varchar),'.jpg'));
+     thumbnail:=file_to_string(concat(get_path(),'/html/imagegen/t_',cast(rnd(get_num_items())+1 as varchar),'.jpg'));
+     discount:=srp-cost;
+   }
+----new related items
+   if ((i<5) and (i>0)) 
+      while (i<5)  {
+          aset(item5,i,aref(item5,i-1)+1);
+          i:=i+1;
+      }
+   else if (i=0) 
+         while (i<5)  {
+           aset(item5,i,iid+7);
+	   i:=i+1;
+         } 
+--
+    update ITEM set I_RELATED1=aref(item5,0),I_RELATED2=aref(item5,1),I_RELATED3=aref(item5,2),
+		    I_RELATED4=aref(item5,3), I_RELATED5=aref(item5,4),
+                    I_COST=cost, I_IMAGE=image,I_THUMBNAIL=thumbnail,
+		    I_PUB_DATE=now()
+       where I_ID=iid;
+
+
+
+--select top 6 ol.OL_I_ID as _ol_i_id, sum(OL_QTY) as ol_qty_sum from (select distinct os.O_C_ID as _c_id from (select top 10000 * from ORDERS order by O_DATE desc) os, ORDER_LINE ol1 where ol1.OL_O_ID = os.O_ID and ol1.OL_ID=50) c,(select top 10000 * from ORDERS order by O_DATE desc) o, ORDER_LINE ol where o.O_C_ID = c._c_id and ol.OL_O_ID = o.O_ID group by ol.OL_I_ID order by ol_qty_sum desc;
+
+display_page:
+?>
+<HTML>
+  <HEAD><TITLE>TPC-W Admin Confirm Page</TITLE></HEAD>
+  <BODY BGCOLOR="#FFFFFF">
+  <H1 ALIGN="CENTER">TPC Web Commerce Benchmark (TPC-W)</H1>
+  <H2 ALIGN="CENTER"><IMG SRC="images/tpc_logo.jpg" ALIGN="BOTTOM" BORDER="0" WIDTH="288" HEIGHT="67"></H2>	
+  <H2 ALIGN="CENTER">Admin Confirm Page</H2>
+  <H2>Product Updated</H2>
+  <H2>Title: <?= title ?></H2>
+  <P>Author: <?=fname?> <?= lname  ?></P>
+  <P>Description: <I> <?=description?></I></P>
+   <IMG SRC="imagegen/i_<?=iid?>.jpg" ALIGN="RIGHT" BORDER="0" WIDTH="200" HEIGHT="200">
+   <IMG SRC="imagegen/t_<?=iid?>.jpg" ALIGN="RIGHT" BORDER="0" WIDTH="100" HEIGHT="150">
+<BLOCKQUOTE>
+ <P><B>Suggested Retail: $<?=srp?></B><BR>
+    <B>Our Price:</B><FONT COLOR="#DD0000"><B> <?=cost?></B></FONT><BR>
+    <B>You Save:</B><FONT COLOR="#DD0000"><B> $<?=srp-cost?></B></FONT></P>
+</BLOCKQUOTE>
+<DL>
+<DT>
+  <FONT SIZE="2"><?=backing?>, <?=page?> pages<BR>
+     Published by <?=publisher?><BR>Publication date: <?= cast(pubdate as date)?><BR>
+     Dimensions (in inches): <?=dimension?><BR>ISBN: <?=isbn?></FONT></DT></DL>
+<P ALIGN="CENTER">
+<A HREF="searchrequest.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/search.jpg" ALT="Search" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+<A HREF="index.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/home.jpg" ALT="Home" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+</P></BODY></HTML>

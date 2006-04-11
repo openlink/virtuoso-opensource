@@ -1,0 +1,81 @@
+# @(#) README 12.1.1.2@(#)
+
+Table of Contents
+===================
+ 0. What is this document?
+ 1. What is TPCW?
+ 2. What will TPCW create?
+ 3. How is TPCW built?
+ 4. Command Line Options for TPCW
+ 5. Environment variable
+
+0. What is this document?
+
+This is the general README file for TPCW, a sample implementation of
+some of the database-population-generation routines required in TPCW. 
+
+1. What is TPCW?
+
+TPCW is a sample database population program for use with the TPC-W
+benchmarks.  It is written in ANSI 'C' for portability, and is based on
+code that has been successfully ported to over a dozen different systems. 
+The source code has been provided to make the process of building a compliant 
+database population as simple as possible.
+
+2. What will TPCW create?
+
+TPCW is meant as a sample of the types of functionality that will be required
+in a database generator for the TPC-W benchmark. It produces sample
+output for two of the fields in the benchmark defintion, A_LNAME and I_TITLE. 
+The number of samples produces, along with related variable settings like 
+number of items and authors can be set from the command line. 
+All output is sent to stdout.
+
+3. How is TPCW built?
+
+The source code for TPCW is contained in the following files:
+	rnd.[ch]	A portable random-number generator
+	text.c		Pseudo-text generation routines
+	tpcw.[ch]	The TPC-W-specific routines
+	bm_utils.c	Generic routines based on those used in TPC-D's DBGEN
+	main.c		A simple driver routine
+	
+To build TPCW on a new system, do the following:
+	1. Create an appropriate makefile, using makefile.suite as a basis.
+	2. make.  
+
+Note: The required changes to the makefile should be limited to the first 
+few lines. 
+
+4. Command Line Options for TPCW
+
+TPCW's output is controlled by a combination of command line options
+and environment variables. Command line options are assumed to be single
+letter flags preceded by a minus sign. They may be followed by an
+optional argument.
+
+option  argument    default     action
+------  --------    -------     ------
+-h                                Display a usage summary
+
+-s      <samples>   1             Number of sample generated
+
+-a      <authors>   250           Set the number of authors
+
+-i      <items>     1000          Set the number of items
+
+-d      <file>      grammar.tpcw  Read distributions from <file>
+
+-m      <mode>      0             Set the output mode. Defined modes are:
+								   0 -- I_TITLE
+								   1 -- A_LNAME
+
+5. Environment Variables
+
+Enviroment variables are used to control features of TPCW
+that are unlikely to change from one execution to another.
+
+Variable    Default     Action
+-------     -------     ------
+TPCW_CONFIG  .             Directory in which to find configuration files
+TPCW_DIST   grammar.tpcw   Name of distribution definition file

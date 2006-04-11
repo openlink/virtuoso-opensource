@@ -1,0 +1,221 @@
+<?vsp
+    declare iid,iid1, _scl_id, _scl_qty numeric(10);
+    declare shopping_id, cart_id, _scl_i_id numeric(20);
+    declare customer_id numeric(10);
+    declare add_flag character(1); 
+    declare cart_qty integer; -- amount of ordered items
+    declare subtotal, _scl_cost numeric(15,2);
+    declare _c_fname, _c_lname varchar(20);
+    declare _c_discount numeric(3,2);
+    declare _i_cost, _i_srp numeric(15,2);
+    declare _i_title varchar(60);
+    declare _i_backing varchar(15);
+    declare _qty_chr varchar;
+    declare qty integer;
+
+    cart_id:=0;
+    cart_qty:=0;
+    shopping_id:= atoi(get_keyword('Shopping_Id', params, '0'));
+    if (shopping_id=0)
+	shopping_id:=coalesce((select max(SC_SHOPPING_ID) from CART), 0) + 1;
+    customer_id:= atoi(get_keyword ('C_ID', params, '0'));
+    add_flag:= get_keyword ('ADD_FLAG', params, '');
+    whenever not found goto further;
+    select SC_SHOPPING_ID into cart_id from CART where SC_SHOPPING_ID=shopping_id;
+further:;
+    -- CART creation
+    if (cart_id = 0)
+    {
+	-- 2.4.3.2
+	if (customer_id <> 0)
+	{
+	    select C_FNAME, C_LNAME, C_DISCOUNT
+		into _c_fname, _c_lname, _c_discount
+		from CUSTOMER
+		where C_ID = customer_id;
+	    insert into CART(SC_SHOPPING_ID, SC_C_ID, SC_DATE,
+		SC_C_FNAME, SC_C_LNAME, SC_C_DISCOUNT)
+		values (shopping_id, customer_id, now(),
+                _c_fname, _c_lname, _c_discount);
+	}
+	-- 2.4.3.1
+	else
+	{
+	    insert into CART(SC_SHOPPING_ID, SC_DATE)
+    		values(shopping_id, now());
+        }
+        cart_qty:=0;  -- cart_qty=0 means CART is empty
+    }
+    -- CART exists already
+    else
+    {  
+	select count(SCL_QTY) into cart_qty
+    	    from CART_ITEM
+	    where (SCL_CART=shopping_id);
+    }
+    -- add item in the CART (from productdetail)
+    if (add_flag = 'Y' and cart_qty < 100)  --the optional CART limit of 100 items has not been reached
+    {
+	iid := atoi(get_keyword('I_ID', params, '0'));
+        cart_qty := cart_qty + 1;
+        if (iid > 0)
+	{
+    	    select count(SCL_I_ID) into _scl_i_id
+        	from CART_ITEM 
+        	where SCL_I_ID = iid and SCL_CART = shopping_id;
+	    if (_scl_i_id > 0)
+	    {
+		update CART_ITEM set SCL_QTY = SCL_QTY + 1   --_scl_qty 
+            	    where SCL_I_ID = iid and SCL_CART = shopping_id;
+	    }
+	    else
+	    {
+		_scl_id := coalesce((select max(SCL_ID) from CART_ITEM), 0) + 1;
+    		--_i_title :=get_keyword('Title',params,'');
+    		select I_COST, I_SRP, I_TITLE, I_BACKING 
+            	    into _i_cost, _i_srp, _i_title, _i_backing
+            	    from ITEM where I_ID=iid;
+		insert into CART_ITEM(SCL_ID, SCL_I_ID, SCL_QTY,
+		    SCL_COST, SCL_SRP, SCL_TITLE, SCL_BACKING, SCL_CART)
+        	    values(_scl_id, iid, 1,
+		    _i_cost, _i_srp, _i_title, _i_backing, shopping_id);
+	    }
+	}
+    }
+    if (add_flag = 'N' and cart_qty <> 0)
+    {
+	declare _scl_cur cursor for
+	    select SCL_ID  from CART_ITEM where SCL_CART=shopping_id for update;
+            whenever not found goto _scl_cur_end;
+        open _scl_cur (prefetch 10);
+        while (1)
+	{
+	    declare _scl_id integer;
+	    fetch _scl_cur into _scl_id;
+	    _qty_chr := get_keyword(concat('QTY',cast(_scl_id as varchar)), params,'*');
+	    if (_qty_chr = '*')
+		goto _scl_cur_end;
+	    qty:=atoi(_qty_chr);
+	    if (qty = 0)
+		delete from CART_ITEM where current of _scl_cur;
+	    else
+		update CART_ITEM set SCL_QTY=qty where current of _scl_cur;
+	}
+_scl_cur_end:;
+	close _scl_cur;
+    }
+    -- list of pairs is empty
+    else if (add_flag = 'N' and cart_qty = 0)
+    {
+	iid1 := rnd(get_num_items()) + 1;
+        select I_RELATED1 into iid from ITEM where I_ID=iid1;
+        _scl_id := coalesce((select max(SCL_ID) from CART_ITEM), 0) + 1;
+        select I_COST, I_SRP, I_TITLE, I_BACKING
+    	    into _i_cost, _i_srp, _i_title, _i_backing
+            from ITEM where I_ID = iid;
+	insert into CART_ITEM(SCL_ID, SCL_I_ID, SCL_QTY,
+	    SCL_COST, SCL_SRP, SCL_TITLE, SCL_BACKING, SCL_CART)
+	    values(_scl_id, iid, 1,
+	    _i_cost, _i_srp, _i_title, _i_backing, shopping_id);
+    }
+    select sum(SCL_QTY*SCL_COST) into subtotal from CART_ITEM
+	where SCL_CART=shopping_id; 
+    update CART set SC_SUB_TOTAL=subtotal,
+	SC_DATE=now()
+	where SC_SHOPPING_ID=shopping_id;
+display:
+?>
+<HTML>
+  <HEAD><TITLE>TPC W Shopping Cart Page</TITLE></HEAD>
+  <BODY BGCOLOR="#FFFFFF">
+    <H1 ALIGN="CENTER">TPC Web Commerce Benchmark (TPC-W)</H1>
+    <CENTER><IMG SRC="images/tpc_logo.jpg" ALIGN="BOTTOM" BORDER="0" WIDTH="288" HEIGHT="67"></CENTER>
+    <H2 ALIGN="CENTER">Shopping Cart Page</H2>
+    <TABLE ALIGN="CENTER" BORDER="0" WIDTH="660">
+      <TR ALIGN="CENTER" VALIGN="top">
+        <TD COLSPAN="5"><B><FONT COLOR="#ff0000" SIZE="+1">Click on one of our latest books to find out more !</FONT></B></TD>
+      </TR>
+      <TR ALIGN="CENTER" VALIGN="top">
+<?vsp
+  declare item numeric(10);
+  declare rel numeric(10);
+  item := rnd(get_num_items())+1;
+  select I_RELATED1 into rel from ITEM where I_ID=item;  
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/ rel?>&C_ID=<?/ customer_id?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+  select I_RELATED2 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/ rel?>&C_ID=<?/ customer_id?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+  select I_RELATED3 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/ rel?>&C_ID=<?/ customer_id?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp	 
+  select I_RELATED4 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/ rel?>&C_ID=<?/ customer_id?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+<?vsp
+  select I_RELATED5 into rel from ITEM where I_ID=item; 
+?>    
+         <TD><A HREF="productdetail.vsp?BookInfo=<?/ rel?>&C_ID=<?/ customer_id?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="imagegen/t_<?/ rel ?>.jpg" ALT="Book #<?/ rel ?>" WIDTH="100" HEIGHT="150"></A></TD>
+      </TR>
+    </TABLE>
+    <FORM ACTION="shoppingcart.vsp" METHOD="GET"> 
+<INPUT TYPE="HIDDEN" NAME="C_ID" VALUE="<?=customer_id?>">
+<INPUT TYPE="HIDDEN" NAME="ADD_FLAG" VALUE="N">
+<INPUT TYPE="HIDDEN" NAME="Shopping_Id" VALUE="<?=shopping_id?>">
+      <CENTER><P></P> 
+<?vsp 
+        declare _sc_date date;
+        declare _sc_subtotal numeric(15,2);
+        declare i integer;
+	select SC_DATE into _sc_date from CART 
+		where SC_SHOPPING_ID = shopping_id;
+?>
+        <TABLE BORDER="0">
+          <TR>
+            <TD><B>Qty</B></TD>
+            <TD><B>Product</B></TD>
+          </TR>
+<?vsp
+	for
+	  select  SCL_ID as _scl_id, SCL_QTY, SCL_TITLE as _scl_title, 
+                 SCL_BACKING as _scl_backing, SCL_SRP as _scl_srp, SCL_COST as _scl_cost 
+                 from CART_ITEM
+		where SCL_CART=shopping_id
+	do
+	{ 
+?>
+          <TR>
+            <TD VALIGN="TOP"><INPUT TYPE="HIDDEN" NAME="I_ID<?=_scl_id?>" VALUE="<?=_scl_id?>">
+              <INPUT type="text" NAME="QTY<?=_scl_id?>" VALUE="<?= SCL_QTY ?>" SIZE="3"></TD>
+            <TD VALIGN="TOP"><I><?=_scl_title?></I> 
+            - Backing: <?=_scl_backing?><BR>
+            SRP. $<?=_scl_srp?>, <FONT COLOR="#AA0000"><B>
+            Your Price: $<?=_scl_cost?></B></FONT></TD>
+          </TR>
+<?vsp    
+	}
+?>
+        </TABLE>
+        <B><I>Subtotal price: $<?=subtotal?> </I></B>
+        <BR>Last Updated: <?=left(cast(_sc_date as varchar), 19)?>
+        <P><BR>
+ <A HREF="customerregistration.vsp?C_ID=<?/customer_id?>&Shopping_Id=<?/shopping_id?>">
+      <IMG SRC="images/checkout.jpg" ALT="Checkout" BORDER="0" WIDTH="120" HEIGHT="30">
+ </A>
+         <!--?? <INPUT TYPE="IMAGE" NAME="Proceed to Checkout" SRC="images/checkout.jpg" HEIGHT="30" WIDTH="120">-->
+ <A HREF="index.vsp?C_ID=<?/customer_id?>&Shopping_Id=<?/shopping_id?>">
+      <IMG SRC="images/home.jpg" ALT="Home" BORDER="0" WIDTH="120" HEIGHT="30">
+ </A>
+        <!--  <INPUT TYPE="IMAGE" NAME="Continue Shopping" SRC="images/home.jpg" HEIGHT="30" WIDTH="120">-->
+        </P>
+        <P>If you have changed the quantities and/or taken anything out<BR> 
+          of your shopping cart, click here to refresh your shopping cart:
+        </P>
+        <P><INPUT TYPE="IMAGE" NAME="Refresh Shopping Cart" ALT="Refresh" SRC="images/refresh.jpg" HEIGHT="30" WIDTH="120"></P>
+    </CENTER>
+    </FORM> 
+  </BODY>
+</HTML>

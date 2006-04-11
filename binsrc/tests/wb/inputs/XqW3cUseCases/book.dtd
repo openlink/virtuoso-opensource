@@ -1,0 +1,15 @@
+<!ELEMENT book (title, author+, section+)>
+<!ELEMENT title (#PCDATA)>
+<!ELEMENT author (#PCDATA)>
+<!ELEMENT section (title, (p | figure | section)* )>
+<!ATTLIST section
+	id         ID    #IMPLIED
+	difficulty CDATA #IMPLIED>
+<!ELEMENT p (#PCDATA)>
+<!ELEMENT figure (title, image)>
+<!ATTLIST figure
+	width   CDATA   #REQUIRED
+	height  CDATA   #REQUIRED >
+  <!ELEMENT image EMPTY>
+  <!ATTLIST image
+	source  CDATA   #REQUIRED >

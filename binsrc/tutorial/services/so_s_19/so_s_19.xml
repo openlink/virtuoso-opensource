@@ -1,0 +1,140 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-19">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>SOAP services</refname>
+    <refpurpose>Contact Details Extraction Service</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-19a">
+
+<title>Example overview</title>
+<para>This example demonstrates:</para>
+<itemizedlist mark="bullet">
+  <listitem>
+  Fetching HTML from a foreign host as specified by the user.
+  </listitem>
+  <listitem><para>
+  Rendering the page with regexp_match() to extract the contacts information.
+  For example, it take information from sequences like:</para>
+  <programlisting>"quoted text" said John Smith, Manager at A Company.
+  </programlisting>
+  </listitem>
+  <listitem>
+  Making a Web search with the company name to find the domain.
+  </listitem>
+  <listitem>
+  Making an email address from contact name, and domain name.
+  </listitem>
+  <listitem>A SOAP call.
+  </listitem>
+  <listitem>Processing the 4 dimensional array in the
+  AJAX based client.
+  </listitem>
+  <listitem>
+  XSL transformation.
+  </listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-19b">
+<title>Example Setup</title>
+<para>The service is prepared by loading the SQL file.
+This performs the following:</para>
+<itemizedlist mark="bullet">
+  <listitem>
+  Define a SOAP type for 4 dimensional array.
+  </listitem>
+  <listitem>
+  Define a stored procedure for the SOAP service that queries, web target and makes the contact info.</listitem>
+  <listitem>
+  The SOAP service is achieved by defining the /SOAP_SO_S_19 URL to
+  have same functionality as using soap_server() function call.
+  </listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-19c">
+<title>Example Operation</title>
+<itemizedlist mark="bullet">
+  <listitem>Get a page from the URL.</listitem>
+  <listitem>Substitute characters " as 0x94 etc.</listitem>
+  <listitem>Remove &lt;i&gt;, &lt;b&gt;, &lt;strong&gt; elements.</listitem>
+  <listitem>Take out CR/LF.</listitem>
+  <listitem>Make breaks before &lt;P and &lt;H elements.</listitem>
+  <listitem>Parse the page to have consistent escapes such as &amp;quote; .</listitem>
+  <listitem>If the above fails then achieve the same with substitutions.</listitem>
+  <listitem>Have a function to return a regular expression(s) by given level
+  of recursion.</listitem>
+  <listitem>Have a recursive function which gets a regular expression based on
+  depth and apply it against the text.</listitem>
+  <listitem>If match found skip rest of pattern matching.</listitem>
+  <listitem>If not, apply the next pattern.</listitem>
+  <listitem>When contact matches name, title and company, the item will
+  be added to a result array.</listitem>
+  <listitem>Company of the result will be searched via Google to find
+  'home page' or 'welcome'.</listitem>
+  <listitem>The top most result link from Google will be parsed to extract
+  the name of the site ie. domain name part.</listitem>
+  <listitem>The email will be composed as FirtsName.LastName@domain .</listitem>
+  <listitem>A multidimensional array will be produced containing the name,
+  company, title and email.</listitem>
+  <listitem>Loop over the resulting array, and make an XML document.</listitem>
+  <listitem>Render the XML to the HTML using XSL-T sheet.</listitem>
+</itemizedlist>
+
+</refsect1>
+<refsect1 id="SO-S-19d">
+<title>Invoking the operation via VB.NET application</title>
+<para>The following example demonstrates the usage of the Microsoft .NET against Virtuoso's SOAP service
+as defined in 'Server Setup':</para>
+<programlisting>
+1. Open a new VB.NET project for Console Application.
+2. Add a web reference to the Virtuoso WSDL end point (http://[host:port]/SOAP_SO_S_19/services.wsdl).
+3. Drag and drop the VirtuosoSOAP() from Class wizard in routine code.
+
+    Sub Main()
+        Dim soap As New WebReference1.VirtuosoSOAP()
+        Dim result As String()
+        Dim len, i As Integer
+
+        result = soap.ExContacts("http://www.openlinksw.com/press/oplappl4.htm")
+
+        len = result.Length - 1
+        For i = 0 To len Step 5
+            System.Console.WriteLine("Name: " + result(i))
+            System.Console.WriteLine("Title: " + result(i + 1))
+            System.Console.WriteLine("Company: " + result(i + 2))
+            System.Console.WriteLine("Email: " + result(i + 3))
+            System.Console.WriteLine("Home page: " + result(i + 4))
+            System.Console.WriteLine("")
+        Next i
+    End Sub
+</programlisting>
+</refsect1>
+</refentry>

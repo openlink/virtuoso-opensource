@@ -1,0 +1,101 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-7">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>SOAP &amp; WSDL service</refname>
+    <refpurpose>Stock Quotes service</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-7a">
+<title>SOAP Server setup</title>
+<itemizedlist mark="bullet">
+  <listitem>An executable virtual directory is needed to create a SOAP based service.</listitem>
+  <listitem>The service in practice is a PL procedure or group of PL procedures.
+       In this example the PL module contains a single procedure.
+       The procedure makes a request to the quotes.nasdaq.com. The retrieved XML document is returned as a
+       string.</listitem>
+
+  <listitem>VSP page for WSDL generation:
+       For this example it is so_s_7_wsdl.vsp. A WSDL response is made and sent to the client.</listitem>
+
+  <listitem>VSP for SOAP server:
+       The SOAP server can be invoked using a soap_server() call.
+       The so_s_7_server.vsp page shows setup of the SOAP server using the soap_server().</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-7b">
+<title>Example Virtuoso client invoked from VSP</title>
+<itemizedlist mark="bullet">
+  <listitem>Virtuoso client is invoked from the VSP page so_s_7_client.vsp.</listitem>
+  <listitem>This page accepts an issuer code and processes it with the Virtuoso SOAP client function - soap_call().</listitem>
+  <listitem>The soap method in this request is the name of the procedure defined in Step 2 above.</listitem>
+  <listitem>The result from the SOAP request will be transformed with an XSL-T style-sheet, and sent to the browser as an HTML document.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-7d">
+<title>Example AJAX SOAP client invoked from JavaScript</title>
+<itemizedlist mark="bullet">
+  <listitem>The "nasdaq_ajax.html" (listed below) contains a JavaScript code used to invoke SOAP client.</listitem>
+  <listitem>This client will invoke the Virtuoso SOAP service as defined above.</listitem>
+  <listitem>The JavaScript code uses XMLHttpRequest object.</listitem>
+</itemizedlist>
+</refsect1>
+
+
+<refsect1 id="SO-S-7c">
+<title>Invoking the operation via VB.NET application</title>
+<para>The following example demonstrates the usage of the Microsoft .NET against Virtuoso's SOAP service
+as defined in 'Server Setup':</para>
+<programlisting>
+1. Open a new VB.NET project for Console Application.
+2. Add a web reference to the Virtuoso WSDL end point (http://[host:port]/xml-soap/services.wsdl).
+3. Drag and drop the VirtuosoSOAP() from Class wizard in routine code.
+
+
+    Sub Main()
+        Dim soap As New WebReference1.VirtuosoDB_DBA_NasdaqQuotes()
+        Dim result As String
+        Dim sty As New Xml.Xsl.XslTransform()
+
+        result = soap.get_NasdaqQuotes("YHOO")
+
+        sty.Load("http://[host:port]/tutorial/services/so_s_7/sr.xsl")
+
+        Dim strReader As New IO.StringReader(result)
+        Dim xpDoc As New Xml.XPath.XPathDocument(strReader)
+        Dim arg As New Xml.Xsl.XsltArgumentList()
+        Dim strWriter As New IO.StringWriter()
+
+        sty.Transform(xpDoc.CreateNavigator(), arg, strWriter)
+        System.Console.WriteLine(strWriter.ToString)
+    End Sub
+</programlisting>
+</refsect1>
+</refentry>

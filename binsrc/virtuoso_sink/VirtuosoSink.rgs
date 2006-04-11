@@ -1,0 +1,11 @@
+HKCR
+{
+	NoRemove AppID
+	{
+		{C9C50643-AE52-11D4-8986-00E018001CA1} = s 'VirtuosoSink'
+		'VirtuosoSink.EXE'
+		{
+			val AppID = s {C9C50643-AE52-11D4-8986-00E018001CA1}
+		}
+	}
+}

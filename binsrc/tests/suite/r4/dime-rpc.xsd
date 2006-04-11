@@ -1,0 +1,67 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://soapinterop.org/attachments/xsd"
+	xmlns:types="http://soapinterop.org/attachments/xsd" 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" 
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+	xmlns:dime="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/" 
+	xmlns:content="http://schemas.xmlsoap.org/ws/2002/04/content-type/" 
+	xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/"
+	xmlns:soap-enc="http://schemas.xmlsoap.org/soap/encoding/"
+>
+	<import namespace="http://schemas.xmlsoap.org/soap/encoding/" location="http://schemas.xmlsoap.org/soap/encoding/" />
+	<import namespace="http://schemas.xmlsoap.org/ws/2002/04/content-type/"/>
+	<import namespace="http://schemas.xmlsoap.org/ws/2002/04/reference/"/>
+	<complexType name="ReferencedBinary">
+		<simpleContent>
+			<restriction base="soap-enc:base64Binary">
+				<annotation>
+					<appinfo>
+						<content:mediaType value="application/octetstream"/>
+					</appinfo>
+				</annotation>
+				<attributeGroup ref="soap-enc:commonAttributes"/>
+			</restriction>
+		</simpleContent>
+	</complexType>
+	<complexType name="ArrayOfBinary">
+		<complexContent>
+			<restriction base="soap-enc:Array">
+				<attribute ref="soap-enc:arrayType" wsdl:arrayType="types:ReferencedBinary[]"/>
+			</restriction>
+		</complexContent>
+	</complexType>
+	<complexType name="ReferencedText">
+		<simpleContent>
+			<restriction base="soap-enc:base64Binary">
+				<annotation>
+					<appinfo>
+						<content:mediaType value="text/plain"/>
+					</appinfo>
+				</annotation>
+				<attributeGroup ref="soap-enc:commonAttributes"/>
+			</restriction>
+		</simpleContent>
+	</complexType>
+</schema>

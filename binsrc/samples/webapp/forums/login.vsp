@@ -1,0 +1,73 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp                                  
+  -- parameters:
+  -- sid-session_id; n-name; p-password; ra-return address; k-page kind; 
+  -- p kind of page,
+  -- k if the session's expired and has to re-login
+  declare id, k, sid, name, pswd, pkind, raddr, praddr, subm, kind, tid, fid varchar; 
+
+
+  sid    := get_keyword('sid', params, '0');
+  id     := get_keyword('id',params, '');
+  name   := get_keyword('n', params, '');
+  pswd   := get_keyword('p', params, '');
+  subm   := get_keyword('submit', params, '');
+  k      := get_keyword('k', params, '');
+  raddr  := get_keyword('raddr', params, '');
+  praddr := get_keyword('praddr', params, '');
+  kind   := get_keyword('kind', params, '');
+  tid    := get_keyword('tid', params, '');
+  fid    := get_keyword('fid', params, '');
+  
+  if (name <> '' AND pswd <> '' AND subm <> '')
+    {	
+      sid := SESS_CREATE(name, pswd, http_client_ip ());
+      if (sid <> -1)
+	{
+	  if (praddr <> '')
+	    {--the login is from the post messages form where there is no login or expire session
+	      MISC_REDIRECT(sprintf('%s?id=%s&sid=%s&raddr=%s&kind=%s&tid=%s&fid=%s',
+		    praddr, id, sid, raddr, kind, tid, fid));
+	      return;
+	    }
+	  else 
+	    {
+	      MISC_REDIRECT(sprintf('%s?id=%s&sid=%s&tid=%s&fid=%s',raddr,id,sid,tid,fid));
+	      return;
+	    };
+	}
+      else
+	{
+          k := '2';
+          sid := '';   
+	}
+    };
+  
+  http_xslt (sprintf ('file:%s/login.xsl', registry_get ('app_forums_xslt_location')));  
+?>
+<?xml version="1.0"?>
+<page>
+<fform id="<?=id?>" sid="<?=sid?>" tid="<?=tid?>" fid="<?=fid?>" k="<?=k?>" raddr="<?=raddr?>" kind="<?=kind?>" praddr="<?=praddr?>">
+</fform>
+</page>

@@ -1,0 +1,55 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-X-3">
+  <refmeta>
+    <refentrytitle>Using XSLT to Format Output</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Using xslt() in VSPs</refname>
+    <refpurpose>An alternative of the http_xslt()</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-X-3a">
+<title>Example</title>
+<itemizedlist mark="bullet">
+  <listitem>This example displays user data using XSLT to customize the look.</listitem>
+  <listitem>The result is the same as in <ulink url="../vs_x_2/vs_x_2.vsp">VS-X-2</ulink>, but XSL-T transformation is done in the VSP.</listitem>
+  <listitem><para>The http_xslt() can be replaced (for main functionality) by the following:</para>
+    <itemizedlist mark="bullet">
+      <listitem>xml_tree_doc() over an XML document</listitem>
+      <listitem>xslt() with XSL-T stylesheet URI and result from xml_tree_doc()</listitem>
+      <listitem>http_value() with result from xslt()</listitem>
+    </itemizedlist></listitem>
+  <listitem>The above describes the steps that the web server makes in the VSP execution when http_xslt() is called.
+   This is not a direct equivalent, because Content-Type is not manipulated, as it is with http_xslt().
+   This means that web server can setup a Content-Type if it's not specified, otherwise it is specified in xsl:output element.</listitem>
+   <listitem>The same is true for encoding. If it is necessary to manipulate content-type with xsl:output, then use xml_tree_doc_media_type() to retrieve the media type from the XML entity, produced from xml-tree_doc(), and manually set 'Content-Type' header with http_header().
+   The above steps are useful for VSP&amp;XSLT understanding, but in practice the http_xslt() is more suitable.
+   The http_xslt() is most appropriate if all content that produces a VSP should be transformed.</listitem>
+
+   <listitem>In the case where a piece of XML data is to be inserted in the middle of the HTML part of VSP, it cannot be done with http_xslt(). It may only be done with the step-by-step way above.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

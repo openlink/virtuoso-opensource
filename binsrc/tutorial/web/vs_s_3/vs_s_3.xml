@@ -1,0 +1,67 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-S-3">
+  <refmeta>
+    <refentrytitle>Web Server Setup</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Examples of Mapping</refname>
+    <refpurpose>Creating a virtual directory to proxy to another server</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-S-3a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+  <listitem>The Virtuoso Web server can act as a proxy server for HTTP requests.</listitem>
+  <listitem>If request from a user-agent is a proxy request, then the Web server will try to retrieve the URL, and will send the response and entity body back to the user-agent.</listitem>
+  <listitem>The virtual directory mapping can be setup when physical location is a Web server. The local URL will then be treated by the Web server as a proxy request.</listitem>
+</itemizedlist>
+<para>Login to the Conductor UI using the dba account.</para>
+</refsect1>
+
+<refsect1 id="VS-S-3b">
+<title>Example virtual directory setup to another HTTP server</title>
+<orderedlist>
+  <listitem>Go to "WebDAV &amp; HTTP" tab and then go to the "HTTP Hosts &amp; Directories" tab.</listitem>
+  <listitem>From the given list of HTTP Hosts click the icon infront of the Interface value.</listitem>
+  <listitem>Click the "Add new directory" link.</listitem>
+  <listitem>Choose the "Proxy server" type and press the button "Next>>".</listitem>
+  <listitem>Enter "/proxy" for Virtual directory path, "http://[desired_host:port]/" for Proxy to, and then press the "Save Changes" button.</listitem>
+</orderedlist>
+<para>To test the new directory: enter the "http://your_host:port/proxy" in browser.
+If all is ok, the content of the web tutorial directory is shown.</para>
+</refsect1>
+
+<refsect1 id="VS-S-3c">
+<title>Equivalent SQL commands to above</title>
+<orderedlist>
+  <listitem>Connect to the Virtuoso server via ISQL utility as DBA user.</listitem>
+  <listitem><para>Create the virtual directory with physical path "http://host:port/"</para>
+  <programlisting>
+SQL&gt; vhost_define (vhost=&gt;'*ini*',lhost=&gt;'*ini*',lpath=&gt;'/proxy',ppath=&gt;'http://host:port/');
+  </programlisting></listitem>
+</orderedlist>
+</refsect1>
+</refentry>

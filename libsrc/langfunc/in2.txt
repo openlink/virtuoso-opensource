@@ -1,0 +1,40 @@
+Valid UTF16BE		|count_all		|UTF-16BE	|x-any	|ØßE=Ra
+Valid UTF16LE		|count_all		|UTF-16LE	|x-any	|ØEß=Ra
+Valid UTF16BE (BOM)	|count_all		|UTF-16BE	|x-any	|şÿØßE=Ra
+Valid UTF16LE (BOM)	|count_all		|UTF-16LE	|x-any	|ÿşØEß=Ra
+Bad UTF16BE (Bad BOM)	|count_all		|UTF-16BE	|x-any	|ÿşØßE=Ra
+Bad UTF16LE (Bad BOM)	|count_all		|UTF-16LE	|x-any	|şÿØEß=Ra
+Bad UTF16BE (no hi)	|count_all		|UTF-16BE	|x-any	|ßE=Ra
+Bad UTF16LE (no hi)	|count_all		|UTF-16LE	|x-any	|Eß=Ra
+Bad UTF16BE (no lo)	|count_all		|UTF-16BE	|x-any	|Ø=Ra
+Bad UTF16LE (no lo)	|count_all		|UTF-16LE	|x-any	|Ø=Ra
+Bad UTF16BE (Break 3/4)	|count_all		|UTF-16BE	|x-any	|Øß
+Bad UTF16LE (Break 3/4)	|count_all		|UTF-16LE	|x-any	|ØE
+Bad UTF16BE (Break 2/4)	|count_all		|UTF-16BE	|x-any	|Ø
+Bad UTF16LE (Break 2/4)	|count_all		|UTF-16LE	|x-any	|Ø
+Bad UTF16BE (Break 1/4)	|count_all		|UTF-16BE	|x-any	|Ø
+Bad UTF16LE (Break 1/4)	|count_all		|UTF-16LE	|x-any	|
+Bad UTF16BE (Break 1/2)	|count_all		|UTF-16BE	|x-any	|ØßE=R
+Bad UTF16LE (Break 1/2)	|count_all		|UTF-16LE	|x-any	|ØEß=Ra
+Load Cp949		|load_eh_ucm		|Cp949		|-	|ucm/java-Cp949-1.3-P.ucm
+Iterate all	Cp949	|iterate_all		|Cp949		|x-any	|sgator È¨ÆäÀÌÁö sgator È¨ÆäÀÌÁö
+Load Cp933		|load_eh_ucm		|Cp933		|-	|ucm/java-Cp933-1.3-P.ucm
+Iterate all	Cp933	|iterate_all		|Cp933		|x-any	|sgator È¨ÆäÀÌÁö sgator È¨ÆäÀÌÁö
+Load ISO2022KR		|load_eh_ucm		|ISO2022KR	|-	|ucm/java-ISO2022KR-1.3-P.ucm
+Iterate all	2022	|iterate_all		|ISO2022KR	|x-any	|sgator È¨ÆäÀÌÁö sgator È¨ÆäÀÌÁö
+Count all 0		|count_all		|blab		|x-any	|Here is Winnie-The-Pooh.
+Count all 1		|count_all		|UTF-8		|x-any	|He is coming downstairs --
+Count all 2		|count_all		|UTF-8		|ru-RU	|bump-Bump-BUMP --
+Count vtb 1		|count_vtb		|UTF8		|x-any	|be~hind Cris~to~pher Ro~bin.
+Count vtb 2		|count_vtb		|ASCII-UK	|en-UK	|Now he is at the bottom,
+Count vtb 3		|count_vtb		|ASCII		|ru-RU	|and ready to meet you.
+Iterate all	1	|iterate_all		|UTF8		|x-any	|Winnie-The-Pooh.
+Iterate all	2	|iterate_all		|UTF8		|ru-RU	|   -- Alex Alexander Miln, Winnie-The-Pooh
+Iterate vtb	1	|iterate_vtb		|UTF8		|x-any	|Documentation is like sex:
+Iterate vtb	2	|iterate_vtb		|UTF8		|en-UK	|When it's good, it is very-very good,
+Iterate vtb	upc 1	|iterate_vtb_upc	|UTF8		|ru-RU	|and if it's bad, is is better than nothing.
+Iterate vtb	upc 2	|iterate_vtb_upc	|LATIN1		|ru-RU	|   -- Denis Ritchi, IMHO
+Bad encoding 1		|count_vtb	c	|ASCII		|ru-RU	|The rest of string is Cyrillic in ASCII: áûñòğî ïîäíÿòûé Ìàñäàé íå ñ÷èòàåòñÿ óïàâøèì
+Bad encoding 2		|count_vtb	c	|UTF8		|x-any	|The rest of string is interrupted UTF-8 char: ş
+Bad encoding 3		|count_vtb	c	|UTF8		|x-any	|The rest of string is poorly encoded UTF-8 chars: şşşşşşşşş
+# Source data for testing language- and encoding- handling functions

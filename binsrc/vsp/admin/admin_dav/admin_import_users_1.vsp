@@ -1,0 +1,159 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare host, port, base, bind, pwd, res, src, sid any;
+
+  sid := adm_get_sesid (params);
+  if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+    {
+      adm_tell_unauth_dav (lines);
+      return (0);
+    }
+  if ({?'get'} is not null)
+    {
+      host := {?'host'};
+      port := {?'port'};
+      base := {?'base'};
+      bind := {?'bind'};
+      pwd := {?'pwd'};
+      src := {?'src'};
+      adm_set_ses_var (sid, 'ldap_host', host);
+      adm_set_ses_var (sid, 'ldap_base', base);
+      adm_set_ses_var (sid, 'ldap_bind', bind);
+      declare exit handler for sqlstate '*'
+	{
+	  declare stat, err any;
+	  stat := __SQL_STATE;
+	  err := __SQL_MESSAGE;
+          rollback work;
+?>
+	  <?include error.vsp ?>
+<?vsp
+	  return;
+	};
+      connection_set ('LDAP_VERSION', 2);
+      host := 'ldap://'|| host || ':' || port;
+      res := ldap_search (host, 0, base, src, bind, pwd);
+    }
+  if ({?'cancel'} is not null
+      )
+   {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: admin_dav_users.vsp\r\n');
+      return 0;
+   }
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>WebDAV User Accounts</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Importing a users from LDAP">
+  </head>
+<?vsp adm_page_header('WebDAV User Accounts', 'davuseradm');
+?>
+<script type="text/javascript">
+function checkRest (form, sel)
+{
+  var i;
+  if (sel.selectedIndex == 0)
+    return;
+  for (i = 0; i < form.elements.length; i++)
+    {
+      var contr = form.elements[i];
+      if (contr != null && contr != sel && contr.type == "select-one")
+	{
+	  if (contr.selectedIndex == sel.selectedIndex)
+            contr.selectedIndex = 0;
+	}
+    }
+}
+</script>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+
+<tr><td COLSPAN="3" CLASS="genhead">Map LDAP Search data</td></tr>
+<TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<form action="admin_import_users_2.vsp" method="POST">
+<input type="hidden" name="sres" value="<?= encode_base64(serialize (res)) ?>"/>
+<input type="hidden" name="sid" value="<?= sid ?>">
+<tr>
+<td class="genlistheadt">
+LDAP property
+</td><td class="genlistheadt">Sample Data (first record)</td>
+<td  CLASS="genlistheadt">User Property</a></td>
+</tr>
+<?vsp
+     declare i, l int;
+     declare ar any;
+     i := 0; l := length (res);
+     while (i < l)
+       {
+	 declare dn, uid, name, email, opts varchar;
+	 if (res[i] = 'entry')
+	   {
+             declare elm any;
+	     declare j, k int;
+
+	     elm := res[i+1];
+             k := length (elm);
+	     for (j := 0; j < k; j := j + 2)
+		{
+	    ?>
+            <tr>
+		<td class="gendata">
+		<?=elm[j]?>
+		</td>
+		<td class="gendata">
+		  <?= substring (case when isstring (elm[j+1]) then elm[j+1] else elm[j+1][0] end, 1, 50) ?>
+		</td>
+	    	<td class="gendata">
+		 <select name="sel_<?=elm[j]?>" onchange="checkRest(this.form,this)">
+			<option value="skip"  >--</option>
+			<option value="uid"   <?= case when elm[j] = 'uid' then 'selected' else '' end ?>>Login Name</option>
+			<option value="fn"    <?= case when elm[j] = 'cn' then 'selected' else '' end ?>>Full Name</option>
+			<option value="email" <?= case when elm[j] = 'mail' then 'selected' else '' end ?>>E-Mail</option>
+			<option value="pwd">Initial Password</option>
+		 </select>
+		</td>
+	    </tr>
+	    <?vsp
+                 }
+	     i := l;
+	   }
+	 i := i + 2;
+       }
+     ?>
+       <tr>
+        <td  CLASS="geninput" colspan="3">
+	<input type="submit" name="import" value="Next">
+	<input type="submit" name="cancel" value="Cancel">
+	</td>
+       </tr>
+</form>
+    </table>
+<?vsp adm_page_footer(); ?>
+</html>
+

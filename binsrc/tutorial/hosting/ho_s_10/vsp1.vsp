@@ -1,0 +1,76 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../demo.css">
+    <title>Executing : select s.name from CLR..Supplier_ho_s_10 s where s.location."x" &lt; 2 and s.location."x" &gt; 5</title>
+  </head>
+  <body>
+<h2>Executing : select s.name from CLR..Supplier_ho_s_10 s where s.location."x" &lt; 2 and s.location."x" &gt; 5</h2>
+<?vsp
+  declare err_sqlstate, err_msg, m_dta, result, err_sqlstate1, err_msg1 any;
+	  err_sqlstate := '00000';
+	  err_msg := 'none';
+          err_sqlstate1 := '00000';
+          err_msg1 := 'none';
+
+	  commit work;
+          exec ('select s.name from CLR..Supplier_ho_s_10 s where s.location."x" > 2 and s.location."x" < 5',
+	      err_sqlstate, err_msg, vector(),
+                100, m_dta, result);
+
+	  exec ('commit work', err_sqlstate1, err_msg1);
+	  if ('00000' <> err_sqlstate)
+	    {
+?>
+              <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+              <TR>
+	        <TD CLASS="errorhead" COLSPAN="2">Execution Error</TD>
+	      </TR>
+	      <TR>
+	        <TD CLASS="genlisthead">SQL State</TD>
+		<TD CLASS="gendata"><?= err_sqlstate ?></TD>
+	      </TR>
+	      <TR>
+		<TD CLASS="genlisthead">Error Message</TD>
+		<TD CLASS="gendata"><?= err_msg ?></TD>
+	      </TR>
+<?vsp	      if ('00000' <> err_sqlstate1)
+		{
+?>
+	          <TR>
+		    <TD CLASS="genlisthead">Txn SQL State</TD>
+		    <TD CLASS="gendata"><?= err_sqlstate1 ?></TD>
+		  </TR>
+		  <TR>
+		    <TD CLASS="genlisthead">Txn Error Message</TD>
+		    <TD CLASS="gendata"><?= err_msg1 ?></TD>
+		  </TR>
+<?vsp		} ?>
+	      </TABLE>
+<?vsp	    }
+	  else
+	    adm_result_to_table(result, m_dta);
+?>
+</body>
+</html>

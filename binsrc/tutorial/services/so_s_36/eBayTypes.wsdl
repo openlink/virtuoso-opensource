@@ -1,0 +1,1494 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:ns="urn:ebay:apis:eBLBaseComponents" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.xmlsoap.org/wsdl/" targetNamespace="urn:ebay:apis:eBLBaseComponents">
+  <wsdl:types>
+    <xs:schema xmlns:ebl="urn:ebay:apis:eBLBaseComponents" xmlns:ns="urn:ebay:apis:CoreComponentTypes" targetNamespace="urn:ebay:apis:CoreComponentTypes" elementFormDefault="qualified" attributeFormDefault="unqualified">
+      <xs:complexType name="AmountType">
+        <xs:simpleContent>
+          <xs:extension base="xs:double">
+            <xs:attribute name="currencyID" type="ebl:CurrencyCodeType" use="required"/>
+          </xs:extension>
+        </xs:simpleContent>
+      </xs:complexType>
+      <xs:complexType name="BasicAmountType">
+        <xs:simpleContent>
+          <xs:extension base="xs:string">
+            <xs:attribute name="currencyID" type="ebl:CurrencyCodeType" use="required"/>
+          </xs:extension>
+        </xs:simpleContent>
+      </xs:complexType>
+      <xs:complexType name="MeasureType">
+        <xs:simpleContent>
+          <xs:extension base="xs:double">
+            <xs:attribute name="unit" type="xs:token" use="required"/>
+          </xs:extension>
+        </xs:simpleContent>
+      </xs:complexType>
+      <xs:complexType name="QuantityType">
+        <xs:simpleContent>
+          <xs:extension base="xs:double">
+            <xs:attribute name="unit" type="xs:token" use="optional"/>
+          </xs:extension>
+        </xs:simpleContent>
+      </xs:complexType>
+      <xs:simpleType name="UUIDType">
+        <xs:restriction base="xs:string">
+          <xs:length value="36"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:schema>
+    <xs:schema xmlns:cc="urn:ebay:apis:CoreComponentTypes" xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:ebay:apis:eBLBaseComponents" elementFormDefault="qualified" attributeFormDefault="unqualified">
+      <xs:simpleType name="AccountStateCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Active"/>
+          <xs:enumeration value="Pending"/>
+          <xs:enumeration value="Inactive"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="AckCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Success"/>
+          <xs:enumeration value="Failure"/>
+          <xs:enumeration value="Warning"/>
+          <xs:enumeration value="SuccessWithWarning"/>
+          <xs:enumeration value="FailureWithWarning"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="AddressOwnerCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="PayPal"/>
+          <xs:enumeration value="eBay"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="AuctionTypeCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Unknown"/>
+          <xs:enumeration value="Chinese"/>
+          <xs:enumeration value="Dutch"/>
+          <xs:enumeration value="Live"/>
+          <xs:enumeration value="Ad type"/>
+          <xs:enumeration value="Stores Fixed-price"/>
+          <xs:enumeration value="Personal Offer"/>
+          <xs:enumeration value="Fixed Price Item"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="BalanceCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Other"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="BuyerPaymentMethodCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="None"/>
+          <xs:enumeration value="MOCC"/>
+          <xs:enumeration value="AmEx"/>
+          <xs:enumeration value="PaymentSeeDescription"/>
+          <xs:enumeration value="CCAccepted"/>
+          <xs:enumeration value="PersonalCheck"/>
+          <xs:enumeration value="COD"/>
+          <xs:enumeration value="VisaMC"/>
+          <xs:enumeration value="Other"/>
+          <xs:enumeration value="PayPal"/>
+          <xs:enumeration value="Discover"/>
+          <xs:enumeration value="CashOnPickup"/>
+          <xs:enumeration value="MoneyXferAccepted"/>
+          <xs:enumeration value="MoneyXferAcceptedInCheckout"/>
+          <xs:enumeration value="OtherOnlinePayments"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="BuyerProtectionCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="ItemIneligible"/>
+          <xs:enumeration value="ItemEligible"/>
+          <xs:enumeration value="ItemMarkedIneligible"/>
+          <xs:enumeration value="ItemMarkedEligible"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="CheckoutStatusCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="CheckoutComplete"/>
+          <xs:enumeration value="CheckoutIncomplete"/>
+          <xs:enumeration value="BuyerRequestsTotal"/>
+          <xs:enumeration value="SellerResponded"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="CompleteStatusCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Incomplete"/>
+          <xs:enumeration value="Complete"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="CountryCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="AF"/>
+          <xs:enumeration value="AL"/>
+          <xs:enumeration value="DZ"/>
+          <xs:enumeration value="AS"/>
+          <xs:enumeration value="AD"/>
+          <xs:enumeration value="AO"/>
+          <xs:enumeration value="AI"/>
+          <xs:enumeration value="AQ"/>
+          <xs:enumeration value="AG"/>
+          <xs:enumeration value="AR"/>
+          <xs:enumeration value="AM"/>
+          <xs:enumeration value="AW"/>
+          <xs:enumeration value="AU"/>
+          <xs:enumeration value="AT"/>
+          <xs:enumeration value="AZ"/>
+          <xs:enumeration value="BS"/>
+          <xs:enumeration value="BH"/>
+          <xs:enumeration value="BD"/>
+          <xs:enumeration value="BB"/>
+          <xs:enumeration value="BY"/>
+          <xs:enumeration value="BE"/>
+          <xs:enumeration value="BZ"/>
+          <xs:enumeration value="BJ"/>
+          <xs:enumeration value="BM"/>
+          <xs:enumeration value="BT"/>
+          <xs:enumeration value="BO"/>
+          <xs:enumeration value="BA"/>
+          <xs:enumeration value="BW"/>
+          <xs:enumeration value="BV"/>
+          <xs:enumeration value="BR"/>
+          <xs:enumeration value="IO"/>
+          <xs:enumeration value="BN"/>
+          <xs:enumeration value="BG"/>
+          <xs:enumeration value="BF"/>
+          <xs:enumeration value="BI"/>
+          <xs:enumeration value="KH"/>
+          <xs:enumeration value="CM"/>
+          <xs:enumeration value="CA"/>
+          <xs:enumeration value="CV"/>
+          <xs:enumeration value="KY"/>
+          <xs:enumeration value="CF"/>
+          <xs:enumeration value="TD"/>
+          <xs:enumeration value="CL"/>
+          <xs:enumeration value="CN"/>
+          <xs:enumeration value="CX"/>
+          <xs:enumeration value="CC"/>
+          <xs:enumeration value="CO"/>
+          <xs:enumeration value="KM"/>
+          <xs:enumeration value="CG"/>
+          <xs:enumeration value="CD"/>
+          <xs:enumeration value="CK"/>
+          <xs:enumeration value="CR"/>
+          <xs:enumeration value="CI"/>
+          <xs:enumeration value="HR"/>
+          <xs:enumeration value="CU"/>
+          <xs:enumeration value="CY"/>
+          <xs:enumeration value="CZ"/>
+          <xs:enumeration value="DK"/>
+          <xs:enumeration value="DJ"/>
+          <xs:enumeration value="DM"/>
+          <xs:enumeration value="DO"/>
+          <xs:enumeration value="TP"/>
+          <xs:enumeration value="EC"/>
+          <xs:enumeration value="EG"/>
+          <xs:enumeration value="SV"/>
+          <xs:enumeration value="GQ"/>
+          <xs:enumeration value="ER"/>
+          <xs:enumeration value="EE"/>
+          <xs:enumeration value="ET"/>
+          <xs:enumeration value="FK"/>
+          <xs:enumeration value="FO"/>
+          <xs:enumeration value="FJ"/>
+          <xs:enumeration value="FI"/>
+          <xs:enumeration value="FR"/>
+          <xs:enumeration value="GF"/>
+          <xs:enumeration value="PF"/>
+          <xs:enumeration value="TF"/>
+          <xs:enumeration value="GA"/>
+          <xs:enumeration value="GM"/>
+          <xs:enumeration value="GE"/>
+          <xs:enumeration value="DE"/>
+          <xs:enumeration value="GH"/>
+          <xs:enumeration value="GI"/>
+          <xs:enumeration value="GR"/>
+          <xs:enumeration value="GL"/>
+          <xs:enumeration value="GD"/>
+          <xs:enumeration value="GP"/>
+          <xs:enumeration value="GU"/>
+          <xs:enumeration value="GT"/>
+          <xs:enumeration value="GN"/>
+          <xs:enumeration value="GW"/>
+          <xs:enumeration value="GY"/>
+          <xs:enumeration value="HT"/>
+          <xs:enumeration value="HM"/>
+          <xs:enumeration value="VA"/>
+          <xs:enumeration value="HN"/>
+          <xs:enumeration value="HK"/>
+          <xs:enumeration value="HU"/>
+          <xs:enumeration value="IS"/>
+          <xs:enumeration value="IN"/>
+          <xs:enumeration value="ID"/>
+          <xs:enumeration value="IR"/>
+          <xs:enumeration value="IQ"/>
+          <xs:enumeration value="IE"/>
+          <xs:enumeration value="IL"/>
+          <xs:enumeration value="IT"/>
+          <xs:enumeration value="JM"/>
+          <xs:enumeration value="JP"/>
+          <xs:enumeration value="JO"/>
+          <xs:enumeration value="KZ"/>
+          <xs:enumeration value="KE"/>
+          <xs:enumeration value="KI"/>
+          <xs:enumeration value="KP"/>
+          <xs:enumeration value="KR"/>
+          <xs:enumeration value="KW"/>
+          <xs:enumeration value="KG"/>
+          <xs:enumeration value="LA"/>
+          <xs:enumeration value="LV"/>
+          <xs:enumeration value="LB"/>
+          <xs:enumeration value="LS"/>
+          <xs:enumeration value="LR"/>
+          <xs:enumeration value="LY"/>
+          <xs:enumeration value="LI"/>
+          <xs:enumeration value="LT"/>
+          <xs:enumeration value="LU"/>
+          <xs:enumeration value="MO"/>
+          <xs:enumeration value="MK"/>
+          <xs:enumeration value="MG"/>
+          <xs:enumeration value="MW"/>
+          <xs:enumeration value="MY"/>
+          <xs:enumeration value="MV"/>
+          <xs:enumeration value="ML"/>
+          <xs:enumeration value="MT"/>
+          <xs:enumeration value="MH"/>
+          <xs:enumeration value="MQ"/>
+          <xs:enumeration value="MR"/>
+          <xs:enumeration value="MU"/>
+          <xs:enumeration value="YT"/>
+          <xs:enumeration value="MX"/>
+          <xs:enumeration value="FM"/>
+          <xs:enumeration value="MD"/>
+          <xs:enumeration value="MC"/>
+          <xs:enumeration value="MN"/>
+          <xs:enumeration value="MS"/>
+          <xs:enumeration value="MA"/>
+          <xs:enumeration value="MZ"/>
+          <xs:enumeration value="MM"/>
+          <xs:enumeration value="NA"/>
+          <xs:enumeration value="NR"/>
+          <xs:enumeration value="NP"/>
+          <xs:enumeration value="NL"/>
+          <xs:enumeration value="AN"/>
+          <xs:enumeration value="NC"/>
+          <xs:enumeration value="NZ"/>
+          <xs:enumeration value="NI"/>
+          <xs:enumeration value="NE"/>
+          <xs:enumeration value="NG"/>
+          <xs:enumeration value="NU"/>
+          <xs:enumeration value="NF"/>
+          <xs:enumeration value="MP"/>
+          <xs:enumeration value="NO"/>
+          <xs:enumeration value="OM"/>
+          <xs:enumeration value="PK"/>
+          <xs:enumeration value="PW"/>
+          <xs:enumeration value="PS"/>
+          <xs:enumeration value="PA"/>
+          <xs:enumeration value="PG"/>
+          <xs:enumeration value="PY"/>
+          <xs:enumeration value="PE"/>
+          <xs:enumeration value="PH"/>
+          <xs:enumeration value="PN"/>
+          <xs:enumeration value="PL"/>
+          <xs:enumeration value="PT"/>
+          <xs:enumeration value="PR"/>
+          <xs:enumeration value="QA"/>
+          <xs:enumeration value="RE"/>
+          <xs:enumeration value="RO"/>
+          <xs:enumeration value="RU"/>
+          <xs:enumeration value="RW"/>
+          <xs:enumeration value="SH"/>
+          <xs:enumeration value="KN"/>
+          <xs:enumeration value="LC"/>
+          <xs:enumeration value="PM"/>
+          <xs:enumeration value="VC"/>
+          <xs:enumeration value="WS"/>
+          <xs:enumeration value="SM"/>
+          <xs:enumeration value="ST"/>
+          <xs:enumeration value="SA"/>
+          <xs:enumeration value="SN"/>
+          <xs:enumeration value="SC"/>
+          <xs:enumeration value="SL"/>
+          <xs:enumeration value="SG"/>
+          <xs:enumeration value="SK"/>
+          <xs:enumeration value="SI"/>
+          <xs:enumeration value="SB"/>
+          <xs:enumeration value="SO"/>
+          <xs:enumeration value="ZA"/>
+          <xs:enumeration value="GS"/>
+          <xs:enumeration value="ES"/>
+          <xs:enumeration value="LK"/>
+          <xs:enumeration value="SD"/>
+          <xs:enumeration value="SR"/>
+          <xs:enumeration value="SJ"/>
+          <xs:enumeration value="SZ"/>
+          <xs:enumeration value="SE"/>
+          <xs:enumeration value="CH"/>
+          <xs:enumeration value="SY"/>
+          <xs:enumeration value="TW"/>
+          <xs:enumeration value="TJ"/>
+          <xs:enumeration value="TZ"/>
+          <xs:enumeration value="TH"/>
+          <xs:enumeration value="TG"/>
+          <xs:enumeration value="TK"/>
+          <xs:enumeration value="TO"/>
+          <xs:enumeration value="TT"/>
+          <xs:enumeration value="TN"/>
+          <xs:enumeration value="TR"/>
+          <xs:enumeration value="TM"/>
+          <xs:enumeration value="TC"/>
+          <xs:enumeration value="TV"/>
+          <xs:enumeration value="UG"/>
+          <xs:enumeration value="UA"/>
+          <xs:enumeration value="AE"/>
+          <xs:enumeration value="GB"/>
+          <xs:enumeration value="US"/>
+          <xs:enumeration value="UM"/>
+          <xs:enumeration value="UY"/>
+          <xs:enumeration value="UZ"/>
+          <xs:enumeration value="VU"/>
+          <xs:enumeration value="VE"/>
+          <xs:enumeration value="VN"/>
+          <xs:enumeration value="VG"/>
+          <xs:enumeration value="VI"/>
+          <xs:enumeration value="WF"/>
+          <xs:enumeration value="EH"/>
+          <xs:enumeration value="YE"/>
+          <xs:enumeration value="YU"/>
+          <xs:enumeration value="ZM"/>
+          <xs:enumeration value="ZW"/>
+          <xs:enumeration value="AA"/>
+          <xs:enumeration value="QM"/>
+          <xs:enumeration value="QN"/>
+          <xs:enumeration value="QO"/>
+          <xs:enumeration value="QP"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="CurrencyCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="AFA"/>
+          <xs:enumeration value="ALL"/>
+          <xs:enumeration value="DZD"/>
+          <xs:enumeration value="ADP"/>
+          <xs:enumeration value="AOA"/>
+          <xs:enumeration value="ARS"/>
+          <xs:enumeration value="AMD"/>
+          <xs:enumeration value="AWG"/>
+          <xs:enumeration value="AZM"/>
+          <xs:enumeration value="BSD"/>
+          <xs:enumeration value="BHD"/>
+          <xs:enumeration value="BDT"/>
+          <xs:enumeration value="BBD"/>
+          <xs:enumeration value="BYR"/>
+          <xs:enumeration value="BZD"/>
+          <xs:enumeration value="BMD"/>
+          <xs:enumeration value="BTN"/>
+          <xs:enumeration value="INR"/>
+          <xs:enumeration value="BOV"/>
+          <xs:enumeration value="BOB"/>
+          <xs:enumeration value="BAM"/>
+          <xs:enumeration value="BWP"/>
+          <xs:enumeration value="BRL"/>
+          <xs:enumeration value="BND"/>
+          <xs:enumeration value="BGL"/>
+          <xs:enumeration value="BGN"/>
+          <xs:enumeration value="BIF"/>
+          <xs:enumeration value="KHR"/>
+          <xs:enumeration value="CAD"/>
+          <xs:enumeration value="CVE"/>
+          <xs:enumeration value="KYD"/>
+          <xs:enumeration value="XAF"/>
+          <xs:enumeration value="CLF"/>
+          <xs:enumeration value="CLP"/>
+          <xs:enumeration value="CNY"/>
+          <xs:enumeration value="COP"/>
+          <xs:enumeration value="KMF"/>
+          <xs:enumeration value="CDF"/>
+          <xs:enumeration value="CRC"/>
+          <xs:enumeration value="HRK"/>
+          <xs:enumeration value="CUP"/>
+          <xs:enumeration value="CYP"/>
+          <xs:enumeration value="CZK"/>
+          <xs:enumeration value="DKK"/>
+          <xs:enumeration value="DJF"/>
+          <xs:enumeration value="DOP"/>
+          <xs:enumeration value="TPE"/>
+          <xs:enumeration value="ECV"/>
+          <xs:enumeration value="ECS"/>
+          <xs:enumeration value="EGP"/>
+          <xs:enumeration value="SVC"/>
+          <xs:enumeration value="ERN"/>
+          <xs:enumeration value="EEK"/>
+          <xs:enumeration value="ETB"/>
+          <xs:enumeration value="FKP"/>
+          <xs:enumeration value="FJD"/>
+          <xs:enumeration value="GMD"/>
+          <xs:enumeration value="GEL"/>
+          <xs:enumeration value="GHC"/>
+          <xs:enumeration value="GIP"/>
+          <xs:enumeration value="GTQ"/>
+          <xs:enumeration value="GNF"/>
+          <xs:enumeration value="GWP"/>
+          <xs:enumeration value="GYD"/>
+          <xs:enumeration value="HTG"/>
+          <xs:enumeration value="HNL"/>
+          <xs:enumeration value="HKD"/>
+          <xs:enumeration value="HUF"/>
+          <xs:enumeration value="ISK"/>
+          <xs:enumeration value="IDR"/>
+          <xs:enumeration value="IRR"/>
+          <xs:enumeration value="IQD"/>
+          <xs:enumeration value="ILS"/>
+          <xs:enumeration value="JMD"/>
+          <xs:enumeration value="JPY"/>
+          <xs:enumeration value="JOD"/>
+          <xs:enumeration value="KZT"/>
+          <xs:enumeration value="KES"/>
+          <xs:enumeration value="AUD"/>
+          <xs:enumeration value="KPW"/>
+          <xs:enumeration value="KRW"/>
+          <xs:enumeration value="KWD"/>
+          <xs:enumeration value="KGS"/>
+          <xs:enumeration value="LAK"/>
+          <xs:enumeration value="LVL"/>
+          <xs:enumeration value="LBP"/>
+          <xs:enumeration value="LSL"/>
+          <xs:enumeration value="LRD"/>
+          <xs:enumeration value="LYD"/>
+          <xs:enumeration value="CHF"/>
+          <xs:enumeration value="LTL"/>
+          <xs:enumeration value="MOP"/>
+          <xs:enumeration value="MKD"/>
+          <xs:enumeration value="MGF"/>
+          <xs:enumeration value="MWK"/>
+          <xs:enumeration value="MYR"/>
+          <xs:enumeration value="MVR"/>
+          <xs:enumeration value="MTL"/>
+          <xs:enumeration value="EUR"/>
+          <xs:enumeration value="MRO"/>
+          <xs:enumeration value="MUR"/>
+          <xs:enumeration value="MXN"/>
+          <xs:enumeration value="MXV"/>
+          <xs:enumeration value="MDL"/>
+          <xs:enumeration value="MNT"/>
+          <xs:enumeration value="XCD"/>
+          <xs:enumeration value="MZM"/>
+          <xs:enumeration value="MMK"/>
+          <xs:enumeration value="ZAR"/>
+          <xs:enumeration value="NAD"/>
+          <xs:enumeration value="NPR"/>
+          <xs:enumeration value="ANG"/>
+          <xs:enumeration value="XPF"/>
+          <xs:enumeration value="NZD"/>
+          <xs:enumeration value="NIO"/>
+          <xs:enumeration value="NGN"/>
+          <xs:enumeration value="NOK"/>
+          <xs:enumeration value="OMR"/>
+          <xs:enumeration value="PKR"/>
+          <xs:enumeration value="PAB"/>
+          <xs:enumeration value="PGK"/>
+          <xs:enumeration value="PYG"/>
+          <xs:enumeration value="PEN"/>
+          <xs:enumeration value="PHP"/>
+          <xs:enumeration value="PLN"/>
+          <xs:enumeration value="USD"/>
+          <xs:enumeration value="QAR"/>
+          <xs:enumeration value="ROL"/>
+          <xs:enumeration value="RUB"/>
+          <xs:enumeration value="RUR"/>
+          <xs:enumeration value="RWF"/>
+          <xs:enumeration value="SHP"/>
+          <xs:enumeration value="WST"/>
+          <xs:enumeration value="STD"/>
+          <xs:enumeration value="SAR"/>
+          <xs:enumeration value="SCR"/>
+          <xs:enumeration value="SLL"/>
+          <xs:enumeration value="SGD"/>
+          <xs:enumeration value="SKK"/>
+          <xs:enumeration value="SIT"/>
+          <xs:enumeration value="SBD"/>
+          <xs:enumeration value="SOS"/>
+          <xs:enumeration value="LKR"/>
+          <xs:enumeration value="SDD"/>
+          <xs:enumeration value="SRG"/>
+          <xs:enumeration value="SZL"/>
+          <xs:enumeration value="SEK"/>
+          <xs:enumeration value="SYP"/>
+          <xs:enumeration value="TWD"/>
+          <xs:enumeration value="TJS"/>
+          <xs:enumeration value="TZS"/>
+          <xs:enumeration value="THB"/>
+          <xs:enumeration value="XOF"/>
+          <xs:enumeration value="TOP"/>
+          <xs:enumeration value="TTD"/>
+          <xs:enumeration value="TND"/>
+          <xs:enumeration value="TRL"/>
+          <xs:enumeration value="TMM"/>
+          <xs:enumeration value="UGX"/>
+          <xs:enumeration value="UAH"/>
+          <xs:enumeration value="AED"/>
+          <xs:enumeration value="GBP"/>
+          <xs:enumeration value="USS"/>
+          <xs:enumeration value="USN"/>
+          <xs:enumeration value="UYU"/>
+          <xs:enumeration value="UZS"/>
+          <xs:enumeration value="VUV"/>
+          <xs:enumeration value="VEB"/>
+          <xs:enumeration value="VND"/>
+          <xs:enumeration value="MAD"/>
+          <xs:enumeration value="YER"/>
+          <xs:enumeration value="YUM"/>
+          <xs:enumeration value="ZMK"/>
+          <xs:enumeration value="ZWD"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="DepositTypeCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="None"/>
+          <xs:enumeration value="OtherMethod"/>
+          <xs:enumeration value="FastDeposit"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="DetailLevelCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="ReturnAll"/>
+          <xs:enumeration value="ItemReturnDescription"/>
+          <xs:enumeration value="ItemReturnAttributes"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="ItemIDType">
+        <xs:restriction base="xs:string"/>
+      </xs:simpleType>
+      <xs:complexType name="AccountEntryType">
+        <xs:sequence>
+          <xs:element ref="ns:Balance"/>
+          <xs:element name="Credit" type="cc:AmountType"/>
+          <xs:element name="Date" type="xs:dateTime"/>
+          <xs:element name="Debit" type="cc:AmountType"/>
+          <xs:element ref="ns:ItemID"/>
+          <xs:element name="Memo" type="xs:string"/>
+          <xs:element name="RefNumber" type="xs:int"/>
+          <xs:element name="AccountEntryDetailsType" type="xs:int"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="AdditionalAccountType">
+        <xs:sequence>
+          <xs:element ref="ns:Balance"/>
+          <xs:element ref="ns:Currency"/>
+          <xs:element ref="ns:AccountCode"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="PromotedItemType">
+        <xs:sequence>
+          <xs:element name="ItemID" type="ns:ItemIDType"/>
+          <xs:element name="PictureURL" type="xs:string" minOccurs="0"/>
+          <xs:element name="position" type="xs:int" minOccurs="0"/>
+          <xs:element name="PromotionPrice" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="PromotionPriceType" type="ns:PromotionItemPriceTypeCodeType" minOccurs="0"/>
+          <xs:element name="SelectionType" type="ns:PromotionItemSelectionCodeType" minOccurs="0"/>
+          <xs:element name="Title" type="xs:string" minOccurs="0"/>
+          <xs:element name="ListingType" type="ns:ListingTypeCodeType" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="CrossPromotionsType">
+        <xs:sequence>
+          <xs:element name="ItemID" type="ns:ItemIDType"/>
+          <xs:element name="PrimaryScheme" type="ns:PromotionSchemeCodeType"/>
+          <xs:element name="PromotionMethod" type="ns:PromotionMethodCodeType"/>
+          <xs:element name="SellerID" type="xs:string"/>
+          <xs:element name="ShippingDiscount" type="xs:boolean"/>
+          <xs:element name="SellerKey" type="xs:string" minOccurs="0"/>
+          <xs:element name="StoreName" type="xs:string" minOccurs="0"/>
+          <xs:element name="PromotedItem" type="ns:PromotedItemType" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="AccountSummaryType" mixed="true">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element name="AccountState" type="ns:AccountStateCodeType" minOccurs="0"/>
+          <xs:element name="AdditionalAccount" type="ns:AdditionalAccountType" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="AdditionalAccountsCount" type="xs:int"/>
+          <xs:element ref="ns:AmountPastDue" minOccurs="0"/>
+          <xs:element name="BankAccountInfo" type="xs:string"/>
+          <xs:element name="BankModifyDate" type="xs:dateTime"/>
+          <xs:element name="BillingCycleDate" type="xs:dateTime"/>
+          <xs:element name="CCExp" type="xs:dateTime"/>
+          <xs:element name="CCInfo" type="xs:string"/>
+          <xs:element name="CCModifyDate" type="xs:dateTime"/>
+          <xs:element ref="ns:CurrentBalance"/>
+          <xs:element name="LastAmountPaid" type="cc:AmountType"/>
+          <xs:element name="LastInvoiceAmount" type="cc:AmountType"/>
+          <xs:element name="LastInvoiceDate" type="xs:dateTime"/>
+          <xs:element name="LastPaymentDate" type="xs:dateTime"/>
+          <xs:element name="PastDue" type="xs:boolean"/>
+          <xs:element name="PaymentMethod" type="ns:SellerPaymentMethodCodeType"/>
+        </xs:choice>
+      </xs:complexType>
+      <xs:complexType name="BuyerType">
+        <xs:sequence>
+          <xs:element ref="ns:ShippingAddress" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="SellerType">
+        <xs:sequence>
+          <xs:element name="AllowPaymentEdit" type="xs:boolean"/>
+          <xs:element name="BillingCurrency" type="ns:CurrencyCodeType" minOccurs="0"/>
+          <xs:element ref="ns:CheckoutEnabled"/>
+          <xs:element name="CIPBankAccountStored" type="xs:boolean"/>
+          <xs:element name="GoodStanding" type="xs:boolean"/>
+          <xs:element name="LiveAuctionAuthorized" type="xs:boolean"/>
+          <xs:element name="MerchandizingPref" type="ns:MerchandizingPrefCodeType"/>
+          <xs:element name="QualifiesForB2BVAT" type="xs:boolean"/>
+          <xs:element ref="ns:SellerLevel"/>
+          <xs:element ref="ns:SellerPaymentAddress" minOccurs="0"/>
+          <xs:element name="SchedulingInfo" type="ns:SchedulingInfoType" minOccurs="0"/>
+          <xs:element ref="ns:StoreOwner"/>
+          <xs:element name="StoreURL" type="xs:anyURI" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="FeeType">
+        <xs:sequence>
+          <xs:element name="Name" type="xs:string" minOccurs="0"/>
+          <xs:element name="Fee" type="cc:AmountType" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="FeesType">
+        <xs:sequence>
+          <xs:element name="Fee" type="ns:FeeType" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="ShippingCarrierDetailsType">
+        <xs:sequence>
+          <xs:element name="CarrierShippingFee" type="cc:AmountType" minOccurs="0"/>
+          <xs:element ref="ns:InsuranceFee" minOccurs="0"/>
+          <xs:element ref="ns:InsuranceOption" minOccurs="0"/>
+          <xs:element name="PackagingHandlingCosts" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="ShippingRateErrorMessage" type="xs:string" minOccurs="0"/>
+          <xs:element ref="ns:ShippingService"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="CalculatedShippingRateType">
+        <xs:sequence>
+          <xs:element name="OriginatingPostalCode" type="xs:string" minOccurs="0"/>
+          <xs:element name="ShippingIrregular" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="CarrierDetails" type="ns:ShippingCarrierDetailsType" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="ShippingPackage" type="ns:ShippingPackageCodeType" minOccurs="0"/>
+          <xs:element name="WeightMajor" type="cc:MeasureType" minOccurs="0"/>
+          <xs:element name="WeightMinor" type="cc:MeasureType" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="FlatShippingRateType">
+        <xs:sequence>
+          <xs:element name="AdditionalShippingCosts" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="FlatShippingHandlingCosts" type="cc:AmountType" minOccurs="0"/>
+          <xs:element ref="ns:InsuranceFee" minOccurs="0"/>
+          <xs:element ref="ns:InsuranceOption" minOccurs="0"/>
+          <xs:element ref="ns:ShippingService" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="SalesTaxType">
+        <xs:sequence>
+          <xs:element name="SalesTaxPercent" type="xs:float" minOccurs="0"/>
+          <xs:element name="SalesTaxState" type="xs:string" minOccurs="0"/>
+          <xs:element name="ShippingIncludedInTax" type="xs:boolean" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="ShippingDetailsType">
+        <xs:sequence>
+          <xs:element name="AllowPaymentEdit" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="CalculatedShippingRate" type="ns:CalculatedShippingRateType" minOccurs="0"/>
+          <xs:element name="ChangePaymentInstructions" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="FlatShippingRate" type="ns:FlatShippingRateType" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="InsuranceTotal" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="InsuranceWanted" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="PaymentInstructions" type="xs:string" minOccurs="0"/>
+          <xs:element name="SalesTax" type="ns:SalesTaxType" minOccurs="0"/>
+          <xs:element name="SellerPostalCode" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="SiteHostedPictureType">
+        <xs:sequence>
+          <xs:element name="PictureURL" type="xs:anyURI" minOccurs="0" maxOccurs="6"/>
+          <xs:element name="PhotoDisplay" type="ns:PhotoDisplayCodeType" minOccurs="0"/>
+          <xs:element name="GalleryType" type="ns:GalleryTypeCodeType" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="VendorHostedPictureType">
+        <xs:sequence>
+          <xs:element name="PictureURL" type="xs:anyURI" minOccurs="0"/>
+          <xs:element name="GalleryURL" type="xs:anyURI" minOccurs="0"/>
+          <xs:element name="GalleryType" type="ns:GalleryTypeCodeType" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="ValType">
+        <xs:sequence>
+          <xs:element name="ValueLiteral" type="xs:string"/>
+        </xs:sequence>
+        <xs:attribute name="ValueID" type="xs:string" use="optional"/>
+      </xs:complexType>
+      <xs:complexType name="AttributeType">
+        <xs:sequence>
+          <xs:element name="Value" type="ns:ValType" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="AttributeID" type="xs:string"/>
+      </xs:complexType>
+      <xs:complexType name="AttributeSetType">
+        <xs:sequence>
+          <xs:element name="Attribute" type="ns:AttributeType" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="AttributeSetID" type="xs:string"/>
+      </xs:complexType>
+      <xs:complexType name="ListOfAttributeSetType">
+        <xs:sequence>
+          <xs:element name="AttributeSet" type="ns:AttributeSetType" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="CategoryType">
+        <xs:sequence>
+          <xs:element name="AutoPayEnabled" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="B2BVATEnabled" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="CatalogEnabled" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="CategoryID" type="xs:string"/>
+          <xs:element name="CategoryLevel" type="xs:int" minOccurs="0"/>
+          <xs:element name="CategoryName" type="xs:string" minOccurs="0"/>
+          <xs:element name="CategoryParentID" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="CategoryParentName" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="CSIDList" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="Expired" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="IntlAutosFixedCat" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="LeafCategory" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="Virtual" type="xs:boolean" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="StorefrontType">
+        <xs:sequence>
+          <xs:element ref="ns:StoreCategoryID"/>
+          <xs:element ref="ns:StoreURL" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="ListingDesignerType">
+        <xs:sequence>
+          <xs:element name="LayoutID" type="xs:int" minOccurs="0"/>
+          <xs:element name="OptimalPictureSize" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="ThemeID" type="xs:int" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="CharityType">
+        <xs:sequence>
+          <xs:element name="CharityName" type="xs:string" minOccurs="0"/>
+          <xs:element name="CharityNumber" type="xs:int" minOccurs="0"/>
+          <xs:element name="DonationPercent" type="xs:float" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="SellingStatusType">
+        <xs:sequence>
+          <xs:element name="BidCount" type="xs:int" minOccurs="0"/>
+          <xs:element name="BidIncrement" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="ConvertedCurrentPrice" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="CurrentPrice" type="cc:AmountType"/>
+          <xs:element ref="ns:HighBidder" minOccurs="0"/>
+          <xs:element name="LeadCount" type="xs:int" minOccurs="0"/>
+          <xs:element name="MinimumToBid" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="QuantitySold" type="xs:int"/>
+          <xs:element name="ReserveMet" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="SecondChanceEligible" type="xs:boolean" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="ReviseStatusType">
+        <xs:sequence>
+          <xs:element name="ItemRevised" type="xs:boolean"/>
+          <xs:element name="BuyItNowAdded" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="BuyItNowLowered" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="ReserveLowered" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="ReserveRemoved" type="xs:boolean" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="ListingDetailsType">
+        <xs:sequence>
+          <xs:element name="Adult" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="BindingAuction" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="CheckoutEnabled" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="ConvertedBuyItNowPrice" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="ConvertedStartPrice" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="ConvertedReservePrice" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="HasReservePrice" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="RegionName" type="xs:string" minOccurs="0"/>
+          <xs:element name="RelistedItemID" type="ns:ItemIDType" minOccurs="0"/>
+          <xs:element name="SecondChanceOriginalItemID" type="ns:ItemIDType" minOccurs="0"/>
+          <xs:element name="StartTime" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="EndTime" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="ViewItemURL" type="xs:anyURI" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="ItemType">
+        <xs:sequence>
+          <xs:element name="ApplicationData" type="xs:string" minOccurs="0"/>
+          <xs:element name="ListOfAttributeSets" type="ns:ListOfAttributeSetType" minOccurs="0"/>
+          <xs:element name="AutoPay" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="BuyerProtection" type="ns:BuyerProtectionCodeType" minOccurs="0"/>
+          <xs:element name="BuyItNowPrice" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="Charity" type="ns:CharityType" minOccurs="0"/>
+          <xs:element ref="ns:Country" minOccurs="0"/>
+          <xs:element name="CrossPromotion" type="ns:CrossPromotionsType" minOccurs="0"/>
+          <xs:element ref="ns:Currency" minOccurs="0"/>
+          <xs:element name="Description" type="xs:string" minOccurs="0"/>
+          <xs:element name="Escrow" type="ns:EscrowCodeType" minOccurs="0"/>
+          <xs:element name="GiftIcon" type="xs:int" minOccurs="0"/>
+          <xs:element name="GiftServices" type="ns:GiftServicesCodeType" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="HitCounter" type="ns:HitCounterCodeType" minOccurs="0"/>
+          <xs:element ref="ns:ItemID" minOccurs="0"/>
+          <xs:element name="ListingDetails" type="ns:ListingDetailsType" minOccurs="0"/>
+          <xs:element name="ListingDesigner" type="ns:ListingDesignerType" minOccurs="0"/>
+          <xs:element ref="ns:ListingDuration" minOccurs="0"/>
+          <xs:element name="ListingEnhancement" type="ns:ListingEnhancementsCodeType" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="ListingType" type="ns:ListingTypeCodeType" minOccurs="0"/>
+          <xs:element name="Location" type="xs:string" minOccurs="0"/>
+          <xs:element name="PartnerCode" type="xs:string" minOccurs="0"/>
+          <xs:element name="PartnerName" type="xs:string" minOccurs="0"/>
+          <xs:element ref="ns:PaymentMethods" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="PayPalEmailAddress" type="xs:string" minOccurs="0"/>
+          <xs:element name="PrimaryCategory" type="ns:CategoryType" minOccurs="0"/>
+          <xs:element name="PrivateListing" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="Quantity" type="xs:int" minOccurs="0"/>
+          <xs:element ref="ns:RegionID" minOccurs="0"/>
+          <xs:element name="RelistLink" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="ReservePrice" type="cc:AmountType" minOccurs="0"/>
+          <xs:element ref="ns:ReviseStatus" minOccurs="0"/>
+          <xs:element name="ScheduleTime" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="SecondaryCategory" type="ns:CategoryType" minOccurs="0"/>
+          <xs:element name="SiteHostedPicture" type="ns:SiteHostedPictureType" minOccurs="0"/>
+          <xs:element ref="ns:Seller" minOccurs="0"/>
+          <xs:element ref="ns:SellingStatus" minOccurs="0"/>
+          <xs:element name="ShippingOption" type="ns:ShippingOptionCodeType" minOccurs="0"/>
+          <xs:element ref="ns:ShippingDetails" minOccurs="0"/>
+          <xs:element ref="ns:ShippingRegions" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="ShippingTerms" type="ns:ShippingTermsCodeType" minOccurs="0"/>
+          <xs:element ref="ns:Site" minOccurs="0"/>
+          <xs:element name="StartPrice" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="Storefront" type="ns:StorefrontType" minOccurs="0"/>
+          <xs:element name="SubTitle" type="xs:string" minOccurs="0"/>
+          <xs:element name="TimeLeft" type="xs:duration" minOccurs="0"/>
+          <xs:element name="Title" type="xs:string" minOccurs="0"/>
+          <xs:element ref="ns:UUID" minOccurs="0"/>
+          <xs:element name="VATDetails" type="ns:VATDetailsType" minOccurs="0"/>
+          <xs:element name="VendorHostedPicture" type="ns:VendorHostedPictureType" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="TransactionArrayType">
+        <xs:sequence>
+          <xs:element ref="ns:Transaction" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="TransactionType">
+        <xs:sequence>
+          <xs:element ref="ns:AmountPaid" minOccurs="0"/>
+          <xs:element name="AdjustmentAmount" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="ConvertedAdjustmentAmount" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="Buyer" type="ns:UserType" minOccurs="0"/>
+          <xs:element ref="ns:ShippingDetails" minOccurs="0"/>
+          <xs:element name="ConvertedAmountPaid" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="ConvertedTransactionPrice" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="CreatedDate" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="DepositType" type="ns:DepositTypeCodeType" minOccurs="0"/>
+          <xs:element name="Item" type="ns:ItemType" minOccurs="0"/>
+          <xs:element name="QuantityPurchased" type="xs:int" minOccurs="0"/>
+          <xs:element name="Status" type="ns:TransactionStatusType" minOccurs="0"/>
+          <xs:element ref="ns:TransactionID" minOccurs="0"/>
+          <xs:element name="TransactionPrice" type="cc:AmountType" minOccurs="0"/>
+          <xs:element name="VATPercent" type="xs:decimal" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:simpleType name="UserIDType">
+        <xs:restriction base="xs:string">
+          <xs:length value="127"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:complexType name="PaymentMeansType">
+        <xs:sequence>
+          <xs:element name="TypeCodeID" type="ns:SellerPaymentMethodCodeType"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="PaymentType">
+        <xs:sequence>
+          <xs:element name="PaymentMeans" type="ns:PaymentMeansType"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="TransactionStatusType">
+        <xs:sequence>
+          <xs:element name="eBayPaymentStatus" type="ns:PaymentStatusCodeType" minOccurs="0"/>
+          <xs:element name="CheckoutStatus" type="ns:CheckoutStatusCodeType" minOccurs="0"/>
+          <xs:element name="LastTimeModified" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="PaymentMethodUsed" type="ns:BuyerPaymentMethodCodeType" minOccurs="0"/>
+          <xs:element name="CompleteStatus" type="ns:CompleteStatusCodeType" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="UserType">
+        <xs:sequence>
+          <xs:element name="AboutMePage" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="EAISToken" type="xs:string" minOccurs="0"/>
+          <xs:element ref="ns:Email"/>
+          <xs:element name="FeedbackScore" type="xs:int" minOccurs="0"/>
+          <xs:element name="FeedbackPrivate" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="FeedbackRatingStar" type="ns:FeedbackRatingStarCodeType" minOccurs="0"/>
+          <xs:element name="IDVerified" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="NewUser" type="xs:boolean" minOccurs="0"/>
+          <xs:element ref="ns:RegistrationAddress" minOccurs="0"/>
+          <xs:element name="RegistrationDate" type="xs:dateTime" minOccurs="0"/>
+          <xs:element ref="ns:Site" minOccurs="0"/>
+          <xs:element name="Status" type="ns:UserStatusCodeType" minOccurs="0"/>
+          <xs:element ref="ns:UserID" minOccurs="0"/>
+          <xs:element name="UserIDChanged" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="UserIDLastChanged" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="VATStatus" type="ns:VATStatusCodeType" minOccurs="0"/>
+          <xs:element name="BuyerInfo" type="ns:BuyerType" minOccurs="0"/>
+          <xs:element name="SellerInfo" type="ns:SellerType" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="VATDetailsType">
+        <xs:sequence>
+          <xs:element name="BusinessSeller" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="RestrictedToBusiness" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="VATPercent" type="xs:float" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="SchedulingInfoType">
+        <xs:sequence>
+          <xs:element name="MaxScheduledMinutes" type="xs:int" minOccurs="0"/>
+          <xs:element name="MinScheduledMinutes" type="xs:int" minOccurs="0"/>
+          <xs:element name="MaxScheduledItems" type="xs:int" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:element name="AccountCode" type="xs:string"/>
+      <xs:element name="AccountSummary" type="ns:AccountSummaryType"/>
+      <xs:element name="AmountPaid" type="cc:AmountType"/>
+      <xs:element name="AmountPastDue" type="cc:AmountType"/>
+      <xs:element name="Balance" type="cc:AmountType"/>
+      <xs:element name="Buyer" type="ns:UserType"/>
+      <xs:element name="Category" type="ns:CategoryType"/>
+      <xs:element name="CheckoutEnabled" type="xs:boolean"/>
+      <xs:element name="CurrentBalance" type="cc:AmountType"/>
+      <xs:element name="Fees" type="ns:FeesType"/>
+      <xs:element name="HighBidder" type="ns:UserType"/>
+      <xs:element name="InsuranceFee" type="cc:AmountType"/>
+      <xs:element name="InsuranceOption" type="ns:InsuranceOptionCodeType"/>
+      <xs:element name="Item" type="ns:ItemType"/>
+      <xs:element name="ItemID" type="ns:ItemIDType"/>
+      <xs:element name="ListingDuration" type="ns:ListingDurationCodeType"/>
+      <xs:element name="PaymentMeans" type="ns:PaymentMeansType"/>
+      <xs:element name="PaymentMethods" type="ns:BuyerPaymentMethodCodeType"/>
+      <xs:element name="PaymentType" type="ns:PaymentType"/>
+      <xs:element name="Region" type="xs:string"/>
+      <xs:element name="RegionID" type="xs:string"/>
+      <xs:element name="RegistrationAddress" type="ns:AddressType"/>
+      <xs:element name="ReviseStatus" type="ns:ReviseStatusType"/>
+      <xs:element name="Seller" type="ns:UserType"/>
+      <xs:element name="SellerLevel" type="ns:SellerLevelCodeType"/>
+      <xs:element name="SellingStatus" type="ns:SellingStatusType"/>
+      <xs:element name="ShippingService" type="ns:ShippingServiceCodeType"/>
+      <xs:element name="Site" type="ns:SiteCodeType"/>
+      <xs:element name="StoreCategoryID" type="xs:int"/>
+      <xs:element name="StoreOwner" type="xs:boolean"/>
+      <xs:element name="StoreURL" type="xs:anyURI"/>
+      <xs:complexType name="ItemArrayType">
+        <xs:sequence>
+          <xs:element ref="ns:Item" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:element name="ItemArray" type="ns:ItemArrayType"/>
+      <xs:complexType name="CategoryArrayType">
+        <xs:sequence>
+          <xs:element ref="ns:Category" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:element name="CategoryArray" type="ns:CategoryArrayType"/>
+      <xs:complexType name="PaginationType">
+        <xs:sequence>
+          <xs:element name="EntriesPerPage" type="xs:int" minOccurs="0"/>
+          <xs:element name="PageNumber" type="xs:int" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="ModifiedFieldType">
+        <xs:sequence>
+          <xs:element name="Field" type="xs:string" minOccurs="0"/>
+          <xs:element name="ModifyType" type="ns:ModifyCodeType" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="PaginationResultType">
+        <xs:sequence>
+          <xs:element name="TotalNumberOfPages" type="xs:int" minOccurs="0"/>
+          <xs:element name="TotalNumberOfEntries" type="xs:int" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:element name="Pagination" type="ns:PaginationType"/>
+      <xs:element name="PaginationResult" type="ns:PaginationResultType"/>
+      <xs:element name="ShippingAddress" type="ns:AddressType"/>
+      <xs:element name="SellerPaymentAddress" type="ns:AddressType"/>
+      <xs:element name="ShippingRegions" type="ns:ShippingRegionCodeType"/>
+      <xs:element name="ShippingDetails" type="ns:ShippingDetailsType"/>
+      <xs:element name="ShippingTerm" type="ns:ShippingTermsCodeType"/>
+      <xs:element name="Transaction" type="ns:TransactionType"/>
+      <xs:element name="TransactionArray" type="ns:TransactionArrayType"/>
+      <xs:element name="TransactionID" type="xs:string"/>
+      <xs:element name="UserID" type="ns:UserIDType"/>
+      <xs:element name="User" type="ns:UserType"/>
+      <xs:complexType name="ErrorParameterType">
+        <xs:sequence>
+          <xs:element name="Value" type="xs:string"/>
+        </xs:sequence>
+        <xs:attribute name="ParamID" type="xs:string"/>
+      </xs:complexType>
+      <xs:complexType name="ErrorType">
+        <xs:sequence>
+          <xs:element name="ShortMessage" type="xs:string"/>
+          <xs:element name="LongMessage" type="xs:string" minOccurs="0"/>
+          <xs:element name="ErrorCode" type="xs:token"/>
+          <xs:element name="SeverityCode" type="ns:SeverityCodeType"/>
+          <xs:element name="ErrorParameters" type="ns:ErrorParameterType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="FaultDetailsType">
+        <xs:sequence>
+          <xs:element name="ErrorCode" type="xs:string"/>
+          <xs:element name="Severity" type="xs:string"/>
+          <xs:element name="DetailedMessage" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="AbstractRequestType" abstract="true">
+        <xs:sequence>
+          <xs:element name="DetailLevel" type="ns:DetailLevelCodeType" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="ErrorLanguage" type="xs:string" minOccurs="0"/>
+          <xs:element name="MessageID" type="xs:string" minOccurs="0"/>
+          <xs:element name="Version" type="xs:string"/>
+          <xs:any processContents="lax" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="AbstractResponseType" abstract="true">
+        <xs:sequence>
+          <xs:element name="Timestamp" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="Ack" type="ns:AckCodeType"/>
+          <xs:element name="CorrelationID" type="xs:string" minOccurs="0"/>
+          <xs:element name="Errors" type="ns:ErrorType" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="Version" type="xs:string"/>
+          <xs:element name="Build" type="xs:string"/>
+          <xs:any processContents="lax" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="AddressType">
+        <xs:sequence>
+          <xs:element name="Name" type="xs:string" minOccurs="0"/>
+          <xs:element name="Street1" type="xs:string" minOccurs="0"/>
+          <xs:element name="Street2" type="xs:string" minOccurs="0"/>
+          <xs:element name="CityName" type="xs:string" minOccurs="0"/>
+          <xs:element name="StateOrProvince" type="xs:string" minOccurs="0"/>
+          <xs:element ref="ns:Country" minOccurs="0"/>
+          <xs:element ref="ns:CountryName" minOccurs="0"/>
+          <xs:element name="Phone" type="xs:string" minOccurs="0"/>
+          <xs:element name="PostalCode" type="xs:string" minOccurs="0"/>
+          <xs:element name="AddressID" type="xs:string" minOccurs="0"/>
+          <xs:element name="AddressOwner" type="ns:AddressOwnerCodeType" minOccurs="0"/>
+          <xs:element name="ExternalAddressID" type="xs:string" minOccurs="0"/>
+          <xs:element name="InternationalName" type="xs:string" minOccurs="0"/>
+          <xs:element name="InternationalStateAndCity" type="xs:string" minOccurs="0"/>
+          <xs:element name="InternationalStreet" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:element name="Country" type="ns:CountryCodeType"/>
+      <xs:element name="CountryName" type="xs:string"/>
+      <xs:element name="Currency" type="ns:CurrencyCodeType"/>
+      <xs:element name="Email" type="xs:string"/>
+      <xs:element name="StateOrProvince" type="xs:string"/>
+      <xs:element name="UUID" type="cc:UUIDType"/>
+      <xs:complexType name="CustomSecurityHeaderType">
+        <xs:sequence>
+          <xs:element name="eBayAuthToken" type="xs:string" minOccurs="0"/>
+          <xs:element name="HardExpirationWarning" type="xs:string" minOccurs="0"/>
+          <xs:element name="Credentials" type="ns:UserIdPasswordType" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="UserIdPasswordType">
+        <xs:sequence>
+          <xs:element name="AppId" type="xs:string"/>
+          <xs:element name="DevId" type="xs:string"/>
+          <xs:element name="AuthCert" type="xs:string"/>
+          <xs:element name="Username" type="xs:string"/>
+          <xs:element name="Password" type="xs:string"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:simpleType name="EscrowCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="ByBuyer"/>
+          <xs:enumeration value="BySeller"/>
+          <xs:enumeration value="None"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="FeedbackRatingStarCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="None"/>
+          <xs:enumeration value="Yellow"/>
+          <xs:enumeration value="Turquoise"/>
+          <xs:enumeration value="Purple"/>
+          <xs:enumeration value="Red"/>
+          <xs:enumeration value="Green"/>
+          <xs:enumeration value="YellowShooting"/>
+          <xs:enumeration value="TurquoiseShooting"/>
+          <xs:enumeration value="PurpleShooting"/>
+          <xs:enumeration value="RedShooting"/>
+          <xs:enumeration value="Blue"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="GalleryTypeCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Featured"/>
+          <xs:enumeration value="Gallery"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="GeneralPaymentMethodCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Other"/>
+          <xs:enumeration value="Echeck"/>
+          <xs:enumeration value="ACH"/>
+          <xs:enumeration value="Creditcard"/>
+          <xs:enumeration value="PayPalBalance"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="GiftServicesCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="GiftExpressShipping"/>
+          <xs:enumeration value="GiftShipToRecipient"/>
+          <xs:enumeration value="GiftWrap"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="HitCounterCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="NoHitCounter"/>
+          <xs:enumeration value="HonestyStyle"/>
+          <xs:enumeration value="GreenLED"/>
+          <xs:enumeration value="Hidden"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="InsuranceOptionCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Optional"/>
+          <xs:enumeration value="Required"/>
+          <xs:enumeration value="NotOffered"/>
+          <xs:enumeration value="IncludedInShippingHandling"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="ListingDurationCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Days_1"/>
+          <xs:enumeration value="Days_3"/>
+          <xs:enumeration value="Days_5"/>
+          <xs:enumeration value="Days_7"/>
+          <xs:enumeration value="Days_10"/>
+          <xs:enumeration value="Days_30"/>
+          <xs:enumeration value="Days_60"/>
+          <xs:enumeration value="Days_90"/>
+          <xs:enumeration value="Days_120"/>
+          <xs:enumeration value="GTC"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="ListingEnhancementsCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Border"/>
+          <xs:enumeration value="BoldTitle"/>
+          <xs:enumeration value="Featured"/>
+          <xs:enumeration value="Highlight"/>
+          <xs:enumeration value="HomePageFeatured"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="ListingTypeCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Unknown"/>
+          <xs:enumeration value="Chinese"/>
+          <xs:enumeration value="Dutch"/>
+          <xs:enumeration value="Live"/>
+          <xs:enumeration value="AdType"/>
+          <xs:enumeration value="StoresFixedPrice"/>
+          <xs:enumeration value="PersonalOffer"/>
+          <xs:enumeration value="FixedPriceItem"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="MerchandizingPrefCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="OptIn"/>
+          <xs:enumeration value="OptOut"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="ModifyCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Dropped"/>
+          <xs:enumeration value="Modify"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="PaymentStatusCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="NoPaymentFailure"/>
+          <xs:enumeration value="BuyerECheckBounced"/>
+          <xs:enumeration value="BuyerCreditCardFailed"/>
+          <xs:enumeration value="BuyerFailedPaymentReportedBySeller"/>
+          <xs:enumeration value="PayPalPaymentInProcess"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="PhotoDisplayCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="None"/>
+          <xs:enumeration value="SlideShow"/>
+          <xs:enumeration value="SuperSize"/>
+          <xs:enumeration value="PicturePack"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="PromotionItemPriceTypeCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="AuctionPrice"/>
+          <xs:enumeration value="BuyItNowPrice"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="PromotionItemSelectionCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Manual"/>
+          <xs:enumeration value="Automatic"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="PromotionMethodCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="CrossSell"/>
+          <xs:enumeration value="UpSell"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="PromotionSchemeCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="ItemToItem"/>
+          <xs:enumeration value="ItemToStoreCat"/>
+          <xs:enumeration value="StoreToStoreCat"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="PurchasePurposeTypeCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Other"/>
+          <xs:enumeration value="BuyNowItem"/>
+          <xs:enumeration value="ShoppingCart"/>
+          <xs:enumeration value="AuctionItem"/>
+          <xs:enumeration value="GiftCertificates"/>
+          <xs:enumeration value="Subscription"/>
+          <xs:enumeration value="Donation"/>
+          <xs:enumeration value="eBayBilling"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="SellerLevelCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Bronze"/>
+          <xs:enumeration value="Silver"/>
+          <xs:enumeration value="Gold"/>
+          <xs:enumeration value="Platinum"/>
+          <xs:enumeration value="Titanium"/>
+          <xs:enumeration value="None"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="SellerPaymentMethodCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Other"/>
+          <xs:enumeration value="Amex"/>
+          <xs:enumeration value="Visa"/>
+          <xs:enumeration value="Mastercard"/>
+          <xs:enumeration value="Discover"/>
+          <xs:enumeration value="JCB"/>
+          <xs:enumeration value="Diners"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="SeverityCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Warning"/>
+          <xs:enumeration value="Error"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="ShippingOptionCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="SiteOnly"/>
+          <xs:enumeration value="WorldWide"/>
+          <xs:enumeration value="SitePlusRegions"/>
+          <xs:enumeration value="WillNotShip"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="ShippingPackageCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="None"/>
+          <xs:enumeration value="Letter"/>
+          <xs:enumeration value="LargeEnvelope"/>
+          <xs:enumeration value="USPSLargePack"/>
+          <xs:enumeration value="VeryLargePack"/>
+          <xs:enumeration value="UPSLetter"/>
+          <xs:enumeration value="USPSFlatRateEnvelope"/>
+          <xs:enumeration value="PackageThickEnvelope"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="ShippingRatesTypeCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Flat"/>
+          <xs:enumeration value="Calculated"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="ShippingRegionCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Africa"/>
+          <xs:enumeration value="Asia"/>
+          <xs:enumeration value="Caribbean"/>
+          <xs:enumeration value="Europe"/>
+          <xs:enumeration value="LatinAmerica"/>
+          <xs:enumeration value="MiddleEast"/>
+          <xs:enumeration value="NorthAmerica"/>
+          <xs:enumeration value="Oceania"/>
+          <xs:enumeration value="SouthAmerica"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="ShippingServiceCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="UPSGround"/>
+          <xs:enumeration value="UPS3rdDay"/>
+          <xs:enumeration value="UPS2ndDay"/>
+          <xs:enumeration value="UPSNextDay"/>
+          <xs:enumeration value="USPSPriority"/>
+          <xs:enumeration value="USPSParcel"/>
+          <xs:enumeration value="USPSMedia"/>
+          <xs:enumeration value="USPSFirstClass"/>
+          <xs:enumeration value="ShippingMethodStandard"/>
+          <xs:enumeration value="ShippingMethodExpress"/>
+          <xs:enumeration value="ShippingMethodNextDay"/>
+          <xs:enumeration value="USPSExpressMail"/>
+          <xs:enumeration value="USPSGround"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="ShippingTermsCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="SellerPays"/>
+          <xs:enumeration value="BuyerPays"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="SiteCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="US"/>
+          <xs:enumeration value="Canada"/>
+          <xs:enumeration value="UK"/>
+          <xs:enumeration value="Australia"/>
+          <xs:enumeration value="Austria"/>
+          <xs:enumeration value="Belgium_French"/>
+          <xs:enumeration value="France"/>
+          <xs:enumeration value="Germany"/>
+          <xs:enumeration value="Italy"/>
+          <xs:enumeration value="Belgium_Dutch"/>
+          <xs:enumeration value="Netherlands"/>
+          <xs:enumeration value="Spain"/>
+          <xs:enumeration value="Switzerland"/>
+          <xs:enumeration value="Taiwan"/>
+          <xs:enumeration value="eBayMotors"/>
+          <xs:enumeration value="HongKong"/>
+          <xs:enumeration value="Singapore"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="UnitCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="kg"/>
+          <xs:enumeration value="lbs"/>
+          <xs:enumeration value="oz"/>
+          <xs:enumeration value="cm"/>
+          <xs:enumeration value="inches"/>
+          <xs:enumeration value="ft"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="UserStatusCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="Unknown"/>
+          <xs:enumeration value="Suspended"/>
+          <xs:enumeration value="Confirmed"/>
+          <xs:enumeration value="Unconfirmed"/>
+          <xs:enumeration value="Ghost"/>
+          <xs:enumeration value="InMaintenance"/>
+          <xs:enumeration value="Deleted"/>
+          <xs:enumeration value="CreditCardVerify"/>
+          <xs:enumeration value="AccountOnHold"/>
+          <xs:enumeration value="Merged"/>
+          <xs:enumeration value="RegistrationCodeMailOut"/>
+          <xs:enumeration value="TermPending"/>
+          <xs:enumeration value="UnconfirmedHalfOptIn"/>
+          <xs:enumeration value="CreditCardVerifyHalfOptIn"/>
+          <xs:enumeration value="UnconfirmedPassport"/>
+          <xs:enumeration value="CreditCardVerifyPassport"/>
+          <xs:enumeration value="UnconfirmedExpress"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType name="VATStatusCodeType">
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="NoVATTax"/>
+          <xs:enumeration value="VATTax"/>
+          <xs:enumeration value="VATExempt"/>
+          <xs:enumeration value="CustomCode"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:schema>
+  </wsdl:types>
+</wsdl:definitions>

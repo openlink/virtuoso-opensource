@@ -1,0 +1,107 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+
+<head>
+<title> Welcome to OpenLink Virtuoso Server v2.0</title>
+<base target="main">
+<STYLE>
+A
+{	TEXT-DECORATION: none;
+}
+DIV
+{	FONT-FAMILY: Verdana, Sans-Serif;
+	FONT-SIZE: 80%;
+	PADDING-TOP: 10px;
+	PADDING-LEFT: 5px;
+	WIDTH: 100%;
+	CLEAR: left;
+}
+.img
+{	TEXT-ALIGN: left;
+	VERTICAL-ALIGN: middle;
+    CURSOR: hand;
+    FLOAT: left;
+    POSITION: static;
+}
+.name
+{	TEXT-ALIGN: left;
+	VERTICAL-ALIGN: middle;
+    CURSOR: hand;
+}
+.mitem
+{	TEXT-ALIGN: CENTER;
+}
+</STYLE>
+</head>
+
+<body bgcolor="#000000" topmargin="0" leftmargin="0" link="#FFFFFF" vlink="#FFFFFF">
+
+<P style="TEXT-ALIGN: center;"><img src="/images/virtblck.jpg" alt="Virtuoso" ></P>
+<BR />
+<BR />
+<BR />
+
+<DIV><A HREF="http://www.openlinksw.com/" target="_top">
+  <SPAN class="img"><IMG SRC="/images/bl-house.jpg" BORDER="0" /></SPAN>
+  <SPAN class="name">OpenLink Home</SPAN></A></DIV>
+<DIV><A HREF="http://www.openlinksw.com/virtuoso/" target="_top">
+  <SPAN class="img"><IMG SRC="/images/bl-house.jpg" BORDER="0" /></SPAN>
+  <SPAN class="name">Virtuoso Home</SPAN></A></DIV>
+
+<DIV><IMG SRC="/images/hzline1.jpg" BORDER="0" /></DIV>
+
+<DIV><A HREF="/admin/admin_main.vsp" target="_top">
+  <SPAN class="img"><IMG SRC="/images/bl-arrow.jpg" BORDER="0" /></SPAN>
+  <SPAN class="name">Administration</SPAN></A></DIV>
+<?vsp
+      if (VAD_CHECK_VERSION ('conductor') is not null)
+	{
+?>
+<DIV><A HREF="/conductor/" target="_top">
+  <SPAN class="img"><IMG SRC="/images/bl-arrow.jpg" BORDER="0" /></SPAN>
+  <SPAN class="name">Conductor</SPAN></A></DIV>
+
+<?vsp   } ?>
+<DIV><A HREF="/doc/docs.vsp">
+  <SPAN class="img"><IMG SRC="/images/bl-arrow.jpg" BORDER="0" /></SPAN>
+  <SPAN class="name">Documentation</SPAN></A></DIV>
+
+<DIV><IMG SRC="/images/hzline1.jpg" BORDER="0" /></DIV>
+
+<DIV><A HREF="/newfeatures.html">
+  <SPAN class="img"><IMG SRC="/images/bl-arrow.jpg" BORDER="0" /></SPAN>
+  <SPAN class="name">New Features</SPAN></A></DIV>
+<DIV><A HREF="/demo-index.html">
+  <SPAN class="img"><IMG SRC="/images/bl-arrow.jpg" BORDER="0" /></SPAN>
+  <SPAN class="name">Features Demonstrations</SPAN></A></DIV>
+<!--DIV><A HREF="/bugsfixed.html">
+  <SPAN class="img"><IMG SRC="/images/bl-arrow.jpg" BORDER="0" /></SPAN>
+  <SPAN class="name">Bugs Fixed</SPAN></A></DIV-->
+<DIV><A HREF="/releasenotes.html">
+  <SPAN class="img"><IMG SRC="/images/bl-arrow.jpg" BORDER="0" /></SPAN>
+  <SPAN class="name">Release Notes</SPAN></A></DIV>
+
+</body>
+</html>

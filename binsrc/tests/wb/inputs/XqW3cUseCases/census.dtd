@@ -1,0 +1,6 @@
+<!ELEMENT census (person*)>
+<!ELEMENT person (person*)>
+<!ATTLIST person
+        name    ID      #REQUIRED
+        spouse  IDREF   #IMPLIED
+        job     CDATA   #IMPLIED >

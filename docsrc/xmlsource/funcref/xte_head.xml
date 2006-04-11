@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_xte_head">
+  <refmeta>
+    <refentrytitle>xte_head</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xte_head</refname>
+    <refpurpose>Returns the vector corresponding to a head of a XML element </refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_xte_head">
+      <funcprototype id="fproto_xte_head">
+        <funcdef><function>xte_head</function></funcdef>
+        <paramdef>in <parameter>tagname</parameter> varchar</paramdef>
+        <paramdef><optional>in <parameter>attr1name</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>attr1val</parameter> varchar</optional></paramdef>
+        <paramdef><parameter>...</parameter> </paramdef>
+        <paramdef><optional>in <parameter>attrNname</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>attrNval</parameter> varchar</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_xte_head"><title>Description</title>
+    <para>This function takes odd number of parameters and creates vector which 
+    corresponds to a head of a XML element. The first parameter is a tag name of the head. 
+    The remaining parameters are optional. Each even parameter is a name of an attribute, 
+    each next odd parameter is a value of this attribute. If two or more attributes have the 
+    same name, the head would have only the last pair.
+    </para>
+  </refsect1>
+  <refsect1 id="xte_head"><title>Parameters</title>
+    <refsect2><title>tagname</title>
+      <para>The tag name of the head</para></refsect2>
+    <refsect2><title>attrIname</title>
+      <para> The name of the I-th attribute</para></refsect2>
+    <refsect2><title>attrIval</title>
+      <para> The value of the I-th attribute</para></refsect2>
+  </refsect1>
+
+  <refsect1 id="errors_xte_head">
+    <title>Errors</title>
+    <table><title>Errors signalled by <function>xte_head</function></title>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry>
+	  </row>
+	</thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>XTE01</errorcode></entry>
+	    <entry><errorname>Function <function>xte_head</function> should have an odd number of parameters</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  <para></para>
+  </refsect1>
+  <refsect1 id="xte_head"><title>Examples</title>
+    <example id="ex_xte_head"><title></title>
+      <para>The xte_head() call below takes three strings </para>
+      <screen>xte_head ('supplier', 'CompanyName', 'Seller' )</screen>
+      <para>and produces the result vector which 
+            corresponds the following head of a XML element:
+      </para>
+      <para>&lt;supplier  CompanyName="Seller"&gt;</para>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_xte_head"><title>See Also</title>
+    <para><link linkend="fn_xte_node">xte_node()</link></para>
+    <para><link linkend="fn_xte_node_from_nodebld">xte_node_from_nodebld()</link></para>
+    <para><link linkend="fn_xte_nodebld_acc">xte_nodebld_acc()</link></para>
+    <para><link linkend="fn_xte_nodebld_final">xte_nodebld_final()</link></para>
+    <para><link linkend="fn_xte_nodebld_init">xte_nodebld_init()</link></para>
+  </refsect1>
+
+</refentry>
+

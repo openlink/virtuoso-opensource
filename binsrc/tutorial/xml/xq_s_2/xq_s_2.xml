@@ -1,0 +1,114 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XQ-S-2">
+    <refmeta>
+	<refentrytitle>XQuery collection function</refentrytitle>
+	<refmiscinfo>tutorial</refmiscinfo>
+    </refmeta>
+    <refnamediv>
+	<refname>Filter WebDAV content content by XQuery</refname>
+	<refpurpose>fn:collection usage example</refpurpose>
+    </refnamediv>
+
+    <refsect1 id="XQ-S-2b">
+	<title>Preliminary</title>
+	<para>
+	    XQuery collection function can be used to get all parsed documents in collection. Virtuoso engine supports several types of collections:
+	</para>
+	<itemizedlist mark="bullet">
+	    <listitem>http://local.virt/DAV/PATHTO - local DAV collection. Contains all documents in DAV collection with path "PATHTO".
+	    </listitem>
+	    <listitem>http://host:port/path - any other URL that can be used to access remote WebDAV collections </listitem>
+	</itemizedlist>
+	<para>In this example collection function is used to filter local blog entries and all cached blog entries from subscriptions. search.vsp uses this collection to filter blogs by XPath exression. For instance, search.vsp with '//a' expression returns all link from all blogs.
+	</para>
+	<para>
+	    text.vsp uses collection function to search blogs which contain some word. Note, it uses "contains" predicate to search blogs, this means it is case sensitive.
+	</para>
+    </refsect1>
+
+    <refsect1 id="XQ-S-2a">
+	<title>Prerequisites</title>
+	<para>This example needs the following VAD packages to be installed:</para>
+	<itemizedlist mark="bullet">
+	    <listitem>Conductor</listitem>
+	    <listitem>WA</listitem>
+	    <listitem>oDrive</listitem>
+	    <listitem>eNews</listitem>
+	    <listitem>Blog</listitem>
+	</itemizedlist>
+	<para>If you do not have permissions to install the above please ask the administrator.</para>
+	<para>The VAD installation can be done via Conductor (if it's installed) or via ISQL tool using vad_install() API function. 
+	    For more details on vad installation please read the user manual.</para>
+	<para>
+	    Important: before to run any of the actions bellow you need to setup a WA account (or use tutorial_demo with password secret).
+	    In both cases you will need to login in WA and create instances of the oDrive, eNews and Blog applications. 
+	</para>
+	<para>
+	    Using the eNews you should subscribe to some news feeds in RSS, Atom or RDF format.
+	</para>
+	<para>
+	    Using the oDrive you can upload some sample data in the account's home directory.
+	</para>
+	<para>
+	    Using the Blog, make few sample blog posts.
+	</para>
+    </refsect1>
+
+    <refsect1 id="XQ-S-2a">
+	<title>Example overview</title>
+	<para>This example demonstrates:</para>
+	<itemizedlist mark="bullet">
+	    <listitem>XQuery collection function</listitem>
+	    <listitem>XPath extension functions</listitem>
+	    <listitem>WebDAV Resource Filtering and WebDAV Extension Types (DETs)</listitem>
+	</itemizedlist>
+    </refsect1>
+
+    <refsect1 id="XQ-S-2c">
+	<title>Example Operation</title>
+	<itemizedlist mark="bullet">
+	    <listitem>Login into WA using the link bellow, after successfull authentication the WA login will redirect browser back to this page</listitem>
+	    <listitem>Using the link 'Run' start the search.vsp</listitem>
+	    <listitem>Initially you will have the WA account's home directory set as a base, so you can change it using the browse button</listitem>
+	    <listitem>If you don't have initial data loaded or data which not satisfies the conditions, the query execution will be produce empty result.</listitem>
+	</itemizedlist>
+    </refsect1>
+
+    <refsect1 id="XQ-S-2b">
+	<title>Example Setup</title>
+	<para>The demo support functions are prepared by loading the supplied SQL file</para>
+    </refsect1>
+
+    <refsect1 id="XQ-S-2d">
+    <title>How to run the examples</title>
+	<itemizedlist mark="bullet">
+	    <listitem>In order to enter the initial data via WA you need to <ulink url="/wa/login.vspx">login and create</ulink> instances via WA. After entering the initial data, you will need to go back to this page. If you already done this just skip this step</listitem>
+	    <listitem>In order to run the examples, you need to <ulink url="/wa/login.vspx?URL=<?U http_path() ?>">login</ulink> in the Web Applications.</listitem>
+	    <listitem>To login you can use the already defined user "tutorial_demo" with password "secret" case sensitive. </listitem>
+	    <listitem>When you click the "Run" link of the search.vsp file the browser will be redirected to WA login page. After succefull login the browser will be redirected back to this page. </listitem>
+	</itemizedlist>
+    </refsect1>
+
+</refentry>

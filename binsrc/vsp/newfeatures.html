@@ -1,0 +1,690 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"><head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><!-- #BeginEditable "doctitle" -->
+<title>What&#39;s New in Virtuoso 4.5</title><!-- #EndEditable -->
+<meta name="keywords" content="VDB, XML, XQuery, HTTP, SOAP, Virtual, EII, Enterprise Data Integration, Process Management, Business Process Management, XML, SQLX, RSS, SQL"><link rel="p3pv1" href="http://www.openlinksw.com/w3c/p3p.xml">
+<link href="default.css" rel="stylesheet" type="text/css">
+<style>.milonic{width:1px;visibility:hidden;position:absolute}span.bodycopy1
+	{font-family:Arial;
+	color:black;
+	text-decoration:none;
+	text-underline:none;
+	text-decoration:none;
+	text-line-through:none}
+ li.MsoNormal
+	{mso-style-parent:"";
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:6.0pt;
+	margin-left:0in;
+	line-height:12.0pt;
+	font-size:10.0pt;
+	font-family:Arial;
+	}
+</style>
+<body>
+<div align="center">
+<table class="header_table" border="0" cellpadding="0" cellspacing="0" width="1020" height="121">
+	<tr>
+		<td rowspan="2" valign="top" bordercolorlight="#89B9DD" bordercolordark="#89B9DD">
+		<table cellpadding="0" cellspacing="0" border="0" width="1017" height="70" id="table1">
+			<!-- MSCellFormattingTableID="5" -->
+			<tr>
+				<td valign="top" bordercolorlight="#89B9DD" bordercolordark="#89B9DD" bgcolor="#89B9DD" height="70" width="1017">
+				<!-- MSCellFormattingType="content" -->
+				<table cellpadding="0" cellspacing="0" border="0" width="1017" height="70" id="table2">
+					<!-- MSCellFormattingTableID="4" -->
+					<tr>
+						<td bgcolor="#89B9DD" colspan="2">
+						<font size="1">
+						<img alt="" width="1" height="1" src="../MsSpacer.gif"></font></td>
+						<td height="1"></td>
+					</tr>
+					
+					</tr>
+					<tr>
+						<td valign="top" bgcolor="#89B9DD" bordercolorlight="#89B9DD" bordercolordark="#89B9DD">
+						<!-- MSCellFormattingType="content" -->
+						<font size="1">
+						<img border="0" src="images/virtuoso_banner.gif" align="left" width="550" height="75"></font></td>
+						<td height="78"></td>
+					</tr>
+					<tr>
+						<td bgcolor="#89B9DD" colspan="2"><font size="1">
+						<img alt="" width="1" height="1" src="../MsSpacer.gif"></font></td>
+						<td height="6"></td>
+					</tr>
+					<tr>
+						<td bgcolor="#000000" width="1015">
+						<font size="1">
+						<img alt="" width="1" height="1" src="../MsSpacer.gif"></font></td>
+						<td width="1"></td>
+						<td height="1" width="1"></td>
+					</tr>
+				</table>
+				</td>
+			</tr>
+		</table>
+		</td>
+	</tr>
+	<tr>
+		<td width="3"></td>
+	</tr>
+</table></div>
+<table class="hmpg_body" align="center" cellpadding="0" cellspacing="0"> 
+</table>
+<table class="hmpg_body" align="center" cellpadding="0" cellspacing="0" width="1024"><tbody><tr><td valign="top"><div class="contentWrapper_body_Virtuoso"><div class="virtuoso_whatsnew"> 
+	<table width="1014"><tbody><tr><td width="295"><h1 align="center">
+		<font face="Verdana" size="5">What's New in Virtuoso 4.5?</font></h1></td>
+		<td width="5">&nbsp;</td><td align="right">
+<div class="content_smcontent_edu" style="border: 1px solid rgb(170, 170, 170);">
+	<font face="Verdana">&nbsp; </font>
+
+           <table align="center" cellpadding="4" cellspacing="1" width="100%">
+  <tbody><tr>
+    <td class="educautoquote">
+<p align="left"><font face="Verdana">Virtuoso 4.5, is the latest version of
+<a href="http://wiki.usnet.private:8791/twiki/bin/view/Main/OpenLink">OpenLink</a> 
+Software’s next-generation Universal Server Platform. Virtuoso facilitates the 
+development and deployment of a new generation of Enterprise-wide, Internet-, 
+Intranet-, and Extranet-based solutions. Virtuoso capabilities include handling 
+of Disparate Databases &amp; Data Sources, Web Service Composition and Business 
+Process Integration and as well as Business Collaboration. </font>
+   </td></tr>
+</tbody></table>
+<div class="roundedCornerSpacer">&nbsp;</div></div><font face="Verdana"><!-- end of div.content -->
+        </font>
+        <div class="bottomCorners"> &nbsp;</div>
+    
+</td></tr></tbody></table>
+<hr class="Virtuosoline" color="#89B9DD"><font face="Verdana"><a name="72"></a>
+	</font><h1><font face="Verdana" size="5">New Features </font></h1>
+	<h4><font face="Verdana"><font color="#000000">WebDAV</font> Repository</font></h4>
+	<table><tbody><tr><td align="center">&nbsp;</td>
+<td>
+<ul>
+	<li><font face="Verdana" size="2"><b>WebDAV - </b>Virtuoso 4.5 introduces an 
+	entirely new 
+	implementation of&nbsp;its WebDAV repository including, dynamic collections, file meta 
+	data support, dynamic views of view of files organized by meta data and meta 
+	data values.</font><ul>
+		<li><font face="Verdana" size="2"><b>SmartDAV Folders</b> - A SmartDAV 
+		folder is a dynamic collection created in DAV whose contents are 
+		determined at run time by automatically categorizing uploaded files or 
+		resources based on a DAV Extention type (DET). Virtuoso DET support 
+		provides a mechanism to create a new dynamic collection, based on its 
+		own methods for reading or writing data. </font></li>
+		<li><font face="Verdana" size="2"><b>Metadata Extraction </b>- Automatic 
+		retrieval of metadata, so it is now possible to retrieve basic metadata 
+		from resources (Support for metadata includes RSS &lt; 1.0, RSS 1.0, RSS 
+		2.0, Atom; Microsoft Office Document, vCard) </font></li>
+		<li><font face="Verdana" size="2"><b>Security Enhancements </b>- 
+		Additional ACLs and added security for SmartDAV Folder collections and 
+		filter searches </font></li>
+		<li><font face="Verdana" size="2"><b>Interoperability</b> - Virtuosos 
+		WebDAV repository has undergone interoperability testing on a number of 3rd party WebDAV 
+		Clients (Dreamweaver, InfoPath, Frontpage, and Microsoft Office).</font></li>
+		<li><font face="Verdana" size="2"><b>API Updates</b> - Additional API 
+		calls to allow fast integration and development. </font></li>
+	</ul>
+	</li>
+</ul>
+<p>
+<img border="0" src="images/whatsn6.jpg"><font face="Verdana"><a href="http://demo.openlinksw.com:/tutorial/web/index.vsp?f=1#BasicVSPXprogramming">Visit 
+Virtuoso 4.5 online tutorials</a></font></td></tr></tbody></table>
+	<hr class="tscline" color="#89B9DD">
+	<h3><font face="Verdana">SQL Database Engine Enhancements</font></h3>
+	<table><tbody><tr><td align="center">&nbsp;</td>
+<td>
+<ul>
+	<li><font face="Verdana" size="2"><b>SQL Cost Model - </b>Virtuoso 4.5 
+	includes substantial improvement to the SQL cost model, yielding 
+	dramatically better SQL optimization choices in certain cases.</font></li>
+	<li><font face="Verdana" size="2"><b>SQL Inverse Function</b> - Virtuoso 
+	introduces an SQL extension for creating functions that are inverses of each 
+	other which include mapping data and foreign Key Relations: Example 
+	dollar_to_euro and euro_to_dollar would be examples of inverse functions.
+	</font></li>
+	<li><font face="Verdana" size="2"><b>Information Schema Views</b> - The 
+	INFORMATION_SCHEMA Views are system views that provide some information 
+	about the system meta-data making it easier to query Virtuoso system tables. 
+	Virtuoso 4.5 includes a number information schema vies based on the ISO 
+	SQL92 standard to allow users more flexibility when developing SQL queries 
+	across database engines and guarantee consistent results when using these 
+	views instead of directly querying system tables which may change from 
+	release to release. </font></li>
+	<li><font face="Verdana" size="2"><b>SQL Compiler Optimizations</b> </font>
+	<ul>
+		<li><font face="Verdana" size="2">Improved support for indirect grants 
+		in SYS_ROLE_GRANTS </font></li>
+		<li><font face="Verdana" size="2">Improved handling the sub expression 
+		matches in regular expressions </font></li>
+		<li><font face="Verdana" size="2">Improved handling of negations in the 
+		where clause of select Union statements</font></li>
+	</ul>
+	</li>
+</ul>
+<p>
+<img border="0" src="images/whatsn7.jpg"><font face="Verdana"><a href="http://demo.openlinksw.com:/tutorial/web/index.vsp?f=1#BasicVSPXprogramming">Visit 
+Virtuoso 4.5 online tutorials</a></font></td></tr></tbody></table>
+	<hr class="tscline" color="#89B9DD"><h3><font face="Verdana">XML Database</font></h3>
+	<table width="1002">
+		<tbody>
+			<tr>
+				<td align="center">&nbsp;</td>
+				<td>
+				<ul>
+					<li><font face="Verdana" size="2"><b>XML Parser</b> - 
+					Optimization and better error reporting in XML Parser.
+					</font></li>
+					<li><font face="Verdana" size="2"><b>XQuery Functions 
+					Updates</b> - Support for XQuery Function fn:collection and 
+					check our latest tutorial </font></li>
+				</ul>
+				<p>
+				<img border="0" src="images/whatsn8.jpg"><font face="Verdana"><a href="http://demo.openlinksw.com:/tutorial/xml/index.vsp">Visit 
+				Virtuoso 4.5 online tutorials</a></font></td>
+			</tr>
+		</tbody>
+	</table><hr class="tscline" color="#89B9DD"><h3><font face="Verdana">Web 
+	Services </font></h3><table><tbody><tr><td align="center">&nbsp;</td>
+<td>
+<ul>
+	<li><font face="Verdana" size="2"><b>BPEL4WS</b> - </font>
+	<span class="bodycopy1"><font face="Verdana">
+	<span style="font-size: 12.0pt">&nbsp;</span><font size="2">BPEL offers the 
+	promise of reducing the cost and complexity associated with process 
+	integration of</font></font></span><font face="Verdana"><font size="2"> 
+	proprietary EAI and BPM solutions, which are expensive to develop, maintain, 
+	and extend across diverse, heterogeneous environments. </font><tt>
+	<span style="font-size: 10.0pt; color: black"><font face="Verdana">V</font></span></tt></font><font face="Verdana" size="2">irtuoso 
+	4.0 now supports BPEL for Web Services (BPEL4WS) and provides the deployment 
+	and execution of business processes defined in BPEL 1.1 through the
+	<a href="#OpenLinks_BPEL_Process_Manager">OpenLink BPEL Process Manager</a>.</font><font face="Verdana"><tt><span style="font-size: 10.0pt; color: black"><font face="Verdana">&nbsp;&nbsp; 
+	Virtuosos BPEL implementation offers a seamless addition to Virtuoso&#39;s 
+	database federation, XML and web services features.&nbsp; It builds on the 
+	strength of having a local high performance relational data store for 
+	process persistency and does not require any third party application server 
+	infrastructure or databases</font></span></tt></font><tt style="font-family: Arial Unicode MS"><span style="font-size: 10.0pt; font-family: Verdana; color: black">.&nbsp;&nbsp;</span></tt></li>
+	<li><font face="Verdana"><b><font size="2">WS Interop</font></b> -
+	<font size="2">WS-RM and WS-Security and BPEL4WS have gone through an 
+	extensive interoperability by testing other vendor&#39;s implementations and 
+	through active participation of WS-Interop forums.</font></font></li>
+</ul>
+<p>
+<img border="0" src="images/whatsn9.jpg"><font face="Verdana"><a href="http://demo.openlinksw.com:/tutorial/services/index.vsp">Visit 
+Virtuoso 4.5 online tutorials</a>, 
+<a href="http://demo.usnet.private:8891/interop">BPEL</a> and
+<a href="http://virtuoso.openlinksw.com/interop/index.htm">Web Services Interop Sites</a></font></td></tr></tbody></table>
+	<hr class="tscline" color="#89B9DD">
+	<h3><a name="Web_Application_Server"><font face="Verdana">Web Application 
+	Server</font></a></h3>
+	<table width="984"><tbody><tr><td align="center">&nbsp;</td>
+<td>
+<ul>
+	<li><font face="Verdana" size="2"><b>HTTP Server Settings </b></font>
+	<ul>
+		<li><font face="Verdana" size="2">New function for controlling the 
+		lifetime of http threads, allowing on-going processing from clients 
+		provided through the <b>&nbsp;HTTP Server HTTP_IGNORE_DISCONNECT</b> 
+		that when set will cause it not to rollback the transaction on a 
+		disconnect.</font></li>
+	</ul>
+	</li>
+</ul>
+<p>
+<img border="0" src="images/whatsn10.jpg"><font face="Verdana"><a href="http://demo.openlinksw.com:/tutorial/web/index.vsp">Visit 
+Virtuoso 4.5 online tutorials</a> </font></td></tr></tbody></table>
+	<hr class="Virtuosoline" color="#89B9DD">
+	<h3><font face="Verdana">Documentation</font></h3><table><tbody><tr><td align="center">&nbsp;</td>
+		<td width="972">
+		<ul>
+			<li><font face="Verdana" size="2"><b>Document Search</b> - Advanced 
+			search functionality has been added to Virtuoso documentation and 
+			provides RSS gems (including Open Search API extensions) as well as 
+			options for HTML or XML formatted results using Free Text, XPath, 
+			and XQuery and search results including excerpts summaries of 
+			document content. </font></li>
+		</ul>
+		<p>
+		<img border="0" src="images/whatsn11.jpg"><font face="Verdana"><a href="../../../../docs.openlinksw.com/virtuoso">Visit 
+		Virtuoso 4.5 online documentation server</a> </font></p></td></tr></tbody></table>
+	<hr class="tscline" color="#89B9DD"><h3><font face="Verdana">Data Access</font></h3><table><tbody><tr><td align="center">&nbsp;</td><td>
+<ul>
+	<li><font face="Verdana" size="2"><b>OpenLink Explorer</b> - Virtuoso 4.5 
+	introduces a new plug-in for Visual Studio .NET allows development of 
+	Virtuoso-specific features within the familiar Visual Studio environment 
+	providing users with ease of use and accelerated development cycles.&nbsp;
+	</font>
+	<ul>
+		<li><font face="Verdana" size="2">Virtuoso tables and connections can 
+		easily be dragged and dropped into MS Studio Projects, which&nbsp; makes 
+		Virtuoso an convenient data source for Web or GUI target Microsoft .Net 
+		development. </font></li>
+		<li><font face="Verdana" size="2">Through OpenLink Explorer any 
+		heterogeneous data sources linked to Virtuoso via its Virtual Database 
+		capability are presented as if they were stored on a local Microsoft SQL 
+		Server.</font></li>
+	</ul>
+	</li>
+	<li><font face="Verdana" size="2"><b>Mac OS X Client Connectivity Kit</b> - 
+	Improved bundling and deployment for ODBC, JDBC, and NET providers </font>
+	</li>
+	<li><font face="Verdana" size="2"><b>Virtuoso ODBC 4.0 Driver</b> - Improved 
+	error messages and conformance with the ODBC error messages specifications.
+	</font></li>
+</ul>
+		</td></tr></tbody></table><hr class="tscline" color="#89B9DD">
+	<h3><font face="Verdana"><a name="Server_Admininstration_Interface">Server 
+	Administration Interface</a></font></h3>
+	<table><tbody><tr><td align="center">
+		<blockquote>
+			<font face="Verdana">
+			<img border="0" src="images/conductor-sm.jpg" width="254" height="160"></font><p>
+			<font face="Verdana" size="2">Screenshot of Virtuoso 4.5 
+			Conductor Image - <br>
+			<a target="_blank" href="images/conductor-lg.jpg">Click 
+              to enlarge</a></font></p>
+		</blockquote>
+		</td><td width="727">
+		<blockquote>
+			<p><font face="Verdana"><b>Virtuoso Conductor 
+			</b>- The Virtuoso Conductor is a new Virtuoso VSPX 
+			web-based administration and configuration tool, which provides 
+			access to a number of database and server interfaces, being designed 
+			to simplify, automate, and reduce the complexity of support and 
+			administration of <a href="http://www.openlinksw.com">OpenLink</a>&#39;s 
+			Virtuoso Universal Server. This user-friendly interface allows 
+			administrators to manage a number of Virtuoso servers’ features 
+			including handling of Database Administration, SQL and XML storage, 
+			Enterprise Data including disparate databases &amp; data sources, Web 
+			Service Composition, Business Process Integration, and Business 
+			Collaboration. Features include: </font></p>
+		</blockquote>
+		</td></tr></tbody></table><hr class="tscline" color="#89B9DD"><h3>
+	<font face="Verdana">Enterprise Data Management </font></h3><table> <tbody><tr><td align="center">
+		<img border="0" src="images/isql-sm.jpg" width="258" height="160"><p><font face="Verdana" size="2">Screenshot of Virtuoso ISQL Image - <br>
+              <a target="_blank" href="images/isql-lg.jpg">Click 
+              to enlarge</a></font></p>
+		<blockquote>
+			<p>
+			<img border="0" src="images/webdav-sm.jpg" width="254" height="160"></p>
+		</blockquote>
+		<p><font face="Verdana" size="2">Screenshot of WebDAV Image - <br>
+              <a target="_blank" href="images/webdav-lg.jpg">Click 
+              to enlarge</a></font></td>
+    <td width="616"><font face="Verdana"><b>Database Administration</b> </font>
+	<ul>
+		<li><font face="Verdana" size="2"><b>Schema Objects Editor</b>: Built-in 
+		Schema Object Viewer (Tables, Views, and Stored Procedures) Create new 
+		objects, enabling/disabling of foreign keys, constraints, and export 
+		Schema DDL. </font></li>
+		<li><font face="Verdana" size="2"><b>ISQL Query Editor </b>: Execute and 
+		develop SQL queries. ISQL features provide syntax highlighting, 
+		execution plans and a SQL builder which provides a Wizard to build 
+		statements on the fly from database schemas. Using this interface you 
+		can edit query results 
+		and save them to a local file or Virtuoso WebDAV repository. </font>
+		</li>
+	</ul>
+	<font face="Verdana"><b>XML Data Management</b></font><ul>
+		<li><font face="Verdana" size="2"><b>XQuery Editor</b> - XQuery Editor 
+		provides a graphical user interface for writing, testing and viewing 
+		XQuery queries. Develop and store XQuery queries for reuse, saving time and 
+		cost as well as storied results for reporting and transformation. </font>
+		</li>
+	</ul>
+	<font face="Verdana"><b>Web Content Management</b> </font>
+	<ul>
+		<li><font face="Verdana" size="2"><b>WebDAV and HTTP Administration</b> 
+		- WebDAV Object Filtering and Searching: Filter database objects by name 
+		or text-search stored procedures and triggers for terms contained in 
+		their definition. </font></li>
+	</ul>
+		</td></tr></tbody></table><hr class="tscline" color="#89B9DD"><h3>
+	<font face="Verdana">Enterprise Information Integration </font></h3><table><tbody><tr><td align="center">
+		<blockquote>
+			<p>
+			<img border="0" src="images/vdbdsn-sm.jpg" width="254" height="160"></p>
+			<p><font face="Verdana" size="2">Screenshot of Linking External 
+			DataSources Image <br>
+			<a target="_blank" href="images/vdbdsn-lg.jpg">Click 
+              to enlarge</a></font></p>
+			<p>
+			<img border="0" src="images/vdbdsn-sm.jpg" width="254" height="160"></p>
+			<p><font face="Verdana" size="2">Screenshot of SQL-XML Image <br>
+			<a target="_blank" href="images/sqlxml-lg.jpg">Click 
+              to enlarge</a></font></p>
+		</blockquote>
+		</td><td width="722">
+		<p style="margin-top: 0"><b><font face="Verdana">Virtual Database Management</font></b></p>
+		<ul>
+			<li>
+			<p style="margin-top: 0"><font face="Verdana" size="2"><b>External Datasources</b> 
+			user interface 
+			provides real-time information integration across disparate data 
+			sources and create a virtual database to make it simple for business 
+			users to access, integration and transform information in from 
+			multiple datasources. </font></li>
+		</ul>
+		<p style="margin-top: 0"><font face="Verdana">S<b>QLX and SQL-XML Transformation</b> </font>
+		</p>
+		<ul>
+			<li>
+			<p style="margin-top: 0"><font face="Verdana" size="2"><b>SQL-XML</b> - 
+			Execute and 
+			define an XML template based on a SQL, SQL-XML or XPath Query or 
+			apply a XQuery Mapping Schema. Through this interface you can 
+			specify root elements that contain the resulting XML tree, a file 
+			name and location of the XML Template. Options include saving the 
+			query to WebDAV or provide an XSLT stylesheet. Behind the scenes 
+			when you provide a stylesheet, it is used as the default 
+			transformation for the XML and the template saved is executed 
+			directly from WebDAV. </font></li>
+		</ul>
+		<p style="margin-top: 0">&nbsp;</p>
+		<p style="margin-top: 0">&nbsp;</p>
+		<p style="margin-top: 0">&nbsp;</p>
+		<p style="margin-top: 0">&nbsp;</p>
+		<p style="margin-top: 0">&nbsp;</td>
+  </tr>
+</tbody></table>
+<hr class="Virtuosoline" color="#89B9DD">
+<h3><font face="Verdana">Web Services Platform </font></h3>
+      <table class="page" width="1018" height="1884">
+        <tr>
+          <td align="center" width="334"> 
+			<blockquote>
+				<p>
+				<img border="0" src="images/soap-sm.jpg" width="254" height="160"></p>
+			</blockquote>
+            <p><font face="Verdana" size="2">Screenshot of SOAP Services - 
+			<a target="_blank" href="images/soap-lg.jpg">Click to enlarge</a></font></p>
+			<blockquote>
+				<p>
+				<img border="0" src="images/http-sm.jpg" width="254" height="160"></p>
+			</blockquote>
+            <p><font face="Verdana" size="2">Screenshot of HTTP directories - 
+			<a target="_blank" href="images/http-lg.jpg">Click to enlarge</a></font></p>
+            <p>&nbsp;</p>
+            </td>
+			<td valign="top" height="261" width="674">    
+			<p style="margin-top: 0px">&nbsp;</p>
+			<p style="margin-top: 0px"><b><font face="Verdana">Web Service 
+			Publishing</font></b></p>
+			<ul>
+				<li>
+				<p style="margin-top: 2px"><font face="Verdana" size="2"><b>SOAP Services</b> - 
+				Web Service publishing interface simplifies Publish stored 
+				procedures, User Defined Types, Queries and modules as web 
+				services.&nbsp; Web Services can be invoked by any external 
+				resource or in a Virtuoso SOAP defined Virtual directory by 
+				simply clicking on a link. </font></li>
+				<li>
+				<p style="margin-top: 2px"><font face="Verdana" size="2"><b>WSDL Services</b> - Using 
+				the WSDL import interface you can use the description of 
+				external web services to publish Web Services. Just provide a 
+				URL to a WSDL description, and Virtuoso will automatically 
+				provide a wrapper for the services available. The Web Services 
+				can be tested through Virtuoso VSMX interface. </font></li>
+			</ul>
+			<p style="margin-top: 2px"><font face="Verdana"><b>Web Application Server</b> </font></p>
+			<ul>
+				<li>
+				<p style="margin-top: 2px"><font face="Verdana" size="2"><b>HTTP Hosts &amp; Directories</b> 
+				- Define Virtual HTTP directories, multiple HTTP server 
+				listeners in Virtuoso. </font></li>
+			</ul>
+			<p style="margin-top: 2px">&nbsp;</p>
+			<p style="margin-top: 2px">&nbsp;</p>
+			<p style="margin-top: 2px">&nbsp;</p>
+			<p style="margin-top: 2px">&nbsp;</td>
+        </tr>
+		<tr>
+
+		<td colspan="2" height="78"><hr class="tscline" color="#89B9DD"><h3>
+		<font face="Verdana">Business Process Integration</font></h3></td>
+		</tr>
+		<tr>
+          <td align="center" width="334"> <p><font face="Verdana">
+			<img border="0" src="images/bpel-sm.jpg" width="258" height="156"></font></p>
+            <p><font face="Verdana" size="2">Screenshot of OpenLinks BPEL 
+			Process Manager Image - 
+			<a target="_blank" href="images/bpel-lg.jpg">Click 
+              to enlarge</a></font></p>
+			<p>&nbsp;</p>
+			<p>&nbsp;</p>
+			<p>&nbsp;</p>
+			<p>&nbsp;</p>
+			<p>&nbsp;</p>
+			<p>&nbsp;</p></td>
+			  <td valign="top" height="219" width="674">&nbsp;<p><b>
+				<font face="Verdana"><a name="OpenLinks_BPEL_Process_Manager">OpenLinks BPEL 
+				Process Manager</a></font></b></p>
+				<ul>
+					<li><font face="Verdana"><b><span style="color: windowtext">
+					<font size="2">Robust BPEL Engine and Deployment Platform</font></span></b><font size="2">:&nbsp; 
+					Virtuoso provides a fully featured native BPEL 1.1 engine 
+					that supports the invocation and deployment of BPEL scripts 
+					as well support for long-running and asynchronous business 
+					processes. </font></font></li>
+					<li><font face="Verdana"><b><span style="color: windowtext">
+					<font size="2">Business Activity Monitoring</font></span><font size="2">:</font></b><font size="2">&nbsp; 
+					Virtuoso BPEL4WS includes a web-based user Interface for 
+					testing, debugging, and monitoring deployed business 
+					process. T</font></font></li>
+					<li><font face="Verdana"><b><span style="color: windowtext">
+					<font size="2">WS-Reliable Messaging and Security</font></span><font size="2">:</font></b><font size="2"> 
+					Enterprises can now deploy business-critical transactions 
+					over the Internet using the WS-Reliable Messaging (WS-RM) 
+					specification. WS-RM support means that guaranteed 
+					(at-most-once, at-least-once, and exactly once) messaging is 
+					now possible over HTTP.&nbsp;&nbsp;&nbsp; </font></font></li>
+					<li><font face="Verdana"><b><span style="color: windowtext">
+					<font size="2">Database, XML and Web Service Integration</font></span><font size="2">:</font></b><font size="2">
+					</font></font><tt style="font-family: Verdana">
+					<font size="2">Virtuoso&#39;s extensive virtual database, XML 
+					and web services features provide for </font></tt>
+					<font size="2" face="Verdana">intelligent transformation for 
+					XML and non-XML applications and data.&nbsp; Virtuoso allows 
+					integration of databases</font><tt style="font-family: Verdana"><span style="color: black"><font size="2">
+					</font></span></tt><font size="2" face="Verdana">into 
+					Service-Oriented Architectures (SOAs), by automating the 
+					creation of Web services from multiple tables in any ODBC, 
+					JDBC or ADO. Net-compliant database.&nbsp; </font>
+					<tt style="font-family: Verdana"><font size="2">BPEL 
+					processes can directly invoke locally hosted Java or .Net 
+					logic and access SQL data from resident in local and remote 
+					tables.&nbsp; </font></tt><font size="2" face="Verdana">&nbsp;</font></li>
+					<li><font face="Verdana"><b><span style="color: windowtext">
+					<font size="2">Import and Execution of any Standards-Based 
+					BPEL Business Processes</font></span><font size="2">:</font></b><font size="2">&nbsp; 
+					Virtuoso BPEL4WS supports standards compliant BPEL 1.1 
+					scripts so that industry Standard Compliant BPEL processes 
+					can be developed in any of the BPEL modeling tools and 
+					deployed on the Virtuoso platform.</font></font></li>
+					<li><b><span style="font-family: Verdana"><font size="2">
+					Interoperability</font></span></b><span style="font-family: Verdana"><font size="2">: 
+					Virtuoso BPEL has gone through an extensive interoperability 
+					testing against Microsoft, Oracle, and other vendor’s 
+					implementations.&nbsp;&nbsp;&nbsp; Through thorough testing of these 
+					processes, it validates the BPEL engine and ensures the 
+					rapid orchestration of existing Web services</font></span></li>
+				</ul>
+			  </td>
+        </tr>
+		<tr>
+			<td colspan="2" height="78"> <hr class="tscline" color="#89B9DD">
+        <h3><font face="Verdana">Enterprise Collaboration </font> 
+      </h3></td>
+		</tr>
+		<tr>
+          <td align="center" width="334"> <p>
+			<img border="0" src="images/wa-sm.jpg" width="258" height="160">&nbsp;&nbsp;&nbsp; </p>
+			<p><font face="Verdana" size="2">Screenshot of OpenLinks Web 
+			Applications Image - 
+			<a target="_blank" href="images/wa-lg.jpg">Click 
+              to enlarge</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </font></p>
+			<p>&nbsp;</p>
+			<p>&nbsp;</p>
+			<p>&nbsp;</p>
+            </td>
+        
+<td height="311" width="674">
+      <font face="Verdana"><b>Virtuoso-Based Applications</b></font><ul>
+			<li><font face="Verdana" size="2"><b>Virtuoso Web Applications </b>- 
+			Provide a Managmenet framework for web-based application developed 
+			using Virtuoso technology. This framework allows the customization 
+			any number of applications from blogs to email, develop portals, 
+			communities and create a point of presence on the web. The WA 
+			application management tool allows you to configure applications and 
+			perform various administrative tasks related to maintaining your 
+			community including adding and removing applications, updating your 
+			profile and community memberships. </font></li>
+		</ul>
+		<p><b><font face="Verdana">Discussion, Mail and Proxy Services</font></b></p>
+		<ul>
+			<li><font face="Verdana" size="2"><b>NNTP Services Administration</b> 
+			- Access USENET and Newsgroup postings and configure Newsgroups 
+			associated with the Virtuoso News Server. Like Virtuoso&#39;s virtual 
+			database. Through the NNTP interface, Virtuoso can &quot;link&quot; in 
+			newsgroups from remote news servers.</font></li>
+		</ul>
+</td>
+		</tr>
+		<tr>
+			<td colspan="2" height="78">
+<hr class="tscline" color="#89B9DD">
+      <h3><font face="Verdana">New and Improved System Services</font></h3></td>
+		</tr>
+		<tr>
+          <td align="center" width="334"> <p>
+			<img border="0" src="images/repl-sm.jpg" width="258" height="160"></p>
+			<p><font face="Verdana" size="2">Screenshot of Basic Replication 
+			Image - <a target="_blank" href="images/repl-bg.jpg">Click 
+              to enlarge</a></font></p> <p>
+			<img border="0" src="images/dash-sm.jpg" width="258" height="160"></p>
+			<p><font face="Verdana" size="2">Screenshot of System Administration Dashboard 
+			Image - <a target="_blank" href="images/dash-bg.jpg">Click 
+              to enlarge</a></font></p> 
+            </td>
+     <td valign="top" height="389" width="674">
+ 
+      &nbsp;<p><b><font face="Verdana">Replication and Synchronization</font></b></p>
+		<ul>
+			<li><font face="Verdana" size="2"><b>Replication - </b>Migrate, 
+			replicate content and synchronize database and structures of any 
+			Virtuoso or ODBC, JDBC or .Net compliant databases. </font></li>
+		</ul>
+		<p><b><font face="Verdana">System Administration</font></b></p>
+		<ul>
+			<li><font face="Verdana" size="2"><b>Dashboard </b>- Providing a 
+			summary of key server details including Database Information 
+			Database License information, Locks, Database Size Total/Used/Free 
+			Space, Backup / Maintenance Status, Database Files 
+			(Logical/Physical) and other key Database Processes </font></li>
+			<li><font face="Verdana" size="2"><b>Simplified User Accounts 
+			Manager</b>: Create and map SQL, WebDAV and logins to appropriate 
+			users in your databases. </font></li>
+			<li><font face="Verdana" size="2"><b>Event Scheduler:</b> Create 
+			Scheduled event quickly and easily with a simplified user interface 
+			and receive notifications for failed events. </font></li>
+			<li><font face="Verdana" size="2"><b>Virtuoso Application Deployment
+			</b>- Any Application can be developed with Virtuoso and packaged 
+			using Virtuoso Application Packages or VAD for short.&nbsp; VADs 
+			encapsulate all of the component necessary to package and deploy a 
+			Virtuoso-based application.&nbsp; This includes schema objects, 
+			directories, and content.&nbsp; Any VAD can be easily applied 
+			through Package interface making software deployment a breeze. </font></li>
+			<li><font face="Verdana" size="2"><b>Database Backup:</b> Schedule 
+			and run full and incremental on-line server backups jobs in seconds.
+			</font></li>
+		</ul>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2" height="340"><hr class="tscline" color="#89B9DD">
+        	<h3><font face="Verdana">Industry Standards Support</font></h3>
+			<li><font face="Verdana" size="2"><strong>Runtimes &amp; Frameworks</strong> 
+			Microsoft .NET, Mono, J2EE</font></li>
+			<li><font face="Verdana" size="2"><strong>Web Services </strong>
+			SOAP, UDDI, WSDL, WS-Security, WS-Routing, WS-Reliable Messaging, 
+			WS-Policy, WS-Trust, BPEL4WS </font></li>
+			<li><font face="Verdana" size="2"><strong>XML</strong> XPath, 
+			XQuery, XSL-T, XML Schema </font></li>
+			<li><font face="Verdana" size="2"><strong>Web &amp; Internet</strong> 
+			WebDAV, HTTP, SMTP, LDAP, POP3 </font></li>
+			<li><font face="Verdana" size="2"><strong>SQL Data Access</strong> 
+			SQL-200n, SQLX, ODBC, JDBC, ADO.NET, and OLE-DB.</font></li>
+			<p><font face="Verdana" size="4"><b>Links to Specifications </b>
+			</font></p>
+			<blockquote>
+				<ul>
+					<li>
+					<a target="_blank" href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnglobspec/html/ws-security.asp">
+					<font size="2" face="Verdana">WS-Security</font></a></li>
+					<li>
+					<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnglobspec/html/ws-routing.asp">
+					<font size="2" face="Verdana">WS-Routing</font></a></li>
+					<li>
+					<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnglobspec/html/ws-referral.asp">
+					<font size="2" face="Verdana">WS-Referral</font></a></li>
+					<li>
+					<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnglobspec/html/ws-trust.asp">
+					<font size="2" face="Verdana">WS-Trust</font></a></li>
+					<li><a href="http://www-106.com/develorworks/library/ws-rm">
+					<font size="2" face="Verdana">WS-Reliable Messaging</font></a></li>
+					<li>
+					<a href="http://www-106.com/develorworks/library/ws-polfram">
+					<font size="2" face="Verdana">WS-Policy</font></a></li>
+					<li><font size="2" face="Verdana">WS-Attachment is part of 
+					the WS-Security Specification.</font></li>
+					<li><a target="_blank" href="http://www.w3.org/TR/xslt11/">
+					<font size="2" face="Verdana">XSLT 1.1</font></a></li>
+					<li>
+					<a target="_blank" href="http://www.w3.org/TR/query-datamodel">
+					<font size="2" face="Verdana">XQUERY</font></a></li>
+					<li>
+					<a target="_blank" href="http://www.w3.org/TR/2000/NOTE-SOAP-20000508">
+					<font size="2" face="Verdana">SOAP 1.1</font></a></li>
+					<li>
+					<a target="_blank" href="http://www.w3.org/TR/2003/REC-soap12-part1-20030624">
+					<font size="2" face="Verdana">SOAP 1.2</font></a></li>
+					<li>
+					<a target="_blank" href="http://www.openmobilealliance.org/syncml/technology2.html">
+					<font size="2" face="Verdana">SyncML 1.0</font></a></li>
+					<li><font size="2" face="Verdana">
+					<a target="_blank" href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnxmlspec/html/xmlanalysis.asp">
+					XML for Analysis</a></font></li>
+					<li><font face="Verdana" size="2"><a href="ftp://">BPEL4WS</a></font></li>
+				</ul>
+			</blockquote>
+			</td>
+		</tr>
+	</table><hr class="Virtuosoline" color="#89B9DD">
+	<p align="center"><font face="Verdana">
+	<img border="0" src="images/whatsn16.gif">
+	<a href="http://oplweb.openlinksw.com/product/virtuoso30.asp">Upgrade Now</a> <font color="#000000">&nbsp;| 
+	<img border="0" src="images/whats_18.jpg"></font><a class="footer" accesskey="1" href="http://virtuoso.openlinksw.com">Virtuoso 
+	Home</a><font color="#000000">&nbsp; | </font>
+	<img border="0" src="images/whats_19.jpg"><a class="footer" accesskey="8" href="http://www.openlinksw.com">OpenLink 
+	Home</a><font color="#000000"> |  </font>
+	<img border="0" src="images/whats_17.gif"><a class="footer" accesskey="9" href="mailto:support@openlinksw.com">Technical 
+	Support</a><font color="#000000"> </font></font></div><div class="bottomCorners"> 
+		<p align="center"><font face="Verdana">Copyright 2005 OpenLink Software. All Rights Reserved.</font></div></div></td>
+	<td valign="top" width="6"><div class="contentWrapper_rightnav"> 
+      <div class="content_Virtuoso_rightnav_graphic">
+	  <font face="Verdana">&nbsp;<br> 
+		</font></div>
+		<form method="post" action="/products/Virtuoso/whatsnew.asp">
+<font face="Verdana">
+<input name="from" value="/products/Virtuoso/whatsnew.asp" type="hidden">
+<input name="SubCheckRatePage" value="1" type="hidden">
+</font>
+</form>
+</div></td></tr></tbody></table>
+<div align="center">
+&nbsp;</div>
+
+</body></html>

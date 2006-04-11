@@ -1,0 +1,125 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<process name="AsyncBPELService"
+         targetNamespace="http://services.otn.com"
+         suppressJoinFailure="yes"
+         xmlns:tns="http://services.otn.com"
+         xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+         xmlns:auto="http://www.autoloan.com/ns/autoloan" 
+         >
+
+  <!-- This process returns LoanApplication document and sets
+    credit rating values to -2001. If the input LoanAmount is
+    more than 10000, it will callback the method "onEvent" before
+    callback "onResult". -->
+  
+  <partnerLinks>
+    <partnerLink name="client"
+             partnerLinkType="tns:AsyncBPELService"
+             myRole="AsyncBPELServiceProvider"
+             partnerRole="AsyncBPELServiceRequester"/>          
+  </partnerLinks>
+
+  <variables>
+    <variable name="input"
+               messageType="tns:AsyncBPELServiceRequestMessage"/>
+    <variable name="event"
+               messageType="tns:AsyncBPELServiceEventMessage"/>
+    <variable name="output"
+               messageType="tns:AsyncBPELServiceResultMessage"/>
+  </variables>
+
+  <sequence>
+    
+    <!-- receive input from requestor -->
+    <receive name="receiveInput" partnerLink="client"
+             portType="tns:AsyncBPELService"
+             operation="initiate" variable="input"
+             createInstance="yes"/>
+
+      <!-- copy LoanApplication from input to output -->
+     
+    <assign>
+      
+      <copy>
+        <from variable="input" part="payload"/>
+        <to variable="output" part="payload"/>
+      </copy>
+      
+      <copy>
+        <from expression="-2003"/>
+        <to variable="output" part="payload"
+            query="/auto:loanApplication/auto:creditRating"/>
+      </copy>
+    </assign> 
+
+    <switch>
+      <case condition="bpws:getVariableData('input', 'payload','/auto:loanApplication/auto:loanAmount') > 10000">
+        <sequence>
+
+          <wait name="wait1" for="PT5S"/>
+
+          <assign>
+            <copy>
+              <from expression="string('your request is being processed')"/>
+              <to variable="event" part="payload"
+                  query="/auto:event"/>
+            </copy>
+          </assign>
+
+          <invoke name="sendEvent1" partnerLink="client"
+                  portType="tns:AsyncBPELServiceCallback"
+                  operation="onEvent" inputVariable="event"/>
+
+          <wait name="wait2" for="PT5S"/>
+
+          <assign>
+            <copy>
+              <from expression="string('we will finish processing your request soon')"/>
+              <to variable="event" part="payload"
+                  query="/auto:event"/>
+            </copy>
+          </assign>
+
+          <invoke name="sendEvent2" partnerLink="client"
+                  portType="tns:AsyncBPELServiceCallback"
+                  operation="onEvent" inputVariable="event"/>
+
+          <wait name="wait3" for="PT5S"/>
+
+        </sequence>
+      </case>
+      <otherwise>
+        <empty/>
+      </otherwise>
+    </switch>
+
+    <!-- respond output to requestor -->
+    <invoke name="replyOutput" partnerLink="client"
+            portType="tns:AsyncBPELServiceCallback"
+            operation="onResult" inputVariable="output"/>
+
+  </sequence>
+
+</process>
+

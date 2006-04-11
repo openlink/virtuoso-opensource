@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="twopcimplementation"><title>Distributed Transaction &amp; Two Phase Commit</title>
+
+<para>2PC is an acronym for 2 Phase Commit. This is a protocol by which
+data being committed to a database is committed in two phases.  In the first
+phase, the transaction processor checks that all parts of the transaction can
+be committed.  In the second phase, all parts of the transaction are committed.
+If any part of the transaction indicates in the first phase that it cannot be
+committed, the second phase does not occur.  ODBC does not support
+two-phase commits.</para>
+<para>Transactions in SQL databases are expected to have "ACID"
+features: Atomicity, Consistency, Isolation, Durability. A two-phase commit
+(2PC) protocol is needed for guaranteeing ACID properties of transactions
+which involve changing data in more than one database.
+This can be the case in a transaction involving tables attached from other
+databases or explicit access to remote databases with rexecute().</para>
+<para>The 2PC protocol needs to have a third party Distributed Transaction
+Coordinator (DTC). Virtuoso supports Microsoft Transaction Server
+(or MS DTC).</para>
+<para>There are two ways of using MTS-driven distributed transactions in
+Virtuoso.  Virtuoso either initiates the transaction, or it responds to a transaction.</para>
+
+<sect2 id="twopc_send"><title>Initiating Distributed Transactions</title>
+<para>In this case the transactions are initiated by Virtuoso itself.
+This causes all remote connections of linked tables to be automatically
+enlisted in a distributed transaction controlled by MTS.
+To enable this, Virtuoso's transaction must be set to a special state with
+the 'SET' statement as follows:</para>
+<programlisting>SET MTS_2PC=1;</programlisting>
+<para>This statement turns distributed transaction support on.
+All transactions started on remote databases shall automatically be enlisted
+as branches of a distributed transaction managed by MS DTC.
+The effect of SET, in this case, lasts until the commit or rollback of the
+transaction. The SET statement should be at the beginning of the transaction,
+before any distributed operations are undertaken.
+</para>
+<para>Example of money transfer from one attached table to another:</para>
+<programlisting>CREATE PROCEDURE TWOPC_TRANSFER_MONEY(IN person_id INTEGER)
+{
+  IF (MTS_STATUS('MTS') = 'disconnected') -- check connection to MS DTC
+  {
+    MTS_CONNECT(0); -- connect to MS DTC
+  }
+  SET MTS_2PC=1; --  transaction of this procedure is now in distributed
+  MTS_SET_TIMEOUT (1000); -- 1sec timeout on distributed transactions
+  UPDATE linked_account1 SET ammount=ammount+100 WHERE id=person_id;
+  UPDATE linked_account2 SET ammount=ammount-100 WHERE id=person_id;
+  commit work;
+}</programlisting>
+<para>This money transfer is under 2PC control of MTS. If one of the two
+participating databases crashes (or rolls back due to deadlock or timeout),
+Virtuoso will roll back the whole distributed transaction.</para>
+<para>
+Note that if a transaction modifies the local Virtuoso database, and not more
+than one remote database, 2 phase commit is not needed for guaranteeing
+integrity.</para>
+<para>
+Deadlocks are detected for local transactions using a wait graph. Deadlocks
+are detected for distributed transactions based on timeouts. Use
+<link linkend="fn_mts_set_timeout">mts_set_timeout()</link> for explicitly
+setting a timeout. See MS DTC for a definition of timeouts.</para>
+</sect2>
+<sect2 id="twopc_resp"><title>Responding to Distributed Transactions</title>
+<para>In this situation a distrtibuted transaction is initiated by an ODBC
+client of Virtuoso. The application enlists one	or more Virtuoso hdbcs in
+an OLE/DB distributed transaction, and then works with that hdbcs and
+commits or rolls back the distributed transaction.</para>
+<para>c++ example:</para>
+<programlisting>/* begin of example */
+  ITransaction* transaction;
+  ITransactionDispenser* disp;
+  HRESULT hr =
+      DtcGetTransactionManager (0, 0, &amp;IID_ITransactionDispenser, 0, 0, 0,
+      &amp;disp);
+  hr = disp->BeginTransaction (0, ISOLATIONLEVEL_ISOLATED,
+      0, 0, &amp;transaction); /* initialize transaction */
+  SQLSetConnectOption (hdbc1, SQL_COPT_SS_ENLIST_IN_DTC,
+      (DWORD) transaction); /* enlist 1st hdbc in transaction */
+  SQLSetConnectOption (hdbc2, SQL_COPT_SS_ENLIST_IN_DTC,
+      (DWORD) transaction); /* enlist 2nd hdbc in transaction */
+
+  ..... /* some work with ODBC connections */
+
+  transaction->Commit (0, 0, 0); /* commit the transaction */
+/* end of example */</programlisting>
+<para>
+If a Virtuoso connection is enlisted into a distributed transaction managed
+by MS DTC, and a Virtuoso statement executed in this transaction accesses
+attached tables, or otherwise uses other databases, then Virtuoso
+automatically enlists these remote databases into the original distributed
+transaction. If the remote database does not support MS DTC, then it signals
+the special error (see error list below).
+</para>
+<para>For more information, see Microsoft's documentation for MTS and OLE DB.
+</para>
+<para>If you want Virtuoso to start connected to MTS, add the following
+string in the [VDB] section of virtuoso.ini file:</para>
+<programlisting>UseMTS = 1</programlisting>
+<tip><title>See also:</title>
+ <para>
+  <link linkend="fn_mts_connect">mts_connect</link>,
+	<link linkend="fn_mts_status">mts_status</link>,
+	<link linkend="fn_mts_set_timeout">mts_set_timeout</link>,
+	<link linkend="fn_mts_get_timeout">mts_get_timeout</link>.  </para>
+  </tip>
+</sect2>
+<sect2 id="twopc_recovery"><title>2PC Log &amp; Recovery</title>
+<para>If one branch of a distributed transaction crashes during the second
+phase of a commit, the recovery cycle will be performed during the next
+start up of the server. Information about a distributed transaction is stored
+in the transaction log file.</para>
+<para>When Virtuoso connects to MS DTC, it creates a guid.bin file in the
+working directory. This file contains a unique ID of the server and is require
+for the recovery cycle.</para>
+</sect2>
+<sect2 id="twopc_errors"><title>Error Codes</title>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1"
+	tabstyle="decimalstyle" orient="land" pgwide="0">
+	 <title>2PC &amp; MS DTC error list</title>
+	 <tgroup align="char" charoff="50" char="." cols="3">
+	 <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+	 <thead>
+	  <row>
+	  <entry>Code</entry>
+	  <entry>Description</entry>
+	  <entry>Possible courses</entry>
+	  </row>
+	 </thead>
+	 <tbody>
+	  <row>
+	   <entry>MX000</entry>
+	   <entry>connection to MS DTC is failed</entry>
+	   <entry>MS DTC service is not started (in case of NT4.0 MTS is not started).</entry>
+	  </row>
+	  <row>
+	   <entry>37100</entry>
+	   <entry>MTS support is not enabled</entry>
+	   <entry>Current or involved in distributed transaction database has not connected to MS DTC. </entry>
+	  </row>
+	 </tbody>
+  	 </tgroup>
+	</table>
+
+</sect2>
+</sect1>

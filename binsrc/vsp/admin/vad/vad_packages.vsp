@@ -1,0 +1,250 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  if (not adm_check_auth(lines))
+    {
+      adm_unauth_response ();
+      return(0);
+    }
+  declare oper_vector any;
+  oper_vector := "VAD"."DBA"."RETRIEVE_HTTP_PARS" (params);
+
+  declare act varchar;
+  act := "PUMP"."DBA"."__GET_KEYWORD"('reg_action', oper_vector, '');
+
+  declare curdir integer;
+  curdir := cast ("PUMP"."DBA"."__GET_KEYWORD"('reg_curdir', oper_vector, '') as integer);
+
+  declare rebuild integer;
+  rebuild := 0;
+?>
+
+<html>
+  <HEAD>
+    <LINK REL="stylesheet" TYPE="text/css" HREF="<?=adm_what_css()?>">
+    <title>OpenLink Interactive SQL (Virtuoso), VAD version <?= "VAD"."DBA"."VAD_VERSION" () ?>.: VAD Packages</title>
+    <meta name="AUTHOR" content="OpenLink Software"> 
+    <META NAME="DESCRIPTION" CONTENT="Virtuoso VAD">
+  </HEAD>
+<?vsp "PUMP"."DBA"."HTML_HEADER_OUT" (oper_vector, 'VAD Packages',''); ?>
+<?vsp "PUMP"."DBA"."OUT_HIDDEN_PARS" (oper_vector, 'packages_list'); ?>
+
+<?vsp
+  declare res integer;
+  declare s varchar;
+  declare dirname integer;
+  if (equ (act, 'makepkg_result'))
+    {
+      declare _err_code, _err_message varchar; 
+      _err_code := '';
+      _err_message := '';
+      
+      declare exit handler for sqlstate '*' { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error_makepkg; };
+      declare tmp integer;
+      dirname := "PUMP"."DBA"."__GET_KEYWORD"('new_pkg_name', oper_vector, '');
+      tmp := cast ("PUMP"."DBA"."__GET_KEYWORD"('tmp', oper_vector, '') as integer);
+
+      if (tmp = 1)
+        res :=  "VAD"."DBA"."VAD_TEST_CREATE1" (oper_vector, dirname);
+      else if (tmp = 2)
+        res :=  "VAD"."DBA"."VAD_TEST_CREATE2" (oper_vector, dirname);
+      else if (tmp = 3)
+        res :=  "VAD"."DBA"."VAD_TEST_CREATE3" (oper_vector, dirname);
+      else if (tmp = 4)
+        res :=  "VAD"."DBA"."VAD_TEST_CREATE4" (oper_vector, dirname);
+      else if (tmp = 0)
+        res :=  "VAD"."DBA"."VAD_ODP_CREATE" (oper_vector, dirname);
+
+
+      if (res>0)
+	{
+	  dirname := 'New package was succesfully created';
+	}
+      else
+	{ 
+error_makepkg:
+	  dirname := sprintf ('Error occured, STATE:%s :%s', _err_code, _err_message);
+	}
+      "PUMP"."DBA"."CHANGE_VAL" (oper_vector, 'result_txt', dirname);
+    }
+  else if (equ (act, 'instpkg_result'))
+    {
+      declare _err_code, _err_message varchar; 
+      _err_code := '';
+      _err_message := '';
+      
+      declare exit handler for sqlstate '*' { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error_instpkg; };
+      declare pkg_name, pkg_vers varchar;
+      dirname := "PUMP"."DBA"."__GET_KEYWORD"('new_pkg_name', oper_vector, '');
+      res :=  "VAD"."DBA"."VAD_TEST_READ" (dirname, pkg_name, pkg_vers);
+      res :=  "VAD"."DBA"."VAD_READ" (oper_vector, dirname);
+      if (res>0)
+	{
+	  dirname := 'New package was succesfully installed';
+	}
+      else
+	{ 
+error_instpkg:;
+	  declare exit handler for sqlstate '*' { goto error_instpkg2; };
+	  "VAD"."DBA"."VAD_TEST_PACKAGE_AND_REMOVE" (oper_vector, pkg_name, pkg_vers);
+error_instpkg2:
+	  dirname := sprintf ('Error occured, STATE:%s :%s', _err_code, _err_message);
+	}
+      "PUMP"."DBA"."CHANGE_VAL" (oper_vector, 'result_txt', dirname);
+    }
+  else if (equ (act, 'delpkg_result'))
+    {
+      declare _err_code, _err_message varchar; 
+      _err_code := '';
+      _err_message := '';
+      
+      declare exit handler for sqlstate '*' { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error_delpkg; };
+      declare dir integer;
+      dir := "PUMP"."DBA"."__GET_KEYWORD"('packages_list', oper_vector, '');
+      res := "VAD"."DBA"."VAD_PKG_UNINSTALL" (oper_vector, dir);
+
+      if (res>0)
+	{
+	  dirname := 'Package was succesfully uninstalled';
+	}
+      else
+	{ 
+error_delpkg:
+	  dirname := sprintf ('Error occured, STATE:%s :%s', _err_code, _err_message);
+	}
+      "PUMP"."DBA"."CHANGE_VAL" (oper_vector, 'result_txt', dirname);
+    }
+?>
+
+<br>
+<table class="statdata" border="0" cellpadding="0">           
+
+<tr>
+
+<td class="statlist" >
+<?vsp
+  "VAD"."DBA"."VAD_OUT_PACKAGES_LIST" (oper_vector);
+?>
+
+</td></tr>
+<tr>
+<td align="center">
+  <?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Install', 'this.form.reg_action.value=\'instpkg\';this.form.submit();', NULL, ' style=\"width: 1in\"'); ?>
+  <?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Info', 'this.form.reg_action.value=\'infopkg\';this.form.submit();', NULL, ' style=\"width: 1in\"'); ?>
+  <?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Configure', 'this.form.reg_action.value=\'cfgpkg\';this.form.submit();', NULL, ' style=\"width: 1in\"'); ?>
+  <?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Uninstall', 'this.form.reg_action.value=\'delpkg\';this.form.submit();', NULL, ' style=\"width: 1in\"'); ?>
+  <br>
+  <?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Create1', 'this.form.tmp.value=1;this.form.new_pkg_name.value=\'./tmp/new_package_broken.vad\';this.form.reg_action.value=\'makepkg\';this.form.submit();', NULL, ' style=\"width: 1in\"'); ?>
+  <?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Create2', 'this.form.tmp.value=2;this.form.new_pkg_name.value=\'./tmp/new_package1.vad\';this.form.reg_action.value=\'makepkg\';this.form.submit();', NULL, ' style=\"width: 1in\"'); ?>
+  <?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Create3', 'this.form.tmp.value=3;this.form.new_pkg_name.value=\'./tmp/new_package2.vad\';this.form.reg_action.value=\'makepkg\';this.form.submit();', NULL, ' style=\"width: 1in\"'); ?>
+  <?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Create4', 'this.form.tmp.value=4;this.form.new_pkg_name.value=\'./tmp/new_package3.vad\';this.form.reg_action.value=\'makepkg\';this.form.submit();', NULL, ' style=\"width: 1in\"'); ?>
+  <br>
+  <?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'CreateODP', 'this.form.tmp.value=0;this.form.new_pkg_name.value=\'./tmp/new_odp_package.vad\';this.form.reg_action.value=\'makepkg\';this.form.submit();', NULL, ' style=\"width: 1in\"'); ?>
+</td>
+</tr>
+</table>
+<br>
+<?vsp
+  if (act is not null and length(act))
+    {
+	if (equ (act, 'instpkg'))
+	  {
+	    http ('<table class="statdata" border="0" cellpadding="0">');
+	    http ('<tr><td CLASS="genhead" colspan=2>Enter the path of new package</td></tr>');
+	    http ('<tr><td CLASS="statlisthead">');
+	    "PUMP"."DBA"."__CHECK_HELP" ('new_pkg_name', 'Package Path');
+	    http ('</td><td width=70%>');
+	    "PUMP"."DBA"."HTML_EDIT_OUT" (oper_vector, 'new_pkg_name', NULL, '', NULL, ' size=40 style="{width: 100%}"');	
+	    http ('</td></tr><tr><td align="center" colspan=2>');
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Install', 'this.form.reg_action.value=\'instpkg_result\';this.form.submit();', NULL, ' style=\"width: 1in\"'); 
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Cancel', 'this.form.submit();', NULL, ' style=\"width: 1in\"'); 
+	    http ('</td></table>');
+	  }
+	else if (equ (act, 'infopkg'))
+	  {
+	    ;
+	  }
+	else if (equ (act, 'makepkg'))
+	  {
+	    http ('<table class="statdata" border="0" cellpadding="0">');
+	    http ('<tr><td CLASS="genhead" colspan=2>Enter the path of package to create</td></tr>');
+	    http ('<tr><td CLASS="statlisthead">');
+	    "PUMP"."DBA"."__CHECK_HELP" ('new_pkg_name', 'Package Path');
+	    http ('</td><td width=70%>');
+	    "PUMP"."DBA"."HTML_EDIT_OUT" (oper_vector, 'new_pkg_name', NULL, '', NULL, ' size=40 style="{width: 100%}"');	
+	    http ('</td></tr><tr><td align="center" colspan=2>');
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Create', 'this.form.reg_action.value=\'makepkg_result\';this.form.submit();', NULL, ' style=\"width: 1in\"'); 
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Cancel', 'this.form.submit();', NULL, ' style=\"width: 1in\"'); 
+	    http ('</td></table>');
+	  }
+	else if (equ (act, 'cfgpkg'))
+	  {
+	    ;
+	  }
+	else if (equ (act, 'delpkg'))
+	  {
+	    declare _err_code, _err_message varchar; 
+	    _err_code := '';
+	    _err_message := '';
+	    declare exit handler for sqlstate '*' { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error_rmval2; };
+
+	    declare itemid integer;
+	    itemid := cast ("PUMP"."DBA"."__GET_KEYWORD"('packages_list', oper_vector, '') as integer);
+	    s := "VAD"."DBA"."VAD_FULL_PATH" (oper_vector, itemid);
+
+	    http ('<table class="statdata" border="0" cellpadding="0">');
+	    http ('<tr><td CLASS="genhead">You are trying to remove package:</td></tr>');
+	    http ('<tr><td CLASS="statlist">');
+	    http (s);
+	    http ('</td></tr><tr><td align="center">');
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Uninstall', 'this.form.reg_action.value=\'delpkg_result\';this.form.submit();', NULL, ' style=\"width: 1in\"'); 
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Cancel', 'this.form.submit();', NULL, ' style=\"width: 1in\"'); 
+	    http ('</td></table>');
+error_rmval2:
+	    if (_err_code is not null and length (_err_code))
+	      {
+		s := sprintf ('Error occured, STATE:%s :%s', _err_code, _err_message);
+		"PUMP"."DBA"."CHANGE_VAL" (oper_vector, 'result_txt', s);
+		"PUMP"."DBA"."HTML_LARGETEXT_OUT" (oper_vector, 'result_txt', 'Internal error:\n', NULL, NULL, '  width=50% ');
+	      }
+	  }
+
+	else if (equ (act, 'instpkg_result'))
+	  {
+	    "PUMP"."DBA"."HTML_LARGETEXT_OUT" (oper_vector, 'result_txt', 'The result of new package installation is:\n', NULL, NULL, '  width=50% ');
+	  }
+	else if (equ (act, 'makepkg_result'))
+	  {
+	    "PUMP"."DBA"."HTML_LARGETEXT_OUT" (oper_vector, 'result_txt', 'The result of new package creation is:\n', NULL, NULL, '  width=50% ');
+	  }
+	else if (equ (act, 'delpkg_result'))
+	  {
+	    "PUMP"."DBA"."HTML_LARGETEXT_OUT" (oper_vector, 'result_txt', 'The result of pakage deleting is:\n', NULL, NULL, '  width=50% ');
+	  }
+	http ('<script>document.forms[0].reg_action.value="";</script>');
+    }
+?>
+
+<?vsp "VAD"."DBA"."HTML_FOOTER_OUT" (oper_vector); ?>
+
+</html>

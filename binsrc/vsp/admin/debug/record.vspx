@@ -1,0 +1,454 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<body>
+<style type="text/css">
+  td {
+    padding: 3px 5px;
+  }
+</style>
+<H3>HTTP Session Recorder</H3>
+<hr/>
+<v:page name="http_recorder" xmlns:v="http://www.openlinksw.com/vspx/" decor="record_login.vspx">
+  <v:variable name="page_mode" persist="pagestate" type="varchar" default="'init'" />
+  <v:variable name="sname" persist="pagestate" type="varchar" default="''" />
+  <v:variable name="vdir" persist="pagestate" type="varchar" default="''" />
+  <v:variable name="pdir" persist="pagestate" type="varchar" default="''" />
+  <v:variable name="pdir_full" persist="pagestate" type="varchar" default="''" />
+  <p>
+    <font style="color:red"><v:error-summary /></font>
+  </p>
+  <v:template name="t_init" type="simple" condition="self.page_mode = 'init'">
+    <v:form name="f_init" type="simple" action="" method="POST">
+      <table width="80%" border="1" cellpadding="0" cellspacing="0">
+        <tr>
+          <td>
+            <h4>
+              Initialization:
+            </h4>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Type unique name for your recording session. This name will be used as part of different system objects names.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <v:text name="record_name" xhtml_style="width:100%; background-color: #FFFFCC" value="mysession" >
+              <v:validator runat="client" name="check1" test="length" min="5" max="100" message="Session name should be at least 5 chars long and no longer then 100 chars"/>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Type physical serverside directory (relative HTTP root) record to.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <v:text name="record_dir" xhtml_style="width:100%; background-color: #FFFFCC" value="./admin/debug/recording" >
+              <v:validator runat="client" name="check2" test="length" min="5" max="100" message="Recording directory name should be at least 5 chars long and no longer then 100 chars"/>
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+declare expr, state, message, meta, result, server_root any;
+server_root := cfg_item_value(virtuoso_ini_path(), 'HTTPServer','ServerRoot');
+expr := sprintf('select sys_mkpath(\'%s/%s\')', server_root, control.ufl_value);
+expr := replace(expr, '\\', '/');
+state := '00000';
+exec(expr, state, message, vector(), 0, meta, result);
+if(state = '00000') {
+  self.pdir := replace(control.ufl_value, '\\', '/');
+}
+else {
+  self.vc_error_message := message;
+  self.vc_is_valid := 0;
+}
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Select HTTP virtual directory to listen:
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <v:data-list name="vdirs" sql="select HP_LPATH from DB.DBA.HTTP_PATH order by lcase(HP_LPATH)" key-column="HP_LPATH" value-column="HP_LPATH" xhtml_style="background-color: #FFFFCC"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Setup list of extensions to ignore:
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <v:data-set name="ds" nrows="5" scrollable="1" cursor-type="keyset" edit="1">
+              <v:sql>
+                <![CDATA[
+                select EXT from WS.WS.HTTP_SES_TRAP_DISABLE
+                ]]>
+              </v:sql>
+              <v:column name="EXT" />
+              <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="ds_header_template">
+                <table width="100%" border="1" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <th>Action</th>
+                    <th>Disabled extension</th>
+                  </tr>
+                </table>
+              </v:template>
+              <v:template type="repeat" name-to-remove="" set-to-remove="" name="ds_repeat_template">
+                <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="ds_if_not_exists_template">
+                  <table width="100%" border="1" cellspacing="0" cellpadding="0">
+                    <tr>
+                      <td align="center" colspan="2">
+                        <b>No one extenstion to disabling registered</b>
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+                <v:template type="browse" name-to-remove="table" set-to-remove="both" name="ds_browse_template">
+                  <table width="100%" border="1" cellspacing="0" cellpadding="0">
+                    <tr>
+                      <td align="right" nowrap="1">
+                        <v:button active="--(1)" action="simple" value="Delete" name="ds_delete" style="button" xhtml_style="width:60px">
+                          <v:on-post width="0" height="16">
+                            <v:script>
+                              <![CDATA[
+      delete from WS.WS.HTTP_SES_TRAP_DISABLE 
+      where EXT = self.ds.ds_current_row.te_rowset[0];
+      self.ds.vc_data_bind(e);
+                              ]]>
+                            </v:script>
+                          </v:on-post>
+                        </v:button>
+                      </td>
+                      <td align="left" nowrap="1">
+                        <v:label format="%s" name="ds_browse_label_0" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))" />
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+                <v:template type="add" name-to-remove="table" set-to-remove="none" name="ds_add_template">
+                  <v:form type="update" method="POST" action="" if-not-exists="insert" name="ds_add_form" table="WS.WS.HTTP_SES_TRAP_DISABLE">
+                    <v:key default="null" width="0" height="0" name="add_EXT" column="EXT" value="--''" />
+                    <v:template type="simple" name-to-remove="table" set-to-remove="both" name="ds_add_template_2">
+                      <table width="100%" border="1" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td align="right" nowrap="1">
+                            <v:button action="submit" value="Add" width="80" name="ds_add_btn" xhtml_style="width:60px"/>
+                          </td>
+                          <td align="left" nowrap="1">
+                            <v:text type="simple" error-glyph="*" value="" name="ds_add_field_0" column="EXT" xhtml_style="width:100%; background-color: #FFFFCC">
+                              <v:validator name="check3" test="length" min="1" max="10" message="Extension value should be at least 1 chars long and no longer then 10 chars"/>
+                              <v:validator name="check4" test="sql" expression="--(select count(*) from WS.WS.HTTP_SES_TRAP_DISABLE where lcase(EXT) = lcase(control.ufl_value))" message="Extension value should be unique"/>
+                            </v:text>
+                          </td>
+                        </tr>
+                      </table>
+                    </v:template>
+                  </v:form>
+                </v:template>
+              </v:template>
+              <v:template type="simple" name-to-remove="table" set-to-remove="top" name="ds_footer_template">
+                <table width="100%" border="1" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td />
+                    <td align="right">
+                      <v:button action="simple" value="Prev" active="--(1)" name="ds_prev" style="button" xhtml_style="width:60px"/>
+                    </td>
+                    <td align="left">
+                      <v:button action="simple" value="Next" active="--(1)" name="ds_next" style="button" xhtml_style="width:60px"/>
+                    </td>
+                  </tr>
+                </table>
+              </v:template>
+            </v:data-set>
+          </td>
+        </tr>
+      </table>
+      <p/>
+      <v:button name="b_select" action="simple" value="Start Recording >>">
+        <v:on-post>
+          <v:script>
+            <![CDATA[
+if(self.vc_is_valid = 0) return;
+self.page_mode := 'recording';
+self.vdir := self.vdirs.ufl_value;
+self.sname := self.record_name.ufl_value;
+self.t_vdir.ufl_value := self.vdir;
+self.t_pdir.ufl_value := self.pdir;
+self.t_sname.ufl_value := self.sname;
+registry_set('__save_http_history', self.vdir);
+registry_set('__block_http_history', http_path());
+sequence_set('sys_http_recording', 0, 0);
+-- clean out previously recorded session
+delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/sys_http_recording/%';
+-- fill in comments line
+self.command_lines.ufl_value := concat(
+'# RUN - what recorded request to run\n',
+'# CHECK_EXISTS - the following expresion should be founded in HTTP resulting page\n',
+'# CHECK_NOTEXISTS - the following expresion should not be founded in HTTP resulting page\n',
+'# XPATH_EXISTS - evaluate given XPATH expression against result\n',
+'# XPATH_NOTEXISTS - evaluate given XPATH expression against result\n',
+'# SQL - execute expression containing in file\n\n');
+
+            ]]>
+          </v:script>
+        </v:on-post>
+      </v:button>
+    </v:form>
+  </v:template>
+  <v:template name="t_start" type="simple" condition="self.page_mode = 'recording'">
+    <v:form name="f_start" type="simple" action="" method="POST">
+      <table width="80%" border="1" cellpadding="0" cellspacing="0">
+        <tr>
+          <td>
+            <h4>
+              Unuque recording session name:
+            </h4>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <v:text name="t_sname" value="" xhtml_style="width:100%; background-color: #FFFFCC" xhtml_readonly="readonly"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <h4>
+              Physical serverside directory write to:
+            </h4>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <v:text name="t_pdir" value="" xhtml_style="width:100%; background-color: #FFFFCC" xhtml_readonly="readonly"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <h4>
+              Listening HTTP virtual directory:
+            </h4>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <v:text name="t_vdir" value="" xhtml_style="width:100%; background-color: #FFFFCC" xhtml_readonly="readonly"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <h4>
+              Default check for expression exists in result page:
+            </h4>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <v:text name="defaut_check_exists" xhtml_style="width:100%; background-color: #FFFFCC" value="200 OK"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <v:button name="b_get_command" action="simple" value="Get Next Recorded Command">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+declare sql, state, message, meta, result any;
+declare sql_rows, rows, idx any;
+declare new_session, fname, server_root any;
+
+server_root := cfg_item_value(virtuoso_ini_path(), 'HTTPServer','ServerRoot');
+-- write out RUN command
+sql := 'select RES_NAME from WS.WS.SYS_DAV_RES where RES_FULL_PATH like \'/DAV/sys_http_recording/%\' order by RES_NAME';
+state := '00000';
+exec(sql, state, message, vector(), 0, meta, result);
+if(state = '00000') {
+  rows := length(result);
+  idx := 0;
+  while(idx < rows) {
+    declare line any;
+    line := concat(self.sname, '_', result[idx][0]);
+    line := replace (line, '&', '_amp_');
+    line := replace (line, '=', '');
+    if(line like '%_sql_exec') {
+      self.command_lines.ufl_value := concat
+                                (
+                                self.command_lines.ufl_value, 
+                                'SQL ', 
+                                line, 
+                                '\n'
+                                );
+    }
+    else {
+      self.command_lines.ufl_value := concat
+                                (
+                                self.command_lines.ufl_value,
+                                '\n#RUN HEADER',
+                                '\nRUN ',
+                                line,
+                                '\n'
+                                );
+    }
+    idx := idx + 1;
+  }
+}
+
+-- if RUN command was not empty - write out CHECK_EXISTS command
+if(rows > 0) {
+  self.command_lines.ufl_value := concat
+                                (
+                                self.command_lines.ufl_value,
+                                'CHECK_EXISTS ',
+                                self.defaut_check_exists.ufl_value,
+                                '\n'
+                                );
+}
+
+-- copy all recorded headers into target directory
+sql := 'select RES_NAME, blob_to_string(RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_FULL_PATH like \'/DAV/sys_http_recording/%\'';
+state := '00000';
+exec(sql, state, message, vector(), 0, meta, result);
+if(state = '00000') {
+  rows := length(result);
+  idx := 0;
+  while(idx < rows) {
+    fname := concat(server_root, '/', self.pdir, '/', self.sname, '_', result[idx][0]);
+    fname := replace (fname, '&', '_amp_');
+    fname := replace (fname, '=', '');
+    string_to_file(fname, result[idx][1], 0);
+    idx := idx + 1;
+  }
+}
+-- clean out previously recorded headers
+delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/sys_http_recording/%';
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <font size="-1">
+            <v:label name="l_info" value="Before click this button, open another browser window with recording virtual directory and do some action..."/>
+            </font>
+            <font size="+1"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <v:textarea name="command_lines" xhtml_rows="17" xhtml_style="width:100%; background-color: #FFFFCC" value=""/>
+          </td>
+        </tr>
+      </table>
+      <p/>
+      <v:button name="b_back" action="simple" value="<< Back to Settings">
+        <v:on-post>
+          <v:script>
+            <![CDATA[
+registry_set('__save_http_history', '');
+registry_set('__block_http_history', '');
+self.page_mode := 'init';
+            ]]>
+          </v:script>
+        </v:on-post>
+      </v:button>
+      <v:button name="b_stop" action="simple" value="Finish Recording and Save Results >>">
+        <v:on-post>
+          <v:script>
+            <![CDATA[
+declare from_fname, to_fname, pos any;
+declare server_root, from_path, content any;
+registry_set('__save_http_history', '');
+registry_set('__block_http_history', '');
+
+-- move necessary script files to target directory
+server_root := cfg_item_value(virtuoso_ini_path(), 'HTTPServer','ServerRoot');
+
+content := http_debug_get_filecontent('filter.awk');
+to_fname := concat(server_root, '/', self.pdir, '/filter.awk');
+string_to_file(to_fname, content, 0);
+
+content := http_debug_get_filecontent('run_tests.sh');
+to_fname := concat(server_root, '/', self.pdir, '/run_tests.sh');
+string_to_file(to_fname, content, 0);
+
+to_fname := concat(server_root, '/', self.pdir, '/', self.sname, '.list');
+{
+  -- remove '\r' characters
+  declare _out, _idx, _len any;
+  _out := string_output();
+  _len := length(self.command_lines.ufl_value);
+  _idx := 0;
+  while(_idx < _len) {
+    if(self.command_lines.ufl_value[_idx] <> ascii('\r')) {
+      http(chr(self.command_lines.ufl_value[_idx]), _out);
+    }
+    _idx := _idx + 1;
+  }
+  string_to_file(to_fname, string_output_string(_out), 0);
+}
+
+-- show 'finish' screen
+self.page_mode := 'finish';
+self.result_msg.ufl_value := concat(
+  'Recording done.<br/> To start tests, go to ',
+  concat(self.pdir),
+  ' directory<br/>',
+  'setup necessary environment variables (see content of \'run_tests.sh\' file) and<br/>',
+  'run \'run_tests.sh ',
+  concat(self.sname, '.list'),
+  '\' command'
+  );
+            ]]>
+          </v:script>
+        </v:on-post>
+      </v:button>
+    </v:form>
+  </v:template>
+  <v:template name="t_finish" type="simple" condition="self.page_mode = 'finish'">
+    <v:form name="f_finish" type="simple" action="" method="POST">
+      <h4>
+        <v:label name="result_msg" value=""/>
+      </h4>
+      <v:button name="b_back2" action="simple" value="<< Back to Settings" >
+        <v:on-post>
+          <v:script>
+            <![CDATA[
+registry_set('__save_http_history', '');
+registry_set('__block_http_history', '');
+self.page_mode := 'init';
+            ]]>
+          </v:script>
+        </v:on-post>
+      </v:button>
+    </v:form>
+  </v:template>
+</v:page>
+</body>
+</html>

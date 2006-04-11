@@ -1,0 +1,83 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- $Id$ -->
+<?vsp
+declare _accept varchar;
+declare _req varchar;
+declare _content_type varchar;
+
+_accept := http_request_header (lines, 'Accept', null, '');
+--dbg_printf ('Accept: [%s]', _accept);
+
+--if (1 <> adm_dav_check_auth (lines))
+--  {
+--    http_rewrite ();
+--    http_request_status ('HTTP/1.1 401 Unauthorized');
+--    _req := string_output_string (http_body_read());
+--    return (0);
+--  }
+
+_content_type := http_request_header (lines, 'Content-Type', null, '');
+--dbg_printf ('Content-Type: [%s]', _content_type);
+
+_req := string_output_string (http_body_read());
+--dbg_printf ('Request: [%s]', _req);
+
+declare _xdoc any;
+if (_content_type = 'application/vnd.syncml+wbxml')
+  {
+    _xdoc := wbxml2xml (_req);
+    connection_set ('SyncML-media', 'application/vnd.syncml+wbxml');
+  }
+else if (_content_type = 'application/vnd.syncml+xml')
+  {
+    _xdoc := xtree_doc (_req);
+    connection_set ('SyncML-media', 'application/vnd.syncml+xml');
+  }
+else
+  {
+    signal ('22023', 'Not supported media');-- XXX signal error here
+  }
+
+declare _reply any;
+_reply := sync_handle_request (_xdoc);
+-- XXX convert to wbxml if needed
+--dbg_obj_print (_reply);
+http_rewrite ();
+
+http_header (sprintf ('Content-Type: %s\r\n', _content_type));
+http_header (http_header_get () || 'Accept-Charset: UTF-8\r\n');
+if (_content_type = 'application/vnd.syncml+wbxml')
+  {
+    _reply := xml2wbxml (_reply);
+    http (_reply);
+    return;
+  }
+else
+  {
+    http ('<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n');
+    _reply := xml_tree_doc (_reply);
+    http_value (_reply);
+  }
+--http_xslt ('file:/sync/sync.xsl');
+?>

@@ -1,0 +1,41 @@
+<?vsp
+declare _path varchar;
+declare _sqlcode varchar;
+declare _message varchar;
+  _path := {?'path'};
+  _sqlcode := '00000';
+  _message := 'OK';
+ ?>
+
+<?vsp DBV.DBV.VSP_HEADER (path,params,lines, 'Search for fragment'); ?>
+<FORM ACTION="search.vsp">
+<INPUT TYPE=TEXT NAME="path" value="<?= _path ?>" size=64>
+<INPUT TYPE=SUBMIT VALUE="Do XPATH search">
+</FORM>
+<BR>
+<?vsp
+  for select ID, FULLNAME, GRP, EXT, REFILL_STATUS from DBV.DBV.SOURCE where TYPE<>'(DirInfo)' and (REFILL_STATUS='' or REFILL_STATUS is null) do
+    DB.DBA.RDF_EXEC_41000_I (concat( 'DBV.DBV.LOAD_TEXT (', WS.WS.STR_SQL_APOS( FULLNAME), ')'));
+  for select ID, FULLNAME, GRP, EXT, REFILL_STATUS from DBV.DBV.SOURCE where TYPE<>'(DirInfo)' and EXT='xml' and REFILL_STATUS='TEXT LOADED' do
+    DB.DBA.RDF_EXEC_41000_I (concat( 'DBV.DBV.PARSE_XML (', WS.WS.STR_SQL_APOS( FULLNAME), ')'));
+?>
+<HR><H3>The result of XPER search for XPATH '<?= _path ?>'</H3><?vsp
+  if ((_path is not null) and _path <> '')
+    {
+      for select ID, FULLNAME, GRP, EXT, REFILL_STATUS, _frag from DBV.DBV.SOURCE where TYPE<>'(DirInfo)' and EXT='xml' and REFILL_STATUS='XML PARSED' and xpath_contains (ORIG_XML, _path, _frag) do
+        {
+?><B><?= FULLNAME ?> (<?= GRP ?>)</B><BR><XMP><?=_frag?></XMP><?vsp
+        }
+    }
+?>
+<HR><H3>The result of SOURCES' search for XPATH '<?= _path ?>'</H3><?vsp
+  if ((_path is not null) and _path <> '')
+    {
+      for select ID, FULLNAME, GRP, EXT, REFILL_STATUS, _frag from DBV.DBV.SOURCE where TYPE<>'(DirInfo)' and EXT='xml' and REFILL_STATUS='XML PARSED' and xpath_contains (ORIG_TEXT, _path, _frag) do
+        {
+?><B><?= FULLNAME ?> (<?= GRP ?>)</B><BR><XMP><?=_frag?></XMP><?vsp
+        }
+    }
+?>
+<?vsp DBV.DBV.VSP_FOOTER (path,params,lines); ?>
+

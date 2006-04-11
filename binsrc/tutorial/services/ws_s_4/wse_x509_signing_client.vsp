@@ -1,0 +1,134 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare resp,inp,outp any;
+
+resp := null;
+if ({?'exec'} is not null)
+  {
+   declare headers, param, _t any;
+   declare mid any;
+   declare wsa_from, wsu_time, par, created, expr, m_id, a_to, act soap_parameter;
+   declare rst SOAP_CLIENT_REQ;
+   rst := new SOAP_CLIENT_REQ ();
+   rst.url := {?'url'};
+   rst.operation := 'StockQuoteRequest';
+   wsa_from := new soap_parameter ();
+   wsa_from.set_xsd ('http://schemas.xmlsoap.org/ws/2004/03/addressing:ReplyTo');
+   wsa_from.add_member ('Address', 'http://schemas.xmlsoap.org/ws/2004/03/addressing/role/anonymous');
+   wsa_from.set_attribute ('Id', 'Id-' || uuid());
+   created := new soap_parameter (dt_set_tz (now (), 0));
+   created.set_xsd ('http://schemas.xmlsoap.org/ws/2002/07/utility:Created');
+   created.set_attribute ('Id', 'Id-' || uuid());
+   expr := new soap_parameter (dt_set_tz (dateadd ('minute', 500, now ()), 0));
+   expr.set_xsd ('http://schemas.xmlsoap.org/ws/2002/07/utility:Expires');
+   expr.set_attribute ('Id', 'Id-' || uuid());
+   wsu_time := new soap_parameter ();
+   wsu_time.set_xsd ('http://schemas.xmlsoap.org/ws/2002/07/utility:Timestamp');
+   wsu_time.add_member ('Created', created);
+   wsu_time.add_member ('Expires', expr);
+   m_id := new soap_parameter (lower ('UUID:'||uuid ()));
+   m_id.set_xsd ('http://schemas.xmlsoap.org/ws/2004/03/addressing:MessageID');
+   m_id.set_attribute ('Id', 'Id-' || uuid());
+   a_to := new soap_parameter (rst.url);
+   a_to.set_xsd ('http://schemas.xmlsoap.org/ws/2004/03/addressing:To');
+   a_to.set_attribute ('Id', 'Id-' || uuid());
+   act := new soap_parameter ('http://stockservice.contoso.com/wse/samples/2003/06/StockQuoteRequest');
+   act.set_xsd ('http://schemas.xmlsoap.org/ws/2004/03/addressing:Action');
+   act.set_attribute ('Id', 'Id-' || uuid());
+   headers := vector_concat (
+			act.get_call_param (''),
+			wsa_from.get_call_param (''),
+			m_id.get_call_param (''),
+			a_to.get_call_param ('')
+			--, wsu_time.get_call_param ('')
+			);
+   resp := SOAP_CLIENT (url=>rst.url, operation=>rst.operation, headers=>headers,
+   style=>1+4+16+2,
+   parameters=>vector (vector ('symbols', 'http://stockservice.contoso.com/wse/samples/2003/06:symbols_t'),
+       vector ({?'symbol'})),
+   auth_type=>'key',
+   target_namespace=>'http://stockservice.contoso.com/wse/samples/2003/06',
+   soap_action=>'http://stockservice.contoso.com/wse/samples/2003/06/StockQuoteRequest',
+   template=>'[func:DB.DBA.WSE_DEMO_TEMPLATE]',
+   security_type=>'sign'
+   , security_schema => vector ('wsse', WSSE_OASIS_URI (),'wsu', WSSU_OASIS_URI())
+   );
+  }
+?>
+<html>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+<body>
+<H3>X.509 signing SOAP client invoking the MS WSE 2.0 Demo Stock Service</H3>
+<form method="post" action="<?= http_path() ?>" name="mform">
+<table class="tableentry">
+<tr><td>1. Enter the endpoint URL</td><td>
+<input type="text" name="url" size="100" value="http://<host name>/X509SignCodeService/X509SigningService.asmx" />
+</td></tr>
+<tr><td>2. Enter a symbol to get a quote</td><td>
+<input type="text" name="symbol" size="15" value="FABRIKAM" />
+</td></tr>
+<tr><td>3. Call the StockQuoteRequest</td><td><input type="submit" name="exec" value="Execute"></td></tr>
+</table>
+</form>
+<?vsp
+  if (resp is not null) {
+  declare inx, oux, atts any;
+  inp := resp[1];
+  outp := resp[2];
+  atts := resp[4];
+  inx := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (inp), vector ('body', 0));
+  oux := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (outp), vector ('body', 0));
+?>
+  <table>
+  <tr>
+    <td>
+    Request
+    </td>
+  </tr>
+  <tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (inx, null); ?>
+    </div>
+    </td>
+  </tr>
+  <tr>
+  <tr>
+    <td>
+    Response
+    </td>
+  </tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (oux, null); ?>
+    </div>
+    </td>
+  </tr>
+  </table>
+<?vsp
+  }
+?>
+
+</body>
+</html>

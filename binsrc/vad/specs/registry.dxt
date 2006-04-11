@@ -1,0 +1,150 @@
+/*! \page vad_registry VAD Registry
+
+
+\section vad_registry_objective Objective
+
+There's no common way to build the list of installed applications by looking at database schema.
+We have a need to store configuration of the system.
+The following requirements are important for such storage:
+<UL>
+<LI>Whole configuration should be available to every application for regular reading and occasional writing.
+<UL>
+<LI>The storage should be capable to handle hundreds of kilobytes of data, but not tens of megabytes. </LI>
+<LI>There must be a way to easily distinguish data of different applications. </LI>
+<LI>Obviously, the storage must be indexed. </LI>
+</UL>
+<LI>The storage should be at least as reliable as the database, and must be in sync with database state during long time </LI>
+</UL>
+
+Obviously, the easiest way to get such storage is to create a special table for application-level configuration parameters. Such alternative as adding configuration parameters into external file (e.g. to server's initialization file virtuoso.ini) will not guarantee that database and configuration are in sync.
+
+
+\section vad_registry_methods Methods
+
+We may elect among three techniques, which are well known for application developer:
+<UL>
+<LI>RPM-like set of records with fixed format of every record; system provides tools to check integrity of these records. </LI>
+<LI>two-level hierarchy of records; like old-Window's *.ini files with one section (list of records) per application; primary key of configuration table will contain two fields: name of application and name of parameter; </LI>
+<LI>hierarchy of short records with no system-level checks for their integrity; applications should confirm some common rules on voluntary basis, and every application has some private branch of hierarchy to store its arbitrary data. </LI>
+</UL>
+
+We've tested registry-like approach in DMOZ and DocBookView demoz, and it works fine for small applications.
+
+\code
+create table DB.DBA.VAD_REGISTRY
+  R_KEY varchar,
+  R_TYPE varchar,
+  R_VALUE long varchar,
+  primary table (R_KEY);
+\endcode
+
+There are only two questions to describe: the list of supported types and the discipline in naming of keys.
+
+
+\section vad_registry_types Supported types
+
+Currently supported types are
+<UL>
+<LI><CODE>STRING</CODE> - the value is stored as is</LI>
+<LI><CODE>INTEGER</CODE> - the value is stored as decimal string</LI>
+<LI><CODE>KEY</CODE> - the value is either a full name of some key, propperly URL-encoded, or a encoded name relative to current record's key.</LI>
+<LI><CODE>URL</CODE> - just the text of url</LI>
+<LI><CODE>XML</CODE> - just the text of syntactically correct XML</LI>
+</UL>
+
+
+\section vad_registry_keys Key naming
+
+Typical key should match syntax for local URL (URL without name of protocol, name of user, address of server and port, only path without starting slash and optional list of parameters after '&'.
+'?' should be used mostly for meta-data about registry info whereas
+application should use key names with no '?' inside, so typical key should consist of only path.
+In some cases, symbol '#' may be used as delimiter.
+
+All keys forms a tree, like all full paths of resources in file system may be organized into nested directories.
+Path
+<CODE>'/VAD/ODP/Files/Content'</CODE>
+may be presented as vector of path components
+<CODE>vector ('VAD', 'ODP', 'Files', 'Content')</CODE>.
+Paths may be compared on per-component basis, so
+it's correct to say that <CODE>'/VAD/ODP/Files/Content'</CODE> is subpath of <CODE>'/VAD/ODP'</CODE> ("is located
+in branch <CODE>'/VAD/ODP'</CODE>"), but is not a subpath of <CODE>'/VAD/O'</CODE>,
+even if it is substring in terms of character.
+To select all application keys of a branch <CODE>'/VAD/Silversurf'</CODE>, the following select statement may be used:
+\code
+select * from DB.DBA.VAD_REGISTRY
+where (
+  (R_KEY='/VAD/Silversurf') or
+  (R_KEY like '/VAD/Silversurf#%') or
+  (R_KEY like '/VAD/Silversurf/%') )
+\endcode
+To select all keys of a branch <CODE>'/VAD/Silversurf'</CODE>, the following select statement may be used:
+\code
+where (
+  (R_KEY='/VAD/Silversurf') or
+  (R_KEY like '/VAD/Silversurf?') or
+  (R_KEY like '/VAD/Silversurf#%') or
+  (R_KEY like '/VAD/Silversurf/%') )
+\endcode
+
+
+It is recommended to use full "VAD Registry" term in documentation, not "Registry", because "Registry" term is used too frequently for various storages.
+
+
+\section vad_registry_branches Top-level branches of the VAD Registry
+
+Only Virtuoso and VAD developers have a right to standardize new top-level branch.
+Currently, there are 4 standardized branches:
+<UL>
+<LI>\ref vad_registry_DOCS contains references to all documentation related to Virtuoso Server and all known packages.
+(Note that part of package's documentation may remain on disk after un-installation of the package, and upgrade of package should not usually remove documentation of old version) </LI>
+<LI>\ref vad_registry_FILES contains helps for DBA about files in web-root directory, DAV objects, external web-resources and various data files including XMLs, XSLTs, DTDs etc. </LI>
+<LI>\ref vad_registry_SCHEMA contains helps for DBA about tables, procedures and other schema objects. </LI>
+<LI>\ref vad_registry_VAD contains data specific for VAD packages, having one sub-branch per package. </LI>
+</UL>
+
+
+\subsection vad_registry_DOCS /DOCS branch
+
+Documentation of a VAD package will usually contains
+<UL>
+<LI>original documentation shipped with the package, </LI>
+<LI>notes added by installation procedures of other packages related to given one, </LI>
+<LI>various documents from technical support and other sources, added manually. </LI>
+</UL>
+
+
+\subsection vad_registry_FILES /FILES branch
+
+This branch may contain information about any known file.
+Key for the given file may be created by concatenation <CODE>/FILES/</CODE> with the absolute URI of the file.
+For files in web-root, <CODE>file:</CODE><CODE>//location</CODE> notation may be used. for files in arbitrary place of host OS's file system, <CODE>file:</CODE><CODE>///location</CODE> notation may be used.
+
+
+\subsection vad_registry_SCHEMA /SCHEMA branch
+
+This branch contain one sub-branch for every database, these sub-branches are divided into branches for users, they in turn contain one sub-branch per object.
+To prevent collisions if e.g. a procedure and a table shares the same name, a concatenation of name of the object, plus and object type in parenthesis is used.
+Thus procedure <CODE>DB.DBA.VAD_INSTALL</CODE> will be described in branch <CODE>/SCHEMA/DB/DBA/VAD_INSTALL+(procedure)</CODE>.
+(Remember that VAD Registry keys are URIs so plus sign will be translated into whitespace).
+Note that if non-alphanumerical characters were used in the name of the object,
+they must be encoded in accordance to URI rules, if needed.
+
+
+\subsection vad_registry_VAD /VAD branch
+
+This branch is for package-specific data.
+Any package has a right to place its data into branch named <CODE>/VAD/vendor/package/version</CODE>, where <CODE>vendor</CODE> is URI-encoded name of vendor or its domain name, <CODE>package</CODE> is URI-encoded name of the package, <CODE>version</CODE> is URI-encoded version number.
+Initial set of data for this branch will be obtained from package's sticker, installation SQL procedures and plain application procedures may alter the content of branch.
+
+This branch contains one sub-branch for every package name, with one sub-branch per package version.
+So versions 1.1 and 1,2 of package "Silversurf" will use branches
+<CODE>'/VAD/Silversurf/1.1'</CODE> and <CODE>'/VAD/Silversurf/1.2'</CODE>
+
+Every package's branch should have a special record named <CODE>'#Current+version'</CODE>, whose value of type <CODE>'KEY'</CODE> is a key of branch for currently installed version.
+In our sample, key <CODE>'/VAD/Silversurf#Current+version'</CODE> may have either value
+<CODE>'/VAD/Silversurf/1.2'</CODE> (absolute) or value <CODE>'1.2'</CODE> (relative).
+
+VAD procedures will keep all meta-data of the package version in the 'Sticker' sub-branch.
+
+*/
+

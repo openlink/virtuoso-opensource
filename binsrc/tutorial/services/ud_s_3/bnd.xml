@@ -1,0 +1,44 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<save_binding xmlns="urn:uddi-org:api" generic="1.0">
+        <bindingTemplate businessKey="$BK" serviceKey="$SK" bindingKey="3D0D377A-5E79-11D5-A5AE-A3BF9797D453">
+          <description xml:lang="en">OpenLink Virtuoso SOAP Server and Client Information</description>
+          <accessPoint URLType="http">http://www.openlinksw.com/virtuoso/whatis.htm</accessPoint>
+          <tModelInstanceDetails>
+            <tModelInstanceInfo tModelKey="$TK">
+              <description xml:lang="en">A SOAP Compatible service description</description>
+              <instanceDetails />
+            </tModelInstanceInfo>
+          </tModelInstanceDetails>
+        </bindingTemplate>
+        <bindingTemplate  businessKey="$BK" serviceKey="$SK" bindingKey="3C1E59DE-5E79-11D5-A5AE-A3BF9797D453">
+          <description xml:lang="en">Web Service Description File for the web service.</description>
+          <accessPoint URLType="http">http://$HOST/SOAP/services.wsdl</accessPoint>
+          <tModelInstanceDetails>
+            <tModelInstanceInfo tModelKey="$TK">
+              <description xml:lang="en">A WSDL service for SOAP</description>
+              <instanceDetails />
+            </tModelInstanceInfo>
+          </tModelInstanceDetails>
+        </bindingTemplate>
+</save_binding>

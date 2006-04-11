@@ -1,0 +1,44 @@
+<?vsp
+declare _cmd varchar;
+declare _stamp, _newstamp integer;
+declare _sqlcode varchar;
+declare _message varchar;
+  _cmd := {?'cmd'};
+  _stamp := cast({?'stamp'} as integer);
+  _sqlcode := '00000';
+  _message := 'OK';
+  _newstamp := sequence_next('_stamp');
+ ?>
+
+<?vsp DBV.DBV.VSP_HEADER (path,params,lines, 'Status of all registered documents'); ?>
+<P><A HREF="status.vsp?stamp=<?/ _newstamp ?>&cmd=READ_DIRINFO">Re-read directory info</A>
+<BR>
+<?vsp
+  if (_cmd <> '')
+    {
+      _cmd := concat('DBV.DBV.',_cmd,'()');
+      if ( _stamp = _newstamp-1)
+        exec (_cmd, _sqlcode, _message);
+      else
+        _message := 'IGNORED as out-of-sequence, maybe due to refresh request from browser. Click again :)';
+      http(concat('Last command, "',_cmd, '", reports ', _sqlcode, ': ', _message));
+    } ?>
+</P>
+<TABLE CELLSPACING=1 CELLPADDING=2 BORDER=0 BGCOLOR="#CCCCCC">
+<?vsp for select ID, FULLNAME, GRP, PATH, NAME, TYPE, EXT, DTDNAME, REFILL_STATUS, REFILL_ERROR, ORIG_TEXT, ORIG_XML, HTML from DBV.DBV.SOURCE where TYPE<>'(DirInfo)' do
+  { ?>
+<TR>
+<?vsp if (REFILL_ERROR <> '') { ?><TD BGCOLOR="#FFFFFF" ROWSPAN=2><?vsp } else { ?><TD BGCOLOR="#FFFFFF"><?vsp } ?>
+<?= ID ?></TD>
+<TD BGCOLOR="#FFFFFF"><A HREF="viewsource.vsp?name=<?/ FULLNAME?>"><?= FULLNAME ?></A></TD>
+<TD BGCOLOR="#FFFFFF"><?= GRP ?></TD>
+<TD BGCOLOR="#FFFFFF"><?= PATH ?></TD>
+<TD BGCOLOR="#FFFFFF"><?= REFILL_STATUS ?></TD>
+</TR>
+<?vsp
+  if (REFILL_ERROR <> '')
+    { ?><TR><TD BGCOLOR="#FFFFFF" COLSPAN=4><PRE><?= REFILL_ERROR ?></PRE></TD></TR><?vsp } ?>
+<?vsp } ?>
+</TABLE>
+<?vsp DBV.DBV.VSP_FOOTER (path,params,lines); ?>
+

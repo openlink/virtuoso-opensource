@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<xsd:schema
+    targetNamespace="http://schemas.xmlsoap.org/ws/2002/12/policy"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:wsp="http://schemas.xmlsoap.org/ws/2002/12/policy"
+    xmlns:wsu="http://schemas.xmlsoap.org/ws/2002/07/utility"
+    xmlns:wsrm="http://schemas.xmlsoap.org/ws/2004/03/rm"
+    xmlns:wsa="http://schemas.xmlsoap.org/ws/2003/03/addressing"
+    elementFormDefault="qualified" blockDefault="#all">
+
+    <xsd:simpleType name="UsageType">
+	<xsd:restriction base="xsd:QName">
+	    <xsd:enumeration value="wsp:Required"/>
+	    <xsd:enumeration value="wsp:Optional"/>
+	    <xsd:enumeration value="wsp:Rejected"/>
+	    <xsd:enumeration value="wsp:Ignored"/>
+	    <xsd:enumeration value="wsp:Observed"/>
+	</xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:complexType name="SpecVersionAssertion">
+	<xsd:sequence />
+	<xsd:attribute name="URI" type="xsd:anyURI" use="required"/>
+	<xsd:attribute name ="Usage" type="xsd:string" use="optional"/>
+	<xsd:attribute name="Preference" type="xsd:int" use="optional"/>
+	<xsd:attribute name="Id" type="xsd:ID" use="optional"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="PolicyExpression">
+	<xsd:sequence minOccurs="0" maxOccurs="unbounded">
+	    <xsd:element ref="wsp:SpecVersion" />
+	    <xsd:element ref="wsrm:DeliveryAssurance" />
+	    <xsd:element ref="wsu:Expires" minOccurs="0" maxOccurs="1"/>
+	    <xsd:element ref="wsrm:InactivityTimeout" />
+	    <xsd:element ref="wsrm:BaseRetransmissionInterval" />
+	    <xsd:element ref="wsrm:AcknowledgementInterval" />
+	</xsd:sequence>
+	<xsd:attribute name="Name" type="xsd:NCName" use="optional"/>
+	<xsd:attribute name="TargetNamespace" type="xsd:anyURI" use="optional"/>
+	<xsd:attribute name="Id" type="xsd:ID" use="optional"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="PolicyAttachmentType">
+	<xsd:sequence>
+	    <xsd:element ref="wsp:AppliesTo"/>
+	    <xsd:element ref="wsp:Policy" minOccurs="0" />
+	    <xsd:element ref="wsp:PolicyReference" minOccurs="0"/>
+	</xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="AppliesTo">
+	<xsd:sequence>
+	    <xsd:element ref="wsrm:SequenceRef" minOccurs="0" maxOccurs="1"/>
+	    <xsd:element ref="wsa:EndpointReference" minOccurs="0" maxOccurs="1"/>
+	</xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="PolicyReferenceType">
+	<xsd:sequence />
+	<xsd:attribute name="URI" type="xsd:anyURI" use="optional"/>
+	<xsd:attribute name="Ref" type="xsd:QName" use="optional"/>
+	<xsd:attribute name="Digest" type="xsd:base64Binary" use="optional"/>
+	<xsd:attribute name="DigestAlgorithm" type="xsd:QName" use="optional"/>
+    </xsd:complexType>
+
+    <xsd:element name="AppliesTo" type="wsp:AppliesTo"/>
+    <xsd:element name="SpecVersion" type="wsp:SpecVersionAssertion"/>
+    <xsd:element name="Policy" type="wsp:PolicyExpression"/>
+    <xsd:element name="PolicyAttachment" type="wsp:PolicyAttachmentType"/>
+    <xsd:element name="PolicyReference" type="wsp:PolicyReferenceType"/>
+</xsd:schema>

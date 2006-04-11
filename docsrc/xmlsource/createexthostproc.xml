@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="createexthostproc"><title>CREATE PROCEDURE Syntax - External hosted procedures</title>
+
+    <para>Virtuoso provides a syntax shortcut for calling static method from hosted user defined types without first defining a Virtuoso external hosted user defined type:</para>
+    <programlisting><![CDATA[
+CREATE (PROCEDURE|FUNCTION) <local_name> ([<arg_def1>, ...])
+	[returns <sql_datatype>] LANGUAGE [JAVA|CLR] EXTERNAL NAME '<external_static_proc_name_literal>'
+
+<arg_def> := [IN|OUT|INOUT] param_name <data_type_spec>
+
+<external_static_proc_name_literal> = <external_type_name_literal>.<static_proc_name>]]></programlisting>
+<para>This compiles into an functional equivalent of :</para>
+    <programlisting><![CDATA[
+create procedure <local_name) ([<arg_def1>, ....])
+{
+  declare ret any;
+
+  exec ('
+    create type <local_name>
+      temporary self as ref 
+        static method m1 ([<arg_def1>, ....]) 
+           returns <datatype> EXTERNAL NAME ''<static_proc_name>''
+   ');
+
+  ret := <local_name>::m1 (....);
+
+  exec ('drop type <local_name>');
+
+  return ret;
+  }
+  ]]></programlisting>
+
+<para>For more details see <link linkend="udtcreatetypestmt">CREATE TYPE</link> and <link linkend="runtimehosting">Runtime hosting</link> chapters.</para>
+<example id="ex_createexthostproc_jvm"><title>CREATE PROCEDURE for a Java method:</title>
+<para>Here is an example for CREATE PROCEDURE and the hosted Java VM:</para>
+<programlisting><![CDATA[
+create procedure get_property (in x varchar) returns varchar language java external name 'java.lang.System.getProperty';]]></programlisting>
+<para>Here's how that procedure is called:</para>
+<programlisting><![CDATA[
+SQL> select get_property ('java.vm.name');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+Java HotSpot(TM) Client VM
+]]></programlisting>
+</example>
+<example id="ex_createexthostproc_clr"><title>CREATE PROCEDURE for a CLR method:</title>
+<para>Here is an example for CREATE PROCEDURE and the hosted CLR:</para>
+<programlisting><![CDATA[
+create procedure curr_thr_id () returns integer language CLR external name 'mscorlib/System.AppDomain.GetCurrentThreadId';]]></programlisting>
+<para>Here's how that procedure is called:</para>
+<programlisting><![CDATA[
+SQL> select curr_thr_id();
+callret
+INTEGER
+_______________________________________________________________________________
+
+2156
+]]></programlisting>
+</example>
+</sect1>

@@ -1,0 +1,356 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+
+  declare _q, _state, _msg, _stmt varchar;
+  declare err integer;
+
+  if (not adm_check_auth (lines))
+    {
+      adm_tell_unauth (lines);
+      return 0;
+    }
+
+  exec ('status (''c'')', _state, _msg);
+
+  _q := get_keyword ('q', params, '');
+
+  if ('' = _q)
+    _q := 'db';
+
+  status();
+?>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Virtuoso VDBMS Server Statistics</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="General statistics">
+  </head>
+<?vsp adm_page_header('Virtuoso Database Server Statistics', NULL); ?>
+
+<?vsp
+      if (not is_empty_or_null (get_keyword ('help', params)))
+        {
+?>
+          <hr>
+          <hr>
+<?vsp
+        }
+?>
+<table class="ctrlmain" border="0" cellpadding="0" cellspacing="0" width="100%">
+<TR><TD><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<tr><td align="left">
+      <table class="statlist" border="0" cellpadding="0">
+          <TR><TD class="stathead" COLSPAN="2">General Info</TD></TR>
+          <TR><TD CLASS="admborders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+        <tr>
+	  <td CLASS="statlisthead">DBMS Name</td>
+	  <td CLASS="statdata"><?= sys_stat('st_dbms_name') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">DBMS Version</td>
+	  <td CLASS="statdata"><?= sys_stat('st_dbms_ver') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Threading model</td>
+	  <td CLASS="statdata"><?= sys_stat('st_build_thread_model') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Server OS</td>
+	  <td CLASS="statdata"><?= sys_stat('st_build_opsys_id') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Build Date</td>
+	  <td CLASS="statdata"><?= sys_stat('st_build_date') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Replication Server Name</td>
+	  <td CLASS="statdata"><?= sys_stat('st_repl_serv_name') ?></td>
+	</tr>
+    </table>
+</td></tr>
+<TR><TD><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<tr><td align="left">
+      <table class="statlist" border="0" cellpadding="0">
+        <TR><TD class="stathead" COLSPAN="2">License &amp; Connection Info &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#info"><small>More information</small></a></TD></TR>
+        <TR><TD CLASS="admborders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+        <tr>
+    <?vsp
+     declare lown varchar;
+     lown := sys_stat('st_lic_owner');
+     if (lown = '')
+       lown := 'Demo version';
+    ?>
+      <td class="statlisthead">Licensed to</td>
+      <td class="statdata"><?= lown ?></td><td><td>
+    </tr>
+        <tr>
+      <td class="statlisthead">License Serial Number</td>
+      <td class="statdata"><?= sys_stat('st_lic_serial_number') ?></td><td><td>
+    </tr>
+        <tr>
+      <td class="statlisthead">Licensed concurrent connections</td>
+      <td class="statdata"><?= sys_stat('st_lic_max_connections') ?></td><td><td>
+    </tr>
+        <tr>
+      <td class="statlisthead">Current active connections</td>
+      <td class="statdata"><?= sys_stat('st_cli_n_current_connections') ?></td><td><td>
+    </tr>
+        <tr>
+      <td class="statlisthead">Total ODBC/SQL connections since server startup</td>
+      <td class="statdata"><?= sys_stat('st_cli_connects') ?></td><td><td>
+    </tr>
+        <tr>
+      <td class="statlisthead">Maximum concurrent connections since server startup</td>
+      <td class="statdata"><?= sys_stat('st_cli_max_connected') ?></td><td><td>
+    </tr>
+        <tr>
+      <td class="statlisthead">HTTP Threads</td>
+      <td class="statdata"><?= sys_stat('st_cli_n_http_threads') ?></td><td><td>
+    </tr>
+        <tr>
+      <td class="statlisthead">RPC Statistics</td>
+      <td class="statdata"><?= sys_stat('st_rpc_stat') ?></td><td><td>
+    </tr>
+    </table>
+</td></tr>
+</td></tr>
+<TR><TD><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<tr><td align="middle">
+      <table class="statlist" border="0" cellpadding="0">
+      <tr><td valign=top>
+      <table class="statlist" border="0" cellpadding="0">
+	  <TR><TD class="stathead" COLSPAN="2">Server Status</TD></TR>
+	  <TR><TD CLASS="admborders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+		<tr>
+		  <td class="statlisthead">Served sessions</td>
+		  <td class="statdata"><?= sys_stat('st_proc_served') ?></td>
+		</tr>
+		<tr>
+		  <td class="statlisthead">Active threads</td>
+		  <td class="statdata"><?= sys_stat('st_proc_active') ?></td>
+		</tr>
+		<tr>
+		  <td class="statlisthead">Running threads</td>
+		  <td class="statdata"><?= sys_stat('st_proc_running') ?></td>
+		</tr>
+		<tr>
+		  <td class="statlisthead">Queued requests</td>
+		  <td class="statdata"><?= sys_stat('st_proc_queued_req') ?></td>
+		</tr>
+	    </table>
+	</td>
+          <td align=left valign=top>
+      <table class="statlist" border="0" cellpadding="0">
+	  <TR><TD class="stathead" COLSPAN="2">Lock Status</TD></TR>
+	  <TR><TD CLASS="admborders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+		<tr>
+		  <td class="statlisthead">Deadlocks</td>
+		  <td class="statdata"><?= sys_stat('lock_deadlocks') ?></td>
+		</tr>
+		<tr>
+		  <td class="statlisthead">2r1w deadlocks</td>
+		  <td class="statdata"><?= sys_stat('lock_2r1w_deadlocks') ?></td>
+		</tr>
+		<tr>
+		  <td class="statlisthead">Forced deadlocks</td>
+		  <td class="statdata"><?= sys_stat('lock_killed_by_force') ?></td>
+		</tr>
+		<tr>
+		  <td class="statlisthead">Waits</td>
+		  <td class="statdata"><?= sys_stat('lock_waits') ?></td>
+		</tr>
+		<!--tr>
+		  <td class="stat_listhead">Enters</td>
+		  <td class="stat_data"><?= sys_stat('lock_enters') ?></td>
+		</tr>
+		<tr>
+		  <td class="stat_listhead">Leaves</td>
+		  <td class="stat_data"><?= sys_stat('lock_leaves') ?></td>
+		</tr-->
+	    </table>
+	  </td>
+        <td align=left valign=top>
+
+      <table class="statlist" border="0" cellpadding="0">
+	  <TR><TD class="stathead" COLSPAN="2">Committed Log Space</TD></TR>
+	  <TR><TD CLASS="admborders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+		<tr>
+		  <td class="statlisthead">Pages changed</td>
+		  <td class="statdata"><?= sys_stat('st_inx_pages_changed') ?></td>
+		</tr>
+		<tr>
+		  <td class="statlisthead">New pages</td>
+		  <td class="statdata"><?= sys_stat('st_inx_pages_new') ?></td>
+		</tr>
+	    </table>
+
+	  </td>
+        <td align=left valign=top>
+
+
+       <table class="statlist" border="0" cellpadding="0">
+           <TR><TD class="stathead" COLSPAN="2">Last Checkpoint</TD></TR>
+           <TR><TD CLASS="admborders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+                 <tr>
+                   <td class="statlisthead">Remap pages</td>
+                   <td class="statdata"><?= sys_stat('st_chkp_remap_pages') ?></td>
+                 </tr>
+                 <tr>
+                   <td class="statlisthead">Pages mapped back</td>
+                   <td class="statdata"><?= sys_stat('st_chkp_mapback_pages') ?></td>
+                 </tr>
+                 <tr>
+                   <td class="statlisthead">Atomic time</td>
+                   <td class="statdata"><?= sys_stat('st_chkp_atomic_time') ?></td>
+                 </tr>
+             </table>
+
+
+
+	  </td></tr>
+	</table>
+	 </td></tr>
+	 <TR><TD><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+	 <tr>
+	 <td align=left>
+
+      <table CLASS="statlist" border="0" cellpadding="0">
+	  <TR><TD CLASS="stathead" COLSPAN="2">Database Status</TD></TR>
+	  <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+        <tr>
+	  <td CLASS="statlisthead">File size (bytes)</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_file_size') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Total pages</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_pages') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Free pages</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_free_pages') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Buffers</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_buffers') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Buffers used</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_used_buffers') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Dirty buffers</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_dirty_buffers') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Wired down buffers</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_wired_buffers') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Disk reads</td>
+	  <td CLASS="statdata"><?= sys_stat('disk_reads') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Disk read average (msec)</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_disk_read_avg') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Disk read percent</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_disk_read_pct') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Last disk read time (sec)</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_disk_read_last') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Disk writes</td>
+	  <td CLASS="statdata"><?= sys_stat('disk_writess') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Disk read aheads</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_disk_read_aheads') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Disk read ahead batch</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_disk_read_ahead_batch') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Second in read</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_disk_second_reads') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">In while read</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_disk_in_while_read') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Multithreaded write</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_disk_mt_write') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Log file name</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_log_name') ?></td>
+	</tr>
+        <tr>
+	  <td CLASS="statlisthead">Log file length (bytes)</td>
+	  <td CLASS="statdata"><?= sys_stat('st_db_log_length') ?></td>
+	</tr>
+    </table>
+</td></tr>
+<tr><td><hr /></td></tr>
+ <tr><td>
+ <div align="center"><a name="info"><b><i>Notes:</i></b></a></div>
+ <ul style="margin-left: 40px; margin-right: 40px; text-align: left;">
+     <li>
+       <b>Licensed to</b> field displays the name of the license owner. If your version is not registered, the field will display "Demo version".<br /><br />
+     </li>
+     <li>
+       <b>License Serial Number</b> field displays the serial number contained in the license file.<br /><br />
+     </li>
+     <li>
+       <b>Licensed concurrent connections</b> displays the number of connections which your server is licensed to accept. This number comprises both HTTP server threads and ODBC/SQL connections. Non-registered servers are allowed three connections.<br /><br />
+     </li>
+     <li>
+       <b>Current active connections</b> displays the current count of active connections (pending HTTP connections included).<br /><br />
+     </li>
+     <li>
+       <b>Total ODBC/SQL connections since server startup</b> counter displays the total connection attempts (including rejected ones) of ODBC/SQL clients from server startup. This value will be reset to zero at server startup.<br /><br />
+     </li>
+     <li>
+       <b>Maximum concurrent connections since server startup</b> displays the maximum number of simultaneous connections (HTTP threads included). This value will be reset to zero at server startup.<br /><br />
+     </li>
+     <li>
+       <b>HTTP Threads</b> displays the total number of HTTP threads made available by the server. (This value is included in the active connection count.)<br /><br />
+     </li>
+ </ul>
+</td></tr>
+<TR><TD><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+</table>
+<tr>
+<?vsp adm_page_footer(); ?>
+</html>

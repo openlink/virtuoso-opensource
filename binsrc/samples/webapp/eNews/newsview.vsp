@@ -1,0 +1,120 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _catID, _uid, _style integer;
+  declare _url, _root, _path, _xsl, _css varchar;
+  _catID := cast(get_keyword('CAT', params) as integer);
+  _uid := cast(get_keyword('UID', params) as integer);
+  _style := cast(get_keyword('STY', params, '-1') as integer);
+  update eNews..registry set Last_Viewed = _catID where UID = _uid;
+  if (_style <> -1)
+    update eNews..registry set xslviewsheet = _style
+           where UID = _uid;
+  else
+    select xslviewsheet into _style from eNews..registry where UID = _uid;
+  select n.sheet, n.css into _xsl, _css
+         from eNews..newsxslsheet as n, eNews..registry as r
+         where r.UID = _uid and r.xslviewsheet = n.xslviewsheet;
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?= _css ?>">
+    <style type="text/css">
+        a
+        {
+          text-decoration: none;
+        }
+
+        a:hover
+        {
+          color : #808000
+        }
+        a.xml_url
+        {
+          font-family: verdana, helvetica, sans-serif;
+          font-size: 13px;
+          color: #FFFFFF;
+          background-color: #808080;
+          text-align: center;
+          text-decoration: underline;
+        }
+        a.xml_url:hover
+        {
+          color: #FFFFFF;
+          background-color: #000000;
+        }
+        .theLook
+        {
+          font-family: verdana, helvetica, sans-serif;
+          font-size: 14px;
+        }
+        .infostyle
+        {
+          font-family: verdana, helvetica, sans-serif;
+          font-size: 10px;
+        }
+    </style>
+    <SCRIPT LANGUAGE="JavaScript1.2" src="dhtml.js"></SCRIPT>
+  </head>
+<body bgcolor="#FFFFFF" link="#3C6C9D" vlink="#3C6C9D" alink="#808000">
+<?vsp
+  http(eNews.eNews.show_headlines(_catID, _xsl));
+?>
+<div id="info" style="position:absolute; visibility:hidden; top:15; left:350">
+<table bgcolor="#FFEFC6" width="100" cellpadding="10" cellspacing="0" border="1">
+<tr><td class="infostyle"><b>What is this?</b><br />These are different ways of viewing the news stream.  Click on each one to see the effect.</td></tr>
+</table>
+</div>
+<script language="Javascript1.2">
+var info = new CSSObject("info", document);
+function showInfo(){info.css.visibility = visible; return;}
+function hideInfo(){info.css.visibility = hidden; return;}
+</script>
+<div class="theLook" id="the_Look" style="position:absolute; visibility:visible; top:150; left:350;" onmouseover="javascript: showInfo();" onmouseout="javascript: hideInfo();">
+Change Look To:
+<?vsp
+  declare _sname varchar;
+  for (select sheetname, xslviewsheet from eNews..newsxslsheet
+              order by sheetname) do
+  {
+    _sname := sheetname;
+    _xsl := xslviewsheet;
+    http('\n  <br /><br />');
+    if (_style <> _xsl)
+    {
+      http(sprintf('<a href="newsview.vsp?UID=%d&CAT=%d&STY=%d">%s</a>', _uid, _catID, _xsl, _sname));
+    }
+    else
+    {
+      http(sprintf('<b>%s</b>', _sname));
+    }
+  }
+?>
+</div>
+<script language="Javascript1.2">
+var look = new CSSObject("the_Look", document);
+look.css.onmouseover = showInfo;
+look.css.onmouseout = hideInfo;
+</script>
+</body>
+</html>

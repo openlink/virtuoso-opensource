@@ -1,0 +1,81 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<process
+    xmlns:tns="http://temp.org"
+    xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+    xmlns:bpws="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+    name="MS01-5"
+    targetNamespace="http://temp.org"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <partnerLinks>
+    <partnerLink name="caller" partnerLinkType="tns:MS01Partner" myRole="service"/>
+  </partnerLinks>
+  <variables>
+    <variable name="request" messageType="tns:rpcInput"/>
+    <variable name="itemno" type="xsd:int"/>
+    <variable name="sample" messageType="tns:sample"/>
+    <variable name="c1" messageType="tns:PO"/>
+  </variables>
+  <sequence>
+    <receive partnerLink="caller" portType="tns:MS01Port"
+      operation="initiate05" variable="request"
+      createInstance="yes"/>
+    <assign>
+      <copy>
+	  <from>
+	      <po xmlns="http://temp.org">
+		  <details>
+		      <orders>
+			  <order>
+			      <itemnumber>1</itemnumber>
+			  </order>
+			  <order>
+			      <itemnumber>2</itemnumber>
+			  </order>
+			  <order>
+			      <itemnumber>3</itemnumber>
+			  </order>
+		      </orders>
+		  </details>
+	      </po>
+	</from>
+	<to variable="c1" part="items"/>
+      </copy>
+    </assign>
+    <assign>
+      <copy>
+        <from variable="c1" part="items" query="/tns:po/tns:details/tns:orders/tns:order[1]/tns:itemnumber"/>
+        <to variable="itemno"/>
+      </copy>
+    </assign>
+    <assign>
+      <copy>
+        <from expression="bpws:getVariableData('itemno')"/>
+        <to variable="sample" part="newqty"/>
+      </copy>
+    </assign>
+    <reply partnerLink="caller" portType="tns:MS01Port"
+      operation="initiate05" variable="sample"/>
+  </sequence>
+</process>

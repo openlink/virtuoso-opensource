@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_let">
+  <refmeta>
+    <refentrytitle>let</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>let</refname>
+    <refpurpose>Creates temporary variables and calculates an expression that uses these variables</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_let">
+      <funcprototype id="xpf_proto_let">
+        <funcdef>any <function>let</function></funcdef> 
+	<paramdef><parameter>var1name</parameter> string</paramdef>
+	<paramdef><parameter>var1value</parameter> sequence</paramdef>
+	<paramdef><parameter>var2name</parameter> string</paramdef>
+	<paramdef><parameter>var2value</parameter> sequence</paramdef>
+	<paramdef><parameter>...</parameter></paramdef>
+	<paramdef><parameter>varNname</parameter> string</paramdef>
+	<paramdef><parameter>varNvalue</parameter> sequence</paramdef>
+	<paramdef><parameter>retval</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_let"><title>Description</title>
+<para>
+For every pair of arguments, the function calcluates values of
+these arguments and then creates a new temporary local variable whose name
+is the string value of the first argument in pair and the value assigned is
+the value of the second argument in pair.
+Obviously, the argument for variable name is usually a constant string of
+alphanumeric characters.
+The expression for a value of variable number I may refer to
+variables created during steps 1 to I-1.
+When all pairs of arguments are turned into temporary variables,
+the last argument is calculated and its value is returned
+as the value of the whole expression.
+</para>
+<para>
+Temporary variables are destroyed on return.
+</para>
+<para>
+This function is used in the implementation of
+&quot;LET&quot; control operator in XQUERY,
+so you will probably use that operator in XQUERY expessions, not the function.
+This function may be useful in XPATH expressions and in XSLT stylesheets.
+It is not a part of library of standard XQUERY 1.0 functions.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_let"><title>Parameters</title>
+    <refsect2><title>varIname</title>
+      <para>Expression for the name for the I-th temporary variable</para></refsect2>
+    <refsect2><title>varIvalue</title>
+      <para>Expression for the value for the I-th temporary variable</para></refsect2>
+    <refsect2><title>retval</title>
+      <para>Expression for the value to be returned</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_let"><title>Return Types</title><para>Any, depending on the type of <parameter>retval</parameter> expression.</para></refsect1>
+  <refsect1 id="xpf_errors_let"><title>Errors</title>
+    <table><title>Errors signalled by let()</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>XPF02</errorcode></entry>
+	    <entry><errorname>Wrong number of arguments for XPATH function let(), maybe internal XQuery error</errorname></entry>
+	    <entry>The function should have odd number of arguments: even number of arguments that describe veriables plus one for the returned expression.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="xpf_examples_let"><title>Examples</title>
+    <example id="xpf_ex_let"><title></title>
+      <para>These two expressions are equivalent,
+but first may be used in any XPATH while second is written in XQUERY syntax</para>
+<screen>
+let('baseprice', /item/price, 'discount', 0.20, $baseprice * (1.0 - $discount))
+LET  $baseprice := /item/price, $discount := 0.20 RETURN $baseprice * (1.0 - $discount)
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_let"><title>See Also</title>
+    <para><link linkend="xpf_for">for()</link></para>
+  </refsect1>
+</refentry>
+

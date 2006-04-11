@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_XMLFOREST">
+  <refmeta>
+    <refentrytitle>XMLFOREST</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XMLFOREST</refname>
+    <refpurpose>Produces a forest of XML elements</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_XMLFOREST">
+      <funcprototype id="fproto_XMLFOREST">
+        <funcdef>
+          <function>XMLFOREST</function>
+        </funcdef>
+        <paramdef>
+          <parameter>string_expr1 [AS alias1]</parameter> varchar</paramdef>
+        <paramdef>
+          <optional>
+            <parameter>string_expr2 [AS alias2]</parameter> varchar</optional>
+        </paramdef>
+        <paramdef>
+          <optional>
+            <parameter>...</parameter>
+          </optional>
+        </paramdef>
+        <paramdef>
+          <optional>
+            <parameter>string_exprN [AS aliasN]</parameter> varchar</optional>
+        </paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_XMLFOREST">
+    <title>Description</title>
+    <para>
+      <function>XMLFOREST</function> produces a forest of XML elements from the given list of arguments. 
+   The arguments may be string expressions with optional aliases. If string expression is a column name, 
+   then you can omit the AS clause, and Virtuoso uses the partially escaped form of 
+   the column name as the name of the enclosing tag. If the expression evaluates to NULL, then no element is 
+   created for that expression. If none of the element is created, then the function returns NULL.
+    </para>
+  </refsect1>
+  <refsect1 id="XMLFOREST">
+    <title>Parameters</title>
+    <refsect2>
+      <title>string_exprI [AS aliasI]</title>
+      <para>string value; AS clause is mandatory if the argument is not a column name but an expression of some other sort.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="errors_XMLFOREST">
+    <title>Errors</title>
+    <table>
+      <title>Errors signalled by <function>XMLFOREST</function>
+      </title>
+      <tgroup cols="4">
+        <thead>
+          <row>
+            <entry>SQLState</entry>
+            <entry>Error Code</entry>
+            <entry>Error Text</entry>
+            <entry>Description</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>
+              <errorcode>37000</errorcode>
+            </entry>
+            <entry>
+              <errorcode>SQ074</errorcode>
+            </entry>
+            <entry>
+              <errorname>The special SQL function has invalid argument</errorname>
+            </entry>
+            <entry>An argument is neither a column name nor an expression with an alias.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+    <para/>
+  </refsect1>
+  <refsect1 id="XMLFOREST">
+    <title>Examples</title>
+    <example id="ex_XMLFOREST">
+      <title>XMLFOREST() with five parameters.</title>
+      <para>
+The following example produces five (or four) elements (&apos;FName&apos;, &apos;LName&apos;, &apos;str&apos;, &apos;Title&apos;, and &apos;Region&apos; - if there is a value) 
+from the string expressions &apos;FirstName&apos;, &apos;LastName&apos;, &apos;string&apos;, &apos;Title&apos;, and &apos;Region&apos;,
+ concatenates the elements produced for each 
+employee, and produces one row for each employee in the result set. 
+</para>
+      <screen>
+select XMLFOREST (
+  "FirstName" as "FName", "LastName" as "LName",
+  'string' as "str", "Title", "Region" )
+from "Demo"."demo"."Employees";
+callret
+VARCHAR
+_______________________________________________________________________________
+ 
+&lt;FName&gt;Nancy&lt;/FName&gt;
+&lt;LName&gt;Davolio&lt;/LName&gt;
+&lt;str&gt;string&lt;/str&gt;
+&lt;Title&gt;Sales Representative&lt;/Title&gt;
+&lt;Region&gt;WA&lt;/Region&gt;
+
+. . .
+
+&lt;FName&gt;Anne&lt;/FName&gt;
+&lt;LName&gt;Dodsworth&lt;/LName&gt;
+&lt;str&gt;string&lt;/str&gt;
+&lt;Title&gt;Sales Representative&lt;/Title&gt;
+ 
+9 Rows.
+       </screen>
+       <para>
+The following example always produces five elements: empty &apos;Region&apos; element is created for NULL values.
+Note the difference in the last rows of this and the previous query results:
+</para>
+      <screen>
+select XMLFOREST (
+  "FirstName" as "FName", "LastName" as "LName",
+  'string' as "str", "Title", coalesce ("Region", &apos;&apos;) as "Region")
+from "Demo"."demo"."Employees";
+callret
+VARCHAR
+_______________________________________________________________________________
+ 
+&lt;FName&gt;Nancy&lt;/FName&gt;
+&lt;LName&gt;Davolio&lt;/LName&gt;
+&lt;str&gt;string&lt;/str&gt;
+&lt;Title&gt;Sales Representative&lt;/Title&gt;
+&lt;Region&gt;WA&lt;/Region&gt;
+
+. . .
+
+&lt;FName&gt;Anne&lt;/FName&gt;
+&lt;LName&gt;Dodsworth&lt;/LName&gt;
+&lt;str&gt;string&lt;/str&gt;
+&lt;Title&gt;Sales Representative&lt;/Title&gt;
+&lt;Region&gt;&lt;/Region&gt;
+
+ 
+9 Rows.
+       </screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_XMLFOREST">
+    <title>See Also</title>
+    <para>
+      <link linkend="fn_XMLELEMENT">XMLELEMENT()</link>
+    </para>
+    <para>
+      <link linkend="fn_XMLATTRIBUTES">XMLATTRIBUTES()</link>
+    </para>
+    <para>
+      <link linkend="fn_XMLAGG">XMLAGG()</link>
+    </para>
+    <para>
+      <link linkend="fn_XMLCONCAT">XMLCONCAT()</link>
+    </para>
+  </refsect1>
+</refentry>

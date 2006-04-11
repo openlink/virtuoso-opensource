@@ -1,0 +1,164 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<definitions targetNamespace="http://temp.org"
+             xmlns:tns="http://temp.org"
+             xmlns:plt="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+   <types>
+     <schema targetNamespace="http://temp.org"
+       xmlns="http://www.w3.org/2001/XMLSchema"
+       xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+       <complexType name="tAddress">
+	 <sequence>
+	   <element name="number" type="xsd:int"/>
+	   <element name="street" type="xsd:string"/>
+	   <element name="city" type="xsd:string"/>
+	   <element name="phone">
+	     <complexType>
+	       <sequence>
+		 <element name="areacode" type="xsd:int"/>
+		 <element name="exchange" type="xsd:int"/>
+		 <element name="number" type="xsd:int"/>
+	       </sequence>
+	     </complexType>
+	   </element>
+	 </sequence>
+       </complexType>
+     
+       <complexType name="tInvoice">
+	   <sequence>
+	       <element name="name" type="xsd:string"/>
+	       <element name="address" type="tns:tAddress"/>
+	       <element name="item" type="xsd:string"/>
+	       <element name="quantity" type="xsd:int"/>
+	       <element name="price" type="xsd:int"/>
+	       <element name="shipper" type="xsd:int"/>
+	   </sequence>
+       </complexType>
+
+       <complexType name="POType">
+	   <sequence>
+	       <element name="details" type="tns:tDetails"/>
+	   </sequence>
+	 </complexType>
+	 
+       <complexType name="tDetails">
+	   <sequence>
+	       <element name="orders" type="tns:tOrders"/>
+	   </sequence>
+	 </complexType>
+	 
+	 <complexType name="tOrders">
+	   <sequence>
+	     <element name="order" type="tns:tOrder" minOccurs="0" maxOccurs="unbounded"/>
+	   </sequence>
+	 </complexType>
+
+       <complexType name="tOrder">
+	   <sequence>
+	       <element name="itemnumber" type="xsd:int"/>
+	   </sequence>
+	 </complexType>
+	
+       <element name="po" type="POType"/>
+       <element name="address" type="tAddress"/>
+       <element name="initiate">
+	  <complexType>
+	      <sequence/>
+          </complexType>
+       </element>		
+       <element name="invoice1" type="tInvoice"/>
+       <element name="header"  type="xsd:int" />
+     </schema>
+   </types>
+
+   <message name="person">
+     <part name="full-name" type="xsd:string"/>
+     <part name="address" element="tns:address"/>
+   </message>
+
+   <message name="PO">
+     <part name="items" element="tns:po" />	
+   </message>	
+
+   <message name="order">
+	<part name="qty" element="tns:header"/>
+   </message>	
+
+   <message name="sample">
+	<part name="newqty" type="xsd:int"/>
+   </message>	
+
+   <message name="SampleMessage">
+      <part name="stringsample" type="xsd:string"/>
+      <part name="numericsample" type="xsd:decimal"/>
+      <part name="overextended" type="xsd:boolean"/>
+      <part name="sampledate" type="xsd:dateTime"/>
+   </message>
+
+   <message name="InvoiceMessage">
+       <part name="header" element="tns:invoice1" />
+   </message>
+
+   <message name="initiateInput">
+	<part name="payload" element="tns:initiate"/>
+   </message>
+
+   <message name="rpcInput"/>
+
+   <portType name="MS01Port">
+      <operation name="initiate01">
+         <input message="tns:initiateInput"/>
+         <output message="tns:InvoiceMessage"/>
+      </operation>
+      <operation name="initiate02">
+         <input message="tns:rpcInput"/>
+         <output message="tns:SampleMessage"/>
+      </operation>
+      <operation name="initiate03">
+         <input message="tns:initiateInput"/>
+         <output message="tns:person"/>
+      </operation>
+      <operation name="initiate04">
+         <input message="tns:rpcInput"/>
+         <output message="tns:sample"/>
+      </operation>
+      <operation name="initiate05">
+         <input message="tns:rpcInput"/>
+         <output message="tns:sample"/>
+      </operation>
+      <operation name="initiate06">
+         <input message="tns:rpcInput"/>
+         <output message="tns:sample"/>
+      </operation>
+   </portType>
+
+   <plt:partnerLinkType name="MS01Partner">
+     <plt:role name="service">
+       <plt:portType name="tns:MS01Port"/>
+     </plt:role>
+   </plt:partnerLinkType>
+
+</definitions>

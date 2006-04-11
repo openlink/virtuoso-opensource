@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="xmltableview">
+<title>Getting a Rowset from XML Data (OPENXML)</title>
+
+<para>Whereas you can use the FOR XML clause to retrieve data as an XML
+document, you can use the Virtuoso-SQL OPENXML function to insert data
+represented as an XML document. OPENXML is a rowset generator similar to a
+table or a view, providing a rowset over in-memory XML documents. OPENXML
+allows access to XML data as if it is a relational rowset by providing a
+rowset view of the internal representation of an XML document. The records
+in the rowset can then be stored in database tables. OPENXML can be used in
+SELECT, and SELECT INTO statements where a source table or view can be
+specified.</para>
+
+<para>To write queries against an XML document using OPENXML, you must
+first call <emphasis>sp_xml_preparedocument</emphasis>, which parses the
+XML document and returns a handle to the parsed document that is ready
+for consumption. The parsed document is a tree representation of various
+nodes (elements, attributes, text, comment, and so on) in the XML document.
+The document handle is passed to OPENXML, which then provides a rowset
+view of the document based on the parameters passed to it.</para>
+
+<para>The internal representation of an XML document must be removed from
+memory by calling <emphasis>sp_xml_removedocument</emphasis>
+system stored procedure to free the memory.</para>
+
+<para>This illustration shows the process.</para>
+<figure id="xmlsp" float="1">
+  <title>Illustration showing the OPENXML process</title>
+  <graphic fileref="xmlsp.gif"/>
+</figure>
+
+<para>The following example shows the use of OPENXML in an INSERT statement
+and a SELECT statement. The sample XML document consists of &lt;Customers&gt;
+and &lt;Orders&gt; elements. First, the
+<emphasis>sp_xml_preparedocument</emphasis> stored procedure parses the XML
+document. The parsed document is a tree representation of the nodes (elements,
+attributes, text, comments, and so on) in the XML document. OPENXML then
+refers to this parsed XML document and provides a rowset view of all or parts
+of this XML document. An INSERT statement using OPENXML can insert data from
+such a rowset into a database table. Several OPENXML calls can be used to
+provide a rowset view of various parts of the XML document and process them,
+for example, inserting them into different tables (this process is also
+referred to as "Shredding XML into tables"). In the following example, an XML
+document is shredded in a way that &lt;Customers&gt; elements are stored in
+the <emphasis>Customers</emphasis> table and &lt;Orders&gt; elements are
+stored in the <emphasis>Orders</emphasis> table using two INSERT statements.
+</para>
+
+<para>The example also shows a SELECT statement with OPENXML that retrieves
+<emphasis>CustomerID</emphasis> and <emphasis>OrderDate</emphasis> from the
+XML document.</para>
+
+<programlisting>
+DECLARE @hDoc int
+EXEC sp_xml_preparedocument @hDoc OUTPUT, 
+      N'&lt;ROOT&gt;
+         &lt;Customers CustomerID="XYZAA" ContactName="Joe" 
+               CompanyName="Company1"&gt;
+            &lt;Orders CustomerID="XYZAA" 
+               OrderDate="2000-08-25T00:00:00"/&gt;
+            &lt;Orders CustomerID="XYZAA" 
+               OrderDate="2000-10-03T00:00:00"/&gt;
+         &lt;/Customers&gt;
+         &lt;Customers CustomerID="XYZBB" ContactName="Steve"
+               CompanyName="Company2"&gt;No Orders yet!
+         &lt;/Customers&gt;
+      &lt;/ROOT&gt;'
+-- Use OPENXML to provide rowset consisting of customer data.
+INSERT Customers 
+SELECT * 
+FROM OPENXML(@hDoc, N'/ROOT/Customers') 
+     WITH Customers
+-- Use OPENXML to provide rowset consisting of order data.
+INSERT Orders 
+SELECT * 
+FROM OPENXML(@hDoc, N'//Orders') 
+     WITH Orders
+-- Using OPENXML in a SELECT statement.
+SELECT * FROM OPENXML(@hDoc, N'/ROOT/Customers/Orders')
+ with (CustomerID nchar(5) '../@CustomerID', OrderDate datetime)
+-- Remove the internal representation of the XML document.
+EXEC sp_xml_removedocument @hDoc
+</programlisting>
+
+<figure id="xmlparsedtree" float="1">
+  <title>The parsed XML tree of the preceding XML documentation created by sp_xml_preparedocument</title>
+  <graphic fileref="xmlparsedtree.gif"/>
+</figure>
+&openxml;
+</sect1>

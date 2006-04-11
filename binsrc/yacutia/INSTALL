@@ -1,0 +1,25 @@
+--  install
+--
+--  $Id$
+--
+--
+
+How to install yacutia pages manually:
+1. Create symlink "yacutia" into http server root catalog from binsrc/yacutia directory,
+   or just copy the whole catalog under http root.
+2. Create symlink "vspx" into http server root catalog from binsrc/vspx directory,
+   or just copy the whole catalog under http root.
+3. Run yac.sql, yacutia.sql, inifiles_load.sql scripts from yacutia directory.
+4. Run vspx_vhost.sql, vspx_demo_init.sql, vdir_helper.sql from vspx directory, admin_dav_browser.sql from vspx/browser directory.
+
+Mostly installation is complete.
+
+
+In order to install inifile properties editor, you need:
+1. copy inifile.xml file into the same directory, where .ini file is.
+2. Be sure the directory binsrc/yacutia is linked on top of the http server directory under the 'yacutia' name.
+   In case you link it under anotehr name, do modify yacutia/yacutia.isql script (second argument of create_inifile_page
+   function).
+3. In .ini file do define the full path on inifile.xml file location for DirsAllowed parameter.
+4. Pages are ready to be used;
+

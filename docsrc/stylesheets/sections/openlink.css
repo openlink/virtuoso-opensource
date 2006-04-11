@@ -1,0 +1,125 @@
+@media screen, print {
+
+BODY {
+  background-image: url(../images/misc/leftbg.jpg); 
+  background-repeat: repeat-y;
+  background-position: top left;
+  margin: 0px;
+  padding: 0px;
+  font-size: 75%;
+  font-family: Verdana, 'Times New Roman', Helvetica, Utopia, Times, 'MS Serif', Serif;
+  background-color: #fff;
+  COLOR: #000000;
+  }
+h1 {
+  margin-top: 10px; margin-bottom: 5px; margin-right: 3em;
+  font-size: 185%;
+  text-align: right;
+  }
+h2 {
+  margin-top: 15px; margin-bottom: 5px; 
+  font-size: 165%;
+  }
+h3 {
+  margin-top: 15px; margin-bottom: 5px; 
+  font-size: 125%;
+  }
+h4 {
+  margin-top: 10px; margin-bottom: 5px; 
+  font-size: 115%;
+  }
+h5 {
+  margin-top: 5px; margin-bottom: 5px;
+  font-size: 100%;
+  }
+h6 {
+  margin-top: 5px; margin-bottom: 5px;
+  font-size: 100%;
+  }
+A {
+  font-family: Verdana, Arial, Sans-Serif; text-decoration: none
+  }
+a:active {
+  text-decoration: none
+  }
+a:visited {
+  text-decoration: none
+  }
+a:hover {
+  text-decoration: underline
+  }
+a[name]{
+  font-family: inherit;
+  text-decoration: inherit;
+  }
+#header {
+  margin: 0px;
+  background: navy url(../images/misc/logobg.jpg);
+  color: white;
+  text-align: right;
+  width: 100%;
+  height: 65px;
+  }
+#header IMG {
+  float: left;
+  margin: 0px;
+  padding: 0px;
+  height: 65px;
+  }
+#header H1 {
+  margin-top: 0px;
+  margin-bottom: 0px;
+  padding-top: 15px;
+  }
+#navbartop {
+  font-size: 90%;
+  text-align: right;
+  background: #c1c1ff;
+  color: #003366;
+  margin: 0px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  width: 100%;
+  }
+#navbartop DIV { padding-right: 1em;}
+#navbartop input { padding: 0px; margin: 0px; font-family: inherit; font-size: 100%; }
+#navbartop a.link {
+  background: #C1C1FF;
+  color: #003366;
+  }
+#footer {
+  font-size: 8pt;
+  font-family: Tahoma, Utopia, Times, Helvetica, Sans-Serif;
+  text-align: center;
+  margin-top: 50px;
+  margin-left: 200px;
+  margin-right: 0px;
+  padding: 1em;
+  clear: both;
+  }
+#footer div {  padding: 2px; }
+#footer img {
+  border: none;
+}
+#validation {
+  text-align: left;
+  margin-top: 3em;
+}
+
+TABLE {font-size: inherit;}
+form { display: inline; width: 0px; padding: 0px; margin: 0px; }
+a.feedlink {
+  font-size: 8pt;
+  background: #dd4422;
+  font-weight: bold;
+  color: white;
+  border-top: 1px outset white;
+  border-left: 1px outset white;
+  border-right: 1px outset black;
+  border-bottom: 1px outset black;
+  padding: 0px;
+  padding-left: 2px;
+  padding-right: 2px;
+  margin: 0px;
+}
+}

@@ -1,0 +1,92 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+  <sect1 id="plinks_props">
+    <title>OpenLink BPEL Process Manager Partner Link properties</title>
+    <para>This page shows information about the properties of a Partner Link for a BPEL process.</para>
+    <simplelist>
+      <member><ulink url="i/save_16.png" alt="Save"/> Click to save the changes.</member>
+      <member><ulink url="i/cancl_16.png" alt="Cancel"/> Click to cancel the changes.</member>
+    </simplelist>
+    <sect2 id="pu_fields">
+      <title>Form fields</title>
+      <sect3 id="pu_version">
+          <title>Version</title>
+          <para>Specify value from the list to be save for the WS-Addressing version section.</para>
+      </sect3>
+      <sect3 id="pu_dinput">
+          <title>Input</title>
+          <para>Specify value from the list to be save for the Delivery Execution Input section.</para>
+      </sect3>
+      <sect3 id="pu_doutput">
+          <title>Output</title>
+          <para>Specify value from the list to be save for the Delivery Execution Output section.</para>
+      </sect3>
+       <sect3 id="pu_un">
+          <title>User Name</title>
+          <para>Specify user name for HTTP / HTTPS Authentication.</para>
+      </sect3>
+      <sect3 id="pu_pwd">
+          <title>Password</title>
+          <para>Specify paswword for HTTP / HTTPS Authentication.</para>
+      </sect3>
+      <sect3 id="pu_wkey">
+          <title>Key</title>
+          <para>Specify value from "Select" to be save for the WS-Security Key section.</para>
+      </sect3>
+      <sect3 id="pu_wpkey">
+          <title>Partner Public key</title>
+          <para>Specify value from "Select" to be save for the WS-Security Partner Public key section.</para>
+      </sect3>
+      <sect3 id="pu_winput">
+          <title>Input</title>
+          <para>If this checkbox is checked, will be shown the lists for the WS-Security Input Encryption and the WS-Security Input Signature.</para>
+      </sect3>
+      <sect3 id="pu_ewinput">
+          <title>Encryption</title>
+          <para>Specify value from the list to be save for the WS-Security Input Encryption section.</para>
+      </sect3>
+      <sect3 id="pu_swinput">
+          <title>Signature</title>
+          <para>Specify value from the list to be save for the WS-Security Input Signature section.</para>
+      </sect3>
+      <sect3 id="pu_woutput">
+          <title>Out</title>
+          <para>If this checkbox is checked, will be shown the lists for the WS-Security Out Encryption, the WS-Security Out Signature and the WS-Security Out Function for Custom signature.</para>
+      </sect3>
+      <sect3 id="pu_ewoutput">
+          <title>Encryption</title>
+          <para>Specify value from the list to be save for the WS-Security Out Encryption section.</para>
+      </sect3>
+      <sect3 id="pu_swoutput">
+          <title>Signature</title>
+          <para>Specify value from the list to be save for the WS-Security Out Signature section.</para>
+      </sect3>
+      <sect3 id="pu_fwoutput">
+          <title>Function for Custom signature</title>
+          <para>Specify name of the function to be used for Custom signature for the WS-Security Out section.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+</HelpTopic>

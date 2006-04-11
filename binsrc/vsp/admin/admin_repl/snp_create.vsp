@@ -1,0 +1,519 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+--no_c_escapes-
+  declare _tbl, _dsn, _uid, _pwd, _dsn1 varchar;
+  declare _tblname varchar;
+  declare _idx integer;
+  declare _ses_res any;
+  _ses_res := string_output ();
+
+  if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+  _tbl := get_keyword ('tbl', params, '');
+  _dsn := get_keyword ('dsn', params, '');
+  _dsn1 := get_keyword ('dsns1', params, '');
+  if (_dsn = '')
+    _dsn := get_keyword ('dsns1', params, '');
+  if (_dsn = '')
+    _dsn := get_keyword ('dsns', params, '');
+  _uid := get_keyword ('uid', params, 'dba');
+  _pwd := get_keyword ('pwd', params, 'dba');
+  if ('Add' = get_keyword ('adddsn', params))
+    {
+      if (_dsn <> '')
+        DB..vd_remote_data_source (_dsn, '', _uid, _pwd);
+    }
+  if ('' <> get_keyword ('dsn_save', params, ''))
+    {
+      _uid := get_keyword ('n_uid', params, 'dba');
+      _pwd := get_keyword ('n_pwd', params, 'dba');
+      if (_dsn <> '')
+        DB..vd_remote_data_source (_dsn, '', _uid, _pwd);
+        -- update SYS_DATA_SOURCE set DS_UID = _uid, DS_PWD = _pwd where DS_DSN = _dsn;
+    }
+  if ('Create' = get_keyword ('SNP', params))
+    {
+      declare dbms_name varchar;
+      if (_dsn <> '')
+	{
+          _dsn := _dsn;
+	  declare s_ver, __stat, __msg, __res varchar;
+	  s_ver := sys_stat ('st_dbms_ver');
+	  s_ver := substring (s_ver, strrchr (s_ver, '.') + 2, length (s_ver));
+	  {
+            declare exit handler for sqlstate '*' { http (__SQL_MESSAGE); return; };
+            dbms_name := get_keyword (17, vdd_dsn_info(_dsn), '');
+	  }
+	  if (atoi (s_ver) > 1937 and strstr (dbms_name, 'Virtuoso') is not null)
+	    {
+	      declare idn, o_idn any;
+	      idn := identify_self ();
+              __stat := '00000'; __msg := '';
+	      rexecute (_dsn, 'select aref(identify_self (), 0), aref(identify_self (), 1), aref(identify_self (), 2), aref(identify_self (), 3)', __stat, __msg, null, null, null, __res);
+	      if (__stat = '00000')
+	        {
+	          if (__res is not null and __tag (__res) = 193)
+	            {
+			o_idn := aref(__res, 0);
+			if (o_idn is not null and length (o_idn) > 3)
+			  {
+			    if ((aref (o_idn, 0) = aref (idn, 0))
+				and (aref (o_idn, 1) = aref (idn, 1))
+				and (aref (o_idn, 2) = aref (idn, 2))
+				and (aref (o_idn, 3) = aref (idn, 3)))
+			      {
+				http ('<H4>Cannot replicate into the source server</H4>');
+				return (0);
+			      }
+			  }
+	            }
+                 }
+	     }
+	}
+      else
+	{
+	  http ('DSN must be supplied');
+	  return;
+	}
+      declare _remote_types any;
+      _remote_types := REPL_REMOTE_TYPES (_dsn);
+      --dbg_obj_print ('types', _remote_types);
+      _idx := 0;
+      while (_tbl := adm_next_keyword ('tbls', params, _idx))
+        {
+          declare _rc integer;
+          declare _stmt, _stat, _msg varchar;
+          declare _pk_names any;
+	  declare _rpk_col_names varchar;
+	  declare _col_name varchar;
+	  declare _attached_qual varchar;
+	  declare _attached_owner varchar;
+	  declare _attached_name varchar;
+	  declare _attached_full_name varchar;
+
+	  _attached_qual := get_keyword (sprintf ('LTBQ_%s', _tbl), params, '');
+	  _attached_owner := get_keyword (sprintf ('LTBO_%s', _tbl), params, '');
+	  _attached_name := get_keyword (sprintf ('LTBN_%s', _tbl), params, '');
+          _attached_full_name := sprintf ('%s.%s.%s', _attached_qual, _attached_owner, _attached_name);
+          _tbl := complete_table_name(_tbl, 1);
+          declare _fq_tbl varchar;
+          _fq_tbl := sprintf ('"%I"."%I"."%I"',
+              name_part (_tbl, 0), name_part (_tbl, 1), name_part (_tbl, 2));
+
+          declare _cols, _col any;
+          declare _ix, _len integer;
+          _cols := REPL_PK_COLS (_tbl);
+          if (length(_cols) = 0)
+	    {
+	      http (sprintf ('<tr><td>%s</td><td>ERR</td><td>The table doesn''t have primary key</td></tr>', _tbl), _ses_res);
+	      goto next_tbl;
+	    }
+          _ix := 0;
+          _len := length (_cols);
+          _rpk_col_names := '';
+          _pk_names := vector ();
+          while (_ix < _len)
+	    {
+              _col := aref (_cols, _ix);
+              _col_name := aref (_col, 0);
+
+	      _rpk_col_names := concat (
+                  _rpk_col_names, quote_dotted (_dsn, _col_name));
+              _pk_names := vector_concat (_pk_names, vector (_col_name));
+              if (_ix + 1 < _len)
+	        _rpk_col_names := concat(_rpk_col_names, ', ');
+              _ix := _ix + 1;
+	    }
+          _stat := '00000';
+          _msg := '';
+          _cols := REPL_ALL_COLS (_tbl);
+          _ix := 0;
+	  _len := length(_cols);
+	  _stmt := sprintf('create table %s (',
+              quote_dotted (_dsn, name_part (_tbl, 2)));
+	  while (_ix < _len)
+	    {
+	      _col := aref(_cols, _ix);
+	      _col_name := aref(_col, 0);
+
+	      _stmt := concat (_stmt,
+                  quote_dotted (_dsn, _col_name),
+                  ' ',
+                  REPL_REMOTE_COLTYPE (dbms_name, _col, _remote_types));
+              if (position (_col_name, _pk_names) <> 0)
+                _stmt := concat (_stmt, ' not null');
+
+	      if (_ix + 1 < _len)
+		_stmt:= concat(_stmt, ', ');
+	      _ix := _ix + 1;
+	    }
+	  _stmt := concat(_stmt, sprintf(', primary key(%s))', _rpk_col_names));
+          if (_dsn <> '')
+            {
+              --dbg_printf ('_stmt: [%s]', _stmt);
+	      _stat := '00000';
+              _msg := '';
+              _rc := rexecute (_dsn, _stmt, _stat, _msg);
+	      if (_rc = 0)
+                {
+	          _stat := '00000';
+                  _msg := '';
+                  _rc := exec ('DB.DBA.vd_int_attach_table (?, ?, ?, NULL, NULL, NULL, 0, 1)',
+                      _stat, _msg,
+                      vector (_dsn, name_part (_tbl, 2), _attached_full_name));
+	          --dbg_printf ('attach result: [%s:%s]', _stat, _msg);
+                }
+	      if (_rc <> 0)
+	        {
+		  if (_stat = 'S0001')
+		    {
+		      if (exists (select 1 from SYS_SNAPSHOT
+                                  where SN_NAME = _attached_full_name))
+			_msg := concat ('Snapshot already defined for ', _dsn);
+		    }
+	          http (sprintf ('<tr><td>%V</td><td>%V</td><td>%V</td></tr>', _tbl, _stat, _msg), _ses_res);
+	          goto next_tbl;
+	        }
+	      if (not exists (select 1 from sys_keys
+                      where name_part (key_table, 2) = concat ('RLOG_', name_part (_tbl, 2))
+                      and name_part (key_table, 1) = name_part (_tbl, 1)
+                      and name_part (key_table, 0) = name_part (_tbl, 0)))
+	        {
+                  _stmt := sprintf ('create snapshot log for %s', _fq_tbl);
+	          _stat := '00000'; _msg := '';
+                  _rc := exec (_stmt, _stat, _msg);
+                  if (_rc <> 0)
+	            {
+	              http (sprintf ('<tr><td>%V</td><td>%V</td><td>%V</td></tr>',
+                                _tbl, _stat, _msg),
+                          _ses_res);
+		      goto next_tbl;
+	            }
+                  --dbg_printf ('create snapshot log ok');
+                }
+
+              _stmt := sprintf ('create snapshot "%I"."%I"."%I" from %s',
+		  _attached_qual, _attached_owner, _attached_name, _fq_tbl);
+	      _stat := '00000';
+              _msg := '';
+              if (0 <> exec (_stmt, _stat, _msg))
+		{
+		  http (sprintf ('<tr><td>%V</td><td>%V</td><td>%V</td></tr>',
+                            _tbl, _stat, _msg),
+                      _ses_res);
+		  goto next_tbl;
+	        }
+	      http (sprintf ('<tr><td>%s</td><td>%s</td><td>%s</td></tr>',
+                        _tbl, 'OK', 'Table created successfully'),
+                  _ses_res);
+            }
+next_tbl:
+          ;
+        }
+      _tbl := '';
+      goto ss_st;
+    }
+  if ('' <> get_keyword ('SNP_', params, ''))
+    {
+      if (_dsn = '')
+	{
+	  http ('DSN must be supplied');
+	  return;
+	}
+      goto ss_st1;
+    }
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Snapshot replication wizard - create replication">
+    <script language="javascript" src="link_tables.js"></script>
+    <title>Snapshot Creation</title>
+  </head>
+<?vsp adm_page_header('Create Snapshot Replication', NULL); ?>
+
+<form name="link_form" action="snp_create.vsp" method=POST>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+    <tr>
+      <td CLASS="genlistheadt">Selected Table(s)</td>
+    </tr>
+      <?vsp
+        declare _tbnum integer;
+
+        _tbnum := 0;
+        if ('' <> get_keyword ('crsnp', params, ''))
+          {
+	    _idx := 0;
+	    while (_tblname := adm_next_checkbox ('TB_', params, _idx))
+	      {
+	        _tbnum := _tbnum + 1;
+	        http (sprintf ('<tr><td CLASS="gendata">%s</td></tr>\n', _tblname));
+	      }
+          }
+        if ('' <> get_keyword ('crsnp1', params, ''))
+          {
+	    _idx := 0;
+	    while (_tblname := adm_next_keyword ('tbls', params, _idx))
+	      {
+	        _tbnum := _tbnum + 1;
+	        http (sprintf ('<tr><td CLASS="gendata">%s</td></tr>\n', _tblname));
+	      }
+          }
+      ?>
+    </table>
+      <?vsp
+        if (_tbnum < 1)
+          {
+	    http ('</form><p><strong>Error: Source table(s) has not been specified</strong></p></TABLE></body></html>');
+	    return;
+          }
+      ?>
+      <p>Select Target Data Source for Replication.</p>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="5">Connected Data Sources</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<tr>
+       <td>
+	<select name="dsns1" Size=5 onChange="javascript:document.link_form.submit ();">
+	  <?vsp for select DS_DSN from SYS_DATA_SOURCE do { ?>
+	    <option <?= select_if (_dsn1, DS_DSN) ?>><?=DS_DSN?></option>
+	  <?vsp  } ?>
+	</select>
+	</td>
+	<td>
+<?vsp
+         if (_dsn <> '' and _dsn = get_keyword ('dsns1', params, ''))
+	   {
+	     declare _n_uid, _n_pwd varchar;
+             _n_uid := ''; _n_pwd := '';
+	     whenever not found goto nfd;
+	     select DS_UID, pwd_magic_calc (DS_UID, DS_PWD, 1) into _n_uid, _n_pwd from SYS_DATA_SOURCE where DS_DSN = _dsn;
+nfd:
+?>
+	   <table border=0 class="genlist">
+	     <tr>
+	       <td CLASS="genlisthead">DSN</td>
+	       <td class="gendata"><?=_dsn?></td>
+	     </tr>
+	     <tr>
+	       <td CLASS="genlisthead">User name</td>
+	       <td><input type=text name=n_uid value="<?=_n_uid?>"></td>
+	     </tr>
+	     <tr>
+	       <td CLASS="genlisthead">Password</td>
+	       <td><input type=password name=n_pwd value="<?=_n_pwd?>"></td>
+	     </tr>
+	   </table>
+
+<?vsp
+	   }
+?>
+	</td>
+      </tr>
+      <tr>
+        <td><input type=submit name="SNP_" value="Create Snapshot"></td>
+        <td><input type=submit name="dsn_save" value="Save"></td>
+      </tr>
+      </table>
+<BR></BR>
+<P>If the required target Data Source is not connected, you must connect before selecting it as a target...</P>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="5">Connect to Data Source</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+        <tr>
+	  <td valign="top">
+            <select name="dsns" onChange="javascript:dsns_chg(this);" Size="5">
+               <?vsp adm_lt_dsn_options(_dsn); ?>
+            </select>
+	  </td>
+	  <td>
+            <table>
+              <tr>
+	        <td CLASS="genlisthead">Data Source</td>
+	        <td><input type="text" name="dsn"></td>
+	      </tr>
+              <tr>
+	        <td CLASS="genlisthead">Username</td>
+	        <td><input type="text" name="uid"></td>
+	      </tr>
+              <tr>
+	        <td CLASS="genlisthead">Password</td>
+	        <td><input type="password" name="pwd"></td>
+	      </tr>
+              <tr>
+	        <td colspan="2" align="right"><input type="submit" name="clear" value="Clear">
+	        	<input type="submit" name="adddsn" value="Add"></td>
+	      </tr>
+	    </table>
+	  </td>
+	</tr>
+      </table>
+      <input type="hidden" name="tbl" value="<?= _tbl ?>">
+      <input type="hidden" name="step" value="">
+      <?vsp
+	if ('' <> get_keyword ('crsnp', params, ''))
+	  {
+	    _idx := 0;
+	    while (_tblname := adm_next_checkbox ('TB_', params, _idx))
+	      {
+		http (sprintf ('<input type="hidden" name="tbls" value="%s">\n', _tblname));
+	      }
+	    http ('<input type="hidden" name="crsnp1" value="crsnp">\n');
+	  }
+	if ('' <> get_keyword ('crsnp1', params, ''))
+	  {
+	    _idx := 0;
+	    while (_tblname := adm_next_keyword ('tbls', params, _idx))
+	      {
+		http (sprintf ('<input type="hidden" name="tbls" value="%s">\n', _tblname));
+	      }
+	    http ('<input type="hidden" name="crsnp1" value="crsnp">\n');
+	  }
+      ?>
+    </form>
+    <?vsp goto end_st; ?>
+    <?vsp ss_st: ?>
+    <html>
+      <head>
+        <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+        <meta name="AUTHOR" content="OpenLink Software">
+        <meta name="DESCRIPTION" content="Snapshot replication wizard - create replication">
+        <title>Snapshot creation from <?= _tbl ?> table</title>
+      </head>
+<?vsp adm_page_header('Snapshot Replication Creation Status', 'snapshotreplication'); ?>
+<?include ../adm_js_check.vsp ?>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+        <tr>
+	  <td CLASS="genlistheadt">Table Name</td>
+	  <td CLASS="genlistheadt">Status</td>
+	  <td CLASS="genlistheadt">Status Description</td>
+	</tr>
+<?vsp http (string_output_string (_ses_res)); ?>
+	</table>
+        <br>
+          <p>From the main menu choose &quot;Snapshot Replication&quot; to Remove or change scheduled update</p>
+        <form>
+          <input type="Button" value="Snapshot Replications" name="Snapshot replications" onclick="location.replace ('admin_repl_main.vsp')">
+	  <!--script language="JavaScript">
+	     setTimeout ("location.replace ('admin_repl_main.vsp')", 20000)
+	  </script-->
+        </form>
+
+        <?vsp goto end_st; ?>
+        <?vsp ss_st1: ?>
+        <html>
+	  <head>
+	    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+	    <meta name="AUTHOR" content="OpenLink Software">
+	    <meta name="DESCRIPTION" content="Snapshot replication wizard - create replication">
+            <title>Snapshot creation from <?= _tbl ?> table</title>
+	  </head>
+<?vsp adm_page_header('Snapshot Replication Confirmation ', NULL); ?>
+
+             <form method=POST action="snp_create.vsp">
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+
+                 <?vsp
+                   if ('' <> get_keyword ('crsnp1', params, ''))
+                     {
+		 ?>
+	               <tr>
+	                 <td colspan=3 class="genlistheadt">Local Table</td>
+	                 <td colspan=3 class="genlistheadt">Attach the generated remote destination table as</td>
+		       </tr>
+	         <?vsp
+ --                      declare _vis integer;
+                       _idx := 0;
+--                       _vis := 0;
+                       while (_tblname := adm_next_keyword ('tbls', params, _idx))
+                         {
+			    ?>
+			     <tr>
+			    <?vsp
+			   declare _attached_name varchar;
+                           _attached_name := att_local_name (_dsn, name_part (_tblname, 2));
+--			   if (_vis = 0)
+--			     {
+--			       _vis := 1;
+			    ?>
+			       <!--td CLASS="genlisthead">Local Tables</td-->
+			    <?vsp
+--			     }
+--			   else
+--			     {
+			    ?>
+			       <!--td CLASS="genlisthead">&nbsp;</td-->
+			    <?vsp
+--			     }
+			   http (sprintf ('<td colspan=3 CLASS="gendata">%V</td>', _tblname));
+			   http (sprintf ('<td><input type="text" name="LTBQ_%s" value="%s"></td>', _tblname, name_part (_attached_name, 0)));
+			   http (sprintf ('<td><input type="text" name="LTBO_%s" value="%s"></td>', _tblname, name_part (_attached_name, 1)));
+			   http (sprintf ('<td><input type="text" name="LTBN_%s" value="%s"></td></tr>', _tblname, name_part (_attached_name, 2)));
+                         }
+                     }
+                   else
+		     {
+		       declare _attached_name varchar;
+                       _attached_name := att_local_name (_dsn, name_part (_tbl, 2));
+                       http (sprintf ('<tr><td CLASS="genlisthead">Local table</td><td CLASS="gendata">%s</td>', _tbl));
+		       http (sprintf ('<td ><input type="text" name="LTBQ" value="%s"></td>', _tbl, name_part (_attached_name, 0)));
+		       http (sprintf ('<td ><input type="text" name="LTBO" value="%s"></td>', _tbl, name_part (_attached_name, 1)));
+		       http (sprintf ('<td ><input type="text" name="LTBN" value="%s"></td></tr>', _tblname, name_part (_attached_name, 2)));
+		     }
+                 ?>
+
+		 <tr><td>&nbsp;</td></tr>
+                 <tr>
+		   <td colspan="2" CLASS="genlisthead">Target</td>
+		   <td colspan="4" CLASS="gendata"><?=_dsn?></td>
+		 </tr>
+                 <tr>
+		   <td colspan="6" align="right">
+				<input type="submit" name="SNP" value="Create">
+				<input type="submit" name="Cancel" value="Cancel"></td>
+		 </tr>
+	       </table>
+               <input type="hidden" name="tbl" value="<?= _tbl ?>">
+               <input type="hidden" name="dsn" value="<?= _dsn ?>">
+               <?vsp
+                 if ('' <> get_keyword ('crsnp1', params, ''))
+                   {
+                     _idx := 0;
+                     while (_tblname := adm_next_keyword ('tbls', params, _idx))
+                       {
+                         http (sprintf ('<input type="hidden" name="tbls" value="%s">\n', _tblname));
+                       }
+                     http ('<input type="hidden" name="crsnp1" value="crsnp">\n');
+                   }
+               ?>
+             </form>
+             <?vsp end_st: ?>
+<?vsp adm_page_footer(); ?>
+  </body>
+</html>

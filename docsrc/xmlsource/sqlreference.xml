@@ -1,0 +1,4076 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="sqlreference.xml" id="sqlreference">
+	<title>SQL Reference</title>
+	<bridgehead>SQL Reference</bridgehead>
+	<abstract>
+<para>SQL Reference.</para>
+</abstract>
+	<!-- ======================================== -->
+	<sect1 id="sqlrefDATATYPES">
+		<title>Datatypes</title>
+		<variablelist>
+			<varlistentry>
+				<term>CHARACTER</term>
+				<listitem>
+					<para>CHARACTER</para>
+				</listitem>
+				<listitem>
+					<para>VARCHAR</para>
+				</listitem>
+				<listitem>
+					<para>VARCHAR&apos;(&apos;INTNUM&apos;)&apos;</para>
+				</listitem>
+				<listitem>
+					<para>NVARCHAR</para>
+				</listitem>
+				<listitem>
+					<para>NVARCHAR&apos;(&apos;INTNUM&apos;)&apos;</para>
+				</listitem>
+				<listitem>
+					<para>CHAR&apos;(&apos;INTNUM&apos;)&apos;</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>NUMERIC</term>
+				<listitem>
+					<para>NUMERIC</para>
+				</listitem>
+				<listitem>
+					<para>NUMERIC&apos;(&apos;INTNUM&apos;)&apos;</para>
+				</listitem>
+				<listitem>
+					<para>NUMERIC&apos;(&apos;INTNUM&apos;,&apos;INTNUM&apos;)&apos;</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>DECIMAL</term>
+				<listitem>
+					<para>DECIMAL</para>
+				</listitem>
+				<listitem>
+					<para>DECIMAL&apos;(&apos;INTNUM&apos;)&apos;</para>
+				</listitem>
+				<listitem>
+					<para>DECIMAL&apos;(&apos;INTNUM&apos;,&apos;INTNUM&apos;)&apos;</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>INTEGER</term>
+				<listitem>
+					<para>INT</para>
+				</listitem>
+				<listitem>
+					<para>INTEGER</para>
+				</listitem>
+				<listitem>
+					<para>SMALLINT</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>FLOAT</term>
+				<listitem>
+					<para>FLOAT</para>
+				</listitem>
+				<listitem>
+					<para>FLOAT&apos;(&apos;INTNUM&apos;)&apos;</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>REAL</term>
+				<listitem>
+					<para>REAL</para>
+				</listitem>
+				<listitem>
+					<para>DOUBLE PRECISION</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>LONG VARCHAR</term>
+				<listitem>
+					<para>BLOB data</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>VARBINARY [( precision )]</term>
+				<listitem>
+					<para>Binary data</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>LONG VARBINARY</term>
+				<listitem>
+					<para>Binary BLOB data</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>TIMESTAMP</term>
+				<listitem>
+					<para>TIMESTAMP</para>
+				</listitem>
+				<listitem>
+					<para>DATETIME</para>
+				</listitem>
+				<listitem>
+					<para>TIME</para>
+				</listitem>
+				<listitem>
+					<para>DATE</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>&lt;UDT&gt;</term>
+				<listitem>
+					<para>User Defined Type with varbinary-like size properties.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>LONG &lt;UDT&gt;</term>
+				<listitem>
+					<para>User Defined Type with LONG varbinary-like size properties.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>LONG XML</term>
+				<listitem>
+					<para>LONG XML BLOB-like data type.</para>
+				</listitem>
+			</varlistentry>
+		</variablelist>
+
+		<note><title>Note:</title>
+		  <para>User Defined Types can be created from native or external types,
+		composites or classes from any hosted language such as Java or .Net.  Any
+		User Defined Type can be used to define a column in a
+		CREATE TABLE statement.</para></note>
+
+ 		<sect2 id="dt_dateliterals">
+ 			<title>Date Literals</title>
+ 			<para>
+ 			Virtuoso does not support date literals or the
+ 			DATE reserved keyword.  Literal dates should be
+ 			enclosed in a conversion function such as
+ 			<function>stringdate()</function>, as in this example:
+ 			</para>
+ 			<programlisting>
+select * from demo.demo.orders o
+  where o.orderdate between stringdate('1994-01-01') And stringdate('1997-12-31')
+</programlisting>
+      <para>Alternatively type casts can be used to explicitly instruct Virtuoso
+      to assume a string as a date, see below.</para>
+ 		</sect2>
+		<sect2 id="dtcasting">
+			<title>Casting</title>
+			<para>
+Blob types can be cast to varchars.  This will produce a string of
+up to 16 MB in length and an error for longer blobs.
+	</para>
+			<para>
+Nothing can be cast to a blob type.  Blobs only come from selecting
+blob columns and are created by assigning
+values to such columns.
+	</para>
+			<para>
+Converting non-integer values to integers rounds towards 0.
+	</para>
+			<para>
+Any data type can be converted to binary with the VARBINARY target data
+type.  The result may or may not be meaningful.  Specifically datetime can be
+converted to binary and back.
+	</para>
+			<programlisting>
+cast_expression :
+		CAST &apos;(&apos; scalar_exp AS data_type [COLLATE collation_name ] &apos;)&apos;
+
+collation_name :
+	identifier
+	| owner &apos;.&apos; identifier
+	| qualifier &apos;.&apos; owner &apos;.&apos; identifier
+</programlisting>
+			<para>
+The CAST expression converts the type of the scalar_exp into the data_type,
+if possible.  If the conversion is not meaningful, as from a float to a date,
+an error is signalled.
+	</para>
+			<para>
+CAST is the recommended way of converting between data types,
+including any conversion between strings, different number types and datetime types.
+	</para>
+			<example>
+				<title>Examples:</title>
+				<programlisting>
+select cast (&apos;2000-1-3&apos; as date);
+
+select cast (cast (&apos;2000-1-3&apos; as date) as varchar);
+	= 2000-01-03 00-00-00 000000
+</programlisting>
+			</example>
+		</sect2>
+    <sect2 id="sqldatemanus"><title>Time &amp; Date Manipulation</title>
+    <para>The SQL92 standard functions for time and date queries are available.
+    These are mapped to Virtuoso internal functions as follows:</para>
+    <simplelist>
+      <member><emphasis>CURRENT_DATE</emphasis> - <link linkend="fn_curdate"><function>curdate()</function></link></member>
+      <member><emphasis>CURRENT_TIME</emphasis> - <link linkend="fn_curdate"><function>curtime()</function></link></member>
+      <member><emphasis>CURRENT_TIMESTAMP</emphasis> - <link linkend="fn_curdate"><function>curdatetime()</function></link></member>
+    </simplelist>
+    <para>The results of the above functions can also be obtained using the
+    <link linkend="fn_now"><function>now()</function></link> function and
+    casting to the appropriate target type.</para>
+    <para>Dates and times should be input or compared as literals in a standard
+    format.  The following table describes the proper methods available:</para>
+
+      <table><title>Time &amp; date syntax</title>
+        <tgroup cols="2">
+	      <thead><row>
+          <entry>Datatype</entry>
+          <entry>ODBC Syntax</entry>
+          <entry>SQL92 Casting</entry>
+        </row></thead>
+	      <tbody>
+          <row>
+            <entry>Date</entry>
+            <entry>{d 'yyyy-mm-dd'}</entry>
+            <entry>cast('yyyy-mm-dd' as date)</entry>
+          </row>
+          <row>
+            <entry>Time</entry>
+            <entry>{t 'hh:mm:ss'}</entry>
+            <entry>cast('hh:mm:ss' as time)</entry>
+          </row>
+          <row>
+            <entry>Datetime/timestamp</entry>
+            <entry>{ts 'yyyy-mm-dd hh:mm:ss[.f...]'}</entry>
+            <entry>cast('yyyy-mm-dd hh:mm:ss[.f...]' as datetime)</entry>
+          </row>
+        </tbody>
+        </tgroup></table>
+
+    <example id="ex_comparingdates"><title>Example: comparing dates</title>
+    <programlisting>
+select datecol from table
+  where datecol &gt; cast('1900-01-01' as date)
+    and datecol &lt; cast(now() as date);
+</programlisting>
+    <para>now() is cast for explicit compatibility although not required.</para>
+    </example>
+    </sect2>
+		<sect2 id="deccolexp">
+			<title>Declaring Collations of Expressions</title>
+			<para>
+A collation can be declared with CAST for string expressions.  Suppose
+insensitive_ascii were a collation name specifying case insensitive comparison
+of ASCII strings, the predicate:
+	</para>
+			<programlisting>
+CAST &apos;foo&apos; as varchar collate insensitive_ascii) = CAST &apos;FOO as varchar collate insensitive_ascii)
+</programlisting>
+			<para>
+would be true.
+	</para>
+			<para>
+This will alter the semantic of string comparison and can be used
+to define a collation where the collation would otherwise be default,
+for instance when comparing results of expressions or constants.  This can
+also alter the default collation implied by the collation declaration in
+column options in CREATE TABLE.
+	</para>
+		</sect2>
+	</sect1>
+
+  &udt;
+
+<sect1 id="sqlrefxmldatatype"><title>XML Column Type</title>
+
+  <para>Virtuoso allows for native XML storage in a database table column using
+  the <computeroutput>LONG XML</computeroutput> type.  This data type is
+  a variation of <computeroutput>LONG VARCHAR</computeroutput> that can have
+  plain text or XML entities, persistent or non-persistent values, but will always
+  return an XML entity when selected.  </para>
+
+  <para>Since ODBC does not support an XML entity type this column will appear
+  as a LONG VARCHAR when selected from ODBC based clients.</para>
+
+  <example id="ex_xmlcolumntype"><title>Using LONG XML Columns</title>
+
+  <programlisting><![CDATA[
+CREATE TABLE xml_col_test (
+  id INTEGER,
+  txt VARCHAR,
+  xmltxt LONG XML
+  )
+  ;
+
+  INSERT INTO xml_col_test (id, txt, xmltxt)
+    VALUES (1, 'test', '<xml><test>test</test><test>test2</test></xml>');
+
+  INSERT INTO xml_col_test (id, txt, xmltxt)
+    VALUES (2, 'test', xml_tree_doc('<xml><test>test</test><test>test2</test></xml>'));
+
+  select * from xml_col_test;
+id          txt               xmltxt
+INTEGER     VARCHAR           LONG VARCHAR
+____________________________________________________________________________
+
+1           test              <xml><test>test</test><test>test2</test></xml>
+2           test              <xml><test>test</test><test>test2</test></xml>
+]]></programlisting>
+</example>
+
+  <tip><title>See Also:</title>
+    <para>The <link linkend="fn_xml_tree_doc"><function>xml_tree_doc()</function></link>
+	also returns an XML entity and describes other functions that work with it.</para></tip>
+
+</sect1>
+
+	<!-- ======================================== -->
+<sect1 id="catidentifiers"><title>Identifier Case &amp; Quoting</title>
+
+  <para>Virtuoso can operate with different identifier case conventions.
+The CaseMode setting in the virtuoso.ini file controls this, see the
+<link linkend="VIRTINI">virtuoso.ini configuration</link> section of
+the documentation.</para>
+  <para>The default files supplied with Virtuoso specify a CaseMode of 2,
+which is a case insensitive mode that preserves the declaration case of identifiers.
+</para>
+			<para>
+A CaseMode of 1 specifies the upper case mode, which is most
+commonly used in SQL databases, e.g. Oracle.
+In the upper case mode, all unquoted identifiers are converted to upper
+case by the SQL parser. If identifiers are not quoted, the case in which
+they are entered is irrelevant.
+</para>
+			<para>
+The identifier quote character is the double quote (&quot;).  Quoted
+identifiers are processed in the case they are written in and are thus
+case sensitive.
+</para>
+			<para>
+SQL reserved words are case insensitive in all case modes.
+</para>
+			<para>
+If CaseMode is 0 or absent, identifiers will be treated as case sensitive
+in all situations, whether quoted or not.
+</para>
+			<para>
+If an identifier&apos;s name is equal to a SQL reserved word, e.g. TABLE,
+it must be quoted (&quot;TABLE&quot;) in order to be used as an identifier.
+</para>
+			<para>
+If an identifier contains non-alphanumeric characters, e.g. space, &apos;-&apos; etc. it
+must be quoted regardless of CaseMode.
+</para>
+			<para>
+Although CaseMode can be changed at any time it should only be set at database
+creation.  Changing the CaseMode may result in view or procedure code becoming invalid
+if it relies on specific case conventions.
+</para>
+		</sect1>
+
+<sect1 id="wideidentifiers"><title>Wide Character Identifiers</title>
+
+<para>All Virtuoso schema columns are confined to 8-bit character fields.  This will
+remain for backwards compatibility and performance reasons, however, there
+are two options available for support of non-ASCII identifier names as follows:</para>
+
+<itemizedlist>
+  <listitem><para>Maintain an 8-bit system.  Pass all 8-bit codes that enter the
+  system and read them back according to the current database character set.
+  This has the convenience of a 1-to-1 correspondence between the character
+  lengths of an identifier and their representation, so it's a subject to
+  like single character wildcards etc.</para>
+  <para>This works well only for languages that do have single bit encodings
+  (like western-european languages and cyrillic).  But this does not work at
+  all for the far-east languages.  It also depends on the database character
+  set and does not allow identifiers to be composed from multiple character
+  sets.</para></listitem>
+
+  <listitem><para>Store all identifiers as UTF-8 encoded unicode strings.  This
+  would allow seamless storage and retrieval of ANY character within the unicode
+  character space.  This, however, has the disadvantage of the varying character
+  length representation which should be taken into account when comparing identifier
+  names with LIKE.</para></listitem>
+</itemizedlist>
+
+<para>Virtuoso supports the above cases which are switchable through the
+"SQL_UTF8_EXECS" = 1/0 flag in the [Client] section of the Virtuoso INI file.
+Setting SQL_UTF8_EXECS = 1 enables UTF-8 identifier storage and retrieval,
+whereas setting SQL_UTF8_EXECS = 0 disables it.  The default setting is 0: disabled
+for backwards compatible option.</para>
+
+<note><title>Note:</title>
+<para>Once a non-ASCII identifier gets stored using a particular setting for
+the "SQL_UTF8_EXECS" flag and the flag is subsequently changed this will
+make the stored identifiers unreadable by normal means (but can be read
+by special means).</para></note>
+
+<para>When an SQL statement comes into the driver(s) it is expanded into unicode (using
+either the current database character set if it is a narrow string like in
+SQLExecDirect, or taking it verbatim as in SQLExecDirectW).  The unicode
+string is then encoded into UTF-8 passed to the SQL parser.  The SQL parser knows
+that it will receive UTF-8 so it takes that into account when parsing the
+national character literals (N'&lt;literal&gt;') and the "normal" literals ('&lt;literal&gt;').
+It will however return identifier names in UTF-8, these will then get stored into
+the DBMS system tables or compared against them depending on the type of statement.</para>
+
+<para>All returned identifiers will be translated from UTF-8 to Unicode when
+returned to the client, so the client should never actually see the
+UTF-8 encoding of the identifiers.</para>
+
+<para>Representing a string in UTF-8 will not change the identifier parsing rules
+or the SQL applications logic since the SQL special characters - like dot,
+quote, space etc - are ASCII symbols and they will get represented as a
+single byte sequence in UTF-8.</para>
+
+<para>The upper/lower functions should be used with care when applied to identifiers:
+they will get narrow strings in UTF-8, so applying an upper/lower to them may
+cause damage to the UTF-8 encoding.  That is why the identifiers should be
+converted explicitly to wide strings using the charset_recode function,
+changed to upper or lower case and then translated back to UTF-8 using the
+charset_recode function again.</para>
+
+<para>Using single character LIKE
+patterns against identifiers stored as narrow strings in system tables will generally not work, as a single character
+may be represented with up to 6 bytes in UTF-8.  An exception to that is when
+using single character pattern to match an ASCII character.</para>
+
+<sect2 id="utf8notes4odbc"><title>UTF-8 Implementation Notes For ODBC</title>
+
+<para>All wide functions which do return an identifier, like SQLDescribeColW and
+friends, will return the correct wide literal.  For their narrow counterparts,
+such as SQLDescribeCol, the UTF-8 string will first be converted to a wide
+string and then to a narrow string using the current database character set.
+However, an extension to the ODBC standard has been implemented instructing
+all result set returning meta-data functions, such as SQLTables and SQLTablesW,
+to return SQL_NVARCHAR instead of SQL_VARCHAR columns.  This is not a problem
+for most applications since all they do is to map the result to
+SQL_C_CHAR on retrieval which will convert the wide string to the appropriate
+narrow string inside the driver using the current database character set.
+This will cause problems with narrow applications like MS Query, trying to get
+identifiers not representable in the current narrow character set, because
+all they will get is the "untranslatable char" mark (currently a question mark).</para>
+</sect2>
+
+<sect2 id="utf8notes4jdbc"><title>UTF-8 Implementation Notes In JDBC</title>
+
+<para>Since JAVA is all unicode there are no unavoidable deviations from the JDBC
+standard.  However when printing the Java strings to the screen or a file
+or getting their byte representation, the usual JAVA conversion rules apply.
+The types of the meta data result set columns in JDBC are somewhat debatable,
+but since they are usually retrieved with Resultset.getString() the Virtuoso
+JDBC driver will return the raw wide string instead of trying to make it
+VARCHAR before returning it to the application.</para>
+</sect2>
+</sect1>
+
+	<!-- ======================================== -->
+	<sect1 id="QUALIFIEDNAMES">
+		<title>Qualified Names</title>
+		<sect2 id="qual_owners">
+			<title>Qualifiers and Owners</title>
+			<para>
+Virtuoso supports multiple namespaces for tables and procedures.  A table
+or procedure is uniquely identified by a three part name consisting of
+qualifier, owner and name separated by dots.
+</para>
+			<para>
+Each connection has a current qualifier which is used as the default
+qualifier for if a name does not specify a qualifier.  The owner can
+be omitted from a name if the qualifier and name uniquely identify the
+object, e.g.  DB..SYS_KEYS.
+</para>
+			<para>
+Initially, all system objects have the qualifier DB and owner DBA.
+</para>
+			<para>
+The default current qualifier of all connections is DB unless otherwise
+specified using db.dba.user_set_qualifier.
+</para>
+			<para>
+A user can be assigned a default qualifier set as current qualifier upon
+login.  This is done with the stored procedure db.dba.user_set_qualifier.
+</para>
+			<screen>
+user_set_qualifier  (in user varchar, in qualifier varchar)
+</screen>
+		</sect2>
+		<sect2 id="defaultqualifiers">
+			<title>Default Qualifiers</title>
+			<para>
+The default qualifier of the user is set to be the qualifier.  The names
+are strings and thus case sensitive.
+</para>
+			<para>Example:</para>
+			<programlisting>
+db..user_set_qualifier (&apos;U1&apos;, &apos;U1DATA&apos;);
+</programlisting>
+		</sect2>
+		<sect2 id="userstmtid">
+			<title>USE Statement, USE identifier</title>
+			<para>
+This sets the default qualifier for the connection in question.  The
+identifier cannot be an expression. The identifier
+is subject to whatever case conversions may be in effect.
+</para>
+			<tip>
+				<title>See Also:</title>
+				<para><link linkend="catidentifiers">CaseMode Configuration parameter</link>.</para>
+			</tip>
+			<para>
+A quoted identifier will always pass in the
+case it is entered. An unquoted identifier will be converted to upper
+case if CaseMode so specifies.
+</para>
+		</sect2>
+	</sect1>
+
+		<sect1 id="litsbraceescs">
+			<title>Literals, Brace Escapes</title>
+			<sect2 id="strings">
+				<title>Strings</title>
+				<para>
+String literals are delimited with single quotes.  A double single
+quote is an escape notation for a single quote character inside a
+string literal.  Additionally, standard C language escapes are supported.
+Support of C escapes can be turned off for compatibility with other SQL databases
+by using the SQL_NO_CHAR_C_ESCAPE option in the configuration file or as an
+ODBC connection option.
+</para>
+				<screen>
+Literal			meaning
+&apos;&apos;			&lt;empty&gt;
+&apos;&apos;&apos;&apos;			&apos;
+&apos;&apos;&apos;&apos;&apos;&apos;			&apos;&apos;
+&apos;\t\r\n\\&apos;		tab, carriage return, newline, backslash
+&apos;\012&apos;			Character 012 octal, i.e. newline
+</screen>
+			</sect2>
+			<sect2 id="numbers">
+				<title>Numbers</title>
+				<para>
+An integer constant consist of an optional minus sign followed by
+decimal digits.  Integer literals are of the C type long, 32 bit.
+</para>
+				<para>
+Numeric literals with a decimal point literal are internally of the DECIMAL SQL type, a variable
+length decimal floating point type.
+The Following are examples of decimal literals:
+</para>
+				<screen>
+123.456
+-16.0
+</screen>
+				<para>
+Numeric literals which specify an exponent, e.g. 1.2e11 or
+2e-3 are read as C doubles, (64 bit IEEE binary floating point). This
+is potentially less precise than the DECIMAL SQL type.
+</para>
+				<para>
+Integer literals outside of the 32-bit range are interpreted as DECIMAL.
+</para>
+			</sect2>
+			<sect2 id="odbcbraceesc">
+				<title>ODBC Brace Escapes</title>
+				<para>
+The Virtuoso SQL parser supports the following ODBC brace escape notations:
+</para>
+				<screen>
+{fn function (argument, ..) }		fm (arguments .)
+call procedure a1, ... }
+
+{d &apos;yyyy.mm.dd&apos;}
+
+{t &apos;hh:mm.ss&apos; }
+
+{ts &apos;yyyy.mm.dd hh:mm.s fraction&apos; }
+
+{oj  }		-- outer join
+</screen>
+			</sect2>
+
+  <sect2 id="sqlrefhexliterals"><title>Hexadecimal Literals</title>
+
+   <para>Hexadecimal values can be specified literally in two ways, prefixing the
+   plain value with '0x' or enclosed with single quotes prefixed with 'X'.  The
+   case is not important.  Hex characters should always be pairs, representing
+   a single byte, and should be at least on pair.  Here are some examples:</para>
+
+<programlisting>
+X'beef'   - valid
+0xbeef    - valid
+
+X'abeef'  - not valid
+X'0abeef' - valid
+X''   - not valid
+</programlisting>
+
+<para><computeroutput>X'&lt;value&gt;'</computeroutput> is equivalent
+to <computeroutput>0x&lt;value&gt;</computeroutput></para>
+
+  </sect2>
+
+  <sect2 id="sqlrefbinliterals"><title>Binary Literals</title>
+
+  <para>Binary strings can be specified as literals prefixed with 'B' and
+  enclosed with single quotes.  The string should not be empty and should
+  contain only 1's or 0's.  Binary strings are read from the end to begining
+  forming bytes on each 8-th bit:</para>
+
+<programlisting>
+B'1'    = 0x01
+B'1111'   = 0x0F
+B'111111111'  = 0x01FF
+B'100000001'  = 0x0101
+B'', X'' and 0x return binary literals.
+</programlisting>
+
+  </sect2>
+
+    </sect1>
+
+
+	<sect1 id="CREATETABLE">
+		<title>CREATE TABLE Statement</title>
+		<sect2 id="syntax">
+			<title>Syntax</title>
+<programlisting><![CDATA[
+    base_table_def: CREATE TABLE new_table_name '(' base_table_element_commalist ')'
+                  | CREATE TABLE new_table_name as query_exp opt_with_data
+
+base_table_element_commalist: base_table_element
+                           | base_table_element_commalist ',' base_table_element
+
+base_table_element: column_def
+                  | table_constraint_def
+
+column_def: column column_data_type column_def_opt_list
+
+opt_referential_triggered_action: /* empty */
+                                | referential_rule
+                                | referential_rule referential_rule
+
+referential_rule: ON UPDATE referential_action
+                | delete_referential_rule
+
+delete_referential_rule: ON DELETE_L referential_action
+
+opt_on_delete_referential_rule: /* empty */
+                              | delete_referential_rule
+
+referential_action: CASCADE
+                  | SET NULLX
+                  | SET DEFAULT
+
+references: REFERENCES q_table_name opt_column_commalist opt_referential_triggered_action
+
+column_def_opt_list: /* empty */
+                   | column_def_opt_list column_def_opt
+
+identity_opt: START_L WITH signed_literal
+            | INCREMENT_L BY INTNUM
+
+identity_opt_list: identity_opt
+                 | identity_opt_list ',' identity_opt
+
+column_def_opt: NOT NULLX
+              | NULLX
+              | IDENTITY
+              | IDENTITY '(' identity_opt_list ')'
+              | PRIMARY KEY
+              | DEFAULT signed_literal
+              | COLLATE q_table_name
+              | references
+              | IDENTIFIED BY column
+              | CHECK '(' search_condition ')'
+	      | WITH SCHEMA column_xml_schema_def
+              | UNIQUE
+
+table_constraint_def: UNDER q_table_name
+                    | opt_constraint_name PRIMARY KEY '(' index_column_commalist ')' opt_index_option_list
+                    | opt_constraint_name FOREIGN KEY '(' column_commalist ')' references
+                    | opt_constraint_name CHECK '(' search_condition ')'
+                    | opt_constraint_name UNIQUE '(' column_commalist ')'
+
+opt_constraint_name: /* empty */
+                   | CONSTRAINT identifier
+
+column_commalist: column
+                | column_commalist ',' column
+
+index_column_commalist: column opt_asc_desc
+                      | index_column_commalist ',' column opt_asc_desc
+
+index_option: CLUSTERED
+            | UNIQUE
+            | OBJECT_ID
+
+index_option_list: index_option
+                 | index_option_list index_option
+
+opt_index_option_list: /* empty */
+                     | index_option_list
+
+column_xml_schema_def
+	: '(' STRING ',' STRING ')'
+	| '(' STRING ',' STRING ',' STRING ')'
+
+opt_with_data
+: /* empty */
+| WITH DATA
+| WITHOUT DATA
+
+]]></programlisting>
+
+<para>The CREATE TABLE statement creates a new table.  The table is identified by a
+new_table_name, which consists of an optional qualifier, an optional owner and
+the name.  If the qualifier is not supplied then it defaults to the current qualifier,
+and likewise if the table owner is not specified then this will default to the login
+name of the user issuing the statement.</para>
+			<para>
+Following the new_table_name is a list of table elements that are either column
+definitions or table constraints.  A column must have a unique name within the table
+and possible super tables.  The only necessary attribute of a column is a data type.
+</para>
+<para>The UNDER q_table_name constraint specifies an optional supertable. The
+table being created will inherit all columns, indices, constraints from the
+supertable, specifically including the primary key. Hence the under and primary
+key constraints cannot be specified together.  If the table being created will be
+owned by a non-dba user, the supertable must be owned by the same user.</para>
+
+<para>The AS query_exp opt_with_data causes the table to be created based on the
+    compile time types of columns of the SELECT expression query_exp. If WITH DATA
+    is specified then the resultset returned by the query_exp is fed into the new
+    table. Otherwise (if WITHOUT DATA or not specified) only the table is created.</para>
+</sect2>
+
+  <sect2 id="consnotnull"><title>NOT NULL</title>
+  <para>Optionally a column can be declared NOT NULL.  Any attempts to
+  insert NULL into column declared NOT NULL will result in an error and the
+  insert rejected.</para>
+	</sect2>
+	<sect2 id="identity"><title>IDENTITY (Auto Increment)</title>
+	<para>The IDENTITY keyword causes the columns to be automatically incremental,
+  meaning that each successive insert into the table will automatically assign
+  a value greater than any previous row of the table.  These columns are
+  often referred to as "autoincrement columns".  The assigned values
+  are normally consecutive integers.  There may be gaps in the sequence if some
+  transactions that reserve a number fail to commit.  </para>
+  <para>An autoincrement column may or may not be part of the primary key or
+  of any index.</para>
+  <para>The <link linkend="fn_identity_value"><function>identity_value()</function></link>
+  function returns the identity column value most recently assigned on the current connection.  This can be used inside procedures or from clients.  See also the ODBC statement option SQL_GETLASTSERIAL.</para>
+  <para>The <link linkend="fn_set_identity_column"><function>set_identity_column()</function></link>
+  function allows you to change the identity column sequence value.</para>
+  <para>The IDENTITY keyword supports the SQL 3 optional clause that allows
+      you to specify a starting value and/or step value in the table creation statement.  The syntax is:</para>
+
+  <programlisting><![CDATA[
+      INDENTITY (START WITH <N>, INCREMENT BY <Y>)
+]]></programlisting>
+
+<example id="ex_identity"><title>Using the IDENTITY declaration</title>
+<programlisting>
+CREATE TABLE DB.DBA.AI (
+	AI INTEGER IDENTITY,
+	XX VARCHAR,
+	PRIMARY KEY (AI)
+  )
+;</programlisting>
+  <para>Creates a table with an autoincrement primary key column AI.</para>
+<programlisting>
+set_identity_column("DB"."DBA"."AI", "AI", 11);</programlisting>
+  <para>will cause the next row to be inserted into AI to have the AI column
+  equal to 11.</para>
+</example>
+
+<example id="ex_identity"><title>Using the IDENTITY (START WITH) declaration</title>
+<programlisting>
+CREATE TABLE DB.DBA.AI (
+	AI INTEGER IDENTITY (START WITH 100),
+	XX VARCHAR,
+	PRIMARY KEY (AI)
+  )
+;</programlisting>
+  <para>Creates a table with an autoincrement primary key column AI, whose
+  first value will be 100 and will auto-increment from there upwards.</para>
+</example>
+
+<tip><title>See Also</title>
+<para><link linkend="sequenceobjects">Sequence Objects</link></para>
+</tip>
+
+  </sect2>
+			<sect2 id="default">
+				<title>DEFAULT</title>
+				<para>
+This option specifies a constant default value given to the column by an INSERT
+that does not specify a value for the column.  The constant must be compatible
+with the column&apos;s data type.  An IDENTITY or TIMESTAMP column cannot have
+a default value.
+</para>
+			</sect2>
+		<sect2 id="pkeycons"><title>PRIMARY KEY Constraint</title>
+    <para>This declares a column combination that will uniquely identify each
+    row in the table.  This automatically defines an index on these columns
+    and clusters the physical rows of the table together with the index entry
+    for this primary key index.  Always specify a primary key if there is a
+    uniquely identifying column combination on the table. This is the case for
+    any normalized database.  Hence virtually all tables should have the primary
+    key constraint.  This is substantially more efficient than defining the
+    primary key as a unique index with CREATE INDEX.   The primary key constraint
+    exists for the purpose of guaranteeing uniqueness of a row and hence should
+    be respected.  A unique index is not a primary key and should never
+    substitute one.</para>
+
+<example id="ex_pkeyfullconstraint"><title>Primary Key using Constraint</title>
+  <para>This example shows how to create a table with a primary key defined in
+  full as a named primary key table constraint</para>
+  <programlisting>
+CREATE TABLE demo_table (
+  id INTEGER NOT NULL,
+  txtdata VARCHAR(20),
+  CONSTRAINT demo_table_pk PRIMARY KEY (id)
+  )
+;</programlisting>
+</example>
+
+    <para>PRIMARY KEY is a shorthand for the PRIMARY KEY (column)
+    table constraint which is specified in the column definition.  SQL-89 required
+    that you specify NOT NULL PRIMARY KEY but SQL-92 does not because primary
+    keys columns do not permit NULL values.  This means that no members of a
+    combination of columns that constitute a primary key can have a NULL value.</para>
+
+<example id="ex_pkeyshort"><title>Primary Key shorthand</title>
+  <para>This example shows how to create a table with a primary key defined
+  using shorthand:</para>
+  <programlisting>
+CREATE TABLE demo_table (
+  id INTEGER NOT NULL PRIMARY KEY,
+  txtdata VARCHAR(20),
+  )
+;</programlisting>
+  <para>Or shorter still:</para>
+  <programlisting>
+CREATE TABLE demo_table (
+  id INTEGER PRIMARY KEY,
+  txtdata VARCHAR(20),
+  )
+;</programlisting>
+</example>
+
+    <para>If a table definition has no PRIMARY KEY clause, Virtuoso will generate
+    a default primary key column called "_IDN".  <important>Always declare a primary key using
+    the primary key table constraint.  This is always more efficient than the
+    default primary key.</important>  You could allow Virtuoso to generate the
+    primary key if you simply want an IDENTITY primary key column, however this
+    is considered lazy and, of course, not portable.  If you already have a
+    column or combination of columns that could be a candidate for a primary
+    key, taking the default primary key from Virtuoso will reduce the overall
+    efficiency because an extra column will be used per row that would be
+    redundant to the data itself.</para>
+
+<example id="ex_pkeydefault"><title>Default Virtuoso Primary Key</title>
+  <para>In the absence of a PRIMARY KEY definition:</para>
+  <programlisting>
+CREATE TABLE SAMPLE (
+  THING VARCHAR
+  )
+;</programlisting>
+  <para>will be expanded into:</para>
+  <programlisting>
+CREATE TABLE SAMPLE (
+  THING VARCHAR,
+  _IDN INTEGER IDENTITY,
+	PRIMARY KEY (_IDN)
+  )
+;</programlisting>
+</example>
+
+  <para>Tables with generated default primary keys will appear as if they have
+  no primary key defined.  The default primary key (_IDN) column will not appear
+  in the ODBC catalog calls <function>SQLColumns()</function>,
+  <function>SQLStatistics()</function>, <function>SQLPrimaryKeys()</function>,
+  <function>SQLColumnPrivileges()</function>.  The column can be explicited
+  referenced in SQL statements just as any other.  The SQL "SELECT * ..."
+  statement will omit the _IDN column.  The "INSERT INTO TABLE VALUES (.)"
+  statement does not expect a value for the _IDN column.
+  <function>SQLSpecialColumns()</function> with the <parameter>SQL_BEST_ROWID</parameter>
+  option is the only catalog call that will return the _IDN column.</para>
+
+  <para>The PRIMARY KEY option may not coexist with UNDER in a CREATE TABLE
+  statement because a subtable always inherits the supertable&apos;s primary key.</para>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="CREATEINDEX">CREATE INDEX</link> for the index options.</para></tip>
+
+</sect2>
+
+  <sect2 id="under"><title>UNDER</title>
+  <para>This allows the user to create a table as a sub-table of an existing table.
+  A sub-table will inherit all columns and constraints of its super-table, most
+  importantly the primary key.  Primary keys shall be unique in the set of rows
+  belonging to any direct or indirect sub-table of one super-table.  A select
+  from a super-table will see all rows, including those of any sub-tables, but
+  not vice versa.  Rows inserted directly into the super-table will not be
+  visible to sub-tables.</para>
+  <para>
+The primary key option may not coexist with UNDER, since a subtable always
+inherits the supertable&apos;s primary key.
+</para>
+
+<example id="ex_under"><title>Creating sub-tables using UNDER</title>
+  <para>Here a subtable will be created for the demo_table defined earlier.
+  Both definitions are listed for convenience.  Notice that the select over
+  the sub-table (demo_sub_table) lists all columns whereas the select from
+  super-table does not, however rows inserted into the super-table,
+  demo_table, will not be seen in a select from the sub-table, but rows
+  inserted into the sub-table will be shown in a select from the super-table.</para>
+  <programlisting>
+CREATE TABLE demo_table (
+  id INTEGER PRIMARY KEY,
+  txtdata VARCHAR(20),
+  )
+;
+
+CREATE TABLE demo_sub_table (
+  new_col VARCHAR(10),
+  UNDER demo_table
+  )
+;
+
+SQL> select * from demo_table;
+id                txtdata
+INTEGER NOT NULL  VARCHAR
+____________________________________________________________________
+
+
+0 Rows. -- 20 msec.
+
+SQL> select * from demo_sub_table;
+id                txtdata               new_col
+INTEGER NOT NULL  VARCHAR               VARCHAR
+____________________________________________________________________
+
+
+0 Rows. -- 10 msec.
+</programlisting>
+</example>
+</sect2>
+	<sect2 id="fkeys"><title>FOREIGN KEY Constraint</title>
+			<para>A FOREIGN KEY is a column of combination of columns used to retrieve a related
+      row from a related table.  These reference constraints are automatically enforced,
+      unless explicitly disabled.  This declaration can be accessed by client
+      applications using the <function>SQLForeignKeys()</function> ODBC
+      function.  This is used by some tools to display dependencies between
+      tables.  Foreign keys are there to maintain referential integrity within
+      the database.  This constraint will ensure that rows in one table will
+      have corresponding rows in another table, so that your orders are not
+      made for products that do not exist, for example.</para>
+			<para>Forward references are not permitted in FOREIGN KEY.  Also a table
+      referenced in a foreign key constraint of another table cannot be dropped.
+      It is usual to list the columns in the referenced table corresponding
+      to the columns in the referencing table, however, this list can be omitted,
+      in which case the set of primary key columns of the referenced table is
+      used automatically by default.  The referenced and referencing column
+      lists must be of equal length.  To declare two mutually referencing tables,
+      ALTER TABLE must be used after both tables are defined. </para>
+      <para>Foreign key constraints are enforced by default.  It is sometimes
+      practical to disable constraint checks for performance or for convenience
+      when importing data or making bulk updates.  To disable or enable checking
+      for foreign key constraints you can use the
+      <link linkend="fn_fk_check_input_values"><function>fk_check_input_values()</function></link>
+      function.  This function changes the foreign key checking behavior globally
+      across the database so it is very important to remember to enable foreign key
+      constraint checking again afterwards.</para>
+      <para>Columns can be defined as having a foreign keys and a default value,
+      however, the default value must not violate the constaint at the time of
+      inserts or update attempted assuming the default value as this will be
+      rejected in the normal way.</para>
+
+<example id="ex_fkeysinuse"><title>Creating tables with foreign key constraints</title>
+	<para>First the Primary key table must be defined before it can be referenced:</para>
+	<programlisting>
+CREATE TABLE T1 (
+  Id INTEGER NOT NULL PRIMARY KEY,
+  Dt VARCHAR
+  )
+;</programlisting>
+	<para>Now the foreign key table can be created referencing the table above:</para>
+	<programlisting>
+CREATE TABLE T2 (
+  Act INTEGER NOT NULL,  -- will refer to Id in T1
+  Retr DATETIME,
+  Description VARCHAR,
+  CONSTRAINT FK1 FOREIGN KEY (Act) REFERENCES T1 (Id) -- the fk constraint
+  )
+;</programlisting>
+  <para>The statement above creates the foreign key constraint in separate line
+  of the create table statement.  This can be also be written in short form
+  with the column definition it applies to:</para>
+  <programlisting>
+CREATE TABLE T2 (
+  Act INTEGER NOT NULL REFERENCES T1 (Id),  -- refer to Id in T1
+  Retr DATETIME,
+  Description VARCHAR
+  )
+;</programlisting>
+</example>
+
+<example id="ex_nwdemofk"><title>Assumed Foreign Key Columns</title>
+  <para>This CREATE TABLE statement was used for creating part of Demo database.
+  This statement does not describe the columns to be used as foreign keys on
+  the referred tables.  Since the referred tables in each case have a single
+  Primary Key (Orders.OrderID and Products.ProductID) they need not be
+  mentioned and will be assumed when this statement is processed.</para>
+  <programlisting>
+CREATE TABLE Order_Details(
+  OrderID INTEGER,
+  ProductID INTEGER,
+  UnitPrice DOUBLE PRECISION,
+  Quantity SMALLINT,
+  Discount REAL,
+  PRIMARY KEY (OrderID, ProductID),
+  FOREIGN KEY (OrderID) REFERENCES Orders,
+  FOREIGN KEY (ProductID) REFERENCES Products
+  )
+;</programlisting>
+</example>
+
+    <sect3 id="fkeyactions"><title>Foreign Key Constraint Actions</title>
+    <para>Foreign key constraint actions allow the user to define what action
+    data should take when the data they are related to by way of a foreign key
+    is updated or deleted.  The two activities that can be programmed are:</para>
+    <simplelist>
+      <member>ON DELETE</member>
+      <member>ON UPDATE</member>
+    </simplelist>
+    <para>The actions available for both types of activity are:</para>
+    <simplelist>
+      <member>CASCADE - automatically perform the same action on the referenced data.</member>
+      <member>SET NULL - set the referenced data to NULL.</member>
+      <member>SET DEFAULT - sets the referenced data to whatever was defined as its default value.</member>
+      <member>NO ACTION - to not perform any action at all.</member>
+    </simplelist>
+
+<example id="fkeyactions"><title>Foreign Key Constraint Actions</title>
+  <para>Now, the foreign key table defined again, but this time with referential
+  rules which control how data is managed when rows are updated or deleted in
+  the primary key table:</para>
+  <programlisting>
+CREATE TABLE T3 (
+  Act INTEGER NOT NULL DEFAULT 99,  -- will refer to Id in T1
+  Retr DATETIME,
+  Description VARCHAR,
+  CONSTRAINT Fk1 FOREIGN KEY (Act) REFERENCES T1 (Id)
+    ON UPDATE CASCADE ON DELETE SET DEFAULT
+  )
+;</programlisting>
+</example>
+
+    </sect3>
+  </sect2>
+  <sect2 id="sqlrefcreattablecheck"><title>The CHECK Constraint</title>
+  <para>The CHECK constraint allows you specify and wide range of rules that
+  will dictate whether an insert of update will be permitted.  The syntax is as follows:</para>
+
+<programlisting><![CDATA[
+CHECK (search-condition)
+]]></programlisting>
+
+  <para>The search condition can be simple and comparative, or quite complicated
+  involving regular expressions.</para>
+
+<example id="ex_sqlrefcreatecheck"><title>Creating a table with the CHECK constraint</title>
+<para>Here a simple table will be created with two CHECK constraints.  One the
+check constraints is a simple comparison ensuring participants are over 18, the
+other complicated constraint verifies that the email address is correct using a
+regular expression.  Samples SQL statements follow that will demonstrate the
+effectiveness of the check constraints.</para>
+<programlisting><![CDATA[
+CREATE TABLE test_check (
+  name VARCHAR,
+  age INTEGER
+    CHECK (age > 18),
+  email VARCHAR
+    CHECK (regexp_like(email, '^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,4})+\$'))
+  )
+  ;
+
+INSERT INTO test_check (name, age, email) VALUES ('Jack', 18, 'jack@foo.bar');
+  -- will cause: *** Error 22023: ... SR363: CHECK constraint violated
+
+INSERT INTO test_check (name, age, email) VALUES ('Jill', 19, 'up@thehill.com');
+  -- will be insert correctly.
+
+INSERT INTO test_check (name, age, email) VALUES ('Jack and Jill', 37, 'ouch/!^^!!@@');
+  -- will cause: *** Error 22023: ... SR363: CHECK constraint violated, also.
+]]></programlisting>
+</example>
+
+<tip><title>See Also:</title>
+  <para><link linkend="fn_regexp_like"><function>regexp_like()</function></link></para></tip>
+  </sect2>
+  <sect2 id="sqlrefcreattablewithschema"><title>The WITH SCHEMA Constraint</title>
+  <para>The WITH SCHEMA constraint allows you force values of an XML column to match a
+particular schema. The syntax is as follows:</para>
+<programlisting><![CDATA[
+WITH SCHEMA (namespace-uri, top-element-name [, optional-dtd-configuration])
+]]></programlisting>
+  <para>To use this feature, you should make load an XMLSchema to the server by a
+<link linkend="CREATEXMLSCHEMA">CREATE XML SCHEMA</link> statement.
+As soon as schema is loaded, its target namespace URI can be used in WITH SCHEMA
+constraint to validate every new value of the column against this schema.
+In addition, the constraint ensures that the document is a well-formed XML document
+(not a well-formed generic XML entity) and checks if the name of the top level element
+of the document is equal to one specified in the constraint.
+</para>
+<para>Depending on document size
+and the complexity of the schema, schema validation may be a time- and memory- consuming
+operation. An application can win a lot if every stored value is validated only once
+and avoid repeating validations on every read of the stored data, but it also may loose
+if the  validation is actually redundand (e.g. if the data  always comes from sources which produce valid content).
+</para>
+<para>
+The parameter &quot;optional-dtd-configuration&quot; lets an application to specify
+how strict the validation should be. In real life, documents may match the schema in general,
+but not in minor details that are not important for a particular application.
+If specified, the parameter must be a string in the format described in
+<link linkend="dtd_config">Configuration Options of the DTD Validator</link>.
+The default value is suitable for most of applications and forces the validator to
+check well-formedness of the document, nesting of elements, presence of
+all &quot;required&quot; attributes, syntax of values of typed elements and attributes;
+it also will check referential integrity of ID and IDREF attributes.
+</para>
+
+<example id="ex_sqlrefcreattablewithschema"><title>Creating a table with the WITH SCHEMA constraint</title>
+<para>Here a simple table will be created with a WITH SCHEMA constraint.
+Sample SQL statements follow that will demonstrate the
+effectiveness of the check constraints.</para>
+<programlisting><![CDATA[
+CREATE XML SCHEMA '<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema targetNamespace="http://www.example.com/parts"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:p="http://www.example.com/parts">
+   <xs:element name="Part">
+      <xs:complexType>
+         <xs:choice minOccurs="0" maxOccurs="unbounded">
+	   <xs:element ref="p:Part"/>
+	 </xs:choice>
+         <xs:attribute name="ID" type="xs:string" use="required" />
+         <xs:attribute name="Count" type="xs:int" use="optional" />
+         <xs:attribute name="Type" type="xs:string" use="optional" />
+      </xs:complexType>
+   </xs:element>
+</xs:schema>';
+
+create table SPARE_PARTS (
+  PACK_ID integer primary key,
+  CONTENT XMLType with schema ('http://www.example.com/parts', 'Part')
+  );
+
+insert into SPARE_PARTS values (1, '
+<p:Part xmlns:p="http://www.example.com/parts" ID="keyboard">
+  <p:Part Count="101"/>
+  <p:Part ID="body"/>
+</p:Part>')
+
+*** Error 42000: [Virtuoso Driver][Virtuoso Server]XML parser detected an error:
+	ERROR  : Only 0 out of 1 required attributes are defined for element <p:Part>, e.g. the element has no attribute 'ID'
+at line 3 column 25 of '(value to be placed in column DB.DBA.SPARE_PARTS of CONTENT)'
+  <p:Part Count="101"/>
+-----------------------^
+
+insert into SPARE_PARTS values (2, '
+<p:Part xmlns:p="http://www.example.com/parts" ID="keyboard">
+  <p:Part ID="key" Count="101"/>
+  <p:Part ID="body"/>
+</p:Part>')
+
+select * from SPARE_PARTS
+PACK_ID           CONTENT
+INTEGER NOT NULL  LONG VARCHAR
+_______________________________________________________________________________
+
+2
+<n0:Part xmlns:n0="http://www.example.com/parts" ID="keyboard">
+  <n0:Part ID="key" Count="101" />
+  <n0:Part ID="body" />
+</n0:Part>
+
+1 Rows. -- 00000 msec.
+]]></programlisting>
+</example>
+
+<para>ALTER TABLE ... MODIFY COLUMN statement does not support changes of WITH SCHEMA constraint.
+Double check your XMLSchema and carefully test it on real data used by an application before
+using this constraint. If you can't test your schema this way then calling of
+<link linkend="fn_xml_validate_schema"><function>xml_validate_schema()</function></link>
+in triggers may be safer than using the constraint: such triggers will be slower than
+the constraint but you can drop triggers without re-creating the table.
+</para>
+
+<tip><title>See Also:</title>
+  <para><link linkend="CREATEXMLSCHEMA">CREATE XML SCHEMA Statement</link></para>
+  <para><link linkend="fn_xml_validate_schema"><function>xml_validate_schema()</function></link></para>
+</tip>
+  </sect2>
+	</sect1>
+
+  <sect1 id="DROPTABLE">
+		<title>DROP TABLE Statement</title>
+		<programlisting>
+drop_table
+	: DROP TABLE q_table_name
+	;
+</programlisting>
+		<para>
+This statement drops a table. This requires dba privileges or ownership of the
+table.  Any subtables are automatically dropped.  Supertables are not affected.
+</para>
+	</sect1>
+	<sect1 id="CREATEINDEX"><title>CREATE INDEX Statement</title>
+
+	<programlisting>
+index_column_commalist
+	: column opt_asc_desc
+	| index_column_commalist ',' column opt_asc_desc
+	;
+
+index_option
+	: CLUSTERED
+	| UNIQUE
+	;
+
+index_option_list
+	: index_option
+	| index_option_list index_option
+	;
+
+opt_index_option_list
+	: /* empty */
+	| index_option_list
+	;
+
+create_index_def
+	: CREATE opt_index_option_list INDEX index
+		ON new_table_name '(' index_column_commalist ')'
+	;
+</programlisting>
+
+	<para>This creates an index on a table.  Index names must be unique across a
+  qualifier.  The ascending / descending column attributes are recognized for
+  compatibility but do not have any effect.  The index is defined and populated
+  at the execution of the statement.  Pre-existing stored procedures and
+  prepared statements will make use of the new index when appropriate.</para>
+	<para>The UNIQUE attribute enforces uniqueness of the specified columns
+  across the table and subtables where the index is visible.</para>
+	<para>The CLUSTERED attribute is not recommended.  It will cause keys to be
+  unprefixed by key id, thus causing the key entries to be intermixed with
+  entries of other CLUSTERED indices with adjacent values of key parts.</para>
+
+<tip><title>See:</title>
+<para>See the <link linkend="freetext">Free Text</link> section on creating free text indices.</para>
+</tip>
+</sect1>
+
+	<sect1 id="DROPINDEX">
+		<title>DROP INDEX Statement</title>
+
+		<programlisting>
+drop_index
+	: DROP INDEX NAME opt_table
+	;
+
+opt_table
+	: /* empty */
+	| q_table_name
+	;
+</programlisting>
+  <para>This will drop an index, dba privileges or table ownership are required.
+  A table&apos;s primary key which has the same name as the table can not be dropped.</para>
+  <para>Optionally, a table name can be given if the index name is not unique.
+  The table name may be qualified.</para>
+</sect1>
+	<sect1 id="ALTERTABLE"><title>ALTER TABLE Statement</title>
+
+		<programlisting><![CDATA[
+add_column:
+            ALTER TABLE q_table_name ADD opt_col_add_column add_col_column_def_list
+          | ALTER TABLE q_table_name DROP opt_col_add_column add_col_column_list
+          | ALTER TABLE q_table_name MODIFY opt_col_add_column column_def
+
+add_col_column_def_list: column_def
+                       | add_col_column_def_list &apos;,&apos; column_def
+
+add_col_column_list: column
+                   | add_col_column_list &apos;,&apos; column
+
+table_rename:
+            ALTER TABLE q_table_name RENAME new_table_name
+
+alter_constraint:
+            ALTER TABLE q_table_name constraint_op opt_table_constraint_def
+
+constraint_op: ADD
+             | DROP
+             | MODIFY
+
+opt_drop_behavior: /* empty */
+                 | CASCADE
+                 | RESTRICT
+
+opt_table_constraint_def: CONSTRAINT identifier opt_drop_behavior
+                        | table_constraint_def
+
+view_query_spec: query_exp
+               | query_no_from_spec
+
+alter_table
+	: ALTER TABLE q_table_name ADD opt_col_add_column add_col_column_def_list
+
+	| ALTER TABLE q_table_name DROP opt_col_add_column add_col_column_list
+
+	| ALTER TABLE q_table_name MODIFY opt_col_add_column column_def
+
+	| ALTER TABLE q_table_name RENAME new_table_name
+
+	| ALTER TABLE <table> ADD | DROP | MODIFY <constraint> [<constraint-name>]
+
+<constraint> ::=
+	: PRIMARY KEY '(' <column list> ')'
+	| FOREIGN KEY '(' <column list> ')' <references>
+	| CHECK ( search-condition )
+
+<references> ::=
+   REFERENCES <table> ['(' <column list> ')' ] <OPTIONS>
+
+<OPTIONS>  ::=
+   [ON UPDATE OPT_ACTION] [ON DELETE OPT_ACTION]
+]]></programlisting>
+  <para>The ALTER TABLE statement adds or drops columns and renames tables.</para>
+  <para>Adding or dropping a column of a table will create a new version of the
+  table&apos;s schema entry.  The rows of the altered table will be changed to
+  conform to the new definition when next updated.  All newly inserted rows
+  will be in the new row layout.  This means that ALTER TABLE itself executes in
+  fixed time without locking the table.  The time to update the actual data
+  will be spread over subsequent updates.</para>
+  <para>An added column will have a NULL value on those rows where the
+  new column has not been set.  A possible default will only apply to newly
+  inserted rows.</para>
+  <para>When dropping a column one can execute a statement of the form UPDATE
+  &lt;table&gt; SET &lt;key&gt; = &lt;key&gt; to force the physical change,
+  causing space associated with the dropped column to be freed.</para>
+  <para>The column_def in the ADD clause may specify any column options, except
+  PRIMARY KEY.</para>
+  <para>If the table name is not fully qualified it is completed as in any table
+  reference.  The new name in the RENAME clause is defaulted to the current
+  qualifier and user account, as in a CREATE TABLE.</para>
+  <para>A primary key may only be modified, never dropped or added.  Tables
+  always have exactly one primary key.</para>
+  <para>The first unique index of an empty table becomes the primary key. This
+  may thereafter not be dropped.</para>
+  <para>The primary key of an attached table may not be changed.</para>
+  <para>Foreign keys can be added.  Dropping a foreign key will drop all
+  foreign keys between the foreign key and primary key tables.</para>
+  <para>ALTER TABLE cannot be applied to an attached table.</para>
+		<example id="ex_altertable"><title>ALTER TABLE Examples</title>
+			<programlisting>
+ALTER TABLE DISTRICT
+    add D_SALES_MGR integer not null references EMPLOYEES (E_ID);
+
+ALTER TABLE idt MODIFY PRIMARY KEY (K1, K2);
+
+ALTER TABLE idt ADD FOREIGN KEY (d) REFERENCES idt (d);
+
+ALTER TABLE idt ADD FOREIGN KEY (k2, k1) REFERENCES idt;
+
+ALTER TABLE idt DROP FOREIGN KEY (d) REFERENCES idt (d);
+</programlisting>
+		</example>
+
+  <sect2 id="sqlrefalttabcheck"><title>Adding a CHECK Constraint</title>
+
+  <para>A CHECK constraint can be added to a table after it has been created
+  and populated providing that none of the tables contents would violate the constraint.</para>
+
+  <example id="ex_alttabcheck"><title>Adding a CHECK constraint to an existing table.</title>
+<programlisting><![CDATA[
+CREATE TABLE test_add_check (
+  name VARCHAR,
+  age INTEGER
+  )
+;
+
+ALTER TABLE test_add_check ADD CONSTRAINT chkage CHECK (age > 18);
+]]></programlisting>
+  </example>
+
+<tip><title>See Also:</title>
+  <para><link linkend="sqlrefcreattablecheck">The CHECK constraint</link></para></tip>
+  </sect2>
+	</sect1>
+
+  <sect1 id="CREATEVIEW"><title>CREATE VIEW Statement</title>
+		<programlisting>
+&lt;view definition&gt; ::=
+    CREATE VIEW &lt;table name&gt; [ &lt;left paren&gt; &lt;view column list&gt;
+                                  &lt;right paren&gt; ]
+      AS &lt;query expression&gt;
+</programlisting>
+	</sect1>
+  <sect1 id="CREATEXMLSCHEMA"><title>CREATE XML SCHEMA Statement</title>
+		<programlisting>
+&lt;xml schema definition&gt; ::=
+    CREATE XML SCHEMA &lt;text of schema&gt;
+</programlisting>
+<para>
+Virtuoso supports registering XML Schemas for use in
+<link linkend="sqlrefcreattablewithschema">WITH SCHEMA</link>
+constraint for column values. The statement contains the whole text of the schema as a
+string constant, i.e. enclosed in single quotes. This is not the best possible syntax,
+because single quotes inside the text of schema should be carefully quoted, but this is
+de-facto standard. If the schema contains number of single quotes (e.g. attributes are
+in single quotes instead of typically used double quotes), try a system stored procedure
+<programlisting>
+DB.DBA.SYS_CREATE_XML_SCHEMA (text_of_schema);
+</programlisting>
+that will have the same effect, but is not portable.
+</para>
+<para>
+In principle, you can register any valid XMLSchema, but some features can cause prohibitive loss of performance.
+It is strongly advised to compose the schema as a "standalone" document that has no references to
+external DTDs or external generic entities. It is also strongly advised to avoid xs:include and
+xs:import directives. The only sort of external references that does not affect performance is
+xs:include or xs:import of a registered "sibling" schema. They say that a schema X is a "sibling" of schema Y
+if their target namespace URIs have identical protocol names and host names and differs only in local path,
+and schema X imports Y using relative (not aboslute!) URI that contain only relative path,
+(no protocol and no host).
+</para>
+<example id="ex_CREATEXMLSCHEMA"><title>Registering Sibling Schemas</title>
+<para>Two sibling schemas are registered here.
+First statement registers an XMLSchema for &quot;http://www.example.com/parts&quot; target namespace.
+Second statement registers an XMLSchema for &quot;http://www.example.com/jobs&quot; target namespace
+that imports the first schema using relative URI.
+The rest of statements demonstrate a single WITH SCHEMA constraint that
+inspect elements of these two target namespaces.</para>
+<programlisting><![CDATA[
+CREATE XML SCHEMA '<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema targetNamespace="http://www.example.com/parts"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:p="http://www.example.com/parts">
+   <xs:element name="Part">
+      <xs:complexType>
+         <xs:choice minOccurs="0" maxOccurs="unbounded">
+	   <xs:element ref="p:Part"/>
+	 </xs:choice>
+         <xs:attribute name="ID" type="xs:string" use="required" />
+         <xs:attribute name="Count" type="xs:int" use="optional" />
+         <xs:attribute name="Type" type="xs:string" use="optional" />
+      </xs:complexType>
+   </xs:element>
+</xs:schema>'
+
+CREATE XML SCHEMA '<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema targetNamespace="http://www.example.com/jobs"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:p="http://www.example.com/parts"
+  xmlns:j="http://www.example.com/jobs">
+   <xs:import schemaLocation="parts" />
+   <xs:element name="Job">
+      <xs:complexType>
+         <xs:sequence>
+	   <xs:element ref="p:Part"/>
+	 </xs:sequence>
+         <xs:attribute name="JobID" type="xs:string" use="required" />
+      </xs:complexType>
+   </xs:element>
+</xs:schema>'
+
+create table JOBS (
+  PACK_ID integer primary key,
+  CONTENT XMLType with schema ('http://www.example.com/jobs', 'Job')
+  )
+
+insert into JOBS values (1, '
+<j:Job xmlns:j="http://www.example.com/jobs" xmlns:p="http://www.example.com/parts" JobID="asmkeyboard">
+  <p:Part xmlns:p="http://www.example.com/parts" ID="keyboard">
+    <p:Part Count="101"/>
+    <p:Part ID="body"/>
+  </p:Part>
+</j:Job>')
+
+*** Error 42000: [Virtuoso Driver][Virtuoso Server]XML parser detected an error:
+	ERROR  : Only 0 out of 1 required attributes are defined for element <p:Part>, e.g. the element has no attribute 'ID'
+at line 4 column 27 of '(value to be placed in column DB.DBA.JOBS of CONTENT)'
+    <p:Part Count="101"/>
+-------------------------^
+
+insert into JOBS values (2, '
+<j:Job xmlns:j="http://www.example.com/jobs" xmlns:p="http://www.example.com/parts" JobID="asmkeyboard">
+  <p:Part xmlns:p="http://www.example.com/parts" ID="keyboard">
+    <p:Part ID="key" Count="101"/>
+    <p:Part ID="body"/>
+  </p:Part>
+</j:Job>');
+]]>
+</programlisting>
+</example>
+<note><title>Note:</title>
+<para>
+There is no way to change a registered schema if it is used in some WITH SCHEMA constraint.
+Double-check any schema before using it, because it may be hard to fix the error
+later.
+</para>
+</note>
+	</sect1>
+  <sect1 id="DROPXMLSCHEMA"><title>DROP XML SCHEMA Statement</title>
+		<programlisting>
+&lt;xml schema removal&gt; ::=
+    DROP XML SCHEMA &lt;target URI&gt;
+</programlisting>
+<para>
+This reverts the effect of <link linkend="CREATEXMLSCHEMA">CREATE XML SCHEMA</link>.
+</para>
+<para>The &lt;target URI&gt; should be a string constant that is equal to the value of
+"targetNamespace" attribute of "xs:schema" element of a previously declared XML schema.
+</para>
+<para>The statement signals an error if the XMLSchema to be dropped is used in some WITH SCHEMA constraint.</para>
+</sect1>
+	<!-- ======================================== -->
+  <sect1 id="sequenceobjects"><title>Sequence Objects</title>
+  <para>
+Virtuoso supports sequence objects. These can be used to generate sequential
+numbers which can be used as unique identifiers.  A sequence object is
+guaranteed never to give the same number twice.  Each sequence has a
+name and a state. The state of a sequence is stored in the database at
+checkpoint time. Between checkpoints sequence states are logged so that
+a possible roll forward recovery will not lose information.
+</para>
+			<para>
+The SQL functions <function>sequence_next</function>() and <function>sequence_set</function>() are used to access
+and set the state of sequences.  These take the name of the sequence as
+argument.  This is a server/wide unique string. There are no restrictions
+on the length or character set of the sequence
+</para>
+			<para>
+Sequences do not have to be separately created.  A sequence object
+will automatically be generated when first referenced by <function>sequence_next</function>()
+or sequence_set.
+</para>
+			<programlisting>sequence_next (in name varchar) returns integer
+</programlisting>
+			<programlisting>sequence_set (in name varchar, in state integer, in mode integer)
+		returns integer
+</programlisting>
+
+			<para>
+Function <function>sequence_next</function>() returns the current state of the specified sequence and
+atomically increments it by one.  The next call will thus return a
+number one greater than the previous. The sequence is shared between
+all connections and all transactions.  Using a sequence never involves
+locking.
+</para>
+			<para>
+Function <function>sequence_set</function>() sets and returns the state of a sequence object.  The next
+call to <function>sequence_next</function>() will return this same number.  If mode equals 0,
+the state is set regardless of the previous state. If mode is non-zero,
+the state is set only if the new state is greater then the previous
+state.  Calling sequence_set (&apos;sequence&apos;&apos; , 0, 1) will always return
+the sequence&apos;s state without changing it.
+</para>
+  <para>
+      Each autoincrement column corresponds to an internal sequence object.
+  The name of the sequence object is&apos;DB.DBA.&apos; plus the concatenation
+  of the table's qualifier, owner, table name and column name,
+  e.g. &apos;DB.DBA.db.dba.my_table.ai_column&apos;.  The user does not
+  normally need to know about the sequence associated with an autoincrement
+  column unless he or she wishes to change the sequence values using the
+  <function>sequence_set()</function> function and the sequence objects name.</para>
+<para>
+See the section on identity columns under create table and the function identity_value and the related ODBC statement option SQL_GETLASTSERIAL for more. 
+</para>
+	</sect1>
+	<sect1 id="insertSTMT">
+		<title>INSERT Statement</title>
+
+<programlisting>
+    insert_statement
+	    : INSERT insert_mode table priv_opt_column_commalist values_or_query_spec
+	    ;
+
+    insert_mode
+	    : INTO
+	    | REPLACING
+	    | SOFT
+
+    priv_opt_column_commalist
+	    : /* empty */
+	    | &apos;(&apos; column_commalist &apos;)&apos;&#10;
+	    ;
+
+    values_or_query_spec
+	    : VALUES &apos;(&apos; insert_atom_commalist &apos;)&apos;
+	    | query_spec
+	    ;
+
+    insert_atom_commalist
+	    : insert_atom
+	    | insert_atom_commalist &apos;,&apos; insert_atom
+	    ;
+
+    insert_atom
+	    : scalar_exp
+	    ;
+
+    column_commalist
+	    : column
+	    | column_commalist &apos;,&apos; column
+	    ;
+
+    query_spec
+	    : SELECT opt_all_distinct selection table_exp
+	    ; ... See the SELECT statement next.
+</programlisting>
+
+<para>
+New rows (or records) are entered into a database using the INSERT statement.
+</para><para>
+If you have to enter a NULL you can simply use the keyword NULL, as you would a normal value.  Since
+NULL is a special keyword you do not need to enclose it in single quotes.
+</para><para>
+You can specify the columns that you are inserting values into in the insert statement.  One
+should always specify the columns that you are inserting into incase the order of columns in
+the database are not as expected, or you are not inserting values into every column.
+</para><para>
+If a value is not specified for a column on insert, then the default value will be used for that column.
+If no default value has been specified either by a CREATE or MODIFY TABLE statement then NULL will be used.
+</para>
+
+<sect2 id="insertsoft"><title>INSERT SOFT</title>
+<para>
+<emphasis>INSERT SOFT</emphasis> can be used in place of <emphasis>INSERT INTO</emphasis>
+if you are unsure whether the value to be inserted into a primary key column will
+violate that constraint.  If the row with this primary key already exists, then the
+new row is not inserted.
+</para>
+<programlisting>
+SQL> create table insert_test(id integer primary key, txt varchar);
+Done. -- 90 msec.
+SQL> insert into insert_test(id, txt) values(1, 'test');
+Done. -- 0 msec.
+SQL> insert into insert_test(id, txt) values(1, 'test');
+
+*** Error 23000: [Virtuoso ODBC Driver][Virtuoso Server]SR197:
+  Non unique primary key on DB.DBA.insert_test. at line 4 (4) of Top-Level:
+  insert into insert_test(id, txt) values(1, 'test')
+
+SQL> insert soft insert_test(id, txt) values(1, 'testsoft');
+
+Done. -- 0 msec.
+SQL> select * from insert_test;
+id                txt
+INTEGER NOT NULL  VARCHAR
+_______________________________________________________________________________
+
+1                 test
+
+1 Rows. -- 60 msec.
+</programlisting>
+</sect2>
+
+<sect2 id="insertreplacing"><title>INSERT REPLACING</title>
+<para>
+<emphasis>INSERT REPLACING</emphasis> can be used in place of <emphasis>INSERT INTO</emphasis>
+if you are unsure whether the value to be inserted into a primary key column will
+violate that constraint.  If the row with this primary key already exists, then the
+new row will be inserted replacing the old values.
+</para>
+<programlisting>
+SQL> create table insert_test(id integer primary key, txt varchar);
+Done. -- 90 msec.
+SQL> insert into insert_test(id, txt) values(1, 'test');
+Done. -- 0 msec.
+SQL> insert into insert_test(id, txt) values(1, 'test');
+
+*** Error 23000: [Virtuoso ODBC Driver][Virtuoso Server]SR197:
+  Non unique primary key on DB.DBA.insert_test. at line 4 (4) of Top-Level:
+  insert into insert_test(id, txt) values(1, 'test')
+
+SQL> insert replacing insert_test(id, txt) values(1, 'testreplacing');
+
+Done. -- 0 msec.
+SQL> select * from insert_test;
+id                txt
+INTEGER NOT NULL  VARCHAR
+_______________________________________________________________________________
+
+1                 testreplacing
+
+1 Rows. -- 0 msec.
+</programlisting>
+</sect2>
+</sect1>
+	<sect1 id="SELECTSTMT">
+		<title>SELECT Statement</title>
+		<sect2 id="selectsyntax">
+			<title>Syntax</title>
+			<para/>
+			<programlisting>
+&lt; select statement: single row &gt; ::= SELECT [ &lt; set quantifier &gt; ] &lt; select list &gt;&#10;
+      INTO &lt; select target list &gt;&#10;
+      &lt; table expression &gt;&#10;
+
+&#10;&lt; select target list &gt; ::=
+      &lt; target specification &gt; [ { &lt; comma &gt; &lt; target specification &gt; }... ]
+
+&#10;&lt; query expression &gt; ::=
+      &lt; non-join query expression &gt;&#10;
+    | &lt; joined table &gt;&#10;
+
+&#10;&lt; non-join query expression &gt; ::=
+      &lt; non-join query term &gt;&#10;
+    | &lt; query expression &gt; UNION  [ ALL ]
+          [ &lt; corresponding spec &gt; ] &lt; query term &gt;&#10;
+    | &lt; query expression &gt; EXCEPT [ ALL ]
+          [ &lt; corresponding spec &gt; ] &lt; query term &gt;&#10;
+
+&#10;&lt; non-join query term &gt; ::=
+      &lt; non-join query primary &gt;&#10;
+    | &lt; query term &gt; INTERSECT [ ALL ]
+          [ &lt; corresponding spec &gt; ] &lt; query primary &gt;&#10;
+
+&#10;&lt; non-join query primary &gt; ::=
+      &lt; simple table &gt;&#10;
+    | &lt; left parent &gt; &lt; non-join query expression &gt; &lt; right parent &gt;&#10;
+
+&#10;&lt; simple table &gt; ::=
+      &lt; query specification &gt;
+    | &lt; table value constructor &gt;
+    | &lt; explicit table &gt;
+
+&#10;&lt; query specification &gt; ::=
+    SELECT [ &lt; set quantifier &gt; ] &lt; select list &gt; &lt; table expression &gt;
+
+&#10;&lt; select list &gt; ::=
+      &lt; asterisk &gt;
+    | &lt; select sublist &gt; [ { &lt; comma &gt; &lt; select sublist &gt; }... ]
+
+&#10;&lt; select sublist &gt; ::=
+      &lt; derived column &gt;
+    | &lt; qualifier &gt; &lt; period &gt; &lt; asterisk &gt;
+
+&#10;&lt; derived column &gt; ::= &lt; value expression &gt; [ &lt; as clause &gt; ]
+
+&#10;&lt; as clause &gt; ::= [ AS ] &lt; column name &gt;
+
+&#10;&lt; table expression &gt; ::=
+    &lt; from clause &gt;
+    [ &lt; where clause &gt; ]
+    [ &lt; group by clause &gt; ]
+    [ &lt; having clause &gt; ]
+
+&#10;&lt; from clause &gt; ::= FROM &lt; table reference &gt;
+    [ { &lt; comma &gt; &lt; table reference &gt; }... ]
+
+&#10;&lt; table reference &gt; ::=
+      &lt; table name &gt; [ [ AS ] &lt; correlation name &gt;
+          [ &lt; left parent &gt; &lt; derived column list &gt; &lt; right parent &gt; ] ]
+    | &lt; derived table &gt; [ AS ] &lt; correlation name &gt;
+          [ &lt; left parent &gt; &lt; derived column list &gt; &lt; right parent &gt; ]
+    | &lt; joined table &gt;
+
+&#10;&lt; derived column list &gt; ::= &lt; column name list &gt;
+
+&#10;&lt; derived table &gt; ::= &lt; table subquery &gt;
+
+&#10;&lt; table subquery &gt; ::= &lt; subquery &gt;
+
+&#10;&lt; joined table &gt; ::=
+      &lt; cross join &gt;
+    | &lt; qualified join &gt;
+    | &lt; left parent &gt; &lt; joined table &gt; &lt; right parent &gt;
+
+&#10;&lt; cross join &gt; ::=
+    &lt; table reference &gt; CROSS JOIN &lt; table reference &gt;
+
+&#10;&lt; qualified join &gt; ::=
+    &lt; table reference &gt; [ NATURAL ] [ &lt; join type &gt; ] JOIN
+      &lt; table reference &gt; [ &lt; join specification &gt; ]
+
+&#10;&lt; join type &gt; ::=
+      INNER
+    | &lt; outer join type &gt; [ OUTER ]
+    | UNION
+
+&#10;&lt; outer join type &gt; ::=
+      LEFT
+    | RIGHT
+    | FULL
+
+&#10;&lt; join specification &gt; ::=
+&#10;      &lt; join condition &gt;
+    | &lt; named columns join &gt;
+
+&#10;&lt; join condition &gt; ::= ON &lt; search condition &gt;
+
+&#10;&lt; named columns join &gt; ::=
+    USING &lt; left parent &gt; &lt; join column list &gt; &lt; right parent &gt;
+
+&#10;&lt; join column list &gt; ::= &lt; column name list &gt;
+
+&#10;&lt; where clause &gt; ::= WHERE &lt; search condition &gt;
+
+&#10;&lt; group by clause &gt; ::=
+    GROUP BY &lt; grouping column reference list &gt;
+
+&#10;&lt; grouping column reference list &gt; ::=
+&#10;    &lt; grouping column reference &gt;
+        [ { &lt; comma &gt; &lt; grouping column reference &gt; }... ]
+
+&#10;&lt; grouping column reference &gt; ::=
+&#10;    &lt; column reference &gt; [ &lt; collate clause &gt; ]
+</programlisting>
+			<para/>
+		</sect2>
+		<sect2 id="descrip">
+			<title>Description</title>
+			<para>
+The SELECT statement is the principal means of information retrieval in SQL.
+A SELECT can retrieve information from one or more tables with arbitrary search criteria.
+SELECT&apos;s can also be nested to have the output of one serve as an input or search condition for another.
+Several SELECT&apos;s can be combined into one query with the UNION, INTERSECTION and EXCEPT operators.
+</para>
+			<para>
+The SELECT syntax consists of the following parts:
+</para>
+			<programlisting>
+SELECT [DISTINCT] scalar_exp {, scalar_exp}
+	FROM table {, table}
+	WHERE &lt; search condition &gt;
+	GROUP BY &lt; column list &gt;
+	HAVING &lt; search condition &gt;
+	ORDER BY &lt; ordering spec list &gt;
+	FOR UPDATE
+</programlisting>
+			<para>
+All parts are optional. If one or more of the clauses
+appear they must appear in the above order.  All parts do not need to be specified,
+e.g. SELECT A FROM T FOR UPDATE is valid but SELECT A FROM T ORDER BY a WHERE &lt; &lt; 10 is not.
+</para>
+			<note>
+				<title>Note:</title>
+				<para>A select without a FROM clause is allowed.
+</para>
+				<para>
+This is useful for returning values of expressions to the client. Such a select always returns one row,
+with the values listed as columns. Typically only useful from interactive SQL.
+</para>
+				<para>
+Example:
+</para>
+				<para>
+select 1 + 2 as three;
+</para>
+			</note>
+			<para>
+A table reference in the FROM clause can either be a simple table name, another SELECT
+expression of the form described above or a join expression.
+A SELECT inside a FROM is called a derived table. This means that the rows selected by
+the derived table expression are treated as if they constituted a table. This is similar to a
+VIEW reference and a derived table can be thought of as an unnamed in-line VIEW declaration.
+</para>
+			<para>
+A join expression combines table references, which are either simple, derived or joined tables
+themselves into different joins.
+</para>
+			<para>
+A join is an operation that retrieves for each row of one table zero
+or more rows from another table. The join condition specifies how the rows are matched.
+The result of a join is a set of rows containing selected columns from both joined tables.
+Joins are by default so called INNER joins, which means that for a row to be in the result
+there must be a row matching the left table in the right table as specified by the join
+condition. An OUTER join is a join that will produce a result row even if there is no row
+in the right table for the row in the left table. The columns that would have come from the
+right table are then just set to NULL&apos;s.
+</para>
+			<programlisting>
+table_ref ::=
+	&lt; table name &gt; [&lt; correlation name &gt;]
+  |	/ query expression ) &lt; correlation name &gt;
+  |	&lt; table ref &gt; &lt; [NATURAL] join &gt; &lt; table ref &gt; &lt; join condition &gt;
+
+join ::=
+  	&lt; empty &gt;
+  |	CROSS
+  |	INNER
+  | 	LEFT [OUTER]
+  | 	RIGHT [OUTER]
+
+join condition ::=
+	&lt; empty &gt;
+  |	ON &lt; search condition &gt;
+  |	USING &apos;(&apos; &lt; column &gt; {, column} &apos;)&apos;
+</programlisting>
+			<para>
+The &lt; correlation name &gt; is an identifier that is used to identify the table in a column
+reference if the same table appears many times in the query expression, e.g. is joined
+with itself.
+</para>
+			<para>
+The CROSS join has no join condition. This means that for each row in the left table all
+rows in the right table are included in the result.
+</para>
+</sect2>
+<!-- ======================================== -->
+	<sect2 id="ASDEC">
+		<title>Column Aliasing - AS Declaration</title>
+		<para>
+Virtuoso supports the AS operator in the selection list of a SELECT
+statement. This notation allows declaring a name and optionally a type
+and precision for a statement&apos;s output column.
+</para>
+		<para>
+The syntax is:
+</para>
+		<screen>
+as_exp:
+Scalar_exp AS NAME opt_data_type
+</screen>
+		<para>
+For instance, one can write:
+</para>
+		<programlisting>
+SELECT COUNT (*) AS NUMBEROFROWS FROM XX;
+SELECT COUNT (*) AS NUMBEROFROWS INTEGER (2) FROM XX;
+SELECT CONCATENATE (COL1, COL2) AS RESULTSTRING VARCHAR (50) FROM XX;
+</programlisting>
+		<para>
+The AS expression tells the client to return specified values in the
+SQLDescribeCol, SQLColAttribute or equivalent calls. The semantics of
+statements is not otherwise affected.   An AS expression can appear
+anywhere a scalar expression can but the only place where it has an
+effect is the selection list of a SELECT statement.
+</para>
+		<para>
+If a data type is given and contains a precision, that precision is
+returned to the client as the precision of the column in question.
+</para>
+		</sect2>
+		<sect2 id="joinexamples">
+			<title>Join examples</title>
+			<para>
+The following three statements produce an identical result.
+</para>
+			<programlisting>
+select Orders.OrderID, ProductID
+    from Orders natural join Order_Details using (OrderID)
+select Orders.OrderID, ProductID
+    from Orders join Order_Details on Orders.OrderID = Order_Details.OrderID
+select Orders.OrderID, ProductID
+    from Orders,  Order_Details where Orders.OrderID = Order_Details.OrderID
+</programlisting>
+			<note>
+				<title>Note:</title>
+				<para>In all these cases if there exists no Order_Details row matching the Orders row there
+will no no result row corresponding to the Orders row.  An outer join can can be used to also
+retrieve left table records for which there is no matching right table record.
+</para>
+			</note>
+			<programlisting>
+select Orders.OrderID, ProductID
+    from Orders natural left outer join Order_Details using (OrderID)
+</programlisting>
+			<para>will produce a result identical to the above sample if for each Orders row there is at least
+one Order_Details row. If there is none however, the OrderID column from Orders will appear
+together with a NULL ProductID from the non-existent Order_Details.
+</para>
+			<para>
+A right outer join is like a left outer join with the left and right tables reversed.
+</para>
+		</sect2>
+		<sect2 id="ordergrping">
+			<title>Ordering and Grouping</title>
+			<para>
+The result rows of a query can be ordered based on their column values.
+The ORDER BY phrase allows specifying an ascending or descending sort order for a
+any column. The SQL interpreter will use an index if there is an index whose order
+reflects the order in the ORDER BY clause. If there is no appropriate index or if
+ascending and descending order is combined for columns of the same table the SQL
+interpreter will first evaluate the query and then sort the results before returning
+them.
+</para>
+			<tip>
+				<title>See:</title>
+				<para>Optimizations below for more information.</para>
+			</tip>
+			<programlisting>
+ select * from Employees order by BirthDate;
+</programlisting>
+			<para>
+will list all employees, oldest first, in ascending order of birth date.
+</para>
+			<para>
+The GROUP BY clause allows computing functions over repeating groups. Without
+the GROUP by clause set functions (AVG, MIN, MAX, SUM, COUNT) may not be mixed
+with normal columns in a selection list.
+If set functions and columns are mixed, all the columns must appear in the GROUP BY section.
+Such a query will produce as many rows as there are distinct value combinations of the grouping columns.
+The set functions will be computed for each distinct column combination.
+</para>
+			<programlisting>
+select OrderID, sum (UnitPrice * Quantity)
+   from Order_Details group by OrderID
+   having sum (UnitPrice * Quantity) &gt; 5000  order by 2 desc;
+</programlisting>
+			<para>
+Produces the OrderID and total value of the order in decreasing order of order value.
+The HAVING clause specifies that only orders with a value &gt; 5000 will be counted. Note
+that the sum expression in having must be written identically to the same expression
+in the SELECT left.
+</para>
+			<para>
+The 2 in the order by refers to the second column of the select, which has no name,
+it being a function reference.
+</para>
+		<sect3 id="ordergrping_cube">
+		<title>CUBE and ROLLUP</title>
+		<para>Virtuoso database offers the tool which increase efficiency of SQL summary queries and
+ simplify such operations. The options ROLLUP and CUBE in the GROUP BY allow creating more comprehensive
+ summary operations. The result of CUBE and ROLLUP are result sets which could be produced in other
+way only with additional coding and queries. </para>
+		<para>The ROLLUP and CUBE extends the result set of GROUP BY. The ROLLUP builds consequence
+ of subtotal aggregates on every queried level including the grand total. The CUBE is an extension of ROLLUP.
+ It builds all possible subtotal aggregates combination for given GROUP BY.</para>
+		<para>Here are the examples of ROLLUP and CUBE usage:</para>
+		<programlisting>
+select j, grouping (j), k, grouping (k), t, grouping (t), sum (i) from TABLE1 group by rollup (j,k,t);
+select j, grouping (j), k, grouping (k), t, grouping (t), sum (i) from ROLLUP1 group by cube (j,k,t);
+</programlisting>
+		<para>the grouping(c1) procedure returns &quot;1&quot; if the column &quot;c1&quot; is
+ not in the dynamic GROUP BY set, and returns &quot;0&quot; otherwise.</para>
+		<para>The result set of:</para>
+		<programlisting>
+select j, k, t, sum (i) from TABLE1 group by rollup (j,k,t) ;
+</programlisting>
+		<para>is equivalent of cumulate result sets of:</para>
+		<programlisting>
+select j, k, t, sum (i) from TABLE1 group by j,k,t;
+select NULL, k, t, sum (i) from TABLE1 group by k,t;
+select NULL, NULL, t, sum (i) from TABLE1 group t;
+select NULL, NULL, NULL, sum (i) from TABLE1;
+</programlisting>
+		<para>The result set of:</para>
+		<programlisting>
+select t,s, sum (i) from TABLE1 group by cube (t,s);
+</programlisting>
+		<para>is equivalent of cumulate result set of:</para>
+		<programlisting>
+select t,s, sum (i) from TABLE1 group by t,s;
+select t,NULL, sum (i) from TABLE1 group by t;
+select s,NULL, sum (i) from TABLE1 group by s;
+select NULL,NULL, sum (i) from TABLE1;
+</programlisting>
+		</sect3>
+		</sect2>
+		<sect2 id="derivedtables">
+			<title>Derived Tables</title>
+			<para>
+A SELECT expression may be used in the place of a table in a FROM clause.
+This provides control over where DISTINCT and ORDER BY operations are evaluated.
+</para>
+			<programlisting>
+select ProductName, UnitsInStock
+    from (select distinct ProductID from Order_Details) O,
+        Products where Products.ProductID = O.ProductID;
+</programlisting>
+			<para>
+This retrieves the name and quantity of products that have been ordered.
+</para>
+			<para>
+An equivalent phrasing would be
+</para>
+			<programlisting>
+select distinct ProductName, UnitsInStock
+   from Order_Details O, Products where Products.ProductID = O.ProductID;
+</programlisting>
+			<para>
+The difference is that the latter retrieves a Products row for each order line whereas
+as the first retrieves a products row for each distinct product  in the order lines.
+The first is therefore faster to evaluate. Also note that the rows in the DISTINCT buffer
+in the first example only consist of the product id whereas they are much longer in the
+second example.
+</para>
+			<para>
+Note that a correlation name is required for derived tables since the derived table is as
+such anonymous.
+</para>
+		</sect2>
+		<sect2 id="qryexpressions">
+			<title>Query Expressions</title>
+			<programlisting>
+&lt; non-join query expression &gt; ::=
+      &lt; non-join query term &gt;
+    | &lt; query expression &gt; UNION  [ ALL ]
+          [ &lt; corresponding spec &gt; ] &lt; query term &gt;
+    | &lt; query expression &gt; EXCEPT [ ALL ]
+          [ &lt; corresponding spec &gt; ] &lt; query term &gt;
+
+&lt; corresponding spec &gt; ::=
+    CORRESPONDING [ BY &lt; left parent &gt;
+        &lt; corresponding column list &gt; &lt; right parent &gt; ]
+</programlisting>
+			<para>
+Queries can be combined by set operators UNION, INTERSECTION and EXCEPT (set difference).
+The ALL keyword will allow duplicate rows in the result set. The CORRESPONDING BY clause
+allows specifying which columns will be used to determine the equality of rows from the
+left and right operands.
+</para>
+			<programlisting>
+ select OrderID from Orders except
+    corresponding by (OrderID) select OrderID from Order_Details
+</programlisting>
+			<para>
+will produce the OrderID&apos;s of orders that have no Order_Details. This is equivalent to:
+select OrderID from Orders a where not exists (select 1 from Order_Details b where a.OrderID = b.OrderID)
+</para>
+			<para>
+Note that the queries, although to a similar effect are executed quite differently.
+There may be significant differences in performance.
+</para>
+		</sect2>
+		<sect2 id="LikePredicate">
+<title>LIKE Predicate &amp; Search Patterns</title>
+	<para>
+The <emphasis>LIKE</emphasis> predicate expects a pattern to be applied to
+a varchar or nvarchar column to qualify the results to be returned from a query.
+</para>
+	<para>
+If the pattern does not begin with an at-sign (@) or with two
+asterisks (**), then we test the equality of the string and pattern
+with ordinary wildcard matching, which behaves
+approximately like the filename pattern matching in the Unix shell.
+(But not like the regular expression matching in utilities like grep
+and sed).
+</para>
+	<para>
+The following characters have special significance in the pattern:
+</para>
+	<simplelist>
+		<member>?    Matches any single character.</member>
+		<member>*    Matches zero or more of any characters.</member>
+	</simplelist>
+
+	<para>
+[ ]  (Called a group-expression here)
+Matches any one of the enclosed characters, unless the
+first character following the opening [ is ^, then matches
+only if the character (in the datum string) is not any one of
+those specified after the ^. (i.e. the ^ negates the meaning
+of this expression.)
+</para>
+	<para>
+You can use character ranges like 0-9 (shorthand for 0123456789)
+inside the brackets, in which case the character in the datum
+string must be lexically within the inclusive range of that
+pair (of course the character at the left side of hyphen must
+be lexically (that is, its ASCII value) less than the
+character at the right side).
+</para>
+	<para>
+The hyphen can be included in the character set by putting it
+as the first or last character.  The right bracket (]) can
+be included by putting it as the first character in the expression,
+i.e. immediately after the opening bracket ([) or the caret (^)
+following it.
+</para>
+
+<example>
+<title>Examples:</title>
+<programlisting>
+[abc]          Matches any of the letters a, b and c.
+[^0123456789]  Matches anything, except digits. (same as [^0-9])
+[[]            Matches [
+[]]            Matches ]
+[][]           Matches ] and [
+[^]]           Matches anything except ]
+[A-Za-z0-9]    Matches all the alphanumeric characters.
+[-*+/]         Matches the four basic arithmetic operators.
+[-]            Matches to single hyphen.
+[]-]           Matches to ] or -
+[-[] or [[-]   Matches to - or [
+</programlisting>
+</example>
+
+	<para>
+That is, the hyphen indicates a range between characters, unless
+it is the first or the last character in the group expression,
+in which case it matches just to itself.
+</para>
+	<para>
+<emphasis>@</emphasis>   Matches the character last matched to ? or group-expression.
+For example ?*@ matches to all strings which begin with the same
+character they end.  However, if there is neither ? nor [] expression
+at the left side of @ in the pattern, then @ matches just to
+itself. (e.g. *@* should match to all e-mail addresses).
+</para>
+	<para>
+Any other characters match ONLY to themselves, that is, not even to
+the upper- or lowercase variants of the same letter. Use expression
+like [Wo][Oo][Rr][Dd] if you want to find any mixed-case variant of
+the word "word", or use the substring search explained below.
+</para>
+	<para>
+However, if the pattern begins with an at-sign (@) then we compare
+the rest of pattern to string with the fuzzy matching,
+allowing differences of few characters in quality and
+quantity (length).  If there is more than one @ in the beginning of
+pattern they are all skipped, and so many
+additional liberties are given for the match function.  The more
+@-signs there are in the beginning, the more fuzzy (liberal) is the
+search.  For example: pattern "@Johnson" will match to string
+"Jonsson" and pattern "@@Johnson" will match also to "Jansson".
+</para>
+	<para>
+If the pattern begins with two asterisks, then we do diacritic- and
+case insensitive substring search,
+trying to find the string given in the rest of pattern from the
+datum string.
+</para>
+
+<example><title>Example:</title>
+<para>"**escort" will match to "Ford Escort vm. 1975".</para>
+</example>
+
+	<para>
+If there are any ISO8859.1 diacritic letters (e.g. vowels with
+accents or umlaut-signs, or letters like the Spanish n with ~ (tilde))
+present in the datum string, then the plain unaccented (7-bit ASCII)
+variant of the same letter in the pattern string will match to it.
+But if there are any diacritic letter specified in the pattern string,
+then it will match only to the upper- or lowercase variant of exactly
+the same diacritic letter.
+</para>
+	<para>
+The rationale behind this is that the people entering the information
+to database can use the exact spelling for the word, for example
+writing the word "Citroen" with the umlaut-e (e with two dots above it),
+as it is actually written in French, and the people who search for
+the Citroens can still find it without need to remember the exact
+orthography of the French, by just giving a word "citroen".
+And this allows also the people who have just plain 7-bit ASCII
+keyboards to search for the words like Ra"a"kkyla" (place in Finland,
+a" means umlaut-a, i.e. a with two dots above it), just by entering
+the word raakkyla.
+</para>
+	<para>
+So the following holds with the substring searches:
+</para>
+
+<simplelist>
+	<member>
+1) Any non-alphabetic character in the pattern matches just to itself
+in the datum string (e.g. ? to ? and 3 to 3).
+</member>
+	<member>
+2) Any 7-bit ASCII letter (A-Z and a-z without any diacritic signs)
+in the pattern matches to any diacritic variant of the same letter
+(as well as to same 7-bit ASCII letter) in the datum string, either
+in the upper- or lowercase.
+</member>
+	<member>
+3) Any diacritic letter (8-bit ISO8859.1 letter) in the pattern matches
+only to the same letter (in the upper- or lowercase) in the datum
+string.
+</member>
+</simplelist>
+
+<note><title>Note:</title>
+<para>because the internal matching functions use macros
+which consider also the characters like:
+@, [, \, ], and ^ to be letters, they will match against characters
+`, {, |, }, and ~ respectively, which is just all right, because
+in some older implementations of European character sets those
+characters mark the uppercase and lowercase variants of certain
+diacritic letters.
+</para>
+</note>
+
+	<para>
+It is generally better to match
+too liberally and so maybe sometimes give something entirely off
+the wall to the user, than to miss something important because of
+too strict criteria.
+</para>
+	<para>
+Of course, when searching from the data which contains text in
+some wide-character format (like certain coding systems for
+Japanese and Chinese where one character is coded with two bytes)
+neither fuzzy matching function nor nc_strstr function presented here
+should be used, as they would often match on entirely spurious cases.
+</para>
+		</sect2>
+<sect2 id="topselectoption">
+	<title>The TOP SELECT Option</title>
+
+	<programlisting>
+query_term :  SELECT opt_top selection ....
+
+opt_top :  opt_all_distinct [ TOP INTNUM ]
+	|  opt_all_distinct [ TOP SKIPINTNUM, INTNUM ]
+	|  opt_all_distinct [ TOP (num_scalar_exp) ]
+	|  opt_all_distinct [ TOP (skip_num_scalar_exp, num_scalar_exp) ]
+opt_all_distinct : [ ALL | DISTINCT ]
+</programlisting>
+
+	<para>
+The TOP n phrase can follow an optional ALL or DISTINCT keyword in a SELECT,
+either at top level or inside a query term of an expression or subquery. The query
+with the TOP option will generate at most the indicated number of result rows.
+</para>
+	<para>
+The scope of TOP is the query in question.  For example
+</para>
+	<programlisting>
+select top 3 row_no from t1 best union select top 3 row_no + 1 from t1;
+</programlisting>
+	<para>
+Will always return 4 rows assuming there are at least 3 rows in T1.
+</para>
+
+<para>The optional SKIPINTNUM parameter lets you offset the selection
+by SKIPINTNUM number of rows.  If you have a ten-row table and
+<computeroutput>select top 2 from this_table</computeroutput> you get
+the first two rows, <computeroutput>select top 2, 2 from this_table</computeroutput>
+will return the third and fourth rows only, instead.</para>
+
+</sect2>
+
+<sect2 id="caseandco"><title>CASE, NULLIF, COALESCE, CAST Value Expressions</title>
+  <sect3 id="case"><title>The CASE Expression</title>
+  <para>There are many situations where you might find it useful to alter the
+  the data returned by a SQL query based on a few rules.  For example, you may
+  want to display Customers gender as 'Male' or 'Female' based on whether their
+  title is 'Mr' or one of 'Miss', 'Mrs' or 'Ms'.  The CASE expression can
+  easily accomodate this.</para>
+  <para>The Syntax of CASE is:</para>
+  <programlisting><![CDATA[
+CASE
+  WHEN <search-condition> THEN <output>
+  WHEN <search-condition> THEN <output>
+  ...
+  ELSE <output>
+END
+]]></programlisting>
+  <para>When a &lt;search-condition&gt; is met the corresponding &lt;output&gt;
+  is returned.  If no conditions are met then the &lt;output&gt; after is ELSE
+  is returned as a default value.</para>
+
+  <example id="ex_caseexp"><title>Using the CASE expression</title>
+  <programlisting>
+SELECT Title, CustomerName,
+  CASE
+    WHEN Title = 'Mr' THEN 'Male'
+    WHEN Title = 'Mrs' THEN 'Female'
+    WHEN Title = 'Miss' THEN Female'
+    WHEN Title = 'Ms' THEN 'Female'
+    ELSE 'Unknown'
+  END as Gender,
+  Company
+  FROM Customers
+</programlisting>
+  <para>May return values such as:</para>
+  <screen>
+Title   Gender  CustomerName        Company
+VARCHAR VARCHAR VARCHAR             VARCHAR
+___________________________________________________________
+
+Mr      Male    Thomas Hardy        Around the Horn
+Miss    Female  Christina Berglund  Berglunds shop
+Mrs     Female  Hanna Moos          Blauer See Delikatessen
+Mr      Male    Laurence Lebihan    Bon app
+</screen>
+  </example>
+
+  <para>There is also a short hand notation for the CASE expression as follows:</para>
+  <programlisting><![CDATA[
+CASE <search-parameter>
+  WHEN <search-value> THEN <output>
+  WHEN <search-value> THEN <output>
+  ...
+  ELSE <output>
+END
+]]></programlisting>
+
+  <para>This short hand is best demonstrated by the rewrite of the above example
+  as follows:</para>
+
+  <example id="ex_caseexpshort"><title>Using the CASE short-hand expression</title>
+  <programlisting>
+SELECT Title, CustomerName,
+  CASE Title
+    WHEN 'Mr' THEN 'Male'
+    WHEN 'Mrs' THEN 'Female'
+    WHEN 'Miss' THEN Female'
+    WHEN 'Ms' THEN 'Female'
+    ELSE 'Unknown'
+  END as Gender,
+  Company
+  FROM Customers
+</programlisting>
+  </example>
+
+  <para>In both cases the ELSE keyword is optional.  If ELSE is unspecified
+  then ELSE NULL is implicit.</para>
+
+  </sect3>
+
+  <sect3 id="casenullif"><title>The NULLIF Expression</title>
+  <para>The NULLIF expression is a short hand implementation of a special case
+  of the CASE expression for a popular demand.  Consider the following CASE
+  expression:</para>
+
+  <programlisting><![CDATA[
+CASE col1
+  WHEN 'something' THEN NULL
+  ELSE col1
+END
+]]></programlisting>
+
+  <para>This is replaced by the NULLIF expression which achieves the same
+  result using the following, much shorter expression:</para>
+
+    <programlisting><![CDATA[
+NULLIF (col1, 'something')
+]]></programlisting>
+
+  <para>This is often useful in situations where you have a code to denote
+  a value as unspecified for whatever reason, but in many applications you
+  would rather this was NULL.</para>
+  </sect3>
+
+  <sect3 id="casecoalesce"><title>The COALESCE Expression</title>
+  <para>The COALESCE expression is another application of the CASE expression
+  to suit another frequent requirement.  The syntax of COALESCE is as follows:</para>
+
+    <programlisting><![CDATA[
+COALESCE (value-1, value-2, ..., value-n)
+]]></programlisting>
+
+  <para>COALESCE returns the first non-NULL parameter.  This is equivalent to</para>
+
+    <programlisting><![CDATA[
+CASE
+  WHEN value-1 IS NOT NULL THEN value-1
+  WHEN value-2 IS NOT NULL THEN value-2
+  ...
+  ELSE value-n
+END
+]]></programlisting>
+  </sect3>
+
+  <sect3 id="selcastexp"><title>The CAST Expression</title>
+  <para>SQL has always been considered a strongly typed language, meaning that
+  you cannot have expressions that contain arbitrary data types.  Casting is
+  invaluable for comparing values that are obviously compatible but their
+  data types are not, such as <computeroutput>1 = '1'</computeroutput>.  This
+  attempts compares an integer with a char which would not work unless one of the
+  values was cast as follows:</para>
+
+  <programlisting>cast('1' as integer) = 1</programlisting>
+
+  <tip><title>See Also:</title>
+  <para>The <link linkend="dtcasting">CASTING</link> section for more
+  information.</para></tip>
+  </sect3>
+  </sect2>
+
+</sect1>
+	<!-- ======================================== -->
+	<sect1 id="COMMIT_ROLLBACK">
+		<title>COMMIT WORK, ROLLBACK WORK Statement</title>
+		<para>
+These statements reset the current transaction.  COMMIT WORK leaves all the changes made
+by the current transaction in effect whereas ROLLBACK work reverses them.
+</para>
+		<para>
+In both cases, the transaction will be in a fresh state, having no locks and
+no changes that could be rolled back.  The rollback operation always succeeds, as any
+change is always reversible until committed.  COMMIT WORK may fail if the
+transaction had been marked to be canceled before the COMMIT WORK operation started.  A failed
+commit has the effect of a rollback but it will signal a SQL STATE descriptive of
+the error, e.g. 40001 (deadlock).
+</para>
+		<para>
+These operations are typically not needed, since the SQLTransact ODBC call and the ODBC
+autocommit mode are used instead for transaction control.  The only use for
+these statements is within stored procedures, where it may be practical to break
+a long sequence of operations into several transactions to reduce lock contention.
+</para>
+		<para>
+These can also be used together with the WHENEVER declaration to automate
+retry upon deadlock inside stored procedures.
+</para>
+		<para>
+Triggers should not normally use these statements.  The exception is the case where
+ a trigger detects a state violating application consistency rules and decides to
+abort the transaction. This can be done by ROLLBACK WORK, typically followed by a call to
+the signal function for notifying the application.
+</para>
+		<example>
+			<title>Examples:</title>
+			<programlisting>
+create procedure retry (in x integer)
+{
+  whenever sql state &apos;40001&apos; goto deal;
+ again:
+  -- action
+  return;
+ deadl:
+   rollback work;
+   goto again;
+}
+
+create trigger sal_negative on &quot;Employee&quot; after update (&quot;Salary&quot;)
+{
+  if (&quot;Salary&quot; &lt; 0) {
+    rollback work;
+    signal (&apos;A0001&apos;, &apos;Salary cannot be negative&apos;);
+  }
+}
+</programlisting>
+		</example>
+		<tip>
+			<title>See Also:</title>
+			<para><link linkend="fn_txn_error">txn_error</link>, <link linkend="fn_txn_killall">txn_killall</link>, <link linkend="fn_signal">signal</link></para>
+		</tip>
+	</sect1>
+	<!-- ======================================== -->
+	<sect1 id="CHECKPOINT">
+		<title>CHECKPOINT, SHUTDOWN Statement</title>
+		<programlisting>
+admin_statement
+	: SHUTDOWN opt_log
+	| CHECKPOINT opt_log
+	| BACKUP opt_log
+	;
+</programlisting>
+		<para>
+The checkpoint is a point in the history of a database where all
+the state is written on disk as a single, consistent image that contains all
+the state committed so far and no uncommitted state.  A transaction log starts after a checkpoint
+and contains the information to allow the recreation of the effect of transactions
+committed since the checkpoint.  The checkpoint state and the transaction
+log together allow recovering the database up to the last committed transaction.
+</para>
+		<para>
+The CHECKPOINT statement forces a checkpoint to be made. Making the checkpoint
+allows starting a new transaction log.
+If no new log name is specified the old log is truncated to length 0 and reused
+for logging transactions.  If the CheckpointAuditTrail option is enabled in
+virtuoso.ini a new log will be started even if no new log is specified in the checkpoint
+or shutdown statement.
+</para>
+		<para>
+The SHUTDOWN statement performs a CHECKPOINT, and terminates the server upon
+completion.
+</para>
+		<para>
+BACKUP is an alternate notation for backup().
+</para>
+		<example>
+			<title>Examples:</title>
+			<programlisting>
+checkpoint &apos;new.log&apos;;
+backup &apos;bak.log&apos;;
+shutdown &apos;new2.log&apos;;
+</programlisting>
+		</example>
+		<para>
+The above sequence of commands makes a checkpoint and starts logging subsequent
+transactions into new.log.  The backup statement makes bak.log, which represents the state
+prior to starting new.log.  The shutdown statement makes a new checkpoint and marks new2.log as the log
+file to be used for logging transactions after the database restarts. The database server exits at the completion of the
+SHUTDOWN statement.
+</para>
+		<programlisting>
+replay (&apos;bak.log&apos;);
+replay (&apos;new.log&apos;);
+</programlisting>
+		<para>
+These statements executed on an empty database will recreate the state in effect after the last transaction
+to commit before the SHUTDOWN statement of the previous example.
+</para>
+
+<tip><title>See Also</title>
+<para>The <link linkend="backup">Backup section</link> for more backup and
+recovery information.</para></tip>
+
+		<sect2 id="checkpointparams">
+			<title>Checkpoint &amp; Page Remapping</title>
+			<para>
+In concept, making a checkpoint consists of writing the last committed
+state of a page on the read-only pre-checkpoint state. This is in case
+the page existed before the previous checkpoint.  If the page was
+created after the last checkpoint, making the checkpoint consists of
+just writing it to disk. Now if the number of pages modified between
+checkpoints largely exceeds the amount of RAM, the checkpoint will be a
+disk-to-disk copy process which takes a time proportional to the number
+of modified pages.   This can take a long time. Virtuoso offers a
+mechanism called checkpoint remap. This allows making a committed
+state persistent, i.e. safe, without copying all the delta
+collected since the last checkpoint over the pre-checkpoint state.
+</para>
+			<para>
+The checkpoint remap mechanism means that a page, say number 12 get
+remapped to 15 when updated. Suppose now that the page were written
+to disk.  Now we have the pre-checkpoint page on 12 and the committed
+post checkpoint state on 15. If a checkpoint now takes place, instead
+of copying 15 over 12, which may involve reading the page, we just write
+that 12 is actually on 15. This speeds up the checkpoint but causes one
+page to take the space of 2. Now suppose 12 were modified again, now we
+would see that the pre checkpoint page is 15 and that the original 12
+is free. The page now gets mapped to 12.  The next checkpoint now will
+mark that 12 is 12, which was the original condition and 15 is free.
+</para>
+			<para>
+The mechanism is actually more complex but this is the basic idea. By
+allowing a page to occupy two pages in some situations we dramatically
+cut down on atomic checkpoint time and improve availability.
+</para>
+			<para>
+Now we may argue that this destroys locality since pages that were
+created contiguous are no longer that after an update.	This is why
+there is also a mechanism called unremap. and there is an upper limit
+to checkpoint remaps. If every page were updated between checkpoints,
+they would alternately be in their original place or in a remote place
+from which the next update-checkpoint combination would return them to
+the original. Now this is not always the case.	Also there is not always
+enough space to keep up to three copies of each page.  Therefore there
+is an unremap mechanism and an upper limit to checkpoint remaps.
+</para>
+			<para>
+The <parameter>MaxCheckpointRemap</parameter> parameter in the
+<link linkend="VIRTINI">virtuoso.ini</link> file controls how many pages may
+be stored on a page other than their logical page.  The
+<parameter>UnremapQuota</parameter> parameter in the
+<link linkend="VIRTINI">virtuoso.ini</link> file controls how many previously
+remapped pages are unremapped each time a checkpoint is made.
+</para>
+			<para>
+Having an unlimited MaxCheckpointRemap and zero UnremapQuota will cause
+a checkpoint to consist exclusively of a flush of dirty buffers.
+The downside is that a page can take the space of two for an unlimited
+period of time and that original locality is not maintained. Setting
+the maximum checkpoint remap to zero in such a situation causes the next
+checkpoint to unremap all checkpoint remapped pages, restoring physical
+sequence and freeing disk space.
+</para>
+<tip><title>See Also:</title>
+<para>The <link linkend="tpcc">TPC C Benchmark</link> chapter for examples
+of checkpoint remapping in use on test environments.</para></tip>
+
+		</sect2>
+	</sect1>
+
+	<!-- ======================================== -->
+	<sect1 id="spasviewsandtables">
+		<title>Stored Procedures as Views &amp; Derived Tables</title>
+		<para>
+Virtuoso allows using a stored procedure result set in place of a table. A view may also be
+defined as a stored procedure. This provides smooth integration to external
+procedural logic in queries.
+</para>
+		<para>
+When a procedure appears as a table, the procedure is called and its result set is inserted
+into a temporary space. Processing continues from that point on as if the data came from a table.
+</para>
+		<para>
+Normally, joins involving procedures are done left to right.  If a procedure is in the leftmost
+position in the from it will be called once for the query, if it is in the second position it will
+be called once for every row of the leftmost table that passes selection criteria applicable
+to it and so on.
+</para>
+		<para>
+Procedures used as tables can get parameters from the query. These parameters are expressed in the containing select's where clause
+as column = expression, where column is a parameter name of the procedure table.
+</para>
+		<para>
+A procedure derived table is of the form:
+</para>
+		<programlisting>
+q_table_name '(' column_commalist ')' '(' column_def_commalist ')' alias
+</programlisting>
+		<para>
+The first column commalist is the parameter list. The second column_def_list is a
+description of the result set, as in a CREATE TABLE statement.   The correlation name
+alias is required if the procedure occurs as a derived table, with no view definition.
+</para>
+		<para>
+A procedure view is declared as follows:
+</para>
+
+<programlisting>
+CREATE procedure VIEW new_table_name
+	AS q_table_name '(' column_commalist ')' '(' column_def_commalist ')'
+</programlisting>
+
+		<para>
+The columns in the column definition list should correspond to the procedure's result
+set columns.  The columns are explicit in the view so as to be able to interpret the view
+definition and to be able to compile procedures and queries using the view before the
+procedure itself is defined.  Thus the procedure need be defined only at time of execution,
+not at time of definition.
+</para>
+		<para>
+The meta-data returned by ODBC catalog calls for a procedure view will show the columns
+as they were declared, just like a regular view. Procedure views are never updatable.
+</para>
+
+			<sect2 id="proctabparams">
+			<title>Procedure Table Parameters</title>
+			<para>
+If there is a condition that is in the top level set of AND'ed conditions in the table
+expression's WHERE clause and if it is an equality condition and if it references a
+parameter of a procedure table and if the other side of the equality does not
+reference the procedure table or a table to the right of it, then this condition is
+considered a parameter.  This means that the condition is not actually evaluated
+but rather that the other side of the equality is evaluated before calling the procedure
+and that the value returned is passed to the procedure as an input parameter in the
+position indicated by the name in the parameter list of the view or derived table.
+</para>
+			<para>
+If the procedure table is referenced in an explicit join, as in outer or inner join syntax,
+only equalities in the join condition (ON clause) are eligible to specify a parameter.
+Equalities in the enclosing query's WHERE phrase will be considered tests on the results,
+not parameters.
+</para>
+			<para>
+The parameter names in the procedure view's or derived table's parameter list do not
+have to be names in the output columns, although this will often be the case.  The
+number of parameters in the parameter list in the view or derived table must match
+that in the procedure definition but the names do not have to be the same.  Only input
+parameters are supported.
+</para>
+			<para>
+If a parameter is specified but no applicable predicate is found, a NULL value is passed.
+</para>
+</sect2>
+			<sect2 id="proctabressets">
+			<title>Procedure Table Result Sets</title>
+			<para>
+The result set is declared in the derived table or view. This should match the result_names
+in the procedure but the former will take precedence on the latter. If an actual result row is
+shorter than the declared set, the missing columns will default to NULL.
+</para>
+</sect2>
+			<sect2 id="proctabsecurity">
+			<title>Procedure Tables &amp; Security</title>
+			<para>
+Accessing a procedure as a table requires execute privileges on the procedure.
+Privileges declared on the view are not checked.
+</para>
+</sect2>
+			<sect2 id="proctablimits">
+			<title>Limitations</title>
+			<para>
+There is no limitation to the number of rows in a procedure result set.  The temporary
+storage takes place in the database similarly to a sorted ORDER BY.  Number of columns is
+limited to the maximum number of columns in a real table. Total row size limit for tables and
+ORDER BY intermediate results applies.
+Blobs are allowed and do not count towards the row length limit.
+</para>
+</sect2>
+			<sect2 id="procexamples">
+			<title>Procedure Table Examples</title>
+
+<programlisting>
+create procedure n_range (in first integer, in  last integer)
+{
+  declare n, n2 integer;
+  n := first;
+  result_names (n, n2);
+  while (n &lt; last){
+    result (n, 2 * n);
+    n := n + 1;
+  }
+}
+
+select n, n2 from n_range (first, last) (n int, n2 int) n
+	where first = 2 and last = 12;
+</programlisting>
+
+<para>
+This returns a set of numbers from 2 to 11 and from 4 to 22.
+</para>
+
+<programlisting>
+select a.n, b.n from n_range (first, last) (n int, n2 int) a,
+    n_range (f2, l2) (n int, n2 int) b
+  where first = 2 and last = 12 and f2 = a.n - 2 and l2 = a.n + 2;
+</programlisting>
+
+<para>
+Here we join the second call to the procedure to the first, effectively passing
+the output of the left call as parameters to the right call.
+</para>
+
+<programlisting>
+create procedure view n_range as n_range (first, last) (n1 int, n2 decimal);
+</programlisting>
+
+<para>
+This defines the procedure as a view, so that it can be referenced like a table.
+</para>
+
+<programlisting>
+select * from n_range a, n_range b where a.first = 1 and a.last = 11
+		and b.last = a.n1 + 2 and b.first = a.n1 - 2;
+</programlisting>
+
+<para>
+This is the previous join but now using the view.
+</para>
+</sect2>
+</sect1>
+
+	<!-- ======================================== -->
+	<!-- ======================================== -->
+	<sect1 id="GRANT">
+		<title>GRANT, REVOKE Statement</title>
+		<programlisting>
+privilege_def
+	: GRANT ALL PRIVILEGES TO grantee
+	| GRANT privileges ON table TO grantee_commalist opt_with_grant_option
+	| GRANT grantee_commalist TO grantee_commalist opt_with_admin_option
+	;
+
+privilege_revoke
+	: REVOKE ALL PRIVILEGES FROM grantee_commalist
+	| REVOKE privileges ON table FROM grantee_commalist
+	| REVOKE grantee_commalist FROM grantee_commalist
+	;
+
+opt_with_grant_option
+	: /* empty */
+	| WITH GRANT OPTION
+	;
+
+opt_with_admin_option
+	: /* empty */
+        | WITH ADMIN OPTION
+ 	;
+
+privileges
+	: ALL PRIVILEGES
+	| ALL
+	| operation_commalist
+	;
+
+operation_commalist
+	: operation
+	| operation_commalist &apos;,&apos; operation
+	;
+
+operation
+	: SELECT priv_opt_column_commalist
+	| INSERT
+	| DELETE
+	| UPDATE priv_opt_column_commalist
+	| REFERENCES opt_column_commalist
+	| EXECUTE
+	| REXECUTE
+	| role_name
+	;
+
+grantee_commalist
+	: grantee
+	| grantee_commalist &apos;,&apos; grantee
+
+	;
+
+grantee
+	: PUBLIC
+	| user
+	;
+
+user
+	: IDENTIFIER
+
+role_name
+	: IDENTIFIER
+
+</programlisting>
+		<para>
+The GRANT and REVOKE statements are used to define privileges on resources to
+users and user groups (roles).  A resource is a table, view or stored procedure.  A grantee
+can be PUBLIC, meaning any present or future user accounts or a user name.  Granting
+a privilege to a user name means that this user AND any users which have this user as their
+user group have the privilege.
+</para>
+		<para>
+Only a granted privilege can be revoked. The sequence:
+</para>
+		<programlisting>
+grant select on employee to public;
+revoke select (e_review) from joe;
+</programlisting>
+		<para>
+Is invalid because the privilege being revoked was not granted, instead
+it was implied by the select on all column to public.
+</para>
+<para>
+Any role name created by the CREATE ROLE statement is a valid grantee and a valid grantable operation.
+</para>
+		<para>
+The term &apos;effective privilege of a user&apos; means the set of privileges
+given to a user by virtue of 1. granting them to public 2. granting them to a role which is granted to the user or to a role either directly or indirectly granted to the user or 3. granting them, to the specific user.
+The dba user and all users whose group is &apos;dba&apos; have all privileges.
+</para>
+		<para>
+The phrase
+</para>
+		<programlisting>
+GRANT ALL PRIVILEGES TO user;
+</programlisting>
+		<para>
+is synonymous with setting the user&apos;s group to &apos;dba&apos;.
+</para>
+		<para>
+The effective privileges inside a trigger are those of the owner of the
+table whose trigger is executing. The privilege of executing a trigger is derived from the
+privilege of performing the trigger action, e.g. update of a specific column.
+</para>
+		<para>
+The effective privilege inside a stored procedure is that of the owner of the procedure.
+The privilege to execute a given procedure is granted with the
+EXECUTE clause.
+</para>
+		<note>
+			<title>Note:</title>
+			<para>The grantee names are identifiers. This means that their case
+can be converted to upper case unless they are quoted. The identifier case
+conversion depends on the global CaseMode setting.
+</para>
+		</note>
+		<para>
+A user may grant or revoke privileges on resources of which he/she is the owner.
+A user with effective dba privileges may manipulate any privileges.
+</para>
+		<example>
+			<title>Examples:</title>
+			<programlisting>
+grant update (&quot;Salary&quot;) on &quot;Employees&quot; to &quot;Manager&quot;;
+
+grant execute on &quot;SalesReport&quot; to &quot;Accounting&quot;;
+</programlisting>
+		</example>
+    <para><emphasis>GRANT REFERENCES</emphasis> is a priviledge required by a
+    user on a table so that this user can create new tables referencing such tables
+    in foreign keys where he/she would otherwise be restricted.</para>
+
+  <formalpara><title>Remote Data Sources</title>
+  <para>To provide further consistent security to remote data, only the DBA
+  group is permitted to use the <function>rexecute()</function>, unless
+  explicitly granted.  Caution is required here since any user granted use of
+  <function>rexecute()</function> has full control of the remote data source
+  set-up by the DBA, however limited to the overall abilities of the remote
+  user on the remote data source.</para></formalpara>
+  <para>Users can be granted and denied access to
+  <function>rexecute()</function> using the following syntax:</para>
+
+<programlisting><![CDATA[
+GRANT REXECUTE ON '<attached_dsn_name>' TO <user_name>
+REVOKE REXECUTE ON '<attached_dsn_name>' FROM <user_name>
+]]></programlisting>
+
+
+  <formalpara><title>UDTs</title>
+  <para>Security of UDTs is maintained through normal SQL GRANT and REVOKE
+  statements via a simple extension.  You can define the level of access to both native
+  and externally hosted UDTs.  Grants for persistent user defined types
+  are persisted into the SYS_GRANTS table.  Grants on temporary user defined
+  types are in-memory only and are lost (together with the temporary user defined
+  type definition) when the server is restarted.</para></formalpara>
+
+  <para>There are two GRANT/REVOKE types for UDTs as follows:</para>
+
+  <simplelist>
+    <member><emphasis>EXECUTE</emphasis> - all methods and members of a class are accessible to the grantee.</member>
+    <member><emphasis>UNDER</emphasis> - the grantee can create subclasses of the class.</member>
+  </simplelist>
+
+<programlisting><![CDATA[
+GRANT/REVOKE EXECUTE on <user_defined_type>
+GRANT/REVOKE UNDER on <user_defined_type>
+]]></programlisting>
+
+  <note><title>Note:</title>
+    <para>SQL modules, user defined types and SQL stored procedures are exposed
+	to GRANT/REVOKE in the same namespace, therefore care must be taken avoid
+	inadvertently granting to multiple objects at the same time.</para></note>
+
+<tip><title>See Also:</title>
+  <para><link linkend="vdbSTOREDPROCS">Virtual Database Procedures &amp; Functions</link></para></tip>
+
+	</sect1>
+	<!-- ======================================== -->
+	<sect1 id="SETstmt">
+		<title>SET Statement</title>
+		<sect2 id="isolation">
+			<title>ISOLATION</title>
+			<para>
+This allows setting a transaction isolation in a stored procedure or trigger body.
+The values are:</para>
+  <simplelist>
+    <member>uncommitted</member>
+    <member>committed</member>
+    <member>repeatable</member>
+    <member>serializable</member>
+  </simplelist>
+
+<para>These are case insensitive strings.</para>
+			<para>
+This takes effect dynamically until replaced by another SET ISOLATION setting.
+The effect never persists over the return of the containing procedure or trigger. The effect
+does extend into procedures or triggers called from after executing the SET ISOLATION
+statement.
+</para>
+			<para>
+The initial isolation comes from the SQL_TXN_ISOLATION statement option in
+the ODBC API (SQLSetConnectOption). The default isolation is repeatable read.
+</para>
+		</sect2>
+		<sect2 id="lockescalation">
+			<title>LOCK_ESCALATION_PCT</title>
+			<para>
+This controls the escalation from row locking to page locking.  A set of
+row locks can be converted into one page lock if: (a) All the row locks on the
+page belong to the same transaction, or, (b) No other transaction waits for any of these locks.
+The value of this parameter is the percentage of rows on a page that must be held by
+the transaction before the locking goes to page level. The default is 50, meaning that
+for a page of 120 rows the 61st row lock will escalate the lock if all the previous
+locks belong to the same transaction and there is no wait pending on any.
+A value of -1 means that locking is always at page level if there is more
+than one lock on the page.  A value in excess of 100 causes
+lock escalation to be turned off. The effect of this setting is global and
+persists until the server is restarted. This setting does not affect the semantic of
+locking.
+</para>
+		</sect2>
+		<sect2 id="parambatch">
+			<title>PARAM_BATCH</title>
+			<para>
+This sets the batch size used by the virtual database
+array parameter optimization batch size.  This causes several
+consecutive executes of the same statement to be grouped as a single ODBC operation
+with array parameters. This optimizes joins of tables on different servers and searched
+updates, inserts and deletes on attached tables.  Most ODBC drivers
+do not support array parameters.  A value of 1 or 0 disables
+the optimization. This should be done if there is a driver which falsely
+claims to support array parameters.  If a given driver returns an error when setting
+array parameters the VDB will detect this and will not try to use them.
+</para>
+			<para>
+The effect of this setting is global and persists until the server is restarted.
+The default value comes from the ArrayParameters configuration parameter.
+</para>
+		</sect2>
+	</sect1>
+
+<sect1 id="besteffortunion">
+	<title>Best Effort Union</title>
+	<para>
+Virtuoso offers a SQL extension for an error tolerant UNION operation.
+The idea is that when querying multiple remote data sources in a single union
+construct some of the participating data sources may be allowed to fail while
+still returning a result for the successfully queried data sources.
+</para>
+	<para>
+The construct is introduced by the BEST keyword before UNION or UNION ALL. If a
+query expression of multiple unions has a single BEST keyword the entire union chain
+is considered as a best effort union.  It is however recommended to have the BEST
+keyword in FROM of all the UNION keywords.
+</para>
+	<para>
+When a run time error occurs during the evaluation of a term in a best effort union
+the evaluation of the term is interrupted and the union continues with the next term.
+The partial result set that may have been generated by the failed term is considered
+when making the result.
+</para>
+	<para>
+Aliasing constant columns selected in the terms of the union by the names __SQLSTATE,
+__MESSAGE and __SET_NO retrieve individual error messages. If these are present and a union term
+encounters an error an extra row is generated for the term with all NULLs and the __SQLSTATE,
+__MESSAGE and __SET_NO columns set to the SQL state, SQL message and the union term number
+respectively.  If neither of these is specified and a union term fails without producing any
+result rows the error will not be visible.
+</para>
+<note><title>Note</title>
+<para>No error encountered during a best effort union will be signaled in the normal fashion.
+</para>
+</note>
+
+	<para>
+If a term of a best effort union meets the criteria for a pass through query on a specific
+remote database and a transaction error occurs when evaluating it, the transaction on the
+VDB is not aborted as would normally happen as a result of a VDB transaction error.
+</para>
+	<para>
+Thus if a pass through term dies of deadlock on its data source the query continues
+normally for other data sources referenced in the best effort union.  The VDB will however
+get the transaction error when attempting to commit the transaction where the best effort
+union took place since the remote transaction branch will still be deadlocked.
+</para>
+
+	<example>
+		<title>Examples</title>
+
+		<programlisting>
+select 2222, 1 / 0 from sys_users best union all select key_id, 1 / (1000 - key_id)  from sys_keys;
+</programlisting>
+
+		<para>
+The first term will immediately hit the /0 error and will produce no rows. The second
+term will produce a few rows for system tables but will hit /0 when getting to key_id 1001.
+</para>
+
+		<para>
+To see the errors one can write:
+</para>
+		<programlisting>
+select '00000' as __sqlstate, '' as __message, 2222, 1 / 0 from sys_users best union
+all select '00000' as __sqlstate, '', key_id, 1 / (1001 - key_id)  from sys_keys;
+</programlisting>
+</example>
+
+<note><title>Note</title>
+<para>The columns are named by the first term, hence the AS declaration in
+the second term is optional.
+</para>
+</note>
+
+	<para>
+The BEST keyword does not affect the ALL or CORRESPONDING BY options of UNION.
+</para>
+</sect1>
+
+&aggregates;
+&sqloptimizer;
+&sqlinverse;
+
+
+	<sect1 id="GRAMMAR">
+		<title>SQL Grammar</title>
+		<programlisting>
+    sql_list
+	    : sql &apos;;&apos;&#10;
+	    | sql_list sql &apos;;&apos;&#10;
+	    ;
+
+    sql
+	    : schema_element_list
+	    | view_def
+	    ;
+
+    schema_element_list
+	    : schema_element
+	    | schema_element_list schema_element
+	    ;
+
+    schema_element
+	    : base_table_def
+	    | create_index_def
+	    | drop_table
+	    | drop_index
+	    | add_column
+	    | table_rename
+	    | privilege_def
+	    | privilege_revoke
+	    | create_user_statement
+	    | delete_user_statement
+	    | set_pass
+	    | set_group_stmt
+	    ;
+
+    base_table_def
+	    : CREATE TABLE new_table_name &apos;(&apos; base_table_element_commalist &apos;)&apos;&#10;
+	    ;
+
+    base_table_element_commalist
+	    : base_table_element
+	    | base_table_element_commalist &apos;,&apos; base_table_element
+	    ;
+
+    base_table_element
+	    : column_def
+	    | table_constraint_def
+	    ;
+
+    column_def
+	    : column data_type column_def_opt_list
+	    ;
+
+    references
+	    : REFERENCES q_table_name opt_column_commalist
+	    ;
+
+    column_def_opt_list
+	    : /* empty */
+	    | column_def_opt_list column_def_opt
+	    ;
+
+    column_def_opt
+	    : NOT NULLX
+	    | IDENTITY
+	    | NOT NULLX PRIMARY KEY opt_index_option_list
+	    | DEFAULT literal
+	    | references
+	    ;
+
+    table_constraint_def
+	    : UNDER q_table_name
+	    | PRIMARY KEY &apos;(&apos; index_column_commalist &apos;)&apos; opt_index_option_list
+	    | FOREIGN KEY &apos;(&apos; column_commalist &apos;)&apos; references
+	    ;
+
+    column_commalist
+	    : column
+	    | column_commalist &apos;,&apos; column
+	    ;
+
+    index_column_commalist
+	    : column opt_asc_desc
+	    | index_column_commalist &apos;,&apos; column opt_asc_desc
+	    ;
+
+    index_option
+	    : CLUSTERED
+	    | UNIQUE
+	    ;
+
+    index_option_list
+	    : index_option
+	    | index_option_list index_option
+	    ;
+
+    opt_index_option_list
+	    : /* empty */
+	    | index_option_list
+	    ;
+
+    create_index_def
+	    : CREATE opt_index_option_list INDEX index
+		    ON new_table_name &apos;(&apos; index_column_commalist &apos;)&apos;&#10;
+	    ;
+
+    drop_index
+	    : DROP INDEX NAME opt_table
+	    ;
+
+    opt_table
+	    : /* empty */
+	    | q_table_name
+	    ;
+
+    drop_table
+	    : DROP TABLE q_table_name
+	    ;
+
+    add_col_column_def_list
+	    : column_def
+	    | add_col_column_def_list &apos;,&apos; column_def
+	    ;
+
+    add_col_column_list
+	    : column
+	    | add_col_column_list &apos;,&apos; column
+	    ;
+
+    add_column
+	    : ALTER TABLE q_table_name ADD opt_col_add_column add_col_column_def_list
+	    | ALTER TABLE q_table_name DROP opt_col_add_column add_col_column_list
+	    | ALTER TABLE q_table_name MODIFY opt_col_add_column column_def
+	    ;
+
+    table_rename
+	    : ALTER TABLE q_table_name RENAME new_table_name
+	    ;
+
+    view_def
+	    : CREATE VIEW new_table_name opt_column_commalist
+		    AS query_exp opt_with_check_option
+	    ;
+
+    opt_with_check_option
+	    : /* empty */
+	    | WITH CHECK OPTION
+	    ;
+
+    opt_column_commalist
+	    : /* empty */
+	    | &apos;(&apos; column_commalist &apos;)&apos;&#10;
+	    ;
+
+    priv_opt_column_commalist
+	    : /* empty */
+	    | &apos;(&apos; column_commalist &apos;)&apos;&#10;
+	    ;
+
+    privilege_def
+	    : GRANT ALL PRIVILEGES TO grantee
+	    | GRANT privileges ON table TO grantee_commalist opt_with_grant_option
+	    | GRANT grantee_commalist TO grantee_commalist opt_with_admin_option
+	    ;
+
+    privilege_revoke
+	    : REVOKE ALL PRIVILEGES FROM grantee_commalist
+	    | REVOKE privileges ON table FROM grantee_commalist
+	    | REVOKE grantee_commalist FROM grantee_commalist
+	    ;
+
+    opt_with_grant_option
+	    : /* empty */
+	    | WITH GRANT OPTION
+	    ;
+
+    opt_with_admin_option
+	    : /* empty */
+	    | WITH ADMIN OPTION
+	    ;
+
+    privileges
+	    : ALL PRIVILEGES
+	    | ALL
+	    | operation_commalist
+	    ;
+
+    operation_commalist
+	    : operation
+	    | operation_commalist &apos;,&apos; operation
+	    ;
+
+    operation
+	    : SELECT priv_opt_column_commalist
+	    | INSERT
+	    | DELETE
+	    | UPDATE priv_opt_column_commalist
+	    | EXECUTE
+	    ;
+
+    grantee_commalist
+	    : grantee
+	    | grantee_commalist &apos;,&apos; grantee
+	    ;
+
+    grantee
+	    : PUBLIC
+	    | user
+	    ;
+
+    set_pass
+	    : SET PASSWORD NAME NAME
+	    ;
+
+    create_user_statement
+	    : CREATE USER user
+	    | CREATE ROLE user
+	    ;
+
+    delete_user_statement
+	    : DELETE USER user [CASCADE]
+	    | DROP ROLE user
+	    ;
+
+    set_group_stmt
+	    : SET USER GROUP user user
+	    ;
+
+    cursor_def
+	    : DECLARE NAME CURSOR FOR query_spec
+	    ;
+
+    opt_order_by_clause
+	    : /* empty */
+	    | ORDER BY ordering_spec_commalist
+	    ;
+
+    ordering_spec_commalist
+	    : ordering_spec
+	    | ordering_spec_commalist &apos;,&apos; ordering_spec
+	    ;
+
+    ordering_spec
+	    : INTNUM opt_asc_desc
+	    | column_ref opt_asc_desc
+	    | function_ref opt_asc_desc
+	    ;
+
+    opt_asc_desc
+	    : /* empty */
+	    | ASC
+	    | DESC
+	    ;
+
+    sql
+	    : manipulative_statement
+	    ;
+
+    manipulative_statement
+	    : query_exp
+	    | update_statement_positioned
+	    | update_statement_searched
+	    | insert_statement
+	    | delete_statement_positioned
+	    | delete_statement_searched
+	    | call_statement
+	    | admin_statement
+	    | use_statement
+	    ;
+
+    use_statement
+	    : USE NAME
+	    ;
+
+    close_statement
+	    : CLOSE cursor
+	    ;
+
+    delete_statement_positioned
+	    : DELETE FROM table WHERE CURRENT OF cursor
+	    ;
+
+    delete_statement_searched
+	    : DELETE FROM table opt_where_clause
+	    ;
+
+    fetch_statement
+	    : FETCH cursor INTO target_commalist
+	    ;
+
+    insert_mode
+	    : INTO
+	    | REPLACING
+	    | SOFT
+
+    insert_statement
+	    : INSERT insert_mode table priv_opt_column_commalist values_or_query_spec
+	    ;
+
+    values_or_query_spec
+	    : VALUES &apos;(&apos; insert_atom_commalist &apos;)&apos;
+	    | query_spec
+	    ;
+
+    insert_atom_commalist
+	    : insert_atom
+	    | insert_atom_commalist &apos;,&apos; insert_atom
+	    ;
+
+    insert_atom
+	    : scalar_exp
+	    ;
+
+    cursor_option
+	    : EXCLUSIVE
+	    | PREFETCH INTNUM
+	    ;
+
+    cursor_options_commalist
+	    : cursor_option
+	    | cursor_options_commalist &apos;,&apos; cursor_option
+	    ;
+
+    opt_cursor_options_list
+	    : /* empty */
+	    | &apos;(&apos; cursor_options_commalist &apos;)&apos;&#10;
+	    ;
+
+    open_statement
+	    : OPEN cursor opt_cursor_options_list
+	    ;
+
+    with_opt_cursor_options_list
+	    : /* empty */
+	    | WITH opt_cursor_options_list
+	    ;
+
+    select_statement
+	    : SELECT opt_all_distinct selection table_exp
+	    | SELECT opt_all_distinct selection
+	    	INTO target_commalist table_exp with_opt_cursor_options_list
+	    ;
+
+    opt_all_distinct
+	    : /* empty */
+	    | ALL
+	    | DISTINCT
+	    ;
+
+    update_statement_positioned
+	    : UPDATE table SET assignment_commalist WHERE CURRENT OF cursor
+	    ;
+
+    assignment_commalist
+	    : /* empty */
+	    | assignment
+	    | assignment_commalist &apos;,&apos; assignment
+	    ;
+
+    assignment
+	    : column COMPARISON scalar_exp
+	    ;
+
+    update_statement_searched
+	    : UPDATE table SET assignment_commalist opt_where_clause
+	    ;
+
+    target_commalist
+	    : target
+	    | target_commalist &apos;,&apos; target
+	    ;
+
+    target
+	    : column_ref
+	    ;
+
+    opt_where_clause
+	    : /* empty */
+	    | where_clause
+	    ;
+
+    query_exp
+	    : query_term
+	    | query_exp UNION query_term
+	    | query_exp UNION ALL query_term
+	    ;
+
+    query_term
+	    : query_spec
+	    | &apos;(&apos; query_exp &apos;)&apos;&#10;
+	    ;
+
+    query_spec
+	    : SELECT opt_all_distinct selection table_exp
+	    ;
+
+    selection
+	    : scalar_exp_commalist
+	    ;
+
+    table_exp
+	    : from_clause opt_where_clause opt_group_by_clause opt_having_clause
+		    opt_order_by_clause opt_lock_mode
+	    ;
+
+    from_clause
+	    : FROM table_ref_commalist
+	    ;
+
+    table_ref_commalist
+	    : table_ref
+	    | table_ref_commalist &apos;,&apos; table_ref
+	    ;
+
+    table_ref
+	    : table
+	    | &apos;(&apos; query_exp &apos;)&apos; NAME
+	    | joined_table
+	    ;
+
+    table_ref_nj
+	    : table
+	    | subquery NAME
+	    ;
+
+    opt_outer
+	    : /* empty */
+	    | OUTER
+	    ;
+
+    jtype
+	    : LEFT
+	    ;
+
+    joined_table
+	    : table_ref jtype opt_outer JOIN table_ref_nj ON search_condition
+	    | BEGIN_OJ_X table_ref jtype opt_outer JOIN table_ref_nj
+	      ON search_condition ENDX
+	    ;
+
+    where_clause
+	    : WHERE search_condition
+	    ;
+
+    opt_group_by_clause
+	    : /* empty */
+	    | GROUP BY ordering_spec_commalist
+	    ;
+
+    opt_having_clause
+	    : /* empty */
+	    | HAVING search_condition
+	    ;
+
+    opt_lock_mode
+	    : /* empty */
+	    | FOR UPDATE
+	    ;
+
+    search_condition
+	    : /* empty */
+	    | search_condition OR search_condition
+	    | search_condition AND search_condition
+	    | NOT search_condition
+	    | &apos;(&apos; search_condition &apos;)&apos;&#10;
+	    | predicate
+	    ;
+
+    predicate
+	    : comparison_predicate
+	    | between_predicate
+	    | like_predicate
+	    | test_for_null
+	    | in_predicate
+	    | all_or_any_predicate
+	    | existence_test
+	    | scalar_exp_predicate
+	    ;
+
+    scalar_exp_predicate
+	    : scalar_exp
+	    ;
+
+    comparison_predicate
+	    : scalar_exp COMPARISON scalar_exp
+	    | scalar_exp COMPARISON subquery
+	    ;
+
+    between_predicate
+	    : scalar_exp NOT BETWEEN scalar_exp AND scalar_exp
+	    | scalar_exp BETWEEN scalar_exp AND scalar_exp
+	    ;
+
+    like_predicate
+	    : scalar_exp NOT LIKE scalar_exp opt_escape
+	    | scalar_exp LIKE scalar_exp opt_escape
+	    ;
+
+    opt_escape
+	    : /* empty */
+	    | ESCAPE atom
+	    | BEGINX ESCAPE atom ENDX
+	    ;
+
+    test_for_null
+	    : column_ref IS NOT NULLX
+	    | column_ref IS NULLX
+	    ;
+
+    in_predicate
+	    : scalar_exp NOT IN subquery
+	    | scalar_exp IN subquery
+	    | scalar_exp NOT IN &apos;(&apos; scalar_exp_commalist &apos;)&apos;&#10;
+	    | scalar_exp IN &apos;(&apos; scalar_exp_commalist &apos;)&apos;&#10;
+	    ;
+
+    all_or_any_predicate
+	    : scalar_exp COMPARISON any_all_some subquery
+	    ;
+
+    any_all_some
+	    : ANY
+	    | ALL
+	    | SOME
+	    ;
+
+    existence_test
+	    : EXISTS subquery
+	    ;
+
+    subquery
+	    : &apos;(&apos; SELECT opt_all_distinct selection table_exp &apos;)&apos;&#10;
+	    ;
+
+    scalar_exp
+	    : scalar_exp &apos;+&apos; scalar_exp
+	    | scalar_exp &apos;-&apos; scalar_exp
+	    | scalar_exp &apos;*&apos; scalar_exp
+	    | scalar_exp &apos;/&apos; scalar_exp
+	    | &apos;+&apos; scalar_exp %prec UMINUS
+	    | &apos;-&apos; scalar_exp %prec UMINUS
+	    | atom
+	    | column_ref
+	    | function_ref
+	    | &apos;(&apos; scalar_exp &apos;)&apos;&#10;
+	    | &apos;(&apos; scalar_exp &apos;,&apos; scalar_exp_commalist &apos;)&apos;&#10;
+	    | function_call
+	    | as_expression
+	    | assignment_statement
+	    | cvt_exp
+	    ;
+
+    cvt_exp
+	    : CONVERT &apos;(&apos; data_type &apos;,&apos; scalar_exp &apos;)&apos;&#10;
+	    ;
+
+    as_expression
+	    : scalar_exp AS NAME data_type
+	    | scalar_exp AS NAME
+	    ;
+
+    opt_scalar_exp_commalist
+	    : /* empty */
+	    | scalar_exp_commalist
+	    ;
+
+    function_call
+	    : q_table_name &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos;&#10;
+	    | BEGIN_FN_X NAME &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos; ENDX
+	    | BEGIN_FN_X USER &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos; ENDX
+	    | BEGIN_FN_X CHARACTER &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos; ENDX
+	    | CALL &apos;(&apos; scalar_exp &apos;)&apos; &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos;&#10;
+	    ;
+
+    obe_literal
+	    : BEGINX NAME atom ENDX
+	    ;
+
+    scalar_exp_commalist
+	    : scalar_exp
+	    | scalar_exp_commalist &apos;,&apos; scalar_exp
+	    ;
+
+    atom
+	    : parameter_ref
+	    | literal
+	    | USER
+	    | obe_literal
+	    ;
+
+    parameter_ref
+	    : parameter
+	    | parameter parameter
+	    | parameter INDICATOR parameter
+	    ;
+
+    function_ref
+	    : AMMSC &apos;(&apos; &apos;*&apos; &apos;)&apos;&#10;
+	    | AMMSC &apos;(&apos; DISTINCT scalar_exp &apos;)&apos;&#10;
+	    | AMMSC &apos;(&apos; ALL scalar_exp &apos;)&apos;&#10;
+	    | AMMSC &apos;(&apos; scalar_exp &apos;)&apos;&#10;
+	    ;
+
+    literal
+	    : STRING
+	    | INTNUM
+	    | APPROXNUM
+	    | NULLX
+	    ;
+
+    q_table_name
+	    : NAME
+	    | NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos; NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos;  &apos;.&apos; NAME
+	    ;
+
+    new_table_name
+	    : NAME
+	    | NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos; NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos;  &apos;.&apos; NAME
+	    ;
+
+    table
+	    : q_table_name
+	    | q_table_name AS NAME
+	    | q_table_name NAME
+	    ;
+
+    column_ref
+	    : NAME
+	    | NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos; NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos; NAME &apos;.&apos; NAME &apos;.&apos; NAME
+	    | NAME &apos;.&apos; &apos;.&apos; NAME &apos;.&apos; NAME
+	    | &apos;*&apos;
+	    | NAME &apos;.&apos; &apos;*&apos;
+	    | NAME &apos;.&apos; NAME &apos;.&apos; &apos;*&apos;&#10;
+	    | NAME &apos;.&apos; NAME &apos;.&apos; NAME &apos;.&apos; &apos;*&apos;&#10;
+	    | NAME &apos;.&apos; &apos;.&apos; NAME &apos;.&apos; &apos;*&apos;&#10;
+	    ;
+
+    data_type
+	    : CHARACTER
+	    | VARCHAR
+	    | VARCHAR &apos;(&apos; INTNUM &apos;)&apos;&#10;
+	    | CHARACTER &apos;(&apos; INTNUM &apos;)&apos;&#10;
+	    | NUMERIC
+	    | NUMERIC &apos;(&apos; INTNUM &apos;)&apos;&#10;
+	    | NUMERIC &apos;(&apos; INTNUM &apos;,&apos; INTNUM &apos;)&apos;&#10;
+	    | DECIMAL
+	    | DECIMAL &apos;(&apos; INTNUM &apos;)&apos;&#10;
+	    | DECIMAL &apos;(&apos; INTNUM &apos;,&apos; INTNUM &apos;)&apos;&#10;
+	    | INTEGER
+	    | SMALLINT
+	    | FLOAT
+	    | FLOAT &apos;(&apos; INTNUM &apos;)&apos;&#10;
+	    | REAL
+	    | DOUBLE PRECISION
+	    | LONG VARCHAR
+	    | LONG VARBINARY
+	    | TIMESTAMP
+	    | DATETIME
+	    | TIME
+	    | DATE
+	    | OWNER
+	    ;
+
+    column
+	    : NAME
+	    ;
+
+    index
+	    : NAME
+	    ;
+
+    cursor
+	    : NAME
+	    ;
+
+    parameter
+	    : PARAMETER
+	    ;
+
+    user
+	    : NAME
+	    ;
+
+    opt_log
+	    : /* empty */
+	    | scalar_exp
+	    ;
+
+    comma_opt_log
+	    : /* empty */
+	    | &apos;,&apos; scalar_exp
+	    ;
+
+    admin_statement
+	    : CHECKPOINT opt_log
+	    | SHUTDOWN opt_log
+	    | SET REPLICATION atom
+	    | LOG OFF
+	    | LOG ON
+	    ;
+
+    sql
+	    : routine_declaration
+	    | trigger_def
+	    | drop_trigger
+	    ;
+
+    routine_declaration
+	    : CREATE routine_head new_table_name rout_parameter_list
+		opt_return compound_statement
+	    ;
+
+    routine_head
+	    : FUNCTION
+	    | PROCEDURE
+	    ;
+
+    opt_return
+	    : /* empty */
+	    | RETURNS data_type
+	    ;
+
+    rout_parameter_list
+	    : &apos;(&apos; parameter_commalist &apos;)&apos;&#10;
+	    ;
+
+    parameter_commalist
+	    : rout_parameter
+	    | parameter_commalist &apos;,&apos; rout_parameter
+	    ;
+
+    rout_parameter
+	    : parameter_mode column_ref data_type
+	    ;
+
+    parameter_mode
+	    : IN
+	    | OUT
+	    | INOUT
+	    ;
+
+    routine_statement
+	    : select_statement
+	    | update_statement_positioned
+	    | update_statement_searched
+	    | insert_statement
+	    | delete_statement_positioned
+	    | delete_statement_searched
+	    | close_statement
+	    | fetch_statement
+	    | open_statement
+	    | commit_statement
+    */
+	    | &apos;;&apos;&#10;
+	    ;
+
+    compound_statement
+	    : BEGINX statement_list ENDX
+	    ;
+
+    statement_list
+	    : statement_in_cs
+	    | statement_list statement_in_cs
+	    ;
+
+    statement_in_cs
+	    : local_declaration &apos;;&apos;&#10;
+	    | compound_statement
+	    | routine_statement &apos;;&apos;&#10;
+	    | control_statement
+	    | NAME &apos;:&apos; statement
+	    ;
+
+    statement
+	    : routine_statement &apos;;&apos;&#10;
+	    | control_statement
+	    | compound_statement
+	    ;
+
+    local_declaration
+	    : cursor_def
+	    | variable_declaration
+	    | handler_declaration
+	    ;
+
+    variable_declaration
+	    : DECLARE variable_list data_type
+	    ;
+
+    variable_list
+	    : NAME
+	    | variable_list &apos;,&apos; NAME
+	    ;
+
+    condition
+	    : NOT FOUND
+	    | SQLSTATE STRING
+	    ;
+
+    handler_declaration
+	    : WHENEVER condition GOTO NAME
+	    | WHENEVER condition GO TO NAME
+	    ;
+
+    control_statement
+	    : call_statement &apos;;&apos;&#10;
+	    | return_statement &apos;;&apos;&#10;
+	    | assignment_statement &apos;;&apos;&#10;
+	    | if_statement
+	    | goto_statement &apos;;&apos;&#10;
+	    | while_statement
+	    ;
+
+    assignment_statement
+	    : lvalue EQUALS scalar_exp
+	    ;
+
+    lvalue
+	    : column_ref
+	    ;
+
+    if_statement
+	    : IF &apos;(&apos; search_condition &apos;)&apos; statement opt_else
+	    ;
+
+    opt_else
+	    : /* empty */
+	    | ELSE statement
+	    ;
+
+    call_statement
+	    : CALL q_table_name &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos;&#10;
+	    | function_call
+	    ;
+
+    goto_statement
+	    : GOTO NAME
+	    | GO TO NAME
+	    ;
+
+    return_statement
+	    : RETURN scalar_exp
+	    | RETURN
+	    ;
+
+    while_statement
+	    : WHILE &apos;(&apos; search_condition &apos;)&apos; statement
+	    ;
+
+    trigger_def
+	    : CREATE TRIGGER NAME action_time event ON q_table_name
+			    opt_old_ref compound_statement
+	    ;
+
+    action_time
+	    : BEFORE
+	    | AFTER
+	    ;
+
+    event
+	    : INSERT
+	    | UPDATE
+	    | DELETE
+	    ;
+
+    opt_old_ref
+	    : /* empty */
+	    | REFERENCING old_commalist
+	    ;
+
+    old_commalist
+	    : old_alias
+	    | old_commalist &apos;,&apos; old_alias
+	    ;
+
+    old_alias
+ 	    : OLD AS NAME
+ 	    | NEW AS NAME
+	    ;
+
+    drop_trigger
+	    : DROP TRIGGER q_table_name
+	    ;
+</programlisting>
+	</sect1>
+	<!-- ======================================== -->
+</chapter>
+
+
+

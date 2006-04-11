@@ -1,0 +1,28 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VirtCOMServer", "VirtCOMServer\VirtCOMServer.vcproj", "{1460409A-6D66-4657-BF76-73F69A387781}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VirtCOMServerPS", "VirtCOMServer\VirtCOMServerPS.vcproj", "{A3A33DAE-BAF6-4A52-9C1E-A41C6C816EDD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1460409A-6D66-4657-BF76-73F69A387781} = {1460409A-6D66-4657-BF76-73F69A387781}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{1460409A-6D66-4657-BF76-73F69A387781}.Debug.ActiveCfg = Debug|Win32
+		{1460409A-6D66-4657-BF76-73F69A387781}.Debug.Build.0 = Debug|Win32
+		{1460409A-6D66-4657-BF76-73F69A387781}.Release.ActiveCfg = Release|Win32
+		{1460409A-6D66-4657-BF76-73F69A387781}.Release.Build.0 = Release|Win32
+		{A3A33DAE-BAF6-4A52-9C1E-A41C6C816EDD}.Debug.ActiveCfg = Debug|Win32
+		{A3A33DAE-BAF6-4A52-9C1E-A41C6C816EDD}.Release.ActiveCfg = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

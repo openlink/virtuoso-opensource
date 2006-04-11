@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_ltrim">
+  <refmeta>
+    <refentrytitle>ltrim</refentrytitle>
+    <refmiscinfo>string</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>ltrim</refname>
+    <refpurpose>removes specific characters from a string</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_ltrim">
+      <funcprototype id="fproto_ltrim">
+        <funcdef><function>ltrim</function></funcdef>
+        <paramdef><parameter>str</parameter> string</paramdef>
+        <paramdef><optional><parameter>trimchars</parameter> string</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_ltrim"><title>Description</title>
+<para>ltrim returns a copy of subsequence of string str with all the characters
+    present in trimchars trimmed off from the beginning. If the second
+    argument is omitted, it is a space ' ' by default.
+</para>
+<para>
+    rtrim is similar except that it trims from the right.
+</para>
+<para>
+    trim trims from both ends.
+</para>
+<screen>concat('*',trim('   SIMURG   '),'*') -&gt; '*SIMURG*'
+ltrim('AbracadabrA','bAr')  -&gt; 'acadabrA'
+rtrim('AbracadabrA','bAr')  -&gt; 'Abracada'
+trim('AbracadabrA','bAr')    -&gt; 'acada'
+</screen>
+
+</refsect1>
+</refentry>
+
+
+

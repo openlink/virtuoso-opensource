@@ -1,0 +1,10 @@
+<!ELEMENT company (name, ticker_symbol?, description?,
+          business_code, partners?, competitors?)>
+<!ELEMENT name (#PCDATA)>
+<!ELEMENT ticker_symbol (#PCDATA)>
+<!ELEMENT description (#PCDATA)>
+<!ELEMENT business_code (#PCDATA)>
+<!ELEMENT partners (partner+)>
+<!ELEMENT partner (#PCDATA)>
+<!ELEMENT competitors (competitor+)>
+<!ELEMENT competitor (#PCDATA)>

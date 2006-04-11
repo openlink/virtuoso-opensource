@@ -1,0 +1,870 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="odbcimplementation"><title>Virtuoso Driver for ODBC</title>
+
+  <sect2 id="virtdsnsetup"><title>Windows ODBC Driver Configuration</title>
+  <para>At installation time two ODBC data source names (DSN&apos;s)
+  are created with default values by the Virtuoso installer, the first DSN named &quot;Local
+  Virtuoso&quot; provides a link to a local default Virtuoso database server instance, while
+  the other named &quot;Local Virtuoso Demo&quot; provides a link to a local Virtuoso server
+  for the Virtuoso demonstration database.</para>
+  <para>The process of creating additional ODBC DSN&apos;s for you Virtuoso drivers for ODBC
+  is explained in the steps that follow:</para>
+
+  <orderedlist>
+  <listitem><para>Go to the Windows <emphasis>Control panel</emphasis>.</para></listitem>
+  <listitem><para>Double click on the <emphasis>ODBC Administrator</emphasis> applet.
+	On Windows 2000 the ODBC Administrator applet may be called
+	<emphasis>Data Source (ODBC)</emphasis> and may be found under Administrative
+	tools icon of the Control Panel.</para></listitem>
+	<listitem><para>Once the ODBC Administrator has been loaded choose by selecting
+	the appropriate panel whether you want a new User or System Data Source.  User
+	Data Sources will only be available to the user that created them.  System Data
+	Sources will be available to all users and applications on the system.</para></listitem>
+	<listitem><para>Click on the <emphasis>Add</emphasis> Data Source Name button</para></listitem>
+  <listitem><para>Select the Driver named <emphasis>OpenLink Virtuoso Driver</emphasis></para></listitem>
+  <listitem><para>Enter values into the fields presented by the Virtuoso
+	Driver&apos;s DSN configuration dialog:</para>
+
+    <figure id="virtdsn001" float="1"><title>Virtuoso ODBC Driver Setup Dialogue for Windows</title>
+      <graphic fileref="virtdsn001.jpg" width="420px" depth="333px"/></figure>
+
+  <para><emphasis>DSN:</emphasis> provide a name that will act as a logical
+	reference to the Virtuoso database server that you will be connecting to.
+	Subsequent references to this database will be made to this value when ODBC
+	compliant applications interact with your Virtuoso driver.</para>
+  <para><emphasis>Description:</emphasis> allows you to provide a short
+	description about the nature of the connection.  This is optional.</para>
+  <para><emphasis>Server:</emphasis> enter the hostname or IP address of the
+	machine hosting your Virtuoso server.</para>
+  <para><emphasis>Port:</emphasis> enter the port number that Virtuoso is
+	listening at.  This is configured in the <link linkend="VIRTINI">Virtuoso ini</link>
+	file on the server.</para></listitem>
+
+	<listitem><para>Press the <emphasis>Next</emphasis> button to configure more
+	details about the connection</para>
+
+    <figure id="virtdsn002" float="1"><title>Virtuoso ODBC Driver Setup Dialogue for Windows</title>
+      <graphic fileref="virtdsn002.jpg" width="420px" depth="333px"/></figure>
+
+  <para><emphasis>User name:</emphasis> allows you to specify the default username
+	for the connection.</para>
+	<para><emphasis>Automatically adjust clock for daylight saving changes</emphasis>
+	lets you choose whether time data values  are adjusted to counter the effects of
+	daylight saving.</para>
+	<para><emphasis>Connect to the Virtuoso Server to obtain databases list</emphasis>
+	when checked will allow you to provide a <emphasis>Password</emphasis> which
+	will be used with the default user name setting to automatically interrogate
+	the database for a list of database names.</para>
+	<para><emphasis>Password:</emphasis> where you specify the password required
+	for the automatic connection to the database for retrieval of database names</para>
+	<para><emphasis>Database:</emphasis> allows you to select the default database
+	for the connection.  You will need to check the box above and supply a password
+	to refresh this list.  Objects created or selected without an explicit
+	catalogue/database qualifier will automatically be sought from this select database.</para>
+	<para><emphasis>Charset:</emphasis> lets you choose the default character set
+	for the connection.</para>
+
+  <para><emphasis>Test database connection</emphasis> can be used to
+	test your configuration</para>
+
+    <figure id="virtdsn003" float="1"><title>Virtuoso ODBC Driver Setup Dialogue for Windows</title>
+      <graphic fileref="virtdsn003.jpg" width="354px" depth="287px"/></figure>
+
+  <para>supply the remaining details (usually only password) and press ok to test.
+	If all is well then you will have returned the confirmation box</para>
+
+    <figure id="virtdsn004" float="1"><title>Virtuoso ODBC Driver Setup Dialogue for Windows</title>
+      <graphic fileref="virtdsn004.jpg" width="380px" depth="126px"/></figure>
+
+  </listitem>
+	<listitem><para>Press <emphasis>Next</emphasis> to configure encryption</para>
+
+    <figure id="virtdsn005" float="1"><title>Virtuoso ODBC Driver Setup Dialogue for Windows</title>
+      <graphic fileref="virtdsn005.jpg" width="420px" depth="333px"/></figure>
+
+	<para>The <emphasis>Encrypted</emphasis> checkbox specifies an encrypted
+	connection when checked.</para>
+	<para>A <emphasis>PKCS#12 file</emphasis> certificate must be supplied
+	for the server to authorize the connection.
+	See <link linkend="x509odbcclient">Using SSL For Secure  ODBC connections</link> for
+	more information regarding this.</para></listitem>
+
+	<listitem><para>When the configuration is complete, and indeed at any time
+	you are satisfied with the configuration press the <emphasis>Finish</emphasis>
+	button to save the DSN.</para></listitem>
+  </orderedlist>
+  </sect2>
+
+&secureodbc;
+
+  <sect2 id="odbccompliance"><title>ODBC Compliance</title>
+
+  <para>The Virtuoso Driver for ODBC conforms to both the ODBC
+  1.x,2.x,and 3.x versions of the ODBC specification, it implements Core, Level 1, Level 2,
+  and Extensions functionality. It also has a native support for the wide versions of the
+  ODBC API (e.g. SQLColumnsW) in Windows. This driver enables you to communicate with local or remote
+  Virtuoso servers across any combination of platforms supported by Virtuoso.</para>
+
+    <sect3 id="odbccompliance"><title>ODBC API implementation details</title>
+      <sect4 id="SQLAllocHandle"><title>SQLAllocHandle</title>
+        <para>Virtuoso ODBC driver does not allow allocation and usage of
+        explicitly allocated descriptor handles.  That is why the
+        SQLAllocHandle (SQL_HANDLE_DESC) will return an error.</para>
+      </sect4>
+      <sect4 id="SQLBulkOperations"><title>SQLBulkOperations</title>
+        <para>Only the SQL_ADD operation is supported.</para>
+      </sect4>
+      <sect4 id="SQLColAttributes"><title>SQLColAttributes</title>
+        <para>The virtuoso ODBC driver does not return information for the
+        following attributes:</para>
+	  <itemizedlist>
+	    <listitem>
+	      <formalpara>
+		<title>SQL_COLUMN_TABLE_NAME</title>
+		<para>Returns an empty string instead</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>SQL_COLUMN_OWNER_NAME</title>
+		<para>Returns an empty string instead</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>SQL_COLUMN_QUALIFIER_NAME</title>
+		<para>Returns an empty string instead</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>SQL_COLUMN_CASE_SENSITIVE</title>
+		<para>Returns 1 instead</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>SQL_COLUMN_AUTO_INCREMENT</title>
+		<para>Returns 0 instead</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>SQL_COLUMN_MONEY</title>
+		<para>Returns 0 instead</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>SQL_COLUMN_UNSIGNED</title>
+		<para>Returns 0 instead</para>
+	      </formalpara>
+	    </listitem>
+	  </itemizedlist>
+      </sect4>
+
+      <sect4 id="SQLDriverConnect"><title>SQLDriverConnect</title>
+        <para>The Virtuoso ODBC driver recognizes the following
+        SQLDriverConnect connection string keywords:</para>
+	  <itemizedlist>
+	    <listitem>
+	      <formalpara>
+		<title>DSN</title>
+		<para>The data source name.</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>HOST</title>
+		<para>The virtuoso server host specification (in the form : [&lt;hostname&gt;[:]][&lt;portnumber&gt;]</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>UID</title>
+		<para>The virtuoso user ID used to connect</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>PWD</title>
+		<para>The login password used to connect</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>DATABASE</title>
+		<para>The qualifier to use when connected (overrides the user's default qualifier)</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>CHARSET</title>
+		<para>The name of the character set to use for wide/narrow conversions</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>DAYLIGHT</title>
+		<para>Boolean parameter (1/0). When ON (1) it takes into account the
+            client OS daylight savings settings.</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>ENCRYPT</title>
+		<para>String parameter (file name or "1"). Specifies how the ODBC
+            connection will be encrypted. see the <link linkend="x509odbcclient">Using
+            SSL For Secure  ODBC connections</link> for details.</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>PWDCLEAR</title>
+		<para>Integer parameter (default to 0). Specifies how the password 
+		    will be sent over the wire. 0 - send digest of the password, 
+		    1 - send password in cleartext, 2 - send password garbaled.</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>SERVERCERT</title>
+		<para>String parameter (file name). Specifies the path for the 
+		    CA list used to verify the server's certificate (in PEM format). 
+		    see the <link linkend="x509odbcclient">Using
+            SSL For Secure  ODBC connections</link> for details.</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>FORCE_DBMS_NAME</title>
+		<para>String parameter (default "OpenLink Virtuoso"). When set it 
+		    alters the result of SQLGetInfo (SQL_DBMS_NAME).</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>NoSystemTables</title>
+		<para>Boolean parameter (1/0) (default 0). When set it 
+		    alters the result of SQLTables () so that it won't find or return
+		    tables of type SYSTEM TABLE.</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>IsolationLevel</title>
+		<para>String parameter ("Read Uncommitted"/"Read Committed"/"Repeatable Read"/"Serializable"). 
+		    When set it specifies the initial transaction isolation mode for that connection.</para>
+	      </formalpara>
+	    </listitem>
+	  </itemizedlist>
+      </sect4>
+      <sect4 id="SQLGetEnvAttr"><title>SQLGetEnvAttr</title>
+        <para>The SQL_ATTR_OUTPUT_NTS does not have any effect on the
+        Virtuoso driver.  It allows the value to be set and retrieved
+        but with no further effect.</para>
+      </sect4>
+      <sect4 id="SQLNativeSql"><title>SQLNativeSql</title>
+        <para>All ODBC syntax is parsed server side.  The native SQL syntax for
+        Virtuoso is the ODBC syntax.</para>
+      </sect4>
+      <sect4 id="not_supp"><title>Not Supported ODBC API functions</title>
+        <para>Virtuoso ODBC driver does not support the following ODBC API
+        functions:</para>
+	  <itemizedlist>
+	    <listitem><para>SQLCopyDesc</para></listitem>
+	  </itemizedlist>
+      </sect4>
+    </sect3>
+  </sect2>
+
+	<!-- ======================================== -->
+	<sect2 id="VScrlCURSORS">
+		<title>Virtuoso Scrollable Cursor Engine</title>
+		<para>Virtuoso implements server side scrollable cursors.
+ODBC 2.0, ODBC 3.5 and JDBC 2.0 API&apos;s are supported.
+</para>
+		<para>Cursor types include:</para>
+		<itemizedlist>
+			<listitem>
+				<formalpara>
+					<title>Forward only</title>
+					<para>This is the default, non-scrollable cursor.</para>
+				</formalpara>
+			</listitem>
+			<listitem>
+				<formalpara>
+					<title>Static</title>
+					<para>The cursor&apos;s evaluation is computed when the cursor statement is first executed.
+	Positioned operations are possible but their effect will not show nor will changes be detected.</para>
+				</formalpara>
+			</listitem>
+			<listitem>
+				<formalpara>
+					<title>Keyset</title>
+					<para>When the cursor is opened a keyset is built.  Rows within the keyset
+	can be fetched and modified by positioned operations. Changes will show when refreshing
+	data and changes by other transactions will be detected for update and delete.
+	Inserts by the same or different transaction will not appear.
+	A keyset cursor may have a finite keyset size. When scrolling outside of
+	the given keyset the keyset will shift to cover the new rows.</para>
+				</formalpara>
+			</listitem>
+			<listitem>
+				<formalpara>
+					<title>Dynamic</title>
+					<para>A dynamic cursor will reflect all changes by the same and different transactions.
+	The dynamic cursor&apos;s evaluation is constructed as needed, hence it generally has
+	less overhead than other types of cursors.</para>
+				</formalpara>
+			</listitem>
+			<listitem>
+				<formalpara>
+					<title>Mixed</title>
+					<para>A mixed cursor is a combination of a keyset-driven cursor and a dynamic cursor.
+It is used when the result set is too large to reasonably generate a keyset for the entire result set.
+Mixed cursors use a keyset smaller than the entire result set but larger than the rowset.
+</para>
+					<para>
+While the application is scrolling within the keyset, the behavior is keyset-driven.
+When the application scrolls beyond the keyset, the behavior becomes dynamic to fetch
+the requested rows and generate a new keyset.
+The behavior then reverts back to keyset-driven within that keyset, as before.
+</para>
+				</formalpara>
+			</listitem>
+		</itemizedlist>
+		<sect3 id="FwdOnlyCursors">
+			<title>Forward Only Cursors</title>
+			<para>
+A forward only cursor is substantially more efficient than a scrollable
+cursor. It however does not allow positioned operations (the WHERE CURRENT OF SQL phrase),
+or SQLSetPos.  The SQLExtendedFetch function is supported but only the SQL_FETCH_NEXT
+fetch type is then allowed.
+</para>
+		</sect3>
+		<sect3 id="CursorOperation">
+			<title>Cursor Operations</title>
+			<para>Virtuoso supports all ODBC scrollable cursor operations. These include
+</para>
+			<formalpara>
+				<title>SQLExtendedFetch / SQLScrollFetch fetch type</title>
+				<itemizedlist>
+					<listitem>
+						<para>SQL_FETCH_FIRST</para>
+					</listitem>
+					<listitem>
+						<para>SQL_FETCH_LAST</para>
+					</listitem>
+					<listitem>
+						<para>SQL_FETCH_NEXT</para>
+					</listitem>
+					<listitem>
+						<para>SQL_FETCH_PRIOR</para>
+					</listitem>
+					<listitem>
+						<para>SQL_FETCH_RELATIVE</para>
+					</listitem>
+					<listitem>
+						<para>SQL_FETCH_ABSOLUTE</para>
+					</listitem>
+					<listitem>
+						<para>SQL_FETCH_BOOKMARK</para>
+					</listitem>
+				</itemizedlist>
+			</formalpara>
+			<formalpara>
+				<title>SQLSetPos operations</title>
+				<itemizedlist>
+					<listitem>
+						<para>SQL_POSITION</para>
+					</listitem>
+					<listitem>
+						<para>SQL_REFRESH</para>
+					</listitem>
+					<listitem>
+						<para>SQL_ADD</para>
+					</listitem>
+					<listitem>
+						<para>SQL_UPDATE</para>
+					</listitem>
+					<listitem>
+						<para>SQL_DELETE</para>
+					</listitem>
+				</itemizedlist>
+			</formalpara>
+			<para>
+Positioned SQL statements, i.e. the WHERE CURRENT OF clause, is supported for
+scrollable cursors.
+</para>
+		</sect3>
+		<sect3 id="CursorOptions">
+			<title>Cursor Options</title>
+			<para>The cursor options
+<itemizedlist>
+					<listitem>
+						<para>SQL_CURSOR_TYPE</para>
+					</listitem>
+					<listitem>
+						<para>SQL_CONCURRENCY</para>
+					</listitem>
+					<listitem>
+						<para>SQL_KEYSET_SIZE</para>
+					</listitem>
+					<listitem>
+						<para>Cursor name (SQLSetCursorName)</para>
+					</listitem>
+				</itemizedlist>
+
+have to be set before a SQLPrepare or SQLExecDirect.
+</para>
+			<para>
+The SQL_ROWSET_SIZE can be varied while a cursor is open.
+</para>
+		</sect3>
+		<sect3 id="CursorsTransactions">
+			<title>Cursors and Transactions</title>
+			<para>
+All forward only or scrollable cursors survive committing or rolling back transactions.
+A  cursor maintains its position over a transaction&apos;s end. Hence the
+next fetch operation will resume from the correct place. If a dynamic cursor&apos;s current row / rowset is
+deleted, the cursor will continue from the next greater / lesser row in the order of the cursor&apos;s
+ordering columns.  This also applies to mixed mode (keyset with finite keyset size)
+cursors scrolling outside of the keyset bounds.  A forward only cursor will retain its logical position across commit/rollback.
+</para>
+			<para>
+The SQL_CONCURRENCY values of SQL_CONCUR_READ_ONLY and SQL_CONCUR_LOCK
+cause Virtuoso to lock the rows in the keyset / rowset in shared or exclusive mode, respectively.
+</para>
+		</sect3>
+		<sect3 id="OptimisticConcurrency">
+			<title>Optimistic Concurrency Control</title>
+			<para>
+A scrollable cursor may have a SQL_CONCURRENCY setting of SQL_CONCUR_VALUES. This
+enables optimistic concurrency control.  This is a mechanism which will reflect an
+update or delete of a row if the row has been modified by a third party after the time the
+application last read the row.
+</para>
+			<para>
+A &apos;updated meanwhile&apos; condition detected in this manner will prevent the operation and
+return a SQL state of 01001 with SQL_SUCCESS_WITH_INFO from SQLSetPos.
+</para>
+			<para>
+The updates and deletes made through SQLSetPos are still subject to being committed or rolled
+back by normal transaction control.  The 01001 state does not prevent the current transaction
+from committing.
+</para>
+			<para>
+The 01001 state is only detected if the update or delete is made by SQLSetPos and the row
+at hand has been changed by any statement of any transaction. If the update of updated
+operation is carried out by any other operation than SQLSetPos of the statement that last read
+the value the condition cannot be  detected.
+</para>
+			<para>
+Note that the time between the last read and the SQLSetPos update can be long
+and can span multiple transactions.
+</para>
+		</sect3>
+		<sect3 id="CursorInfo">
+			<title>Cursor Information</title>
+			<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+				<title>Cursor Support</title>
+				<tgroup align="char" charoff="50" char="." cols="4">
+					<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+					<thead>
+						<row>
+							<entry/>
+							<entry>Static</entry>
+							<entry>Keyset</entry>
+							<entry>Dynamic</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>SQLRowCount</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+							<entry/>
+						</row>
+						<row>
+							<entry>SQL_BOOKMARK</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+						</row>
+						<row>
+							<entry>SQL_ROW_NUMBER</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+							<entry/>
+						</row>
+						<row>
+							<entry>reflect update</entry>
+							<entry/>
+							<entry>x</entry>
+							<entry>x</entry>
+						</row>
+						<row>
+							<entry>reflect delete</entry>
+							<entry/>
+							<entry/>
+							<entry>x</entry>
+						</row>
+						<row>
+							<entry>reflect inx</entry>
+							<entry/>
+							<entry/>
+							<entry>x</entry>
+						</row>
+						<row>
+							<entry>Notice update</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+						</row>
+						<row>
+							<entry>Notice delete</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+			<para>
+SQLRowCount is set after the initial SQLExecute. This is the actual row count or the keyset size
+for a mixed mode cursor.  A dynamic cursor does not know this since it builds the evaluation as
+needed.
+</para>
+			<para>
+All cursors support bookmarks.
+</para>
+			<para>
+The SQL_ROW_NUMBER is the ordinal number of the current row in the
+cursor&apos;s evaluation.  A dynamic cursor cannot know this, as the scrolling may
+start from end and rows may appear on either side of the current row while the cursor is open.
+</para>
+			<para>
+&apos;reflect&apos; means that the new values or added / deleted rows
+appear when re-scrolling over the rows. A deletion is reflected by
+omitting the row.
+</para>
+			<para>
+&apos;notice&apos; means that the row is flagged by SQL_UPDATE, SQL_DELETED
+or SQL_ADDED in the SQLExtendedFetch status array when the cursor re-scrolls over the
+rows in question.
+</para>
+		</sect3>
+		<sect3 id="CursorsVDB">
+			<title>Cursors and Virtual Database</title>
+			<para>
+The cursor subsystem modifies the cursor&apos;s defining select statement to
+make various backward and forward read statements, update and delete statements etc.
+These transformations can be seen through the explain function.
+</para>
+			<para>
+Since cursors are implemented by generating SQL statements these work transparently
+against remote database, independently of their possible native cursor support.
+</para>
+		</sect3>
+		<sect3 id="CursorSpecialCases">
+			<title>Cursor Special Cases</title>
+			<para>
+SQL SELECT statements fall in two categories: Simple, which consist of
+one or more tables, an arbitrary WHERE clause and an optional ORDER BY, and Complex, which includes
+all other SELECT&apos;s, e.g. ones with GROUP BY, derived tables, full outer joins, UNION&apos;s etc.
+</para>
+			<para>
+A simple statement can easily be modified to read backwards or forwards from a given point. Also,
+each result row of a simple statement has a physical counterpart, or many physical counterparts
+for a join.  Having a physical counterpart makes it possible to define the meaning of a positioned
+update or delete.  A GROUP BY is a counter-example.
+</para>
+			<para>
+All complex SQL statements occurring as cursors are processed as static
+cursors regardless of the declared cursor type.
+</para>
+		</sect3>
+		<sect3 id="CursorPerf">
+			<title>Cursors and Performance</title>
+			<para>
+If a cursor&apos;s ordering corresponds to an ordering in an index, dynamic cursors will generally perform
+best.  This is understandable since the engine can quickly locate
+the current row based on an index and then just read backward or forward on that index.
+On the other hand, if the result set is very sparsely spread over the table or if
+there is no ordering index dynamic cursors will have a substantial penalty.
+</para>
+			<para>
+If used as a forward only cursor in a single transaction, a dynamic cursor is only some
+30% slower than a forward only cursor.
+</para>
+			<para>
+A static or keyset cursor has a relatively long execute time since the initial execute
+will make the entire keyset. The initial execute of a dynamic cursor is instantaneous
+since the fetch operations will do the work as needed.
+</para>
+			<para>
+With most off the shelf applications, e.g. Microsoft ADO, static and keyset cursors
+are preferable because the applications may rely on row counts and row numbers which
+are not known for dynamic cursors.
+</para>
+			<para>
+Positioned operations are not affected by cursor type.
+</para>
+		</sect3>
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="CONN_STMT_OPTIONS">
+		<title>Effect of Connection &amp; Statement Options</title>
+		<sect3 id="ConnOpt">
+			<title>Connection Options</title>
+			<sect4 id="SQL_AUTOCOMMIT">
+				<title>SQL_AUTOCOMMIT</title>
+				<para>
+The autocommit option is set at the connection level and affects
+every statement executed after it being set.  Setting the option
+does not communicate itself with the server and is therefore fast.
+</para>
+				<para>
+Autocommit is on by default. Autocommitting SELECT statements are executed
+with read committed isolation. This is appropriate since any update
+based on the autocommitting read would be in a different transaction and hence
+would block to wait for access to the selected row.  Also re-evaluating
+a select in autocommit mode would read the data in a different transaction.
+Hence there is no point in repeatable read isolation for autocommitting
+cursors.  Cursors inside procedures have the normal repeatable read isolation
+regardless of whether the procedure was called in autocommit mode.
+</para>
+				<para>
+When an autocommitting statement starts it is executed in the transaction
+That is the connection&apos;s current transaction when it is received. Before
+starting the autocommitting statement sets the connection&apos;s current
+transaction to a new one. In this manner a client can issue multiple
+asynchronous autocommitting statements at the same time and the statements
+will execute concurrently, each in its own transaction.
+</para>
+				<para>
+If array parameters are used in a statement on an autocommitting
+connection each parameter row will be processed in its own transaction
+in sequential order.  Multiple  Asynchronous statements must be used to
+execute one client&apos;s statements in parallel.
+</para>
+  <para>To commit or roll back a transaction in manual-commit mode, an
+  application should call SQLEndTran.  Applications should not attempt
+  to commit or roll back transactions by executing COMMIT or ROLLBACK
+  statements with SQLExecute or SQLExecDirect.  The effects of doing
+  this are undefined.</para>
+  </sect4>
+			<sect4 id="SQL_TXN_ISO">
+				<title>SQL_TXN_ISOLATION</title>
+				<para>
+This option allows all the values defined in ODBC,
+</para>
+				<para>
+The isolation of an operation is the property of the operation rather than
+of the transaction within which it takes place. Once an operation
+has started, e.g. a cursor has been opened, its isolation cannot be changed.
+</para>
+				<para>
+The value of this option will affect any subsequently executed statement.
+Note that setting this option to different values during a transaction will work,
+thus a transaction can have cursors with different isolations although that
+is presumably not the intention of the ODBC specification.
+</para>
+				<para>
+See the transaction model for a definition of the different isolation levels.
+</para>
+				<para>
+A statement in autocommit mode executes
+in the same transaction as the previous statement. The transaction is
+committed when the statement successfully completes.  The next statement in
+the connection will execute in the fresh transaction that was associated to
+the connection at the start of the previous autocommitting statement.
+</para>
+				<para>
+As a consequence of this multiple concurrent autocommitting transactions may execute
+on the same connection at the same time.
+</para>
+				<para>
+Statements executed with array parameters execute each set of
+parameters as a separate transaction if the connection is in autocommit
+mode.
+</para>
+  </sect4>
+			<sect4 id="SQL_ACCESS_MODE">
+				<title>SQL_ACCESS_MODE</title>
+				<para>
+This has the effect of reversing any SQL_CONCUR_LOCK concurrency to SQL_CONCUR_READ_ONLY.
+The statement option&apos;s value is not changed though.
+</para>
+			</sect4>
+			<sect4 id="SQL_CURRENT_QUAL">
+				<title>SQL_CURRENT_QUALIFIER</title>
+				<para>
+This sets or gets the current qualifier.  The initial
+value is obtained from the server at connect time. The values reflect the
+effects of any USE statements.
+</para>
+			</sect4>
+			<sect4 id="SQL_NO_CHAR_C_ESCAPE">
+				<title>SQL_NO_CHAR_C_ESCAPE (=5002)</title>
+				<para>
+This has the same effect as the NO_CHAR_C_ESCAPE option in the SET statement.  It takes boolean int values (0/non-0)
+</para>
+			</sect4>
+			<sect4 id="SQL_CHARSET">
+				<title>SQL_CHARSET (=5003)</title>
+				<para>
+This has the same effect as the CHARSET option in SET statement.  It takes string values (the name of the
+character set to use).
+</para>
+			</sect4>
+			<sect4 id="SQL_ENCRYPT_CONNECTION">
+				<title>SQL_ENCRYPT_CONNECTION (=5004)</title>
+				<para>
+Usable only with the Virtuoso CLI (because the ODBC/iODBC driver manager does not pass-through the custom
+options to the driver on SQLConnect/SQLDriverConnect). When set to the string "1" means use SSL but no
+X509 certificates.  Setting it to a NULL (default) means no encryption of the ODBC connection.
+Any other string is treated as a file name of one PKCS12 package to get the data from for establishing an
+encrypted SSL connection using X509 certificates (see the -E/-X ISQL options).
+</para>
+			</sect4>
+			<sect4 id="SQL_SHUTDOWN_ON_CONNECT">
+				<title>SQL_SHUTDOWN_ON_CONNECT (=5005)</title>
+				<para>
+Usable only with the Virtuoso CLI (because the ODBC/iODBC driver manager does not pass through the custom
+options to the driver on SQLConnect/SQLDriverConnect).  Shuts down the server on connection after authenticating
+the DBA user (see the -K ISQL option).
+</para>
+			</sect4>
+		</sect3>
+		<sect3 id="SQLSetStmtOption">
+			<title>SQLSetStmtOption Statement Options</title>
+			<para>
+Virtuoso supports all ODBC 2.x and ODBC 3.x statement options.
+The following options are mentioned below due to implementation specific
+details.
+</para>
+			<sect4 id="SQLConcurrency">
+				<title>SQL_CONCURRENCY</title>
+				<para>
+The supported values are SQL_CONCUR_READ_ONLY, SQL_CONCUR_LOCK and SQL_CONCUR_VALUES, the
+last option is only available for scrollable cursors.  A select statement
+with SQL_CONCUR_READ_ONLY will make shared locks when locking for repeatable
+read or serializable transactions.  The SQL_CONCUR_LOCK for a select statement
+will cause it to make exclusive locks, as if it had the FOR UPDATE clause specified.
+</para>
+				<para>
+See the section on scrollable cursors for the effect of SQL_CONCUR_VALUES.  For
+all statements except scrollable cursors this value reverts to SQL_CONCUR_READ_ONLY.
+</para>
+				<para>
+Any searched update or delete statements will make exclusive locks in all cases.
+</para>
+			</sect4>
+			<sect4 id="SQLMaxRows">
+				<title>SQL_MAX_ROWS</title>
+				<para>
+This option only affects static cursors.
+</para>
+			</sect4>
+			<sect4 id="SQLTxnTimeout">
+				<title>SQL_TXN_TIMEOUT</title>
+				<para>
+This is an extension that allows setting a time limit on the current transaction.
+The time limit starts at the execution of the statement specifying this option.
+The transaction will terminate the indicated number of seconds after the execute
+whether the statement has completed or not.</para>
+			</sect4>
+			<sect4 id="SQLPrefetchSize">
+				<title>SQL_PREFETCH_SIZE</title>
+				<para>
+This is an extension option that controls how many rows of a forward only cursor are
+prefetched by the execute and fetch calls.  A high value is advantageous for
+long consecutive reads since it cuts down on the number of client server messages
+exchanged.  On the other hand a large value can result in unnecessary data transfer
+and locking if only the first few rows of a cursor are fetched.  A value of -1 will
+cause the entire rowset to be fetched at the execute, so that no matter the select size, only
+one message is exchanged.  The default value is 20.  This can also be set in the virtuoso.ini file.
+</para>
+				<para>
+A select with array parameters will always work as with a SQL_PREFETCH_SIZE of -1, meaning that
+all the result sets are computed and sent to the client by the SQLExecute
+call that opens the cursor.
+</para>
+			</sect4>
+			<sect4 id="SQLCursorType">
+				<title>SQL_CURSOR_TYPE</title>
+			</sect4>
+			<sect4 id="KeySetSize">
+				<title>SQL_KEYSET_SIZE</title>
+			</sect4>
+			<sect4 id="SQLConcur">
+				<title>SQL_CONCURRENCY</title>
+			</sect4>
+			<para>
+The cursor type  options should be set before preparing a statement.
+Other options may be set at any time.  The rowset and prefetch opions options should not be modified after executing a SELECT.
+</para>
+			<sect4 id="SQLGETLASTSERIAL">
+				<title>SQL_GETLASTSERIAL</title>
+				<para>
+This is an extension that returns the last assigned identity column
+value.  The return buffer pvParam is of type SQLINTEGER.  For this to be
+meaningful, the statement in question must be an INSERT into a table
+that has an identity column.  Note that if there are more than one
+identity columns or if triggers make inserts with identity columns the
+value will be undefined.
+</para>
+			</sect4>
+		</sect3>
+
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="EFFICIENTAPI">
+		<title>Efficient Use of API</title>
+		<para>
+DO NOT USE SQLExecDirect. If a statement is executed more than once it
+is much faster to prepare the statement with SQLPrepare and then use
+SQLExecute repeatedly. The system only compiles the statement once,
+therefore there is no parsing overhead for repeatedly compiling the
+same text.
+</para>
+		<para>
+Array parameters for insert, update or single row selects are about
+twice as fast as the same operations on a single parameter set.
+</para>
+		<para>
+The OR connective in SQL can result in slow queries with extensive
+locking.
+</para>
+		<para>
+Autocommit should be used when possible, i.e. make the last statement of
+a transaction autocommitting to avoid having to commit the transaction
+as a separate operation.
+</para>
+	</sect2>
+
+</sect1>

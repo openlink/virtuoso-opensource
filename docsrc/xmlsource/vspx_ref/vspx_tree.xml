@@ -1,0 +1,212 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_tree">
+<refmeta>
+  <refentrytitle>vspx_tree</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_tree</refname>
+  <refpurpose>A container for displaying a tree of nested nodes.</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_tree">
+    <funcprototype id="proto_vspx_tree">
+      <funcdef>
+        <function>tree</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>show-root (required) </attribute>
+        <attribute>multi-branch (required) </attribute>
+        <attribute>orientation (required) </attribute>
+        <attribute>root-function (required) </attribute>
+        <attribute>child-function (required) </attribute>
+        <attribute>start-path (required) </attribute>
+      </attributes>
+      <childs>
+        <child>after-data-bind</child>
+        <child>after-data-bind-container</child>
+        <child>before-data-bind</child>
+        <child>before-data-bind-container</child>
+        <child>on-post</child>
+        <child>on-post-container</child>
+        <child>before-render</child>
+        <child>before-render-container</child>
+        <child>template</child>
+      </childs>
+      <class>
+        <screen><![CDATA[
+			  
+			    create type vspx_tree under vspx_control
+			    self as ref temporary
+			    overriding method vc_pre_render () returns any,
+			    overriding method vc_view_state (stream any) returns any,
+			    method vc_get_state () returns any,
+			    constructor method vspx_tree (name varchar, parent vspx_control)
+			    ;
+
+			    create type vspx_tree_node under vspx_control
+			    as
+			      (
+				tn_open int default 0,
+				tn_value varchar,
+				tn_element any default null,
+				tn_level int default 0,
+				tn_position int default 0,
+				tn_is_leaf int default 0
+			      )
+			    self as ref temporary
+			    method vc_close_all_childs () returns any,
+			    method vc_get_state (stream any) returns any,
+			    constructor method vspx_tree_node (name varchar, parent vspx_control, leaf int, ctr int, lev int)
+			    ;
+
+			  
+			  ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_tree">
+  <title>Description</title>
+  <para>
+    <function>vspx_tree</function>
+    This can be used for hierarchical tables of contents, 
+    directory browsing, hierarchical menus and such.
+    The tree can have either one or more branches open at any time, up to
+    the leaves.  The tree has a root, which may or may not be visible.  
+    The contents of the tree can either be fixed, in which case these are an
+    XML tree, or dynamic, in which case these are generated level by level
+    by SQL functions attached to the tree. The tree can have various external appearences.
+
+    The tree is represented at run time by a vspx_tree instance.  
+    Nodes of the tree are represented by vspx_tree_node objects, 
+    which are childs of the vspx_tree.  The nodes hold an identifier (vc_instance_name)
+    of the corresponding tree branch, which is used to retrieve children of the node.  
+    These also hold a flag (tn_open member) indicating if the node is open or not.
+			</para>
+</refsect1>
+<refsect1 id="attrs_vspx_tree">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>show-root</title>
+    <para>
+This determines whether the tree&#39;s root node has a representation.  Most of the time this is not desired, so that the first level of children appear as so many roots, each with its own tree.
+			   </para>
+  </refsect2>
+  <refsect2>
+    <title>multi-branch</title>
+    <para>
+This determines whether more than one branches can be open at one time.  
+The values are 0 and 1 (true and false).  The default is 0 (false).
+			   </para>
+  </refsect2>
+  <refsect2>
+    <title>orientation</title>
+    <para>
+      This can be &#39;horizontal&#39; or &#39;vertical&#39;, the default is &#39;vertical&#39;.
+      The tree can have different styles.  The default is a vertical arrangement 
+      with open levels indented, the children under the parent node.   
+      Each node template is a single line.  The horizontal style shows each level on a separate line.  
+      In this case it is not allowed multiple open branches.  The children of the root will be 
+      shown on one line.  When one is opened, its children will fill the next line.
+			   </para>
+  </refsect2>
+  <refsect2>
+    <title>root-function</title>
+    <para>
+This is a SQL expression which produces the root object.  
+This can be of any data type, a file system path is an example.
+			   </para>
+  </refsect2>
+  <refsect2>
+    <title>child-function</title>
+    <para>
+Given the result of the root expression, this must generate an array
+of similar elements corresponing to the children of the node in
+question.  This same function should be applicable to each element of
+the array it returns.  If the array is empty then the node in question
+is a leaf.  
+			   </para>
+  </refsect2>
+  <refsect2>
+    <title>start-path</title>
+    <para>
+			   </para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_tree">
+  <title>Children</title>
+  <refsect2>
+    <title>template</title>
+    <para>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node represantation)</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="examples_vspx_tree">
+  <title>Examples</title>
+  <example id="ex_vspx_tree">
+    <title>Simple example</title>
+    <para>Example of vertical oriented tree</para>
+    <screen><![CDATA[
+			  
+			  <html>
+			  <body>
+			  <v:page name="tree_page_01" xmlns:v="http://www.openlinksw.com/vspx/" >
+			  <v:tree name="tree1" show-root="0" multi-branch="1" orientation="vertical"
+				 root="root_node" start-path="." child-function="child_node" >
+			  <v:node-template name="node_tmpl">
+			    <div>
+			      <v:button name="tree1_toggle" action="simple"
+				value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then '+' else '-' end" />
+			      <v:label name="label1" value="--(control.vc_parent as vspx_tree_node).tn_value" />
+			      <v:node />
+			      </div>
+			  </v:node-template>	
+			  <v:leaf-template name="leaf_tmpl">
+			    <div><v:label name="label2" value="--(control.vc_parent as vspx_tree_node).tn_value" /></div>
+			  </v:leaf-template> 
+			 </v:tree>
+			 </v:page>
+			 </body>
+			 </html>
+			  ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

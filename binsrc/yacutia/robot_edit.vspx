@@ -1,0 +1,470 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!-- $Id$ -->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="robot_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="_descr" type="varchar" default="''" persist="0" />
+      <v:variable name="_host" type="varchar" default="''" persist="0" />
+      <v:variable name="_url" type="varchar" default="''" persist="0" />
+      <v:variable name="_root" type="varchar" default="''" persist="0" />
+      <v:variable name="_own" type="varchar" default="''" persist="0" />
+      <v:variable name="_newd" type="varchar" default="''" persist="0" />
+      <v:variable name="_flow" type="varchar" default="''" persist="0" />
+      <v:variable name="_dflow" type="varchar" default="''" persist="0" />
+      <v:variable name="_opage" type="varchar" default="''" persist="0" />
+      <v:variable name="_img" type="varchar" default="''" persist="0" />
+      <v:variable name="_dav" type="varchar" default="''" persist="0" />
+      <v:variable name="_del" type="varchar" default="''" persist="0" />
+      <v:variable name="_redir" type="varchar" default="''" persist="0" />
+      <v:variable name="_store" type="varchar" default="''" persist="0" />
+      <v:variable name="_auth" type="varchar" default="''" persist="0" />
+      <v:variable name="mode" type="varchar" default="''" persist="0" />
+      <v:variable name="_old_url" type="varchar" default="''" persist="0" />
+      <v:variable name="target_url" type="varchar" default="''" persist="0" />
+      <v:variable name="target_uid" type="varchar" default="''" persist="0" />
+      <v:variable name="target_pwd" type="varchar" default="''" persist="0" />
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="WebDAV Content Management"/>
+    </vm:menu>
+    <vm:rawheader>
+      <h1 class="page_title">
+        <?vsp
+          if (self.mode = 'edit')
+            http('Modify content import target');
+          else
+            http('Create content import target');
+        ?>
+      </h1>
+    </vm:rawheader>
+    <vm:pagebody>
+      <v:before-data-bind>
+        <v:script>
+          <![CDATA[
+            declare _idx, _oth varchar;
+            declare _n_own integer;
+            self.mode := get_keyword('mode', self.vc_page.vc_event.ve_params, self.mode);
+            if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit')
+            {
+              _oth := '';
+              _n_own := 0;
+              select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT,
+                VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
+                VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE
+                into self._descr, self._host, self._url, _idx, self._root,
+                self._newd, self._del, self._flow, self._dflow, self._auth,
+                self._img, self._dav, _n_own, _oth, self._opage, self._redir, self._store
+                from WS.WS.VFS_SITE where VS_HOST = get_keyword('EDIT', self.vc_page.vc_event.ve_params) and VS_ROOT = get_keyword ('root', self.vc_page.vc_event.ve_params);
+              self._own := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _n_own);
+              update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = self._host and VQ_ROOT = self._root;
+              self._root := concat('/DAV/', self._root);
+              self._newd := subseq(datestring(self._newd), 0, 19);
+              self._old_url := self._url;
+              self.target_url := 'http://';
+	      if (length (self._auth))
+	        {
+		  declare auth any;
+		  auth := split_and_decode (self._auth, 0, '\0\0:');
+		  if (length (auth) = 2)
+		    {
+		      self.target_uid := auth[0];
+		      self.target_pwd := auth[1];
+		    }
+		}
+              self.target_url := concat(self.target_url, self._host, self._url);
+            }
+            else if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'create')
+            {
+              self._newd := '1900-01-01 00-00-00';
+              self._del := '';
+              self._opage := '';
+              self._img := '';
+              self._dav := '';
+              self._own := 'dav';
+              self._descr := '';
+              self._host := '';
+              self._url := '';
+              self._root := '';
+              self._flow := '';
+              self._dflow := '';
+              self._store := '';
+              self._redir := '';
+	      self.target_url := '';
+	      self.target_uid := '';
+	      self.target_pwd := '';
+            }
+          ]]>
+        </v:script>
+      </v:before-data-bind>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+                        <td class="page_tab" align="center" nowrap="1">
+                          <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_selected" align="center" nowrap="1">
+                          <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab" align="center" nowrap="1">
+			  <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab" align="center" nowrap="1">
+			  <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td width="100%" >
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+      <v:form name="robot_form" type="simple" method="POST" action="">
+        <table border="0" cellspacing="0" cellpadding="3" class="ctl_grp">
+            <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
+            <tr>
+              <td>Target description</td>
+              <td>
+                <v:text name="descr" value="--self._descr"  xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+	      <td>Target URL <!--br/>
+		<em>(http://httpuser:password@host:port/start_path)</em-->
+	      </td>
+              <td>
+                <v:text name="tar_url" value="--self.target_url" xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+	      <td>Login name on target</td>
+              <td>
+                <v:text name="tar_uid" value="--self.target_uid" xhtml_size="20"/>
+              </td>
+            </tr>
+            <tr>
+	      <td>Login password on target</td>
+              <td>
+                <v:text name="tar_pwd" value="--self.target_pwd" type='password' xhtml_size="20"/>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Copy to local DAV collection
+              </td>
+              <td>
+                <v:text name="root" value="--self._root" xhtml_readonly="--case when self.mode='edit' then 'readonly' else '@@hidden@@' end"  xhtml_size="70"/>
+                <?vsp
+                  if (self.mode <> 'edit')
+                  {
+                ?>
+                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="root"/>
+                <?vsp
+                  }
+                ?>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+                <?vsp
+                  if (self.mode <> 'edit')
+                  {
+                ?>
+                <v:check-box name="opage" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage"/>
+                <?vsp
+                  } else {
+                ?>
+                  <v:check-box name="opage1" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage" xhtml_disabled="yes"/>
+                <?vsp
+                  }
+                ?>
+                <label for="opage">Single page download</label>
+              </td>
+            </tr>
+            <tr>
+              <td>Local resources owner</td>
+              <td>
+               <v:data-list name="own" sql="select U_NAME from WS.WS.SYS_DAV_USER" key-column="U_NAME" value-column="U_NAME">
+                 <v:before-data-bind>
+                      <![CDATA[
+                        control.ufl_value := self._own;
+                      ]]>
+                  </v:before-data-bind>
+                </v:data-list>
+              </td>
+            </tr>
+            <tr>
+              <td>Download only newer than</td>
+              <td>
+                <v:text name="newd" value="--self._newd" />
+              </td>
+            </tr>
+            <tr>
+              <td>Follow links matching<EM><br/>(delimited with ;)</EM></td>
+              <td>
+                <v:text name="flow" value="--self._flow"  xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+              <td>Do not follow links matching<EM><br/>(delimited with ;)</EM></td>
+              <td>
+                <v:text name="dflow" value="--self._dflow"  xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+                <v:check-box name="img" value="1" initial-checked="--case when self._img = 'checked' then 1 else 0 end" xhtml_id="img"/>
+                <label for="img">Download images</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+                <v:check-box name="dav" value="1" initial-checked="--case when self._dav = 'checked' then 1 else 0 end" xhtml_id="dav"/>
+                <label for="dav">Use WebDAV methods</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+                <v:check-box name="del" value="1" initial-checked="--case when self._del = 'checked' then 1 else 0 end" xhtml_id="del"/>
+                <label for="del">Delete if remove on remote detected</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+                <v:check-box name="redir" value="1" initial-checked="--case when self._redir then 1 else 0 end" xhtml_id="redir"/>
+                <label for="redir">Follow HTTP redirects</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+                <v:check-box name="store" value="1" initial-checked="--case when self._store then 1 else 0 end" xhtml_id="store"/>
+                <label for="store">Store content locally</label>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" colspan="2">
+                <v:button action="simple" value="Cancel" name="robot_button1" format="%s">
+                  <v:on-post>
+                    <![CDATA[
+                      http_request_status ('HTTP/1.1 302 Found');
+                      http_header(sprintf('Location: cont_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                      return;
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <input type="reset" name="Submit2" value="Reset"/>
+                <v:button action="simple" value="--(case self.mode when 'edit' then 'Update' else 'Create' end)" name="robot_button">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare _idx, _oth, tar_url, sav_host varchar;
+                        declare ret_arr any;
+                        declare pos integer;
+                        tar_url := get_keyword('tar_url', self.vc_page.vc_event.ve_params, '');
+                        if (length(tar_url) <= 0)
+                        {
+                          self.vc_error_message := 'Incorrect target URL';
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        ret_arr := WS.WS.PARSE_URI(tar_url);
+                        pos := 0;
+                        pos := strchr(aref(ret_arr, 1), '@');
+                        if (pos is null)
+                          pos := 0;
+			self._auth := left(aref(ret_arr, 1), pos);
+			sav_host := self._host;
+			self._host := right(aref(ret_arr, 1), length(aref(ret_arr, 1)) - pos);
+
+			self._auth := '';
+			if (length (self.tar_uid.ufl_value) and length (self.tar_pwd.ufl_value))
+			  {
+			    self._auth := concat (self.tar_uid.ufl_value,':',self.tar_pwd.ufl_value);
+			  }
+
+			if (self._host[0] = ascii ('@'))
+			  self._host := substring (self._host, 2, length (self._host));
+
+			if (self.mode = 'edit' and sav_host <> self._host)
+			  {
+			    self._host := sav_host;
+                            self.vc_error_message := sprintf ('Host name can not be edited, it must be "%s".', sav_host);
+                            self.vc_is_valid := 0;
+                            return;
+			  }
+
+
+                        self._descr := get_keyword('descr', self.vc_page.vc_event.ve_params);
+                        self._url := aref(ret_arr, 2);
+                        if (aref(ret_arr, 4) is not null and length(aref(ret_arr, 4)) > 0)
+                        {
+                          self._url := concat(self._url, '?', aref(ret_arr, 4));
+                          self._url := trim(self._url);
+                        }
+                        self._root := get_keyword('root', self.vc_page.vc_event.ve_params);
+                        if (self.mode <> 'edit' and right(self._root, 1) <> '/')
+                          self._root := concat(self._root, '/');
+                        if (left(self._root, 5) = '/DAV/')
+                          self._root := right(self._root, length(self._root) - 5);
+                        self._newd := get_keyword('newd', self.vc_page.vc_event.ve_params);
+                        self._flow := get_keyword('flow', self.vc_page.vc_event.ve_params);
+                        self._dflow := get_keyword('dflow', self.vc_page.vc_event.ve_params);
+                        self._del := get_keyword('del', self.vc_page.vc_event.ve_params);
+                        if (self.mode = 'edit')
+                          self._opage := self._opage;
+                        else
+                        self._opage := get_keyword('opage', self.vc_page.vc_event.ve_params);
+                        _idx := null;
+                        self._img := get_keyword('img', self.vc_page.vc_event.ve_params);
+                        self._dav := get_keyword('dav', self.vc_page.vc_event.ve_params);
+                        self._own := get_keyword('own', self.vc_page.vc_event.ve_params);
+                        self._redir := get_keyword('redir', self.vc_page.vc_event.ve_params);
+                        self._store := get_keyword('store', self.vc_page.vc_event.ve_params);
+                        if (self.mode <> 'edit' and self._opage = '1') self._opage := 'checked';
+                        if (self._del = '1') self._del := 'checked';
+                        if (self._img = '1') self._img := 'checked';
+                        if (self._dav = '1') self._dav := 'checked';
+                        _oth := null;
+                        if (WS.WS.isempty(self._host) or WS.WS.isempty(self._root) or WS.WS.isempty(self._url))
+                        {
+                          self.vc_error_message := 'Host, Target collection and Start path must be specified';
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        if (aref(self._url, 0) <> ascii('/'))
+                          self._url := concat('/', self._url);
+                        if (aref(self._root, 0) = ascii('/') or strstr(self._root , '..') is not null and self.mode <> 'edit')
+                        {
+                          self.vc_error_message := 'The local collection/resource destination MUST be a relative path under WebDAV root collection/resource and cannot contain a ''..''.';
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        if (self._opage = 'checked')
+                        {
+                          declare u_arr any;
+                          declare target_page varchar;
+                          if (self._url not like '%/')
+                          {
+                            u_arr := WS.WS.HREF_TO_ARRAY(self._url, '');
+                            target_page := u_arr[length (u_arr) - 1];
+                          }
+                          else
+                            target_page := 'index.html';
+                          -- we'll guess is the root is a collection or not
+                          if (self._root[length(self._root) - 1] = ascii('/'))
+                            self._root := concat(self._root, target_page);
+                        }
+                        if (exists(select 1 from WS.WS.VFS_SITE where VS_ROOT = self._root and VS_HOST = self._host) and self.mode <> 'edit')
+                        {
+                          self.vc_error_message := 'Target resource/collection already specified. Please do specify another target collection or resource';
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        if (self.mode = 'edit')
+                        {
+                          update WS.WS.VFS_SITE
+                            set
+                              VS_DESCR = self._descr,
+                              VS_INX = _idx,
+                              VS_OWN = (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
+                              VS_NEWER = stringdate(self._newd),
+                              VS_DEL = self._del,
+                              VS_FOLLOW = self._flow,
+                              VS_NFOLLOW = self._dflow,
+                              VS_SRC = self._img,
+                              VS_OPAGE = self._opage,
+                              VS_METHOD = self._dav,
+                              VS_OTHER = _oth,
+                              VS_OPTIONS = self._auth,
+                              VS_URL = self._url,
+                              VS_REDIRECT = self._redir,
+                              VS_STORE = self._store
+                            where
+                              VS_HOST = self._host and
+                              VS_ROOT = self._root;
+                          if (not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._url))
+                            update WS.WS.VFS_QUEUE set VQ_URL = self._url where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._old_url;
+                        }
+                        else
+                        {
+                          declare hinf any;
+                          hinf := WS.WS.PARSE_URI(self._host);
+                          if (lower(hinf[0]) = 'http' and hinf[1] <> '')
+                            self._host := hinf[1];
+                          insert into WS.WS.VFS_SITE(
+                            VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN,
+                            VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
+                            VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, VS_OPAGE, VS_REDIRECT, VS_STORE)
+                            values(self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
+                            self._root, stringdate(self._newd), self._del, self._flow, self._dflow, self._img, self._dav, _oth, self._auth, self._opage, self._redir, self._store);
+                          insert into WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
+                        }
+                        http_request_status ('HTTP/1.1 302 Found');
+                        http_header(sprintf('Location: cont_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid, self.realm));
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <table style="display:none"><tr><td>$Id$</td></tr></table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

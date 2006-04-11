@@ -1,0 +1,2 @@
+SET TRIGGERS OFF;
+insert replacing DB.DBA.VSPX_SESSION values('vspx', 'ad53461283bb384b413c7cb695d90c00', 'dba', NULL, now());

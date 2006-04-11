@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<HTML>
+  <HEAD>
+    <TITLE>SOAP Demo</TITLE>
+    <LINK REL="stylesheet" TYPE="text/css" HREF="../admin/admin_style.css">
+  </HEAD>
+
+  <BODY CLASS="admpagesbody">
+
+<SCRIPT type="text/javascript">
+var current_mask = "G";
+
+function clickit()
+{
+  var output_text = document.applets.sc.htmlIt(current_mask);
+  var heading_text = "<HTML><HEAD><TITLE>SOAP Query results for " + current_mask + "%<\/TITLE><\/HEAD>";
+  document.open ("text/html");
+  document.write (heading_text);
+  document.write (output_text);
+  document.write ("<\/HTML>");
+  document.close ();
+}
+</SCRIPT>
+
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING=0 CELLSPACING=0>
+<TR><TD CLASS="admpagestitle" COLSPAN="2"><H2>Virtuoso SOAP Test</H2></TD></TR>
+<TR CLASS="admborders"><TD COLSPAN="2"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR CLASS="ctrlmain"><TD COLSPAN="2"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR CLASS="ctrlmain"><TD COLSPAN="2">
+
+    <FORM>
+      <P>Company starting with : <INPUT type="TEXT" id="mask" name="mask"
+      onchange='current_mask=this.value;' value="G"></P>
+
+      <P><INPUT type="button" value="Call SOAP Server" onclick= 'clickit()'></P>
+    </FORM>
+    <HR>
+    <BR>
+    <BR>
+
+    <P><I><A href="fishselect.sql">View the stored procedure being
+    called definition</A></I></P>
+
+
+</TD></TR>
+<TR CLASS="ctrlmain"><TD COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD>
+</TABLE>
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+<TR CLASS="copyrightborder"><TD><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD><P CLASS="copyright">Virtuoso SOAP Test Interface - Copyright&copy; 1999-2003 OpenLink Software.  </P></TD></TR>
+</TABLE>
+
+    <P>&nbsp; <APPLET code="SOAP.class" name="sc"
+    archive="xerces.jar,saxapi.jar,soaprt.jar,demo.jar"
+    width="0" height= "0">demo</APPLET></P>
+
+  </BODY>
+</HTML>

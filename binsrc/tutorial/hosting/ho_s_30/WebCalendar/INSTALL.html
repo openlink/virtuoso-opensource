@@ -1,0 +1,427 @@
+<HTML>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<HEAD>
+<TITLE>WebCalendar Installation Instructions</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<H2>WebCalendar Installation Instructions</H2>
+
+<UL>
+<LI><A HREF="#requirements">Requirements</A>
+<LI><A HREF="#fileunpacking">File Unpacking</A>
+<LI><A HREF="#databasesetup">Database Setup</A>
+<LI><A HREF="#applicationsetup">Application Setup</A>
+<LI><A HREF="#userauth">User Authentication</A>
+<LI><A HREF="#reminders">Setting up email reminders</A>
+<LI><A HREF="#palmpilot">Palm Pilot users</A>
+<LI><A HREF="#optional">Optional</A>
+<LI><A HREF="#runwithit">Run with it</A>
+<LI><A HREF="#problems">Problems</A>
+<LI><A HREF="#upgrading">Upgrading</A>
+</UL>
+
+
+If upgrading, see <A HREF="#upgrading">upgrading notes</A> below.
+
+
+
+<HR><H3><A NAME="requirements">Requirements</A></H3>
+
+You must have PHP and one of the following databases installed:
+<UL>
+<LI> MySQL
+<LI> Oracle 8
+<LI> PostgreSQL
+<LI> Interbase
+<LI> ODBC
+</UL>
+For the database you choose, you must have its drivers built into
+PHP.  For example, to use MySQL, PHP must be compiled with MySQL
+support (which is the default setting when installing PHP).
+See the PHP pages (<A HREF="http://www.php.net">www.php.net</A>)
+for more information on setting up PHP.
+<P>
+
+No optional PHP packages (other than MySQL) are required for this
+application.  However, PHP shoud be compiled with <TT>--enable-track-vars</TT>
+on some systems. 
+
+<P>
+
+Make sure that <TT>magic_quotes_gpc</TT> in <TT>php.ini</TT>
+is turned on (otherwise, you
+will get database errors when entering quotation marks in HTML forms).
+
+<P>
+You can run PHP either as a CGI or an Apache module.  You'll get better
+performance with PHP setup as a module.  Not only will you not have to
+deal with the CGI performance hit, but you'll be able to use PHP's
+database connection pooling.  Additionally, this application can use
+a form/cookie-based authentication or traditional HTTP authentication.
+For traditional HTTP authentication, PHP must be built as an Apache
+module.
+
+<P>
+If you are planning on using email reminders, you will need to build
+PHP as a CGI in order to run the <TT>send_reminders.php</TT> script.  I would
+strongly recommend building a module-based PHP for your web server
+and then a second PHP build to create the CGI version.
+
+
+<HR><H3><A NAME="fileunpacking">File Unpacking</A></H3>
+Unpack the calendar software in its own directory somewhere where
+your web server will find it.  (See your web server docs for info.)
+<P>
+By default, WebCalendar should create its own directory
+when you unpack it.  The new directory name will typically
+contain the version name (such as <TT>WebCalendar-0.9.35</TT>).
+You can rename this directory after unpacking the files if you
+prefer a directory name like <TT>calendar</TT> or <TT>webcalendar</TT>.
+Keep in mind that unless you remap the directory (via your web server's
+configuration settings), it will be part of
+the URL for the calendar.
+
+
+<HR><H3><A NAME="databasesetup">Database Setup</A></H3>
+You can place the calendar db tables in an existing database or
+create a new database with the following:
+<BLOCKQUOTE>
+	MySQL (from command line):<BR>
+	<TT>mysqladmin create intranet</TT><BR>
+	(This will create a database named "intranet".)
+	<P>
+
+	Oracle (from within sqlplus):<BR>
+	<TT>CREATE TABLESPACE webcalendar
+	DATAFILE 'webcalendar.dat' SIZE 10M
+	AUTOEXTEND ON NEXT 10M MAXSIZE 40M;</TT>
+	<P>
+
+	PostgreSQL (from within psql):<BR>
+	<TT>create database webcalendar;<BR>
+		\c webcalendar<BR>
+		\i tables-postgres.sql<BR>
+		\q</TT>
+	<P>
+
+	Interbase (from within usql)<BR>
+	<TT>CREATE DATABASE 'WEBCAL.gdb';</TT><BR>
+	(This will create a database named "WEBCAL.gdb")
+</BLOCKQUOTE>
+
+<P>
+
+You will want to setup a new user that defaults to
+this new tablesapce:
+<BLOCKQUOTE>
+	Oracle (from within sqlplus):<BR>
+	<TT>CREATE USER webcalendar IDENTIFIED BY webcal01
+		DEFAULT TABLESPACE webcalendar;<BR>
+		GRANT dba TO webcalendar;</TT><BR>
+	(Note: I use "webcal01" for a password rather than
+	"web!calendar" because sqlplus barfs on the "!")
+	<P>
+
+	To do this in MySQL:<BR>
+	<TT>mysql --user=root mysql<BR>
+		mysql> GRANT ALL PRIVILEGES ON *.* TO webcalendar@"%"
+		IDENTIFIED BY 'webcal01' WITH GRANT OPTION;<BR>
+		mysql> FLUSH PRIVILEGES;</TT>
+</BLOCKQUOTE>
+
+Create the calendar tables using the supplied <TT>tables.sql</TT> file:
+<BLOCKQUOTE>
+	MySQL (from command line):<BR>
+	<TT>mysql intranet < tables-mysql.sql</TT><BR>
+	(where "intranet" is the name of your database)
+<P>
+Oracle (from command line):<BR>
+<TT>sqlplus webcalendar/webcal01<BR>
+	@tables-oracle;</TT>
+<P>
+PostgreSQL:<BR>
+	(This was already done using the PostgreSQL commands
+	above.)
+<P>
+Interbase (from within isql)<BR>
+  <TT>connect /path/WEBCAL.gdb;<BR>
+	  input path/table-ibase.sql;</TT>
+</BLOCKQUOTE>
+
+<P>
+
+This will create all the needed tables and setup one user account
+with the login "admin" and password "admin", which you are encouraged
+to use to create your own account.
+
+
+<HR><H3><A NAME="applicationsetup">Application Setup</A></H3>
+Next, you will need to customize the file <TT>includes/config.php</TT>
+to tell WebCalendar which database you are using and what
+the database login/password is.
+Use your favorite text editor (vim, emacs, notepad, etc.)
+to make these changes.
+
+<P>
+To configure your database access.  Set the values for:
+<TABLE BORDER="0">
+<TR><TD VALIGN="top">$db_type</TD>
+<TD VALIGN="top">One of "mysql", "oracle", "postgresql",
+"odbc", or "ibase"</TD></TR>
+
+<TR><TD VALIGN="top">$db_host</TD>
+<TD VALIGN="top">The hostname that database is running on.
+(Use localhost if it's the same machine as
+the web server.) (This variable is not used with ODBC)</TD></TR>
+
+<TR><TD VALIGN="top">$db_login</TD>
+<TD VALIGN="top">The database login</TD></TR>
+
+<TR><TD VALIGN="top">$db_password</TD>
+<TD VALIGN="top">The database password for the above login</TD></TR>
+
+<TR><TD VALIGN="top">$db_database</TD>
+<TD VALIGN="top">The name of the database that the calendar
+tables reside in.  ("intranet" in the example
+above.)
+For ODBC, this should be the DSN.</TD></TR>
+</TABLE>
+
+<P>
+
+You can configure the calendar to run in single-user mode or multi-user mode.
+If this is your first time using the calendar, it's easier to try single-user.
+You can always switch to multi-user later.  Leave <TT>$single_user</TT> set to
+"N" (the default) for multi-user or set it to "Y" and set the
+value of <TT>$single_user_login</TT> to a login name of your liking
+to set the system to single-user mode.
+(And be sure to set the value of <TT>$single_user_login</TT> to the login that you
+would choose if you decide to switch to multi-user mode some day.)
+<P>
+
+Note: If you do decide to switch from single-user mode to multi-user mode,
+make sure you add in a user to the system for the login you set the
+<TT>$single_user_login</TT> variable to.  You will need to do this via the
+database (mysql, sqlplus, etc...)  Look in the <TT>tables-mysql.sql</TT>
+(or <TT>tables-oracle.sql</TT>, etc.) to see the example of adding in the
+"admin" user.
+<P>
+
+If you are setting up a multi-user calendar, you will need to choose
+how your users are authenticated.
+
+You must change the settings of <TT>$use_http_auth</TT> and <TT>$user_inc</TT> within the <TT>config.php</TT> configuration file to setup which authentication method to use.
+
+<P>
+
+You currently have four choices:
+
+<OL>
+<LI> Web-based authentication (login/passwords verified in the WebCalendar database):<BR>
+	<TT>$use_http_auth = false;</TT><BR>
+	<TT>$user_inc = "user.php";</TT>
+<LI> HTTP-based authentication (login/passwords verified by the web server):<BR>
+	<TT>$use_http_auth = true;</TT><BR>
+	<TT>$user_inc = "user.php";</TT><BR>
+	... and don't forget to setup your web server to handle user
+	authentication.  (Note: In order to use HTTP-based authentication,
+	PHP must be setup as a module for your server rather than a CGI.)
+<LI> NIS-based authentication (login/passwords verified by NIS):<BR>
+	<TT>$use_http_auth = false;</TT><BR>
+	<TT>$user_inc = "user-nis.php";</TT><BR>
+	Additional configuration settings will need to be set
+	in <TT>includes/config/user-nis.php</TT>.
+<LI> LDAP-based authentication (login/passwords verified by LDAP server):<BR>
+	<TT>$use_http_auth = false;</TT><BR>
+	<TT>$user_inc = "user-ldap.php";</TT><BR>
+	Additional configuration settings will need to be set
+	in <TT>includes/config/user-ldap.php</TT>.
+</OL>
+
+<P>
+
+Next, you may want to customize the event-specific fields found in
+the <TT>includes/site_extras.php</TT> field.
+If this is your first time using the calendar, you can skip
+this step and come back later since this step
+is <I>optional</I>.
+
+<P>
+You can use this feature to add extra
+fields to your calendar events.  For example, you can add a URL or
+a contact email address.  By default, the file is configured with
+a single reminder field that allows the user to specify how long
+before the event the reminder should be sent.  The
+<TT>includes/site_extras.php</TT> file is well-documented, so look there for
+examples and specific instructions on setting this up.
+<P>
+Keep in mind that if you want to use reminders, you will need to
+setup the <TT>send_reminders.php</TT> script (see below) and keep your admin
+setting for "Email enabled" set to "Yes" on the admin settings page.
+
+
+<HR><H3><A NAME="reminders">Setting up email reminders</A></H3>
+PHP does not come with a utility for executing time-based jobs.
+So, in order to check periodically for email reminders, a shell
+script was written in PHP.  You will need two things to get this working:
+<OL>
+<LI> You should have a version of PHP built as a CGI (so that you can run
+  php from the command line).  This does not mean you must build all
+  of PHP as a CGI.  You can still build PHP as a module for your web
+  server and then build the CGI-based PHP later.
+<LI> You must setup cron (on Linux/UNIX) or something like cron for Windows
+to run the <TT>send_reminders.php</TT> script periodically.
+</OL>
+
+<P>
+Building PHP as a CGI is outside the scope of these instructions.  But,
+if you read the PHP instructions, you'll see that the default build
+settings will build the CGI-based PHP.  If you really can't do this
+(perhaps you don't have permission to install anything new on the
+system), skip down a couple of paragraphs to an alternate solution
+that does not require PHP CGI.
+<P>
+
+For Linux/UNIX users, add the following line to the crontab entry of
+a user.  (This would be the same user that the web server
+process runs as.)
+<BLOCKQUOTE>
+	<TT>1 * * * * cd /some/directory/webcalendar/tools; ./send_reminders.php</TT>
+</BLOCKQUOTE>
+
+<P>
+Of course, replace the directory location to wherever the
+<TT>send_reminders.php</TT> file can be found.  If you moved this out of the
+tools directory (which is recommended for security reasons),
+be sure to update <TT>send_reminders.php</TT> since it needs
+to know where to find other WebCalendar files.
+<P>
+
+If you cannot setup PHP as a CGI or have no idea how, you can leave
+<TT>send_reminders.php</TT> in its current location and access it via a URL.
+IMHO, this is not the best choice, but it still works.  Setup a cron
+job to access the URL.  For Linux/UNIX users, add the following line to
+the crontab entry of a user.
+<BLOCKQUOTE>
+<TT>1 * * * * wget http://yourserverhere/webcalendardirectoryhere/tools/send_reminders.php > /dev/null</TT>
+</BLOCKQUOTE>
+<P>
+
+Of course, you should probably test this from the command line first to make
+sure your setup is correct.  If you do not have <TT>wget</TT> installed on your
+system, you can use any tool (lynx, perl script, etc.) that is capable
+of making an HTTP request for this.
+
+
+<HR><H3><A NAME="apachephp">Help with Apache/PHP/MySQL</A></H3>
+
+If you're having problems getting Apache/PHP/MySQL setup (which
+is the most common configuration for PHP), Linux/UNIX users can
+try the following article from Linux Magazine written by
+yours truly:
+<BLOCKQUOTE>
+	<I><A HREF="http://www.linux-mag.com/online/php_01.html">The Scoop on PHP</A></I>, Linux Magaine
+</BLOCKQUOTE>
+<P>
+
+If you're a Windoze user, I highly recommend <A HREF="http://sourceforge.net/projects/foxserv">FoxServ</A>, which will install
+and configure Apache, PHP and MySQL on a MS Windows machine.
+
+	
+
+
+<HR><H3><A NAME="palmpilot">Palm Pilot users</A></H3>
+Exporting data to your Palm Pilot is possible with <TT>install-datebook</TT> tool,
+which is part of the <A HREF="http://sourceforge.net/project/?group_id=2158">pilot-link distribution</A>.
+<P>
+Unfortunately, there are some bugs in the install-datebook utility, so you'll
+need to patch it before you compile and install pilot-link:
+<BLOCKQUOTE>
+	<TT>patch -p0 < install-datebook.patch</TT>
+</BLOCKQUOTE>
+Note that <TT>install-datebook</TT> does not currently support repeating events, so
+repeating events will not show up as repeating on your Palm Pilot.  The
+tool is not smart enough to know when it's already added an event, so if
+you use it twice with the same data, you'll get duplicates in your Palm
+Pilot Calendar.
+
+
+<HR><H3><A NAME="optional">Optional!</A></H3>
+You might want to configure your web server so that users can not access
+the "includes" directory.  See your web server documentation on how to do
+this.
+<P>
+The <TT>includes</TT> directory has a <TT>index.html</TT> file that should
+prevent users from obtaining a listing files.
+
+
+<HR><H3><A NAME="runwithit">Run with it</A></H3>
+Hey, you're done...  Give it a try by logging in using the default
+"admin" account (if you're setup for multi-user) or just go to index.php
+if you're setup for single-user mode.
+<P>
+
+The default setup for the web-based authentication includes
+a single user login "demo" with the password set to "admin".
+
+
+<HR><H3><A NAME="problems">Problems</A></H3>
+See <A HREF="FAQ.html">FAQ.html</A> if you run into any problems or
+not sure how to do something...
+<P>
+If your problem is not listed in the FAQ,
+you can check the following resources available
+on SourceForge:
+<UL>
+<LI><A HREF="http://sourceforge.net/forum/forum.php?forum_id=11588">Help Forum</A>
+<LI><A HREF="http://sourceforge.net/tracker/?group_id=3870&atid=103870">Bug Reports</A>
+<LI><A HREF="http://sourceforge.net/tracker/?group_id=3870&atid=203870">Support Requests</A>
+</UL>
+
+
+<HR><H3><A NAME="upgrading">Upgrading</A></H3>
+
+If upgrading from a previous version, see the file
+<A HREF="UPGRADING.html">UPGRADING.html</A> first.
+
+<P>Version 0.9.35 adds support for groups, views, activity log and
+system settings.  This requires six new database tables.
+Please see <A HREF="UPGRADING.html">UPGRADING.html</A>.
+
+<P>Version 0.9.27 adds support for custom event fields and reminders.
+This requires two new database tables.
+Please see <A HREF="UPGRADING.html">UPGRADING.html</A>.
+
+<P>Version 0.9.22 adds support for calendar layers and adds a new
+table.
+Please see <A HREF="UPGRADING.html">UPGRADING.html</A>.
+
+<P>Version 0.9.12 changes the way events with no time are handled.
+Please see <A HREF="UPGRADING.html">UPGRADING.html</A>.
+
+<P>Version 0.9.7 uses a different set of table names than 0.9.6.
+Please see <A HREF="UPGRADING.html">UPGRADING.html</A>.
+
+</BODY>
+</HTML>

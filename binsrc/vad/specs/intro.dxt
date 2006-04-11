@@ -1,0 +1,323 @@
+/*! \page vad_intro Introduction to VAD
+
+\section vad_intro_objective What VAD can do and what it can't
+
+The VAD design purpose is to formalize the concept of a web site or other
+Virtuoso application.
+A VAD package is a single file.
+It can be installed as a unit on a Virtuoso server to deliver a hosted solution or components thereof.
+As such, it contains all parts needed to compose a Virtuoso-based web service.
+It does not contain system's parts, which are independent of Virtuoso, such as possible external executables or operating system installers or shared objects or operating system settings.
+Deploying such should be done in the context of a conventional package management system.
+
+
+\subsection vad_intro_objective_operations Operations supported by VAD
+
+The following operations may be executed between a Virtuoso database and a VAD package:
+<UL>
+<LI>List all installed VAD packages </LI>
+<LI>List all completed operations over VAD packages </LI>
+<LI>Check if the preconditions exist for installing the package </LI>
+<LI>Install the package </LI>
+<LI>Check if the package is installed and is in the state of the distribution, with optional building of list of locally changed parts of the package </LI>
+<LI>Check if the preconditions exist for uninstalling the package </LI>
+<LI>Uninstall the package </LI>
+</UL>
+
+
+\subsection vad_intro_objective_package Content of a VAD package
+
+A VAD package is built on a development environment from source code which
+can be managed and versioned in whatever system the developers prefer.
+
+The VAD package is described by an XML structure named 'sticker'.
+\ref vad_sticker lists
+all items to deploy, all procedures to perform at (de-)installation time and
+all conditions to be checked to prevent invalid installation.
+In common, XML structure contain
+of the VAD package.
+Sticker contains:
+<UL>
+<LI>VAD package meta data, including
+<UL>
+<LI>names of package, developer, copyright holder etc. </LI>
+<LI>version of package, including number, date, build number, build type
+(e.g. sort of optimization performed) </LI>
+<LI>information about required dependencies, including minimal allowed and/or maximum allowed version numbers of Virtuoso server, plus allowed versions of other VAD packages required; for every required package some hint texts may be provided, to explain administrator a) why there's a need in additional package and b) how to obtain the required package </LI>
+<LI>information about known conflicts between packages, in form of name and version number of conflicting package with optional troubleshooting hints </LI>
+<LI>Initial value for flag "if uninstallation is possible", and list of reasons why it may be impossible </LI>
+<LI>Any custom configuration data to be placed in the \ref vad_registry </LI>
+</UL>
+<LI>Locations of various SQL files containing main and installation code:
+<UL>
+<LI>pre-install code, to be used to check application-specific installation preconditions </LI>
+<LI>definitions of the application's tables and views </LI>
+<LI>definitions of the application's stored procedures and triggers </LI>
+<LI>post-install (initialization) code, such as initial contents of tables </LI>
+<LI>pre-uninstall code, to be used to check if it is safe to uninstall a package </LI>
+<LI>post-uninstall code, such as removal of cached resources which are unusable if the package is not installed </LI>
+</UL>
+<LI>Locations of resource files:
+<UL>
+<LI>Documentation files </LI>
+<LI>Sample data files, e.g. demos and data for sanity check </LI>
+<LI>VSP pages, related graphics, Java scripts, stylesheets, other web content </LI>
+<LI>XML docs, XSLT sheets, DTDs and Schemas </LI>
+</UL>
+</UL>
+
+
+\subsection vad_intro_objective_versioning Versioning of packages
+
+All required packages should be listed in the sticker.
+Known conflict of two packages may be listed in any of two stickers, so not only sticker of new package should be checked, but stickers of all installed packages.
+
+Later versions of the same package may be installed over earlier versions of the same package.
+It may be prohibited if given installed version is not listed as "conflicting" in the sticker of new one.
+It also may be prohibited if given installed version states that it conflicts with new versions of the same package. Moreover, it's possible to prevent re-installation of the package by stating that it conflicts with itself.
+Two last cases are important for some secured packages, because exploit may be based on attempt to upgrade, downgrade or re-install the package, in hope that administrator will corrupt existing installation by installing new packages and resolving their dependencies.
+
+Various shipments of a package may differ in language and encoding of documentation and resource files, even if version number is the same.
+If the package is sensitive to internationalization issues, the developer should either assign different names to various localizations of a product, or divide a product into kernel package for language-independent part and set of language-specific packages, with some dependency between them.
+
+
+\subsection vad_intro_objective_resources Processing of resources
+
+When application developer creates VAD package, "location" mentioned above may be name of file in filesystem or URI or DAV path.
+On packaging time, URIs will be resolved and resources under them will be put into the package, so resulting sticker will contain both location of resource in the package and the target location.
+
+All SQL files have a specific order of loading, so that tables, views etc. should be defined before referenced.
+
+
+\subsection vad_intro_objective_limitations Things not supported by VAD
+
+The VAD specification explicitly does not define:
+<UL>
+<LI>Method of development or environment.
+There are no specific restrictions for the schema or PL/SQL code of package.
+The VAD system does not make assumptions on the method of software development.
+</LI>
+<LI>Method of source code control or versioning.
+Version numbers used in sticker has nothing common with tag labels in developers' versioning system.
+If procedures are developed using a web interface, editing them directly in the database and if CASE tools are used to define tables, then these should be exported into a file to be included into a VAD package.
+If application developer uses some script to export code, this script is usually not a part of sticker or the resulting package.
+</LI>
+<LI>Means of shipment of the VAD package from vendor to user.
+VAD has no methods to download missing packages, to check for package updates etc. </LI>
+<LI>Concurrent running of different versions of the same VAD package on one server.
+No one automatic tool can guarantee that pre-installation check or post-installation operations.
+will provide correct results if more than one VAD is under processing on the same time.
+The only thing VAD provides is that any package installation will be either entirely successful or entirely rolled back. </LI>
+<LI>Installation or maintenance of non-Virtuoso hosted components.
+Unlike Virtuoso-based packages, these components are usually system-specific, they may require some complex tuning, the using of components from Virtuoso applications may require changes in virtuoso.ini configuration file.
+VAD package may contain test calls of required external executables in pre-installation SQL procedures to check if these executables are available and provide the functionality package needs. </LI>
+<LI>Data migration.
+Some installations may require some days to change format of stored data, while it is still possible to provide restricted service during this time. VAD contains no tools to simplify such things. VAD ends its work right after post-installation code execution. </LI>
+<LI>Synchronous installation of a package on all hosts of distributed system or cluster.
+VAD has no standardized meta-data about replication issues, so package-specific code may be required.
+Similarly, if a cluster uses "round-robin" or "director" loading management system, and server should be stopped for VAD installation, administrator should explicitly inform cluster manager about this event. </LI>
+</UL>
+
+
+\subsection vad_intro_objective_security VAD provides no security warranties!
+
+Any new package installed may violate security regulations of target database and may damage files resided in web-root of the Virtuoso Server and in directories specified as available for writing in <CODE>virtuoso.ini</CODE>.
+Moreover, installation procedures of the package may call executables specified in
+"SafeExecutables" and "DbaExecutables" parameters of <CODE>virtuoso.ini</CODE>,
+if "AllowOsCalls" is set to 1, any OS command may be executed.
+
+VAD packages are not self-protected from unauthorized modifications.
+Every VAD package contains a checksum, but its purpose is to detect occasional corruption, such as data transfer error, and it may not protect the package from intentional modification.
+
+
+\section vad_intro_building VAD package building
+
+\subsection vad_intro_pack Composing VAD package from scratch
+
+In the initial state, sticker and resources are in a file system,
+DAV directory and other places available through DB.DBA.HTTP_URI_GET().
+
+The VAD create operation parses the XML description of the contents of the application and constructs the VAD file.
+
+\code
+DB.DBA.VAD_PACK (in sticker_uri varchar, in base_uri_of_resources varchar,
+    in package_uri varchar) returns varchar
+\endcode
+
+This function gets the resource identified by the sticker_uri, which contains the vad:package root element.
+The URIs present there are interpreted in the context of the base_uri_of_resources and the individual resources are fetched.
+These are parsed to make sure that they are syntactically correct and the resources are appended to the generated package resource, which is stored into the result_uri.
+vad_pack() returns a human-readable log of error and warning messages, vad_pack() will signal errors if some resources or database objects will be unavailable.
+
+By convention, VAD package file has extension '.vad'.
+
+
+\subsection vad_intro_diff VAD diffing
+
+Optional package named VADutils provides various tools to capture edits made in database after some moment of time.
+The result of capture consists of
+<UL>
+<LI>added database objects whose names match given patterns (e.g. all tables and procedures with some qualifier) </LI>
+<LI>added resources under some locations </LI>
+<LI>resources of some package, customized locally after the installation of package </LI>
+</UL>
+The result may be used in some ways:
+<UL>
+<LI>changes may be archived and later replayed by dbpump utility </LI>
+<LI>a special package may be created to upgrade fresh installation of the package by applying custom changes. </LI>
+<LI>the result may be included in full-scale package, and capture's description will be included into sticker of the package </LI>
+</UL>
+
+These mechanisms provide good support for "Centralized Development and Custom Deployment" methodology.
+If a site is localized to contain local links, graphics, custom layout or such then VAD capabilities may help the developer to define the specific overlay of customizations over another VAD package.
+When the underlying VAD package is updated the local customizations will be overwritten.
+Being saved in a VAD package, customizations can be reapplied over the updated base package.
+
+
+\section vad_intro_admin VAD Administrator Operations
+
+Installing (including upgrading) and uninstalling of a VAD application requires a break of service.
+Check of VAD package may be performed on the fly, if it is known that nobody edits resources of the inspected package.
+Check whether a package may be installed or uninstalled is read-only and operates solely with \ref vad_registry and read-only functions, so such check may be performed on the fly.
+
+All the below operations require DBA access to the database.
+Any operation will be reflected in event log of the server.
+Any completed operation will be reflected in DB.DBA.VAD_HISTORY table.
+
+Optional package named VADutils provides some additional administrative tools, mostly for troubleshooting.
+Depending on version of Virtuoso Server used, VADutils may have special installation and de-installation functions with ignoring error signals, interactive editor for VAD Registry etc.
+
+
+\subsection vad_intro_admin_check_installability Check if a VAD package may be installed
+
+\code
+DB.DBA.VAD_CHECK_INSTALLABILITY (in package_uri varchar) returns varchar
+\endcode
+
+Checks the presence and correct versions of required packages and of the
+Virtuoso platform.
+It does not executes any pre-install PL/SQL code from the package, so
+there's no guarantee that installation will be successful if the check found no error.
+
+
+\subsection vad_intro_admin_installation Installation of a VAD package
+
+\code
+DB.DBA.VAD_INSTALL (in package_uri varchar) returns varchar
+\endcode
+
+The administrator performs the following operations when installing:
+<UL>
+<LI>Invoke the install operation from interactive SQL or from the web user interface.
+This will:
+<UL>
+<LI>Install documentation files </LI>
+<LI>Check for version and prerequisite package compatibility </LI>
+<LI>disconnect SQL users and terminate web processing </LI>
+<LI>Make a database checkpoint </LI>
+<LI>Run the pre-install SQL script </LI>
+<LI>Load all SQL code in the VAD package, in the order given by the developer </LI>
+<LI>Copy all VSP and XSLT and other web resources into their designated place in DAV or the
+Virtuoso Web root </LI>
+<LI>Run any post install SQL code </LI>
+</UL>
+</LI>
+<LI>If DB.DBA.VAD_INSTALL() succeeded the server comes back on-line.</LI>
+<LI>If there was a failure in mid-install, such as running out of disk or some other serious unrecoverable database error, the server exits.
+The installation can be undone manually by halting the server, deleting the transaction log file and restarting.
+The server will start from the checkpoint as if the installation was never attempted. </LI>
+</UL>
+
+The return value of function is usually a sum of messages from pre- and post-installation procedures of the package. It usually should contain at least
+<UL>
+<LI>any errors and warnings found in the process </LI>
+<LI>created users and qualifiers </LI>
+<LI>root VSP page for accessing the application, if any </LI>
+<LI>path to installed documentation files </LI>
+<LI>performance optimization hints </LI>
+</UL>
+
+The VAD file is installable on an empty Virtuoso database after the possible required VAD packages are installed.
+Installing a package on an empty server is important in order to determine that no procedures or other components were missed since the application may run in the development server simply because of procedures or tables defined in the environment but not in the source.
+The completeness of the source archive of the application and its independence from any ad hoc SQL objects is important because only in this way can it be reliably versioned and tracked or uninstalled.
+
+
+\subsection vad_intro_admin_uninstallability Check if a VAD package may be installed
+
+\code
+DB.DBA.VAD_CHECK_UNINSTALLABILITY (in package_name varchar) returns varchar
+\endcode
+
+Checks if the package can be uninstalled.
+It does not executes any pre-uninstall PL/SQL code from the package, so there's no guarantee that uninstallation will be successful if the check found no error.
+
+
+\subsection vad_intro_admin_uninstallation Uninstallation of a VAD package
+
+\code
+DB.DBA.VAD_UNINSTALL (in package_name varchar) returns varchar
+\endcode
+
+The administrator performs the following operations when uninstalling:
+
+<UL>
+<LI>Invoke the uninstall operation from interactive SQL or from the web user interface.
+This will:
+<UL>
+<LI>Check if no other package is using the subject of uninstall </LI>
+<LI>disconnect SQL users and terminate web processing </LI>
+<LI>Make a database checkpoint </LI>
+<LI>Run the pre-uninstall SQL script </LI>
+<LI>Remove all VSP and XSLT and other web resources from their designated place in DAV or the
+Virtuoso Web root </LI>
+<LI>Drop all SQL procedures and data, in the reverse order reversed to  order given by the developer </LI>
+<LI>Run any post-uninstall SQL code </LI>
+<LI>Remove documentation files explicitly marked as removable (usually documentation should remains on disk after package uninstallation, but it is needed e.g. if a set of documents is distributed as VAD package) </LI>
+</UL>
+</LI>
+<LI>If DB.DBA.VAD_UNINSTALL() succeeded the server comes back on-line.</LI>
+<LI>If there was a failure in mid-uninstall, such as running out of disk or some other serious unrecoverable database error, the server exits.
+The failed uninstallation can be undone manually. As usual, halting the server, deleting the transaction log file and restarting will force the server to start from the checkpoint as if the uninstallation was never attempted. </LI>
+</UL>
+
+
+\subsection vad_intro_admin_check Check the state of VAD package installation
+
+\code
+DB.DBA.VAD_CHECK (in package_uri varchar) returns varchar
+\endcode
+
+This checks to see if the elements of the package are as they are defined in the original distribution.
+A list of differing elements is returned.
+This does not always indicate a corruption since a later version or another package may add columns to tables, and some resources may be customized after installation.
+
+
+\subsection vad_intro_overlap Package overlap
+
+A package will contain full definitions of all tables and indices.  When installing the following takes place:
+<UL>
+<LI> If a table already exists and has the same primary key as the new definition, the new columns are added to the table.  If the primary key is different the installation fails.
+Note that a pre-install SQL script can be defined to explicitly alter tables if consecutive versions of an application have different primary keys. </LI>
+<LI> If an index exists it is left as is.
+If it does not, it is created.  If indices should be modified or dropped, the pre-install script is responsible for dropping these.
+</UL>
+
+Thus the same SQL schema can be loaded twice without ill effect.
+
+The post install script will populate tables etc.  This should be done using the insert soft statement, so that if the row already exists the operation just fails.
+The post install script can perform any application level data format changes.
+
+A package should not overwrite another package if it is not the earlier version of same package.
+Therefore packages should be defined in their own distinct qualifiers.  Sometimes a package will use another package's tables.
+To do this the package must grant itself these tables in a pre-install script.  A schema element such as a table, view or procedure will always have at most one owner package even though it may be referenced or even modified /adding columns) by a using package.
+These elements will only be dropped when the owner package is dropped.
+Tables created ad hoc from interactive SQL do not have any owner package.
+
+This will check for the prior existence of tables, views etc owned by other applications and not compatible with this application.
+If such are found they are listed and the installation is not continued.
+These may be dropped by the DBA to force the installation to succeed.
+Note that such elements may be not a part of some application, hence uninstalling applications will not be effective.
+Such elements must be dropped with the appropriate SQL commands.
+
+*/
+

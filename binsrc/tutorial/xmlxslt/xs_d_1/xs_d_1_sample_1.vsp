@@ -1,0 +1,214 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare txt, ses, dt, err, ot varchar;
+  declare op any;
+  declare i, l integer;
+  declare j, k integer;
+  err := ''; ot := '';
+  op := vector (
+	  'Validation', vector ('SGML', 'RIGOROUS', 'QUICK', 'DISABLE'),
+	  'AttrCompletion', vector ('DEFAULT', 'DISABLE','ENABLE'),
+	  'AttrMisFormat', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'AttrUnknown', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'BadRecursion', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'BuildStandalone', vector ('ENABLE', 'DISABLE'),
+	  'Fsa', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'FsaBadWs', vector ('IGNORE', 'FATAL', 'ERROR', 'WARNING',  'DISABLE'),
+	  'FsaSgml', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'GeRedef', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'IdDuplicates', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'IdrefIntegrity', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'Include', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'MaxErrors', 25,
+	  'MaxWarnings', 100,
+	  'NamesUnknown', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'NamesUnordered', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'NamesUnresolved', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'PeRedef', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'Sgml', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'TooManyWarns', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'TraceLoading', vector ('DEFAULT','ENABLE', 'DISABLE'),
+	  'VcData', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'),
+	  'VcDtd', vector ('DEFAULT','FATAL', 'ERROR', 'WARNING', 'IGNORE', 'DISABLE'));
+
+
+  i := 0; l := length (op);
+
+  while (i < l)
+    {
+      if (get_keyword (op[i], params, 'DEFAULT') <> 'DEFAULT')
+	{
+          ot := concat (ot, op[i], '=', get_keyword (op[i], params), ' ');
+	}
+      i := i + 2;
+    }
+
+  if ({?'exec'} is not null)
+    {
+      declare q, d varchar;
+      q := case
+	     when {?'q'} = '1' then 'select ShipperID, Phone from Demo.demo.Shippers for xml auto'
+	     when {?'q'} = '2' then 'select ShipperID from Demo.demo.Shippers for xml auto'
+	     else 'select ShipperID, CompanyName from Demo.demo.Shippers for xml auto'
+           end;
+
+      d := case
+	     when {?'d'} = '1' then 'select ShipperID, Phone from Demo.demo.Shippers for xml auto'
+	     when {?'d'} = '2' then 'select ShipperID from Demo.demo.Shippers for xml auto'
+	     else 'select ShipperID, CompanyName from Demo.demo.Shippers for xml auto'
+           end;
+      ses := string_output ();
+      xml_auto (q, vector(), ses);
+      ses := string_output_string (ses);
+      dt := xml_auto_dtd (d, 'doc');
+      txt := sprintf ('<?xml version="1.0" ?><!DOCTYPE doc [ %s ]>\n<doc>\n%s\n</doc>\n', dt, ses);
+      err := xml_validate_dtd (txt, 0, '', current_charset(), 'x-any', ot);
+      if (err = '')
+        err := '*** DTD validation passed ***';
+    }
+?>
+
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+
+<form method="post" action="xs_d_1_sample_1.vsp">
+
+<H3>DTD validation example</H3>
+<?vsp if ({?'exec'} is not null ) { ?>
+<table class="tableresult">
+<th>Result of validation</th>
+<tr><td>
+<pre><b>
+<?=err?>
+</b></pre>
+</td></tr>
+</table>
+<?vsp } ?>
+
+<table class="tableentry">
+
+<tr>
+<td>
+1. Select query to to build the SQL/XML document
+</td>
+<td>
+<select name=q>
+<option <?= either (equ (get_keyword ('q', params, 'DEFAULT'), '1'), 'selected', '') ?> value='1'>select ShipperID, Phone from Demo.demo.Shippers for xml auto</option>
+<option <?= either (equ (get_keyword ('q', params, 'DEFAULT'), '2'), 'selected', '') ?> value='2'>select ShipperID from Demo.demo.Shippers for xml auto</option>
+<option <?= either (equ (get_keyword ('q', params, 'DEFAULT'), '3'), 'selected', '') ?> value='3'>select ShipperID, CompanyName from Demo.demo.Shippers for xml auto</option>
+</select>
+</td>
+</tr>
+
+<tr>
+<td>
+2. Select query to to build the DTD document
+</td>
+<td>
+<select name=d>
+<option <?= either (equ (get_keyword ('d', params, 'DEFAULT'), '1'), 'selected', '') ?> value='1'>select ShipperID, Phone from Demo.demo.Shippers for xml auto</option>
+<option <?= either (equ (get_keyword ('d', params, 'DEFAULT'), '2'), 'selected', '') ?> value='2'>select ShipperID from Demo.demo.Shippers for xml auto</option>
+<option <?= either (equ (get_keyword ('d', params, 'DEFAULT'), '3'), 'selected', '') ?> value='3'>select ShipperID, CompanyName from Demo.demo.Shippers for xml auto</option>
+</select>
+</td>
+</tr>
+
+<tr>
+<td>
+3. Set up parameters for validation or leave as default
+</td>
+<td colspan="2">
+&nbsp;
+</td>
+</tr>
+
+<?vsp
+  i := 0; l := length (op);
+  while (i < l)
+    {
+?>
+
+<tr>
+<td>
+<?=op[i]?>
+</td>
+<td>
+
+<?vsp
+   if (isarray (op[i+1]))
+     {
+       declare po any;
+       po := op[i+1];
+       j := 0; k := length (po);
+       http (sprintf ('<select name="%s">\n', op[i]));
+       while (j < k)
+	 {
+	   if (po[j] = get_keyword (op[i], params, 'DEFAULT'))
+	     {
+?>
+	<option selected value="<?=po[j]?>" ><?=po[j]?></option>
+<?vsp
+	     }
+	   else
+	     {
+?>
+	<option value="<?=po[j]?>" ><?=po[j]?></option>
+<?vsp
+             }
+           j := j + 1;
+	 }
+       http ('</select>\n');
+     }
+   else
+     {
+?>
+       <input type=text name="<?=op[i]?>" value="<?=get_keyword (op[i], params, op[i+1])?>">
+
+
+<?vsp
+     }
+?>
+
+</td>
+</tr>
+
+
+<?vsp
+      i := i + 2;
+   }
+?>
+<tr>
+<td>
+4. Validate document
+</td>
+<td colspan="2">
+<input type=submit name=exec value="Execute">
+</td>
+</tr>
+
+</table>
+
+</body>
+</html>

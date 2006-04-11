@@ -1,0 +1,57 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VX-S-4">
+  <refmeta>
+    <refentrytitle>Advanced VSPX programming</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>VSPX tree control</refname>
+    <refpurpose>Directory tree browser</refpurpose>
+  </refnamediv>
+  <refsect1 id="VS-S-4a">
+    <title>Vertical oriented tree</title>
+    <para>
+    To display any data which can be represented as tree hierarchy,
+    the vspx:tree control can be used.  In it's forms it may be represented as 
+    vertical or horizontal one. The following example show directory structure of the 
+    VSPX tutorials on local file system.  
+    </para>
+    <para>
+    The vspx:tree control have three important attributes:
+    </para>
+    <itemizedlist mark="bullet">
+      <listitem>root - This is a name of PL procedure which must return nodes under root of tree</listitem>
+      <listitem>child-function - This evaluated on a node must return children nodes or empty if it's a leaf</listitem>
+      <listitem>start-path - This expression or constant is passed to the root function</listitem>
+    </itemizedlist>
+    <para>In our example the root and child functions returns a array of strings per directory or file, the '.' and '..' are omitted. In interest also are two special containers and one place-holder:</para>
+    <itemizedlist mark="bullet">
+      <listitem>leaf-template - the content of this template will be instantiated and rendered when current position in the tree is a leaf.</listitem>
+      <listitem>node-template - this will be instantiated and rendered on nodes, per each node. The place of next node is designated with "node" placeholder.</listitem>
+      <listitem>node - place-holder to mark-up place where child content must be instantiated.</listitem>
+    </itemizedlist>
+    <para>In that control like as in data-set may have special button suffixed with '[name of tree control]_toggle'. This will be rendered as other submit buttons (in our case it have image appearance), but it will have special function to expand or collapse the branch.</para>
+  </refsect1>
+</refentry>

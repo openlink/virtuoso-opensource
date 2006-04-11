@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_regexp_parse">
+  <refmeta>
+    <refentrytitle>regexp_parse</refentrytitle>
+    <refmiscinfo>string</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>regexp_parse</refname>
+    <refpurpose>returns substrings that match the regular expression
+	in supplied string after an offset</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_regexp_parse">
+      <funcprototype id="fproto_regexp_parse">
+        <funcdef>index_vector <function>regexp_parse</function></funcdef>
+        <paramdef>in <parameter>pattern</parameter> string</paramdef>
+        <paramdef>in <parameter>target_string</parameter> string</paramdef>
+        <paramdef>in <parameter>offset</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_regexp_parse"><title>Description</title>
+      <para>
+It applies regular expression to target_str with offset. This function returns a
+vector containing 2 elements for first match of the pattern and if there a sub expressions : 
+2 elements for each of subexpression match. 
+The first (even numbered) element of each pair is the start index and the second 
+(odd numbered) is the end index of the match.
+The regexp_parse function is more efficient than regexp_match and regexp_substr,
+because it doesn't allocate strings.
+      </para>
+      <programlisting><![CDATA[
+	  SQL> select regexp_parse('(2[34]).*(2[35])','22232225222323', 0);
+	  callret
+	  VARCHAR
+	  _______________________________________________________________________________
+
+	  lvector(2,14,2,4,12,14)
+
+	  1 Rows. -- 10 msec.]]>
+      </programlisting>
+      <para>
+	  Where: 2-14 is a range matched by whole expression,
+	  2-4 is a range where '(2[34])' is matched , and 12-14 
+	  is a range where '(2[35])' subexpression matched.
+      </para>
+			<example id="ex_regexp_parse">
+<title>Examples</title>
+<programlisting>
+CREATE PROCEDURE all_tokens2 (IN pattern VARCHAR,IN str VARCHAR, IN offs INTEGER)
+{
+
+	DECLARE vec ANY;
+	DECLARE i INTEGER;
+	DECLARE out_str VARCHAR;
+
+
+	vec:=regexp_parse(pattern,str,offs);
+	IF ((vec IS NOT NULL) AND (length(vec)&gt;1))
+	{
+		out_str:='';
+		i:=0;
+		WHILE ( (length(vec)/2) &gt; i )
+		{
+			out_str:=concat(out_str,'/',
+				subseq(str,aref(vec,(i)*2),
+				aref(vec,(i)*2+1)));
+			i:=i+1;
+		};
+		RETURN concat(out_str,test_parsing(pattern,str,aref(vec,1)+1));
+	}
+	return NULL;
+};
+</programlisting>
+</example>
+</refsect1>
+  <refsect1 id="seealso_regexp_parse"><title>See Also</title>
+    <para><link linkend="fn_regexp_match"><function>regexp_match()</function></link></para>
+    <para><link linkend="fn_regexp_like"><function>regexp_like()</function></link></para>
+    <para><link linkend="fn_regexp_instr"><function>regexp_instr()</function></link></para>
+    <para><link linkend="fn_regexp_replace"><function>regexp_replace()</function></link></para>
+    <para><link linkend="fn_regexp_substr"><function>regexp_substr()</function></link></para>
+  </refsect1>
+</refentry>
+
+

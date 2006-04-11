@@ -1,0 +1,31 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<save_service xmlns="urn:uddi-org:api" generic="1.0">
+    <businessService businessKey="$BK" serviceKey="3C70B274-5E79-11D5-A5AE-A3BF9797D453">
+      <name>OpenLink Virtuoso SOAP Server</name>
+      <description xml:lang="en">A HTTP SOAP server.</description>
+      <categoryBag>
+        <keyedReference tModelKey="uuid:c0b9fe13-179f-413d-8a5b-5004db8e5bb2" keyName="Information Services" keyValue="5141" />
+      </categoryBag>
+    </businessService>
+</save_service>

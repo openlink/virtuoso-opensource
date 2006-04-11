@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_document">
+  <refmeta> 
+    <refentrytitle>document</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>document</refname>
+    <refpurpose>Returns data from XML documents other than the main source document.</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_document">
+      <funcprototype id="xpf_proto_document">
+        <funcdef>node-set <function>document</function></funcdef>
+        <paramdef><parameter>document_uri</parameter> varchar</paramdef>
+        <paramdef><optional><parameter>base_uri</parameter> varchar</optional></paramdef>
+        <paramdef><optional><parameter>parser_mode</parameter> integer</optional></paramdef>
+        <paramdef><optional><parameter>content_encoding</parameter> varchar</optional></paramdef>
+        <paramdef><optional><parameter>content_language</parameter> varchar</optional></paramdef>
+        <paramdef><optional><parameter>dtd_validator_config</parameter> varchar</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_document"><title>Description</title>
+<para>
+The function tries to access an XML text at location specified by <parameter>document_uri</parameter>
+and optionally <parameter>base_uri</parameter>. On success, it parses the text and returns
+the root entity of the &quot;XML Tree&quot; document; the result is identical to
+the entity created by <link linkend="fn_xtree_doc">xtree_doc()</link> Virtuoso/PL function.
+</para>
+<para>
+If the <parameter>document_uri</parameter> argument is node-set, not a string,
+then a node-set is returned as if document() function is applied to string-value of every node
+of the node-set.
+</para>
+<para>
+Note that the list of attributes of the function differs from specified in XSLT 1.0 standard.
+In XPATH 1.0, there is no such function at all.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_document"><title>Parameters</title>
+    <refsect2><title>document_uri</title>
+      <para>An absolute or relative URI that points to a well formed XML or HTML document.
+If the URI is relative, then the <parameter>base_uri</parameter> must be specified.</para></refsect2>
+    <refsect2><title>base_uri</title>
+      <para>The URI that is used to
+resolve all relative URIs (i.e. to convert them into absolute in order to locate and load subdocuments) and
+to change 'local' absolute references to relative when in HTML mode.</para></refsect2>
+    <refsect2><title>parser_mode</title>
+      <para>0, 1 or 2; 0 - XML parser mode, 1 - HTML parser mode, 2 - 'dirty HTML'
+mode (with quiet recovery after any syntax error)</para></refsect2>
+    <refsect2><title>content_encoding</title>
+      <para>string with content encoding type of document; valid are 'ASCII', 'ISO',
+'UTF8', 'ISO8859-1', 'LATIN-1' etc., defaults are 'UTF-8' for XML mode and 'LATIN-1' for
+HTML mode.</para></refsect2>
+    <refsect2><title>content_language</title>
+      <para>string with language tag of content of document; valid names are listed in
+IETF RFC 1766, default is 'x-any' (it means 'mix of words from various human languages')</para></refsect2>
+    <refsect2><title>dtd_validator_config</title>
+      <para>configuration string for DTD validator, default is "Include=ERROR IdCache=ENABLE" meaning that DTD
+should be read but validation should be disabled; errors on including subdocuments should be
+reported as errors and thus should abort the processing; a dictionary of element's IDs should be created
+in order to support XQuery 'pointer operator'.
+ See <link linkend="dtd_config">Configuration Options of the DTD Validator</link> for details.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_document"><title>Return Types</title><para>Node-set</para></refsect1>
+  <refsect1 id="xpf_errors_document"><title>Errors</title>
+    <table><title>Errors signalled by document()</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPF09</errorcode></entry>
+	    <entry><errorname>Too many arguments passed to XPATH function document()</errorname></entry>
+	    <entry>The number of parameters may vary only from 1 to 6.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPF10</errorcode></entry>
+	    <entry><errorname>XML entity or a string expected as \"base_uri\" argument of XPATH function document()</errorname></entry>
+	    <entry>If presents, the second argument of the function must be either a string or an XML entity whose XML document has a suitable base URI.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+<para>
+The function may signal variety of errors when it reads the requested document(s) from network or from local resources.
+It may even cause deadlocks e.g. if documents are retrieved from the Virtuoso's own webserver and
+these documents must be created on the fly from data that are locked by Virtuoso/PL procedure that invokes the XPATH processor.
+</para>
+  </refsect1>
+  <refsect1 id="xpf_examples_document"><title>Examples</title>
+    <example id="xpf_ex_document1"><title>Simple reading of a standalone XML document</title>
+      <para>Read a standalone document from http://www.example.com/sales/prices.xml</para>
+      <screen>document("http://www.example.com/sales/prices.xml")</screen>
+    </example>
+    <example id="xpf_ex_document2"><title>Simple reading of a non-standalone document</title>
+      <para>Read a non-standalone document from local mirror but access its subdocuments as if it is retrieved directly from
+'http://www.example.com/sales/prices.xml', so e.g. the subdocument that is referenced as 'termsandconditions.xml' is
+retrieved from http://www.example.com/sales/termsandconditions.xml but not from
+http://webcache.localdomain/examplesales/termsandconditions.xml .</para>
+      <screen>document("http://webcache.localdomain/examplesales/prices.xml", "http://www.example.com/sales/prices.xml")</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_document"><title>See Also</title>
+    <para><link linkend="xpf_doc">doc()</link></para>
+    <para><link linkend="xpf_document_literal">document-literal()</link></para>
+    <para><link linkend="fn_xtree_doc">xtree_doc()</link></para>
+    <para><link linkend="fn_xper_doc">xper_doc()</link></para>
+  </refsect1>
+</refentry>
+

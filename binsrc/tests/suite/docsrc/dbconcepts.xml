@@ -1,0 +1,856 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<chapter id="chapter2" label="II">
+<title>Database Concepts</title>
+
+<!-- ======================================== -->
+<sect1 id="LogicalDataModel">
+<title>Logical Data Model</title>
+<para>Virtuoso provides an extended Object Relational model which offers all
+the flexibility of relational access with inheritance, run time data
+typing, late binding, identity based access.
+</para>
+<sect2 id="LDMTable">
+<title>Table</title>
+<para>
+A table is a uniquely named entity that has the following characteristics:
+</para>
+<itemizedlist mark="bullet" SPACING="compact">
+<listitem><para>Zero or more columns</para></listitem>
+<listitem><para>One primary key</para></listitem>
+<listitem><para>Zero or more keys (indices)</para></listitem>
+<listitem><para>An optional super table from which this inherits properties</para></listitem>
+<listitem><para>An optional object ID key, which may or may not be the primary key</para></listitem>
+<listitem><para>Various	SQL table constraints, e.g. CHECK&apos;s</para></listitem>
+</itemizedlist>
+<para>A table will then have zero or more rows. The relationship of a table
+and its rows can be thought of as a class-instance relationship.
+</para>
+</sect2>
+
+<sect2 id="LDMCols"><title>Column</title>
+<para>
+A column is always defined in one table and has a name that is unique
+within that table. A column may appear in more than one table as a
+result of inheritance but always has one place of definition. i.e.
+one database wide &apos;identity&apos;.
+</para>
+<para>
+A column has the following characteristics:
+</para>
+<itemizedlist mark="bullet" SPACING="compact">
+<listitem><para>Table</para></listitem>
+<listitem><para>Name inside the table</para></listitem>
+<listitem><para>database wide ID</para></listitem>
+<listitem><para>Data type</para></listitem>
+<listitem><para>Various SQL constraints, e.g. DEFAULT, CHECK etc.</para></listitem>
+</itemizedlist>
+</sect2>
+
+<sect2 id="LDMKey"><title>Key</title>
+<para>
+A key or index is the means whereby tables manifest themselves in the
+physical database. A key is always defined with respect to one table
+but may occur in several as a result of inheritance. Keys have unique
+names inside the table. A key has the following characteristics:
+</para>
+<itemizedlist mark="bullet" SPACING="compact">
+<listitem><para>A database wide key ID</para></listitem>
+<listitem><para>One or more &apos;significant&apos; key parts, which are columns of the defining table or super tables</para></listitem>
+<listitem><para>Zero or more &apos;trailing&apos; key parts, columns of the defining table or supertables.</para></listitem>
+<listitem><para>Whether the key is primary</para></listitem>
+<listitem><para>Whether the key is unique</para></listitem>
+<listitem><para>How the key is clustered</para></listitem>
+<listitem><para>Whether the key is an object ID key</para></listitem>
+</itemizedlist>
+</sect2>
+
+<sect2 id="LDMSubtable"><title>Subtable</title>
+<para>
+A subtable is a table that inherits all columns, the primary key and
+all other keys from another table, called super table.
+</para>
+<para>
+A subtable can define its own columns and keys which add themselves to
+those of the super table. No primary key can be redefined, though.
+</para>
+<para>
+The inheritance relationship between tables is manifested by a key-subkey
+relationship between the tables&apos; primary and other keys.
+</para>
+<para>
+A table can inherit columns and keys from more than one line of
+inheritance but the first super table is in a special position since it
+is the one where the primary key comes from. This is somewhat analogous
+to the multiple inheritance of C++, where one superclass has a special
+position.
+</para>
+</sect2>
+
+<sect2 id="LDMObjectID"><title>Object ID</title>
+<para>
+An object ID is a special data type that encodes an identity based
+reference. The object ID is logically composed of the ID, a variable
+length binary string and of a 4 byte class specification that encodes
+the class of the referenced entity.
+</para>
+<para>
+A table does not necessarily declare a primary key.  Even so, the table must
+have a primary key, in this case a sythetic record ID which is defined as primary key. The record ID  is an autoincrementing
+column that is normally invisible but if present, can be accessed by explicit reference. One
+should not rely on this feature being available, though.
+</para>
+<para>
+Thus
+</para>
+<programlisting>
+create table nokey (a integer);
+</programlisting>
+<para>
+expands to
+</para>
+<programlisting>
+create table nokey (a integer, _IDN integer identity, primary key (_IDB));
+</programlisting>
+<para>
+The first unique index to be defined will become the primary key if the table
+is empty at the time of the index&apos;es definition.
+</para>
+<para>
+Thus
+</para>
+<programlisting>
+create unique index a on nokey (a);
+</programlisting>
+<para>
+will change the nokey table to be as if defined by
+</para>
+<programlisting>
+create table nokey (a integer, primary key (a));
+</programlisting>
+<para>
+Having a primary key other han _IDN is always better than the default primary key.
+Declaring a primary key is therefore always advisable.
+</para>
+</sect2>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="DataTypes">
+<title>Data Types</title>
+
+<para>Virtuoso supports most SQL 92 data types.</para>
+
+<sect2 id="DTCharVChar">
+<title>CHARACTER &amp; VARCHAR</title>
+
+<itemizedlist mark="bullet">
+<listitem><para>CHARACTER</para></listitem>
+<listitem><para>VARCHAR</para></listitem>
+<listitem><para>VARCHAR &apos;(&apos; INTNUM &apos;)&apos;</para></listitem>
+<listitem><para>CHARACTER &apos;(&apos; INTNUM &apos;)&apos;</para></listitem>
+</itemizedlist>
+
+<para>The CHAR, CHARACTER and VARCHAR are implemented as a single binary string type with dynamic length.
+The precision that may be specified controls how the column is described by SQLColumns, SQLDescribeCol et al
+but has no other effect.  Any of these types cam contain arbitrary binary data, including zeros. The length is stored
+separately. Space required is 2+length for length &lt; 256, 5+length otherwise.
+</para>
+<para>If the precision is omitted a default of 24 is assumed. As a rule, the precision should always be specified
+and should reflect the maximum length of the column.
+</para>
+</sect2>
+
+<sect2 id="DTNumeric">
+<title>NUMERIC &amp; DECIMAL</title>
+<itemizedlist mark="bullet">
+<listitem><para>NUMERIC</para></listitem>
+<listitem><para>NUMERIC &apos;(&apos; INTNUM &apos;)&apos;</para></listitem>
+<listitem><para>NUMERIC &apos;(&apos; INTNUM &apos;,&apos; INTNUM &apos;)&apos;</para></listitem>
+<listitem><para>DECIMAL</para></listitem>
+<listitem><para>DECIMAL &apos;(&apos; INTNUM &apos;)&apos;</para></listitem>
+<listitem><para>DECIMAL &apos;(&apos; INTNUM &apos;,&apos; INTNUM &apos;)&apos;</para></listitem>
+</itemizedlist>
+
+<para>The various forms of NUMERIC and DECIMAL refer to a single variable precision
+decimal floating point type. This type provides accurate arithmetic and decimal rounding.
+The default precision and scale are 40 and 20, which are also the maximum precision and scale. The
+precision is the number of decimal digits used in the computation. The scale is the maximum number of
+decimal digits to the right of the decimal point. Internal calculations are always precisio but
+numbers are truncated to the column&apos;s precision and scale when stored.  If a value being stored
+has more digits to the left of the decimal point than allowed in the column an error is signalled.
+If a number being stored has more digits to the right of the decimal point than allowed in a column the decimal part is rounded to the precision of the column.
+</para>
+<para>
+The space consumption of a number is 3 + precision / 2.
+The precision and scale of a column of this type are returned by SQLColumns, SQLDescribeCol et al.
+</para>
+<para>
+A DECIMAL or NUMERIC with precision &lt;= 9 and scale = 0 is transformed to INTEGER.
+</para>
+</sect2>
+
+<sect2 id="DTInt">
+<title>INTEGER &amp; SMALLINT</title>
+
+<itemizedlist mark="bullet">
+<listitem><para>INT</para></listitem>
+<listitem><para>INTEGER</para></listitem>
+<listitem><para>SMALLINT</para></listitem>
+</itemizedlist>
+<para>These types are represented as a 32 bit signed binary integer.  An integer is described as
+having a precision of 9 and a scale of 0, although the range is +- 2**31. Storage space is 2 bytes
+for -129 &lt; x &lt; 128, 5 bytes otherwise.
+</para><para>
+A column declared SMALLINT is described as SQL_SMALLINT. A column declared INTEGER or INT is
+described as SQL_INTEGER.  This is the only difference between the types and is prompted by the fact that certain ODBC
+applications need these types to be separate.
+</para>
+</sect2>
+
+<sect2 id="DTFLOAT">
+<title>FLOAT &amp; DOUBLE</title>
+
+<itemizedlist mark="bullet">
+<listitem><para>FLOAT</para></listitem>
+<listitem><para>FLOAT &apos;(&apos; INTNUM &apos;)&apos;</para></listitem>
+<listitem><para>DOUBLE PRECISION</para></listitem>
+</itemizedlist>
+<para>These types refer to the 64 but IEEE floating point number, the C double type. This is a fixed precision
+binary floating point number. This is described as having a precision of 15 and a scale of 0. If
+decimal rounding is not required this type is preferable to NUMERIC since it is precise enough for
+most uses and more efficient and compact than NUMERIC.  The storage requirement is 9 bytes.
+</para></sect2>
+
+<sect2 id="DTREAL">
+<title>REAL</title>
+
+<itemizedlist mark="bullet">
+<listitem><para>REAL</para></listitem>
+</itemizedlist>
+<para>This type if the 32 bit IEEE floating point number, corresponding to the C float type.  The storage requirement is 5 bytes.
+</para>
+</sect2>
+
+<sect2 id="DTLONG">
+<title>LONG VARCHAR &amp; LONG VARBINARY</title>
+
+<itemizedlist mark="bullet">
+<listitem><para>LONG VARCHAR</para></listitem>
+<listitem><para>LONG VARBINARY</para></listitem>
+</itemizedlist>
+<para>
+These types implement a binary large object (BLOB) type. The length can be up to 2**31 (2GB).
+If manuoulated with the SQLGetDatya and SQLPutData ODBC functions a BLOB need not fit in the DBMS&apos;s or the client&apos;s memory.
+The LONG VARCHAR and LONG VARBINARY types are distinct only because certain ODBC aopplications
+gain from being able to distinguish long text from long binary. The types are described as SQL_LONGVARCHAR and SQL_LONGVARBINARY respectively, with a precision of 2GB.
+</para>
+<para>
+Several long columns may exist on a single row. A long column may not
+be a key part in an index or primary key.
+</para>
+<para>
+Data in long columns is stored as a linked list of database pages.  Thus a long column
+if it does not fit in-line on the containing row will require an integer number of 4K
+database pages.  If a long column&apos;s value is short enough in order to fit within the row
+containing it the blob will be stored on the row and will not take more space than a VARCHAR of the
+same actual length.  A long column fits on a row if the sum of the lengths of columns, including the long column, is
+under 2000 bytes.
+</para>
+</sect2>
+
+<sect2 id="DTVARBINARY">
+<title>VARBINARY</title>
+
+<itemizedlist mark="bullet">
+<listitem><para>VARBINARY</para></listitem>
+</itemizedlist>
+<para>
+This type is internally like VARCHAR but is distinct for compatibility
+with ODBC applications. A VARBINARY column is described as SQL_BINARY to ODBC clients.  The
+storage requirement is the same as for a corresponding VARCHAR. VARBINARY and
+VARCHAR data are never equal even if the content be the same but they can be cast to
+each other.  VARBINARY data sorts in the unsigned order of the bytes
+comprising the data.
+</para>
+</sect2>
+
+<sect2 id="DTTIMESTAMP">
+<title>TIMESTAMP; DATE &amp; TIME</title>
+
+<itemizedlist mark="bullet">
+<listitem><para>TIMESTAMP</para></listitem>
+<listitem><para>DATETIME</para></listitem>
+<listitem><para>TIME</para></listitem>
+<listitem><para>DATE</para></listitem>
+</itemizedlist>
+<para>
+All the time and date related types are internally represented as a single datetime type. The
+type consists of a Julian day, hour, minute, second, 6 digit fraction and timezone.
+The range of the year is from 0 to over 9999. This type can accommodate all values of any SQL 92 time related type.
+</para>
+<para>
+Although the internal representation is the same, a column of a time related type is described
+as being of the appropriate ODBC type, i.e. SQL_TIMESTAMP for TIMESTAMP and DATATIME and SQL_DATE for DATE and SQL_TIME for TIME.
+</para>
+<para>
+A DATETIME as precision 19, a DATE as precision 10 and a TIME as precision 8.
+</para>
+<para>
+A column declared a TIMESTAMP is automatically set to the timestamp of the transaction which either inserts or
+updates any column of the table containing it. The timestamp of a transaction is guaranteed to be distinct from that of
+any other transaction.  Due to compatibility reasons a TIMESTAMP column is described to ODBC clients as a binary
+of 10 bytes. It is however possible to use any date related functions on timestamps and to bind
+a timestamp column to a date or datetime variable (SQL_C_TIMESTAMP type in ODBC).  Binding to a binary will also work but
+the data will then be opaque.
+</para>
+<para>
+SQL 92 provides for types with a timezone. Although the ODBC API does not expose the timezone, it is stored with
+these types and can be retrieved with the timezone function. The timezone has a precision of minutes from UTC.
+</para>
+<para>
+The storage requirement for these types is 11 bytes.
+</para>
+</sect2>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="PhysicalOrg">
+<title>Physical Organisation</title>
+
+<!--  This has not been found yet -->
+
+</sect1>
+
+
+<!-- ======================================== -->
+<sect1 id="Locking">
+<title>Locking</title>
+<para>
+Virtuoso offers a dynamic locking schema which combines
+the high resolution of row level locking with the performance of
+page locking for large transactions.
+</para>
+
+<sect2 id="IsoLevels"><title>Isolation Levels</title>
+
+<para>
+Virtuoso has a full range of isolation options, ranging from dirty read to
+serializable. The default isolation is repeatable read, which is adequeta
+for most practical applications.
+</para>
+
+<sect3 id="ReadUncommit"><title>Read Uncommitted</title>
+<para>This corresponds to SQL_TXN_READ_UNCOMMITTED.  A read
+is never prevented by locking, nor do read rows stay locked. The data being read
+may or may not be committed, hence there is no guarantee of transaction integrity.
+</para>
+</sect3>
+
+<sect3 id="ReadCommit"><title>Read Committed</title>
+<para>Reading will wait for access to exclusively locked rows. Such rows
+are ones that have been read FOR UPDATE, updated or inserted.  Readinfg a row dows not
+leave a lock in place, hence some other transaction may modify a row that has been read
+in a read committed transaction while the latter is in progress.
+</para>
+</sect3>
+
+<sect3 id="RepeatableRead"><title>Repeatable Read</title>
+<para>The transaction will wait for access to exclusively locked rows
+and lock all rows it reads.  The locking of read fows can be shared or exclusive depending
+on the FOR UPDATE clause in SELECT or the SQL_CONCURRENCY statement option.  In the case
+of a select over a range of rows where not all rows match some other critiria,
+only matching rows are locked.  This mode guarantees that any row that has once been locked by the
+reading transaction can be re-read on the basis of its identity (primary key) and will not have
+been changed by any other transaction while this transaction is in progress.
+This mode does not prevent phantoms, i.e., new rows may appear between rows that were locked
+as a result of an insert by another transaction.
+</para>
+</sect3>
+
+<sect3 id="Serializable"><title>Serializable</title>
+<para>This mode guarantees that concurrent transactions will look as if
+the next transaction started only after the previous terminated. This is like repeatable read
+but will also prevent phantoms.  This means that space that was found to be empty
+in one read will remain empty in the next read while the transaction is ongoing.
+</para>
+<para>Serializable isolation is implemented by locking all ranges of rows matching
+criteria pertaining to the ordering index in a select. The range here includes the last row
+before the first in the range.  An empty range can be locked by locking the row before the range
+by a special follow lock, which prevents insertions to the right of the locked row.  A by product
+of this is that serializable locking guarantees that a select count will give the same result repeatedly unless the transaction itself affect the rows counted.
+</para>
+</sect3>
+
+<para>Serializable isolation is slower than repeatable read and not required by the semantic of
+most applications.
+</para>
+<para>All insert, delete and update operations make an exlusive row lock on the rows
+they operate on, regardless of specified isolation.
+</para>
+<para>Isolation is set at the connection, i.e. transaction level.  Variously isolated
+transactions may coexist and each will behave consistently with its semantic.
+</para>
+<para>Repeatable read and serializable transactions are susceptibe at any time to be
+terminated by deadlock, SQL state 40001.  Also other transactions are susceptible
+to deadlock if they own locks as a result of insert, update or delete.  Deadlocks are
+resolved in favor of the older of the contendig transactions. A transaction&apos;s age is
+the count of reads read + 2 * the count of rows inserted, deleted or updated.
+</para>
+<para>Any transaction that has modified the database may be rolled back.  To this effect all transactions
+maintain a rollback log.  This is a memory based data structure that contanis the
+state of changed rows as they were before the transaction first affected them. This
+leads to potential transient memory consumption.
+</para>
+<para>All transactions that have changed the database also have a roll forward log.
+This will be used to recreate the effects of the transaction during roll forward
+recovery.
+</para>
+</sect2>
+
+<sect2 id="LockExtent"><title>Lock Extent</title>
+<para>
+If a transaction is the exlusive owner of locks on a database page and a sufficient percentage
+of the rows are locked, it makes sense to replace the distinct row locks
+by a single page lock.  The LOCK_ESCALATION_PCT parameter controls the threshold for doing
+this. See the SET statement for details.
+</para>
+<para>
+If a cursor reads data serially and has a history of locking a high percentage of rows on
+each page it traverses, it will start setting page level locks as its first choice.
+It woll do this when entering a new page where there are no row level locks.
+</para>
+</sect2>
+
+<sect2 id="TransactionSize"><title>Transaction Size</title>
+<para>
+There is no limit to the transaction size per se.  The mmoru consumed by a transaction
+is proportional to the number of locks held by it, and the number of changed rows (insert, update, delete).
+BKLOB&apos;s manupulated by a transaction do not contribute to memory consumption, them being always disk based.
+</para>
+</sect2>
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="SysTables">
+<title>System Tables</title>
+
+<example id="VDOCS-SYSTAB-01">
+<title>Schema Tables</title>
+<programlisting>
+	create table SYS_COLS (
+		TABLE			varchar,
+		COLUMN			varchar,
+		COL_ID			integer,
+		COL_DTP			integer,
+		primary key (COL_ID))
+
+	create index SYS_COLS_BY_NAME on SYS_COLS (TABLE, COLUMN)
+
+	create table SYS_KEYS (
+		KEY_TABLE		varchar,
+		KEY_NAME		varchar,
+		KEY_ID			integer,
+		KEY_N_SIGNIFICANT	integer,
+		KEY_CLUSTER_ON_ID	integer,
+		KEY_IS_MAIN		integer,
+		KEY_IS_OBJECT_ID	integer,
+		KEY_IS_UNIQUE		integer,
+		KEY_MIGRATE_TO		integer,
+		primary key (KEY_TABLE, KEY_NAME))
+
+	create index SYS_KEYS_BY_ID on SYS_KEYS (KEY_ID)
+
+	create table SYS_KEY_PARTS (
+		KP_KEY_ID		integer,
+		KP_NTH			integer,
+		KP_COL			integer
+		primary key (KP_KEY_ID, KP_NTH))
+
+	create table SYS_KEY_SUBKEY (
+		SUPER			integer,
+		SUB			integer,
+		primary key (SUPER, SUB))
+</programlisting>
+</example>
+
+<para>
+The SYS_COLS table defines all tables and columns. Each column
+appears once in this table. No entries are made for inherited columns.
+The SYS_KEYS table defines all indices. A row in this table corresponds
+to each key in the database, either originally defined or inherited.
+</para><para>
+The KEY_CLUSTER_ON_ID column is the clustering ID of the key. If this
+is zero the key is clustered by value. KEY_IS_MAIN is non-zero if this
+is the primary key of its table. The KEY_MIGRATE_TO is the key ID of a
+new version of this key if this key is obsolete (e.g. the primary key
+of a table from before an ALTER TABLE). The KEY_N_SIGNIFICANT
+indicated how many leading key parts are used in ordering keys.
+</para><para>
+The KEY_ID references the KP_KEY_ID in the SYS_KEY_PARTS table.
+This table embodies the actual layout of keys and rows. The KP_NTH is
+a number positioning the KP_COL to the appropriate place in the row.
+The KP_COL references the COL_ID in SYS_COLS.	The KP_NTH is not
+necessarily a series of consecutive integers but the order matches the
+order of columns on the row.
+</para><para>
+The SYS_KEY_SUBKEY table has a row for each pair of keys where one is
+the immediate subkey of the other.
+</para>
+
+<para>The following SQL procedure exemplifies how the SYS_COLS, SYS_KEYS
+and SYS_KEY_PARTS tables combine. Given a table name it produces the
+set of columns and the set of indices and their parts.
+</para>
+<programlisting>
+	create procedure dt (in tn varchar)
+	{
+		declare index_name, col, dtp varchar;
+		declare t, nth integer;
+
+		dtp := '-';
+
+		result_names (col, t);	  --- first result set
+
+		declare cr cursor for select COLUMN, COL_DTP
+		  from SYS_COLS where TABLE = tn;
+
+		whenever not found goto done;
+		open cr;
+		while (1=1) {
+			fetch cr into col, t;
+			result (col, t);
+		}
+	done:
+		result_names (index_name, nth, col);	 -- 2nd result set
+		end_result ();
+
+		declare icr cursor for select KEY_NAME, KP_NTH, COLUMN
+		  from SYS_KEYS, SYS_KEY_PARTS, SYS_COLS
+		  where KEY_TABLE = tn and KP_KEY_ID = KEY_ID
+		  and KP_NTH &lt; KEY_N_SIGNIFICANT and	 COL_ID = KP_COL;
+
+		whenever not found goto k_done;
+		open icr;
+		while (1=1) {
+			fetch icr into index_name, nth, col;
+			result (index_name, nth, col);
+		}
+	k_done:
+		return 0;
+	}
+</programlisting>
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="ThreadUsage">
+<title>Thread Usage</title>
+
+<!-- DUNNO WHERE THIS IS EITHER -->
+
+</sect1>
+
+
+<!-- ======================================== -->
+<sect1 id="UserGroupPriv">
+<title>Users &amp; Group Priviledges</title>
+
+<para>
+Virtuoso supports users and user groups.  The security implementation
+is similar to that found in most SQL databases
+</para><para>
+When a database is created it contains one user account named dba.
+The initial password is dba. When subsequent users are created, the
+user name is the default password and users always initially belong to
+their own group as its only member. These users only have the privileges
+granted to PUBLIC.
+</para><para>
+The dba user and users that may be moved to the dba group have unlimited
+privileges.
+</para>
+
+<sect2 id="UserSchemaObj">
+<title>Users and Schema Objects</title>
+<para>
+A user can create schema objects, e.g. tables, views, procedures, etc. A non-dba
+user is only permitted to create objects whose owner is the user, thus the owner part of the
+qualified object name defaults to the login name of the creating user.  A dba user can also create objects with other owners.
+</para><para>
+A user irrevocably has all privileges to those objects whose owner it is.
+This includes the privilege of further granting these privileges.
+</para><para>
+A procedurel object, that is a stored procedure or view has the privileges of its owner.
+It is therefore possible to grant access to a view or procedure without granting access to the
+schema objects referenced by it.
+</para>
+</sect2>
+
+<sect2 id="UsersGroups">
+<title>Users and Groups</title>
+<para>
+A user is characterized by a unique user name, a unique user id and a
+group id. There is a one to one correspondence between the user name and
+user id. A user account can be used a user group.   User group id's are
+normal user id's. A user has all the privileges granted to it, all the
+privileges granted to the user whose user id appears as its group id and
+all the privileges granted to public. Additionally if the user is dba
+(id 0) or if its group id is 0 it has all privileges.
+</para><para>
+To use a user group one creates a user account for the group and then
+creates the group members, after which the group members can be added
+to the group. To create a group &apos;staff&apos; with users jim and john, one
+executes the following statements with dba privilege:
+</para>
+
+<screen id="createuser" label="Create User Statement">
+create user staff;
+create user jim;
+create user john;
+set user group jim staff;
+set user group john staff;
+</screen>
+
+<para>
+Now the dba can grant privileges to staff and those will apply to users
+logged in a either jim or john. Note that since staff is a user account
+one can also log in as staff. The passwords of the accounts default to
+the user name. It is advisable to set the password to something else
+immediately after creating the accounts.
+</para><para>
+To grant select on STOCK to staff, one can execute:
+</para>
+
+<screen id="grant" label="Grant to User Statement">
+grant select on STOCK to staff;
+</screen>
+</sect2>
+
+<sect2 id="ManagePwds">
+<title>Managing Passwords</title>
+<para>
+Each user can change his password when logged in. The SET PASSWORD
+statement changes the password associated with the user who executes it.
+</para>
+
+<screen id="setpwd" label="Set Password Statement">
+SET PASSWORD &lt;old password&gt; &lt;new password&gt;
+</screen>
+
+<para>
+For example:
+</para>
+
+<screen>
+% isql 1111 john john
+SQL&gt; SET PASSWORD john cheetah;
+SQL&gt; exit;
+
+% isql 1111 john  cheetah
+SQL&gt;
+</screen>
+
+<para>
+Changes john's password from john, the initial default to cheetah.
+</para>
+</sect2>
+
+<sect2 id="UserSysTables">
+<title>System Tables</title>
+<para>
+Security information is stored in the tables:
+</para>
+<programlisting>
+	create table SYS_USERS (
+		U_NAME		varchar,
+		U_PASSWORD	varchar,
+		U_ID		integer,
+		U_GROUP		integer,
+		primary key (U_NAME);
+
+	create table SYS_GRANTS	 (
+		G_USER		varchar,
+		G_OP		integer,
+		G_OBJECT	varchar,
+		G_COL		varchar,
+		primary key (G_USER, G_OP, G_OBJECT, G_COL));
+</programlisting>
+
+<para>
+These tables are visible only to dba users. The procedure list_grants
+shows a summary of granted privileges:
+</para>
+
+<screen>
+SQL&gt; list_grants (0);
+</screen>
+
+<para>
+These tables should not be modified by applications. Only the SQL
+statements GRANT, REVOKE, CREATE USER, DELETE USER, SET USER GROUP and
+SET PASSWORD should be used to maintain user and security information.
+Security information is cached in RAM during the execution of a Virtuoso
+process and these statements ensure that the cache stays consistent with
+the tables.
+</para>
+</sect2>
+
+<sect2 id="ProcsSecurity">
+<title>Procedures and Security</title>
+<para>
+A stored procedure may perform all actions granted to the user who
+created it.  Execution privileges can be granted on procedures by dba
+users.	A non-dba user may perform actions through stored procedures
+that it could not perform by executing individual statements.
+</para><para>
+While privileges are mostly checked at compile time (SQLPrepare),
+procedure permissions are checked at invocation time.
+</para>
+
+<screen>
+isql 1111 dba dba
+SQL&gt; create procedure stock_report (in dept_id integer)
+{
+--
+-- code
+--
+};
+SQL&gt; grant execute on stock_report to staff;
+SQL&gt;
+</screen>
+</sect2>
+
+<sect2 id="RevokingPrivs">
+<title>Revoking Privileges</title>
+<para>
+Only a privilege that has been granted can be revoked.	More precisely
+the privilege and grantee in a REVOKE statement must be the same as in
+a previous GRANT statement. For example:
+</para>
+<screen>
+grant select  (S_I_ID, S_LEVEL), update (S_LEVEL) to staff;
+</screen>
+<para>and </para>
+<screen>
+revoke update on STOCK from jim;
+</screen>
+
+<para>
+are incompatible, firstly because &apos;update on STOCK&apos; was never granted and
+because nothing was ever granted to jim.
+</para>
+<para>
+Instead,
+</para>
+
+<screen>
+revoke update (S_LEVEL) on STOCK from staff;
+</screen>
+
+<para>
+is OK.
+</para><para>
+To revoke one user&apos;s privileges, one should first set the user's group
+to the user itself. This will cause the user to have only the privileges
+specifically granted to it or to public. The one can revoke the privileges
+of the user one by one. The list_grants procedure can be used to list
+what has been granted.
+</para>
+
+<tip><title>See Also:</title>
+<para>GRANT</para>
+<para>REVOKE</para>
+<para>SET PASSWORD</para>
+<para>CREATE USER</para>
+<para>DELETE USER</para>
+</tip>
+
+</sect2>
+
+<sect2 id="CreateUserStmts">
+<title>CREATE USER, DELETE USER, SET PASSWORD, SET USER GROUP statement</title>
+
+<example id="VDOCS-UGMAINT-01">
+<title>set_pass</title>
+<programlisting>SET PASSWORD NAME NAME</programlisting>
+</example>
+
+<example id="VDOCS-UGMAINT-02">
+<title>create_user_statement</title>
+<programlisting>CREATE USER user	</programlisting>
+</example>
+
+<example id="VDOCS-UGMAINT-03">
+<title>delete_user_statement</title>
+<programlisting>DELETE USER user	</programlisting>
+</example>
+
+<example id="VDOCS-UGMAINT-04">
+<title>set_group_stmt</title>
+<programlisting>SET USER GROUP user user</programlisting>
+</example>
+
+<para>
+These statements are used to manage user accounts. Their use
+is limited to users with dba privileges, with the exception of SET PASSWORD.
+</para>
+<para>
+CREATE USER makes a new user account. The password defaults to the user name.
+DELETE USER deletes a user account. The account being dropped may not
+have privileges granted to it nor can it be the user group of any user except itself.
+SET USER GROUP assigns a group to a user.  By default a user belings to its own group. Changing
+a user&apos;s group to be another user causes the member user&apos;s effective privileges to be those of
+the group plus those granted specifically to the member user.
+</para>
+<para>
+Privileges are only inherited from the immediate group, not from the group&apos;s group
+etc.
+</para>
+<para>
+Note that the user names and passwords are identifiers. This means that they can
+be converted to upper case unless quoted in if the global CaseMode setting is 1.
+</para>
+
+<example id="VDOCS-UGMAINT-05">
+<title>Examples:</title>
+<programlisting>create user &quot;Accounting&quot;;
+create user &quot;AcctMgr&quot;;
+set user group &quot;AcctMgr&quot; &quot;Accounting&quot;;
+grant select on &quot;Orders&quot; to &quot;Accounting&quot;;
+grant select on &quot;Employees&quot; to &quot;Accounting&quot;;
+grant update (&quot;Salary&quot;) on &quot;Employee&quot; to &quot;AcctMgr&quot;;
+</programlisting>
+</example>
+
+<para>
+AcctMgr will have select privileges on &quot;Employee&quot; as a result of
+belonging to the Accounting group and will have updte privileges on Salary by
+virtue of the direct grant.
+</para>
+</sect2>
+</sect1>
+
+</chapter>

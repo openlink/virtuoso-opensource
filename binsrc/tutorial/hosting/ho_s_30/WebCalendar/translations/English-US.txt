@@ -1,0 +1,858 @@
+# Use this as a starting point to translate this application into
+# another language.  The format is "English text: translated text"
+# There cannot be a ":" in the English text.
+# Translated by:
+#	your name and email here...
+# Last update: 02 July 2002
+# Check out the tools directory which contains two perl scripts:
+#   check_translation.pl will tell you if you have successfully translated
+#        all required text
+#   pagify_translation.pl will take an old translation file and move the
+#        translations around so they age grouped by the page they appear in.
+#
+# Note: You will notice the entry for "May_" below.  There's a reason for
+# this.  Translate "May_" to the full month name and "May" to the three-letter
+# month abbreviation (like "Oct" for "October").
+#
+#
+#
+#
+# Translation last updated on 11-30-2002
+
+
+###############################################
+# Page: admin.php
+#
+Server URL is required: Server URL is required
+Server URL must end with '/': Server URL must end with '/'
+Invalid color for document background: Invalid color for document background
+Invalid color for document title: Invalid color for document title
+Invalid color for table cell background: Invalid color for table cell background
+Invalid color for table grid: Invalid color for table grid
+Invalid color for table header background: Invalid color for table header background
+Invalid color for table text background: Invalid color for table text background
+Invalid color for event popup background: Invalid color for event popup background
+Invalid color for event popup text: Invalid color for event popup text
+Invalid color for table cell background for today: Invalid color for table cell background for today
+Color format should be '#RRGGBB': Color format should be '#RRGGBB'
+System Settings: System Settings
+You are not authorized: You are not authorized
+Note: Note
+Your user preferences: Your user preferences
+may be affecting the appearance of this page.: may be affecting the appearance of this page.
+Click here: Click here
+to not use your user preferences when viewing this page: to not use your user preferences when viewing this page
+are being ignored while viewing this page.: are being ignored while viewing this page.
+to load your user preferences when viewing this page: to load your user preferences when viewing this page
+Save: Save
+Help: Help
+Settings: Settings
+app-name-help: Specifies the name of the application that will appear in the browser title bar for all pages and on the login page.  The value you specify here will be looked up in the translations file allowing you to provide different titles for different languages.
+Application Name: Application Name
+server-url-help: Specifies the base URL for the application.  This will be included when sending out email reminders and notifications.
+Server URL: Server URL
+language-help: Specifies which language to use.
+Language: Language
+Your browser default language is: Your browser default language is
+fonts-help: Specifies a list of system fonts to use (such as "Arial, Helvetica")
+Fonts: Fonts
+preferred-view-help: Specifies the default view (Day, Week, Month, or Year).
+Preferred view: Preferred view
+Day: Day
+Week: Week
+Month: Month
+Year: Year
+display-weekends-help: Include weekends when viewing a week.
+Display weekends in week view: Display weekends in week view
+Yes: Yes
+No: No
+date-format-help: Specifies the preferred date format.
+Date format: Date format
+December: December
+time-format-help: Specifies which time format to use: <BR><I>12 hour:</I> Display times as 3am, 8:30pm, etc.  <BR><I>24 hour:</I> Display times as 300, 2030, etc.
+Time format: Time format
+12 hour: 12 hour
+24 hour: 24 hour
+time-interval-help: Specifies how long the time blocks in the week view and day view will be.
+Time interval: Time interval
+hour: hour
+minutes: minutes
+auto-refresh-help: When enabled, the day view, week view, month view, and list aunapproved pages will all automatically refresh themselves periodically.
+Auto-refresh calendars: Auto-refresh calendars
+auto-refresh-time-help: If Auto-refresh is enabled, this specifies the time between each refresh.
+Auto-refresh time: Auto-refresh time
+require-approvals-help: When enabled, a user must approve an event before it is displayed on their calendar (unless Display unapproved is enabled).  Note setting this to "No" will not turn off approvals for the Public Access calendar (if the Public Access calendar is enabled).
+Require event approvals: Require event approvals
+display-unapproved-help: Specifies whether unapproved events are displayed in your calendar.<BR> If set to "Yes", then unapproved events will be displayed in your calendar (in a different text color).<BR> If set to "No", then unapproved events must be approved before they are displayed in your calendar.
+Display unapproved: Display unapproved
+display-week-number-help: Specifies whether the week number (1-52) should be displayed in the month view and the week view.
+Display week number: Display week number
+display-week-starts-on: Specifies whether the week starts on Sunday or Monday.  If Monday is specified, then week numbers will be ISO week numbers.
+Week starts on: Week starts on
+Sunday: Sunday
+Monday: Monday
+work-hours-help: Specifies the time range to display for the day view.
+Work hours: Work hours
+From: From
+to: to
+disable-priority-field-help: Selecting "Yes" will remove the "Priority" field from event information pages, providing a simpler interface for novices.
+Disable Priority field: Disable Priority field
+disable-access-field-help: Selecting "Yes" will remove the "Access" field from event information pages, providing a simpler interface for novices.
+Disable Access field: Disable Access field
+disable-participants-field-help: Selecting "Yes" will remove the "Particpants" field from event information pages, preventing users from adding other users to their events.  If you enable this option, you may want to also disable the "Allow viewing other user's calendars" field also.
+Disable Participants field: Disable Participants field
+disable-repeating-field-help: Selecting "Yes" will remove the "Repeating" field when adding events.  This will provide a simpler interface for novices.
+Disable Repeating field: Disable Repeating field
+allow-view-other-help: Specifies whether one user may view another user's calendar.
+Allow viewing other user's calendars: Allow viewing other user's calendars
+allow-public-access-help: When enabled, the calendar can be used as a read-only public calendar that does not require users to login.
+Allow public access: Allow public access
+public-access-view-others-help: When access the system with public access, specifies whether the user can view the calendar of another calendar user.
+Public access can view other users: Public access can view other users
+public-access-can-add-help: When enabled, users that access the system through Public Access will be able to add new events, but they will not show up in the calendar until an administrator approves the new event.
+Public access can add events: Public access can add events
+public-access-add-requires-approval-help: Specifies whether events added via the public access account require approval before being displayed.
+Public access new events require approval: Public access new events require approval:
+allow-view-add-help: A '+' icon will be included in views, allowing users to quickly add events to other users' calendars.
+Include add event link in views: Include add event link in views
+allow-external-users-help: Specifies whether a non-calendar user can be added to an event.  This allows non-calendar users to be listed as event participants.
+Allow external users: Allow external users
+external-can-receive-notification-help: When external users are enabled and email usage is enabled, external users can receive email notifications when the event is added, updated or delete (if the external user's email address is provided).
+External users can receive email notifications: External users can receive email notifications
+external-can-receive-reminder-help: When external users are enabled and email usage is enabled, external users can receive email reminders (if the external user's email address is provided).
+External users can receive email reminders: External users can receive email reminders
+remember-last-login-help: When enabled, the user's login will be filled in for them on the login page (but not the password), and the user's preferences will be loaded (including their preferred colors and language selection).
+Remember last login: Remember last login
+conflict-check-help: Check for event conflicts (two events scheduled for the same time for the same person).  If you set this to "Yes", you will still be able to schedule two events at the same time after confirming a warning. If you set this to "No", no checking for conflicts will be done.  You probably want to set this to "Yes", so conflict checking occurs.
+Check for event conflicts: Check for event conflicts
+conflict-months-help: If conflict checking is in place ("Check for event conflicts" is set to "No"), this specifies how many months into the future we should check for conflicts.  If you find adding events is taking a long time to process, reduce this number.
+Conflict checking months: Conflict checking months
+conflict-check-override-help: Allows users to override event conflicts and schedule two or more events for the same time.
+Allow users to override conflicts: Allow users to override conflicts
+limit-appts-help: Allows the system administrator to set a system-wide limit on the number of appointments a single user can have on any single day.
+Limit number of timed events per day: Limit number of timed events per day
+limit-appts-number-help: Specifies the maximum number of timed events a user can have in a single day.
+Maximum timed events per day: Maximum timed events per day
+Plugins: Plugins
+plugins-enabled-help: Enable plugin applications.
+Enable Plugins: Enable Plugins
+plugins-sort-key-help: Specifies a sort key for the plugin.  This allows the plugins to appear in a specific order.
+Plugin: Plugin
+Groups: Groups
+groups-enabled-help: Enables group support, allowing users to select users by groups.
+Groups enabled: Groups enabled
+user-sees-his-group-help: If enabled, users will not see calendar users that are not in at least one of their groups.
+User sees only his groups: User sees only his groups
+Categories: Categories
+categories-enabled-help: Enables support for event categories.
+Categories enabled: Categories enabled
+Email: Email
+email-enabled-help: Turn on or off all sending of email for notification and reminders.  Set to "no", if your server is not properly setup to send mail.
+Email enabled: Email enabled
+email-default-sender: Specifies the email address to specify as the sender when sending out reminders.
+Default sender address: Default sender address
+Default user settings: Default user settings
+email-event-reminders-help: Specifies whether or not to send event reminders.
+Event reminders: Event reminders
+email-event-added: Specifies whether or not to send email notifications when an event is added to your calendar.
+Events added to my calendar: Events added to my calendar
+email-event-updated: Specifies whether or not to send email notifications when an event is updated on your calendar.
+Events updated on my calendar: Events updated on my calendar
+email-event-deleted: Specifies whether or not to send email notifications when an event is removed from your calendar.
+Events removed from my calendar: Events removed from my calendar
+email-event-rejected: Specifies whether or not to send email notifications when a participant rejects an event that is on your calendar.
+Event rejected by participant: Event rejected by participant
+colors-help: All colors should be specified in "#RRGGBB" hexadecimal format where "RR" is the hex value for red, "GG" is the hex value for green, and "BB" is the hex value for blue.
+Colors: Colors
+Allow user to customize colors: Allow user to customize colors
+Document background: Document background
+Select: Select
+Document title: Document title
+Document text: Document text
+Table grid color: Table grid color
+Table header background: Table header background
+Table header text: Table header text
+Table cell background: Table cell background
+Table cell background for current day: Table cell background for current day
+Table cell background for weekends: Table cell background for weekends
+Event popup background: Event popup background
+Event popup text: Event popup text
+
+
+###############################################
+# Page: activity_log.php
+#
+Activity Log: Activity Log
+User: User
+Calendar: Calendar
+Date: Date
+Time: Time
+Event: Event
+Action: Action
+Event created: Event created
+Event approved: Event approved
+Event rejected: Event rejected
+Event updated: Event updated
+Event deleted: Event deleted
+Notification sent: Notification sent
+Reminder sent: Reminder sent
+Database error: Database error
+Next: Next
+
+
+###############################################
+# Page: add_entry.php
+#
+Invalid entry id: Invalid entry id
+This is a private event and may not be added to your calendar.: This is a private event and may not be added to your calendar.
+Error adding event: Error adding event
+
+
+###############################################
+# Page: admin_handler.php
+#
+Error: Error
+The following error occurred: The following error occurred
+
+
+###############################################
+# Page: approve_entry.php
+#
+Error approving event: Error approving event
+
+
+###############################################
+# Page: category.php
+#
+Add: Add
+Category Name: Category Name
+Global: Global
+Delete: Delete
+Are you sure you want to delete this entry?: Are you sure you want to delete this entry?
+Add New Category: Add New Category
+
+
+###############################################
+# Page: category_handler.php
+#
+
+
+###############################################
+# Page: colors.php
+#
+
+
+###############################################
+# Page: datesel.php
+#
+Previous: Previous
+
+
+###############################################
+# Page: day.php
+#
+Assistant mode: Assistant mode
+Generate printer-friendly version: Generate printer-friendly version
+Printer Friendly: Printer Friendly
+
+
+###############################################
+# Page: del_entry.php
+#
+Hello: Hello
+An appointment has been canceled for you by: An appointment has been canceled for you by
+The subject was: The subject was
+Notification: Notification
+
+
+###############################################
+# Page: del_layer.php
+#
+
+
+###############################################
+# Page: edit_entry.php
+#
+You have not entered a Brief Description: You have not entered a Brief Description
+You have not entered a valid time of day: You have not entered a valid time of day
+The time you have entered begins before your preferred work hours.  Is this correct?: The time you have entered begins before your preferred work hours.  Is this correct?
+Edit Entry: Edit Entry
+Add Entry: Add Entry
+brief-description-help: This should provide a short description (about 20 characters) of the event.  This will represent the event when viewing the calendar.
+Brief Description: Brief Description
+full-description-help: This should complete details of the event.  This information can be seen when a user views the event.
+Full Description: Full Description
+date-help: Specifies the date of the event.
+time-help: Specifies the time of the event.<BR>Select either "Timed event" (for an event that is scheduled for a specific time on that day), "Untimed event" (for an event this does not have a time (like a holiday), or "All day event" (for an event that takes all day (like being out of the office).
+am: am
+pm: pm
+Untimed event: Untimed event
+Timed event: Timed event
+All day event: All day event
+duration-help: Specifies the duration (in hours:minutes) of the event.  <BR><I>This field can be left blank.</I>
+Duration: Duration
+hours: hours
+priority-help: Specifies the priority of the event.  High priority events will be displayed in bold.
+Priority: Priority
+Low: Low
+Medium: Medium
+High: High
+access-help: Specifies the access level of the event.<BR> <I>Public</I>: Everyone can see the full details of the event.  <BR><I>Confidential</I>: Others can see that you have an entry for that date and time, but not the details of what it is.
+Access: Access
+Public: Public
+Confidential: Confidential
+category-help: Specifies the category of the event.
+Category: Category
+days: days
+before event: before event
+participants-help: Lists the participants of this entry.
+Participants: Participants
+external-participants-help: Specifies a list of participants for the event that are not calendar users.  The users should be listed one per line and can include an email address.  If an email address is specified, the user is eligible to receive notications and reminders.
+External Participants: External Participants
+repeat-type-help: Select how often the event should repeat.<I>Monthly (by day)</I> allows an event to repeat on the 1st Monday of the month, 3rd Thursday of the month, etc.  <I>Monthly (by date)</I> allows an event to repeat on the same day of the month.
+Repeat Type: Repeat Type
+None: None
+Daily: Daily
+Weekly: Weekly
+Monthly: Monthly
+by day: by day
+by date: by date
+Yearly: Yearly
+repeat-end-date-help: Specifies the date the event should repeat until.
+Repeat End Date: Repeat End Date
+Use end date: Use end date
+repeat-day-help: Specifies which days of the week the event should repeat on.  This is for use only when <I>Repeat Type</I> is set to <I>Weekly</I>.
+Repeat Day: Repeat Day
+for weekly: for weekly
+Tuesday: Tuesday
+Wednesday: Wednesday
+Thursday: Thursday
+Friday: Friday
+Saturday: Saturday
+repeat-frequency-help: Specifies how often the event should repeat.  The default 1 indicates it should occur every time.  Specifying 2 will make the event occur every other week (if <I>Repeat Type</I> is set to <I>Weekly</I>), every other month (if <I>Repeat Type</I> is set to <I>Monthly</I>), etc.
+Frequency: Frequency
+Delete entry: Delete entry
+You are not authorized to edit this entry: You are not authorized to edit this entry
+
+
+###############################################
+# Page: edit_entry_handler.php
+#
+The following conflicts with the suggested time: The following conflicts with the suggested time
+Unnamed Event: Unnamed Event
+The description is: The description is
+Title: WebCalendar
+A new appointment has been made for you by: A new appointment has been made for you by
+An appointment has been updated by: An appointment has been updated by
+The subject is: The subject is
+Please look on: Please look on
+to accept or reject this appointment: to accept or reject this appointment
+to view this appointment: to view this appointment
+Scheduling Conflict: Scheduling Conflict
+Your suggested time of: Your suggested time of
+conflicts with the following existing calendar entries: conflicts with the following existing calendar entries
+Cancel: Cancel
+
+
+###############################################
+# Page: edit_layer.php
+#
+Invalid color: Invalid color
+Edit Layer: Edit Layer
+Add Layer: Add Layer
+Source: Source
+Color: Color
+Duplicates: Duplicates
+Show layer events that are the same as your own: Show layer events that are the same as your own
+Are you sure you want to delete this layer?: Are you sure you want to delete this layer?
+Delete layer: Delete layer
+
+
+###############################################
+# Page: edit_layer_handler.php
+#
+You cannot create a layer for yourself: You cannot create a layer for yourself
+You can only create one layer for each user: You can only create one layer for each user
+
+
+###############################################
+# Page: edit_user.php
+#
+Edit User: Edit User
+Add User: Add User
+Username: Username
+First Name: First Name
+Last Name: Last Name
+E-mail address: E-mail address
+Password: Password
+again: again
+Admin: Admin
+Disabled for demo: Disabled for demo
+Change Password: Change Password
+New Password: New Password
+Set Password: Set Password
+
+
+###############################################
+# Page: edit_user_handler.php
+#
+Deleting users not supported: Deleting users not supported
+The passwords were not identical: The passwords were not identical
+You have not entered a password: You have not entered a password
+
+
+###############################################
+# Page: export.php
+#
+Export: Export
+Export format: Export format
+Palm Pilot: Palm Pilot
+Export all dates: Export all dates
+Start date: Start date
+End date: End date
+Modified since: Modified since
+
+
+###############################################
+# Page: export_handler.php
+#
+
+
+###############################################
+# Page: group_edit.php
+#
+Unnamed Group: Unnamed Group
+Add Group: Add Group
+Edit Group: Edit Group
+Group name: Group name
+Updated: Updated
+Created by: Created by
+Users: Users
+
+
+###############################################
+# Page: group_edit_handler.php
+#
+You must specify a group name: You must specify a group name
+
+
+###############################################
+# Page: groups.php
+#
+Add New Group: Add New Group
+
+
+###############################################
+# Page: help_admin.php
+#
+
+
+###############################################
+# Page: pref.php
+#
+Preferences: Preferences
+to modify the preferences for the Public Access calendar: to modify the preferences for the Public Access calendar
+tz-help: Specifies how many hours to adjust the time from server time to local time.
+Timezone Offset: Timezone Offset
+Add N hours to: Add N hours to
+Subtract N hours from: Subtract N hours from
+same as: same as
+server time: server time
+Default Category: Default Category
+Sun: Sun
+Mon: Mon
+Tue: Tue
+Wed: Wed
+Thu: Thu
+Fri: Fri
+Sat: Sat
+Save Preferences: Save Preferences
+
+
+###############################################
+# Page: help_bug.php
+#
+Report Bug: Report Bug
+
+
+###############################################
+# Page: help_edit_entry.php
+#
+Adding/Editing Calendar Entries: Adding/Editing Calendar Entries
+
+
+###############################################
+# Page: help_index.php
+#
+Help Index: Help Index
+Layers: Layers
+
+
+###############################################
+# Page: help_layers.php
+#
+Layers are useful for displaying other users' events in your own calendar.  You can specifiy the user and the color the events will be displayed in.: Layers are useful for displaying other users' events in your own calendar.  You can specifiy the user and the color the events will be displayed in.
+Add/Edit/Delete: Add/Edit/Delete
+Clicking the Edit Layers link in the admin section at the bottom of the page will allow you to add/edit/delete layers.: Clicking the Edit Layers link in the admin section at the bottom of the page will allow you to add/edit/delete layers.
+Specifies the user that you would like to see displayed in your calendar.: Specifies the user that you would like to see displayed in your calendar.
+The text color of the new layer that will be displayed in your calendar.: The text color of the new layer that will be displayed in your calendar.
+If checked, events that are duplicates of your events will be shown.: If checked, events that are duplicates of your events will be shown.
+Disabling: Disabling
+Press the Disable Layers link in the admin section at the bottom of the page to turn off layers.: Press the Disable Layers link in the admin section at the bottom of the page to turn off layers.
+Enabling: Enabling
+Press the Enable Layers link in the admin section at the bottom of the page to turn on layers.: Press the Enable Layers link in the admin section at the bottom of the page to turn on layers.
+
+
+###############################################
+# Page: help_pref.php
+#
+default-category-help: Specifies the category a new event should default to.
+
+
+###############################################
+# Page: week.php
+#
+cont.: cont.
+
+
+###############################################
+# Page: index.php
+#
+
+
+###############################################
+# Page: layers.php
+#
+to modify the layers settings for the: to modify the layers settings for the
+Layers are currently: Layers are currently
+Enabled: Enabled
+Disabled: Disabled
+Disable Layers: Disable Layers
+Enable Layers: Enable Layers
+Layer: Layer
+Edit layer: Edit layer
+Add layer: Add layer
+
+
+###############################################
+# Page: layers_toggle.php
+#
+
+
+###############################################
+# Page: list_unapproved.php
+#
+View this entry: View this entry
+Approve this entry?: Approve this entry?
+Approve/Confirm: Approve/Confirm
+Reject this entry?: Reject this entry?
+Reject: Reject
+No unapproved events for: No unapproved events for
+Unapproved Events: Unapproved Events
+Public Access: Public Access
+
+
+###############################################
+# Page: login.php
+#
+You must enter a login and password: You must enter a login and password
+Save login via cookies so I don't have to login next time: Save login via cookies so I don't have to login next time
+Login: Login
+Access public calendar: Access public calendar
+cookies-note: <B>Note:</B> This application requires cookies to be enabled.
+
+
+###############################################
+# Page: view_v.php
+#
+
+
+###############################################
+# Page: month.php
+#
+
+
+###############################################
+# Page: pref_handler.php
+#
+
+
+###############################################
+# Page: reject_entry.php
+#
+An appointment has been rejected by: An appointment has been rejected by
+
+
+###############################################
+# Page: search.php
+#
+Search: Search
+Advanced Search: Advanced Search
+Keywords: Keywords
+
+
+###############################################
+# Page: search_handler.php
+#
+You must enter one or more search keywords: You must enter one or more search keywords
+Search Results: Search Results
+match found: match found
+matches found: matches found
+No matches found: No matches found
+
+
+###############################################
+# Page: select_user.php
+#
+View Another User's Calendar: View Another User's Calendar
+Go: Go
+
+
+###############################################
+# Page: set_entry_cat.php
+#
+You have not added any categories: You have not added any categories
+Set Category: Set Category
+
+
+###############################################
+# Page: users.php
+#
+denotes administrative user: denotes administrative user
+Add New User: Add New User
+
+
+###############################################
+# Page: usersel.php
+#
+All: All
+Reset: Reset
+Remove: Remove
+Ok: Ok
+
+
+###############################################
+# Page: view_entry.php
+#
+every: every
+1st: 1st
+2nd: 2nd
+3rd: 3rd
+4th: 4th
+5th: 5th
+Description: Description
+Status: Status
+Waiting for approval: Waiting for approval
+Deleted: Deleted
+Rejected: Rejected
+External User: External User
+Approve/Confirm entry: Approve/Confirm entry
+Reject entry: Reject entry
+Set category: Set category
+Edit repeating entry for all dates: Edit repeating entry for all dates
+Edit entry for this date: Edit entry for this date
+This will delete this entry for all users.: This will delete this entry for all users.
+Delete repeating event for all dates: Delete repeating event for all dates
+Delete entry only for this date: Delete entry only for this date
+Edit entry: Edit entry
+This will delete the entry from your calendar.: This will delete the entry from your calendar.
+Do you want to add this entry to your calendar?: Do you want to add this entry to your calendar?
+This will add the entry to your calendar.: This will add the entry to your calendar.
+Add to My Calendar: Add to My Calendar
+Email all participants: Email all participants
+Show activity log: Show activity log
+Hide activity log: Hide activity log
+
+
+###############################################
+# Page: view_m.php
+#
+
+
+###############################################
+# Page: view_w.php
+#
+
+
+###############################################
+# Page: views.php
+#
+Views: Views
+Add New View: Add New View
+
+
+###############################################
+# Page: views_edit.php
+#
+Unnamed View: Unnamed View
+Add View: Add View
+Edit View: Edit View
+View Name: View Name
+View Type: View Type
+
+
+###############################################
+# Page: views_edit_handler.php
+#
+You must specify a view name: You must specify a view name
+
+
+###############################################
+# Page: week_details.php
+#
+New Entry: New Entry
+Private: Private
+
+
+###############################################
+# Page: week_ssi.php
+#
+
+
+###############################################
+# Page: year.php
+#
+
+
+###############################################
+# Page: assistant_edit.php
+#
+Yours assistants: Yours assistants
+Assistants: Assistants
+
+
+###############################################
+# Page: assistant_edit_handler.php
+#
+
+
+###############################################
+# Page: purge.php
+#
+
+
+###############################################
+# Page: includes/trailer.php
+#
+Go to: Go to
+Back to My Calendar: Back to My Calendar
+My Calendar: My Calendar
+Logout: Logout
+Another User's Calendar: Another User's Calendar
+Add New Entry: Add New Entry
+Manage Views: Manage Views
+Edit Layers: Edit Layers
+Account: Account
+Current User: Current User
+Manage calendar of: Manage calendar of
+
+
+###############################################
+# Page: includes/connect.php
+#
+
+
+###############################################
+# Page: includes/functions.php
+#
+This event is confidential: This event is confidential
+exceeds limit of XXX events per day: exceeds limit of XXX events per day
+You have XXX unapproved events: You have XXX unapproved events
+January: January
+February: February
+March: March
+April: April
+May_: May
+June: June
+July: July
+August: August
+September: September
+October: October
+November: November
+Jan: Jan
+Feb: Feb
+Mar: Mar
+Apr: Apr
+May: May
+Jun: Jun
+Jul: Jul
+Aug: Aug
+Sep: Sep
+Oct: Oct
+Nov: Nov
+Dec: Dec
+
+
+###############################################
+# Page: includes/user.php
+#
+Invalid login: Invalid login
+Invalid user login: Invalid user login
+
+
+###############################################
+# Page: includes/site_extras.php
+#
+Send Reminder: Send Reminder
+
+
+###############################################
+# Page: includes/translate.php
+#
+
+
+###############################################
+# Page: includes/validate.php
+#
+
+
+###############################################
+# Page: includes/user-ldap.php
+#
+
+
+###############################################
+# Page: includes/user-nis.php
+#
+
+
+###############################################
+# Page: includes/help_trailer.php
+#
+
+
+###############################################
+# Page: includes/config.php
+#
+
+
+###############################################
+# Page: includes/index.php
+#
+
+
+###############################################
+# Page: includes/js.php
+#
+
+
+###############################################
+# Page: includes/php-dbi.php
+#
+
+
+###############################################
+# Page: includes/styles.php
+#
+
+
+###############################################
+# Page: includes/dbtable.php
+#
+
+
+###############################################
+# Page: tools/send_reminders.php
+#
+This is a reminder for the event detailed below.: This is a reminder for the event detailed below.
+Reminder: Reminder

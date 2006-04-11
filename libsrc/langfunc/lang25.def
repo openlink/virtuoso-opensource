@@ -1,0 +1,3 @@
+LIBRARY LANG25
+EXPORTS
+  lang25_check @1

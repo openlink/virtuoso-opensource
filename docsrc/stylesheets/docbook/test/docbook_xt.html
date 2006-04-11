@@ -1,0 +1,143 @@
+<html>
+<head>
+<title>DocBook V4.0 Example Document</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.12">
+</head>
+<body>
+<div class="book" id="N3">
+<div class="titlepage">
+<h1 class="title">
+<a name="N3">DocBook V4.0 Example Document</a>
+</h1>
+<h3 class="author">Norman Walsh</h3>
+<div class="abstract">
+<a name="N12"><b>Abstract</b></a>
+<p>This document demonstrates the new tags in DocBook V4.0.</p>
+<p>The focus of this document is to present examples of new elements,
+minor changes such as the addition of new attribute values are not
+included.</p>
+</div>
+<hr>
+</div>
+<div class="toc">
+<p>
+<b>Table of Contents</b>
+</p>
+<dl>
+<dt>1. <a href="#N17">Block-level Markup</a>
+</dt>
+<dt>2. <a href="#N170">Inline markup</a>
+</dt>
+</dl>
+</div>
+<div id="N17" class="chapter">
+<h2 class="title">
+<a name="N17">1. Block-level Markup</a>
+</h2>
+<p>There's a new simple-alternative for <tt>msgentry</tt>:
+<tt>simplemsgentry</tt>.</p>
+<div class="simplemsgentry">
+<a name="N29"></a>
+<p>The text of a message</p>
+<div class="msgexplan">
+<a name="N33"></a>
+<p>An explanation of the message.</p>
+</div>
+</div>
+<div class="simplemsgentry">
+<a name="N36"></a>
+<p>The text of a message</p>
+<div class="msgexplan">
+<a name="N40"></a>
+<p>An explanation of the message.</p>
+</div>
+</div>
+<p>Longer descriptions are possible in a <tt>revhistory</tt>:
+</p>
+<p>
+<div class="revhistory">
+<table border="0" width="100%">
+<tr>
+<th align="left" valign="top" colspan="3"><b>Revision History</b></th>
+</tr>
+<tr>
+<td align="left">Revision 2</td><td align="left">today</td><td align="left">nwalsh</td>
+</tr>
+<tr>
+<td align="left">Revision 1</td><td align="left">yesterday</td><td align="left">nwalsh</td>
+</tr>
+</table>
+</div>
+</p>
+<p>Ordered and itemized lists can have titles:</p>
+<div class="itemizedlist">
+<p>
+<b>Itemized List</b>
+</p>
+<ul>
+<li>
+<a name="N93"></a>
+<p>First thing</p>
+</li>
+<li>
+<a name="N96"></a>
+<p>Second thing</p>
+</li>
+<li>
+<a name="N99"></a>
+<p>Third thing</p>
+</li>
+</ul>
+</div>
+<div class="itemizedlist">
+<p>
+<b>Ordered List</b>
+</p>
+<ul>
+<li>
+<a name="N105"></a>
+<p>First thing</p>
+</li>
+<li>
+<a name="N108"></a>
+<p>Second thing</p>
+</li>
+<li>
+<a name="N111"></a>
+<p>Third thing</p>
+</li>
+</ul>
+</div>
+<p>Linespecific environments can indicate line numbering:</p>
+<pre class="programlisting">
+&lt;!ENTITY % linespecific.attrib
+	"format		NOTATION
+			(linespecific)	'linespecific'
+         linenumbering	(numbered|unnumbered) 	#IMPLIED"&gt;
+</pre>
+<p>Added <tt>classsynopsis</tt> for documenting
+object-oriented programming language classes. Here's one example:</p>
+<pre class="classsynopsis"> <span class="ooclass"><span class="modifier">public&nbsp;</span><span class="classname">TextFileWriter</span></span> extends <span class="ooclass"><span class="classname">HandlerBase</span></span>&nbsp;{
+
+<div class="fieldsynopsis">&nbsp;&nbsp;<span class="modifier">private&nbsp;</span><span class="type">Writer&nbsp;</span><span class="varname">writer&nbsp;</span>;</div>
+<div class="fieldsynopsis">&nbsp;&nbsp;<span class="modifier">public&nbsp;</span><span class="type">String&nbsp;</span><span class="varname">writerName&nbsp;</span><span class="initializer">=&nbsp;"MyWriter"</span>;</div>
+<div class="methodsynopsis">  <span class="modifier">static&nbsp;</span><span class="modifier">public&nbsp;</span><span class="void">void&nbsp;</span><span class="methodname">write</span>(<span class="methodparam"><span class="type">ResultTreeFragment&nbsp;</span><span class="parameter">frag</span></span>,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="methodparam"><span class="type">String&nbsp;</span><span class="parameter">file</span></span>)
+&nbsp;&nbsp;&nbsp;&nbsp;throws&nbsp;<span class="exceptionname">SAXException</span>;</div>}</pre>
+</div>
+<div id="N170" class="chapter">
+<h2 class="title">
+<a name="N170">2. Inline markup</a>
+</h2>
+<p>The <tt>sgmltag</tt> element has new
+class attribute values:
+<tt>xmlpi</tt> and
+<tt>emptytag</tt>. These produce
+<tt>&lt;?processing instructions?&gt;</tt>
+and <tt>&lt;empty-tag/&gt;</tt> markup
+suitable for XML.
+</p>
+</div>
+</div>
+</body>
+</html>

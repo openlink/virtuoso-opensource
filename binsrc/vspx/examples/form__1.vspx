@@ -1,0 +1,56 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!--! \brief Simple entry form containing various controls
+The OK button of the form submits data from the form back to the same page.
+the check-box is validated against ragio group
+-->
+<v:page name="form__1" xmlns:v="http://www.openlinksw.com/vspx/">
+  <html>
+    <head>
+      <title>VSPX samples | v:form | v:validator</title>
+    </head>
+    <body>
+      <v:form name="f1" type="simple" method="POST">
+	<v:error-summary/><br/>
+        <v:label name="l1" value="--'Simple form'"/><br/>
+        <v:url name="u1" value="--'This page'" url="--self.f1.uf_action" /><br/>
+        <v:text name="t1" value="--self.rb1.ufl_value"/><br/>
+        <v:text name="t2" value="--'my'||'password'" type="password"/><br/>
+        <v:text name="t3" value="--'something'||'hidden'" type="hidden"/>
+	<v:textarea name="ta1" value="--'some text'" /><br/>
+        <v:check-box name="cb1" value="check-box" /><br/>
+	<v:radio-group name="rg1">
+	 <v:radio-button name="rb1" value="one" />
+	 <v:radio-button name="rb2" value="two" />
+        </v:radio-group><br/>
+        <v:button name="b1" action="simple" value="--'OK'"/><br/>
+ 	<v:validator test="sql" message="only when radio is on position one check-box could be checked">
+	if (self.rb2.ufl_selected and self.cb1.ufl_selected)
+	  {
+	    return 1;
+	  }
+	</v:validator>
+      </v:form>
+    </body>
+  </html>
+</v:page>

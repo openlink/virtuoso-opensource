@@ -1,0 +1,55 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="RP-S-2">
+  <refmeta>
+    <refentrytitle>WS-Referral</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Manipulating of message path on a WS-Routing enabled endpoints</refname>
+    <refpurpose>Routing path manipulation</refpurpose>
+  </refnamediv>
+
+<refsect1 id="RP-S-2a">
+<title>Example</title>
+<para>
+In order to try the following example you need first to setup the <ulink url="../rp_s_1/rp_s_1.vsp">RP-S-1</ulink> as it uses the endpoints defined there. Also this example needs at least 3 HTTP threads configured in order to work properly.
+</para>
+
+<para>
+The VSP page demonstrates how routing path can be manipulated on a SOAP routers using the WS-Referral statements.
+</para>
+<orderedlist mark="bullet">
+<listitem>The example show inserting an intermediary router in routing path</listitem>
+<listitem>Querying a router for already registered intermediary</listitem>
+<listitem>Execution of a single call to an endpoint</listitem>
+<listitem>Traveling of the message between client and endpoint via first and second router (added on step 1)</listitem>
+<listitem>Removal of a registered intermediary</listitem>
+<listitem>If step 1 is invoked twice sequentially an duplicates error will be shown</listitem>
+<listitem>If step 3 is invoked before step 1 or after step 5, an error for missing intermediary from routing path is shown</listitem>
+</orderedlist>
+<para>Note: To determinate message routing path, see at content of 'rev' element in response message header when invoking the echoString operation.</para>
+
+</refsect1>
+</refentry>

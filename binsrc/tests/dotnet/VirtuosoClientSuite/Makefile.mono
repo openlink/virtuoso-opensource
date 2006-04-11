@@ -1,0 +1,50 @@
+#
+# $Id$
+#
+
+CSC=mcs
+
+CSFLAGS=-debug+
+
+SOURCES=\
+ BlobTest.cs\
+ CommandBuilderTest.cs\
+ CommandTest.cs\
+ ConnectionTest.cs\
+ TransactionTest.cs\
+ SqlXmlTest.cs\
+ VirtuosoClientSuite.cs
+
+REFERENCES=/reference:OpenLink.Testing.dll,OpenLink.Data.Virtuoso.dll,System.Data
+CLIENT_REFERENCES=/reference:OpenLink.Testing.dll,OpenLink.Data.VirtuosoClient.dll,System.Data
+ODBC_CLIENT_REFERENCES=/reference:OpenLink.Testing.dll,OpenLink.Data.VirtuosoOdbcClient.dll,System.Data
+
+all: VirtuosoSuite.dll VirtuosoClientSuite.dll VirtuosoOdbcClientSuite.dll
+
+VirtuosoSuite.dll: $(SOURCES) OpenLink.Testing.dll OpenLink.Data.Virtuoso.dll
+	$(CSC) /target:library /out:$@ $(CSFLAGS) $(REFERENCES) $(SOURCES)
+
+VirtuosoClientSuite.dll: $(SOURCES) OpenLink.Testing.dll OpenLink.Data.VirtuosoClient.dll
+	$(CSC) /target:library /out:$@ /define:CLIENT $(CSFLAGS) $(CLIENT_REFERENCES) $(SOURCES)
+
+VirtuosoOdbcClientSuite.dll: $(SOURCES) OpenLink.Testing.dll OpenLink.Data.VirtuosoOdbcClient.dll
+	$(CSC) /target:library /out:$@ /define:ODBC_CLIENT $(CSFLAGS) $(ODBC_CLIENT_REFERENCES) $(SOURCES)
+
+OpenLink.Testing.dll:
+	cd ../harness && $(MAKE) -f Makefile.mono
+	cp ../harness/OpenLink.Testing.dll .
+
+OpenLink.Data.Virtuoso.dll: ../../../VirtuosoClient.Net/OpenLink.Data.Virtuoso.dll
+	cd ../../../VirtuosoClient.Net && $(MAKE) -f Makefile.mono OpenLink.Data.Virtuoso.dll
+	cp ../../../VirtuosoClient.Net/OpenLink.Data.Virtuoso.dll .
+
+OpenLink.Data.VirtuosoClient.dll: ../../../VirtuosoClient.Net/OpenLink.Data.VirtuosoClient.dll
+	cd ../../../VirtuosoClient.Net && $(MAKE) -f Makefile.mono OpenLink.Data.VirtuosoClient.dll
+	cp ../../../VirtuosoClient.Net/OpenLink.Data.VirtuosoClient.dll .
+
+OpenLink.Data.VirtuosoOdbcClient.dll: ../../../VirtuosoClient.Net/OpenLink.Data.VirtuosoOdbcClient.dll
+	cd ../../../VirtuosoClient.Net && $(MAKE) -f Makefile.mono OpenLink.Data.VirtuosoOdbcClient.dll
+	cp ../../../VirtuosoClient.Net/OpenLink.Data.VirtuosoOdbcClient.dll .
+
+clean:
+	rm -rf VirtuosoSuite.dll VirtuosoClientSuite.dll VirtuosoOdbcClientSuite.dll OpenLink.Testing.dll OpenLink.Data.Virtuoso.dll OpenLink.Data.VirtuosoClient.dll OpenLink.Data.VirtuosoOdbcClient.dll

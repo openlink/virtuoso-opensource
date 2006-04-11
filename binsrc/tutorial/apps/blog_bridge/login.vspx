@@ -1,0 +1,84 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../demo.css"/>
+  </head>
+  <body>
+    <v:page name="pagecal1" xmlns:v="http://www.openlinksw.com/vspx/">
+      <v:variable name="requested_url" type="any" default="null" persist="0"/>
+      <div align="left" style="margin-left: 100px;">
+        <H2>Weblog brigde</H2>
+      </div>
+      <div align="left" style="margin-left: 100px;">
+        <!-- LOGIN -->
+        <v:form name="f1" type="simple" method="POST">
+          <v:login name="login1" realm="blog" mode="url" user-password-check="BLOG..blog_user_password_check">
+            <v:template type="if-no-login">
+              <P>Please enter a login details</P>
+            </v:template>
+            <v:login-form name="loginf" required="1">
+              <table border="0" class="tableentry">
+                <tr>
+                  <td style="width: 70px;">Name</td>
+                  <td>
+                    <v:text name="username" value="" xhtml_style="width: 100px;"/>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="width: 70px;">Password</td>
+                  <td>
+                    <v:text name="password" value="" type="password" xhtml_style="width: 100px;"/>
+                  </td>
+                </tr>
+                <tr align="center">
+                  <td colspan="2">
+                    <v:button action="simple" name="login" value="Login"/>
+                  </td>
+                </tr>
+              </table>
+            </v:login-form>
+            <v:template type="if-login"/>
+            <v:before-data-bind><![CDATA[
+         if (get_keyword ('URL', params) is not null)
+           {
+              self.requested_url := get_keyword ('URL', params);
+	   }
+	  ]]></v:before-data-bind>
+            <v:on-post><![CDATA[
+        if (self.vc_authenticated and self.sid is not null and self.requested_url is not null)
+          {
+            http_request_status ('HTTP/1.1 302 Found');
+            http_header (sprintf ('Location: %s?sid=%s&realm=%s\r\n', self.requested_url, self.sid, self.realm));
+          }
+        ]]></v:on-post>
+          </v:login>
+        </v:form>
+        <!-- END LOGIN -->
+        <div>
+	  <a href="/wa/">Register as new</a>
+        </div>
+      </div>
+    </v:page>
+  </body>
+</html>

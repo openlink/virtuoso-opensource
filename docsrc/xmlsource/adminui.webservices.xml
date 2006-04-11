@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="admui.webservices"><title>Web Services</title>
+
+		<sect2 id="importtargets">
+			<title>Import Targets</title>
+
+    <para>Virtuoso can be set up to retrieve content from external web sites and
+    host it in its own WebDAV repository via this page.</para>
+
+        <figure float="1"><title>Web Robot - Target</title>
+          <graphic fileref="ui/dav_rbt_trgt_01.jpg" width="608px" depth="473px"/></figure>
+		<para>
+<emphasis>Target Description</emphasis> lets you provide a friendly description
+for the target that you are defining.</para>
+		<para>
+<emphasis>Target Host Name</emphasis> is the hostname of the web site
+that you are trying to retrieve content from.  Only the hostname should be
+provided here, along with the protocol.  For example http://www.myhost.com.</para>
+		<para>
+<emphasis>Start Path in Target</emphasis> must contain the root page to begin
+the web copy from.   If you wanted to copy the pages below
+http://www.myhost.com/things/thispage.html then you would
+place /things/thispage.html in this field.</para>
+		<para>
+<emphasis>Login name on target</emphasis> is the username for accessing
+the remote server, if required.</para>
+		<para>
+<emphasis>Login password on target</emphasis> is the password for the login name above</para>
+		<para>
+<emphasis>Copy to Local DAV collection</emphasis> is the name of the collection
+(folder) where retrieved content will be stored in Dav.</para>
+		<para>
+<emphasis>Single page download</emphasis> radio button specifies whether
+Virtuoso will retrieved linked content also.</para>
+		<para>
+<emphasis>Local Resources Owner</emphasis> The DAV user that will be the owner
+of the content that will copied to DAV.
+</para>
+		<para>
+The <emphasis>Download only newer than</emphasis> field allows you to specify
+a datetime value to prevent Virtuoso downloading files that are older than
+that datetime.</para>
+		<para>
+Use the <emphasis>Follow Links Matching</emphasis> field to limit the content
+that is downloaded by specify pattern matching criteria.</para>
+		<para>
+<emphasis>Do NOT follow links matching</emphasis> allows you limit content by
+specifying what files not to download.</para>
+		<para>
+<emphasis>Download Images</emphasis> radio buttons to allow Virtuoso to pull
+down image type also.  You may want to prevent this if you are more interested
+in the textual content rather than bandwidth draining images.</para>
+		<para>
+<emphasis>Use WebDAV methods</emphasis> can be checked if the host is known to
+support WebDAV methods.  This would enable better copying of sites that support DAV.</para>
+		<para>
+<emphasis>Delete if Remove on Remote is Detected</emphasis> can be switched on
+so that when Virtuoso synchronizes its content with that on the remote host
+it will check for files that have been removed on the remote and remove
+them from the local copy also.</para>
+		<para>
+When all details have been completed press the <emphasis>Add</emphasis> (or
+Update if updating) button to submit the web robot task to the queue.
+</para>
+		</sect2>
+
+		<sect2 id="importqueues">
+			<title>Import Queues</title>
+		<para>
+The queues page shows you a list of web copy targets that have been enlisted with the Virtuoso Server,
+and a list of web robot update schedules.  Several options are available for each item listed: Start, Update,
+Schedule, Reset, and Stop.  You can configure the scheduled update interval by pressing the Schedule
+link and entering a value in minutes.  Once that is done you can start the schedule by pressing the Start
+link.  You make a manual update of the content by pressing the Update link.  You can stop the scheduled
+updates taking place by pressing the Stop link.  To reset the details of the web copy item press the Reset link.
+</para>
+        <figure float="1"><title>Web Robot - Queues</title>
+          <graphic fileref="ui/dav_rbt_que_01.jpg" width="635px" depth="243px"/></figure>
+		</sect2>
+
+		<sect2 id="retrievedsites">
+			<title>Retrieved Sites</title>
+		<para>
+You can view a list of the links retrieved from the web copy from this page.  You are also able to remove
+some of the content from this page by following the Edit link.
+</para>
+        <figure float="1"><title>Web Robot - Retrieved Links</title>
+          <graphic fileref="ui/dav_rbt_rtrd_01.jpg" width="582px" depth="136px"/></figure>
+		</sect2>
+
+    <sect2 id="exportlocalcontent">
+			<title>Export</title>
+		<para>
+This page allows you to export content from the WebDAV repository. You can
+only export content that has been retrieved using Virtuoso's Web Robot. This
+page lists the targets that have been retrieved.
+</para>
+<para>Each item on the table has an <emphasis>Export</emphasis> link to be
+clicked on to export that content.</para>
+
+        <figure float="1"><title>Web Robot - Exporting Content</title>
+          <graphic fileref="ui/dav_rbt_expt_01.jpg" width="597px" depth="136px"/></figure>
+
+<para>When you click an Export link you will be presented with a screen for
+selecting the export target location.  Choose the export method: either File System
+or DAV.  This lets you indicate to the remote target where to store the exported
+content.  Then type the target URL to an existing location on the server.
+Finally press the <emphasis>Export</emphasis> button to export.  A confirmation
+will be supplied once the operation is complete.</para>
+
+        <figure float="1" id="dav_rbt_expt_02"><title>Web Robot - Exporting Content</title>
+          <graphic fileref="ui/dav_rbt_expt_02.jpg" width="597px" depth="136px"/></figure>
+
+<note><title>Note:</title><para>When selecting the filesystem method you are
+restricted to Virtuoso targets, however WebDAV methods can be applied to any
+WebDAV server.  WebDAV methods assume that the target is publically available for writing.</para></note>
+	</sect2>
+
+  <sect2 id="admiui.accesscontrol"><title>Access Control</title>
+
+
+
+          <figure float="1" id="acl001"><title>Access Control Lists</title>
+          <graphic fileref="ui/acl001.jpg" width="317px" depth="146px"/></figure>
+
+          <figure float="1" id="acl002"><title>Access Control Lists</title>
+          <graphic fileref="ui/acl002.jpg" width="403px" depth="191px"/></figure>
+
+          <figure float="1" id="acl003"><title>Access Control Lists</title>
+          <graphic fileref="ui/acl003.jpg" width="340px" depth="232px"/></figure>
+
+          <figure float="1" id="acl004"><title>Access Control Lists</title>
+          <graphic fileref="ui/acl004.jpg" width="405px" depth="210px"/></figure>
+
+  </sect2>
+
+  <sect2 id="admiui.wsdl"><title>Import WSDL</title>
+
+  <para>This interface allows you to use the description of external web services
+  to provide Virtuoso system usable procedures.  You provide a URL to a WSDL
+  description, in return Virtuoso will automatically provide a wrapper for the services
+  available, hence stored procedures and user-defined types that are callable
+  within Virtuoso while the processing and mechanics of the services are actually
+  handled at the source.  </para>
+
+        <figure float="1" id="wsdlimp001"><title>WSDL Import</title>
+          <graphic fileref="ui/wsdlimp001.jpg" width="412px" depth="127px"/></figure>
+
+  <para>After Virtuoso examines the supplied URL to a WSDL you are
+  presented with the source code for the PL wrappers and Virtuoso user-defined
+  types to be created.  You have the chance to edit the code for more specific
+  needs and then you can either save this to a file for later work, or execute it
+  in Virtuoso to create the procedures and types.</para>
+
+          <figure float="1" id="wsdlimp002"><title>WSDL Import</title>
+          <graphic fileref="ui/wsdlimp002.jpg" width="510px" depth="333px"/></figure>
+
+   <para>Any errors in the code will be highlighted if you try and execute it.</para>
+
+   <para>If you wish to save the file the appropriate file system ACLs must be in
+   place for the destination.</para>
+
+  </sect2>
+
+
+</sect1>

@@ -1,0 +1,173 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions name="Pick"
+        targetNamespace="http://samples.otn.com"
+        xmlns:tns="http://samples.otn.com"
+        xmlns="http://schemas.xmlsoap.org/wsdl/"
+        xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+        xmlns:s1="http://www.autoloan.com/ns/autoloan"
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:wsa="http://schemas.xmlsoap.org/ws/2003/03/addressing"
+        >
+        
+  <types>
+    <schema attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://www.autoloan.com/ns/autoloan" xmlns="http://www.w3.org/2001/XMLSchema">
+      <element name="loanApplication" type="s1:LoanApplicationType"/>
+      <element name="loanApplication_resp" type="s1:LoanApplicationType"/>
+      
+      <complexType name="LoanApplicationType">
+          <sequence>
+            <element name="SSN" type="string"/>
+            <element name="email" type="string"/>
+            <element name="customerName" type="string"/>
+            <element name="loanAmount" type="double"/>
+            <element name="carModel" type="string"/>
+            <element name="carYear" type="string"/>
+            <element name="creditRating" type="int"/>
+          </sequence>
+      </complexType>
+    </schema>
+	<schema targetNamespace="http://schemas.xmlsoap.org/ws/2003/03/addressing"
+	    xmlns="http://www.w3.org/2001/XMLSchema"
+	    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+	    <element name="ReplyTo" type="wsa:EndpointReferenceType"/>
+	    <element name="MessageID" type="wsa:AttributedURI"/>
+	    <element name="RelatesTo" type="wsa:Relationship"/>
+	    <complexType name="AttributedURI">
+		<simpleContent>
+		    <extension base="xsd:anyURI">
+			<xs:attribute name="Id" type="xsd:string"/>
+		    </extension>
+		</simpleContent>
+	    </complexType>
+	    <complexType name="Relationship">
+		<simpleContent>
+		    <extension base="xsd:anyURI">
+			<attribute name="RelationshipType" type="xsd:QName" use="optional"/>
+			<attribute name="Id" type="xsd:string"/>
+		    </extension>
+		</simpleContent>
+	    </complexType>
+	    <complexType name="EndpointReferenceType">
+		<sequence>
+		    <element name="Address" type="anyURI"/>
+		    <element name="ReferenceProperties" type="wsa:ReferencePropertiesType" minOccurs="0"/>
+		    <element name="PortType" type="wsa:AttributedQName" minOccurs="0"/>
+		    <element name="ServiceName" type="wsa:ServiceNameType" minOccurs="0"/>
+		</sequence>
+		<attribute name="Id" type="xsd:string"/>
+	    </complexType>
+	    <complexType name="ServiceNameType">
+		<simpleContent>
+		    <extension base="QName">
+			<attribute name="PortName" type="NCName"/>
+		    </extension>
+		</simpleContent>
+	    </complexType>
+	    <complexType name="AttributedQName">
+		<simpleContent>
+		    <extension base="QName"/>
+		</simpleContent>
+	    </complexType>
+	    <complexType name="ReferencePropertiesType">
+		<sequence>
+		    <any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</sequence>
+	    </complexType>
+	</schema>
+  </types>
+
+  <message name="StartHeader">
+    <part name="MessageID" element="wsa:MessageID"/>
+    <part name="ReplyTo" element="wsa:ReplyTo"/>
+  </message>
+  <message name="ContinueHeader">
+    <part name="RelatesTo" element="wsa:RelatesTo"/>
+  </message>
+  
+  <message name="PickRequestMessage">
+    <part name="payload" element="s1:loanApplication"/>
+  </message>
+  <message name="PickResultMessage">
+    <part name="payload" element="s1:loanApplication_resp"/>
+  </message>
+
+  <message name="AsyncBPELServiceRequestMessage">
+    <part name="payload" element="s1:loanApplication"/>
+  </message>
+  <message name="AsyncBPELServiceResultMessage">
+    <part name="payload" element="s1:loanApplication_resp"/>
+  </message>
+
+
+  <portType name="Pick">
+    <operation name="initiate">
+      <input message="tns:PickRequestMessage"/>
+    </operation>
+  </portType>
+  <portType name="PickCallback">
+    <operation name="onResult">
+      <input message="tns:PickResultMessage"/>
+    </operation>
+  </portType>
+
+  <portType name="AsyncBPELService">
+    <operation name="initiate">
+      <input message="tns:AsyncBPELServiceRequestMessage"/>
+    </operation>
+  </portType>
+  <portType name="AsyncBPELServiceCallback">
+    <operation name="onResult">
+      <input message="tns:AsyncBPELServiceResultMessage"/>
+    </operation>
+</portType>
+
+ <binding name="AsyncBPELServiceBinding" type="tns:AsyncBPELService">
+     <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+     <operation name="initiate">
+	 <soap:operation soapAction="#initiate" style="document" />
+	 <input>
+	     <soap:header message="tns:StartHeader" part="MessageID" use="literal" required="false"/>
+	     <soap:body use="literal" />
+	 </input>
+     </operation>
+ </binding>
+ 
+ <service name="AsyncLoanService">
+     <port name="AsyncLoanServicePort" binding="tns:AsyncBPELServiceBinding">
+	 <soap:address location="http://localhost:6666/asyncLoan" />
+     </port>
+ </service>
+
+  
+  <plnk:partnerLinkType name="AsyncBPELService">
+    <plnk:role name="AsyncBPELServiceProvider">
+      <plnk:portType name="tns:AsyncBPELService"/>
+    </plnk:role>
+    <plnk:role name="AsyncBPELServiceRequester">
+      <plnk:portType name="tns:AsyncBPELServiceCallback"/>
+    </plnk:role>
+  </plnk:partnerLinkType>  
+
+</definitions>

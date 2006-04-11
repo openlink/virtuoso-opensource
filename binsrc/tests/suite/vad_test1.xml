@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="ASCII"?>
+<!DOCTYPE sticker SYSTEM "vad_sticker.dtd">
+<sticker version="1.0.010505A" xml:lang="en-UK">
+  <caption>
+    <name package="test1">
+      <prop name="Title" value="Test1 Package"/>
+      <prop name="Developer" value="OpenLink Software"/>
+      <prop name="Copyright" value="(C) 2001 OpenLink Software"/>
+      <prop name="Download" value="http://www.openlinksw.com/virtuoso"/>
+      <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso"/>
+    </name>
+    <version package="1.00">
+      <prop name="Release Date" value="2004-05-31"/>
+      <prop name="Build" value="Release, optimized"/>
+    </version>
+  </caption>
+  <dependencies/>
+  <procedures uninstallation="supported">
+    <sql purpose="pre-install">dbg_obj_print('procedure pre-install');</sql>
+    <sql purpose="post-install">dbg_obj_print('procedure post-install');</sql>
+  </procedures>
+  <ddls>
+    <sql purpose="pre-install">dbg_obj_print('ddl pre-install');</sql>
+    <sql purpose="post-install">
+      registry_set('__no_vspx_temp', '1');
+      "DB"."DBA"."VAD_LOAD_SQL_FILE"('/DAV/VAD/vad_test1/test.sql', 1, 'report', 1);
+      vhost_remove (lpath=>'/vad_test1');
+      vhost_define (lpath=>'/vad_test1',ppath=>'/DAV/VAD/vad_test1/', is_dav=>1, vsp_user=>'dba', is_brws=>1, def_page=>'1.vsp');
+    </sql>
+    <sql purpose="post-uninstall">
+      vhost_remove (lpath=>'/vad_test1');
+      "DB"."DBA"."VAD_REMOVE_FILE"('./vad/vsp/vad_test1');
+    </sql>
+  </ddls>
+  <resources>
+    <file type="dav" source="http" target_uri="vad_test1/1.vsp" dav_owner='dav' dav_grp='administrators' dav_perm='111101101N' makepath="yes"/>
+    <file type="dav" source="http" target_uri="vad_test1/2.vsp"  dav_owner='dav' dav_grp='administrators' dav_perm='111101101N' makepath="yes"/>
+    <file type="dav" source="http" target_uri="vad_test1/test.sql" dav_owner='dav' dav_grp='administrators' dav_perm='111101101N' makepath="yes"/>
+  </resources>
+  <registry>
+    <record key="/VAD/test1/1.00/records/s1" type="STRING" overwrite="yes">tram param</record>
+    <record key="/VAD/test1/1.00/records/s2" type="STRING" overwrite="no">tram param 2</record>
+  </registry>
+</sticker>

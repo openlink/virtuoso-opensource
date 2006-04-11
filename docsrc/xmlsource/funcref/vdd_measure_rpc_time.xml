@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_vdd_measure_rpc_time">
+  <refmeta>
+    <refentrytitle>vdd_measure_rpc_time</refentrytitle>
+    <refmiscinfo>rmt</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>vdd_measure_rpc_time</refname>
+    <refpurpose>Estimate VDB RPC round-trip for a given DSN in milliseconds</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_vdd_measure_rpc_time">
+      <funcprototype id="fproto_vdd_measure_rpc_time">
+        <funcdef>float <function>vdd_measure_rpc_time</function></funcdef>
+	<paramdef>in <parameter>_dsn</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_vdd_measure_rpc_time">
+    <title>Description</title>
+    <para>This function will return the estimated number of milli-seconds to 
+	perform an RPC round trip on the DSN supplied.</para>
+  </refsect1>
+  <refsect1 id="params_vdd_measure_rpc_time">
+    <title>Parameters</title>
+    <refsect2><title>_dsn</title>
+      <para>The name of the data source to estimate round-trip time for.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_vdd_measure_rpc_time"><title>Return Types</title>
+    <para>The length of time taken in milli-seconds as a float type.</para>
+  </refsect1>
+<!--
+<refsect1 id="errors_vdd_measure_rpc_time">
+    <title>Errors</title>
+
+ In case of non-function-specific errors, i.e. only common
+     parameter errors are signalled, comment out the table below 
+     otherwise add the unique error values as individual errorcodes 
+
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+  <refsect1 id="examples_vdd_measure_rpc_time">
+    <title>Examples</title>
+    <example id="ex_vdd_measure_rpc_time"><title></title>
+      <para></para>
+      <screen><![CDATA[
+]]>
+</screen>
+    </example>
+</refsect1>
+-->
+  <refsect1 id="seealso_vdd_measure_rpc_time">
+    <title>See Also</title>
+    <para><link linkend="fn_vd_statistics"><function>vd_statistics()</function></link></para>
+  </refsect1>
+</refentry>

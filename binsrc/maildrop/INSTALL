@@ -1,0 +1,176 @@
+Installation instructions
+-------------------------
+
+1. replacing procmail as default handler in sendmail configurations
+===================================================================
+
+1.  Copy virt_mail to /usr/bin/virt_mail
+    Copy odbc_mail.default.ini to /etc/odbc_mail.ini
+
+    IMPORTANT: Make sure /etc/odbc_mail.ini is NOT GROUP/WORLD writable.
+    virt_mail will fail to run if it is.
+
+
+2. Edit /etc/odbc_mail.ini and change the login settings to match your
+current database installation.
+
+If you don't have or want to use procmail, comment out the "Fallback"
+setting in the [Deliver] section.
+
+3. Edit /etc/sendmail.cf
+
+Change
+  Mlocal,	P=/usr/bin/procmail, F=lsDFMAw5:/|@qSPfhn9, S=10/30, R=20/40,
+		  T=DNS/RFC822/X-Unix,
+		  A=procmail -Y -a $h -d $u
+
+into:
+  Mlocal,	P=/usr/bin/virt_mail, F=lsDFMA5:/|@qSPhn9, S=10/30, R=20/40,
+		  T=DNS/RFC822/X-Unix,
+		  A=virt_mail -c /etc/odbc_mail.ini -l $u -h $h -s $g
+
+NOTE: The changes to the F= setting involve removing both the 'w' and 'f' flags.
+
+The removal of the 'w' flag affects lookups in /etc/passwd, which are no
+longer required if all mail drops go into the database.
+The default ini file is set up to maildrop to procmail, which will perform
+this check correctly.
+
+
+2. per-user database maildrops under sendmail
+=============================================
+
+1. Copy odbc_mail.default.ini to ~the_user_name/.odbc_mail.ini
+
+  IMPORTANT: Make sure the .odbc_mail.ini is NOT GROUP/WORLD writable.
+  virt_mail will fail to run if it is.
+
+2. Put at the end of ~the_user_name/.procmailrc something like:
+:0:
+| /usr/bin/virt_mail -c .odbc_mail.ini -l the_user_name -h your.domain.com
+
+replacing the_user_name with the user you're setting up.
+
+Note: the '-l ..' parameter is used to relate the local recipient to
+the database user for which the maildrop is done. See the remarks in
+the odbc_mail.default.ini file.
+
+3. Adjust the parameters in .odbc_mail.ini to match your configuration
+
+IMPORTANT - also disable Fallback delivery in .odbc_mail.ini
+Comment out the "Fallback =" entry in the .odbc_mail.ini
+or set it to something that doesn't involve procmail.
+Otherwise, this could lead to drop loops.
+
+
+3. per-user database maildrops under qmail
+==========================================
+
+1. Copy odbc_mail.default.ini to ~the_user_name/.odbc_mail.ini
+
+  IMPORTANT: Make sure the .odbc_mail.ini is NOT GROUP/WORLD writable.
+  virt_mail will fail to run if it is.
+
+2.  If you're setting up a .qmail, simply do something like
+| /usr/bin/virt_mail -m qmail -c .odbc_mail.ini
+
+If you're setting up .qmail-default or .qmail-<some_alias_name>,
+make sure you adjust the RemovePrefix accordingly in the odbc_mail.ini.
+
+This also works if a single user is receiving mail for an entire
+(virtual) domain.
+
+If you want to configure qmail so that user 'db' gets all mail for
+example.com, do this:
+1. create a new user db in /etc/passwd etc.
+2. remove example.com from /var/qmail/control/locals
+3. add to /var/qmail/controls/virtualdomains:
+example.com:db
+4. adjust /var/qmail/users/assign accordingly:
+	=db:db:<uid>:<gid>:<home>:::
+	+db-:db:<uid>:<gid>:<home>:-::
+  or run qmail-pw2u < /etc/passwd > /var/qmail/users/assign
+  then run qmail-newu and restart qmail
+5. in ~db/.qmail-default, put:
+| /usr/bin/virt_mail -m qmail -c .odbc_mail.ini
+6. in .odbc_mail.ini, set RemovePrefix=db-
+Now, mail to info@example.com will be delivered to the qmail alias
+db-info@example.com and is stored into the database for user 'info'.
+
+3. Adjust the parameters in .odbc_mail.ini to match your configuration
+
+
+4. per-user database maildrops under courier
+============================================
+
+1. Copy odbc_mail.default.ini to ~the_user_name/.odbc_mail.ini
+
+  IMPORTANT: Make sure the .odbc_mail.ini is NOT GROUP/WORLD writable.
+  virt_mail will fail to run if it is.
+
+2.  If you're setting up a .courier, simply do something like
+| /usr/bin/virt_mail -mcourier -c .odbc_mail.ini
+
+If you're setting up .courier-default or .courier-<some_alias_name>,
+make sure you adjust the RemovePrefix accordingly in the .odbc_mail.ini.
+
+Note 1: although courier is very similar to qmail in this respect,
+it is different from qmail in how it handles exit codes.
+If you use -mqmail while running under courier, you'll get the wrong
+exit codes, so mail is bounced instead of retried.
+
+Note 2: If delivering to multiple recipients in a .courier file,
+make sure the virt_mail is specified first. This is because if the
+virt_mail fails with a temporary error, the other recipients will
+get another drop when courier re-attempts to deliver the mail.
+Right:
+| /usr/bin/virt_mail -mcourier -c .odbc_mail.ini
+./Maildir
+Wrong:
+./Maildir
+| /usr/bin/virt_mail -mcourier -c .odbc_mail.ini
+
+3. Adjust the parameters in .odbc_mail.ini to match your configuration
+
+
+5. EXIM
+=======
+Here are a code snippets for Exim that perform maildrops into the odbc database.
+
+## IN TRANSPORT SECTION
+
+# Delivers into the database
+odbc:
+  driver = pipe
+  command = /usr/bin/virt_mail \
+	-c /etc/odbc_mail.ini \
+	-s "${if def:return_path{$return_path}{MAILER-DAEMON}}" \
+	-l "$local_part" -h "$domain"
+  user = USERNAME
+  return_path_add
+  delivery_date_add
+  prefix =
+  suffix =
+  temp_errors = 73 : 74 : 75
+  return_fail_output
+
+# NOTE: Make sure the USERNAME in the 'user = USERNAME' setting matches
+# the owner of /etc/odbc_mail.ini, because this file must have mode 0600.
+# Consider creating a new user account for this delivery only.
+# You should specify 'user = root' here only if Fallback delivery is
+# configured in /etc/odbc_mail.ini (for procmail fallback delivery
+# for instance)
+
+
+## IN DIRECTORS SECTION
+
+# Attempts delivery of all mail into the database
+to_db:
+  driver = smartuser
+  transport = odbc
+  require_files = /etc/odbc_mail.ini
+  #
+  # uncomment line below to deliver all mail to db-XXX into the database, for any
+  # value of XXX. For this to work, set "RemovePrefix = db-" in
+  # the [Translate] section in /etc/odbc_mail.ini
+  #prefix = db-

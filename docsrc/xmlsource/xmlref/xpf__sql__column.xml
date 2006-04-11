@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!--
+  Please use the following prefixes for IDs:
+    xpf_ for old XPATH functions,
+    xf_ for XPATH 2.0 & XQUERY 1.0 functions,
+    xsl_ for XSL elements,
+-->
+<refentry id="xpf__sql__column">
+  <refmeta> 
+    <refentrytitle>sql:column</refentrytitle> 
+    <refmiscinfo>XQuery</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>sql:column</refname> 
+    <refpurpose>Returns the value of a column from SQL result-set.</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv> 
+    <funcsynopsis id="xpf_syn__sql__column"> 
+      <funcprototype id="xpf_proto__sql__column">
+        <funcdef>any <function>sql:column</function></funcdef> 
+	<paramdef>constant <parameter>column_name</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc__sql__column"><title>Description</title>
+    <para>This is actually not a function but a special macro that is
+    converted to a reference to a global parameter.
+    </para>
+  </refsect1>
+  <refsect1 id="xpf_params__sql__column"><title>Parameters</title>
+    <refsect2><title>column_name</title>
+      <para>A string constant (literal, not an expression)
+that is a column name in plain SQL syntax. It can be a column name
+(and it can be qualified to specify a table name or an alias name).
+It can be a name of a Virtuoso/PL variable.
+</para>
+<para>The string should not contain quotes around parts of the column name.
+</para>
+</refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret__sql__column"><title>Return Types</title>
+<para>The value of the sql:column() invocation is the value of some
+SQL column or variable. If the type of the value is not supported by XQuery
+interpreter then it will be converted accodring to geenric rules for
+XQuery parameters.</para>
+  </refsect1>
+  <refsect1 id="xpf_examples__sql__column"><title>Examples</title>
+    <example id="xpf_ex__sql__column"><title>Various invocations of sql:column</title>
+      <para>These two statements will produce identical results:</para>
+      <screen></screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso__sql__column"><title>See Also</title>
+    <para><link linkend="xq_precompilation">Pre-compilation of XPath and XQuery Expressions</link></para>
+  </refsect1>
+</refentry>
+

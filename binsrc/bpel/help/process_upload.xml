@@ -1,0 +1,73 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+  <sect1 id="process_upload">
+    <title>OpenLink BPEL Process Manager Process upload</title>
+    <para>This page uploads a BPEL process.</para>
+    <sect2 id="pu_fields">
+      <title>Form fields</title>
+      <sect3 id="pu_fields_name">
+        <title>Process name</title>
+        <para>When specified, this string will be the name of the process.</para>
+      </sect3>
+      <sect3 id="pu_fields_depl">
+        <title>Deployment Methods</title>
+        <para>Choose values from the list in order to import process or upload BPEL and WSDL files for process.<br/>
+                If you choose "Import process" value from the Deployment Methods list, all bpel and wsdl files referenced by the file at this URL will be loaded and will be ready to compile.<br/>
+                If you choose "Upload process" value from the Deployment Methods list, will be allowed to individually upload or provide external URI's for the bpel and wsdl files defining the process. When these are all provided the process will be ready to be compiled.</para>
+      </sect3>
+      <sect3 id="pu_fields_bpel">
+        <title>BPEL</title>
+        <para>This is the section for uploading the bpel file for the process.</para>
+        <simplelist>
+          <member>To choose the "URL" option choose the "URL" radio button.</member>
+          <member>To choose the "File" option choose the "File" radio button.</member>
+        </simplelist>
+      </sect3>
+      <sect3 id="pu_fields_wsdl">
+        <title>WSDL</title>
+        <para>This is the section for uploading the wsdl file for the process.</para>
+        <simplelist>
+          <member>To choose the "URL" option choose the "URL" radio button.</member>
+          <member>To choose the "File" option choose the "File" radio button.</member>
+        </simplelist>
+      </sect3>
+      <sect3 id="pu_fields_authen">
+        <title>Authentication</title>
+        <para>This is the authentication section. When the file responding to the file at entered "URL" file location expects authentication, you have to enter user name and paswword for the authentication.</para>
+        <simplelist>
+          <member>Enter the User name in the field "User".</member>
+          <member>Enter the password in the field "Password".</member>
+        </simplelist>
+      </sect3>
+      <sect3 id="pu_fields_descr">
+        <title>Load Deployment Descriptor from</title>
+        <para>This is the Deployment Descriptor section.</para>
+        <simplelist>
+          <member>All bpel and wsdl files referenced by the file at this URL will be loaded and will be ready to compile.</member>
+        </simplelist>
+      </sect3>
+    </sect2>
+  </sect1>
+</HelpTopic>

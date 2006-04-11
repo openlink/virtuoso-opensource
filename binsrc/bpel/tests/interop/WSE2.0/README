@@ -1,0 +1,172 @@
+WS-Security interoperability with .NET
+
+
+The demo consist of three parts:
+1) Secure BPEL process 
+2) Secure Web service based on ASPX  
+3) Secure SOAP client written in C#
+
+The demo operates as follows:
+
+- The client send a request containing a string data,
+so the request is encrypted and digitally signed.
+
+- The process decode the request and do signature verification.
+
+- The process send a encrypted and signed request to the secure service.
+
+- The .NET service do decryption and signature verification, append a
+'IIS response=' string in the front of string data and 
+sends back to the BPEL process response signed and encrypted.
+
+- The process perform verification and decryption and then 
+send back to the client the .NET service response encrypted and signed.
+
+In this way demo shows how BPEL script is interoperable with secure (WSE 2.0 based) 
+applications.
+
+
+
+.NET client description
+
+
+The client is a console application which is uses the WSE 2.0 SDK. It 
+contains two parts : service proxy and invocation part. 
+The service proxy is created with VS.NET when importing the web reference from
+process' WSDL. Then WSE 2.0 settings are changed to enable the extensions. As 
+a result is created echoWse class that is included in the SecClient.cs file.
+
+Invocation part contains code for adding signature and encryption to the 
+request. Here is a snippet describing how this is achieved : 
+
+... Run method of the SecureClient class ...
+
+	  // Create an instance of the Web service proxy
+	  echoWse serviceProxy = new echoWse ();
+
+          // Retrieve the Client's key
+	  X509SecurityToken token = GetClientToken ();
+
+	  // Add an EncryptedData element to the security collection
+	  // to encrypt the request.
+	  serviceProxy.RequestSoapContext.Security.Elements.Add (new EncryptedData (token));
+
+	  // Get the Server's key
+	  token = GetServerToken ();
+
+	  // Add the signature element to a security section on the request
+	  // to sign the request
+	  serviceProxy.RequestSoapContext.Security.Tokens.Add (token);
+	  serviceProxy.RequestSoapContext.Security.Elements.Add (new MessageSignature (token));
+
+          // Call the echo process
+	  serviceProxy.echo (ref var);
+
+... end of snippet ...
+
+To build the client following actions must be performed:
+
+1) copy the Microsoft.Web.Services2.dll (from WSE 2.0 installation) into SecClient directory.
+2) go to the SecClient and run NMAKE 
+3) run the client 
+   > SecClient http://host:port/SecEcho hello
+
+.NET service description
+
+The WSE 2.0 provides a input and output filters for WS-Security. 
+These filters will automatically decrypt and verify incoming secure messages.  
+In the SecSvc Web service are added additional checking of the incoming message to 
+have signature on some data and to be encrypted with proper key.
+
+... snippet of the echoSync method of the Web service class ...
+          
+          //
+          // Note in exceptions are omitted details for brevity
+          // for details see SecSvc.asmx.cs source file 
+          //  
+	  [WebMethod]
+	  [SoapDocumentMethod(Action="#echoSync")]
+	  [return:XmlElement("CallReturn")]
+	  public string echoSync (string var)
+	    {
+	      // Check if the soap message contains all the required message parts
+              // This is to check for mandatory elements in signature  
+	      VerifyMessageParts(RequestSoapContext.Current);
+
+	      // Check if the Soap Message is Signed with proper key.
+	      X509SecurityToken x509Token = GetSigningToken(RequestSoapContext.Current) as X509SecurityToken;
+	      if (x509Token == null || 
+		  !CompareArray(x509Token.KeyIdentifier.Value, Convert.FromBase64String(ClientBase64KeyId)))
+		{
+		  throw new SecurityFault (...);
+		}
+
+
+	      // Check if the Soap Message is Encrypted.
+	      x509Token = GetEncryptingToken(RequestSoapContext.Current) as X509SecurityToken;
+	      if (x509Token == null)
+		{
+		  throw new SecurityFault(...);
+		}
+
+	      X509SecurityToken serverCert = GetServerToken();
+	      if (serverCert == null)
+		{
+		  throw new SecurityFault(...);
+		}
+
+              // Check the encryption key to be same as server key
+	      if (!serverCert.Equals(x509Token))
+		{
+		  throw new SecurityFault(...);
+		}
+	      // reply to the process	
+	      return "IIS reply="+var;
+	    }
+... end of snippet ...
+
+
+To deploy the web service copy the SecSvc directory under wwwroot and make it 
+as virtual directory via IIS admin console. Copy the Microsoft.Web.Services2.dll 
+or put reference in the Makefile. Invoke NMAKE command to make the library.
+
+BPEL process description
+
+The BPEL process act as a proxy,
+it accept a input message containing a string and passes it to the
+remote web service and then reply with remote server's response back
+to the client. The intended behavior is to accept and verify the input
+to encode and sign the request to the remote etc. In this way it 
+have all IO traffic encrypted. 
+To perform these tasks options to the partner links have to be specified:
+
+  <wsOptions>
+    <!-- WS-Addressing version URI -->
+    <addressing version="http://schemas.xmlsoap.org/ws/2004/03/addressing"/>
+    <security>
+      <!-- own and remote keys -->
+      <key name="ClientPrivate.pfx" />
+      <pubkey name="ServerPublic.cer" />
+      <in>
+        <encrypt type="Optional" />
+        <signature type="Optional" />
+      </in>
+      <out>
+        <!-- session key type -->  
+        <encrypt type="AES192" />
+        <signature type="Default" />
+      </out>
+    </security>
+   </wsOptions>
+
+this is settable with single update operation of the partner_link_init table 
+after script is compiled. 
+
+To deploy the script make a directory 'interop' under http root. 
+Copy the Sec.*, SecSvc.wsdl and keys into it. 
+Make sure ClientPrivate.pfx to contain the WSE 2.0 client test certificate
+and ServerPublic.cer to contains WSE 2.0 server certificate (can be obtained from WSE 2.0 installation). 
+Please note that SecSvc.wsdl needs to be edited to have proper URI to the service description. Furthermore 
+the SecSvc service MUST be deployed before next step. 
+Execute the Sec.sql as DBA against Virtuoso server (must have BPEL4WS VAD package installed).
+

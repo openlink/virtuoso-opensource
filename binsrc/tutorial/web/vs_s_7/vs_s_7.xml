@@ -1,0 +1,54 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-S-7">
+  <refmeta>
+    <refentrytitle>Web Server Setup</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Control of the Web Request Log</refname>
+    <refpurpose>HTTP requests logging</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-S-7a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+  <listitem>It is possible to log HTTP requests.</listitem>
+  <listitem>The log file can be analyzed with the Conductor UI, such as the Analog utility, going to the "System Admin" tab, then to the "Monitor" tab and then to the "Log Viewer" sub-tab.</listitem>
+  <listitem>HTTP logging is enabled by setting the HTTPLogFile parameter in the [HTTPServer] section of the database INI file.</listitem>
+  <listitem><para>The HTTPLogFile must be set to the path of the HTTP server log. For example:</para>
+    <programlisting>[HTTPServer]
+ ....
+HTTPLogFile   = ./http.log
+ ....</programlisting></listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-S-7b">
+<title>Log file format</title>
+<programlisting>CLIENT_IP AUTH_TYPE AUTH_ID [DD/MMM/YYYY:HH:MM:SS +ZZZZ] "HTTP REQUEST" HTTP_RESPONSE CONTENT_LENGTH</programlisting>
+<para>Here is an example:</para>
+<programlisting>127.0.0.1 Basic test_user [02/May/2001:11:05:25 +0200] "GET / HTTP/1.0" 200 2186</programlisting>
+</refsect1>
+</refentry>

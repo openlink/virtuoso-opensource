@@ -1,0 +1,71 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="blog">
+  <refmeta>
+    <refentrytitle>Blog application</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Blog application</refname>
+    <refpurpose>Blog application</refpurpose>
+  </refnamediv>
+
+<refsect1 id="bloga">
+<title>Overview</title>
+<itemizedlist mark="bullet">
+<listitem>The application allow users to post messages to a Weblog servers using XML-RPC protocol.</listitem>
+<listitem>It can work locally where as server is used one running the application.</listitem>
+<listitem>Also it demonstrate usage of VSPX calendar, dataset and login controls.</listitem>
+<listitem>The demo also shows usage of blogger API.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="blogb">
+<title>Application pages</title>
+<para>The application has the following pages:</para>
+<itemizedlist mark="bullet">
+<listitem><para>Login</para> 
+ <para>
+  This page allow existing Web users to login to the application. 
+  Furthermore these credentials will be used to authenticate against Weblog server. 
+  When user is authenticated the request will be redirected to the home page.
+  </para></listitem>
+  
+ <listitem><para>Configuration</para>
+  
+ <para>
+  This page is accessible via "Settings" link of home page (see below). 
+  It allows users to configure parameters for blogger API request as "appkey", "blogID" and target server endpoint.
+  It's vital for application to set these properly before trying any aother action on home page.
+  </para></listitem>
+  
+ <listitem><para>Home</para>
+ <para>
+  This page allows users to enter a new message, to edit an existing or see in archive organized by date.
+  To look at the archive calendar control is used for navigation. Please note that this application limits number of messages shown at screen for brevity; so as exercise it can be edited to show number of messages entered on that page in special box.  
+  </para></listitem>
+</itemizedlist>
+</refsect1>
+
+</refentry>

@@ -1,0 +1,230 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+  <HEAD>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Virtuoso Configuration Editor</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Virtuoso.ini Configuration Editor">
+  </HEAD>
+
+  <BODY>
+
+<?vsp
+
+declare sect, item, item_value, new_item, t_g varchar;
+declare items, sections, i, j, idx, _pos integer;
+
+if (not adm_check_auth (lines))
+  {
+    adm_tell_unauth(lines);
+    return (0);
+  }
+
+if (not adm_check_auth (lines))
+  {
+    adm_tell_unauth(lines);
+    return (0);
+  }
+
+_pos := atoi (get_keyword('dd_sect', params, '0'));
+sect := cfg_section_name(virtuoso_ini_path(), _pos);
+
+if (isinteger (sect))
+  sect := cast (sect as varchar);
+if ('' <> get_keyword('really_delete', params, ''))
+{
+-- remove one
+	cfg_write(virtuoso_ini_path(), sect, get_keyword('to_go', params, ''), '');
+}
+
+if ('' <> get_keyword('update_ini', params, ''))
+{
+-- perform the update to the ini file
+
+	idx :=0;
+	while (idx < length(params))
+	{
+		item := aref(params, idx);
+		if ('_ini_'  = left(item, 5))
+		{	item := ltrim(item, '_ini_');
+		        new_item := get_keyword (concat('n_',item), params, item);
+			item_value := aref(params, idx +1);
+                        if (new_item <> item)
+			  cfg_write(virtuoso_ini_path(), sect, item, '');
+			cfg_write(virtuoso_ini_path(), sect, new_item, item_value);
+		}
+		idx := idx +2;
+	}
+
+	if ('' <> get_keyword('_new_item', params, ''))
+	{	item := get_keyword('_new_item', params, NULL);
+		item_value := get_keyword('_new_value', params, '');
+	 	cfg_write(virtuoso_ini_path(), sect, item, item_value);
+	}
+}
+
+sections := cfg_section_count(virtuoso_ini_path());
+items := cfg_item_count(virtuoso_ini_path(), sect);
+
+    if ('' <> get_keyword ('delete', params, ''))
+    {
+      goto comf_page;
+    }
+-- view the current section
+?>
+
+<?vsp adm_page_header('Virtuoso Configuration Editor', NULL); ?>
+<FORM NAME="virtini" ACTION="admin_virtini.vsp" METHOD="post">
+<TABLE CLASS="genlist" CELLPADDING="0" CELLSPACING="2" BORDER="0">
+<TR><TD CLASS="genhead" COLSPAN="3">Virtuoso Configuration File</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD CLASS="genlisthead">&nbsp;</TD><TD COLSPAN="2" class="gendata"><?= adm_get_init_name ()?></TD></TR>
+<TR><TD COLSPAN="3"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+
+<TR><TD ALIGN="right" VALIGN="top">
+<TABLE class="genlist" CELLPADDING="0" CELLSPACING="2" BORDER="0">
+<TR><TD class="genhead">Section</TD></TR>
+<TR><TD CLASS="AdmBorders"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD>
+
+<?vsp
+	i := 0;
+	http('<SELECT SIZE="10" NAME="dd_sect" onChange="javascript:document.virtini.submit();">');
+	while (i < sections)
+	{
+		http('<OPTION '); http(select_if(cfg_section_name(virtuoso_ini_path(), i),sect));
+			http(' VALUE="'); http(cast(i as varchar)); http('">');
+			http(cfg_section_name(virtuoso_ini_path(), i)); http('</OPTION>');
+		i := i + 1;
+	}
+	http('</SELECT>');
+?>
+
+</TD></TR></TABLE></TD><TD VALIGN="top">
+<TABLE class="genlist" CELLPADDING="0" CELLSPACING="2" BORDER="0">
+<TR><TD class="genhead" COLSPAN="3"><?=sect?></TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR>
+     <TH class="genlistheadt">Name</TH>
+     <TH class="genlistheadt">Value</TH>
+     <TH class="genlistheadt">Action</TH>
+</TR>
+
+<?vsp
+	j := 0;
+	while (j < items)
+	{
+		item := cfg_item_name(virtuoso_ini_path(), sect, j);
+		item_value := cfg_item_value(virtuoso_ini_path(), sect, item);
+                if (item <> 'DirsAllowed' and item <> 'DirsDenied'
+		    and item <> 'SafeExecutables' and item <> 'DbaExecutables')
+		  {
+		http(sprintf('<TR><TD class="gendata"><INPUT TYPE="hidden" NAME="n_%V" VALUE="%V">%V</TD>',
+		      item, item, item));
+		http(sprintf('<TD><INPUT TYPE="text" SIZE="40" NAME="_ini_%V" VALUE="%V" /></TD>', item, item_value));
+		http(sprintf('<TD class="gendata"><a class="tablelistaction" href="admin_virtini.vsp?to_go=%s&delete=1&dd_sect=%i&update_ini=1">Remove</a></TD></TR>', item, _pos));
+		  }
+		else
+		  {
+		http(sprintf('<TR><TD class="genlisthead">%V</TD>', item));
+		http(sprintf('<TD>%V</TD>', item_value));
+		http(sprintf('<TD>&nbsp;</TD></TR>', item));
+		  }
+		j := j + 1;
+	}
+
+if ('' <> get_keyword('add', params, ''))
+{
+	http('<TR><TD COLSPAN="3" class="genlistheadt">New:</TD></TR>');
+	http('<TR><TD><INPUT TYPE="text" NAME="_new_item" VALUE="" /></TD>');
+	http('<TD><INPUT TYPE="text" SIZE="40" NAME="_new_value" VALUE="" /></TD></TR>');
+}
+?>
+
+
+<TR><TD COLSPAN="2" ALIGN="right">
+	<INPUT TYPE="submit" FOCUSED NAME="update_ini" VALUE="Update File" />
+	<?vsp if ('' = get_keyword('add', params, '')) http('<INPUT TYPE="submit" NAME="add" VALUE="Add" />'); ?>
+</TD></TR>
+</TABLE></TD></TR>
+<TR><TD ALIGN="middle">
+<?vsp
+
+if ('' <> get_keyword('delete', params, ''))
+{
+-- remove one question
+	http(sprintf('<TABLE><TR><TD class="genlisthead">Remove "%V", Are you sure? ', get_keyword('to_go', params, '')));
+	http(sprintf('<INPUT TYPE="hidden" NAME="to_go" VALUE="%V">', get_keyword('to_go', params, '')));
+	http('<INPUT TYPE="submit" NAME="really_delete" VALUE="Yes"><INPUT TYPE="submit" NAME="nope" VALUE="No">');
+	http('</TD></TR></TABLE>');
+}
+?>
+</TD></TR></TABLE>
+</FORM>
+
+ <div style="margin-left: 40px; margin-right: 40px; text-align: left;"><a name="info"><b><i>Important:</i></b></a>
+    Changes will take effect upon server restart.
+ </div>
+
+<?vsp adm_page_footer(); ?>
+</HTML>
+<?vsp
+  return;
+comf_page:;
+
+--  declare t_g varchar;
+
+  t_g := get_keyword('to_go', params, '');
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Confirmation</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Deleting Database User">
+  </head>
+  <BODY>
+<?vsp adm_page_header(concat ('Removing Configuration Parameter ', t_g), NULL); ?>
+    <form method="POST" action="admin_virtini.vsp" name="delete_ini_prm">
+    <table border="0" width="60%">
+      <tr><td>You are about to remove the parameter <?= t_g ?>.
+      This removal cannot be undone. Do you wish to continue?</td></tr>
+      <tr>
+      <td align="center">
+	 <INPUT TYPE="hidden" NAME="to_go" VALUE="<?= t_g ?>">
+	 <INPUT TYPE="hidden" NAME="dd_sect" VALUE="<?= _pos ?>">
+         <INPUT TYPE="submit" NAME="really_delete" VALUE="Remove">&nbsp;
+	 <INPUT TYPE="submit" NAME="proceed" VALUE="Cancel"></td>
+      </tr>
+    </form>
+    </table>
+</TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+</TABLE>
+<?include admin_footer.vsp ?>
+  </body>
+</html>
+

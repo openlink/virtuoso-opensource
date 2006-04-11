@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_bif_arg">
+  <refmeta>
+    <refentrytitle>Virtuoso Server Extension Interface (VSEI) functions</refentrytitle>
+    <refmiscinfo>bif</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>bif_arg</refname>
+    <refname>bif_array_arg</refname>
+    <refname>bif_array_or_null_arg</refname>
+    <refname>bif_bin_arg</refname>
+    <refname>bif_double_arg</refname>
+    <refname>bif_entity_arg</refname>
+    <refname>bif_float_arg</refname>
+    <refname>bif_long_arg</refname>
+    <refname>bif_long_or_char_arg</refname>
+    <refname>bif_string_arg</refname>
+    <refname>bif_string_or_null_arg</refname>
+    <refname>bif_string_or_wide_or_null_arg</refname>
+    <refname>bif_strses_arg</refname>
+    <refpurpose>Get parameters for built in function</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_bif_arg">
+      <funcprototype id="fproto_bif_arg">
+        <funcdef>caddr_t <function>bif_arg</function></funcdef>
+        <paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+        <paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+        <paramdef>int <parameter>nth</parameter></paramdef>
+        <paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_array_arg">
+      <funcprototype id="fproto_bif_array_arg">
+        <funcdef>caddr_t <function>bif_array_arg</function></funcdef>
+        <paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+        <paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+        <paramdef>int <parameter>nth</parameter></paramdef>
+        <paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_array_or_null_arg">
+      <funcprototype id="fproto_bif_array_or_null_arg">
+		<funcdef>caddr_t <function>bif_array_or_null_arg</function></funcdef>
+		<paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+		<paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+		<paramdef>int <parameter>nth</parameter></paramdef>
+		<paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_bin_arg">
+      <funcprototype id="fproto_bif_bin_arg">
+		<funcdef>caddr_t <function>bif_bin_arg</function></funcdef>
+		<paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+		<paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+		<paramdef>int <parameter>nth</parameter></paramdef>
+		<paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_double_arg">
+      <funcprototype id="fproto_bif_double_arg">
+		<funcdef>caddr_t <function>bif_double_arg</function></funcdef>
+		<paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+		<paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+		<paramdef>int <parameter>nth</parameter></paramdef>
+		<paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_entity_arg">
+      <funcprototype id="fproto_bif_entity_arg">
+		<funcdef>caddr_t <function>bif_entity_arg</function></funcdef>
+		<paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+		<paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+		<paramdef>int <parameter>nth</parameter></paramdef>
+		<paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_float_arg">
+      <funcprototype id="fproto_bif_float_arg">
+		<funcdef>caddr_t <function>bif_float_arg</function></funcdef>
+		<paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+		<paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+		<paramdef>int <parameter>nth</parameter></paramdef>
+		<paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_long_arg">
+      <funcprototype id="fproto_bif_long_arg">
+		<funcdef>caddr_t <function>bif_long_arg</function></funcdef>
+		<paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+		<paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+		<paramdef>int <parameter>nth</parameter></paramdef>
+		<paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_long_or_char_arg">
+      <funcprototype id="fproto_bif_long_or_char_arg">
+		<funcdef>caddr_t <function>bif_long_or_char_arg</function></funcdef>
+		<paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+		<paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+		<paramdef>int <parameter>nth</parameter></paramdef>
+		<paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_string_arg">
+      <funcprototype id="fproto_bif_string_arg">
+		<funcdef>caddr_t <function>bif_string_arg</function></funcdef>
+		<paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+		<paramdef>int <parameter>nth</parameter></paramdef>
+		<paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_string_or_null_arg">
+      <funcprototype id="fproto_bif_string_or_null_arg">
+		<funcdef>caddr_t <function>bif_string_or_null_arg</function></funcdef>
+		<paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+		<paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+		<paramdef>int <parameter>nth</parameter></paramdef>
+		<paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_string_or_wide_or_null_arg">
+      <funcprototype id="fproto_bif_string_or_wide_or_null_arg">
+		<funcdef>caddr_t <function>bif_string_or_wide_or_null_arg</function></funcdef>
+		<paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+		<paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+		<paramdef>int <parameter>nth</parameter></paramdef>
+		<paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_bif_strses_arg">
+      <funcprototype id="fproto_bif_strses_arg">
+		<funcdef>caddr_t <function>bif_strses_arg</function></funcdef>
+		<paramdef>caddr_t * <parameter>qst</parameter></paramdef>
+		<paramdef>state_slot_t ** <parameter>args</parameter></paramdef>
+		<paramdef>int <parameter>nth</parameter></paramdef>
+		<paramdef>char * <parameter>func</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+
+  </refsynopsisdiv>
+  <refsect1 id="desc_bif_arg"><title>Description</title>
+    <para>The bif_...._arg functions are used in the Virtuoso shared object. They allow
+    customisation of the Virtuoso server.
+    They are written in C code, and linked with the Virtuoso shared object.</para>
+    <para>The _or_null_ variants of these functions represent the SQL null
+    value as a 00 pointer, even though getting the same argument with bif_arg()
+    would return a box with the DV_DB_NULL tag.
+    All number functions will coerce other types of numbers to the result type. 
+    All array argument functions will accept any type of array. It is up to the 
+    VSE itself to distinguish.</para>
+    <para>Virtuoso Server Extensions (VSEs) were formally referred to as Built-In Functions (BIFs).</para>
+  </refsect1>
+
+  <refsect1 id="params_bif_arg">
+    <title>Parameters</title>
+    <refsect2>
+      <title>qst</title>
+      <para>Query instance.</para>
+    </refsect2>
+    <refsect2>
+      <title>args</title>
+      <para>input arguments.</para>
+    </refsect2>
+    <refsect2>
+      <title>nth</title>
+      <para>which argument to retrieve  (zero indexed).</para>
+    </refsect2>
+    <refsect2>
+      <title>func</title>
+      <para>name of calling function. This will be printed in the SQL error message.</para>
+    </refsect2>
+  </refsect1>
+
+  <refsect1 id="ret_bif_arg"><title>Return Values</title>
+    <para>On success, return a valid pointer to the data retrieved, or NULL.
+    A SQL error is generated if the datatype is not valid.
+    The bif_arg is the only function not to have validation of a data type.</para>
+    <para>The values returned by any of these belong to the query instance, and the bif 
+    is not authorized to modify or free them.</para>
+      <table><title>Return types</title>
+        <tgroup cols="2">
+        <thead>
+  	  <row><entry>Function</entry><entry>Type validated and returned</entry></row>
+        </thead>
+	<tbody>
+	  <row>
+	    <entry>bif_arg</entry>
+	    <entry>Any type of data. (no data type check)</entry>
+	  </row>
+	  <row>
+	    <entry>bif_array_arg</entry>
+	    <entry>string or array data</entry>
+	  </row>
+	  <row>
+	    <entry>bif_array_or_null_arg</entry>
+	    <entry>string or array or NULL data</entry>
+	  </row>
+	  <row>
+	    <entry>bif_bin_arg</entry>
+	    <entry>binary data</entry>
+	  </row>
+	  <row>
+	    <entry>bif_double_arg</entry>
+	    <entry>double data</entry>
+	  </row>
+	  <row>
+	    <entry>bif_entity_arg</entry>
+	    <entry>XML entity data</entry>
+	  </row>
+	  <row>
+	    <entry>bif_float_arg</entry>
+	    <entry>float data</entry>
+	  </row>
+	  <row>
+	    <entry>bif_long_arg</entry>
+	    <entry>long data</entry>
+	  </row>
+	  <row>
+	    <entry>bif_long_or_char_arg</entry>
+	    <entry>long or character data</entry>
+	  </row>
+	  <row>
+	    <entry>bif_string_arg</entry>
+	    <entry>string data</entry>
+	  </row>
+	  <row>
+	    <entry>bif_string_or_null_arg</entry>
+	    <entry>string or null data</entry>
+	  </row>
+	  <row>
+	    <entry>bif_string_or_wide_or_null_arg</entry>
+	    <entry>strings, widestrings or null data</entry>
+	  </row>
+	  <row>
+	    <entry>bif_strses_arg</entry>
+	    <entry>string session data</entry>
+	  </row>
+	</tbody>
+	</tgroup>
+      </table>
+  </refsect1>
+  <refsect1 id="examples_bif_arg"><title>Examples</title>
+    <example id="ex_bif_len">
+      <title>Creating a function my_length()</title>
+      <para>A function called <function>my_length</function> written by developers, may process
+      a string argument by making a call to
+      <function>bif_string_arg</function>.</para>
+    </example>
+  </refsect1>
+</refentry>
+

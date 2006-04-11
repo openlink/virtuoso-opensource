@@ -1,0 +1,162 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<process name="LoanFlow"
+         targetNamespace="http://samples.cxdn.com"
+         suppressJoinFailure="yes"
+         xmlns:tns="http://samples.cxdn.com"
+         xmlns:services="http://services.cxdn.com"
+         xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+         >
+
+  <!-- *********************************************************************
+         This process invokes a synchronous credit rating service (which
+         throws NegativeCredit exceptions), then  it invokes two asynchronous
+         loan processor services in parallel and finally selects the best loan
+         offer received and returns it (asynchronously) to its caller.
+       *********************************************************************-->
+
+  <partnerLinks>
+    <partnerLink name="client"
+             partnerLinkType="tns:FlowSample"
+             partnerRole="FlowSampleRequester"
+             myRole="FlowSampleProvider"/>
+     <partnerLink name="UnitedLoanService"
+             partnerLinkType="services:LoanService"
+             myRole="LoanServiceRequester"
+             partnerRole="LoanServiceProvider"/>
+    <partnerLink name="AmericanLoanService"
+             partnerLinkType="services:LoanService"
+             myRole="LoanServiceRequester"
+             partnerRole="LoanServiceProvider"/>
+  </partnerLinks>
+
+  <variables>
+    <!-- input of this process -->
+    <variable name="input"
+               messageType="tns:initiateFlowSampleMessage"/>
+  	<!-- output of this process -->
+    <variable name="output"
+               messageType="tns:onFlowSampleResultMessage"/>
+    <!-- input of united loan and american loan-->
+    <variable name="loanApplication"
+               messageType="services:initiateLoanServiceMessage"/>
+    <!-- output of united loan-->
+    <variable name="loanOffer1"
+               messageType="services:onLoanServiceResultMessage"/>
+    <!-- output of american loan-->
+    <variable name="loanOffer2"
+               messageType="services:onLoanServiceResultMessage"/>
+
+  </variables>
+
+
+  <sequence>
+
+    <!-- ************************************************************
+         Receive input from requestor - this is what kicks
+         off this flow. We get passed a loan application business doc
+         ************************************************************ -->
+
+    <receive name="receiveInput" partnerLink="client"
+             portType="tns:FlowSample"
+             operation="initiate" variable="input"
+             createInstance="yes"/>
+
+     <!-- ************************************************************
+         Now we will invoke the 2 loan providers (async web services)
+         in parallel. We send each a LoanApplication bus doc and wait
+         for a LoanOffer to be returned.
+         ************************************************************ -->
+
+    <!-- initialize the input of UnitedLoan and AmericanLoan -->
+    <assign>
+        <copy>
+            <from variable="input" part="parameters" query="//tns:xmlLoanApp"/>
+            <to variable="loanApplication" part="parameters"
+                query="/services:initiateLoanServiceMessage/services:xmlLoanApp"/>
+        </copy>
+    </assign>
+
+    <flow>
+
+    <!-- ************************************************************
+         Invoke the first loan provider (UnitedLoan)
+         ************************************************************ -->
+      <!-- invoke first loan provider -->
+      <sequence>
+
+        <!--  initiate the remote service -->
+        <invoke name="invokeUnitedLoan"
+                partnerLink="UnitedLoanService"
+                portType="services:LoanService"
+                operation="initiate"
+                inputVariable="loanApplication"/>
+
+        <!--  receive the result of the remote service -->
+        <receive name="receive_invokeUnitedLoan"
+                partnerLink="UnitedLoanService"
+                portType="services:LoanServiceCallback"
+                operation="onResult"
+                variable="loanOffer1"/>
+
+      </sequence>
+
+      <!-- ************************************************************
+           Invoke the second loan provider (AmericaLoan)
+           ************************************************************ -->
+      <sequence>
+
+        <!--  initiate the remote service -->
+        <invoke name="invokeAmericanLoan" partnerLink="AmericanLoanService"
+                portType="services:LoanService"
+                operation="initiate"
+                inputVariable="loanApplication"/>
+
+        <!--  receive the result of the remote service -->
+        <receive name="receive_invokeAmericanLoan"
+                partnerLink="AmericanLoanService"
+                portType="services:LoanServiceCallback"
+                operation="onResult"
+                variable="loanOffer2"/>
+
+      </sequence>
+
+    </flow>
+
+
+
+    <!-- ************************************************************
+         And, finally, send the return back to our client who
+         kicked off the whole process.
+         ************************************************************ -->
+    <invoke name="replyOutput"
+            partnerLink="client"
+            portType="tns:FlowSampleCallback"
+            operation="onResult"
+            inputVariable="output"/>
+
+
+  </sequence>
+
+</process>
+

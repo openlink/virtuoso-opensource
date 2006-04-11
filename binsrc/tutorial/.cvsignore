@@ -1,0 +1,16 @@
+virtuoso.lic
+make_tutorial_dav_vad.xml
+make_tutorial_fs_vad.xml
+tutorial_filesystem.vad
+tutorial_dav.vad
+vad_files
+make_tutorial_vad.log
+virtuoso.db
+virtuoso.ini
+virtuoso.lck
+virtuoso.log
+virtuoso.tdb
+virtuoso.trx
+virtuoso.pxa
+Makefile.in
+Makefile

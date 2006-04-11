@@ -1,0 +1,213 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _list, _case, _text, _run, _qid varchar;
+  declare _descr, _xpath, _etalon any;
+  declare _xpath_text varchar;
+  declare _strstr_document, _strstr_proto integer;
+  declare _lex_list any;
+  declare _lex_last_row integer;
+  declare _lex_ctr integer;
+  declare _lexem any;
+  declare _xp_res any;
+  declare _xp_expn, _xp_state, _xp_msg varchar;
+  declare _ms1, _ms2 integer;
+  declare _expected_text varchar;
+  _list := {?'list'};
+  if (_list is null)
+    _list := '';
+  _case := {?'case'};
+  if (_case is null)
+    _case := '';
+  _text := {?'text'};
+  _run := {?'run'};
+  _qid := sequence_next('_');
+?>
+<HTML>
+<BODY TEXT="#000000" LINK="#0000CC" VISITED="#3300CC" BGCOLOR="#EEEEEE" TOPMARGIN=0>
+<?vsp
+  select "DESCR", "_XPATH", "ETALON" into _descr, _xpath, _etalon from "XP"."XP"."TEST_CASES" where "NAME" = _case;
+  _xpath_text := cast (xpath_eval ('string(.)', _xpath) as varchar);
+  _descr := cast (xpath_eval ('string(.)', _descr) as varchar);
+  if (_text is null or _text = '')
+    _text := _xpath_text;
+-- To compare texts, they must be somehow normalized
+  _xpath_text := replace (_xpath_text, '\x0D\x0A', '\x0A');
+  _xpath_text := replace (_xpath_text, '\x09', '\x20\x20\x20\x20\x20\x20\x20\x20');
+  _xpath_text := trim (_xpath_text, '\x0A\x20');
+  _text := replace (_text, '\x0D\x0A', '\x0A');
+  _text := replace (_text, '\x09', '\x20\x20\x20\x20\x20\x20\x20\x20');
+  _text := trim (_text, '\x0A\x20');
+-- Now we know if user has changed the query
+  if (_text = _xpath_text)
+    {
+      ?><H2><?= _list ?>, sample query <?= _case ?></H2><P><B><?= _descr ?></B></P><?vsp
+    }
+  else
+    {
+      ?><H2>Custom Query</H2><?vsp
+    }
+?>
+<FORM
+ACTION="desk.vsp"
+METHOD="POST"
+ENCTYPE="multipart/form-data"
+>
+<INPUT TYPE="HIDDEN" NAME="list" VALUE="<?= _list?>">
+<INPUT TYPE="HIDDEN" NAME="case" VALUE="<?= _case?>">
+<TABLE BORDER=0>
+<TR><TD COLSPAN=2><B>Query text:</B></TD></TR>
+<TR><TD COLSPAN=2><TEXTAREA NAME="text" COLS="80" ROWS="15"><?= _text ?></TEXTAREA></TD></TR>
+<TR><TD ALIGN=LEFT><INPUT TYPE="SUBMIT" NAME="run" VALUE=" COMPILE AND EXECUTE "></TD><TD ALIGN=RIGHT><INPUT TYPE="SUBMIT" NAME="run" VALUE=" Execution plan "></TD></TR>
+</TABLE>
+</FORM>
+<?vsp
+  _expected_text := '';
+  if (_text = _xpath_text)
+    _expected_text := "XP"."XP"."INDENT_XML" ("XP"."XP"."XPER_TO_XTREE"(xpath_eval('./etalon/node()', _etalon, 0)));
+  if (_run is not null and _run = ' COMPILE AND EXECUTE ')
+    {
+      _strstr_document := strstr (_text,'document');
+      _strstr_proto := strstr (_text,'http://');
+      if ( _strstr_proto is null)
+	_strstr_proto := strstr (_text,'virt://');
+      if (_strstr_document is not null and _strstr_proto is not null and _strstr_document < _strstr_proto)
+	{
+	  http ('<HR><B>Sorry, your query will not be executed due to security restrictions.</B>');
+	  return;
+	}
+--      string_to_file (
+--	'query_demo_log.txt',
+--	concat('\n----- QID ', cast (_qid as varchar), ' RUN BEGIN :\n', _text),
+--	-1 );
+      _xp_state := '00000';
+      _xp_msg := 'OK';
+      _xp_expn := concat ('xpath_explain(',WS.WS.STR_SQL_APOS(_text),')');
+      _ms1 := msec_time();
+      _xp_res := exec (_xp_expn, _xp_state, _xp_msg);
+      _ms2 := msec_time();
+      if (_xp_msg <> 'OK')
+	{
+--	  string_to_file (
+--	    'query_demo_log.txt',
+--	    concat('\n----- QID ', cast (_qid as varchar), ' NOT COMPILED'),
+--	    -1 );
+          ?><HR><B>Query compilation failed, SQLCODE <?= _xp_state ?>:</B><BR><PRE><XMP><?vsp http(_xp_msg); ?></XMP></PRE><?vsp
+	}
+      else
+	{
+--	  string_to_file (
+--	    'query_demo_log.txt',
+--	    concat('\n----- QID ', cast (_qid as varchar), ' COMPILED OK'),
+--	    -1 );
+          ?><HR><B>Query compiled successfully.</B> (<?= _ms2 - _ms1 ?> msec.)<BR><?vsp
+	  _xp_state := '00000';
+	  _xp_msg := 'OK';
+	  _xp_expn := concat ('"XP"."XP"."DESK_RUN"(', WS.WS.STR_SQL_APOS(_text), ',', cast ((_ms2-_ms1) as varchar) , ',', WS.WS.STR_SQL_APOS(_expected_text), ', 0)');
+	  exec (_xp_expn, _xp_state, _xp_msg);
+	  if (_xp_msg <> 'OK')
+	    {
+--	      string_to_file (
+--		'query_demo_log.txt',
+--		concat('\n----- QID ', cast (_qid as varchar), ' EXEC FAILED'),
+--	    	-1 );
+	      ?><B>Execution failed, SQLCODE <?= _xp_state ?>:</B><BR><PRE><XMP><?vsp http(_xp_msg); ?></XMP></PRE><?vsp
+	    }
+--	  else
+--	    {
+--	      string_to_file (
+--		'query_demo_log.txt',
+--		concat('\n----- QID ', cast (_qid as varchar), ' EXEC OK'),
+--	    	-1 );
+--	    }
+	}
+    }
+  if (_run is not null and _run = ' Execution plan ')
+    {
+--      string_to_file (
+--	'query_demo_log.txt',
+--	concat('\n----- QID ', cast (_qid as varchar), ' PLAN BEGIN :\n', _text),
+--	-1 );
+      _lex_list := xpath_lex_analyze (_text);
+--      string_to_file (
+--	'query_demo_log.txt',
+--	concat('\n----- QID ', cast (_qid as varchar), ' LEX COMPLETED'),
+--	-1 );
+      ?><HR><B>All lexemes of XPath:</B><TABLE><?vsp
+  _lex_last_row := -1;
+  _lex_ctr := 0;
+  while (_lex_ctr < length (_lex_list))
+    {
+      _lexem := aref (_lex_list, _lex_ctr);
+      if (_lex_last_row <> aref (_lexem, 0))
+	{
+	  if (_lex_last_row > 0)
+	    {
+	      ?></TD></TR><?vsp
+	    }
+	  ?><TR><TD><?= aref (_lexem, 0) ?></TD><TD><?vsp
+	  _lex_last_row := aref (_lexem, 0);
+	  ?><FONT COLOR="#FFFF00"><?vsp
+	  http (repeat ('&nbsp;:&nbsp;', aref (_lexem, 1)));
+	  ?></FONT><?vsp
+	}
+      if (length(_lexem) > 3)
+	{
+	  ?><B><?= aref (_lexem, 2) ?></B><FONT SIZE=-2><?= aref (_lexem, 3) ?></FONT> <?vsp
+	}
+      else
+	{
+	  ?><B>??<?= aref (_lexem, 2) ?>??</B><?vsp
+	}
+      _lex_ctr := _lex_ctr + 1;
+    }
+  ?></TD></TR></TABLE><?vsp
+      _xp_state := '00000';
+      _xp_msg := 'OK';
+      _xp_res := exec (concat ('xpath_explain(',WS.WS.STR_SQL_APOS(_text),')'), _xp_state, _xp_msg);
+      if (_xp_msg <> 'OK')
+	{
+--	  string_to_file (
+--	    'query_demo_log.txt',
+--	    concat('\n----- QID ', cast (_qid as varchar), ' NOT COMPILED'),
+--	    -1 );
+          ?><HR><B>Query compilation failed, SQLCODE <?= _xp_state ?>:</B><BR><PRE><XMP><?= _xp_msg ?></XMP></PRE><?vsp
+	}
+      else
+	{
+--	  string_to_file (
+--	    'query_demo_log.txt',
+--	    concat('\n----- QID ', cast (_qid as varchar), ' EXPLAINED'),
+--	    -1 );
+          ?><HR><B>Execution plan:</B><BR><PRE><?= xpath_explain(_text) ?></PRE><?vsp
+        }
+    }
+  if (_text = _xpath_text)
+    {
+      ?><HR><B>Expected result:</B><?vsp
+      http(_expected_text);
+    }
+?>
+</BODY>
+</HTML>
+

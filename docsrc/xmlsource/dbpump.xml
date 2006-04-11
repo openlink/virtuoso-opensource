@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect2 id="dbpumpdev"><title>DBPump Developers Reference</title>
+
+  <para>DBPump is a VSP application for selective data and schema export of 
+  Virtuoso content.  DBPump is also a backup and restore utility</para>
+
+  <sect3 id="vspintrinsics"><title>VSP - Pages Intrinsics</title>
+
+    <para>The implementation of the DBPUMP VSP pages has been abstracted into 
+    interface content and sensible work.  DBPUMP consists of a number of independent 
+    components each of which can be called by name and VSP pages can be considered 
+    just as a visually convenient method to call this components.  Each page consists 
+    of three parts - header, body and footer.  In header we can see the title of 
+    current page and the set of buttons - jumps to other pages. Page body contains 
+    the current contest and footer currently is empty with exception for possibility 
+    to turn on a debug printing.  All DBPUMP VSP-pages use the  component 
+   'retrieve_oper_pars' explicitly implicitly and we will not refer to this 
+   component later.</para>
+
+  <para>The Dump Page (dump_page.vsp) lets you save the current database schema 
+  and selected tables.  The Schema dump contains:</para>
+  <itemizedlist mark="bullet" spacing="compact">
+    <listitem>creation of all users in file 'users.sql'</listitem>
+    <listitem>creation of new qualifiers in the same file</listitem>
+    <listitem>views section, and normal and XML views are created here in 'views.sql' file</listitem>
+    <listitem>stored procedures in 'procs.sql' file</listitem>
+  </itemizedlist>
+
+  <para>The <emphasis>Current Directory</emphasis> or Folder in the 
+  context of a DBPUMP dump denotes the root directory of the tables 
+  dump.  This directory will contain the schema (if needed) and temporary 
+  files for Isql.  Each table dump will be placed in a subdirectory.  
+  The name of such subdirectories is not the same as the table name because 
+  the name of a table can be too long and/or contain characters considered invalid 
+  by the file system.  The name is devised as a string representation 
+  of subsequent number with suffix '.table'.  In these subdirectories there can be 
+  files of 3 kinds:</para>
+
+  <itemizedlist mark="bullet" spacing="compact">
+    <listitem><emphasis>blob.xxxx</emphasis> files with outlined blobs, file size is 
+    in general limited by 'split_by' option in 'Options' page, if the blob is greater 
+    then 'split_by' parameter,  the current blob file will be closed and the next will be 
+    written without size restriction.  xxxx here means 0000 for first file, 0001 for 
+    second, etc...</listitem>
+    <listitem><emphasis>data.xxxx</emphasis> files with table data.  The same file 
+    length rules apply.  These files have their structure as follows:  
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>magic: "--DBPUMP--\n" written through 
+      'PrpcWriteObject', we should note here that all values in this file 
+      are written via this mechanism.</listitem>
+      <listitem>Raw table name e.g.: 'Demo.demo.Order_Details'</listitem>
+      <listitem>comment defined by user in 'T-Dump' page</listitem>
+      <listitem>serialization of DBPUMP's internal state at the moment of 
+      dump (we will talk about the mechanism of permanent state transmission few later).</listitem>
+      <listitem>the beginning of a SQL insert statement up to the data values, this 
+      will be used for data restore.  Certainly this can be easily calculated 
+      through column info but in such form it is very useful to control data 
+      serialization and in general you can consider it as additional reserve point.</listitem>
+      <listitem>reserve</listitem>
+      <listitem>number of 'before tables' - tables which should be created before 
+      the current one (and, obviously, drooped after it)</listitem>
+      <listitem>above described number of strings with tables names</listitem>
+      <listitem>number of 'after tables' - which are antipodes of 'before tables'</listitem>
+      <listitem>above described number of strings with tables names</listitem>
+      <listitem>number of schema clauses which are:  drops, table and indices 
+      creations, grants and triggers</listitem>
+      <listitem>above described number of strings with SQL statements</listitem>
+      <listitem>number of columns</listitem>
+      <listitem><para>for each column we have:</para>
+        <simplelist>
+        <member>column type as returned by ODBC SQLColumns</member>
+        <member>column bind type - as was used in ODBC SQLBindCol for main loop's 'select'</member>
+        <member>is that blob flag</member>
+        <member>column name</member>
+        <member>reserve</member>
+        </simplelist>
+        </listitem>
+
+        <listitem>the rest of the file is filled with data row by row, column by column 
+        in the same order as filled above.  The number of 'PrpcWriteObject' calls 
+        per column depends only on the column type, usually this is 1 call for integers 
+        or varchar, up to 7 calls in case of TIMESTAMP.  The most complex case is the 
+        blob type (SQL_LONGVARCHAR, SQL_LONGVARBINARY, SQL_WLONGVARCHAR).  If blob length 
+        is less then some threshold (currently 64 bytes) it will be written as varchar 
+        with pre-written integer zero, in other case the blob's record consists of three 
+        items: integer length in bytes, starting position of blob in file, the name of blob file.</listitem>
+      </itemizedlist>
+      </listitem>
+
+      <listitem><emphasis>text.xxxx</emphasis> files for dump in plain text mode, this 
+      is very similar to what you get at 'T-Restore' procedure with the following 
+      exceptions:
+        <itemizedlist mark="bullet" spacing="compact">
+          <listitem>It will not be possible to restore this data by no means 
+          except manual Isql call</listitem>
+          <listitem>even this will not work if your table has foreign key(s) 
+          and/or super-table</listitem>
+          <listitem>each table slice will have stored procedure with table creation, 
+          but only in first one there will be explicit call of this procedure</listitem>
+        </itemizedlist>
+        </listitem>
+      <listitem><emphasis>isql.code</emphasis> temporary log file with all SQL 
+      statements concerning this table</listitem>
+    </itemizedlist>
+
+    <para>Now let's glance at the T-Dump page itself.  In the upper area you can see two 
+    list-box for tables selection.  In left one there are available tables.  
+    With buttons '&lt;', '&lt;&lt;', '&gt;&gt;' and '&gt;' you can manipulate by them.  
+    It should be noticed that the number of really dumped tables can be greater then 
+    the number of selected tables.  The reason is that there exists dependencies with 
+    other tables via foreign keys and super-tables.  Below table filters and comments 
+    are placed.  Filter works on the list of available tables, to activate them you 
+    should enter some values in one of them and press the Refresh button below.</para>
+
+
+    <para>The Filter Options page (filter_options.vsp) represents all options for filtering management.</para>
+
+    <para>The Advanced Dump Options page (dump_options.vsp) represents all options and execution parameters which 
+    can be found in DBPUMP VSP pages.</para>
+
+    <para>The Advanced Restore Options page (restore_options.vsp) represents all options and execution 
+    parameters which can be found in DBPUMP VSP pages.</para>
+
+    <para>The Password page (passwd_page.vsp) is a gate way from interface to action pages.</para>
+
+    <para>The Restore page (restore_page.vsp) can restore previously saved state 
+    of selected tables.  This page uses following DBPUMP components:</para>
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem><emphasis>choice_rpath</emphasis> gets tree-like list of dbpump's subtree</listitem>
+      <listitem><emphasis>choice_rschema</emphasis> - gets *.dbk sub folders in current folder</listitem>
+    </itemizedlist>
+
+    <para>The Browse page (browse_page.vsp) can choice real path from dbpump's server's root. 
+    This page uses following DBPUMP components:</para>
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem><emphasis>choice_rpath</emphasis> gets tree-like list of dbpump's subtree</listitem>
+      <listitem><emphasis>choice_rschema</emphasis> gets *.dbk sub folders in current folder</listitem>
+    </itemizedlist>
+
+    <para>The algorithm of those page's action is relatively complex.  For every requested table 
+    we should recursively get lists of dependent tables.  As result of this procedure we will 
+    get new (probably greater) ordered list of requested tables.  Having this list we can 
+    execute a set of sequent ODBC calls through 4 passes:</para>
+
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem>drops in back order</listitem>
+      <listitem>creations in normal order</listitem>
+      <listitem>rows of data in normal order</listitem>
+      <listitem>triggers creations in any order</listitem>
+    </itemizedlist>
+
+    <para>The result of the conversion piece by piece will be executed and 
+    a common error output will be returned to http client.  
+    </para>
+  
+    <para>The Dump Results page (dump_itself.vsp) is an action page.  It calls 
+    'dump_tables' component and displays results.</para>
+
+    <para>The Restore Results page (restore_itself.vsp) is an action page.  It calls 
+    'restore_tables' component and displays results.</para>
+
+  </sect3>
+
+  <sect3 id="context"><title>DBPUMP's context.</title>
+    <para>This context consists of the set of named and internally registered 
+    character values.  Internally each component can get a value of every such 
+    value and use its value by any way.  There exists the only parameter with 
+    pre-defined name 'all_together_now' and trying to obtain its value you'll 
+    get the serialization of all other parameters. Symmetrically, an attempt to 
+    set value of this parameter will yield to deserialization of previously 
+    saved state.  Consequently every VSP-page should have hidden input element 
+    with such name.  Because of every VSP page in first steps runs 'retrieve_oper_pars' 
+    (or its relative) which returns deserialization of all parameters including that 
+    (without recursion, sure).  So if we have synonymous hidden field, at hotel 
+    form submission its value will be posted and values of all (not only existing 
+    in current form) parameters will be restored.  So if hotel form has input elements 
+    with registered in DBPUMP names, values of this parameters will be also accepted 
+    by DBPUMP and serialized in the next iteration of 'all_together_now'.</para>
+  </sect3>
+
+  <sect3 id="commandline"><title>DBPUMP's command line.</title>
+    <para>DBPUMP has different variants of execution:</para>
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem><para>normal. Command line syntax is: </para> 
+<programlisting>
+dbpump component-name [ component-arg [ output-file-name ] ] 
+  [oper-par1-name=oper-par1-value] ... [oper-parN-name=oper-parN-value]
+</programlisting>
+      </listitem>
+      <listitem><para>via file: dbpump @file-name and in this file we 
+      should store all arguments in the first(normal) form</para></listitem>
+    </itemizedlist>
+
+    <para>component-name is one of the set of internally registered components 
+    names, if this name is unknown the result will be void.  Some components have 
+    arguments, some not.  Extra arguments can not break something  and if component 
+    doesn't require argument but you are interested in file output, you can freely 
+    pass as argument whatever you want.  All parameters have names consisting only 
+    from printable chars but in value of parameter there can be placed any string.  
+    Due to this, values of parameters should be passed in urlified form (i.e. ' '='+', 
+    printable chars as is, other in form '%xx').</para>
+  </sect3>
+
+  <sect3 id="components"><title>DBPUMP's Components.</title>
+    <para>DBPUMP does not have its own behavior, all that it can do is to construct 
+    operational parameters pool, run required component, pass to it argument and 
+    print out component's messages.  In fact DBPUMP is a set of independent 
+    mini-programs under one roof.  Such components are:</para>
+
+    <itemizedlist mark="bullet" spacing="compact">
+					<listitem>
+	  'retrieve_oper_pars' - we have already talked about it. This component just prints all not-empty parameters in form:
+	  par1-name=par1-urlified-value&amp;par2-name=par2-urlified-value&amp;...
+	  Used operational parameters: all or required 
+	  Argument: '*' for all or list of parameters with delimiter '@'
+					</listitem>
+					<listitem>
+	  'select_datasources' - when on WIN32 DBPUMP was not linked with native odbc32.lib this returns a list of available datasources in form:
+	  dsn1-name=dsn1-description&amp;dsn2-name=dsn2-description&amp;...
+	  In other cases this returns nothing.
+	  Used operational parameters: none 
+	  Argument: none
+					</listitem>
+					<listitem>
+	  'retrieve_tables' - this returns list of available tables in similar form:
+	  table1-name=table1-name&amp;table2-name=table2-name&amp;...
+	  Used operational parameters:
+						<itemizedlist mark="bullet" spacing="compact">
+							<listitem>
+		  'datasource'
+							</listitem>
+							<listitem>
+		  'user'
+							</listitem>
+							<listitem>
+		  'password'
+							</listitem>
+							<listitem>
+		  'qualifier'
+							</listitem>
+						</itemizedlist>
+	  Argument: none
+					</listitem>
+					<listitem>
+	  'choice_tables' - this will give you the list of tables selected for dump in the same form as previous component.
+	  Used operational parameters:
+						<itemizedlist mark="bullet" spacing="compact">
+							<listitem>
+		  'choice_sav' - summarization of all 'choice_tables' from listbox with such name
+							</listitem>
+						</itemizedlist>
+	  Argument: none
+					</listitem>
+					<listitem>
+	  'choice_rpath' - this component will give you the sub-tree of server file system. This component will recursively fall into each 
+	  sub folder (including symlinks, this generates the problem of cycling, this situation yields to zero output after maximal depth will be achieved). 
+	  The root folder of this sub-tree will be placed in  'ServerRoot' parameter of section [HTTPServer] of Virtuoso config file. 
+	  Each sub folders will occupy one pair of output:
+	  real_path1=indented-name1&amp;real_path2=indented-name2&amp;...
+	  Used operational parameters: none 
+	  Argument: none
+					</listitem>
+					<listitem>
+	  'choice_rdir' - returns the content of current folder. To do this it should descend in all sub folders and try to find file 'data.0000'.
+	  If it exists, the header should be read and table name found. The result will be in form:
+	  table1-name=table1-name&amp;table2-name=table2-name&amp;...
+	  Used operational parameters:
+						<itemizedlist mark="bullet" spacing="compact">
+							<listitem>
+		  'rpath' - selected row in corresponding listbox
+							</listitem>
+						</itemizedlist>
+	  Argument: none
+					</listitem>
+					<listitem>
+	  'dump_tables' this component will try to do the above described procedure of tables dump, the error and info output of which 
+	  will be put into operational parameter 'result' and then all parameters will be output as in 'retrieve_oper_pars'.
+	  This component is called from 'dump_tables_itself.vsp'
+	  Used operational parameters:
+						<itemizedlist mark="bullet" spacing="compact">
+							<listitem>
+		  'datasource'
+							</listitem>
+							<listitem>
+		  'user'
+							</listitem>
+							<listitem>
+		  'password'
+							</listitem>
+							<listitem>
+		  'comment'
+							</listitem>
+							<listitem>
+		  'dump_path' remote path, the root path for all dump
+							</listitem>
+							<listitem>
+		  'dump_dir' remote path, the name of dump folder, if not ended with '.dbk', will be concated with it
+							</listitem>
+							<listitem>
+		  'choice_sav' - summarization of all 'choice_tables' from listbox with such name
+							</listitem>
+							<listitem>
+		  'table_defs' - if is equal to 'on', the create table statement will be included into the dump
+							</listitem>
+							<listitem>
+		  'triggers' - if is equal to 'on', the create trigger statements will be included into the dump
+							</listitem>
+							<listitem>
+		  'stored_procs' - if is equal to 'on', the create procedure statements will be put into dump root's procs.sql file
+							</listitem>
+							<listitem>
+		  'constraints' - if is equal to 'on', the create index statements will be included into the dump
+							</listitem>
+							<listitem>
+		  'constraints' - if is equal to 'on', the foreign keys create statements will be included into the dump
+							</listitem>
+							<listitem>
+		  'views' - if is equal to 'on', the create view will be put into dump root's views.sql file
+							</listitem>
+							<listitem>
+		  'users' - if is equal to 'on', the create user statements will be put into dump root's users.sql file
+							</listitem>
+							<listitem>
+		  'grants' - if is equal to 'on', the grant statements will be included into dump file
+							</listitem>
+							<listitem>
+		  'table_data' - if is equal to 'on', the data themselves will be included into dump file
+							</listitem>
+							<listitem>
+		  'change_qualifier' - if is equal to 'on', all statements will be put with the qualifier from 'new_qualifier'
+							</listitem>
+							<listitem>
+		  'change_owner' - if is equal to 'on', all statements will be put with the owner from 'new_owner'
+							</listitem>
+							<listitem>
+		  'new_qualifier' - this will be used if 'change_qualifier' is set to 'on'
+							</listitem>
+							<listitem>
+		  'new_owner' - this will be used if 'change_owner' is set to 'on'
+							</listitem>
+							<listitem>
+		  'custom_qual' - integer, if not zero, the value from 'selected_qualifier' will be used as filter in preocedures and views output but not in tables filter such as tables can have foreign references across qualifiers.
+							</listitem>
+							<listitem>
+		  'selected_qualifier' - this will be used when 'custom_qual' is not zero
+							</listitem>
+							<listitem>
+		  'split_by' - integer, means the lenght in MB of created data and blob slice.
+							</listitem>
+						</itemizedlist>
+	  Argument N1: '*' for all or list of parameters with delimiter '@'
+					</listitem>
+					<listitem>
+	  'restore_tables' - the same but the procedure is tables restore.
+	  This component is called from 'restore_tables_itself.vsp'
+	  Used operational parameters:
+						<itemizedlist mark="bullet" spacing="compact">
+							<listitem>
+		  'datasource'
+							</listitem>
+							<listitem>
+		  'user'
+							</listitem>
+							<listitem>
+		  'password'
+							</listitem>
+							<listitem>
+		  'dump_path' remote path, the root path for all dump
+							</listitem>
+							<listitem>
+		  'dump_dir' remote path, the name of dump folder, if not ended with '.dbk', will be concated with it
+							</listitem>
+							<listitem>
+		  'choice_sav' - summarization of all 'choice_tables' from listbox with such name
+							</listitem>
+						</itemizedlist>
+	  Argument: none
+					</listitem>
+				</itemizedlist>
+
+			</sect3>
+	      	<sect3 id="sql_api">
+			<title>SQL API.</title>
+			<para>
+				<itemizedlist mark="bullet" spacing="compact">
+					<listitem>
+"DB"."DBA"."BACKUP_ALL_VIA_DBPUMP"  - returns varchar. Backs up tables with all qualifiers. Arguments are:
+					<itemizedlist mark="bullet" spacing="compact">
+						<listitem>
+in username varchar
+						</listitem>
+						<listitem>
+in passwd varchar - password
+						</listitem>
+						<listitem>
+in datasource varchar - something like 'localhost:1111'
+						</listitem>
+						<listitem>
+in dump_path varchar - means 'dump directory' in 'Dump' page.
+						</listitem>
+						<listitem>
+in dump_dir varchar - means 'dump name' in 'Dump' page.
+						</listitem>
+					</itemizedlist>
+					</listitem>
+					<listitem>
+"DB"."DBA"."BACKUP_SCHEMA_VIA_DBPUMP"  - returns varchar. Backs up tables with selected qualifier. Arguments are:
+					<itemizedlist mark="bullet" spacing="compact">
+						<listitem>
+in username varchar
+						</listitem>
+						<listitem>
+in passwd varchar - password
+						</listitem>
+						<listitem>
+in datasource varchar - something like 'localhost:1111'
+						</listitem>
+						<listitem>
+in qualifier varchar - selected qualifier
+						</listitem>
+						<listitem>
+in dump_path varchar - means 'dump directory' in 'Dump' page.
+						</listitem>
+						<listitem>
+in dump_dir varchar - means 'dump name' in 'Dump' page.
+						</listitem>
+					</itemizedlist>
+					</listitem>
+					<listitem>
+"DB"."DBA"."RESTORE_DBPUMP'S_FOLDER"  - returns varchar. Restores what you have backed up. Arguments are:
+					<itemizedlist mark="bullet" spacing="compact">
+						<listitem>
+in username varchar
+						</listitem>
+						<listitem>
+in passwd varchar - password
+						</listitem>
+						<listitem>
+in datasource varchar - something like 'localhost:1111'
+						</listitem>
+						<listitem>
+in dump_path varchar - means 'dump directory' in 'Dump' page.
+						</listitem>
+						<listitem>
+in dump_dir varchar - means 'dump name' in 'Dump' page.
+						</listitem>
+					</itemizedlist>
+					</listitem>
+				</itemizedlist>
+</para>
+			</sect3>
+		</sect2>

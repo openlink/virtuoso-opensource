@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_internal_type_name">
+  <refmeta>
+    <refentrytitle>internal_type_name</refentrytitle>
+    <refmiscinfo>type</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>internal_type_name</refname>
+    <refname>dv_type_title</refname>
+    <refpurpose>returns the internal type name of the argument</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_internal_type_name">
+      <funcprototype id="fproto_internal_type_name">
+        <funcdef><function>internal_type_name</function></funcdef>
+        <paramdef><parameter>internal_type</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_dv_type_title">
+      <funcprototype id="fproto_dv_type_title">
+        <funcdef><function>dv_type_title</function></funcdef>
+        <paramdef><parameter>internal_type</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+<para>internal_type_name returns a string which is a human-readable name for an
+    internal_type integer given as its argument.  The function
+    <function>dv_type_title()</function> is an alias of
+    <function>internal_type_name()</function>.</para>
+<screen>
+internal_type_name (internal_type ('kumikala'))
+		-&gt; 'SHORT_STRING'
+select internal_type_name(COL_DTP) from SYS_COLS;
+</screen>
+
+</refsect1>
+</refentry>
+
+

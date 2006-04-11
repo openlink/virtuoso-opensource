@@ -1,0 +1,263 @@
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+create procedure VSP_GETSTATUSPICTURE(in status varchar, in id integer)
+{
+ declare st varchar;
+ if (status is null) {
+  st:='not loaded';
+ } else
+  st:=status;
+ 
+ declare next_operation varchar;
+ declare id_str varchar;
+
+ id_str:=sprintf('%d',id);
+
+ IF (status='loaded') {
+  next_operation:='parse';
+ } ELSE IF (status='parsed') {
+  next_operation:='vld';
+ } ELSE IF (status='validated') {
+  next_operation:='vld';
+ } ELSE
+  next_operation:='load';
+
+  http(concat(
+	'<a href=\"main.vsp?op=',	next_operation, '&id=', id_str, '\">',
+	'<b>',
+	next_operation,
+	'</b>',
+	'</a>'));
+};
+
+CREATE PROCEDURE vsp_rawoutput(IN str VARCHAR)
+{
+ DECLARE httplog VARCHAR;
+ DECLARE https ANY;
+
+ https:=string_output();
+ http_value(str,NULL,https);
+-- httplog:=replace (string_output_string(https),' ','&nbsp;');
+-- httplog:=replace (string_output_string(https),'\t','&nbsp;');
+ 
+ return string_output_string(https);
+-- return str;
+};
+
+CREATE PROCEDURE vsp_lognormalize (IN lg VARCHAR)
+{
+ DECLARE httplog VARCHAR;
+
+ httplog := vsp_rawoutput (lg);
+ 
+ RETURN concat ('<table width=1000> <tr><td><pre> ',httplog, '</pre></td></tr></table>');
+};
+
+CREATE PROCEDURE vsp_showxml (IN id INTEGER)
+{
+ http (sprintf('<a href=\"xml.vsp?id=%d\"> xml&nbsp;doc </a>',id));
+};
+
+CREATE PROCEDURE vsp_load (IN id INTEGER, IN defprefix VARCHAR)
+{
+ DECLARE base VARCHAR;
+ DECLARE prefix VARCHAR;
+ DECLARE filename VARCHAR;
+
+ IF (NOT EXISTS (SELECT xt_id FROM xml_text WHERE xt_id=id)) 
+  RETURN;
+
+ SELECT xt_file INTO filename FROM xml_text WHERE xt_id=id;
+ SELECT value INTO base FROM vsp_config WHERE name='base';
+ IF (defprefix IS NULL)
+  {
+   SELECT xt_prefix INTO prefix FROM xml_text WHERE xt_id = id;
+  }   
+ ELSE
+  prefix := defprefix;
+
+ FOR SELECT xt_base FROM xml_text WHERE xt_id = id
+  DO {
+    declare _base varchar;
+    if (xt_base IS NULL) {
+       _base:=base;
+    } ELSE
+       _base:=xt_base;
+    _base := concat (prefix, _base);  
+    UPDATE xml_text SET	xt_log='loaded',
+			xt_status='loaded',
+			xt_text=xml_uri_get(_base,filename)  
+      WHERE xt_id=id;
+  };
+};
+
+CREATE PROCEDURE xsd_load_all(IN prefix VARCHAR)
+{
+ declare cnt integer;
+ cnt := 0; 
+ FOR SELECT xt_id FROM xml_text
+ DO {
+WHENEVER SQLSTATE '39000' GOTO cont; 
+  vsp_load(xt_id, prefix);
+  cnt:=cnt+1;
+cont:
+  commit work;
+ }
+ return sprintf('%d documents loaded',cnt); 
+}
+
+CREATE PROCEDURE vsp_parse(IN id INTEGER, IN defprefix VARCHAR)
+{
+ DECLARE text VARCHAR;
+ DECLARE base VARCHAR;
+ DECLARE prefix VARCHAR;
+
+
+ IF (NOT EXISTS (SELECT xt_id FROM xml_text WHERE xt_id=id)) 
+  RETURN;
+ 
+ SELECT value INTO base FROM vsp_config WHERE name='base';
+ 
+ IF (defprefix IS NULL)
+ {
+  SELECT xt_prefix INTO prefix FROM xml_text WHERE xt_id=id;
+ }
+ ELSE
+  prefix := defprefix;
+
+ FOR SELECT xt_base FROM xml_text WHERE xt_id = id
+  DO {
+    declare _base varchar;
+    if (xt_base IS NULL) {
+       _base:=base;
+    } ELSE
+       _base:=xt_base;
+     _base:=concat(prefix, _base);
+     UPDATE xml_text 
+      SET 	xt_xml=xml_persistent(
+	xt_text,
+	_base,
+	'x-any',
+	'Validation=OFF FsaBadWs=IGNORE BuildStandalone=ENABLE'),
+	xt_status='parsed',
+	xt_log='parsed'
+      WHERE xt_id = id;
+  };
+
+ RETURN;
+};
+
+CREATE PROCEDURE vsp_validate(IN id INTEGER, IN defprefix VARCHAR)
+{
+
+ DECLARE base VARCHAR;
+ DECLARE prefix VARCHAR;
+ DECLARE schema_base VARCHAR;
+
+ IF (NOT EXISTS (SELECT xt_id FROM xml_text WHERE xt_id=id)) 
+  RETURN;
+ 
+ SELECT value INTO base FROM vsp_config WHERE name='base';
+ SELECT value INTO schema_base FROM vsp_config WHERE name='schema_base';
+ 
+ IF (defprefix IS NULL) 
+ {
+  SELECT xt_prefix INTO prefix FROM xml_text WHERE xt_id=id;
+ }
+ ELSE
+  prefix:=defprefix;
+
+ FOR SELECT xt_base FROM xml_text WHERE xt_id = id
+  DO {
+    declare _base varchar;
+    if (xt_base IS NULL) {
+       _base:=schema_base;
+    } ELSE
+       _base:=xt_base;
+
+      _base:=concat(prefix,_base);	 
+--    UPDATE xml_text 
+--     SET 	xt_log=xml_validate_schema (
+--		xt_text,
+--		_base,
+--		xt_file,
+--		0, 
+--		_base, 
+--		'UTF-8', 	
+--		'x-any', 
+--		'Validation=SGML FsaBadWs=IGNORE BuildStandalone=ENABLE MaxErrors=100'),
+--	xt_status='validated'
+--   WHERE xt_id=id;
+
+   DECLARE _text, _file VARCHAR;
+   DECLARE _log LONG VARCHAR;
+   SELECT xt_text,xt_file INTO _text, _file FROM xml_text WHERE xt_id=id;
+   declare _cfg_str varchar;	
+   SELECT value INTO _cfg_str FROM vsp_config WHERE name='schema config';  
+   if (_file like '%.xsd')
+    {	
+	 _log:=xml_load_schema_decl (
+		_base,
+		_file, 
+		'UTF-8', 	
+		'x-any');
+    }
+   else {
+	_log:=xml_validate_schema (
+		_text,
+		0,
+		_base,
+		'UTF-8',
+		'x-any',
+		_cfg_str);
+   };	
+   UPDATE xml_text SET xt_log=_log,xt_status='validated' WHERE xt_id=id;
+  };
+
+ RETURN;
+};
+CREATE PROCEDURE xsd_validate_all(IN prefix VARCHAR)
+{
+ declare res varchar;
+ res := ''; 
+ FOR SELECT xt_id,xt_base, xt_file, xt_status FROM xml_text 
+ DO {
+  res := concat (xt_base, '/',xt_file,' is ');	
+  IF (xt_status IS NOT NULL)
+   {
+     vsp_validate (xt_id, prefix);
+     result (concat (res, 'PASSED:'));
+   } 
+  ELSE
+   {
+     res := concat (res, 'not loaded');
+   }
+   commit work;
+ }
+} 
+
+create procedure SET_CFG_VALUE (in nm varchar, in val varchar)
+{
+  IF ( (select name from vsp_config where name=nm) IS NULL)
+	insert into vsp_config values(nm,val);
+  ELSE
+	update vsp_config set value=val where name=nm;
+} 

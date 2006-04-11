@@ -1,0 +1,106 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare _sstart, _sint, _tbl, _rtbl varchar;
+if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+_sstart := datestring (now());
+_sint := 10;
+_tbl := get_keyword ('tbl', params);
+_rtbl := get_keyword ('rtbl', params);
+if (_rtbl is null or _rtbl = '')
+  {
+    http ( sprintf ('<p>Error: %s doesn''t exists in snapshot table</p>', _tbl));
+  }
+if ( get_keyword ('DELETE', params) = 'Delete')
+    delete from SYS_SCHEDULED_EVENT where SE_NAME = _rtbl;
+if ( get_keyword ('PROCESS', params) = 'yes')
+  {
+    if (get_keyword ('Add', params) = 'Add')
+      {
+    	_sstart := get_keyword ('sstart', params);
+    	_sint := atoi (get_keyword ('sint', params));
+	if (exists (select 1 from SYS_SCHEDULED_EVENT where SE_NAME = _rtbl))
+	  {
+	    update SYS_SCHEDULED_EVENT
+	      set SE_START = cast (_sstart as datetime),
+	          SE_INTERVAL = _sint
+	          where SE_NAME = _tbl;
+	  }
+	else
+	  insert into SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL)
+	    values (_rtbl, cast (_sstart as datetime), _sint,
+	      concat ('UPDATE SNAPSHOT ', _rtbl));
+      }
+  }
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<title>
+Snapshot replication Scheduled Update
+</title>
+<body>
+<H1>Snapshot replication Scheduled Update</H1>
+<p>Press &quot;Add&quot; to define or modify or &quot;Delete&quot; to remove scheduled update for &quot;<?= _rtbl ?>&quot;</p>
+<?include ../adm_js_check.vsp ?>
+<form action="snp_sched.vsp">
+<table>
+<tr><td>Description</td><td><strong><?= _tbl ?></strong></td></tr>
+<tr><td>Start at</td><td><input type="text" name="sstart" value="<?= _sstart ?>"></td></tr>
+<tr><td>Interval</td><td><input type="text" name="sint" value="<?= _sint ?>"></td></tr>
+<tr><td colspan="2"><table>
+<tr><td><input type="submit" name="Add" value="Add"></td>
+<td><input type="submit" name="DELETE" value="Delete"></td>
+<td><!--input type="Button" value="Cancel" name="Cancel" onclick="location.replace ('snp_main.vsp')"--></td></tr>
+</table></td></tr>
+</table>
+<input type="hidden" name="rtbl" value="<?= _rtbl ?>">
+<input type="hidden" name="PROCESS" value="yes">
+<input type="hidden" name="tbl" value="<?= _tbl ?>">
+</form>
+<hr>
+
+<p><strong>Snapshot replications with scheduled update</strong></p>
+<table>
+<th bgcolor=silver>Description</th>
+<th>Start on</th>
+<th>Interval</th>
+<th>Last executed</th>
+<?vsp
+declare _cnt integer;
+_cnt := 0;
+for select SE_NAME, SE_START, SE_INTERVAL, SE_LAST_COMPLETED from SYS_SCHEDULED_EVENT where SE_SQL like 'UPDATE SNAPSHOT%' do {
+  _cnt := _cnt + 1;
+  http (concat ('<tr><td>',
+	SE_NAME, '</td><td align="right">',
+	subseq (cast (SE_START as varchar), 0, 19), '</td><td align="right">',
+	cast (SE_INTERVAL as varchar), '</td><td align="right">',
+	subseq (cast (SE_LAST_COMPLETED as varchar), 0 , 19), '</td></tr>'));
+}
+  if (_cnt < 1)
+    http ('<tr><td colspan="4"><table><tr align="center"><td>*** no scheduled updates defined ***</td></tr></table></td></tr>');
+?>
+</table>
+<?include ../admin_footer.vsp ?>
+</body>
+</html>

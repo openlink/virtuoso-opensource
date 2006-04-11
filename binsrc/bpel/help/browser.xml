@@ -1,0 +1,45 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+  <sect1 id="browser">
+    <title>OpenLink BPEL Process Manager Upload file</title>
+    <para>This page shows uploads file. This file may be bpel file for the process, wsdl file for the process, or wsdl for the partner link of the process.</para>
+    <simplelist>
+       <member>To choose file upload option check one of the radio boxes URL or File. If URL radio box is checked, you have to enter a valid file location. If the file expects authentication, you have to enter in the User field the user name and in the Password field the password for authentication of the file.</member>
+       <member><ulink url="i/import_data_16.png" alt="Upload"/> Click to upload a file which will be received from the entered URL or choosen from the file upload control.</member>
+       <member><ulink url="i/back_16.png" alt="Back"/> Click to return back to the previous page. This will close the Upload file page.</member>
+    </simplelist>
+    <sect2 id="pu_fields">
+      <title>Form fields</title>
+      <sect3 id="pu_file">
+          <title>File</title>
+          <para>When this radio box is checked, you have to choose a file from the "Browse". No relative references inside file will be accepted.</para>
+      </sect3>
+      <sect3 id="pu_url">
+          <title>URL</title>
+          <para>When this radio box is checked, you have enter a valid file location. If the file expects authentication, you have to enter in the User and Password fields the user name and password for the authentication.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+</HelpTopic>

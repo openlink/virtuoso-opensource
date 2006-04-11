@@ -1,0 +1,148 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="incoming_msg" xmlns:v="http://www.openlinksw.com/vspx/" decor="bpel_decor.vspx" style="bpel_style.xsl" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+<v:method name="do_redirect" arglist="in url varchar"><![CDATA[
+  url := vspx_uri_add_parameters (url, sprintf ('sid=%s&realm=%s',self.sid,self.realm));
+  http_request_status ('HTTP/1.1 302 Found');
+  http_header ('Location: '||url||'\r\n');
+]]></v:method>
+
+  <v:on-init>
+    set isolation='committed';
+  </v:on-init>
+  <vm:pagewrapper>
+    <v:variable persist="temp" name="r_count" type="integer" default="0"/>
+    <vm:pagetitle>OpenLink BPEL Process Manager Debugger Console Waiting messages</vm:pagetitle>
+    <vm:pagebody>
+      <v:form name="msg" type="simple" method="POST">
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+        <tr>
+	  <th class="info" colspan="3">Debug message queue</th>
+        </tr>
+        <tr>
+          <td colspan="3">
+            <?vsp http(sprintf('<a target="_blank"  href="help.vspx?id=incoming&sid=%s&realm=%s\r\n"><img title="Help" alt="Help" src="i/help_24.gif" border="0" /></a>', self.sid ,self.realm));?>
+            <?vsp http(sprintf('<a target="_blank"  href="help.vspx?id=incoming&sid=%s&realm=%s\r\n"> Help</a>', self.sid ,self.realm));?>
+            <?vsp http(sprintf('<a href="incoming.vspx?sid=%s&realm=%s\r\n"><img alt="Refresh" title="Refresh" src="i/ref_24.png" border="0" /></a>', self.sid ,self.realm));?>
+            <?vsp http(sprintf('<a href="incoming.vspx?sid=%s&realm=%s\r\n"> Refresh</a>', self.sid ,self.realm));?>
+          </td>
+        </tr>
+	    <tr>
+	      <td>
+		Look for messages from instances in the below list.
+		<!--<v:url name="u1" value="Refresh page" url="incoming.vspx" />-->Refresh page to see possible changes.
+	      </td>
+	    </tr>
+	<tr><td width="90%">
+	<table id="contentlist" width="100%" cellpadding="0" cellspacing="0">
+	    <tr>
+	      <th>Date</th>
+	      <th>Direction</th>
+	      <th>Operation</th>
+	      <th>Process name</th>
+	      <th>Instance ID</th>
+	      <th>Partner</th>
+	      <th>Endpoint URL</th>
+	      <th> </th>
+	    </tr>
+	<v:data-set name="ds" nrows="10" scrollable="1" edit="1" cursor-type="dynamic">
+	  <v:sql><![CDATA[select bdm_ts, bdm_inout, bdm_plink, bdm_recipient, bdm_id, bdm_script, bdm_sender_inst, bdm_oper from BPEL..dbg_message order by bdm_id asc]]></v:sql>
+	    <v:template name="repeater" type="repeat">
+	      <v:template name="no_rows" type="if-not-exists">
+		<tr><td colspan="7">Debug Queue is empty</td></tr>
+	      </v:template>
+	      <v:template name="template4" type="browse">
+		<?vsp
+                  self.r_count := self.r_count + 1;
+                  http (sprintf ('<tr bgcolor="%s">', case when mod (self.r_count, 2) then '#fefefe' else '#efefef' end));
+                ?>
+		  <td align="right"><v:label value="--BPEL..date_fmt ((control.vc_parent as vspx_row_template).te_rowset[0])"/></td>
+		  <td align="right"><v:label value="--case when (control.vc_parent as vspx_row_template).te_rowset[1] = 1 then 'in' else 'out' end"/></td>
+		  <td align="right"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[7]"/></td>
+		  <td align="right">
+		    <v:url name="scpu1" value="" url="process.vspx">
+		      <v:after-data-bind><![CDATA[
+			declare scp int;
+			scp := (control.vc_parent as vspx_row_template).te_rowset[5];
+			control.ufl_value := (select bs_name from BPEL..script where bs_id = scp);
+			control.vu_url := sprintf ('process.vspx?id=%d', scp);
+			]]>
+		      </v:after-data-bind>
+		    </v:url>
+		  </td>
+		  <td align="right">
+		    <v:url name="inst1" value="--(control.vc_parent as vspx_row_template).te_rowset[6]" url="status.vspx" format="%d" enabled="--case when (control.vc_parent as vspx_row_template).te_rowset[6] > 0 then 1 else 0 end">
+		      <v:after-data-bind><![CDATA[
+			declare scp, inst int;
+			scp := (control.vc_parent as vspx_row_template).te_rowset[5];
+			inst := (control.vc_parent as vspx_row_template).te_rowset[6];
+			control.vu_url := sprintf ('status.vspx?id=%d&nid=%d', scp, inst);
+			]]>
+		      </v:after-data-bind>
+		    </v:url><img src="i/1pixdot.gif" border="0" height="1" width="1"/>
+		  </td>
+		  <td align="right"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[2]"/><img src="i/1pixdot.gif" border="0" height="1" width="1"/></td>
+		  <td align="right"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[3]"/><img src="i/1pixdot.gif" border="0" height="1" width="1"/></td>
+		  <td align="center">
+                    <v:button action="simple" value="i/tools_16.png" xhtml_title="Actions" style="image" xhtml_alt="Actions" text="&#160;Actions">
+                      <v:on-post>
+                        declare spage varchar;
+                        declare sty,smid any;
+                        sty := (control.vc_parent as vspx_row_template).te_rowset[1];
+                        smid := (control.vc_parent as vspx_row_template).te_rowset[4];
+                        if  (sty = 0)
+                          spage := 'imsgpr.vspx';
+                        else if (sty = 1)
+                          spage := 'omsgpr.vspx';
+                        else spage := 'rmsgpr.vspx';
+                        self.do_redirect (sprintf('%s?mid=%d',spage,smid));
+                      </v:on-post>
+                    </v:button>
+                      <!--<v:url name="nxt" value="Actions" url="--sprintf ('%s?mid=%d',
+		      case (control.vc_parent as vspx_row_template).te_rowset[1] when 0
+		      then 'imsgpr.vspx' when 1 then 'omsgpr.vspx' else 'rmsgpr.vspx' end,
+		      (control.vc_parent as vspx_row_template).te_rowset[4])"/>-->
+                  </td>
+	      <?vsp
+                http('</tr>');
+              ?>
+	      </v:template>
+	    </v:template>
+	    <v:template name="scrol1" type="simple">
+	      <tr>
+	        <td colspan="8" align="center">
+                  <!--<v:button action="simple" value="i/first_24.png" name="ds_first" xhtml_title="First" xhtml_alt="First" style="image"/>
+                  <v:button action="simple" value="i/previous_24.png" name="ds_prev" xhtml_title="Previous" xhtml_alt="Previous" style="image"/>
+                  <v:button action="simple" value="i/next_24.png" name="ds_next" xhtml_title="Next" xhtml_alt="Next" style="image"/>
+                  <v:button action="simple" value="i/last_24.png" name="ds_last" xhtml_title="Last" xhtml_alt="Last" style="image"/>-->
+                  <vm:ds-navigation data-set="ds"/>
+	        </td>
+	    </tr>
+	    </v:template>
+	</v:data-set>
+      </table></td></tr></table>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

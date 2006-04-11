@@ -1,0 +1,9 @@
+<!ELEMENT items       (item_tuple*)>
+<!ELEMENT item_tuple  (itemno, description, offered_by, 
+                              start_date?, end_date?, reserve_price? )>
+<!ELEMENT itemno      (#PCDATA)>
+<!ELEMENT description (#PCDATA)>
+<!ELEMENT offered_by  (#PCDATA)>
+<!ELEMENT start_date  (#PCDATA)>
+<!ELEMENT end_date    (#PCDATA)>
+<!ELEMENT reserve_price (#PCDATA)>

@@ -1,0 +1,39 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="windows-1251"?>
+<document>
+
+<obj542>
+<fld1_>2000-09-14</fld1_>
+<fld2_>2125722160</fld2_>
+<fld3_>5.25</fld3_>
+<fld4_>0.00</fld4_>
+<fld6_>Лихва от 14.08.2000 до 14.09.2000</fld6_>
+<fld7_>2000-09-14</fld7_>
+<fld8_>БФ-50486</fld8_>
+<fld9_>ЛИ-14.09.2000 08:50:14:87</fld9_>
+<fld10_>4594__0000</fld10_>
+<fld11_>10857348</fld11_>
+</obj542>
+
+</document>

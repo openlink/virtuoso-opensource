@@ -1,0 +1,144 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="/admin/admin_style.css"/>
+  <meta http-equiv="content-type" content="text/html;charset=iso-8859-1"/>
+  <meta name="generator" content="Adobe GoLive 6"/>
+  <title>Virtuoso HTTP Hosted Modules</title>
+</head>
+
+<?vsp adm_page_header('Virtuoso HTTP Hosted Modules', ''); ?>
+
+<?vsp
+      if (not adm_is_hosted ())
+         {
+            http ('This service requires mono/clr or java extension servers.');
+            return;
+         }
+      http ('<BR />');
+?>
+
+<body>
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+  <tr><td align="center" valign="top">
+<v:page name="show_methods_page_1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<v:variable name="selected_file" type="any" default="null" />
+<v:variable name="error_list_vec" type="any" default="null" />
+
+<v:data-grid name="dg" nrows="15" sql="select _type, _class from defined_types where _in = mask" scrollable="1" cursor-type="static" edit="1">
+<v:column name="_type" />
+<v:column name="_class" />
+<v:param name="mask" value="--'clr or java'" />
+
+<v:template name="dg_frame" type="frame">
+<p>
+<font style="color:red"><v:error-summary /></font>
+</p>
+<table border="0" cellspacing="0" cellpadding="0" class="genlist">
+  <tr>
+    <td colspan="3" class="genhead">Loaded Modules</td>
+  </tr>
+  <tr>
+    <th class="genlistheadt"><v:label name="label1h" value="'Name'" format="%s"/></th>
+    <th class="genlistheadt"><v:label name="label2h" value="'Type'" format="%s"/></th>
+    <th class="genlistheadt">&amp;nbsp;</th>
+  </tr>
+  <v:rowset />
+  <v:form type="add"/>
+  <tr>
+    <td><v:button name="dg_prev" action="simple" value="&lt;&lt;&lt;" xhtml:size="10pt"/></td>
+    <td><v:button name="dg_next" action="simple" value="&gt;&gt;&gt;" xhtml:size="10pt"/></td>
+  </tr>
+  <tr>
+      <td colspan="3" align="center">
+    <v:button name="unload" action="simple" value="Unload Selected">
+<v:on-post>
+<v:script>
+  <![CDATA[
+          {
+             declare idx, fl integer;
+             declare stmt varchar;
+             declare params any;
+
+             params := e.ve_params;
+
+             idx := 0;
+             fl := 0;
+
+             while (idx < (length (params) - 2))
+               {
+                  if (params[idx] like 'dg_rows%:cb%')
+                    {
+             		fl := 1;
+                        stmt := concat ('drop type ', params[idx + 1]);
+                        exec (stmt);
+		    }
+		  idx := idx + 2;
+	       }
+
+	     if (fl)
+	       {
+                  declare grid vspx_data_grid;
+                  grid := control.vc_find_parent (control, 'vspx_data_grid');
+                  grid.vc_data_bind (e);
+	       }
+
+
+	  }
+          ]]>
+</v:script>
+</v:on-post>
+</v:button>
+</td>
+  </tr>
+</table>
+</v:template>
+
+<v:template name="dg_empty" type="if-not-exists">
+<tr>
+  <td colspan="2" align="center" >No rows selected</td>
+</tr>
+</v:template>
+
+<v:template name="dg_rows" type="row">
+<tr>
+
+  <td nowrap="nowrap" class="gendata"><v:label name="label2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/></td>
+  <td nowrap="nowrap" class="gendata"><v:label name="label1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/></td>
+  <td nowrap="nowrap" class="gendata">
+    <v:check-box name="cb" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[1])" initial-checked="0" width="184" height="24" />
+  </td>
+</tr>
+</v:template>
+
+
+</v:data-grid>
+</v:page>
+</td></tr>
+</table>
+<?vsp adm_page_footer(); ?>
+</body>
+</html>

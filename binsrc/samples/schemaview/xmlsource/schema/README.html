@@ -1,0 +1,65 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+   <title>DocBook XML Schema</title>
+</head>
+
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+
+<h1>DocBook XML Schema</h1>
+
+<p><a href="#blurb.c37aab9">Norman Walsh</a>, Staff Engineer<br>
+Sun Microsystems, XML Technology Center</p>
+
+<p>Copyright &copy; 2000 by Sun Microsystems, Inc. Schema derived from DocBook DTD Copyright 1992-2000 HaL Computer Systems, Inc., O'Reilly & Associates, Inc., ArborText, Inc., Fujitsu Software Corporation, and the Organization for the Advancement of Structured Information Standards (OASIS).</p>
+
+<hr>
+
+<table border="1" width="40%" align="right">
+   <tr>
+      <th>Useful Links</th>
+   </tr>
+
+   <tr>
+      <td>
+      <ul>
+         <li><a href="http://www.oasis-open.org/docbook/">DocBook</a></li>
+         <li><a href="http://www.w3.org/XML/Schema">XML Schema</a></li>
+         <li><a href="dbxs4121.zip">DocBook XML Schema V4.1.2.1</a></li>
+         <li><a href="http://www.w3.org/2000/06/webdata/xsv">XSV</a></li>
+      </ul>
+      </td>
+   </tr>
+</table>
+
+<p>This is the README for the <a href="http://www.oasis-open.org/docbook/">DocBook</a> <a href="http://www.w3.org/XML/Schema">XML Schema</a>.</p>
+
+<p>The <a href="dbxs4121.zip">DocBook XML Schema V4.1.2.1</a> attempts to be an accurate translation of the <a href="http://www.oasis-open.org/docbook/xml">DocBook XML V4.1.2 DTD</a>.</p>
+
+<p>In this version, the parameterization of the schema is roughly identical to the parameterization of the DTD. This may change as I begin to experiment with the construction of derivative schemas.</p>
+
+<h3><a name="c37ab4">Alpha Release</a></h3>
+
+<p>DocBook XML Schema V4.1.2.1 is an experimental release. It validates with <a href="http://www.w3.org/2000/06/webdata/xsv">XSV</a> version 1.166/1.77 of 2000/09/28 15:54:50 on my system.</p>
+
+<p>I welcome reports of success or failure with other XML Schema validation tools.</p>
+
+<p>The namespace names (URIs) used in this schema are purely imaginary. They have no official status, nor do they foreshadow the future existence of any similar official URIs. I had to use something.</p>
+
+<p>The DocBook XML Schema is known to differ from the DocBook DTD in the following ways:</p>
+
+<ul>
+   <li><p>There are no named character entities. You can't define those in XML Schema.</p></li>
+   <li><p>The table model is the OASIS Exchange Table Model, not the CALS Table Model. This table model is less rich than the CALS model, lacking <tt>spanspec</tt>, <tt>tfoot</tt>, and a few other things.</p></li>
+   <li><p>Inside the table model, the <tt>tgroup</tt> element and all of its descendants are in a different namespace.</p></li>
+   <li><p>There are bugs, perhaps dozens, possibly hundreds.</p></li>
+</ul>
+
+<p>With the exception of tables, which will definitely require some markup changes in the instances, documents that are valid against the DTD should be valid against this schema.</p>
+
+<hr>
+
+<p><a name="blurb.c37aab9"></a>The Author: Norman Walsh, a Staff Engineer in Sun's XML Technology Center, is chair of the OASIS DocBook Technical Committee and serves on a number of W3C Working Groups, including the XML Core, XSL, and XML Schema WGs.</p>
+</body>
+</html>

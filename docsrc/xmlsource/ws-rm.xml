@@ -1,0 +1,945 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="warm"><title>Web Services Reliable Messaging Protocol (WS-ReliableMessaging)</title>
+
+<para>The WS-ReliableMessaging protocol is a SOAP-based RPC protocol 
+for guaranteed  delivery of messages; possibly in specific
+order from one sender to one receiver. 
+Such messages are usual SOAP messages - XML documents conforming
+to the SOAP specification.
+The Sender is an alias of the transmission initiator, i.e. the originator of the
+message transfer. The Receiver is a recipient, that which accepts the messages.
+How accepted messages should be processed is not covered in this document.; 
+What to do with the data and whether to send replies is at the discretion of the application.</para>
+
+
+<tip><title>See Also:</title>
+  <para><ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnglobspec/html/ws-reliablemessaging.asp">WS Reliable Messaging</ulink></para>
+  <para><ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnglobspec/html/WS-RM-exec-summary.asp">WS Reliable Messaging Exec Summary</ulink></para></tip>
+
+<para>Further in this section for brevity WS-RM will be used
+in place of "Web Services Reliable Messaging Protocol".</para>
+
+<para><emphasis>Delivery Assurances Types:</emphasis></para>
+
+<simplelist>
+<member><emphasis>AtMostOnce</emphasis> - Delivery at most once without
+duplication or an error will be raised on at least one endpoint. It is possible
+that some messages in a sequence may not be delivered.</member>
+
+<member><emphasis>AtLeastOnce</emphasis> - Every message sent will be
+delivered or an error will be raised on at least one endpoint. Some messages
+may be delivered more than once.</member>
+
+<member><emphasis>ExactlyOnce</emphasis> - Every message sent will be delivered
+without duplication or an error will be raised on at least one endpoint. This
+delivery assurance is the logical "and" of the two prior delivery assurances.</member>
+
+<member><emphasis>InOrder</emphasis> - Messages will be delivered in the order
+that they were sent. This delivery assurance may be combined with any of the
+above delivery assurances.  It requires that the sequence observed by the
+ultimate receiver be non-decreasing. It says nothing about duplications or
+omissions.</member>
+</simplelist>
+
+<tip><title>See Also:</title>
+  <para><link linkend="systabswsrm">WS-RM System Table Definitions</link>
+  in the Appendix section</para></tip>
+
+<sect2 id="wsrmsoapcliapi"><title>SOAP CLIENT API Extensions</title>
+
+<para>The SOAP Client API is used for handling, building and accessing
+complex types required to perform a SOAP request. It allows you to build
+a structures to access their elements and to build values suitable for
+passing to the
+<link linkend="fn_soap_client"><function>SOAP_CLIENT()</function></link> function.
+It also allows to de-serialize a SOAP response to a
+<computeroutput>soap_parameter</computeroutput>
+and access its members and attributes safely.</para>
+
+<para>Vectors are used to pass or retrieve a complex type using SOAP
+These vectors contain special content or UDTs.  In SOAP, 
+structures are allowed to have multiple members of the same name, or
+conditional members (choices). Thus it is not possible to cover all
+variants of XSD types with UDTs (which would be  the most elegant way to represent structures).
+So to cover all variants of structure handling or to express
+structures containing attributes, we have to use vectors.
+Since we used a special structure with vectors for expressing such complex types
+we introduce the following API to deal with them.</para>
+
+<para>The base of API is a UDT 'soap_parameter':</para>
+
+<programlisting><![CDATA[
+create type soap_parameter as
+		(
+		  s any default null,
+		  param_type int default 1,
+		  param_xsd varchar default null,
+		  ver int default 11
+		)
+		temporary self as ref
+;
+]]></programlisting>
+
+<para>Its members are:</para>
+
+<simplelist>
+  <member><emphasis>'s'</emphasis> - a vector representing a structure,
+  array or simple type.</member>
+  <member><emphasis>'param_type'</emphasis> - designates what is kept in
+  's' : 1 is struct ; 0 - simple type; 2 - array</member>
+  <member><emphasis>'param_xsd'</emphasis> - URL; QName of the type stored in 's'</member>
+  <member><emphasis>'ver'</emphasis> - soap version to be used for 
+  serialization/deserialization if RPC style is used.</member>
+</simplelist>
+
+<para>Its Constructors are:</para>
+
+<programlisting><![CDATA[
+constructor method soap_complex_parameter ()
+Instantiate an empty structure placeholder;
+]]></programlisting>
+
+<programlisting><![CDATA[
+constructor method soap_simple_parameter (val any),
+Instantiate an empty simple type placeholder
+]]></programlisting>
+
+<programlisting><![CDATA[
+constructor method soap_array_parameter (n int),
+Instantiate an array placeholder
+]]></programlisting>
+
+<programlisting><![CDATA[
+constructor method soap_single_parameter (elm soap_parameter),
+Instantiate an element of containing a type of 'elm'
+]]></programlisting>
+
+<para>Its Methods are:</para>
+
+<programlisting><![CDATA[
+method get_length () returns any,
+Returns the  length of the parameter
+]]></programlisting>
+
+<programlisting><![CDATA[
+method add_member (name varchar, val any) returns any,
+Add a new member element to the structure placeholder
+]]></programlisting>
+
+<programlisting><![CDATA[
+method set_member (name varchar, val any) returns any
+Sets the value of an existing member by name or will add a new member  if  the member does not exist
+]]></programlisting>
+
+<programlisting><![CDATA[
+method set_member (pos int, val any) returns any,
+the same as above but using ordinal position of the member;
+]]></programlisting>
+
+<programlisting><![CDATA[
+method get_member (name varchar) returns any,
+Returns a member's value by name
+]]></programlisting>
+
+<programlisting><![CDATA[
+method get_member (pos int) returns any,
+Returns member value by ordinal position
+]]></programlisting>
+
+<programlisting><![CDATA[
+method get_value () returns any,
+Returns value for simple types. Only for simple type is applicable
+]]></programlisting>
+
+<programlisting><![CDATA[
+method set_value (val any) returns any,
+Sets the value of a simple type
+]]></programlisting>
+
+<programlisting><![CDATA[
+method set_attribute (name varchar, val any) returns any,
+Set an attribute value of a structure or simple type
+]]></programlisting>
+
+<programlisting><![CDATA[
+method get_attribute (name varchar) returns any,
+Return an attribute value of a structure or simple type
+]]></programlisting>
+
+<programlisting><![CDATA[
+method get_call_param (name varchar) returns any,
+]]></programlisting>
+
+<para>Serializes the parameter in a form suitable for  passing to the
+SOAP_CLIENT() function. When several parameters needs to be passed to it,
+then result of those calls must be concatenated (see vector_concat())
+Importanat: set_xsd have to be called with valid ExQName, before doing
+get_call_param call.
+</para>
+
+<programlisting><![CDATA[
+method set_xsd (xsd varchar) returns any,
+]]></programlisting>
+
+<para>Establish a SOAP data-type Expanded QName, referencing the data kept in the
+soap_parameter. This is a reference to a SOAP complex data-type already defined
+with soap_dt_define () function (see function reference).
+This method only sets the relation between data kept in soap_parameter and
+doesn't check its validity unless serialize is performed. The data-type
+Expanded QName also will be included into output of the get_call_param method.
+</para>
+
+<example id="ex_wsrmtypes"><title>Complex WS Type Example</title>
+
+<para>Consider the following complex type:</para>
+<programlisting><![CDATA[
+<xsd:complexType
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    name="SOAPComplexType"
+    targetNamespace="http://soapinterop.org/xsd">
+ <xsd:sequence>
+	<xsd:element minOccurs="1" maxOccurs="1" name="varInt" type="xsd:int" />
+	<xsd:element minOccurs="0" maxOccurs="1" name="varString" type="xsd:string" />
+	<xsd:element minOccurs="1" maxOccurs="1" name="varFloat" type="xsd:float" />
+ </xsd:sequence>
+</xsd:complexType>
+
+declare s soap_parameter ;
+s := new soap_parameter ();
+s.set_xsd ('http://soapinterop.org/xsd:SOAPComplexType');
+s.add_member ('varString', 'string');
+s.serialize ('mystruct'); -- will generate an error as, varInt and varFloat are
+			              -- missing but they are declared as minOccurs="1"
+]]></programlisting>
+
+<para>So if we add two more members, and remove varString, to the statements above.</para>
+
+<programlisting><![CDATA[
+s.add_member ('varInt', 123);
+s.add_member ('varFloat', 3.14);
+s.serialize ('mystruct');
+]]></programlisting>
+
+<para>Will produce valid output:</para>
+
+<programlisting><![CDATA[
+<mystruct><varInt>123</varInt><varFloat>3.14</varFloat></mystruct>
+]]></programlisting>
+
+<para>and finally  we can make a parameter for the SOAP_CLIENT() function:</para>
+
+<programlisting><![CDATA[
+par := s.get_call_param ('par1');
+]]></programlisting>
+<para>here are the contents of 'par':</para>
+<programlisting><![CDATA[
+(
+  ("par1", "http://soapinterop.org/xsd:SOAPComplexType" ), -- designates paramter par1, with type SOAPComplexType
+  (<COMPOSITE>, "",	-- this is a marker that it's a struct
+	"varInt", 123, 	-- the members name/value pairs follows
+	"varFloat", 3.14
+  )
+)
+]]></programlisting>
+</example>
+
+<para>Further methods are:</para>
+
+<programlisting><![CDATA[
+method deserialize (xs any, elem varchar) returns any,
+]]></programlisting>
+
+<para>Deserializes a element 'elem' from  'xs' (XML tree object)
+the the soap_parameter.</para>
+
+<programlisting><![CDATA[
+method serialize (tag varchar) returns any,
+]]></programlisting>
+
+<para>Returns an XML document representing the data kept into
+the soap_parameter.</para>
+
+<programlisting><![CDATA[
+method set_struct (s any) returns any
+]]></programlisting>
+<para>Explicitly sets the structure/array/simple type kept in the
+soap_parameter UDT. This can be used to disassemble a nested
+complex type into its components.</para>
+
+<example id="ex_wsrmuseparam"><title>Example Using WS-RM</title>
+
+<para>echoStruct invocation</para>
+
+<programlisting><![CDATA[
+declare ret any;
+declare pa soap_parameter;
+
+pa := new soap_parameter ();
+pa.add_member ('varString', 'My String');
+pa.add_member ('varInt', 12345);
+pa.add_member ('varFloat', 3.1415926);
+pa.set_xsd ('http://soapinterop.org/xsd:SOAPStruct');
+
+ret := SOAP_CLIENT (url=>'http://.../interop',
+  operation=>'echoStruct', parameters=>pa.get_call_param ('inputStruct'));
+
+pa := new soap_parameter ();
+pa.set_xsd ('http://soapinterop.org/xsd:SOAPStruct');
+pa.deserialize (ret, 'CallReturn');
+return pa.get_member ('varString');
+]]></programlisting>
+
+<para>echoDocument invocation</para>
+
+<programlisting><![CDATA[
+declare ret any;
+declare doc, pa soap_parameter;
+
+doc := new soap_parameter ('The document content');
+doc.set_attribute ('ID', uuid());
+doc.set_xsd ('http://soapinterop.org/xsd:x_Document');
+
+
+ret := SOAP_CLIENT (url=>'http://.../r3/Compound1', operation=>'echoDocument',
+  parameters=>doc.get_call_param ('x'), style=>1);
+
+
+pa := new soap_parameter ();
+pa.set_xsd ('http://soapinterop.org/xsd:Document');
+pa.deserialize (ret, 'result_Document');
+dbg_obj_print (pa.s);
+
+return pa.get_attribute ('ID');
+]]></programlisting>
+</example>
+
+<tip><title>See Also:</title>
+  <para><link linkend="fn_soap_client"><function>SOAP_CLIENT()</function></link></para></tip>
+</sect2>
+
+<sect2 id="wsrmsndrapi"><title>WS-RM Sender API</title>
+
+<para>The WS-RM API allows for:</para>
+
+<simplelist>
+  <member>register/start a conversation</member>
+  <member>set parameters on both sides (receiver or sender)</member>
+  <member>check the acknowledgment</member>
+  <member>retry if needed</member>
+  <member>to finish or cancel the conversation (can be with cancel) </member>
+  <member>check for faults</member>
+</simplelist>
+
+<para>The User Defined Types defined in support of WS-RM are as follows:</para>
+
+<itemizedlist>
+<listitem><para><emphasis>soap_client () parameters wrapper</emphasis></para>
+
+<programlisting><![CDATA[
+create type soap_client_req as
+	(
+	url varchar,
+	operation varchar,
+	target_namespace varchar default null,
+	parameters any default null,
+	headers any default null,
+	soap_action varchar default '',
+	attachments any default null,
+	ticket any default null,
+	passwd varchar default null,
+	user_name varchar default null,
+	user_password varchar default null,
+	auth_type varchar default 'none',
+	security_type varchar default 'sign',
+	debug integer default 0,
+	template varchar default null,
+	style integer default 0,
+	version integer default 11,
+	direction integer default 0
+      	)
+;
+]]></programlisting>
+
+<para>This UDT is used for passing  various parameters to the
+WS-RM client to send a SOAP messages along with WS-RM specific headers.
+The members are with same names as for SOAP_CLIENT () function.
+In other words applications must fill a soap_client_req specific
+data and pass this to the wsrm_cli methods (see below).</para>
+</listitem>
+
+<listitem><para><emphasis>client addressing UDT:</emphasis></para>
+
+<para>To facilitate two-way transport the receiver must know the
+address of the sender's responder (endpoint for asynchronous acknowledgement or
+response). To pass such addresses to the WS-RM client (wsrm_cli)
+the following UDT is used.</para>
+
+<programlisting><![CDATA[
+create type wsa_cli as
+	(
+	mid varchar default null,
+	"to" varchar default null,
+	"from" varchar default null,
+	action varchar default null,
+	fault_to varchar default null,
+	reply_to varchar default null
+	)
+]]></programlisting>
+
+<para>Whose members are as follows:</para>
+
+<simplelist>
+  <member><emphasis>mid</emphasis> - message identifier; unique across space and time</member>
+  <member><emphasis>to</emphasis> - where message travelling to</member>
+  <member><emphasis>from</emphasis> - from where it's sent</member>
+  <member><emphasis>action</emphasis> - WS-Addressing Action headed element</member>
+  <member><emphasis>fault_to</emphasis> - where to return the fault</member>
+  <member><emphasis>reply_to</emphasis> - where to reply; if no such URL given the "to" will be used to reply. </member>
+</simplelist>
+
+<note><title>Important Note:</title>
+  <para>A special "to" equal to
+  '<computeroutput>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</computeroutput>'
+  is used to designate an 'anonymous' sender. Further acknowledgement
+  can be made as a synchronous reply only.  There is no way to return a response
+  in asynchronous manner.</para></note>
+
+<para>Constructors:</para>
+
+<programlisting><![CDATA[
+constructor method wsa_cli ()
+]]></programlisting>
+
+<para>Instantiate a new addressing placeholder ; with new message id. </para>
+</listitem>
+
+<listitem><para><emphasis>WS-RM Client UDT</emphasis></para>
+
+<para>The following is a core UDT for the sender's activity.
+It is used to establish a message sequence context, to
+set various parameters and to send/check/cancel WS-RM
+encapsulated SOAP messages to the sender.</para>
+
+<programlisting><![CDATA[
+create type wsrm_cli as
+	(
+	url varchar,
+	seq varchar,
+	msgno int default -1,
+	assurance varchar,
+	expiry datetime,
+	address wsa_cli,
+	i_timeout int,
+	resend_intl int,
+	ack_intl int,
+	dirty int default 0,
+	is_last int default 0,
+	is_finish int default 0
+	)
+	temporary self as ref
+]]></programlisting>
+
+<para>Members:</para>
+
+<simplelist>
+  <member><emphasis>url</emphasis> - the recipient's URL</member>
+  <member><emphasis>seq</emphasis> - identifier; unique Id for batch of
+  messages to be sent together</member>
+  <member><emphasis>msgno</emphasis> - unique number/unsigned integer greater than 1,
+  unique identifying a message within a sequence</member>
+  <member><emphasis>assurance</emphasis> - policy to be applied on receiver
+  side : AtLeastOne; InOrder; AtMostOne </member>
+  <member><emphasis>expiry</emphasis> - message expiration </member>
+  <member><emphasis>address</emphasis> - a UDT of type <computeroutput>wsa_cli</computeroutput>;
+  identifying sender and receiver URLs</member>
+  <member><emphasis>i_timeout</emphasis> - inactivity timeout</member>
+  <member><emphasis>ack_intl</emphasis> - acknowledgement interval</member>
+  <member><emphasis>dirty</emphasis> - (internal use)</member>
+  <member><emphasis>is_last</emphasis> - the current message is a last in sequence</member>
+  <member><emphasis>is_finish</emphasis> - transfer is finished; no more
+  messages are pending</member>
+</simplelist>
+
+<para>Constructors:</para>
+
+<programlisting><![CDATA[
+constructor method wsrm_cli (addr wsa_cli, url varchar),
+]]></programlisting>
+
+<para>Instantiate a new WS-RM sender object; new message sequence
+This will generate a new sequence identifier, and will store it into a
+outgoing sequences table. The default policy will be established.</para>
+
+<programlisting><![CDATA[
+constructor method wsrm_cli (addr wsa_cli, url varchar, seq varchar),
+]]></programlisting>
+
+<para>Instantiate a WS-RM sender object from a persisted state;
+The policy and parameters will be read from database and instantiated
+in WS-RM sender's object.</para>
+
+<para>Methods:</para>
+
+<programlisting><![CDATA[
+method create_sequence () returns any,
+]]></programlisting>
+
+<para>Start a new sequence with current WS-RM sender's object;</para>
+
+<programlisting><![CDATA[
+method send_message (req soap_client_req, last int) returns any,
+]]></programlisting>
+
+<para>Send a message to the recipient; depending on 'last' flag this can be
+designate open or closed message sequence.
+The 'req' must be fulfilled with appropriate parameters (see above).</para>
+
+<programlisting><![CDATA[
+method send_message (req soap_client_req) returns any,
+]]></programlisting>
+
+<para>same as send_message (req soap_client_req, 0)</para>
+
+<programlisting><![CDATA[
+method finish (req soap_client_req) returns any,
+]]></programlisting>
+
+<para>same as send_message (req soap_client_req, 1)</para>
+
+<programlisting><![CDATA[
+method check_state () returns any,
+]]></programlisting>
+
+<para>retrieves a state for a sequence. If sequence is closed and all is
+delivered no remote call will be performed. If an message is in pending state
+a remote call will be issued to check the state of message sequence.
+The return value is an array containing message numbers (id's within sequence)
+and their state: 0 or 1 - send or pending</para>
+
+<programlisting><![CDATA[
+method cancel () returns any,
+]]></programlisting>
+
+<para>cancel the sequence; kill it on WS-RM sender site ; say that to recipient to
+do that also.</para>
+
+<programlisting><![CDATA[
+method set_parameter (name varchar, val any) returns any,
+]]></programlisting>
+
+<para>Set a parameter to the current message sequence : like policy; timeout etc.
+The parameters will be sent together with next WS-RM conversation.
+Note: Some of parameters may invalidate previous state of message transfer; so
+in this case the sender will receive a fault and application must handle the
+situation properly. </para>
+
+<para>Valid 'name's are :</para>
+  <simplelist>
+    <member><emphasis>Assurance</emphasis> - 'AtMostOnce','AtLeastOnce','ExactlyOnce','InOrder'</member>
+    <member><emphasis>Expiry</emphasis> - date of expiration</member>
+    <member><emphasis>Timeout</emphasis> - inactivity timeout in milliseconds</member>
+    <member><emphasis>RetryInterval</emphasis> - retry on every n milliseconds if message is not sent</member>
+    <member><emphasis>AckInterval</emphasis> - acknowledgement interval in milliseconds</member>
+  </simplelist>
+</listitem>
+</itemizedlist>
+
+<formalpara><title>Sender's responder (endpoint)</title>
+
+<para>To receive an asynchronous acknowledgement the sender must
+have an endpoint to handle them.
+The <computeroutput>WSRMSequenceAcknowledgement()</computeroutput>
+procedure must be exposed at that endpoint.  This accepts and processes asynchronous
+acknowledgements.  This is used to accept a SequenceAcknowledgement response
+from a remote party so it will process the response and will set the state
+of messages that are acknowledged.</para>
+</formalpara>
+
+</sect2>
+
+<sect2 id="wsrmrcvrapi"><title>WSRM Receiver API</title>
+
+<para>On the receiver side we have PL wrappers
+that take as arguments all *known* WS-RM headers.
+This procedure, when granted to a SOAP endpoint will process the
+incoming requests. It will also answer send the appropriate
+answers to the sender.</para>
+
+<para>The following is the list of WS-RM receiver wrappers:</para>
+
+<orderedlist>
+  <listitem>
+  <formalpara><title>WSRMSequence</title>
+  <para>accept and store a Sequence requests.  This is used
+  to accept Sequence requests from sender and will perform the
+  following actions:</para></formalpara>
+  <simplelist>
+    <member>store the message in incoming message log table</member>
+    <member>process and apply the Policy attachment (if supplied); otherwise
+    apply default rule: AtMostOnce</member>
+    <member>depending of a addressing headers will reply in synchronous or
+	asynchronous manner. This depends on the value of "From" and "ReplyTo" headers.
+	If these contains non-anonymous URL (see above); an asynchronous
+	acknowledgement will be sent in a separate TCP connection. Thus in this mode
+	the sender must have defined a listener with WSRMSequenceAcknowledgement
+	exposed to accept such responses.  Otherwise synchronous acknowledgement
+	will be sent in the same TCP connection.</member>
+    <member>If an error occurred a Fault will be generated </member>
+  </simplelist>
+  </listitem>
+
+  <listitem>
+  <formalpara><title>WSRMSequenceTerminate</title>
+  <para>accept and process SequenceTerminate requests.  This is used to
+  accept cancel request; to kill an existing message sequence.  Further
+  actions on such sequence will be rejected.</para></formalpara></listitem>
+
+  <listitem>
+  <formalpara><title>WSRMAckRequested</title>
+  <para>accept and process AckRequested requests.  This is used to process
+  AckRequested WS-RM messages and will produce a SequenceAcknowledgement
+  containing info about messages been accepted. Used from sender's side to
+  check the message sequence state.</para></formalpara>
+  </listitem>
+</orderedlist>
+
+<para>These PL procedures are built-in to the server, and
+have to be granted to the user that is assigned as the SOAP execution
+account for a given virtual directory designated as a WS-RM receiver endpoint.</para>
+</sect2>
+
+<sect2 id="wsrmsetupendpoint"><title>WS-RM Protocol Endpoint Configuration</title>
+
+<para>The setup is a virtual directory definition and grant of
+rights to the procedures for sender and receiver endpoints.</para>
+
+<para>This will be demonstrated as an example of setting up both endpoints:</para>
+
+<itemizedlist>
+<listitem><para><emphasis>Sender</emphasis></para>
+<programlisting><![CDATA[
+create user WSRMS;
+grant execute on WSRMSequenceAcknowledgement to WSRMS;
+vhost_define (lpath=>'/replyto', ppath=>'/SOAP/', soap_user=>'WSRMS');
+]]></programlisting>
+</listitem>
+
+<listitem><para><emphasis>Reply</emphasis></para>
+<programlisting><![CDATA[
+create user WSRMR;
+grant execute on WSRMSequence to WSRMR;
+grant execute on WSRMSequenceTerminate to WSRMR;
+grant execute on WSRMAckRequested to WSRMR;
+vhost_define (lpath=>'/wsrm', ppath=>'/SOAP/', soap_user=>'WSRMR');
+]]></programlisting>
+</listitem>
+</itemizedlist>
+
+<example id="ex_wsrmping"><title>WS-RM Ping Test Example</title>
+
+<para>This is an example client used to perform the interoperability
+test "Ping" as proposed in "Interop Workshop Scenarios"</para>
+
+<programlisting><![CDATA[
+soap_dt_define ('',
+		'<element
+			xmlns="http://www.w3.org/2001/XMLSchema"
+			name="Ping" type="test:Ping_t"
+			targetNamespace = "http://tempuri.org/" xmlns:test="http://tempuri.org/" />');
+]]></programlisting>
+
+<programlisting><![CDATA[
+soap_dt_define ('',
+		'<complexType xmlns="http://www.w3.org/2001/XMLSchema"
+		 	      name="Ping_t" targetNamespace = "http://tempuri.org/">
+				<sequence>
+					<element minOccurs="1" maxOccurs="1" name="Text" type="string"/>
+				</sequence>
+		</complexType>');
+]]></programlisting>
+
+<programlisting><![CDATA[
+create procedure WSRMTestPing (in _to varchar, in _from varchar)
+  {
+    declare addr wsa_cli;
+    declare test wsrm_cli;
+    declare req soap_client_req;
+    declare finish any;
+    declare ping soap_parameter;
+
+    ping := new soap_parameter (1);
+
+    ping.set_xsd ('http://tempuri.org/:Ping');
+    ping.s := vector ('Hello World');
+
+    addr := new wsa_cli ();
+    addr."to" := _to;
+    addr."from" := _from;
+    addr.action := 'urn:wsrm:Ping';
+
+    req := new soap_client_req ();
+    req.url := _to;
+    req.operation := 'Ping';
+    req.parameters := ping.get_call_param ('');
+
+    test := new wsrm_cli (addr, _to);
+
+    test.send_message (req);
+    test.send_message (req);
+    test.finish (req);
+    return test.seq;
+  }
+;
+]]></programlisting>
+</example>
+</sect2>
+
+<sect2 id="wsrmmsgexamples"><title>Message Examples</title>
+
+<example id="ex_wsrminitreq"><title>Example: Initial request</title>
+
+<programlisting><![CDATA[
+<SOAP:Envelope>
+  <SOAP:Header>
+    <wsa:MessageID>uuid:aa8bd508-110b-11d8-8344-8cfad4a25a87</wsa:MessageID>
+    <wsa:To>http://host:9999/wsrm</wsa:To>
+    <wsa:From>
+      <wsa:Address>http://host:9999/replyto</wsa:Address>
+    </wsa:From>
+    <wsa:Action><!-- depending of application --></wsa:Action>
+    <wsrm:Sequence>
+      <wsu:Identifier>uuid:aa8bfa74-110b-11d8-8344-8cfad4a25a87</wsu:Identifier>
+      <wsrm:MessageNumber>1</wsrm:MessageNumber>
+    </wsrm:Sequence>
+  </SOAP:Header>
+  <SOAP:Body>
+    <!-- some application data -->
+  </SOAP:Body>
+</SOAP:Envelope>
+]]></programlisting>
+
+<para>receiver accepts and return just</para>
+
+<programlisting><![CDATA[
+HTTP/1.1 202 Accepted
+Content-Length: 0
+]]></programlisting>
+
+<para>Last message</para>
+
+<programlisting><![CDATA[
+<SOAP:Envelope>
+  <SOAP:Header>
+    <wsa:MessageID>uuid:aa8bd508-110b-11d8-8344-8cfad4a25a87</wsa:MessageID>
+    <wsa:To>http://host:9999/wsrm</wsa:To>
+    <wsa:From>
+      <wsa:Address>http://host:9999/replyto</wsa:Address>
+    </wsa:From>
+    <wsa:Action><!-- depending of application --></wsa:Action>
+    <wsrm:Sequence>
+      <wsu:Identifier>uuid:aa8bfa74-110b-11d8-8344-8cfad4a25a87</wsu:Identifier>
+      <wsrm:MessageNumber>2</wsrm:MessageNumber>
+      <wsrm:LastMessage/>
+    </wsrm:Sequence>
+  </SOAP:Header>
+  <SOAP:Body>
+    <!-- some application data -->
+  </SOAP:Body>
+</SOAP:Envelope>
+]]></programlisting>
+
+<para>receiver accepts and returns </para>
+
+<programlisting><![CDATA[
+HTTP/1.1 202 Accepted
+Content-Length: 0
+]]></programlisting>
+
+<para>Sequence Acknowledgement response; sent via another channel</para>
+
+<programlisting><![CDATA[
+<SOAP:Envelope>
+  <SOAP:Header>
+    <wsa:MessageID>uuid:aadedf64-110b-11d8-8344-8cfad4a25a87</wsa:MessageID>
+    <wsa:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</wsa:To>
+    <wsa:From>
+      <wsa:Address>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</wsa:Address>
+    </wsa:From>
+    <wsa:Action>http://schemas.xmlsoap.org/ws/2004/08/rm#SequenceAcknowledgement</wsa:Action>
+    <wsrm:SequenceAcknowledgement>
+      <wsu:Identifier>uuid:aa8bfa74-110b-11d8-8344-8cfad4a25a87</wsu:Identifier>
+      <wsrm:AcknowledgementRange Upper="2" Lower="1"/>
+    </wsrm:SequenceAcknowledgement>
+  </SOAP:Header>
+  <SOAP:Body/>
+</SOAP:Envelope>
+]]></programlisting>
+
+<para>initial sender accepts and returns </para>
+
+<programlisting><![CDATA[
+HTTP/1.1 202 Accepted
+Content-Length: 0
+]]></programlisting>
+</example>
+
+</sect2>
+
+<sect2 id="wsrmschema"><title>WS-RM Schema</title>
+
+<programlisting><![CDATA[
+<xsd:schema
+    targetNamespace="http://schemas.xmlsoap.org/ws/2003/03/rm"
+	xmlns:wsu="http://schemas.xmlsoap.org/ws/2002/07/utility"
+	xmlns:wsrm="http://schemas.xmlsoap.org/ws/2003/03/rm"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+	<!-- *** BASE *** -->
+    <xsd:complexType name="SequenceType">
+	<xsd:sequence>
+	    <xsd:element ref="wsu:Identifier"/>
+	    <xsd:element name="MessageNumber" type="xsd:unsignedLong"/>
+	    <xsd:element name="LastMessage" type="xsd:ENTITY" minOccurs="0"/>
+	</xsd:sequence>
+    </xsd:complexType>
+
+
+    <xsd:complexType name="SequenceTerminate_t">
+	<xsd:sequence>
+	    <xsd:element ref="wsu:Identifier"/>
+	</xsd:sequence>
+    </xsd:complexType>
+
+
+    <xsd:complexType name="AcknowledgmentRange_t">
+	<xsd:sequence/>
+	<xsd:attribute name="Upper" type="xsd:unsignedLong" use="required"/>
+	<xsd:attribute name="Lower" type="xsd:unsignedLong" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="SequenceAcknowledgement_t">
+	<xsd:sequence>
+	    <xsd:element ref="wsu:Identifier"/>
+	    <xsd:element name="AcknowledgementRange" type="wsrm:AcknowledgmentRange_t" maxOccurs="unbounded">
+	    </xsd:element>
+	</xsd:sequence>
+    </xsd:complexType>
+
+
+    <xsd:complexType name="AckRequestedType">
+	<xsd:sequence>
+	    <xsd:element ref="wsu:Identifier"/>
+	</xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:element name="Sequence" type="wsrm:SequenceType"/>
+    <xsd:element name="SequenceTerminate" type="wsrm:SequenceTerminate_t"/>
+    <xsd:element name="SequenceAcknowledgement" type="wsrm:SequenceAcknowledgement_t" />
+    <xsd:element name="AckRequested" type="wsrm:AckRequestedType"/>
+
+    <!-- *** FAULTS *** -->
+
+    <xsd:simpleType name="FaultCodes">
+	<xsd:restriction base="xsd:QName">
+	    <xsd:enumeration value="wsrm:UnknownSequence"/>
+	    <xsd:enumeration value="wsrm:SequenceTerminated"/>
+	    <xsd:enumeration value="wsrm:InvalidAcknowledgement"/>
+	    <xsd:enumeration value="wsrm:MessageNumberRollover"/>
+	</xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:complexType name="SequenceFaultType">
+	<xsd:sequence>
+	    <xsd:element ref="wsu:Identifier"/>
+	    <xsd:element name="FaultCode" type="wsrm:FaultCodes"/>
+	</xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:element name="SequenceFault" type="wsrm:SequenceFaultType"/>
+
+    <!-- *** ASSERTATIONS *** -->
+    <xsd:complexType name="InactivityTimeout_t">
+	<xsd:sequence/>
+	<xsd:attribute name="Milliseconds" type="xsd:unsignedLong" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="BaseRetransmissionInterval_t">
+	<xsd:sequence/>
+	<xsd:attribute name="Milliseconds" type="xsd:unsignedLong" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="AcknowledgementInterval_t">
+	<xsd:sequence/>
+	<xsd:attribute name="Milliseconds" type="xsd:unsignedLong" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="PolicyAssertionType">
+	<xsd:sequence>
+	    <xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+	</xsd:sequence>
+	<xsd:anyAttribute namespace="##other"/>
+    </xsd:complexType>
+
+    <xsd:simpleType name="DeliveryAssuranceEnum">
+	<xsd:restriction base="xsd:QName">
+	    <xsd:enumeration value="wsrm:AtMostOnce"/>
+	    <xsd:enumeration value="wsrm:AtLeastOnce"/>
+	    <xsd:enumeration value="wsrm:ExactlyOnce"/>
+	    <xsd:enumeration value="wsrm:InOrder"/>
+	</xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:complexType name="DeliveryAssurance_t">
+	<xsd:sequence/>
+	<xsd:attribute name="Value" type="xsd:QName" use="required"/>
+    </xsd:complexType>
+
+    <xsd:element name="InactivityTimeout" type="wsrm:InactivityTimeout_t" />
+    <xsd:element name="BaseRetransmissionInterval" type="wsrm:BaseRetransmissionInterval_t" />
+    <xsd:element name="ExponentialBackoff" type="wsrm:PolicyAssertionType"/>
+    <xsd:element name="AcknowledgementInterval" type="wsrm:AcknowledgementInterval_t"/>
+    <xsd:element name="DeliveryAssurance" type="wsrm:DeliveryAssurance_t"/>
+
+    <!-- *** Sequence Reference *** -->
+    <xsd:complexType name="SequenceRefType">
+	<xsd:sequence />
+	<xsd:attribute name="Identifier" type="xsd:anyURI" use="required"/>
+	<xsd:attribute name="Match" type="wsrm:MatchChoiceType" use="optional"/>
+    </xsd:complexType>
+
+    <xsd:simpleType name="MatchChoiceType">
+	<xsd:restriction base="xsd:QName">
+	    <xsd:enumeration value="wsrm:Exact"/>
+	    <xsd:enumeration value="wsrm:Prefix"/>
+	</xsd:restriction>
+    </xsd:simpleType>
+    <xsd:element name="SequenceRef" type="wsrm:SequenceRefType"/>
+
+</xsd:schema>
+]]></programlisting>
+</sect2>
+</sect1>

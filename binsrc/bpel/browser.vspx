@@ -1,0 +1,266 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<title>OpenLink BPEL Process Manager
+  <?vsp
+  declare name varchar;
+  name := {?'op'};
+  if (name = 'bpel')
+    http_value(' Upload BPEL file');
+  else if (name ='plink')
+    http_value(concat(' Upload wsdl file for partner link ',{?'role'}));
+  else if (name ='wsdl')
+    http_value(' Upload WSDL file');
+  else
+   http_value(' Error');
+?>
+</title>
+<v:page name="bpel_browser" decor="bpel_decor.vspx" style="bpel_style_new.xsl" xmlns:v="http://www.openlinksw.com/vspx/"  xmlns:vm="http://www.openlinksw.com/vspx/macro" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <v:on-init>
+    set isolation='committed';
+  </v:on-init>
+  <vm:pagewrapper>
+    <v:variable name="cop" type="varchar" default="null" param-name="op"/>
+    <v:variable name="crole" type="varchar" default="null" param-name="role"/>
+    <v:variable name="cid" type="int" default="null" param-name="id"/>
+    <vm:pagetitle>s</vm:pagetitle>
+    <vm:pagebody>
+      <v:template name="actionE" type="simple" enabled="--case when self.cop = 'bpel' then 1 when self.cop = 'wsdl' then 1 else 0 end">
+        <v:form name="upl" type="simple" method="POST" action="browser.vspx" xhtml_enctype="multipart/form-data" >
+          <table width="100%"  id="content" cellpadding="0" cellspacing="0">
+            <v:template name="th1" type="simple" enabled="--case when self.cop = 'bpel' then 1 else 0 end">
+              <tr><th class="info" colspan="3">Upload BPEL file</th></tr>
+            </v:template>
+            <v:template name="th2" type="simple" enabled="--case when self.cop = 'wsdl' then 1 else 0 end">
+              <tr><th class="info" colspan="3">Upload WSDL file</th></tr>
+            </v:template>
+            <tr>
+              <td colspan="3">
+                <?vsp http(sprintf('<a target="_blank" href="help.vspx?id=browser&sid=%s&realm=%s\r\n"><img alt="Help" title="Help" src="i/help_24.gif" border="0" /></a>', self.sid ,self.realm));?>
+                <?vsp http(sprintf('<a target="_blank" href="help.vspx?id=browser&sid=%s&realm=%s\r\n"> Help</a>', self.sid ,self.realm));?>
+              </td>
+            </tr>
+            <tr>
+               <td valign="top" align="right"><BR/>
+                 <v:url name="u1URL" value="URL" url="--sprintf('help.vspx?id=browser&name=pu_url')" xhtml_target="_blank"/>
+               </td>
+               <td valign="top">
+                 <BR/><v:radio-button initial-checked="1" value="1" name="btn_first" group-name="choice"/>
+               </td>
+               <td><font style="color: red"><v:error-summary match="pl_first" /></font><BR/>
+                 <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+                   <tr><td colspan="2"><v:text name="pl_first" value="''" xhtml_size="55%"/></td></tr>
+                   <tr>
+                     <td align="right">Authentication</td>
+                     <td>
+                       <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+                         <tr>
+                           <td nowrap="1" align="right"><label for="login_user">User</label></td>
+                           <td>
+                             <v:text name="usern" value="--connection_get('HTTP_CLI_UID')" null-value="''" xhtml_maxlength="30" xhtml_size="20" xhtml_id="login_user"/>
+                           </td>
+                         </tr>
+                         <tr>
+                           <td align="right"><label for="login_pwd">Password</label></td>
+                           <td>
+                             <v:text name="pass" value="--connection_get('HTTP_CLI_PWD')" null-value="''" xhtml_size="20" xhtml_maxlength="30" type="password" xhtml_id="login_pwd"/>
+                           </td>
+                         </tr>
+                       </table>
+                     </td>
+                   </tr>
+                 </table>
+               </td>
+             </tr>
+            <tr>
+               <td valign="top" align="right"><BR/>
+                 <v:url name="u1FILE" value="File" url="--sprintf('help.vspx?id=browser&name=pu_file')" xhtml_target="_blank"/>
+               </td>
+               <td valign="top">
+                 <BR/><v:radio-button initial-checked="0" value="0" name="btn_second" group-name="choice"/>
+               </td>
+               <td><font style="color: red"><v:error-summary match="pl_second" /></font><BR/>
+                  <v:text name="pl_second" type="file" xhtml_class="m_e" xhtml_size="60%"/><br/>
+                 <table id="subcontent"><tr><td/><td/><td/><td><font color="Red">Note: </font>No relative references inside file will be accepted.</td></tr></table>
+               </td>
+            </tr>
+            <tr>
+               <td>&nbsp;</td>
+               <td colspan="2">
+                 <v:button action="return" value="i/back_16.png" xhtml_title="Back" style="image" xhtml_alt="Back" text="&#160;Back">
+                   <v:field name="vbpel" ref="label7"/>
+                   <v:field name="vbpelcontent" ref="label8"/>
+                   <v:field name="vwsdl" ref="label5"/>
+                   <v:field name="vwsdlcontent" ref="label6"/>
+                 </v:button>
+                 <v:button action="simple" value="i/import_data_16.png" xhtml_title="Upload" style="image" xhtml_alt="Upload" text="&#160;Upload">
+                   <v:on-post>
+                       if (not self.vc_is_valid)
+                           return;
+
+                       if (self.btn_first.ufl_selected = 1)
+                       {
+                         if (not length (self.pl_first.ufl_value))
+                         {
+                           self.pl_first.vc_error_message := 'Please, enter valid URL.';
+                           self.vc_is_valid := 0;
+                           return 0;
+                         };
+
+                         BPEL.BPEL.set_uri_connection(self.usern.ufl_value, self.pass.ufl_value);
+
+                         if (self.cop = 'bpel')
+                         {
+                            BPEL..script_source_update(self.cid,trim(self.pl_first.ufl_value,' '),null);
+                         }
+                         else
+                         {
+                            BPEL..wsdl_upload(self.cid,trim(self.pl_first.ufl_value,' '),null);
+                         };
+                         self.uploadU.ufl_value := 'File uploaded successfully.';
+                       }
+                       else if (self.btn_second.ufl_selected = 1)
+                       {
+                         if (not length (self.pl_second.ufl_value))
+                         {
+                           self.pl_second.vc_error_message := 'Please, choose file.';
+                           self.vc_is_valid := 0;
+                           return 0;
+                         };
+                         if (self.cop = 'bpel')
+                         {
+                            BPEL..script_source_update(self.cid,'',self.pl_second.ufl_value);
+                         }
+                         else
+                         {
+                           BPEL..wsdl_upload(self.cid,'',self.pl_second.ufl_value);
+                         };
+                         self.uploadU.ufl_value := 'File uploaded successfully.';
+                       };
+                      self.upl.vc_data_bind(e);
+                   </v:on-post>
+                 </v:button>
+                 <v:label name="uploadU" value="''"/>
+               </td>
+            </tr>
+          </table>
+        </v:form>
+      </v:template>
+      <v:template name="PartnerLinks" type="simple" enabled="--case when self.cop = 'plink' then 1 else 0 end">
+        <v:form name="ufl" type="simple" method="POST" action="browser.vspx" xhtml_enctype="multipart/form-data">
+          <table width="100%" id="content" cellpadding="0" cellspacing="0">
+            <tr><th class="info" colspan="3">Upload Partner Link file</th></tr>
+            <tr>
+              <td colspan="3">
+                <?vsp http(sprintf('<a target="_blank"  href="help.vspx?id=browser&sid=%s&realm=%s\r\n"><img alt="Help" title="Help" src="i/help_24.gif" border="0" /></a>', self.sid ,self.realm));?>
+                <?vsp http(sprintf('<a target="_blank"  href="help.vspx?id=browser&sid=%s&realm=%s\r\n"> Help</a>', self.sid ,self.realm));?>
+              </td>
+            </tr>
+            <tr>
+               <td valign="top" align="right"><BR/>
+                 <v:url name="u2URL" value="URL" url="--sprintf('help.vspx?id=browser&name=pu_url')" xhtml_target="_blank"/>
+               </td>
+               <td valign="top">
+                 <BR/><v:radio-button initial-checked="1" value="1" name="btn_first1" group-name="choice"/>
+               </td>
+               <td><font style="color: red"><v:error-summary match="pl_first1" /></font><BR/>
+                 <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+                   <tr><td colspan="2"><v:text name="pl_first1" value="''" xhtml_size="55%"/></td></tr>
+                   <tr>
+                     <td align="right">Authentication</td>
+                     <td>
+                       <table width="45%"  border="1" id="subcontent" cellpadding="0" cellspacing="0">
+                         <tr>
+                           <td nowrap="1" align="right"><label for="login_user2">User</label></td>
+                           <td>
+                             <v:text name="usern2" value="--connection_get('HTTP_CLI_UID')" null-value="''" xhtml_maxlength="30" xhtml_size="20" xhtml_id="login_user2"/>
+                           </td>
+                         </tr>
+                         <tr>
+                           <td align="right"><label for="login_pwd2">Password</label></td>
+                           <td>
+                             <v:text name="pass2" value="--connection_get('HTTP_CLI_PWD')" null-value="''" xhtml_size="20" xhtml_maxlength="30" type="password" xhtml_id="login_pwd2"/>
+                           </td>
+                         </tr>
+                       </table>
+                     </td>
+                   </tr>
+                 </table>
+               </td>
+             </tr>
+            <tr>
+               <td valign="top" align="right"><BR/>
+                 <v:url name="u2FILE" value="File" url="--sprintf('help.vspx?id=browser&name=pu_file')" xhtml_target="_blank"/>
+               </td>
+               <td valign="top">
+                 <BR/><v:radio-button initial-checked="0" value="0" name="btn_second1" group-name="choice"/>
+               </td>
+               <td><font style="color: red"><v:error-summary match="pl_second" /></font><BR/>
+                 <v:text name="pl_second1" type="file" xhtml_class="m_e" xhtml_size="60%"/><BR/>
+                 <table id="subcontent"><tr><td/><td/><td/><td><font color="Red">Note: </font>No relative references inside file will be accepted.</td></tr></table>
+               </td>
+           </tr>
+            <tr>
+               <td>&nbsp;</td>
+               <td colspan="2">
+                 <v:button action="return" value="i/back_16.png" xhtml_title="Back" style="image" xhtml_alt="Back" text="&#160;Back">
+                   <v:field name="vbpel" ref="hbpel"/>
+                 </v:button>
+                 <v:button action="simple" value="i/import_data_16.png" xhtml_title="Upload" style="image" xhtml_alt="Upload" text="&#160;Upload">
+                   <v:on-post>
+                       if (not self.vc_is_valid)
+                           return;
+                       if (self.btn_first1.ufl_selected = 1)
+                       {
+                         if (not length (self.pl_first1.ufl_value))
+                         {
+                           self.pl_first1.vc_error_message := 'Please, enter valid URL.';
+                           self.vc_is_valid := 0;
+                           return 0;
+                         };
+                         BPEL.BPEL.set_uri_connection(self.usern2.ufl_value, self.pass2.ufl_value);
+                         BPEL..wsdl_upload(self.cid,trim(self.pl_first1.ufl_value,' '),null,self.crole);
+                         self.uploadP.ufl_value := 'File uploaded successfully.';
+                       }
+                      else if (self.btn_second1.ufl_selected = 1)
+                       {
+                         if (not length (self.pl_second1.ufl_value))
+                         {
+                           self.pl_second1.vc_error_message := 'Please, choose file.';
+                           self.vc_is_valid := 0;
+                           return 0;
+                         };
+                         BPEL..wsdl_upload(self.cid,'',self.pl_second1.ufl_value,self.crole);
+                         self.uploadP.ufl_value := 'File uploaded successfully.';
+                       };
+                      self.ufl.vc_data_bind(e);
+                   </v:on-post>
+                 </v:button>
+                 <v:label name="uploadP" value="''"/>
+               </td>
+            </tr>
+          </table>
+        </v:form>
+      </v:template>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

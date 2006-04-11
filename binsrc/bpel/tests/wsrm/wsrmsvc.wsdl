@@ -1,0 +1,148 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+ xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" 
+ xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:dime="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+ xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" 
+ xmlns:content="http://schemas.xmlsoap.org/ws/2002/04/content-type/" 
+ xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/" 
+ xmlns:ns0="services.wsdl"
+ xmlns:dl="services.wsdl" 
+ xmlns:tns="services.wsdl"
+ xmlns:plt="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+ xmlns:wsa="http://schemas.xmlsoap.org/ws/2003/03/addressing"
+ targetNamespace="services.wsdl"
+ name="VirtuosoSOAP" xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+	<types>
+	<schema targetNamespace="services.wsdl"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+	<element name="echo" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs='1' maxOccurs='1' name='var' type='xsd:string' />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="echoResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs='1' maxOccurs='1' name='CallReturn' type='xsd:string' />
+	    </all>
+	  </complexType>
+	</element>
+	</schema>
+	<schema targetNamespace="http://schemas.xmlsoap.org/ws/2003/03/addressing"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+          <complexType name="AttributedURI">
+              <simpleContent>
+                  <extension base="anyURI">
+		      <attribute name="Id" type="xsd:string"/>
+                  </extension>
+              </simpleContent>
+          </complexType>
+          <complexType name="EndpointReferenceType">
+              <sequence>
+                  <element name="Address" type="anyURI"/>
+                  <element name="ReferenceProperties" type="wsa:ReferencePropertiesType" minOccurs="0"/>
+                  <element name="PortType" type="wsa:AttributedQName" minOccurs="0"/>
+                  <element name="ServiceName" type="wsa:ServiceNameType" minOccurs="0"/>
+              </sequence>
+	      <attribute name="Id" type="xsd:string"/>
+          </complexType>
+          <complexType name="ServiceNameType">
+              <simpleContent>
+                  <extension base="QName">
+                      <attribute name="PortName" type="NCName"/>
+                  </extension>
+              </simpleContent>
+          </complexType>
+          <complexType name="AttributedQName">
+              <simpleContent>
+                  <extension base="QName"/>
+              </simpleContent>
+          </complexType>
+          <complexType name="ReferencePropertiesType">
+              <sequence>
+                  <any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+              </sequence>
+          </complexType>
+          <element name="MessageID" type="wsa:AttributedURI"/>
+          <element name="ReplyTo" type="wsa:EndpointReferenceType"/>
+	</schema>
+	</types>
+	<message name="ReplyTo">
+		<part name="ReplyTo" element="wsa:ReplyTo" />
+	</message>
+	<message name="MessageID">
+		<part name="MessageID" element="wsa:MessageID" />
+	</message>
+	<message name="echoRequest">
+		<part element="dl:echo" name="parameters" />
+	</message>
+	<message name="onResultMessage">
+		<part element="dl:echoResponse" name="parameters" />
+	</message>
+	<portType name="SOAPDocLiteralPortType">
+		<operation name="echo">
+			<input message="tns:echoRequest" name="echoRequest" />
+		</operation>
+	</portType>
+	<portType name="onResultPortType">
+	    <operation name="onResult">
+		<input message="tns:onResultMessage"/>
+	    </operation>
+	</portType>
+	<binding name="SOAPDocLiteralBinding" type="tns:SOAPDocLiteralPortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<operation name="echo">
+			<soap:operation soapAction="#echo" style="document" />
+			<input name="echoRequest">
+				<soap:body use="literal" />
+				<soap:header use="literal" message="tns:ReplyTo" part="ReplyTo" />
+				<soap:header use="literal" message="tns:MessageID" part="MessageID" />
+			</input>
+		</operation>
+	</binding>
+	<service name="VirtuosoSOAP">
+		<documentation>Virtuoso SOAP services</documentation>
+		<port name="SOAPDocLiteralPort" binding="tns:SOAPDocLiteralBinding">
+			<soap:address location="http://localhost:6666/RmSvc" />
+		</port>
+	</service>
+ <plt:partnerLinkType name="SyncService">
+     <plt:role name="SyncServiceProvider">
+	 <plt:portType name="tns:SOAPDocLiteralPortType"/>
+     </plt:role>
+     <plt:role name="ASyncServiceRequester">
+	 <plt:portType name="tns:onResultPortType"/>
+     </plt:role>
+ </plt:partnerLinkType>
+</definitions>

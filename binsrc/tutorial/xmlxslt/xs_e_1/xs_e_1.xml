@@ -1,0 +1,75 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XS-E-1">
+  <refmeta>
+    <refentrytitle>Encodings</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Encodings in HTTP, XML XSL-T</refname>
+    <refpurpose>Encodings in HTTP, XML XSL-T</refpurpose>
+  </refnamediv>
+
+<refsect1 id="XS-E-1a">
+<title>Treatment of the &lt;?xml &gt; notation</title>
+<itemizedlist mark="bullet">
+  <listitem><para>Each external parsed entity may begin with a text declaration:</para>
+    <programlisting>&lt;?xml versioninfo encoding_declaration &gt;</programlisting></listitem>
+  <listitem>Each external parsed entity in an XML document may use a different encoding for its characters.</listitem> 
+  <listitem><para>The encoding declaration instructs the XML parser which encoding to use to parse the entity.</para>
+    <programlisting>encoding="encoding name"</programlisting></listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="XS-E-1b">
+<title>The xsl:output element's options</title>
+<itemizedlist mark="bullet">
+  <listitem>The xml output method outputs the result tree as a well-formed XML external general parsed entity.</listitem> 
+  <listitem>The html output method outputs the result tree as HTML.</listitem>
+  <listitem>The text output method outputs the result tree by outputting the string-value of every text node in the
+    result tree in document order without any escaping.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="XS-E-1c">
+<title>Parsing the XML documents with specified encoding</title>
+<itemizedlist mark="bullet">
+  <listitem>If the encoding is specified in the XML document (in xml header), it is used.</listitem>
+  <listitem>If not in the document, but in "default encoding" argument, then the argument's value is used.</listitem>
+  <listitem>If no argument, the session should be used only for HTML, but for XMLs the standard requires UTF-8.</listitem>
+  <listitem>So when a tree comes from xslt the xsl:output is reflected there for use when serializing.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="XS-E-1d">
+<title>Examples</title>
+<itemizedlist mark="bullet">
+  <listitem>The example in the SQL script demonstrates using the encodings and languages with free-text search over indexed data.</listitem>
+  <listitem>The first example accepts text from the user and maps this to any selected encoding and returns the text in another encoding. The selection box of input and output encodings is used to transfer the narrow character data.</listitem>
+  <listitem>The second example sends the text of the XS-S-1 data to the user agent in a selectable encoding, using an XSL-T transformation.</listitem>
+  <listitem>The last example shows how the text can be effected by the HTTP 'Content-Type' header defining the charset.</listitem>
+  <listitem>In this example current charset is set with 'set charset=...' statement. This invokes sending a 'charset' mime attribute to the user-agent.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

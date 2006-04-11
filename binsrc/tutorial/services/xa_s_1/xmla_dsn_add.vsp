@@ -1,0 +1,105 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+declare _dsn, _uid, _pwd, ses varchar;
+
+  _dsn := _uid := _pwd := ''; ses := string_output ();
+  if ({?'add'} is not null)
+    {
+      if ({?'add'} = 'Cancel')
+	goto redir;
+      _dsn := get_keyword ('dsn', params, '');
+      _uid := get_keyword ('user', params, '');
+      _pwd := get_keyword ('pwd', params, '');
+      declare exit handler for sqlstate '*' {
+  	      http ('<TABLE BORDER="0" CELLPADDING="0">', ses);
+  	      http (sprintf ('<TR><TD COLSPAN="2">Connection to %s failed:</TD></TR>', _dsn), ses);
+  	      http ('<TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>', ses);
+ 	      http (sprintf ('<TR><TD>SQL State</TD><TD>%s</TD></TR>', coalesce (__SQL_STATE, '')), ses);
+ 	      http (sprintf ('<TR><TD>Error Message</TD><TD>%s</TD></TR>', coalesce (__SQL_MESSAGE, '')), ses);
+  	      http ('</TABLE>', ses);
+	goto again;  };
+      vd_remote_data_source (_dsn, '', _uid, _pwd);
+redir:
+      http_rewrite ();
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: xmla.vsp\r\n');
+    }
+again:;
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>Connected data sources</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Change connected data source properties in Virtuoso Tutorials">
+  </head>
+  <BODY>
+<?vsp
+    http (string_output_string (ses));
+?>
+
+    <form method="POST" name="add_cds_form" action="xmla_dsn_add.vsp">
+
+       <TABLE BORDER="0" CELLPADDING="0">
+        <tr>
+	 <td NOWRAP >DataSource</td>
+	 <td>
+<?vsp if (length (sql_data_sources(1)) > 0) { ?>
+	  <select name=dsn >
+	  <?vsp
+	     adm_lt_dsn_options(_dsn);
+	  ?>
+	  </select>
+<?vsp } else { ?>
+	  <input type=text name="dsn" value="<?=_dsn?>">
+<?vsp }?>
+	 </td>
+	</tr>
+        <tr>
+	 <td NOWRAP >User Name</td>
+	 <td>
+	  <input type=text name="user" value="<?=_uid?>">
+	 </td>
+	</tr>
+        <tr>
+	 <td NOWRAP >Password</td>
+	 <td>
+	  <input type=password name="pwd" value="<?=_pwd?>">
+	 </td>
+	</tr>
+        <TR>
+
+	<TD VALIGN="bottom" ALIGN="center" colspan=2>
+              <input type="submit" name="add" value="Add" >
+              <input type="submit" name="add" value="Cancel" >
+	      </td>
+	</TD>
+
+      </TR>
+       </TABLE>
+    </form>
+  </body>
+</html>

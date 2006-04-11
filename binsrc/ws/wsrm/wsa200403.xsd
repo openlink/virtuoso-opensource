@@ -1,0 +1,92 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<xs:schema xmlns:wsu="http://schemas.xmlsoap.org/ws/2002/07/utility" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://schemas.xmlsoap.org/ws/2004/03/addressing" elementFormDefault="qualified" blockDefault="#all" xmlns:wssu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+  <xs:element name="EndpointReference" type="wsa:EndpointReferenceType"/>
+  <xs:complexType name="EndpointReferenceType">
+    <xs:sequence>
+      <xs:element name="Address" type="xs:anyURI"/>
+      <xs:element name="ReferenceProperties" type="wsa:ReferencePropertiesType" minOccurs="0"/>
+      <xs:element name="PortType" type="wsa:AttributedQName" minOccurs="0"/>
+      <xs:element name="ServiceName" type="wsa:ServiceNameType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute ref="wssu:Id"/>
+  </xs:complexType>
+  <xs:complexType name="ReferencePropertiesType">
+    <xs:sequence>
+      <xs:any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ServiceNameType">
+    <xs:simpleContent>
+      <xs:extension base="xs:QName">
+        <xs:attribute name="PortName" type="xs:NCName"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="AttributedURI">
+    <xs:simpleContent>
+      <xs:extension base="xs:anyURI">
+        <xs:attribute ref="wssu:Id"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:element name="MessageID" type="wsa:AttributedURI"/>
+  <xs:element name="RelatesTo" type="wsa:Relationship"/>
+  <xs:element name="To" type="wsa:AttributedURI"/>
+  <xs:element name="Action" type="wsa:AttributedURI" nillable="false"/>
+  <xs:element name="From" type="wsa:EndpointReferenceType"/>
+  <xs:element name="ReplyTo" type="wsa:EndpointReferenceType"/>
+  <xs:element name="FaultTo" type="wsa:EndpointReferenceType"/>
+  <xs:element name="Recipient" type="wsa:EndpointReferenceType"/>
+  <xs:complexType name="Relationship">
+    <xs:simpleContent>
+      <xs:extension base="xs:anyURI">
+        <xs:attribute name="RelationshipType" type="xs:QName" use="optional"/>
+        <xs:attribute ref="wssu:Id"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:simpleType name="RelationshipTypeValues">
+    <xs:restriction base="xs:QName">
+      <xs:enumeration value="wsa:Reply"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="AttributedQName">
+    <xs:simpleContent>
+      <xs:extension base="xs:QName">
+			</xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:element name="ReplyAfter"/>
+  <xs:simpleType name="FaultSubcodeValues">
+    <xs:restriction base="xs:QName">
+      <xs:enumeration value="wsa:InvalidMessageInformationHeader"/>
+      <xs:enumeration value="wsa:MessageInformationHeaderRequired"/>
+      <xs:enumeration value="wsa:DestinationUnreachable"/>
+      <xs:enumeration value="wsa:ActionNotSupported"/>
+      <xs:enumeration value="wsa:EndpointUnavailable"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:attribute name="Action" type="xs:anyURI"/>
+</xs:schema>

@@ -1,0 +1,91 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../demo.css">
+    <title>Create freetext index on table fth</title>
+  </head>
+  <body>
+<h2>Create freetext index on table fth</h2>
+
+<?vsp
+  declare stat, msg varchar;
+  stat := null;
+  msg := null;
+  {
+      declare exit handler for sqlstate '*'
+      {
+        stat := __SQL_STATE;
+        msg := __SQL_MESSAGE;
+?>
+        <TABLE>
+	  <TR>
+	    <TD>SQL State</TD>
+	    <TD><font color=red><?= stat ?></font></TD>
+	  </TR>
+	  <TR>
+	    <TD>Error Message</TD>
+	    <TD><font color=red><?= msg ?></font></TD>
+	  </TR>
+        </TABLE>
+<?vsp
+        return;
+      };
+
+      exec ('drop table VTLOG_DB_DBA_fth', stat, msg);
+      exec ('drop table fth_dt_WORDS', stat, msg);
+      exec ('delete from fth');
+      exec ('create text index on fth (dt) with key id clustered with (c1) using function');
+
+      insert into fth values (1, 'abc', 'one');
+      insert into fth values (2, 'def', 'two');
+      insert into fth values (3, null, 'zero');
+      insert into fth values (4, null, 'zeroize');
+
+      exec ('select id from fth where contains (dt, ''abc'')');
+
+      exec ('select id from fth where contains (dt, ''def'')');
+      exec ('select id from fth where contains (dt, ''one'')');
+      exec ('select id from fth where contains (dt, ''two'')');
+      exec ('select id from fth where contains (dt, ''zero'')');
+      exec ('select id from fth where contains (dt, ''zeroize'')');
+
+      delete from fth where id = 1;
+      delete from fth where id = 4;
+
+      exec ('select id from fth where contains (dt, ''abc'')');
+      exec ('select id from fth where contains (dt, ''one'')');
+      exec ('select id from fth where contains (dt, ''zeroize'')');
+
+      update fth set dt = 'xyz' , c1 = 'bcd' where id = 2;
+      update fth set dt = null, c1 = 'upd zero' where id = 3;
+
+      exec ('select id from fth where contains (dt, ''def'')');
+      exec ('select id from fth where contains (dt, ''xyz'')');
+      exec ('select id from fth where contains (dt, ''two'')');
+      exec ('select id from fth where contains (dt, ''bcd'')');
+      exec ('select id from fth where contains (dt, ''zero and upd'')');
+   }
+?>
+
+<h3>Success : a freetext index was built using a custom PL indexing hooks</h3>

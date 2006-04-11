@@ -1,0 +1,271 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+declare _acct, _srv, _mode varchar;
+declare _mod integer;
+if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+_mode := '';
+_acct := get_keyword ('acct', params, '');
+_srv := get_keyword ('srv', params, '');
+if (_acct = '' or _srv = '')
+  {
+    http ('Error: account and server is mandatory');
+    return;
+  }
+if ('' <> get_keyword ('set_sync_user', params, ''))
+  {
+    declare _sync_user varchar;
+    _sync_user := get_keyword ('sync_user', params);
+    REPL_SYNC_USER (_srv, _acct, _sync_user);
+  }
+if ('' <> get_keyword ('sched', params, ''))
+  {
+    whenever not found goto nexts;
+    declare _int integer;
+    _int := atoi (get_keyword ('int', params, '0'));
+    DB.DBA.SUB_SCHEDULE (_srv, _acct, _int);
+    nexts:;
+  }
+if ('' <> get_keyword ('chmod', params, ''))
+  {
+    declare ix integer;
+    declare _item varchar;
+    ix := 0;
+    _mod := atoi (get_keyword ('mode', params, '0'));
+    while (_item := adm_next_checkbox ('CB_', params, ix))
+      {
+        update DB.DBA.SYS_TP_ITEM set TI_IS_COPY = _mod where TI_SERVER = _srv and
+               TI_ITEM = _item and TI_ACCT = _acct;
+      }
+  }
+if ('' <> get_keyword ('loadata', params, ''))
+  {
+    declare errors any;
+    errors := REPL_INIT_COPY ( _srv, _acct, 1);
+    if (isarray (errors))
+      {
+        http_rewrite ();
+        ?>
+<?include sub_error.vsp ?>
+        <?vsp
+        return;
+      }
+  }
+if ('' <> get_keyword ('set_valid', params, ''))
+  {
+    if (not exists (select 1 from SYS_REPL_SUBSCRIBERS
+                    where RS_SERVER = _srv and RS_ACCOUNT = _acct
+                    and RS_SUBSCRIBER = _srv))
+      repl_add_subscriber (_srv, _acct, _srv);
+    else
+      {
+        update SYS_REPL_SUBSCRIBERS set RS_VALID = 1
+            where RS_SERVER = _srv and RS_ACCOUNT = _acct
+            and RS_SUBSCRIBER = _srv;
+      }
+    repl_changed();
+  }
+if ('' <> get_keyword ('set_invalid', params, ''))
+  {
+    if (not exists (select 1 from SYS_REPL_SUBSCRIBERS
+                    where RS_SERVER = _srv and RS_ACCOUNT = _acct
+                    and RS_SUBSCRIBER = _srv))
+      repl_add_subscriber (_srv, _acct, _srv);
+    update SYS_REPL_SUBSCRIBERS set RS_VALID = 0
+        where RS_SERVER = _srv and RS_ACCOUNT = _acct
+        and RS_SUBSCRIBER = _srv;
+    repl_changed();
+  }
+adm_config_purger_actions (_srv, _acct, params);
+?>
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Transactional replication subscription wizard">
+    <title>Edit subscription "<?=_srv?>/<?=_acct?>"</title>
+  </head>
+<?vsp
+  adm_page_header(concat('Subscription Parameters ', _acct), NULL);
+  if (repl_is_pushback (_srv, _acct) = 0)
+    {
+?>
+
+    <form method=post action="trx_sub_edit.vsp" enctype="multipart/form-data">
+       <input type=hidden name="srv" value="<?=_srv?>">
+       <input type=hidden name="acct" value="<?=_acct?>">
+    <table class=genlist>
+     <tr>
+	<td class=genlisthead>Sel</td>
+	<td class=genlisthead>Item</td>
+	<td class=genlisthead>Type</td>
+	<td class=genlisthead>Is Copy</td>
+	<td class=genlisthead>Mode <small>(procedures only)</small></td>
+     </tr>
+     <?vsp
+     declare _itype, _sched, _cp, _opt varchar;
+     declare _popt integer;
+      declare _sync_user varchar;
+      _sync_user := null;
+      whenever not found goto sync_user_nf;
+      select SYNC_USER into _sync_user
+          from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = _srv and ACCOUNT = _acct;
+sync_user_nf:
+      if (_sync_user is null or _sync_user = '')
+        _sync_user := 'dba';
+     _sched := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT
+	      where SE_NAME = concat ('repl_', _srv, '_', _acct)), 'No');
+     for select TI_ITEM, TI_TYPE as _itp, TI_IS_COPY as cp , TI_OPTIONS as opt from DB.DBA.SYS_TP_ITEM
+         where TI_SERVER = _srv and TI_ACCT = _acct do {
+       if (_itp = 1)
+	 _itype := 'DAV Collection';
+       else if (_itp = 2)
+	 _itype := 'Table';
+       else if (_itp = 3)
+	 _itype := 'PL/SQL Procedure';
+
+       _opt := 'None';
+       _cp := 'None';
+
+       if (cp = 0)
+	 _cp := 'No';
+       else if (cp = 1)
+	 _cp := 'Yes';
+
+       if (isstring (opt))
+	 _popt := atoi (opt);
+       else
+	 _popt := opt;
+       if (_popt = 1)
+	 _opt := 'Calls';
+       else if (_popt = 2)
+	 _opt := 'Definition';
+       else if (_popt = 3)
+         _opt := 'Both';
+    ?>
+     <tr>
+	<td><input type=checkbox name="CB_<?=TI_ITEM?>"></td>
+	<td class="gendata"><?=TI_ITEM?></td>
+	<td class="gendata"><?=_itype?></td>
+	<td class="gendata"><?=_cp?></td>
+	<td class="gendata"><?=_opt?></td>
+     </tr>
+    <?vsp
+	 }
+    ?>
+    </table>
+    <p class=helptext>Scheduled update: <b><?=_sched?></b></p>
+    <hr>
+    <p class=helptext>To change the schedule on the Subscription, input <b>Scheduled interval</b> and click <b>Add schedule</b>.</p>
+    <p class=helptext>To remove the Subscription schedule, input <b>"0"</b> in <b>Scheduled interval</b> and click <b>Add schedule</b>.</p>
+    <table>
+     <tr>
+       <td class=widgettitle>Sync User</td>
+       <td>
+	  <select name="sync_user">
+          <?vsp
+            for select U_NAME from DB.DBA.SYS_USERS
+                where U_IS_ROLE = 0 and U_DAV_ENABLE = 0
+                order by U_NAME do
+              {
+                declare _sel varchar;
+                if (U_NAME = _sync_user)
+                  _sel := ' selected';
+                else
+                  _sel := '';
+          ?>
+	    <option value=<?=U_NAME?><?=_sel?>><?=U_NAME?></option>
+	  <?vsp
+              }
+          ?>
+	  </select>
+       </td>
+       <td><input type=submit name="set_sync_user" value="Set"></td>
+     </tr>
+     <tr>
+       <td class=widgettitle>Scheduled interval</td>
+       <td><input type=text name="int" value="<?=_sched?>"></td>
+       <td><input type=submit name="sched" value="Add schedule"></td>
+     </tr>
+    </table>
+    <hr>
+    <p class=helptext>To load initial data, click here: &nbsp;&nbsp;&nbsp;&nbsp;<input type=submit name="loadata" value="Load data"><br />
+   (Only click here if you have not yet synchronized this Subscription.)
+    </p>
+
+    <hr>
+    <p class=helptext>
+    To change the copy mode of item(s) in the Subscription, select the item(s) you <br>
+    want, choose the appropriate <b>Copy mode</b>, and click the <b>Change mode</b> button.
+    </p>
+    <table>
+     <tr>
+       <td class=genlisthead>Copy mode</td>
+       <td>
+       <select name="mode">
+         <option value=0>Leave local copy</option>
+         <option value=1>Remove local copy</option>
+       </select>
+       </td>
+       <td><input type=submit name="chmod" value="Change mode"></td>
+     </tr>
+    </table>
+    </form>
+
+<?vsp
+    }
+  else
+    {
+      http ('<form action="trx_sub_edit.vsp" method="post">');
+      http (concat ('<input type=hidden name="acct" value="', _acct, '">'));
+      http (concat ('<input type=hidden name="srv" value="', _srv, '">'));
+      adm_config_purger_form (_srv, _acct);
+      http ('</form>');
+
+      http ('<hr>');
+      declare _is_valid integer;
+      _is_valid := 1;
+      whenever not found goto nf;
+      select RS_VALID into _is_valid from SYS_REPL_SUBSCRIBERS
+          where RS_SERVER = _srv and RS_ACCOUNT = _acct
+          and RS_SUBSCRIBER = _srv;
+nf:
+      if (_is_valid <> 0)
+        http ('This pushback account is valid.');
+      else
+        http ('This pushback account is invalid.');
+      http ('<form action="trx_sub_edit.vsp" method="post">');
+      http (concat ('<input type=hidden name="acct" value="', _acct, '">'));
+      http (concat ('<input type=hidden name="srv" value="', _srv, '">'));
+      http ('<table border="0">');
+      http ('<td><input type=submit name="set_valid" value="Set Valid"></td>');
+      http ('<td><input type=submit name="set_invalid" value="Set Invalid"></td>');
+      http ('</table>');
+      http ('</form>');
+    }
+?>
+
+<?vsp adm_page_footer(); ?>
+</html>

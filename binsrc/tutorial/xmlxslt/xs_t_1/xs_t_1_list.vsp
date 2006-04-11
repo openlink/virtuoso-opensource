@@ -1,0 +1,78 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+
+  if (isstring({?'del'}))
+    {
+      delete from XML_TEXT2 where XT_FILE = {?'del'};
+    }
+  if (isstring({?'uplf'}))
+    {
+      declare body, ses, xe any;
+      http_request_status ('HTTP/1.1 200 OK');
+      body := xml_uri_get (null, {?'upl'});
+      body := xml_tree (body, 2);
+      ses := string_output ();
+      xe := xml_tree_doc (body);
+      xml_tree_doc_set_output (xe, 'xml');
+      http_value (xe, null, ses);
+      body := string_output_string (ses);
+      insert into XML_TEXT2 (XT_ID, XT_FILE, XT_TEXT)
+	  values (sequence_next ('XML_TEXT2'), {?'upl'}, body);
+    }
+
+?>
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+<form action=xs_t_1_list.vsp method=post>
+<table class="tableentry">
+ <tr>
+     <td colspan="2">1. Define a <a href="xs_t_1_trig.vsp">text trigger query</a></td>
+ </tr>
+ <tr>
+     <td>2. Enter the URL to upload</td>
+     <td><input type=text name=upl value="" size="50"></td>
+ </tr>
+ <tr>
+     <td>3. Upload the content</td>
+     <td><input type=submit name=uplf value="Upload"></td>
+ </tr>
+ <tr>
+     <td colspan="2">4. Look up <a href="xs_t_1_hits1.vsp">Hits</a> for matches</td>
+ </tr>
+ <tr>
+     <td colspan="2">5. Remove the uploaded file from list bellow and goto step 4.</td>
+ </tr>
+</table>
+<table class="tableresult">
+<tr><td>File</td><td>Action</td></tr>
+<?vsp for select XT_FILE from XML_TEXT2 do { ?>
+ <tr>
+     <td><?=XT_FILE?></td>
+     <td><a href="xs_t_1_list.vsp?del=<?=XT_FILE?>">Delete</a></td>
+ </tr>
+<?vsp } ?>
+</table>
+</body>
+</html>

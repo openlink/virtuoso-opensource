@@ -1,0 +1,74 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _spot_depth integer;
+  declare _spot_len integer;
+  declare _spot_end varchar;
+  declare _old_top_level integer;
+  declare __spot integer;
+  __spot := {?'spot'};
+  if (__spot is null)
+    __spot := '';
+  _spot_end := concat (__spot, '~');
+  _spot_len := length (__spot);
+  _old_top_level := null;
+  http_rewrite (null);
+  http_header ('Content-Type: text/xml; charset=ISO-8859-1\n');
+  http ('<?xml version="1.0" encoding="ISO-8859-1" ?>\n<vad:group xmlns:vad="SYSTEM http://www.openlinksw.com/urn/vad"><vad:registry>');
+-- Spotted keys
+for
+  select
+    "R_KEY" as _r_key,
+    "R_TYPE" as _r_type,
+    "R_VALUE" as _r_value
+  from "DB"."DBA"."VAD_REGISTRY"
+  where
+    ("R_KEY" >= __spot) and
+    ("R_KEY" < _spot_end) and
+    (("R_KEY" = __spot) or
+     (strchr ('/?#', chr ( aref ("R_KEY", _spot_len))) is not null) )
+  order by
+    replace (
+      replace ("R_KEY", '#', '\1'),
+      '?', '\2')
+do
+  {
+     declare _rkey_path any;
+     declare _rkey_params varchar;
+     declare _rkey_anchor varchar;
+     _rkey_path := "DB"."DBA"."VAD_RKEY_PATH_COMPONENTS"(_r_key);
+     _rkey_params := "DB"."DBA"."VAD_RKEY_PARAMS"(_r_key);
+     _rkey_anchor := "DB"."DBA"."VAD_RKEY_ANCHOR"(_r_key);
+    if (_rkey_anchor is null)
+      {
+        if (aref (_rkey_path, 0) <> _old_top_level)
+          http ('</vad:registry><vad:registry>');
+        _old_top_level := aref (_rkey_path, 0);
+        http (concat ('<vad:branch key="', _r_key, '" type="', _r_type, '" owerwrite="equal" >'));
+        http (_r_value);
+        http ('</vad:branch>');
+      }
+  }
+   http ('</vad:registry></vad:group>');
+-- Table of keys terminated
+?>

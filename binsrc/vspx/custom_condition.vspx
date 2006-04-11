@@ -1,0 +1,63 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="iso-8859-1"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=iso-8859-1"/>
+  <meta name="generator" content="Adobe GoLive 6"/>
+  <title>Template with custom condition example</title>
+</head>
+
+<body bgcolor="#ffffff">
+<p>
+
+<v:page name="custom_condition" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+<v:template name="template1" type="simple" condition="(get_keyword('select', control.vc_page.vc_event.ve_params, 'both')='one') or (get_keyword('select', control.vc_page.vc_event.ve_params, 'both')='both')">
+  <label>Template named template1 is visible</label>
+</v:template>
+<br/>
+<v:template name="template2" type="simple" condition="(get_keyword('select', control.vc_page.vc_event.ve_params, 'both')='two') or (get_keyword('select', control.vc_page.vc_event.ve_params, 'both')='both')">
+  <label>Template named template2 is visible</label>
+</v:template>
+<br/>
+<hr/>
+<form action="custom_condition.vspx" method="get" name="FormName">
+  <select name="select" size="1">
+    <option value="one">first</option>
+    <option value="two">second</option>
+    <option value="both">both</option>
+  </select>
+  <input type="submit" name="button" value="Submit" border="0"/><p/>
+</form>
+
+<v:include name="include1" url="footer.xml"/>
+
+</v:page>
+
+</p>
+
+</body>
+
+</html>

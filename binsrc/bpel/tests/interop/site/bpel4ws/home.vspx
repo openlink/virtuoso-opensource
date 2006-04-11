@@ -1,0 +1,110 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!-- $Id$ -->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="home_page" decor="interop_decor.vspx" style="interop_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+   <vm:pagetitle>OpenLink BPEL Interoperability Home</vm:pagetitle>
+<vm:pagewrapper>
+  <vm:pagebody>
+    <table width="100%" border="0" cellpadding="2" cellspacing="2">
+      <tr>
+        <td>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content_header">
+            <tr>
+	      <td class="paragraph">
+	        Virtuoso Universal Server Business Process Execution Language (BPEL) Interoperability Site
+	      </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+            <tr>
+              <th class="info" colspan="5">Tasks</th>
+            </tr>
+            <tr>
+              <td class="home" width="5%">&nbsp;</td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="intest.vspx"><img alt="BPEL Interop Testing" title="BPEL Interop Testing" src="new_24.png" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="intest.vspx">BPEL Interop Testing</a>'));?>
+              </td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="tstsum.vspx"><img alt="Test Results" title="Test Results" src="go_24.png" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="tstsum.vspx">Test Results</a>'));?>
+              </td>
+              <td class="home" width="30%">
+              </td>
+              <td class="home" width="5%">&nbsp;</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+
+            <tr>
+              <th class="info" colspan="5">Info</th>
+            </tr>
+            <tr>
+              <td class="home" width="5%">&nbsp;</td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="about.vspx"><img alt="About this site" title="About this site" src="about_24.png" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="about.vspx">About this site</a>'));?>
+              </td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="bpeluct.vspx"><img alt="BPEL Use Case Testing" title="BPEL Use Case Testing" src="confg_24.png" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="bpeluct.vspx">BPEL Use Case Testing</a>'));?>
+              </td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="mgrsum.vspx"><img alt="Features Summary" title="Features Summary" src="opelbeplsmall.png" height="35" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="mgrsum.vspx">Features Summary</a>'));?>
+              </td>
+              <td class="home" width="5%">&nbsp;</td>
+            </tr>
+            <tr><td class="home" colspan="5">&nbsp;</td></tr>
+            <tr>
+              <td class="home" width="5%">&nbsp;</td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="bpelrsc.vspx"><img alt="BPEL Resources" title="BPEL Resources" src="web_24.png" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="bpelrsc.vspx">BPEL Resources</a>'));?>
+              </td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="protocols.vspx"><img alt="Protocol Support" title="Protocol Support" src="favs_24.png" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="protocols.vspx">Protocol Support</a>'));?>
+              </td>
+              <td class="home" width="30%">
+                <?vsp http(sprintf('<a class="homelinks" href="wsa.vspx"><img alt="WS-I Advocate" title="WS-I Advocate" src="WS-I_Advocate_Color_sm.gif" height="35" border="0" /></a>'));?>
+                <?vsp http(sprintf('<a class="homelinks" href="wsa.vspx">WS-I Advocate</a>'));?>
+              </td>
+              <td class="home" width="5%">&nbsp;</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

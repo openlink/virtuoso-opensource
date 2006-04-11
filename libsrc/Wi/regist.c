@@ -1,0 +1,592 @@
+/*
+ *  regist.c
+ *
+ *  $Id$
+ *
+ *  Database Registry
+ *  
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *  
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *  
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  
+ *  
+*/
+
+#include "sqlnode.h"
+#include "sqlfn.h"
+#include "log.h"
+
+
+buffer_desc_t *reg_buf;
+
+int
+cpt_write_registry (dbe_storage_t * dbs, dk_session_t *ses)
+{
+  long copy_bytes;
+  long bytes_left = strses_length (ses);
+  long byte_from = 0;
+  dp_addr_t first = dbs->dbs_registry;
+  dp_addr_t any_page = first;
+
+  if (!reg_buf)
+    {
+      reg_buf = buffer_allocate (DPF_BLOB);
+      reg_buf->bd_storage = dbs;
+    }
+  CATCH_READ_FAIL (ses)
+    {
+      while (bytes_left)
+	{
+	  if (!first)
+	    {
+	      dp_addr_t new_dp = dbs_get_free_disk_page (dbs, 0);
+	      if (!any_page)
+		{
+		  dbs->dbs_registry = new_dp;
+		  any_page = new_dp;
+		  reg_buf->bd_page = reg_buf->bd_physical_page = new_dp;
+		}
+	      else
+		{
+		  LONG_SET (reg_buf->bd_buffer + DP_OVERFLOW, new_dp);
+		  buf_disk_write (reg_buf, 0);
+		  reg_buf->bd_page = new_dp;
+		  reg_buf->bd_physical_page = new_dp;
+		}
+	      LONG_SET (reg_buf->bd_buffer + DP_OVERFLOW, 0);
+	    }
+	  else
+	    {
+	      reg_buf->bd_page = first;
+	      reg_buf->bd_physical_page = first;
+	      buf_disk_read (reg_buf);
+	    }
+	  copy_bytes = MIN (PAGE_DATA_SZ, bytes_left);
+	  session_buffered_read (ses, (char *) (reg_buf->bd_buffer + DP_DATA), copy_bytes);
+	  LONG_SET (reg_buf->bd_buffer + DP_BLOB_LEN, copy_bytes);
+	  bytes_left -= copy_bytes;
+	  byte_from += copy_bytes;
+	  first = LONG_REF (reg_buf->bd_buffer + DP_OVERFLOW);
+	  if (!bytes_left && first)
+	    {
+	      LONG_SET (reg_buf->bd_buffer + DP_OVERFLOW, 0);
+	      buf_disk_write (reg_buf, 0);
+	      while (first)
+		{
+		  reg_buf->bd_page = first;
+		  reg_buf->bd_physical_page = first;
+		  buf_disk_read (reg_buf);
+		  dbs_free_disk_page (dbs, first);
+		  first = LONG_REF (reg_buf->bd_buffer + DP_OVERFLOW);
+		}
+	    }
+	  else
+	    buf_disk_write (reg_buf, 0);
+	}
+    }
+  FAILED
+    {
+      GPF_T1 ("Inconsistent number of bytes read in cpt_write_registry");
+    }
+  END_READ_FAIL (ses);
+  return LTE_OK;
+}
+
+#ifdef DBG_BLOB_PAGES_ACCOUNT
+extern int f_backup_dump;
+#endif
+
+
+dk_session_t *
+dbs_read_registry (dbe_storage_t * dbs)
+{
+#ifdef DBG_BLOB_PAGES_ACCOUNT
+  if (f_backup_dump)
+    db_dbg_account_init_hash ();
+#endif
+  if (!bootstrap_cli)
+    {
+      bootstrap_cli = client_connection_create ();
+      local_start_trx (bootstrap_cli);
+    }
+  if (dbs->dbs_registry)
+    {
+      dk_session_t *str = bloblike_pages_to_string_output (dbs, bootstrap_cli->cli_trx, dbs->dbs_registry);
+      local_commit (bootstrap_cli);
+      return str;
+    }
+  else
+    return NULL;
+}
+
+
+id_hash_t *registry;
+id_hash_t *sequences;
+
+#define ENSURE_REGISTRY \
+  if (!registry) registry = id_str_hash_create (101);
+#define ENSURE_SEQUENCES \
+  if (!sequences) sequences = id_str_hash_create (101);
+
+
+caddr_t
+box_deserialize_string (caddr_t text, int opt_len)
+{
+  scheduler_io_data_t iod;
+  caddr_t reg;
+
+  dk_session_t ses;
+  /* read_object will not box top level numbers */
+  if (DV_LONG_INT == ((dtp_t*)text)[0])
+    return (box_num (LONG_REF_NA (text + 1)));
+  if (DV_SHORT_INT == ((dtp_t*) text)[0])
+    return (box_num (((signed char *)text)[1]));
+  memset (&ses, 0, sizeof (ses));
+  memset (&iod, 0, sizeof (iod));
+  ses.dks_in_buffer = text;
+  if (opt_len)
+    ses.dks_in_fill = opt_len;
+  else
+    ses.dks_in_fill = box_length (text);
+  SESSION_SCH_DATA ((&ses)) = &iod;
+
+  reg = (caddr_t) read_object (&ses);
+  return reg;
+}
+
+int in_crash_dump = 0;
+
+void
+db_replay_registry_setting (caddr_t ent, caddr_t *err_ret)
+{
+  if (ent[0] == 'X' && !in_crash_dump)
+    {
+      caddr_t err = NULL;
+      query_t *qr = sql_compile (ent + 1, bootstrap_cli, &err, 0);
+      if (qr)
+	{
+	  err = qr_quick_exec (qr, bootstrap_cli, "", NULL, 0);
+	  qr_free (qr);
+	}
+      if (IS_BOX_POINTER (err))
+	{
+	  *err_ret = err;
+	}
+    }
+}
+
+void
+db_replay_registry_sequences (void)
+{
+  id_hash_iterator_t hi;
+  caddr_t *pkey, *pdata;
+
+  id_hash_iterator (&hi, registry);
+
+  while (hit_next (&hi, (caddr_t *) &pkey, (caddr_t *) &pdata))
+    {
+      if (pdata && *pdata)
+	{
+	  caddr_t err = NULL;
+	  db_replay_registry_setting (*pdata, &err);
+	  if (IS_BOX_POINTER (err))
+	    {
+	      log_error ("Error reading registry: %s: %s\n%s",
+		  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
+		  *pdata);
+	      dk_free_tree (err);
+	      err = NULL;
+	    }
+	}
+    }
+}
+
+
+void
+dbs_init_registry (dbe_storage_t * dbs)
+{
+  int inx;
+  caddr_t *reg;
+  dk_session_t *ses = dbs_read_registry (dbs);
+  ENSURE_SEQUENCES;
+  ENSURE_REGISTRY;
+  if (!ses)
+    return;
+
+  reg = (caddr_t *) read_object (ses);
+  DO_BOX (caddr_t *, ent, inx, reg)
+  {
+    id_hash_set (registry, (caddr_t) & ent[0], (caddr_t) & ent[1]);
+    dk_free_box ((caddr_t) ent);
+  }
+  END_DO_BOX;
+  dk_free_box ((caddr_t) reg);
+  if (ses)
+    dk_free_box ((box_t) ses);
+}
+
+int sql_escaped_string_literal (char *target, char *text, int max);
+
+
+void
+registry_exec ()
+{
+  id_hash_iterator_t it;
+  caddr_t *name;
+  caddr_t *value;
+  id_hash_iterator (&it, registry);
+  while (hit_next (&it, (caddr_t *) & name, (caddr_t *) & value))
+    {
+      caddr_t str = *value;
+      if (str && str[0] == 'X' && str[1] == ' ')
+	{
+	  caddr_t err;
+	  query_t *qr = sql_compile (str + 1, bootstrap_cli, &err, 0);
+	  if (qr)
+	    {
+	      err = qr_quick_exec (qr, bootstrap_cli, "", NULL, 0);
+	      qr_free (qr);
+	    }
+	  if (IS_BOX_POINTER (err))
+	    {
+	      log_error ("Error reading registry: %s: %s\n%s",
+			 ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
+			 str);
+	    }
+	}
+    }
+}
+
+
+void
+registry_update_sequences (void)
+{
+  id_hash_iterator_t it;
+  caddr_t *name;
+  long *value;
+  id_hash_iterator (&it, sequences);
+  ASSERT_IN_TXN;
+  while (hit_next (&it, (caddr_t *) & name, (caddr_t *) & value))
+    {
+      char temp[2000];
+      caddr_t the_id = box_sprintf_escaped (*name, 0);
+
+      snprintf (temp, sizeof (temp), "X sequence_set ('%s', %ld, 1)", the_id, *value);
+      dk_free_box (the_id);
+
+      registry_set (*name, temp);
+    }
+}
+
+
+caddr_t list (long n,...);
+
+
+void
+dbs_write_registry (dbe_storage_t * dbs)
+{
+  scheduler_io_data_t iod;
+  dk_set_t ents = NULL;
+  int inx;
+  caddr_t *arr;
+  dk_session_t *ses = strses_allocate ();
+  id_hash_iterator_t it;
+  caddr_t *k, *d;
+
+  registry_update_sequences ();
+  id_hash_iterator (&it, registry);
+  while (hit_next (&it, (caddr_t *) & k, (caddr_t *) & d))
+    {
+      caddr_t *ent = (caddr_t *) list (2, *k, *d);
+      dk_set_push (&ents, ent);
+    }
+  arr = (caddr_t *) list_to_array (dk_set_nreverse (ents));
+  if (!SESSION_SCH_DATA (ses))
+    SESSION_SCH_DATA (ses) = &iod;
+  memset (&iod, 0, sizeof (iod));
+  CATCH_WRITE_FAIL (ses)
+      print_object ((caddr_t) arr, ses, NULL, NULL);
+  cpt_write_registry (dbs, ses);
+  strses_free (ses);
+  DO_BOX (caddr_t, elt, inx, arr)
+    {
+      dk_free_box (elt);
+    }
+  END_DO_BOX;
+  dk_free_box ((box_t) arr);
+}
+
+
+int
+sql_escaped_string_literal (char *target, char *text, int max)
+{
+  int inx = 0;
+  while (*text)
+    {
+      unsigned char ch = *text;
+      if ((ch >= 'A' && ch <= 'Z') ||
+	  (ch >= 'a' && ch <= 'z') ||
+	  (ch >= '0' && ch <= '9'))
+	target[inx++] = ch;
+      else
+	{
+	  target[inx++] = '\\';
+	  target[inx++] = '0' + (ch / 64);
+	  target[inx++] = '0' + ((ch / 8) & 7);
+	  target[inx++] = '0' + (ch & 7);
+	}
+      text++;
+      if (inx > max - 5)
+	break;
+    }
+  target[inx++] = 0;
+  return inx - 1;
+}
+
+
+void
+db_log_registry (dk_session_t * log)
+{
+  id_hash_iterator_t it;
+  caddr_t *k, *d;
+
+  IN_TXN;
+  registry_update_sequences ();
+  id_hash_iterator (&it, registry);
+  while (hit_next (&it, (caddr_t *) & k, (caddr_t *) & d))
+    {
+      int llen = 0;
+      char temp[2000];
+      caddr_t the_id = box_sprintf_escaped (*k, 0);
+
+      if (!*d)
+	{
+	  dk_free_box (the_id);
+	  continue;
+	}
+      if (0 == strncmp (*k, "__key__", 7))
+	{
+	  dk_free_box (the_id);
+	  continue;
+	}
+      tailprintf (temp, sizeof (temp), &llen, "registry_set ('%s', '", the_id);
+      dk_free_box (the_id);
+
+      llen += sql_escaped_string_literal (&temp[llen], *d, sizeof (temp) - llen);
+      if (llen + 3 > sizeof (temp))
+	continue;
+
+      tailprintf (temp, sizeof (temp), &llen, "')");
+
+      session_buffered_write_char (LOG_TEXT, log);
+      session_buffered_write_char (DV_LONG_STRING, log);
+      print_long ((long)llen, log);
+      session_buffered_write (log, temp, llen);
+    }
+  LEAVE_TXN;
+}
+
+
+void
+registry_set_1 (char *name, char *value, int is_boxed)
+{
+  caddr_t *place;
+  ASSERT_IN_TXN;
+  ENSURE_REGISTRY;
+
+  if (is_boxed && !DV_STRINGP (value))
+    GPF_T1 ("setting non-string in registry");
+  place = (caddr_t *) id_hash_get (registry, (caddr_t) & name);
+  if (place)
+    {
+      dk_free_box (*place);
+      *place = is_boxed ? box_copy (value) : box_dv_short_string (value);
+    }
+  else
+    {
+      caddr_t copy_name = box_string (name);
+      caddr_t copy_value = is_boxed ? box_copy (value) : box_dv_short_string (value);
+      id_hash_set (registry, (caddr_t) & copy_name, (caddr_t) & copy_value);
+    }
+}
+
+
+caddr_t
+registry_get (char *name)
+{
+  caddr_t *place;
+  ASSERT_IN_TXN;
+  place = (caddr_t *) id_hash_get (registry, (caddr_t) & name);
+  if (place)
+    return (box_copy (*place));
+  else
+    return NULL;
+}
+
+
+long
+sequence_next_inc (char *name, int in_map, long inc_by)
+{
+  long res;
+  if (INSIDE_MAP != in_map)
+    IN_TXN;
+  ENSURE_SEQUENCES;
+  {
+    long *place = (long *) id_hash_get (sequences, (caddr_t) & name);
+    if (!place)
+      {
+	caddr_t name_copy = box_string (name);
+	long init = 1;
+	id_hash_set (sequences, (caddr_t) & name_copy, (caddr_t) & init);
+	res = 0;
+      }
+    else
+      {
+	res = (*place);
+	(*place) += inc_by;
+      }
+  }
+  if (INSIDE_MAP != in_map)
+    LEAVE_TXN;
+  return res;
+}
+
+
+caddr_t
+registry_remove (char *name)
+{
+  caddr_t *place;
+  ASSERT_IN_TXN;
+  place = (caddr_t *) id_hash_get (registry, (caddr_t) & name);
+  if (place)
+    {
+      caddr_t res = *place;
+      id_hash_remove (registry, (caddr_t) &name);
+      return res;
+    }
+  else
+    return NULL;
+}
+
+
+long
+sequence_next (char *name, int in_map)
+{
+  return sequence_next_inc (name, in_map, 1);
+}
+
+
+long
+sequence_set (char *name, long value, int mode, int in_map)
+{
+  long res;
+  if (INSIDE_MAP != in_map)
+  IN_TXN;
+  ENSURE_SEQUENCES;
+  {
+    long *place = (long *) id_hash_get (sequences, (caddr_t) & name);
+    if (!place)
+      {
+	if (mode == SEQUENCE_GET)
+	  res = 0;
+	else
+	  {
+	    caddr_t name_copy = box_string (name);
+	    id_hash_set (sequences, (caddr_t) & name_copy, (caddr_t) & value);
+	    res = value;
+	  }
+      }
+    else
+      {
+	if (mode == SEQUENCE_GET)
+	  res = *place;
+	else if (mode == SET_IF_GREATER)
+	  {
+	    if (value > *place)
+	      *place = value;
+	  }
+	else
+	  *place = value;
+	res = *place;
+      }
+  }
+  if (INSIDE_MAP != in_map)
+    LEAVE_TXN;
+  return res;
+}
+
+
+
+box_t
+registry_get_all ( void )
+{
+  box_t ret = NULL;
+  dk_set_t parts = NULL;
+  id_hash_iterator_t it;
+  caddr_t *name_copy;
+  caddr_t *value_copy;
+
+  id_hash_iterator (&it, (id_hash_t *) registry);
+  while (hit_next (&it, (caddr_t *) & name_copy, (caddr_t *) & value_copy))
+    {
+      dk_set_push (&parts, box_copy (*name_copy));
+      dk_set_push (&parts, box_copy (*value_copy));
+    }
+  ret = list_to_array (dk_set_nreverse (parts));
+  return ret;
+}
+
+
+long
+sequence_remove (char *name, int in_map)
+{
+  long res;
+  if (INSIDE_MAP != in_map)
+  IN_TXN;
+  ENSURE_SEQUENCES;
+
+  res = id_hash_remove (sequences, (caddr_t) & name);
+  if (res)
+    {
+      caddr_t data = registry_remove (name);
+      if (data)
+	dk_free_box (data);
+    }
+  if (INSIDE_MAP != in_map)
+    LEAVE_TXN;
+  return res;
+}
+
+
+box_t
+sequence_get_all ( void )
+{
+  box_t ret = NULL;
+  dk_set_t parts = NULL;
+  id_hash_iterator_t it;
+  long **place;
+  caddr_t *name_copy;
+
+  id_hash_iterator (&it, (id_hash_t *) sequences);
+  while (hit_next (&it, (caddr_t *) & name_copy, (caddr_t *) & place))
+    {
+      dk_set_push (&parts, box_copy (*name_copy));
+      dk_set_push (&parts, box_num ((ptrlong) *place));
+    }
+  ret = list_to_array (dk_set_nreverse (parts));
+  return ret;
+}

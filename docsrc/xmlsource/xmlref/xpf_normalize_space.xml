@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_normalize_space">
+  <refmeta> 
+    <refentrytitle>normalize-space</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>normalize-space</refname>
+    <refpurpose>Returns the argument string with whitespace normalized.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_normalize_space">
+      <funcprototype id="xpf_proto_normalize_space">
+        <funcdef>string <function>normalize-space</function></funcdef>
+	<paramdef><optional><parameter>strg</parameter> string</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_normalize_space"><title>Description</title>
+<para>
+The function returns the argument string with whitespace
+normalized by stripping leading and trailing whitespace and
+replacing sequences of whitespace characters by a single space.
+Whitespace characters are the same as those allowed by the S production in XML,
+i.e. space (#x20), carriage returns (#xD), line feeds (#xA), and tabs (#x9).
+If the argument is omitted, it defaults to the context node converted to a string,
+in other words the string-value of the context node.
+</para></refsect1>
+  <refsect1 id="xpf_params_normalize_space"><title>Parameters</title>
+    <refsect2><title>strg</title>
+      <para>A string to be normalized</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_normalize_space"><title>Return Types</title><para></para></refsect1>
+  <refsect1 id="xpf_examples_normalize_space"><title>Examples</title>
+    <example id="xpf_ex_normalize_space"><title></title>
+      <screen>normalize-space('    too     many   spaces    ')</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_normalize_space"><title>See Also</title>
+    <para><link linkend="xpf_translate">translate()</link><link linkend="xpf_replace">replace()</link></para>
+  </refsect1>
+</refentry>
+

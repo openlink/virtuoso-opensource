@@ -1,0 +1,155 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+ xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" 
+ xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:dime="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+ xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" 
+ xmlns:content="http://schemas.xmlsoap.org/ws/2002/04/content-type/" 
+ xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/" 
+ xmlns:plt="http://schemas.xmlsoap.org/ws/2003/05/partner-link/" 
+ xmlns:ns0="http://temp.org"
+ xmlns:dl="http://temp.org" 
+ xmlns:tns="http://localhost:6666/TSvc/services.wsdl"
+ targetNamespace="http://localhost:6666/TSvc/services.wsdl"
+ name="TestService" xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+	<types>
+	<schema targetNamespace="http://temp.org"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+	 <element name="event" type="string"/>
+	<element name="TestCancel" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs='1' maxOccurs='1' name='Seq' type='xsd:int' />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="TestCancelResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs='1' maxOccurs='1' name='CallReturn' type='xsd:int' />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="Test" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs='1' maxOccurs='1' name='Seq' type='xsd:int' />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="TestResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs='1' maxOccurs='1' name='CallReturn' type='xsd:int' />
+	    </all>
+	  </complexType>
+	</element>
+	</schema>
+	</types>
+	<message name="TestCancelRequest">
+		<part element="dl:TestCancel" name="parameters" />
+	</message>
+	<message name="TestCancelResponse">
+		<part element="dl:TestCancelResponse" name="parameters" />
+	</message>
+	<message name="TestRequest">
+		<part element="dl:Test" name="parameters" />
+	</message>
+	<message name="TestResponse">
+		<part element="dl:TestResponse" name="parameters" />
+	</message>
+	<message name="TestServiceEventMessage">
+	    <part name="parameters" element="dl:event"/>
+	</message>
+	<portType name="TestServicePortType">
+		<operation name="TestCancel">
+			<input message="tns:TestCancelRequest" name="TestCancelRequest" />
+			<output message="tns:TestCancelResponse" name="TestCancelResponse" />
+		</operation>
+		<operation name="Test">
+			<input message="tns:TestRequest" name="TestRequest" />
+			<output message="tns:TestResponse" name="TestResponse" />
+		</operation>
+	</portType>
+	<binding name="TestServiceBinding" type="tns:TestServicePortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<operation name="TestCancel">
+			<soap:operation soapAction="http://temp.org#TestCancel" style="document" />
+			<input name="TestCancelRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="TestCancelResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="Test">
+			<soap:operation soapAction="http://temp.org#Test" style="document" />
+			<input name="TestRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="TestResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+	</binding>
+	<service name="TestService">
+		<documentation>Virtuoso SOAP services</documentation>
+		<port name="TestServicePort" binding="tns:TestServiceBinding">
+			<soap:address location="http://localhost:6666/TSvc" />
+		</port>
+	</service>
+	<portType name="TestServiceCallback">
+	    <operation name="onEvent">
+		<input message="tns:TestServiceEventMessage"/>
+	    </operation>
+	</portType>
+	<binding name="TestServiceCallbackBinding" type="tns:TestServiceCallback">
+	    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+	    <operation name="onEvent">
+		<soap:operation style="document" soapAction="onEvent"/>
+		<input>
+		    <soap:body use="literal"/>
+		</input>
+	    </operation>
+	</binding>
+	<service name="TestServiceCallbackService">
+	    <port name="TestServiceCallbackPort" binding="tns:TestServiceCallbackBinding">
+		<soap:address location="http://set.by.caller"/>
+	    </port>
+	</service>
+	<plt:partnerLinkType name='TestService'>
+		<plt:role name='TestServiceProvider'>
+			<plt:portType name='tns:TestServicePortType'/>
+		</plt:role>
+		<plt:role name="TestServiceRequester">
+		    <plt:portType name="tns:TestServiceCallback"/>
+		</plt:role>
+	</plt:partnerLinkType>
+</definitions>

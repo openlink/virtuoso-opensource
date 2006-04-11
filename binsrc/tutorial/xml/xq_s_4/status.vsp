@@ -1,0 +1,63 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+  <head>
+    <meta HTTP-EQUIV="REFRESH" content="5; URL=status.vsp">
+</head>
+<body>
+  <H1>Demo initialization status</H1>
+  <p>
+  <?vsp 
+    declare stat, ostat any;
+  stat := registry_get ('xq_s_4_stat');
+  http_flush (1);
+  ostat := '';
+  while (isstring (stat) and stat not in ('done', 'error'))
+    {
+      if (ostat <> stat)
+        { 
+  ?>
+  Downloading URL: <?V stat ?> </br>
+  <?vsp 
+        } 
+      commit work;
+      http_flush (1);
+      ostat := stat;
+      delay (5);
+      stat := registry_get ('xq_s_4_stat');
+    }
+  if (stat = 'done')
+    { 
+  ?>
+  <P>Finished</P>
+  <?vsp 
+    }
+  else if (stat = 'error')
+    { 
+  ?>
+  <P>Interrupted</P>
+  <?vsp 
+    }
+  ?>
+</body>
+</html>

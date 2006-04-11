@@ -1,0 +1,177 @@
+<?xml version='1.0'?>
+
+<!-- Note: the perl version of the chunker doesn't do namespaces, so 
+     this is sortof imaginary. The chunker actually cares about and
+     uses the namespace prefix at the moment. -->
+
+<chunk-control xmlns="http://nwalsh.com/docbook/xsl/chunker/1.0"
+	       xmlns:ch="http://nwalsh.com/docbook/xsl/chunker/1.0"
+               xmlns:html="http://www.w3.org/TR/REC-html40"
+               chunk-extension=".html"
+               transclude="1">
+
+<chunk-library src="n:/share/xsl/docbook/bin/dingbat.pl"/>
+<chunk-library src="n:/share/xsl/docbook/bin/docbook.pl"/>
+<chunk-library src="n:/share/xsl/docbook/bin/removexmlns.pl"/>
+
+<character-mapping>
+  <dingbat name="bullet" entity="bull"/>
+  <dingbat name="copyright" entity="copy"/>
+  <dingbat name="trademark" entity="trade"/>
+  <dingbat name="ldquo">"</dingbat>
+  <dingbat name="rdquo">"</dingbat>
+  <dingbat name="lsquo">'</dingbat>
+  <dingbat name="rsquo">'</dingbat>
+  <dingbat name="em-dash" entity="mdash"/>
+  <dingbat name="en-dash" entity="ndash"/>
+  <dingbat name="emdash" entity="mdash"/>
+  <dingbat name="endash" entity="ndash"/>
+  <dingbat name="mdash" entity="mdash"/>
+  <dingbat name="ndash" entity="ndash"/>
+  <dingbat name="nbsp" entity="nbsp"/>
+
+  <unicode char="60" entity="lt"/>
+  <unicode char="38" entity="amp"/>
+  <unicode char="62" entity="gt"/>
+  <unicode char="160" entity="nbsp"/>
+  <unicode char="169" entity="copy"/>
+  <unicode char="8220" entity="#147"/>
+  <unicode char="8221" entity="#148"/>
+  <unicode char="8212" entity="#150"/>
+  <unicode char="8211">-</unicode>
+  <unicode char="8240" entity="#137"/>
+  <unicode char="0x07e2">'</unicode>
+  <unicode char="0x00ae" entity="reg"/>
+</character-mapping>
+
+<chunk-elements>
+  <element name="appendix" abbrev="ap"/>
+  <element name="article" abbrev="ar"/>
+  <element name="bibliography" abbrev="bi"/>
+  <element name="book" abbrev="book"/>
+  <element name="chapter" abbrev="ch"/>
+  <element name="colophon" abbrev="co"/>
+  <element name="glossary" abbrev="gl"/>
+  <element name="index" abbrev="ix"/>
+  <element name="part" abbrev="pt"/>
+  <element name="preface" abbrev="pr"/>
+  <element name="refentry" abbrev="rf"/>
+  <element name="reference" abbrev="rc"/>
+  <element name="sect1" abbrev="s" notfirst="1"/>
+  <element name="section" abbrev="s" notfirst="1" depth="2"/>
+  <element name="set" abbrev="set"/>
+  <element name="setindex" abbrev="si"/>
+  <element name="index" abbrev="ix"/>
+</chunk-elements>
+
+<chunk-enumeration-nesting>
+  <nest-reset name="book">
+    <element name="appendix"/>
+    <element name="article"/>
+    <element name="bibliography"/>
+    <element name="chapter"/>
+    <element name="colophon"/>
+    <element name="glossary"/>
+    <element name="index"/>
+    <element name="part"/>
+    <element name="preface"/>
+    <element name="refentry"/>
+    <element name="reference"/>
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="reference">
+    <element name="refentry"/>
+  </nest-reset>
+
+  <nest-reset name="partintro">
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="section">
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="appendix">
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="article">
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="chapter">
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="preface">
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+</chunk-enumeration-nesting>
+
+<empty-elements>
+  <element name="br"/>
+  <element name="hr"/>
+  <element name="img"/>
+  <element name="link"/>
+  <element name="meta"/>
+</empty-elements>
+
+<ch:chunk-head xmlns="http://www.w3.org/TR/REC-html40">
+<title>{title}</title>
+<link rel="home" title="{hometitle}" href="{homelink}"/>
+<ch:if ch:test="uplink"><link rel="up" title="{uptitle}" href="{uplink}"/></ch:if>
+<ch:if ch:test="{prevlink}"><link rel="previous" title="{prevtitle}" href="{prevlink}"/></ch:if>
+<ch:if ch:test="{nextlink}"><link rel="next" title="{nexttitle}" href="{nextlink}"/></ch:if>
+</ch:chunk-head>
+
+<ch:chunk-header-navigation xmlns="http://www.w3.org/TR/REC-html40">
+<div class="navheader">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <th colspan="3" align="center" >{title}</th>
+  </tr>
+  <tr>
+    <td width="10%" align="left" valign="bottom"
+><ch:if ch:test="{prevlink}"><a href="{prevlink}">Prev</a></ch:if></td>
+    <td width="80%" align="center" valign="bottom"
+><ch:if ch:test="{uplink}"><a href="{uplink}">Up</a></ch:if></td>
+    <td width="10%" align="right" valign="bottom"
+><ch:if ch:test="{nextlink}"><a href="{nextlink}">Next</a></ch:if></td>
+  </tr>
+  </table>
+  <hr align="left" width="100%"/>
+</div>
+</ch:chunk-header-navigation>
+
+<ch:chunk-foot xmlns="http://www.w3.org/TR/REC-html40">
+</ch:chunk-foot>
+
+<ch:chunk-footer-navigation xmlns="http://www.w3.org/TR/REC-html40">
+<div class="navfooter">
+  <hr align="left" width="100%"/>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td width="33%" align="left" valign="top"
+><ch:if ch:test="{prevlink}"><a href="{prevlink}">Prev</a></ch:if></td>
+    <td width="34%" align="center" valign="top"
+><ch:if ch:test="{homelink}"><a href="{homelink}">Home</a></ch:if></td>
+    <td width="33%" align="right" valign="top"
+><ch:if ch:test="{nextlink}"><a href="{nextlink}">Next</a></ch:if></td>
+  </tr>
+  <tr>
+    <td width="33%" align="left" valign="top">{prevtitle}</td>
+    <td width="34%" align="center" valign="top"></td>
+    <td width="33%" align="right" valign="top">{nexttitle}</td>
+  </tr>
+  </table>
+</div>
+</ch:chunk-footer-navigation>
+
+</chunk-control>

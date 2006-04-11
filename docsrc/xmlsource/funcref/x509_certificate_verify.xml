@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_x509_certificate_verify">
+  <refmeta>
+    <refentrytitle>x509_certificate_verify</refentrytitle>
+    <refmiscinfo>hash</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>x509_certificate_verify</refname>
+    <refpurpose>Verifies X.509 certificate</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_x509_certificate_verify">
+      <funcprototype id="fproto_x509_certificate_verify">
+        <funcdef>varchar <function>x509_certificate_verify</function></funcdef>
+	<paramdef>in <parameter>cert</parameter> varchar</paramdef>
+        <paramdef>in <parameter>cacerts</parameter> any</paramdef>
+        <paramdef><optional>in <parameter>flags</parameter> varchar</optional></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_x509_certificate_verify"><title>Description</title>
+      <para>
+	  This function takes a X.509 certificate and verifies it against 
+	  list of CA certificates. It checks for various certificate 
+	  attributes such as self signed, expiration date etc.
+	  If an error is detected it will be signalled.  
+
+      </para>
+      <para>
+	  The certificates are passed as a strings containing X.509 
+	  certificate binary data in DER (raw) format. 
+      </para>
+</refsect1>
+  <refsect1 id="params_x509_certificate_verify"><title>Parameters</title>
+    <refsect2><title>cert</title>
+      <para>The X.509 certificate to be verified</para></refsect2>
+     <refsect2><title>cacerts</title>
+      <para>array of strings containing CA certificates</para></refsect2>
+    <refsect2><title>flags</title>
+	<para>A string containing comma separated list of verification options. See table below for valid values.</para>
+      <table><title>Values for <parameter>flags</parameter></title>
+        <tgroup cols="2">
+          <thead>
+            <row>
+              <entry>Option</entry>
+              <entry>Description</entry>
+            </row>
+          </thead>
+	  <tbody>
+	    <row>
+	      <entry>expired</entry>
+	      <entry>Do not check for expiration</entry>
+	    </row>
+	    <row>
+	      <entry>self-signed</entry>
+	      <entry>Do not treat self signed certificate as error</entry>
+	    </row>
+	    <row>
+	      <entry>invalid-ca</entry>
+	      <entry>Ignore invalid CA</entry>
+	    </row>
+	    <row>
+	      <entry>invalid-purpose</entry>
+	      <entry>Ignore invaid certificate purpose</entry>
+	    </row>
+	    <row>
+	      <entry>unhandled-extension</entry>
+	      <entry>Ignore unhadled critical extension</entry>
+	    </row>
+	  </tbody>
+        </tgroup>
+      </table>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_x509_certificate_verify"><title>Return Types</title>
+      <para>None</para>
+  </refsect1>
+  <refsect1 id="errors_x509_certificate_verify"><title>Errors</title>
+    <table><title>Errors signalled by <function>x509_certificate_verify</function></title>
+      <tgroup cols="4">
+        <thead>
+          <row>
+            <entry>SQLState</entry>
+            <entry>Error Code</entry>
+            <entry>Error Text</entry>
+            <entry>Description</entry>
+          </row>
+        </thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>CR014</errorcode></entry>
+	    <entry><errorname>Invalid certificate</errorname></entry>
+	    <entry>The input can't be decoded as a X.509 certificate</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>CR016</errorcode></entry>
+	    <entry><errorname>Can not allocate a X509 store</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>CR019</errorcode></entry>
+	    <entry><errorname>Invalid CA certificate</errorname></entry>
+	    <entry>Some of CA certificates can not be loaded due to bad format</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>CR017</errorcode></entry>
+	    <entry><errorname>Can not allocate X509 verification context</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>CR018</errorcode></entry>
+	    <entry><errorname>Can not initialize X509 verification context</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>CR015</errorcode></entry>
+	    <entry><errorname>X509 error: [the verification error text]</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="examples_x509_certificate_verify"><title>Examples</title>
+    <example id="ex_x509_certificate_verify"><title>Verification of a X.509 certificate</title>
+<programlisting><![CDATA[
+    SQL> x509_certificate_verify (file_to_string ('keys/srv/cert.cer'), vector (file_to_string ('keys/srv/ca.cer')), 'self-signed');
+
+    Done. -- 29 msec.
+    ]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_x509_certificate_verify"><title>See Also</title>
+    <para><link linkend="fn_get_certificate_info">get_certificate_info()</link></para>
+ </refsect1>
+</refentry>
+

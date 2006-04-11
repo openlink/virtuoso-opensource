@@ -1,0 +1,1796 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="virtoledb">
+  <title>OLE DB Provider for Virtuoso</title>
+
+  <para>OLE DB is an open data access technology developed and promoted by Microsoft.
+  It allows for uniform data access across diverse data sources including but not
+  limited to conventional RDBMSes. Based on the COM architecture it providies very
+  flexible and exhaustive set of interfaces any database application developer might
+  ever need.  At the same time, OLE DB is somewhat overcomplicated and therefore
+  is rarely used directly.  In the majority of cases people use ADO(+) instead, ADO is
+  another, somewhat simpler, of Microsoft's data access technologies. However, 
+  ADO itself is based upon OLE DB, thus those who use ADO make indirect use of 
+  OLE DB as well.</para>
+
+  <para>With the advent of ADO.NET, OLE DB is no longer as an much essential 
+  part of the overall Microsoft data access architecture as it used to be.  
+  However it still remains important and useful working together with the 
+  Microsoft OLE DB .NET Data Provider.</para>
+
+  <para>The OLE DB Provider for Virtuoso (VIRTOLEDB) gives OLE DB and ADO 
+  applications access to the Virtuoso databases.  In principle, the same thing is 
+  possible through the conjunction of the Virtuoso ODBC driver and Microsoft 
+  OLE DB Provider for ODBC.  However, VIRTOLEDB provides native OLE DB access 
+  which is more complete and more efficient.  Therefore it is preferable for 
+  this purpose.</para>
+
+<!--
+  <para>VIRTOLEDB aims to be an OLE DB version 2.6 compliant provider (although 
+  it currently fails some of the conformance tests).</para>
+
+  <para>VIRTOLEDB is implemented as a COM in-process server that is as a DLL that
+  is loaded into application's address space and exposes a predefined set of COM
+  interfaces. All its COM objects support free-threaded model and also aggregate
+  IMarshal objects obtained from CoCreateFreeThreadedMarshaler to guarantee a
+  minimum of marshaling support for their use by apartment-model consumers.</para>
+-->
+
+  <sect2 id="oledbusing">
+    <title>Using the OLE DB Provider for Virtuoso</title>
+
+    <para>Being a COM in-process server VIRTOLEDB has to be installed on the client computer.  
+    When VIRTOLEDB is properly installed it can be used by a host of existing applications thanks 
+    to the support of standard OLE DB interfaces.</para>
+
+    <sect3 id="oledbrequirements">
+      <title>System Requirements</title>
+
+      <para>VIRTOLEDB requires the following software:
+        <itemizedlist>
+	  <listitem>
+	    Windows 98, ME, NT4.0, 2000, or XP.
+	  </listitem>
+	  <listitem>
+	    Virtuoso Server version 2.7 or higher running on the same or remote computer.
+	  </listitem>
+	  <listitem>
+	    Redistributable files provided with Microsoft Data Access Components 
+          (MDAC) 2.5 or higher. Note that this version of MDAC comes along with 
+          Windows 2000. It is also available (as well as other versions of MDAC) 
+          at the Microsoft Web site: <ulink url="http://www.microsoft.com/data/">http://www.microsoft.com/data/</ulink>
+	  </listitem>
+	</itemizedlist>
+      </para>
+
+    </sect3>
+
+    <sect3 id="oledbinstalling">
+      <title>Installing the Provider</title>
+
+      <para>VIRTOLEDB is installed as a part of Virtuoso installation on a Windows 
+      platform. The following files pertain to the OLE DB Provider for Virtuoso.</para>
+
+      <table>
+	<title>OLE DB Provider for Virtuoso Files</title>
+	<tgroup cols="2">
+	  <thead>
+	    <row>
+ 	      <entry>File</entry>
+	      <entry>Description</entry>
+	    </row>
+	  </thead>
+	  <tbody>
+	    <row>
+ 	      <entry>virtoledb.dll</entry>
+	      <entry>DLL that implements the VIRTOLEDB provider.</entry>
+	    </row>
+	    <row>
+ 	      <entry>virtoledb.h</entry>
+	      <entry>Header file for development of VIRTOLEDB consumers.</entry>
+	    </row>
+	  </tbody>
+	</tgroup>
+      </table>
+
+      <para>The installation procedure, in addition to placing VIRTOLEDB files 
+      on a client computer, also registers VIRTOLEDB in the system to make it 
+      known as a COM server. This also makes it available through the OLE DB 
+      root enumerator object and the Data Links component.</para>
+
+    </sect3>
+
+    <sect3 id="oledbinvoking">
+      <title>Invoking the Provider</title>
+
+      <para>Applications that utilize OLE DB Data Links component can use VIRTOLEDB 
+      without any specific measures. Applications that need to directly invoke 
+      VIRTOLEDB should follow examples provided in this section.</para>
+
+      <sect4 id="datalinks">
+	<title>Using Data Link User Interface</title>
+
+	<para>Data Links is a user interface component for connecting to OLE DB
+        data sources and constructing ADO-style connection strings. It belongs
+        to OLE DB core components and is a part of MDAC. It is used my many
+        applications including development environments like MS Visual Studio.</para>
+
+	<para>VIRTOLEDB uses the extension mechanism of the Data Link API and
+        provides a customized version of the Data Link connection page.</para>
+
+	<figure id="datalinkprovider" float="1">
+	  <title>Data Link Provider Page</title>
+	  <graphic fileref="datalinkprovider.jpg"/>
+	</figure>
+
+	<figure id="datalinkconnection" float="1">
+	  <title>Data Link Connection Page</title>
+	  <graphic fileref="datalinkvirtuosoconnection.jpg"/>
+	</figure>
+
+      </sect4>
+
+      <sect4 id="oledbcppapp">
+	<title>Using COM and OLE DB Interfaces Directly</title>
+
+	<para>Applications that utilize OLE DB Data Links component can use VIRTOLEDB 
+        without any specific measures. Applications that need to directly invoke 
+        VIRTOLEDB should follow examples provided in this section.</para>
+
+	<informalexample>
+<programlisting format="linespecific">
+#define INITGUID
+#include "virtoledb.h"
+
+..
+
+  IDBInitialize* pIDBInitialize = NULL;
+  HRESULT hr = CoCreateInstance(CLSID_VIRTOLEDB, NULL, CLSCTX_INPROC_SERVER,
+                                IID_IDBInitialize, (void**) &amp;pIDBInitialize);
+  if (FAILED(hr))
+    goto EXIT;
+</programlisting>
+	</informalexample>
+      </sect4>
+
+      <sect4 id="oledbadoapp">
+	<title>ADO Applications</title>
+
+	<informalexample>
+<programlisting>
+Dim strConn As String
+Dim objConn As ADODB.Connection
+
+strConn = "Provider=VIRTOLEDB;Data Source=localhost:1111;User Id=dba;Password=dba;Initial Catalog=Demo;Prompt=NoPrompt;"
+
+Set objConn = New ADODB.Connection
+objConn.CursorLocation = adUseServer
+objConn.Open strConn
+</programlisting>
+	</informalexample>
+      </sect4>
+    </sect3>
+
+  </sect2>
+
+  <sect2 id="oledblimitations">
+    <title>Known Limitations</title>
+
+    <itemizedlist>
+      <listitem>
+	Per-column properties are not supported.
+      </listitem>
+      <listitem>
+	Reference accessors are not supported.
+      </listitem>
+      <listitem>
+	Optimized accessors are not supported.
+      </listitem>
+      <listitem>
+	Asynchronous execution is not supported.
+      </listitem>
+    </itemizedlist>
+
+  </sect2>
+
+  <sect2 id="oledbdatatypes">
+    <title>Data Types</title>
+
+    <sect3 id="mappings">
+      <title>Data Type Mappings in Rowsets and Parameters</title>
+
+      <para>The methods that provide information about rowset columns and command parameters
+      (IColumnsInfo::GetColumnInfo, ICommandWithParameters::GetParameterInfo) use the
+      mapping of Virtuoso data types into OLE DB data types shown in the following
+      table.</para>
+
+      <table>
+	<title>Data Type Mappings</title>
+	<tgroup cols="2">
+	  <thead>
+	    <row>
+	      <entry>Virtuoso Type</entry>
+	      <entry>OLE DB Type</entry>
+	    </row>
+	  </thead>
+
+	  <tbody>
+	    <row>
+	      <entry>CHAR</entry>
+	      <entry>DBTYPE_STR</entry>
+	    </row>
+	    <row>
+	      <entry>VARCHAR</entry>
+	      <entry>DBTYPE_STR</entry>
+	    </row>
+	    <row>
+	      <entry>LONG VARCHAR</entry>
+	      <entry>DBTYPE_STR</entry>
+	    </row>
+	    <row>
+	      <entry>NCHAR</entry>
+	      <entry>DBTYPE_WSTR</entry>
+	    </row>
+	    <row>
+	      <entry>NVARCHAR</entry>
+	      <entry>DBTYPE_WSTR</entry>
+	    </row>
+	    <row>
+	      <entry>LONG NVARCHAR</entry>
+	      <entry>DBTYPE_WSTR</entry>
+	    </row>
+	    <row>
+	      <entry>NUMERIC</entry>
+	      <entry>DBTYPE_NUMERIC</entry>
+	    </row>
+	    <row>
+	      <entry>DECIMAL</entry>
+	      <entry>DBTYPE_NUMERIC</entry>
+	    </row>
+	    <row>
+	      <entry>SMALLINT</entry>
+	      <entry>DBTYPE_I2</entry>
+	    </row>
+	    <row>
+	      <entry>INTEGER</entry>
+	      <entry>DBTYPE_I4</entry>
+	    </row>
+	    <row>
+	      <entry>FLOAT</entry>
+	      <entry>DBTYPE_R8</entry>
+	    </row>
+	    <row>
+	      <entry>DOUBLE</entry>
+	      <entry>DBTYPE_R8</entry>
+	    </row>
+	    <row>
+	      <entry>REAL</entry>
+	      <entry>DBTYPE_R4</entry>
+	    </row>
+	    <row>
+	      <entry>VARBINARY</entry>
+	      <entry>DBTYPE_BYTES</entry>
+	    </row>
+	    <row>
+	      <entry>LONG VARBINARY</entry>
+	      <entry>DBTYPE_BYTES</entry>
+	    </row>
+	    <row>
+	      <entry>DATE</entry>
+	      <entry>DBTYPE_DBDATE</entry>
+	    </row>
+	    <row>
+	      <entry>TIME</entry>
+	      <entry>DBTYPE_DBTIME</entry>
+	    </row>
+	    <row>
+	      <entry>DATETIME</entry>
+	      <entry>DBTYPE_DBTIMESTAMP</entry>
+	    </row>
+	    <row>
+	      <entry>TIMESTAMP</entry>
+	      <entry>BINARY</entry>
+	    </row>
+	  </tbody>
+	</tgroup>
+      </table>
+
+    </sect3>
+
+    <sect3 id="conversions">
+      <title>Data Type Conversions</title>
+
+      <para>Applications can bind column and parameter values using data types
+      different from those described in <xref linkend="mappings"/>. In such cases
+      VIRTOLEDB uses OLE DB Data Conversion Library. See MDAC documentation for the
+      list of supported data type conversions.</para>
+
+    </sect3>
+
+    <sect3 id="longdata">
+      <title>Long Data Types</title>
+
+      <para>Long data types include LONG VARCHAR, LONG NVARCHAR, and LONG VARBINARY.
+      A long value can only be bound to a buffer that have one of these OLE DB types:</para>
+
+      <itemizedlist>
+	<listitem>DBTYPE_IUNKNOWN</listitem>
+	<listitem>DBTYPE_STR</listitem>
+	<listitem>DBTYPE_STR | DBTYPE_BYREF</listitem>
+	<listitem>DBTYPE_WSTR</listitem>
+	<listitem>DBTYPE_WSTR | DBTYPE_BYREF</listitem>
+	<listitem>DBTYPE_BYTES</listitem>
+	<listitem>DBTYPE_BYTES | DBTYPE_BYREF</listitem>
+      </itemizedlist>
+
+      <para>Other type conversions are not supported.</para>
+
+      <para>If a long data is bound to a DBTYPE_IUNKNOWN type, this implies
+      the use of the ISequentialStream interface. VIRTOLEDB supports the
+      ISequentialStream::Read method both when getting and setting data.
+      The ISequentialStream::Write method is never supported.</para>
+
+    </sect3>
+
+  </sect2>
+
+  <sect2 id="metadata">
+    <title>Metadata</title>
+
+    <sect3 id="schemas">
+      <title>Schema Rowsets</title>
+
+      <para>VIRTOLEDB supports schema rowsets listed in the following table.</para>
+
+      <table>
+	<title>Supported Schema Rowsets</title>
+
+	<tgroup cols="2">
+	  <thead>
+	    <row>
+	      <entry>Schema Rowset</entry>
+	      <entry>Supported Restrictions</entry>
+	    </row>
+	  </thead>
+	  <tbody>
+	    <row>
+	      <entry>DBSCHEMA_CATALOGS</entry>
+	      <entry>All (CATALOG_NAME)</entry>
+	    </row>
+	    <row>
+	      <entry>DBSCHEMA_COLUMN_PRIVILEGES</entry>
+	      <entry>All (TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, GRANTOR, GRANTEE)</entry>
+	    </row>
+	    <row>
+	      <entry>DBSCHEMA_COLUMNS</entry>
+	      <entry>All (TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME)</entry>
+	    </row>
+	    <row>
+	      <entry>DBSCHEMA_FOREIGN_KEYS</entry>
+	      <entry>All (PK_TABLE_CATALOG, PK_TABLE_SCHEMA, PK_TABLE_NAME,
+                          FK_TABLE_CATALOG, FK_TABLE_SCHEMA, FK_TABLE_NAME)</entry>
+	    </row>
+	    <row>
+	      <entry>DBSCHEMA_INDEXES</entry>
+	      <entry>1, 2, 3, and 5 (TABLE_CATALOG, TABLE_SCHEMA, INDEX_NAME, TABLE_NAME)</entry>
+	    </row>
+	    <row>
+	      <entry>DBSCHEMA_PRIMARY_KEYS</entry>
+	      <entry>All (TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME)</entry>
+	    </row>
+	    <row>
+	      <entry>DBSCHEMA_PROCEDURE_PARAMETERS</entry>
+	      <entry>All (PROCEDURE_CATALOG, PROCEDURE_SCHEMA, PROCEDURE_NAME, PARAMETER_NAME)</entry>
+	    </row>
+	    <row>
+	      <entry>DBSCHEMA_PROCEDURES</entry>
+	      <entry>All (PROCEDURE_CATALOG, PROCEDURE_SCHEMA, PROCEDURE_NAME, PROCEDURE_TYPE)</entry>
+	    </row>
+	    <row>
+	      <entry>DBSCHEMA_PROVIDER_TYPES</entry>
+	      <entry>All (DATA_TYPE, BEST_MATCH)</entry>
+	    </row>
+	    <row>
+	      <entry>DBSCHEMA_SCHEMATA</entry>
+	      <entry>All (CATALOG_NAME, SCHEMA_NAME, SCHEMA_OWNER)</entry>
+	    </row>
+	    <row>
+	      <entry>DBSCHEMA_TABLE_PRIVILEGES</entry>
+	      <entry>All (TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, GRANTOR, GRANTEE)</entry>
+	    </row>
+	    <row>
+	      <entry>DBSCHEMA_TABLES</entry>
+	      <entry>All (TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE)</entry>
+	    </row>
+	  </tbody>
+	</tgroup>
+      </table>
+
+    </sect3>
+
+    <sect3 id="columns">
+      <title>Columns Rowset</title>
+
+      <para>VIRTOLEDB supports the following columns in the columns rowset.</para>
+
+      <itemizedlist>
+	<listitem>DBCOLUMN_IDNAME</listitem>
+	<listitem>DBCOLUMN_GUID</listitem>
+	<listitem>DBCOLUMN_PROPID</listitem>
+	<listitem>DBCOLUMN_NAME</listitem>
+	<listitem>DBCOLUMN_NUMBER</listitem>
+	<listitem>DBCOLUMN_TYPE</listitem>
+	<listitem>DBCOLUMN_TYPEINFO</listitem>
+	<listitem>DBCOLUMN_COLUMNSIZE</listitem>
+	<listitem>DBCOLUMN_PRECISION</listitem>
+	<listitem>DBCOLUMN_SCALE</listitem>
+	<listitem>DBCOLUMN_FLAGS</listitem>
+	<listitem>DBCOLUMN_BASECATALOGNAME</listitem>
+	<listitem>DBCOLUMN_BASECOLUMNNAME</listitem>
+	<listitem>DBCOLUMN_BASESCHEMANAME</listitem>
+	<listitem>DBCOLUMN_BASETABLENAME</listitem>
+	<listitem>DBCOLUMN_COMPUTEMODE</listitem>
+	<listitem>DBCOLUMN_DATETIMEPRECISION</listitem>
+	<listitem>DBCOLUMN_ISCASESENSITIVE</listitem>
+	<listitem>DBCOLUMN_ISSEARCHABLE</listitem>
+	<listitem>DBCOLUMN_OCTETLENGTH</listitem>
+	<listitem>DBCOLUMN_KEYCOLUMN</listitem>
+      </itemizedlist>
+
+    </sect3>
+
+  </sect2>
+
+  <sect2 id="interfaces">
+    <title>Supported Interfaces</title>
+
+    <para>VIRTOLEDB supports the interfaces listed in the following table.</para>
+
+    <table>
+      <title>Supported Interfaces</title>
+      <tgroup cols="3">
+	<thead>
+	  <row>
+	    <entry>Object</entry>
+	    <entry>Interface</entry>
+	    <entry>Notes</entry>
+	  </row>
+	</thead>
+	<tbody>
+
+	  <row>
+	    <entry morerows="6">Data Source</entry>
+	    <entry>IDBCreateSession</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IDBInitialize</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IDBProperties</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IPersist</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IDBInfo</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IPersistFile</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ISupportErrorInfo</entry>
+	    <entry></entry>
+	  </row>
+
+	  <row>
+	    <entry morerows="8">Session</entry>
+	    <entry>IGetDataSource</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IOpenRowset</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ISessionProperties</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IDBCreateCommand</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IDBSchemaRowset</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ISupportErrorInfo</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ITransaction</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ITransactionJoin</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ITransactionLocal</entry>
+	    <entry></entry>
+	  </row>
+
+	  <row>
+	    <entry morerows="9">Command</entry>
+	    <entry>IAccessor</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IColumnsInfo</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ICommand</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ICommandProperties</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ICommandText</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IConvertType</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IColumnsRowset</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ICommandPrepare</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ICommandWithParameters</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ISupportErrorInfo</entry>
+	    <entry></entry>
+	  </row>
+
+	  <row>
+	    <entry morerows="1">Multiple Results</entry>
+	    <entry>IMultipleResults</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ISupportErrorInfo</entry>
+	    <entry></entry>
+	  </row>
+
+	  <row>
+	    <entry morerows="14">Rowset</entry>
+	    <entry>IAccessor</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IColumnsInfo</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IConvertType</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IRowset</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IRowsetInfo</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IColumnsRowset</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IConnectionPointContainer</entry>
+	    <entry>For IRowsetNotify interface.</entry>
+	  </row>
+	  <row>
+	    <entry>IRowsetChange</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IRowsetIdentity</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IRowsetLocate</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IRowsetRefresh</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IRowsetResynch</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IRowsetScroll</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>IRowsetUpdate</entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry>ISupportErrorInfo</entry>
+	    <entry></entry>
+	  </row>
+
+	  <row>
+	    <entry>Error Lookup</entry>
+	    <entry>IErrorLookup</entry>
+	    <entry></entry>
+	  </row>
+
+	</tbody>
+      </tgroup>
+    </table>
+
+  </sect2>
+
+  <sect2 id="oledbdatasource">
+    <title>Data Source Objects</title>
+
+    <sect3 id="initprops">
+      <title>Initialization and Authorization Properties</title>
+
+      <para>VIRTOLEDB supports the following properties in the initialization property group.</para>
+
+      <table>
+	<title>Supported Initialization and Authorization Properties</title>
+	<tgroup cols="2">
+	  <thead>
+
+	    <row>
+	      <entry>Property</entry>
+	      <entry>R/W</entry>
+	      <entry>Default</entry>
+	      <entry>Notes</entry>
+	    </row>
+
+	  </thead>
+	  <tbody valign="top">
+
+	    <row>
+	      <entry>DBPROP_AUTH_PASSWORD</entry>
+	      <entry>Read/Write</entry>
+	      <entry></entry>
+	      <entry>General Info: Password</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_AUTH_USERID</entry>
+	      <entry>Read/Write</entry>
+              <entry></entry>
+              <entry>User ID</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_AUTH_PERSIST_SENSITIVE_AUTHINFO</entry>
+	      <entry>Read/Write</entry>
+              <entry>VARIANT_FALSE</entry>
+              <entry>Persist Security Info</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_INIT_DATASOURCE</entry>
+	      <entry>Read/Write</entry>
+              <entry></entry>
+              <entry>Data Source</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_INIT_CATALOG</entry>
+	      <entry>Read/Write</entry>
+              <entry></entry>
+              <entry>Initial Catalog</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_INIT_PROVIDERSTRING</entry>
+	      <entry>Read/Write</entry>
+              <entry></entry>
+	      <entry>Extended Properties</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_INIT_HWND</entry>
+	      <entry>Read/Write</entry>
+              <entry></entry>
+              <entry>Window Handle</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_INIT_PROMPT</entry>
+	      <entry>Read/Write</entry>
+              <entry>DBPROMPT_COMPLETE</entry>
+              <entry>Prompt</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_INIT_TIMEOUT</entry>
+	      <entry>Read/Write</entry>
+              <entry>0</entry>
+              <entry>Connect Timeout</entry>
+	    </row>
+
+	  </tbody>
+	</tgroup>
+      </table>
+
+      <para>In addition, VIRTOLEDB implements a provider-specific property set
+      DBPROPSET_VIRTUOSODBINIT with the following properties</para>
+
+      <table>
+	<title>Provider-Specific Initialization and Authorization Properties</title>
+	<tgroup cols="2">
+	  <thead>
+
+	    <row>
+	      <entry>Property</entry>
+	      <entry>R/W</entry>
+	      <entry>Default</entry>
+	      <entry>Notes</entry>
+	    </row>
+
+	  </thead>
+	  <tbody valign="top">
+
+	    <row>
+	      <entry>VIRTPROP_INIT_ENCRYPT</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry>
+	        <para>Type: VT_BOOL</para>
+		<para>Description: Encrypt Connection</para>
+		<para>If this property is set to VARIANT_TRUE
+	        the provider uses SSL encrypted connections.</para>
+	      </entry>
+	    </row>
+	    <row>
+	      <entry>VIRTPROP_AUTH_PKCS12FILE</entry>
+	      <entry>Read/Write</entry>
+	      <entry></entry>
+	      <entry>
+		<para>Type: VT_BSTR</para>
+		<para>Description: PKCS #12 File</para>
+		<para>If this property is set to a non-empty
+                string then it is used as a name of a PKCS #12
+                file that authenticates the client. This
+                also implies that the VIRTPROP_INIT_ENCRYPT
+                property is set to VARIANT_TRUE</para>
+              </entry>
+	    </row>
+
+	  </tbody>
+	</tgroup>
+      </table>
+
+    </sect3>
+
+    <sect3 id="oledbdatasourceprops">
+      <title>Data Source Properties</title>
+
+      <para>VIRTOLEDB supports the following properties in the data source property group.</para>
+
+      <table>
+	<title>Supported Data Source Properties</title>
+	<tgroup cols="2">
+	  <thead>
+
+	    <row>
+	      <entry>Property</entry>
+	      <entry>R/W</entry>
+	      <entry>Default</entry>
+	      <entry>Notes</entry>
+	    </row>
+
+	  </thead>
+	  <tbody valign="top">
+
+	    <row>
+	      <entry>DBPROP_CURRENTCATALOG</entry>
+              <entry>Read/Write</entry>
+	      <entry></entry>
+              <entry>Current Catalog</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_MULTIPLECONNECTIONS</entry>
+              <entry>Read/Write</entry>
+	      <entry></entry>
+              <entry>Multiple Connections</entry>
+	    </row>
+
+	  </tbody>
+	</tgroup>
+      </table>
+    </sect3>
+
+    <sect3 id="datasourceinfoprops">
+      <title>Data Source Information Properties</title>
+
+      <para>VIRTOLEDB supports the following properties in the data source information property group.</para>
+
+      <table>
+	<title>Supported Data Source Information Properties</title>
+	<tgroup cols="2">
+	  <thead>
+
+	    <row>
+	      <entry>Property</entry>
+	      <entry>R/W</entry>
+	      <entry>Default</entry>
+	      <entry>Notes</entry>
+	    </row>
+
+	  </thead>
+	  <tbody valign="top">
+
+	    <row>
+	      <entry>DBPROP_ACTIVESESSIONS</entry>
+	      <entry>Read-Only</entry>
+              <entry></entry>
+              <entry>The number of connections the Virtuoso server is licensed to.</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_ASYNCTXNABORT</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry>VIRTOLEDB cannot abort transactions asynchronously.</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_ASYNCTXNCOMMIT</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry>VIRTOLEDB cannot commit transactions asynchronously.</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_BYREFACCESSORS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry>VIRTOLEDB does not support reference accessors.</entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_CATALOGLOCATION</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_CL_START</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_CATALOGTERM</entry>
+	      <entry>Read-Only</entry>
+	      <entry>"qualifier"</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_CATALOGUSAGE</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_CU_DML_STATEMENTS | DBPROPVAL_CU_TABLE_DEFINITION | DBPROPVAL_CU_INDEX_DEFINITION | DBPROPVAL_CU_PRIVILEGE_DEFINITION</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_COLUMNDEFINITION</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_CD_NOTNULL</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_COMSERVICES</entry>
+	      <entry>Read-Only</entry>
+	      <entry>0</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_CONCATNULLBEHAVIOR</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_CB_NULL</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_CONNECTIONSTATUS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_CS_INITIALIZED</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_DATASOURCENAME</entry>
+	      <entry>Read-Only</entry>
+	      <entry>N/A</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_DATASOURCEREADONLY</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_DATASOURCE_TYPE</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_DST_TDP</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_DBMSNAME</entry>
+	      <entry>Read-Only</entry>
+	      <entry>"Virtuoso"</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_DBMSVER</entry>
+	      <entry>Read-Only</entry>
+	      <entry></entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_DSOTHREADMODEL</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_RT_FREETHREAD</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_GROUPBY</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_GB_NO_RELATION</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_HETEROGENEOUSTABLES</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_HT_DIFFERENT_CATALOGS</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_IDENTIFIERCASE</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_IC_SENSITIVE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_MAXINDEXSIZE</entry>
+	      <entry>Read-Only</entry>
+	      <entry>2000</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_MAXOPENCHAPTERS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>0</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_MAXROWSIZE</entry>
+	      <entry>Read-Only</entry>
+	      <entry>2000</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_MAXROWSIZEINCLUDESBLOB</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_MAXTABLESINSELECT</entry>
+	      <entry>Read-Only</entry>
+	      <entry>0</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_MULTIPLEPARAMSETS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_MULTIPLERESULTS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_MR_SUPPORTED</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_MULTIPLESTORAGEOBJECTS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_MULTITABLEUPDATE</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_NULLCOLLATION</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_NC_HIGH</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_OLEOBJECTS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_OO_BLOB</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_OPENROWSETSUPPORT</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_ORS_TABLE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_ORDERBYCOLUMNSINSELECT</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_OUTPUTPARAMETERAVAILABILITY</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_OA_ATROWRELEASE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_PERSISTENTIDTYPE</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_PT_NAME</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_PREPAREABORTBEHAVIOR</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_CB_PRESERVE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_PREPARECOMMITBEHAVIOR</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_CB_PRESERVE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_PROCEDURETERM</entry>
+	      <entry>Read-Only</entry>
+	      <entry>"procedure"</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_PROVIDERFRIENDLYNAME</entry>
+	      <entry>Read-Only</entry>
+	      <entry>"OpenLink OLE DB Provider for Virtuoso"</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_PROVIDERMEMORY</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_PROVIDERFILENAME</entry>
+	      <entry>Read-Only</entry>
+	      <entry>"virtoledb.dll"</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_PROVIDEROLEDBVER</entry>
+	      <entry>Read-Only</entry>
+	      <entry>"02.60"</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_PROVIDERVER</entry>
+	      <entry>Read-Only</entry>
+	      <entry></entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_QUOTEDIDENTIFIERCASE</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_IC_SENSITIVE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_ROWSETCONVERSIONSONCOMMAND</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_SCHEMATERM</entry>
+	      <entry>Read-Only</entry>
+	      <entry>"owner"</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_SCHEMAUSAGE</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_SU_DML_STATEMENTS | DBPROPVAL_SU_TABLE_DEFINITION | DBPROPVAL_SU_INDEX_DEFINITION | DBPROPVAL_SU_PRIVILEGE_DEFINITION</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_SERVERNAME</entry>
+	      <entry>Read-Only</entry>
+	      <entry></entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_SQLSUPPORT</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_SQL_ODBC_MINIMUM | DBPROPVAL_SQL_ODBC_CORE | DBPROPVAL_SQL_ANSI89_IEF | DBPROPVAL_SQL_ESCAPECLAUSES | DBPROPVAL_SQL_ANSI92_ENTRY</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_STRUCTUREDSTORAGE</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_SS_ISEQUENTIALSTREAM</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_SUBQUERIES</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_SQ_CORRELATEDSUBQUERIES | DBPROPVAL_SQ_COMPARISON | DBPROPVAL_SQ_EXISTS | DBPROPVAL_SQ_IN | DBPROPVAL_SQ_QUANTIFIED | DBPROPVAL_SQ_TABLE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_SUPPORTEDTXNDDL</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_TC_DML</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_SUPPORTEDTXNISOLEVELS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_TI_READUNCOMMITTED | DBPROPVAL_TI_READCOMMITTED | DBPROPVAL_TI_REPEATABLEREAD | DBPROPVAL_TI_SERIALIZABLE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_SUPPORTEDTXNISORETAIN</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_TR_DONTCARE</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_TABLESTATISTICS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>0</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_TABLETERM</entry>
+	      <entry>Read-Only</entry>
+	      <entry>"table"</entry>
+	      <entry></entry>
+	    </row>
+ 	    <row>
+	      <entry>DBPROP_USERNAME</entry>
+	      <entry>Read-Only</entry>
+	      <entry>N/A</entry>
+	      <entry></entry>
+	    </row>
+
+	  </tbody>
+	</tgroup>
+      </table>
+    </sect3>
+
+  </sect2>
+
+  <sect2 id="oledbsessions">
+    <title>Sessions</title>
+
+    <sect3 id="oledbsession-properties">
+      <title>Session Properties</title>
+
+      <para>VIRTOLEDB supports the following properties in the session property group.</para>
+
+      <table>
+	<title>Supported Session Properties</title>
+	<tgroup cols="4">
+	  <thead>
+
+	    <row>
+	      <entry>Property</entry>
+	      <entry>R/W</entry>
+	      <entry>Default</entry>
+	      <entry>Notes</entry>
+	    </row>
+
+	  </thead>
+	  <tbody valign="top">
+
+	    <row>
+	      <entry>DBPROP_SESS_AUTOCOMMITISOLEVELS</entry>
+	      <entry>Read/Write</entry>
+	      <entry>DBPROPVAL_TI_REPEATABLEREAD</entry>
+	      <entry>Isolation level in auto-commit mode.</entry>
+	    </row>
+
+	  </tbody>
+	</tgroup>
+      </table>
+    </sect3>
+
+  </sect2>
+
+ <!--
+  <sect2 id="oledbcommands">
+    <title>Commands</title>
+
+  </sect2>
+-->
+
+  <sect2 id="oledbrowsets">
+    <title>Rowsets</title>
+
+    <sect3 id="oledbrowsetproperties">
+      <title>Properties</title>
+
+      <table>
+	<title>Supported Rowset Properties</title>
+	<tgroup cols="4">
+	  <thead>
+
+	    <row>
+	      <entry>Property</entry>
+	      <entry>R/W</entry>
+	      <entry>Default</entry>
+	      <entry>Notes</entry>
+	    </row>
+
+	  </thead>
+	  <tbody valign="top">
+
+	    <row>
+	      <entry>DBPROP_ABORTPRESERVE</entry>
+	      <entry>Read/Write</entry>
+	      <entry></entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_ACCESSORDER</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_AO_RANDOM</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_BLOCKINGSTORAGEOBJECTS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_BOOKMARKINFO</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_BI_CROSSROWSET</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_BOOKMARKS</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_BOOKMARKSKIPPED</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_BOOKMARKTYPE</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_BMK_NUMERIC</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_CACHEDEFERRED</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_CANFETCHBACKWARDS</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_CANHOLDROWS</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_CANSCROLLBACKWARDS</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_CHANGEINSERTEDROWS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_COLUMNRESTRICT</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_COMMANDTIMEOUT</entry>
+	      <entry>Read/Write</entry>
+	      <entry></entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_COMMITPRESERVE</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_DEFERRED</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE or VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_DELAYSTORAGEOBJECTS</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_FINDCOMPAREOPS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>0</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_HIDDENCOLUMNS</entry>
+	      <entry>Read-Only</entry>
+	      <entry></entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IAccessor</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IColumnsInfo</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IColumnsRowset</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IConnectionPointContainer</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IConvertType</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IMMOBILEROWS</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IMultipleResults</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IRowset</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IRowsetChange</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IRowsetIdentity</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IRowsetInfo</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IRowsetLocate</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IRowsetRefresh</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IRowsetResynch</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IRowsetScroll</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_IRowsetUpdate</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_ISequentialStream</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_ISupportErrorInfo</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_LITERALBOOKMARKS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_LITERALIDENTITY</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_LOCKMODE</entry>
+	      <entry>Read/Write</entry>
+	      <entry>DBPROPVAL_LM_NONE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_MAXOPENROWS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>0</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_MAXPENDINGROWS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>0</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_MAXROWS</entry>
+	      <entry>Read/Write</entry>
+	      <entry>0</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_NOTIFICATIONGRANULARITY</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_NT_SINGLEROW</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_NOTIFICATIONPHASES</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_NP_OKTODO | DBPROPVAL_NP_ABOUTTODO | DBPROPVAL_NP_SYNCHAFTER | DBPROPVAL_NP_FAILEDTODO | DBPROPVAL_NP_DIDEVENT</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>
+		DBPROP_NOTIFYCOLUMNSET
+		DBPROP_NOTIFYROWDELETE
+		DBPROP_NOTIFYROWFIRSTCHANGE
+		DBPROP_NOTIFYROWINSERT
+		DBPROP_NOTIFYROWRESYNCH
+		DBPROP_NOTIFYROWSETCHANGED
+		DBPROP_NOTIFYROWSETFETCHPOSITIONCHANGE
+		DBPROP_NOTIFYROWSETRELEASE
+		DBPROP_NOTIFYROWUNDOCHANGE
+		DBPROP_NOTIFYROWUNDODELETE
+		DBPROP_NOTIFYROWUNDOINSERT
+		DBPROP_NOTIFYROWUPDATE
+              </entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_NP_OKTODO | DBPROPVAL_NP_ABOUTTODO | DBPROPVAL_NP_SYNCHAFTER</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_ORDEREDBOOKMARKS</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_OTHERINSERT</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_OTHERUPDATEDELETE</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_OWNINSERT</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_OWNUPDATEDELETE</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_QUICKRESTART</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_REENTRANTEVENTS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_REMOVEDELETED</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_REPORTMULTIPLECHANGES</entry>
+	      <entry>Read-Onle</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_RETURNPENDINGINSERTS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_ROWRESTRICT</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_ROWSET_ASYNCH</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_ROWTHREADMODEL</entry>
+	      <entry>Read-Only</entry>
+	      <entry>DBPROPVAL_RT_FREETHREAD</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_SERVERCURSOR</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_SERVERDATAONINSERT</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_SKIPROWCOUNTRESULTS</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_TRUE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_STRONGIDENTITY</entry>
+	      <entry>Read-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_TRANSACTEDOBJECT</entry>
+	      <entry>Reaq-Only</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_UNIQUEROWS</entry>
+	      <entry>Read/Write</entry>
+	      <entry>VARIANT_FALSE</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>DBPROP_UPDATABILITY</entry>
+	      <entry>Read/Write</entry>
+	      <entry>0</entry>
+	      <entry></entry>
+	    </row>
+
+	  </tbody>
+	</tgroup>
+      </table>
+
+    </sect3>
+
+    <sect3 id="rowset-interfaces">
+      <title>Interfaces</title>
+
+      <para>VIRTOLEDB supports the following rowset interfaces.</para>
+
+      <table>
+	<title>Supported Rowset Interfaces</title>
+	<tgroup cols="2">
+	  <thead>
+	    <row>
+	      <entry>Interface</entry>
+	      <entry>Description</entry>
+	    </row>
+	  </thead>
+	  <tbody>
+	    <row>
+	      <entry>IAccessor</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>IColumnsInfo</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>IConvertType</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>IRowset</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>IRowsetChange</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>IRowsetIdentity</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>IRowsetInfo</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>IRowsetLocate</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>IRowsetScroll</entry>
+	      <entry></entry>
+	    </row>
+	    <row>
+	      <entry>ISupportErrorInfo</entry>
+	      <entry></entry>
+	    </row>
+	  </tbody>
+	</tgroup>
+      </table>
+    </sect3>
+
+  </sect2>
+<!--
+  <sect2 id="oledberrors">
+    <title>Errors</title>
+
+    <sect3 id="error-interfaces">
+      <title>Interfaces</title>
+
+      <para>VIRTOLEDB supports the following error interfaces.</para>
+
+      <table>
+	<title>Supported Error Interfaces</title>
+	<tgroup cols="2">
+	  <thead>
+	    <row>
+	      <entry>Interface</entry>
+	      <entry>Description</entry>
+	    </row>
+	  </thead>
+	  <tbody>
+	    <row>
+	      <entry>IErrorLookup</entry>
+	      <entry></entry>
+	    </row>
+	  </tbody>
+	</tgroup>
+      </table>
+    </sect3>
+  </sect2>
+-->
+</sect1>
+
+<!--
+Local Variables:
+mode: xml
+sgml-parent-document: ("./virtdocs.xml" "book" "chapter" "sect1")
+sgml-default-dtd-file: "./virtdocs.ced"
+End:
+-->

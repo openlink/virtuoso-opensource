@@ -1,0 +1,2053 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="sqlprocedures.xml" id="sqlprocedures">
+	<title>SQL Procedure Language Guide</title>
+	<abstract>
+<para>Stored procedures are a key component of database performance.  The fewer
+messages are sent between the client and the server for a given transaction,
+the faster it will complete.</para>
+
+<para>Virtuoso/PL is a simple and straightforward language for writing stored
+procedures and triggers in Virtuoso.  Its syntax is a combination of SQL and
+C, making learning it as easy as possible. It offers the features commonly
+found in database procedure languages in a simple, efficient and concise
+package. This document presents the primary concepts of the language and
+ends with a reference section.</para>
+</abstract>
+	<!-- ======================================== -->
+	<sect1 id="GENERALPRINCIPLES">
+		<title>General Principles</title>
+		<para>
+A stored procedure is a named piece of Virtuoso/PL code stored in the
+SYS_PROCEDURES table. Stored procedures are created with the create
+procedure statement and are used by executing a procedure call statement
+through the regular SQL API.
+</para>
+		<para>
+A procedure takes zero or more arguments and optionally returns a value.
+Procedure arguments may be input, output or input and output.
+In this manner a procedure may modify a variable passed to it by its
+caller. If the procedure is called from a call statement executed by
+a client process, the client process gets back the procedure&apos;s return
+value and the values of output parameters.
+</para>
+<para>
+Procedures can be called with positional or keyword parameters.  A call with positional
+parameters will bind the first argument in the call to the first parameter in the
+procedure parameter list and so on.  A keyword parameter call allows specifying
+named parameters, where the argument of a given name is bound to the parameter of
+the same name in the procedure's parameter list.  Procedure parameters may be
+required or optional.  The combination of optional parameters and the keyword call
+notation make it convenient to have procedures with large numbers of parameters of
+which only part are used at any one time.
+</para>
+		<para>
+Procedures have local variables and cursors that are not visible to
+other procedures. Procedures can call each other without limitations,
+including recursively.
+</para>
+		<para>
+In addition to returning a value and changing values of output parameters
+a procedure may yield one or more result sets. The client can receive
+rows in result sets just like rows returned by a select statement.
+A procedure calling another procedure cannot receive a result set
+produced by the called procedure, however. While parameters and return
+values work equally well between procedures as between procedure and
+client application, a result set always goes to the client, even if the
+procedure has been called by another procedure.  A procedure view is a
+separate construct which allows a procedure to iterate over another procedure's
+result set.  See the Procedure Views section.
+</para>
+		<para>
+A procedure consists of statements and expressions similar to those of any
+procedural language. In addition, procedures may contain SQL statements
+operating on the procedure&apos;s arguments and local variables. Writing a
+stored procedure is thus much like using embedded SQL in C, except that
+a stored procedure is typically much faster.
+</para>
+		<para>
+The elements of the procedure are:
+</para>
+		<itemizedlist mark="bullet">
+			<listitem>
+				<formalpara>
+					<title>Procedure Declaration</title>
+					<para>
+This is a create procedure statement that names the procedure and its
+arguments.
+</para>
+				</formalpara>
+			</listitem>
+			<listitem>
+				<formalpara>
+					<title>Variable Declaration</title>
+					<para>
+This declares a local variable for the procedure.
+</para>
+				</formalpara>
+			</listitem>
+			<listitem>
+				<formalpara>
+					<title>Cursor Declaration</title>
+					<para>
+This declares a cursor, A cursor allows a procedure to iterate over the
+rows produced by a select statement.
+</para>
+				</formalpara>
+			</listitem>
+			<listitem>
+				<formalpara>
+					<title>Manipulative SQL statement</title>
+					<para>
+This can be a delete or update statement, either searched or positioned,
+a cursor manipulation or other so called routine statement.
+</para>
+				</formalpara>
+			</listitem>
+			<listitem>
+				<formalpara>
+					<title>Control statement</title>
+					<para>
+This is any control structure, loop, assignment or procedure call.
+</para>
+				</formalpara>
+			</listitem>
+			<listitem>
+				<formalpara>
+					<title>Handler declaration</title>
+					<para>
+This specifies what to do in a specific exception situation. Exceptions
+are error conditions produced by SQL statements (e.g. deadlock) or
+&apos;not found&apos; situations.
+</para>
+				</formalpara>
+			</listitem>
+		</itemizedlist>
+	</sect1>
+	<!-- ======================================== -->
+	<sect1 id="SCOPEOFDECLARATION">
+		<title>Scope of Declarations</title>
+		<para>A declaration can appear anywhere inside a compound statement. It affects
+all statements in the compound statement following the declaration
+statement.
+</para>
+
+	</sect1>
+	<!-- ======================================== -->
+	<sect1 id="sqlplDATATYPES">
+		<title>Data Types</title>
+		<para>
+Virtuoso/PL supports the regular SQL scalar data types as well as user-defined-types
+(UDTs).   UDTs and structures can be composed of data types or classes made from
+any hosted language such C# or Java.
+Local temporary tables are not supported by the present
+Virtuoso but may be added in the future.
+</para>
+		<para>
+Memory management is automatic. Parameters, cursors and intermediate
+results are automatically allocated and freed.
+</para>
+		<para>
+A parameter or variable can be of any data type a column can. Variables
+are however typed at run time, so that the declared type is mostly for
+documentation. The declared types also affect how interactive SQL
+shows certain values.
+</para>
+<para>There is a special <parameter>vector</parameter> construct, declared
+as type <parameter>ANY</parameter>, that can be used as an array.
+Vectors must be instantiated using the <function>vector()</function> function,
+optionally containing initial elements as a comma-separated list, and can
+be increased in size using the <function>vector_concat()</function>.
+Elements of a vector are read and changed using the
+<link linkend="fn_aref"><function>aref()</function></link> and
+<link linkend="fn_aset"><function>aset()</function></link> functions
+respectively.  A special notation can be used as a short-hand for accessing the
+elements of a vector one-level deep only.  The notation is by using the variable
+with the index in square brackets.  Hence, <function>aref(vec, 1)</function> is
+the same as <function>vec[1]</function>.
+
+The following example reveal more:</para>
+
+<example id="ex_vectorcontrol"><title>Using Vectors</title>
+<para>Simple excerpt showing how to instantiate a vector.</para>
+<programlisting><![CDATA[
+declare vec1, vec2, vec3 any;
+
+vec1 := vector();  -- simple empty vector
+vec2 := vector('a', 'b', 1, 2);  -- vector of mixed types
+vec3 := vector(vector('a', 'b'), vector(1, 2));  -- vector of vectors
+]]></programlisting>
+
+<para>Second-level elements of vec3 cannot be referenced as vec3[1][1].</para>
+
+<para>Here is the code for a simple VSP page that shows how vectors
+can be used.</para>
+
+<programlisting><![CDATA[
+<html>
+ <body>
+<?vsp
+declare vec1 any;
+declare i integer;
+
+vec1 := vector();
+
+http('loading up the vector using vector_concat...<br>');
+i := 0;
+while ( i <= 5 ) {
+  vec1 := vector_concat(vec1, vector(i * 5));
+  i := i + 1;
+}
+
+http('displaying the contents using aref<br>');
+i := 0;
+while ( i <= 5 ) {
+  http_value(aref(vec1, i)); http('<br>');
+  i := i + 1;
+}
+
+http('changing the values using aset<br>');
+i := 0;
+while ( i <= 5 ) {
+  aset(vec1, i, i * 10);
+  i := i + 1;
+}
+
+http('displaying the contents using [] notation<br>');
+i := 0;
+while ( i <= 5 ) {
+  http_value(vec1[i]); http('<br>');
+  i := i + 1;
+}
+
+http('changing the values using [] notation<br>');
+i := 0;
+while ( i <= 5 ) {
+  vec1[i] := i * 15;
+  i := i + 1;
+}
+
+http('displaying the contents using [] notation again<br>');
+i := 0;
+while ( i <= 5 ) {
+  http_value(vec1[i]); http('<br>');
+  i := i + 1;
+}
+?>
+ </body>
+</html>
+]]></programlisting>
+
+<para>Which produces the following output:</para>
+
+<screen><![CDATA[
+loading up the vector using vector_concat...
+displaying the contents using aref
+0
+5
+10
+15
+20
+25
+changing the values using aset
+displaying the contents using [] notation
+0
+10
+20
+30
+40
+50
+changing the values using [] notation
+displaying the contents using [] notation again
+0
+15
+30
+45
+60
+75
+]]></screen>
+</example>
+
+<tip><title>See Also:</title>
+  <para><link linkend="fn_aref"><function>aref()</function></link></para>
+  <para><link linkend="fn_aset"><function>aset()</function></link></para>
+  <para><link linkend="fn_vector_concat"><function>vector_concat()</function></link></para>
+  </tip>
+	</sect1>
+	<!-- ======================================== -->
+	<sect1 id="RESULTSETS">
+		<title>Handling Result Sets</title>
+		<para>A single Virtuoso procedure may produce multiple result sets, each
+with different result columns. A normal procedure produces one empty
+result set, only returning a possible return value and values of output
+parameters to the application.
+</para>
+    <para>The <function>result_names()</function>
+predefines variables to be used in a result set to follow.  The variables must
+be previously declared, from which the column data types are ascertained.
+This assigns the meta data but does not send any results.  The
+<function>result()</function> function sends its parameters as a single row
+of results.  These parameters should be compatible with those in the previous
+<function>result_names()</function>.  The <function>end_results()</function>
+function can be used to separate multiple result sets.  The
+<function>result_names()</function> can then be used to alter
+the structure of the next result set.</para>
+<para>The <function>result_names()</function> call can be omitted if
+the application already knows what columns and their types are to be returned.</para>
+
+<tip><title>See Also:</title>
+    <para><link linkend="fn_result"><function>result()</function></link>,
+    <link linkend="fn_result_names"><function>result_names()</function></link>,
+    <link linkend="fn_end_result"><function>end_result()</function></link></para>
+</tip>
+	</sect1>
+	<!-- ======================================== -->
+	<sect1 id="ARRAYS">
+		<title>Result Sets and Array Parameters</title>
+		<para>
+A procedure may be called with array parameters,
+c.f. SQLParamOptions. Each call can yield multiple result sets.
+</para>
+		<para>
+The SQLMoreResults function is used to get from one result set to the
+next and from one procedure call to the next. One may have to call this
+function an indeterminate number of times before all results from a
+procedure with array parameters have been received.
+</para>
+		<para>
+Each procedure return is marked with SQL_SUCCESS_WITH_INFO with SQL state
+&apos;PMORE&apos;. The next SQLFetch will retrieve the first row of the first
+result set of the next procedure invocation.
+</para>
+
+
+	</sect1>
+	<!-- ======================================== -->
+	<sect1 id="EXCEPTIONS">
+		<title>Exception Semantics</title>
+		<para>
+Exceptions are of two types: Not Found and SQLSTATE. A not found
+exception occurs when a select - into or open statement finds no row or
+when a fetch statement reads past the last row of a cursor. A SQLSTATE
+exception may result from any operation, typically a manipulative
+SQL statement. The SQLSTATE &apos;4001&apos;, deadlock is an example of this.
+A user-written procedure may signal a user defined exception with the
+signal function.
+</para>
+		<para>
+Virtuoso/PL supports PSM 96 style exception handlers.  These allow catching specific SQL states or ranges of SQL states, invoking a specific block of code when the state is signaled from within the scope of the handler.  The handler may propagate the exception to an outer handler or transfer control to any appropriate point in the containing procedure.
+</para>
+		<para>
+An unhandled exception will cause the procedure where it is detected to
+return the exception to its caller. If the caller is another procedure
+that has a handler for the specified exception that procedure invokes the handler. If the caller is a call statement issued
+by a client, the client gets the SQLSTATE and the SQLExecute function
+called by the client returns SQL_ERROR and the client application may
+retrieve the SQLSTATE and message with the SQLError function.
+</para>
+		<para>
+A SQLSTATE is any short string used to identify an error or exception
+condition. The system itself generates certain predefined SQLSTATE&apos;s
+for error conditions. Applications may add other states.
+</para>
+		<para>
+See the DECLARE HANDLER, whenever statement and signal function for an example of
+exception handling.
+</para>
+	</sect1>
+	<!-- ======================================== -->
+	<sect1 id="PLREF">
+		<title>Virtuoso/PL Syntax</title>
+		<!-- ~ # ==== ~ ==== # ~ -->
+		<sect2 id="createprocstmt">
+			<title>Create Procedure Statement</title>
+			<programlisting>
+CREATE PROCEDURE NAME (parameter , parameter...) [RETURNS data_type]
+{ statement ... }
+
+parameter: parameter_type name data_type opt_default
+
+parameter_type: IN | OUT | INOUT
+
+opt_default: | DEFAULT literal | := literal
+</programlisting>
+  <para>The create procedure statement actually performs a "create or
+  replace" type operation.  The create procedure statement compiles and stores a
+  Virtuoso/PL procedure. The procedure text is first parsed and compiled into
+  Virtuoso virtual machine code and if the compilation is successful the text
+  is stored into the SYS_PROCEDURES table. This table is read at startup.
+  Stored procedures are thus always available for use and need be defined
+  only once.  New procedures created with the same name as existing procedures
+  automatically replace their predecessor.</para>
+  <tip><title>See Also:</title>
+      <para><link linkend="createexthostproc">CREATE PROCEDURE Syntax - External hosted procedures</link></para></tip>
+			<screen>
+CREATE PROCEDURE FIBO (IN X INTEGER)
+{
+    IF (X &lt; 2)
+	RETURN X;
+    ELSE
+	RETURN (FIBO (X - 1) + FIBO (X - 2));
+}
+
+CREATE PROCEDURE CFIBO (IN X INTEGER)
+{
+    DECLARE RES INTEGER;
+
+    RES := FIBO (X);
+
+    RESULT_NAMES (RES);
+
+    RESULT (RES);
+}
+</screen>
+</sect2>
+	<sect2 id="spasviewsandtablespl">
+		<title>Stored Procedures as Views &amp; Derived Tables</title>
+		<para>
+Virtuoso allows using a stored procedure result set in place of a table. A view may also be
+defined as a stored procedure. This provides smooth integration to external
+procedural logic in queries.
+</para>
+		<para>
+When a procedure appears as a table, the procedure is called and its result set is inserted
+into a temporary space. Processing continues from that point on as if the data came from a table.
+</para>
+
+<tip><title>See Also:</title>
+<para>For more information about Store Procedures as Views &amp; Derived Tables go to the
+<link linkend="spasviewsandtables">SQL Reference Chapter</link></para></tip>
+		</sect2>
+
+		<sect2 id="kwds">
+			<title>Keyword and Optional Procedure Arguments</title>
+<para>
+Normally arguments in a procedure call are bound to formal parameters from left to right, as is
+the default behavior in any programming language.  If a default value is specified for a parameter
+in the procedure definition this parameter is optional and the default value will
+be assigned to it if the caller does not specify a value.
+A call may consist of zero or more positional arguments followed by zero or more keyword
+arguments.  A positional argument is any scalar expression.
+A keyword argument is marked with the syntax:
+</para>
+<programlisting>
+NAME =&gt; scalar_exp
+</programlisting>
+<para>
+This notation specifies that the expression is to be bound to the parameter NAME in the
+procedure declaration.  The names are matched case-insensitively in all case modes.
+After all leading positional arguments have been bound to the matching formal parameters
+in the procedure definition, each keyword argument is bound to the parameter of the same name.
+After this all unbound formal parameters are assigned to their default values.
+If a parameter with no default remains unbound an error is signaled.  OUT and INOUT
+parameters are always required, regardless of the mode of calling.
+</para>
+<para>
+An expression can be passed as INOUT or OUT, but in that case the output
+value assigned by the procedure is not accessible in the caller.  The output value
+is only accessible if the actual parameter is a variable or parameter.
+</para>
+<para>
+Arguments of procedures are always evaluated left to right.
+</para>
+
+<programlisting>
+create procedure kwd (in k1 int := 111, inout k2 int, in k3 int := 333)
+{
+  result_names (k1, k2, k3);
+  result (k1, k2, k3);
+}
+
+kwd (1,1+1,3);
+-- results 1,2,3
+
+kwd ();
+-- error because inout parameters are always required
+
+kwd (k2=&gt;1);
+-- error because a constant is not a suitable value for an inout parameter.
+
+kwd (k2=&gt;1+2);
+-- result 111, 2, 333
+
+kwd (k3=&gt;3, k1=&gt;1,k2=&gt;1+1);
+-- result 1, 2, 3
+
+kwd (1, k2=&gt;1+1);
+-- result 1, 2, 333
+kwd (1);
+-- error, k2 is required
+kwd (badkey=&gt;2, k2=&gt;2+1);
+-- error, badkey not a parameter of the function
+
+create procedure kwd2 (in k1 int , in k2 int, in k3 int)
+{
+  result_names (k1, k2, k3);
+  result (k1, k2, k3);
+}
+
+kwd2 (k1=&gt;1, k2=&gt;2, k3=&gt;3);
+-- result 1, 2, 3
+kwd2 (1,2,3);
+-- result 1, 2, 3
+</programlisting>
+</sect2>
+
+		<!-- ~ # ==== ~ ==== # ~ -->
+		<sect2 id="whilestmt">
+			<title>if, while, for, foreach statements</title>
+			<programlisting>
+if_statement
+	: IF &apos;(&apos; search_condition &apos;)&apos; statement opt_else
+
+opt_else
+	: /* empty */
+	| ELSE statement
+
+while_statement
+	: WHILE &apos;(&apos; search_condition &apos;)&apos; statement
+
+for_statement
+  :	FOR &apos;(&apos; for_init_statement_list &apos;;&apos; for_opt_search_cond &apos;;&apos; for_inc_statement_list &apos;)&apos; statement
+  | FOREACH &apos;(&apos; data_type_ref identifier IN_L scalar_exp &apos;)&apos; DO statement
+</programlisting>
+			<para>
+The IF statement executes the immediately following statement if the
+condition is true. If there is an else clause and the condition is false
+the statement immediately following the else keyword will be executed.
+</para>
+			<para>
+The while statement evaluates the search condition and executes the
+following statement if the condition is true. It does this as long as
+the condition is true. To exit from a loop, use goto. C-like break and
+continue statements are not available.
+</para>
+			<para>
+The for statement initiates the for_init_statement_list and executes
+the following statement until the search condition is true. After
+every execution of the statement it executes for_inc_statement_list.
+You can exit the loop with using goto syntax also.
+</para>
+			<para>
+The foreach statement executes the statement for each element from
+an array and sets a variable to the corresponding element of that array.
+</para>
+			<screen><![CDATA[
+IF (A > B)
+    A := A + 1;
+ELSE
+    B := B + 1;
+
+WHILE (1 = 1) {
+    A := A + 1;
+}
+
+FOR (declare X any, X := 1; X <= 2 ; X := X + 1){
+    S := S + X;
+}
+
+FOR (declare X any, X := 1; X <= 2 ; ){
+    S := S + X;
+    X := X + 1;
+}
+
+FOR (declare X any, X := 1; ; X := X + 1){
+    if (X > 2)
+    goto exit_loop;
+    S := S + X;
+}
+exit_loop:
+
+declare X integer;
+X := 1;
+FOR (; X <= 2 ; X := X + 1){
+    S := S + X;
+}
+
+ARR := vector (1,2);
+FOREACH (int X in ARR) do {
+    S := S + X;
+}
+]]></screen>
+		</sect2>
+		<!-- ~ # ==== ~ ==== # ~ -->
+		<sect2 id="compoundstmts">
+			<title>compound statement</title>
+			<programlisting>
+compound_statement
+	: &apos;{&apos; statement_list &apos;}&apos;
+	;
+
+statement_list
+   	: statement_in_cs
+	| statement_list statement_in_cs
+	;
+
+statement_in_cs
+	: local_declaration &apos;;&apos;
+	| compound_statement
+	| routine_statement &apos;;&apos;
+	| control_statement
+	| label &apos;:&apos; statement
+	;
+
+statement
+	: routine_statement &apos;;&apos;
+	| control_statement
+	| compound_statement
+	;
+
+local_declaration
+	: cursor_def
+	| variable_declaration
+	| handler_declaration
+	;
+
+variable_declaration
+	: DECLARE variable_list data_type
+	;
+
+
+variable_list
+	: NAME
+	| variable_list &apos;,&apos; NAME
+	;
+</programlisting>
+			<para>The compound statement is the main building block of
+procedures. Statements in a compound statement are executed left to right,
+unless the flow of control is changed with a goto statement. The compound
+statement allows declaring local variables and exception handlers.
+See &apos;Scope Rules&apos; above for a description of the scope of declarations.
+</para>
+			<para>
+Labelled statements (goto targets) and declarations can only occur within
+a compound statement.
+</para>
+			<tip>
+				<title>See:</title>
+				<para><link linkend="createprocstmt">Create Procedure statement</link></para>
+			</tip>
+		</sect2>
+		<!-- ~ # ==== ~ ==== # ~ -->
+		<sect2 id="gotortnstmts">
+			<title>goto, return statements</title>
+			<programlisting>
+goto_statement
+	: GOTO label
+	;
+
+label	: NAME
+
+return_statement
+	: RETURN scalar_exp
+	| RETURN
+	;
+</programlisting>
+			<para>The goto statement unconditionally transfers control to the label
+following it. The label can be anywhere within the same procedure. It is
+in principle possible to jump into a block (e.g. loop body) from outside.
+</para>
+			<para>
+The return statement causes the executing procedure to return. If a
+return value is specified the expression is evaluated and returned as
+the return value of the procedure. If no return value is specified the
+procedure returns an undefined value.
+</para>
+			<para>
+Returning from a procedure automatically frees any resources associated
+with the procedure. This includes values in local variables or call by
+value (IN) parameters and any cursors that may be open.
+</para>
+			<tip>
+				<title>See:</title>
+				<para><link linkend="createprocstmt">Create Procedure statement</link></para>
+			</tip>
+		</sect2>
+		<!-- ~ # ==== ~ ==== # ~ -->
+		<sect2 id="wheneverstmt">
+			<title>whenever statement</title>
+			<programlisting>
+condition
+	: NOT FOUND
+	| SQLSTATE STRING
+	;
+
+handler_declaration
+	: WHENEVER condition GOTO NAME
+	;
+</programlisting>
+			<para>This declares that control should be transferred to a particular label
+in the procedure whenever a condition occurs within the lexical scope
+of the WHENEVER declaration. This is similar to the statement of the
+same name found in most embedded SQL implementations.
+</para>
+			<para>
+The scope of the declaration is all the lines lexically following the
+declaration. A previous declaration is replaced by a new declaration
+for the same &lt;condition&gt;.
+</para>
+			<screen>
+CREATE PROCEDURE COUNT_CUSTOMERS (IN C_NAME VARCHAR)
+{
+    DECLARE COUNT INTEGER;
+
+    COUNT := 0;
+
+    DECLARE C CURSOR FOR SELECT C_ID FROM CUSTOMER WHERE C_NAME = C_NAME;
+
+    WHENEVER SQLSTATE &apos;4001&apos; GOTO DEADLOCK;
+
+    WHENEVER NOT FOUND GOTO DONE;
+
+    OPEN C;
+    WHILE (1=1)
+    {
+	FETCH C INTO N;
+	COUNT := COUNT + 1;
+    }
+
+DONE:
+    RETURN COUNT;
+
+DEADLOCK:
+    RETURN -1;
+}
+</screen>
+			<note>
+				<title>Note:</title>
+				<para>This is about the same as select count (*) from CUSTOMER where C_NAME = ?; </para>
+			</note>
+		</sect2>
+		<!-- ~ # ==== ~ ==== # ~ -->
+		<sect2 id="callassignstmt">
+			<title>call, assignment statements</title>
+			<programlisting>
+function_call
+	: NAME &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos;
+	| call &apos;(&apos; scalar_exp &apos;)&apos; &apos;(&apos;opt_scalar_exp_commalist &apos;)&apos;
+	;
+
+call_statement
+	: CALL NAME &apos;(&apos; opt_scalar_exp_commalist &apos;)&apos;
+	| function_call
+	;
+
+assignment_statement
+	: lvalue EQUALS scalar_exp
+	| lvalue &apos;=&apos; scalar_exp
+	;
+
+lvalue	:  NAME
+</programlisting>
+			<para>The call statement calls a specified procedure with the given arguments.
+The procedure to call is resolved at run time, i.e. the latest definition
+prevails, even if it has been made after the calling procedure was
+defined. The CALL reserved word is optional and is supported for
+compatibility.
+</para>
+			<para>
+If the called procedure has reference parameters (OUT or INOUT) the
+matching actual parameter must be a variable or parameter.
+</para>
+			<para>
+There is a computed function call form of function_call. In this,
+the scalar expression in parentheses following the call keyword should
+evaluate to a string which then identifies the function to be called.
+</para>
+			<para>
+The assignment statement sets a value to a variable. The variable must
+be either a local variable declared with declare or a procedure argument
+declared in the procedure argument list. If the variable in question is
+a reference parameter the assignment takes effect in the actual parameter
+as will, i.e. the value of the argument variable in the caller is set.
+</para>
+			<screen>
+CREATE PROCEDURE COMPUTED_CALL (IN Q INTEGER)
+{
+    DECLARE FN VARCHAR;
+
+    FN := &apos;F&apos;;
+
+    --- CALL FUNCTION FF WITH ARGUMENT 11.
+    R := CALL (CONCATENATE (FN, &apos;F&apos;)) (11);
+}
+</screen>
+		</sect2>
+		<!-- ~ # ==== ~ ==== # ~ -->
+		<sect2 id="openfetchetcintostmts">
+			<title>open, fetch, close, select ... into statements</title>
+			<programlisting>
+SELECT opt_all_distinct selection
+    INTO target_commalist
+    table_exp
+    with_opt_cursor_options_list
+    ;
+
+opt_all_distinct
+	: /* empty */
+	| ALL
+	| DISTINCT
+	;
+
+with_opt_cursor_options_list
+	: /* empty */
+	| WITH opt_cursor_options_list
+	;
+
+cursor_option
+	: EXCLUSIVE
+	;
+
+cursor_options_commalist
+	: cursor_option
+	| cursor_options_commalist &apos;,&apos; cursor_option
+	;
+
+opt_cursor_options_list
+	: /* empty */
+	| &apos;(&apos; cursor_options_commalist &apos;)&apos;
+	;
+
+cursor_def : DECLARE NAME CURSOR FOR query_exp
+           | DECLARE NAME (DYNAMIC|KEYSET|STATIC) CURSOR FOR query_exp
+
+open_statement
+	: OPEN cursor opt_cursor_options_list
+	;
+
+fetch_statement : FETCH cursor INTO target_commalist
+                | FETCH cursor (FIRST|NEXT|PREVIOUS|LAST) INTO target_commalist
+                | FETCH cursor BOOKMARK scalar_exp INTO target_commalist
+
+target_commalist
+	: variable
+	| target_commalist &apos;,&apos; variable
+	;
+
+close_statement
+	: CLOSE cursor
+	;
+</programlisting>
+			<para>The open, fetch and close statements manipulate cursors in Virtuoso/PL
+statements. Cursors are declared with the declare cursor statement.
+The select into statement is a shorthand for a cursor declaration, open,
+fetch and close.
+</para>
+			<para>
+A forward-only cursor declaration is a declaration only and executing one does not
+take time. The open statement effectively starts the search associated
+with the forward-only cursor.
+</para>
+			<para>
+The forward-only cursor options used with open and select into allow controlling how
+the cursor sets locks on selected rows and how many rows it fetches at
+a time.  The EXCLUSIVE option should be
+used if intending to update or delete a row in the cursor&apos;s evaluation.
+This causes selected rows to be locked with exclusive (write) locks.
+</para>
+			<screen>
+The statements:
+
+{
+    DECLARE CR CURSOR FOR SELECT C_NAME FROM CUSTOMER WHERE C_ID = ID;
+    OPEN CR;
+    FETCH CR INTO NAME;
+    CLOSE CR;
+}
+
+and
+
+SELECT C_NAME INTO NAME FROM CUSTOMER WHERE C_ID = ID;
+
+have the same effect.
+</screen>
+			<tip>
+				<title>See:</title>
+				<para>the <link linkend="tpccintro">TPC C Bench Marking</link> chapter for more examples.</para>
+			</tip>
+		</sect2>
+		<!-- XXX: NO INFORMATION
+<sect2>
+<title>result, result_names, end_result functions</title>
+
+<para>
+-->
+<!-- function signal -->
+		<!-- ~ # ==== ~ ==== # ~ -->
+		<sect2 id="forstmt">
+			<title>FOR Select Statement</title>
+			<programlisting>
+&lt;for statement&gt; ::=
+     FOR &lt;query exp&gt; DO statement
+</programlisting>
+			<para>
+The FOR statement provides a compact notation for iterating over the result
+set of a cursor.  The body is executed once for each row in the query expression&apos;s result set.
+The result columns produced by the query expression are accessible as variables of the same
+name inside the body.  All result columns do therefore have to be named with the AS declaration
+if they are not simple columns, in which case the name defaults to the column&apos;s name.
+</para>
+			<para>
+The body can be exited in mid loop with a goto. The cursor of the FOR does not
+have to be specifically closed or opened.  FOR statements can be freely nested.
+If a WHENEVER NOT FOUND declaration is in effect before the FOR it will be canceled
+by it, so that it is not in effect after the loop&apos;s body.
+</para>
+			<example>
+				<title>Examples</title>
+				<programlisting>
+for select C_NAME, sum (O_VALUE) as value  from CUSTOMER, ORDER group by C_NAME DO
+  {
+    result (C_NAME, value);
+  })
+</programlisting>
+				<para>
+The equivalent code is
+</para>
+				<programlisting>
+declare C_NAME, value any;
+whenever not found goto done;
+declare cr cursor for select ....;
+open cr;
+while (1) {
+  fetch cr into C_NAME, value;
+  whenever not found default;
+  ...
+}
+done: ;
+</programlisting>
+			</example>
+			<para>
+The cursor and end label names are generated to be unique by the FOR expansion.
+</para>
+		</sect2>
+		<sect2 id="setstmt">
+			<title>SET statement</title>
+			<programlisting>
+Set_statement:
+	SET option &apos;=&apos; scalar_exp
+	| SET option OFF
+	| SET option ON
+	;
+
+option:
+	ISOLATION
+	| LOCK_ESCALATION_PCT
+	| TRIGGERS
+	| PARAM_BATCH
+	;
+</programlisting>
+			<para>The SET statement sets an option to a value. Options may control trigger
+invocation, transaction isolation and other settable parameters of
+the engine. A SET inside a procedure takes effect inside the procedure
+and invoked procedures, counting from time of execution.  Control must
+pass through the SET statement for it to take effect, i.e. SET is not
+a declaration. The effect of a SET does typically not persist across
+procedure return.
+</para>
+			<para>
+A SET given at top level, i.e. directly executed and by a client as the
+statement of a SQLExecute sets an option at the connection level. This
+may only be reversed by another SET.
+</para>
+			<para>
+The option may be:
+</para>
+		</sect2>
+		<sect2 id="settriggers">
+			<title>SET Triggers</title>
+			<para>
+A value of OFF or 0 causes triggers not to be invoked even if there may
+be applicable triggers.  This is mostly useful for controlling recursion
+of triggers or for debugging triggers.
+</para>
+			<para>The value of TRIGGERS is passed into called procedures but other options are not.
+</para>
+			<tip>
+				<title>See Also:</title>
+				<para><link linkend="SETstmt">SET statement.</link></para>
+			</tip>
+		</sect2>
+	</sect1>
+
+	&createassembly;
+	&createexthostproc;
+
+	<!-- ======================================== -->
+	<sect1 id="PERFTIPS">
+		<title>Performance Tips</title>
+		<sect2 id="remember">
+			<title>Remember the following:</title>
+			<itemizedlist>
+				<listitem>
+					<para>Reference parameters (inout and out) are faster then value parameters (in).</para>
+				</listitem>
+				<listitem>
+					<para>Use cursors and positioned delete/update (where current of) for read-modify transactions instead of a select .. into and searched update.</para>
+				</listitem>
+				<listitem>
+					<para>Make an EXCLUSIVE read in read-modify transactions.</para>
+				</listitem>
+				<listitem>
+					<para>When using ORDER BY and wishing to use a particular index, specify ALL
+key parts of the index, including those that have a &apos;=&apos; condition. If you
+want to have descending order using an index, specify DESC on ALL key parts.
+</para>
+				</listitem>
+			</itemizedlist>
+		</sect2>
+	</sect1>
+	<!-- ======================================== -->
+	<sect1 id="PROCEDURES_TRANSACTIONS">
+		<title>Procedures and Transactions</title>
+		<para>
+A procedure call executed by a client is just like any other SQL
+statement. It executes in the context of the client&apos;s active transaction.
+If the connection is in autocommit mode the transaction is automatically
+committed if the procedure returns successfully and rolled back if
+the procedure returns with an error. If the connection is in manual
+commit mode, a possible procedure error has no effect on the client&apos;s
+transaction, unless the error is a transaction error, e.g. timeout
+or deadlock.
+</para>
+
+		<para>
+For best performance, we recommend using procedures in autocommit
+mode. In this way, a single client-server exchange will suffice to carry
+out the whole transaction. This will also conveniently roll back the
+transaction if the procedure exited as a result of an unhandled SQLSTATE
+or a &apos;not found&apos; condition.
+</para>
+		<para>
+Procedures can commit or rollback transactions using commit work and rollback work statements.
+</para>
+	</sect1>
+	<!-- ======================================== -->
+	<!-- ======================================== -->
+
+  &twopc;
+
+	<!-- ======================================== -->
+	<!-- ======================================== -->
+	<sect1 id="TRIGGERS">
+		<title>Triggers</title>
+
+  <para>A trigger is a procedure body associated with a table and an event.
+  A trigger can take effect before, after or instead of the event on the subject
+  table.   Several before, after or instead of triggers may exist for a given event
+  on a given table, which can be fired in a specified order. </para>
+			<para>Triggers are useful for enforcing integrity rules, maintaining the
+validity of data computed from other data, accumulating history data etc.
+</para>
+			<para>
+A trigger body has no arguments in the sense a procedure does. A trigger
+body implicitly sees the columns of the subject table as read-only
+parameters. An update trigger may see both the new and old values of
+the row of the subject table. These are differentiated by correlation
+names in the REFERENCING clause.
+</para>
+			<para>
+Triggers are capable of cascading; the code of a trigger may cause
+another trigger to be activated. This may lead to non-terminating
+recursion in some cases. Triggers may be turned off either inside a
+compound statement or inside a connection with the SET TRIGGERS OFF
+statement.</para>
+			<para>
+An update trigger may have a set of sensitive columns whose update will
+cause the trigger code to be run. Update of non-sensitive columns will
+not invoke the trigger. If no column list is specified any update will
+invoke the trigger.
+</para>
+		<sect2 id="createtrigger"><title>The CREATE TRIGGER statement</title>
+
+  <para>Triggers can be defined to act upon a table or column and fire upon:</para>
+
+  <simplelist>
+    <member>UPDATE</member>
+    <member>INSERT</member>
+    <member>DELETE</member>
+  </simplelist>
+
+  <para>at the following times during the operation on a table or column:</para>
+
+  <simplelist>
+    <member>BEFORE</member>
+    <member>AFTER</member>
+    <member>INSTEAD OF</member>
+  </simplelist>
+
+  <para>Triggers have a unique name which is qualified by the current catalog
+  and owner.  The trigger name is only really relevant for the
+  purposes of dropping triggers.  Triggers operate on a table or column which
+  must be adequately qualified.</para>
+
+  <para>The trigger body has read-only access to the values of the data
+  manipulation operation that triggered the trigger.  In the case of an update
+  statement it has access to both old and new values for each effected column.
+  These values cannot be changed directly.  If the trigger is to influence any
+  data in a table, even from the current operation, it must be achieved by
+  another SQL statement.   The REFERENCING clause allows specifying a
+  correlation name for new and old values of columns.  By default, the new
+  values are seen under the column names without a correlation name.  If old
+  values of updated columns are needed, the REFERENCING OLD AS &lt;alias&gt;
+  will make &lt;alias&gt;.&lt;column&gt; refer to the old value.</para>
+
+  <para>Triggers defined to make further operations within the same or other
+  table may fire further triggers, or even the same trigger again.  Care must be
+  taken to understand the implications of this and when triggers cane be
+  allowed to continue firing after the current trigger.  For example, an after update
+  trigger that makes a further update to the same table will fire the same trigger
+  again and may continue looping in this way endlessly.
+  The <computeroutput>SET TRIGGER</computeroutput>  statement can be
+  issued to control this:</para>
+
+  <simplelist>
+    <member>SET TRIGGERS on; -- (default state) further triggers within this transaction are allowed to fire.</member>
+    <member>SET TRIGGERS off; -- further triggers within this transaction are disabled.</member>
+  </simplelist>
+
+  <para>A table may have more than one trigger.  Their execution order can be
+  specified  using the ORDER clause.  Each trigger gets an order number, triggers
+  are called starting at the lowest order number in ascending order.</para>
+
+  <para>Syntax:</para>
+
+			<programlisting>
+CREATE TRIGGER NAME action_time event ON q_table_name
+  opt_order opt_old_ref trig_action
+
+action_time
+	: BEFORE
+	| AFTER
+
+event
+	: INSERT
+	| UPDATE opt_column_commalist
+	| DELETE
+
+opt_order
+	| ORDER INTNUM
+
+opt_old_ref
+	| REFERENCING old_commalist
+
+trig_action
+	: compound_statement
+
+old_commalist
+	: old_alias
+	| old_commalist &apos;,&apos; old_alias
+
+old_alias
+	: OLD AS NAME
+	| NEW AS NAME
+</programlisting>
+
+<example id="ex_createtrigger"><title>Creating a simple trigger</title>
+
+<para>This trigger is a simple example of one that would cause an
+endless loop if further triggering were not disabled.</para>
+
+<programlisting><![CDATA[
+create trigger update_mydate after
+   update on mytable referencing old as O, new as N
+{
+  set triggers off;
+  update mytable
+    set
+      previousdate = O.mydate,
+      mydate=now()
+    where id=N.id;
+}
+;
+]]></programlisting>
+<para>The trigger makes aliases for the values of the column that are part of
+the SQL manipulation transaction that will be in progress, hence the values of the
+columns can be accessed as "O.column" and "N.column" for old and new values respectively.</para>
+<para>The set statement is scope  to the procedure or trigger body where it occurs, plus procedures called from there  , thus when the trigger
+finishes no other triggers are effected by it.</para>
+</example>
+
+<example id="ex_createtriggerinsteadof"><title>Creating a simple trigger using INSTEAD OF</title>
+
+<para>This trigger example will show how INSTEAD OF can be used to intercept
+the values of an insert statement and re-write it.  In this case the purpose is
+to deliberately truncate VARCHAR inserts to prevent an error if the
+data type bounds are exceeded:</para>
+
+<para>First we create a test table with a 30 character limitation in one of the columns:</para>
+
+<programlisting><![CDATA[
+SQL>create table test_trunc (
+      id integer not null primary key,
+      txt varchar (30)
+      )
+    ;
+
+Done. -- 10 msec.
+]]></programlisting>
+
+<para>Then we attempt to insert 33 characters into it with the following results:</para>
+
+<programlisting><![CDATA[
+SQL>insert into test_trunc (id, txt)
+      values (1, 'aaaaaaaaaabbbbbbbbbbccccccccccxxx');
+
+*** Error 22026: [Virtuoso ODBC Driver][Virtuoso Server]SR319: Max column length (30) of column [txt] exceeded
+]]></programlisting>
+
+<para>Now we make a trigger to fire instead of insert statements that can
+perform some custom error correction, in this case we simply want to chop-off
+any extra characters that will cause an insert to fail.</para>
+
+<programlisting><![CDATA[
+SQL>create trigger test_trunc_it
+      instead of insert on test_trunc
+        referencing new as N
+    {
+      set triggers off; -- we do not want this looping...
+      insert into test_trunc (id, txt) values (N.id, left(N.txt, 30));
+    }
+    ;
+
+Done. -- 10 msec.
+]]></programlisting>
+
+<para>We perform the same test insert, now without errors:</para>
+
+<programlisting><![CDATA[
+SQL>insert into test_trunc (id, txt)
+  values (1, 'aaaaaaaaaabbbbbbbbbbccccccccccxxx');
+
+Done. -- 10 msec.
+]]></programlisting>
+
+<para>And to see what we have in the database, a quick select:</para>
+
+<programlisting><![CDATA[
+SQL> select * from test_trunc;
+id                txt
+INTEGER NOT NULL  VARCHAR
+______________________________________________________
+
+1                 aaaaaaaaaabbbbbbbbbbcccccccccc
+
+1 Rows. -- 20 msec.
+]]></programlisting>
+</example>
+</sect2>
+
+		<!-- ~ # ==== ~ ==== # ~ -->
+	<sect2 id="triggers_on_views">
+		<title>Triggers on Views</title>
+		<para>In virtuoso you can create a trigger on a view. To accomplish this there is only one condition: The first trigger for a given type of event (INSERT/DELETE/UPDATE)
+		must be an INSTEAD OF trigger. After such a trigger  is defined then any type of triggers (AFTER/BEFORE) can be added.</para>
+  <example id="ex_createtriggeronview"><title>Creating a trigger on view</title>
+
+  <para>We will make two tables and an union view for them. Then we will create a trigger which inserts a new record in one of the tables according to values.</para>
+
+  <para>First lets create the tables and the view.</para>
+  <programlisting><![CDATA[
+create table first_table(
+  id integer not null primary key,
+  txt varchar
+);
+
+create table second_table(
+  id integer not null primary key,
+  txt varchar
+);
+
+create view all_tables (id,from_table,txt)
+as select id,'first',txt from first_table
+union all
+select id,'second',txt from second_table;]]></programlisting>
+
+  <para>Now lets create a trigger instead of insert for the view and insert some data.</para>
+  <programlisting><![CDATA[
+create trigger insert_all_tables
+  instead of insert on all_tables referencing new as N{
+    if(N.from_table = 'first' or N.from_table = 'all')
+      insert into first_table (id,txt) values(N.id,N.txt);
+
+    if(N.from_table = 'second' or N.from_table = 'all')
+      insert into second_table (id,txt) values(N.id,N.txt);
+  };
+
+  insert into all_tables (id,from_table,txt) values (1,'first','into first');
+  insert into all_tables (id,from_table,txt) values (2,'second','into second');
+  insert into all_tables (id,from_table,txt) values (3,'all','into all');
+
+  select * from all_tables;
+
+  id       from_table  txt
+  INTEGER  VARCHAR  VARCHAR
+  _______________________________________________________________________________
+
+  1        first    into first
+  3        first    into all
+  2        second   into second
+  3        second   into all
+]]></programlisting>
+  </example>
+  <para>You can see that the trigger inserted the data in the two tables according the value of from_table.</para>
+
+	</sect2>
+		<!-- ~ # ==== ~ ==== # ~ -->
+		<sect2 id="droptrigger">
+			<title>The DROP TRIGGER statement</title>
+			<programlisting>
+DROP TRIGGER qualified_name
+</programlisting>
+			<para>This drops a trigger of the given name. The name may optionally have
+a qualifier and owner, in which case these should be the qualifier and
+owner of the subject table of the trigger.  Identical trigger
+names may exist for identically named tables in different namespaces.
+</para>
+		</sect2>
+		<!-- ~ # ==== ~ ==== # ~ -->
+	<sect2 id="triggers_vdb">
+		<title>Triggers and Virtual Database</title>
+		<para>
+Triggers may be defined on tables residing on remote databases. The
+semantic of triggers is identical but will of course only take place when
+the manipulation takes place through the Virtuoso defining the triggers.
+Trigger bodies may reference remote tables just as any other procedure
+bodies can. Note that triggers can be used for replication, i.e. one may
+define a local change to be mirrored to a remote table using a trigger.
+</para>
+		<para>
+Consider an application with a warehouse supplying orders. There is a
+total value of all orders kept at the warehouse level and there is the
+total value of all order lines kept at the order level. When an order
+line is added, both the order value and consequently the total order
+value are updates. These values are maintained for insert, update and
+delete of order line. On the other have, when an order is deleted,
+all corresponding order lines must be deleted.
+</para>
+		<para>
+These rules are maintained with the below set of triggers.
+</para>
+		<screen>
+drop table T_WAREHOUSE;
+
+drop table T_ORDER;
+
+drop table T_ORDER_LINE;
+
+create table T_WAREHOUSE (W_ID integer default 1,
+			  W_ORDER_VALUE float default 0,
+			  W_DATA varchar,
+			  primary key (W_ID));
+
+create table T_ORDER (O_ID integer not null primary key, O_C_ID integer,
+		      O_W_ID integer default 1,
+		      O_VALUE numeric default 0,
+		      O_MODIFIED datetime);
+
+create table T_ORDER_LINE (OL_O_ID integer,
+			   OL_I_ID integer,
+			   OL_QTY integer,
+			   OL_MODIFIED timestamp,
+			   OL_I_PRICE float default 1,
+			   primary key (OL_O_ID, OL_I_ID));
+
+create index OL_I_ID on T_ORDER_LINE (OL_I_ID);
+
+create trigger AMT_INS after insert on T_ORDER_LINE
+{
+  update T_ORDER
+    set O_VALUE = O_VALUE + OL_QTY * OL_I_PRICE
+    where O_ID = OL_O_ID;
+}
+
+create trigger AMT_DEL after delete on T_ORDER_LINE
+{
+  update T_ORDER
+    set O_VALUE = O_VALUE - OL_QTY * OL_I_PRICE
+    where O_ID = OL_O_ID;
+}
+
+create trigger AMT before update on T_ORDER_LINE referencing old as O
+{
+  update T_ORDER
+    set O_VALUE = O_VALUE - O.OL_QTY * O.OL_I_PRICE + OL_QTY * OL_I_PRICE
+    where O_ID = OL_O_ID;
+}
+
+create trigger W_VALUE before update (O_VALUE) on T_ORDER
+     referencing old as O, new as N
+{
+  update T_WAREHOUSE
+    set W_ORDER_VALUE = W_ORDER_VALUE - O.O_VALUE + N.O_VALUE
+    where W_ID = O.O_W_ID;
+}
+
+create trigger O_DEL_OL after delete on T_ORDER order 2
+{
+  set triggers off;
+  delete from T_ORDER_LINE where OL_O_ID = O_ID;
+}
+
+create trigger O_DEL_W  after delete on T_ORDER order 1
+{
+  update T_WAREHOUSE
+    set W_ORDER_VALUE = W_ORDER_VALUE - O_VALUE
+    where W_ID = O_W_ID;
+}
+
+create procedure ol_reprice_1 (in i_id integer, in i_price float)
+{
+  declare id integer;
+  declare cr cursor for
+    select OL_I_ID from T_ORDER_LINE;
+  whenever not found goto done;
+  open cr;
+  while (1) {
+    fetch cr into id;
+    if (id = i_id)
+      update T_ORDER_LINE set OL_I_PRICE = i_price where current of cr;
+  }
+ done:
+  return;
+}
+
+create procedure ol_reprice_2 (in i_id integer, in i_price float)
+{
+  declare id integer;
+  declare cr cursor for
+    select OL_I_ID from T_ORDER_LINE order by OL_I_ID;
+  whenever not found goto done;
+  open cr;
+  while (1) {
+    fetch cr into id;
+    if (id = i_id)
+      update T_ORDER_LINE set OL_I_PRICE = i_price where current of cr;
+  }
+ done:
+  return;
+}
+
+create procedure ol_del_i_id_2 (in i_id integer)
+{
+  declare id integer;
+  declare cr cursor for
+    select OL_I_ID from T_ORDER_LINE order by OL_I_ID;
+  whenever not found goto done;
+  open cr;
+  while (1) {
+    fetch cr into id;
+    if (id = i_id)
+      delete from T_ORDER_LINE where current of cr;
+  }
+ done:
+  return;
+}
+</screen>
+		<note>
+			<title>Compatibility:</title>
+			<para>Virtuoso triggers are modeled after SQL 3.  Omitted are the FOR EACH
+STATEMENT and related OLD  TABLE AS phrases as well as the WHEN in the
+trigger body.  The implementation is otherwise complete.
+</para>
+		</note>
+</sect2>
+</sect1>
+		<!-- ~ # ==== ~ ==== # ~ -->
+<sect1 id="charescaping">
+<title>Character Escaping</title>
+
+<para>
+The C style escape character can be used to include  special characters inside literals.  The backslash character, '\', followed by an octal character code  or
+a special character  provides a notation for  characters that are normally not typable in a string literal such as tab or crlf.
+Backslash support can be turned on or off at the statement level, the connection level or server default level.
+</para>
+
+<sect2 id="backslashstmt">
+<title>Statement Level</title>
+	<para>
+If you want to activate or deactivate the backslash support in a
+stored procedure you can use the following two special comments (on a separate line) :
+</para>
+<programlisting>--no_c_escapes+</programlisting>
+
+<para>
+turns the backslash escaping support off (insert into x values ('c:\test') will result in 'c:\test' in the column
+</para>
+
+<programlisting>--no_c_escapes-</programlisting>
+<para>
+turns the backslash escaping support on. (same as above will insert 'c:test' in the column.)
+</para>
+</sect2>
+
+<sect2 id="backslashconlevel">
+<title>Connection Level</title>
+
+<para>The switch SET SQL_NO_CHAR_C_ESCAPE can be set to 'on' or 'off' to respectively turn backslash support on or off
+for the current connection</para>
+<para>There is an ODBC connection attribute that can be set for the same effect in an ODBC connection.
+SQLGetConnectAttr/SQLSetConnectAttr with option ID of 5002 takes values 0 or 1 to facilitate this
+</para>
+</sect2>
+
+<sect2 id="backslashserver">
+<title>Server Default</title>
+
+<para>SQL_NO_CHAR_C_ESCAPE=0/1 can be set in the &quot;Client&quot;
+section of the virtuoso.ini file to set the connection default backslash handling behavior.  The default value is 0.
+</para>
+</sect2>
+
+<note><title>Note</title>
+<para>When a 'create procedure' is executed and that mode is &quot;ON&quot; the
+procedure is stored in such a way that it will preserve the setting for
+it's text no matter what the current default is.
+</para></note>
+
+</sect1>
+
+<sect1 id="PLSCROLLCRSRS">
+<title>Virtuoso/PL Scrollable Cursors</title>
+
+<para>
+Virtuoso/PL supports scrollable cursors, providing functionality similar to the ODBC scrollable cursor support.
+Scrollable Cursor support extends the basic (forward-only) syntax of DECLARE CURSOR and FETCH to support
+the various fetch directions &amp; cursor modes.  The Virtuoso/PL scrollable cursors always operate with a
+rowset size equal to 1.  The keyset size (where applicable) is as per the default.
+</para>
+<note><title>Note:</title>
+<para>If a Virtuoso/PL cursor is declared forward only it supports only FETCH .. NEXT scroll direction.
+The FETCH defaults its direction to NEXT (if omitted) so this is how the syntax
+extensions to DECLARE CURSOR &amp; FETCH interoperate with the forward-only cursors syntax.
+</para>
+</note>
+
+<sect2 id="PLSCROLLDECLARE">
+<title>Declaring a Scrollable Cursor</title>
+<para>
+Virtuoso/PL cursor types are specified at declaration time.  Unlike the forward-only cursor declaration
+the scrollable cursor DECLARE CURSOR causes some actions (cursor statement preparation &amp; cursor variable
+assignment).  The cursor variable&apos;s value can not be copied,
+it should be passed only by reference in procedure calls.
+Scrollable cursors have an appropriate destructor, which will close the cursor when the cursor variable goes out of scope.
+Variables in the surrounding context are referenced similarly to the forward-only cursor.
+</para>
+<note><title>Note:</title>
+<para>Some types of statements do not allow other cursor types than static.
+For example SELECT DISTINCT will always result in a static cursor, ignoring the cursor declared type.
+</para>
+</note>
+
+</sect2>
+<sect2 id="PLSCROLLOPEN">
+<title>Opening a Scrollable Cursor</title>
+<para>
+The OPEN on a scrollable cursor opens the cursor and sets it&apos;s position right before the first resultset row.
+So before taking the bookmark value at least one FETCH should be issued.
+</para>
+</sect2>
+<sect2 id="PLSCROLLFETCH">
+<title>Fetching Data From a Scrollable Cursor</title>
+<para>
+The FETCH on a scrollable cursor allows specification of a direction.  If there is no more data
+in the specified fetch direction this causes the NOT FOUND exception to be raised, as with the
+forward-only cursors.  In addition to that if the row on which the cursor is about to position has been
+deleted and the isolation level &amp; cursor type allows detecting that, then the exception
+SQLSTATE &apos;HY109&apos; (Row deleted) is raised.
+</para>
+<para>
+Positioning on a bookmark is done the following way:
+</para>
+<para>
+A bookmark value should be retrieved using the <link linkend="fn_bookmark">bookmark() function</link>.
+The value returned by that function can be stored, copied and retrieved.
+This value can also survive a cursor close and reopen, even between transactions.
+How the cursor will behave if a bookmark from a cursor with different select statement or scroll
+type is used for positioning is undefined and should be avoided.  On some
+occasions it may signal an error, on others it will position on a wrong or non-existing row.
+As a general rule bookmark values should be used only on the cursor from which  they are generated.
+</para>
+<para>
+The cursor should be in opened state.  Now a FETCH .. BOOKMARK bm_value INTO ... can be issued with
+the bookmark variable.
+</para>
+<para>
+Bookmarks can serve for persisting the cursor position in an VSP context.  One can imagine a VSP page
+which on it&apos;s first go will execute a cursor and will show the first so-many rows.
+Then it can retrieve the bookmark value of the last displayed row, persist it somehow
+(for example as an HTTP session variable), then close the cursor and exit.
+On each subsequent hit it will open again the same cursor, position on the bookmark
+persisted and return the next, previous, first or last so-many rows.
+</para>
+<!-- &bookmark; -->
+</sect2>
+<sect2 id="PLSCROLLEXAMPLES">
+<title>Virtuoso/PL Scrollable Cursor Examples</title>
+<example>
+<title>Procedure using scrollable cursor to read the keys in batches of 20</title>
+<programlisting><![CDATA[
+create procedure READ_KEYS_NEXT_20 (in mask varchar, inout bm any) returns integer
+{
+  --- This procedure reads the next 20 table names based on a bookmark value.
+  declare cr static cursor for
+      select distinct KEY_TABLE
+        from DB.DBA.SYS_KEYS
+	where
+	  KEY_IS_MAIN = 1 and
+	  KEY_MIGRATE_TO is NULL and
+	  KEY_TABLE like mask;
+  declare table_name varchar;
+  declare inx integer;
+
+  inx := 1;
+
+  -- no 'Row Deleted' (HY109) handling as the static cursors doesn't show the deleted rows.
+  whenever not found goto done;
+  open cr;
+
+  -- positions on the bookmark or on the first if it is null
+  -- and fetches the value into table_name
+  if (bm is not null)
+    {
+      fetch cr bookmark bm into table_name;
+      -- note that the value from fetch bookmark is omitted
+      fetch cr next into table_name;
+    }
+  else
+    fetch cr first into table_name;
+
+  -- fetches the next 20 rows (or less)
+  while (inx < 20)
+    {
+      result (table_name);
+      inx := inx + 1;
+      fetch cr next into table_name;
+    }
+
+  -- 20 rows were fetched - get the bookmark of the last row fetched
+  bm := bookmark (cr);
+  close cr;
+  return;
+
+done:
+
+  -- no more rows - set the bookmark to NULL
+  close cr;
+  bm := NULL;
+};
+
+
+create procedure READ_KEYS (in mask varchar)
+{
+  -- the main function (mask is a mask to be applied over the select
+
+  declare table_name varchar;
+  declare bm any;
+
+  -- it'll return a resultset with a single column
+  result_names (table_name);
+
+  -- sets the bookmark to empty
+  bm := NULL;
+
+  while (1)
+    {
+       READ_KEYS_NEXT_20 (mask, bm);
+
+       -- that's the flag for no more rows
+       if (bm is NULL)
+         return;
+    }
+};
+
+READ_KEYS ('%');
+]]></programlisting>
+</example>
+</sect2>
+</sect1>
+
+<sect1 id="plmodules"><title>Virtuoso PL Modules</title>
+
+<para>
+Modules are packages of procedures which compile together.  Procedure names in
+module definitions are not fully qualified names, but consist only of a single
+identifier that it is appended to the name of the module (which is a 3-part
+name) to make the 4-part module procedure name.
+</para>
+<para>
+Module procedures do not appear in SQLProcedures output.  Module names are in
+the same domain as the procedure names, so it is not possible to have
+a procedure with the same name as an existing module.
+</para>
+
+<sect2 id="plmodsyntax"><title>Syntax</title>
+<programlisting>
+CREATE MODULE
+  m_name
+{
+  [PROCEDURE|FUNCTION] p_name1 (...) { ...};
+  [PROCEDURE|FUNCTION] p_name2 (...) { ...};
+  ...
+  [PROCEDURE|FUNCTION] p_nameN (...) { ...};
+}
+</programlisting>
+<programlisting>
+DROP MODULE m_name;
+</programlisting>
+</sect2>
+
+<example id="ex_plmod2"><title>Procedure Modules</title>
+<programlisting>
+create module
+  DB.DBA.MOD
+{
+  function MOD1 () returns varchar {
+    return ('MOD1');
+  };
+
+  procedure MOD2 () {
+    return concat (MOD1(), 'MOD2');
+  };
+};
+</programlisting>
+<para>
+This example creates a module, MOD, with 2 procedures: MOD1 &amp; MOD2.
+Their fully-qualified names are DB.DBA.MOD.MOD1 and DB.DBA.MOD.MOD2.
+</para>
+<para>
+Note the call to MOD1 in MOD2 - it is not fully qualified, but it resolves to
+the module procedure MOD1, instead of any procedure external to the module.
+</para>
+</example>
+<para>
+A single part procedure name in a call inside a module is first matched against procedures defined in the module. 
+If the above example were  executed by DBA (in the DB qualifier),
+then the  below  statements are equivalent:
+</para>
+
+<programlisting>
+select DB.DBA.MOD.MOD1()
+select DB..MOD.MOD1()
+</programlisting>
+<para>
+The statement:
+</para>
+<programlisting>
+select MOD.MOD1()
+</programlisting>
+<para>
+will result in calling the DB.DBA.MOD.MOD1() only if a function DB.MOD.MOD1
+does not exist.  If it exists, it will be preferred over DB.DBA.MOD.MOD1
+when using this notation.
+</para>
+
+<sect2 id="plmodsecurity"><title>Security</title>
+<para>
+Module procedures can be granted to users.  Modules can also be granted to
+users.  Granting execute to a module is equivalent to granting execute for
+all of the module's procedures.</para>
+</sect2>
+</sect1>
+
+<sect1 id="handlingplcondit"><title>Handling Conditions In Virtuoso/PL Procedures</title>
+
+  <para>
+Condition handlers determine the behavior of a Virtuoso/PL procedure when a
+condition occurs.  You can declare one or more condition handlers in your Virtuoso/PL
+procedure for general SQL conditions or specific SQLSTATE values.
+</para>
+  <para>
+If a statement in your procedure raises an SQLEXCEPTION condition and you declared
+a handler for the specific SQLSTATE or SQLEXCEPTION condition the server passes control
+to that handler.
+</para>
+  <para>
+If a statement in your Virtuoso/PL procedure raises an SQLEXCEPTION condition,
+and you have not declared a handler for the specific SQLSTATE or the
+SQLEXCEPTION condition, the server passes the exception to the calling procedure (if any).
+If the procedure call is at the top-level, then the exception is signaled to the calling
+client.
+</para>
+  <para>
+Handlers are active only for the duration of the enclosing compound statement.  When an exception
+is thrown outside the handler's scope then this handler is never called.
+</para>
+
+<sect2 id="declarecondit"><title>Declaring Condition Handlers</title>
+
+  <para>
+The general form of handler declaration is:
+</para>
+<programlisting>
+DECLARE &lt;handler_type&gt; HANDLER FOR
+	&lt;condition&gt; [, &lt;condition [...]]
+	&lt;sql_procedure_statement&gt;;
+</programlisting>
+  <para>
+For compatibility handlers can be declared also as :
+</para>
+  <programlisting>
+WHENEVER &lt;condition&gt; [GOTO &lt;label&gt;|DEFAULT];
+</programlisting>
+  <para>
+When Virtuoso raises a condition that matches the &lt;condition&gt;, the &lt;sql_procedure_statement&gt;
+gets executed and when (and if) it finishes the execution continues according to the &lt;handler_type&gt;.
+</para>
+
+<programlisting>
+&lt;handler_type&gt;
+</programlisting>
+
+  <para>
+<emphasis>CONTINUE</emphasis> - Specifies that after &lt;sql_procedure_statement&gt; completes,
+execution continues with the statement after the statement which caused the error.
+</para>
+
+  <para>
+<emphasis>EXIT</emphasis> - Specifies that after &lt;sql_procedure_statement&gt; completes,
+execution continues after the end of the compound statement that contains the declaration of the handler. 
+</para>
+
+  <programlisting>
+&lt;condition&gt;
+</programlisting>
+
+  <para>
+<emphasis>NOT FOUND</emphasis> - Identifies any condition that results in SQL STATE = SQL_NO_DATA_FOUND (+100)
+</para>
+  <para>
+<emphasis>SQLEXCEPTION</emphasis> - Identifies all character SQL STATEs excluding ones starting with '01', '02' and '00'
+</para>
+  <para>
+<emphasis>SQLWARNING</emphasis> - Identifies character SQL STATEs starting with '01'.
+This is a shortcut for SQLSTATE '01*'
+</para>
+  <para>
+<emphasis>SQLSTATE [VALUE] '&lt;sql_state_mask&gt;'</emphasis> - Identifies character SQL STATEs.
+The &lt;sql_state_mask&gt; can be a full 5 character value or 0-4 characters  followed by an '*'.
+When a '*' is present then any SQL STATE signal led which starts with the same characters as
+the &lt;sql_state_mask&gt; before the '*' will cause that handler to execute.
+For example the exception with SQL state '42S22' will match all the following
+</para>
+
+<programlisting>
+SQLSTATE &lt;conditions&gt; :
+SQLSTATE '*' SQLSTATE '42*'
+SQLSTATE '42S22'
+</programlisting>
+
+<note><title>Note:</title>
+<para>Handler's call priority is determined by the number of matching characters in this mask.</para>
+</note>
+
+<programlisting>
+&lt;sql_procedure_statement&gt;
+</programlisting>
+
+  <para>
+This can be any allowed Virtuoso/PL statement as well as an compound statement.  This statement is
+executed in the same procedure context  as the procedure body itself, so any labels and variables in the
+procedure body can be used and RETURN causes the procedure to end.  No handler is active while the
+&lt;sql_procedure_statement&gt; is executed.  So any exception raised is passed directly to the procedure
+caller.  The &lt;sql_procedure_statement&gt; can be empty resulting in the &lt;handler_type&gt; action being
+taken right after setting the __SQL_STATE &amp; __SQL_MESSAGE variables.
+</para>
+  <para>
+When multiple active handlers &lt;condition&gt;s match the exception being raised Virtuoso chooses the closest to the
+statement raised the exception that has a largest call priority.
+This means that if an exception is there are two handlers with condition SQLSTATE '4*' and SQLSTATE '42*'
+and an exception with SQL STATE '42S22' is raised the handler with &lt;condition&gt; '42*' will be called.
+</para>
+
+<programlisting>
+WHENEVER &lt;condition&gt; GOTO &lt;label&gt;
+</programlisting>
+<para>is an equivalent of:</para>
+<programlisting>
+DECLARE EXIT HANDLER FOR &lt;condition&gt; GOTO label.
+</programlisting>
+<programlisting>
+WHENEVER &lt;condition&gt; DEFAULT
+</programlisting>
+<para>is equivalent of:</para>
+<programlisting>
+DECLARE EXIT HANDLER FOR &lt;condition&gt; RESIGNAL;
+</programlisting>
+
+  <para>
+The following examples demonstrate simple common handlers:
+</para>
+
+  <para>
+<emphasis>CONTINUE handler:</emphasis> The handler assigns a value of 1 to a local variable at_end when a NOT FOUND condition
+is raised.  The execution then continues with the statement after the signal.
+</para>
+
+  <programlisting>
+create procedure test1 ()
+{
+  declare at_end integer;
+
+  at_end := 0;
+  declare continue handler for NOT FOUND at_end := 1;
+
+  result_names (at_end);
+
+  result (at_end);
+  signal (100);
+  result (at_end);
+}
+</programlisting>
+
+  <para>
+When this procedure gets executed it returns the following result set :
+</para>
+
+  <screen>
+0
+1
+</screen>
+
+  <para>
+<emphasis>EXIT handler:</emphasis> The handler assigns a value of 2 to a local variable at_end when a NOT_FOUND condition is raised.
+The execution then continues with the statement after the compound statement containing the signal.
+</para>
+
+  <programlisting>
+create procedure test2 ()
+{
+  declare at_end integer;
+
+  result_names (at_end);
+
+  at_end := 0;
+  declare exit handler for NOT FOUND at_end := 1;
+
+    {
+      result (at_end);
+      signal (100);
+      result (3);
+    }
+  result (at_end);
+}
+</programlisting>
+
+  <para>
+When this procedure gets executed it returns the following result set :
+</para>
+  <screen>
+0
+1
+</screen>
+
+  <programlisting>
+__SQL_STATE and __SQL_MESSAGE variables.
+</programlisting>
+
+<para>
+All Virtuoso/PL procedure have  two variables implicitly declared :
+</para>
+
+<programlisting>
+declare __SQL_STATE any;
+declare __SQL_MESSAGE varchar;
+</programlisting>
+
+  <para>
+Initially they are set to 0.
+</para>
+
+  <para>
+When an exception is raised these variables are set as follows :
+</para>
+
+  <programlisting>
+__SQL_STATE gets the SQL STATE (character string or integer 100 for NOT FOUND)
+__SQL_MESSAGE gets the SQL MESSAGE (character) or NULL if no message.
+</programlisting>
+
+  <para>
+Their values are preserved until the next exception overwrites them.
+</para>
+
+  <programlisting>
+RESIGNAL statement
+
+Syntax :
+RESIGNAL [ '&lt;new_sql_state&gt;' ]
+
+RESIGNAL  is a shortcut for    signal (__SQL_STATE, __SQL_MESSAGE)
+RESIGNAL '&lt;new_sql_state&gt;' is a shortcut for     signal ('&lt;new_sql_state&gt;', __SQL_MESSAGE);
+</programlisting>
+
+  <para>
+This statement resignals the current exception to the caller of the procedure.
+</para>
+</sect2>
+<sect2 id="stacktracesql"><title>Stack Trace Reporting On Sql Error Generation</title>
+  <para>
+When an exception occurs the Virtuoso server has the ability to provide information
+about the procedure call stack.  It appends the call stack information to the
+error message text.  There are also line numbers besides each level of the call stack
+which are a Virtuoso/PL procedure.  The line numbers mark the beginning of the
+innermost compound statement.
+</para>
+  <para>
+The call stack reporting mode is controlled by the "CallstackOnException" option
+in the <link linkend="parameters"><emphasis>Parameters</emphasis> section of the Virtuoso INI file</link>.
+</para>
+  <para>
+This parameter takes the following values:
+</para>
+  <simplelist>
+    <member>0 (default) - Call stack reporting disabled.</member>
+    <member>1 - Call stack is reported but does not include values of arguments.</member>
+    <member>2 - Call stack is reported and contains all available information.</member>
+  </simplelist>
+<para>
+Call stack reporting can be a security hole because it can demonstrate internal logic of the system to the end user;
+this is especially important for dynamic web pages.
+Mode 2 is especially insecure because it may print values of function arguments that may contain confidential information.
+</para>
+<para>
+Some client applications are unable to handle long error messages properly.
+Client-side APIs for ODBC and similar protocols assume that client should
+allocate a buffer for error message string and then ask the API to save
+the message string to the specified buffer of the specified size. Not all
+client applications work properly if a message does not fit in the buffer.
+If an client application you use reports an empty string instead of error
+message or displays a message like 'Error message is too long' then you may
+wish to decrease the value of the "CallstackOnException" option to keep
+messages shorter.
+</para>
+</sect2></sect1>
+
+&pldebugger;
+&rowlevelsecurity;
+
+</chapter>
+
+
+

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="webservices.xml" id="webservices">
+  <title>Web Services</title>
+  <abstract>
+    <para>The term Web Services describes an application of XML for exposing
+    application functionality to disparate clients via the Web. This paradigm
+    provides access to entire applications, modules, objects, functions,
+    and methods via HTTP and other transport protocols. Web Services are
+    inherently platform- and programming-language independent. Services can be
+    developed in one language and consumed in another; this holds true
+    irrespective of client or server host operating system combinations.</para>
+    <para>A collection of core XML-based specifications and standards work in
+    concert to fulfill the Web services value proposition. These standards
+    include:</para>
+  <simplelist>
+    <member> SOAP - XML notation that describes how messages are assembled and
+    transmitted over HTTP between services and service consumers.</member>
+    <member> WSDL - XML notation for describing SOAP services. </member>
+    <member> UDDI - Application of the SOAP protocol for registering and
+    publishing information about organizations, contacts within organizations,
+    and Web Services that these organizations have chosen to expose to the
+    public.</member>
+  </simplelist>
+  <para>
+  Virtuoso enables stored procedures to be exposed as Web services that
+  are consumable by any Web services-aware development tool,
+  application, or environment. The stored procedures exposed by Virtuoso
+  may be native stored procedures, or may be hosted in any third-party
+  database that supports stored procedures, and is accessible via an
+  ODBC or JDBC driver.  In Virtuoso, exposing stored procedures as Web
+  services does not require any programming effort.  You simply identify
+  the stored procedures to be exposed using the Virtuoso Administrative
+  Interface.
+  </para>
+  <para>
+  This feature is immensely valuable in situations where organizations
+  are seeking to transform time-tested stored procedures into Web
+  Services without having to upgrade or change databases or host
+  operating systems.  In modern enterprises, such stored procedures
+  drive mission-critical solutions; Virtuoso's approach to Web services
+  enables you to maximize current investment while minimizing the need
+  for rework.
+  </para>
+  </abstract>
+
+	<!-- ################### ~~~~~~~~~~ ################### -->
+
+&soap;
+
+&wsdl;
+
+&ws-security;
+
+&ws-routing;
+
+&ws-rm;
+
+&ws-trust;
+
+&xmla;
+
+&xmlrpc;
+
+&syncml;
+
+&uddi;
+
+&exposingws;
+
+&vsmx;
+
+&bpel;
+
+&xsql;
+
+</chapter>

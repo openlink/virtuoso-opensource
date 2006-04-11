@@ -1,0 +1,166 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare ret any;
+  declare _varchar	varchar (20);
+  declare _real	real;
+  declare _double	double precision;
+  declare _numeric	numeric;
+  declare _datetime	datetime;
+  declare _vector	any;
+  declare _integer	integer;
+  declare err varchar;
+
+  declare md5_varchar, md5_real, md5_double, md5_numeric, md5_datetime, md5_vector, md5_integer varchar(32);
+  declare ret_varchar, ret_real, ret_double, ret_numeric, ret_datetime, ret_vector, ret_integer varchar(32);
+
+  err := '';
+  _varchar := 'varchar';
+  md5_varchar := tree_md5 (_varchar, 1);
+  _real := cast ('12345.6789' as real);
+  md5_real := tree_md5 (_real, 1);
+  _double := cast ('12345.6789' as double precision);
+  md5_double := tree_md5 (_double, 1);
+  _numeric := cast ('12345.6789' as numeric);
+  md5_numeric := tree_md5 (_numeric, 1);
+  _datetime := cast( '2000-06-13 15:19:42.000000' as datetime);
+  md5_datetime := tree_md5 (_datetime, 1);
+  _vector := vector ('one', 'two');
+  md5_vector := tree_md5 (_vector, 1);
+  _integer := cast ('123456' as integer);
+  md5_integer := tree_md5 (_integer, 1);
+
+  declare exit handler for sqlstate '*' { err := __SQL_MESSAGE; goto endr; };
+  {
+  ret := soap_call (concat ('localhost:', server_http_port()), '/services', 'fake', 'SOAPTYPES',
+      vector (
+	'_varchar',	_varchar,
+	'_real',	_real,
+	'_double',	_double,
+	'_numeric',	_numeric,
+	'_datetime',	_datetime,
+	'_vector',	_vector,
+	'_integer',	_integer), 1);
+  }
+  if (not isarray (ret))
+    {
+      err := 'The result is empty';
+      goto endr;
+    }
+  ret := aref (ret, 1);
+
+  ret_varchar := soap_box_xml_entity (aref (ret, 1), 'string');
+  ret_real := soap_box_xml_entity (aref (ret, 3), 'string');
+  ret_double := soap_box_xml_entity (aref (ret, 5), 'string');
+  ret_numeric := soap_box_xml_entity (aref (ret, 7), 'string');
+  ret_datetime := soap_box_xml_entity (aref (ret, 9), 'string');
+  ret_vector := soap_box_xml_entity (aref (ret, 11), NULL);
+  ret_integer := soap_box_xml_entity (aref (ret, 13), 'string');
+endr:
+?>
+
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+<H3>Supported Data types in SOAP</H3>
+<table class="tableresult">
+
+<?vsp
+      if (err = '')
+        {
+?>
+  <tr>
+  <td>
+  <?=either (neq (ret_varchar, md5_varchar), 'Differ', 'OK')?>
+  </td>
+  <td>
+  <?=soap_box_xml_entity (aref (ret, 2), 'string')?>
+  </td>
+  </tr>
+
+  <tr>
+  <td>
+  <?=either (neq (ret_real, md5_real), 'Differ', 'OK')?>
+  </td>
+  <td>
+  <?=soap_box_xml_entity (aref (ret, 4), 'string')?>
+  </td>
+  </tr>
+
+  <tr>
+  <td>
+  <?=either (neq (ret_double, md5_double), 'Differ', 'OK')?>
+  </td>
+  <td>
+  <?=soap_box_xml_entity (aref (ret, 6), 'string')?>
+  </td>
+  </tr>
+
+  <tr>
+  <td>
+  <?=either (neq (ret_numeric, md5_numeric), 'Differ', 'OK')?>
+  </td>
+  <td>
+  <?=soap_box_xml_entity (aref (ret, 8), 'string')?>
+  </td>
+  </tr>
+
+  <tr>
+  <td>
+  <?=either (neq (ret_datetime, md5_datetime), 'Differ', 'OK')?>
+  </td>
+  <td>
+  <?=soap_box_xml_entity (aref (ret, 10), 'string')?>
+  </td>
+  </tr>
+
+  <tr>
+  <td>
+  <?=either (neq (ret_vector, md5_vector), 'Differ', 'OK')?>
+  </td>
+  <td>
+  <?=soap_box_xml_entity (aref (ret, 12), 'string')?>
+  </td>
+  </tr>
+
+  <tr>
+  <td>
+  <?=either (neq (ret_integer, md5_integer), 'Differ', 'OK')?>
+  </td>
+  <td>
+  <?=soap_box_xml_entity (aref (ret, 14), 'string')?>
+  </td>
+  </tr>
+<?vsp
+	}
+     else
+       {
+?>
+   <tr><td>Error: <?=err?></td></tr>
+<?vsp
+       }
+?>
+</table>
+
+</body>
+</html>

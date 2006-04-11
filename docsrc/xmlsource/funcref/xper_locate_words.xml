@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_xper_locate_words">
+  <refmeta>
+    <refentrytitle>xper_locate_words</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xper_locate_words</refname>
+    <refpurpose>returns a smallest fragment of persistent XML entity object ('XPER entity') such that it contains some range of words in its text</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_xper_doc">
+      <funcprototype id="fproto_xper_doc">
+        <funcdef><function>xper_locate_words</function></funcdef>
+        <paramdef>in <parameter>entity</parameter>any</paramdef>
+        <paramdef><optional>in <parameter>starting_word</parameter> integer</optional></paramdef>
+        <paramdef><optional>in <parameter>ending_word</parameter> integer</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>This receives the XML entity and returns its fragment or signals an error.</para>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>entity</title>
+      <para>A 'persistent XML' entity to be searched</para></refsect2>
+    <refsect2><title>starting_word</title>
+      <para>The number of the leftmost word which should be in the selected fragment</para></refsect2>
+    <refsect2><title>ending_word</title>
+      <para>The number of the rightmost word which should be in the selected fragment</para></refsect2>
+  </refsect1>
+<!--  <refsect1 id="ret"><title>Return Types</title><para></para></refsect1> -->
+<!--
+  <refsect1 id="errors"><title>Errors</title>
+    <table><title>Errors signalled by xper_locate_words()</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+-->
+</refentry>
+
+

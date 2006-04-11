@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!--
+  Please use the following prefixes for IDs:
+    xpf_ for old XPATH functions,
+    xf_ for XPATH 2.0 & XQUERY 1.0 functions,
+    xsl_ for XSL elements,
+-->
+<refentry id="xpf_processXQuery">
+  <refmeta>
+    <refentrytitle>processXQuery</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>processXQuery</refname>
+    <refpurpose>Calls an XQuery module from XPath expression, e.g. from some XSLT or BPEL code.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_processXQuery">
+      <funcprototype id="xpf_proto_processXQuery">
+        <funcdef>any <function>processXQuery</function></funcdef>
+	<paramdef><parameter>module_uri</parameter> string</paramdef>
+	<paramdef><optional><parameter>context</parameter> entity</optional></paramdef>
+	<paramdef><optional><parameter>index</parameter> integer</optional></paramdef>
+	<paramdef><optional><parameter>param1_name</parameter> string</optional></paramdef>
+	<paramdef><optional><parameter>param1_value</parameter> any</optional></paramdef>
+	...
+	<paramdef><optional><parameter>paramN_name</parameter> string</optional></paramdef>
+	<paramdef><optional><parameter>paramN_value</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_processXQuery"><title>Description</title>
+    <para>
+This function takes a URI of an XQuery module and an XML entity and
+calls the module with the entity as a context.
+Depending on value of <parameter>index</parameter> parameter,
+either the result of the module is returned 'as is' or the sequence of results is returned.
+    </para>
+    <para>
+Parameters can be passed to the module by specifying additional arguments
+to <function>processXQuery()</function>.
+The names of parameters should appear in argument list without the leading '$' sign.
+Unlike <link linkend="fn_xquery_eval"><function>xquery_eval()</function></link> function, parameter
+can not be ignored depending on the type of its value.
+If the same name appears more than once in the vector, the last name/value pair is
+used and all preceding pairs with this name are silently ignored.
+Obviously, names should be strings that are valid XPath variable names.
+    </para>
+    <para>
+The XQuery standard does not offer a way of calling of a module from other XQuery expression.
+The reason is that there's no need for such calling if the code is designed properly.
+If an expression is re-used in various places then it should be turned into a function and
+placed into an XQuery library module; one should import the module and call the function instead of
+calling a non-library module. It is possible to use <function>processXQuery()</function>
+in XQuery expressions but it is much better to use library modules instead, and to use
+<function>processXQuery()</function> only for tricks in XPATH expressions.
+    </para>
+    <para>
+For compatibility, the <function>processXQuery()</function>   function can also be called as
+<function>http://schemas.oracle.com/xpath/extension:processXQuery()</function>.
+    </para>
+    </refsect1>
+  <refsect1 id="xpf_params_processXQuery"><title>Parameters</title>
+    <refsect2><title>module_uri</title>
+      <para>URI pointing to the location of an XQuery module. It can be absolute or relative.
+A relative <title>module_uri</title> should be resolved before use, this requires base URI information.
+Base URI can be declared explicitly by &quot;__base_uri&quot; parameter in XPATH or
+&quot;declare base-uri&quot; setter in XQuery.
+If not declared but the expression is a part of some stylesheet or XQuery module then the URI of module is
+used as a base URI.
+A run-time error is signalled if the URI is relative and the expression does not contain explicit declaration and the expression is neither in a stylesheet nor in a module.
+      </para></refsect2>
+    <refsect2><title>index</title>
+      <para>Result index. If omitted a value of 1 is assumed,
+meaning only the first result is returned. If a value of 0 is supplied then a (flatten) sequence of all results is returned.
+(Note that if a non-zero value is specified then the returned value still can be a sequence).
+</para></refsect2>
+    <refsect2><title>context</title>
+      <para>XML entity that is the context node of module call.
+If the function is called with only one argument then the current context node of the <function>processXQuery()</function> call is used as a context of module call.
+(In any case, context size and context position of module call are always set to 1 and not inherited from call of <function>processXQuery()</function>.)
+</para></refsect2>
+    <refsect2><title>paramI_name</title>
+      <para>Name of parameter to be passed to the
+    XSLT engine for use in the transformation.</para></refsect2>
+    <refsect2><title>paramI_value</title>
+      <para>Value of parameter with name specified by <parameter>paramI_name</parameter>.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_processXQuery"><title>Return Types</title><para>The type of return value depends on type of value returned by module.</para></refsect1>
+<!--
+  <refsect1 id="xpf_errors_processXQuery"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+-->
+  <refsect1 id="xpf_examples_processXQuery"><title>Examples</title>
+    <example id="xpf_ex_processXQuery"><title>Call of XQuery in XSLT</title>
+      <para>Sample templates put the result of the call of module "mymodule.xq" for context node into the resulting document.
+This assumes that both the stylesheet and XQuery module "mymodule.xq" reside in the same directory so relative a URI "mymodule.xq"
+can be resolved using the URI of the stylesheet as base URI.
+      </para>
+      <screen><![CDATA[
+<xsl:template match="myelement">
+  <xsl:copy-of select="processXQuery('mymodule.xq')"/>
+</xsl:template>
+      ]]></screen>
+      <para>This is equivalent with the following template:
+      </para>
+      <screen><![CDATA[
+<xsl:template match="myelement">
+  <xsl:copy-of select="processXQuery('mymodule.xq', current(), 1)"/>
+</xsl:template>
+      ]]></screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_processXQuery"><title>See Also</title>
+    <para><link linkend="fn_xquery_eval"><function>xquery_eval()</function></link></para>
+    <para><link linkend="xpf_processXSLT"><function>processXSLT()</function></link></para>
+    <para><link linkend="xpf_processXSQL"><function>processXSQL()</function></link></para>
+  </refsect1>
+</refentry>
+

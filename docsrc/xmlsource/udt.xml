@@ -1,0 +1,1592 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="udt"><title>User Defined Types</title>
+
+<para>A user-defined type is a schema object, identified by a user-defined
+type name.  The definition of a user-defined type specifies a number of
+components, including in particular a list of attribute definitions.  The
+representation of a user-defined type is expressed as a list of attribute
+definitions.</para>
+
+<para>The definition of a user-defined type may include a method specification
+list consisting of one or more method specifications.  A method specification
+is either an original method specification or an overriding method
+specification.  Each original method specification specifies the method name,
+the SQL parameter declaration list, the returns data type, the &lt;language clause&gt;,
+the language (if the language is not SQL), and whether it is a STATIC or
+CONSTRUCTOR method.</para>
+
+<para>Each overriding method specification specifies the method name, the SQL
+parameter declaration list and the RETURNS data type.  For each overriding method
+specification, there must be an original method specification with the same
+method name and SQL parameter declaration list in some proper supertype of
+the user-defined type.  Every SQL-invoked method in a schema must correspond to
+exactly one original method specification or overriding method specification
+associated with some user-defined type existing in that schema.  A
+method <computeroutput>M</computeroutput> that corresponds to an original method
+specification in the definition of a structured type <computeroutput>T1</computeroutput>
+is an original method of <computeroutput>T1</computeroutput>. A
+method <computeroutput>M</computeroutput> that corresponds to an overriding
+method specification in the definition of <computeroutput>T1</computeroutput> is
+an overriding method of <computeroutput>T1</computeroutput>.  A method
+<computeroutput>M</computeroutput> is a method of type
+<computeroutput>T1</computeroutput> if one of the following holds:</para>
+
+<simplelist>
+  <member><computeroutput>M</computeroutput> is an original method of <computeroutput>T1</computeroutput></member>
+  <member><computeroutput>M</computeroutput> is an overriding method of <computeroutput>T1</computeroutput></member>
+  <member>There is a proper supertype <computeroutput>T2</computeroutput> of
+  <computeroutput>T1</computeroutput> such that <computeroutput>M</computeroutput>
+  is an original or overriding method of <computeroutput>T2</computeroutput>
+  and such that there is no method <computeroutput>M3</computeroutput> such that
+  <computeroutput>M3</computeroutput> has the same method name and SQL parameter
+  declaration list as <computeroutput>M</computeroutput> and
+  <computeroutput>M3</computeroutput> is an original method or overriding
+  method of a type <computeroutput>T3</computeroutput> such that
+  <computeroutput>T2</computeroutput> is a proper supertype of
+  <computeroutput>T3</computeroutput> and <computeroutput>T3</computeroutput> is
+  a supertype of <computeroutput>T1</computeroutput>.</member>
+</simplelist>
+
+<para>A user defined type can be a direct subtype of one (and only one) user
+defined type.  The user defined type cannot be a subtype of itself.</para>
+
+<para>A type <computeroutput>Ta</computeroutput> is a direct subtype of a type
+<computeroutput>Tb</computeroutput> if <computeroutput>Ta</computeroutput> is a
+proper subtype of <computeroutput>Tb</computeroutput> and there does not exist a
+type <computeroutput>Tc</computeroutput> such that <computeroutput>Tc</computeroutput>
+is a proper subtype of <computeroutput>Tb</computeroutput> and a proper supertype
+of <computeroutput>Ta</computeroutput>.</para>
+
+<para>A type <computeroutput>Ta</computeroutput> is a subtype of type
+<computeroutput>Tb</computeroutput> if one of the following pertains:</para>
+
+<simplelist>
+  <member><computeroutput>Ta</computeroutput> is a direct subtype of
+  <computeroutput>Tb</computeroutput>; or</member>
+  <member><computeroutput>Ta</computeroutput> is a subtype of some type
+  <computeroutput>Tc</computeroutput> and <computeroutput>Tc</computeroutput> is
+  a direct subtype of <computeroutput>Tb</computeroutput>.</member>
+</simplelist>
+
+<para>By the same token, <computeroutput>Tb</computeroutput> is a supertype of
+<computeroutput>Ta</computeroutput> and is a direct supertype of
+<computeroutput>Ta</computeroutput> in the particular case where
+<computeroutput>Ta</computeroutput> is a direct subtype of
+<computeroutput>Tb</computeroutput>.  If <computeroutput>Ta</computeroutput>
+is a subtype of <computeroutput>Tb</computeroutput>, then
+<computeroutput>Ta</computeroutput> is proper subtype of
+<computeroutput>Tb</computeroutput> and <computeroutput>Tb</computeroutput> is
+a proper supertype of <computeroutput>Ta</computeroutput>.  A type cannot be a
+proper supertype of itself.  A type with no proper supertypes is a maximal
+supertype.  A type with no proper subtypes is a leaf type.</para>
+
+<para>Let <computeroutput>Ta</computeroutput> be a maximal supertype and let
+<computeroutput>T</computeroutput> be a subtype of <computeroutput>Ta</computeroutput>.
+The set of all subtypes of <computeroutput>Ta</computeroutput> (which includes
+<computeroutput>Ta</computeroutput> itself) is called a subtype family of
+<computeroutput>T</computeroutput> or (equivalently) of
+<computeroutput>Ta</computeroutput>.  A subtype family is not permitted to have
+more than one maximal supertype.  Every value in a type
+<computeroutput>T</computeroutput> is a value in every supertype of
+<computeroutput>T</computeroutput>.  A value <computeroutput>V</computeroutput>
+in type <computeroutput>T</computeroutput> has exactly one most specific type
+<computeroutput>MST</computeroutput> such that <computeroutput>MST</computeroutput>
+is a subtype of <computeroutput>T</computeroutput> and
+<computeroutput>V</computeroutput> is not a value in any proper subtype of
+<computeroutput>MST</computeroutput>.  The most specific type of value need not
+be a leaf type.  For example, a type structure might consist of a type
+<computeroutput>PERSON</computeroutput> that has
+<computeroutput>STUDENT</computeroutput> and <computeroutput>EMPLOYEE</computeroutput>
+as its two subtypes, while <computeroutput>STUDENT</computeroutput> has two
+direct subtypes <computeroutput>UG_STUDENT</computeroutput> and
+<computeroutput>PG_STUDENT</computeroutput>.  The invocation
+<computeroutput>STUDENT( )</computeroutput> of the constructor function for
+<computeroutput>STUDENT</computeroutput> returns a value whose most specific
+type is <computeroutput>STUDENT</computeroutput>, which is not a leaf type.
+If <computeroutput>Ta</computeroutput> is a subtype of
+<computeroutput>Tb</computeroutput>, then a value in
+<computeroutput>Ta</computeroutput> can be used wherever a value in
+<computeroutput>Tb</computeroutput> is expected. In particular, a value in
+<computeroutput>Ta</computeroutput> can be stored in a column of type
+<computeroutput>Tb</computeroutput>, can be substituted as an argument for an
+input SQL parameter of data type <computeroutput>Tb</computeroutput>, and can
+be the value of an invocation of an SQL-invoked function whose result data type
+is <computeroutput>Tb</computeroutput>.  A type <computeroutput>T</computeroutput>
+is said to be the minimal common supertype of a set of types
+<computeroutput>S</computeroutput> if <computeroutput>T</computeroutput> is a
+supertype of every type in <computeroutput>S</computeroutput> and a subtype of
+every type that is a supertype of every type in <computeroutput>S</computeroutput>.</para>
+
+<note><title>Note:</title>
+<para>Because a subtype family has exactly one maximal supertype, if two types
+have a common subtype, they must also have a minimal common supertype.  Thus,
+for every set of types drawn from the same subtype family, there is some member
+of that family that is the minimal common supertype of all of the types in that
+set.  </para></note>
+
+<para>A user-defined type is declared by a user-defined type
+<link linkend="udtcreatetypestmt">CREATE TYPE statement</link>.</para>
+
+<sect2 id="udtcreatetypestmt"><title>CREATE TYPE Statement</title>
+
+<programlisting><![CDATA[
+CREATE TYPE type_name
+   [ UNDER type_name ]
+   [ LANGUAGE language_name [ EXTERNAL NAME literal ] ]
+   [ AS (type_member, ...) ]
+   [ type_option [type option ] .... ]
+   [ method_specification, ... ]
+
+type_name :
+  [ [ identifier  .] [ identifier ] . ] identifier
+
+type_member :
+  identifier data_type [ DEFAULT literal ] [ EXTERNAL NAME string ] [ EXTERNAL TYPE string ]
+    [ __SOAP_TYPE literal ] [ __SOAP_NAME literal ]
+
+type_option : SELF AS REF | TEMPORARY | SOAP_TYPE literal
+
+method_specification : original_method_specification | overriding_method_specification
+
+original_method_specification :
+  [ STATIC | INSTANCE ] METHOD identifier ( [ decl_parameter, ... ] )
+    RETURNS data_type [ method_characteristics ]
+  |
+  CONSTRUCTOR METHOD identifier ( [ decl_parameter, ... ] )  [ method_characteristics ]
+
+overriding_method_specification :
+	OVERRIDING [ INSTANCE ] METHOD identifier ( [ decl_parameter, ... ] )
+    RETURNS data_type
+
+method_characteristics :
+  [ EXTERNAL TYPE literal ] [ EXTERNAL NAME string | EXTERNAL VARIABLE NAME string ]
+
+language_name : SQL | CLR | JAVA
+]]></programlisting>
+
+<para>The CREATE TYPE statements declares a user defined type.  Generally
+speaking the user defined types can be in two states: forward-referenced,
+declared and instantiable.</para>
+
+<para>A type is in forward reference state if it's name is quoted in some other
+CREATE TYPE statement (as a supertype, member type or a method parameter type
+or return type).  When a type is in forward reference state it's instances can be
+copied, passed as parameter values and returned by functions, but it cannot be
+instantiated, no type members can be accessed and no type methods can be called.
+Forward references are temporary objects and they disappear at server shutdown.</para>
+
+<para>A type moves to the declared state when a CREATE TYPE is executed for it.
+In that state type methods can be called, type members can be accessed, but the type
+cannot be instantiated.</para>
+
+<para>A type goes into instantiable state from declared state when it has no
+supertype or it's supertype is also in instantiable state.  The server tries to
+move the defined types to instantiable state on every CREATE TYPE statement.</para>
+
+<para>Normally the type definitions are stored into the DB.DBA.SYS_USER_TYPES
+system table.</para>
+
+<para>This has the following layout:</para>
+
+<programlisting>
+CREATE TABLE SYS_USER_TYPES
+(
+ UT_NAME VARCHAR,
+ UT_PARSE_TREE LONG VARCHAR,
+ UT_ID integer identity,
+ UT_MIGRATE_TO integer,
+ primary key (UT_NAME));
+</programlisting>
+
+<simplelist>
+ <member><emphasis>UT_NAME</emphasis> - the fully qualified user defined type name.</member>
+ <member><emphasis>UT_PARSE_TREE</emphasis> - the user defined type definition (in machine readable form).</member>
+ <member><emphasis>UT_ID</emphasis> - the ID of the type (used in persisting type instances to/from network/storage).</member>
+ <member><emphasis>UT_MIGRATE_TO</emphasis> - reserved for future use.</member>
+</simplelist>
+
+<para>If a TEMPORARY type_option is specified, the CREATE TYPE does not write
+the type definition into the table - it declares the type only in server's
+memory.  TEMPORARY types are not persistable.  They disappear when the server is
+restarted.  A TEMPORARY type cannot be a supertype or a subtype of a
+non-TEMPORARY type.</para>
+
+<para>The <computeroutput>SELF AS REF</computeroutput> option directs the server
+to return a reference to the type's instance when instantiating the type, as
+opposed to returning the instance itself.  The references are explained in
+more detail in the <computeroutput>NEW</computeroutput> operator.</para>
+
+<note><title>Note:</title>
+<para>The CREATE TYPE is an autocommiting statement.</para></note>
+
+<example id="ex_createtype"><title>Creating User Defined Types</title>
+<para>This example creates a SQL implemented user defined type UDT_TEST with
+no supertype.  It has two members : A and B, two constructor methods, a static
+method _ADD, an ADDIT method taking either zero or two arguments and an instance
+method SUB_IT.</para>
+
+<programlisting><![CDATA[
+create type UDT_TEST
+  as (A integer default 1, B integer default 2)
+  CONSTRUCTOR METHOD UDT_TEST(_a integer, _b integer),
+  CONSTRUCTOR METHOD UDT_TEST(),
+  STATIC METHOD _ADD(_xx integer, _yy integer) returns integer specific DB.DBA.static_add,
+  METHOD ADDIT() returns integer,
+  METHOD ADDIT(c integer) returns integer,
+  METHOD SUB_IT () returns integer;
+]]></programlisting>
+
+<para>This creates a subtype of UDT_TEST named UDT_TEST_SUB.  UDT_TEST_SUB
+extends the static method _ADD of UDT_TEST so it can also take 4 arguments,
+overrides the method ADDIT from UDT_TEST and defines a new instance method
+MULTIPLY_IT.</para>
+
+<programlisting><![CDATA[
+create type UDT_TEST_SUB under UDT_TEST
+  as (C integer default 12, _D integer default 32)
+  STATIC METHOD _ADD(_xx integer, _yy integer, _zz integer, _qq integer) returns integer,
+  OVERRIDING METHOD ADDIT() returns integer,
+  METHOD MULTIPLY_IT () returns integer;
+]]></programlisting>
+
+<para>This is a SQL wrapper for a public Java type testsuite_base
+(see testsuite_base.java).</para>
+
+<programlisting><![CDATA[
+create type testsuite_base language java external name 'testsuite_base'
+as (
+    protected_I integer external name 'protected_I' external type 'I',
+    private_I integer external name 'private_I' external type 'I',
+    sZ smallint external name 'Z' external type 'Z',
+    sfalseZ smallint external name 'falseZ' external type 'Z',
+    sB smallint external name 'B' external type 'B',
+    sC smallint external name 'C' external type 'C',
+    sS smallint external name 'S' external type 'S',
+    sI int external name 'I' external type 'I',
+    sJ int external name 'J' external type 'J',
+    sF real external name 'F' external type 'F',
+    sD double precision external name 'D' external type 'D',
+    sL any external name 'L' external type 'Ljava/lang/Short;',
+    sAI any external name 'AI' external type '[I',
+    sAL any external name 'AL' external type '[Ljava/lang/Short;',
+    sstr nvarchar external name 'str' external type 'Ljava/lang/String;',
+    sdat datetime external name 'dat' external type 'Ljava/util/Date;',
+
+    tF real external name 'F',
+    "F" real,
+
+    non_existant_var integer external name 'non_existant_var' external type 'I'
+   )
+    static method get_static_ro_I ()
+	returns integer external type 'I' external variable name 'static_ro_I',
+    static method get_static_I ()
+	returns integer external type 'I' external variable name 'static_I',
+    static method get_protected_static_I ()
+	returns integer external type 'I' external variable name 'protected_static_I',
+    static method get_private_static_I ()
+	returns integer external type 'I' external variable name 'private_static_I',
+
+    static method test_bool (x integer external type 'I')
+	returns smallint external type 'Z' external name 'test_bool',
+
+    constructor method testsuite_base (),
+    constructor method testsuite_base (i integer external type 'I'),
+
+    static method echoDouble (a double precision external type 'D')
+	returns any external type 'Ljava/lang/Double;' external name 'echoDouble',
+    static method getObjectType (a any external type 'Ljava/lang/Object;')
+	returns varchar external type 'Ljava/lang/String;' external name 'getObjectType',
+    static method echoThis (a testsuite_base external type 'Ltestsuite_base;')
+	returns integer external type 'I' external name 'echoThis',
+    static method static_echoInt (a integer external type 'I')
+	returns integer external type 'I' external name 'static_echoInt',
+
+    static method change_it (a testsuite_base)
+	returns integer external type 'I' external name 'change_it',
+
+    method "overload_method" (i integer external type 'I')
+	returns integer external type 'I',
+
+    method echoInt (a integer external type 'I')
+	returns integer external type 'I' external name 'echoInt',
+
+    method echoInt (a double precision external type 'D')
+	returns integer external type 'I' external name 'echoInt',
+
+    method protected_echo_int (a integer external type 'I')
+	returns integer external type 'I' external name 'protected_echo_int',
+
+    method private_echo_int (a integer external type 'I')
+	returns integer external type 'I' external name 'private_echo_int',
+
+    method "echoDbl" (a double precision)
+	returns double precision,
+
+    method non_existant_method (a integer external type 'I')
+	returns integer external type 'I' external name 'non_existant_method',
+
+    static method non_existant_static_var (a integer external type 'I')
+	returns integer external type 'I' external variable name 'non_existant_static_var';
+]]></programlisting>
+</example>
+</sect2>
+
+<sect2 id="udtaltertypestmt"><title>ALTER TYPE Statement</title>
+
+<programlisting><![CDATA[
+ALTER TYPE type_name
+ (  ADD ATTRIBUTE type_member
+ | DROP ATTRIBUTE identifier [ CASCADE | RESTRICT ]
+ | ADD method_specification
+ | DROP original_method_specification [ CASCADE | RESTRICT ]
+
+type_name :
+  [ [ identifier  .] [ identifier ] . ] identifier
+
+type_member :
+  identifier data_type [ DEFAULT literal ] [ EXTERNAL NAME string ] [ EXTERNAL TYPE string ]
+    [ __SOAP_TYPE literal ] [ __SOAP_NAME literal ]
+
+type_option : SELF AS REF | TEMPORARY | SOAP_TYPE literal
+
+method_specification : original_method_specification | overriding_method_specification
+
+original_method_specification :
+  [ STATIC | INSTANCE ] METHOD identifier ( [ decl_parameter, ... ] )
+    RETURNS data_type [ method_characteristics ]
+  |
+  CONSTRUCTOR METHOD identifier ( [ decl_parameter, ... ] )  [ method_characteristics ]
+
+overriding_method_specification :
+	OVERRIDING [ INSTANCE ] METHOD identifier ( [ decl_parameter, ... ] )
+    RETURNS data_type
+
+method_characteristics :
+  [ EXTERNAL TYPE literal ] [ EXTERNAL NAME string | EXTERNAL VARIABLE NAME string ]
+
+language_name : SQL | CLR | JAVA
+]]></programlisting>
+
+<para>The ALTER TYPE statements modifies a user defined type.  It can be used for
+    adding or dropping methods and members of user defined types.</para>
+
+
+<note><title>Note:</title>
+<para>The ALTER TYPE is an autocommiting statement.</para></note>
+
+<example id="ex_altertype"><title>Altering User Defined Types</title>
+<para>This example uses a SQL implemented user defined type UDT_ALTER_TYPE with
+    no supertype defined as follows: </para>
+
+<programlisting><![CDATA[
+create type UDT_ALTER_TYPE as (A integer default 1)
+method m1 (I integer) returns integer;
+create method M1 (in I integer) returns integer for UDT_ALTER_TYPE
+{
+ return I;
+};
+]]></programlisting>
+
+<para>Then it adds an attribute B to it :</para>
+
+<programlisting><![CDATA[
+alter type UDT_ALTER_TYPE Add attribute B integer default 2;
+]]></programlisting>
+
+<para>Then drops the original A attribute : </para>
+
+<programlisting><![CDATA[
+alter type udt_ALTER_TYPE drop attribute A;
+]]></programlisting>
+
+<para>Now let's add a new method M2 to the type : </para>
+
+<programlisting><![CDATA[
+alter type UDT_ALTER_TYPE Add method M2 (ID integer) returns integer;
+create method M2 (in ID integer) returns integer for UDT_ALTER_TYPE
+{
+  return ID + 100;
+};
+]]></programlisting>
+
+<para>And drop the M1 method : </para>
+
+<programlisting><![CDATA[
+alter type UDT_ALTER_TYPE drop method M1 (ID integer) returns integer;
+]]></programlisting>
+</example>
+</sect2>
+
+<sect2 id="udtdroptypestmt"><title>DROP TYPE Statement</title>
+
+<programlisting>
+DROP TYPE type_name
+</programlisting>
+
+<para>This statement reverses the effect of CREATE TYPE statement.  If the type
+has methods defined they are deleted as well.  Note that forward references
+cannot be dropped by a DROP TYPE.</para>
+<para>The DROP TYPE statement can be used only for dropping types that are
+not referenced in another type's UNDER statement.</para>
+
+<example id="ex_udtdroptype"><title>Dropping a user-defined type</title>
+<para>Dropping the subtype from the previous section.</para>
+<programlisting><![CDATA[
+drop type UDT_TEST_SUB;
+]]></programlisting>
+</example>
+</sect2>
+
+
+<sect2 id="udtcreatemethodstmt"><title>CREATE METHOD Statement</title>
+
+<programlisting><![CDATA[
+CREATE [ INSTANCE | STATIC | CONSTRUCTOR ] METHOD identifier
+     ( parameter, .... ) [ RETURNS data_type ] FOR type_name
+     {
+       .....
+     }
+
+  parameter : { IN | OUT | INOUT } identifier data_type
+]]></programlisting>
+
+<para>For the SQL user defined types every method should be defined in order
+to be callable.  It is an error to call CREATE METHOD for a non-SQL type's
+methods (as the methods are implemented in some other non-SQL language).</para>
+
+<para>There is no DROP METHOD as each CREATE METHOD will override the current
+method definition (if any).  The method name, parameter types and the return
+type should match exactly the method declaration (method_specification in
+CREATE TYPE).</para>
+
+<para>The method name for the constructors is the name of the type (without
+the qualifier and the owner).</para>
+
+<para>For the constructor and instance methods there is a variable named
+<computeroutput>SELF</computeroutput> (in scope for the compound statement
+defining the method) representing the current type instance.</para>
+
+<para>The method members and other methods are not in scope in the method's
+compound statement.  They should be accessed through the
+<computeroutput>SELF</computeroutput> variable.</para>
+
+<example id="ex_methodcreation"><title>Simple method demonstration</title>
+<para>This example defines the two parameter constructor for the UDT_TEST type.
+It sets the values for the type members A and B to the values of the constructor
+parameters.  This example uses the SQL200n syntax for method mutators (see below).</para>
+
+<programlisting><![CDATA[
+create constructor method UDT_TEST (in _a integer, in _b integer)
+  for UDT_TEST
+{
+  SELF := A(SELF, _a);
+  SELF := B(SELF, _b);
+  return SELF;
+};
+]]></programlisting>
+
+<para>This defines the static method _ADD for the type UDT_TEST.
+Note that it does not use SELF - it would be a syntax error to do so.</para>
+
+<programlisting><![CDATA[
+create static method _ADD (in a1 integer, in a2 integer)
+  for UDT_TEST
+{
+  return a1 + a2;
+};
+]]></programlisting>
+</example>
+</sect2>
+
+<sect2 id="udttypeinstances"><title>Type Instances</title>
+
+<para>Every user defined type can have zero or more instances.  Every instance knows
+it's type.  The instances are SQL values.  They are copiable.  Instances for SQL
+types contain placeholders for the type's members.  Instances for non-SQL
+types contain a reference to the real instance in type's hosted environment.
+(Java VM for JAVA and the CLR virtual machine for CLR).  So copying an
+instance is different for SQL and non-SQL types.  When a SQL type's instance
+is copied a new set of members placeholders is created and all members values are
+copied.  This way the copy does not hold any link to it's original and they can
+be considered as two different instances.  This means that changing members'
+value in the copy will not affect the original.</para>
+
+<para>The non-SQL types instances hold only a reference to the real instance.
+So copying such an instance is equivalent of making another reference to the
+foreign object.  Thus changing the member's value in the copy WILL affect the
+original.  Usually the foreign virtual machines have a means of explicitly
+copying an instance, but they are not used by the Virtuoso server when copying
+the SQL values.</para>
+
+<para>As with the other SQL values, an instance gets destroyed when it is no
+longer referenced.</para>
+</sect2>
+
+<sect2 id="udtinstancerefs"><title>Instance References</title>
+
+<para>Because the SQL types instances cannot be referenced by more than one
+variable/type member Virtuoso PL implements instance references.  The
+references are created for the types marked with
+<computeroutput>SELF AS REF type_option</computeroutput>
+(see <link linkend="udtcreatetypestmt">CREATE TYPE</link>).  For such types the
+constructor(s) make a SQL value of reference type in addition to making the
+instance itself.  The engine places the instances in a connection specific
+cache of instances and returns a SQL value of type reference which points to
+that instance.  Copying the reference value will not cause copying the instance
+into the cache, so a <computeroutput>SELF AS REF</computeroutput> type will behave
+as a hosted class with respect to changing values in the copy.  A new instance in
+the cache will be created only when the constructor for the type is called again.
+The server will accept a SQL reference value in every place where an instance
+value is expected.  When a reference is serialized, as in when storing into a
+column of a table, the server will serialize the instance data, not the
+reference itself.</para>
+
+<para>The connection's instance cache is cleared after the completion of the
+current server operation, i.e. completion of the top level state, statement
+invoked by a client or the completion of processing an HTTP request.  The cache
+will thus survive multiple transactions if these are transacted within a single
+client initiated operation.</para>
+</sect2>
+
+<sect2 id="udtnewop"><title>NEW Operator</title>
+
+<programlisting><![CDATA[
+[ NEW ] type_name ( [ parameter_value, .... ] )
+]]></programlisting>
+
+<para>This returns an instance (or reference to an instance) of the user defined
+type type_name.  It will try to match a constructor by calculating the parameter
+types at compile time and matching the so produced signature to the closest
+constructor signature (see below: <link linkend="udtfindingmethods">finding
+methods</link>).  The SQL types have an implicit constructor with no parameters
+that assigns the DEFAULT values to the type members (if any, otherwise NULL).
+When a SQL constructor is called it will have the <computeroutput>SELF</computeroutput>
+set-up to the result of calling the  implicit constructor.  The NEW operator
+is a scalar expression and can be used wherever the SQL syntax allows scalar
+expressions.</para>
+</sect2>
+
+<sect2 id="udtfindingmethods"><title>Finding Methods - Method Signatures Generation &amp; Comparison</title>
+
+<para>A method of a user defined type is identified uniquely by the combination
+of the following:</para>
+
+<simplelist>
+  <member>the method name</member>
+  <member>number of the method's parameters</member>
+  <member>the method's parameter types</member>
+  <member>the method's return type</member>
+</simplelist>
+
+<para>This combination of a method attributes is called the method's signature.</para>
+
+<para>The Virtuoso Server must know the method's types of the parameter values
+and the return type at compile time to calculate the method signature and find
+exactly the method to call in the types method table.  This is different from
+the current practice in calling stored procedures, because the compile types
+are not used to find the procedure.</para>
+
+<para>The majority of the system functions are known at compile time to return
+values of a certain SQL type (e.g.: LEFT is known to return VARCHAR,
+ATOI returns INTEGER etc).  But there are some (e.g.: AREF) that may return
+values of more than one type.  The Virtuoso server does type arithmetic
+for scalar expressions at compile time already (to be able to supply columns
+types of a result set to ODBC clients for example), but so far the calculated
+type has only informative value and was not used anywhere during the compilation.
+All of the type checks are done at runtime.  The method/constructor invocation
+breaks that practice by using the calculated compile time types for the scalar
+expressions.</para>
+
+<example id="ex_udtpoorsignature"><title>Method Signatures</title>
+
+<para>Consider a method <computeroutput>m1</computeroutput> of type
+<computeroutput>t1</computeroutput> taking an INTEGER parameter and returning
+an integer value:</para>
+
+<programlisting><![CDATA[
+CREATE METHOD m1 (in x integer)
+  for t1 returns integer
+{ return x + 10; };
+]]></programlisting>
+
+<para>Now consider calling the method as follows (in a Virtuoso/PL procedure):</para>
+
+<programlisting>
+...
+declare p float;
+declare ret integer;
+declare t1i t1;
+
+t1i := new t1();
+p := 1;
+
+ret := t1i.m1(p);
+....
+</programlisting>
+
+<para>This will yield a compilation error explaining that there is no method
+<computeroutput>m1</computeroutput> of user defined type <computeroutput>t1</computeroutput>.
+It will do that because p has a compile time type of FLOAT.</para>
+<para>The following will also fail to compile:</para>
+
+<programlisting>
+...
+declare p integer;
+declare ret float;
+declare t1i t1;
+
+t1i := new t1();
+p := 1;
+
+ret := t1i.m1(p);
+....
+</programlisting>
+
+<para>This time the <computeroutput>ret</computeroutput> has a declared type of
+FLOAT and there is no method in t1 taking 1 INTEGER parameter and returning FLOAT.</para>
+
+<para>The most consistent way of specifying the compile time type of a scalar
+expression is to enclose it in a CAST statement, as follows:</para>
+
+<programlisting>
+...
+declare p float;
+declare ret integer;
+declare t1i t1;
+
+t1i := new t1();
+p := 1;
+
+ret := t1i.m1(CAST (p as integer));
+....
+</programlisting>
+
+<para>This will compile and execute correctly.</para>
+</example>
+</sect2>
+
+<sect2 id="udtgetsetmembervals"><title>Getting &amp; Setting Member Values of Type Instances (member observers &amp; mutators)</title>
+
+<para>Let <computeroutput>T</computeroutput> be a user defined type that has a
+member <computeroutput>A</computeroutput> of type <computeroutput>AT</computeroutput>.
+Let <computeroutput>IT</computeroutput> be an instance of type
+<computeroutput>T</computeroutput>.</para>
+
+<sect3 id="udtmemobserv"><title>Member Observers (Getting Values)</title>
+  <para>There are two alternative syntaxes (both scalar expressions):</para>
+  <programlisting><![CDATA[
+SQL200n :  A(<scalar_exp>)
+Virtuoso extension :  <scalar_exp>.A
+]]></programlisting>
+
+  <para>Both of the above will return a copy of the member's value of the
+  instance in &lt;scalar_exp&gt; when the scalar expression &lt;scalar_exp&gt;
+  has a compile time type of <computeroutput>T</computeroutput>.  If the compile
+  time type is not determined to be a user defined type
+  <computeroutput>T</computeroutput> the first one will be compiled as a call
+  to the SQL function <computeroutput>A</computeroutput> and the second will
+  either generate a syntax error or the server will consider it as reference
+  to a scope variable (depending on the type of &lt;scalar_exp&gt;).</para>
+
+  <para>These are also scalar expressions and have a compile time
+  type <computeroutput>AT</computeroutput>.</para>
+
+  <para>To specify an explicit type of the scalar expression there is a
+  third syntax:</para>
+
+  <programlisting><![CDATA[
+(<scalar_exp> as T).A
+]]></programlisting>
+
+  <para>This will force the server to compile a reference to the member
+  <computeroutput>A</computeroutput> in user defined type <computeroutput>T</computeroutput>.
+  Whether the &lt;scalar_exp&gt; is indeed of type <computeroutput>T</computeroutput>
+  will be checked at runtime.</para>
+  </sect3>
+
+<sect3 id="udtmemmutators"><title>Member Mutators (Setting Values)</title>
+  <para>There are two alternative syntaxes (both scalar expressions):</para>
+
+  <programlisting><![CDATA[
+SQL200n :  A(<scalar_exp>, <new_value_scalar_exp>)
+Virtuoso extension :  <scalar_exp>.A := <new_value_scalar_exp>
+]]></programlisting>
+
+  <para>Both of the above will set the member's value of the instance  in
+  &lt;scalar_exp&gt; to a copy of &lt;new_value_scalar_exp&gt; when the
+  scalar expression &lt;scalar_exp&gt; has a compile time type of
+  <computeroutput>T</computeroutput>.  If the compile time type is not
+  determined to be a user defined type <computeroutput>T</computeroutput> the
+  first one will be compiled as a call to the SQL function
+  <computeroutput>A</computeroutput> and the second will either generate
+  a syntax error or the server will consider it as reference to a scope variable
+  (depending on the type of &lt;scalar_exp&gt;).</para>
+
+  <para>These are also scalar expressions and have a compile time type
+  <computeroutput>T</computeroutput> and return a copy of the &lt;scalar_exp&gt;.
+  To specify an explicit type of the scalar exp there is a third syntax:</para>
+
+  <programlisting><![CDATA[
+(<scalar_exp> as T).A := <new_value_scalar_exp>
+]]></programlisting>
+
+  <para>This will force the server to compile a reference to the member
+  <computeroutput>A</computeroutput> in user defined type <computeroutput>T</computeroutput>.
+  Whether the &lt;scalar_exp&gt; is indeed of type
+  <computeroutput>T</computeroutput> will be checked at runtime.</para>
+
+  <example id="ex_usingconstructor"><title>Member Construction</title>
+  <para>This will make a new object of type <computeroutput>UDT_FR_BASE</computeroutput>
+  by calling it's two int parameters constructor and will return the member
+  <computeroutput>B</computeroutput> value of the instance stored in member
+  <computeroutput>UDT_M</computeroutput> of <computeroutput>UDT_FR_BASE</computeroutput>.</para>
+
+  <programlisting><![CDATA[
+select new UDT_FR_BASE (1, 2).UDT_M.B;
+]]></programlisting>
+</example>
+  </sect3>
+</sect2>
+
+<sect2 id="udtstaticmethods"><title>Calling Static Methods</title>
+<para>Let <computeroutput>T</computeroutput> be a user defined type that has
+a static method <computeroutput>SM</computeroutput>.</para>
+
+<programlisting>
+T::SM ( [ parameter, .... ] )
+</programlisting>
+
+<para>This will call the static method of <computeroutput>SM</computeroutput>
+of <computeroutput>T</computeroutput> and will return whatever the static
+method returns.</para>
+
+<example id="ex_callstaticmethod"><title>Calling A Static Method</title>
+<programlisting>
+select UDT_TEST::_ADD (1, 2);
+</programlisting>
+</example>
+</sect2>
+
+<sect2 id="udtcallinstmethod"><title>Calling Instance Methods</title>
+<para>Let <computeroutput>T</computeroutput> be a user defined type that has
+an instance method <computeroutput>IM</computeroutput>.  Let
+<computeroutput>IT</computeroutput> be a scalar expression having a compile
+time type of <computeroutput>T</computeroutput>.</para>
+
+<programlisting>
+IT.IM ( [ parameter, .... ] )
+</programlisting>
+
+<para>This will call the instance method <computeroutput>IM</computeroutput>
+of <computeroutput>T</computeroutput> and will return  whatever the
+<computeroutput>IM</computeroutput> returns.</para>
+
+<para>Similarly to  member observers/mutators the compile time type of
+<computeroutput>IT</computeroutput> can be specified explicitly:</para>
+
+<programlisting>
+(IT as T).IM ( [ parameter, .... ] )
+</programlisting>
+
+<para>This syntax however has an additional property in that it will call the
+method of the type regardless of whether it is overloaded in a subtype or not.
+Let <computeroutput>ST</computeroutput> be a subtype of <computeroutput>T</computeroutput>
+and <computeroutput>ST</computeroutput> that has the method
+<computeroutput>IM</computeroutput> overloaded.  Let <computeroutput>IST</computeroutput>
+be a scalar expression that represents an instance of <computeroutput>ST</computeroutput>.</para>
+
+<para>Then:</para>
+
+<programlisting>
+(IST as T).IM ( [ parameter, ... ] )
+</programlisting>
+
+<para>will call the method <computeroutput>IM</computeroutput> as defined in
+<computeroutput>T</computeroutput>, whereas</para>
+
+<programlisting>
+IST.IM ( [ parameter, ... ] )
+</programlisting>
+
+<para>will call the method <computeroutput>IM</computeroutput> as defined in
+<computeroutput>ST</computeroutput>.</para>
+
+<example id="ex_callinginstmethods"><title>Calling Overloaded Instance Methods</title>
+<programlisting>
+<![CDATA[
+CREATE TYPE UDT_BASE
+  method A () returns integer;
+
+CREATE TYPE UDT_SUB under UDT_BASE
+  OVERRIDING method A () returns integer;
+
+create method A () returns integer for UDT_BASE
+{
+  return 1;
+}
+
+create method A () returns integer for UDT_SUB
+{
+  return 2;
+}
+
+select new UDT_SUB ().A() as IMPLICIT,
+  (new UDT_SUB() as UDT_BASE).A() as EXPLICIT;
+]]></programlisting>
+<para>This will return:</para>
+<programlisting><![CDATA[
+IMPLICIT		EXPLICIT
+----------------------------
+2			1
+]]></programlisting>
+
+<para>This is done so the overloaded methods can call the base type methods.</para>
+</example>
+</sect2>
+
+<sect2 id="udtserilizingtypeinst"><title>Serializing &amp; Deserializing Type Instances</title>
+<para>Virtuoso allows serializing and deserializing of non TEMPORARY type
+instances.  This means that the instances can be saved as a column value and can
+be used with the serialize/deserialize SQL functions.</para>
+
+<example id="ex_serializetypeinst"><title>Storing User Defined Types</title>
+<para>This creates a type SER_UDT, a table UDT_TABLE with a DATA column
+capable of storing SER_UDT instances, stores an instance of SER_UDT into the
+table and demonstrates some selects using the stored instance.</para>
+
+<programlisting><![CDATA[
+create type SER_UDT as (A integer default 12)
+  method NEGATE () returns integer;
+
+create method NEGATE () returns integer for SER_UDT
+{
+  return SELF.A * -1;
+}
+
+create table UDT_TABLE (ID integer primary key, DATA SER_UDT);
+
+insert into UDT_TABLE (ID, DATA) values (1, new SER_UDT ());
+
+select C.DATA.A from UDT_TABLE C where C.ID = 1;
+
+select C.ID from UDT_TABLE C where C.DATA.A > 10;
+
+select C.ID from UDT_TABLE C where C.DATA.NEGATE() < -10;
+]]></programlisting>
+
+<para>Note that the table alias is mandatory here.</para>
+
+<programlisting><![CDATA[
+select ID from UDT_TABLE where DATA.A > 10;
+]]></programlisting>
+
+<para>and</para>
+
+<programlisting><![CDATA[
+select ID from UDT_TABLE where DATA.NEGATE() < -10;
+]]></programlisting>
+
+<para>will both yield a syntax error.</para>
+</example>
+
+<para>The columns of a certain type allow storing subtype instances as well.
+The subtype instances will not be converted to the their supertype when stored.
+</para>
+
+<para>If we define the type <computeroutput>SER_UDT_SUB</computeroutput> as:</para>
+
+<programlisting>
+create type SER_UDT_SUB under SER_UDT
+  as (B integer default 13);
+</programlisting>
+
+<para>then we can do:</para>
+
+<programlisting>
+insert into UDT_TABLE (ID, DATA) values (2, new SER_UDT_SUB ());
+
+select (C.DATA as SER_UDT_SUB).B from UDT_TABLE C where C.ID = 2;
+</programlisting>
+
+<para>Type instances can be stored into an ANY column:</para>
+
+<programlisting>
+create table ANY_TABLE (ID integer primary key, DATA any);
+
+insert into ANY_TABLE (ID, DATA) values (1, new SER_UDT());
+
+select (C.DATA as SER_UDT).A from ANY_TABLE C where C.ID = 1;
+</programlisting>
+
+<example id="ex_serializebifs"><title>SERIALIZE/DESERIALIZE VSEs example</title>
+<programlisting>
+select (DESERIALIZE (SERIALIZE (new SER_UDT ())) as SER_UDT).A;
+</programlisting>
+
+<para>The SERIALIZE VSE can be used to store larger type instances into
+LONG VARCHAR columns.  For example:</para>
+
+<programlisting>
+create table LOB_TABLE (ID integer primary key, LOB_DATA LONG VARCHAR);
+
+insert into LOB_TABLE (ID, LOB_DATA) values (1, SERIALIZE (new SER_UDT()));
+
+select (DESERIALIZE (BLOB_TO_STRING (LOB_DATA)) as SER_UDT).A
+  from LOB_TABLE where ID = 1;
+</programlisting>
+</example>
+
+<para>The serialization/deserialization for the non-SQL type instances is done
+by the means of the hosted language (Java Object serialization API and CLR Binary
+serialization API).  So to be serialized/deserialized correctly the Java classes
+must implement the java.io.Serializable interface and the CLR classes should
+have the [Serializable] attribute set.  For details refer to the respective
+API documentation.</para>
+</sect2>
+
+<sect2 id="udtutilfuncs"><title>User Defined Types Utility Functions</title>
+
+<para>Virtuoso implements the following user defined types utility functions:</para>
+
+<simplelist>
+  <member><link linkend="fn_udt_instance_of"><function>udt_instance_of()</function></link></member>
+  <member><link linkend="fn_udt_defines_field"><function>udt_defines_field()</function></link></member>
+  <member><link linkend="fn_udt_implements_method"><function>udt_implements_method()</function></link></member>
+  <member><link linkend="fn_udt_get"><function>udt_get()</function></link></member>
+  <member><link linkend="fn_udt_set"><function>udt_set()</function></link></member>
+</simplelist>
+
+</sect2>
+
+<sect2 id="udthostedforiegnobjects"><title>Hosted Foreign Objects in Virtuoso</title>
+
+<sect3 id="udtjvmhost"><title>Java VM Hosted Objects</title>
+
+  <para>A special build of Virtuoso hosts a Java VM and allows manipulation of
+  Java classes through the SQL user defined types.</para>
+
+  <para>In order to access the Java class instances they have to be defined as Virtuoso
+  types using CREATE TYPE and specifying LANGUAGE JAVA.  Java classes have to be
+  in the CLASSPATH of the hosted Java VM.</para>
+
+  <example id="ex_jvmhostobj"><title>Hosted Java Objects</title>
+
+  <para>Java (Point.java):</para>
+
+  <programlisting><![CDATA[
+public class Point implements java.io.Serializable
+{
+  public double x = 0;
+  public double y = 0;
+
+  public Point (double new_x, double new_y)
+  {
+    x = new_x;
+    y = new_y;
+  }
+
+  public double distance (Point p)
+  {
+    return Math.sqrt ((p.x - this.x) * (p.x - this.x) + (p.y - this.y) * (p.y - this.y));
+  }
+}
+]]></programlisting>
+
+  <para>This Java class should be compiled and the corresponding Point.class
+  should be placed in the hosted VM's classpath.  Then a Virtuoso user defined
+  type should be created as follows:</para>
+
+<programlisting><![CDATA[
+create type Point language java external name 'Point'
+ as (
+  x double precision external name 'x',
+	y double precision external name 'y'
+)
+
+constructor method Point (new_x double precision, new_y double precision),
+method distance (Point p) returns double precision external name 'distance';
+]]></programlisting>
+
+  <para>From now on the SQL Point type can be used to create instances of the
+  Java Point class, access it's members, call it's methods and store it into
+  tables (since the Java Point class implements the
+  <computeroutput>java.io.Serializable</computeroutput> interface).</para>
+  </example>
+
+  <para>For the hosted Java objects a LANGUAGE JAVA should be specified.
+  The format of EXTERNAL NAME is:</para>
+  <simplelist>
+    <member>the full name of the Java class for classes (ex. 'java.lang.Class')</member>
+    <member>the name of the methods/instance members</member>
+  </simplelist>
+
+  <para>Since Java has static members and the Virtuoso SQL types do not,
+  Virtuoso allows read-only access to static members through static observer
+  functions with EXTERNAL VARIABLE NAME instead of EXTERNAL NAME.</para>
+
+  <example id="ex_staticmembers"><title>Static Member Access</title>
+  <programlisting><![CDATA[
+java (stat.java) :
+public class stat
+{
+  static stat_m double;
+}
+]]></programlisting>
+
+  <para>Virtuoso SQL:</para>
+  <programlisting><![CDATA[
+create type stat language java external name 'stat'
+static method observe_stat_m ()
+  returns double precision external variable name 'stat_m';
+]]></programlisting>
+  </example>
+
+  <para>Virtuoso does automatic mapping between the Virtuoso SQL data types
+  and the Java data types.  Since Java data types are much more primitive than
+  Virtuoso types it is safe to explicitly specify the Java type of an instance
+  member, method parameter or method return value.  This is done by using the
+  Type Signatures format described in the Java Native Interface Specification
+  (chapter 3 : JNI Types and Data Structures : Table 3.2).  The signatures are
+  supplied as string values to EXTERNAL TYPE clause.</para>
+
+  <para>To facilitate the creation of the wrapper SQL types Virtuoso uses
+  the Java Reflection API to get the description of the class in XML form.
+  This XML is then transformed using an XSL stylesheet to makes the
+  CREATE TYPE statements required automatically.  In the process it preserves
+  the superclass/subclass relationships of the specified Java classes and
+  represents them as a supertypes/subtypes in SQL.  The
+  <link linkend="fn_jvm_ref_import"><function>jvm_ref_import()</function></link>
+  procedure is used to create the XML by calling the Java Reflection API.</para>
+
+  <para>The function <link linkend="fn_import_jar"><function>import_jar()</function></link>
+  takes the same parameters as <function>jvm_ref_import()</function> but will
+  automatically create and execute the create type statements within the Virtuoso
+  server.</para>
+
+  <table><title>Java Type to Virtuoso Type Conversions</title>
+  <tgroup cols="2">
+   <thead><row>
+     <entry>Java Type/Class</entry>
+     <entry>Virtuoso Internal Type</entry>
+   </row></thead>
+   <tbody>
+     <row><entry>boolean</entry>
+       <entry>smallint</entry></row>
+     <row><entry>byte</entry>
+       <entry>smallint</entry></row>
+     <row><entry>char</entry>
+       <entry>smallint</entry></row>
+     <row><entry>short</entry>
+       <entry>integer</entry></row>
+     <row><entry>int</entry>
+       <entry>integer</entry></row>
+     <row><entry>long</entry>
+       <entry>integer</entry></row>
+     <row><entry>float</entry>
+       <entry>real</entry></row>
+     <row><entry>double</entry>
+       <entry>double precision</entry></row>
+     <row><entry>byte[]</entry>
+       <entry>binary</entry></row>
+     <row><entry>java.lang.String</entry>
+       <entry>NVARCHAR</entry></row>
+     <row><entry>java.util.Date</entry>
+       <entry>DATETIME</entry></row>
+     <row><entry>[]</entry>
+       <entry>vector</entry></row>
+   </tbody>
+  </tgroup>
+</table>
+
+  <table><title>Virtuoso Type to Java Type Conversions</title>
+  <tgroup cols="2">
+   <thead><row>
+     <entry>Virtuoso Internal Type</entry>
+     <entry>Java Type/Class</entry>
+   </row></thead>
+   <tbody>
+     <row><entry>smallint</entry>
+       <entry>short</entry></row>
+     <row><entry>integer</entry>
+       <entry>integer</entry></row>
+     <row><entry>real</entry>
+       <entry>float</entry></row>
+     <row><entry>double precision</entry>
+       <entry>double</entry></row>
+     <row><entry>varchar</entry>
+       <entry>java.lang.String</entry></row>
+     <row><entry>nvarchar</entry>
+       <entry>java.lang.String</entry></row>
+     <row><entry>datetime</entry>
+       <entry>java.util.Date</entry></row>
+     <row><entry>timestamp</entry>
+       <entry>java.util.Date</entry></row>
+     <row><entry>binary</entry>
+       <entry>byte[]</entry></row>
+   </tbody>
+  </tgroup>
+</table>
+
+   <para>For all the other types encountered in the signatures of the Java
+   methods/members it makes a forward reference to a Virtuoso/PL user defined
+   type based on the java class name, replacing the dot ('.') with the
+   underscore ('_') character.</para>
+
+   <para>For example:</para>
+
+    <para><computeroutput>'java.lang.System'</computeroutput>
+	becomes <computeroutput>'java_lang_System'</computeroutput></para>
+
+   <para>In order to correctly map a java superclass/subclass relationship between
+   class A and class B when importing, it is nessesary to include A, B and all
+   the intermediate classes in the superclass/subclass chain in a single
+   <function>import_jar()</function> call.</para>
+
+  <para>To implement serialization/deserialization for Java object the Virtuoso
+  needs the __virt_helper Java class.  This class contains utility functions
+  implementing serialization/deserealization.  This class must be in the CLASSPATH.</para>
+
+  <para>The Java VM hosted inside the Virtuoso binary is not started at startup,
+  but when first needed.  It's startup is marked by a message in the Virtuoso
+  log file.  An application can control the initialization of the Java VM by
+  explicitly initializing the Java VM (preferrably on server startup) by
+  calling the VSE: <link linkend="fn_java_vm_attach"><function>java_vm_attach()</function></link></para>
+  </sect3>
+
+
+  <sect3 id="udtclrhosted"><title>CLR Hosted Objects</title>
+  <para>A special virtuoso build is available to allow SQL types integration
+  with the CLR (Common Language Runtime) on Windows.  This is achieved by
+  providing COM server in C# (virtclr.dll) that is called from the native code
+  through COM.</para>
+
+  <para>The virtclr.dll library should be registered into the CLR's Global
+  assembly cache.</para>
+
+  <para>The semantics of CLR hosted objects are largely the same as those
+  described for Java hosted objects.  As before, native objects need SQL Type
+  wrappers, but with LANGUAGE CLR clause specified.</para>
+
+  <para>To automatically create the SQL Type wrappers based on the CLR Reflection
+  API the Virtuoso CLR binary has a system stored procedure:
+  <link linkend="fn_import_clr"><function>import_clr()</function></link></para>
+
+  <para>There are three forms for specifying the EXTERNAL NAME of a CLR class:</para>
+
+  <itemizedlist>
+   <listitem>a) <computeroutput>&lt;Assembly public name&gt;/&lt;namespace-prefixed-class-name&gt;</computeroutput>
+   Here the Virtuoso CLR host issues Assembly.Load with <computeroutput>&lt;Assembly public
+   name&gt;</computeroutput> to find the assembly.  After finding it, it looks
+   for <computeroutput>&lt;namespace-prefixed-class-name&gt;</computeroutput> in it.</listitem>
+   <listitem>b) <computeroutput>&lt;namespace-prefixed-class-name&gt;</computeroutput>
+   Here the Virtuoso CLR host issues Assembly.Load with
+   <computeroutput>&lt;namespace-prefixed-class-name&gt;</computeroutput>.  After
+   finding it, it looks for <computeroutput>&lt;namespace-prefixed-class-name&gt;</computeroutput>
+   in it.</listitem>
+   <listitem>c) <computeroutput>&lt;path-to-the-assembly-binary&gt;/&lt;namespace-prefixed-class-name&gt;</computeroutput>
+   Here the Virtuoso CLR host issues Assembly.LoadFrom with <computeroutput>&lt;path-to-the-assembly-binary&gt;</computeroutput>.
+   After finding it, it looks for <computeroutput>&lt;namespace-prefixed-class-name&gt;</computeroutput>
+   in it.</listitem>
+  </itemizedlist>
+
+  <para>
+  The Virtuoso CLR host does the above when creating an instance of the type,
+  accessing static methods or properties.</para>
+
+  <para>However when it deserializes an serialized CLR instance it calls the
+  CLR deserialization class BinaryFormatter.  The BinaryFormatter.Deserialize
+  calls internally Assembly.Load to find the serialized class description.
+  So althrough the classes defined with EXTERNAL name as in c) above are otherwise
+  accessible (and serializable) they will possibly not deserialize correctly
+  (as the assembly binary may not be findable through the Assembly.Load).  To
+  avoid that CLR limitation it is advisable to use the EXTERNAL NAME forms
+  a) and b) wherever possible.</para>
+
+  <para>The Assembly.Load process of finding Assemblies is very well documented
+  on the <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpguide/html/cpconhowruntimelocatesassemblies.asp">MSDN</ulink>.
+  Note that if an assembly was loaded through Assembly.LoadFrom it is not
+  considered as "already loaded" by the Assembly.Load.  The Virtuoso CLR is a
+  CLR runtime host.  As such it can use the normal CLR configuration files. It also
+  is able of using private assemblies.</para>
+
+  <tip><title>See Also:</title>
+    <para>The <link linkend="createassembly">Create Assembly</link> Syntax</para></tip>
+
+  </sect3>
+
+  <sect3 id="udtaspxhosting"><title>ASPX Hosting Using the Hosted CLR</title>
+  <para>Virtuoso CLR hosting allows ASPX pages to be executed through the
+  Virtuoso HTTP server inside the hosted CLR Virtual machine.  To enable this
+  support an additional library  (virt_http.dll) needs to be registered with
+  the Global Assembly cache.  Having achieve this and copying ASPX project files
+  under the Virtuoso HTTP server's root allows direct execution of the ASPX
+  page.  See the sample ASPX pages in the Virtuoso distribution.</para>
+
+  <para>If the ASPX project files reside in a WebDAV directory they are copied
+  into a temporary file system directory under a special temprary directory
+  (configurable by the TempASPXDir INI parameter in [HTTPServer] section of
+  <link linkend="VIRTINI">virtuoso ini</link> file) before executed.  In order
+  to be execute correctly from WebDAV the ASPX files should have Execute WebDAV
+  permission set them.  The execution of ASPX is also controlled by the
+  EnableDavVSP INI parameter in the [HTTPServer] as with any active content
+  within WebDAV.</para>
+
+  <tip><title>See Also:</title>
+    <para><link linkend="rthwritaspxapps">Writing ASP.Net Web Applications</link></para>
+	<para><link linkend="runtimehosting">Runtime Hosting</link></para></tip>
+  </sect3>
+
+  <sect3 id="udtaspxhostexprsdeps"><title>Expressing Hosted Language Supertype/Subtype Dependancies With Virtuoso/PL User-Defined-Types</title>
+
+   <para>It is also possible to represent the tree or in-part of Java or the CLR's
+   superclass/subclass hierarchy with Virtuoso user defined type mappings.</para>
+
+   <para>Consider the following sample Java code:</para>
+
+<programlisting><![CDATA[
+class g1 { public int g1_value; public int mtd_g1 (int x) { return g1_value; } };
+class g2 extends g1 { public int g2_value; public int mtd_g2 (int x) { return g2_value; } };
+class g3 extends g2 { public int g3_value; };
+class g2_sib extends g1 { public int g2_sib_value; };
+
+class uses_types {
+  public static g3 mtd (int x) { return new g3 (); }
+}
+]]></programlisting>
+
+
+   <para>One can create SQL user defined types for
+   <computeroutput>g1</computeroutput>, <computeroutput>g2</computeroutput>
+   and <computeroutput>g3</computeroutput> to represent the
+   <computeroutput>g1</computeroutput>/<computeroutput>g2</computeroutput>/
+   <computeroutput>g3</computeroutput> Java class hierarchy if calling
+   <computeroutput>mtd_g1</computeroutput> and
+   <computeroutput>mtd_g2</computeroutput> is needed:</para>
+
+<programlisting><![CDATA[
+create type sql_g1 language java external name 'g1' as (
+    g1_value int)
+method mtd_g1 (x integer) returns integer;
+
+create type sql_g2 under sql_g1 language java external name 'g2' as (
+    g2_value int)
+method mtd_g2 (x integer) returns integer;
+
+create type sql_g3 under sql_g2 language java external name 'g3' as (
+    g3_value int)
+method mtd_g3 (x integer) returns integer;
+
+create type uses_types language java external name 'uses_types'
+ static method mtd (x integer) returns sql_g3;
+]]></programlisting>
+
+   <para>provided with the above, one can call
+   <computeroutput>uses_types.g3 ()</computeroutput>method and
+   call <computeroutput>mtd_g1 ()</computeroutput> on the returned instance in
+   Virtuoso/PL as follows:</para>
+
+<programlisting><![CDATA[
+select uses_types::mtd (12).mtd_g1 (10);
+]]></programlisting>
+
+   <para>Sometimes it is not desirable or nessesary to mirror the full
+   supertype/subtype hierarchy from Java to Virtuoso/PL.</para>
+
+   <para>For the above example only <computeroutput>sql_g2</computeroutput>
+   and <computeroutput>sql_g3</computeroutput> can be defined if the goal was
+   to call <computeroutput>mtd_g2()</computeroutput> instead of
+   <computeroutput>mtd_g1()</computeroutput>.</para>
+
+   <para>When creating instances of the Virtuoso/PL user defined types to
+   represent the data returned by the hosted code, Virtuoso tries to find the
+   closest common ancestor of the hosted instance's class and the ones defined
+   in Virtuoso as user defined types.</para>
+
+   <para>For example if in the above example a Java function returns an instance of
+   <computeroutput>g3</computeroutput> and there is a
+   <computeroutput>sql_g3</computeroutput> defined inside virtuoso the
+   <computeroutput>g3</computeroutput> Java instance will be wrapped into an
+   <computeroutput>sql_g3</computeroutput> Virtuoso/PL instance.  Note that
+   that will not depend on the presence or absence of
+   <computeroutput>sql_g1</computeroutput> and
+   <computeroutput>sql_g2</computeroutput> definitions - i.e. Virtuoso will favor
+   the exact match.</para>
+
+   <para>If, however <computeroutput>sql_g3</computeroutput> is not defined, but
+   <computeroutput>sql_g2</computeroutput> and <computeroutput>sql_g1</computeroutput>
+   are, then the <computeroutput>g3</computeroutput> instance will be wrapped
+   up in an <computeroutput>sql_g2</computeroutput> instance when returned.</para>
+
+   <para>Simularly, if an instance of the <computeroutput>g2_sib</computeroutput>
+   is to be returned in Virtuoso/PL and <computeroutput>sql_g1</computeroutput>
+   to <computeroutput>sql_g3</computeroutput> are defined, Virtuoso will wrap the
+   <computeroutput>g2_sib</computeroutput> Java instance into an
+   <computeroutput>sql_g1</computeroutput> SQL instance.</para>
+
+   </sect3>
+</sect2>
+
+<sect2 id="udtrepressentsoapstruct">
+ <title>Using User Defined Types to Represent SOAP Structures</title>
+
+ <para>The Virtuoso SOAP server is capable of using user defined types (both
+ native and hosted) to represent structures in SOAP requests/responses.
+ Normally a SOAP exposed procedure would have references to defined schema
+ types (__SOAP_TYPE for it's return type and for it's argument types).  When
+ such a schema type represents a structure (see the SOAP RPC encoding) the
+ Virtuoso SOAP server will map the structure to an array of name/value pairs
+ for it's members (the type of value returned by the soap_box_structure VSE).
+ The user defined types however are better suited for representing such data.
+ In order for a user defined type to be usable in SOAP, it must have a default
+ constructor (no arguments).  For native types that is always true (since they
+ have the implicit constructor setting up the member's values to the respective
+ DEFAULT values from the user defined type declaration).  The Virtuoso SOAP
+ implementation supports two ways of specifying how a SOAP value XML fragment
+ should be materialized as a user defined type instance, as follows.</para>
+
+ <sect3 id="udtsoapuseschemafrag"><title>Using Schema Fragments</title>
+  <para>The <link linkend="fn_soap_dt_define"><function>SOAP_DT_DEFINE()</function></link>
+  function is used to map a particular schema fragment describing a composite
+  schema type for SOAP usage.  This now takes an additional optional argument to
+  establish a link to a user defined type name:</para>
+
+  <programlisting><![CDATA[
+create type SO_S_30
+  as (
+      "varString" nvarchar,
+      "varInt" integer,
+      "varFloat" real,
+      "processingResult" nvarchar,
+      "vmVersion" nvarchar)
+  constructor method SO_S_30 (),
+  method process_data () returns nvarchar;
+
+soap_dt_define ('',
+'<complexType name="SOAPStruct"
+   xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/"
+   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+   xmlns="http://www.w3.org/2001/XMLSchema"
+   targetNamespace="services.wsdl"
+   xmlns:tns="services.wsdl">
+  <all>
+    <element name="varString" type="string" nillable="true"/>
+    <element name="varInt" type="int" nillable="true"/>
+    <element name="varFloat" type="float" nillable="true"/>
+    <element name="processingResult" type="string" nillable="true"/>
+    <element name="vmVersion" type="string" nillable="true"/>
+  </all>
+</complexType>', 'SO_S_30');
+]]></programlisting>
+  <para>The CREATE TYPE statement defines the user defined type SO_S_30 as
+  having 5 data members, a no-parameters constructor and a processing method.
+  The <function>soap_dt_define()</function> call maps the SO_S_30 to a schema
+  type SOAPStruct which also has 5 data members and makes that schema type
+  available to SOAP.  Now we create a SOAP exposed stored procedure:</para>
+
+  <programlisting><![CDATA[
+create procedure echoSOAPStructSch (
+    in sst SO_S_30 __soap_type 'services.wsdl:SOAPStruct')
+returns SO_S_30 __soap_type 'services.wsdl:SOAPStruct'
+{
+  declare procesingResult nvarchar;
+  procesingResult := sst.process_data ();
+  return sst;
+};
+]]></programlisting>
+  <para>When processing the SOAP request for calling that stored procedure,
+  the SOAP server will call the default constructor for SO_S_30 (require to
+  create the empty instance) and will fill up the values from the incoming XML
+  fragment for the sst parameter to the members of the newly created SO_S_30
+  instance.  Then it will pass that instance as a value for the sst parameter
+  of the echoSOAPStructSch function.  As a result echoSOAPStructSch will correctly
+  execute the member function process_data.  Then it will return the (possibly)
+  modified SO_S_30 instance to the SOAP server.  The SOAP server will make the
+  XML fragment for the return value based on the SOAPStruct schema fragment using
+  the values from the SO_S_30 members.</para>
+
+  <para>This approach allows easy migration for the existing SOAP services
+  using structures.  To upgrade a SOAP service procedure to use user defined
+  types one should define the types and add the additional argument to
+  <function>SOAP_DT_DEFINE()</function>.</para>
+
+  <para>For developing new SOAP services, however, it is redundant to create the
+  schema fragment in addition to creating the user defined type to hold the
+  SOAP structure.</para>
+
+  <para>For this reason, Virtuoso offers a second approach in using user
+  defined types in SOAP.</para>
+ </sect3>
+
+ <sect3 id="udtsoapudt"><title>Using the User Defined Type Definition</title>
+
+  <para>Consider the altered definition of SO_S_30 as follows:</para>
+
+  <programlisting><![CDATA[
+create type SO_S_30
+  as (
+      varString nvarchar __soap_type 'string' __soap_name 'varString',
+      "varInt" integer __soap_type 'int',
+      "varFloat" real __soap_type 'float',
+      "processingResult" nvarchar __soap_type 'string',
+      "vmVersion" nvarchar)
+  __soap_type 'services.wsdl:SOAPStruct'
+  constructor method SO_S_30 (),
+  method process_data () returns nvarchar;
+]]></programlisting>
+
+   <para>and the procedure echoSOAPStructSch as:</para>
+
+   <programlisting><![CDATA[
+create procedure echoSOAPStructSch (in sst SO_S_30) returns SO_S_30
+{
+  declare procesingResult nvarchar;
+  procesingResult := sst.process_data ();
+  return sst;
+};
+]]></programlisting>
+
+   <para>Now all we have to do is expose the echoSOAPStructSch in a SOAP service.
+   The SOAP server will take into account the fact that the sst type and the
+   return type are user defined types and automatically make the WSDL
+   description (including the schema fragments) and will correctly process
+   the incoming XML.</para>
+
+   <para>The SOAP names and data type names inside the user defined type definition
+   are optional and default to the SQL member's name for names and employ
+   a straight mapping of the PL types to the SOAP types for data types.</para>
+
+ </sect3>
+</sect2>
+
+<sect2 id="udtcnsmsoap"><title>Consuming Third-Party SOAP Services via User Defined Types</title>
+
+<para>Virtuoso provides function for acting as a SOAP client called
+<link linend="fn_soap_client"><function>SOAP_CLIENT()</function></link>.
+Embedding SOAP Web Service methods in Virtuoso/PL procedures using this function,
+however, is not suitable in most cases, especially if the services contained a
+large number of parameters of different type, the procedure could become very
+complex, the encoding may also vary.  Thus direct SOAP_CLIENT() invocation in
+some cases in non-trivial and may lead to errors that are hard to debug.</para>
+
+<para>To aid development of Web based applications written in PL that use
+the SOAP protocol, Virtuoso introduces two new approaches for consuming
+a Web service:</para>
+
+<simplelist>
+  <member>generate SOAP proxy wrappers encapsulated in a PL Module</member>
+  <member>generate a User Defined Type (UDT) for SOAP proxy encapsulation.</member>
+</simplelist>
+
+<para>Please note that both methods of making a SOAP proxy-wrapper requires
+a WSDL description.  If some SOAP service does not have a corresponding
+WSDL, neither of these methods can be used.</para>
+
+<para>The first approach can be achieved using the SOAP_WSDL_IMPORT() function.
+This will make a PL module utilizing the SOAP_CLIENT() function that will import the
+complex types and pass appropriate parameters.  But it has one significant
+problem in that it will return the result as a parsed XML entity. The result should
+then be processed in the application code, which requires prior knowledge of
+the return parameters.</para>
+
+<para>The second approach consists of creating a UDT encapsulation of
+the SOAP wrappers using the
+<link linkend="fn_wsdl_import_udt"><function>WSDL_IMPORT_UDT()</function>.</link></para>
+
+<tip><title>See Also</title>
+<para>The <link linkend="fn_soap_wsdl_import"><function>SOAP_WSDL_IMPORT()</function></link> function.</para>
+<para>The <link linkend="fn_wsdl_import_udt"><function>WSDL_IMPORT_UDT()</function></link> function.</para>
+</tip>
+
+<para>The import function <function>WSDL_IMPORT_UDT()</function> has two
+phases:</para>
+
+ <simplelist>
+  <member>retrieve and expand the WSDL file (expansion will be done if import is specified)</member>
+  <member>compile the result and make SQL script with UDT definition</member>
+ </simplelist>
+
+<para>The following points will hold true for this method of SOAP encapsulation:</para>
+
+<itemizedlist>
+  <listitem>Any XML Schema types, required for calling the target SOAP service will be imported in database.</listitem>
+  <listitem>A UDT will be created for each service defined within the WSDL description. </listitem>
+  <listitem>The UDT will have members: url, request, response, and debug.
+   <itemizedlist>
+    <listitem>the 'url' member designate the endpoint for SOAP invocation</listitem>
+    <listitem>debug is a flag to manage wrappers to return wire dumps if needed</listitem>
+    <listitem>request and response members will contain wire dumps  if 'debug' is equal to 'true' (integer 1).</listitem>
+    </itemizedlist></listitem>
+  <listitem>for each method defined in the WSDL description there will be UDT's method.</listitem>
+  <listitem>each method of UDT will contain:
+   <itemizedlist>
+    <listitem>a number IN/OUT/INOUT parameters (depending on the target method)</listitem>
+    <listitem>no return value, SOAP does not define explicitly return values.</listitem>
+    <listitem>call to the SOAP_CLIENT () function with appropriate arguments</listitem>
+    <listitem>XPATH over the result and transform with SOAP validation functions to
+      ensure value of OUT and INOUT parameters.  </listitem>
+   </itemizedlist>
+  </listitem>
+ </itemizedlist>
+
+ <tip><title>See Also</title>
+ <para>The Virtuoso Administration Interface provides a web based
+ interface for importing WSDL definitions and creating UDTs and procedures.
+ This can be found in the <link linkend="admiui.wsdl">Visual Server Administration
+ Interface</link> Chapter.</para>
+ </tip>
+ </sect2>
+
+ <sect2 id="udtsecurity"><title>UDT Security</title>
+
+  <para>Security of UDTs is maintained through normal SQL GRANT and REVOKE
+  statements via a simple extension.  You can define the level of access to both native
+  and externally hosted UDTs.</para>
+
+  <para>Grants for persistent user defined types are persisted into the SYS_GRANTS
+  table.  Grants on temporary user defined types are in-memory only and are lost
+  (together with the temporary user defined type definition) when the server is
+  restarted.</para>
+
+  <para>There are two GRANT/REVOKE types for UDTs as follows:</para>
+
+  <simplelist>
+    <member><emphasis>EXECUTE</emphasis> - all methods and members of a class are accessible to the grantee.</member>
+    <member><emphasis>UNDER</emphasis> - the grantee can create subclasses of the class.</member>
+  </simplelist>
+
+<programlisting><![CDATA[
+GRANT/REVOKE EXECUTE on <user_defined_type>
+GRANT/REVOKE UNDER on <user_defined_type>
+]]></programlisting>
+
+  <note><title>Note:</title>
+    <para>SQL modules, user defined types and SQL stored procedures are exposed
+	to GRANT/REVOKE in the same namespace, therefore care must be taken avoid
+	inadvertently granting to multiple objects at the same time.</para></note>
+
+ </sect2>
+</sect1>
+

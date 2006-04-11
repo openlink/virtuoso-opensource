@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_XMLATTRIBUTES">
+  <refmeta>
+    <refentrytitle>XMLATTRIBUTES</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XMLATTRIBUTES</refname>
+    <refpurpose>Creates a list of attributes and their values</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_XMLATTRIBUTES">
+      <funcprototype id="fproto_XMLATTRIBUTES">
+        <funcdef><function>XMLATTRIBUTES</function></funcdef>
+        <paramdef><parameter>string_expr1 [AS alias1]</parameter> varchar</paramdef>
+	<paramdef><optional><parameter>string_expr2 [AS alias2]</parameter> varchar</optional></paramdef>
+	<paramdef><optional><parameter>...</parameter></optional></paramdef>
+	<paramdef><optional><parameter>string_exprN [AS aliasN]</parameter> varchar</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_XMLATTRIBUTES"><title>Description</title>
+    <para>
+   This function creates a vector that may be used only as argument of 
+   <function>XMLELEMENT</function> function. The vector has an even number of elements, each odd element is a name of an attribute, an
+   even element is its value. If the attribute value is NULL, then no attribute and no value is created.
+   If none of the attribute is created, then the function returns NULL.
+   If string_expr is a column name, then you can omit the AS clause, and Virtuoso uses the partially escaped form of 
+   the column name as the attribute name. 
+    </para>
+  </refsect1>
+  <refsect1 id="XMLATTRIBUTES"><title>Parameters</title>
+    <refsect2><title>String_exprI [AS aliasI]</title>
+      <para>string value; AS clause is mandatory if it is not a column name but an expression of some other sort.</para>
+    </refsect2>
+  </refsect1>
+<!--
+  <refsect1 id="errors_XMLATTRIBUTES">
+    <title>Errors</title>
+    <table><title>Errors signalled by <function>XMLATTRIBUTES</function></title>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry>
+	  </row>
+	</thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>37000</errorcode></entry>
+	    <entry><errorcode>SQ074</errorcode></entry>
+	    <entry><errorname>The special SQL predicate has invalid argument</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  <para></para>
+  </refsect1>
+-->  
+  <refsect1 id="XMLATTRIBUTES"><title>Examples</title>
+    <example id="ex_XMLATTRIBUTES"><title>XMLATTRIBUTES() with two parameters</title>
+      <para>The following example produces an &apos;EmpName&apos; elements with two attributes (if value of the column &apos;Region&apos; is not NULL) or 
+with one attribute (if value of the column &apos;Region&apos; is NULL) </para>
+      <screen>
+select XMLELEMENT ("EmpName",
+                    XMLATTRIBUTES ("FirstName" || ' ' || "LastName" as "Name", "Region" ))
+  from "Demo"."demo"."Employees";
+callret
+VARCHAR
+_______________________________________________________________________________
+&lt;EmpName Name="Nancy Davolio" Region="WA" /&gt;
+&lt;EmpName Name="Andrew Fuller" Region="WA" /&gt;
+&lt;EmpName Name="Janet Leverling" Region="WA" /&gt;
+&lt;EmpName Name="Margaret Peacock" Region="WA" /&gt;
+&lt;EmpName Name="Steven Buchanan" /&gt;
+&lt;EmpName Name="Michael Suyama" /&gt;
+&lt;EmpName Name="Robert King" /&gt;
+&lt;EmpName Name="Laura Callahan" Region="WA" /&gt;
+&lt;EmpName Name="Anne Dodsworth" /&gt;
+ 
+9 Rows. 
+       </screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_XMLATTRIBUTES"><title>See Also</title>
+    <para><link linkend="fn_XMLELEMENT">XMLELEMENT()</link></para>
+    <para><link linkend="fn_XMLFOREST">XMLFOREST()</link></para>
+    <para><link linkend="fn_XMLAGG">XMLAGG()</link></para>
+    <para><link linkend="fn_XMLCONCAT">XMLCONCAT()</link></para>
+  </refsect1>
+
+</refentry>
+

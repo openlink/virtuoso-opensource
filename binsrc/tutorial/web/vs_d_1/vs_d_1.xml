@@ -1,0 +1,63 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-D-1">
+  <refmeta>
+    <refentrytitle>DAV Maintenance</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DAV Security Model</refname>
+    <refpurpose>DAV Maintenance &amp; Security</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-D-1a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+  <listitem>A resource has a group and an owner user, just like files in a Unix file system.</listitem>
+  <listitem>A resource has flags determining the read, write, and execute privileges of it's owner,
+  other members of the owner's group, and all other users on it.</listitem>
+  <listitem>Additionally it has a free text indexing flag.</listitem>
+  <listitem>Collections are resources also. These have the same flags but the free text index
+  flag is treated differently.</listitem>
+  <listitem><para>DAV server asks for authentication in the following situations:</para>
+    <itemizedlist mark="bullet">
+      <listitem>on the read operation if URL is not public readable</listitem>
+      <listitem>on the write operations if URL is not public writable</listitem>
+	</itemizedlist></listitem>
+  <listitem>The read operations are GET, POST, PROPFIND, HEAD</listitem>
+  <listitem>The write operations are LOCK, PUT, MOVE, COPY, DELETE, PROPPATCH</listitem>
+  <listitem>The Webdav admin account has full access rights to the Webdav repository, regardless of privilege flags.</listitem>
+  <listitem>The server will try to match the user to resource owner, second match to the group ownership,
+  and last to the additional groups membership.</listitem>
+  <listitem>If the URL is public readable, the request will be processed without asking for authentication.</listitem>
+  <listitem>The special flag in permissions can be set to the no-index, index, index recursively.</listitem>
+  <listitem>On resources, the last two settings act in the same way: if the resource is a text document,
+  the content will be free text indexed, otherwise not.</listitem>
+  <listitem>On collections, the 'no-index' will stop indexing of all direct and indirect members.</listitem>
+  <listitem>The 'index this' flag will cause indexing only over direct members (resources).</listitem>
+  <listitem>The 'index recursively' will allow free-text indexing of all direct and indirect members.</listitem>
+  <listitem>The values indicated in the WebDAV content management UI are N, T and R for the no-index, index, index recursively respectively.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

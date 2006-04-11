@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_doc">
+  <refmeta> 
+    <refentrytitle>doc</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>doc</refname>
+    <refpurpose>Returns data from XML doc other than the main source document.</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_doc">
+      <funcprototype id="xpf_proto_doc">
+        <funcdef>node-set <function>doc</function></funcdef>
+        <paramdef><parameter>document_uri</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_doc"><title>Description</title>
+<para>
+The function tries to access an XML text at location specified by <parameter>document_uri</parameter>.
+</para>
+<para>
+If the <parameter>document_uri</parameter> argument is node-set, not a string,
+then a node-set is returned as if document() function is applied to string-value of the first node
+of the node-set.
+</para>
+<para>
+The result of call doc($uri) is similar to the call of function <link linkend="fn_document">document()</link>
+with default parameters:
+</para>
+<screen>
+ document($uri, document-uri(.), 0, 'UTF-8', 'x-any', 'Include=ERROR IdCache=ENABLE')
+</screen>
+<para>
+I.e. the retrieved document should be XML or XHTML (but not an old-style HTML) in 'UTF-8'
+encoding, content language is 'x-any' (it means 'mix of words from various human languages'),
+DTD should be read but validation should be disabled; errors on including subdocuments should be
+reported as errors and thus should abort the processing; a dictionary of element's IDs should be created
+in order to support XQuery 'pointer operator'.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_doc"><title>Parameters</title>
+    <refsect2><title>document_uri</title>
+      <para>An absolute or relative URI that points to a well formed XML or HTML document.
+If the URI is relative, then the base URI of context node is used to convert
+the given URI into absolute one.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_doc"><title>Return Types</title><para>Node-set</para></refsect1>
+  <refsect1 id="xpf_errors_doc"><title>Errors</title>
+<para>
+The function may signal variety of errors when it reads the requested document(s) from network or from local resources.
+It may even cause deadlocks e.g. if documents are retrieved from the Virtuoso's own webserver and
+these documents must be created on the fly from data that are locked by Virtuoso/PL procedure that invokes the XPATH processor.
+</para>
+  </refsect1>
+  <refsect1 id="xpf_examples_doc"><title>Examples</title>
+    <example id="xpf_ex_doc1"><title>Simple reading of a standalone XML document</title>
+      <para>Read a standalone document from http://www.example.com/sales/prices.xml</para>
+      <screen>doc("http://www.example.com/sales/prices.xml")</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_doc"><title>See Also</title>
+    <para><link linkend="xpf_document">document()</link></para>
+    <para><link linkend="xpf_document_literal">document-literal()</link></para>
+    <para><link linkend="fn_xtree_doc">xtree_doc()</link></para>
+    <para><link linkend="fn_xper_doc">xper_doc()</link></para>
+  </refsect1>
+</refentry>
+

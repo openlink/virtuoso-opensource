@@ -1,0 +1,92 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+
+  declare _all_t, _all_s, _is_started integer;
+
+  if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+
+  _is_started := 0;
+
+  if (registry_get ('interop_client') = '1')
+    _is_started := 1;
+
+  if (get_keyword ('CLEAR', params, '') <> '')
+    {
+      INIT_RESULT_TABLE ();
+    }
+
+  if (get_keyword ('REBUILD', params, '') <> '')
+    {
+      FILL_SERVICE_LIST ();
+    }
+
+  if (get_keyword ('START', params, '') <> '')
+    {
+       if (_is_started = 0)
+         {
+	   http_rewrite ();
+	   http_request_status ('HTTP/1.1 302 Found');
+	   http_header ('Location: interop_main.vsp\r\n');
+	   http_flush ();
+	   RUN_TESTS();
+	   return;
+         }
+    }
+
+  select count (*) into _all_t from RESULTS;
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<HTML>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>OpenLink SOAP Client 1.1 - Main page</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="OpenLink SOAP Client 1.1 - Main page">
+    <meta HTTP-EQUIV="REFRESH" content="10; URL=interop_main.vsp">
+  </head>
+  <BODY>
+  <H1>OpenLink SOAP Client 1.1</H1>
+  <P><H3>Test:</H3>
+<?vsp if (_is_started) { ?>
+  <LI>The test is started</A>
+<?vsp } else { ?>
+  <LI><A href="interop_main.vsp?START=1">Start all tests on Background</A>
+<?vsp } ?>
+  <P><H3>Support:</H3>
+  <LI><A href="interop_main.vsp?REBUILD=1">Rebuld service table</A>
+  <LI><A href="interop_main.vsp?CLEAR=1">Clear result table</A>
+  <P><H3>Results:</H3>
+  <LI><A href="interop_results.vsp">View results by servers</A>
+  <LI><A href="interop_test.vsp">View results by tests </A>
+  <LI><A href="interop_failed_wsdl.vsp">View results from WSDL Imports</A>
+  <P><H3>Other:</H3>
+  <LI><A href="interop_services.vsp">View Service List</A>
+  <P>- - -
+  <P>All test: <?=_all_t?>
+  </BODY>
+</HTML>
+

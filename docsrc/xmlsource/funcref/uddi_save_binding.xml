@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="me_uddi_save_binding">
+  <refmeta>
+    <refentrytitle>uddi_save_binding</refentrytitle>
+    <refmiscinfo>uddi</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>uddi_save_binding</refname>
+    <refpurpose>save or update a complete <parameter>bindingTemplate</parameter> structure</refpurpose>
+  </refnamediv>
+  <refsect1 id="syntax_uddi_save_binding"><title>Syntax</title>
+    <screen>
+&lt;uddi_save_binding
+  generic="1.0"
+  xmlns="urn:uddi-org:api" &gt;
+	&lt;authInfo/&gt;
+	&lt;bindingTemplate/&gt;
+	[&lt;bindingTemplate/&gt;...]
+&lt;/uddi_save_binding&gt;
+  </screen></refsect1>
+  <refsect1 id="desc_uddi_save_binding"><title>Description</title>
+    <para>
+The <parameter>uddi_save_binding</parameter> message is used to save or update a complete <parameter>bindingTemplate</parameter> structure.
+This message can be used to add or update one or more <parameter>bindingTemplate</parameter> structures
+to one or more existing <parameter>businessService</parameter> structures.
+  </para></refsect1>
+  <refsect1 id="params_uddi_save_binding"><title>Attributes &amp; Children</title>
+    <refsect2><title>authInfo</title><para>This required argument is an element that contains an authentication token, obtained using the <parameter>get_authToken</parameter> call.</para></refsect2>
+    <refsect2><title>bindingTemplate</title><para>One or more complete <parameter>bindingTemplate</parameter> structures.  The order in which these
+are processed is not defined.  To save a new <parameter>bindingTemplate</parameter>, pass a
+<parameter>bindingTemplate</parameter> structure with an empty <parameter>bindingKey</parameter> attribute value.</para></refsect2>
+    <refsect2><title>Behavior</title><para>Each <parameter>bindingTemplate</parameter> structure passed must contain a <parameter>serviceKey</parameter> value that
+corresponds to a registered <parameter>businessService</parameter> controlled by the same identity
+saving the <parameter>bindingTemplate</parameter> data.  The effect of this call is to establish
+the parent <parameter>businessService</parameter> relationship for each <parameter>bindingTemplate</parameter> affected by
+this call.  If the same <parameter>bindingTemplate</parameter> (determined by matching <parameter>bindingKey</parameter>
+value) is listed more than once, any relationship to the containing
+<parameter>businessService</parameter> will be determined by processing order, which is determined
+by the position of the <parameter>bindingTemplate</parameter> data in first-to-last order.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret_uddi_save_binding"><title>Return Types</title>
+    <para>
+This message returns a <parameter>bindingDetail</parameter> message
+that reflects the newly registered information for the affected <parameter>bindingTemplate</parameter> structures.
+  </para>
+  </refsect1>
+  <refsect1 id="errors_uddi_save_binding"><title>Errors</title>
+    <para>
+If an error occurs in processing this message, a <parameter>dispositionReport</parameter> structure
+will be returned to the caller in a SOAP Fault. The following error
+information will be relevant:
+  </para>
+    <table><title>Errors signalled by uddi_save_binding</title>
+      <tgroup cols="2">
+       <thead><row><entry>Error Code</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>E_invalidKeyPassed</errorcode></entry>
+	    <entry>signifies that the request cannot be satisfied because one or
+more <parameter>uuid_key</parameter> values specified is not a valid key value, or that a <parameter>hostingRedirector</parameter>
+value references a <parameter>bindingTemplate</parameter> that itself contains a <parameter>hostingRedirector</parameter> value.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>E_authTokenExpired</errorcode></entry>
+	    <entry>signifies that the authentication token value passed in the <parameter>authInfo</parameter> argument
+is no longer valid because the token has expired.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>E_authTokenRequired</errorcode></entry>
+	    <entry>signifies that the authentication token value passed in the <parameter>authInfo</parameter> argument is
+either missing or is not valid.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>E_userMismatch</errorcode></entry>
+	    <entry>signifies that one or more of the <parameter>uuid_key</parameter> values passed refers to data that is not
+controlled by the entity represented by the authentication token.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>E_operatorMismatch</errorcode></entry>
+	    <entry>signifies that one or more of the <parameter>uuid_key</parameter> values passed refers to data that
+is not controlled by the server that received the request
+for processing.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>E_keyRetired</errorcode></entry>
+	    <entry>signifies that the request cannot be satisfied because one or more
+<parameter>uuid_key</parameter> values specified has previously been hidden or removed by the
+requester.  This specifically applies to the <parameter>tModelKey</parameter> values passed.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>E_invalidURLPassed</errorcode></entry>
+	    <entry>an error occurred with one of the <parameter>uploadRegister</parameter> URL values.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>E_accountLimitExceeded</errorcode></entry>
+	    <entry>signifies that user account limits have been exceeded.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+</refentry>

@@ -1,0 +1,559 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="vwsssupport"><title>WS-Security (WSS) Support in Virtuoso SOAP Server</title>
+
+<para>The following terms  are used in this section in the following meanings:</para>
+
+<itemizedlist>
+ <listitem><formalpara><title>encryption</title>
+  <para>The process of making data unreadable using some secret (see 'key')</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>decryption</title>
+  <para>The opposite of encryption</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>signature</title>
+  <para>A sequence of binary codes that is calculated based on the original data
+  and a key to secure the content from undetected change.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>key</title>
+  <para>A secret, depending on the type can be symmetric or asymmetric.</para>
+  </formalpara>
+  <para>Typical symmetric keys are passwords.  Symmetric keys are by their
+  nature more at risk of being compromised if the secret key is stolen.  Symmetric
+  keys are usually used to encrypt large amounts of data as they are very fast.</para>
+  <para>Asymmetric keys are more secure and their structure is more complicated.
+  Asymmetric keys generally consist of a private and public key pair.  The owner
+  of the key can sign data to be verified by recipient with public key.  A
+  correspondent can encrypt the data using public key to be decrypted by private
+  key owner.  Asymmetric keys are used to sign data, or encrypt small amounts of
+  data as they are slower to process than symmetric ones.</para>
+  </listitem>
+
+ <listitem><formalpara><title>certificate</title>
+  <para>This is a structure of secure data, which identifies a certificate owner.
+  This is similar to having a user-name and password but more secure.  A
+  'certificate' can be associated with a document as an alias of the X.509
+  certificate.  Certificates are issued by a third-party, not the owner or
+  recipient in the verification path, namely the Certificate Authority (CA).
+  The CA's function is to guarantee that a receiver can trust data accompanied
+  by a particular certificate.  Certificates will contain a public key, but
+  never the private key.  These must be distinguished from certificates that
+  are exported together with their private key in PKCS#12 format, these are
+  different things.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>user account space</title>
+  <para>This is a data area where a user can store private data.
+  Only ODBC sessions and web page processing code which runs on behalf of a
+  certain SQL user account has access to this area.  This is useful for caching
+  private security related information such as keys or certificates.</para>
+
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>key reference</title>
+  <para>A short hand for a key, sometime called a 'key name'.  This is a string
+  to uniquely identify a key in a user account space. </para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>key instance</title>
+  <para>An entity representing a key in PL, this is a not the key per se.
+  The key instance is used in encryption or decryption routines.</para>
+  </formalpara></listitem>
+</itemizedlist>
+
+<para>The following algorithms are supported:</para>
+
+<simplelist>
+ <member>RSA (http://www.w3.org/2001/04/xmlenc#rsa-1_5)</member>
+ <member>DSA (http://www.w3.org/2001/04/xmlenc#dsa)</member>
+ <member>triple DES (http://www.w3.org/2001/04/xmlenc#tripledes-cbc)</member>
+ <member>AES128 (http://www.w3.org/2001/04/xmlenc#aes128-cbc)</member>
+ <member>AES192 (http://www.w3.org/2001/04/xmlenc#aes192-cbc)</member>
+ <member>AES256 (http://www.w3.org/2001/04/xmlenc#aes256-cbc)</member>
+</simplelist>
+
+<para>Digest algorithms:</para>
+
+<simplelist>
+ <member>SHA1 (http://www.w3.org/2000/09/xmldsig#sha1)</member>
+</simplelist>
+
+<para>Signing algorithms: </para>
+<simplelist>
+ <member>RSA-SHA1 (http://www.w3.org/2000/09/xmldsig#rsa-sha1)</member>
+ <member>DSA-SHA1 (http://www.w3.org/2000/09/xmldsig#dsa-sha1)</member>
+</simplelist>
+
+<para>Canonicalization algorithms with comments:</para>
+<simplelist>
+ <member>(http://www.w3.org/TR/2001/REC-xml-c14n-20010315)</member>
+ <member>(http://www.w3.org/TR/2001/REC-xml-c14n)</member>
+</simplelist>
+
+<para>The keys can be temporary or persistent keys.  Temporary keys are loaded
+only in memory an will be lost when the server is restarted.  These are usually
+used for making symmetric session keys.  Persistent keys are kept on the
+file-system or in the database and will be loaded upon server startup.  These
+are asymmetric keys, certificates that belong to the user.</para>
+
+<para>The location where persistent keys are stored depends on the key reference.
+If the key reference is a 'file:' URI, then the API's assume file-system storage,
+otherwise they will be kept in the U_OPT column of the SYS_USERS table as a
+serialized string.  The API functions are described below.  Whether keys are
+stored on the file-system or within the database they will have an
+in-memory representation which is used in crypto functions.  The memory cache
+of keys is contained in the user account space, hence no user can access or
+reference another user's keys.  Furthermore if a user account is removed all
+associated keys will also be removed if they were stored in the database.
+If the keys were on the file-system only the in-memory cache will be deleted.</para>
+
+<sect2 id="vwsssrvclisidecerts"><title>Client and Server side Certificates &amp; Keys</title>
+
+<para>Since XML encoding routines are executed on server-side, we cannot strictly
+say that we have client and server certificates (as browser and HTTPS server).
+To perform the encoding on behalf of a client or user account, the XML encoding
+functions need to have the keys and certificates loaded in the memory cache of
+the user.  The same applies to server keys and certificates.  Therefore we will
+refer to these as client or server security tokens that are kept on server-side.
+</para>
+
+<note><title>Note:</title>
+<para>Uploading of keys and certificate must be done under
+a secure SSL/TLS connection to minimize the risk of vulnerability. </para></note>
+
+<sect3 id="vwsskeydefpersist"><title>Key Definition &amp; Persistence</title>
+
+<link linkend="fn_xenc_key_3DES_rand_create"><function>xenc_key_3DES_rand_create()</function></link>
+<link linkend="fn_USER_KEY_LOAD"><function>USER_KEY_LOAD()</function></link>
+</sect3>
+
+<sect3 id="vwsskeyenc"><title>Key Encryption</title>
+
+<para>To minimize the risk of non-authorized private key usage, keys are
+usually kept encrypted with password.  If a key or certificate containing a key
+is loaded using a password, the API will assume it is an encrypted private key
+and will be kept in that form.  In other words encrypted keys are kept in
+their encrypted form in memory, there will be no raw certificate or key data
+if the encrypted form is used to import.  Virtuoso will ask for passwords to
+unlock persisted encrypted keys upon server restart.  This is only possible
+when the server is running in foreground mode.  If the server is started as
+background process and the key needs a password to decrypt and load,
+an error will be logged in the virtuoso log file and that particular key will
+not be loaded.</para>
+
+<example id="vwsspasslog"><title>An example of a password prompt and log on success</title>
+<screen><![CDATA[
+Enter a password for key "wss.pfx":
+13:14:04 PL LOG: XENC:   Loaded : wss.pfx
+]]></screen>
+</example>
+</sect3>
+
+<sect3 id="vwssreferencingkeys"><title>Referencing Keys</title>
+
+<para>To make a run-time key instance, used for XML encryption functions,
+and to perform server or client side the
+<link linkend="fn_xenc_key_inst_create"><function>xenc_key_inst_create (in key_name varchar[, super key inst])</function></link>
+function can be used.</para>
+
+<example id="vwssrefkeyex"><title>Example</title>
+<programlisting><![CDATA[
+create procedure
+DB.DBA.WSDK_GET_KEY ()
+{
+  -- this returns a instance of shared secret suitable for content encryption
+  return xenc_key_inst_create ('WSDK Sample Symmetric Key');
+}
+;
+
+create procedure
+DB.DBA.WS_SOAP_GET_KEY ()
+{
+  declare superkey, keyinst any;
+  superkey := xenc_key_inst_create ('file:dsa.der'); -- already loaded asymmetric key (see above example)
+  -- this returns a session key , to be encrypted with a asymmetric one
+  keyinst := xenc_key_inst_create (xenc_key_3DES_rand_create (NULL), superkey);
+  return keyinst;
+}
+;
+]]></programlisting>
+</example>
+</sect3>
+
+<sect3 id="vwsskeyremoval"><title>Key Removal</title>
+
+<para>To delete a key, persistent or otherwise, the following function
+is used:</para>
+
+<para><link linkend="fn_xenc_key_remove"><function>xenc_key_remove()</function></link></para>
+</sect3>
+</sect2>
+
+<sect2 id="vwsssoapendpoint"><title>SOAP Server WS-Security Endpoint</title>
+
+<para>The WS-Security processing is performed by filtering incoming and
+outgoing messages of the Virtuoso SOAP server.  These filters are activated
+when a special SOAP option is set on the current virtual directory that is
+the SOAP endpoint.  The WS-Security filters are invoked on input to
+verify / decrypt the message.  Upon success the message will be processed by
+the SOAP server, otherwise a <computeroutput>SOAP:Fault</computeroutput> will be
+returned to the SOAP requester.  On outgoing messages, depending of SOAP options,
+messages produced by the SOAP server can be encoded and signed as well.
+The administrator configures the WS Security subsystem at the access point
+level.  Different security schemes involving encryption and/or signature
+can be selected.</para>
+
+<para>The keys and certificates need to be defined in order to get a working
+secure service.  The key/certificate(s) for the SOAP endpoint that is WS-Security
+enabled are referenced in a special PL hook and/or signature template.  If
+none of these (signature or key instance hook) are defined the response
+will not be encrypted or signed.</para>
+
+<para>Here are the steps involved in processing a message to a secure end point.</para>
+<orderedlist>
+ <listitem><para>SOAP server receives a message on a secure endpoint</para></listitem>
+
+ <listitem><para>The message is determined to be for  this endpoint, otherwise will
+ be sent to the next SOAP router if routing is enabled. </para></listitem>
+
+ <listitem><para>The message (as is) is passed to the decoding routine.  At this point
+ keys that are referenced in SOAP message need to be in the user space of
+ the SQL account on whose behalf SOAP accessible procedures of this end point
+ run.  If any key does not exist in the user space, the requested processing will fail.</para>
+ <note><title>Note:</title>
+  <para>Signatures can be verified in the following manners:</para>
+  <simplelist>
+   <member>never try signatures</member>
+   <member>expect signatures, explicit</member>
+   <member>try signature if exists</member>
+  </simplelist>
+  <para>This behavior depends on the "WSS-Validate-Signature" option
+   set for the virtual directory.</para>
+ </note>
+ </listitem>
+
+ <listitem><para>If step 3 completes  without problem, security related headers
+ are stripped from the decoded message.</para></listitem>
+
+ <listitem><para>The result of point 4 is passed to the usual SOAP server for
+ processing.</para></listitem>
+
+ <listitem><para>Once a response is generated by the SOAP method (i.e.
+ corresponding PL procedure, exposed as SOAP method) the result will be encoded
+ and/or signed.  This is the last step before the result is sent back to
+ the requestor client.  At this point the server behavior is controlled by
+ a few options defined in the virtual directory.  See below: "WSS-KEY",
+ "WSS-Template", and "WSS-Type" options.</para></listitem>
+</orderedlist>
+</sect2>
+
+<sect2 id="vwssvdsoapopt"><title>Virtual Directory SOAP WSS Options</title>
+
+<para>The following SOAP options are available for configuring a virtual
+directory:</para>
+
+<itemizedlist>
+ <listitem><formalpara><title>WS-SEC</title>
+  <para>WS-Security processing is enabled on the endpoint, in practice this
+  enables the input and output message filters for Security Header processing.
+  This MUST be set to enable WS-Security endpoints.  All other WS related options
+  will be ignored if this option is disabled.  The possible values for this
+  option are "yes" or "no"</para></formalpara></listitem>
+
+ <listitem><formalpara><title>WSS-KEY</title>
+  <para>The name of a PL procedure that is expected to return a key instance.
+   Examples of this can be found in the
+  <link linkend="vwssreferencingkeys">Referencing Keys</link> section.  If this
+  NULL or undefined the SOAP server will not encrypt outgoing messages.
+  </para></formalpara></listitem>
+
+ <listitem><formalpara><title>WSS-Template</title>
+  <para>path and file name to a file containing a template - an instruction
+  for how to make the XML signature for the response message.  For more
+  information see the <link linkend="vwsssectemplates">Security Templates</link>
+  section.  If this option is NULL or undefined the SOAP server will not sign
+   any outgoing messages from this endpoint.  As an example, if the value
+  "sig.xml" was supplied to this option this would imply that the content of
+  template is stored in the file called sig.xml located in the servers working
+  directory.  A default template can be used by setting this option to the
+  value <computeroutput>[key reference for signing]</computeroutput> -
+  (note '[]' around name is required).  In this case the server will generate
+  a default template based on a key, and produce a default rule for making a
+  signature.</para></formalpara></listitem>
+
+<!--
+>>>> obsoleted, the above have full control!!!!, will be
+removed <<< "WSS-Type" - 0/1 - sign or and encrypt the message, this is what to
+do with outgoing SOAP message: to encrypt or do signature also.
+-->
+
+ <listitem><formalpara><title>WSS-Validate-Signature</title>
+  <para>This option controls how the SOAP server responds to incoming messages
+  i.e. how to verify the incoming message.</para></formalpara>
+  <para>possible values are:</para>
+  <simplelist>
+   <member><emphasis>0</emphasis> do not verify signatures</member>
+   <member><emphasis>1</emphasis> expects signature to exist</member>
+   <member><emphasis>2</emphasis> will verify signature if exists</member>
+  </simplelist>
+  </listitem>
+</itemizedlist>
+
+<example id="vwssvirtdirexpl"><title>Configuring WS Secure Endpoints</title>
+
+<programlisting><![CDATA[
+-- definition of /SecureWebServices endpoint
+VHOST_DEFINE (
+  lpath=>'/SecureWebServices', ppath=>'/SOAP/', soap_user=>'WSS',
+  soap_opts=>vector(
+    'Namespace','http://temp.uri/',
+    'MethodInSoapAction','yes',
+    'ServiceName', 'WSSecure',
+    'CR-escape', 'no',
+    'WS-SEC','yes',
+    'WSS-Validate-Signature', 2)
+  )
+;]]></programlisting>
+
+<para>this will define a WS-Security enabled endpoint that is compatible with
+.NET WSDK examples.  This endpoint will accept encrypted/or signed SOAP messages
+and will generate an error if security checking fails.  Upon success it will return
+non-encrypted message.  Therefore it's a one-way encryption example.</para>
+
+<programlisting><![CDATA[
+-- complex example
+VHOST_DEFINE (
+  lpath=>'/wss', ppath=>'/SOAP/', soap_user=>'WSS',
+  soap_opts=>vector(
+    'Namespace','http://soapinterop.org/',
+		'MethodInSoapAction','no',
+		'ServiceName', 'WSSecure',
+		'HeaderNS', 'http://soapinterop.org/echoheader/',
+		'CR-escape', 'no',
+    'WS-SEC','yes',
+		'WSS-KEY','DB.DBA.WS_SOAP_GET_KEY',
+		'WSS-Template','wss_tmpl.xml',
+    'WSS-Validate-Signature', 1)
+  )
+;]]></programlisting>
+
+<para>This endpoint will expect signed and encrypted incoming messages and will
+sign and encrypt outgoing messages too. This is a two-way encryption example,
+for client to server and reverse.</para>
+</example>
+
+</sect2>
+
+<sect2 id="vwssaccounting"><title>Accounting &amp; Accounting Hook</title>
+
+  <para>If an X.509 certificate is used to sign an incoming message, the
+  following connection variables will be available to the SOAP processing
+  function and accounting hook:</para>
+
+  <simplelist>
+   <member><emphasis>wss-token-owner</emphasis> owner of certificate, an example is "C=US/ST=MA/CN=User Name".</member>
+   <member><emphasis>wss-token-issuer</emphasis> issued by , it's like above , but it's name of who is issued the certificate.</member>
+   <member><emphasis>wss-token-serial</emphasis> serial number, an integer specific to certificate issuer.</member>
+   <member><emphasis>wss-token-start</emphasis> valid from, a string containing a data of validity.</member>
+   <member><emphasis>wss-token-end</emphasis> valid to, a string containing data of end of validity.</member>
+  </simplelist>
+
+  <para>These can be accessed by invoking connection_get([name-of-info]) when
+  processing the SOAP request, i.e. in the procedure being invoked or from a
+  user defined accounting hook.</para>
+
+  <para>A user defined procedure hook named DB.DBA.WS_SOAP_ACCOUNTING can be
+  used for accounting purposes.  If it exists it will be invoked after the
+  connection information is set.  This PL hook  should return 0 when an error
+  occurs or 1 upon success.  Hence, a SOAP request may be rejected based on
+  some custom condition. </para>
+
+  <para>The procedure prototype is :</para>
+
+<programlisting><![CDATA[
+create procedure DB.DBA.WS_SOAP_ACCOUNTING ()
+{
+  -- custom logic
+  return 1; -- on success
+  return 0; -- on failure
+}
+;]]></programlisting>
+
+  <para>Note that the usage of this functionality is global to the Virtuoso
+  server,  To get similar functionality for each SOAP method, the developer
+  will need to include account checking within the PL procedures that are
+  exposed as SOAP methods.</para>
+
+<!--  an example -->
+</sect2>
+
+<sect2 id="vwsssectemplates"><title>Signature Templates</title>
+
+ <para>Signature templates are used to define how signatures are generated for
+ SOAP messages.  They are XML files containing a structure of Signature elements
+ as per XML Signature standard.  The DigestValue and SignatureValue  elements
+ are empty, so they will be filled upon output.  The most important element is
+ the KeyName element.  This must contain a reference to an existing key from the
+ user account space.  This key reference does not need to be the same as key
+ for datas encryption, it can be a different key.  Please note that XML encoding
+ routines will resolve the key automatically, so there is no need to specify
+ how the key instance will be obtained, hence no relation to "WSS-Key" from
+ SOAP options section (above).</para>
+
+ <sect3 id="vwssdefaulttemplate"><title>Default Template Generation</title>
+ <para>The default template will create an XML Signature using the following
+ definitions:</para>
+
+ <para>a) have a simple template corresponding to a key reference
+ (and it's algorithm) as:</para>
+
+<programlisting><![CDATA[
+TEMP := <?xml version="1.0" encoding="UTF-8"?>
+<Signature xmlns="http://www.w3.org/2000/09/xmldsig#" >
+  <SignedInfo>
+    <CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" />
+    <SignatureMethod Algorithm="[key algorithm]" />
+  </SignedInfo>
+  <SignatureValue></SignatureValue>
+  <KeyInfo>
+    <KeyName>[key reference]</KeyName>
+  </KeyInfo>
+</Signature>'
+]]></programlisting>
+
+
+ <para>b) generate references to template a), using the
+ <function>dsig_template_ext()</function> function and BODY of
+ the SOAP request.</para>
+
+<programlisting><![CDATA[
+TEMPLATE :=  dsig_template_ext (xtree_doc (SOAP_BODY), TEMP,
+      'http://schemas.xmlsoap.org/soap/envelope/', 'Body',
+      'http://schemas.xmlsoap.org/rp', 'action',
+      'http://schemas.xmlsoap.org/rp', 'to',
+      'http://schemas.xmlsoap.org/rp', 'id',
+      'http://schemas.xmlsoap.org/ws/2002/07/utility', 'Created',
+      'http://schemas.xmlsoap.org/ws/2002/07/utility', 'Expires');
+]]></programlisting>
+
+ <para>In other words, the 'Body' of the SOAP message, part of the routing
+ header elements ('action,'to','id') and, if it exists, Timestamp
+ headers ('Created', 'Expires').</para>
+
+<example id="vwssusingdefaulttemplate"><title>Using default templates</title>
+<para>This example demonstrates the use of the default template
+mechanism and X.509 certificate with RSA key:</para>
+
+<programlisting><![CDATA[
+--------------- SOAP message
+<SOAP:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:SOAP="http://schemas.xmlsoap.org/soap/envelope/"
+ xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+ xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+ xmlns:xenc="http://www.w3.org/2001/04/xmlenc#"
+ xmlns:wsse="http://schemas.xmlsoap.org/ws/2002/07/secext"
+ xmlns:dt="urn:schemas-microsoft-com:datatypes">
+  <SOAP:Header />
+  <SOAP:Body Id="Id-2e7c29c7-8645-4ad8-af59-06bed179d2fb">
+    <AddInt xmlns="http://microsoft.com/wsdk/samples/SumService">
+      <a>3</a>
+      <b>4</b>
+    </AddInt>
+  </SOAP:Body>
+</SOAP:Envelope>
+
+--------------- Generated signature template
+<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+	      xmlns:wsse="http://schemas.xmlsoap.org/ws/2002/07/secext"
+	      xmlns:wsu="http://schemas.xmlsoap.org/ws/2002/07/utility">
+   <ds:SignedInfo>
+      <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#">
+      </ds:CanonicalizationMethod>
+      <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"></ds:SignatureMethod>
+      <ds:Reference URI="#Id-2e7c29c7-8645-4ad8-af59-06bed179d2fb">
+        <ds:Transforms>
+	  <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#">
+	    </ds:Transform>
+	  </ds:Transforms>
+	<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"></ds:DigestMethod>
+	<ds:DigestValue></ds:DigestValue>
+      </ds:Reference>
+   </ds:SignedInfo>
+   <ds:SignatureValue></ds:SignatureValue>
+    <ds:KeyInfo>
+      <wsse:SecurityTokenReference>
+        <wsse:Reference URI="#SecurityToken-24c152e3-26e0-d611-bb59-90b4c67d3be5"></wsse:Reference>
+      </wsse:SecurityTokenReference>
+    </ds:KeyInfo>
+</ds:Signature>
+]]></programlisting>
+
+<para>Now, an example of a user defined template:</para>
+
+<programlisting><![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>
+<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+    <SignedInfo>
+      <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />
+      <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#dsa-sha1" />
+      <Reference URI="">
+        <Transforms>
+          <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
+        </Transforms>
+        <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+        <DigestValue></DigestValue>
+      </Reference>
+    </SignedInfo>
+    <SignatureValue></SignatureValue>
+    <KeyInfo>
+        <KeyName>file:dsa.der</KeyName>
+    </KeyInfo>
+</Signature>
+]]></programlisting>
+</example>
+</sect3>
+</sect2>
+
+<sect2 id="vwsssoapclient"><title>SOAP Client</title>
+
+<para>The <function>soap_client()</function> function is used to make soap
+requests.  Upon success it will return an array containing the XML tree of
+the result.  However, it can return more complex results when the debug parameter
+is enabled, in which case it can return the request and the response messages
+as well.  Some of the parameters are optional, not all are required and they can
+be named.</para>
+
+<tip><title>See Also:</title>
+<para><link linkend="fn_soap_client">
+ <function>soap_client()</function></link></para></tip>
+</sect2>
+
+</sect1>
+
+

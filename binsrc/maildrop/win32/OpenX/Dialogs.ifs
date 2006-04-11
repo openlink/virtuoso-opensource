@@ -1,0 +1,209 @@
+(*
+ *  Dialogs.ifs
+ *
+ *  $Id$
+ *
+ *  Setup functions for extended Inno Setup
+ *
+ *  (C)Copyright 2001 OpenLink Software.
+ *  All Rights Reserved.
+ *
+ *  The copyright above and this notice must be preserved in all
+ *  copies of this source code.  The copyright above does not
+ *  evidence any actual or intended publication of this source code.
+ *
+ *  This is unpublished proprietary trade secret of OpenLink Software.
+ *  This source code may not be copied, disclosed, distributed, demonstrated
+ *  or licensed except as authorized by OpenLink Software.
+ *)
+
+program Setup;
+
+var
+  UserPrompts, UserValues: TArrayOfString;
+  BouncePrompts, BounceValues: TArrayOfString;
+  HostnamePrompts, HostnameValues: TArrayOfString;
+  DoBounce: Boolean;
+  DoRegister: Boolean;
+  DoHostname: Boolean;
+
+function InitializeSetup (): Boolean;
+var
+  Domain: String;
+  Host: String;
+begin
+  RegQueryStringValue (HKLM, 'SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', 'Domain', Domain);
+  RegQueryStringValue (HKLM, 'SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', 'Hostname', Host);
+
+  DoRegister := False;
+  DoBounce := False;
+  DoHostname := False;
+
+  SetArrayLength (UserPrompts, 1);
+  UserPrompts[0] := 'Filter:';
+
+  SetArrayLength (UserValues, 1);
+  UserValues[0] := 'rcpt to=*@' + Host + '.' + Domain;
+
+  SetArrayLength (BouncePrompts, 2);
+  BouncePrompts[0] := 'Pass the mail on to the next sink in the chain or drop it into the BadMail directory.';
+  BouncePrompts[1] := 'Send a detailed failure notification back to the sender.';
+
+  SetArrayLength (BounceValues, 2);
+  BounceValues[0] := '0';
+  BounceValues[1] := '1';
+
+  SetArrayLength (HostnamePrompts, 2);
+  HostnamePrompts[0] := 'Mail domains are not supported - only use the recipient name for account lookups';
+  HostnamePrompts[1] := 'Mail domains are supported - use both recipient name and host name for lookups';
+
+  SetArrayLength (HostnameValues, 2);
+  HostnameValues[0] := '0';
+  HostnameValues[1] := '1';
+
+  Result := True;
+end;
+
+function DomainDlg (BackClicked: Boolean): Boolean;
+var
+  CurSubPage: Integer;
+  Next, NextOk: Boolean;
+begin
+  DoRegister := ShouldProcessEntry ('', 'doregister') = srYes;
+  if DoRegister then
+  begin
+    if not BackClicked then
+      CurSubPage := 0
+    else
+      CurSubPage := 2;
+    ScriptDlgPageOpen ();
+    while (CurSubPage >= 0) and (CurSubPage <= 2) and not Terminated do begin
+      case CurSubPage of
+        0:
+	  begin
+	    ScriptDlgPageSetCaption ('Mail Sink Activation Rule');
+	    ScriptDlgPageSetSubCaption1 ('When do you want this sink to act?');
+	    ScriptDlgPageSetSubCaption2 ('Please specify a matching filter rule that matches your SMTP domain, then click Next.');
+	    Next := InputQueryArray (UserPrompts, UserValues);
+	    if Next then
+	    begin
+	      NextOk := UserValues[0] <> '';
+	      if not NextOk then
+		MsgBox ('You must specify a filter rule.', mbError, MB_OK);
+	    end;
+	  end;
+	1:
+	  begin
+	    ScriptDlgPageSetCaption ('Undeliverable Mail Handling');
+	    ScriptDlgPageSetSubCaption1 ('What to do with undeliverable mail?');
+	    ScriptDlgPageSetSubCaption2 ('Please specify what you would like this sink to do when it cannot deliver the incoming mail into the database, then click Next.');
+            Next := InputOptionArray (BouncePrompts, BounceValues, True, False);
+            NextOk := True;
+	    DoBounce := BounceValues[1] = '1';
+	  end;
+	  (*
+	2:
+	  begin
+	    ScriptDlgPageSetCaption ('Virtual mail domains support');
+	    ScriptDlgPageSetSubCaption1 ('Are multiple mail domains supported?');
+	    ScriptDlgPageSetSubCaption2 ('Please specify whether or not your version of OpenX supports multiple virtual mail domains, then click Next.');
+            Next := InputOptionArray (HostnamePrompts, HostnameValues, True, False);
+            NextOk := True;
+	    DoHostname := HostnameValues[1] = '1';
+	  end;
+	  *)
+      end;
+      if Next then begin
+        if NextOk then
+          CurSubPage := CurSubPage + 1;
+      end else
+        CurSubPage := CurSubPage - 1;
+    end;
+    if not BackClicked then
+      Result := Next
+    else
+      Result := not Next;
+    ScriptDlgPageClose (not Result);
+  end else begin
+    Result := True;
+  end;
+end;
+
+function NextButtonClick (CurPage: Integer): Boolean;
+begin
+  if CurPage = wpSelectTasks then
+    Result := DomainDlg (False)
+  else
+    Result := True;
+end;
+
+function BackButtonClick (CurPage: Integer): Boolean;
+begin
+  if CurPage = wpReady then
+    Result := DomainDlg (True)
+  else
+    Result := True;
+end;
+
+function FilterName (Default: String): String;
+begin
+  if DoRegister then
+    Result := UserValues[0]
+  else
+    Result := Default;
+end;
+
+function FilterBounce (Default: String): String;
+begin
+  if DoRegister and DoBounce then
+    Result := '1'
+  else
+    Result := Default;
+end;
+
+function FilterHostname (Default: String): String;
+begin
+  if DoRegister and DoHostname then
+    Result := '1'
+  else
+    Result := Default;
+end;
+
+function UpdateReadyMemo(Space, NewLine, MemoDirInfo, MemoTypeInfo, MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
+var
+  S: String;
+begin
+  S := '';
+
+  S := S + SetupMessage (msgReadyMemoDir) + #13;
+  S := S + Space + WizardDirValue + #13;
+  S := S + #13;
+
+  S := S + SetupMessage (msgReadyMemoComponents) + #13;
+  S := S + Space + WizardSelectedComponents (True) + #13;
+  S := S + #13;
+
+  if DoRegister then
+  begin
+    S := S + 'Sink Registration:' + #13;
+    S := S + Space + UserValues[0] + #13;
+    if DoBounce then
+      S := S + Space + 'sink will send bounce messages' + #13
+    else
+      S := S + Space + 'sink will NOT send bounce messages' + #13;
+    (*
+    if DoHostname then
+      S := S + Space + 'sink will use fully qualified recipient names' + #13
+    else
+      S := S + Space + 'sink will use local recipient name only' + #13;
+     *)
+    S := S + #13;
+  end;
+
+  Result := S;
+end;
+
+begin
+end.
+
+// vim: syntax=pascal

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_http_value">
+  <refmeta>
+    <refentrytitle>http_value</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>http_value</refname>
+    <refpurpose>write to HTTP client or string output stream with HTML
+    escapes</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_http_value">
+      <funcprototype id="fproto_http_value">
+        <funcdef><function>http_value</function></funcdef>
+        <paramdef>in <parameter>val_expr</parameter>any</paramdef>
+	<paramdef><optional>in <parameter>tag</parameter> varchar</optional></paramdef>
+	<paramdef><optional>in <parameter>stream</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params_http_value"><title>Parameters</title>
+    <refsect2><title>val_expr</title>
+      <para>A value expression. May be any string expression. If
+      <parameter>val_expr</parameter> is an XML entity, a serialization of
+      the entity is written to the <parameter>stream</parameter>. This is not
+      the string value of the XML fragment, but a serialization of the XML
+      fragment as text including all the markup, i.e. elements, attributes,
+      namespaces, text nodes, etc. To get the string value of an XML entity,
+      convert it to a varchat using <function>cast</function>. Casting as
+      varchar will only produce a concatenation of the text nodes in the
+      XML fragment, leaving out elements, attributes, name spaces, etc.</para>
+    </refsect2>
+    <refsect2><title>tag</title>
+      <para>Optional. If present and is a string, the output will be enclosed
+      in tags named as the string content of <parameter>tag</parameter>.
+      If the expression evaluates to 0 or null, it will be ignored.</para>
+    </refsect2>
+    <refsect2><title>stream</title>
+      <para>Optional parameter. If omitted or is 0 and the function is
+      executed within a VSP context, the <parameter>val_expr</parameter> will
+      be written to the HTTP client. If present and non-zero,
+      <parameter>val_expr</parameter> will be written to the specified stream.
+      If non-zero, the value must be a valid stream obtained
+      from function
+      <link linkend="fn_string_output"><function>string_output</function>
+      </link></para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_http_value"><title>Return Values</title>
+    <para>None</para>
+  </refsect1>
+  <refsect1 id="desc_http_value"><title>Description</title>
+    <para>The <function>http_value</function> is used to write to an HTTP
+    client (when in a VSP context) or a specified string output stream.
+    <function>http_value</function> uses HTML-escapes for characters that
+    should be escaped according to the HTML spec.</para>
+  </refsect1>
+  <refsect1 id="errors"><title>Errors</title>
+    <table><title>Errors signalled by <function>http_value</function></title>
+      <tgroup cols="4">
+      <thead>
+	  <row>
+	    <entry>SQLSTATE</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry>
+	  </row>
+      </thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>37000</errorcode></entry>
+	    <entry><errorcode>HT006</errorcode></entry>
+	    <entry><errorname>http output function outside of http context
+	    and no stream specified: %s</errorname></entry>
+	    <entry>occurs if called outside VSP and no string session is
+	    given </entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>SR066</errorcode></entry>
+	    <entry><errorname>Unsupported case in CONVERT
+	     (&lt;data_type_of 1st arg&gt; -&gt; VARCHAR): %s</errorname></entry>
+	    <entry>if the value passed as the 1st argument can't be
+	    converted to a VARCHAR value and it's not a XML/XQUERY tree
+	    </entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  <para></para>
+  </refsect1>
+  <refsect1 id="examples_http_value"><title>Using http_value()</title>
+    <example id="ex_http_value"><title>HTTP output</title>
+      <para>Output of various flavours of <function>http</function>. See
+	<link linkend="fn_string_output"><function>string_output</function>
+	</link> and
+	<link linkend="fn_string_output_string"><function>string_output_string
+	</function></link> for examples how to use http to write to streams
+	other than the HTTP output.</para>
+      <screen>
+http (&apos; % &lt;b&gt;&apos;)     &apos; &lt;b&gt;
+http_value (&apos; % &lt;b&gt;&apos;)   % &amp;lt;b&amp;gt;
+http_url (&apos; % &lt;b&gt;&apos;)  +%25+&lt;b&gt;
+http_value (12, &apos;li&apos;)  &lt;li&gt;12&lt;/li&gt;
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_http_value"><title>See Also</title>
+    <para>
+      <link linkend="fn_http"><function>http</function></link>,
+      <link linkend="fn_http_url"><function>http_url</function></link>,
+      <link linkend="fn_string_output"><function>string_output</function></link>,
+      <link linkend="fn_http_rewrite"><function>http_rewrite</function></link>.
+    </para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,47 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="demo_tree" xmlns:v="http://www.openlinksw.com/vspx/">
+<html>
+ <body>
+ <v:form name="f1" method="POST" type="simple">
+ <div>
+ <v:tree name="tree1" multi-branch="1" orientation="vertical"
+         root="root_node_fun" start-path="--TUTORIAL_ROOT_DIR()||'/tutorial/web'" child-function="child_node_fun" >
+  <v:node-template name="node_tmpl">
+    <div STYLE="margin-left:1em;">
+	<v:button name="tree1_toggle" action="simple" style="image" value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then '../plus.gif' else '../minus.gif' end" />
+	<b><v:label name="label1" value="--(control.vc_parent as vspx_tree_node).tn_value" /></b>
+	<v:node />
+    </div>
+  </v:node-template>
+  <v:leaf-template name="leaf_tmpl">
+    <div STYLE="margin-left:1em;">
+	<v:label name="label2" value="--(control.vc_parent as vspx_tree_node).tn_value" />
+    </div>
+  </v:leaf-template>
+ </v:tree>
+ </div>
+ </v:form>
+ </body>
+</html>
+</v:page>

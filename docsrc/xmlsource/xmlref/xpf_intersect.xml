@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!--
+  Please use the following prefixes for IDs:
+    xpf_ for old XPATH functions,
+    xf_ for XPATH 2.0 & XQUERY 1.0 functions,
+    xsl_ for XSL elements,
+-->
+<refentry id="xpf_intersect">
+  <refmeta> 
+    <refentrytitle>intersect</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>intersect</refname> 
+    <refpurpose>Returns an intersect of two sets</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv> 
+    <funcsynopsis id="xpf_syn_intersect"> 
+      <funcprototype id="xpf_proto_intersect">
+        <funcdef>sequence <function>intersect</function></funcdef> 
+	<paramdef><parameter>set1</parameter> sequence</paramdef>
+	<paramdef><parameter>set2</parameter> sequence</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_intersect"><title>Description</title><para>The function returns an unordered sequence that consits of all distinct items such that every of source sequences contains every of the resulting items.</para>
+  <para>Duplicates are removed, including duplicate occurences of same value in one sequence,
+the decision whether two values duplicate each other is made accurding rules used by
+<link linkend="xpf_distinct"><function>distinct()</function></link> function.</para>
+  </refsect1>
+  <refsect1 id="xpf_params_intersect"><title>Parameters</title>
+    <refsect2><title>set1, set2</title>
+      <para>Sequence that contains items of the resulting intersect.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_intersect"><title>Return Types</title><para>The function returns a sequence of distinct values.</para></refsect1>
+<!--  
+  <refsect1 id="xpf_errors_intersect"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="xpf_examples_intersect"><title>Examples</title>
+    <example id="xpf_ex_intersect"><title></title>
+      <para></para>
+      <screen></screen>
+    </example>
+  </refsect1>
+-->  
+  <refsect1 id="xpf_seealso_intersect"><title>See Also</title>
+    <para><link linkend="xpf_union"><function>union</function></link></para>
+    <para><link linkend="xpf_except"><function>except</function></link></para>
+  </refsect1>
+</refentry>
+

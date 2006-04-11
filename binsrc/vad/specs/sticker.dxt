@@ -1,0 +1,114 @@
+/*! \page vad_sticker VAD sticker
+\dontinclude vad_sticker.dtd
+
+\section vad_sticker_objective Objective
+
+As described in '\ref vad_intro_objective_package' section, sticker should contain large amount of meta-data and descriptions of resources.
+To make maintenance of the package convenient, the sticker stored in the package may be composed from more than one source file.
+Both sources and the target of sticker creation are XML resources, so there are no other significant differences between source and target stickers.
+
+\section vad_sticker_dtd Sticker's DTD
+
+The namespace <CODE>vad</CODE> is used below to mean <CODE>http://www.openlinksw.com/urn/vad</CODE>.
+
+\subsection vad_sticker_dtd_top Sticker's top-level elements
+
+\skip <<top>>
+\until <</top>>
+
+The top-level tag of sticker is, yes, '<CODE>sticker</CODE>'.
+It must contain caption and it may contain dependencies, procedures, DDLs and resources.
+
+\skip <<caption>>
+\until <</caption>>
+
+Caption contains one name and one version element, they have package attribute for keeping requisites used by VAD procedures.
+Other prop-s are for keeping admin-readable info, but they will not affect the installer's behavior.
+Typical names of properties here are 
+<CODE>Vendor</CODE>, <CODE>Copyright</CODE>,
+<CODE>Release+Date</CODE>, <CODE>Build</CODE>,
+<CODE>Language</CODE>, <CODE>Encoding</CODE>,
+but any (even non-unique) names are acceptable.
+
+\subsection vad_sticker_dtd_dependencies Sticker's elements for dependencies
+
+\skip <<dependencies>>
+\until <</dependencies>>
+
+Element <CODE>dependencies</CODE> contains an list of packages related to given one.
+For every version or range of versions of every package, developer may specify whether the given version is required for the package, or allowed but not required, or will cause some sort of troubles.
+
+More precisely, to find information about some particular version of a package, the list of children of <CODE>dependencies</CODE> element will be scanned from top to bottom.
+If the first matching record is in <CODE>conflict</CODE> group, not in <CODE>require</CODE> or <CODE>allow</CODE>, then installation is impossible.
+From other side, there must be at least one installed package for every <CODE>require</CODE> section.
+
+Element <CODE>require</CODE> may be labeled with optional <CODE>group</CODE> attribute.
+As an exception from common rule,
+there must be at least one installed package for every group of <CODE>require</CODE> sections with identical name.
+E.g. If an installation of package B requires either of two interchangeable packages A1 and A2,
+sticker should contain a pair of nodes in the same group:
+\code
+<require group="G">
+  <name package="A1">...</name>
+</require>
+
+...
+
+<require group="G">
+  <name package="A2">...</name>
+</require>
+\endcode
+Note that there are no methods to specify that exactly one package, either A1 or A2, should be installed.
+It must be done by placing proper <CODE>conflict</CODE> descriptions in stickers of A1 and/or A2,
+but not in the sticker of B.
+
+\subsection vad_sticker_dtd_procedures Sticker's elements for procedures
+
+\skip <<procedures>>
+\until <</procedures>>
+
+Element <CODE>procedures</CODE> contains an list of PL/SQL fragments, and every fragment is tagged by one of four values of the <CODE>purpose</CODE> attribute.
+At every stage of install or uninstall VAD procedure, a whole list of procedures will be scanned from the beginning to the end, and all procedures of appropriate sort will be executed in the same order as they are listed.
+In source sticker files, <CODE>include</CODE> attribute may be used to insert text of some external file instead of having SQL code written inside the element.
+
+\subsection vad_sticker_dtd_ddls Sticker's elements for ddls
+
+\skip <<ddls>>
+\until <</ddls>>
+
+Element <CODE>ddls</CODE> is very similar to <CODE>procedures</CODE> and contains an list of PL/SQL fragments to create schemas etc.
+
+\subsection vad_sticker_dtd_resources Sticker's elements for resources
+
+\skip <<resources>>
+\until <</resources>>
+
+Element <CODE>resources</CODE> lists all files to be copied onto target box.
+For every file, source and target URIs should be specified, and suggested behavior for cases when a directory should be created or file should be overwritten.
+Target URI may be relative to one of roots: for documentation, web-resources, DAV, SQL code (it's where virtuoso.ini is located) and one of special locations, additionally specified by <CODE>location</CODE> elements.
+(Installer may query administrator to allow changing of locations' roots; in such case, information from location's properties will be shown to the administrator.)
+By default, the value of <CODE>package_id</CODE> is a space delimited list of type, location ID (if any) and target URI.
+
+\subsection vad_sticker_dtd_registry Sticker's elements for registry
+
+\skip <<registry>>
+\until <</registry>>
+
+Element <CODE>registry</CODE> lists all branches to be defined in the \ref vad_registry.
+Every <CODE>record</CODE> element contain data of one record.
+The first children of <CODE>record</CODE> element (either a text or an element) will be serialized and
+stored as a value of DB.DBA.VAD_REGISTRY.R_VALUE cell.
+To prevent errors, it is recommended to keep comments to the data outside the <CODE>record</CODE> element:
+being in the wrong place inside, they may be stored in the registry instead of actually needed data.
+
+\subsection vad_sticker_samples Sample stickers
+
+A package which contains only
+some commonly useful ("exported") functions,
+one table for internal purposes,
+a small sample VSP application,
+and small set of documentation files.
+
+\include sticker_rdf_lib.xml
+
+*/

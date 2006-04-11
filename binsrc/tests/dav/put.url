@@ -1,0 +1,5 @@
+localhost 6666
+1 PUT /DAV/Dav_Coll/Resource.pdf HTTP/1.0
+1 PUT /DAV/Dav_Coll/Coll_First_Level/Resource.pdf HTTP/1.0
+1 PUT /DAV/Dav_Coll/Coll2_First_level/Resource.pdf HTTP/1.0
+1 PUT /DAV/Dav_Coll/Coll_First_Level/Coll_Second_Level/Resource.pdf HTTP/1.0

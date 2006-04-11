@@ -1,0 +1,51 @@
+<HTML>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<HEAD>
+<TITLE>OpenLink Virtuoso JDBC Demonstration</TITLE>
+</HEAD>
+<BODY BGCOLOR=#FFFFFF FGCOLOR=#000000 LINK=#0000FF VLINK=#0000FF>
+
+<H1>OpenLink Virtuoso JDBC Applet Demonstration</H1>
+<P><HR></P>
+<P>&nbsp;This is a demonstration of an applet using the OpenLink Virtuoso JDBC Driver. </P>
+<H2>Starting</H2>
+<P>When the Web browser has finished loading the Java applet, a window containing the JDBC applet will appear:</P>
+<P><IMG SRC="WebJDBCDemo1.jpg" WIDTH=352 HEIGHT=230></P>
+<P>&nbsp;</P>
+<H2>Running a Query</H2>
+<P>When it is running, click on the "Query" button to execute a SQL query against the default connection URL. If successful, you should see the first row of the resultset filling the applet window:</P>
+<P><IMG SRC="WebJDBCDemo2.jpg" WIDTH=347 HEIGHT=340></P>
+<P>Click on the "Next" button to retrieve the next row, and so on, until you have reached the end of the resultset.</P>
+<P>&nbsp;</P>
+<H2>Changing the connection URL</H2>
+<P>To change the connection URL, select "File|Set Connection URL.." from the menu. A dialog box will appear, enabling you to change the connection URL:</P>
+<P><IMG SRC="WebJDBCDemo3.jpg" WIDTH=358 HEIGHT=194></P>
+<P>Please note that due to the applet security restrictions, it is only possible to connect to the same server IP as the Web server.</P>
+<P><A HREF="WebJDBCDemo.java"><I>The Java source for this applet</I></A></P>
+<P><applet code=WebJDBCDemo.class id=WebJDBCDemo archive=../virtjdbc2.jar height=1 width=1>
+  <PARAM name=URL1 value=":1112/UID=demo/PWD=demo/">
+  <PARAM name="numParams" value="1">
+</applet></P>
+</BODY>
+</HTML>

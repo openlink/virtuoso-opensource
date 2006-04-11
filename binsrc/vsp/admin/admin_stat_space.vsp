@@ -1,0 +1,98 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+
+  declare _q, _state, _msg, _stmt varchar;
+  declare err integer;
+
+  if (not adm_check_auth (lines))
+    {
+      adm_tell_unauth (lines);
+      return (0);
+    }
+
+  _q := get_keyword ('q', params, '');
+
+  if ('' = _q)
+    _q := 'db';
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Virtuoso VDBMS Space Usage Statistics</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Space usage statistics">
+  </head>
+  <BODY>
+  <table class="ctrlmain" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr><td>
+<?vsp adm_page_header('Space Usage Statistics', NULL); ?>
+
+      <table CLASS="statlist" border="0" cellpadding="0">
+        <tr>
+	  <th CLASS="statlistheadt">Table</th>
+	  <th CLASS="statlistheadt">Index name</th>
+	  <th CLASS="statlistheadt">Rows</th>
+	  <th CLASS="statlistheadt">Pages</th>
+	  <th CLASS="statlistheadt">Row pages</th>
+	  <th CLASS="statlistheadt">Blob pages</th>
+        </tr>
+      <?vsp for select
+                  ISS_KEY_TABLE,
+                  ISS_KEY_NAME,
+                  ISS_NROWS,
+                  ISS_PAGES,
+                  ISS_ROW_PAGES,
+                  ISS_BLOB_PAGES
+                 from DB.DBA.SYS_INDEX_SPACE_STATS
+                 order by ISS_PAGES desc do { ?>
+	<tr>
+	  <td CLASS="statdata"><?= ISS_KEY_TABLE ?></td>
+	  <td CLASS="statdata"><?= ISS_KEY_NAME ?></td>
+	  <td CLASS="statdata"><?= ISS_NROWS ?></td>
+	  <td CLASS="statdata"><?= ISS_PAGES ?></td>
+	  <td CLASS="statdata"><?= ISS_ROW_PAGES ?></td>
+	  <td CLASS="statdata"><?= ISS_BLOB_PAGES ?></td>
+	</tr>
+      <?vsp } ?>
+    </table>
+  </td></tr>
+  <tr><td>
+    <div align="center"><a name="info"><b><i>Notes:</i></b></a></div>
+    <ul style="margin-left: 40px; margin-right: 40px; text-align: left;">
+     <li>
+       The page size for this database is <b><?= sys_stat ('st_db_page_size') ?> bytes</b>.<br /><br />
+     </li>
+    </ul>
+  </td></tr>
+  </table>
+
+<?vsp adm_page_footer(); ?>
+    </body>
+</html>

@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="xslttrans">
+<title>XSLT Transformation</title>
+
+<para>
+Virtuoso implements XSLT 1.0 transformations as SQL callable
+functions.  In general, Virtuoso's XSLT processor follows the XSLT 1.0
+standard as far as possible without loss of database-related
+functionality.  The most important difference is in error handling.
+While XSLT rules assume that almost any error must be recovered,
+Virtuoso will stop the transformation in case of data access error or
+in case of serious arithmetic error, such as divide by zero.  This is
+due to the greater complexity of the Virtuoso XSLT processor's
+environment.  Standalone processors generally accept a set of files as
+input parameters, the only output is the resulting transformation as a
+file, and all configuration parameters are listed on the command line.
+Virtuoso's XSLT processor may retrieve both data and stylesheets from
+local filesystems, local tables, remote datasources, or the Web.
+Parameters of the stylesheet transformation may be prepared by
+complicated Virtuoso PL procedures and so on.  Plain XSLT processors may
+continue producing &quot;dirty&quot; output; Virtuoso's processor will
+stop upon encountering serious in order to produce helpful error
+diagnostics.
+    </para>
+    <para>
+Another important difference is that Virtuoso has one processor for
+XSLT, XPath and XQuery. The user will find this convenient because an
+application may use XSLT-specific functions in XPath expressions,
+XQuery functions in XSLT, and so on.  If extension functions are
+defined for the XSLT processor, they may also be used in XPath and
+XQuery expressions without any additional operations.  One caveat is
+that this may invalidate some rules related to the document order of
+nodes in node-sets.  Both the XPath 1.0 and XSLT 1.0 standards say
+that some functions must process the node that is first in document
+order from a given node-set.  In such cases Virtuoso's processor will
+process the first node found in the node-set, regardless of whether it
+is actually the first in document order or not.  This is done because
+the old XPath rule is nonsensical if nodes of the node-set are
+retrieved from more than one document or are created in the query.
+The processor follows the old rule for 99% of real expressions.
+Specifically, it fully matches the standards' rules for all XPath
+expressions that are free of reverse-order axes and non-standard
+functions.
+    </para>
+
+<sect2 id="namespaces">
+<title>Namespaces </title>
+
+	<para>
+In the following the <programlisting>xsl:</programlisting> namespace
+prefix is used to mean
+&quot;http://www.w3.org/XSL/Transform/1.0&quot;.  In fact all
+namespace URI&apos;s beginning with
+&quot;http://www.w3.org/XSL/Transform&quot; are considered as the
+XSLT namespace.  The namespaces
+&quot;http://www.w3.org/1999/XSL/Transform&quot; and
+&quot;http://www.w3.org/TR/WD-xsl&quot; are recognized as synonymous.
+No other namespace URI&apos;s have special significance.
+</para>
+</sect2>
+
+<sect2 id="xsloutputelt">
+<title>The <parameter>&lt;xsl:output&gt;</parameter> Tag</title>
+	<para>
+The Virtuoso XSLT processor recognizes and verifies the
+<parameter>&lt;xsl:output&gt;</parameter> tag.  The only
+<parameter>&lt;xsl:output&gt;</parameter> attributes that are used are
+the
+<parameter>method</parameter>,
+<parameter>encoding</parameter>,
+<parameter>omit-xml-declaration</parameter>,
+<parameter>media-type</parameter>,
+<parameter>doctype-public</parameter>
+<parameter>doctype-system</parameter>
+and
+<parameter>indent</parameter>.
+The processor output is created
+in the character set that is in effect for the client or the one
+specified by encoding.
+</para>
+<para>
+The SQL function <link linkend="fn_xml_tree_doc_media_type">
+<function>xml_tree_doc_media_type()</function></link>
+returns the media type in effect for the result of the <link
+linkend="fn_xslt"><function>xslt()</function></link> function based on
+the xsl:output <parameter>media-type</parameter> and
+<parameter>method</parameter> attributes of the stylesheet applied.
+This method is also used for producing FOR XML AUTO WebDAV resources
+for HTTP reply generation.
+</para>
+</sect2>
+  <sect2 id="xsltextparams">
+    <title>External Parameters in XSLT Stylesheets</title>
+    <para>
+The XSLT 1.0 standard specifies that parameters may be passed to the
+XSLT processor from its environment in order to control data
+transformation, but the details are implementation-specific.
+Virtuoso's XSLT Processor will accept default values for global
+parameters from the optional third argument of the <link
+linkend="fn_xslt">xslt()</link> Virtuoso PL function.  This argument, if
+specified, must be a vector of parameter names and values of the form
+<programlisting>vector(name1, value1,... nameN,
+valueN)</programlisting>, where <parameter>name1 ... nameN</parameter>
+must be of type <parameter>varchar</parameter>, and <parameter>value1
+... valueN</parameter> may be of any Virtuoso datatype, but may not be
+null.  If a parameter has a null value specified, it is removed from
+the vector without any further processing.  After removal of null
+values, duplicate names are eliminated.  If a name occurs more than
+once in the vector, only the last one will be retained.
+    </para>
+    <para>
+When the XSLT Processor begins the transformation of the document, it
+creates two stacks of variables, one for global variables and one for
+local variables.  Initially the stacks are empty.
+Then it prepares temporary indexes for all
+<parameter>&lt;xsl:key&gt;</parameter> elements; all future calls
+of <link linkend="xpf_key"><function>key()</function></link> function
+will return without any searches through the source document.
+Only after the processing of all keys of the stylesheet, the
+XSLT Processor pushes all
+parameters from the third argument of
+the <link
+linkend="fn_xslt"><function>xslt()</function></link> function
+into the stack of local variables.
+Then, as described in the XSLT specification, it
+initializes top-level variables and parameters.  For every
+<parameter>&lt;xsl:variable&gt;</parameter> or
+<parameter>&lt;xsl:param&gt;</parameter> element found at the
+top-level of the main stylesheet or at the top level of some imported
+stylesheet, the processor calculates the value and pushes the created
+variable into the stack of local variables.  The
+<parameter>&lt;xsl:param&gt;</parameter> element is ignored if the
+specified name is already declared in the vector of parameters or in
+some stylesheet imported before.  When all top-level variables and
+parameters are initialized, the content of the stack of local
+variables is moved into the stack of global variables, and the stack
+of local variables is made empty.  During the rest of the XSLT
+transformation, these variables will be used as global variables. They
+may be temporarily shadowed by inner declarations of local variables
+&mdash; though not by declarations of local parameters &mdash; but they
+cannot be changed.
+Note that expressions for values of variables and parameters may contain
+calls of <link linkend="xpf_key"><function>key()</function></link> function,
+because temporary indexes are ready to use before the first such
+expression is calculated. Expressions of
+<parameter>&lt;xsl:key&gt;</parameter> elements may not refer to any
+parameters or variables, due to the same reason.
+    </para>
+  </sect2>
+
+<sect2 id="xsltfunctions">
+<title>Functions</title>
+<para>
+The <link linkend="fn_xslt"><function>xslt()</function></link>
+Virtuoso/PL function applies a given stylesheet to a given source XML
+document and returns the transformed document.  There is no restriction to
+what a VSP page can output, this is usually HTML but can be XML.  The function
+<link linkend="fn_http_xslt"><function>http_xslt()</function></link> allows
+a stylesheet to be applied to a whole output of an VSP page before it is sent
+to the user agent.
+Functions
+<link linkend="fn_xslt_sheet"><function>xslt_sheet()</function></link>
+and
+<link linkend="fn_xslt_stale"><function>xslt_stale()</function></link>
+allow you to create and destroy a stylesheet dynamically.
+Function <link linkend="fn_xmlupdate"><function>xmlupdate()</function></link>
+is convenient for very simple &quot;search-and replace&quot; transformations.
+</para>
+</sect2>
+
+<sect2 id="xsltexamples">
+<title>XSLT Examples</title>
+	<para>
+This section covers some examples of applying XSLT to various stored data.
+</para>
+
+<example>
+<programlisting>
+create procedure xml_view_string (in _view varchar)
+{
+  declare _body any;
+  declare _pf varchar;
+  _body := string_output ();
+  http (&apos;&lt;document&gt;&apos;, _body);
+  _pf := concat (&apos;DB.DBA.http_view_&apos;, _view);
+  call (_pf) (_body);
+  http (&apos;&lt;/document&gt;&apos;, _body);
+
+  return (string_output_string (_body));
+}
+</programlisting>
+
+<programlisting>
+create procedure xslt_view (in v varchar, in xst varchar)
+{
+
+  declare str, r varchar;
+  xslt_sheet (xst, xtree_doc (file_to_string (xst)));
+  str := xml_view_string (v);
+  r := xslt (xst, xtree_doc (str));
+  declare str_out any;
+  str_out := string_output ();
+  http_value (r, 0, str_out);
+  string_to_file (&apos;xslt.out&apos;, string_output_string (str_out), 0);
+}
+</programlisting>
+</example>
+	<para>
+These functions will take the serialized text of an XML view created
+with CREATE XML VIEW, transform it with a stylesheet and store the
+result into a file.
+</para>
+	<para>
+The first function returns a string containing the text generated as
+the value of the XML view specified as argument.  It calls the
+serialization function, which is <programlisting>DB.DBA.http_view_ +
+view name</programlisting>.  This function writes the text into the
+string output stream passed to it.  Note that the function wraps the
+text inside a <parameter>&lt;document&gt;</parameter> element in order
+to make it well-formed, since the view serialization function will
+emit multiple top-level elements, one for each selected row in the
+root table in the XML view.
+</para>
+	<para>
+The <function>xslt_view()</function> function first defines the style
+sheet, which it takes from a file in this case.  The
+<function>xslt_sheet()</function> function is called with the name and
+root element of the parsed file.
+</para>
+	<para>
+The function next gets the string to process, parses it as XML, and
+converts the parse tree into an entity object.  This is then passed to
+the <function>xslt()</function> function.  The result is another
+entity object.  This is finally serialized as XML text and written
+into the file <parameter>xslt.out</parameter>.
+</para>
+	<para>
+These examples show how to parse and serialize XML using varchars,
+string output streams and the entity data type.
+</para>
+	<para>
+The central points are:
+</para>
+<simplelist>
+<member>
+The XML entity object is a reference to a particular element of a
+parsed XML document, The underlying document is only visible through
+this reference.  A string is converted into such a document and a
+reference to the document&apos;s root is returned by the
+<programlisting>xtree_doc (string)</programlisting> function.
+In previous versions of Virtuoso, the combination
+<programlisting>xml_tree_doc (xml_tree (string))</programlisting>
+was used for this purpose; this combination still works to
+maintain backwards compatibility, but using xtree_doc() is preferable.
+</member>
+<member>
+A string output is used to capture the serialization of data by the
+<function>http_value()</function> function.  If the string output were
+not specified the data would be sent to the HTTP client directly, if
+we were running in an HTTP request context.
+</member>
+</simplelist>
+</sect2>
+
+<sect2 id="userdefxpathfunc4xsl"><title>XPath Function Extensions for XSLT</title>
+<para>Virtuoso provides a way to extend the abilities of the XSLT
+processor by creating user defined XPath functions.  The functions
+<link linkend="fn_xpf_extension"><function>xpf_extension()</function></link> and
+<link linkend="fn_xpf_extension_remove"><function>xpf_extension_remove()</function></link>
+allow addition and removal of XPath extension functions.</para>
+
+</sect2>
+<sect2 id="xsltsupport">
+<title>Status Of XSLT And XPath Implementation</title>
+<para>Items marked with (*) are currently not implemented.</para>
+
+<sect3 id="xpathaxissupport">
+<title>XPath Axes</title>
+<simplelist>
+<member>ancestor::</member>
+<member>ancestor-or-self::</member>
+<member>attribute::</member>
+<member>child::</member>
+<member>descendant::</member>
+<member>descendant-or-self::</member>
+<member>following::</member>
+<member>following-sibling::</member>
+<member>namespace:: (*)</member>
+<member>parent::</member>
+<member>preceding::</member>
+<member>preceding-sibling::</member>
+<member>self::</member>
+</simplelist>
+</sect3>
+
+<sect3 id="xpathnodefunctions">
+<title>Node Functions</title>
+<simplelist>
+<member>number <link linkend="xpf_position">position</link>()</member>
+<member>number <link linkend="xpf_count">count</link>(node-set)</member>
+<member>string <link linkend="xpf_local_name">local-name</link>(node-set?)</member>
+<member>string <link linkend="xpf_namespace_uri">namespace-uri</link>(node-set?)</member>
+<member>string <link linkend="xpf_name">name</link>(node-set?)</member>
+<member>boolean <link linkend="xpf_lang">lang</link>(string)</member>
+</simplelist>
+</sect3>
+
+<sect3 id="xpathnodesetfunctions">
+<title>Node Set Functions</title>
+<simplelist>
+<member>node-set <link linkend="xpf_document">document</link>(string, string?, integer?, name?, name?, string?)</member>
+<member>node-set <link linkend="xpf_document_literal">document-literal</link>(string, string?, integer?, name?, name?, string?)</member>
+<member>node-set <link linkend="xpf_id">id</link>(object)</member>
+<member>node-set <link linkend="xpf_append">append</link>(object, object, ..., object)</member>
+</simplelist>
+</sect3>
+
+<sect3 id="xpathstringfunctions">
+<title>String Functions</title>
+<simplelist>
+<member>string <link linkend="xpf_string">string</link>(object?)</member>
+<member>string <link linkend="xpf_serialize">serialize</link>(object?)</member>
+<member>string <link linkend="xpf_format_number">format-number</link>(number, string, string?)</member>
+<member>string <link linkend="xpf_concat">concat</link>(object, object, ..., object)</member>
+<member>number <link linkend="xpf_string_length">string-length</link>(string?)</member>
+<member>boolean <link linkend="xpf_contains">contains</link>(string, string)</member>
+<member>boolean <link linkend="xpf_text_contains">text-contains</link>(string, string)</member>
+<member>boolean <link linkend="xpf_starts_with">starts-with</link>(string, string)</member>
+<member>boolean <link linkend="xpf_ends_with">ends-with</link>(string, string)</member>
+<member>string <link linkend="xpf_substring">substring</link>(string, number, number?)</member>
+<member>string <link linkend="xpf_substring_before">substring-before</link>(string, string)</member>
+<member>string <link linkend="xpf_substring_after">substring-after</link>(string, string)</member>
+<member>string <link linkend="xpf_normalize_space">normalize-space</link>(string?)</member>
+<member>string <link linkend="xpf_translate">translate</link>(string, string, string)</member>
+<member>string <link linkend="xpf_replace">replace</link>(string, string, string)</member>
+</simplelist>
+</sect3>
+
+<sect3 id="xpathboolfunctions">
+<title>Boolean Functions</title>
+<simplelist>
+<member>boolean <link linkend="xpf_boolean">boolean</link>(object)</member>
+<member>boolean <link linkend="xpf_true">true</link>()</member>
+<member>boolean <link linkend="xpf_false">false</link>()</member>
+<member>boolean <link linkend="xpf_not">not</link>(boolean)</member>
+<member>boolean <link linkend="xpf_and">and</link>(boolean, boolean, ..., boolean)</member>
+<member>boolean <link linkend="xpf_or">or</link>(boolean, boolean, ..., boolean)</member>
+<member>boolean <link linkend="xpf_some">some</link>(name, boolean, node-set)</member>
+<member>boolean <link linkend="xpf_every">every</link>(name, boolean, node-set)</member>
+<member>boolean <link linkend="xpf_function_available">function_available</link>(name)</member>
+</simplelist>
+</sect3>
+
+<sect3 id="xpathnumberfunctions">
+<title>Number Functions</title>
+<simplelist>
+<member>number <link linkend="xpf_number">number</link>(object?)</member>
+<member>number <link linkend="xpf_floor">floor</link>(number)</member>
+<member>number <link linkend="xpf_ceiling">ceiling</link>(number)</member>
+<member>number <link linkend="xpf_round">round</link>(number)</member>
+<member>number <link linkend="xpf_sum">sum</link>(number)</member>
+<member>number <link linkend="xpf_avg">avg</link>(number)</member>
+<member>number <link linkend="xpf_max">max</link>(number)</member>
+<member>number <link linkend="xpf_min">min</link>(number)</member>
+</simplelist>
+</sect3>
+
+<sect3 id="xpathnumberfunctions">
+<title>XSLT-specific Functions</title>
+<simplelist>
+<member><link linkend="xpf_current">current</link>()</member>
+<member><link linkend="xpf_function_available">function-available</link>(string)</member>
+<member><link linkend="xpf_unparsed_entity_uri">unparsed-entity-uri</link>(string)</member>
+<member><link linkend="xpf_system_property">system-property</link>(string)</member>
+</simplelist>
+</sect3>
+
+<sect3 id="xslt_keys">
+<title>XSLT 1.0 Elements and Attributes</title>
+<simplelist>
+<member>xsl:apply-imports</member>
+<member>xsl:apply-templates</member>
+<member>xsl:attribute</member>
+<member>xsl:attribute-set (*)</member>
+<member>xsl:call-template</member>
+<member>xsl:choose</member>
+<member>xsl:comment</member>
+<member>xsl:copy</member>
+<member>xsl:copy-of</member>
+<member>xsl:decimal-format</member>
+<member>xsl:element</member>
+<member>xsl:fallback (*)</member>
+<member>xsl:for-each</member>
+<member>xsl:if</member>
+<member>xsl:import</member>
+<member>xsl:include</member>
+<member>xsl:key</member>
+<member>xsl:message</member>
+<member>xsl:namespace-alias</member>
+<member>xsl:number 		NOTE: formatting and level="any" is not implemented</member>
+<member>xsl:otherwise</member>
+<member>xsl:output</member>
+<member>xsl:param</member>
+<member>xsl:preserve-space (*)</member>
+<member>xsl:processing-instruction</member>
+<member>xsl:sort</member>
+<member>xsl:strip-space</member>
+<member>xsl:stylesheet</member>
+<member>xsl:template</member>
+<member>xsl:text</member>
+<member>xsl:transform (*) NOTE: use xsl:stylesheet instead</member>
+<member>xsl:value-of</member>
+<member>xsl:variable</member>
+<member>xsl:when</member>
+<member>xsl:with-param</member>
+</simplelist>
+</sect3>
+</sect2>
+</sect1>

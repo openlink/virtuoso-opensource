@@ -1,0 +1,99 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+
+  declare _tbl varchar;
+  declare _q, _stat, _msg varchar;
+  declare err integer;
+
+  if (not adm_check_auth (lines))
+    {
+      adm_tell_unauth (lines);
+      return (0);
+    }
+  _tbl := get_keyword ('tbl', params, '');
+  _q := get_keyword ('q', params, '');
+
+  if ('' = _tbl)
+    _tbl := 'db';
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <!--script language="javascript" src="admin_tables.js"></script-->
+    <script language="javascript" src="admin_utils.js"></script>
+    <title>Triggers for <?= _tbl ?></title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Trigger Administration">
+  </head>
+  <BODY>
+<?vsp adm_page_header(concat('Triggers for ',_tbl), 'triggers'); ?>
+<?include adm_js_check.vsp ?>
+<?vsp
+      err := adm_trigs_action (params, _stat, _msg);
+      if (-2 = err)
+        {
+?>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="errorhead" COLSPAN="2">Error - invalid trigger definition</TD></TR>
+<TR><TD CLASS="adm_borders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata"><?=_stat?></TD></TR>
+<TR><TD CLASS="genlisthead">Error</TD><TD CLASS="gendata"><?=_msg?></TD></TR>
+</TABLE>
+
+<?vsp
+        }
+?>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+       <form method="POST" action="admin_triggers_verify.vsp">
+       <input type="hidden" name="tbl" value="<?= _tbl ?>">
+       <input type="hidden" name="q" value="<?= _q ?>">
+	    <tr>
+	      <th CLASS="genlistheadt">Trigger name</th>
+	      <th CLASS="genlistheadt">Text (excerpt)</th>
+	      <td CLASS="genlistheadt"><input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)"></td>
+	      <th CLASS="genlistheadt">Action</th>
+	    </tr>
+	    <?vsp adm_trigs_list (_tbl, _q); ?>
+	    <tr>
+	      <td colspan="4" align="right">
+	        <input type="submit" name="drop" value="Drop Selected">
+	    </form>
+	    <form method="POST" action="admin_triggers_edit.vsp">
+	        <input type="hidden" name="q" value="<?=_q?>">
+	        <input type="hidden" name="tbl" value="<?=_tbl?>">
+	        <input type="submit" name="add" value="Add">
+	    </form>
+	      </td>
+	    </tr>
+    </table>
+<?vsp adm_page_footer(); ?>
+  </body>
+</html>

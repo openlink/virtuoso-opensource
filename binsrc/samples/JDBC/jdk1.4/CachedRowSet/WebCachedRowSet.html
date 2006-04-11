@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<head>
+<title>OpenLink JDBC 3.0 Cached RowSet Demonstration</title>
+</head>
+
+<body link="#0000ff" vlink="#800080">
+
+<h1>OpenLink JDBC 3.0 Cached RowSet Demonstration</h1>
+<hr>
+<p> This is a demonstration of an applet using OpenLink Software's
+JDBC(tm) 3.0 Driver with the JDBC 3.0 specification. </p>
+
+<h2>Starting</h2> <p>When the Web browser has finished loading the Java
+applet, a window containing the JDBC applet will appear:</p>
+
+<p><img src="WebCachedRowSet1.gif"></p>
+
+<h2>Running a Query</h2>
+<p>When it is running, click on the "Execute" button, it will execute
+a SQL query against the default connection URL and populate this
+CachedRowSet object with data. The current contents of the rowset are
+discarded. If there are outstanding updates, they are also ignored. It
+will closes any database connections that it creates. If successful, you
+should see the first row of the resultset filling the applet window:</p>
+
+<p><img src="WebCachedRowSet2.gif"></p>
+
+<p>The "Accept" button will propagate all row update, insert, and delete
+changes to a data source. When successful, it replaces the original
+value of the rowset with the current value.</p>
+
+<p>Click on the "Next" button to retrieve the next row, "Previous" to
+go back a row, "First" to move directly to the first row, and "Last"
+to move to the last row. </p>
+
+<p>Clicking "Delete" will delete the current row from this rowset. It
+will mark the current row as deleted, but it does not delete the row
+from the underlying data source. The button "Accept" must be clicked
+to delete the row in the data source.</p>
+
+<p>Clicking on "Refresh" will set the current row with its original
+value and marks the row as not updated, thus undoing any changes made
+to the row since the last call to the "Update" or "Delete".  </p>
+
+<p>Clicking on "Insert" will insert the contents of the insert row
+into this rowset following the current row. It will mark the current
+row as inserted, but it does not insert the row to the underlying data
+source. The button "Accept" must be clicked to insert the row to the
+data source.</p>
+
+<p>Clicking on "Update" will mark the current row of this rowset as
+updated but it does not update the row to the underlying data source. The
+button "Accept" must be clicked to update the row to the data source.
+To move to a particular position in the resultset, enter that position
+into the edit box and click the "Absolute" button.</p>
+
+<p>The "Relative" button will move the cursor position forwards or
+backwards by the number of rows specified in the edit box. To move
+backwards, enter a negative number.</p>
+
+<p>The "CancelDelete" button will cancel deletion of the current row
+and the current row is no longer marked for deletion.</p>
+
+<p>The "CancelInsert" button will  cancel insertion of the current
+row and the current row is immediately removed from the rowset. This
+operation cannot be undone.</p>
+
+<p>The "CancelUpdate" button may be clicked before clicking on "Update"
+to rollback the updates made to a row. If no updates have been made or
+"Update" has already been clicked, then this button has no effect.</p>
+
+<p>The "SetOriginal" button will marks all rows in this rowset as being
+original rows. Any updates made to the rows become the original values
+for the rowset.  It cannot be reversed. </p>
+
+<p>The "SetOriginalRow" button will  marks the current row in this
+rowset as being an original row. The row is no longer marked as inserted,
+deleted, or updated, and its values become the original values. It cannot
+be reversed.</p>
+
+<p>The "RestoreOriginal" button will restore the rowset to its original
+state (the original value of the rowset becomes the current value). All
+updates, inserts, and deletes made to the original state are lost. The
+cursor is positioned before the first row.</p>
+
+<h2>Changing the connection URL</h2>
+<p>To change the connection URL, select "File|Set Connection URL.." from
+the menu. A dialog box will appear enabling you to change the connection
+URL, as well as the driver to use:</p>
+
+<p><img src="WebCachedRowSet3.gif"></p>
+
+<p>Please note that due to the applet security restrictions, it is only
+possible to connect to the same server host as the Web server.</p>
+
+<hr>
+<p> <applet code="WebCachedRowSet.class" archive=../virtjdbc3.jar id="WebCachedRowSet" height="1"
+ width="1">
+  <PARAM name=URL1 value=":1112/UID=demo/PWD=demo">
+  <PARAM name="numParams" value="1">
+</applet></p>
+<br>
+</body>
+</html>

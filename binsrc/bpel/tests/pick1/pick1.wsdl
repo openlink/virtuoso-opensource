@@ -1,0 +1,79 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions name="pick1"
+  targetNamespace="http://services.otn.com"
+  xmlns:tns="http://services.otn.com"
+  xmlns:s1="http://samples.otn.com"
+  xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+  xmlns="http://schemas.xmlsoap.org/wsdl/">
+  <types>
+    <schema attributeFormDefault="qualified"
+      elementFormDefault="qualified"
+      targetNamespace="http://samples.otn.com"
+      xmlns="http://www.w3.org/2001/XMLSchema">
+     <element name="email" type="string"/>
+     <element name="address" type="s1:addressType"/>
+     <element name="creditCard" type="s1:creditCardType"/>
+     <complexType name="addressType">
+       <sequence>
+         <element name="name" type="string"/>
+         <element name="street" type="string"/>
+         <element name="city" type="string"/>
+         <element name="zip" type="string"/>
+         <element name="state" type="string"/>
+       </sequence>
+     </complexType>
+     <complexType name="creditCardType">
+       <sequence>
+         <element name="number" type="string"/>
+         <element name="expiration" type="date"/>
+       </sequence>
+     </complexType>
+   </schema>
+  </types>
+  <message name="pick1EmailMessage">
+    <part name="payload" element="s1:email"/>
+  </message>
+  <message name="pick1AddressMessage">
+    <part name="payload" element="s1:address"/>
+  </message>
+  <message name="pick1CreditCardMessage">
+    <part name="payload" element="s1:creditCard"/>
+  </message>
+  <portType name="pick1">
+    <operation name="getAddress">
+      <input  message="tns:pick1EmailMessage" />
+      <output message="tns:pick1AddressMessage"/>
+    </operation>
+    <operation name="getCreditCard">
+      <input  message="tns:pick1EmailMessage" />
+      <output message="tns:pick1CreditCardMessage"/>
+    </operation>
+  </portType>
+  <plnk:partnerLinkType name="pick1">
+    <plnk:role name="pick1Provider">
+      <plnk:portType name="tns:pick1"/>
+    </plnk:role>
+  </plnk:partnerLinkType>
+</definitions>

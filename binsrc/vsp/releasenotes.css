@@ -1,0 +1,78 @@
+BODY
+{
+    MARGIN-TOP: 0px;
+    FONT-SIZE: 70%;
+    MARGIN-LEFT: 0em;
+    MARGIN-RIGHT: 3em;
+    FONT-FAMILY: Verdana, 'Times New Roman', Helvetica, Utopia, Times, 'MS Serif', Serif;
+    BACKGROUND-COLOR: #ffffff
+}
+H1
+{
+    PADDING-RIGHT: 3em;
+    MARGIN-TOP: 5px;
+    FONT-SIZE: 185%;
+    MARGIN-BOTTOM: 5px;
+    MARGIN-LEFT: 0em
+}
+.chaphead
+{
+    PADDING-BOTTOM: 5px;
+    MARGIN-LEFT: 0em;
+    COLOR: #191970;
+    LINE-HEIGHT: normal;
+    MARGIN-RIGHT: -3em;
+    PADDING-TOP: 5px;
+    BORDER-BOTTOM: navy thin solid;
+    FONT-FAMILY: Verdana, Arial, Helvetica, Lucida, Sans-Serif;
+    BACKGROUND-COLOR: skyblue;
+    TEXT-ALIGN: right
+}
+P
+{
+    MARGIN-TOP: 2px;
+    MARGIN-BOTTOM: 5px;
+    TEXT-ALIGN: left
+}
+H2, H3, H4, P 
+{
+  margin-left: 1em;
+}
+.sect1head
+{
+    MARGIN-TOP: 5px;
+    FONT-SIZE: 165%;
+    MARGIN-BOTTOM: 5px;
+    PADDING-TOP: 30px
+}
+A
+{
+    FONT-FAMILY: Verdana, Arial, Sans-Serif;
+    TEXT-DECORATION: none
+}
+A:active
+{
+    TEXT-DECORATION: none
+}
+A:visited
+{
+    TEXT-DECORATION: none
+}
+A:hover
+{
+    TEXT-DECORATION: underline
+}
+.vtabfoot
+{
+    FONT-SIZE: 8pt;
+    PADDING-BOTTOM: 10px;
+    FONT-FAMILY: Tahoma, Verdana, Utopia, Times, Helvetica, Sans-Serif;
+    BACKGROUND-COLOR: white;
+    TEXT-ALIGN: center
+}
+LI
+{
+	PADDING-BOTTOM: 5px;
+	PADDING-TOP: 3px;
+}
+

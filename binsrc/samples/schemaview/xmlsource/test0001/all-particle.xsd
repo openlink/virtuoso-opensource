@@ -1,0 +1,68 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<!DOCTYPE schema SYSTEM "XMLSchema.dtd" [
+ <!ENTITY % p "">
+ <!ENTITY % s "">
+ <!ENTITY % schemaAttrs "
+        xmlns:r		CDATA	#IMPLIED
+        xmlns:xipo	CDATA	#IMPLIED
+ ">
+]>	
+<schema targetNamespace="http://www.example.com/Report"
+        xmlns:r="http://www.example.com/Report"
+        xmlns:xipo="http://www.example.com/IPO"
+        elementFormDefault="qualified">
+
+		
+<!-- xmlns="http://www.w3.org/2001/XMLSchema" -->
+<include schemaLocation="empty.xsd"/>
+<complexType name='biblioentry'>
+  <choice minOccurs='1' maxOccurs='unbounded'>
+    <sequence>
+	<element name="bla1" type="string"/>
+	<element name="bla2" type="string"/>
+    </sequence>
+    <element ref="r:H1B"/>
+    <group ref='db:bibliocomponent.mix'/>
+  </choice>
+</complexType>
+
+<element name="H1B" type="string"/>
+
+ <complexType name="hello">
+  <all>
+  	<element name="subhello" type="integer"/>
+	<element name="subhello1" type="integer"/>
+	<element name="subhello2" type="integer"/>
+	<element name="subhello3" type="integer"/>
+	<element name="subhello4" type="integer"/>
+	<element name="subhello5" type="integer"/>
+	<element name="subhello6" type="integer"/>
+	<element name="subhello7" type="integer"/>
+	<element ref="r:exthello" minOccurs="0"/>
+  </all>
+ </complexType>
+ <element name="exthello" type="string"/>
+
+</schema>

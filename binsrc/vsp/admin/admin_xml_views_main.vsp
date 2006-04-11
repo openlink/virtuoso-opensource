@@ -1,0 +1,56 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?include adm_style.vsp ?>
+<?vsp
+
+  declare _flt varchar;
+
+  if (not adm_check_auth(lines))
+    return(0);
+
+  adm_param_default (_flt, 'flt', params, '%');
+
+?>
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="adm_style.html">
+    <title>XML Views</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="XML view mgmt using Virtuoso VSP">
+  </head>
+  <body>
+    <h2>XML Views</h2>
+    <table>
+      <tr>
+        <form method="POST" name="filter_form" action="adm_xml_views_main.vsp">
+          <td>
+            <span class="widgettitle">View name filter</span>
+            <input type="text" name="flt" onChange="javascript:document.filter_form.submit();" value="<?= _flt ?>">
+          </td>
+        </form>
+      </tr>
+    </table>
+<?include admin_footer.vsp ?>
+  </body>
+</html>

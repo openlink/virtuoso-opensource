@@ -1,0 +1,50 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VX-S-7">
+  <refmeta>
+    <refentrytitle>Advanced VSPX programming</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>VSPX  browse button control</refname>
+    <refpurpose>Pop-up select list</refpurpose>
+  </refnamediv>
+  <refsect1 id="VS-S-7a">
+    <title>Example</title>
+    <para>This example repeats the <ulink url="../vx_s_3/vx_s_3.vsp">VX-S-3(data-set)</ulink>,
+    but it also introduce the vspx:button with special functions browse and select.
+   These buttons are to make inter-page communication, in our case to establish the foreign key relation ship between Products and Categories tables from Northwind demo database.
+    </para>
+    <para>The browse button represents a HTML button which will pop-up the window to make selection.
+    The special attributes selector and child-window-options are used to indicate which link should be used for pop-up and how to display the child browser window.
+    </para>
+    <para>The selector window (child) is also an data-set over Categories table and contains special button with name of data-set control suffixed with '_select'. This is a Java script button which will return back to parent window the selected data and will close the window after selection is made.
+    </para>
+    <para>Both buttons have as children elements vspx:field, these are markers to the buttons which control value and must be used to link both pages. The name attribute of these is the same of the control which needs to be selected or filled with the data. In that way this is a exception of unique names in the page.</para>
+    <para>Please note that both controls instruct VSPX compiler to add client-side Java script functions to maintain functionality. Hence disabling the Java script on browser will made these to stop working.</para>
+    <para>
+    In our example the discussed functionality is demonstrated with buttons Browse in rows to insert and when do an update of products page. Hitting on one of these will pop-up a window to select appropriate foreign key value.
+    </para>
+  </refsect1>
+</refentry>

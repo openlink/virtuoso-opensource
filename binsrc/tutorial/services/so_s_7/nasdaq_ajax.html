@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<html>
+<head>
+	<title>AJAX Nasdaq Search</title>
+  <HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+  <script type="text/javascript" src="../soap.js"></script>
+  <script type="text/javascript" id="soap_script">
+
+  function doSearch ()
+   {
+     var symbol = document.forms[0].elements["symbol"].value;
+     var req = new XMLHttpRequest();
+     document.getElementById("showLinks").innerHTML = "Please wait...";
+     if (!req)
+       {
+	 alert ('XMLHttpRequest is not supported');
+	 return;
+       }
+     req.onreadystatechange =
+	 function()
+	  {
+	     if (req.readyState == 4 && req.status == 200)
+	       {
+		 var respXML =  req.responseXML;
+		 var elms = respXML.getElementsByTagName("CallReturn");
+		 fill_inner (elms, 'showLinks');
+	       }
+	     else if (req.readyState == 4 && req.status != 200)
+	       {
+		 document.getElementById("showLinks").innerHTML = "Error occured";
+		 soap_error_alert (req);
+	       }
+	  }
+
+     req.open('POST', '/xml-soap/so_s_7_server.vsp');
+     req.setRequestHeader('Content-Type', 'text/xml; charset=UTF-8');
+     req.setRequestHeader('SOAPAction', '""');
+     req.send
+	 (
+	 '<env:Envelope xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"' +
+	 ' env:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" ' +
+	 ' xmlns:xs="http://www.w3.org/1999/XMLSchema" ' +
+	 ' xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance">' +
+	 ' <env:Body>' +
+	 '    <a0:getNasdaqQuotes xmlns:a0="http://openlinksw.com/virtuoso/soap/schema">'+
+	 '       <symbol xsi:type="xs:string">' + symbol + '</symbol>'+
+	 '    </a0:getNasdaqQuotes>'+
+	 ' </env:Body>'+
+	 '</env:Envelope>'
+	 );
+   }
+  </script>
+</head>
+
+<body>
+<h3>Mozilla Nasdaq Search</h3>
+<form action="#" onsubmit="return false;" id="form_id">
+<p>Enter a symbol:<br />
+<input type="text" name="symbol" value="IBM"></p>
+<p><input type="button" value="Search" onclick="doSearch();" id="button_id" ></p>
+</form>
+
+<div id="showLinks">Results will appear here.</div>
+
+</body>
+</html>
+

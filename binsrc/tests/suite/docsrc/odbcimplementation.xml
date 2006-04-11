@@ -1,0 +1,512 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<chapter label="X" id="chapter10">
+<title>ODBC Implementation</title>
+<abstract>
+<para/>
+</abstract>
+<!-- ======================================== -->
+<sect1 id="VScrlCURSORS"><title>Virtuoso Scrollable Cursor</title>
+<para>Virtuoso implements server side scrollable cursors.
+ODBC 2.0, ODBC 3.5 and JDBC 2.0 API&apos;s are supported.
+</para>
+<para>Cursor types include:</para>
+<itemizedlist>
+<listitem><formalpara><title>Forward only</title>
+	<para>This is the default, non-scrollable cursor.</para>
+	</formalpara></listitem>
+<listitem><formalpara><title>Static</title>
+	<para>The cursor&apos;s evaluation is computed when the cursor statement is first executed.
+	Positioned operations are possible but their effect will not show nor will changes be detected.</para>
+	</formalpara></listitem>
+<listitem><formalpara><title>Keyset</title>
+	<para>When the cursor is opened a keyset is built.  Rows within the keyset
+	can be fetched and modified by positioned operations. Changes will show when refreshing
+	data and changes by other transactions will be detected for update and delete.
+	Inserts by the same or different transaction will not appear.
+	A keyset cursor may have a finite keyset size. When scrolling outside of
+	the given keyset the keyset will shift to cover the new rows.</para>
+	</formalpara></listitem>
+<listitem><formalpara><title>Dynamic</title>
+	<para>A dynamic cursor will reflect all changes by the same and different transactions.
+	The dynamic cursor&apos;s evaluation is constructed as needed, hence it generally has
+	less overhead than other types of cursors.</para>
+	</formalpara></listitem>
+</itemizedlist>
+
+<sect2 id="FwdOnlyCursors"><title>Forward Only Cursors</title>
+<para>
+A forward only cursor is substantially more efficient than a scrollable
+cursor. It however dows not allow positioned operations (the WHERE CURRENT OF SQL phrase),
+or SQLSetPos.  The SQLExtendedFetch function is supported but only the SQL_FETCH_NEXT
+fetch type is then allowed.
+</para>
+</sect2>
+
+<sect2 id="CursorOperation"><title>Cursor Operations</title>
+<para>Virtuoso supports all ODBC scrollable cursor operations. These include
+</para>
+
+<formalpara><title>SQLExtendedFetch / SQLScrollFetch fetch type</title>
+<itemizedlist>
+<listitem><para>SQL_FETCH_FIRST</para></listitem>
+<listitem><para>SQL_FETCH_LAST</para></listitem>
+<listitem><para>SQL_FETCH_NEXT</para></listitem>
+<listitem><para>SQL_FETCH_PRIOR</para></listitem>
+<listitem><para>SQL_FETCH_RELATIVE</para></listitem>
+<listitem><para>SQL_FETCH_ABSOLUTE</para></listitem>
+<listitem><para>SQL_FETCH_BOOKMARK</para></listitem>
+</itemizedlist>
+</formalpara>
+
+<formalpara><title>SQLSetPos operations</title>
+<itemizedlist>
+<listitem><para>SQL_POSITION</para></listitem>
+<listitem><para>SQL_REFRESH</para></listitem>
+<listitem><para>SQL_ADD</para></listitem>
+<listitem><para>SQL_UPDATE</para></listitem>
+<listitem><para>SQL_DELETE</para></listitem>
+</itemizedlist>
+</formalpara>
+
+<para>
+Positioned SQL statements, i.e. the WHERE CURRENT OF clause, is supported for
+scrollable cursors.
+</para>
+</sect2>
+
+<sect2 id="CursorOptions"><title>Cursor Options</title>
+<para>The cursor options
+<itemizedlist>
+<listitem><para>SQL_CURSOR_TYPE</para></listitem>
+<listitem><para>SQL_CONCURRENCY</para></listitem>
+<listitem><para>SQL_KEYSET_SIZE</para></listitem>
+<listitem><para>Cursor name (SQLSetCursorName)</para></listitem>
+</itemizedlist>
+
+have to be set before a SQLPrepare or SQLExecDirect.
+</para>
+
+<para>
+The SQL_ROWSET_SIZE can be varied while a cursor is open.
+</para>
+</sect2>
+
+<sect2 id="CursorsTransactions"><title>Cursors and Transactions</title>
+<para>
+All scrollable cursors survive committing or rolling back transactions.
+All forward only cursors are implicitly closed by ending a transaction.
+A scrollable cursor maintains its position over a transaction&apos;s end. Hence the
+next fetch operation will resume from the correct place. If a cynamic cursor&apos;s cyrrent row / rowset is
+deleted, the cursor will continue from the next greater / lesser row in the order of the cursor&apos;s
+ordering columns.  This also applies to mixed mode (keyset with finite keyset size)
+cursors scrolling outside of the keyset bounds.
+</para>
+<para>
+The SQL_CONCURRENCY values of SQL_CONCUR_READ_ONLY and SQL_CONCUR_LOCK
+cause Virtuoso to lock the rows in the keyset / rowset in shared or exclusive mode, respectively.
+</para>
+</sect2>
+
+<sect2 id="OptimisticConcurrency"><title>Optimistic Concurrency Control</title>
+<para>
+A scrollable cursor may have a SQL_CONCURRENCY setting of SQL_CONCUR_VALUES. This
+enables optimistic concurrency control.  This is a mechanism which will refect an
+update or delete of a row if the row has been modified by a third party after the time the
+application last read the row.
+</para>
+<para>
+A &apos;updated meanwhile&apos; condition detected in this manner will prevent the operation and
+return a SQL state of 01001 with SQL_SUCCESS_WITH_INFO from SQLSetPos.
+</para>
+<para>
+The updates and deletes made through SQLSetPos are still subject to being committed or rolled
+back by normal transaction control.  The 01001 state does not prevent the current transaction
+from committing.
+</para>
+<para>
+The 01001 state is only detented if the update or delete is made by SQLSetPos and the row
+at hand has been changed by any statement of any transaction. If the update of updated
+operation is carried out by any other operation than SQLSetPos of the statement that last read
+the value the condition cannot be  detected.
+</para>
+<para>
+Note that the time between the last read and the SQLSetPos update can be long
+and can span multiple transactions.
+</para>
+</sect2>
+
+<sect2 id="CursorInfo"><title>Cursor Information</title>
+
+	<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+		<title>Cursor Support</title>
+				<tgroup align="char" charoff="50" char="." cols="4">
+					<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+					<thead>
+						<row>
+							<entry/>
+							<entry>static</entry>
+							<entry>keyset</entry>
+							<entry>dynamic</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>SQLRowCount</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+							<entry/>
+						</row>
+						<row>
+							<entry>SQL_BOOKMARK</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+						</row>
+						<row>
+							<entry>SQL_ROW_NUMBER</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+							<entry/>
+						</row>
+						<row>
+							<entry>reflect upd</entry>
+							<entry/>
+							<entry>x</entry>
+							<entry>x</entry>
+						</row>
+						<row>
+							<entry>reflect del</entry>
+							<entry/>
+							<entry/>
+							<entry>x</entry>
+						</row>
+						<row>
+							<entry>reflect inx</entry>
+							<entry/>
+							<entry/>
+							<entry>x</entry>
+						</row>
+						<row>
+							<entry>Notice update</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+						</row>
+						<row>
+							<entry>Notice delete</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+							<entry>x</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+
+<para>
+SQLRowCount is set after the initial SQLExecute. This is the actual row count or the keyset size
+for a mixed mode cursor.  A dynamic cursor does not know this since it builds the evaluation as
+needed.
+</para>
+<para>
+All cursors support bookmarks.
+</para>
+<para>
+The SQL_ROW_NUMBER is the ordinal number of the current row in the
+cursor&apos;s evaluation.  A dynamic cursor can not know this, as the scrolling may
+start from end and rows may appear on either side of the current row while the cursor is open.
+</para>
+<para>
+&apos;reflect&apos; means that the new values or added / deleted rows
+appear when re-scrolling over the rows. A deletion is reflected by
+omitting the row.
+</para>
+<para>
+&apos;motice&apos; means that the row is flagged by SQL_UPDATE, SQL_DELETED
+or SQL_ADDED in the SQLExtendedFetch status array when the cursor re-scrolls over the
+rows in question.
+</para>
+</sect2>
+
+<sect2 id="CursorsVDB"><title>Cursors and Virtual Database</title>
+<para>
+The cursor subsystem modifies the cursor&apos;s defining select statement to
+make various backward and forward read statements, update and delete statements etc.
+These transformations can be seen through the explain function.
+</para>
+<para>
+Since cursors are implemented by generating SQL statements these work transparently
+against remote database, independently of their possible native cursor support.
+</para>
+</sect2>
+
+<sect2 id="CursorSpecialCases"><title>Cursor Special Cases</title>
+<para>
+SQL SELECT statements fall in two categories: Simple, which consist of
+one or more tables, an arbitrary WHERE clause abd an optional ORDER BY, and Comples, which includes
+all other SELECT&apos;s, e.g. ones with GROUP BY, derived tables, full outer joins, UNION&apos;s etc.
+</para>
+<para>
+A simple stetement can easily be modified to read backwards or forwards from a given point. Also,
+each result row of a simple statement has a physical cunterpart, or many physical counterparts
+for a join.  Having a physical counterpart makes it possible to define the meaning of a positioned
+update or delete.  A GROUP BY is a counter-example.
+</para>
+<para>
+All complex SQL statements occurring as cursors are processed as static
+cursors regardless of the declared cursor type.
+</para>
+</sect2>
+
+<sect2 id="CursorPerf"><title>Cursors and Performance</title>
+<para>
+If a cursor&apos;s ordering coeesponds to an ordering in an index, dynamic cursors will generally perform
+best.  This is understandable since since the engine can quickly locate
+the current row based on an index and then just read backward or forward on that index.
+On the other hand, if the resilt set is very sparsely spread over the table or if
+there is no ordering index dynamic cursors will have a substantial penalty.
+</para>
+<para>
+If used as a forward only cursor in a single transaction, a dynamic cursor is only some
+30% slower than a forward only cursor.
+</para>
+<para>
+A static or keyset cursor has a relatively long execute time since the initial execute
+will make the entire keyset. The initial execute of a dynamic cursor is instantaneous
+since the fetch operations will do the work as needed.
+</para>
+<para>
+With most off the shelf applications, e.g. Microsoft ADO, static and keyset cursors
+are preferrable because the applications may rely on row counts and row numbers which
+are not known for dynamic cursors.
+</para>
+<para>
+Positioned operations are not affected by cursor type.
+</para>
+</sect2>
+</sect1>
+
+	<!-- ======================================== -->
+<sect1 id="CONN_STMT_OPTIONS"><title>Effect of Connection and Statement Options</title>
+<sect2 id="ConnOpt"><title>Connection Options</title>
+<sect3 id="SQL_AUTOCOMMIT"><title>SQL_AUTOCOMMIT</title>
+<para>
+The autocommit option is set at the connection level and affects
+every statement executed after it being set.  Setting the option
+does not communicate itself with the server and is therefore fast.
+</para>
+<para>
+Autocommit is on by default. Autocommitting SELECT statements are executed
+with read committed isolation. This is appropriate since any update
+based on the autocommitting read would be in a different transaction and hence
+would block to wait for access to the selected row.  Also re-evaluating
+a select in autocommit mode would read the data in a different transaction.
+Hence there is no point in repeatable read isolation for autocommitting
+cursors.  Cursors inside procedures have the normal repeatable read isolation
+regardless of whether the procedure was called in autocommit mode.
+</para>
+<para>
+When an autocommitting statement starts it executed in the transaction
+that&apos;s the connection&apos;s current transaction when it is received. Before
+starting the autocommitting statement sets the connection&apos;s current
+transaction to a new one. In this manner a client can issue multiple
+asynchronous autocommitting statements at the same time and the statements
+will execute concurrently, each in its own transaction.
+</para>
+<para>
+If array parameters are used in a statement on an autocommitting
+connection each parameter row will be processed in its own transaction
+in sequential order.  Multiple  Asynchronous statements must be used to
+execute one client&apos;s statements in parallel.
+</para>
+</sect3>
+
+<sect3 id="SQL_TXN_ISO"><title>SQL_TXN_ISOLATION</title>
+<para>
+This option allows all the values defined in ODNC,
+</para>
+<para>
+The isolation of an operation is the property of the operation rather than
+of the transaction within which it takes place. Once an operation
+has started, e.g. a cursor has been opened, its isolation cannot be changed.
+</para>
+<para>
+The value of this option will affect any subsequently executed statement.
+Note that setting this option to different values during a transaction will work,
+thus a transaction can have cursors with different isolations although that
+is presumably not the intention of the ODBC specification.
+</para>
+<para>
+See the transaction model for a definition of the different isolation lovels.
+</para>
+<para>
+A statement in autocommit mode executes
+in the same transaction as the previous statement. The transaction is
+committed when the statement successfully completes.  The next statement in
+the connection will execute in the fresh transaction that was associated to
+the connection at the start of the previous autocommitting statement.
+</para>
+<para>
+As a consequence of this multiple concurrent autocommitting transactions may execute
+on the same connection at the same time.
+</para>
+<para>
+Statements executed with array parameters execute each set of
+parameters as a separate transaction if the connection is in autocommit
+mode.
+</para>
+</sect3>
+
+<!--  <sect3 id="SQL_ACCESS_MODEa"><title>SQL_ACCESS_MODE</title>
+
+***** NOTHING FOUND HERE ***** - hmm please check the order
+
+</sect3>
+-->
+
+<sect3 id="SQL_ACCESS_MODE"><title>SQL_ACCESS_MODE</title>
+<para>
+This has the effect of reversing any SQL_CONCUR_LOCK concurrency to SQL_CONCUR_READ_ONLY.
+The statement option&apos;s value is not changed though.
+</para>
+</sect3>
+
+<sect3 id="SQL_CURRENT_QUAL"><title>SQL_CURRENT_QUALIFIER</title>
+<para>
+This sets or gets the current qualifier.  The initial
+value is obtained from the server at connect time. The values reflect the
+effects of any USE statements.
+</para>
+</sect3>
+</sect2>
+
+<sect2 id="SQLSetStmtOpion"><title>SQLSetStmtOption Statement Options</title>
+<para>
+Virtuoso supports all ODBC 2.x and ODBC 3.x statement options.
+This only mentions options where there are implementation specific
+comments to be made.
+</para>
+
+<sect3 id="SQLConcurrency"><title>SQL_CONCURRENCY</title>
+<para>
+The supported values are SQL_CONCUR_READ_ONLY, SQL_CONCUR_LOCK and SQL_CONCUR_VALUES, the
+last only for scrollable cursors.  A select statement with SQL_CONCUR_READ_ONLY will make
+shared locks when locking for repeatable read or serializable transactions.  The
+SQL_CONCUR_LOCK for a select statement will cause it to make exclusive locks, as
+if it had the FOR UPDATE clause specified.
+</para>
+<para>
+See the section on scrollable cursors for the effect of SQL_CONCUR_VALUES. For
+all statements except scrollable cursors this value reverts to SQL_CONCUR_READ_ONLY.
+</para>
+<para>
+Any searched update or delete statements will make exclusive locks in all cases.
+</para>
+</sect3>
+
+<sect3 id="SQLMaxRows"><title>SQL_MAX_ROWS</title>
+<para>
+This option only affects static cursors.
+</para>
+</sect3>
+
+<sect3 id="SQLTxnTimeout"><title>SQL_TXN_TIMEOUT</title>
+<para>
+This is an extension that allows setting a time limit on the current transaction.
+The time limit starts at the execution of the statement specifying this option.
+The transaction will terminate the indicated number of seconds after the execute
+whether the statement has completed or not.  The transaction&apos;s
+</para>
+</sect3>
+
+<sect3 id="SQLPrefetchSize"><title>SQL_PREFETCH_SIZE</title>
+<para>
+This is an extension option that controls how many rows of a forward only cursor are
+prefetched by the execute and fetch calls.  A high value is advantageous for
+long consecutive reads since it cuts down on the number of client server messages
+exchanged.  On the other hand a large value can result in unnecessary data transfer
+and locking if only the first few rows of a cursor are fetched.  A value of -1 will
+cause the entire rowset to be fetched at the execute, so that no matter the select size, only
+one message is exchanged.  The default is 20 but can also be set in the virtuoso.ini file.
+</para>
+<para>
+A select with array parameters will always work as with a SQL_PREFETCH_SIZE of -1, meaning that
+all the result sets are computed and sent to the client by the SQLExecute
+call that opens the cursor.
+</para>
+</sect3>
+
+<sect3 id="SQLCursorType"><title>SQL_CURSOR_TYPE</title>
+</sect3>
+
+<sect3 id="KeySetSize"><title>SQL_KEYSET_SIZE</title>
+</sect3>
+
+<sect3 id="SQLConcur"><title>SQL_CONCURRENCY</title>
+</sect3>
+
+<para>
+These options should be set before preparing a statement.
+Other options may be set at any time.
+</para>
+</sect2>
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="ODBC35COMPLIANCE"><title>ODBC 3.5 Compliance</title>
+
+<!--
+
+*** Contents not yet defined or found ***
+
+-->
+
+</sect1>
+
+<!-- ======================================== -->
+<sect1 id="EFFICIENTAPI"><title>Efficient Use of API</title>
+<para>
+DO NOT USE SQLExecDirect. If a statement is executed more than once it
+is much faster to prepare the statement with SQLPrepare and then use
+SQLExecute repeatedly. The system only compiles the statement once,
+therefore there is no parsing overhead for repeatedly compiling the
+same text but passing the statement&apos;s description back to the client
+TAKES LONG. This is to be fixed.
+</para>
+<para>
+Array parameters for insert, update or single row selects are about
+twice as fast as the same operations on a single parameter set.
+</para>
+<para>
+The OR connective in SQL can result in slow queries with extensive
+locking.
+</para>
+<para>
+Autocommit should be used when possible, i.e. make the last statement of
+a transaction autocommitting to avoid having to commit the transaction
+as a separate operation.
+</para>
+</sect1>
+</chapter>

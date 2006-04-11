@@ -1,0 +1,152 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<HTML>
+ <head>
+   <title>SMS Messages setup interface</title>
+ </head>
+<body>
+   <H2>SMS Messages setup interface</H2>
+<?vsp
+  declare _ClientSerialNo, _SMSKey, _SenderName, _SenderEmail, _Recepient, _msg varchar;
+  declare _test_sms, _set_value integer;
+
+  _test_sms := trim (get_keyword ('test_sms', params, ''));
+  _set_value := trim (get_keyword ('set_values', params, ''));
+  _ClientSerialNo := trim (get_keyword ('_ClientSerialNo', params));
+  if (isstring (registry_get ('ho_s_3.Redcoal.ClientSerialNo')) and not isstring (_ClientSerialNo))
+    _ClientSerialNo := registry_get ('ho_s_3.Redcoal.ClientSerialNo');
+  _SMSKey := trim (get_keyword ('_SMSKey', params));
+  if (isstring (registry_get ('ho_s_3.Redcoal.SMSKey')) and not isstring (_SMSKey))
+    _SMSKey := registry_get ('ho_s_3.Redcoal.SMSKey');
+  _SenderName := 'Virtuoso Server';
+  _SenderEmail := trim (get_keyword ('_SenderEmail', params));
+  if (isstring (registry_get ('ho_s_3.Redcoal.SenderEmail')) and not isstring (_SenderEmail))
+    _SenderEmail := registry_get ('ho_s_3.Redcoal.SenderEmail');
+  _recepient := trim (get_keyword ('_recepient', params));
+  if (isstring (registry_get ('ho_s_3.MGRPhone')) and not isstring (_recepient))
+    _recepient := registry_get ('ho_s_3.MGRPhone');
+  _msg := trim (get_keyword ('message', params, ''));
+
+  declare exit handler for sqlstate '*' {
+?>
+    <hr/>
+    <table>
+      <tr>
+        <td>SQL State</td>
+        <td><?= __SQL_STATE ?></td>
+      </tr>
+      <tr>
+        <td>SQL Message</td>
+        <td><?= __SQL_MESSAGE ?></td>
+      </tr>
+     </table>
+     <hr/>
+<?vsp
+  };
+
+  if (_set_value <> '')
+    {
+      registry_set ('ho_s_3.Redcoal.ClientSerialNo', _ClientSerialNo);
+      registry_set ('ho_s_3.Redcoal.SMSKey', _SMSKey);
+      registry_set ('ho_s_3.Redcoal.SenderEmail', _SenderEmail);
+      registry_set ('ho_s_3.MGRPhone', _recepient);
+?>
+    <hr/>
+<?vsp
+  if (isstring (_ClientSerialNo) and isstring (_SMSKey) and isstring (_recepient) and
+      length (_ClientSerialNo) > 0 and length (_SMSKey) > 0 and length (_recepient) > 0)
+    {
+?>
+       <p>SMS will be sent on insert/update/delete</p>
+<?vsp
+    } else {
+?>
+       <p>SMS will NOT be sent on insert/update/delete</p>
+<?vsp
+    }
+?>
+    <hr/>
+<?vsp
+    }
+  if (_test_sms <> '')
+    {
+      declare reply varchar;
+      declare svc CLR..redcoalsms_redcoalsmssvc;
+      svc := new CLR..redcoalsms_redcoalsmssvc (_ClientSerialNo, _SMSKey, _SenderName, _SenderEmail);
+      reply :=  svc.sendSms (_recepient, _msg);
+?>
+    <hr/>
+    <p>Sending SMS to : <b><?= _recepient ?></b>.</p>
+    <p>Status : <b><?= reply ?></b></p>
+    <hr/>
+<?vsp
+    }
+?>
+
+
+
+   <FORM action="setup_sms.vsp">
+    <table>
+     <tr><td>
+     <TABLE>
+       <TR>
+         <TD><b>SMS Client Serial No</b></TD>
+	 <TD><INPUT type=text size=24 name="_ClientSerialNo" value="<?= _ClientSerialNo ?>"></TD>
+	 <TD><i>Blank to not send SMS. Usually : 1F917E73-6838-4371-0017-E063369AF100</i></td>
+       </TR>
+       <TR>
+         <TD><b>SMS Key</b></TD>
+	 <TD><INPUT type=text name="_SMSKey" value="<?= _SMSKey ?>"></TD>
+	 <TD><i>Go to <a href="http://redcoal.com/">http://redcoal.com/</a> for your SMS key, Password</i></td>
+       </TR>
+       <TR>
+         <TD><b>Recepient's Phone</b></TD>
+	 <TD><INPUT type=text name="_recepient" value="<?= _recepient ?>"></TD>
+	 <TD><i>Using the international convension.Example :+35987123456</i></td>
+       </TR>
+       <TR>
+         <TD>Sender's name</TD>
+	 <TD><?= _SenderName ?></TD>
+       </TR>
+       <TR>
+         <TD>Sender's e-mail</TD>
+	 <TD colspan=2><INPUT type=text size=40 name="_SenderEmail" value="<?= _SenderEmail ?>"></TD>
+       </TR>
+       <TR>
+         <TD>Message text</TD>
+	 <TD colspan=2><INPUT size=80 maxlength=120 type=text name="message" value="<?= _msg ?>"></TD>
+       </TR>
+      </TABLE>
+      </td></tr>
+      <td><td align=left>
+      <table>
+        <tr align=left>
+	  <td align=left><input type="submit" name="test_sms" value="Send SMS"><td>
+	  <td align=left><input type="submit" name="set_values" value="Save values"><td>
+	</tr>
+      </table>
+      </td></tr>
+     </table>
+   </FORM>
+</body>
+</html>

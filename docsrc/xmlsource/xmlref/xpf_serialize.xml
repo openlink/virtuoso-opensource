@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_serialize">
+  <refmeta>
+    <refentrytitle>serialize</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>serialize</refname>
+    <refpurpose>Serializes a value of its argument following the rules of the host RDBMS.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_serialize">
+      <funcprototype id="xpf_proto_serialize">
+        <funcdef>string <function>serialize</function></funcdef>
+	<paramdef><optional><parameter>obj</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_serialize"><title>Description</title>
+    <para>The serialize() function converts an object to a string as follows:</para>
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem><para>An empty sequence is converted to an empty string.</para></listitem>
+      <listitem><para>
+A nonempty node-set is converted to a string by serialization of its first node.</para></listitem>
+      <listitem><para>
+A non-attribute XML entity is serialized as if it is serialized by http() function.
+In other words, the result is a plain text of XML syntax.
+For an attribute XML entity, the value of attribute is returned.</para></listitem>
+      <listitem><para>Values of other types are converted into strings as cast(... as varchar) do this in Virtuoso/PL, exactly.</para></listitem>
+    </itemizedlist>
+    <para>If the argument is omitted, context node is converted instead as if it is a node-set of one element.</para>
+  </refsect1>
+  <refsect1 id="xpf_params_serialize"><title>Parameters</title>
+    <refsect2><title>obj</title><para>Value to be converted into the string</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_serialize"><title>Return Types</title><para>String</para></refsect1>
+  <refsect1 id="xpf_errors_serialize"><title>Errors</title>
+<!--    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table> -->
+  </refsect1>
+  <refsect1 id="xpf_examples_serialize"><title>Examples</title>
+    <example id="xpf_ex_serialize"><title></title>
+      <para></para>
+      <screen>string(//title)</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_serialize"><title>See Also</title>
+    <para><link linkend="xpf_format_number">format_number()</link></para>
+    <para><link linkend="xpf_serialize">serialize()</link></para>
+    <para><link linkend="xpf_concat">concat()</link></para>
+  </refsect1>
+</refentry>
+

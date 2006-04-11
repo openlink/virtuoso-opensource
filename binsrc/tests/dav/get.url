@@ -1,0 +1,2 @@
+localhost 6666
+1 GET /DAV/Dav_Coll/Resource.pdf HTTP/1.0

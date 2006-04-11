@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_xmlview">
+  <refmeta>
+    <refentrytitle>xmlview</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xmlview</refname>
+    <refpurpose>Returns the xml document corresponding to given XML view </refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_xmlview">
+      <funcprototype id="xpf_proto_xmlview">
+        <funcdef><function>xmlview</function></funcdef>
+        <paramdef>in <parameter>view_name</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_xmlview"><title>Description</title>
+    <para>
+    The function returns the output produced by an XML view as it was a
+content of some XML document accessed via document() XPath function.
+The result of the function call may be used as input of some path expression
+that select interesting parts of the full output of the XML view.
+The XQuery engine will translate the XPath expression into SQL statement
+in order to avoid redundant data access and to build whole XML tree.
+</para>
+    <para>This function may be used only in the header of FOR operator of XQuery.
+To specify the list of values of a variable, a path expression may be used that
+starts with the call of xmlview() function.</para>
+  </refsect1>
+  <refsect1 id="xpf_param_xmlview"><title>Parameters</title>
+    <refsect2><title>view_name</title>
+      <para>The name of xml view</para></refsect2>
+  </refsect1>
+
+  <refsect1 id="xpf_err_xmlview">
+    <title>Errors</title>
+    <table><title>Errors signalled by <function>xmlview</function></title>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry>
+	  </row>
+	</thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>37000</errorcode></entry>
+	    <entry><errorcode> </errorcode></entry>
+	    <entry><errorname>Unknown view name is passed as argument of xmlview()</errorname></entry>
+	    <entry> </entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  <para></para>
+  </refsect1>
+  <refsect1 id="xpf_example_xmlview"><title>Examples</title>
+    <example id="xpf_ex_xmlview"><title></title>
+      <para>The XQUERY expressions below are queries to the following XML view: </para>
+      <screen>
+      create xml view "cat" as
+      {
+        "Demo"."demo"."Categories" c as "category" ("CategoryID", "Description" as "description")
+	    {
+	          "Demo"."demo"."Products" p as "product"  ("ProductName")
+		      on (p."CategoryID" = c."CategoryID")
+	    }
+      };
+      </screen>
+      <para>
+      The first query returns all products with the attribute ProductName starting with "L".
+      The second query returns categories with attribute CategoryID less than 10.
+      </para>
+      <screen>
+for $r in xmlview("cat")//product[@ProductName like "L%"] return $r
+for $r in xmlview("cat")/category[@CategoryID&lt;"10"] return $r
+      </screen>
+    </example>
+  </refsect1>
+
+</refentry>
+

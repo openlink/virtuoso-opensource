@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_http_pending_req">
+  <refmeta>
+    <refentrytitle>http_pending_req</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>http_pending_req</refname>
+    <refpurpose>return array describing running  VSP threads</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_http_pending_req">
+      <funcprototype id="fproto_http_pending_req">
+        <funcdef><function>http_pending_req</function></funcdef>
+        <paramdef />
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_http_pending_req"><title>Description</title>
+    <para>This function requires dba privileges.</para>
+    <para>
+<function>http_pending_req</function> returns an array of arrays of data
+on running VSP requests.  Each array contains the Client IP Address, URL,
+and Process Request ID.  These values can be used
+with the <function>http_kill()</function> function.
+</para>
+  </refsect1>
+  <refsect1 id="ret_http_pending_req"><title>Return Types</title>
+    <para>
+An array of 3-part-arrays.  Each 3-part-array consists of client_IP_address (string),
+URL (string), and process request ID (number).
+    </para>
+<para>
+The request ID's can be used to terminate requests with http_kill.
+</para>
+  </refsect1>
+   <refsect1 id="errors_http_pending_req"><title>Errors</title>
+    <table><title>Errors signalled by <function>http_pending_req</function></title>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry>
+	  </row>
+	</thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>SR159</errorcode></entry>
+	    <entry><errorname>Function http_pending_req restricted to dba
+	    group</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  <para></para>
+  </refsect1>
+  <refsect1 id="examples_http_pending_req"><title>Examples</title>
+  <example id="ex_http_pending_req"><title>Retrieving a list of VSP processes</title>
+  <programlisting>
+declare ps any;
+
+ps := http_pending_req ();
+
+-- the ps value is (('127.0.0.1', '/long.vsp', 1234567), ('192.168.1.1', '/long.vsp', 345678))
+</programlisting>
+  </example>
+  </refsect1>
+  <refsect1 id="seealso_http_pending_req"><title>See Also</title>
+    <para><link linkend="fn_http_kill"><function>http_kill</function></link></para>
+    <para><link linkend="fn_http"><function>http</function></link></para>
+  </refsect1>
+</refentry>
+
+

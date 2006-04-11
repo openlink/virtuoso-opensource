@@ -1,0 +1,116 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-11">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>SOAP &amp; WSDL service</refname>
+    <refpurpose>Global provinces and administrative divisions lookup service</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-11a">
+<title>Example overview</title>
+<para>This example demonstrates:</para>
+<itemizedlist mark="bullet">
+  <listitem>Fetching HTML from a foreign host to populate a native table.</listitem>
+  <listitem>A SOAP call.</listitem>
+  <listitem>SQL to XML conversion with FOR XML EXPLICIT.</listitem>
+  <listitem>XSL transformation.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-11b">
+<title>Example Setup</title>
+<para>The service is prepared by loading the SQL file.
+This performs the following:</para>
+<itemizedlist mark="bullet">
+  <listitem>Fetch HTML country and province data from a foreign host.</listitem>
+  <listitem>Insert the data into COUNTRY and PROVINCE tables.</listitem>
+  <listitem>Fill tables COUNTRY_XML and PROVINCE_XML using http://[host:port]/DAV/factbook/factbook.xml. (http://www.xfront.org/factbook.xml)</listitem>
+  <listitem>
+  Define a stored procedure for the SOAP service that queries, using SQL,
+  the data from the tables. The data is returned as XML, by including the
+  FOR XML EXPLICIT clause, using the xml_auto() function to produce this
+  as a string.
+  </listitem>
+  <listitem>
+	    Sample can use data from:
+	<orderedlist>
+  	  <listitem>
+	    Live feed from CIA factbook
+  	  </listitem>
+  	  <listitem>
+    	    Cached XML Data
+  	  </listitem>
+	</orderedlist>
+  </listitem>
+  <listitem>
+  The SOAP service is achieved by defining the /SOAP_SO_S_11 URL to
+  have same functionality as using soap_server() function call.
+  </listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-11c">
+<title>Example Operation</title>
+<itemizedlist mark="bullet">
+  <listitem>Makes a SOAP client request. The XML result is held in a stream.</listitem>
+  <listitem>Convert the stream using XSLT to HTML.</listitem>
+  <listitem>Send the HTML to the browser for display.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-11d">
+<title>Invoking the operation via VB.NET application</title>
+<para>The following example demonstrates the usage of the Microsoft .NET against Virtuoso's SOAP service
+as defined in 'Server Setup':</para>
+<programlisting>
+1. Open a new VB.NET project for Console Application.
+2. Add a web reference to the Virtuoso WSDL end point (http://[host:port]/SOAP_SO_S_11/services.wsdl).
+3. Drag and drop the VirtuosoSOAP() from Class wizard in routine code.
+
+    Sub Main()
+        Dim soap As New WebReference1.VirtuosoSOAP()
+        Dim result As String
+        Dim sty As New Xml.Xsl.XslTransform()
+
+        result = soap.administrative_divisions("United States", "")
+
+        sty.Load("http://[host:port]/tutorial/services/so_s_11/sr.xsl")
+
+        Dim strReader As New IO.StringReader(result)
+        Dim xpDoc As New Xml.XPath.XPathDocument(strReader)
+        Dim arg As New Xml.Xsl.XsltArgumentList()
+        Dim strWriter As New IO.StringWriter()
+
+        sty.Transform(xpDoc.CreateNavigator(), arg, strWriter)
+        System.Console.WriteLine(strWriter.ToString)
+    End Sub
+</programlisting>
+</refsect1>
+
+
+</refentry>

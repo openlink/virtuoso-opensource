@@ -1,0 +1,43 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+  <HEAD>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Virtuoso News</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Frame for updating server">
+  </HEAD>
+
+<frameset border="0" frameborder="0" framespacing="0" rows="150,*">
+    <frame src="news_available_processing.vsp?serv_name=<?=get_keyword('serv_name',params, '')?>" name="main1" marginheight="0" scrolling="no">
+    <frame src="news_available_update.vsp?nsupdate=<?=get_keyword('nsupdate',params, '')?>&serv_name=<?=get_keyword('serv_name',params, '')?>" name="main2" marginheight="0" target="mainfr" scrolling="no">
+  <noframes>
+  <body bgcolor="#FFFFFF">
+<P>This page contains frames but your browser does not support them.
+Please acquire a more up to date browser or wait for a no frames version</P>
+  </body>
+  </noframes>
+</frameset>
+
+</HTML>

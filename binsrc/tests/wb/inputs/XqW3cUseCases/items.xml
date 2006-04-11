@@ -1,0 +1,34 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE items SYSTEM "items.dtd">
+<items>
+<item_tuple><itemno>1001</itemno><description>Red Bicycle</description><offered_by>U01</offered_by><start_date>1999-01-05</start_date><end_date>1999-01-20</end_date><reserve_price>40</reserve_price></item_tuple>
+<item_tuple><itemno>1002</itemno><description>Motorcycle</description><offered_by>U02</offered_by><start_date>1999-02-11</start_date><end_date>1999-03-15</end_date><reserve_price>500</reserve_price></item_tuple>
+<item_tuple><itemno>1003</itemno><description>Old Bicycle</description><offered_by>U02</offered_by><start_date>1999-01-10</start_date><end_date>1999-02-20</end_date><reserve_price>25</reserve_price></item_tuple>
+<item_tuple><itemno>1004</itemno><description>Tricycle</description><offered_by>U01</offered_by><start_date>1999-02-25</start_date><end_date>1999-03-08</end_date><reserve_price>15</reserve_price></item_tuple>
+<item_tuple><itemno>1005</itemno><description>Tennis Racket</description><offered_by>U03</offered_by><start_date>1999-03-19</start_date><end_date>1999-04-30</end_date><reserve_price>20</reserve_price></item_tuple>
+<item_tuple><itemno>1006</itemno><description>Helicopter</description><offered_by>U03</offered_by><start_date>1999-05-05</start_date><end_date>1999-05-25</end_date><reserve_price>50000</reserve_price></item_tuple>
+<item_tuple><itemno>1007</itemno><description>Racing Bicycle</description><offered_by>U04</offered_by><start_date>1999-01-20</start_date><end_date>1999-02-20</end_date><reserve_price>200</reserve_price></item_tuple>
+<item_tuple><itemno>1008</itemno><description>Broken Bicycle</description><offered_by>U01</offered_by><start_date>1999-02-05</start_date><end_date>1999-03-06</end_date><reserve_price>25</reserve_price></item_tuple>
+</items>

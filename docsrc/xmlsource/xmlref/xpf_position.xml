@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_position">
+  <refmeta> 
+    <refentrytitle>position</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>position</refname> 
+    <refpurpose>Returns the context position from expression evaluation context.</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv> 
+    <funcsynopsis id="xpf_syn_position"> 
+      <funcprototype id="xpf_proto_position">
+        <funcdef>number <function>position</function></funcdef>
+	<void/>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_position"><title>Description</title>
+<para>
+Context position is the number of nodes in the node-set where the context node comes from.
+For the most popular case, when position() is used inside a predicate,
+and the predicate relates to some axis of the path,
+position() is the number of calls of the predicate,
+including the &quot;current&quot; call which is in progress when the
+function is called.
+Thus, context position cannot be greater than context size.
+</para></refsect1>
+  <refsect1 id="xpf_ret_last"><title>Return Types</title><para>Positive integer.</para></refsect1>
+  <refsect1 id="xpf_examples_last"><title>Examples</title>
+    <example id="xpf_ex_last"><title>Explicit call of position() inside a predicate</title>
+      <para>For every waybill, find the last &lt;address&gt; child inside the &lt;waybill&gt; element.</para>
+      <screen>//waybill/address[position() = last()]</screen>
+    </example>
+    <example id="xpf_ex_last"><title>Implicit call of position() inside a predicate</title>
+      <para>For every article, find up to three first paragraphs of the first section.</para>
+      <screen>//article/section[1]/paragraph[position()&lt;=3]</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_last"><title>See Also</title>
+    <para><link linkend="xpf_last">last()</link><link linkend="xpf_count">count()</link></para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,44 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <head>
+    <link href="../demo.css" type="text/css" rel="stylesheet"/>
+  </head>
+  <body>
+    <v:page name="vx_s_1" xmlns:v="http://www.openlinksw.com/vspx/">
+      <h3>Simple VSPX controls: label and url</h3>
+      <p>
+        <?vsp http ('Here is some VSP content'); ?>
+      </p>
+      <p>A label with integer value : 
+	<v:label name="label1" value="--(1 + 2)" format="%d" width="48" height="30"/>
+      </p>
+      <p>A label with string value : 
+	<v:label name="label2" value="'this is a string'" format="%s" width="75" height="30"/>
+      </p>
+      <p>An url : 
+	<v:url name="url1" value="--'OpenLink Software Ltd.'" format="%s" url="--'http://openlinksw.com/'" width="113" height="24"/>
+      </p>
+    </v:page>
+  </body>
+</html>

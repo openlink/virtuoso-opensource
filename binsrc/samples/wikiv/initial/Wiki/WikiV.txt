@@ -1,0 +1,10 @@
+The [[Virtuoso server]] provides a ready-to-use [[Wiki engine]] called "WikiV".
+It keeps source texts in DAV collections, allowing users to edit them via DAV or
+via any web browser. When a source text is changed, WikiV converts it into HTML
+and a modified version is immediately available for all visitors of the website.
+Unlike most of other Wiki engines, WikiV stores both source and compiled pages
+not in separate files but in a database. Moreover, WikiV pre-process the page
+when the page is changed, so the browsing of the resulting pages is made more
+efficient then in the most of other engines.
+As a result, WikiV provides good speed and scalability for large
+corporate and Internet sites.

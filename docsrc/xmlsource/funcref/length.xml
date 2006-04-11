@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_length">
+  <refmeta>
+    <refentrytitle>length</refentrytitle>
+    <refmiscinfo>string</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>length</refname>
+    <refpurpose>Get length of argument</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_length">
+      <funcprototype id="fproto_length">
+        <funcdef>integer <function>length</function></funcdef>
+        <paramdef>in <parameter>arg</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_length"><title>Description</title>
+    <para>Returns the length of its argument.</para>
+    <table><title>Value returned by <function>length</function> by argument datatype</title>
+      <tgroup cols="2">
+        <thead>
+          <row>
+            <entry>Argument type</entry><entry>Value returned</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry><type>string</type></entry><entry>number of characters</entry>
+          </row>
+          <row>
+            <entry><type>array</type></entry><entry>number of elements</entry>
+          </row>
+          <row>
+            <entry>NULL</entry><entry>zero</entry>
+          </row>
+          <row>
+            <entry><type>LOB</type></entry><entry>length if known (see below)</entry>
+          </row>
+          <row>
+            <entry><type>string_session</type></entry><entry>number of bytes written into the session</entry>
+          </row>
+          <row>
+            <entry><type>composite</type></entry><entry>sum of byte lengths of elements consisting the composite</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+    <note>In case of a LOB that does not have a length as in the case of one supplied by a client with SQLPutData and not yet stored, a zero is returned.</note>
+  </refsect1>
+  <refsect1 id="params_length"><title>Parameters</title>
+    <refsect2>
+      <title>arg</title>
+      <para>Any type that can be tested for length.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_length"><title>Return Values</title>
+      <para>Integer length of the argument</para>
+  </refsect1>
+  <refsect1 id="errors_length"><title>Errors</title>
+    <table><title>Errors signalled by <function>length</function></title>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>sqlstate</entry><entry>error code</entry><entry>error text</entry>
+	  </row>
+        </thead>
+        <tbody>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>SR015</errorcode></entry>
+	    <entry><errorname>Function length is not applicable to XML tree entity</errorname></entry>
+            <entry><function>Length</function> cannot calculate a length for a non-persistent XML entity.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry><errorcode>SR016</errorcode></entry>
+	    <entry><errorname>Function length does not handle arguments
+			of type x</errorname></entry>
+            <entry><para>An invalid data type was passed as an argument to <function>length</function></para></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="examples_length"><title>Examples</title>
+    <example id="ex_length">
+      <title>Some uses of length()</title>
+      <screen>
+SQL> select length('abacus'), length (NULL);
+callret   callret
+INTEGER   INTEGER
+_______________________________________________________________________________
+
+6         0
+
+1 Rows. -- 11 msec.
+SQL> select max (length (ProductName)) from Demo.demo.Products;
+flag
+INTEGER
+_______________________________________________________________________________
+
+32
+
+1 Rows. -- 61 msec.
+    </screen>
+    </example>
+  </refsect1>
+</refentry>

@@ -1,0 +1,222 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="blog_bridge" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//IETF//DTD HTML//EN">
+  <v:variable name="opts" type="any" default="null"/>
+  <v:variable name="saved_params" type="any" default="null"/>
+  <v:on-init>
+  <![CDATA[
+  if (self.opts is null and isstring ({?'err_pages_opts_in'}))
+    self.opts := deserialize (decode_base64 ({?'err_pages_opts_in'}));
+  if (self.saved_params is null and isstring ({?'err_pages_opts_in'}))
+    self.saved_params := {?'err_pages_saved_params'};
+  if (not isarray (self.opts))
+    self.opts := vector ();
+  --dbg_obj_print ('error_pages.vspx:self.opts on init', self.opts);
+  ]]>
+  </v:on-init>
+  <html>
+    <head>
+      <link rel="stylesheet" type="text/css" href="&lt;?V adm_what_css() ?>"/>
+      <title>Virtual directory error pages</title>
+      <meta name="AUTHOR" content="OpenLink Software"/>
+      <meta name="DESCRIPTION" content="Virtual directory error pages"/>
+    </head>
+    <body>
+      <?vsp adm_page_header('Virtual directory error pages', ''); ?>
+      <H4>Virtual directory error pages</H4>
+      <p style="color: red;">
+        <v:error-summary/>
+      </p>
+      <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+        <TR>
+          <TD class="genhead">Error maps</TD>
+        </TR>
+        <TR>
+          <TD CLASS="AdmBorders">
+            <IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""/>
+          </TD>
+        </TR>
+        <TR>
+          <TD>
+             <v:form name="form1" type="simple" action="error_pages.vspx">
+              <!-- DATASET -->
+              <v:data-set name="ds" sql="select OPT_NAME, OPT_VALUE from DB.DBA.ADM_OPT_ARRAY_TO_RS_PVIEW where OPT_ARRAY = :thisopts and cast (left (OPT_NAME, 3) as integer) &gt; 399" nrows="10" scrollable="1" cursor-type="keyset" edit="0" width="80">
+	        <v:param name="thisopts" value="--self.opts"/>
+                <v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table class="genlist" BORDER="0" CELLPADDING="0">
+                    <tr>
+                      <td class="genlistheadt">
+                        <v:label name="label1" value="'Error code'" format="%s" width="80"/>
+                      </td>
+                      <td class="genlistheadt">
+                        <v:label name="label4" value="'Page'" format="%s" width="80"/>
+                      </td>
+                      <td class="genlistheadt">
+                        Action
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+                <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+                  <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
+                    <table width="400" border="1" cellspacing="2" cellpadding="0">
+                      <tr>
+                        <td align="left" nowrap="1" class="gendata">
+                          <v:label name="label51" value="--left ((control.vc_parent as vspx_row_template).te_rowset[0], 3)" format="%s" width="80"/>
+                        </td>
+                        <td align="left" nowrap="1" class="gendata">
+                          <v:label name="label81" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
+                        </td>
+			<td>
+			  <v:button name="b2" value="Delete" action="simple" >
+			  <v:on-post>
+			  <![CDATA[
+			     declare inx,len integer;
+			     declare opt_name varchar;
+			     declare _opts any;
+
+			     opt_name := (control.vc_parent as vspx_row_template).te_rowset[0];
+			     _opts := self.opts;
+
+			     len := length (_opts);
+			     inx := 0;
+
+			     while (inx < len)
+                               {
+				 if (_opts[inx] = opt_name)
+				   {
+				     _opts := vector_concat (subseq (_opts, 0, inx), subseq (_opts, inx + 2));
+                                     inx := len;
+				   }
+				 inx := inx + 2;
+			       }
+
+			     self.opts := _opts;
+			     self.vc_data_bind(e);
+			  ]]>
+			  </v:on-post>
+			  </v:button>
+			  <v:button name="b8" value="Edit" action="simple" >
+			  <v:on-post>
+			  <![CDATA[
+			     declare inx,len integer;
+			     declare opt_name, opt_value varchar;
+			     declare _opts any;
+
+			     opt_name := (control.vc_parent as vspx_row_template).te_rowset[0];
+			     opt_value := (control.vc_parent as vspx_row_template).te_rowset[1];
+			     self.error_code_txt.ufl_value := left (opt_name, 3);
+			     self.page_url_txt.ufl_value := opt_value;
+			     self.add_page_btn.ufl_value := 'Update';
+			     self.vc_data_bind(e);
+			  ]]>
+			  </v:on-post>
+			  </v:button>
+			</td>
+                      </tr>
+                    </table>
+                  </v:template>
+                  <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                    <table width="400" border="2" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td align="center" colspan="9" class="gendata">No error mapping pages defined.</td>
+                      </tr>
+                    </table>
+                  </v:template>
+                </v:template>
+                <v:template name="template10" type="simple" name-to-remove="table" set-to-remove="both">
+                  <table class="genlist" BORDER="0" CELLPADDING="0">
+		    <tr />
+                    <tr>
+                      <td class="genlistheadt">
+		        <v:text name="error_code_txt" >
+			<v:validator name="v_error_code_txt" test="regexp" regexp="[4-9][0-9][0-9]" />
+			</v:text>
+                      </td>
+                      <td class="genlistheadt">
+		        <v:text name="page_url_txt" />
+                      </td>
+                      <td class="genlistheadt">
+		        <v:button name="add_page_btn" value="Add" action="simple" >
+			<v:on-post><v:script>
+			  <![CDATA[
+			     declare inx,len integer;
+			     declare opt_name varchar;
+			     declare _opts any;
+
+			     opt_name :=  sprintf ('%s_page', self.error_code_txt.ufl_value);
+			     _opts := self.opts;
+
+			     len := length (_opts);
+			     inx := 0;
+
+			     dbg_obj_print ('error_pages.vspx:opt_name ', opt_name);
+			     while (inx < len)
+                               {
+				 if (_opts[inx] = opt_name)
+				   {
+				     _opts[inx + 1] := self.page_url_txt.ufl_value;
+				     opt_name := null;
+                                     inx := len;
+				   }
+				 inx := inx + 2;
+			       }
+
+                             if (opt_name is not null)
+                               {
+				 _opts := vector_concat (_opts,
+				     vector (
+				       sprintf ('%s_page', self.error_code_txt.ufl_value),
+				       self.page_url_txt.ufl_value));
+			       }
+			     self.opts := _opts;
+			     dbg_obj_print ('error_pages.vspx:self.opts after add', self.opts);
+			     self.vc_data_bind(e);
+			     self.ds.vc_data_bind(e);
+			  ]]>
+			</v:script></v:on-post>
+			</v:button>
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+              </v:data-set>
+              <!-- END DATASET -->
+             </v:form>
+          </TD>
+        </TR>
+        <TR>
+          <TD>
+	    <v:form name="form2" type="simple" action="admin_virt_dir.vsp" METHOD="POST" >
+	    <v:text name="err_pages_saved_params_ret" type="hidden" value="--self.saved_params" />
+	    <v:text name="error_pages_return_opts" type="hidden" value="--encode_base64 (serialize (self.opts))" />
+	    <v:button action="simple" name="Done" value="Done">
+	    </v:button>
+	    </v:form>
+          </TD>
+        </TR>
+      </TABLE>
+      <?vsp adm_page_footer(); ?>
+    </body>
+  </html>
+</v:page>

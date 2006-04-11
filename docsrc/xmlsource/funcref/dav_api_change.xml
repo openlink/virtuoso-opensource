@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_dav_api_change">
+  <refmeta>
+    <refentrytitle>DAV manipulation functions</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DAV_COPY</refname>
+    <refname>DAV_MOVE</refname>
+    <refname>DAV_PROP_SET</refname>
+    <refname>DAV_PROP_REMOVE</refname>
+    <refpurpose>Functions for manipulating an existing DAV
+    collection or resource</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_DAV_COPY">
+      <funcprototype id="fproto_DAV_COPY">
+        <funcdef>integer <function>DAV_COPY</function></funcdef>
+        <paramdef>in <parameter>path</parameter> varchar</paramdef>
+        <paramdef>in <parameter>destination</parameter> varchar</paramdef>
+        <paramdef>in <parameter>overwrite</parameter> integer</paramdef>
+        <paramdef>in <parameter>permissions</parameter> varchar</paramdef>
+        <paramdef>in <parameter>uname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>gname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_uname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_pwd</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_DAV_MOVE">
+      <funcprototype id="fproto_DAV_MOVE">
+        <funcdef>varchar <function>DAV_MOVE</function></funcdef>
+        <paramdef>in <parameter>path</parameter> varchar</paramdef>
+        <paramdef>in <parameter>destination</parameter> varchar</paramdef>
+        <paramdef>in <parameter>overwrite</parameter> integer</paramdef>
+        <paramdef>in <parameter>auth_uname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_pwd</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_DAV_PROP_SET">
+      <funcprototype id="fproto_DAV_PROP_SET">
+        <funcdef>integer <function>DAV_PROP_SET</function></funcdef>
+        <paramdef>in <parameter>path</parameter> varchar</paramdef>
+        <paramdef>in <parameter>propname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>propvalue</parameter> any</paramdef>
+        <paramdef>in <parameter>auth_uname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_pwd</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_DAV_PROP_REMOVE">
+      <funcprototype id="fproto_DAV_PROP_REMOVE">
+        <funcdef>varchar <function>DAV_PROP_REMOVE</function></funcdef>
+        <paramdef>in <parameter>path</parameter> varchar</paramdef>
+        <paramdef>in <parameter>propname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>silent</parameter> integer</paramdef>
+        <paramdef>in <parameter>auth_uname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_pwd</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_dav_api_change"><title>Description</title>
+    <para>DAV_COPY copies the resource or collection taken from path to the destination.
+  returns COL_ID or RES_ID on success.</para>
+    <para>DAV_MOVE moves the collection or resource to the destination path
+  returns 1 on success.</para>
+    <para>DAV_PROP_SET defines or updates the property with name <parameter>propname</parameter>
+    with <parameter>propvalue</parameter>. Returns PROP_ID on success.</para>
+    <para>DAV_PROP_GET returns the value of previously defined property with name <parameter>propname</parameter>.</para>
+    <para>DAV_PROP_REMOVE removal of the existing property on target path.
+    If silent supplied then no error will be returned.</para>
+    <para>Some attributes of resources and collections are accessible as predefined properties. E.g., owner user ID of the resource can be retrieved or changed by
+    <function>DAV_PROP_GET</function> or <function>DAV_PROP_SET</function> with <parameter>propname</parameter> equal to &apos;:virtowneruid&apos;.
+    Some of these properties are read-only for all resources, some are writable for some but not for all resources.
+    Names of all predefined properties starts with &apos;:&apos; so application-specific properties should not start with colon.
+    Moreover, it is strongly suggested to use &quot;unqualified XML names&quot; as property names, otherwise PROPGET and PROPPATH DAV requests may return invalid XML responses.
+    <parameter>propname</parameter>.</para>
+  </refsect1>
+  <refsect1 id="params_dav_api_change"><title>Parameters</title>
+    <refsect2><title>path</title>
+      <para></para>
+      <para>Directory and name of source to be operated on.</para>
+    </refsect2>
+    <refsect2><title>destination</title>
+      <para>Directory and name of destination.</para>
+    </refsect2>
+    <refsect2><title>overwrite</title>
+      <para>If non zero then overwrite is enabled. Default is 0.</para>
+    </refsect2>
+    <refsect2><title>permissions</title>
+      <para>Access permission of Dav collection or resource.
+      Defaults to '110100000R' if not supplied.</para>
+    </refsect2>
+    <refsect2><title>propname</title>
+      <para>Property name.</para>
+    </refsect2>
+    <refsect2><title>propvalue</title>
+      <para>Property value.</para>
+    </refsect2>
+    <refsect2><title>silent</title>
+      <para>If specified as non zero, then no error will be returned.
+      Default is 0, so errors are returned.</para>
+    </refsect2>
+    <refsect2><title>uname</title>
+      <para>User identifier. Default is 'dav'.</para>
+    </refsect2>
+    <refsect2><title>gname</title>
+      <para>Group identifier. Default is 'dav'.</para>
+    </refsect2>
+    <refsect2><title>auth_uname</title>
+      <para>Administration user capable of performing the operation.
+      Default is null.</para>
+    </refsect2>
+    <refsect2><title>auth_pwd</title>
+      <para>Password of Administrator. Default is null.</para>
+    </refsect2>
+  </refsect1>
+
+  <refsect1 id="sysprops_dav_api_change"><title>System Properties</title>
+    <para>Names of &apos;standard live propeties&apos; matches tag names used in PROPFIND response for same purposes.</para>
+    <para>Names of virtuoso-specific system properties starts with &apos;:virt&apos; substring.</para>
+    <para>In the table below, &apos;Read/Write&apos; access type means that the appication can try to set the property.
+    This does not mean that the property can be successfully changed for any particular resource or collection.</para>
+    <table><title>System properties supported by DAV_PROP_GET and DAV_PROP_SET functions</title>
+      <tgroup cols="4">
+       <thead><row><entry>propname</entry><entry>Access Type</entry><entry>Data Type</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row><entry>:getlastmodified</entry><entry>Read/Write</entry><entry>datetime</entry><entry>Time of the last modification.</entry></row>
+	  <row><entry>:creationdate</entry><entry>Read/Write</entry><entry>datetime</entry><entry>Time of creation.</entry></row>
+	  <row><entry>:lastaccessed</entry><entry>Read Only</entry><entry>datetime</entry><entry>Time of the last access to the resource, may be inaccurate by a large amount.</entry></row>
+	  <row><entry>:getetag</entry><entry>Read Only</entry><entry>varchar</entry><entry>The value of 'Etag' field of responce header as reported by HEAD HTTP request.</entry></row>
+	  <row><entry>:getcontenttype</entry><entry>Read/Write</entry><entry>varchar</entry><entry>MIME type of the resource (&apos;dav/unix-directory&apos; for collections).</entry></row>
+	  <row><entry>:getcontentlength</entry><entry>Read Only</entry><entry>integer</entry><entry>Resource length in bytes. 0 for collections.</entry></row>
+	  <row><entry>:resourcetype</entry><entry>Read Only</entry><entry>XML entity</entry><entry>&apos;&lt;D:collection/&gt;&apos; for collections, NULL for resources.</entry></row>
+	  <row><entry>:virtowneruid</entry><entry>Read/Write</entry><entry>integer</entry><entry>User ID of resource owner user.</entry></row>
+	  <row><entry>:virtownergid</entry><entry>Read/Write</entry><entry>integer</entry><entry>Group ID of resource owner group.</entry></row>
+	  <row><entry>:virtpermissions</entry><entry>Read/Write</entry><entry>char(10)</entry><entry>Access permissions string.</entry></row>
+	  <row><entry>:virtacl</entry><entry>Read/Write</entry><entry>long varbinary</entry><entry>Access Control List.</entry></row>
+	  <row><entry>:virtdet</entry><entry>Read/Write</entry><entry>varchar</entry><entry>DAV Extension Type of special collection, NULL for plain collections and resources.</entry></row>
+	</tbody>
+      </tgroup>
+    </table>
+    <para>Note that the value of &apos;Etag&apos; field depends on &apos;:getlastmodified&apos; value.
+    Some HTTP clients, such as download managers, web indexing robots and proxy servers, use 'Etag' field to support caching and/or partial document transfer.
+    It is unsafe to decrement &apos;:getlastmodified&apos; because it can confuse such clients.</para>
+    <para>Only resource/collection owner or DAV administrator can change &apos;:virtowneruid&apos;, &apos;:virtownergid&apos;, &apos;:virtpermissions&apos; and &apos;:virtacl&apos;.</para>
+    <para>Only DAV administrator can change &apos;:virtdet&apos; property.</para>
+  </refsect1>  
+  
+  <refsect1 id="errors_dav_api_change"><title>Errors</title>
+    <table><title>Errors signalled by DAV_* functions</title>
+      <tgroup cols="2">
+       <thead><row><entry>Error Code</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row><entry><errorcode>&gt;=0</errorcode></entry>
+	    <entry><errorname>success</errorname></entry></row>
+	  <row><entry><errorcode>-1</errorcode></entry>
+	    <entry><errorname>The path (target of operation) is not valid</errorname></entry></row>
+	  <row><entry><errorcode>-2</errorcode></entry>
+	    <entry><errorname>The destination (path) is not valid</errorname></entry></row>
+	  <row><entry><errorcode>-3</errorcode></entry>
+	    <entry><errorname>Overwrite flag is not set and destination exists</errorname></entry></row>
+	  <row><entry><errorcode>-4</errorcode></entry>
+	    <entry><errorname>The target is resource, but source is collection (in copy move operations)</errorname></entry></row>
+	  <row><entry><errorcode>-5</errorcode></entry>
+	    <entry><errorname>Permissions are not valid</errorname></entry></row>
+	  <row><entry><errorcode>-6</errorcode></entry>
+	    <entry><errorname>uid is not valid</errorname></entry></row>
+	  <row><entry><errorcode>-7</errorcode></entry>
+	    <entry><errorname>gid is not valid</errorname></entry></row>
+	  <row><entry><errorcode>-8</errorcode></entry>
+	    <entry><errorname>Target is locked</errorname></entry></row>
+	  <row><entry><errorcode>-9</errorcode></entry>
+	    <entry><errorname>Destination is locked</errorname></entry></row>
+	  <row><entry><errorcode>-10</errorcode></entry>
+	    <entry><errorname>Property name is reserved (protected or private)</errorname></entry></row>
+	  <row><entry><errorcode>-11</errorcode></entry>
+	    <entry><errorname>Property does not exists</errorname></entry></row>
+	  <row><entry><errorcode>-12</errorcode></entry>
+	    <entry><errorname>Authentication failed</errorname></entry></row>
+	  <row><entry><errorcode>-13</errorcode></entry>
+	    <entry><errorname>Operation is forbidden (the authenticated user do not have a permissions for the action)</errorname></entry></row>
+	  <row><entry><errorcode>-14</errorcode></entry>
+	    <entry><errorname>the target type is not valid</errorname></entry></row>
+	  <row><entry><errorcode>-15</errorcode></entry>
+	    <entry><errorname>The umask is not valid</errorname></entry></row>
+	  <row><entry><errorcode>-16</errorcode></entry>
+	    <entry><errorname>The property already exists</errorname></entry></row>
+	  <row><entry><errorcode>-17</errorcode></entry>
+	    <entry><errorname>Invalid property value</errorname></entry></row>
+	  <row><entry><errorcode>-18</errorcode></entry>
+	    <entry><errorname>no such user</errorname></entry></row>
+	  <row><entry><errorcode>-19</errorcode></entry>
+	    <entry><errorname>no home directory</errorname></entry></row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+
+  <refsect1 id="examples_dav_api_change"><title>Examples</title>
+    <example id="ex_dav_api_change_1"><title>Copy and move operations</title>
+     <para>Renaming of the resource and copy the folder. After executing the commands in the http://[host:port]/DAV/user/B/ we will show the resource B.txt</para>
+      <screen>
+-- initial upload      
+SQL> select DB.DBA.DAV_COL_CREATE ('/DAV/user/','110100000R', 'dav','dav','dav','dav');
+SQL> select DB.DBA.DAV_COL_CREATE ('/DAV/user/A/','110100000R','dav','dav','dav','dav');
+SQL> select DB.DBA.DAV_RES_UPLOAD ('/DAV/user/A/A.txt','this is a test','text/plain','110100000R','dav','dav','dav','dav');
+SQL> DB.DBA.DAV_MOVE('/DAV/user/A/A.txt', '/DAV/user/A/B.txt', 1,'dav','dav');
+SQL> DB.DBA.DAV_COPY('/DAV/user/A/', '/DAV/user/B/', 1, '110110000R','dav','dav','dav','dav');
+
+      </screen>
+    </example>
+  </refsect1>
+
+   <refsect1 id="seealso_dav_api_change"><title>See Also</title>
+    <para><link linkend="fn_dav_api_add">DAV content add/update/delete functions</link></para>
+    <para><link linkend="fn_dav_api_lock">DAV lock manipulation functions</link></para>
+    <para><link linkend="fn_dav_api_search">DAV search functions</link></para>
+    <para><link linkend="fn_dav_api_user">DAV user management functions</link></para>
+  </refsect1>
+
+</refentry>

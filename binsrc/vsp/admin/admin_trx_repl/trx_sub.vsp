@@ -1,0 +1,228 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+declare _srv, _acct, _cstat, _uid, _exp varchar;
+declare _stat, _rno, _sched integer;
+
+if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+_exp := soap_print_box (now (), '', 1);
+_exp := concat ('', _exp, '');
+
+
+if ('' <> get_keyword ('sync', params, ''))
+  {
+    declare s, a, pair, status, message, usr, pwd varchar;
+    declare ix integer;
+    ix := 0;
+    while (pair := adm_next_checkbox ('CB_', params, ix))
+      {
+        pair := deserialize (decode_base64 (pair));
+        s := aref (pair , 0);
+        a := aref (pair , 1);
+	--dbg_obj_print ('syncing', s , a);
+	whenever not found goto nxt;
+        select d.DS_UID, pwd_magic_calc (d.DS_UID, d.DS_PWD, 1) into usr, pwd
+	    from DB.DBA.SYS_DATA_SOURCE d, DB.DBA.SYS_SERVERS sr
+	    where sr.SERVER = s and d.DS_DSN = sr.DB_ADDRESS;
+	exec ('repl_sync (?, ?, ?, ?)', status, message, vector (s, a, usr, pwd), 0);
+nxt:;
+      }
+    --SYNC_REPL ();
+  }
+if ('' <> get_keyword ('disc', params, ''))
+  {
+    for select SERVER from SYS_SERVERS where SERVER <> repl_this_server () do {
+      repl_disconnect (SERVER);
+    }
+  }
+if ('' <> get_keyword ('drop', params, ''))
+  {
+    _srv := get_keyword ('srv', params, '');
+    _acct := get_keyword ('acct', params, '');
+    if (_srv <> '' and _acct <> '')
+      {
+	DB.DBA.SUB_SCHEDULE (_srv, _acct, 0);
+        DB.DBA.REPL_UNSUBSCRIBE (_srv, _acct, null);
+	if (not exists (select 1 from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = _srv))
+	  repl_disconnect (_srv);
+      }
+  }
+else if ('' <> get_keyword ('drop_1', params, ''))
+  {
+    _srv := get_keyword ('srv', params, '');
+    _acct := get_keyword ('acct', params, '');
+    if (_srv <> '' and _acct <> '')
+      {
+	update DB.DBA.SYS_TP_ITEM set TI_IS_COPY = 1 where TI_SERVER = _srv and TI_ACCT = _acct;
+	DB.DBA.SUB_SCHEDULE (_srv, _acct, 0);
+        DB.DBA.REPL_UNSUBSCRIBE (_srv, _acct, null);
+	if (not exists (select 1 from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = _srv))
+	  repl_disconnect (_srv);
+      }
+  }
+
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Transactional replication subscription wizard">
+    <script language="javascript" src="../admin_utils.js"></script>
+    <!--META HTTP-EQUIV="Expires" CONTENT="<?=_exp?>"-->
+    <!--META HTTP-EQUIV="REFRESH" CONTENT="5"-->
+    <title>Transactional replication subscriptions</title>
+  </head>
+<?vsp adm_page_header('Transactional Replication Subscriptions', NULL); ?>
+<?include ../adm_js_check.vsp ?>
+  <!--BODY CLASS="adm_pages_body">
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING=0 CELLSPACING=0>
+<TR><TD CLASS="adm_pages_title" COLSPAN="2"><H2>Transactional Replication Subscriptions</H2></TD></TR>
+<TR><TD CLASS="adm_borders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"-->
+
+    <p class=helptext>To add a new Subscription, click on the <b>New</b> button and follow the wizard.</p>
+    <p class=helptext>Click on the <b>Subscription name</b> link to change the properties.</p>
+    <p class=helptext>To drop the Subscription and all items associated with it, click on the <b>Drop</b> link.</p>
+    <p class=helptext>To simply unsubscribe from the Publication, click on the <b>Unsubscribe</b> link.<br>
+    This action will halt the replication from the Publisher. <br>
+    As long as the default "Leave local copy" Advanced Subscription property is set, <br>
+    no local items associated with it will be erased.
+   </p>
+    <p class=helptext>To synchronize Subscription(s), select the Subscription(s) you want and click at <b>Sync Selected</b> button.</p>
+    <p class=helptext>To disconnect all Subscriptions click on the <b>Disconnect all</b> button.</p>
+    <p class=helptext>To load image file, click on the <b>Load image</b> button and follow the wizard.</p>
+    <hr>
+  <table class=tablelist>
+  <form method=post action="trx_sub_new.vsp">
+   <tr><td colspan=8 CLASS="adm_bb_btns"><input type=submit name=new value="New"></td></tr>
+  </form>
+  <form method=post action="trx_sub.vsp">
+  <tr>
+  <td class=genlisthead>
+     <input type="checkbox" name="selectall" value="Select All"
+        onClick="selectAllCheckboxes(this.form, this)">
+  </td>
+  <td class=genlisthead>Server</td>
+  <td class=genlisthead>Publication</td>
+  <td class=genlisthead>Login name</td>
+  <td class=genlisthead>Last trx no</td>
+  <td class=genlisthead>Sync User</td>
+  <td class=genlisthead>Schedule</td>
+  <td class=genlisthead>Status</td>
+  <td class=genlisthead>Actions</td>
+  </tr>
+<?vsp
+    declare _l integer; _l := 0;
+    --
+    -- compose ACCT (and order by ACCT) so that pushback accounts appear
+    -- right after corresponding normal accounts
+    for select SERVER, ACCOUNT, SYNC_USER as _sync_user, case when repl_is_pushback(SERVER, ACCOUNT) = 0 then ACCOUNT else concat (subseq (ACCOUNT, 1), '!') end as ACCT from SYS_REPL_ACCOUNTS
+        where SERVER <> repl_this_server () order by SERVER, ACCT do
+      {
+    repl_status (SERVER, ACCOUNT, _rno, _stat);
+    _l := _l + 1;
+    if (_stat = 0)
+      _cstat := 'OFF';
+    else if (_stat = 1)
+      _cstat := 'SYNCING';
+    else if (_stat = 2)
+      _cstat := 'IN SYNC';
+    else if (_stat = 3)
+      _cstat := 'REMOTE DISCONNECTED';
+    else if (_stat = 4)
+      _cstat := 'DISCONNECTED';
+    else if (_stat = 5)
+      _cstat := 'TO DISCONNECT';
+        if (repl_is_pushback(SERVER, ACCOUNT) = 0)
+          {
+            if (_sync_user is null or _sync_user = '')
+              _sync_user := 'dba';
+            _sched := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT
+	        where SE_NAME = concat ('repl_', SERVER, '_', ACCOUNT)), 'No');
+          }
+        else
+          {
+            _sync_user := 'N/A';
+            _sched := 'N/A';
+          }
+    declare _srvr varchar;
+    _srvr := SERVER;
+    _uid := coalesce ((select DS_UID from SYS_DATA_SOURCE where DS_DSN = (select DB_ADDRESS from SYS_SERVERS as s where s.SERVER = _srvr)), '');
+?>
+  <tr>
+<?vsp
+  if (repl_is_pushback(SERVER, ACCOUNT) = 0)
+    {
+?>
+      <td class="gendata"><input type="checkbox" name="CB_<?= encode_base64 (serialize (vector (SERVER, ACCOUNT))) ?>"></td>
+<?vsp
+    }
+  else
+      http ('<td class="gendata">&nbsp;</td>');
+?>
+      <td class="gendata"><?=SERVER?></td>
+      <td class="gendata"><a href="trx_sub_edit.vsp?acct=<?=ACCOUNT?>&srv=<?=SERVER?>"><?=ACCOUNT?></a></td>
+      <td class="gendata"><?=_uid?></td>
+      <td class="gendata"><?=_rno?></td>
+      <td class="gendata"><?=_sync_user?></td>
+      <td class="gendata" align=right><?=_sched?></td>
+      <td class="gendata"><?=_cstat?></td>
+      <td class="gendata">
+<?vsp
+  if (repl_is_pushback(SERVER, ACCOUNT) = 0)
+    {
+?>
+      <table>
+      <tr>
+      <td><a href="trx_sub.vsp?drop_1=1&acct=<?=ACCOUNT?>&srv=<?=SERVER?>" onclick="javascript: return confirm_a_drop(this)">Drop</a></td>
+      <td><a href="trx_sub.vsp?drop=1&acct=<?=ACCOUNT?>&srv=<?=SERVER?>">Unsubscribe</a></td>
+      </tr>
+      </table>
+<?vsp
+    }
+?>
+      </td>
+  </tr>
+<?vsp
+    }
+   if (_l = 0)
+     http ('<tr><td colspan=8 align=center>** No subscriptions defined **</td></tr>');
+?>
+  </table>
+  <table>
+  <tr>
+  <!--td><a href="trx_sub_new.vsp?new=New"><input type=button value=New onClick="return true"></a></td-->
+    <!--td CLASS="adm_bb_btns"><input type=button name=selectall value="Select All" onClick="selectAllCheckboxes(this.form, this)">&nbsp;&nbsp;&nbsp;&nbsp;</td-->
+    <td><input type=submit name=sync value="Sync Selected"></td>
+    <td><input type=submit name=disc value="Disconnect all"></td>
+  </form>
+  <form method=post action="trx_sub_replay.vsp">
+    <td><input type=submit name=repl value="Load image"></td>
+  </form>
+  </tr>
+  </table>
+<?vsp adm_page_footer(); ?>
+</html>

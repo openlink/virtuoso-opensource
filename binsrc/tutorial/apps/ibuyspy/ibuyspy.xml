@@ -1,0 +1,66 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="ibuyspy">
+  <refmeta>
+    <refentrytitle>"IBuySpy" portal</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>IBuySpy application</refname>
+    <refpurpose>Running ASPX based applications</refpurpose>
+  </refnamediv>
+
+<refsect1 id="ibuyspya">
+<title>Overview</title>
+<itemizedlist mark="bullet">
+<listitem>The goal of that demo is to demonstrate ability of Virtuoso server to host ASP.NET projects</listitem>
+<listitem>The IBuySpy application is ASP.NET based solution for making a portal applications</listitem>
+<listitem>The demo uses Virtuoso as hosting environment and Database back-end</listitem>
+<listitem>It may re-configured easy to use MS SQL server as back-end</listitem>
+<listitem>The Database connection options are two</listitem>
+<listitem>Virtuoso .NET client</listitem>
+<listitem>Virtuoso OLEDB provider</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="ibuyspyb">
+<title>Installation</title>
+<para>
+</para>
+ 
+<orderedlist>
+<listitem>This demo can be started only on Virtuoso server running over Windows OS environment</listitem>
+<listitem>If you are going to try application using MS SQL Server back-end, the IBuySpy application must be downloaded from <ulink url="http://www.ibuyspy.com">www.ibuyspy.com</ulink> and installed.</listitem>
+<listitem>The Mobile Internet Toolkit (MMIT 1.0), available from <ulink url="http://www.asp.net/download.aspx?tabindex=5">www.asp.net</ulink> must be installed.</listitem>
+<listitem>Go to the folder vsp/IBuySpy under installation directory and unpack one of the .ZIP archives, depending of provider type : OLEDB or .NET provider. Please note that Store application is available only with .NET provider only.</listitem>
+<listitem>The content of archive must be extracted under vsp/IBuySpy, so if all is ok the PortalCSVS subdirectory must appear.</listitem>
+<listitem>If you are not running Virtuoso demo instance, the supplied SQL scripts must be loaded via ISQL tool using DBA account. In this case also needs to define a virtual directory pointing to the (HTTP root)/IBuySpy/PortalCSVS and (HTTP root)/IBuySpy/StoreCSVS. (See web applications tutorial how to make a executable virtual directory) 
+</listitem>
+<listitem>If you are running Virtuoso demo instance, the scripts are already loaded and virtual directory is created. </listitem>
+<listitem>Edit the Web.config file under vsp/IBuySpy/PortalCSV directory and change the address of Virtuoso server location (host name and ODBC/SQL port) in the appSettings section, key="ConnectionString" element </listitem>
+<listitem>The Portal application Web UI is accessible through the <ulink url="/PortalCSVS/">http://[host:port]/PortalCSVS/</ulink></listitem>
+<listitem>Also the Store application Web UI is accessible through the <ulink url="/StoreCSVS/">http://[host:port]/StoreCSVS/</ulink></listitem>
+</orderedlist>
+</refsect1>
+</refentry>

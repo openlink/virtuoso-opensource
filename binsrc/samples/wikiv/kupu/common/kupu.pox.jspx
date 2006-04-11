@@ -1,0 +1,35 @@
+<!--
+    Based on JSTL, see http://java.sun.com/products/jsp/jstl/1.1/docs/tlddocs/index.html
+    and JSP 2.0. JSP 2.0 is part of the Servlet 2.4 API and supported e.g. by Tomcat 5, see http://jakarta.apache.org/tomcat/.
+
+    Place kupu-i18n.jar, jstl.jar and standard.jar in WEB-INF/lib.
+
+    See also: ../make-jspx.xml (which can be used to create localized Jspx temlates from kupu-files)
+
+    $Id$
+-->
+<jsp:root version="2.0" 
+          xmlns:jsp="http://java.sun.com/JSP/Page" 
+          xmlns:c="http://java.sun.com/jsp/jstl/core" 
+          xmlns:x="http://java.sun.com/jsp/jstl/xml" 
+          xmlns:fmt="http://java.sun.com/jsp/jstl/fmt"
+>    
+  <c:import url="kupu.pox" var="xml"/>
+  <x:parse var="doc" doc="${xml}" scope="application" />
+  <catalog>
+    <fmt:setLocale value="${param.language}" />
+    <fmt:bundle basename="org.oscom.kupu.Messages">
+      <x:forEach  select="$doc/catalog/message">
+        <x:set select="string(@filenames)" var="fn" />
+        <x:set select="normalize-space(msgid)" var="msgid" />
+        <message filenames="${fn}">
+          <msgid>${msgid}</msgid>
+          <msgstr><fmt:message key="${msgid}" /></msgstr>
+        </message>
+      </x:forEach>
+    </fmt:bundle>
+    <c:if test="${param.mymessages != null}">
+      <jsp:include page="${param.mymessages}" />
+    </c:if>
+  </catalog>
+</jsp:root>

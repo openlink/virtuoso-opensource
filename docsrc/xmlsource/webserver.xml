@@ -1,0 +1,1072 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="webserver"><title>The HTTP Server</title>
+
+  <para>When a request comes in to one of the network interfaces where
+  Virtuoso is listening for HTTP requests, it is matched against a set of virtual directory
+  path mappings.  A path mapping has the following attributes:</para>
+
+ <simplelist>
+  <member><emphasis>Interface</emphasis> - interface coming from HTTP request</member>
+  <member><emphasis>Virtual Host</emphasis> - matched virtual host name</member>
+  <member><emphasis>Logical Path</emphasis> - logical path</member>
+  <member><emphasis>Mapped Path</emphasis> - physical location of the resource</member>
+  <member><emphasis>Is in DAV</emphasis> - If the resource is placed in WebDAV domain</member>
+  <member><emphasis>Default page</emphasis> - the name of the page to be returned if none is supplied</member>
+  <member><emphasis>Browseable</emphasis> - allows for returning the list of files in a directory if no specific file is requested</member>
+  <member><emphasis>Security</emphasis> - security restrictions to the resource</member>
+  <member><emphasis>Authentication Function</emphasis> - Virtuoso/PL procedure name, which performs authentication</member>
+  <member><emphasis>Realm</emphasis> - an string applied to Authentication function</member>
+  <member><emphasis>Request Post-processing Function</emphasis> - Virtuoso/PL procedure name, which performs post-processing action, before sending the response</member>
+  <member><emphasis>Database User Account</emphasis> - User account name, on behalf of which  active content  will be executed</member>
+ </simplelist>
+
+  <figure id="httpconcept" float="1"><title>HTTP Server Conceptual Diagram</title>
+   <graphic fileref="httpconcept.jpg" format="jpeg"></graphic></figure>
+
+ <para>Incoming requests are also checked against the HTTP access control lists.
+ These lists rely on the following attributes of the connection to determine whether
+ the request should be answered:</para>
+
+ <simplelist>
+  <member><emphasis>Client Host or IP Address</emphasis> - the incoming requstor is pattern matched to specify a range.</member>
+  <member><emphasis>Destination Host or IP Address</emphasis> - Destination IP/Host match, also applicable to the proxy capabilities.</member>
+ </simplelist>
+
+  <para>The Virtuoso HTTP server is HTTP/1.1 compliant.  It can accept persistent
+  connections from HTTP/1.1 clients.  The HTTP/1.0 requests are processed as normal
+  without the persistent connections feature.</para>
+
+  <para>Persistent HTTP connections offer several advantages, such as:</para>
+
+ <simplelist>
+  <member>Reduced CPU usages by opening and closing fewer connections.</member>
+  <member>HTTP requests and responses can be pipelined on a connection.
+  Pipelining allows a client to make multiple requests without waiting for each
+  response, allowing a single TCP connection to be used much more efficiently with
+  lower elapsed time.</member>
+  <member>Network traffic is reduced.</member>
+  <member>Latency on subsequent requests is reduced.</member>
+ </simplelist>
+
+<tip><title>See Also:</title>
+<para><ulink url="http://www.rfc-editor.org/rfc/rfc2616.txt">RFC2616</ulink> for more details</para></tip>
+
+
+<sect2 id="vspconf"><title>HTTP Server Base Configuration</title>
+
+  <para>The <computeroutput>[HTTPServer]</computeroutput> section of the
+  Virtuoso INI file contains parameters that directly affect the HTTP server upon
+  server startup.  After the server has been started further configuration can be
+  performed using the Visual Server Administration Interface.  Here is an example
+  of the section in the INI file:</para>
+
+<programlisting>
+[HTTPServer]
+  ServerPort = 8890
+  ServerRoot = ../vsp
+  ServerThreads = 2
+  MaxKeepAlives = 10
+  KeepAliveTimeout = 10
+  DavRoot = DAV
+</programlisting>
+
+  <para>The meanings of these parameters are briefly explained here as a quick
+  reference for the most frequently used parameters:</para>
+
+     <itemizedlist>
+				<listitem>
+					<formalpara>
+						<title>ServerPort</title>
+						<para>This specifies the HTTP listen port for the VSP server.</para>
+					</formalpara>
+				</listitem>
+				<listitem>
+					<formalpara>
+						<title>ServerThreads</title>
+						<para>This specifies the number of concurrently serviced HTTP requests.
+            If there are more concurrent requests, accepting the connections will be
+            deferred until there is a thread ready to serve each.</para>
+					</formalpara>
+				</listitem>
+				<listitem>
+					<formalpara>
+						<title>ServerRoot = ../vsp</title>
+						<para>This is the file system path of the root directory of files served by the Virtuoso
+web server.  The index.html in that directory will be served for the / URI.  If relative, the path is
+interpreted relative to the server&apos;s working directory.</para>
+					</formalpara>
+				</listitem>
+				<listitem>
+					<formalpara>
+						<title>MaxKeepAlives = 10</title>
+						<para>Connections by HTTP 1.1 clients can remain open after the initial response has been sent.
+This parameters sets a cap on how many socket descriptors will at most be taken by keep alive connections.
+Such connections will be dropped by the server ahead of timeout if this number would be exceeded.
+Thus the maximum number of open sockets for the Virtuoso HTTP server is this number plus the number of threads.
+A keep alive connection is by definition not associated to any pending processing on any thread.</para>
+					</formalpara>
+				</listitem>
+				<listitem>
+					<formalpara>
+						<title>KeepAliveTimeout = 10</title>
+						<para>This is a timeout in seconds before Virtuoso closes an idle HTTP 1.1 connection.</para>
+					</formalpara>
+				</listitem>
+				<listitem>
+					<formalpara>
+						<title>DavRoot = DAV</title>
+						<para>This specifies the root path of DAV resources.  If DAV specific HTTP methods are used on Virtuoso,
+these should only reference resources with paths starting with this.  This is the top level DAV collection.
+This is matched against URI's after the translation from external to internal URI's through the virtual directory table.
+See Virtual Directories below.</para>
+					</formalpara>
+				</listitem>
+			</itemizedlist>
+
+  <tip><title>See Also:</title>
+  <para>The <link linkend="server">Server Administration chapter</link> contains
+  a complete list of the Virtuoso INI file parameters.  In particular, the
+  <link linkend="ini_HTTPServer">[HTTPServer] section</link>.</para></tip>
+
+</sect2>
+
+<sect2 id="virtdir"><title>Virtual Directories</title>
+  <para>A Virtuoso virtual directory maps logical paths to physical resource
+  locations accompanied by rules and/or parameters that govern how the mappings
+  respond to user-agent (e.g. Web browser) requests.  This mechanism allows
+  physical locations to be obscured or simply reorganized.  Some resource types
+  require authentication challenges, such as the Visual Server Administration
+  Interface, and/or special headers such as SOAP, which is another HTTP endpoint.</para>
+
+  <para>Virtual directories are useful when one server has to provide access to
+  several Web sites.  Redirects are not a universal solution to this, it is far better to
+  define virtual directories that point to the other sites.  Suppose that we have
+  two companies, "a" and "b", that are to share a Virtuoso server but want to
+  represented on the Web by <computeroutput>www.a.com</computeroutput>
+  and <computeroutput>www.b.com</computeroutput> respectively.  Their pages
+  could be stored in directories "/a" and "/b" on the server, whilst virtual directories
+  map requests appropriately: </para>
+
+  <programlisting><![CDATA[
+  http://www.a.com/  --> /a
+  http://www.b.com/  --> /b
+]]></programlisting>
+
+  <para>Hence, user-agent requests for <computeroutput>www.a.com</computeroutput>
+  receive pages from /a, and likewise for "b".  Requests under these domains are
+  mapped back to their physical location such as the request for the URI
+  <computeroutput>http://www.a.com/images/picture.jpg</computeroutput>
+  retrieves the file <computeroutput>/a/images/picture.jpg</computeroutput>.</para>
+
+  <para>Virtual directory definitions are held within the system table DB.DBA.HTTP_PATH.
+  Virtual directories can be administered in three basic ways:</para>
+
+  <simplelist>
+   <member>Using the Visual Administration Interface via a Web browser.</member>
+   <member>Using the functions <function>vhost_define()</function> and
+   <function>vhost_remove()</function>.</member>
+   <member>Updating the system table directory using SQL statements.</member>
+  </simplelist>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="httpvirtualdirs">Virtual Directory Administration UI</link></para>
+  <para><link linkend="fn_vhost_define">vhost_define()</link>, <link linkend="fn_vhost_remove">vhost_remove()</link></para>
+  <para><link linkend="davhttppath">HTTP_PATH system table</link></para>
+  </tip>
+
+  <para>Virtuoso matches user-agent requests againts a logical path using
+  the longest entry that matches the path extracted  from the URI.  Suppose
+  we have two entries  '<computeroutput>/a/b</computeroutput>' and
+  '<computeroutput>/a</computeroutput>' and a request is made of:
+  '<computeroutput>http://foo.bar/a/b/c.html</computeroutput>', will match
+  the entry for '<computeroutput>/a/b</computeroutput>'.</para>
+
+  <para>First, Virtuoso will attempt to locate the physical path that has been
+  mapped to a virtual host, interface and logical path.  The virtual host
+  corresponds to the 'Host' header field value from HTTP/1.1 requests.  If the
+  first step does not succeed then the server will try resolving the interface
+  and logical path.  Failing that, the default step will attempt to resolve the path
+  directly to a physical location.</para>
+
+  <figure float="1"><title>HTTP Virtual Directory Matching</title>
+    <graphic fileref="virtualdirectories.jpg" width="570px" depth="335px"/></figure>
+
+<note><title>Note:</title>
+  <para>HTTP 1.0 does not use the HOST header.  Virtuoso will have little
+  choice but to send HTTP 1.0 user-agents the contents of the default
+  virtual host definition for the interface.  </para></note>
+
+    <para>Thus if the following mappings are in effect:</para>
+			<programlisting>
+/	-&gt;  /DAV
+/doc	-&gt;  http://docs.biz.com:/
+/admin	-&gt;  /admin
+</programlisting>
+			<para>
+The following translations would be made:
+</para>
+			<programlisting>
+/doc/howto/intro.html	   -&gt; http://docs.biz.com:/howto/intro.html
+/admin/help.vsp		   -&gt; /admin/help.vsp
+/gizmo/doc.xml		   -&gt; /DAV/gizmo/doc.xml
+</programlisting>
+			<para>
+Thus, the longest match is selected and the matching substring is replaced by
+the right hand side of the mapping.  Note that this is also how automatic proxying takes place,
+since a physical path beginning with http:// will be passed forward to a remote server.
+	</para>
+
+<sect3 id="defaultpageanddirbrws"><title>Default Pages And Directory Browsing</title>
+  <para>
+For each virtual host or logical path pair we can define a list of default pages.  If the
+requested URL path is a directory then the server checks the default page definition
+for that virtual directory, if a default page exists then the path will be internally
+expanded to include its name, ands its contents returned.
+</para>
+
+<example id="ex_defpage"><title>Default Page</title>
+<para>if we have a mapping for the host:</para>
+<programlisting>www.a.com</programlisting>
+<para>with the logical path mapping of:</para>
+<programlisting>'/' mapped to '/a'</programlisting>
+<para>with default page 'index.htm', then if the URL</para>
+<programlisting>http://www.a.com/</programlisting>
+<para>is requested the server will try to send the content of '/a/index.htm'.</para>
+</example>
+
+  <para>
+The same mechanism is used to determine whether a directory listing  is to be
+returned.  If a mapping is defined to have 'Browseable' set to a number greater
+than zero then the server, if a default page does not exist or is not defined,
+a directory listing will be resturned to the calling client.
+</para>
+</sect3>
+
+<sect3 id="virtandmultihosting"><title>Virtual Hosting and Multi Hosting</title>
+
+<para>
+The term Virtual Host refers to the practice of maintaining more than one server
+on one machine, differentiated by their apparent host name.  It is often
+desirable for companies sharing a web server to have their own domains, with
+web servers accessible as www.company1.com and www.company2.com, without
+requiring the user to know any extra path information.  The Virtual host can
+be IP-based or non-IP.  The IP-based (Multi Hosting) refers to practice of
+having one machine listen for incoming requests on different network interfaces
+and respond with different pages.  The non-IP-based (Virtual Hosting) refers
+to the practice of one machine having many DNS aliases, and requests from
+client to a specific alias returning a different response regarding content
+of 'Host' HTTP header field.  Virtuoso supports IP-based, virtual IP-based,
+and name-based virtual hosts. </para>
+  <para>
+For distinct IP-based, hosts are used to determine on which interfaces
+Virtuoso will listen and accept HTTP requests.
+</para>
+
+<!--
+Note that up to the moment we are only talking about URL path.  The
+network locator (see <ulink url="http://www.rfc-editor.org/rfc/rfc1738.txt">RFC1738</ulink>,
+<ulink url="http://www.rfc-editor.org/rfc/rfc1808.txt">RFC1808</ulink> and dependents)
+we will discuss in the Virtual hosting and Multihosting section of this document.
+-->
+
+</sect3>
+
+<sect3 id="virtproxy"><title>Virtuoso As A Proxy</title>
+
+  <para>The Virtuoso HTTP server can act as a proxy server on the same port
+  as the HTTP port.  You can put the host and port that the Virtuoso HTTP server
+  is listening on, into your browser proxy settings and all requests will be
+  processed by it.  Also this can be used to retrieve a page inside VSP.</para>
+
+  <para>The physical path setting of a virtual directory definition can be URL to
+  another HTTP server.  In which case Virtuoso will act as a proxy to that site
+  when the logical path for it is requested.</para>
+
+  <tip><title>See Also:</title>
+  <para><link linkend="furthervsp">Virtuoso also provides VSP functions for proxying.</link></para>
+  <para><link linkend="fn_http_proxy"><function>http_proxy()</function></link>.</para></tip>
+
+  <para>The nature of Virtuoso's Web Proxying ability makes it easy and
+  seamless to bind multiple websites under one roof.  Existing sites do not
+  have to move or change to be integrated under the Virtuoso Proxy.  Simply
+  map them under a logical path name.  They can be mapped multiple times
+  or from multiple ports.</para>
+
+  <para>If you already have pages written and working from other
+  servers via ASP or PHP, then you will be able to run these servers concurrently
+  with Virtuoso so they can share form data and give dynamic content from various
+  sources, consistent with our value proposition of maximum incorporation of new
+  technologies with minimum disruption to existing infrastructure.  Whether
+  these servers were hosted on various machines or the same machine
+  there is no need to expose their running ports and services.  This makes the
+  end user experience cleaner, and helps maintain some server security and/or
+  anonymity.</para>
+
+  <note><title>Note:</title>
+    <para>Virtuoso  provides runtime hosting capabilities and PHP support,
+    therefore ASP.Net and PHP and other applications can be run and hosted directly within
+the  file system or  WebDAV.</para></note>
+
+  <para>Suppose that you have two machines running existing web servers that
+  serve various parts of your intranet.  One web server may have been
+  constructed for or by your sales department while the other server may have
+  been a built by the support department.  These servers could be resolved by
+  http://sales.mycompany.com/ and http://support.mycompany.com/ respectively.</para>
+
+  <para>You can place Virtuoso on another server and start integrating your
+  existing sites under this installation.  You mayuse the Visual  Server Administration
+  Interface or choose to use the following commands via the isql interface:</para>
+
+    <programlisting><![CDATA[
+DB.DBA.VHOST_DEFINE(lpath=>'/sales', ppath=>'http://sales.mycompany.com/');
+DB.DBA.VHOST_DEFINE(lpath=>'/support', ppath=>'http://support.mycompany.com/');
+]]></programlisting>
+
+	<para>This way your old servers will exist under /sales/ and /support/ of
+  your new server.  Now you can start adding virtuoso .vsp pages to your
+  new Virtuoso server and they operate interleaved with your existing pages to
+  add new life and functionality as required.</para>
+
+  <para>You may decide that you want to install Virtuoso onto a server
+  where a web server already exists.  If you plan to use Virtuoso as your
+  default web server and the proxy to your existing server then you will need to
+  make sure that the servers run on different ports. The default port is 80,
+  you will have to configure Virtuoso to use this port from the virtuoso.ini file
+  and then move your existing web server port to another number.
+  Afterwards the procedure is similar:</para>
+
+    <programlisting><![CDATA[
+DB.DBA.VHOST_DEFINE(lpath=>'/apache', ppath=>'http://localhost:90/');
+]]></programlisting>
+
+<sect4 id="apachedoingproxy"><title>Proxying Virtuoso via Apache</title>
+
+  <para>You may also achieve the same goal as above but in reverse, using
+  another web server as a proxy in front of  Virtuoso.  If you have an existing
+  Apache server that you want to keep as you default web server then you can
+  set up a proxy within Apache to Virtuoso.</para>
+
+  <para>Firstly you will need to make sure that Apache can make use of the
+  mod_proxy module available from most Apache distribution sites.  You then have
+  to make sure that it is referenced in your httpd.conf (or apache.conf) file.
+  You should have something like:</para>
+
+    <screen>
+...
+LoadModule proxy_module       modules/libproxy.so
+...
+AddModule mod_proxy.c
+...
+</screen>
+
+  <para>You will then need to add a configuration line to the httpd.conf file
+  to let Apache know how to proxy requests Virtuoso:</para>
+
+    <screen>
+ProxyPass /virtserver   http://MyVirtuosoServer:8890/
+</screen>
+
+<tip><title>See Also:</title>
+<para><ulink url="http://www.apache.org/docs/">Apache Online Documentation</ulink></para>
+</tip>
+
+</sect4>
+			</sect3>
+      </sect2>
+
+
+
+<sect2 id="wsauth"><title>Authentication</title>
+  <para>
+If a Virtuoso/PL procedure is specified to perform authentication for this
+mapping then it will be executed.  The procedure can take one (varchar) parameter,
+the 'Realm' value.  The result from the procedure must be 1
+if authentication successful otherwise must be zero (0).
+If the procedure returns 0 this causes the processing to terminate and whatever
+output the hook generated to be sent to the client.  Typically this will be an
+authentication challenge.
+</para>
+</sect2>
+
+<sect2 id="wssessman"><title>Session Management</title>
+  <para>
+The Virtuoso HTTP session management consists of functions for session
+variables manipulation and an ability to define a pre- and post-processing function.
+The pre and post-processing functions are used to save and restore session
+data between HTTP posts, usually to and from a session table.</para>
+
+  <para>Session management must be enable by settings the flag for persistent
+  session variables in virtual directory mapping.  Virtual directory mappings use
+  the <emphasis>persistent_session_variables</emphasis> flag, which when
+specified, session variables can be used in a post-process function to determine
+if the session variables content must be stored on to the session table or not.
+</para>
+  <para>
+The post-processing function hook can be any user-defined Virtuoso/PL procedure,
+it will be executed every time after processing of the active page.
+</para>
+
+<tip><title>See Also:</title>
+<para><link linkend="sesmanvars">VSP Session Management and Session Variables</link></para>
+</tip>
+
+</sect2>
+
+<sect2 id="customauthsess"><title>Writing Your Own Authentication and Session Handling</title>
+  <para>
+We will explain the following precompiled procedures in Virtuoso used to
+authenticate three branches of users.
+</para>
+
+<simplelist>
+<member><emphasis>HP_AUTH_SQL_USER</emphasis> - VSP authentication based on DB users</member>
+<member><emphasis>HP_AUTH_DAV_ADMIN</emphasis> - VSP authentication based on WebDAV users</member>
+<member><emphasis>HP_AUTH_DAV_PROTOCOL</emphasis> - WebDAV repository authentication</member>
+</simplelist>
+
+<programlisting>
+-- Authenticate against names and passwords in SYS_USERS, using HP_SECURITY for level
+
+create procedure
+DB.DBA.HP_AUTH_SQL_USER (in realm varchar)
+{
+  declare _u_name, _u_password varchar;
+  declare _u_group, _u_id, allow_basic integer;
+
+  declare auth, sec, lev varchar;
+  declare _user varchar;
+  declare ses_dta, lines any;
+
+  lines := http_request_header ();         -- got a request header lines
+  sec := http_map_get ('security_level');  -- got a security level from http mapping
+  if (isstring (sec))
+    sec := ucase (sec);
+  if (sec = 'DIGEST')
+    allow_basic := 0;	-- if security is only digest then allow basic is false
+  else
+    allow_basic := 1;
+
+  auth :=
+    DB.DBA.vsp_auth_vec (lines);	-- parse request header to got authentication credentials
+  if (0 &lt;&gt; auth)			-- and if client sent any authentication information try it
+    {
+
+     lev := get_keyword ('authtype', auth, '');	-- check if client tried basic but
+						-- domain restricted to digest only
+     if (allow_basic = 0 and 'basic' = lev)
+	goto nf;
+      _user := get_keyword ('username', auth, '');
+
+      if ('' = _user) -- if no user name then 'bye'
+	return 0;
+
+      whenever not found goto nf;  -- if no such user in table - 'bye'
+
+      -- got the password from users table
+
+      select U_NAME, PWD_MAGIC_CALC (U_NAME, U_PASSWORD, 1), U_GROUP, U_ID
+	into _u_name, _u_password, _u_group, _u_id from DB.DBA.SYS_USERS
+	where u_name = _user;
+
+      -- check credential against user name and password
+
+      if (0 = _u_group and 1 = DB.DBA.vsp_auth_verify_pass (auth, _u_name,
+					       get_keyword ('realm', auth, ''),
+					       get_keyword ('uri', auth, ''),
+					       get_keyword ('nonce', auth, ''),
+					       get_keyword ('nc', auth, ''),
+					       get_keyword ('cnonce', auth, ''),
+					       get_keyword ('qop', auth, ''),
+					       _u_password))
+	{
+	  if (http_map_get ('persist_ses_vars'))
+	    {			-- if all is ok check for persistent variables storage
+	      declare vars any;
+	      declare sid varchar;
+            vars := null;
+            sid := http_param ('sid');
+	        -- got from session table stored variables
+            vars := coalesce ((select deserialize (ASES_VARS)
+              from DB.DBA.ADMIN_SESSION where ASES_ID = sid), null);
+            if (sid is not null and vars is null or isarray (vars))
+		connection_vars_set (vars);
+	      if (sid is not null and connection_get ('sid') is null)
+		{
+		  connection_set ('sid', sid);
+		}
+	    }
+	  return 1; -- return authenticated
+	}
+    }
+ nf: 	-- all errors go there, we compose authentication header
+	-- and send 401 unauthorized to the client
+  DB.DBA.vsp_auth_get (realm, http_path (),
+		md5 (datestring (now ())),
+		md5 ('eEsSlLAaf'),
+		'false', lines, allow_basic);
+  return 0; -- return not authenticated
+}
+;
+</programlisting>
+
+<programlisting>
+-- Authenticate against SYS_DAV_USER, using HP_SECURITY for level,
+-- in the context of DAV administration pages accessed through regular HTTP
+-- The logic is the same but in difference of password retrieval.
+
+create procedure
+DB.DBA.HP_AUTH_DAV_ADMIN (in realm varchar)
+{
+  declare _u_name, _u_pwd varchar;
+  declare _u_group, _u_id, allow_basic integer;
+
+  declare auth, sec, lev varchar;
+  declare _user varchar;
+  declare ses_dta, lines any;
+
+
+  lines := http_request_header ();
+  sec := http_map_get ('security_level');
+  if (isstring (sec))
+    sec := ucase (sec);
+  if (sec = 'DIGEST')
+    allow_basic := 0;
+  else
+    allow_basic := 1;
+  auth := DB.DBA.vsp_auth_vec (lines);
+
+  if (0 &lt;&gt; auth)
+    {
+
+      lev := get_keyword ('authtype', auth, '');
+      if (allow_basic = 0 and 'basic' = lev)
+	goto nf;
+      _user := get_keyword ('username', auth, '');
+
+      if ('' = _user)
+	return 0;
+
+      whenever not found goto nf;
+
+      -- we tried to find out password for enabled valid WebDAV user
+      select U_NAME, U_PWD, U_GROUP, U_ID
+	into _u_name, _u_pwd, _u_group, _u_id from WS.WS.SYS_DAV_USER
+	where u_name = _user and U_ACCOUNT_DISABLED = 0;
+
+      if (DB.DBA.vsp_auth_verify_pass (auth, _u_name,
+				get_keyword ('realm', auth, ''),
+				get_keyword ('uri', auth, ''),
+				get_keyword ('nonce', auth, ''),
+				get_keyword ('nc', auth, ''),
+				get_keyword ('cnonce', auth, ''),
+				get_keyword ('qop', auth, ''),
+				_u_pwd))
+	{
+	  if (http_map_get ('persist_ses_vars'))
+	    {
+	      declare vars any;
+	      declare sid varchar;
+            vars := null;
+            sid := http_param ('sid');
+            vars := coalesce ((select deserialize (ASES_VARS)
+              from DB.DBA.ADMIN_SESSION where ASES_ID = sid), null);
+            if (vars is null or isarray (vars))
+		  connection_vars_set (vars);
+	      if (connection_get ('sid') is null)
+		{
+		  connection_set ('sid', sid);
+		}
+	    }
+	  return (_u_id);
+	}
+    }
+ nf:
+  DB.DBA.vsp_auth_get (realm, '/admin/admin_dav',
+		md5 (datestring (now ())),
+		md5 ('vVAadAnIimMDdaNnimda'),
+		'false', lines, allow_basic);
+  return 0;
+}
+;
+</programlisting>
+
+<programlisting>
+-- The same as for DAV admin pages but in the context of DAV protocol requests.
+create procedure
+DB.DBA.HP_AUTH_DAV_PROTOCOL (in realm varchar)
+{
+  declare _u_name, _u_password, _perms varchar;
+  declare _u_id, _u_group, req_user, req_group, what integer;
+  declare auth varchar;
+  declare _user varchar;
+  declare our_auth_vec, lines, sec, path, req_perms, req_meth, cmp_perms, def_page varchar;
+  declare _method, lev, allow_basic, authenticated integer;
+
+  declare c cursor for select 1, COL_OWNER, COL_GROUP, COL_PERMS
+      from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) = path;
+  declare r cursor for select 2, RES_OWNER, RES_GROUP, RES_PERMS
+      from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path;
+
+  authenticated := 0;
+
+  lines := http_request_header ();
+  path := http_physical_path ();
+
+  if (isarray (lines))
+    {
+      req_meth := aref (lines, 0);
+      if (strchr (req_meth, ' ') is not null)
+        req_meth := lower (substring (req_meth, 1, strchr (req_meth, ' ')));
+    }
+
+  -- there we compose mask for permissions compared against
+  -- resource or collection permission
+  if (req_meth = 'get' or
+      req_meth = 'post' or
+      req_meth = 'options' or
+      req_meth = 'propfind' or
+      req_meth = 'head' or
+      req_meth = 'trace' or
+      req_meth = 'copy')
+    cmp_perms := '1__'; -- in this case only read access needed
+  else if (req_meth = 'mkcol' or req_meth = 'put')
+    {
+      if (length (path) &gt; 1
+          and strrchr (substring (path, 1, length(path) - 1), '/') is not null)
+        path := substring (path, 1,
+	  strrchr (substring (path, 1, length(path) - 1), '/') + 1);
+      cmp_perms := '11_';
+    }
+  else
+    cmp_perms := '11_'; -- but in this we needs a read/write access
+
+
+  what := 0;
+  whenever not found goto fr;
+  open c (prefetch 1);
+  fetch c into what, req_user, req_group, req_perms;
+		-- get from collections owner , owner group and permissions
+
+  def_page := http_map_get ('default_page');
+  if (isstring (def_page))
+    {
+      path := concat (path, def_page);
+      what := 0;
+    }
+fr:
+  close c;
+
+  if (not what)
+    {
+      whenever not found goto fe;
+      open r (prefetch 1);
+      fetch r into what, req_user, req_group, req_perms; -- if not a collection try a resource
+fe:
+      close r;
+    }
+
+
+  sec := http_map_get ('security_level'); -- see DB user authentication
+  if (isstring (sec))
+    sec := ucase (sec);
+  if (sec = 'DIGEST')
+    allow_basic := 0;
+  else
+    allow_basic := 1;
+
+  auth := DB.DBA.vsp_auth_vec (lines);
+
+  if (0 &lt;&gt; auth)
+    {
+      lev := get_keyword ('authtype', auth, '');
+      if (allow_basic = 0 and 'basic' = lev)
+	goto nf;
+
+      _user := get_keyword ('username', auth);
+
+      if (_user = '' or isnull (_user))
+	{
+	  goto nf;
+	}
+
+      whenever not found goto nf;
+
+      select U_NAME, U_PWD, U_GROUP, U_ID, U_METHODS, U_DEF_PERMS
+	into _u_name, _u_password, _u_group, _u_id, _method, _perms from WS.WS.SYS_DAV_USER
+	where U_NAME = _user and U_ACCOUNT_DISABLED = 0;
+      if (_u_password is null)
+	goto nf;
+      if (DB.DBA.vsp_auth_verify_pass (auth, _u_name,
+				coalesce(get_keyword ('realm', auth), ''),
+				coalesce(get_keyword ('uri', auth), ''),
+				coalesce(get_keyword ('nonce', auth), ''),
+				coalesce(get_keyword ('nc', auth),''),
+				coalesce(get_keyword ('cnonce', auth), ''),
+				coalesce(get_keyword ('qop', auth), ''),
+				_u_password))
+	{
+	  update WS.WS.SYS_DAV_USER set U_LOGIN_TIME = now () where U_NAME = _user;
+	  if (http_map_get ('persist_ses_vars'))
+	  {
+	    declare vars any;
+	    declare sid varchar;
+	    vars := null;
+	    sid := http_param ('sid');
+	    vars := coalesce ((select deserialize (ASES_VARS)
+            from DB.DBA.ADMIN_SESSION where ASES_ID = sid), null);
+          if (vars is null or isarray (vars))
+		connection_vars_set (vars);
+	    if (connection_get ('sid') is null)
+	    {
+		connection_set ('sid', sid);
+	    }
+	  }
+	  if (connection_get ('DAVUserID') &lt;&gt; _u_id)
+	    connection_set ('DAVUserID', _u_id);
+          authenticated := 1;
+	}
+    }
+
+-- Check permissions
+  if (authenticated and _u_id = 1) -- If user is DAV admin all rights granted
+    return 1;
+  else if (not authenticated and req_perms like concat ('______', cmp_perms, '%'))
+    return -1; 	-- if not authenticated and resource
+			-- does have public access return authenticated
+  else if (authenticated and
+          ((_u_id = req_user and req_perms like concat (cmp_perms, '%')) or
+	   (req_group = _u_group and req_perms like concat ('___', cmp_perms, '%')) or
+	   (req_perms like concat ('______', cmp_perms, '%'))))
+    return (_u_id); 	-- if user is owner or belongs to group
+				-- ownership return authenticated
+  else if (authenticated) 	-- if authenticated but does not access
+					-- return false but set 403 forbidden
+    {
+      http_request_status ('HTTP/1.1 403 Forbidden');
+      http ( concat ('&lt;!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"&gt;',
+             '&lt;HTML&gt;&lt;HEAD&gt;',
+             '&lt;TITLE&gt;403 Forbidden&lt;/TITLE&gt;',
+             '&lt;/HEAD&gt;&lt;BODY&gt;&lt;H1&gt;Forbidden&lt;/H1&gt;',
+             'Access to the resource is forbidden.&lt;/BODY&gt;&lt;/HTML&gt;'));
+      return 0;
+    }
+-- End check permissions
+
+nf: 	-- all error ceses go there, we send authentication credentials
+	-- and turn status 401 Unauthorized, and return false
+  DB.DBA.vsp_auth_get (realm, '/DAV',
+      md5 (datestring(now())),
+      md5 ('opaakki'),
+      'false', lines, allow_basic);
+  return 0;
+}
+;
+</programlisting>
+
+<programlisting>
+-- Post-processing function, this will executed after processing
+-- the request but before sending result to the client.
+create procedure
+DB.DBA.HP_SES_VARS_STORE ()
+{
+  declare vars any;
+  declare sid varchar;
+  if (http_map_get ('persist_ses_vars') and connection_is_dirty ())
+    -- if connection variables changed in request and persistent variables stored
+    {
+      vars := connection_vars (); -- get all variables
+      connection_vars_set (null); -- set immediately to empty vector (prevent changing)
+      sid := get_keyword ('sid', vars, null); -- got the session ID
+      -- store the variables in session table
+      if (sid is not null)
+	update DB.DBA.ADMIN_SESSION set ASES_VARS = serialize (vars) where ASES_ID = sid;
+    }
+}
+;
+</programlisting>
+
+  <para>
+These functions are implemented as part of Virtuoso server by default.  The user can
+freely define their own procedures based on this logic to use for special
+authentication (different users information table etc.) and session management.
+</para>
+</sect2>
+
+<sect2 id="cancelwebreq"><title>Cancellation of Web Requests</title>
+  <para>
+If there are many long-running tasks processing on Virtuoso it is possible to
+have denial of service.  To prevent this we can use status and stop functions.
+We can retrieve the URL, client IP-address, and process status code for all currently
+running VSP requests, then use this information to isolated and eliminate a process.
+</para>
+
+<para><link linkend="fn_http_pending_req"><function>http_pending_req()</function></link></para>
+
+<tip><title>See Also:</title>
+<para><link linkend="longhttptrans">Long HTTP Transactions</link></para></tip>
+</sect2>
+
+
+<sect2 id="virtwebrobot"><title>Virtuoso WebRobot API</title>
+  <para>
+The Virtuoso WebRobot (WebCopy) is useful for retrieving Internet web sites and
+storing them on to a local WebDAV repository.  Once retrieved, the local copy in
+the WebDAV repository can be exported to the local filesystem or another WebDAV
+enabled server.  The common features and usages are demonstrated in
+the <link linkend="webdataimportsexports">WebCopy User Interface</link> in the
+Visual Server Administration Interface.  This document provides the actual
+API's and techniques useful for some other implementations.
+</para>
+
+<sect3 id="robotnewtarget"><title>Creating A New Target</title>
+  <para>
+A new web server target is created by inserting a row in to
+the WS.WS.VFS_SITE table and then a row in to the WS.WS.VFS_QUEUE table.
+</para>
+<tip><title>See Also:</title>
+<para><link linkend="robotsystables">Web Robot System Tables</link> for table definitions</para>
+</tip>
+
+<example id="newrobottarget"><title>Creating a new target</title>
+  <para>
+This example creates a new target pointing to the site http://www.foo.com/help/,
+with instructions to walk across foreign links, delete a local page if it is detected
+that it has been removed from the remote, retrieve images, walk on entire site using
+HTTP GET method.  The content will be stored in /DAV/sites/www_foo_com collection
+in the local WebDAV repository.
+</para>
+  <orderedlist><listitem><para>Create target for http://www.foo.com/help/</para>
+<programlisting>
+insert into WS.WS.VFS_SITE
+    (VS_DESCR,VS_HOST,VS_URL,VS_OWN,VS_ROOT,VS_NEWER,VS_DEL,
+      VS_FOLLOW,VS_NFOLLOW,VS_SRC,VS_OPTIONS,VS_METHOD,VS_OTHER)
+  values
+    ('My first test', 'www.foo.com', '/help/', 1, 'sites/www_foo_com', '1990-01-01',
+      'checked', '/%;', '', 'checked', null, null, 'checked');
+</programlisting>
+</listitem>
+<listitem><para>Create start queue entry</para>
+<programlisting>
+insert into WS.WS.VFS_QUEUE
+    (VQ_HOST,VQ_TS,VQ_URL,VQ_ROOT,VQ_STAT,VQ_OTHER)
+  values ('www.foo.com', now(), '/help/', 'sites/www_foo_com', 'waiting', null);
+</programlisting>
+</listitem>
+</orderedlist>
+</example>
+</sect3>
+
+<sect3 id="robotqueuehook"><title>Creating A Custom Queue Hook</title>
+  <para>
+The custom queue hook can be used to extract the next entry from the robot's
+queue following a custom algorithm.  The following example extracts the
+oldest entry comparing to the my_data array (this array consists of
+non-desirable sites) and returns if some are found.
+</para>
+
+<example id="robotcustomqueuehook"><title>Creating A Custom Robot Queue Hook</title>
+<programlisting>
+create procedure
+  DB.DBA.my_hook (
+    in host varchar, in collection varchar, out url varchar, in my_data any
+  )
+{
+  declare next_url varchar;
+  whenever not found goto done;
+
+  -- we trying to extract the oldest entry
+  declare cr cursor for select VQ_URL from WS.WS.VFS_QUEUE
+      where VQ_HOST = host and VQ_ROOT = collection and VQ_STAT = 'waiting'
+      order by VQ_HOST, VQ_ROOT, VQ_TS for update;
+
+  open cr;
+  while (1)
+  {
+    fetch cr into next_url;
+    if (get_keyword (host, my_data, null) is not null) -- process if host not in black-list
+    {
+      update WS.WS.VFS_QUEUE set VQ_STAT = 'pending'
+	  where VQ_HOST = host and VQ_ROOT = collection and VQ_URL = next_url;
+      url := next_url;
+      close cr;
+      return 1;
+    }
+    else -- otherwise continue finding
+	update WS.WS.VFS_QUEUE set VQ_STAT = 'retrieved'
+	  where VQ_HOST = host and VQ_ROOT = collection and VQ_URL = next_url;
+    }
+done:
+  -- if we arrive at the bottom of the queue return false to stop processing
+  close cr;
+  return 0;
+}
+;
+</programlisting>
+</example>
+
+<note><title>Note:</title>
+<para>The default function will return the oldest entry from queue without
+any restriction.  The follow/not-follow restrictions are applied to the path
+on target before inserting a new queue entry.
+</para></note>
+</sect3>
+
+<sect3 id="robotretrievestart"><title>Starting The Site's Retrieval/Update</title>
+  <para>
+The site retrieval can be performed with the WS.WS.SERV_QUEUE_TOP PL function
+integrated in to the Virtuoso server.
+</para>
+
+<para><link linkend="fn_serv_queue_top"><function>serv_queue_top()</function></link></para>
+
+</sect3>
+
+<sect3 id="exporttofsordav">
+<title>Exporting Local Content To Filesystem Or Other Webdav Enabled Server</title>
+
+<para><link linkend="fn_lfs_exp"><function>lfs_exp</function></link></para>
+
+<para><link linkend="fn_dav_exp"><function>dav_exp</function></link></para>
+
+</sect3>
+
+<tip><title>See Also</title>
+<para><link linkend="robotsystables">Web Robot System tables</link></para></tip>
+</sect2>
+
+<sect2 id="server_http_ext">
+<title>HTTP Server Extensions</title>
+
+<para>
+The Virtuoso shared object library enables you to create your own custom
+extensions to the Virtuoso HTTP server and create custom VSEs.  Support
+for PHP page execution was implemented using this functionality.  Virtuoso
+can automatically switch processing mode from VSP to PHP or some other custom
+extension based on the extension of the files being requested from the HTTP server.
+To enable Virtuoso to process files of a different extension you have to write a
+VSE handler where part of the name contains the
+extension: <emphasis>__http_handler_[extension]</emphasis>.  The VSEs
+for HTTP handling must have the following parameters:
+</para>
+
+<funcsynopsis id="fsyn_http_handler">
+  <funcprototype id="fproto_http_handler">
+    <funcdef><function>__http_handler_&lt;extension&gt;</function></funcdef>
+    <paramdef>in <parameter>resource</parameter> varchar</paramdef>
+    <paramdef>in <parameter>parameters</parameter> vector</paramdef>
+    <paramdef>in <parameter>request_header</parameter> vector</paramdef>
+    <paramdef>inout <parameter>type_flag</parameter> any</paramdef>
+  </funcprototype>
+</funcsynopsis>
+
+<itemizedlist>
+<listitem><para><emphasis>resource</emphasis> is either the path to a
+  file or the content of a resource in the WebDAV store.  The interpretation
+  of this parameter by the server is dependent of the type_flag parameter.</para></listitem>
+<listitem><para><emphasis>parameters</emphasis> for execution, the server
+  will pass to this parameter a string session containing the entity body of the POST
+  method request.</para></listitem>
+<listitem><para><emphasis>request_header</emphasis> is the HTTP request header
+  lines as an array of strings.  This parameter will accept the original header as a vector.
+  The vector will contain the complete HTTP request header.</para></listitem>
+<listitem><para><emphasis>type_flag</emphasis> is an in/out parameter which is a flag
+  for indicating the type of the first parameter.  If the resource parameter is a file path
+  in the file system this flag should be NULL, if the resource is located in the WebDAV store
+  this flag should be set to URI of the WebDAV resource, something like:
+  virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/dir1/subdir/myfile.php.
+  Virtuoso will return in this parameter an array of two strings set to the
+  http response status line and the header after execution.
+</para></listitem>
+</itemizedlist>
+
+<tip><title>See Also:</title>
+<para><link linkend="cinterface">Virtuoso Server Extensions Interface</link></para>
+</tip>
+</sect2>
+
+<sect2 id="webserverchunking"><title>Chunked Transfer Encoding</title>
+
+<para>Virtuoso supports HTTP 1.1 Chunking Encoding which allows Virtuoso to
+send the user agent chunks of output as the page is still processing.  Chunking
+is enabled by calling <function>http_flush(1)</function> within the VSP page.
+Chunks are sent for every 4k worth of output generated.  Chunked mode requires
+the following conditions:</para>
+
+<simplelist>
+  <member>no "Content-Length" header sent to the client using http_header()</member>
+  <member>no "Content-Encoding" header sent to the client using http_header()</member>
+  <member>use http_xslt() is not permitted</member>
+  <member>The client supports HTTP 1.1</member>
+</simplelist>
+
+<para>Failing these conditions, <function>http_flush(1)</function> will be a
+No-Operation.</para>
+
+<para>Chunked mode is not supported for static content.</para>
+
+<tip><title>See Also:</title>
+  <para><link linkend="fn_http_flush"><function>http_flush()</function></link></para>
+  <para><ulink url="http://www.rfc-editor.org/rfc/rfc2616.txt">RFC-2616</ulink></para></tip>
+
+</sect2>
+
+<sect2 id="webserverviaapache"><title>Using Virtuoso Server capabilities via Apache Web Server</title>
+    <para>
+	In some situations  Virtuoso services like WebDAV, JSP, PHP etc.
+        may need to be accessed via an Apache Web Server. All this can be done
+        through  apache’s mod_proxy to Virtuoso HTTP server and the Virtuoso HTTP
+        server can be configured to take requests coming only from localhost.
+    </para>
+    <para>
+	The following configuration makes :
+	The Virtuoso server to listen for HTTP requests comming ONLY from localhost.
+        Apache proxies the outside requests to Virtuoso HTTP server.
+    </para>
+    <programlisting><![CDATA[
+	line added to the /etc/httpd/conf/httpd.conf
+	(999.999.999.999, must be changed with actual IP address of external interface):
+	----------------------------------
+	Listen 8080
+	<VirtualHost 999.999.999.999:8080 127.0.0.1:8080>
+	       ServerAdmin webmaster@host.example.domain
+	       ProxyPass  / http://localhost:6666/
+	</VirtualHost>
+	----------------------------------
+	]]></programlisting>
+    <programlisting><![CDATA[
+	Then changes in the virtuoso.ini
+
+	[HTTPServer] section)
+        ...
+	ServerPort = 127.0.0.1:6666
+	...
+	]]></programlisting>
+</sect2>
+
+</sect1>
+
+
+
+

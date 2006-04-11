@@ -1,0 +1,550 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_tidy_html">
+  <refmeta>
+    <refentrytitle>tidy_html</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>tidy_html</refname>
+    <refpurpose>Invoke built-in version of HTML Tidy utility to fix typical errors in  HTML text</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_tidy_html">
+      <funcprototype id="fproto_tidy_html">
+        <funcdef><function>tidy_html</function></funcdef>
+	<paramdef>in <parameter>raw_html</parameter> varchar</paramdef>
+	<paramdef>in <parameter>tidy_config</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title><para>
+This function improves the given source HTML text, by invoking a
+custom version of HTML Tidy utility.
+To learn more about Tidy see http://www.w3.org/People/Raggett/tidy/ .
+Some particular combinations of errors in source HTML may cause Tidy to
+misinterpret the source so the output may be incomplete or corrupted.
+This is an  unavoidable problem, due to heruistic nature of the procedure.
+ On the other hand, Tidy will process almost any HTML suitable for some
+&quot;popular&quot; browser, e.g. Internet Explorer or Netscape Navigator.
+</para></refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>raw_html</title>
+      <para>
+Source HTML text to process.
+Note that the encoding of this text must be specified in
+<parameter>tidy_config</parameter> string,
+and default encoding of session will not be mentoined by Tidy.
+</para>
+</refsect2>
+    <refsect2><title>tidy_config</title>
+<!--
+      <para>
+Configuration string, space-delimited list of options, exactly as
+in original Tidy's command-line or in Tidy's configuration file.
+Not all options of original Tidy will work, due to obvious reasons,
+unsupported options will be silently ignored, so you may read your
+favorite Tidy's configuration file by file_to_string function and
+pass it to tidy_html.
+</para>
+    <table><title>Tidy options</title>
+      <tgroup cols="2">
+       <thead><row><entry>Option</entry><entry>Effect</entry></row></thead>
+	<tbody>
+<row><entry>-indent or -i</entry><entry>indent element content</entry></row>
+<row><entry>-omit   or -o</entry><entry>omit optional endtags</entry></row>
+<row><entry>-wrap 72</entry><entry>wrap text at column 72 (default is 68)</entry></row>
+<row><entry>-upper  or -u</entry><entry>force tags to upper case (default is lower)</entry></row>
+<row><entry>-clean  or -c</entry><entry>replace font, nobr &amp; center tags by CSS</entry></row>
+<row><entry>-numeric or -n</entry><entry>output numeric rather than named entities</entry></row>
+<row><entry>-errors or -e</entry><entry>only show errors</entry></row>
+<row><entry>-quiet or -q</entry><entry>suppress nonessential output</entry></row>
+<row><entry>-xml</entry><entry>use this when input is wellformed xml</entry></row>
+<row><entry>-asxml</entry><entry>to convert html to wellformed xml</entry></row>
+<row><entry>-slides</entry><entry>(DISABLED) to burst into slides on h2 elements</entry></row>
+<row><entry>-raw</entry><entry>leave chars > 128 unchanged upon output</entry></row>
+<row><entry>-ascii</entry><entry>use ASCII for output, Latin-1 for input</entry></row>
+<row><entry>-latin1</entry><entry>use Latin-1 for both input and output</entry></row>
+<row><entry>-iso2022</entry><entry>use ISO2022 for both input and output</entry></row>
+<row><entry>-utf8</entry><entry>use UTF-8 for both input and output</entry></row>
+<row><entry>-mac</entry><entry>use the Apple MacRoman character set</entry></row>
+<row><entry>-config &lt;file&gt;</entry><entry>(DISABLED) set options from config &lt;file&gt;</entry></row>
+<row><entry>-f &lt;file&gt;</entry><entry>(DISABLED) write errors to named &lt;file&gt;</entry></row>
+<row><entry>-modify or -m</entry><entry>(DISABLED) to modify original files</entry></row>
+<row><entry>-version or -v</entry><entry>(DISABLED) show version</entry></row>
+<row><entry>-help or -h</entry><entry>(DISABLED) list command line / configuration options</entry></row>
+	</tbody>
+      </tgroup>
+    </table>
+-->
+      <para>
+Configuration string is a list of options, delimited by newlines,
+with exactly the same syntax as original Tidy's configuration file.
+Not all options of original Tidy will work, due to obvious reasons,
+unsupported options will be silently ignored, so you may read your
+favorite Tidy's configuration file by file_to_string function and
+pass it to tidy_html.
+</para>
+
+<formalpara><title>tidy-mark: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis> (the default) Tidy will add a meta
+element to the document head to indicate that the document has
+been tidied. To suppress this, set tidy-mark to <emphasis>no</emphasis>. Tidy
+won't add a meta element if one is already present.</para></formalpara>
+
+<formalpara><title>markup: <emphasis>bool</emphasis></title>
+
+<para>Determines whether Tidy generates a pretty printed version of
+the markup. Bool values are either <emphasis>yes</emphasis> or <emphasis>no</emphasis>.
+Note that Tidy won't generate a pretty printed version if it
+finds unknown tags, or missing trailing quotes on attribute
+values, or missing trailing '&gt;' on tags. The default is
+<emphasis>yes</emphasis>.</para></formalpara>
+
+<formalpara><title>wrap: <emphasis>number</emphasis></title>
+
+<para>Sets the right margin for line wrapping. Tidy tries to wrap
+lines so that they do not exceed this length. The default is 66.
+Set wrap to zero if you want to disable line wrapping.</para></formalpara>
+
+<formalpara><title>wrap-attributes: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, attribute values may be wrapped
+across lines for easier editing. The default is no. This option
+can be set independently of wrap-scriptlets</para></formalpara>
+
+<formalpara><title>wrap-script-literals: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, this allows lines to be wrapped
+within string literals that appear in script attributes. The
+default is <emphasis>no</emphasis>. The example shows how Tidy wraps a really
+really long script string literal inserting a backslash character
+before the linebreak:
+<screen>
+&lt;a href="somewhere.html" onmouseover="document.status = '...some \
+really, really, really, really, really, really, really, really, \
+really, really long string..';"&gt;test&lt;/a&gt;
+</screen>
+</para></formalpara>
+
+<formalpara><title>wrap-asp: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>no</emphasis>, this prevents lines from being wrapped
+within ASP pseudo elements, which look like:
+&lt;%&#160;...&#160;%&gt;. The default is <emphasis>yes</emphasis>.</para></formalpara>
+
+<formalpara><title>wrap-jste: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>no</emphasis>, this prevents lines from being wrapped
+within JSTE pseudo elements, which look like:
+&lt;#&#160;...&#160;#&gt;. The default is <emphasis>yes</emphasis>.</para></formalpara>
+
+<formalpara><title>wrap-php: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>no</emphasis>, this prevents lines from being wrapped
+within PHP pseudo elements. The default is <emphasis>yes</emphasis>.</para></formalpara>
+
+<formalpara><title>literal-attributes: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, this ensures that whitespace
+characters within attribute values are passed through unchanged.
+The default is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>tab-size: <emphasis>number</emphasis></title>
+
+<para>Sets the number of columns between successive tab stops. The
+default is 4. It is used to map tabs to spaces when reading
+files. Tidy never outputs files with tabs.</para></formalpara>
+
+<formalpara><title>indent: <emphasis>no, yes</emphasis> or <emphasis>auto</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, Tidy will indent block-level tags.
+The default is <emphasis>no</emphasis>. If set to <emphasis>auto</emphasis> Tidy will
+decide whether or not to indent the content of tags such as
+title, h1-h6, li, td, th, or p depending on whether or not the
+content includes a block-level element. You are advised to avoid
+setting indent to yes as this can expose layout bugs in some
+browsers.</para></formalpara>
+
+<formalpara><title>indent-spaces: <emphasis>number</emphasis></title>
+
+<para>Sets the number of spaces to indent content when indentation
+is enabled. The default is 2 spaces.</para></formalpara>
+
+<formalpara><title>indent-attributes: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, each attribute will begin on a new
+line. The default is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>hide-endtags: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, optional end-tags will be omitted
+when generating the pretty printed markup. This option is ignored
+if you are outputting to XML. The default is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>input-xml: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, Tidy will use the XML parser rather
+than the error correcting HTML parser. The default is
+<emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>output-xml: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, Tidy will use generate the pretty
+printed output writing it as well-formed XML. Any entities not
+defined in XML 1.0 will be written as numeric entities to allow
+them to be parsed by an XML parser. The tags and attributes will
+be in the case used in the input document, regardless of other
+options. The default is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>add-xml-pi: <emphasis>bool</emphasis>, add-xml-decl: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, Tidy will add the XML declatation
+when outputting XML or XHTML. The default is <emphasis>no</emphasis>. Note
+that if the input document includes an &lt;?xml?&gt; declaration
+then it will appear in the output independent of the value of
+this option.</para></formalpara>
+
+<formalpara><title>output-xhtml: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, Tidy will generate the pretty printed
+output writing it as extensible HTML. The default is <emphasis>no</emphasis>.
+This option causes Tidy to set the doctype and default namespace
+as appropriate to XHTML. If a doctype or namespace is given they
+will checked for consistency with the content of the document. In
+the case of an inconsistency, the corrected values will appear in
+the output. For XHTML, entities can be written as named or
+numeric entities according to the value of the "numeric-entities"
+property. The tags and attributes will be output in the case used
+in the input document, regardless of other options.</para></formalpara>
+
+<formalpara><title>doctype: <emphasis>omit, auto, strict, loose</emphasis> or
+&lt;<emphasis>fpi</emphasis>&gt;</title>
+
+<para>This property controls the doctype declaration generated by
+Tidy. If set to <emphasis>omit</emphasis> the output file won't contain a
+doctype declaration. If set to <emphasis>auto</emphasis> (the default) Tidy
+will use an educated guess based upon the contents of the
+document. If set to <emphasis>strict</emphasis>, Tidy will set the doctype to
+the strict DTD. If set to <emphasis>loose</emphasis>, the doctype is set to
+the loose (transitional) DTD. Alternatively, you can supply a
+string for the formal public identifier (fpi) for example:
+<screen>
+doctype: "-//ACME//DTD HTML 3.14159//EN"
+</screen>
+If you specify the fpi for an XHTML document, Tidy will set
+the system identifier to the empty string. Tidy leaves the
+document type for generic XML documents unchanged.</para></formalpara>
+
+<formalpara><title>char-encoding: <emphasis>raw, ascii, latin1, utf8</emphasis> or
+<emphasis>iso2022</emphasis></title>
+
+<para>Determines how Tidy interprets character streams. For
+<emphasis>ascii</emphasis>, Tidy will accept Latin-1 character values, but
+will use entities for all characters whose value &gt; 127. For
+<emphasis>raw</emphasis>, Tidy will output values above 127 without
+translating them into entities. For <emphasis>latin1</emphasis> characters
+above 255 will be written as entities. For <emphasis>utf8</emphasis>, Tidy
+assumes that both input and output is encoded as UTF-8. You can
+use <emphasis>iso2022</emphasis> for files encoded using the ISO2022 family
+of encodings e.g. ISO 2022-JP. The default is
+<emphasis>ascii</emphasis>.</para></formalpara>
+
+<formalpara><title>numeric-entities: <emphasis>bool</emphasis></title>
+
+<para>Causes entities other than the basic XML 1.0 named entities
+to be written in the numeric rather than the named entity form.
+The default is <emphasis>no</emphasis></para></formalpara>
+
+<formalpara><title>quote-marks: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, this causes " characters to be
+written out as &amp;quot; as is preferred by some editing
+environments. The apostrophe character ' is written out as
+&amp;#39; since many web browsers don't yet support &amp;apos;.
+The default is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>quote-nbsp: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, this causes non-breaking space
+characters to be written out as entities, rather than as the
+Unicode character value 160 (decimal). The default is
+<emphasis>yes</emphasis>.</para></formalpara>
+
+<formalpara><title>quote-ampersand: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, this causes unadorned &amp;
+characters to be written out as &amp;amp;. The default is
+<emphasis>yes</emphasis>.</para></formalpara>
+
+<formalpara><title>assume-xml-procins: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, this changes the parsing of
+processing instructions to require ?&gt; as the terminator rather
+than &gt;. The default is <emphasis>no</emphasis>. This option is
+automatically set if the input is in XML.</para></formalpara>
+
+<formalpara><title>fix-backslash: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, this causes backslash characters "\"
+in URLs to be replaced by forward slashes "/". The default is
+<emphasis>yes</emphasis>.</para></formalpara>
+
+<formalpara><title>break-before-br: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, Tidy will output a line break before
+each &lt;br&gt; element. The default is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>uppercase-tags: <emphasis>bool</emphasis></title>
+
+<para>Causes tag names to be output in upper case. The default is
+<emphasis>no</emphasis> resulting in lowercase, except for XML input where
+the original case is preserved.</para></formalpara>
+
+<formalpara><title>uppercase-attributes: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis> attribute names are output in upper
+case. The default is <emphasis>no</emphasis> resulting in lowercase, except
+for XML where the original case is preserved.</para></formalpara>
+
+<formalpara><title>word-2000: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, Tidy will go to great pains to strip
+out all the surplus stuff Microsoft Word 2000 inserts when you
+save Word documents as "Web pages". The default is <emphasis>no</emphasis>.
+Note that Tidy doesn't yet know what to do with VML markup from
+Word, but in future I hope to be able to map VML to SVG.</para>
+<para>
+ Microsoft has developed its own optional filter for exporting to
+HTML, and the 2.0 version is much improved. You can download the
+filter free from the <ulink url="http://officeupdate.microsoft.com/2000/downloadDetails/Msohtmf2.htm">
+Microsoft Office Update site</ulink>.</para></formalpara>
+
+<formalpara><title>clean: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, causes Tidy to strip out surplus
+presentational tags and attributes replacing them by style rules
+and structural markup as appropriate. It works well on the html
+saved from Microsoft Office'97. The default is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>logical-emphasis: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, causes Tidy to replace any occurrence
+of i by em and any occurrence of b by strong. In both cases, the
+attributes are preserved unchanged. The default is <emphasis>no</emphasis>.
+This option can now be set independently of the clean and
+drop-font-tags options.</para></formalpara>
+
+<formalpara><title>drop-empty-paras: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, empty paragraphs will be discarded.
+If set to no, empty paragraphs are replaced by a pair of
+&lt;br&gt; elements as HTML4 precludes empty paragraphs. The
+default is <emphasis>yes</emphasis>.</para></formalpara>
+
+<formalpara><title>drop-font-tags: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis> together with the clean option (see
+above), Tidy will discard font and center tags rather than
+creating the corresponding style rules. The default is
+<emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>enclose-text: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, this causes Tidy to enclose any text
+it finds in the body element within a p element. This is useful
+when you want to take an existing html file and use it with a
+style sheet. Any text at the body level will screw up the
+margins, but wrap the text within a p element and all is well!
+The default is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>enclose-block-text: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, this causes Tidy to insert a p
+element to enclose any text it finds in any element that allows
+mixed content for HTML transitional but not HTML strict. The
+default is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>fix-bad-comments: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, this causes Tidy to replace
+unexpected hyphens with "=" characters when it comes across
+adjacent hyphens. The default is <emphasis>yes</emphasis>. This option is
+provided for users of Cold Fusion which uses the comment syntax:
+&lt;!---&#160;---&gt;</para></formalpara>
+
+<formalpara><title>add-xml-space: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, this causes Tidy to add
+xml:space="preserve" to elements such as pre, style and script
+when generating XML. This is needed if the whitespace in such
+elements is to be parsed appropriately without having access to
+the DTD. The default is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>alt-text: <emphasis>string</emphasis></title>
+
+<para>This allows you to set the default alt text for img
+attributes. This feature is dangerous as it suppresses further
+accessibility warnings. <emphasis>YOU ARE RESPONSIBLE FOR MAKING YOUR
+DOCUMENTS ACCESSIBLE TO PEOPLE WHO CAN'T SEE THE
+IMAGES!!!</emphasis></para></formalpara>
+
+<formalpara><title>write-back: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, Tidy will write back the tidied
+markup to the same file it read from. The default is <emphasis>no</emphasis>.
+You are advised to keep copies of important files before tidying
+them as on rare occasions the result may not always be what you
+expect.</para></formalpara>
+
+<formalpara><title>keep-time: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, Tidy won't alter the last modified
+time for files it writes back to. The default is <emphasis>yes</emphasis>.
+This allows you to tidy files without effecting which ones will
+be uploaded to the Web server when using a tool such as
+'SiteCopy'. Note that this feature may not work on some
+platforms.</para></formalpara>
+
+<formalpara><title>error-file: <emphasis>filename</emphasis></title>
+
+<para>Writes errors and warnings to the named file rather than to
+stderr.</para></formalpara>
+
+<formalpara><title>show-warnings: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>no</emphasis>, warnings are suppressed. This can be
+useful when a few errors are hidden in a flurry of warnings. The
+default is <emphasis>yes</emphasis>.</para></formalpara>
+
+<formalpara><title>quiet: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, Tidy won't output the welcome message
+or the summary of the numbers of errors and warnings. The default
+is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>gnu-emacs: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis>, Tidy changes the format for reporting
+errors and warnings to a format that is more easily parsed by GNU
+Emacs. The default is <emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>split: <emphasis>bool</emphasis></title>
+
+<para>If set to <emphasis>yes</emphasis> Tidy will use the input file to create
+a sequence of slides, splitting the markup prior to each
+successive &lt;h2&gt;. You can see an example of the results in a
+<ulink url="http://www.w3.org/Talks/1999/03/24-stockholm-xhtml/">
+recent talk on XHTML</ulink>. The slides are written to
+"slide1.html", "slide2.html" etc. The default is
+<emphasis>no</emphasis>.</para></formalpara>
+
+<formalpara><title>new-empty-tags: <emphasis>tag1, tag2, tag3</emphasis></title>
+
+<para>Use this to declare new empty inline tags. The option takes a
+space or comma separated list of tag names. Unless you declare
+new tags, Tidy will refuse to generate a tidied file if the input
+includes previously unknown tags. Remember to also declare empty
+tags as either inline or blocklevel, see below.</para></formalpara>
+
+<formalpara><title>new-inline-tags: <emphasis>tag1, tag2, tag3</emphasis></title>
+
+<para>Use this to declare new non-empty inline tags. The option
+takes a space or comma separated list of tag names. Unless you
+declare new tags, Tidy will refuse to generate a tidied file if
+the input includes previously unknown tags.</para></formalpara>
+
+<formalpara><title>new-blocklevel-tags: <emphasis>tag1, tag2, tag3</emphasis></title>
+
+<para>Use this to declare new block-level tags. The option takes a
+space or comma separated list of tag names. Unless you declare
+new tags, Tidy will refuse to generate a tidied file if the input
+includes previously unknown tags. Note you can't change the
+content model for elements such as table, ul, ol and dl. This is
+explained in more detail in the original release notes.</para></formalpara>
+
+<formalpara><title>new-pre-tags: <emphasis>tag1, tag2, tag3</emphasis></title>
+
+<para>Use this to declare new tags that are to be processed in
+exactly the same way as HTML's pre element. The option takes a
+space or comma separated list of tag names. Unless you declare
+new tags, Tidy will refuse to generate a tidied file if the input
+includes previously unknown tags. Note you can't as yet add new
+CDATA elements (similar to script).</para></formalpara>
+
+
+</refsect2>
+  </refsect1>
+  <refsect1 id="ret"><title>Return Types</title>
+<para></para></refsect1>
+  <refsect1 id="errors"><title>Errors</title>
+    <table><title>Errors signalled by tidy_html</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>XTID2</errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname>HTML Tidy failed</errorname></entry>
+	    <entry>The given HTML text contains serious errors. To get detailed list of them, call tidy_list_errors with same paramaters as tidy_html.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_tidy_html"><title></title>
+      <para></para>
+      <screen>
+fine_html := tidy_html (ugly_html, '
+indent: auto
+indent-spaces: 2
+wrap: 72
+markup: yes
+output-xml: no
+input-xml: no
+show-warnings: yes
+numeric-entities: yes
+quote-marks: yes
+quote-nbsp: yes
+quote-ampersand: no
+break-before-br: no
+uppercase-tags: no
+uppercase-attributes: no
+char-encoding: latin1
+new-inline-tags: cfif, cfelse, math, mroot,
+  mrow, mi, mn, mo, msqrt, mfrac, msubsup, munderover,
+  munder, mover, mmultiscripts, msup, msub, mtext,
+  mprescripts, mtable, mtr, mtd, mth
+new-blocklevel-tags: cfoutput, cfquery
+new-empty-tags: cfelse');
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_tidy_list_errors"></link></para>
+  </refsect1>
+</refentry>
+

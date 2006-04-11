@@ -1,0 +1,181 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<tables>
+	<table name="DEMO.DEMO.EMPLOYEES"  parent="xsi:nil" >
+		<column name="EMPLOYEEID" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="LASTNAME" type="VARCHAR(40)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="FIRSTNAME" type="VARCHAR(30)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="TITLE" type="VARCHAR(30)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="TITLEOFCOURTESY" type="VARCHAR(25)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="BIRTHDATE" type="DATE" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="HIREDATE" type="DATE" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="ADDRESS" type="VARCHAR(60)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="CITY" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="REGION" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="POSTALCODE" type="VARCHAR(10)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="COUNTRY" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="HOMEPAGE" type="VARCHAR(24)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="EXTENSION" type="VARCHAR(4)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="PHOTO" type="LONGVARBINARY" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="NOTES" type="LONGVARCHAR" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="REPORSTO" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<pk  is_unique="xsi:false"  is_clustered="xsi:false" is_oid="xsi:false">
+		   <field col="EMPLOYEEID" ord="1"/>
+		</pk>
+	</table>
+
+
+	<table name="DEMO.DEMO.CATEGORIES"  parent="xsi:nil" >
+		<column name="CATEGORYID" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="CATEGORYNAME" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="DESCRIPTION" type="LONGVARCHAR" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="PICTURE" type="LONGVARBINARY" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+
+		<pk  is_unique="xsi:false"  is_clustered="xsi:false" is_oid="xsi:false">
+		   <field col="CATEGORYID" ord="1"/>
+		</pk>
+		<fk col="SUPPLIERID">
+			    <reference table="DEMO.DEMO.SUPPLIERS" col="SUPPLIERID"  delete_rule="xsi:nil" update_rule="xsi:nil"/>
+		</fk>		
+	</table>
+
+	<table name="DEMO.DEMO.SHIPPERS"  parent="xsi:nil" >
+		<column name="SHIPPERID" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="COMPANYNAME" type="VARCHAR(40)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="PHONE" type="VARCHAR(24)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+
+		<pk  is_unique="xsi:false"  is_clustered="xsi:false" is_oid="xsi:false">
+		   <field col="SHIPPERID" ord="1"/>
+		</pk>
+	</table>
+
+	<table name="DEMO.DEMO.SUPPLIERS"  parent="xsi:nil" >
+		<column name="SUPPLIERID" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="COMPANYNAME" type="VARCHAR(40)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="CONTACTNAME" type="VARCHAR(30)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="CONTACTTITLE" type="VARCHAR(30)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="ADDRESS" type="VARCHAR(60)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="CITY" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="REGION" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="POSTALCODE" type="VARCHAR(10)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="COUNTRY" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="PHONE" type="VARCHAR(24)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="FAX" type="VARCHAR(24)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="HOMEPAGE" type="LONGVARCHAR" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+
+
+		<pk  is_unique="xsi:false"  is_clustered="xsi:false" is_oid="xsi:false">
+		   <field col="SUPPLIERID" ord="1"/>
+		</pk>
+	</table>
+
+
+
+ 
+	<table name="DEMO.DEMO.PRODUCTS"  parent="xsi:nil" >
+		<column name="PRODUCTID" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="SUPPLIERID" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="CATEGORYID" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="PRODUCTNAME" type="VARCHAR(40)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="QUANTITYPERUNIT" type="VARCHAR(20)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="UNITPRICE" type="DOUBLEPRECISION" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="UNITSINSTOCK" type="SMALINT" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="UNITSONORDER" type="SMALINT" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="REORDERLEVEL" type="SMALINT" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="DISCONTINUED" type="SMALINT" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+
+		<pk  is_unique="xsi:false"  is_clustered="xsi:false" is_oid="xsi:false">
+		   <field col="PRODUCTID" ord="1"/>
+		</pk>
+		<fk col="SUPPLIERID">
+			    <reference table="DEMO.DEMO.SUPPLIERS" col="SUPPLIERID"  delete_rule="xsi:nil" update_rule="xsi:nil"/>
+		</fk>		
+		<fk col="CATEGORYID">
+			    <reference table="DEMO.DEMO.CATEGORIES" col="CATEGORYID"  delete_rule="xsi:nil" update_rule="xsi:nil"/>
+		</fk>		
+	</table>
+
+	<table name="DEMO.DEMO.CUSTOMERS"  parent="xsi:nil" >
+		<column name="CUSTOMERID" type="VARCHAR(5)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="COMPANYNAME" type="VARCHAR(40)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="CONTACTNAME" type="VARCHAR(30)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="CONTACTTITLE" type="VARCHAR(30)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="ADDRESS" type="VARCHAR(60)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="CITY" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="REGION" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="POSTALCODE" type="VARCHAR(10)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="COUNTRY" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="PHONE" type="VARCHAR(24)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="FAX" type="VARCHAR(24)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<pk  is_unique="xsi:false"  is_clustered="xsi:false" is_oid="xsi:false">
+		   <field col="CUSTOMERID" ord="1"/>
+		</pk>
+	</table>
+	<table name="DEMO.DEMO.ORDERS"  parent="xsi:nil" >
+		<column name="ORDERID" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="CUSTOMERID" type="VARCHAR(5)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="EMPLOYEEID" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="ORDERDATE" type="DATETIME" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="REQUIREDDATE" type="DATE" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="SHIPVIA" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="FREIGHT" type="DOUBLEPRECISION" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="SHIPNAME" type="VARCHAR(40)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="SHIPADDRESS" type="VARCHAR(60)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="SHIPCITY" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="SHIPREGION" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="SHIPPOSTALCODE" type="VARCHAR(10)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="COUNTRY" type="VARCHAR(15)" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+
+		<pk  is_unique="xsi:false"  is_clustered="xsi:false" is_oid="xsi:false">
+		   <field col="ORDERID" ord="1"/>
+		</pk>
+		<fk col="CUSTOMERID">
+			    <reference table="DEMO.DEMO.CUSTOMERS" col="CUSTOMERID"  delete_rule="xsi:nil" update_rule="xsi:nil"/>
+		</fk>		
+		<fk col="SHIPVIA">
+			    <reference table="DEMO.DEMO.SHIPPERS" col="SHIPPERID"  delete_rule="xsi:nil" update_rule="xsi:nil"/>
+		</fk>		
+		<fk col="EMPLOYEEID">
+			    <reference table="DEMO.DEMO.EMPLOYEES" col="EMPLOYEEID"  delete_rule="xsi:nil" update_rule="xsi:nil"/>
+		</fk>		
+	</table>
+	<table name="DEMO.DEMO.ORDER_DETAILS"  parent="xsi:nil" >
+		<column name="ORDERID" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="PRODUCTID" type="INTEGER" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="UNITPRICE" type="DOUBLEPRECISION" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="QUANTITY" type="SMALINT" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<column name="DISCOUNT" type="REAL" not_nullable="xsi:false" collation="xsi:nil" identity="xsi:false" identified_by="xsi:nil"/>
+		<pk  is_unique="xsi:false"  is_clustered="xsi:false" is_oid="xsi:false">
+		   <field col="ORDERID" ord="1"/>
+		   <field col="PRODUCTID" ord="2"/>
+		</pk>
+		<fk col="ORDERID">
+			    <reference table="DEMO.DEMO.ORDERS" col="ORDERID"  delete_rule="xsi:nil" update_rule="xsi:nil"/>
+		</fk>		
+		<fk col="PRODUCTID">
+			    <reference table="DEMO.DEMO.PRODUCTS" col="PRODUCTID"  delete_rule="xsi:nil" update_rule="xsi:nil"/>
+		</fk>		
+	</table>
+	
+</tables>

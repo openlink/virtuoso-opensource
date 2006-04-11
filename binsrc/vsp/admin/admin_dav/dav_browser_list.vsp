@@ -1,0 +1,155 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!DOCTYPE html
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<?include vsp_debug.vsp?>
+<!--
+
+  The frame producing a list of collections and resources
+
+  when list_mode = 1, a detailed listing is produced.
+
+  xfer_mode:
+
+  'DOM'
+  'SUBMIT' - a form submit will be done to selected target
+
+  browse_mode:
+
+  'RES' - RES_ID
+  'COL' - COL_ID
+  'STANDALONE' - STANDALONE
+
+  What should be handled:
+
+  - Attempt to browse contents of collection the user has no read privileges for
+-->
+
+  <head>
+    <title>DAV Browser Column Contents Listing</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+    <link rel="stylesheet" href="dav_browser.css" type="text/css" />
+
+    <?include dav_js.vsp ?>
+
+  </head>
+
+<!-- Get data from form submit -->
+<?vsp
+  declare start_path varchar;
+  declare cur_path varchar;
+  declare cur_col integer;
+  declare new_col integer;
+  declare uid integer;
+  declare err integer;
+  declare lst_mode integer;
+  declare xfer_mode varchar;
+  declare browse_mode varchar;
+  declare flt_pat varchar;
+  declare col integer;
+  declare new_path varchar;
+  declare os varchar;
+
+  cur_col := cast (get_keyword ('cur_col', params, '0') as integer);
+  new_col := cast (get_keyword ('new_col', params, '0') as integer);
+  new_path := get_keyword ('new_path', params, '');
+  os := get_keyword ('os', params, 'dav');
+
+  if (os = 'dav')
+    {
+      if ('' <> new_path)
+	{
+	  if (aref (new_path, length (new_path)) <> '/')
+	    new_path := concat (new_path, '/');
+	  col := dav_search_id (new_path, 'C');
+	  if (-1 <> col)
+	    {
+	      cur_col := new_col;
+	      new_col := col;
+	    }
+	}
+
+      cur_path := "WS"."WS"."COL_PATH" (new_col);
+    }
+  else if (os = 'os')
+    {
+      cur_path := get_keyword ('os_path', params, '');
+      if ('' <> new_path)
+        cur_path := new_path;
+      cur_path := adm_path_normalize (cur_path);
+    }
+
+  flt_pat := get_keyword ('flt_pat', params, '*');
+  uid := adm_dav_br_get_uid (lines);
+
+  lst_mode := cast (get_keyword ('lst_mode', params, '1') as integer);
+  browse_mode := get_keyword ('browse_mode', params, 'STANDALONE');
+  xfer_mode := get_keyword ('xfer_mode', params, 'DOM');
+?>
+
+  <body onload="javascript:dav_update_path ('<?=cur_path?>');">
+<H1>Contents of <?= case cur_path when '' then '/' else cur_path end ?></H1>
+
+<!--p><pre>
+ cur_col: <?=cur_col?>
+ new_col: <?=new_col?>
+     flt: <?=flt_pat?>
+     os: <?=os?>
+ br_mode: <?=browse_mode?>
+ xf_mode: <?=xfer_mode?>
+lst_mode: <?=lst_mode?>
+cur_path: <?=cur_path?>
+</pre></p-->
+
+<?vsp
+    if (os = 'dav')
+      err := adm_dav_br_gen_col_c_listing (cur_col, new_col, cur_path, uid, flt_pat, lst_mode, browse_mode, xfer_mode);
+    else
+      err := adm_os_br_gen_col_c_listing (cur_path, uid, flt_pat, lst_mode, browse_mode, xfer_mode);
+?>
+
+  </table>
+  <form method="POST"
+	name="obj_form"
+	action="<?=http_path()?>">
+    <input type="hidden" name="cur_path" />
+    <input type="hidden" name="cur_col" value="<?=cur_col?>" />
+    <input type="hidden" name="new_col" value="<?=new_col?>" />
+    <input type="hidden" name="os_path" value="<?=cur_path?>" />
+    <input type="hidden" name="os" value="<?=os?>" />
+    <input type="hidden" name="new_path" />
+    <input type="hidden" name="flt_pat" value="<?=flt_pat?>" />
+    <input type="hidden" name="browse_mode" value="<?=browse_mode?>" />
+    <input type="hidden" name="lst_mode" value="<?=lst_mode?>" />
+    <input type="hidden" name="xfer_mode" value="<?=xfer_mode?>" />
+<!--    <input type="button"
+           name="Debug"
+           value="Debug"
+           onClick="javascript:window.top.opener.document.BrowserLaunch.RES.value='Hippi!'" />
+-->
+  </form>
+  </body>
+</html>

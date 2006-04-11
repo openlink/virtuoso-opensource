@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_create_element">
+  <refmeta> 
+    <refentrytitle>create-element</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>create-element</refname>
+    <refpurpose>Creates an element with specified name, attributes and children</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_create_element">
+      <funcprototype id="xpf_proto_create_element">
+        <funcdef>node <function>create-element</function></funcdef>
+	<paramdef><parameter>head</parameter> sequence</paramdef>
+	<paramdef><parameter>child1</parameter> any</paramdef>
+	<paramdef><parameter>child2</parameter> any</paramdef>
+	<paramdef><parameter>...</parameter></paramdef>
+	<paramdef><parameter>childN</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_create_element"><title>Description</title>
+<para>
+This is an internal XQUERY function and you will probably never need to
+call it explicitely. It is not a part of library of standard XQUERY 1.0
+functions.
+</para>
+<para>
+This function creates a new &quot;XML Tree&quot; element whose name is a string-value of the first
+item of <parameter>head</parameter> sequence, with attributes and children
+specified by the rest of <parameter>head</parameter> sequence and by the list of
+arguments <parameter>child1</parameter>, <parameter>child2</parameter>, ...
+<parameter>childN</parameter>.
+</para>
+First of all, a new element will be created, without attributes or children.
+The name of element will be taken from the first item of the
+<parameter>head</parameter> sequence.
+Then attributes will be created from the second and third items of <parameter>head</parameter>,
+from fourth and fifth and so on. In every pair of items will specify name and
+value of some attribute. Non-string items will be converted to strings first.
+It is an error to specify the same attribute name twice in
+<parameter>head</parameter> sequence.
+<para>
+</para>
+When the &quot;opening tag&quot; of the element is prepared, children are
+added, in the same order as they are specified by
+arguments <parameter>child1</parameter>, <parameter>child2</parameter>, ...
+<parameter>childN</parameter>.
+If the value of some argument is a sequences (e.g. a node-set),
+items of the sequence are added as separate children in the same order as
+they are in the sequence.
+Nodes are added &quot;as-is&quot;, numbers, strings and
+other &quot;scalar&quot; values are converted to strings first and these strings
+are converted into PCDATA (text) children.
+<para>
+</para>
+&quot;Attribute descriptor&quot; objects are not converted to children elements;
+if descriptor item is found, one attribute in the opening tag of the
+created element is added or changed and the descriptor is removed from
+the list of children.
+<para>
+</para>
+When all children are prepared, some normalization is performed.
+If there are two or more adjacent PCDATA (text) children, they are replaced
+with one PCDATA children whose text is a concatenation of
+texts of all that children.
+<para>
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_create_element"><title>Parameters</title>
+    <refsect2><title>head</title>
+      <para>Name of the element or a sequence of name and attributes of the element.</para></refsect2>
+    <refsect2><title>childI</title>
+      <para>Children node or sequence of children node.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_create_element"><title>Return Types</title><para>Node</para></refsect1>
+  <refsect1 id="xpf_errors_create_element"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFC0</errorcode></entry>
+	    <entry><errorname>At least one argument (name of element to be created) must be passed to create-element XPATH function.</errorname></entry>
+	    <entry>create-element is called without arguments.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFC1</errorcode></entry>
+	    <entry><errorname>No name of element in the first argument of create-element XPATH function.</errorname></entry>
+	    <entry>The <parameter>head</parameter> sequence is empty.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFC2</errorcode></entry>
+	    <entry><errorname>Last atttribute has no value specified in the first argument of create-element XPATH function.</errorname></entry>
+	    <entry>The <parameter>head</parameter> sequence is of even length.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFC3</errorcode></entry>
+	    <entry><errorname>Unsupported type of element of the first argument of create-element XPATH function.</errorname></entry>
+	    <entry>Current version may create name and attributes of elements only from strings, entities and numbers.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFC4</errorcode></entry>
+	    <entry><errorname>Duplicate attribute names in first argument of create-element XPATH function.</errorname></entry>
+	    <entry>Duplicate attribute names may appear in attribute descriptors but not in the <parameter>head</parameter> argument.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFC5</errorcode></entry>
+	    <entry><errorname>First argument of create-element XPATH function must be string, symbol or sequence of them.</errorname></entry>
+	    <entry>The function was unable to prepare name of element.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFC6</errorcode></entry>
+	    <entry><errorname>Error in XPATH user extension function or internal error: sequence argument is not flat in create-element XPATH function.</errorname></entry>
+	    <entry>A value of XQUERY &quot;sequence&quot; type should not contain other sequences as its items, i.e. it must be &quot;flat&quot;.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFC7</errorcode></entry>
+	    <entry><errorname>Invalid special entity found in argument of create-element XPATH function.</errorname></entry>
+	    <entry>An invalid object (probably built by XPATH extension function) is specified as child entity.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFCA</errorcode></entry>
+	    <entry><errorname>Persistent XML entities are not fully supported by create-element XPATH function.</errorname></entry>
+	    <entry>The function creates &quot;XML Tree&quot; element, &quot;Persistent XML&quot; entity can not become a children of &quot;XML Tree&quot;.</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPFCB</errorcode></entry>
+	    <entry><errorname>Unsupported type of argument in create-element XPATH function.</errorname></entry>
+	    <entry>Some argument or some item of an argument may not be converted to a string or a node, so a children may not be created.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="xpf_examples_create_element"><title>Examples</title>
+    <example id="xpf_ex_create_element"><title></title>
+      <para>Two following XQUERY expressions are equivalent:</para>
+<screen><![CDATA[
+<H1>{'Hello, '}<B>{'world'}</B></H1>
+create-element('H1', 'Hello, ', create-element('B', 'world'))
+]]></screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_create_element"><title>See Also</title>
+    <para><link linkend="xpf_create_attribute">create-attribute()</link></para>
+    <para><link linkend="xpf_create_comment">create-comment()</link></para>
+    <para><link linkend="xpf_create_pi">create-pi()</link></para>
+  </refsect1>
+</refentry>
+

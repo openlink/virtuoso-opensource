@@ -1,0 +1,263 @@
+-- /* File:        PAYMENT.SQL */
+-- /* Purpose:     Payment transaction for Microsoft TPC-C Benchmark Kit */
+
+
+create or replace procedure payment (
+       w_id_         in integer,
+       c_w_id_       in integer,
+       h_amount_     in float,
+       d_id_         in integer,
+       c_d_id_       in integer,
+       c_c_id_       in integer,
+       c_c_last_     in varchar )
+as
+      type tc_byname is ref cursor;
+			w_street_1_    char(20);
+            w_street_2_    char(20);
+            w_city_        char(20);
+            w_state_       char(2);
+            w_zip_         char(9);
+            w_name_        char(10);
+            d_street_1_    char(20);
+            d_street_2_    char(20);
+            d_city_        char(20);
+            d_state_       char(2);
+            d_zip_         char(9);
+            d_name_        char(10);
+            c_first_       char(16);
+            c_middle_      char(2);
+            c_street_1_    char(20);
+            c_street_2_    char(20);
+            c_city_        char(20);
+            c_state_       char(2);
+            c_zip_         char(9);
+            c_phone_       char(16);
+            c_since_       date;
+            c_credit_      char(2);
+            c_credit_lim_  float;
+            c_balance_     float;
+            c_ytd_payment_ float;
+            c_discount_    float;
+            data1_         char(250);
+            data2_         char(250);
+            c_data_1_      char(250);
+            c_data_2_      char(250);
+--            datetime_      date;
+            w_ytd_         float;
+            d_ytd_         float;
+            cnt_           integer ;
+            val_           integer ;
+            screen_data_   char(200);
+            d_id_local_    integer ;
+            w_id_local_    integer ;
+            c_id_local_    integer;
+			rowcount_	   integer;
+			c_id_		   integer;
+			c_last_		   varchar(50);
+			n			   integer;
+			c_byname	   tc_byname;
+begin
+    screen_data_ := '';
+	c_id_ := c_c_id_;
+	c_last_ := c_c_last_;
+
+--set transaction;
+
+    /* get payment date */
+--    datetime_ := sysdate;
+
+    if c_id_ = 0 then
+        /* get customer id and info using last name */
+        select count(*)
+			into cnt_
+            from customer
+            where c_last = c_last_ and
+                  c_w_id = c_w_id_ and
+                  c_d_id = c_d_id_;
+
+        val_ := (cnt_ + 1) / 2;
+        rowcount_ := val_;
+
+        open c_byname for select   c_id
+							from customer
+							where c_last = c_last_ and
+							c_w_id = c_w_id_ and
+							c_d_id = c_d_id_
+							order by c_w_id, c_d_id, c_last, c_first for update;
+
+		while n <= cnt_/2 loop
+			fetch c_byname into c_id_;
+			n := n + 1;
+		end loop;
+
+		close c_byname;
+
+        rowcount_ := 0;
+     end if;
+
+    /* get customer info and update balances */
+
+    update customer set
+        c_balance  = c_balance_,
+        c_cnt_payment    = c_cnt_payment + 1
+       where c_id   = c_id_   and
+             c_w_id = c_w_id_ and
+             c_d_id = c_d_id_
+		returning
+		c_balance - h_amount_,
+        c_ytd_payment + 10.0,
+        c_first,
+        c_middle,
+        c_last,
+        c_street_1,
+        c_street_2,
+        c_city,
+        c_state,
+        c_zip,
+        c_phone,
+        c_credit,
+        c_credit_lim,
+        c_discount,
+        c_since,
+        c_data_1,
+        c_data_2,
+        c_id
+		into
+		c_balance_,
+        c_ytd_payment_,
+        c_first_,
+        c_middle_,
+        c_last_,
+        c_street_1_,
+        c_street_2_,
+        c_city_,
+        c_state_,
+        c_zip_,
+        c_phone_,
+        c_credit_,
+        c_credit_lim_,
+        c_discount_,
+        c_since_,
+        data1_,
+        data2_,
+        c_id_local_;
+
+    /* if customer has bad credit get some more info */
+
+    if c_credit_ = 'BC' then
+        /* compute new info (Kublissa on myos substring) */
+        c_data_2_ := substr(data1_,209,42) || substr(data2_,1,208);
+
+        c_data_1_ := to_char( c_id_ ) ||  -- 5
+                     to_char( c_d_id_) || -- 4
+                     to_char( c_w_id_) || -- 5 
+                     to_char( d_id_) || -- 4
+                     to_char( w_id_) || -- 5
+                     to_char( h_amount_) || -- 19
+                     substr(data1_, 1, 208);
+
+        /* update customer info */
+        update customer set
+               c_data_1 = c_data_1_,
+               c_data_2 = c_data_2_
+            where c_id   = c_id_ and
+                  c_w_id = c_w_id_ and
+                  c_d_id = c_d_id_;
+
+
+        screen_data_ := substr(c_data_1_,1,200);
+
+     end if;
+
+
+    /* get district data and update year-to-date */
+
+    update district
+        set		d_ytd   = d_ytd + h_amount_
+        where	d_w_id	= w_id_ and
+				d_id	= d_id_
+	    returning 
+            d_street_1,
+            d_street_2,
+            d_city,
+            d_state,
+            d_zip,
+            d_name,
+            d_id
+			into
+			d_street_1_,
+            d_street_2_,
+            d_city_,
+            d_state_,
+            d_zip_,
+            d_name_,
+            d_id_local_;
+
+    /* get warehouse data and update year-to-date */
+
+    update warehouse
+        set		w_ytd   = w_ytd + h_amount_
+        where	w_id	= w_id_
+		returning
+            w_street_1,
+            w_street_2,
+            w_city,
+            w_state,
+            w_zip,
+            w_name,
+            w_id
+		into
+            w_street_1_,
+            w_street_2_,
+            w_city_,
+            w_state_,
+            w_zip_,
+            w_name_,
+            w_id_local_;
+
+    /* create history record */
+
+    insert into history
+        values(c_id_local_,
+               c_d_id_,
+               c_w_id_,
+               d_id_local_,
+               w_id_local_,
+               sysdate,
+               h_amount_,
+               w_name_ || '    ' || d_name_); /* 10 + 4 + 10 = 24 */
+
+    commit;
+
+    /* return data to client */
+
+/*    select c_id_,
+           c_last_,
+           datetime_,
+           w_street_1_,
+           w_street_2_,
+           w_city_,
+           w_state_,
+           w_zip_,
+           d_street_1_,
+           d_street_2_,
+           d_city_,
+           d_state_,
+           d_zip_,
+           c_first_,
+           c_middle_,
+           c_street_1_,
+           c_street_2_,
+           c_city_,
+           c_state_,
+           c_zip_,
+           c_phone_,
+           c_since_,
+           c_credit_,
+           c_credit_lim_,
+           c_discount_,
+           c_balance_,
+           screen_data_ */
+end payment;
+/
+

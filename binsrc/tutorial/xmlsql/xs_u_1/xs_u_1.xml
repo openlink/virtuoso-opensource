@@ -1,0 +1,151 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XS-U-1">
+  <refmeta>
+    <refentrytitle>Updategrams</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>General</refname>
+    <refpurpose>Updategrams</refpurpose>
+  </refnamediv>
+
+<refsect1 id="XS-U-1a">
+<title>Updategram Overview</title>
+
+<para>Updategrams allow database updates to be defined as XML.  This is ultimately achieved by mapping the 
+XML nodes against corresponding database columns. </para>
+
+<para>Updategrams can be used to replace existing data access components in a middle tier. A typical 
+application will include a middle tier consisting of Business Logic and Data Access code. The Data Access code 
+will interface with the database using disconnected Recordsets and Command objects calling  stored procedures etc. 
+Most of the Data Access section of the middle tier can be replaced with Updategrams. </para>
+
+<para>Most Data Access tiers (both middle tier code and stored procedures) will individually deal with specific 
+database tables or groups of related tables. This can inhibit performance and quite often several round trips 
+to the database are required to complete a transaction.</para>
+
+<para>Updategrams can solve this problem by including all of the data in an XML document, which is then mapped to 
+database tables and columns. The entire database update can then be accomplished in one fell  swoop. This update 
+can include inserting, updating and deleting data.</para>
+
+<para>The 'xmlsql_update' function supports XML-based insert, update, and delete operations 
+performed on an existing table in database.</para>
+</refsect1>
+
+<refsect1 id="XS-U-1b">
+<title>Updategram Basics</title>
+<para>
+The general format of an updategram is:
+</para>
+<programlisting>
+&lt;sql:sync xmlns:sql="xml-sql"&gt;
+        &lt;sql:before&gt;
+                &lt;TABLENAME [sql:id="value"] col="value" col="value"?../&gt;
+        &lt;/sql:before&gt;
+        &lt;sql:after&gt;
+                &lt;TABLENAME [sql:id="value"] [sql:at-identity="value"] col="value" col="value"?../&gt;
+        &lt;/sql:after&gt;
+&lt;/sql:sync&gt;
+
+or
+
+&lt;sql:sync xmlns:sql="xml-sql"&gt;
+        &lt;sql:before&gt;
+                &lt;TABLENAME [sql:id="value"]&gt; 
+		   &lt;col&gt;"value"&lt;/col&gt;
+		   &lt;col&gt;"value"&lt;/col&gt;
+		   ...
+		&lt;/TABLENAME&gt;
+		...
+        &lt;/sql:before&gt;
+        &lt;sql:after&gt;
+                &lt;TABLENAME [sql:id="value"] [sql:at-identity="value"]&gt; 
+		   &lt;col&gt;"value"&lt;/col&gt;
+		   &lt;col&gt;"value"&lt;/col&gt;
+		   ...
+		&lt;/TABLENAME&gt;
+		...
+        &lt;/sql:after&gt;
+&lt;/sql:sync&gt;
+</programlisting>
+</refsect1>
+
+<refsect1 id="XS-U-1c">
+<title>Elements Description</title>
+<itemizedlist mark="bullet">
+  <listitem>The &lt;sync&gt; tag of the updategram signifies the beginning of an operation(s).</listitem>
+  <listitem>The rows specified in the &lt;before&gt; refer to existing records in the database.</listitem>
+  <listitem>The rows specified in the &lt;after&gt; block refer to what the user wants in the database.</listitem>
+  <listitem>TABLENAME identifies target table.</listitem>
+  <listitem>The sql:at-identity attribute stores the last identity value added by the system (if possible). </listitem>
+  <listitem>The captured identity value can then be used in subsequent operations.</listitem>
+  <listitem>The sql:id attribute is used to mark rows. This forces an association between
+  the record specified in the &lt;before&gt; and &lt;after&gt; block in the updategram.</listitem>
+  <listitem>When there are multiple instances specified, it is recommended that sql:id
+  attribute be used for all of the instances.</listitem>
+  <listitem>Each TABLENAME refers to a single table. Multiple &lt;TABLENAME..../&gt; entries
+  are allowed in the same &lt;before&gt; , or &lt;after&gt; tags, or in both &lt;before&gt; and
+    &lt;after&gt; tags; however, nesting is not allowed.</listitem>
+  <listitem>The &lt;before&gt; and &lt;after&gt; tags are optional. A missing tag is the same as
+    having a tag with no content.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="XS-U-1d">
+<title>Determining Actions</title>
+
+<para>In an updategram if only the &lt;after&gt; block is specified, the
+rows specified in the &lt;after&gt; block are inserted in the table(s). If both
+the &lt;before&gt; and &lt;after&gt; blocks are specified, then the rows specified in 
+the &lt;after&gt; block for which there is no corresponding rows in the &lt;before&gt; 
+block are inserted in the table(s).
+In an update operation, the instances (rows) specified in the &lt;before&gt; block
+refer to the existing rows in the database. The corresponding instances
+(rows) in the &lt;after&gt; block reflect what the user wants in the database. A
+row update operation is performed if there is an instance (row) in both
+&lt;before&gt; and &lt;after&gt; sections with the same set of values for the attributes
+that uniquely identify a row in a table. The set of rows specified in the
+&lt;before&gt; block must be valid in the database for the updategram to
+successfully update the rows.
+In a delete operation, if only the &lt;before&gt; block is specified in the updategram, 
+the instances (rows) specified in the &lt;before&gt; block are deleted from
+the table(s). If both the &lt;before&gt; and &lt;after&gt; blocks are specified, the
+instances (rows) for which there is no corresponding instances (rows) in the
+&lt;after&gt; block are deleted from the table(s). </para>
+</refsect1>
+
+<refsect1 id="XS-U-1e">
+<title>Example</title>
+
+<itemizedlist mark="bullet">
+<listitem> This example creates a SQL function that takes the orders and order lines from the demo database and applies 
+a stylesheet to the FOR XML rendition of these to make updategrams.  Use the updategrams to fill out
+a similar table structure containing order summary with only fulfilled orders included. </listitem>
+</itemizedlist>
+
+<para>The interface will show the sources of the report and the transformed report which is the updategram. 
+</para>
+</refsect1>
+</refentry>

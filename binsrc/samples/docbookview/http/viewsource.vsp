@@ -1,0 +1,12 @@
+<?vsp
+declare _fullname varchar;
+declare _text long varchar;
+_fullname := {?'name'};
+DBV.DBV.LOAD_TEXT (_fullname);
+select ORIG_TEXT into _text from DBV.DBV.SOURCE where FULLNAME=_fullname;
+?>
+<?vsp DBV.DBV.VSP_HEADER (path,params,lines, concat(_fullname, ' | Source text')); ?>
+<PRE>
+<?= _text ?>
+</PRE>
+<?vsp DBV.DBV.VSP_FOOTER (path,params,lines); ?>

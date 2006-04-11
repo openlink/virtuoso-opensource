@@ -1,0 +1,358 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+   declare _dsn, _user, _pass varchar;
+   declare _step, _sel varchar;
+   declare btns integer;
+   declare parr, rst any;
+   _dsn := _user := _pass := '';
+  --dbg_obj_print ('params : ', params);
+  if (not adm_check_auth (lines)) { adm_tell_unauth (lines); return (0); }
+
+  _dsn := get_keyword ('dsn', params , '');
+  _user := get_keyword ('user', params , '');
+  _pass := get_keyword ('pass', params , '');
+  _step := get_keyword ('step', params , '');
+  _sel := get_keyword ('remote_o', params , '');
+  parr := deserialize (decode_base64 (get_keyword ('parr', params, '')));
+  btns := 0;
+
+  if ({?'unlink'} is not null)
+    {
+      declare pr, st, msg, stmt varchar;
+      declare i integer;
+      while (pr := adm_next_keyword ('remote_tbls', params, i))
+	{
+          stmt := sprintf ('drop procedure "%I"."%I"."%I"', name_part (pr, 0), name_part (pr, 1), name_part (pr, 2));
+          st := '00000';
+          exec (stmt, st, msg);
+          -- test for error here
+	}
+    }
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<script>
+function dsns_chg(sel)
+{
+
+  var i, _new, old;
+
+
+  if (sel.selectedIndex == -1)
+    {
+      document.link_form.dsn.value = '';
+      document.link_form.user.value = '';
+      document.link_form.pass.value = '';
+      return (0);
+    }
+
+  for (i = 0;i < sel.length;i++)
+    {
+      if (sel.options[i].selected)
+	{
+	  if (sel.options[i].text == document.link_form.dsn.value)
+	    {
+	      sel.options[i].selected = false;
+	    }
+	  else
+	    {
+	      document.link_form.dsn.value = sel.options[i].text;
+	    }
+	}
+    }
+  document.link_form.submit();
+}
+
+function unlink_url()
+{
+  document.unlink_form.action = 'admin_unlink_proc.vsp';
+  document.unlink_form.submit();
+}
+
+</script>
+
+<html>
+  <head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+  <script language="javascript" src="admin_utils.js"></script>
+    <title>External procedures management</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Link External Procedures into Virtuoso using VSP">
+  </head>
+  <BODY>
+<?vsp  adm_page_header('External Procedures Management', NULL); ?>
+
+<?include adm_js_check.vsp ?>
+<FORM method="POST" name="unlink_form" action="admin_link_proc.vsp">
+<?vsp
+
+   if ({?'login'} is not null)
+     {
+       if (_dsn <> '')
+	 {
+	   declare i, l integer;
+	    declare exit handler for sqlstate '*' {
+  	      http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+  	      http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Connection to %s failed:</TD></TR>', _dsn));
+  	      http ('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+ 	      http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (__SQL_STATE, '')));
+ 	      http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (__SQL_MESSAGE, '')));
+  	      http ('</TABLE>');
+              parr := vector ();
+	      goto err_end;
+
+	   };
+	   vd_remote_data_source (_dsn,'', _user, _pass);
+           parr := sql_procedures (_dsn, NULL, NULL, NULL);
+	 }
+err_end:;
+     }
+?>
+
+<TABLE><TR><TD VALIGN="top">
+   <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+   <TR><TD CLASS="genhead" COLSPAN="2">Currently Linked</TD></TR>
+   <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+   <TR><TD CLASS="genselect" ALIGN="right">
+      <select name="remote_tbls" MULTIPLE Size="10">
+      <?vsp
+        declare no_p integer;
+        for select P_NAME from SYS_PROCEDURES where proc_is_remote (P_NAME) or (regexp_match ('\-\-PL Wrapper .*', coalesce (P_TEXT, blob_to_string(P_MORE))) is not null and P_NAME not like '%.vsp') do
+	  {
+	    http ('<option>');
+	    http (P_NAME);
+	    http ('</option>');
+            no_p := 1;
+	  }
+         if (not no_p)
+           http ('<option>-No External Procedures Linked-</option>');
+      ?>
+      </select></TD></TR>
+    <TR><TD VALIGN="bottom" ALIGN="right"><input type="submit" name="unlink" value="Unlink" onClick="unlink_url();"></TD>
+    </TD>
+  </TR>
+  </TABLE>
+</TD>
+</FORM>
+<TD VALIGN="top">
+<FORM method="POST" name="link_form" action="admin_link_proc.vsp">
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+  <TR><TD class="genhead" COLSPAN="3">Link from Data Source</TD></TR>
+  <TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+  <TR><TD class="genselect" ROWSPAN="3">
+    <select name="dsns" onChange="dsns_chg(this)" MULTIPLE Size="12">
+    <?vsp adm_lt_dsn_options(_dsn);
+          if (_user = '' and exists (select 1 from SYS_DATA_SOURCE where DS_DSN = _dsn))
+	    {
+	      whenever not found goto nfds;
+	      select DS_UID, pwd_magic_calc (DS_UID,DS_PWD,1) into _user, _pass
+		  from SYS_DATA_SOURCE where DS_DSN = _dsn;
+              nfds:;
+	    }
+    ?></select></TD>
+  <TD></TD><TD VALIGN="top">
+    <TABLE class="genlist" BORDER="0" CELLPADDING="0">
+    <TR><TD class="genlisthead" NOWRAP>Data Source</TD><TD class="geninput">
+    <input type="text" size="25" name="dsn" value="<?= _dsn ?>"></TD></TR>
+    <TR><TD class="genlisthead">Username</TD><TD class="geninput">
+    <input type="text" size="25" name="user" value="<?= _user ?>"></TD></TR>
+    <TR><TD class="genlisthead">Password</TD><TD class="geninput">
+    <input type="password" size="25" name="pass" value="<?= _pass ?>"></TD></TR>
+    <TR><TD COLSPAN="2" ALIGN="right">
+    </TR>
+    <TR>
+      <TD COLSPAN="2" ALIGN="right">
+        <input type="submit" name="login" value="List" >
+      </TD>
+    </TR>
+    </TABLE>
+  </TD></TR>
+  </TABLE>
+  </FORM>
+  <FORM name="sel_list" method="POST" action="
+<?vsp if (_step = '1')
+        http ('admin_link_proc_1.vsp');
+      else
+        http ('admin_link_proc.vsp');
+    ?>">
+  <input type=hidden name=dsn value="<?=_dsn?>">
+  <input type=hidden name=user value="<?=_user?>">
+  <input type=hidden name=pass value="<?=_pass?>">
+<?vsp
+
+   declare _deni integer;
+   _deni := 0;
+   if ({?'login'} is not null or _step = '1')
+     {
+?>
+
+<?vsp
+       if (_dsn <> '')
+	 {
+	   declare i, l integer;
+	   declare line, txt1 any;
+
+           i := 0; l := length (parr);
+	       if (_step <> '1')
+		 {
+       	   rst := vector ();
+           txt1 := '';
+           while (i<l)
+             {
+	        declare qual, owner, what varchar;
+		line := parr[i];
+                qual := line[0];
+                owner := line[1];
+		if (qual <> '' and qual is not null)
+		  {
+ 	            what := concat(qual,'.',owner);
+	            txt1 := 'Qualifier/';
+		  }
+		else
+ 	          what := owner;
+		if (position (what, rst) = 0 and _step = '')
+		      rst := vector_concat (rst, vector (what));
+               i := i + 1;
+	     }
+?>
+   <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+   <TR><TD CLASS="genhead" COLSPAN="2">Select External Procedures <?=txt1?>Owner</TD></TR>
+   <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+     <TR>
+     <TD>
+     <select name="remote_o" size="<?=length(rst)?>">
+<?vsp
+		    i := 0; l := length (rst);
+		    while (i<l)
+		      {
+?>
+     <option><?=rst[i]?></option>
+<?vsp
+		    i := i + 1;
+		      }
+?>
+		    </TD>
+		    <TD ALIGN="right">
+		    <INPUT type="submit" name="link" value="List Selected">
+		    <INPUT type=hidden name="parr" value="<?=encode_base64 (serialize (parr))?>">
+		    <INPUT type=hidden name="step" value="1">
+		    </TD>
+		    </TR>
+<?vsp
+		 }
+	       else
+		 {
+?>
+   <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+   <TR><TD CLASS="genhead" COLSPAN="2">External Procedures</TD></TR>
+   <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<?vsp
+		   i := 0; l := length (parr);
+                   _deni := 0;
+		   while (i<l)
+		     {
+		       declare qual, own, elm, _den varchar;
+                       qual := parr[i][0];
+                       own := parr[i][1];
+                       elm := own;
+		       if (qual <> '' and qual is not null)
+	                 elm := concat (qual, '.', own);
+		       if(elm = _sel)
+			 {
+			   declare _p_pat varchar;
+			   if (isstring (parr[i][0]))
+			     _p_pat := sprintf ('%s.%s.%s',parr[i][0], parr[i][1], parr[i][2]);
+			   else
+			     _p_pat := sprintf ('.%s.%s', parr[i][1], parr[i][2]);
+		           _p_pat := replace (_p_pat, '*', '\\*');
+		           _p_pat := replace (_p_pat, '+', '\\+');
+		           _p_pat := replace (_p_pat, ']', '\\]');
+		           _p_pat := replace (_p_pat, '[', '\\[');
+		           _p_pat := replace (_p_pat, '(', '\\(');
+		           _p_pat := replace (_p_pat, ')', '\\)');
+		           _p_pat := replace (_p_pat, '.', '\\.');
+                           _den := '';
+			   if (exists (select 1 from SYS_PROCEDURES where
+				 regexp_match (sprintf ('\-\-"DSN:%s PROCEDURE:%s"', _dsn, _p_pat),
+				   coalesce (P_TEXT, blob_to_string(P_MORE))) is not null))
+			     {
+                               _den := '*';
+			       _deni := _deni + 1;
+			     }
+?>
+     <TR>
+     <TD>
+     <input type="checkbox" name="PR_<?=parr[i][0]?>.<?=parr[i][1]?>.<?=parr[i][2]?>">
+         <input type="hidden" name="PRN_<?=parr[i][0]?>.<?=parr[i][1]?>.<?=parr[i][2]?>" value="<?=parr[i][2]?>">
+     </TD>
+     <TD CLASS="gendata" ALIGN="left">
+<?vsp
+     if (_den <> '')
+       {
+	 http (_den);
+       }
+?>
+     <?=parr[i][1]?>.<?=parr[i][2]?></TD></TR>
+<?vsp
+			 }
+		       i := i + 1;
+		       btns := 1;
+		    }
+		}
+	 }
+	if (_deni)
+	  {
+?>
+
+  <TR><TD COLSPAN="2">* Denotes procedure already linked.</TD></TR>
+
+<?vsp
+	  }
+?>
+   </TABLE>
+<?vsp
+     }
+
+?>
+
+  <TR><TD COLSPAN="7" ALIGN="right">
+<?vsp
+  if (btns = 1)
+    {
+?>
+  <INPUT type="button" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)">
+  <INPUT type="submit" name="link" value="Link Selected">
+<?vsp
+    }
+?>
+
+  </TD></TR>
+  </FORM>
+</TABLE>
+<?vsp adm_page_footer(); ?>
+</BODY>
+</HTML>

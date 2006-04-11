@@ -1,0 +1,87 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare host, port, base, bind, pwd, res, src, sid any;
+
+  sid := adm_get_sesid (params);
+  if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+    {
+      adm_tell_unauth_dav (lines);
+      return (0);
+    }
+  host := '';
+  base := '';
+  bind := '';
+      host := adm_get_ses_var (sid, 'ldap_host', host);
+      base := adm_get_ses_var (sid, 'ldap_base', base);
+      bind := adm_get_ses_var (sid, 'ldap_bind', bind);
+  if ({?'cancel'} is not null)
+   {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: admin_dav_users.vsp\r\n');
+      return 0;
+   }
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>WebDAV User Accounts</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Importing a users from LDAP">
+  </head>
+<?vsp adm_page_header('WebDAV User Accounts', 'davuseradm');
+?>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+
+<tr><td COLSPAN="3" CLASS="genhead">LDAP Search</td></tr>
+<TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+      <form name="dav_user" method="POST" action="admin_import_users_1.vsp">
+      <input type="hidden" name="sid" value="<?= sid ?>">
+      <tr>
+ 	<td CLASS="genlisthead">Host name</td><td CLASS="geninput"><input type="text" size="35" name="host" value="<?=host?>"></td>
+	</tr><tr>
+ 	<td CLASS="genlisthead">Port</td><td CLASS="geninput"><input type="text" size="5" name="port" value="389"></td>
+	</tr><tr>
+ 	<td CLASS="genlisthead">Base</td><td CLASS="geninput"><input type="text" size="35" name="base" value="<?=base?>"></td>
+	</tr><tr>
+ 	<td CLASS="genlisthead">Bind DN</td><td CLASS="geninput"><input type="text" size="35" name="bind" value="<?=bind?>"></td>
+	</tr><tr>
+ 	<td CLASS="genlisthead">Password</td><td CLASS="geninput"><input type="password" size="35" name="pwd" value=""></td>
+	</tr>
+	<tr>
+ 	<td CLASS="genlisthead">Search string</td><td CLASS="geninput"><input type="text" size="35" name="src" value="(cn=*)"></td>
+	</tr>
+	<tr>
+	<td colspan="2" CLASS="genlisthead">
+	<input type="submit" name="get" value="Search">
+	<input type="submit" name="cancel" value="Cancel">
+	</td>
+	</tr>
+    </table>
+<?vsp adm_page_footer(); ?>
+</html>
+

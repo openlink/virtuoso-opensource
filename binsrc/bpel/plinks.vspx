@@ -1,0 +1,193 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="plinks_page" decor="bpel_decor.vspx" style="bpel_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/"  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+<v:on-init>
+    set isolation='committed';
+    if (self.id > 0)
+      self.xml_data := BPEL.BPEL.process_data(self.id);
+    else
+      self.xml_data :=  XMLELEMENT('page',XMLELEMENT( 'bpel_name',''),XMLELEMENT( 'partnerLinks',''));
+</v:on-init>
+
+<vm:pagewrapper>
+  <v:variable name="id" type="int" default="0" param-name="id"/>
+  <v:variable persist="pagestate" name="xml_data" type="any" default="null"/>
+  <v:variable persist="temp" name="r_count" type="integer" default="0"/>
+
+  <vm:pagetitle>OpenLink BPEL Process Manager Process Partner Links</vm:pagetitle>
+
+  <vm:pagebody>
+    <v:form name="upl" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+      <input type="hidden" name="pl_endp" value="<?= get_keyword ('pl_endp', self.vc_page.vc_event.ve_params) ?>"/>
+      <v:text name="hbpel" type="hidden" value="''"/>
+      <v:text name="pop" type="hidden" value="'&id='"/>
+      <v:text name="por" type="hidden" value="'role='"/>
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+        <tr>
+          <th class="info" colspan="5">Partner Links for process
+            <v:url name="b_url1" value="--xpath_eval('/page/bpel_name',self.xml_data)" url="--concat('process.vspx?id=',cast(self.id as varchar))" format="%s" xhtml_class="m_y" />
+            <!--<v:label name="bpel_name"
+               element-value="--self.xml_data"
+	           element-path="/page/bpel_name"
+	           element-place="text()"
+                   xhtml_size="30"/>-->
+          </th>
+        </tr>
+        <tr>
+        <td colspan="5">
+          <?vsp http(sprintf('<a target="_blank" href="help.vspx?id=plinks&sid=%s&realm=%s\r\n"><img alt="Help" title="Help" src="i/help_24.gif" border="0" /></a>', self.sid ,self.realm));?>
+          <?vsp http(sprintf('<a target="_blank" href="help.vspx?id=plinks&sid=%s&realm=%s\r\n"> Help</a>', self.sid ,self.realm));?>
+        </td>
+      </tr>
+        <tr><td><table width="100%" border="0" cellpadding="0" cellspacing="0" id="contentlist">
+        <v:data-set name="ds"
+             sql="SELECT bpl_script, bpl_name, bpl_endpoint,bpl_role, bpl_debug, bpl_backup_endpoint, bs_state
+                    FROM BPEL.BPEL.partner_link_init, BPEL.BPEL.script
+                   WHERE bpl_script = bs_id and bs_id = :scriptID" nrows="10" scrollable="1" cursor-type="keyset" edit="1" width="80">
+          <v:param name="scriptID" value="--self.id"/>
+          <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+            <tr>
+              <th width="10%" align="left">
+                <v:label name="label1" value="Name" format="%s"/>
+              </th>
+              <th width="45%" align="left">
+                <v:label name="label3" value="Endpoint" format="%s"/>
+              </th>
+              <th width="20%" align="left">
+                <v:label name="label16" value="Backup" format="%s"/>
+              </th>
+              <th width="5%" align="left">
+                <v:label value="Debug" />
+              </th>
+	      <th align="center" width="10%">
+                <v:label name="label2" value="Actions" format="%s"/>
+              </th>
+              <th width="10%" align="center">
+                <v:label name="label4" value="WSDL" format="%s"/>
+              </th>
+            </tr>
+          </v:template>
+          <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+            <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+              <tr align="center">
+                <td colspan="5" align="left">No Partner Links</td>
+              </tr>
+            </v:template>
+            <v:template name="template5" type="edit" name-to-remove="" set-to-remove="">
+              <v:form name="upf" type="update" table="BPEL.BPEL.partner_link_init" if-not-exists="insert">
+                <v:key column="bpl_name" value="--self.ds.ds_current_row.te_rowset[1]" default="null"/>
+                <v:template name="template6" type="simple" name-to-remove="table" set-to-remove="both">
+                  <v:text type="hidden" name="c_r2" column="bpl_name"/>
+                    <?vsp
+                      self.r_count := self.r_count + 1;
+                      http (sprintf ('<tr bgcolor="%s">', case when mod (self.r_count, 2) then '#fefefe' else '#efefef' end));
+                    ?>
+                    <td width="10%" align="right">
+                      <v:label name="c_id1" value="--((self.vc_find_descendant_control('ds') as vspx_data_set).ds_current_row.te_rowset[1])"/>
+                      <input type="hidden" name="c_role" value="<?= ((self.vc_find_descendant_control('ds') as vspx_data_set).ds_current_row.te_rowset[3]) ?>"/></td>
+                    <td width="45%" align="left">
+                      <v:text name="c_id2" column="bpl_endpoint" xhtml_size="50"/>
+                    </td>
+                    <td>
+		      <v:text name="c_id4" column="bpl_backup_endpoint" xhtml_size="42"/>
+                    </td>
+                    <td align="center">
+		      <v:check-box name="c_id3" column="bpl_debug" is-boolean="1" true-value="1" false-value="0"/>
+                    </td>
+                    <td width="10%" align="center" nowrap="nowrap">
+                      <v:button name="upd_button" action="submit" value="i/save_16.png" xhtml_title="Save" style="image" xhtml_alt="Save" text="&#160;Save"/>
+                      <?vsp http(sprintf('<a href="plinks.vspx?id=%d&sid=%s&realm=%s\r\n"><img title="Cancel" title="Cancel" src="i/cancl_16.png" border="0" /></a>', self.id, self.sid ,self.realm));?>
+                      <?vsp http(sprintf('<a href="plinks.vspx?id=%d&sid=%s&realm=%s\r\n">Cancel</a>', self.id, self.sid ,self.realm));?>
+                    </td>
+                    <td align="center" width="10%" nowrap="nowrap">
+                      <v:button name="now1" action="simple" active="--0" value="i/sinfo_16.png" xhtml_title="View" style="image" xhtml_alt="View" text="&#160;View" enabled="--case when (BPEL.BPEL.check_file(self.id,(control.vc_parent.vc_find_control ('c_r2') as vspx_field).ufl_value)) then 0 else 1 end"/>
+                      <v:button action="browse" selector="view.vspx" value="i/sinfo_16.png" xhtml_title="View" style="image" xhtml_alt="View" text="&#160;View" enabled="--case when (BPEL.BPEL.check_file(self.id,(control.vc_parent.vc_find_control ('c_r2') as vspx_field).ufl_value)) then 1 else 0 end"
+                           child-window-options="scrollbars=yes, menubar=no">
+	                <v:field name="hbpel"/>
+                        <v:after-data-bind>
+                          control.vcb_browser_options := concat(self.por.ufl_value , (control.vc_parent.vc_find_control ('c_r2') as vspx_field).ufl_value,self.pop.ufl_value,cast(self.id as varchar));
+                        </v:after-data-bind>
+                      </v:button>
+                   </td>
+		   <!--<?vsp
+                      http (sprintf ('</tr><tr bgcolor="%s">', case when mod (self.r_count, 2) then '#fefefe' else '#efefef' end));
+		   ?>
+		    <td/>
+                    <td width="45%" align="left">
+                      <v:label name="l10" value="Backup: "/>
+		      <v:text name="c_id4" column="bpl_backup_endpoint" xhtml_size="42"/>
+                    </td>
+		    <td/>
+		    <td/>
+		    <td/>-->
+                  <?vsp
+                    http('</tr>');
+                  ?>
+                </v:template>
+              </v:form>
+            </v:template>
+            <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+              <v:text type="hidden" name="c_r1" value="--((control.vc_parent as vspx_row_template).te_rowset[1])"/>
+              <?vsp
+                self.r_count := self.r_count + 1;
+                http (sprintf ('<tr bgcolor="%s">', case when mod (self.r_count, 2) then '#fefefe' else '#efefef' end));
+              ?>
+                <td width="10%" align="right"><v:label name="label5" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/></td>
+                <td width="45%" align="left">&nbsp;<v:label name="label6" value="--case when (control.vc_parent as vspx_row_template).te_rowset[2] is null then '&nbsp;' else (control.vc_parent as vspx_row_template).te_rowset[2] end" format="%s" width="60"/></td>
+                <td>
+                   <v:label name="label9" value="--case when (control.vc_parent as vspx_row_template).te_rowset[5] is null then '&nbsp;' else (control.vc_parent as vspx_row_template).te_rowset[5] end" format="%s" width="52"/>
+                </td>
+		<td width="5%" align="right"><v:label name="label7" value="--case when (control.vc_parent as vspx_row_template).te_rowset[4] = 0 then 'OFF' else 'ON' end" /></td>
+		<td width="10%" align="center" nowrap="nowrap">
+		  <v:button name="ds_edit" action="simple" value="i/edit_record_16.png" xhtml_title="Edit" style="image" xhtml_alt="Edit"  text="&#160;Edit" xhtml_disabled="--case when (control.vc_parent as vspx_row_template).te_rowset[6] = 1 then 'true' else '@@hidden@@' end"/>
+		  <v:button name="props" action="simple" value="i/prefs_16.png" xhtml_title="Properties" style="image" xhtml_alt="Properties" text="&#160;Properties" xhtml_disabled="--case when (control.vc_parent as vspx_row_template).te_rowset[6] = 1 then 'true' else '@@hidden@@' end">
+		    <v:on-post><![CDATA[
+		      self.vc_redirect (sprintf ('plinks_props.vspx?id=%d&pl=%s', self.id, (control.vc_parent as vspx_row_template).te_rowset[1]));
+		      ]]></v:on-post>
+		  </v:button>
+		</td>
+                <td align="center" width="10%" nowrap="nowrap">
+                  <v:button name="now" action="simple" active="--0" value="i/sinfo_16.png" xhtml_title="View" style="image" xhtml_alt="View" text="&#160;View" enabled="--case when (BPEL.BPEL.check_file(self.id,(control.vc_parent.vc_find_control ('c_r1') as vspx_field).ufl_value)) then 0 else 1 end"/>
+                  <v:button action="browse" selector="view.vspx" value="i/sinfo_16.png" style="image" xhtml_title="View" xhtml_alt="View" text="&#160;View" enabled="--case when (BPEL.BPEL.check_file(self.id,(control.vc_parent.vc_find_control ('c_r1') as vspx_field).ufl_value)) then 1 else 0 end"
+                      child-window-options="scrollbars=yes, menubar=no">
+	            <v:field name="hbpel"/>
+                    <v:after-data-bind>
+                      control.vcb_browser_options := concat(self.por.ufl_value , (control.vc_parent.vc_find_control ('c_r1') as vspx_field).ufl_value,self.pop.ufl_value,cast(self.id as varchar));
+                    </v:after-data-bind>
+                  </v:button>
+                </td>
+              <?vsp
+                http('</tr>');
+              ?>
+	    </v:template>
+	  </v:template>
+        </v:data-set>
+       </table>
+     </td>
+  </tr>
+      </table>
+    </v:form>
+  </vm:pagebody>
+</vm:pagewrapper>
+</v:page>

@@ -1,0 +1,163 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!-- $Id$ -->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="db_repl_pub"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+      <v:variable name="inter" type="integer" default="10" persist="0"/>
+      <v:variable name="chk" type="integer" default="0" persist="0"/>
+      <v:variable name="c_text" type="varchar" default="''" persist="0"/>
+      <v:before-data-bind>
+        <v:script>
+          <![CDATA[
+            declare _idx integer;
+            declare _mode varchar;
+            declare _u_id, _mode1 integer;
+            _idx := 0;
+            self.chk := 0;
+            self.c_text := '';
+
+            _mode := registry_get('DELAY_UPDATE_WS_WS_SYS_DAV_RES');
+            if (_mode = 'OFF')
+              self.chk := 0;
+            else if (_mode = 'ON')
+              self.chk := 1;
+            if ('' <> get_keyword ('edit', control.vc_page.vc_event.ve_params, ''))
+            {
+              _mode1 := atoi(get_keyword('choice_source', control.vc_page.vc_event.ve_params));
+              if (_mode1 = 1)
+              {
+                self.chk := 1;
+                _mode := 'ON';
+              }
+              else if (_mode1 = 0)
+              {
+                self.chk := 0;
+                _mode := 'OFF';
+              }
+              self.inter := atoi (get_keyword ('int', control.vc_page.vc_event.ve_params, '0'));
+              if (self.inter < 0)
+                self.inter := 10;
+              if (self.inter = 0)
+              {
+                self.chk := 0;
+                _mode := 'OFF';
+              }
+              DB.DBA.vt_batch_update('WS.WS.SYS_DAV_RES', _mode, self.inter);
+              _mode := registry_get('DELAY_UPDATE_WS_WS_SYS_DAV_RES');
+              if (_mode = 'OFF')
+              {
+                self.chk := 0;
+                self.c_text := 'Indexing properties set to Continuously';
+              }
+              else if (_mode = 'ON')
+              {
+                self.chk := 1;
+                self.c_text := 'Indexing properties set to Batch Mode';
+              }
+            }
+            self.inter := coalesce((select SE_INTERVAL from SYS_SCHEDULED_EVENT where upper (SE_NAME) = 'VT_INC_INDEX_WS_WS_SYS_DAV_RES()'), 10);
+          ]]>
+        </v:script>
+      </v:before-data-bind>
+      <v:form name="inx_form" type="simple" method="POST" action="cont_page.vspx?page=3">
+        <table class="SubData" border="0" cellpadding="3" cellspacing="0">
+          <tr>
+            <td>
+              <v:radio-button name="persist_enable" value="0" group-name="choice_source" xhtml_id="choice_source1">
+                <v:before-data-bind>
+                  <v:script>
+                    <![CDATA[
+                      if (self.chk = 0)
+                        control.ufl_selected := 1;
+                      else
+                        control.ufl_selected := 0;
+                      control.vc_data_bound := 1;
+                    ]]>
+                  </v:script>
+                </v:before-data-bind>
+              </v:radio-button>
+            </td>
+            <td>
+              <label for="choice_source1">Continuously</label>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <v:radio-button name="realtime_enable" value="1" group-name="choice_source" xhtml_id="choice_source2">
+                <v:before-data-bind>
+                  <v:script>
+                    <![CDATA[
+                      if (self.chk = 1)
+                        control.ufl_selected:= 1;
+                      else
+                        control.ufl_selected:= 0;
+                      control.vc_data_bound := 1;
+                    ]]>
+                  </v:script>
+                </v:before-data-bind>
+              </v:radio-button>
+            </td>
+            <td>
+              <label for="choice_source2">Batch Mode</label>
+            </td>
+          </tr>
+          <tr>
+            <td/>
+            <td>
+              Update every
+              <input type="text" name="int" value="<?V self.inter ?>"/>
+              minutes
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2" align="center">
+              <input type="reset" value=" Reset"/>
+              <input type="submit" name="edit" value="Accept"/>
+            </td>
+          </tr>
+	  <?vsp
+	    -- this shouldnot be shown here
+            if (0 and self.c_text is not null and self.c_text <> '')
+            {
+          ?>
+          <tr>
+            <td class="Warning" align="center" colspan="2">
+              <p>
+                <?vsp
+                  http(self.c_text);
+                  self.c_text := '';
+                ?>
+              </p>
+            </td>
+          </tr>
+          <?vsp
+            }
+          ?>
+        </table>
+      </v:form>
+  <table style="display:none"><tr><td>$Id$</td></tr></table>
+</v:page>

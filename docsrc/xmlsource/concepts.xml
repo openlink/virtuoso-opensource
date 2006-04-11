@@ -1,0 +1,628 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="concepts.xml" id="concepts">
+  <title>Conceptual Overview</title>
+  <abstract>
+    <para>Virtuoso provides both a native database capability and a
+    virtual database that integrates remote or third-party ODBC data
+    sources seamlessly with Virtuoso's own.  The virtual database (VDB)
+    allows transparent unified queries across all linked data sources. The
+    Virtuoso server supports ANSI SQL92, object extensions, and a
+    significant set of PL extensions.  The most important extensions
+    include support for modern Internet standards for communication, data,
+    and document exchange.  Virtuoso supports communications protocols
+    such as HTTP, SMTP and NNTP as well as a full suite of XML-based
+    protocols including XML, XSL, SOAP, and WSDL.</para>
+  </abstract>
+
+<!-- ########################################### -->
+
+&dbconcepts;
+
+<!-- ########################################### -->
+
+	<sect1 id="thevdb">
+		<title>Virtual Database (VDB) Engine</title>
+		<sect2 id="consneed4vdb"><title>The Need for VDB Engines</title>
+		<sect3 id="conssitanal">
+			<title>Situation Analysis</title>
+			<para>As computer hardware, network protocols,
+    database engines, applications, application servers, and desktop productivity tools,
+    proliferate the enterprise, integration of disparate applications from disparate vendors
+    is becoming an all too common problem. </para>
+			<para>Add the emergence of standards based Distributed Computing galvanized by the Internet
+    infrastructure and associated Internet protocols to this picture, and the need for
+    Integration is even higher.</para>
+			<para>Increasing the industry at large is looking to a new technology deliverable known as
+    Universal Data Access Middleware to address these systems integration pains. </para>
+			<para>&quot;With Universal Data Access (UDA), customers receive all of the benefits of a
+    high-level and consistent Application Programming Interface (API) that abstracts all the
+    database complexities while providing a capability that can be specified, controlled, and
+    managed on its own to optimize the near universal need of programs for data access&quot;. </para>
+			<para>
+				<emphasis>Source IDC, 1998 Middleware Markets &amp; Trends </emphasis>
+			</para>
+			<para>At OpenLink Software, it is our opinion that a new genre of UDA middleware called the
+    &quot;Virtual Database&quot;, is set to emerge as the dominant UDA middleware solution for
+    addressing the integration challenges as they exist today, and tomorrow. This new UDA
+    middleware format plays the role of a Universal Data Access manager, fusing traditional
+    database functionality and traditional data access middleware functionality into a single
+    independent packaged software solution.</para>
+		</sect3>
+		<sect3 id="consvdbedef">
+			<title>Virtual Database Engines Defined</title>
+			<para>A Virtual Database (VDB) Engine is a UDA middleware
+    format that transparently brings local and or remote heterogeneous databases together
+    using logical database references called Data Source Names (DSN&apos;s). A VDB Engine exposes
+    Metadata and Data held within these heterogeneous DSN&apos;s to clients applications and
+    services homogeneously. </para>
+			<para>VDB Engines presume the existence of a number of Database Engines and Data Access
+    Drivers provided by a variety of database vendors within an organization. VDB Engines
+    provide transparent access to these heterogeneous databases via DSN&apos;s associated with the
+    relevant data access drivers without exposing end-users or developers to the intricacies
+    of heterogeneous data access.</para>
+		</sect3>
+		<sect3 id="dsns">
+			<title>Data Source Names (DSN&apos;s)</title>
+			<para>A Data Source Name is a logical reference that
+    exposes database to standards compliant or native data access drivers. DSN&apos;s provide a
+    flexible naming and binding service for database driven applications developers and
+    end-users alike. Applications no longer need to be inextricably linked to specific
+    database names or specific database engines.</para>
+		</sect3>
+		<figure id="imagewp01" float="1">
+			<title>Distributed Computing Infrastructure Incorporating A Virtual Database Engine</title>
+			<graphic fileref="wpImage18.gif" width="782px" depth="539px"/>
+		</figure>
+	</sect2>
+	<sect2 id="consfirstvdbps">
+		<title>First Generation Virtual Database Products</title>
+		<para>Although the strict VDB definition may be new,
+    there are a number of products that have been around for a while that attempt to address
+    VDB issues. The list of such products includes The Microsoft JET Engine, Borland Database
+    Engine (BDE), and IBM DataJoiner.</para>
+		<sect3 id="msjet">
+			<title>Microsoft JET</title>
+			<para>The Microsoft JET Engine lies at the heart of
+    Microsoft Access, it is the piece of technology that allows you to link external and
+    typically remote database tables into your local Access space via ODBC Data Sources. Once
+    this link process has been completed, Access allows you to build Queries, Reports, Forms
+    etc. using these external database tables as though they were Local Access tables. JET can
+    also link to external tables hosted within desktop database engines via native interfaces.</para>
+			<para>The Microsoft JET Engine services are exposed via Microsoft provided data access
+    interfaces such as: DAO, ADO, and OLE-DB. These interfaces are integral parts of most
+    Microsoft applications, thereby exposing the benefits of the JET VDB transparently.</para>
+		</sect3>
+		<sect3 id="borlandbde">
+			<title>Borland Database Engine</title>
+			<para>The Borland Database Engine (BDE) from Inprise
+    like the Microsoft JET Engine also facilitates external table linkage via ODBC Data
+    Sources. The BDE also lets you link to external database tables via native database
+    interfaces and there is no restriction to desktop database engines when you adopt this
+    approach.</para>
+			<para>Although the BDE has a published set of APIs, it is predominantly used by Inprise
+    applications in very much the same way JET is used by Microsoft applications.</para>
+		</sect3>
+		<sect3 id="ibmdj">
+			<title>IBM DataJoiner</title>
+			<para>DataJoiner from IBM provides the ability
+    access heterogeneous data sources via IBM DB/2 Client Application Enablers. It does
+    support ODBC and JDBC as client interfaces and makes use of Native or ODBC based data
+    access for external Data I/O.</para>
+		</sect3>
+	</sect2>
+	<sect2 id="vdbimpliss">
+		<title>VDB Implementation Issues</title>
+		<para>The essential components that affect the
+    implementation of VDB Engines are, High-Level Data Access Interfaces, Low-Level Data
+    Access Interfaces and Traditional Database Functionality.
+</para>
+		<sect3 id="hilevdai">
+			<title>High-Level Data Access Interfaces</title>
+			<para>A VDB Engine&apos;s capabilities are exposed via High
+    Level Data Access interfaces. For the purpose of this document, a high level data access
+    interface is an interface utilized predominantly by applications, as opposed to middleware
+    developers for achieving application database independence. A high level data access
+    interface sits atop Low-Level data access interfaces, providing an abstraction layer that
+    serves to simplifying the process of database independent application development.</para>
+			<para>A number of High Level Data Access standards exist today, the more prevalent being:</para>
+			<simplelist>
+				<member>
+					<ulink url="http://www.microsoft.com/vbasic/techmat/whitepapers/ado20/">Data Access Objects (DAO)</ulink>
+				</member>
+				<member>
+					<ulink url="http://www.microsoft.com/vbasic/techmat/whitepapers/ado20/">Remote Data Objects (RDO)</ulink>
+				</member>
+				<member>
+					<ulink url="http://www.microsoft.com/data/ado/">ActiveX Data Objects (ADO)</ulink>
+				</member>
+				<member>
+					<ulink url="http://www.microsoft.com/data/oledb/">OLE-DB</ulink>
+				</member>
+				<member>
+					<ulink url="http://java.sun.com/products/java-blend/index.html">JavaBlend</ulink>
+				</member>
+				<member>
+					<ulink url="http://java.sun.com/beans/infobus/index.html">InfoBus</ulink>
+				</member>
+			</simplelist>
+			<para>It is important to note that low-level Data access interfaces such as ODBC, UDBC, JDBC
+    and OLE-DB transparently serve the high-level interfaces mentioned in the section above.
+    Thus, in most cases VDB vendors will treat ODBC, UDBC, JDBC, and OLE-DB as high-level
+    interfaces by providing VDB data access drivers conforming to these standards as part of
+    the VDB deliverable.</para>
+		</sect3>
+		<sect3 id="lowlevdai">
+			<title>Low-Level Data Access Interfaces</title>
+			<para>A VDB Engine&apos;s data I/O occurs via
+    low-level data access interfaces to underlying database engines or data sources. In recent
+    times the Open Database Connectivity (<ulink url="http://www.microsoft.com/data/">ODBC</ulink>)
+    API and the X/Open <ulink url="http://www.jcc.com/sql_stnd.html">SQL</ulink> Call Level Interface
+    (CLI) have emerged as the dominant industry wide Low-Level Data Access Standards. OLE-DB
+    from Microsoft is also emerging as a new low-level data access standard for relational and
+    non-relational data in the Microsoft Component Object Model (COM) world. While JDBC is
+    emerging like wise as the low-level data access standard for the burgeoning Java world.</para>
+			<para>A VDB may also be a Native Database Interface Client, making use of database engine
+    vendor provided data access interfaces. Native interfaces are based upon Embedded SQL, an
+    older format Low-Level data access interface that preceded the X/Open SQL CLI. It is
+    important to note that ODBC from Microsoft, JDBC from JavaSoft, and UDBC from OpenLink
+    Software are all derived from the X/Open SQL CLI.</para>
+		</sect3>
+		<sect3 id="traddbfunc">
+			<title>Traditional Database Functionality</title>
+			<para>The degree to which a VDB implements a traditional
+    database engine&apos;s functionality has a direct bearing on the intrinsic value of a VDB
+    engine. Traditional database functionality is extensive, but for the purposes of this
+    document, a core set of functionality common to all commercial database engines has been
+    assembled. The functionality list includes:</para>
+			<formalpara>
+				<title>Query Language Support</title>
+				<para>standard syntax for interrogating, manipulating,
+    describing, and securing data contained within a database. Examples include the Structured
+    Query Language (SQL) for relational databases and the Object Query Language (OQL) for
+    Object and Object-Relational Databases.</para>
+			</formalpara>
+			<formalpara>
+				<title>Query Processor</title>
+				<para>the mechanism used by a database engine to convert Query
+    Language Statements into actual data retrieval instructions. In addition, this database
+    component is responsible for ensuring Query Language syntax conformance, Query Execution
+    Plan Assembly and Query Fulfillment. </para>
+			</formalpara>
+			<formalpara>
+				<title>Standard Data Types Support</title>
+				<para>data contained within a database must be
+    describable using standard data types e.g. Character, Number, Date, etc.</para>
+			</formalpara>
+			<formalpara>
+				<title>VIEW Support</title>
+				<para>pre constructed query statements stored within a database,
+    for the purpose of query simplification, or content and structural security.</para>
+			</formalpara>
+			<formalpara>
+				<title>Stored Procedure Support</title>
+				<para>Stored Procedures facilitate the embedding of
+    application programming logic within a database. Their pre-compiled nature enhances data
+    access performance by reducing message hops between database servers and database clients.</para>
+			</formalpara>
+			<formalpara>
+				<title>Scrollable Cursor Support</title>
+				<para>the process by which the result of a database
+    query (known as a result-set) is traversed. Traversal occurs in either direction,
+    backwards or forwards, using result-set chunks (known as row-sets). Resultset scrolling
+    occurs when database engines exchange data with database clients.</para>
+			</formalpara>
+			<formalpara>
+				<title>Concurrency Control</title>
+				<para>the process through which a database engine supports
+    multiple sessions running concurrently, across multiple database users and database client
+    applications without compromising underlying data integrity or introducing quantum
+    increases in application response times.</para>
+			</formalpara>
+			<formalpara>
+				<title>Transaction Support</title>
+				<para>ensures that database instructions can be grouped into
+    logical units of execution that are Atomic, Consistent, Isolated from the effect of other
+    units of execution affecting the same underlying data, and Durable.</para>
+			</formalpara>
+			<formalpara>
+				<title>Transaction Isolation</title>
+				<para>describes the ability of a database engine to provide
+    transaction process partitioning options called Isolation Levels, that offer different
+    ways of managing the effects of multiple and concurrent transactions affecting the same
+    underlying data.</para>
+			</formalpara>
+			<formalpara>
+				<title>Distributed Transaction Support</title>
+				<para>describes the ability to preserve
+    transaction atomicity, consistency, integrity, and durability across database servers
+    hosted on the same or different database server machines within a networked environment.
+    This involves supporting transaction Commits and Rollbacks using a 2-phase commit
+    protocol.</para>
+			</formalpara>
+			<formalpara>
+				<title>User Definable Type Support</title>
+				<para>this is how a database engine allows
+    end-users extend its base functionality. This is achieved by providing interfaces that
+    allow end-users create new ways in which a database engine&apos;s data is described and
+    manipulated.</para>
+			</formalpara>
+			<formalpara>
+				<title>Federated Database Support</title>
+				<para>data access and manipulation across database
+    servers resident on the same machine.</para>
+			</formalpara>
+			<formalpara>
+				<title>Distributed Database Support</title>
+				<para>data access, and manipulation across database
+    servers resident on the different machines within a networked environment.</para>
+			</formalpara>
+			<formalpara>
+				<title>Security</title>
+				<para>the process by which data, and data transmission is protected
+    using a combination of database and operating system privileges, roles and roles
+    hierarchies. It also includes the ability of a database engine to protect data transmitted
+    to its clients using data encryption.</para>
+			</formalpara>
+		</sect3>
+	</sect2>
+	<sect2 id="vdbcomponents">
+		<title>VDB Engine Components</title>
+		<para>The prior section outlined the critical implementation
+    issues that affect the development and implementation of VDB Engines. These issues form
+    the basis around which a component based framework for depicting VDB architectures has
+    been derived. </para>
+		<para>The components that comprise a VDB Engine framework are as follows:</para>
+		<sect3 id="dadrvr">
+			<title>Data Access Drivers</title>
+			<para>The VDB component that forms the entry point
+    to the VDB Engine&apos;s services, these drivers may or may not conform to industry
+    standards. Applications and Services that sit atop a VDB Engine must have their data
+    access layers written to the same Application Programming Interfaces (APIs) implemented by
+    the Data Access Drivers provided by a VDB engine.</para>
+		</sect3>
+		<sect3 id="secman">
+			<title>Security Manager</title>
+			<para>The VDB component that is responsible for
+    protecting data and data transmission (using encryption) within the VDB Engine&apos;s
+    domain. It is also responsible for managing Application, User, Group, Role and Domain
+    privileges as they relate to the creation, manipulation and destruction of VDB data and
+    metadata.</para>
+		</sect3>
+		<sect3 id="qrymangr">
+			<title>Query Manager</title>
+			<para>The VDB component that handles queries
+    presented to it by the VDB Engine&apos;s data access drivers. It provides query syntax
+    checking, query execution plan compilation, and query fulfillment services. A query
+    processor is built in conformance to one or more query language specifications, the most
+    notable being the Structured Query Language (SQL) for relational database engines, and the
+    Object Query Language (OQL) for Object-Relational and Object Database engines.</para>
+		</sect3>
+		<sect3 id="metadmngr">
+			<title>Meta Data Manager</title>
+			<para>The VDB component that provides the Query
+    Processor with information about the data entities from which the Query Processor&apos;s
+    execution plan is derived. Metadata managers are also the components responsible for
+    linking external data sources into the VDB domain and directing the Query Processor to the
+    appropriate Data I/O manager. </para>
+		</sect3>
+		<sect3 id="tranmgr">
+			<title>Transaction Manager</title>
+			<para>The Transaction Manager component ensures that
+    transactions are Atomic (clearly distinguishable units), Consistent (thereby preserving
+    integrity of data), Isolated from the effect of other transactions, and Durable (such that
+    the effects of committed transactions survive failure). The Transaction Manager ensures
+    VDB Engines are capable of supporting Online Transaction Processing (OLTP) and Distributed
+    Transaction oriented applications and services. Transaction Managers may be standards
+    based implementing X/Open&apos;s XA Resource Manager Specifications. Distributed
+    transaction support is implemented by using a two-phase commit protocol.</para>
+		</sect3>
+		<sect3 id="concmngr">
+			<title>Concurrency Manager</title>
+			<para>The VDB component that ensures client applications and
+    services are capable of opening multiple concurrent sessions that execute data INSERTS,
+    UPDATES and DELETIONS, without implicitly reducing application response times or
+    compromising data integrity. Concurrency control is delivered in one of two formats,
+    Optimistic or Pessimistic depending on the response times desired by VDB client
+    applications or services.</para>
+		</sect3>
+		<sect3 id="localiomngr">
+			<title>Local Data I/O Manager</title>
+			<para>VDB Engine&apos;s that provide local data
+    storage uses this component for reading and writing data to disk. This is how a VDB
+    provides traditional database engine data storage services. </para>
+		</sect3>
+		<sect3 id="extiomngr">
+			<title>External Data I/O Manager</title>
+			<para>VDB component that handles data reads and
+    writes to external data sources. The External Data I/O Manager be implemented using
+    standard data access interfaces such as ODBC, JDBC, UDBC, OLE-DB or Native data source
+    interfaces. </para>
+		</sect3>
+		<sect3 id="rplmgr">
+			<title>Replication Manager</title>
+			<para>Component that manages data migration and
+    synchronization across two or more VDB servers within a distributed computing environment.
+    This component acts as a data coordinator between the activities of Local Data I/O and
+    External Data I/O Managers across VDB servers. The Replication Manager enables a VDB
+    Engine offer automated bi-directional data, and metadata transformation services across
+    heterogeneous data sources without end-user or developer intervention.</para>
+			<figure id="imagewp02" float="1">
+				<title>Virtual Database Engine Architecture &amp; Components</title>
+				<graphic fileref="wpImage19.gif" width="563px" depth="468px"/>
+			</figure>
+			</sect3>
+		<sect3 id="vdbimplappro">
+			<title>VDB Implementation Approaches</title>
+			<para>There are no golden VDB implementation specifications,
+    but the implementation of a VDB has a direct impact the degree to which you realize
+    desired value from the VDB concept as a whole. </para>
+			<para>The VDB value proposition is simply stated as follows: </para>
+			<para>&quot;To provide transparent access to heterogeneous data sources, independent of host
+        operating system and underlying database engines &quot;.</para>
+			<para>VDB implementations can be categorized as follows:</para>
+			<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+				<title>VDB Implementation Categories</title>
+				<tgroup align="char" charoff="50" char="." cols="4">
+					<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+					<thead>
+						<row>
+							<entry/>
+							<entry>VDB Data Access Interface</entry>
+							<entry>VDB External Data I/O</entry>
+							<entry>Traditional Database Functionality</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>Type 1</entry>
+							<entry>Native</entry>
+							<entry>Native</entry>
+							<entry>Partial</entry>
+						</row>
+						<row>
+							<entry>Type 2</entry>
+							<entry>Native</entry>
+							<entry>Native</entry>
+							<entry>Full</entry>
+						</row>
+						<row>
+							<entry>Type 3</entry>
+							<entry>Native</entry>
+							<entry>Standards Based</entry>
+							<entry>Partial</entry>
+						</row>
+						<row>
+							<entry>Type 4</entry>
+							<entry>Native</entry>
+							<entry>Standards Based</entry>
+							<entry>Full</entry>
+						</row>
+						<row>
+							<entry>Type 5</entry>
+							<entry>Standards Based</entry>
+							<entry>Native</entry>
+							<entry>Partial</entry>
+						</row>
+						<row>
+							<entry>Type 6</entry>
+							<entry>Standards Based</entry>
+							<entry>Native</entry>
+							<entry>Full</entry>
+						</row>
+						<row>
+							<entry>Type 7</entry>
+							<entry>Standards Based</entry>
+							<entry>Standards Based</entry>
+							<entry>Partial</entry>
+						</row>
+						<row>
+							<entry>Type 8</entry>
+							<entry>Standards Based</entry>
+							<entry>Standards Based</entry>
+							<entry>Full</entry>
+						</row>
+						<row>
+							<entry>Type 9</entry>
+							<entry>Standards Based</entry>
+							<entry>Standards Based or Native</entry>
+							<entry>Partial</entry>
+						</row>
+						<row>
+							<entry>Type 10</entry>
+							<entry>Standards Based</entry>
+							<entry>Standards Based or Native</entry>
+							<entry>Full</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+			<para>The sections that follow provide illustrations of the
+    different VDB formats, depicting the components that provide the basis for the
+    categorization used in the table above.</para>
+				<sect4 id="t1vdbngin">
+				<title>Type 1 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via Native and Proprietary
+    high-level data access interfaces. Data I/O is achieved via native, proprietary, and data
+    source specific low-level data access interfaces. This category of VDB does not possess a
+    complete set of traditional database engine components.</para>
+				<figure id="imagewp03" float="1">
+					<title>Type 1 VDB Engine Architecture</title>
+					<graphic fileref="wpImage20.gif" width="596px" depth="494px"/>
+				</figure>
+			</sect4>
+			<sect4 id="t2vdbngin">
+				<title>Type 2 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via Native and Proprietary
+    high-level data access interfaces. External data I/O is achieved via native, proprietary,
+    and data source specific low-level data access interfaces. This category of VDB possesses
+    a complete set of traditional database engine components.</para>
+						<figure id="imagewp04" float="1">
+					<title>Type 2 VDB Engine Architecture</title>
+					<graphic fileref="wpImage21.gif" width="597px" depth="494px"/>
+				</figure>
+			</sect4>
+			<sect4 id="t3vdbngin">
+				<title>Type 3 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via Native and Proprietary
+    high-level data access interfaces. Data I/O is achieved via Open, Standards based, and
+    Database Independent low-level data access interfaces. This category of VDB does not
+    possess a complete set of traditional database engine components.</para>
+						<figure id="imagewp05" float="1">
+					<title>Type 3 VDB Engine Architecture</title>
+					<graphic fileref="wpImage22.gif" width="596px" depth="494px"/>
+				</figure>
+			</sect4>
+			<sect4 id="t4vdbngin">
+				<title>Type 4 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via Native and Proprietary
+    high-level data access interfaces. External data I/O is achieved via Open, Standards
+    based, and Database Independent low-level data access interfaces. This category of VDB
+    possesses a complete set of traditional database engine components.</para>
+						<figure id="imagewp06" float="1">
+					<title>Type 4 VDB Architecture</title>
+					<graphic fileref="wpImage23.gif" width="574px" depth="468px"/>
+				</figure>
+			</sect4>
+			<sect4 id="t5vdbngin">
+				<title>Type 5 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via open and standards based
+    high-level data access Interfaces. Data I/O is achieved via native, proprietary, and data
+    source specific low-level interfaces. This category of VDB does not possess a complete set
+    of traditional database engine components.</para>
+				<figure id="imagewp07" float="1">
+					<title>Type 5 VDB Engine Architecture</title>
+					<graphic fileref="wpImage24.gif" width="614px" depth="494px"/>
+				</figure>
+					</sect4>
+			<sect4 id="t6vdbngin">
+				<title>Type 6 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via
+    open, standards based, high and low-level Interfaces. External data I/O is achieved via
+    native, proprietary, and data source specific low-level interfaces. This category of VDB
+    possesses a complete set of traditional database engine components.</para>
+				<figure id="imagewp08" float="1">
+					<title>Type 6 - VDB Engine Architecture</title>
+					<graphic fileref="wpImage25.gif" width="588px" depth="494px"/>
+				</figure>
+			</sect4>
+			<sect4 id="t7vdbngin">
+				<title>Type 7 VDB Engine</title>
+				<para>This category of VDB exposes its services via open, standards based high-level data
+    access interfaces. Data I/O is achieved via Open, Standards based, and Database
+    Independent low-level data access interfaces. This category of VDB does not possess a
+    complete set of traditional database engine components.</para>
+				<figure id="imagewp09" float="1">
+					<title>Type 7 VDB Engine Architecture</title>
+					<graphic fileref="wpImage26.gif" width="614px" depth="494px"/>
+				</figure>
+					</sect4>
+			<sect4 id="t8vdbngin">
+				<title>Type 8 VDB Engine</title>
+				<para>This category of VDB exposes its services via open,
+    standards based, high and low-level interfaces. External data I/O is achieved via Open,
+    Standards based, and Database Independent low-level data access interfaces. This category
+    of VDB does possess a complete set of traditional database engine components.</para>
+				<figure id="imagewp10" float="1">
+					<title>Type 8 VDB Engine Architecture</title>
+					<graphic fileref="wpImage27.gif" width="614px" depth="548px"/>
+				</figure>
+			</sect4>
+			<sect4 id="t9vdbngin">
+				<title>Type 9 VDB Engine</title>
+				<para>This category of VDB exposes its services via Open, Standards based, high-level
+    data access interfaces. Data I/O is achieved by using either Open, Standards based, and
+    Database Independent low-level data access interfaces or Native, Proprietary, and Database
+    Specific low-level data access interfaces. This category of VDB does not possess a
+    complete set of traditional database engine components.</para>
+				<figure id="imagewp11" float="1">
+					<title>Type 9 VDB Architecture</title>
+					<graphic fileref="wpImage28.gif" width="570px" depth="484px"/>
+				</figure>
+					</sect4>
+			<sect4 id="t10vdbngin">
+				<title>Type 10 VDB Engine</title>
+				<para>This category of VDB exposes its services via Open,
+    Standards based, high-level data access interfaces. External data I/O is achieved by using
+    either Open, Standards based, and Database Independent low-level data access interfaces or
+    Native, Proprietary, and Database Specific low-level data access interfaces. This category
+    of VDB possesses a complete set of traditional database engine components.</para>
+				<figure id="imagewp12" float="1">
+					<title>Type 10 VDB Architecture</title>
+					<graphic fileref="wpImage29.gif" width="613px" depth="494px"/>
+				</figure>
+			</sect4>
+		</sect3>
+	</sect2>
+  </sect1>
+
+
+  <sect1 id="webinternetproto"><title>Web &amp; Internet Protocol Support</title>
+  <para>Virtuoso provides direct access to a number of Internet protocols through
+  built in procedures.  These protocols include SMTP, NNTP, POP3, HTTP, XML and many
+  more.  Combined with Virtuoso's native database and virtual database capabilities
+  applications can be developed very rapidly from scratch or existing systems can be
+  enhanced with a rich set of tools.  An old customer table can be used to create a
+  mail shot; a products table can now generate an XML file which can be converted to
+  plain text and or HTML via XSLT which can be emailed to the customers every week
+  automatically using the scheduler, or on request from a VSP page served by the
+	HTTP server.  The possibilities are endless and all these abilities are contained
+	within a single server.</para>
+  </sect1>
+
+  <sect1 id="websrvcsproto"><title>Web Services Protocol Support</title>
+	<para>The Internet is reaching a stage where automatic processes want to rely
+	on other sites and services presenting their uses in a standard way.  This is
+	Web Services.  What ever an organization or repository of data contains the
+	it needs to be exploited as fully as possibly.  This is exposing existing
+	systems as Web Services.  These need to be accessible over well known protocols
+	which combine to provide a service over the web.</para>
+	<para>SQL provides the means to query data within a database.  This is a very
+	well known and supported operation.  The query may or may not be able to
+	make use of free text indexes to obtain results faster and more accurately from
+	textual sources.  The source could even come from a remote database contacted
+	over ODBC, JDBC or OLEDB - more well supported standards.  The results may be
+	shipped to another server for further processing.  Further processing could
+	include transformations into various XML's directly or via an XSLT stylesheet.
+	This collaboration of services can be enhanced further with other Web and Internet
+	protocols for the grand objective of making parts of useful information or
+	ability consumable over the Internet as a Web Service. </para>
+    <figure id="virtpyramid" float="1"><title>Towards Web Services...</title>
+    <graphic fileref="virtpyramid.jpg" width="322px" depth="239px"/></figure>
+  </sect1>
+
+  <sect1 id="conceptarchitecture"><title>Architecture</title>
+
+	<para>The base of Virtuoso is the Virtuoso Data Management.  This
+	handles the normal tasks of the database and virtual database collaborating
+	between local native and remote SQL and XML based resources.  Web and Internet
+	services and protocols then sit atop of this layer to expose Virtuoso to the Web
+	and its users.</para>
+
+<figure id="varch322" float="1"><title>OpenLink Virtuoso Product Architecture</title>
+  <graphic fileref="varch32.jpg" width="384px" depth="377px"/></figure>
+
+  </sect1>
+
+</chapter>

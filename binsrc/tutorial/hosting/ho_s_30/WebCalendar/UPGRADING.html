@@ -1,0 +1,280 @@
+<HTML><HEAD><TITLE>WebCalendar Upgrading Notes</TITLE></HEAD><BODY BGCOLOR="#FFFFFF">
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<H2>WebCalendar Upgrading Notes</H2>
+
+Below are the steps needed to upgrade from a previous version:
+
+<P><HR><P><B>To upgrade to 0.9.40 from 0.9.39 or older:</B>
+<P>
+  Two new tables were created: webcal_asst and webcal_entry_ext_user.
+  And the column cal_ext_for_id was added to the webcal_entry table.
+  Use the following SQL
+  for MySQL and PostgreSQL:
+  <BLOCKQUOTE><PRE>
+    CREATE TABLE webcal_asst (
+      cal_boss VARCHAR(25) NOT NULL,
+      cal_assistant VARCHAR(25) NOT NULL,
+      PRIMARY KEY ( cal_boss, cal_assistant )
+    );
+    CREATE TABLE webcal_entry_ext_user (
+      cal_id INT DEFAULT 0 NOT NULL,
+      cal_fullname VARCHAR(50) NOT NULL,
+      cal_email VARCHAR(75) NULL,
+      PRIMARY KEY ( cal_id, cal_fullname )
+    );
+  ALTER TABLE webcal_entry ADD cal_ext_for_id INT NULL;
+  </PRE></BLOCKQUOTE>
+  For Oracle, use VARCHAR2 instead of VARCHAR.
+
+<P><HR><P><B>To upgrade to 0.9.39 from 0.9.38 or older:</B>
+<P>
+  The names of the date settings in the database were modified.
+  All old data settings need to be removed from the database.
+  <BLOCKQUOTE><PRE>
+    DELETE FROM webcal_config WHERE cal_setting LIKE 'DATE_FORMAT%';
+    DELETE FROM webcal_user_pref WHERE cal_setting LIKE 'DATE_FORMAT%';
+  </PRE></BLOCKQUOTE>
+
+<P><HR><P><B>To upgrade to 0.9.38 from 0.9.37 or older:</B>
+<P>
+  The webcal_entry_user table was modified, and a new table
+  webcal_categories was created.  Use the following SQL
+  to modify your table for MySQL and PostgreSQL:
+  <BLOCKQUOTE><PRE>
+    ALTER TABLE webcal_entry_user ADD cal_category INT DEFAULT NULL;
+
+    CREATE TABLE webcal_categories (
+      cat_id INT NOT NULL,
+      cat_owner VARCHAR(25),
+      cat_name VARCHAR(80) NOT NULL,
+      PRIMARY KEY ( cat_id )
+    );
+  </PRE></BLOCKQUOTE>
+
+<P><HR><P><B>To upgrade to 0.9.37 from 0.9.36 or older:</B>
+<P>
+  The webcal_entry_log table was modified, and a new table
+  webcal_entry_repeats_not was created.  Use the following SQL
+  to modify your table for MySQL and PostgreSQL:
+  <BLOCKQUOTE><PRE>
+    ALTER TABLE webcal_entry_log ADD cal_user_cal VARCHAR(25);
+
+    CREATE TABLE webcal_entry_repeats_not (
+      cal_id INT NOT NULL,
+      cal_date INT NOT NULL,
+      PRIMARY KEY ( cal_id, cal_date )
+    );
+  </PRE></BLOCKQUOTE>
+
+
+<P><HR><P><B>To upgrade to 0.9.35 from 0.9.34 or older:</B>
+<P>
+  Six new tables were added for group support, views, system
+  settings and activity logs.
+  Look at tables-mysql.sql, tables-oracle.sql, or tables-postgres.sql
+  for these new tables: webcal_group, webcal_group_user,
+  webcal_view, webcal_view_user, wecbal_config, webcal_entry_log
+  After adding these tables, be sure to go to the System Settings page
+  (admin.php) since you will be missing some config stuff in your
+  database that you can add from the System Settings page.
+  For MySQL and PostgreSQL, the SQL is:
+  <BLOCKQUOTE><PRE>
+
+    CREATE TABLE webcal_group (
+      cal_group_id INT NOT NULL,
+      cal_owner VARCHAR(25) NULL,
+      cal_name VARCHAR(50) NOT NULL,
+      cal_last_update INT NOT NULL,
+      PRIMARY KEY ( cal_group_id )
+    );
+
+    CREATE TABLE webcal_group_user (
+      cal_group_id INT NOT NULL,
+      cal_login VARCHAR(25) NOT NULL,
+      PRIMARY KEY ( cal_group_id, cal_login )
+    );
+
+    CREATE TABLE webcal_view (
+      cal_view_id INT NOT NULL,
+      cal_owner VARCHAR(25) NOT NULL,
+      cal_name VARCHAR(50) NOT NULL,
+      cal_view_type CHAR(1),
+      PRIMARY KEY ( cal_view_id )
+    );
+
+    CREATE TABLE webcal_view_user (
+      cal_view_id INT NOT NULL,
+      cal_login VARCHAR(25) NOT NULL,
+      PRIMARY KEY ( cal_view_id, cal_login )
+    );
+
+    CREATE TABLE webcal_config (
+      cal_setting VARCHAR(50) NOT NULL,
+      cal_value VARCHAR(50) NULL,
+      PRIMARY KEY ( cal_setting )
+    );
+
+    CREATE TABLE webcal_entry_log (
+      cal_log_id INT NOT NULL,
+      cal_entry_id INT NOT NULL,
+      cal_login VARCHAR(25) NOT NULL,
+      cal_type CHAR(1) NOT NULL,
+      cal_date INT NOT NULL,
+      cal_time INT NULL,
+      cal_text TEXT,
+      PRIMARY KEY ( cal_log_id )
+    );
+    </PRE></BLOCKQUOTE>
+
+    <P><HR><P><B>To upgrade to 0.9.27:</B><P>
+
+  Two new tables were added for custom event fields and reminders.
+  Look at tables-mysql.sql, tables-oracle.sql, or tables-postgres.sql.
+  Execute the SQL for creating webcal_site_extras and webcal_reminder_log.
+  For MySQL and PostgreSQL, the SQL is:
+  <BLOCKQUOTE><PRE>
+
+    CREATE TABLE webcal_site_extras (
+      cal_id INT DEFAULT '0' NOT NULL,
+      cal_name VARCHAR(25) NOT NULL,
+      cal_type INT NOT NULL,
+      cal_date INT DEFAULT '0',
+      cal_remind INT DEFAULT '0',
+      cal_data TEXT,
+      PRIMARY KEY ( cal_id, cal_name, cal_type )
+    );
+
+    CREATE TABLE webcal_reminder_log (
+      cal_id INT DEFAULT '0' NOT NULL,
+      cal_name VARCHAR(25) NOT NULL,
+      cal_event_date INT NOT NULL DEFAULT 0,
+      cal_last_sent INT NOT NULL DEFAULT 0,
+      PRIMARY KEY ( cal_id, cal_name, cal_event_date )
+    );
+
+  For Oracle, the SQL is:
+    CREATE TABLE webcal_site_extras (
+      cal_id INT DEFAULT '0' NOT NULL,
+      cal_name VARCHAR(25) NOT NULL,
+      cal_type INT NOT NULL,
+      cal_date INT DEFAULT '0',
+      cal_remind INT DEFAULT '0',
+      cal_data LONG,
+      PRIMARY KEY ( cal_id, cal_name, cal_type )
+    );
+
+    CREATE TABLE webcal_reminder_log (
+      cal_id INT DEFAULT '0' NOT NULL,
+      cal_name VARCHAR(25) NOT NULL,
+      cal_event_date INT NOT NULL DEFAULT 0,
+      cal_last_sent INT NOT NULL DEFAULT 0,
+      PRIMARY KEY ( cal_id, cal_name, cal_event_date )
+    );
+    </PRE></BLOCKQUOTE>
+
+    <P>
+  You will also need to setup the tools/send_reminders.php script
+  to be run periodically.  I would recommend once an hour.  For
+  Linux/UNIX, this is simple.  Just use cron and add a line to
+  your crontab file that looks like:
+  <BLOCKQUOTE><PRE>
+    1 * * * * cd /some/directory/webcalendar/tools; ./send_reminders.php
+    </PRE></BLOCKQUOTE>
+
+    <P>
+  This will tell cron to run the script at one minute after the hour.
+  Windows users will have to find another way to run the script.
+  There are ports/look-a-likes of cron for Windows, so look around.
+
+
+  <P><HR><P><B>To upgrade to 0.9.22:</B><P>
+
+  A new table was added to support layering.  Look at
+  tables-mysql.sql, tables-oracle.sql, or tables-postgres.sql.
+  Execute the SQL for creating the webcal_entry_repeats.  For MySQL,
+  the SQL is:
+  <BLOCKQUOTE><PRE>
+
+    CREATE TABLE webcal_user_layers (
+      cal_layerid INT DEFAULT '0' NOT NULL,
+      cal_login varchar(25) NOT NULL,
+      cal_layeruser varchar(25) NOT NULL,
+      cal_color varchar(25) NULL,
+      cal_dups CHAR(1) DEFAULT 'N',
+      PRIMARY KEY ( cal_login, cal_layeruser )
+    );
+    </PRE></BLOCKQUOTE>
+
+
+    <P><HR><P><B>To upgrade to 0.9.14:</B><P>
+
+  A new table was added to support repeating events.  Look at
+  tables-mysql.sql, tables-oracle.sql, or tables-postgres.sql.
+  Execute the SQL for creating the webcal_entry_repeats.  For MySQL,
+  the SQL is:
+  <BLOCKQUOTE><PRE>
+    CREATE TABLE webcal_entry_repeats (
+      cal_id INT DEFAULT '0' NOT NULL,
+      cal_type VARCHAR(20),
+      cal_end INT,
+      cal_frequency INT DEFAULT '1',
+      cal_days CHAR(7),
+      PRIMARY KEY (cal_id)
+   );
+    </PRE></BLOCKQUOTE>
+
+    <P><HR><P><B>To upgrade from 0.9.7-0.9.11 to 0.9.12:</B><P>
+
+  To fix a bug in the handing of events at midnight, all the
+  entries with NULL for cal_time are changed to -1.  Use the
+  following SQL command:
+  <BLOCKQUOTE><PRE>
+    update webcal_entry set cal_time = -1 where cal_time is null;
+    </PRE></BLOCKQUOTE>
+
+    <P><HR><P><B>To upgrade from 0.9.[23456] to 0.9.7:</B><P>
+
+  Entirely new tables are used.  Use the following commands to
+  convery your existing MySQL tables to the new tables:
+  <BLOCKQUOTE><PRE>
+    cd tools
+    ./upgrade_to_0.9.7.pl
+    mysql intranet < commands.sql
+    </PRE></BLOCKQUOTE>
+  where "intranet" is the name of the MySQL database that contains
+  your WebCalendar tables.
+
+  <P><HR><P><B>To upgrade from 0.9.[23]:</B><P>
+  Not a thing....
+
+  <P><HR><P><B>To upgrade from 0.9.1:</B><P>
+  You only need to create the table cal_user_pref in tables.sql
+
+  <P><HR><P><B>To upgrade from 0.9:</B><P>
+  You need to create the table cal_user_pref in tables.sql
+  You need to create the table cal_entry_user in tables.sql that
+    was mistakenly created as "cal_event_user" in the 0.9 release
+
+</BODY></HTML>

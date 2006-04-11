@@ -1,0 +1,356 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<chapter label="IX" id="chapter9">
+	<title>Data Replication in Virtuoso</title>
+	<abstract>
+This chapter describes how replicate data between virtuoso and non-virtuoso servers.
+</abstract>
+	<!-- ======================================== -->
+	<sect1 id="SNAPSHOT">
+		<title>Snapshot replication</title>
+		<sect2 id="NONINC">
+			<title>Non incremental snapshot replication</title>
+			<para>
+The Virtuoso periodically evaluates a query and inserts the result into a table,
+replacing the content. The source and target can be anywhere but typically will
+be on different databases of which at least one is remote.
+</para>
+			<para>
+Note that this makes a two party distributed transaction. Only one of the transaction
+branches is writing, hence this goes with a one phase commit.
+</para>
+			<para>
+Note that this can be used to replicate between two non-Virtuoso databases.
+</para>
+			<para>
+The prerequisite of this mode of replication is that all tables exist.
+The schema is never replicated.
+</para>
+		</sect2>
+		<sect2 id="SNLOG">
+			<title>Table snapshot logs</title>
+			<para>
+In order to be able to create incremental snapshots on a table there should be
+a snapshot log table defined in the following fashion :
+</para>
+			<programlisting>
+create table RLOG_sourcetable (
+RLOG_sourcetable_primarykey_parts,
+...
+SNAPTIME DATETIME,
+DMLTYPE	 CHAR(1),
+PRIMARY KEY (RLOG_*));
+</programlisting>
+			<para>
+The name of the snapshot log table is constructed from the name of the source table by
+prefixing it with RLOG_ .
+</para>
+			<para>
+Snapshot log table contains all the primary key parts of the source table prefixed with RLOG_ .
+</para>
+			<para>
+Snapshot log table contains at most one row per updated source table row with the update time
+and update type in DMLTYPE (I - for insert, U - for update, D - for delete).
+</para>
+			<para>
+There should be triggers on the source table to update the log like that :
+</para>
+			<programlisting>
+create trigger xxx_I_log after insert on xxx {
+		insert replacing RLOG_xxx values (xxx_pk, now(), 'I'); }
+create trigger xxx_D_log after delete on xxx {
+		insert replacing RLOG_xxx values (xxx_pk, now(), 'D'); }
+create trigger xxx_U_log after update on xxx {
+  		if (OLD.xxx_pk differs from NEW.xxx_pk)
+    	{
+      		insert replacing RLOG_xxx values (OLD.xxx_pk, now(), 'D');
+      		insert replacing RLOG_xxx values (NEW.xxx_pk, now(), 'I');
+    	}
+  		else
+    		insert replacing RLOG_xxx values (xxx_pk, now(), 'U');
+}
+</programlisting>
+			<para>
+where xxx is the source table name, RLOG_xxx is the snapshot log table name, xxx_pk is a comma separated list
+of the source table's primary key parts. The names of the triggers are constructed from the fully qualified name
+(DB.DBA.Orders makes DB_DBA_Orders_I_log).
+</para>
+		</sect2>
+		<sect2 id="INC">
+			<title>Incremental snapshot replication</title>
+			<para>
+A table can be replicated from a generic, possibly non-Virtuoso source in an
+incremental fashion if the data source meets certain criteria:
+</para>
+			<para>
+The data should come from a single table.
+</para>
+			<para>
+The source table should have an explicit primary key.
+</para>
+			<para>
+There source query should have the form
+</para>
+			<programlisting>SELECT fields FROM source_table WHERE scalar_conditions
+</programlisting>
+			<para>
+A snapshot log on the source table should exist.
+</para>
+			<para>
+The should be insert, delete and update triggers on the source table to update the snapshot log.
+</para>
+			<para>
+The incremental update is done in the following way:
+</para>
+			<para>
+All the changed records with a snaptime greater or equal from SN_LAST_TS are processed.
+If the record to insert allready exists, then it's updated. If the record to update doesn't
+exist in the destination table, then it's inserted. This contributes for conflict resolving.
+</para>
+		</sect2>
+		<sect2 id="SYSTABLES">
+			<title>Replication system tables</title>
+			<programlisting>
+CREATE TABLE SYS_SNAPSHOT (
+    SN_NAME	VARCHAR(255),
+    SN_QUERY    VARCHAR(1024),
+    SN_LAST_TS	VARBINARY(30),
+    SN_IS_INCREMENTAL	INTEGER,
+    SN_SOURCE_TABLE	VARCHAR(255),
+    PRIMARY KEY (SN_NAME))
+</programlisting>
+			<para>
+This table describes all defined snapshot replication relations.
+SN_NAME is the snapshot's name (destination table name). SN_QUERY is the query to get the data from.
+SN_LAST_TS is the time of the last update reflected for incremental snapshots (from the snapshot log's SNAPTIME).
+SN_IS_INCREMENTAL is null for nonincremental snapshots and non-null for the incremental ones.
+SN_SOURCE_TABLE is the source table for the incremental snapshots, NULL otherwise.
+</para>
+			<para>
+This implies that an incremental snapshot can be updated in two ways - incrementaly and nonincrementaly
+as the nonincremental definition is a subset of the incremental definition.
+</para>
+		</sect2>
+		<sect2 id="COMMANDS">
+			<title>Command reference</title>
+			<sect3 id="CREATELOG">
+				<title>CREATE SNAPSHOT LOG FOR source_table</title>
+				<programlisting>CREATE SNAPSHOT LOG FOR source_table</programlisting>
+				<programlisting>repl_create_snapshot_log(in source_table varchar)</programlisting>
+				<para>
+Creates a snapshot log of a native (non VDB) table and the appropriate log update triggers.
+</para>
+				<para>
+Note that when replicating data from a remote Virtuoso a snapshot log table can be created on the
+remote virtuoso and then the source and log tables can be attached into the local Virtuoso. However
+the snapshot log table and the update triggers should be created manually on a non-Virtuoso data source.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+create snapshot log for Orders;
+</programlisting>
+			</sect3>
+			<sect3 id="DROPLOG">
+				<title>DROP SNAPSHOT LOG FOR source_table</title>
+				<programlisting>DROP SNAPSHOT LOG FOR source_table</programlisting>
+				<programlisting>repl_drop_snapshot_log(in source_table varchar)</programlisting>
+				<para>
+Drops a snapshot log of a table and the log update triggers.
+</para>
+				<para>
+This results in 4 SQL commands :
+</para>
+				<programlisting>
+drop trigger xxx_I_log;
+drop trigger xxx_U_log;
+drop trigger xxx_D_log;
+drop table RLOG_xxx;
+</programlisting>
+				<para>
+where xxx is the source table name (fully qualified - DB.DBA.Orders becomes DB_DBA_Orders).
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+drop snapshot log for Orders;
+</programlisting>
+			</sect3>
+			<sect3 id="PURGELOG">
+				<title>PURGE SNAPSHOT LOG FOR source_table</title>
+				<programlisting>PURGE SNAPSHOT LOG FOR source_table</programlisting>
+				<programlisting>repl_purge_snapshot_log(in source_table varchar)</programlisting>
+				<para>
+There can be old snapshot log rows witch have been replayed in all the snapshots of a given source table.
+Thease rows are no longer needed and can be purged from the snapshot log for a faster operation.
+</para>
+				<para>
+This command checks if there are any rows in SYS_REPLICATION reffering to that source table and if there
+are, then it deletes all the rows in the log table with SNAPTIME earlier then MIN(SN_LAST_TS).
+</para>
+				<para>
+If there are no rows in SYS_SNAPSHOT it asumes that the log is used for "pull" replication
+and doesn't do anything.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+purge snapshot log for Orders;
+</programlisting>
+			</sect3>
+			<sect3 id="CREATENONINC">
+				<title>CREATE NONINCREMENTAL SNAPSHOT</title>
+				<programlisting>CREATE NONINCREMENTAL SNAPSHOT dest_table as 'query_def'</programlisting>
+				<programlisting>repl_create_snapshot(in query_def varchar, in dest_table varchar)</programlisting>
+				<para>
+Creates a non-incremental snapshot log of the data returned by the query query_def.
+</para>
+				<para>
+The server first checks for the existance of a table with the same name. If it doesn't exist,
+then a table with a layout to accomodate the resultset produced by query_def is created.
+</para>
+				<para>
+Then a entry containing query_def and tablename is added to SYS_SNAPSHOT and the destination table
+is filled in with an insert into tablename query_def.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+<programlisting>create nonincremental snapshot sub_orders as
+		'select * from Orders where OrderID &lt; 5'
+</programlisting>
+			</sect3>
+			<sect3 id="CREATEINC">
+				<title>CREATE INCREMENTAL SNAPSHOT</title>
+<programlisting>CREATE SNAPSHOT dest_table FROM source_table [ 'source_column_list' ]
+		[ WHERE 'condition' ]</programlisting>
+				<programlisting>repl_create_inc_snapshot(
+    in source_column_list varchar,
+    in source_table varchar,
+    in condition varchar,
+    in dest_table varchar)</programlisting>
+				<para>
+Creates a incremental snapshot log using source query like that :
+</para>
+				<programlisting>
+SELECT source_table_pk_cols, source_column_list FROM source_table WHERE condition
+</programlisting>
+				<para>
+If the dest table allready exists, then it's column count is checked tobe greater than the
+primary key parts count of the source table.
+</para>
+				<para>
+If the source_column_list is ommited, then the destination table is created to have the same
+columns as the source table.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+CREATE SNAPSHOT sub_orders FROM Orders WHERE 'OrderID &lt; 5'
+</programlisting>
+			</sect3>
+			<sect3 id="UPDATESNAP">
+				<title>UPDATE SNAPSHOT</title>
+				<programlisting>UPDATE SNAPSHOT snapshot_table_name [ AS NONINCREMENTAL ]</programlisting>
+				<programlisting>repl_refresh_inc_snapshot(
+    in snapshot_table_name varchar)</programlisting>
+				<programlisting>repl_refresh_noninc_snapshot(
+    in snapshot_table_name varchar)</programlisting>
+				<para>
+Without the optional argument updates the snapshot according to it's type.
+If an incremental snapshot needs to be updated as a nonincremental, then the full form should be used.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+UPDATE SNAPSHOT sub_orders
+</programlisting>
+			</sect3>
+			<sect3 id="DROPSNAP">
+				<title>DROP SNAPSHOT</title>
+				<programlisting>DROP SNAPSHOT snapshot_table_name [ WITH DELETE ]</programlisting>
+				<programlisting>repl_drop_snapshot(
+    in snapshot_table_name varchar,
+    in delete integer)</programlisting>
+				<para>
+Removes a snapshot definition from SYS_SNAPSHOT and optionaly drops the snapshot destination table.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+DROP SNAPSHOT sub_orders WITH DELETE
+</programlisting>
+			</sect3>
+		</sect2>
+	</sect1>
+	<!-- ======================================== -->
+	<sect1 id="SCHEDULER">
+		<title>Virtuoso scheduler</title>
+		<para>
+Virtuoso scheduler allows an arbitrary SQL command to be run at sertain intervals.
+</para>
+		<para>
+The scheduler process wakes up every n minutes, scans the SYS_SHCEDULED_EVENT table and
+executes each command witch applies to the current time. Note that overdue commands are executed
+only once.
+</para>
+		<para>
+There is a virtuoso.ini parameter "Scheduler interval" under "Parameters" section witch defines
+the scheduler wake-up interval. Set this to 0 (the default) to disable the scheduler.
+</para>
+		<sect2 id="SYSTABLES">
+			<title>SYS_SCHEDULED_EVENT</title>
+			<programlisting>
+CREATE TABLE SYS_SCHEDULED_EVENT(
+    SE_NAME		varchar,
+    SE_START		datetime,
+    SE_SQL		varchar,
+    SE_LAST_COMPLETED	datetime,
+    SE_INTERVAL		integer,
+    PRIMARY KEY(SE_NAME));
+</programlisting>
+			<para>
+This table describes each scheduled SQL command. SE_NAME is the name of the scheduled event.
+SE_START is the first schedule execution time.
+SE_SQL is the text of the SQL command to be executed.
+SE_LAST_COMPLETED is the last time when the SQL command was executed successfully.
+SE_INTERVAL is the interval between the runs of the SQL command in minutes.
+</para>
+			<para>
+Defining a new scheduled event means adding a row to the SYS_SCHEDULED_EVENT with an insert statement like this:
+</para>
+			<programlisting>
+INSERT INTO SYS_SHCEDULED_EVENT (SE_NAME, SE_SQL, SE_START, SE_INTERVAL)
+		VALUES (.....)
+</programlisting>
+		</sect2>
+	</sect1>
+</chapter>

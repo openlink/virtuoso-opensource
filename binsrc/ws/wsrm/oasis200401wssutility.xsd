@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" targetNamespace="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.1">
+  <xsd:simpleType name="tTimestampFault">
+    <xsd:restriction base="xsd:QName">
+      <xsd:enumeration value="wsu:MessageExpired"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:attribute name="Id" type="xsd:ID" />
+  <xsd:complexType name="AttributedDateTime">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:string">
+    <xsd:attribute ref="wsu:Id" use="optional"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+  <xsd:complexType name="AttributedURI">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:anyURI">
+    <xsd:attribute ref="wsu:Id" use="optional"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+  <xsd:complexType name="TimestampType">
+    <xsd:sequence>
+      <xsd:element ref="wsu:Created" minOccurs="0"/>
+      <xsd:element ref="wsu:Expires" minOccurs="0"/>
+    </xsd:sequence>
+    <xsd:attribute ref="wsu:Id" use="optional"/>
+  </xsd:complexType>
+  <xsd:element name="Timestamp" type="wsu:TimestampType"/>
+  <xsd:element name="Expires" type="wsu:AttributedDateTime"/>
+  <xsd:element name="Created" type="wsu:AttributedDateTime"/>
+</xsd:schema>

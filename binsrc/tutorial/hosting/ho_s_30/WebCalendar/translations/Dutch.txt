@@ -1,0 +1,960 @@
+# Use this as a starting point to translate this application into
+# another language.  The format is "English text: translated text"
+# There cannot be a ":" in the English text.
+# Translated by: Marieke Timmer / marieke.timmer@tijdhof.nl
+# Last update: 28 August 2002
+# check out the tools directory which contains two perl scripts:
+# check_translation.pl will tell you if you have successfully translated all re
+# Translation last updated on 11-30-2002
+
+
+###############################################
+# Page: admin.php
+#
+Server URL is required: server-URL vereist
+Server URL must end with '/': server-URL moet eindigen op /
+Invalid color for document background: ongeldige kleur voor de achtergrond
+Invalid color for document title: ongeldige kleur voor de agendatitel
+Invalid color for table cell background: ongeldige kleur voor de tabelcel
+Invalid color for table grid: ongeldige kleur voor tabelraster
+Invalid color for table header background: ongeldige kleur voor achtergrond tab
+Invalid color for table text background: ongeldige kleur voor tekstachtergrond
+Invalid color for event popup background: ongeldige achtergrondkleur voor afspr
+Invalid color for event popup text: ongeldige tekstkleur voor afspraak-popup
+Invalid color for table cell background for today: ongeldige achtergrondkleur v
+Color format should be '#RRGGBB': kleur weergeven in #RRGGBB-formaat
+System Settings: instellingen
+You are not authorized: u heeft geen toegang
+Note: Let op!
+Your user preferences: de gebruikersinstellingen
+may be affecting the appearance of this page.: kunnen de weergave van deze pagi
+Click here: Klik hier
+to not use your user preferences when viewing this page: om de gebruikersinstel
+are being ignored while viewing this page.: worden genegeerd bij het bekijken v
+to load your user preferences when viewing this page: om de gebruikersinstellin
+Save: bewaren
+Help: help
+Settings: instellingen
+app-name-help: Hier wordt de naam van de applicatie gedefinieerd.
+Application Name: programmanaam
+server-url-help: Specificeert de basis URL van de applicatie.
+Server URL: server URL
+language-help: Specificeert welke taal gebruikt dient te worden.
+Language: taal
+Your browser default language is: De browsertaal is
+fonts-help: Specificeert een lijst van systeem-fonts die gebruikt kunnen worden
+Fonts: fonts
+preferred-view-help: Specificeert de standaard agendaview (dag, week, maand of
+Preferred view: standaard-weergave
+Day: dag
+Week: week
+Month: maand
+Year: jaar
+display-weekends-help: toon ook weekenden in week-view.
+Display weekends in week view: toon ook weekenden in week-view.
+Yes: ja
+No: nee
+date-format-help: Hier geeft u aan hoe de datum wordt weergegeven.
+Date format: datumweergave
+December: december
+time-format-help: Hier geeft u aan hoe tijden worden weergegeven: <BR><I>12 uur
+Time format: tijdweergave
+12 hour: 12 uur
+24 hour: 24 uur
+time-interval-help: Hiermee wordt de duur van de tijdblokken in de week- en dag
+Time interval: tijdsinterval
+hour: uur
+minutes: minuten
+auto-refresh-help: Indien ingeschakeld zorgt deze optie voor een automatische p
+Auto-refresh calendars: automatische agenda-update
+auto-refresh-time-help: Indien de optie auto-refresh is geactiveerd wordt hier
+Auto-refresh time: interval automatische agenda-update
+require-approvals-help: Indien ingeschakeld dient een gebruiker een afspraak te
+Require event approvals: vraag om afspraakbevestiging
+display-unapproved-help: Geeft aan of openstaande, onbevestigde afspraken moete
+Display unapproved: toon openstaande afspraken
+display-week-number-help: Geeft aan of het weeknummer (1-52) moet worden weerge
+Display week number: toon weeknummer
+display-week-starts-on: Specificeert of de week op zondag of maandag start. Ind
+Week starts on: week begint op
+Sunday: zondag
+Monday: maandag
+work-hours-help: Specificeert hoe laat een normale dag begint en eindigt. <br><
+Work hours: werktijden
+From: van
+to: tot
+disable-priority-field-help: Door ja te kiezen wordt het veld Priority niet get
+Disable Priority field: de-activeer veld Priority
+disable-access-field-help: Door [ja] te kiezen wordt het veld Toegang niet geto
+Disable Access field: de-activeer veld Toegang
+disable-participants-field-help: Door [ja] te kiezen wordt het veld Aanwezigen
+Disable Participants field: de-activeer veld Aanwezigen
+disable-repeating-field-help: Door [ja] te kiezen wordt het veld [herhalingspat
+Disable Repeating field: de-activeer veld Herhalingspatroon
+allow-view-other-help: Definieert of een gebruiker de agenda van andere gebruik
+Allow viewing other user's calendars: inzage agenda andere gebruikers toegestaa
+allow-public-access-help: Indien ingeschakeld kan de agenda worden gebruikt als
+Allow public access: sta publieke toegang toe
+public-access-view-others-help: Indien publieke toegang is ingeschakeld bepaalt
+Public access can view other users: inzage agenda overige gebruikers bij publie
+public-access-can-add-help: Indien ingeschakeld kunnen gebruikers, die de agend
+Public access can add events: toevoegen nieuwe afspraken bij publieke toegang t
+#
+# << MISSING >>
+# public-access-add-requires-approval-help:
+# English text: Specifies whether events added via the public access account require approval before being displayed.
+#
+#
+# << MISSING >>
+# Public access new events require approval:
+# English text: Public access new events require approval:
+#
+#
+# << MISSING >>
+# allow-view-add-help:
+# English text: A '+' icon will be included in views, allowing users to quickly add events to other users' calendars.
+#
+#
+# << MISSING >>
+# Include add event link in views:
+#
+# << MISSING >>
+# allow-external-users-help:
+# English text: Specifies whether a non-calendar user can be added to an event.  This allows non-calendar users to be listed as event participants.
+#
+#
+# << MISSING >>
+# Allow external users:
+#
+# << MISSING >>
+# external-can-receive-notification-help:
+# English text: When external users are enabled and email usage is enabled, external users can receive email notifications when the event is added, updated or delete (if the external user's email address is provided).
+#
+#
+# << MISSING >>
+# External users can receive email notifications:
+#
+# << MISSING >>
+# external-can-receive-reminder-help:
+# English text: When external users are enabled and email usage is enabled, external users can receive email reminders (if the external user's email address is provided).
+#
+#
+# << MISSING >>
+# External users can receive email reminders:
+remember-last-login-help: Indien ingeschakeld zal, bij een volgend bezoek, de g
+Remember last login: onthoud loginnaam
+conflict-check-help: check op conflicterende afspraken (= afspraken van een per
+Check for event conflicts: check op conflicterende afspraken
+conflict-months-help: Indien u bij optie Check op conflicterende afspraken [ja]
+Conflict checking months: aantal maanden conflictencheck
+#
+# << MISSING >>
+# conflict-check-override-help:
+# English text: Allows users to override event conflicts and schedule two or more events for the same time.
+#
+#
+# << MISSING >>
+# Allow users to override conflicts:
+#
+# << MISSING >>
+# limit-appts-help:
+# English text: Allows the system administrator to set a system-wide limit on the number of appointments a single user can have on any single day.
+#
+#
+# << MISSING >>
+# Limit number of timed events per day:
+#
+# << MISSING >>
+# limit-appts-number-help:
+# English text: Specifies the maximum number of timed events a user can have in a single day.
+#
+#
+# << MISSING >>
+# Maximum timed events per day:
+#
+# << MISSING >>
+# Plugins:
+#
+# << MISSING >>
+# plugins-enabled-help:
+# English text: Enable plugin applications.
+#
+#
+# << MISSING >>
+# Enable Plugins:
+#
+# << MISSING >>
+# plugins-sort-key-help:
+# English text: Specifies a sort key for the plugin.  This allows the plugins to appear in a specific order.
+#
+#
+# << MISSING >>
+# Plugin:
+Groups: groepen
+groups-enabled-help: Maakt groepsondersteuning mogelijk, zodat gebruikers ander
+Groups enabled: activeer groepen
+user-sees-his-group-help: Indien geactiveerd hebben gebruikers geen inzake in a
+User sees only his groups: gebruiker heeft enkel inzage in eigen groep(en)
+Categories: categorieen
+categories-enabled-help: Activeert ondersteuning bij afspraak-categorieen
+Categories enabled: activeer gebruik van categorieen
+Email: email
+email-enabled-help: Activeer of deactiveer hier het verzenden van email-notific
+Email enabled: activeer gebruik van email
+email-default-sender: Specificeert het mailadres dat als afzender wordt getoon
+Default sender address: standaard mailadres
+Default user settings: standaard gebruikersinstellingen
+email-event-reminders-help: Specificeert of er per email herinneringen van van
+Event reminders: stuur mij een email om mij aan een afspraak te herinneren
+email-event-added: Specificeert of er email-notificaties worden verzonden als e
+Events added to my calendar: stuur mij een email als afspraken aan mijn agenda
+email-event-updated: Specificeert of er email-notificaties worden verzonden bij
+Events updated on my calendar: stuur mij een email als afspraken in mijn agenda
+email-event-deleted: Specificeert of er email-notificaties worden verzonden bij
+Events removed from my calendar: stuur mij een email als afspraken uit mijn age
+email-event-rejected: Specificeert of er email-notificaties worden verzonden wa
+Event rejected by participant: stuur mij een email als een afspraak door een ge
+colors-help: Alle kleuren moeten worden aangegeven als #RRGGBB hexadecimaal for
+Colors: kleuren
+Allow user to customize colors: gebruikers mogen kleuren van eigen agenda aanpa
+Document background: achtergrondkleur agenda
+Select: kies
+Document title: tekstkleur programmanaam inlogscherm
+Document text: standaard tekstkleur
+Table grid color: kleur tabelraster
+Table header background: achtergrondkleur tabelzijden
+Table header text: tekstkleur tabelheaders
+Table cell background: achtergrondkleur tabelcellen
+Table cell background for current day: achtergrondkleur voor afspraken
+Table cell background for weekends: achtergrondkleur voor weekends
+Event popup background: achtergrondkleur afspraak-popup
+Event popup text: tekstkleur afspraak-popup
+
+
+###############################################
+# Page: activity_log.php
+#
+Activity Log: logboek
+User: gebruiker
+Calendar: agenda
+Date: datum
+Time: tijd
+Event: afspraak
+Action: actie
+Event created: afspraak aangemaakt
+Event approved: afspraak goedgekeurd
+Event rejected: afspraak geweigerd
+Event updated: afspraak bijgewerkt
+Event deleted: afspraak verwijderd
+Notification sent: notificatie verzonden
+Reminder sent: herinnering verzonden
+Database error: databasefout
+Next: volgende
+
+
+###############################################
+# Page: add_entry.php
+#
+Invalid entry id: ongeldige afspraak-ID
+This is a private event and may not be added to your calendar.: Dit is een priv
+Error adding event: fout bij toevoegen afspraak
+
+
+###############################################
+# Page: admin_handler.php
+#
+Error: fout
+The following error occurred: de volgende fout heeft zich voorgedaan
+
+
+###############################################
+# Page: approve_entry.php
+#
+Error approving event: fout bij bevestigen afspraak
+
+
+###############################################
+# Page: category.php
+#
+Add: voeg toe
+Category Name: categorienaam
+Global: publieke categorie
+Delete: verwijderen
+Are you sure you want to delete this entry?: Weet u zeker dat u dit item wilt v
+Add New Category: categorie toevoegen
+
+
+###############################################
+# Page: category_handler.php
+#
+
+
+###############################################
+# Page: colors.php
+#
+
+
+###############################################
+# Page: datesel.php
+#
+Previous: vorige
+
+
+###############################################
+# Page: day.php
+#
+#
+# << MISSING >>
+# Assistant mode:
+Generate printer-friendly version: genereer printversie
+Printer Friendly: printversie
+
+
+###############################################
+# Page: del_entry.php
+#
+Hello: Dag
+An appointment has been canceled for you by: Er is een afspraak voor u geannule
+The subject was: Het betreft afspraak
+Notification: notificatie
+
+
+###############################################
+# Page: del_layer.php
+#
+
+
+###############################################
+# Page: edit_entry.php
+#
+You have not entered a Brief Description: U heeft geen korte omschrijving ingev
+You have not entered a valid time of day: U heeft geen geldige tijd ingevuld
+#
+# << MISSING >>
+# The time you have entered begins before your preferred work hours.  Is this correct?:
+Edit Entry: afspraak wijzigen
+Add Entry: afspraak toevoegen
+brief-description-help: In dit veld kunt u een korte afspraakomschrijving invul
+Brief Description: korte omschrijving
+full-description-help: Hier ziet u de volledige afspraakomschrijving. <br>N.B.:
+Full Description: volledige omschrijving
+date-help: Dit is de datum waarop de afspraak plaatsvindt.
+time-help: Dit is de aanvangstijd van de afspraak. <BR><I>Dit veld mag leeg bli
+am: a.m. (ante meridiem), 's morgens
+pm: p.m. (post medidiem), 's avond
+#
+# << MISSING >>
+# Untimed event:
+#
+# << MISSING >>
+# Timed event:
+#
+# << MISSING >>
+# All day event:
+duration-help: Hier geeft u aan hoe lang de afspraak duurt (in minuten). <BR><I
+Duration: duur
+hours: uren
+priority-help: Hier kunt u de prioriteit van de afspraak vermelden; afspraken m
+Priority: prioriteit
+Low: lage prioriteit
+Medium: normale prioriteit
+High: hoge prioriteit
+access-help: Hier bepaalt u de toegankelijkheid van de afspraak voor anderen. <
+Access: toegankelijkheid
+Public: publiekelijk
+Confidential: vertrouwelijk
+category-help: Hier geeft u aan in welke categorie de afspraak thuishoort.
+Category: categorie
+days: dagen
+before event: voor de afspraak
+participants-help: Selecteer hier de personen die bij de afspraak aanwezig zijn
+Participants: aanwezigen
+#
+# << MISSING >>
+# external-participants-help:
+# English text: Specifies a list of participants for the event that are not calendar users.  The users should be listed one per line and can include an email address.  If an email address is specified, the user is eligible to receive notications and reminders.
+#
+#
+# << MISSING >>
+# External Participants:
+repeat-type-help: Geef aan hoe vaak de afspraak moet worden herhaald: voor <I>m
+Repeat Type: herhalingspatroon
+None: geen
+Daily: dagelijks
+Weekly: wekelijks
+Monthly: maandelijks
+by day: op dag
+by date: op datum
+Yearly: jaarlijks
+repeat-end-date-help: Specificeert de datum waarop het herhalingspatroon eindig
+Repeat End Date: einddatum herhaling
+Use end date: gebruik einddatum
+repeat-day-help: Indien uw afspraak wekelijks wordt herhaald, geeft u hier aan
+Repeat Day: herhalingsdag
+for weekly: bij wekelijks
+Tuesday: dinsdag
+Wednesday: woensdag
+Thursday: donderdag
+Friday: vrijdag
+Saturday: zaterdag
+repeat-frequency-help: Hier kunt u een eventueel herhalingsinterval specificere
+Frequency: herhalingsinterval
+Delete entry: afspraak verwijderen
+You are not authorized to edit this entry: u heeft geen toegang tot deze afspra
+
+
+###############################################
+# Page: edit_entry_handler.php
+#
+The following conflicts with the suggested time: De voorgestelde tijd conflicte
+Unnamed Event: naamloze afspraak
+The description is: De omschrijving van de afspraak luidt
+Title: Titel
+A new appointment has been made for you by: Er is een nieuwe afspraak voor u ge
+An appointment has been updated by: Er is een afspraak voor u bijgewerkt door
+The subject is: Het betreft afspraak
+Please look on: Raadpleegt u
+to accept or reject this appointment: om deze afspraak te bevestigen of te weig
+to view this appointment: om deze afspraak te bekijken.
+Scheduling Conflict: agendaconflict
+Your suggested time of: De door u voorgestelde tijd
+conflicts with the following existing calendar entries: conflicteert met de vol
+Cancel: annuleer
+
+
+###############################################
+# Page: edit_layer.php
+#
+Invalid color: ongeldige kleur
+Edit Layer: laag wijzigen
+Add Layer: laag toevoegen
+Source: bron
+Color: kleur
+Duplicates: afspraken dupliceren
+Show layer events that are the same as your own: In elke laag ook de afspraken
+Are you sure you want to delete this layer?: Weet u zeker dat u deze laag wilt
+Delete layer: laag verwijderen
+
+
+###############################################
+# Page: edit_layer_handler.php
+#
+You cannot create a layer for yourself: U kunt geen laag voor uzelf aanmaken
+You can only create one layer for each user: U kunt slechts een laag per gebrui
+
+
+###############################################
+# Page: edit_user.php
+#
+Edit User: gebruiker wijzigen
+Add User: gebruiker toevoegen
+Username: gebruikersnaam
+First Name: voornaam
+Last Name: achternaam
+E-mail address: mailadres
+Password: wachtwoord
+again: opnieuw
+Admin: beheerder
+Disabled for demo: uitgeschakeld in demo-versie
+Change Password: wijzig wachtwoord
+New Password: nieuw wachtwoord
+Set Password: bewaar wachtwoord
+
+
+###############################################
+# Page: edit_user_handler.php
+#
+Deleting users not supported: Het verwijderen van gebruikers is niet mogelijk
+The passwords were not identical: De ingevoerde wachtwoorden zijn niet identiek
+You have not entered a password: U heeft geen wachtwoord ingevuld
+
+
+###############################################
+# Page: export.php
+#
+Export: exporteren
+Export format: exportformaat
+Palm Pilot: Palm Pilot
+Export all dates: alles exporteren
+Start date: startdatum
+End date: einddatum
+Modified since: wijzigingen vanaf
+
+
+###############################################
+# Page: export_handler.php
+#
+
+
+###############################################
+# Page: group_edit.php
+#
+Unnamed Group: naamloze groep
+Add Group: groep toevoegen
+Edit Group: groep wijzigen
+Group name: groepsnaam
+Updated: gewijzigd
+Created by: aangemaakt door
+Users: gebruikers
+
+
+###############################################
+# Page: group_edit_handler.php
+#
+You must specify a group name: Specificeer een groepsnaam
+
+
+###############################################
+# Page: groups.php
+#
+Add New Group: groep toevoegen
+
+
+###############################################
+# Page: help_admin.php
+#
+
+
+###############################################
+# Page: pref.php
+#
+Preferences: voorkeuren
+to modify the preferences for the Public Access calendar: om de voorkeuren voor
+#
+# << MISSING >>
+# tz-help:
+# English text: Specifies how many hours to adjust the time from server time to local time.
+#
+#
+# << MISSING >>
+# Timezone Offset:
+#
+# << MISSING >>
+# Add N hours to:
+#
+# << MISSING >>
+# Subtract N hours from:
+#
+# << MISSING >>
+# same as:
+#
+# << MISSING >>
+# server time:
+Default Category: toon de volgende categorieen in mijn agenda
+Sun: zo
+Mon: ma
+Tue: di
+Wed: wo
+Thu: do
+Fri: vrij
+Sat: za
+Save Preferences: voorkeuren bewaren
+
+
+###############################################
+# Page: help_bug.php
+#
+Report Bug: rapporteer een programmafout
+
+
+###############################################
+# Page: help_edit_entry.php
+#
+Adding/Editing Calendar Entries: afspraken toevoegen/wijzigen
+
+
+###############################################
+# Page: help_index.php
+#
+Help Index: overzicht help-onderwerpen
+Layers: lagen
+
+
+###############################################
+# Page: help_layers.php
+#
+#
+# << MISSING >>
+# Layers are useful for displaying other users' events in your own calendar.  You can specifiy the user and the color the events will be displayed in.:
+Add/Edit/Delete: toevoegen / wijzigen / verwijderen
+#
+# << MISSING >>
+# Clicking the Edit Layers link in the admin section at the bottom of the page will allow you to add/edit/delete layers.:
+Specifies the user that you would like to see displayed in your calendar.: Spec
+The text color of the new layer that will be displayed in your calendar.: De te
+If checked, events that are duplicates of your events will be shown.: Indien de
+Disabling: de-activeer
+#
+# << MISSING >>
+# Press the Disable Layers link in the admin section at the bottom of the page to turn off layers.:
+Enabling: activeer
+#
+# << MISSING >>
+# Press the Enable Layers link in the admin section at the bottom of the page to turn on layers.:
+
+
+###############################################
+# Page: help_pref.php
+#
+default-category-help: Hiermee wordt de standaard-categorie geselecteerd
+
+
+###############################################
+# Page: week.php
+#
+#
+# << MISSING >>
+# cont.:
+
+
+###############################################
+# Page: index.php
+#
+
+
+###############################################
+# Page: layers.php
+#
+to modify the layers settings for the: instellingen aanpassen voor
+Layers are currently: Lagen worden momenteel
+Enabled: wel weergeven
+Disabled: niet weergegeven
+Disable Layers: lagen deactiveren
+Enable Layers: lagen activeren
+Layer: laag
+Edit layer: laag wijzigen
+Add layer: laag toevoegen
+
+
+###############################################
+# Page: layers_toggle.php
+#
+
+
+###############################################
+# Page: list_unapproved.php
+#
+View this entry: afspraak bekijken
+Approve this entry?: afspraak bevestigen?
+Approve/Confirm: bevestigen
+Reject this entry?: afspraak weigeren?
+Reject: weigeren
+No unapproved events for: geen openstaande afspraken voor
+Unapproved Events: openstaande afspraken
+Public Access: publieke toegang
+
+
+###############################################
+# Page: login.php
+#
+You must enter a login and password: U moet een gebruikersnaam en een wachtwoor
+Save login via cookies so I don't have to login next time: Bewaar <I>cookies</I
+Login: aanmelden
+Access public calendar: ga naar publieke agenda
+cookies-note: <B>NB:</B> deze applicatie maakt gebruik van cookies.
+
+
+###############################################
+# Page: view_v.php
+#
+
+
+###############################################
+# Page: month.php
+#
+
+
+###############################################
+# Page: pref_handler.php
+#
+
+
+###############################################
+# Page: reject_entry.php
+#
+An appointment has been rejected by: Er is een afspraak geweigerd door
+
+
+###############################################
+# Page: search.php
+#
+Search: zoeken
+Advanced Search: uitgebreid zoeken
+Keywords: trefwoorden
+
+
+###############################################
+# Page: search_handler.php
+#
+You must enter one or more search keywords: Vul een of meer trefwoorden in
+Search Results: zoekresultaten
+match found: afspraak gevonden die overeenkomst met de trefwoorden
+matches found: afspraken gevonden die overeenkomen met de trefwoorden
+No matches found: Helaas, geen match aangetroffen
+
+
+###############################################
+# Page: select_user.php
+#
+View Another User's Calendar: Bekijk de agenda van een andere gebruiker
+Go: tonen
+
+
+###############################################
+# Page: set_entry_cat.php
+#
+You have not added any categories: u heeft geen categorieen toegevoegd
+Set Category: bepaal categorie
+
+
+###############################################
+# Page: users.php
+#
+denotes administrative user: administrator
+Add New User: gebruiker toevoegen
+
+
+###############################################
+# Page: usersel.php
+#
+All: alle
+Reset: reset
+Remove: verwijderen
+Ok: OK
+
+
+###############################################
+# Page: view_entry.php
+#
+every: elke
+1st: 1e
+2nd: 2e
+3rd: 3e
+4th: 4e
+5th: 5e
+Description: omschrijving
+Status: status
+Waiting for approval: nog niet bevestigd
+Deleted: verwijderd
+Rejected: geweigerd
+#
+# << MISSING >>
+# External User:
+Approve/Confirm entry: afspraak bevestigen
+Reject entry: afspraak weigeren
+Set category: bepaal categorie
+Edit repeating entry for all dates: WIJZIG de gehele reeks met afspraken
+Edit entry for this date: WIJZIG alleen de afspraak op deze datum
+This will delete this entry for all users.: De afspraak wordt uit de agenda voo
+Delete repeating event for all dates: VERWIJDER de gehele reeks met afspraken
+Delete entry only for this date: VERWIJDER alleen de afspraak op deze datum
+Edit entry: afspraak wijzigen
+This will delete the entry from your calendar.: De afspraak wordt uit de agenda
+Do you want to add this entry to your calendar?: Deze afspraak ook in eigen age
+This will add the entry to your calendar.: Bevestig om de afspraak in uw eigen
+Add to My Calendar: zet afspraak ook in mijn eigen agenda
+Email all participants: stuur emailbericht naar alle aanwezigen
+Show activity log: toon logboek
+Hide activity log: verberg logboek
+
+
+###############################################
+# Page: view_m.php
+#
+
+
+###############################################
+# Page: view_w.php
+#
+
+
+###############################################
+# Page: views.php
+#
+Views: overzichten
+Add New View: overzicht toevoegen
+
+
+###############################################
+# Page: views_edit.php
+#
+Unnamed View: naamloos overzicht
+Add View: overzicht toevoegen
+Edit View: overzicht wijzigen
+View Name: naam
+View Type: type
+
+
+###############################################
+# Page: views_edit_handler.php
+#
+You must specify a view name: Er moet een overzichtnaam toegekend worden
+
+
+###############################################
+# Page: week_details.php
+#
+New Entry: nieuwe afspraak
+Private: prive-afspraak
+
+
+###############################################
+# Page: week_ssi.php
+#
+
+
+###############################################
+# Page: year.php
+#
+
+
+###############################################
+# Page: assistant_edit.php
+#
+#
+# << MISSING >>
+# Yours assistants:
+#
+# << MISSING >>
+# Assistants:
+
+
+###############################################
+# Page: assistant_edit_handler.php
+#
+
+
+###############################################
+# Page: purge.php
+#
+
+
+###############################################
+# Page: includes/trailer.php
+#
+Go to: ga naar
+Back to My Calendar: EIGEN AGENDA
+My Calendar: VANDAAG
+Logout: afmelden
+Another User's Calendar: agenda andere gebruiker
+Add New Entry: afspraak toevoegen
+Manage Views: overzichten instellen
+Edit Layers: lagen wijzigen
+Account: account
+Current User: huidige gebruiker
+#
+# << MISSING >>
+# Manage calendar of:
+
+
+###############################################
+# Page: includes/connect.php
+#
+
+
+###############################################
+# Page: includes/functions.php
+#
+This event is confidential: vertrouwelijk - details niet beschikbaar
+#
+# << MISSING >>
+# exceeds limit of XXX events per day:
+You have XXX unapproved events: Er zijn XXX openstaande afspraken
+January: januari
+February: februari
+March: maart
+April: april
+May_: mei
+June: juni
+July: juli
+August: augustus
+September: september
+October: oktober
+November: november
+Jan: jan
+Feb: feb
+Mar: maa
+Apr: apr
+May: mei
+Jun: jun
+Jul: jul
+Aug: aug
+Sep: sep
+Oct: okt
+Nov: nov
+Dec: dec
+
+
+###############################################
+# Page: includes/user.php
+#
+Invalid login: ongeldige login
+Invalid user login: ongeldige gebruikerslogin
+
+
+###############################################
+# Page: includes/site_extras.php
+#
+Send Reminder: herinnering sturen
+
+
+###############################################
+# Page: includes/translate.php
+#
+
+
+###############################################
+# Page: includes/validate.php
+#
+
+
+###############################################
+# Page: includes/user-ldap.php
+#
+
+
+###############################################
+# Page: includes/user-nis.php
+#
+
+
+###############################################
+# Page: includes/help_trailer.php
+#
+
+
+###############################################
+# Page: includes/config.php
+#
+
+
+###############################################
+# Page: includes/index.php
+#
+
+
+###############################################
+# Page: includes/js.php
+#
+
+
+###############################################
+# Page: includes/php-dbi.php
+#
+
+
+###############################################
+# Page: includes/styles.php
+#
+
+
+###############################################
+# Page: includes/dbtable.php
+#
+
+
+###############################################
+# Page: tools/send_reminders.php
+#
+This is a reminder for the event detailed below.: Dit is een herinnering voor d
+Reminder: herinnering

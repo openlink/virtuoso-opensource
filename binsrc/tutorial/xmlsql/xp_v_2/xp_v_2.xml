@@ -1,0 +1,99 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XP-V-2">
+  <refmeta>
+    <refentrytitle>Using XPath queries to XML views</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Examples</refname>
+    <refpurpose>Using XPath queries with options.</refpurpose>
+  </refnamediv>
+
+<refsect1 id="XP-V-2a">
+<title>XML serialization text</title>
+<para>You can get xml serialization text of the selected entity by the query </para>
+<programlisting><![CDATA[
+XPATH [__view "xmlview_name"] /xpath_query
+]]></programlisting>
+<para>e.g. for given &apos;cat&apos; xml view the full serialization text can be received by the query</para>
+<programlisting><![CDATA[
+XPATH [__view "cat"] /*
+]]></programlisting>
+<para>or</para>
+<programlisting><![CDATA[
+XPATH [__view "cat"] /category
+]]></programlisting>
+<para>see xp_v_2_sample</para>
+</refsect1>
+
+<refsect1 id="XP-V-2b">
+<title>Select all columns instead of a serialization text</title>
+<para>
+You can select all columns of the selected entity instead of its serialization text by using __* option:
+</para>
+<programlisting><![CDATA[
+XPATH [__* __view "cat"] //product
+
+ProductID ProductName SupplierID CategoryID QuantityPerUnit UnitPrice UnitsInStock UnitsOnOrder ReorderLevel Discontinued
+INTEGER    VARCHAR     INTEGER     INTEGER     VARCHAR  DOUBLE PRECISION  SMALLINT    SMALLINT    SMALLINT    SMALLINT
+______________________________________________________________________________________________________________________
+
+ 1         Chai           1          1     10 boxes x 20bags     8          39          0          10            0
+ 2         Chang          1          1     24 - 12 oz bottles   19          17         40          25            0
+ 3      Aniseed Syrup     1          2     12 - 550 ml bottles  10          13         70          25            0
+.  .  .  .  .  .   
+
+]]></programlisting>
+<para>
+This is only valid when __view is specified and the result set is homogeneous. 
+</para>
+
+</refsect1>
+
+<refsect1 id="XP-V-2c">
+<title>Select the key instead of the serialization text</title>
+<para>
+You can select the key of the selected entities instead of the serialization text by using __key option:
+</para>
+<programlisting><![CDATA[
+XPATH [__key __view "cat"] /*; 
+
+CategoryID
+INTEGER NOT NULL
+_______________________________________________________________________________
+ 
+   1
+   2
+   3
+   4
+   5
+   6
+   7
+   8                                                                                                
+]]></programlisting>
+
+</refsect1>
+
+</refentry>

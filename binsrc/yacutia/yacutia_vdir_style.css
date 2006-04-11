@@ -1,0 +1,153 @@
+IMG
+{
+	border-style: none
+}
+
+BODY
+{
+  font-family: tahoma, verdana, arial, helvetica, sans-serif;
+  font-size: 8pt
+}
+
+TD
+{
+  font-family: tahoma, verdana, arial, helvetica, sans-serif;
+  font-size: 8pt
+}
+
+TH
+{
+  font-family: tahoma, verdana, arial, helvetica, sans-serif;
+  font-size: 8pt
+}
+
+.wframe
+{
+  background-color: #c5c5c5
+}
+
+.wcontainer
+{
+    
+}
+
+.whorizgroup
+{
+  margin: 5px
+}
+
+.whidden
+{
+    display: none
+}
+
+.wtext
+{
+
+}
+
+thead.wfilelistheadgrp
+{
+  display: table-header-group
+}
+
+table.wfilelist
+{
+  border-collapse: collapse;
+  empty-cells: hide
+}
+
+tr.wfilelistheadrow
+{
+  background-color: 	lightgrey
+}
+
+th.wfilelisthead
+{
+  text-align: 		left;
+  empty-cells: 		inherit;
+  border-left-style: 	solid;
+  border-width: 	1px
+}
+
+#davbrowserfilelist
+{
+  padding:		0;
+  margin:		0;
+  border-width: 	0
+}
+
+#davbrowsertop
+{
+  padding:		0px;
+  margin:		0px;
+  border-width: 	0px
+}
+
+#davtopwidgetblock
+{
+  margin-left:		0.5em;
+  margin-right:		0.5em;
+  margin-top:		5px;
+  margin-bottom:	5px
+}
+
+.davbrtitleblk
+{
+  margin-top: 		0px;
+  padding-left: 	0.5em;
+  padding-right: 	0.5em;
+  text-align: 		right;
+  background-color: 	skyblue;
+  border-bottom-style: 	solid;
+  border-width: 	3px;
+  border-color: 	navy
+}
+
+.davbrtitle
+{
+  margin: 0;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  color: navy
+}
+
+#botfltpatlabel
+{
+  width: 10em
+}
+
+#botfltpatinput
+{
+  width: 20em
+}
+
+#botapplybut
+{
+  width: 6em
+}
+
+#botclearbut
+{
+  width: 6em
+}
+
+#botrnamelabel
+{
+  width: 10em
+}
+
+#botrnameinput
+{
+  width: 20em
+}
+
+#botselectbut
+{
+  width: 6em
+}
+
+#botcancelbut
+{
+  width: 6em
+}

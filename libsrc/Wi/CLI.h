@@ -1,0 +1,985 @@
+/*
+ *  CLI.h
+ *
+ *  $Id$
+ *
+ *  SQL client data structures
+ *  
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *  
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *  
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  
+ *  
+*/
+
+#ifndef _CLI_H
+#define _CLI_H
+
+#include "Dk.h"
+#include "odbcinc.h"
+#include "virtext.h"	/* virtuoso odbc extensions */
+#include "sqlcomp.h"
+#ifdef __BORLANDC__ /* Rogue Wave STL contains numeric.h */
+#include "G:\libsrc\Wi\numeric.h"
+#else
+#include "numeric.h"
+#endif
+#include "blobio.h"
+#include "widv.h"
+#include "wirpce.h"
+#include "date.h"
+#include "datesupp.h"
+
+#ifndef UNALIGNED
+#define UNALIGNED
+#endif
+
+#define VARCHAR_UNSPEC_SIZE "4070"
+typedef struct sql_error_rec_s
+  {
+    char *		sql_state;
+    char *		sql_error_msg;
+    int			sql_error_col;
+    struct sql_error_rec_s *	sql_error_next;
+  } sql_error_rec_t;
+
+
+typedef struct sql_error_s
+  {
+    sql_error_rec_t *	err_queue;
+    int			err_rc;
+    sql_error_rec_t *	err_queue_head;
+  } sql_error_t;
+
+
+typedef struct cli_environment_s
+  {
+    sql_error_t		env_error;
+    dk_set_t		env_connections;
+	SQLINTEGER		env_connection_pooling;
+	SQLINTEGER		env_cp_match;
+	SQLINTEGER		env_odbc_version;
+	int				env_output_nts;
+	dk_mutex_t *		env_mtx;
+  } cli_environment_t;
+
+
+typedef struct con_defaults_s
+  {
+    long	cdef_query_timeout;
+    long	cdef_txn_timeout;
+    long	cdef_prefetch;
+    long	cdef_prefetch_bytes;
+    long	cdef_no_char_c_escape;
+    long	cdef_utf8_execs;
+    long	cdef_binary_timestamp;
+  } con_defaults_t;
+
+#define STMT_MSEC_OPTION(x) \
+	((x > 0x7fffffff / 1000) ? 0x7ffffff : x * 1000)
+
+
+typedef struct cli_connection_s
+  {
+    sql_error_t		con_error;
+    cli_environment_t * con_environment;
+    dk_session_t *	con_session;
+    dk_set_t		con_statements;
+    SDWORD		con_last_id;
+    SDWORD		con_autocommit;
+    long		con_isolation;
+    int			con_is_read_only;
+    id_hash_t *		con_cursors;
+    UCHAR *		con_user;
+    UCHAR *		con_dsn;
+    SDWORD		con_access_mode;
+    UCHAR *		con_qualifier;
+    UCHAR *		con_db_ver;
+    int 		con_db_casemode;
+    int			con_db_gen; /* last 4 digits of con_db_ver */
+    dk_hash_t *		con_bookmarks;
+    long		con_last_bookmark;
+    dk_mutex_t *	con_mtx;
+
+    /* ODBC 3 stuff */
+    SQLUINTEGER 	con_async_mode;
+    SQLUINTEGER 	con_timeout;
+    SQLUINTEGER 	con_max_rows;
+    con_defaults_t	con_defs;
+    wcharset_t *	con_charset;
+    caddr_t		con_charset_name;
+#ifdef VIRTTP
+    caddr_t con_d_trx_id; /* connection is enlisted in Virtuoso TP transaction */
+#endif
+    caddr_t		con_encrypt;
+    caddr_t		con_ca_list;
+    int 		con_pwd_cleartext;
+    long		con_shutdown;
+
+#ifdef INPROCESS_CLIENT
+    void *		con_inprocess_client;
+#endif
+    int			con_in_transaction;
+    int			con_no_system_tables;
+  } cli_connection_t;
+
+#define IN_CON(c) mutex_enter (c->con_mtx)
+
+#define LEAVE_CON(c) mutex_leave (c->con_mtx)
+
+typedef struct col_binding_s col_binding_t;
+struct col_binding_s
+  {
+    col_binding_t *	cb_next;
+    caddr_t		cb_place;
+    SQLLEN *		cb_length;
+    SQLLEN		cb_max_length;
+    int			cb_c_type; /* ODBC SQL_C_xx */
+    SQLLEN		cb_read_up_to; /* used by SQLGetData */
+    int			cb_not_first_getdata;
+  };
+
+
+typedef struct parm_binding_s parm_binding_t;
+struct parm_binding_s
+  {
+    parm_binding_t *	pb_next;
+    int			pb_nth;
+    caddr_t		pb_place;
+    SQLLEN *		pb_length;
+    SQLULEN		pb_max_length;
+    int			pb_param_type;
+    int			pb_c_type;
+    SWORD		pb_sql_type;
+    SQLLEN		pb_max;
+  };
+
+
+/* with array param data at exec blobs the bhid identifies the bh's param row and ipar */
+#define BHID(row_no, col_no) (((row_no) * 1024) + (col_no))
+#define BHID_COL(bhid) ((bhid) & 1023)
+#define BHID_ROW(bhid) ((bhid) >> 10)
+
+
+#define ROW_APP_DESCRIPTOR		1
+#define ROW_IMP_DESCRIPTOR		2
+#define PARAM_APP_DESCRIPTOR	3
+#define PARAM_IMP_DESCRIPTOR	4
+
+typedef struct stmt_descriptor_s  stmt_descriptor_t;
+
+typedef struct pending_call_s
+  {
+    int		p_api;
+    int		psp_op;
+    int		psp_irow;
+    int		psp_toral_rows;
+    int		psp_nth_row;
+    HSTMT	psp_st_stmt;
+    caddr_t	pex_text;
+  } pending_call_t;
+
+
+typedef struct cli_stmt_s
+  {
+    sql_error_t		stmt_error;
+
+    /* Statement Information */
+    int			stmt_status;
+    char *		stmt_text;
+    caddr_t		stmt_id;
+    cli_connection_t *	stmt_connection;
+    stmt_compilation_t *stmt_compilation;
+
+    /* Cursor */
+    future_t *		stmt_future;
+    int			stmt_current_of;
+    ptrlong		stmt_n_rows_to_get;
+    int			stmt_at_end;
+    char *		stmt_cursor_name;
+    caddr_t		stmt_prefetch_row;
+
+    /* Binding */
+    int			stmt_n_parms;
+    int			stmt_n_cols;
+    SQLULEN		stmt_parm_rows;
+    SQLULEN *		stmt_pirow;
+    SQLLEN		stmt_parm_rows_to_go;
+    parm_binding_t *	stmt_parms;
+    parm_binding_t *	stmt_return;	/* proc return value host var */
+    col_binding_t *	stmt_cols;
+
+    /* Options */
+    stmt_options_t *	stmt_opts;
+    int			stmt_is_deflt_rowset;
+
+    SDWORD		stmt_last_asked_param;	/* set when returning SQL_NEED_DATA */
+
+    int			stmt_is_proc_returned;
+    caddr_t *		stmt_current_row;
+    char		stmt_co_last_in_batch;
+    SDWORD		stmt_rows_affected;
+    caddr_t		stmt_identity_value;
+    caddr_t **		stmt_rowset;
+    long		stmt_pos_in_rowset;
+    int			stmt_bind_type;
+    UWORD *		stmt_row_status;
+    int			stmt_rowset_fill;
+    int			stmt_fetch_mode; /* extended vs. regular */
+    struct cli_stmt_s *	stmt_set_pos_stmt;
+    int			stmt_fwd_fetch_irow;
+    int			stmt_fetch_current_of;
+    col_binding_t * 	stmt_bookmark_cb;
+    dk_hash_t *		stmt_bookmarks;
+    id_hash_t *		stmt_bookmarks_rev;
+
+    /* ODBC 3 fields */
+    SQLULEN *           stmt_rows_fetched_ptr;
+    int			stmt_param_bind_type;
+    UWORD *		stmt_param_status;
+    SQLLEN *	        stmt_bookmark_ptr;
+    SQLULEN 		stmt_retrieve_data;
+    SQLULEN		stmt_rowset_size;
+
+	/* descriptors */
+    stmt_descriptor_t *stmt_app_row_descriptor,
+    			*stmt_imp_row_descriptor,
+			*stmt_app_param_descriptor,
+			*stmt_imp_param_descriptor;
+
+    pending_call_t	stmt_pending;
+    dk_set_t		stmt_dae;
+    long **		stmt_current_dae;
+    dk_set_t		stmt_dae_fragments;
+    caddr_t * 		stmt_param_array;
+    dtp_t		stmt_next_putdata_dtp;
+#ifndef MAP_DIRECT_BIN_CHAR
+    int			stmt_next_putdata_translate_char_bin;
+#endif
+    int			stmt_on_first_row;
+  } cli_stmt_t;
+
+
+#define STS_NEW 1
+#define STS_PREPARED 2
+#define STS_LOCAL_DAE 3
+#define STS_SERVER_DAE 4
+#define STS_EXECUTED 5
+
+
+
+struct stmt_descriptor_s {
+
+		int d_type;
+		cli_stmt_t * d_stmt;
+		SQLINTEGER * d_bind_offset_ptr;
+		int d_max_recs;
+	};
+
+#define FETCH_NONE 0
+#define FETCH_FETCH 1
+#define FETCH_EXT 2
+
+#ifndef dbg_printf
+# ifdef DEBUG_
+#  define dbg_printf(a)  printf a; fflush (stdout);
+# else
+#  define dbg_printf(a)
+# endif
+#endif
+
+#ifndef err_printf
+# define err_printf(a)
+#endif
+
+
+#define CON(c, cc) \
+  cli_connection_t *c = (cli_connection_t *) cc
+
+#define CON_CONNECTED(c) \
+  ((c) && ((cli_connection_t *)(c))->con_session)
+
+#define ENV(e,ee) \
+  cli_environment_t *e = (cli_environment_t *) ee
+
+#define STMT(s, st) \
+  cli_stmt_t *s = (cli_stmt_t *) st
+
+#define DESC(d, de) \
+  stmt_descriptor_t *d = (stmt_descriptor_t *) de
+
+#define NOT_IMPL_FUN(eo, msg) \
+  set_error ((sql_error_t *) eo, "IM001", "CL001", (msg)); \
+  return SQL_ERROR;
+
+
+#define SUCCESS(err) \
+  ((err)->err_queue ? SQL_SUCCESS_WITH_INFO : SQL_SUCCESS)
+
+
+#if !defined (LONG_TO_EXT)
+#if defined (LOW_ORDER_FIRST)
+# define LONG_TO_EXT(l) \
+  ((((uint32) (l) >> 24) | \
+   (((uint32) (l) & 0x00ff0000) >> 8) | \
+   (((uint32) (l) & 0x0000ff00) << 8) | \
+   (((uint32) (l)) << 24)) )
+#else
+# define LONG_TO_EXT(l) (l)
+#endif
+#endif
+
+#define TV_TO_STRING(tv) \
+  ((tv)->tv_sec =  LONG_TO_EXT ((tv)->tv_sec), \
+   (tv)->tv_usec = LONG_TO_EXT ((tv)->tv_usec) )
+
+#ifdef INPROCESS_CLIENT
+
+# define VERIFY_INPROCESS_CLIENT(con)			\
+  do							\
+    {							\
+      RETCODE rc = verify_inprocess_client (con);	\
+      if (rc != SQL_SUCCESS)				\
+        return rc;					\
+    }							\
+  while (0)
+
+# define CON_IS_INPROCESS(con) (con->con_inprocess_client != NULL)
+
+#else
+
+# define VERIFY_INPROCESS_CLIENT(con)
+
+# define CON_IS_INPROCESS(con) (0)
+
+#endif
+
+/* CLIsql1.c */
+int internal_sql_connect (
+	HDBC hdbc,
+	UCHAR FAR * szDSN,
+	SWORD cbDSN,
+	UCHAR FAR * szUID,
+	SWORD cbUID,
+	UCHAR FAR * szAuthStr,
+	SWORD cbAuthStr);
+
+#ifdef INPROCESS_CLIENT
+RETCODE verify_inprocess_client (cli_connection_t *con);
+#endif
+
+/* CLIuti.c */
+int sql_type_to_sqlc_default (int sqlt);
+int dv_to_sql_type (dtp_t dv, int cli_binary_timestamp);
+char *sql_type_to_sql_type_name (int type, char *resbuf, int maxbytes);
+caddr_t box_n_string (UCHAR *str, SQLLEN len);
+caddr_t con_new_id (cli_connection_t *con);
+parm_binding_t *stmt_nth_parm (cli_stmt_t *stmt, int n);
+col_binding_t *stmt_nth_col (cli_stmt_t *stmt, int n);
+void set_error (sql_error_t *err, char *state, char *virt_state, char *message);
+sql_error_rec_t * cli_make_error (char * state, char *virt_state, char * msg, int col);
+void  err_queue_append (sql_error_rec_t ** q1, sql_error_rec_t ** q2);
+void set_success_info (sql_error_t * err, char *state, char *virt_state, char *message, int col);
+void set_data_truncated_success_info (cli_stmt_t *stmt, char *virt_state, UWORD icol);
+RETCODE stmt_seq_error (cli_stmt_t *stmt);
+void stmt_set_proc_return (cli_stmt_t *stmt, caddr_t *res);
+RETCODE stmt_process_result (cli_stmt_t *stmt, int needs_evl);
+#if 0
+void stmt_check_at_end (cli_stmt_t * stmt);
+#endif
+cli_stmt_t *con_find_cursor (cli_connection_t *con, caddr_t id);
+caddr_t con_make_current_ofs (cli_connection_t *con, cli_stmt_t *stmt);
+void string_to_tm (struct tm *tm, int32 *usec_ret, char *tmp, SWORD sql_type);
+caddr_t *stmt_collect_parms (cli_stmt_t *stmt);
+RETCODE str_box_to_buffer(char *box, char *buffer, int buffer_length, void *string_length_ptr, int length_is_long, sql_error_t *error);
+void str_box_to_place (char *box, char *place, int max, int *sz);
+int dv_to_sqlc_default (caddr_t xx);
+int vector_to_text (caddr_t vec, size_t box_len, dtp_t vectype, char *dest, size_t dest_size);
+SQLLEN dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place, SQLLEN *len_ret, SQLLEN str_from_pos, cli_stmt_t *stmt, int nth_col, SQLLEN box_len, int c_type, SWORD sql_type);
+SQLLEN dv_to_place (caddr_t it, int c_type, SWORD sql_type, SQLLEN max, caddr_t place, SQLLEN *len_ret, SQLLEN str_from_pos, cli_stmt_t *stmt, int nth_col);
+#ifndef MAP_DIRECT_BIN_CHAR
+void bin_dv_to_str_place (unsigned char *str, char *place, size_t nbytes);
+void bin_dv_to_wstr_place (unsigned char *str, wchar_t *place, size_t nbytes);
+#endif
+void stmt_set_columns (cli_stmt_t *stmt, caddr_t *row, int nth_in_set);
+unsigned char *strncasestr (unsigned char *string1, unsigned char *string2, size_t maxbytes);
+UCHAR *stmt_convert_brace_escapes (UCHAR *statement_text, SQLINTEGER *newCB);
+char *get_next_keyword (char **str_ptr, char **start_ptr, char *result, int maxsize);
+UCHAR *stmt_correct_create_table_for_jdbc_test (UCHAR *statement_text);
+void stmt_reset_getdata_status (cli_stmt_t * stmt, caddr_t * row);
+long stmt_row_bookmark (cli_stmt_t * stmt, caddr_t * row);
+void stmt_free_bookmarks (cli_stmt_t * stmt);
+caddr_t buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
+	      cli_stmt_t * err_stmt, int inprocess);
+caddr_t stmt_param_place_ptr ( parm_binding_t * pb, int nth, cli_stmt_t * stmt, SQLULEN length );
+SQLULEN sqlc_sizeof (int sqlc, SQLULEN deflt);
+void stmt_free_current_rows (cli_stmt_t * stmt);
+
+#if defined(PARAM_DEBUG)
+void dbg_print_box (caddr_t object, FILE * out);
+#endif
+extern int isdts_mode;
+
+#define cli_dbg_printf(a)
+
+
+/*
+ *  Added prototypes for internal functions
+ */
+RETCODE SQL_API virtodbc__SQLCancel (HSTMT hstmt);
+
+RETCODE SQL_API virtodbc__SQLDescribeCol (HSTMT hstmt, UWORD icol,
+    UCHAR FAR * szColName, SWORD cbColNameMax, SWORD FAR * pcbColName,
+    SWORD FAR * pfSqlType, SQLULEN FAR * pcbColDef, SWORD FAR * pibScale,
+    SWORD FAR * pfNullable);
+
+RETCODE SQL_API virtodbc__SQLExecDirect (HSTMT hstmt, UCHAR FAR * szSqlStr,
+    SDWORD cbSqlStr);
+
+RETCODE SQL_API virtodbc__SQLFetch (HSTMT hstmt, int preserve_rowset_at_end);
+
+RETCODE SQL_API virtodbc__SQLSetParam (HSTMT hstmt, UWORD ipar, SWORD fCType,
+    SWORD fSqlType, SQLULEN cbColDef, SWORD ibScale, PTR rgbValue,
+    SQLLEN FAR * pcbValue);
+
+RETCODE SQL_API virtodbc__SQLGetData (HSTMT hstmt, UWORD icol, SWORD fCType,
+    PTR rgbValue, SQLLEN cbValueMax, SQLLEN FAR * pcbValue);
+
+RETCODE SQL_API virtodbc__SQLAllocEnv (HENV FAR * phenv);
+
+RETCODE SQL_API virtodbc__SQLAllocConnect (HENV henv, HDBC FAR * phdbc);
+
+RETCODE SQL_API virtodbc__SQLAllocStmt (HDBC hdbc, HSTMT FAR * phstmt);
+
+RETCODE SQL_API virtodbc__SQLFreeEnv (HENV henv);
+
+RETCODE SQL_API virtodbc__SQLFreeConnect (HDBC hdbc);
+
+RETCODE SQL_API virtodbc__SQLFreeStmt (HSTMT hstmt, UWORD fOption);
+
+RETCODE SQL_API virtodbc__SQLError (HENV henv, HDBC hdbc, HSTMT hstmt,
+	UCHAR FAR * szSqlState, SQLINTEGER FAR * pfNativeError, UCHAR FAR * szErrorMsg,
+	SWORD cbErrorMsgMax, SWORD FAR * pcbErrorMsg, int bClearState);
+
+RETCODE SQL_API virtodbc__SQLGetStmtOption (HSTMT hstmt, UWORD fOption, PTR pvParam);
+
+RETCODE SQL_API virtodbc__SQLSetStmtOption (HSTMT hstmt, UWORD fOption, SQLULEN vParam);
+
+RETCODE SQL_API virtodbc__SQLSetConnectOption (HDBC hdbc, UWORD fOption, SQLULEN vParam);
+
+RETCODE SQL_API virtodbc__SQLGetConnectOption (HDBC hdbc, UWORD fOption, PTR pvParam, SQLINTEGER StringLength, UNALIGNED SQLINTEGER * StringLengthPtr);
+
+RETCODE SQL_API virtodbc__SQLGetTypeInfo (HSTMT hstmt, SWORD fSqlType);
+
+RETCODE SQL_API virtodbc__SQLAllocHandle (SQLSMALLINT handleType, SQLHANDLE inputHandle, SQLHANDLE * outputHandlePtr);
+
+RETCODE SQL_API virtodbc__SQLFreeHandle (SQLSMALLINT handleType, SQLHANDLE handle);
+
+RETCODE SQL_API virtodbc__SQLExtendedFetch ( HSTMT hstmt, UWORD fFetchType, SQLLEN irow, SQLULEN FAR * pcrow,
+				    UWORD FAR * rgfRowStatus, SQLLEN bookmark_offset);
+
+RETCODE SQL_API virtodbc__SQLTransact ( HENV henv, HDBC hdbc, UWORD fType);
+
+RETCODE SQL_API virtodbc__SQLPrepare (HSTMT hstmt,UCHAR FAR * szSqlStr, SQLINTEGER cbSqlStr);
+
+SQLRETURN SQL_API virtodbc__SQLSetPos ( HSTMT hstmt, SQLSETPOSIROW irow, UWORD fOption, UWORD fLock);
+
+RETCODE SQL_API virtodbc__SQLColAttributes (HSTMT hstmt,UWORD icol,UWORD fDescType, PTR rgbDesc,SWORD cbDescMax,SWORD FAR * pcbDesc, SQLLEN FAR * pfDesc);
+
+RETCODE SQL_API virtodbc__SQLNumResultCols (HSTMT hstmt, SWORD FAR * pccol);
+
+RETCODE SQL_API virtodbc__SQLBindParameter ( HSTMT hstmt, UWORD ipar, SWORD fParamType, SWORD fCType,
+    SWORD fSqlType, SQLULEN cbColDef, SWORD ibScale, PTR rgbValue, SQLLEN cbValueMax, SQLLEN FAR * pcbValue);
+
+
+RETCODE SQL_API virtodbc__SQLSpecialColumns ( HSTMT hstmt, UWORD fColType, UCHAR FAR * szTableQualifier,
+	SWORD cbTableQualifier, UCHAR FAR * szTableOwner, SWORD cbTableOwner, UCHAR FAR * szTableName,
+	SWORD cbTableName, UWORD fScope, UWORD fNullable);
+
+RETCODE SQL_API virtodbc__SQLStatistics ( HSTMT hstmt, UCHAR FAR * szTableQualifier, SWORD cbTableQualifier,
+	UCHAR FAR * szTableOwner, SWORD cbTableOwner, UCHAR FAR * szTableName, SWORD cbTableName,
+	UWORD fUnique, UWORD fAccuracy);
+caddr_t stmt_parm_to_dv (parm_binding_t * pb, int nth, long bhid, cli_stmt_t *stmt);
+
+RETCODE SQL_API
+virtodbc__SQLColumnPrivileges (
+	HSTMT hstmt,
+	UCHAR FAR * szTableQualifier,
+	SWORD cbTableQualifier,
+	UCHAR FAR * szTableOwner,
+	SWORD cbTableOwner,
+	UCHAR FAR * szTableName,
+	SWORD cbTableName,
+	UCHAR FAR * szColumnName,
+	SWORD cbColumnName);
+
+RETCODE SQL_API
+virtodbc__SQLColumns (
+	HSTMT hstmt,
+	UCHAR FAR * szTableQualifier,
+	SWORD cbTableQualifier,
+	UCHAR FAR * szTableOwner,
+	SWORD cbTableOwner,
+	UCHAR FAR * szTableName,
+	SWORD cbTableName,
+	UCHAR FAR * szColumnName,
+	SWORD cbColumnName);
+
+RETCODE SQL_API
+virtodbc__SQLForeignKeys (
+	HSTMT hstmt,
+	UCHAR FAR * szPkTableQualifier,
+	SWORD cbPkTableQualifier,
+	UCHAR FAR * szPkTableOwner,
+	SWORD cbPkTableOwner,
+	UCHAR FAR * szPkTableName,
+	SWORD cbPkTableName,
+	UCHAR FAR * szFkTableQualifier,
+	SWORD cbFkTableQualifier,
+	UCHAR FAR * szFkTableOwner,
+	SWORD cbFkTableOwner,
+	UCHAR FAR * szFkTableName,
+	SWORD cbFkTableName);
+
+RETCODE SQL_API
+virtodbc__SQLGetCursorName (
+	HSTMT hstmt,
+	UCHAR FAR * szCursor,
+	SWORD cbCursorMax,
+	SWORD FAR * pcbCursor);
+
+RETCODE SQL_API
+virtodbc__SQLGetInfo (
+	HDBC hdbc,
+	UWORD fInfoType,
+	PTR rgbInfoValue,
+	SWORD cbInfoValueMax,
+	SWORD FAR * pcbInfoValue);
+
+RETCODE SQL_API
+virtodbc__SQLNativeSql (
+	HDBC hdbc,
+	UCHAR FAR * szSqlStrIn,
+	SQLINTEGER cbSqlStrIn,
+	UCHAR FAR * szSqlStr,
+	SQLINTEGER cbSqlStrMax,
+	SQLINTEGER FAR * pcbSqlStr);
+
+RETCODE SQL_API
+virtodbc__SQLPrimaryKeys (
+	HSTMT hstmt,
+	UCHAR FAR * szTableQualifier,
+	SWORD cbTableQualifier,
+	UCHAR FAR * szTableOwner,
+	SWORD cbTableOwner,
+	UCHAR FAR * szTableName,
+	SWORD cbTableName);
+
+RETCODE SQL_API
+virtodbc__SQLProcedureColumns (
+	HSTMT hstmt,
+	UCHAR FAR * szProcQualifier,
+	SWORD cbProcQualifier,
+	UCHAR FAR * szProcOwner,
+	SWORD cbProcOwner,
+	UCHAR FAR * szProcName,
+	SWORD cbProcName,
+	UCHAR FAR * szColumnName,
+	SWORD cbColumnName);
+
+RETCODE SQL_API
+virtodbc__SQLProcedures (
+	HSTMT hstmt,
+	UCHAR FAR * szProcQualifier,
+	SWORD cbProcQualifier,
+	UCHAR FAR * szProcOwner,
+	SWORD cbProcOwner,
+	UCHAR FAR * szProcName,
+	SWORD cbProcName);
+
+RETCODE SQL_API
+virtodbc__SQLSetCursorName (
+      HSTMT hstmt,
+      UCHAR FAR * szCursor,
+      SWORD cbCursor);
+
+RETCODE SQL_API
+virtodbc__SQLTablePrivileges (
+	HSTMT hstmt,
+	UCHAR FAR * szTableQualifier,
+	SWORD cbTableQualifier,
+	UCHAR FAR * szTableOwner,
+	SWORD cbTableOwner,
+	UCHAR FAR * szTableName,
+	SWORD cbTableName);
+
+RETCODE SQL_API
+virtodbc__SQLTables (
+	HSTMT hstmt,
+	UCHAR FAR * szTableQualifier,
+	SWORD cbTableQualifier,
+	UCHAR FAR * szTableOwner,
+	SWORD cbTableOwner,
+	UCHAR FAR * szTableName,
+	SWORD cbTableName,
+	UCHAR FAR * szTableType,
+	SWORD cbTableType);
+
+int sql_fetch_scrollable (cli_stmt_t * stmt);
+
+#ifndef WIN32
+#define HWND void *
+#endif
+
+
+#if ODBCVER >= 0x0300
+RETCODE SQL_API
+virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
+    SQLINTEGER Attribute,
+    SQLPOINTER ValuePtr,
+    SQLINTEGER StringLength,
+    UNALIGNED SQLINTEGER * StringLengthPtr);
+
+RETCODE SQL_API
+virtodbc__SQLGetDescRec (SQLHDESC descriptorHandle,
+    SQLSMALLINT RecNumber,
+    SQLCHAR * Name,
+    SQLSMALLINT BufferLength,
+    SQLSMALLINT * StringLengthPtr,
+    SQLSMALLINT * TypePtr,
+    SQLSMALLINT * SubTypePtr,
+    SQLLEN * LengthPtr,
+    SQLSMALLINT * PrecisionPtr,
+    SQLSMALLINT * ScalePtr,
+    SQLSMALLINT * NullablePtr);
+
+RETCODE SQL_API
+virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
+    SQLSMALLINT RecNumber,
+    SQLSMALLINT FieldIdentifier,
+    SQLPOINTER ValuePtr,
+    SQLINTEGER BufferLength,
+    SQLINTEGER * StringLengthPtr);
+
+RETCODE SQL_API
+virtodbc__SQLGetStmtAttr (SQLHSTMT statementHandle,
+    SQLINTEGER Attribute,
+    SQLPOINTER ValuePtr,
+    SQLINTEGER BufferLength,
+    SQLINTEGER * StringLengthPtr);
+
+RETCODE SQL_API
+virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
+    SQLINTEGER Attribute,
+    SQLPOINTER ValuePtr,
+    SQLINTEGER StringLength);
+
+RETCODE SQL_API
+virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
+    SQLHANDLE Handle,
+    SQLSMALLINT nRecNumber,
+    SQLSMALLINT nDiagIdentifier,
+    SQLPOINTER pDiagInfoPtr,
+    SQLSMALLINT nBufferLength,
+    SQLSMALLINT * pnStringLengthPtr);
+
+RETCODE SQL_API
+virtodbc__SQLGetDiagRec (SQLSMALLINT HandleType,
+    SQLHANDLE Handle,
+    SQLSMALLINT RecNumber,
+    SQLCHAR * Sqlstate,
+    SQLINTEGER * NativeErrorPtr,
+    SQLCHAR * MessageText,
+    SQLSMALLINT BufferLength,
+    SQLSMALLINT * TextLengthPtr);
+
+RETCODE SQL_API
+virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
+    SQLSMALLINT RecNumber,
+    SQLSMALLINT FieldIdentifier,
+    SQLPOINTER ValuePtr,
+    SQLINTEGER BufferLength);
+
+RETCODE SQL_API
+virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
+    SQLINTEGER Attribute,
+    SQLPOINTER ValuePtr,
+    SQLINTEGER StringLength);
+
+RETCODE SQL_API
+virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
+    SQLUSMALLINT ColumnNumber,
+    SQLUSMALLINT FieldIdentifier,
+    SQLPOINTER CharacterAttributePtr,
+    SQLSMALLINT BufferLength,
+    SQLSMALLINT * StringLengthPtr,
+#if !defined (NO_UDBC_SDK) && !defined (WIN32)
+    SQLPOINTER  NumericAttributePtr
+#else
+    SQLLEN *NumericAttributePtr
+#endif
+    );
+#endif
+
+
+extern char application_name[60];
+extern char __virtodbc_dbms_name[512];
+extern col_desc_t bm_info;
+
+#define VIRT_SERVER "[Virtuoso Server]"
+#define VIRT_SERVER_LEN sizeof (VIRT_SERVER) - 1
+
+caddr_t cli_box_server_msg (char *msg);
+
+#define STMT_CHARSET(hstmt)	\
+	STMT(stmt, hstmt);	\
+	wcharset_t *charset = stmt->stmt_connection->con_charset
+
+#define CON_CHARSET(hdbc)	\
+	CON(con, hdbc);	\
+	wcharset_t *charset = con->con_charset
+
+#define DESC_CHARSET1(hdesc)	\
+  DESC (desc, hdesc); \
+  wcharset_t *charset = desc->d_stmt->stmt_connection->con_charset
+
+#define DESC_CHARSET(Handle, HandleType)	\
+  /*ENV (env, Handle);*/ \
+  CON (con, Handle); \
+  STMT (stmt, Handle); \
+  DESC (desc, Handle); \
+  wcharset_t * charset = (HandleType == SQL_HANDLE_DBC ? con->con_charset : \
+      ( HandleType == SQL_HANDLE_STMT ? stmt->stmt_connection->con_charset : \
+	(HandleType == SQL_HANDLE_DESC ? desc->d_stmt->stmt_connection->con_charset : (wcharset_t *)(NULL))))
+
+#define NDEFINE_OUTPUT_NONCHAR_NARROW(wide, len, pcb, con, type) \
+  type _##len = (type) (len * (( (con) && (con)->con_defs.cdef_utf8_execs) ? VIRT_MB_CUR_MAX : 1)); \
+  caddr_t _##wide = NULL; \
+  type _v##pcb, * _##pcb = &_v##pcb
+
+#define NMAKE_OUTPUT_NONCHAR_NARROW(wide, len, con) \
+  if (wide && len > 0) \
+    { \
+      if ((con) && (con)->con_defs.cdef_utf8_execs) \
+	_##wide = dk_alloc_box (_##len * VIRT_MB_CUR_MAX, DV_LONG_STRING); \
+      else \
+	_##wide = (caddr_t) wide; \
+    }
+
+#define NSET_AND_FREE_OUTPUT_NONCHAR_NARROW(wide, len, plen, con) \
+  if (wide && len >= 0) \
+    { \
+      int len2 = (!_##plen || *_##plen == SQL_NTS) ? (int) strlen (_##wide) : *_##plen; \
+      if ((con) && len > 0 && (con)->con_defs.cdef_utf8_execs) \
+	{ \
+	  SWORD len1; \
+	  len1 = (SWORD) cli_utf8_to_narrow (con->con_charset, (unsigned char *) _##wide, len2, (unsigned char *) wide, len); \
+	  if (len1 >= 0) \
+	    { \
+	      if (plen) \
+		*plen = len1; \
+	    } \
+	  else \
+	    { \
+	      dk_free_box (_##wide); \
+	      return SQL_ERROR; \
+	    } \
+	  dk_free_box (_##wide); \
+	} \
+      else \
+	if (plen) \
+	  *plen = len2; \
+    }
+
+
+#define NMAKE_OUTPUT_NONCHAR_NARROW_ALLOC(wide, len, con) \
+  if (wide && len > 0) \
+    { \
+      if ((con) && (con)->con_defs.cdef_utf8_execs) \
+	_##wide = dk_alloc_box (_##len * VIRT_MB_CUR_MAX, DV_LONG_STRING); \
+      else \
+	_##wide = (caddr_t) dk_alloc_box (_##len, DV_LONG_STRING); \
+    }
+
+#define NSET_AND_FREE_OUTPUT_NONCHAR_NARROW_FREE(wide, len, plen, con) \
+  if (wide && len >= 0) \
+    { \
+      int len2 = (!_##plen || *_##plen == SQL_NTS) ? (int) strlen (_##wide) : *_##plen; \
+      if ((con) && len > 0 && (con)->con_defs.cdef_utf8_execs) \
+	{ \
+	  SWORD len1; \
+	  len1 = (SWORD) cli_utf8_to_narrow (con->con_charset, (unsigned char *) _##wide, len2, (unsigned char *) wide, len); \
+	  if (len1 >= 0) \
+	    { \
+	      if (plen) \
+		*plen = len1; \
+	    } \
+	  else \
+	    { \
+	      dk_free_box (_##wide); \
+	      return SQL_ERROR; \
+	    } \
+	  dk_free_box (_##wide); \
+	} \
+      else \
+	{ \
+	  if (len2 > 0) \
+ 	    strncpy (wide, _##wide, len2); \
+          else \
+	    ((SQLCHAR *)wide)[0] = 0; \
+          dk_free_box (_##wide); \
+	  if (plen) \
+	    *plen = len2; \
+	} \
+    }
+
+#define NDEFINE_INPUT_NARROW(param) \
+  UCHAR FAR *sz##param = NULL
+
+#define NMAKE_INPUT_NARROW_N(param) \
+if (wsz##param) \
+{ \
+  sz##param = wsz##param; \
+}
+
+#define NMAKE_INPUT_NARROW(param, con) \
+if (!(con)->con_defs.cdef_utf8_execs) \
+{ \
+  NMAKE_INPUT_NARROW_N(param); \
+} \
+else \
+{ \
+  if (wsz##param && cb##param) \
+    { \
+      len = cb##param > 0 ? cb##param : strlen ((const char *) wsz##param); \
+      sz##param = (UCHAR FAR *) dk_alloc_box (len * VIRT_MB_CUR_MAX + 1, DV_LONG_STRING); \
+      cli_narrow_to_utf8 (con->con_charset, wsz##param, len, sz##param, len * VIRT_MB_CUR_MAX + 1); \
+      cb##param = (SWORD) strlen ((const char *) sz##param); \
+    } \
+}
+
+#define NFREE_INPUT_NARROW(param) \
+if (wsz##param && wsz##param != sz##param) \
+{ \
+  dk_free_box ((box_t) sz##param); \
+}
+
+
+#define NDEFINE_OUTPUT_CHAR_NARROW(param, con, type) \
+  UCHAR FAR *sz##param = NULL; \
+  type _vpcb##param, *_pcb##param = &_vpcb##param; \
+  type _cb##param = cb##param * ((con)->con_defs.cdef_utf8_execs ? VIRT_MB_CUR_MAX : 1)
+
+#define NMAKE_OUTPUT_CHAR_NARROW(param, con) \
+if (wsz##param) \
+  { \
+    if ((con)->con_defs.cdef_utf8_execs) \
+      sz##param = (UCHAR FAR *) dk_alloc_box (cb##param * VIRT_MB_CUR_MAX, DV_LONG_STRING); \
+    else \
+      sz##param = (UCHAR FAR *) wsz##param; \
+  }
+
+#define NSET_AND_FREE_OUTPUT_CHAR_NARROW(param, con) \
+if (wsz##param) \
+  { \
+    if ((con)->con_defs.cdef_utf8_execs) \
+      { \
+	SWORD len1; \
+	len1 = (SWORD) cli_utf8_to_narrow (con->con_charset, sz##param, _cb##param, wsz##param, cb##param); \
+	if (pcb##param) \
+	  *pcb##param = *_pcb##param; \
+	dk_free_box ((box_t) sz##param); \
+      } \
+    else \
+      { \
+	if (pcb##param) \
+	  *pcb##param = *_pcb##param; \
+      } \
+  }
+
+#define NMAKE_INPUT_ESCAPED_NARROW_N(param) NMAKE_INPUT_NARROW_N(param)
+
+#define NMAKE_INPUT_ESCAPED_NARROW(param, con) NMAKE_INPUT_NARROW(param, con)
+#define NDEFINE_INPUT_NONCHAR_NARROW(wide, len) \
+SQLLEN _##len = ((len) < 0 ? strlen ((char *) wide) : (len)) ; \
+    caddr_t _##wide = NULL
+
+#define NMAKE_INPUT_NONCHAR_NARROW_N(wide, len) \
+    _##wide = (caddr_t) wide
+
+#define NMAKE_INPUT_NONCHAR_NARROW(wide, len, con) \
+    if ((con)->con_defs.cdef_utf8_execs) \
+      { \
+	if (_##len > 0 && wide) \
+	  { \
+            _##wide = dk_alloc_box (len * VIRT_MB_CUR_MAX + 1, DV_LONG_STRING); \
+	    cli_narrow_to_utf8 (con->con_charset, (unsigned char *) wide, _##len, (unsigned char *) _##wide, _##len * VIRT_MB_CUR_MAX + 1); \
+	    _##len = strlen ((char *) _##wide); \
+	  } \
+      } \
+    else \
+      { \
+	NMAKE_INPUT_NONCHAR_NARROW_N(wide, len); \
+      }
+
+#define NFREE_INPUT_NONCHAR_NARROW(wide, len) \
+    if (_##len > 0 && wide && ((caddr_t) wide) != _##wide) \
+      { \
+	dk_free_box (_##wide); \
+      }
+
+#define CHECK_SI_TRUNCATED(errptr, max, str) \
+      if (max < (SWORD) strlen (str)) \
+        { \
+	  rc = SQL_SUCCESS_WITH_INFO; \
+	  if (errptr) \
+	    set_success_info (errptr, "01004", "CL087", "String data, right truncation", 0); \
+	}
+
+#define V_SET_ODBC_STR(str, _outb, max_len, ret_len, errptr) \
+      if (str) \
+        { \
+	  size_t slen = strlen ((const char *) (str)); \
+	  if (_outb && max_len > 0) \
+	    { \
+	      if (slen < max_len - 1) \
+		strcpy_size_ck ((char *) _outb, (const char *) (str), max_len); \
+	      else \
+		{ \
+		  strncpy ((char *) _outb, (const char *) (str), max_len - 1); \
+		  ((char *) _outb)[max_len - 1] = 0; \
+		} \
+	    } \
+	  if (ret_len) \
+	    *ret_len = (SWORD) slen; \
+	  if (max_len < (SWORD) slen) \
+	    { \
+	      rc = SQL_SUCCESS_WITH_INFO; \
+	      if (errptr != NULL) \
+		set_success_info (errptr, "01004", "CL088", "String data, right truncation", 0); \
+	    } \
+	} \
+      else \
+        { \
+	  if (_outb && max_len > 0) \
+	    *((char *)_outb) = '\x0'; \
+	  if (ret_len) \
+	    *ret_len = 0; \
+	}
+
+
+#endif /* _CLI_H */

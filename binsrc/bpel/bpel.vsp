@@ -1,0 +1,205 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare scpuri, host varchar;
+  declare opts any;
+
+  opts := http_map_get ('soap_opts');
+  if (not isarray (opts))
+    opts := vector ();
+
+  scpuri := {?'script'};
+  if (scpuri is null)
+    scpuri := get_keyword ('scp_name', opts, null);
+
+  declare exit handler for SQLSTATE '*' {
+    declare err_msg varchar;
+    if ({?'wsdl'} is null)
+      {
+	err_msg := soap_make_error ('300', __SQL_STATE, __SQL_MESSAGE);
+        -- http_rewrite ();
+	http (err_msg);
+	resignal 'VSPRT';
+      }
+  };
+
+  host := http_request_header (lines, 'Host');
+-- WSIL document
+if ({?'wsil'} is not null)
+  {
+    http_rewrite ();
+?>
+<?xml version="1.0" ?>
+<inspection xmlns="http://schemas.xmlsoap.org/ws/2001/10/inspection">
+<?vsp
+  http_header ('Content-Type: text/xml\r\n');
+  for select bs_name, bs_lpath from BPEL..script where bs_state = 0 do
+    {
+      declare ep any;
+      if (length (bs_lpath))
+        ep := 'http://' || host || bs_lpath || '?wsdl';
+      else
+        ep := sprintf ('http://%s/BPELGUI/bpel.vsp?script=%U&wsdl', host, bs_name);
+?>
+      <service>
+	<name><?=bs_name?></name>
+	<description referencedNamespace="http://schemas.xmlsoap.org/wsdl/" location="<?=ep?>"/>
+      </service>
+<?vsp
+    }
+?>
+</inspection>
+<?vsp
+    return;
+  }
+
+if (scpuri is null)
+  {
+    signal ('BP502', 'Process is not specified');
+  }
+
+-- WSDL document
+if ({?'wsdl'} is not null)
+  {
+    declare nam, surl, src, pname varchar;
+    declare pt any;
+    declare scp_id int;
+
+    whenever not found goto nosuchscp1;
+    select bs_id, bs_name into scp_id, nam from BPEL..script where bs_name = scpuri and bs_state = 0;
+    select bsrc_text into src from BPEL..script_source where bsrc_script_id = scp_id and bsrc_role = 'bpel';
+    if ({?'script'} is not null)
+      surl := sprintf ('%s?script=%U', http_requested_url (), scpuri);
+    else
+      surl := http_requested_url ();
+    http_header ('Content-type: text/xml\r\n');
+    pt := string_output ();
+    http ('<ports>', pt);
+    for select distinct bo_port_type as ptype from BPEL..operation where bo_script = scp_id and bo_init = 1 do
+       {
+	 http (sprintf ('<portType name="%s"/>', BPEL..get_nc_name (ptype)),pt);
+       }
+    http ('</ports>', pt);
+    pt := xtree_doc (pt);
+
+    pname := xpath_eval ('process/@name', src);
+    if (not length (pname))
+      pname := 'Service';
+
+    for select bsrc_text from BPEL..script_source
+	where bsrc_script_id = scp_id and bsrc_role = 'wsdl'
+	do {
+              declare wsdl any;
+              wsdl := xslt (BPEL.BPEL.res_base_uri() || 'bpel4ws/1.0/genwsdl.xsl', bsrc_text,
+		vector ('uri', surl,
+			'nam', pname,
+			'pt', pt));
+	      http_value (wsdl);
+              return;
+	   }
+    nosuchscp1:;
+    signal ('42000', 'No wsdl assigned to the given script, or script does not exists.');
+  }
+
+ {
+	-- needed to allow compiling of bpel.vsp
+	-- so the deadlock when the bpel script is invoked
+	-- by UI does not occur
+
+	declare content_type, soap_method, soap_xml, req_body varchar;
+        declare style int;
+
+        content_type := http_request_header (lines, 'Content-Type');
+	if (isstring (content_type))
+           content_type := lower (content_type);
+
+        soap_method := trim (http_request_header (lines, 'SOAPAction'), '" ');
+
+        soap_xml := NULL;
+
+	if (content_type = 'text/xml')
+          {
+	    declare rtext varchar;
+	    req_body := http_body_read ();
+	    rtext := string_output_string (req_body);
+	    if (length (rtext) = 0)
+	      signal ('42000', 'Unsupported encoding');
+	    else
+  	      soap_xml := xml_tree_doc (xml_tree (rtext));
+	  }
+        else
+	  signal ('42000', 'Unsupported encoding');
+
+
+	soap_method := trim (soap_method, '"');
+
+        if (soap_method = 'ebXML')
+          {
+	    signal ('42000', 'ebXML not implemented yet');
+	  }
+        else
+          {
+	    declare body, hdrs any;
+
+	    connection_set ('BPEL/Script', scpuri);
+
+            --dbg_obj_print (soap_xml);
+
+	    -- Incoming message is either encrypted or signed or both
+            if (xpath_eval ('/Envelope/Header/Security', soap_xml) is not null)
+              {
+		declare ns any;
+                ns := vector ();
+		DB.DBA.WS_SECURITY_CHECK (req_body, soap_xml, lines, ns);
+	        soap_xml := xslt ('http://local.virt/wsrp_ultim', soap_xml);
+              }
+            -- Incoming message is WS-RM
+            if (xpath_eval ('/Envelope/Header/Sequence', soap_xml) is not null)
+	      {
+                declare ret, meth any;
+		meth := cast (xpath_eval ('name(/Envelope/Body/*[1])', soap_xml) as varchar);
+                ret := soap_server (soap_xml, soap_method, lines, 11,
+			vector (meth, 'DB.DBA.WSRMSequence'));
+              }
+
+            body := xml_cut (xpath_eval ('/Envelope/Body', soap_xml));
+            hdrs := xpath_eval ('/Envelope/Header', soap_xml);
+            if (hdrs is not null)
+              hdrs := xml_cut (hdrs);
+
+            -- if the request is RCP encoded
+            if (xpath_eval ('//@encodingStyle', soap_xml) = N'http://schemas.xmlsoap.org/soap/encoding/')
+              {
+		style := 0;
+              }
+            else -- literal style
+              {
+                style := 1;
+              }
+
+            BPEL..schedule_request (scpuri, soap_method, body, hdrs, style, host);
+	    return;
+	  }
+  }
+?>
+

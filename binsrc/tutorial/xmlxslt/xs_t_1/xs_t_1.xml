@@ -1,0 +1,75 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XS-T-1">
+  <refmeta>
+    <refentrytitle>Text and XML Triggers</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Making a freetext trigger</refname>
+    <refpurpose>Freetext triggers example</refpurpose>
+  </refnamediv>
+
+<refsect1 id="XS-T-1a">
+<title>Example</title>
+<para>
+This example adds an XML content trigger to the data of <ulink url="../../xmlsql/xs_s_1/xs_s_1.vsp">XS-S-1</ulink>.
+The main features of this example are:</para>
+<itemizedlist mark="bullet">
+  <listitem>Display a list of documents held in a table.</listitem>
+  <listitem>Add a new document or delete an existing one.</listitem>
+  <listitem>Define a trigger.</listitem>
+  <listitem>Show the hits found by the triggers.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="XS-T-1b">
+<title>Document upload and list page</title>
+<itemizedlist mark="bullet">
+  <listitem>The URI for the document is entered, and the system goes to retrieve it using xml_uri_get().</listitem>
+  <listitem>The document is inserted into a table.</listitem>
+  <listitem>If the document is HTML it is converted to XHTML with xml_tree() HTML mode.</listitem>
+  <listitem>If the HTML is not in a valid format or the document at the URI is not found, an error is reported.</listitem>
+  <listitem>There is a list of the rows in the documents table.</listitem>
+  <listitem>Each row has a delete button, to remove the document.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="XS-T-1c">
+<title>Trigger definition page</title>
+<itemizedlist mark="bullet">
+  <listitem>The triggers page allows triggers to be added and deleted. When a trigger is deleted the
+   hits are also deleted.</listitem>
+  <listitem>Some pre-existing triggers look for text of specific tags in the XS-S-1 material.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="XS-T-1d">
+<title>Hits page</title>
+<itemizedlist mark="bullet">
+  <listitem>The hits are listed on this page.</listitem>
+  <listitem>The hits page has a delete all button, to remove the hits.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

@@ -1,0 +1,63 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="UD-S-3">
+  <refmeta>
+    <refentrytitle>UDDI</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Web services registration</refname>
+    <refpurpose>Step by step registration of SOAP services in Virtuoso hosted registry</refpurpose>
+  </refnamediv>
+
+<refsect1 id="UD-S-3a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+  <listitem>The UDDI provides a flexible way to register any kind of
+  service.</listitem>
+  <listitem>The services in particular can be SOAP or WSDL web
+  services.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="UD-S-3b">
+<title>SOAP and WSDL registration example</title>
+<itemizedlist mark="bullet">
+  <listitem>This example makes a business record, and will define a service for it.</listitem>
+  <listitem>The services can be provided by an organization (business).
+  Without a defined provider service, it cannot be registered separately.</listitem>
+  <listitem>Because there is no tModel for the service, one is provided
+  for SOAP classification (tm.xml).</listitem>
+  <listitem>Next step is to create a business description.(be.xml)</listitem>
+  <listitem>Then create a service description (bs.xml).</listitem>
+  <listitem>Then there is a binding (bnd.xml) of the service and business.</listitem>
+  <listitem><para>This binding has two templates:</para>
+  <itemizedlist mark="bullet">
+    <listitem>SOAP template for information via Web page</listitem>
+    <listitem>WSDL template for WSDL description of that service</listitem>
+  </itemizedlist></listitem>
+  <listitem>The example shows step by step for each template.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

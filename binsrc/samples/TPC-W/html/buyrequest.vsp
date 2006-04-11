@@ -1,0 +1,304 @@
+<?vsp
+   declare cid, _c_id       numeric (10);
+   declare uname            varchar (20);
+   declare passwd           varchar (20);
+   declare fname            varchar (15);
+   declare lname            varchar (15);
+   declare country          varchar (50);
+   declare street1          varchar (40);
+   declare street2          varchar (40);
+   declare phone            varchar (16);
+   declare email            varchar (50);
+   declare zip              varchar (10);
+   declare city             varchar (30);
+   declare state            varchar (20);
+   declare birthday         date;
+   declare data, login      varchar (500);
+   declare discount          numeric(3,2);
+   declare shopping_id numeric(20);
+   declare country_id integer;
+   declare address_id numeric(10);
+   declare cost,srp numeric(15,2);
+   declare title varchar(60);
+   declare backing varchar(15);
+   declare sub_total, total,tax,ship_cost, total numeric(15,2);
+
+   shopping_id:=atoi(get_keyword('Shopping_Id',params,'0'));
+   cid:=atoi(get_keyword('C_ID',params,'0'));
+    if ('Y'=get_keyword('RETURNING_FLAG',params,'Y'))
+    {
+	uname:=get_keyword('username',params,'');
+        passwd:=get_keyword('password',params,'');
+        whenever not found goto further;
+        select C_ID, C_PASSWD,C_FNAME,C_LNAME,C_PHONE,C_EMAIL,C_BIRTHDATE,
+	    C_DATA,C_DISCOUNT,ADDR_STREET1,ADDR_STREET2,ADDR_CITY,ADDR_STATE,
+            ADDR_ZIP,CO_NAME
+	    into  _c_id, passwd, fname, lname, phone, email, birthday,
+	    data, discount, street1, street2, city, state, zip, country
+	    from  CUSTOMER,ADDRESS,COUNTRY
+	    where C_UNAME=uname and C_ADDR_ID=ADDR_ID and ADDR_CO_ID=CO_ID;
+	login :=now();
+	-- Update the following information within a single database transaction:
+	update CUSTOMER
+	    set C_LOGIN=login, C_EXPIRATION = dateadd('hour', 2, login)
+	    where C_ID=_c_id;
+further: ;
+    -- explain('select C_ID, C_PASSWD,C_FNAME,C_LNAME,C_PHONE,C_EMAIL,C_BIRTHDATE,ADDR_STREET1,ADDR_STREET2,ADDR_CITY,ADDR_STATE,ADDR_ZIP,CO_NAME from CUSTOMER,ADDRESS,COUNTRY  where C_UNAME=\'SE\' and C_ADDR_ID=ADDR_ID and ADDR_CO_ID=CO_ID');
+    }
+    else   --'N'=get_keyword('RETURNING_FLAG',params,'Y'))
+    {
+	--<start transaction>
+	birthday:=get_keyword('birthday',params,'');
+	zip:=get_keyword('zip',params,'');
+	fname:=get_keyword('firstname',params,'');
+	lname:=get_keyword('lastname',params,'');
+	street1:=get_keyword('address1',params,'');
+	street2:=get_keyword('address2',params,'');
+	city:=get_keyword('city',params,'');
+	state:=get_keyword('state',params,'');
+	country:=get_keyword('country',params,'');
+	phone:=get_keyword('phone',params,'');
+	email:=get_keyword('email',params,'');
+	data:=get_keyword('data',params,'');
+	-- address - get address_id
+        whenever not found goto insert_country;
+        select CO_ID into country_id from COUNTRY where CO_NAME=country;
+        goto get_address;
+insert_country:;
+        country_id:=rnd(24)+1;
+get_address:;
+        whenever not found goto insert_addr;
+        select ADDR_ID into address_id from ADDRESS 
+	    where ADDR_STREET1=street1 and ADDR_STREET2=street2 and 
+            ADDR_CITY=city and ADDR_STATE=state and 
+            ADDR_ZIP=zip and ADDR_CO_ID = country_id;
+        goto fill_customer;
+insert_addr:;
+        address_id:=coalesce ((select max(ADDR_ID) from ADDRESS), 0) + 1;
+    	insert into ADDRESS(ADDR_ID,ADDR_STREET1,ADDR_STREET2,ADDR_CITY,
+	    ADDR_STATE,ADDR_ZIP,ADDR_CO_ID)
+	    values(address_id,street1,street2,city,
+	    state,zip,country_id);
+fill_customer:;
+	_c_id := coalesce((select max(C_ID) from CUSTOMER), 0) + 1;
+        uname := DigSyl(_c_id, 0);
+        passwd := lcase(uname);
+        discount := rnd(51)/100.0;
+        login := now();
+        insert into CUSTOMER(C_ID,C_UNAME,C_PASSWD,C_FNAME,C_LNAME,C_ADDR_ID,
+	    C_PHONE,C_EMAIL,C_SINCE,C_LAST_VISIT,C_LOGIN,
+	    C_EXPIRATION,C_DISCOUNT,C_BALANCE,C_YTD_PMT,
+	    C_BIRTHDATE,C_DATA) 
+	    values(_c_id,uname,passwd,fname,lname,address_id,
+	    phone,email,now(),now(),login,
+	    dateadd('hour',2,login),discount,0.0,0.0,
+	    now(),data);
+COMMIT WORK;
+	--<end transaction>
+	-- update shopping cart
+	update CART set SC_C_FNAME =fname,SC_C_LNAME =lname,
+	    SC_C_DISCOUNT=discount, SC_C_ID=_c_id
+	    where SC_SHOPPING_ID=shopping_id;
+    }
+?>
+<HTML>
+  <HEAD><TITLE>TPC-W Buy Request Page</TITLE></HEAD>
+  <BODY BGCOLOR="ffffff">
+  <H1 ALIGN="CENTER">TPC Web Commerce Benchmark (TPC-W)</H1>
+  <HR WIDTH="700" COLOR="#202020">
+  <H2 ALIGN="CENTER">Buy Request Page</H2>
+  <HR WIDTH="700">
+<FORM ACTION="buyconfirm.vsp?" METHOD="GET">
+<INPUT TYPE="HIDDEN" NAME="C_ID" VALUE="<?=_c_id?>">
+<INPUT TYPE="HIDDEN" NAME="Shopping_Id" VALUE="<?=shopping_id?>">
+  <TABLE BORDER="0" WIDTH="90%">
+    <TR ALIGN="LEFT" VALIGN="TOP">
+      <TD VALIGN="TOP" WIDTH="45%"> <H2>Billing Information:</H2>
+       <TABLE WIDTH="100%" BORDER="0">
+        <TR>
+          <TD>Firstname:</TD>
+          <TD> <?=fname?></TD>
+	</TR>
+        <TR>
+          <TD>Lastname: </TD>
+          <TD> <?=lname?></TD> 
+        </TR>
+        <TR>
+          <TD>Addr_street_1:</TD>
+          <TD> <?=street1?></TD>
+        </TR>
+        <TR>
+          <TD>Addr_street_2:</TD>
+          <TD> <?=street2?></TD>
+        </TR>
+        <TR>
+          <TD>City:</TD>
+          <TD> <?=city?></TD>
+        </TR>
+        <TR>
+          <TD>State:</TD>
+          <TD> <?=state?></TD>
+        </TR>
+        <TR>
+          <TD>Zip:</TD>
+          <TD><?=zip?></TD>
+        </TR>
+        <TR>
+          <TD>Country:</TD>
+          <TD> <?=country?></TD>
+        </TR>
+        <TR>
+          <TD>Email:</TD>
+          <TD> <?=email?></TD>
+        </TR>
+        <TR>
+          <TD>Phone:</TD>
+          <TD> <?=phone?></TD>
+        </TR>
+        <TR>
+          <TD>Username:</TD>
+          <TD><?=uname?></TD>
+        </TR>
+        <TR>
+          <TD>C_ID</TD>
+          <TD><?=_c_id?></TD>
+        </TR>
+       </TABLE>
+      </TD>
+      <TD VALIGN="TOP" WIDTH="45%"><H2>Shipping Information:</H2>
+        <TABLE BORDER="0" CELLSPACING="0" CELLPADDING="0" WIDTH="100%">
+          <TR>
+            <TD WIDTH="50%">Addr_street_1:</TD>
+            <TD WIDTH="50%"><INPUT NAME="shipadd1" SIZE="40" VALUE="<?=street1?>"></TD>
+          </TR>
+          <TR>
+            <TD>Addr_street_2:</TD>
+            <TD><INPUT NAME="shipadd2" SIZE="40" VALUE="<?=street2?>"></TD>
+          </TR>
+          <TR>
+            <TD>City:</TD>
+            <TD><INPUT NAME="shipcity" SIZE="30" VALUE="<?=city?>"></TD>
+          </TR>
+          <TR>
+            <TD>State:</TD>
+            <TD><INPUT NAME="shipstate" SIZE="20" VALUE="<?=state?>"></TD>
+          </TR>
+          <TR>
+            <TD>Zip:</TD>
+            <TD><INPUT NAME="shipzip" SIZE="10" VALUE="<?=zip?>"></TD>
+          </TR>
+          <TR>
+            <TD>Country:</TD>
+            <TD><INPUT NAME="shipcountry" VALUE="<?=country?>" SIZE="40"></TD>
+          </TR>
+        </TABLE></TD>
+          </TR>
+        </TABLE><HR WIDTH="700"><H2>Order Information:</H2>
+        <TABLE BORDER="1" CELLSPACING="0" CELLPADDING="0">
+          <TR>
+            <TD><B>Qty</B></TD>
+            <TD><B>Product</B></TD>
+          </TR>
+<?vsp
+-- The SUT executes the following steps as an atomic set of operations:
+    declare _scl_cart_cur cursor for
+	select I_COST from ITEM, CART_ITEM 
+        where SCL_CART=shopping_id and SCL_I_ID=I_ID;
+    whenever not found goto _scl_cart_cur_end;
+    open _scl_cart_cur (prefetch 10);
+    while (1)
+    {
+	declare _i_cost numeric(15,2);
+	fetch _scl_cart_cur into _i_cost;
+	update CART_ITEM set SCL_COST = _i_cost
+	    where current of _scl_cart_cur;
+    }
+    update CART set SC_DATE = now()
+	where SC_SHOPPING_ID=shopping_id;
+_scl_cart_cur_end:;
+    sub_total:=0;
+    ship_cost:=0;
+    for select SCL_TITLE, SCL_COST, SCL_SRP, SCL_BACKING, SCL_QTY
+	from CART_ITEM
+	where SCL_CART=shopping_id
+        do
+	{
+    	    sub_total:=sub_total+SCL_COST*SCL_QTY;
+            ship_cost:=ship_cost+SCL_QTY;  
+?> 
+         <TR>
+            <TD VALIGN="TOP"><?=SCL_QTY?></TD>
+            <TD VALIGN="TOP">Title: <I><?=SCL_TITLE?></I> 
+                 - Backing: <?=SCL_BACKING?><BR>
+                 SRP. $<?=SCL_SRP?> <FONT COLOR="#AA0000"><B>Your
+                 Price: $<?=SCL_COST?></B></FONT></TD>
+          </TR>
+<?vsp
+        }
+        sub_total:=sub_total*(1-discount);
+        tax:=sub_total*0.0825;
+        ship_cost:= 3.0+(1.0*ship_cost);
+        total:= sub_total+ship_cost+tax;
+        update CART set SC_SUB_TOTAL=sub_total,
+	    SC_TAX=tax,
+            SC_SHIP_COST=ship_cost,
+            SC_TOTAL = total
+            where SC_SHOPPING_ID=shopping_id;
+?> 
+        </TABLE><P><BR></P>
+        <TABLE BORDER="0">
+          <TR>
+            <TD><B>Subtotal with discount (<?=discount?>%):</B></TD>
+            <TD ALIGN="RIGHT"><B>$<?=cast(sub_total as numeric(15,2))?></B></TD>
+          </TR>
+          <TR>
+            <TD><B>Tax</B></TD>
+            <TD ALIGN="RIGHT"><B>$<?=cast(tax as numeric(15,2))?></B></TD>
+          </TR>
+          <TR>
+            <TD><B>Shipping &amp; Handling</B></TD>
+            <TD ALIGN="RIGHT"><B>$<?=cast(ship_cost as numeric(15,2))?></B></TD>
+          </TR>
+          <TR>
+            <TD><B>Total</B></TD>
+            <TD ALIGN="RIGHT"><B>$<?=cast(total as numeric(15,2))?></B></TD>
+          </TR>
+        </TABLE><HR WIDTH="700"><P><BR></P>
+        <TABLE BORDER="1" CELLPADDING="5" CELLSPACING="0">
+        <TR>
+          <TD>Credit Card Type</TD>
+          <TD><INPUT TYPE="RADIO" NAME="cctype" VALUE="VISA" CHECKED>VISA
+              <INPUT TYPE="RADIO" NAME="cctype" VALUE="MASTERCARD">MASTERCARD
+              <INPUT TYPE="RADIO" NAME="cctype" VALUE="DISCOVER">DISCOVER
+              <INPUT TYPE="RADIO" NAME="cctype" VALUE="AMEX">AMERICAN EXPRESS
+              <INPUT TYPE="RADIO" NAME="cctype" VALUE="DINERS">DINERS
+          </TD>
+        </TR>
+        <TR>
+          <TD>Name on Credit Card</TD>
+          <TD><INPUT NAME="ccname" SIZE="30" VALUE="Please, change Name"></TD>
+        </TR>
+        <TR>
+          <TD>Credit Card Number</TD>
+          <TD><INPUT NAME="ccnum" SIZE="16" VALUE="11111111111"></TD>
+        </TR>
+        <TR>
+          <TD>Credit Card Expiration Date</TD>
+          <TD><INPUT NAME="ccdate" SIZE="15" VALUE="12/12/2003"></TD>
+        </TR>
+        <TR>
+          <TD>Shipping Method</TD>
+          <TD><INPUT TYPE="RADIO" NAME="shipmethod" VALUE="AIR" CHECKED>AIR
+              <INPUT TYPE="RADIO" NAME="shipmethod" VALUE="UPS">UPS
+              <INPUT TYPE="RADIO" NAME="shipmethod" VALUE="FEDEX">FEDEX
+              <INPUT TYPE="RADIO" NAME="shipmethod" VALUE="SHIP">SHIP
+              <INPUT TYPE="RADIO" NAME="shipmethod" VALUE="COURIER">COURIER
+              <INPUT TYPE="RADIO" NAME="shipmethod" VALUE="MAIL">MAIL
+          </TD>
+        </TR>
+      </TABLE><P ALIGN="CENTER">
+      <INPUT TYPE="IMAGE" NAME="Confirm Buy" SRC="images/process.jpg" HEIGHT="30" WIDTH="120">
+      <A HREF="shoppingcart.vsp?ADD_FLAG=N&C_ID=<?/_c_id?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/cart.jpg" ALT="Shopping Cart" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="120" HEIGHT="30"></A>
+      <A HREF="index.vsp?C_ID=<?/_c_id?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/home.jpg" ALT="Home" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="120" HEIGHT="30"></A>
+     </P>
+</FORM></BODY></HTML>

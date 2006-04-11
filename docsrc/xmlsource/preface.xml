@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+	<preface id="preface">
+  <title>Preface</title>
+
+    <sect1 id="docuventions"><title>Conventions</title>
+		<para>A note on the typographical conventions that have been used in this text:</para>
+
+    <para>This is the normal font type used for ordinary text.</para>
+
+    <programlisting>This monospaced font is used to describe program code.</programlisting>
+    
+    <screen>This monospaced font is used to describe screen output, 
+differentiated from code if required.</screen>
+
+    <tip><title>This See Also:</title><para>is a tip used for cross-referencing 
+    meterial either within the documentation, or externally.</para></tip>
+
+    <note><title>This Note:</title><para>is a note used for revealing a point of 
+    interest or special feature</para></note>
+
+    <para>Special formatting is used to highlight <function>functions()</function> 
+    and their <parameter>parameters</parameter> above the rest of the text.</para>
+
+    <para>Important keywords are <emphasis>emphasised</emphasis> using bolding 
+    (or strong character typing) and text that 
+    is <important>very important and must be noticed</important> is displayed 
+    in a traditional red warning color</para>
+
+    </sect1>
+
+
+	</preface>
+
+
+

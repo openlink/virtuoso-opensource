@@ -1,0 +1,665 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="relnotes" id="relnotes">
+<title>Release Notes</title>
+<sect1 id="ptrs">
+<title>Bugs Fixed</title>
+<itemizedlist>
+<listitem><formalpara>
+<title>PTR: 3 - Informix stores7 manufact table when queried via ACCESS generates #NAME</title>
+<para>Database involved: Virtuoso </para><programlisting>Informix Driver   - manufact table when queried via ACCESS generates #NAME this is a type handling problem  </programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 4 - Sybase Sales table produces #NAME in Access</title>
+<para>Database involved: Virtuoso </para><programlisting>Sybase Driver   - Sales table generates ATTACH ERROR:   SQLExecute failed Error Message : Table already exists in ATTACH SQL STATE : S0001 Native error : -1   - ACCESS tests against this table produce #NAME also. </programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 5 - OpenIngres - Emloyee table causes GPF when linked in Access</title>
+<para>Database involved: Virtuoso </para><programlisting>OpenIngres Driver   - The Employees table is the only table usable from ACCESS when going direct to the Ingres Driver, via Virtuoso we get a GPF. I know this is related to BLOB handling in the part of the OpenIngres Driver. </programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 6 - Oracle - Cannot attach tables with mixed case</title>
+<para>Database involved: Virtuoso </para><programlisting>Oracle Driver  - Mixed case Tables will not attach due to misleading GetInfos from Oracle driver relating to Quoted Identifier Character. I expect a work around to be released with beta 2.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 7 - Virtuoso Conductor intermittently hangs</title>
+<para>Database involved: Virtuoso </para><programlisting>Virtuoso Conductor:  - Failures to connect to a particular DSN appear to hang, this is partly due to this program not being multi threaded or thread safe. When this happens the only solution is a shutdown of the Web Assistant.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 8 - Virtuoso Conductor ISQL interface cannot execute query 'select * from sys_views' against a Virtuoso server</title>
+<para>Database involved: Virtuoso </para><programlisting>The following error is generating by the WEB Configurtaor, even though their are no rows in the table on Linux &amp; Win32:  www_sv: script error on /scripts/virtisql(324): Not enough memory to allocate resultset element www_sv: 500 Server error     195.153.164.102  POST /scripts/virtisql HTTP/1.1  </programlisting><screen>Simon tested virtisql on opllinux5 21Dec98 and could not find fault.</screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 9 - Cannot create Virtuoso Lite ODBC DSNs' via the WEB Configurator Wizards</title>
+<para>Database involved: Virtuoso </para><programlisting>We need to be able to create DSN for the Virtuoso Lite WEB configurator, as currently we can only create DSNs' for the OpenLink MT Data Access drivers via this configurator wizards.  This is required for Beta 2</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 11 - Certain queries using the Admin Assistant ISQL interface results in Server Error 500</title>
+<para>Database involved: Virtuoso </para><programlisting>1) Execution of the following query via the Admin Assistant: select * from qa_test_result  Server Error The server encountered an internal error or misconfiguration and was unable to complete your request. Please contact the server administrator, Administrator and inform them of the time the error occurred, and anything you might have done that may have caused the error.  2) Execution of the same query via command line ISQL Type HELP; for help and EXIT; to exit. SQL&gt; select * from qa_test_result; Connected to OpenLink Virtuoso DBMS Driver: 01.07.1720 OpenLink Virtuoso UDBC Driver TEST_DESC                                           DATASOURCE_DESC JDBC_DRIVER_NAME                                    JDBC_URL USER_ID                PASS_WORD                  DB_HOST_NAME               DB_NAME DB_VERSION                 DB_AGENT_NAME              RELEASE_NAME TEST_HOST_NAME             JDBC_DRIVER_VERSION        ODBC_DRIVER_NAME         TEST_NAME CLASS_NAME                                          SQL_FILE_NAME TEST_DATE   ELAPSED_MILLISECOND  TEST_RESULT                                                            TEST_NOTE TEST_EXCEPTIONS TEST_COMMENT                                                        REVIEW_NOTE VARCHAR                                             VARCHAR VARCHAR                                             VARCHAR VARCHAR                VARCHAR                    VARCHAR                    VARCHAR VARCHAR                    VARCHAR                    VARCHAR VARCHAR                    VARCHAR                    VARCHAR         VARCHAR VARCHAR                                             VARCHAR DATE        INTEGER     VARCHAR                                                   LONG VARCHAR LONG VARCHAR LONG VARCHAR                                               LONG VARCHAR ____________________________________________________________________________ ___  Load some data                                      Virtuoso Local virtuoso.jdbc.Driver jdbc:virtuoso://localhost dba                dba                        weinronk Virtuoso                   1.0b                       NULL NULL                       weinronk                   3.8 NULL         sql_file_load_tables2 qatest sql_file_load_tables2.sql                           1998.10.31  290 COL1 ccc ddd Once upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce  upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a ti meOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a timeOnce upon a time -x    NULL NULL NULL NU LL  1 Rows. -- 30 msec  3) Create table SQL (Virtuoso local table) CREATE TABLE qa.qa_test_result (         test_desc varchar (50) NOT NULL ,         datasource_desc varchar (50) NOT NULL ,         jdbc_driver_name varchar (50) NOT NULL ,         jdbc_url varchar (255) NOT NULL ,         user_id varchar (25)  ,         pass_word varchar (25)  ,         db_host_name varchar (25)  ,         db_name varchar (25)  ,         db_version varchar (25)  ,         db_agent_name varchar (25)  ,         release_name varchar (25)  ,         test_host_name varchar (25)  ,         jdbc_driver_version varchar (25)  ,         odbc_driver_name varchar (25)  ,         test_name varchar (255) NOT NULL ,         class_name varchar (50)  ,         sql_file_name varchar (50)  ,         test_date date NOT NULL ,         elapsed_millisecond int  ,         test_result varchar (255)  ,         test_note long varchar  ,         test_exceptions long varchar  ,         test_comment long varchar  ,         review_note long varchar )</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 12 - Virtuoso local table via Access results in #Deleted columns</title>
+<para>Database involved: Virtuoso </para><programlisting>1)Results in Access TEST_DESC DATASOURCE_DESC JDBC_DRIVER_NAME JDBC_URL USER_ID PASS_WORD DB_HOST_NAME DB_NAME DB_VERSION DB_AGENT_NAME RELEASE_NAME TEST_HOST_NAME JDBC_DRIVER_VERSION ODBC_DRIVER_NAME TEST_NAME CLASS_NAME SQL_FILE_NAME TEST_DATE ELAPSED_MILLISECOND TEST_RESULT TEST_NOTE TEST_EXCEPTIONS TEST_COMMENT REVIEW_NOTE #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted #Deleted   #Deleted #Deleted #Deleted #Deleted #Deleted  2) SQL to create the local Virtuoso table CREATE TABLE qa.qa_test_result (         test_desc varchar (50) NOT NULL ,         datasource_desc varchar (50) NOT NULL ,         jdbc_driver_name varchar (50) NOT NULL ,         jdbc_url varchar (255) NOT NULL ,         user_id varchar (25)  ,         pass_word varchar (25)  ,         db_host_name varchar (25)  ,         db_name varchar (25)  ,         db_version varchar (25)  ,         db_agent_name varchar (25)  ,         release_name varchar (25)  ,         test_host_name varchar (25)  ,         jdbc_driver_version varchar (25)  ,         odbc_driver_name varchar (25)  ,         test_name varchar (255) NOT NULL ,         class_name varchar (50)  ,         sql_file_name varchar (50)  ,         test_date date NOT NULL ,         elapsed_millisecond int  ,         test_result varchar (255)  ,         test_note long varchar  ,         test_exceptions long varchar  ,         test_comment long varchar  ,         review_note long varchar )</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 10 - Problem attaching DSN with a '.' in the name via Admin Assistant</title>
+<para>Database involved: MS SQL Server </para><programlisting>1) When I tested the existing lite, my datasource name was "SQLServer 6.5 Lite on SWEINRONK".  The name that the table retained the "."  See below Linking "pubs"."dbo"."jobs" to "DB"."SQLSERVER_6.5_LITE_ON_SWEINRONK"."jobs" : SUCCESS  Then when I tried to link it into Access, all of the tables appeared with the same name: "SQLSERVER_6.5_LITE_ON_SWEINRONK" and linking generated an error.  2) Then, when I tried to unlink the tables via the Admin Assistant, I got the following error: Unlink "DB"."SQLSERVER_6"."5_LITE_ON_SWEINRONK" :   SQLExecute failed    Error Message : No table in drop table.  SQL STATE : S0002  Native error : -1   Finally, I linked and replaced the "." with "_" during the link process, and everything worked.  So I have some dead links that I'll have to try and unattach manually.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 13 - Virtjdbc: Unable to set a date to a prepared statement using setDate</title>
+<para>Database involved: Virtuoso </para><programlisting>1) Java code to set a date: preparedInsertStatement.setDate (18,(java.sql.Date)test_date);  2) Result of inserting a date value of 1998-10-13 into a local Virtuoso table: 0001-01-09  Note: Also unable to use date escape syntax and setString with a prepared statement.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 14 - Virtjdbc: Branding of error messages</title>
+<para>Database involved: General </para><programlisting>Error messages for virtjdbc include [OPLJDBC].  Should this change to [VIRTJDBC]?  java.sql.SQLException: [OPLJDBC] Could not get integer info : [S1009][0][Driver]Invalid argument value</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 15 - Conductor does not work on Netscape 2.02</title>
+<para>Database involved: General </para><programlisting>Most users can upgrade to a newer browser, but OS/2 is stuck at 2.02. Therefore OS/2 users viewing an NT or Linux Admin Assistant must use the forms approach for now. </programlisting><screen>On 14Dec98 the back and next buttons were fixed. This *might* make all Conductor features OK.</screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 16 - Trap Service already running in NT install</title>
+<para>Database involved: General </para><programlisting>Need to add error handling for situations where the Admin Assistant or JDBC Server is running during a Virtuoso installation. We should be able to tell the end-user to shut these programs down and then hit continue the installation process. At the current time a default error is produced by installshield and that ends the installation process. I would like to trap condition and then ask user if they would like the installer to stop the services. If this option is taken we shutdown services, complete installation and then restart services.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 17 - Unlinked tables still visible in conductor</title>
+<para>Database involved: General </para><programlisting>Unlinks do not seem to take effect until I shutdown and restart Virtuoso.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 18 - Need less OpenLink tone for other DSN creation</title>
+<para>Database involved: General </para><programlisting>Wizard dialogs maintain an OpenLink tone even when the Driver being used to create the DSN isn't from OpenLink. Need to address this or disable support of non OpenLink Drivers. I am actually referring more to the text content as opposed to graphics. It needs to have an OpenLink identity, while at the same time comprising dialog wording that is  generic as opposed to OpenLink ODBC. Hugh / Rob should be able to clarify this if you remain uncertain. simply attempt to use this interface to configure an Oracle ODBC Driver from Oracle to see what I mean.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 19 - Indicate newsgroup feedback method</title>
+<para>Database involved: General </para><programlisting>The feedback Email on the menu, does not cover all ways we expect feedback. The correct newsgroup should be mentioned.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 20 - Virtuoso Admin Assistant generates 'Server Error' when linking in large  number of Tables on AIX &amp; DG/UX (Mortarola and Intel)</title>
+<para>Database involved: General </para><programlisting>The WEB Server appears to have a problem when attempting to post large amounts of data.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 21 - Virtuoso Server needs to parse SQL passed to it by Access to check validity</title>
+<para>Database involved: Virtuoso </para><programlisting>&gt;&gt;Here is the statement as generated by your query: &gt;&gt; &gt;&gt;  SELECT &gt;&gt;      "MS1"."call_code", &gt;&gt;      "INFORMIX_7_DGINT_call_type_1"."call_code" &gt;&gt;  FROM &gt;&gt;      "INFORMIX_7_DGINT"."call_type" "INFORMIX_7_DGINT_call_type_1", &gt;&gt;      "INFORMIX_7_DGINT"."call_type" "MS1" &gt;&gt;  WHERE &gt;&gt;      ("MS1"."call_code" = &gt;&gt;"INFORMIX_7_DGINT_call_type_1"."call_code" ) &gt;&gt; &gt;&gt; &gt;&gt;Compare this to the statement generated on my machine (which works): &gt;&gt; &gt;&gt;  SELECT &gt;&gt;      "MS1"."call_code", &gt;&gt;      "INFORMIX_7_DGINT"."call_type"."call_code" &gt;&gt;  FROM &gt;&gt;      "INFORMIX_7_DGINT"."call_type", &gt;&gt;      "INFORMIX_7_DGINT"."call_type" "MS1" &gt;&gt;  WHERE &gt;&gt;      ("MS1"."call_code" = "INFORMIX_7_DGINT"."call_type"."call_code") &gt;&gt;  ORDER BY "MS1"."call_code &gt;&gt;  I am aware of the difference in Qualifier length and the fact that this exceeds 18 in my case.  &gt;&gt; &gt;&gt;As you can see your MSAccess version is generating a very long &gt;&gt;alias name : "INFORMIX_7_DGINT_call_type_1" which is too long for &gt;&gt;Informix 7 to handle as it supports up to 18 characters as &gt;&gt;per the error &gt;&gt;message. Strangely the other alias is MS1, so I do not understand why &gt;&gt;MSAccess would use such a long alias on the one and a short &gt;&gt;one on the &gt;&gt;other. They could have easily used MS1 and MS2 which would have been &gt;&gt;much more portable and easier to generate in the first place. &gt;&gt; &gt;&gt;I do not think that MSAccess even checks the length of identifiers &gt;&gt;using the SQLGetInfo call so I presume this query fails the same way &gt;&gt;when doing it natively instead of via the Virtuoso engine. &gt;&gt;  We are the VDB layer at this point not ACCESS, so we have to handle things properly.  &gt;&gt;I checked with Orri and he tells me that the VDB parser sees that all &gt;&gt;the tables referenced in this select are from the same &gt;&gt;database, so it &gt;&gt;passes the complete statement unchanged to the remote database. &gt;&gt;  It should not be passed unchanged. this is the very problem that we are hitting. I wasn't expecting to see ACCESS generated code exiting Virtuoso to the ODBC Driver.  Hugh: Please PTR in the Virtuoso bug database.  Orri: We need to fix this for beta </programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 22 - Virtuoso Lite 'bin' directory needs to be added to the 'Path' environment variable during installation</title>
+<para>Database involved: Virtuoso </para><programlisting></programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 23 - Virtuoso JDBC &amp; Demo DB components need to be optionally components, installed by default</title>
+<para>Database involved: Virtuoso </para><programlisting>I also need the JDBC Driver (comprising Client &amp; Server pieces) to be identified as a configurable check-box item. Finally the Demo DB needs to be checked by default, ditto the JDBC Driver component. </programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 24 - The command 'isql 1112' fails on NT but works fine on UNIX</title>
+<para>Database involved: Virtuoso </para><programlisting></programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 25 - Drop table function retrun incorrect error message when table does not exist</title>
+<para>Database involved: Virtuoso </para><programlisting>The DROP table function returns incorrect information if the object being dropped is actually incorrect. For instance if the table "product" does not exist in my Virtuoso DB and enter "drop table product", the error returned indicates a permissions problem rather than indicating that the object referenced does not exist.  George:  The Problem occurs only if the user is not a member of the DBA group. Changed the error messages to be more verbose. Available in the next build (1922)</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 26 - Virtuoso need to retrun more descript error meessage Foriegn Key relationship mismatches</title>
+<para>Database involved: Virtuoso 1925</para><programlisting>George,  Fine, the issue here is the fact that a Compound Key and a single field key do not form the based of the Foreign Key relationship.  We do need to make our error message read much more like the SQL Server one which is easier to understand.  Re. SCAN:  No Foreign Key information is being displayed, are you seeing any Info ? This is the basis of the existence or non existence of a problem.  Regards, Kingsley  &gt; -----Original Message----- &gt; From: George Kodinov [mailto:kgeorge@plovdiv.techno-link.com] &gt; Sent: Tuesday, February 08, 2000 7:47 AM &gt; To: Kingsley Idehen &gt; Cc: Hugh Williams; Orri Erling; Patrick van Kleef &gt; Subject: Re: Updated SQL DDL re. Foreign Key problems &gt; &gt; &gt; Kingsley, &gt; &gt; I've tried the same schema against a SQL Server and did OPLScan on it to &gt; compare the results. &gt; Here is what I've found : &gt; - the table component_archive fails to create on both Virtuoso and SQL &gt; Server with the  following errors : &gt;    - SQL Server : Foreign key opsys_version_id references invalid column &gt; opsys_version_id in referencing table 'component_archive'. &gt;    - Virtuoso : Different number of referencing and referenced columns in &gt; foreign key &gt;   I've also tried to create this foreign key using the "Diagrams" window &gt; in the SQL Server's Enterprise Manager witch resulted in a dialog as &gt; follows (when dragging the opsys_version_id from component_archive to the &gt; opsys_version table) : &gt;         Primary key table		Foreign key table &gt; 	----------------		----------------- &gt; 	opsys_version			component_archive &gt; 	----------------		---------------- &gt; 	opsys_version_id		opsys_version_id &gt; 	opsys_version			&lt;empty&gt; &gt; 	opsys_id			&lt;empty&gt; &gt; &gt; On "OK" it returns the following error : "A pair of matching columns is &gt; required to create a relationship. Select a column to relate to column &gt; 'opsys_version' in table 'opsys_version'" &gt; When two non-matching columns on the left are removed it returns the &gt; following error : "The columns in table 'opsys_version' do not match an &gt; existing primary key or UNIQUE constraint" &gt; &gt; Virtuoso &gt; ------------ &gt; When changing the last two foreign key definitions in component_archive &gt; like that : &gt; foreign key (opsys_version_id) references opsys_version &gt; (opsys_version_id), &gt; foreign key (dbms_version_id) references dbms_version (dbms_version_id) &gt; &gt; It returns with an error : "Foreign key reference to non existent table" &gt; &gt; All of that means as I can interpret it that the foreign key should &gt; reference an unique index from the table being referenced (be it the &gt; primary key or some other index). &gt; So I think this is not an implementation error, but rather an SQL &gt; limitation. &gt; &gt; As for the OPLScan I've checked it's results for your schema (except the &gt; component_archive table) and they are the same for both virtuoso an SQL &gt; Server so I see no error there.
+</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 27 - Probems exporting tables from Access to Virtuoso</title>
+<para>Database involved: Virtuoso </para><programlisting>George,  I have placed an ACCESS DB ZIP archive on machine 77 in the /tmp/directory, the file is called "qadb.zip". This contains an ACCESS database with several tables, the I am having are as follows:  1. If I export the contents of the table "web_contacts" to Virtuoso, then link Virtuoso back into ACCESS, then open up the linked table, and then select all records and hit the DELETE key, Virtuoso deadlocks.  2. I am also unable to complete an APPEND query from "web_contacts" in ACCESS to "web_contacts" in Virtuoso, the query fails at approx. 75%.  Hugh: We need to PTR these cases as well as adding this to our Virtuoso test rig.  George: Two things here : 1. A bug in VDB attach table code (SQLStatistics) : fixed 1926 2. Not generating a lot of parentesis when passing trough a statement. </programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 30 - VSP Admin assistant does not allow multiple table to be linked in simultaneously</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>This issues was raise by Enterwork (#3950).</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 35 - Unable to Link Progress tables in VIrtuoso using the 1920 build</title>
+<para>Database involved: Virtuoso </para><programlisting>Cannot link table into progress using the new VSP based Admin assistant or the original Virtuoso Conductor. The URL below provides an ODBC trace. George: There was a problem in the "PRESENT" Virtuoso conductor when displaying a list of remote tables in the link tables page. If some of the SQLTables resultset columns is null you get a random behavior. Corrected. Will go in 1922 build. I was able to attach a table "monthly" from Progress 8.1A@195.153.164.147 into Virtuoso/NT. I then linked the same table from Virtuoso into MS Access 2K/NT Data shown OK in Access.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 36 - Unable to attach OpenIngres tables linked into Virtuoso into MSAccess</title>
+<para>Database involved: Virtuoso 1926</para><programlisting>OpenIngres tables linked into Virtuoso cannot be linked into Access. The URL below point to the ODBC trace file showing the error occurring. George: Tested : branch table from a OpenIngres 1.x@195.153.164.77 Virtuoso 1921 MS Access 2K/NT4 MS DASDK 2.5 Able to attach the table using the "NEW" Virtuoso conductor and to attach it in MS Access from Virtuoso.  George: This is the case only with MS Access where it generates a lot of OR clauses witch Ingress is not able to compile. Orri told me that the OpenLink drivers do substitute thease ORs with an union or whatever. But the do not do this, if the expression contains any parentesis (as generated by the Virtuoso VDB. Will be fixing this for 1923 George : fixed : 1926</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 38 - Server Statistics Pages</title>
+<para>Database involved: Virtuoso 1925</para><programlisting>From Work schedules</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 39 - Attach table wizard</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>from Work schedules</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 40 - Web Robot UI</title>
+<para>Database involved: General 1925</para><programlisting>From work schedules</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 41 - DAV FreeText enable/disable UI</title>
+<para>Database involved: General 1925</para><programlisting>From work schedules	</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 42 - Logical / physical web path setup into mgr UI</title>
+<para>Database involved: General 1925</para><programlisting>From Works schedules</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 43 - Transactional replication mgmt UI</title>
+<para>Database involved: General 1939</para><programlisting>From Work schedules</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 48 - DAV replication procs</title>
+<para>Database involved: Virtuoso 1926</para><programlisting>From work schedules</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 50 - Use mail tables in the MIME demo</title>
+<para>Database involved: General </para><programlisting>From  work schedules</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 52 - Web email reading, sending</title>
+<para>Database involved: General </para><programlisting>From work schedules MIME demo used</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 53 - Have cache of reusable proxy connections, same for SOAP</title>
+<para>Database involved: General </para><programlisting>From work schedules</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 54 - VDB procedure pass through , as by rfunc.txt</title>
+<para>Database involved: General 1925</para><programlisting>From work schedules</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 55 - test suite - replication and D transactions</title>
+<para>Database involved: General </para><programlisting>Added tpcd.sh and modified testall.sh and testrepl.sh  to run by themselves (agains two virtuoso servers) if no parameters specified.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 56 - Log free text as procedure calls, not as effect thereof</title>
+<para>Database involved: General 1925</para><programlisting>From work schedules</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 57 - transactional replication procedures &amp; triggers</title>
+<para>Database involved: General 1926</para><programlisting>From work schedules</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 58 - generating persistent XML docs into DAV from create xml view's, setting refresh frequency  (SQL stmt)</title>
+<para>Database involved: General </para><programlisting>From work schedules without the sql command interface expansion to CREATE XML VIEW. Made as stored procedure ( xml_view_publish ( in view_name varchar, in dav_path varchar, in dav_owner_id varchar, in is_persistent integer, in update_interval_min integer)</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 63 - GPF with gtkbench w/ scrollable cursors</title>
+<para>Database involved: General 1925</para><programlisting>From work schedules gtkbench-0.32</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 80 - Virtuoso 2.0 does not display correct licence registration information</title>
+<para>Database involved: Virtuoso </para><programlisting>I have just generated a license entering the following information when prompted by the Virtuoso Key Generator: User: Kingsley Idehen Labs  Here is what I get when I start Virtuoso in foreground mode: &lt;&lt;                 Mon Apr 24 2000 11:13:04 OpenLink Virtuoso VDBMS Server 11:13:04 Version 02.00.1920-pthreads for Linux as of Apr 17 2000 , unlimited number of usersey Idehen Labs 11:13:05 Roll forward started 11:13:05 Roll forward complete 11:13:05 View with bad owner, owner = 11:13:05 View with bad owner, owner = 11:13:05 View with bad owner, owner = 11:13:06 Checkpoint made, log reused 11:13:08 Started on localhost.localdomain ( localhost marketing ) 11:13:08 License UDP port : 60002 11:13:08 Server online at 1111 (pid 10852) &gt;&gt;  Note: "usersey" instead of "user Kingsley" .</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 81 - Virtuoso XML View prologue needs encoding=</title>
+<para>Database involved: Virtuoso 1922</para><programlisting>George: Mitko is fixing this for DAV views access. Will come in the nex build.  George,  In previous mails I have asked you to include the encoding scheme attribute to the Virtuoso XML VIEWs that we generate. This is basically the following line: &lt;&lt;   &lt;?xml version="1.0" encoding="ISO-8859-1" ?&gt; &gt;&gt;  instead of:  &lt;&lt;   &lt;?xml version="1.0" ?&gt; &gt;&gt;  Some XML clients will not work with Virtuoso XML Views without this change.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 82 - Virtuoso attach() command does not support the linking of views</title>
+<para>Database involved: Virtuoso </para><programlisting>We have recreate this issue in-house, and Virtuoso does not support the linking of views currently only tables. Orri has provided a potential work around, that requires the tables be manually linked in, which we will be trying in-house and suggesting to the customer in the short term until this support can be added, which is  - create local table schema for remote view in Virtuoso(with primary key) - use VDRemoteTable(DSN, localtable, remoteview) to link in the view  Hugh 27/04/00: We tried the work around above but although it listed the view in the linked tables list it returned the following error when you attmpted to access it:  recieved error:  Return:	SQL_ERROR=-1 stmt: szSqlState = "00000", *pfNativeError = -1, *pcbErrorMsg = 32, *ColumnNumber = -2, *RowNumber = -2  MessageText = "remote prepare: Remote DSN ??: "  George: provided extension to attach table xxx commands see the new PTR on this subject.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 83 - Virtuoso 1921 build does not upgrade older DB's with new Objects required</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>George,
+
+I spoke to Orri re. the above and he indicated to me that if 1921 in
+installed on a machine with an older DB, the older will get upgraded (i.e.
+missing DB objects would be added).
+
+I have installed 1921 on my NT server and the Admin Interface does not
+contain the new "Web Copy" and Web Export functionality. Basically the VSP
+(Stored Procs) have not be added to my old DB as would be expected. George: It now does this.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 84 - ATTACH table syntax extension to support linking remote views</title>
+<para>Database involved: Virtuoso </para><programlisting>new ATTACH TABLE syntax: ATTACH TABLE q_table_name [PRIMARY KEY (fld1, ...)] [AS local_name] FROM 'dsn' [USER 'username' PASSWORD 'pwd']  Note the optional PRIMARY KEY. If this is supplied it overrides the primary key from the metadata for tables and defines one for views.  available in 1922 In order to attach  a view this should allways be supplied ! </programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 85 - SQLTables not handling TableType correctly</title>
+<para>Database involved: Virtuoso 1921</para><programlisting>SQLTables inplementation in the virtuoso CLI library was not handling TableType parameter correctly. Fixed in 1922</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 87 - Virtuoso ODBC Driver does not support SQLSpecialColumns()</title>
+<para>Database involved: Virtuoso 1926</para><programlisting>SQLProcedureColumns: 				In:				StatementHandle = 0x008118E0, CatalogName = SQL_NULL_HANDLE,  										NameLength1 = 0, SchemaName = SQL_NULL_HANDLE, NameLength2 = 0,  										ProcName = SQL_NULL_HANDLE, NameLength3 = 0, ColumnName = SQL_NULL_HANDLE, NameLength4 = 0 				Return:	SQL_ERROR=-1 				stmt:		szSqlState = "IM001", *pfNativeError = -1, *pcbErrorMsg = 45, *ColumnNumber = -2, *RowNumber = -2 										MessageText = "Function not supported: SQLProcedureColumnsW" 				stmt:		szSqlState = "IM001", *pfNativeError = -1, *pcbErrorMsg = 45, *ColumnNumber = -2, *RowNumber = -2 										MessageText = "Function not supported: SQLProcedureColumnsW" George : SQLProcedureColumns implemented.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 88 - SQLGetInfo(SQL_DRIVER_VERSION) and the properties version on the DLL are not consistent</title>
+<para>Database involved: Virtuoso 1926</para><programlisting>The version returned by properties on the Virtuoso ODBC driver DLL (virtodbc.dll) is 1.01.0914, where as the SQLGetInfo() call returns:  SQLGetInfo: 				In:				ConnectionHandle = 0x008116D0, InfoType = SQL_DRIVER_VER=7,  										InfoValuePtr = 0x00149D60, BufferLength = 300, StringLengthPtr = 0x0013A3A0,  										Information Value Type = SQL_C_CHAR=1 				Return:	SQL_SUCCESS=0 				Out:			*InfoValuePtr = "01.08.1919 OpenLink Virtuoso ODBC Driver",  										*StringLengthPtr = 40  This is the Virtuoso internal build number ie 1919 George: Makever reimplemented as a BAT script to generate the correct version info resource.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 92 - Virtuoso maps binary data types to character types in ODBC</title>
+<para>Database involved: Virtuoso 1926</para><programlisting>The binary data bound to a character buffer should &gt;be &gt; represented in hex but is not. George: the Virtuoso CLI now behaves exactly like SQLServer's:  When binaries requested as SQL_C_CHAR it'll return thease as hex (2 synmbols per binary byte). Note that for SQLGetData to be correctly implemented the buffer size passed to it shoud be with odd size (even char length + 1 space for the terminating zero).</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 95 - SQLProcedure() support in Vituoso VDB</title>
+<para>Database involved: Virtuoso </para><programlisting>George: SQLProcedureColumns implemented</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 96 - WEB Robot crashes</title>
+<para>Database involved: Virtuoso </para><programlisting>- Free text and web robot - The bug reported avout periodic crashes has &gt;   been verified. We need more tests, also load generation for &gt; free text indexing and querying, which &gt;   have no real stress / concurrency  test.  Mitko: The periodic crashes of server when Web robot is running is caused by unhandled broken connection state when header retrived from the target site. The function is fixed to avoid crash.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 97 - Virtuoso build 1923  crashes when 'use ws' command is executed via the VSP Admin Assitant interactive SQL</title>
+<para>Database involved: Virtuoso </para><programlisting>If you execute the statement "USE WS" from the Interactive SQL interface
+within the Admin Assistant it kills the Virtuoso Server on Windows NT (and I
+suspect other platforms).
+George: Due to a bug in the use implementation. Fixed.
+Will be part of 1924 build (or a replacement binary)</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 98 - Virtuoso build 1923 Web Bot &amp; HTML Pages problem</title>
+<para>Database involved: Virtuoso </para><programlisting>I cannot create a VFS DAV resource for http://www.xmldevcon2000.com/exhibitors.htm  The process appears to work through the Web copy interface but a DAV resource is never created.  Mitko: Problem is missing leading slash in start path, so target report with (404 Not found).  The "Web Site definition" VSP page is fixed to avoid this problem.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 99 - Virtuoso build 1923 HTTP Deadlock</title>
+<para>Database involved: Virtuoso </para><programlisting>Using build 1923 I attempted to update the URL used for retrieving one of my XML feeds. The update in the "Target Site Definition" worked but when I then attempted to update the actual Quueue it lead to a Virtuoso HTTP Server hang.  Mitko: The top level procedure doesn't dead lock handling. The procedure is fixed.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 100 - Virtuoso 1923 build gives inconsistently when linking tables from SQLServer 7</title>
+<para>Database involved: Virtuoso 1925</para><programlisting>Kingsley: I can no longer attach: Employees, Categories, Suppliers from the MS SQL Server 7 "Northwind" database. This worked with prior releases.  I am also having serious SCAN problems, the simple SCAN table lookup no longer works with Virtuoso.  Hugh: Their does indeed appear to be a problem although my observation are different from yours:  1. I can link the tables Employees, Categories, Suppliers into the the Virtuoso 1923 build Server  2. I can attach and open these 3 tables in MSAccess  3. select * from Employees returns an empty result (just column headers) in Scan, as does Categories but Suppliers returns the complete result set.  4. Using the VSP Admin interface isql tool select * from Employees consistently takes about 2 minutes to return 9 rows whereas the other two tables return the result set instantaneously.  Strange ...  George: SCAN problems are due to the fact that NorthWind database in SQL Server is using NCHAR/NVARCHAR columns, witch are not interpretted correctly by SCAN ? Otherwise as te select is passed trough I've seen no problems or differences in speed when doing selects over the attached tables in Virtuoso Admin.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 102 - Virtuoso isql should map &lt;hostname&gt; to &lt;hostname&gt;:1111 by default</title>
+<para>Database involved: Virtuoso 1926</para><programlisting>The command:   isql &lt;hostname&gt;  should add a port number of '1111' ie the Virtuoso defualt as a port number is not specified George: isql works this way. So do all the clients (for example and DSN with localhost will work as well)</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 106 - WEB Robot export features does not work</title>
+<para>Database involved: Virtuoso </para><programlisting>When I attempt to export WEB site imported into my DAV, via the WEB Robot, I received the following errors when attempting to export to a DAV and filesystem:  DAV: SQL Error FS001 Can't open file http://hmills.ne.mediaone.net/DAV/UKSALES/sales/Business-Partner-Application-Form.doc, error 22   Filesystem: SQL Error FS001 Can't open file D:\TEMP/OPLUKINTRANET/index.htm, error 2   I have also noticed that having created a WEB robot Target if I attempt to update the target, the update appears to be accepted, but when viewed no changes have been written to it.  Mitko: The DAV export can not generate file system error, probably  radio button not switched to DAV in first case. Second case is different effect on NT4 and Win2000 with stat (C library function) when directory string have trailing slash Win2000 generate error, but on NT4 stat returns success. The export procedure is fixed to remove trailing slash from directory string, also fix contains support both slash semantic (slash and back slash) on NT and Win2000 About update: update process retrive and store pages if different. Condition is different Etag from target, Different MD5 check sum, and older than specified date in Site definition menu. The update process is tested but no problem appear.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 107 - Virtuoso ODBC driver Dialogs changes</title>
+<para>Database involved: Virtuoso 1926</para><programlisting>Virtuoso Login Dialog: Removal of "Update databases List" button and asign the refresh to Databases combo drop-down event  Virtuoso Setup Dialog: Make a wizard like interface (2 screens) SQL Server native ODBC driver alike: 1. A checkbox &amp; edit control for the password used to connect to the server and get the databases list 2. Second screen showing the databases list combo filled up when "Next" on the previous screen is clicked. </programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 109 - select sprintf('test %s', 1) crashes Virtuoso server (from any interface)</title>
+<para>Database involved: General 1926</para><programlisting>The correct thing to do here is obviously not use int where string is expected without casting perhaps but this should not crash Virtuoso. If I use 0 instead of 1 (or !=0) then null is reported instead of a crash.  George: sprintf made to parse the format and check for validity and overflows. It also uses snprintf where available.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 110 - GTKBench (v0.34) presents unnecessary dialog box when deleting items</title>
+<para>Database involved: General </para><programlisting>&gt; When I attempt to delete a benchmark item I get presented with a &gt; file browse &gt; dialog. If a benchmark item is highlighted (one or more) and I select &gt; Edit&amp;#124Delete these items should simply be removed from the current &gt; benchmark &gt; project.  George: corrected</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 111 - VIrtuoso VSP Admin interface cannot link tables from Access ODBC driver</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>The following error is returned when you attempt to link in tables from Access:
+
+virtuoso        2c4-4b0	ENTER SQLTablesW 
+		HSTMT               00D21F28
+		WCHAR *             0x00000000 
+		SWORD                        0 
+		WCHAR *             0x00D22D18 [      -3] "%"
+		SWORD                       -3 
+		WCHAR *             0x00D22D30 [      -3] "%"
+		SWORD                       -3 
+		WCHAR *             0x00D22D48 [      -3] "TAB"
+		SWORD                       -3 
+
+virtuoso        2c4-4b0	EXIT  SQLTablesW  with return code -1 (SQL_ERROR)
+		HSTMT               00D21F28
+		WCHAR *             0x00000000 
+		SWORD                        0 
+		WCHAR *             0x00D22D18 [      -3] "%"
+		SWORD                       -3 
+		WCHAR *             0x00D22D30 [      -3] "%"
+		SWORD                       -3 
+		WCHAR *             0x00D22D48 [      -3] "TAB"
+		SWORD                       -3 
+
+		DIAG [S1C00] [Microsoft][ODBC Microsoft Access Driver]Optional feature not implemented  (106) 
+
+virtuoso        2c4-4b0	ENTER SQLErrorW 
+		HENV                00000000
+		HDBC                00000000
+		HSTMT               00D21F28
+		WCHAR *             0x048FC604 (NYI) 
+ 		SDWORD *            0x048FCAD4
+		WCHAR *             0x048FC204 
+		SWORD                      500 
+		SWORD *             0x005753C4
+
+virtuoso        2c4-4b0	EXIT  SQLErrorW  with return code 0 (SQL_SUCCESS)
+		HENV                00000000
+		HDBC                00000000
+		HSTMT               00D21F28
+		WCHAR *             0x048FC604 (NYI) 
+ 		SDWORD *            0x048FCAD4 (106)
+		WCHAR *             0x048FC204 [      74] "[Microsoft][ODBC Microsoft Access Dri"
+		SWORD                      500 
+		SWORD *             0x005753C4 (74)
+
+virtuoso        2c4-4b0	ENTER SQLErrorW 
+		HENV                00000000
+		HDBC                00000000
+		HSTMT               00D21F28
+		WCHAR *             0x048FC604 (NYI) 
+ 		SDWORD *            0x048FCAD4
+		WCHAR *             0x048FC204 
+		SWORD                      500 
+		SWORD *             0x005753C4
+
+virtuoso        2c4-4b0	EXIT  SQLErrorW  with return code 100 (SQL_NO_DATA_FOUND)
+		HENV                00000000
+		HDBC                00000000
+		HSTMT               00D21F28
+		WCHAR *             0x048FC604 (NYI) 
+ 		SDWORD *            0x048FCAD4
+		WCHAR *             0x048FC204 
+		SWORD                      500 
+		SWORD *             0x005753</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 115 - HTTP: wrong content type for jpeg's and general limited support.</title>
+<para>Database involved: General 1927</para><programlisting>.jpg return text/html when it should be image/jpeg .png is not supported and hence also returns as text.  Fixed the HTTP server to look for mime types in the WS.WS.SYS_DAV_RES_TYPES</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 117 - Virtuoso ODBC client returns numeric and decimal datatypes as SQL_DOUBLE</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>SQL Server 7 Type OpenLink ODBC Type Comments 
+char SQL_VARCHAR mapping not according to ODBC spec. 
+varchar SQL_VARCHAR   
+bit SQL_SMALLINT mapping not according to ODBC spec. 
+binary SQL_VARCHAR mapping not according to ODBC spec. 
+varbinary SQL_VARCHAR mapping not according to ODBC spec. 
+tinyint SQL_SMALLINT mapping not according to ODBC spec. 
+smallint SQL_SMALLINT   
+integer SQL_INTEGER   
+decimal SQL_DOUBLE mapping not according to ODBC spec., lose precision 
+numeric SQL_DOUBLE mapping not according to ODBC spec., lose precision 
+float SQL_DOUBLE mapping not according to ODBC spec. 
+real SQL_REAL   
+double SQL_DOUBLE   
+datetime SQL_TIMESTAMP</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 119 - Virtuoso uses '\' as universal escape character for strings</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>Problem reported by Enterworks (SPR 4159):
+
+OpenLink assumes that the '\' character is an escape character for all strings. This means that if you want to insert a '\' into a text field, you would have to escape it ('\\'). This would impact ECI when doing data migrations into tables stored in OpenLink, because ECI would have to know to escape all occurances of the '\' character before inserting the data into the table. This syntax is required even in escape strings. Example: select * from &lt;table&gt; where not &lt;column&gt; like '%\_%' escape '\' Would have to be written as follows in order to work with OpenLink: select * from &lt;table&gt; where not &lt;column&gt; like '%\\_%' escape '\\'
+
+To recreate:
+
+Attempt to insert the following string into an OpenLink table: 'My file is at d:\temp' Now query the table and note that the data returned is this: 'My file is at d:temp'
+
+George:
+Generally the SQL Parser does expand backspace escaped characher on parsing the input string. That's why if you do :
+SQLExecDirect (..., "insert into some_table (char_data) values ('d:\data1')", SQL_NTS) it would parse the \ and the result would be "d:data1" stored in the coulmn.
+But if you do bind the value as in "insert into some_table (char_data) values (?)" and you bind 'd:\data1' as a input parameter to the command you'll get the correct values.
+I've prepared a small shell script to demonstrate the use of the ISQL's command FOREACH LINE (witch does bind it's values as parameters) to demonstrate this.
+Otherwise the LIKE predicate supports the syntax LIKE x ESCAPE y, but doesn't actually use the value supplied by ESCAPE.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 120 - Remote database passwords not encrypted when stored in Virtuoso</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>EnterWorks (SPR 4181):
+The user passwords for remote sources are not encrypted. This violates most customer security requirements.
+
+Orri has indicated that we can and should encrypt these passwords</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 121 - Virtuoso gives syntax errors for POSITION and EXTRACT scalar functions</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>EnterWorks (SPR 4169):
+When I ran the following queries using Solaris ECI which talks to pre 2.0 Beta NT OPENLINK Server,I got error messages as, 1. select COUNT(POSITION (au_id IN au_lname)) from olink.terrypubs2.authors; I got error as, ivsql:VDBException::Excep: 805 143"ExecuteSQL : [SQLSTATE] = 37000 [NATIVE CODE] = -1 [MESSAGE] = Line 1: syntax error at IN\n\nError calling ODBC function: SQLPrepare\nNo message\n" 2 1 2"0" The Native sql statement for this is, SELECT COUNT( ALL POSITION( terrypubs2.dba.discounts.highqty IN terrypubs2.dba.discounts.lowqty)) FROM terrypubs2.dba.discounts" 2.select EXTRACT(month FROM date_) from olink.terrypubs2.sales;I got error as, ivsql:VDBException::Excep: 805 145"ExecuteSQL : [SQLSTATE] = 37000 [NATIVE CODE] = -1 [MESSAGE] = Line 1: syntax error at FROM\n\nError calling ODBC function: SQLPrepare\nNo message\n" 2 1 2"0" The Native sql statement is, SELECT EXTRACT(MONTH FROM terrypubs2.dba.sales.date_) FROM terrypubs2.dba.sales" 
+
+Orri has indicated we will look to implement as a generic  passthrough of arbritrary function to specific datasources, in the next release ( 2.5 ???)
+George: these functions implemented both as a pass-trough &amp; local</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 122 - Virtuoso keeps open connections to databases</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>Enterworks (SPR 4107):
+
+Description: OpenLink keeps alive connections to all databases that have been queried. (E.g. it does not close the connection after the query has been completed). This can cause problems because it will prevent actions that require exclusive rights to the database. Such things could include renaming the database, dropping the database, etc. 
+Reproduced: Always 
+Steps to Reproduce: Make a query to a database table using OpenLink attempt to drop the database in the data source verify that the database was not dropped because it was in use 
+
+Orri has indicated we will implement a timeout feature to enable the time connections are held open to be configured. George: timeout implemented</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 123 - Next query will fail if data source connection is lost</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>Enterworks (SPR 4104):
+
+Description: If an OpenLink server looses it's Data Source connection, the next query to that data source will fail, even if the data source is running correctly. OpenLink seems to keep a connection open to each of it's data sources, and if one of the connections is lost for some reason, it is not smart enough to realize this and re-establish the connection when the next query to that data source comes in. The query will fail but the next query that comes in to that data source will succeed.  
+Reproduced: Always 
+Steps to Reproduce: Link a table to an Omni server. Do a query to the table. Using Sybase Central, find the connection being used by the OpenLink server and delete it. Do a query to the table, and note that it failed. Do another query to the table, and note that it succeeded. 
+
+Orri has indicated  that we will provide a fix for this. George: The server VDB now retries 1 time before returning an error</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 124 - Virtuoso 1928 build crashes when XPATH Query //* is run</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>I have verified this. It crashes my today's build on linux, too.
+Will talk to Orri about this tomorrow.
+
+- Yrjana
+
+Kingsley Idehen wrote:
+
+&gt; Yrjana,
+&gt;
+&gt; Please look at Andrew's observations below. The crash scenario implies a
+&gt; potential bug.
+&gt;
+&gt; Hugh: If Yrjana verifies this then raise a PTR.
+&gt;
+&gt; Kingsley
+&gt; &gt; -----Original Message-----
+&gt; &gt; From: Andrew Hill [mailto:ahill@openlinksw.com]
+&gt; &gt; Sent: Tuesday, June 20, 2000 4:27 PM
+&gt; &gt; To: Kingsley Idehen
+&gt; &gt; Cc: Simon Hughes
+&gt; &gt; Subject: RE: New Virtuoso 2.0 Binary
+&gt; &gt;
+&gt; &gt;
+&gt; &gt; Kingsley,
+&gt; &gt;
+&gt; &gt; Second time around, new 1928 binaries installed over a current V2.0
+&gt; &gt; Enterprise from Simon's IFTW.
+&gt; &gt; Testing on Win2k laptop.
+&gt; &gt;
+&gt; &gt; All general sanity checks fine, including heterogenous join query
+&gt; &gt; and SOAP.
+&gt; &gt; Free text wildard issues still there.
+&gt; &gt;
+&gt; &gt; One issue is I managed to crash the Virtuoso demo server
+&gt; &gt; repeatedly by going
+&gt; &gt; to WebServices Management/Content Search/changing the drop down to XPATH
+&gt; &gt; expression and trying a //* query on entity list.  Query on XML instead of
+&gt; &gt; entity list came back fine, but took a while to complete.
+&gt; &gt;
+&gt; &gt; Best regards,
+&gt; &gt; Andrew . George: have tried this with the current build but no crashes. Need reverifying.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 126 - Virtuoso ODBC client crashed OPLSCAN we obtaining 'Driver Info.'</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>Oplscan crashes when attempting to obtain 'Driver Info', which is one of the menu options. One point of note is the fact that if you create a scan ODBC trace of itself making the 'Driver Info.' request it then sucessfully retrieves the info. without crashing. With tracing off or if you create an ODBC driver Manager trace it crashes, see DM trace below:
+
+OPLScan         154-8d8	ENTER SQLAllocEnv 
+		HENV *              0047233C
+
+OPLScan         154-8d8	EXIT  SQLAllocEnv  with return code 0 (SQL_SUCCESS)
+		HENV *              0x0047233C ( 0x00801598)
+
+OPLScan         154-8d8	ENTER SQLAllocConnect 
+		HENV                00801598
+		HDBC *              00472340
+
+OPLScan         154-8d8	EXIT  SQLAllocConnect  with return code 0 (SQL_SUCCESS)
+		HENV                00801598
+		HDBC *              0x00472340 ( 0x008014f0)
+
+OPLScan         154-8d8	ENTER SQLDriverConnectW 
+		HDBC                008014F0
+		HWND                00000000
+		WCHAR *             0x1F7D8B70 [      -3] "******\ 0"
+		SWORD                       -3 
+		WCHAR *             0x1F7D8B70 
+		SWORD                        8 
+		SWORD *             0x00000000
+		UWORD                        1 &lt;SQL_DRIVER_COMPLETE&gt;
+
+OPLScan         154-8d8	EXIT  SQLDriverConnectW  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		HWND                00000000
+		WCHAR *             0x1F7D8B70 [      -3] "******\ 0"
+		SWORD                       -3 
+		WCHAR *             0x1F7D8B70 
+		SWORD                        8 
+		SWORD *             0x00000000
+		UWORD                        1 &lt;SQL_DRIVER_COMPLETE&gt;
+
+OPLScan         154-8d8	ENTER SQLGetInfoW 
+		HDBC                008014F0
+		UWORD                        8 &lt;SQL_FETCH_DIRECTION&gt;
+		PTR                 0006F79C
+		SWORD                        4 
+		SWORD *             0x0006F4A4
+
+OPLScan         154-8d8	EXIT  SQLGetInfoW  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                        8 &lt;SQL_FETCH_DIRECTION&gt;
+		PTR                 0006F79C
+		SWORD                        4 
+		SWORD *             0x0006F4A4 (4)
+
+OPLScan         154-8d8	ENTER SQLGetInfoW 
+		HDBC                008014F0
+		UWORD                       44 &lt;SQL_SCROLL_OPTIONS&gt;
+		PTR                 0006F79C
+		SWORD                        4 
+		SWORD *             0x0006F4A4
+
+OPLScan         154-8d8	EXIT  SQLGetInfoW  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                       44 &lt;SQL_SCROLL_OPTIONS&gt;
+		PTR                 0006F79C
+		SWORD                        4 
+		SWORD *             0x0006F4A4 (4)
+
+OPLScan         154-8d8	ENTER SQLGetFunctions 
+		HDBC                008014F0
+		UWORD                       69 
+		UWORD *             0x0006F7A6
+
+OPLScan         154-8d8	EXIT  SQLGetFunctions  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                       69 
+		UWORD *             0x0006F7A6 (0)
+
+OPLScan         154-8d8	ENTER SQLGetInfoW 
+		HDBC                008014F0
+		UWORD                       17 &lt;SQL_DBMS_NAME&gt;
+		PTR                 0x00801B80 
+		SWORD                       98 
+		SWORD *             0x0006F4A4
+
+OPLScan         154-8d8	EXIT  SQLGetInfoW  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                       17 &lt;SQL_DBMS_NAME&gt;
+		PTR                 0x00801B80 [      46] "OpenLink Virtuoso VDBMS"
+		SWORD                       98 
+		SWORD *             0x0006F4A4 (46)
+
+OPLScan         154-8d8	ENTER SQLGetInfoW 
+		HDBC                008014F0
+		UWORD                        6 &lt;SQL_DRIVER_NAME&gt;
+		PTR                 0x00801B80 
+		SWORD                      100 
+		SWORD *             0x0006F7A8
+
+OPLScan         154-8d8	EXIT  SQLGetInfoW  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                        6 &lt;SQL_DRIVER_NAME&gt;
+		PTR                 0x00801B80 [      24] "virtodbc.dll"
+		SWORD                      100 
+		SWORD *             0x0006F7A8 (24)
+
+OPLScan         154-8d8	ENTER SQLGetInfoW 
+		HDBC                008014F0
+		UWORD                        9 &lt;SQL_ODBC_API_CONFORMANCE&gt;
+		PTR                 0x00472358
+		SWORD                        4 
+		SWORD *             0x0006F4A4
+
+OPLScan         154-8d8	EXIT  SQLGetInfoW  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                        9 &lt;SQL_ODBC_API_CONFORMANCE&gt;
+		PTR                 0x00472358 (2)
+		SWORD                        4 
+		SWORD *             0x0006F4A4 (2)
+
+OPLScan         154-8d8	ENTER SQLGetInfoW 
+		HDBC                008014F0
+		UWORD                       29 &lt;SQL_IDENTIFIER_QUOTE_CHAR&gt;
+		PTR                 0x00801B80 39
+		SWORD                      100 
+		SWORD *             0x0006F7A8
+
+OPLScan         154-8d8	EXIT  SQLGetInfoW  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                       29 &lt;SQL_IDENTIFIER_QUOTE_CHAR&gt;
+		PTR                 0x00801B80 [       2] """
+		SWORD                      100 
+		SWORD *             0x0006F7A8 (2)
+
+OPLScan         154-8d8	ENTER SQLSetConnectOption 
+		HDBC                008014F0
+		UWORD                      102 &lt;SQL_AUTOCOMMIT&gt;
+		SQLLEN                     1
+
+OPLScan         154-8d8	EXIT  SQLSetConnectOption  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                      102 &lt;SQL_AUTOCOMMIT&gt;
+		SQLLEN                     1
+
+OPLScan         154-8d8	ENTER SQLGetConnectOption 
+		HDBC                008014F0
+		UWORD                      101 
+		PTR                0x0006E960
+
+OPLScan         154-8d8	EXIT  SQLGetConnectOption  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                      101 
+		PTR                0x0006E960
+
+OPLScan         154-8d8	ENTER SQLGetConnectOption 
+		HDBC                008014F0
+		UWORD                      102 
+		PTR                0x0006E960
+
+OPLScan         154-8d8	EXIT  SQLGetConnectOption  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                      102 
+		PTR                0x0006E960
+
+OPLScan         154-8d8	ENTER SQLGetConnectOption 
+		HDBC                008014F0
+		UWORD                      103 
+		PTR                0x0006E960
+
+OPLScan         154-8d8	EXIT  SQLGetConnectOption  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                      103 
+		PTR                0x0006E960
+
+OPLScan         154-8d8	ENTER SQLGetConnectOption 
+		HDBC                008014F0
+		UWORD                      104 
+		PTR                0x0006E960
+
+OPLScan         154-8d8	EXIT  SQLGetConnectOption  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                      104 
+		PTR                0x0006E960
+
+OPLScan         154-8d8	ENTER SQLGetConnectOption 
+		HDBC                008014F0
+		UWORD                      105 
+		PTR                0x0006E97C
+
+OPLScan         154-8d8	EXIT  SQLGetConnectOption  with return code 0 (SQL_SUCCESS)
+		HDBC                008014F0
+		UWORD                      105 
+		PTR                0x0006E97C
+
+OPLScan         154-8d8	ENTER SQLGetConnectOption 
+		HDBC                008014F0
+		UWORD                      106 
+		PTR                0x0006E97C George: When retested with the 1939 build the problem doesn't appea</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 129 - right outer join returns wrong result set</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>Enterworks (SPR #4084)
+Steps to Reproduce: issue the following query: select * from {oj authors left outer join titleauthor on authors.title_id = titleauthor.title_id } change the "left" to "right" has no effect.
+George: The VDB is verified to issue the correct statements. Problem is scheduled to be fixed in the next UDA release</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 130 - Web interface query tool doesn't show results of stored procedure.</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>The stored procedure "res" shown on page 176 of Virtuoso document (in Handling Result Sets) section does not show results when executed from the Query page of the Web interface. It does show the first result set from the isql interface (the second result set is never shown). The web limitation means that isql must be used to test stored procedures.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 131 - Tables names can be created that cannot be dropped</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>Enterworks (SPR 4221):
+I entered create table "x\\x" ("y'x" int) which succeeded. Here's some output from ODBC test: "TABLE_QUALIFIER", "TABLE_OWNER", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE", "TYPE_NAME", "LENGTH", "LENGTH", "SCALE", "RADIX", "NULLABLE", "REMARKS" "DB", "DBA", "x\\x", "y'z", 4, "INTEGER", 10, 10, &lt;Null&gt;, 2, 2, &lt;Null&gt; 1 row fetched from 12 columns. drop table "x\\x" gets this result: stmt: szSqlState = "S0002", *pfNativeError = -1, *pcbErrorMsg = 24, *ColumnNumber = -2, *RowNumber = -2 MessageText = "No table in drop table." Table with less challenging names can be dropped okay.
+George: Added support for these.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 133 - Identifiers don't allow embedded quotes</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>Enterworks (SPR 4223):
+
+: It should be possible to use delimited identifiers with embedded double quotes, e.g., create table "x""x" (y int), but this gets a syntax error at the third double quote. The SQL standard says the double double-quote in the middle should be treated as a single double-quote embedded in the identifier.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 135 - Virtuoso does not allow MSQuery</title>
+<para>Database involved: Virtuoso 1939</para><programlisting>I have just attempted to perform a simple query using MS Query against a
+Remote table only to find that we have a bug in Virtuoso that stops MS Query
+applying criteria ("is one of" MS query predicate).
+
+I have attached a session log that includes output from msquery going to
+Virtuoso, and then msquery going to the same table directly via OpenLink.
+The table in question is the continent table (Hugh: this is our MIS
+continent table), the host database is Oracle.
+
+Please let me know if you can see what the problem is, search on the word
+"continent". The first SELECT on continent in this file is the Virtuoso
+query.
+
+Hugh: Please PTR. You simply need to link the continent table into MS Query
+and then attempt to apply search criteria where you pick two or more
+countries from the "Name" fields' VALUE listing (hit the Values button and
+use the Shift+Click to select 2 or more continents).
+
+BTW - As I wrote this mail I repeated this test against the Virtuoso Demo DB
+and I got the same failure, so this isn't VDB specific. We should able to
+use the MS Query criteria functionality and the "is one of" predicate with
+Virtuoso.
+
+We need to fix this bug before the code freeze.</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 140 - Missing select all-buttons in admin web interface</title>
+<para>Database involved: Virtuoso </para><programlisting>The following lists with checkboxes should have a select all-button: Views, tables, trigger list, stored procedures </programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 144 - Virtuoso does not handle the escape clause for like correctly</title>
+<para>Database involved: Virtuoso 1942</para><programlisting>Enterworks (SPR #4313):  Example: select type from pubs3.dba.titles where type like '%\_%' escape '\' This should return all rows that have a '_' in the column type.  When executed from the isql program, I get a Syntax error for the above statement.  If I try a double '\' (like I needed to for SPR 4159) the statement is accepted, but no rows are returned. [select type from pubs3.dba.titles where titles like '%\\_%' escape '\\']  Without this ability, there is no way to escape the '_' and '%' charaters in a like clause. Reproduced:  Always Steps to Reproduce: Try to do a select with a like clause and an escape clause.  Hugh: Not sure why this has been closed</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 148 - security of entity references</title>
+<para>Database involved: Virtuoso 1943</para><programlisting>Done by storing the DAV user ID of the logged-in user into the connection variable DAVUserID. If there is no logged in-user that variable will be set to NULL</programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 152 - authentication/browsers, do not attempt digest for some</title>
+<para>Database involved: Virtuoso 1944</para><programlisting></programlisting><screen></screen></formalpara></listitem>
+<listitem><formalpara>
+<title>PTR: 219 - Mutiple table creations in parallel causes the Virtuoso Server to crash</title>
+<para>Database involved: Virtuoso </para><programlisting>Steps to Reproduce: ECI needs to be using OpenLink Virtuoso/EDS as its data server. The testing for this was done on Virtuoso version 1947 on Solaris OS 2.7. The Solaris machine (penguin) has 4 processors.  To test from ECI, set the target data server to a virtuoso/openlink server.  Then do the query as above. What is special about this query is that it is a union of queries against web tables, and it has an aggregate function.  The combination causes the subqueries to be executed concurrently, insert-selecting the results into a local "scratch" table on the data server.  But the crash actually occurs earlier, as each subquery is attempting to put the web results into a local "scratch" table.  So there are three concurrent threads, each of which is creating its own local table and insert-values of rows into it.  The test described above will encounter problems much of the time, although it will sometimes succeed. When it succeeds, it tends to do so many times in a row.  When it fails, it tends to do so many many times in a row. Cannot figure out an exact pattern. Virtuoso does not core dump every time there is a failure, but it does core dump a significant amount of the time.  The error messages and core dumping of virtuoso can be reliably reproduced  using a script which invokes three isql batch sessions, putting each into the background.  Each isql script creates a table and inserts rows into it. See /home/ellersk/virtuoso/scripts/testcrash for the example.  I ran these scripts against a Virtuoso on NT, but it did not crash.  However, the NT machine I tried it on has only one processor.  Have not tested from ECI on NT.  Custom Computer Configuration Other Hardware and Software: none  Attachments: none  --- History --- Assigned to: Ellersieck, Laura Date Assigned: 9/21/2000  Comment by: Ellersieck, Laura Date Commented: 9/22/2000 Comments: See steps to reproduce for additional details of the circumstances and how to make it happen.  Core dump files can be found on  penguin:/pastest/cots/OpenLink/Virtuoso1947/db/  Here is some of the console output from running the testcrash script:  bash-2.03$ /home/ellersk/virtuoso/scripts/testcrash Connected to OpenLink Virtuoso VDBMS Driver: 02.00.1947 OpenLink Virtuoso ODBC Driver  Done. -- 106 msec. waiting... Connected to OpenLink Virtuoso VDBMS Driver: 02.00.1947 OpenLink Virtuoso ODBC Driver Connected to OpenLink Virtuoso VDBMS Driver: 02.00.1947 OpenLink Virtuoso ODBC Driver Connected to OpenLink Virtuoso VDBMS Driver: 02.00.1947 OpenLink Virtuoso ODBC Driver  *** Error S0022: No column _IDN in tempdb.dbo.TST28056_1235533_868709author. at line 1 (1) of Command-Line-Load /home/ellersk/virtuoso/scripts/spr4455-1-2.txt: CREATE TABLE tempdb.dbo.TST28056_1235533_868709author("au_id" varchar(20) not null, "au_lname" varchar(40) not null, "au_fname" varchar(20) not null, "phone" varchar(20) not null, "address" varchar(40) not null, "city" varchar(20) not null, "state" varchar(20) not null, "country" varchar(20) not null, "postalcode" varchar(20) not null)  *** Error 40001: Transaction deadlocked. at line 1 (1) of Command-Line-Load /home/ellersk/virtuoso/scripts/spr4455-1-2.txt: CREATE TABLE tempdb.dbo.TST28056_1235533_868709author("au_id" varchar(20) not null, "au_lname" varchar(40) not null, "au_fname" varchar(20) not null, "phone" varchar(20) not null, "address" varchar(40) not null, "city" varchar(20) not null, "state" varchar(20) not null, "country" varchar(20) not null, "postalcode" varchar(20) not null)  *** Error S0002: No table tempdb.dbo.TST28056_1235533_868709author. at line 2 (2) of Command-Line-Load /home/ellersk/virtuoso/scripts/spr4455-1-2.txt: INSERT INTO tempdb.dbo.TST28056_1235533_868709author ("au_id","au_lname","au_fname","phone","address","city","state","country","postalcode") VALUES ('172-32-1176','White','Johnson','408 496-7223','10932 Bigge Rd.','Menlo Park','Ca','USA','94025')   Comment by: Ellersieck, Laura Date Commented: 9/22/2000 Comments: The important part of the testcrash script looks like this:  isql penguin:12031 dba dba /home/ellersk/virtuoso/scripts/spr4455-1-1.txt &amp; isql penguin:12031 dba dba /home/ellersk/virtuoso/scripts/spr4455-1-2.txt &amp; isql penguin:12031 dba dba /home/ellersk/virtuoso/scripts/spr4455-1-3.txt &amp;  ----- Each of the spr4455-1-*.txt scripts looks like this, but with a different table name in each and more rows (23 I think) being inserted.  CREATE TABLE tempdb.dbo.TST28056_1238885_868709author("au_id" varchar(20) not null, "au_lname" varchar(40) not null, "au_fname" varchar(20) not null, "phone" varchar(20) not null, "address" varchar(40) not null, "city" varchar(20) not null, "state" varchar(20) not null, "country" varchar(20) not null, "postalcode" varchar(20) not null); INSERT INTO tempdb.dbo.TST28056_1238885_868709author ("au_id","au_lname","au_fname","phone","address","city","state","country","postalcode") VALUES ('172-32-1176','White','Johnson','408 496-7223','10932 Bigge Rd.','Menlo Park','Ca','USA','94025'); INSERT INTO tempdb.dbo.TST28056_1238885_868709author ("au_id","au_lname","au_fname","phone","address","city","state","country","postalcode") VALUES ('213-46-8915','Green','Marjorie','415 986-7020','309 63rd St. #411','Oakland','Ca','USA','94618'); INSERT INTO tempdb.dbo.TST28056_1238885_868709author ("au_id","au_lname","au_fname","phone","address","city","state","country","postalcode") VALUES ('238-95-7766','Carson','Cheryl','415 548-7723','589 Darwin Ln.','Berkeley','Ca','USA','94705');   Comment by: Ellersieck, Laura Date Commented: 9/22/2000 Comments: The important part of the testcrash script looks like this:  isql penguin:12031 dba dba /home/ellersk/virtuoso/scripts/spr4455-1-1.txt &amp; isql penguin:12031 dba dba /home/ellersk/virtuoso/scripts/spr4455-1-2.txt &amp; isql penguin:12031 dba dba /home/ellersk/virtuoso/scripts/spr4455-1-3.txt &amp;  ----- Each of the spr4455-1-*.txt scripts looks like this, but with a different table name in each and more rows (23 I think) being inserted.  CREATE TABLE tempdb.dbo.TST28056_1238885_868709author("au_id" varchar(20) not null, "au_lname" varchar(40) not null, "au_fname" varchar(20) not null, "phone" varchar(20) not null, "address" varchar(40) not null, "city" varchar(20) not null, "state" varchar(20) not null, "country" varchar(20) not null, "postalcode" varchar(20) not null); INSERT INTO tempdb.dbo.TST28056_1238885_868709author ("au_id","au_lname","au_fname","phone","address","city","state","country","postalcode") VALUES ('172-32-1176','White','Johnson','408 496-7223','10932 Bigge Rd.','Menlo Park','Ca','USA','94025'); INSERT INTO tempdb.dbo.TST28056_1238885_868709author ("au_id","au_lname","au_fname","phone","address","city","state","country","postalcode") VALUES ('213-46-8915','Green','Marjorie','415 986-7020','309 63rd St. #411','Oakland','Ca','USA','94618'); INSERT INTO tempdb.dbo.TST28056_1238885_868709author ("au_id","au_lname","au_fname","phone","address","city","state","country","postalcode") VALUES ('238-95-7766','Carson','Cheryl','415 548-7723','589 Darwin Ln.','Berkeley','Ca','USA','94705');   Comment by: Ellersieck, Lau</programlisting><screen>Remove atomic drop feature added to 1947 build whichwas the cause of the problem</screen></formalpara></listitem>
+</itemizedlist></sect1></chapter>

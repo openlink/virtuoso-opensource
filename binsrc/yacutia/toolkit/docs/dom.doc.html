@@ -1,0 +1,188 @@
+<h2>dom.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>This is the basic library. Can be considered a toolkit on its own, as it provides many useful functions and shortcuts.</p>
+<hr/>
+<h3>Functions</h3>
+<ul>
+	<li><a href="#$">$(element)</a></li>
+	<li><a href="#$$">$$(element)</a></li>
+	<li><a href="#$v">$v(element)</a></li>
+	<li><a href="#create">Dom.create(tagName, [styleObj])</a></li>
+	<li><a href="#text">Dom.text(text)</a></li>
+	<li><a href="#option">Dom.option(name, value, [parent])</a></li>
+	<li><a href="#hide">Dom.hide(element)</a></li>
+	<li><a href="#show">Dom.show(element)</a></li>
+	<li><a href="#clear">Dom.clear(element)</a></li>
+	<li><a href="#unlink">Dom.unlink(element)</a></li>
+	<li><a href="#ischild">Dom.isChild(child, parent)</a></li>
+	<li><a href="#hex2dec">Dom.hex2dec(hex_str)</a></li>
+	<li><a href="#color">Dom.color(str)</a></li>
+	<li><a href="#isclass">Dom.isClass(element, className)</a></li>
+	<li><a href="#collide">Dom.collide(element_1, element_2)</a></li>
+	<li><a href="#attach">Dom.attach(element, event, callback)</a></li>
+	<li><a href="#detach">Dom.detach(element, event, callback)</a></li>
+	<li><a href="#source">Dom.source(event)</a></li>
+	<li><a href="#style">Dom.style(element, property)</a></li>
+	<li><a href="#position">Dom.position(element)</a></li>
+	<li><a href="#getlt">Dom.getLT(element)</a></li>
+	<li><a href="#getwh">Dom.getWH(element)</a></li>
+	<li><a href="#moveby">Dom.moveBy(element, dx, dy)</a></li>
+	<li><a href="#resizeby">Dom.resizeBy(element, dx, dy)</a></li>
+	
+</ul>
+<hr/>
+
+<h3><a name="$">$(element)</a></h3>
+<p>This function is very popular and appear in almost every JS framework available. It's purpose
+is to provide a shortcut for longer <code>document.getElementById()</code> function. So, basic usage is:</p>
+<p class="code">var object = $("some_id");<br/>alert(object.tagName);</p>
+<p>In this example, we assume that there is a HTML node with id "some_id". The $-function converts a string to the object.
+Note that it is perfectly correct to pass an object reference to $-function, although not very useful.</p>
+<p>Due to presence of this function in toolkit, every other function that accepts node reference as argument can also accept its id.</p>
+		
+<h3><a name="$$">$$(element)</a></h3>
+<p>See <a href="#$v">$v(element)</a>.</p>
+
+<h3><a name="$v">$v(element)</a></h3>
+<p>This function is identical to <code>$$()</code>. They are a shortucut for <code>$().value</code>. You should use them
+when getting a value of any form element.</p>
+
+<h3><a name="create">Dom.create(tagName, [styleObj])</a></h3>
+<p>Used for dynamic creation of HTML nodes. Two parameters are accepted, the first one is mandatory. Example:</p>
+<p class="code">
+	var myDiv = Dom.create("div");
+	var myStyledDiv = Dom.create("div", {color : "#f00", fontWeight : "bold"});
+</p>
+<p>The second (optional) argument <em>styleObj</em> is an object of css properties. For a full list of them, see 
+	<a href="http://developer.mozilla.org/en/docs/DOM:CSS">Mozilla documentation</a> and <a href="http://msdn.microsoft.com/workshop/author/dhtml/reference/objects/obj_style.asp">MSDN</a>.
+	These properties are not the same for these browsers, so specifying a floating element looks like
+	<code>var element = Dom.create("div", {cssFloat:"left", styleFloat:"left"});</code> - the first declaration is for Gecko, the latter for MSIE.
+</p>
+
+<h3><a name="text">Dom.text(text)</a></h3>
+<p>Creates and returns DOM text node with value of argument <em>text</em>.</p>
+
+<h3><a name="option">Dom.option(name, value, [parent])</a></h3>
+<p>Creates and returns DOM &lt;option&gt; node with name of <em>name</em> and value of <em>value</em>. 
+If <em>parent</em> is specified, this function also appends newly created node to that parent. Example:</p>
+<p class="code">
+	var s = Dom.create("select");
+	Dom.option("apples",1,s);
+	Dom.option("bananas",2,s);
+	Dom.option("cherries",3,s);
+</p>
+
+<h3><a name="hide">Dom.hide(element)</a></h3>
+<p>Hides specified <em>element</em> by setting its <code>style.visibility<code> property.</p>
+
+<h3><a name="show">Dom.show(element)</a></h3>
+<p>Unhides previously hidden <em>element</em> by setting its <code>style.visibility<code> to default value.</p>
+
+<h3><a name="clear">Dom.clear(element)</a></h3>
+<p>This function clears all child nodes from an element. May be called with either object reference as an argument, or a id-string. So, for instance:</p>
+<p class="code">Dom.clear("my_select_element");</p>
+<p>removes all options from existing &lt;select&gt; element with id "my_select_element".</p>
+
+
+<h3><a name="unlink">Dom.unlink(element)</a></h3>
+<p>Unlinks <em>element</em> from DOM tree. Notice that the element is not destroyed as long as it can be referenced.</p>
+
+<h3><a name="ischild">Dom.isChild(child, parent)</a></h3>
+<p>Tests whether a <em>child</em> is a subnode of node <em>parent</em>. The depth is not important here.</p>
+
+
+<h3><a name="hex2dec">Dom.hex2dec(hex_str)</a></h3>
+<p>Converts hexadecimal string <em>hex_str</em> to a decimal number. Example:</p>
+<p class="code">alert( Dom.hex2dec("fab") ); // 4011 </p>
+
+<h3><a name="color">Dom.color(str)</a></h3>
+<p>Returns an array of three elements, representing red, green and blue portion of color specified in <em>str</em>. 
+Input should be a valid css color specification, i.e. <code>#02bacf</code>, <code>#ba7</code> or <code>rgb(150,5,102)</code>. Example:</p>
+<p class="code">var colors = Dom.color("#abc");<br/>
+alert("Green part: "+colors[1]);</p>
+
+<h3><a name="isclass">Dom.isClass(element, className)</a></h3>
+HTML elements may be of multiple classes, this function 
+returns <code>true</code> when at least one of <em>element</em>'s classes is <em>className</em>. Example:</p>
+<p class="code">
+	var div = Dom.create("div");
+	div.className = "big red fox";
+	alert( Dom.isClass(div,"fox"); ); // true
+</p>
+
+<h3><a name="collide">Dom.collide(element_1, element_2)</a></h3>
+<p>Tests whether two elements overlap. HTML elements have a rectangular shape, so this function basically tests whether 
+intersection of <em>element_1</em> and <em>element_2</em> is nonempty.</p>
+
+<h3><a name="attach">Dom.attach(element, event, callback)</a></h3>
+<p>Attaches function specified with <em>callback</em> to <em>event</em> detected on <em>element</em>. 
+The <em>event</em> is specified without the "on" prefix. Function reference <em>callback</em> will be called with 
+one argument, the event object reference. Example:</p>
+<p class="code">Dom.attach("myDiv", "click", function() { alert("!"); });</p>
+
+<h3><a name="detach">Dom.detach(element, event, callback)</a></h3>
+<p>Removes attached <em>callback</em> from <em>element</em> fired with <em>event</em>. Note that only non-anonymous functions
+ can be detached.</p>
+
+<h3><a name="source">Dom.source(event)</a></h3>
+<p>Converts <em>event</em> to reference to element which fired it. This can be useful when multiple elements 
+fire the same callback and one needs to know which element fired it. Example:</p>
+<pre><p class="code">var callback = function(event) {
+	var id = Dom.source(event).id;
+	alert("Event fired by " + id);
+}
+var div = Dom.create("div");
+div.id = "myDiv";
+Dom.attach(div, "click", callback);
+</p></pre>
+
+<h3><a name="style">Dom.style(element, property)</a></h3>
+<p>Returns a style <em>property</em> of <em>element</em>. This is different from accessing the <code>element.style.property</code> value,
+as this function return computed style (i.e. set by stylesheets etc.) instead of a dynamically created one. Example:</p>
+<p class="code">
+	var family = Dom.style("elementId", "fontFamily");<br/>
+	alert(family); // returns actual font-family for this element, wherever it is set
+</p>
+
+<h3><a name="position">Dom.position(element)</a></h3>
+<p>Returns x and y coordinates of <em>element</em>'s top left corner, relative to page's top left corner. 
+Coordinates are returned in an array of two elements. To count this value, whole tree of <code>offsetParent</code>s must be 
+climbed up, so it is not wise to call this function too often. Example:</p>
+<p class="code">
+var coords = Dom.position(div);<br/>
+alert("x: " + coords[0]+", y:" + coords[1]);
+</p>
+
+<h3><a name="getlt">Dom.getLT(element)</a></h3>
+<p>Returns x and y coordinates of <em>element</em>'s top left corner, relative to its <code>offsetParent</code>, 
+in form of array with two elements.</p>
+
+<h3><a name="getwh">Dom.getWH(element)</a></h3>
+<p>Returns width and height of <em>element</em> (in pixels), in form of array with two elements.</p>
+
+<h3><a name="moveby">Dom.moveBy(element, dx, dy)</a></h3>
+<p>Moves <em>element</em> by <em>dx</em> pixels horizontally and <em>dy</em> pixels vertically.</p>
+
+<h3><a name="resizeby">Dom.resizeBy(element, dx, dy)</a></h3>
+<p>Resizes <em>element</em> by <em>dx</em> pixels horizontally and <em>dy</em> pixels vertically.</p>

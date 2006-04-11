@@ -1,0 +1,54 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<process xmlns:tns="urn:echo:echoService" xmlns:bpelv="http://www.openlinksw.com/virtuoso/bpel" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" name="java_exec_test" targetNamespace="urn:echo:echoService" xmlns:bpelx="http://schemas.oracle.com/bpel/extension">
+
+  <bpelv:exec binding="JAVA" import="java.util.*"/>
+  <bpelv:exec binding="JAVA" import="java.lang.*"/>
+  <bpelv:exec binding="JAVA" import="java.rmi.RemoteException"/>
+  <bpelv:exec binding="JAVA" import="javax.naming.NamingException"/>
+
+  <partnerLinks>
+    <partnerLink name="caller" partnerLinkType="tns:dest"/>
+  </partnerLinks>
+
+  <variables>
+    <variable name="request" messageType="tns:destRequestMessage"/>
+    <variable name="res" messageType="tns:destResponseMessage"/>
+  </variables>
+  <sequence>
+    <receive partnerLink="caller" portType="tns:dest" operation="check_dest" variable="request" createInstance="yes"/>
+    <bpelv:exec binding="JAVA" name="invokeSomething"><![CDATA[
+
+	System.out.println("Executing Java exec in BPEL");
+	System.out.println(variables);
+	System.out.println("getVariableData returned: " + getVariableData ("request", "req_payload", "/tns:destRequest/tns:city"));
+
+	setVariableData ("res", 
+			"repl_payload",
+			"/destResponse/country",
+			"KZ");
+	]]></bpelv:exec>
+    <reply partnerLink="caller" portType="tns:dest" operation="check_dest" variable="res"/>
+  </sequence>
+</process>

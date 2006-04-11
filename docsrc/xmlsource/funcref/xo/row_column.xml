@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!-- REMOVE FROM INDEX bug 1690 --> 
+<refentry id="fn_row_column">
+  <refmeta>
+    <refentrytitle>row_column</refentrytitle>
+    <refmiscinfo>sql</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>row_column</refname>
+    <refpurpose>Retrieves a column value from a row string given the name of
+the table and column.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_row_column">
+      <funcprototype id="fproto_row_column">
+      <funcdef><function>row_column</function></funcdef>
+      <paramdef>in <parameter>row </parameter>varchar</paramdef>
+      <paramdef>in <parameter>table_name </parameter>varchar</paramdef>
+      <paramdef>in <parameter>col_name </parameter>varchar</paramdef>
+      <paramdef>out <parameter>exists </parameter>integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_row_column"><title>Description</title>
+			<para>
+This function retrieves a column value from a row string given the name of
+the table and column if such a column existed in the row.  If not, NULL is
+returned.
+</para>
+			<para>
+<parameter>row</parameter> is a row string obtained by selecting _ROW from
+some table, or a row identity string returned by
+<function>row_identity()</function>.  In this case
+the column being retrieved must be part of the primary key of the table
+the row identity string references.
+</para>
+			<para>
+<parameter>Table_name</parameter> is the name of the table that defines the column being retrieved.
+</para>
+			<para>
+<parameter>Col_name</parameter> is the name of the column.
+</para>
+			<para>
+The output parameter <parameter>exists</parameter> is optional.  If a
+variable is specified here,
+it is set to 1 if the table contains a column of the name requested.
+</para>
+			<para>
+If <parameter>table_name</parameter> and <parameter>col_name</parameter> specify a column that is not in the row,
+NULL is returned. This can happen if the row comes from a table other than
+the one specified in <parameter>table_name</parameter>.
+</para>
+			<programlisting>
+Diagnostics: OB001	Illegal row string.
+</programlisting>
+			<example id="ex_row_column">
+<!-- <title>Example:</title> -->
+					<programlisting>
+select row_column (_ROW, 'employee', 'emp_name') from employee;
+</programlisting>
+<para>
+is identical to
+</para>
+<programlisting>
+select emp_name from employee;
+</programlisting>
+				</example>
+			<para>
+The direct column reference is faster, naturally.
+</para>
+
+</refsect1>
+  <refsect1 id="seealso_row_column">
+    <title>See Also</title>
+    <para>
+      <link linkend="fn_row_table"><function>row_table()</function></link>
+      <link linkend="fn_row_identity"><function>row_identity()</function></link>
+      <link linkend="fn__row"><function>_row()</function></link>
+    </para>
+  </refsect1>
+</refentry>

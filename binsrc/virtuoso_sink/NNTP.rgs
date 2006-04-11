@@ -1,0 +1,24 @@
+HKCR
+{
+	VirtuosoSink.NNTP.1 = s 'NNTP Class'
+	{
+		CLSID = s '{AA60BE4C-B3C6-11D4-8987-00E018001CA1}'
+	}
+	VirtuosoSink.NNTP = s 'NNTP Class'
+	{
+		CLSID = s '{AA60BE4C-B3C6-11D4-8987-00E018001CA1}'
+		CurVer = s 'VirtuosoSink.NNTP.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {AA60BE4C-B3C6-11D4-8987-00E018001CA1} = s 'NNTP Class'
+		{
+			ProgID = s 'VirtuosoSink.NNTP.1'
+			VersionIndependentProgID = s 'VirtuosoSink.NNTP'
+			ForceRemove 'Programmable'
+			LocalServer32 = s '%MODULE%'
+			val AppID = s '{C9C50643-AE52-11D4-8986-00E018001CA1}'
+			'TypeLib' = s '{C9C50642-AE52-11D4-8986-00E018001CA1}'
+		}
+	}
+}

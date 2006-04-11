@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_round">
+  <refmeta>
+    <refentrytitle>round</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>round</refname>
+    <refpurpose>Returns the integer that is the nearests to the argument.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_round">
+      <funcprototype id="xpf_proto_round">
+        <funcdef>integer <function>round</function></funcdef>
+	<paramdef><parameter>num</parameter> number</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_round"><title>Description</title>
+<para>
+The function returns the number that is closest to the argument and that is an integer.
+If there are two such numbers, then the one that is closest to positive infinity is returned.
+If the argument is NaN, then NaN is returned.
+If the argument is positive infinity, then positive infinity is returned.
+If the argument is negative infinity, then negative infinity is returned.
+</para></refsect1>
+  <refsect1 id="xpf_params_round"><title>Parameters</title>
+    <refsect2><title>num</title>
+      <para>The value to be rounded</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_round"><title>Return Types</title><para></para></refsect1>
+  <refsect1 id="xpf_examples_round"><title>Examples</title>
+    <example id="xpf_ex_round"><title></title>
+      <para>The following expressions are true:</para>
+      <screen>
+round(2.4) = 2
+round(2.5) = 3
+round(2.6) = 3
+round(-2.4) = -3
+round(-2.5) = -2
+round(-2.6) = -2
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_round"><title>See Also</title>
+    <para><link linkend="xpf_floor">floor()</link><link linkend="xpf_ceiling">ceiling()</link></para>
+  </refsect1>
+</refentry>
+

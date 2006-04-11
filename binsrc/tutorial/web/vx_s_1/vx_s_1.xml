@@ -1,0 +1,103 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<refentry id="VX-S-1">
+  <refmeta>
+    <refentrytitle>Basic VSPX Programming</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Simple VSPX controls</refname>
+    <refpurpose>Building a VSPX page</refpurpose>
+  </refnamediv>
+  <refsect1 id="VS-S-1a">
+    <title>Preliminaries</title>
+    <para>
+    The framework named Virtuoso Server Pages Extensions (VSPX) is a set of widgets (controls)
+    which are executed on server side. The VSPX page itself is an active page which contains
+    XHTML, VSP and widget code.  The VSPX page like VSP is a server side executable, so in both cases the virtual
+    directory where pages are placed needs to be executable. For the details of virtual directory setup
+    please read <ulink url="../../web/vs_b_1/vs_b_1.vsp">VS-B-1</ulink>.
+    </para>
+    <para>
+    It might appear that VSPX pages and VSP pages are similar, but in practice there are differences:
+    </para>
+    <itemizedlist mark="bullet">
+      <listitem>The content of a VSPX page must be well-formed XML (like XHTML), in contrast to a VSP page
+        where this is not mandatory.</listitem>
+      <listitem>VSPX pages have a container element named "page", VSP pages do not (they are processing instruction
+        based).</listitem>
+      <listitem>The controls and containers in the VSPX page are in a special name space:
+        "http://www.openlinksw.com/vspx/", we will alias it with the prefix "vspx:" for the controls in the rest
+        of the tutorials.</listitem>
+      <listitem>Any active content must be in vspx:page container, and no more than one vspx:page can be in a
+        separate VSPX source file.</listitem>
+      <listitem>The VSPX pages are compiled to a more complex structure than VSPs.</listitem>
+      <listitem>The processing model of VSPX pages have five phases on execution: initialization, data-binding,
+        post processing, pre-rendering and rendering. VSP only has pre-processing, and execution.
+		For more details please read the VSPX section in the Virtuoso server documentation.</listitem>
+      <listitem>The VSPX page may contain one or more controls, VSPs do not have components. Also each control
+        in the VSPX page (and page container itself) represents a user defined type (class).</listitem>
+    </itemizedlist>
+    <para>As VSPX pages may contain macros and may have a pre-processing XSL-T transformation, an intermediate
+      file will be generated in the same place where the source page is. Also the compilation will generate a SQL
+      script as a file before compilation of PL code in memory. These files will be explained later in the
+      <ulink url="../vx_s_8/vx_s_8.vsp">VX-S-8</ulink> example.</para>
+    <para>Finally there are several notes about VSPX controls (widgets). They need to have unique names in the
+      page space, including the macro expanded ones. It is not mandatory for the page name to be unique in the
+      Web server space. All of the controls are represented by trees of class instances, where each member vc_children
+      contains instances to the children controls.</para>
+  </refsect1>
+  <refsect1 id="VS-S-1b">
+    <title>Example</title>
+    <para>
+      The example shows a simple page containing a vspx:page container and basic controls: vspx:label, vspx:url
+      and vspx:include. The vspx:page container (as already discussed) can contain any executable content,
+      but it may not be the topmost element in the page as we may see in the source of simple.vspx page. It also
+      shows how VSP processing instructions can be nested in the VSPX page. On that point we need to say that a
+      good VSPX programming style is to use very minimal VSP code to get the benefit of widgets.
+    </para>
+    <para>
+    The rest of the controls used in this example can be placed in any other control or container allowing content.
+    The special case is vspx:include which we will discuss later.
+    </para>
+    <para>
+      The vspx:label is the simplest text label which can be data bound. The "data bound" term designates the ability
+      of the control to obtain a value (it may be constant or Virtuoso/PL expression) on data bind phase when the page
+      gets executed. The format attribute is used to render the data, so it depends on the data type of the control's
+      value. In practice it's a format string as in sprintf() function. In that example the first label has
+      string value and the format is '%s', but second one is integer and the format used is '%d'.
+    </para>
+    <para>
+      The vspx:url represents a HTML anchor, but value and url are data bind-able. We can talk about it as
+      an extended functionality of the vspx:label control.
+    </para>
+    <para>
+      The last one is a vspx:include control. This is not a control per se, it's rather a place where the
+      expanded content of another document will be placed before VSPX page compilation. In that way we can easily
+      re-use common code between different pages. In that particular case the included file is very simple,
+      but it can also be another VSPX page. With this approach VSPX pages have more complex ways to do macro
+      expansions which will be explained in detail in <ulink url="../vx_s_8/vx_s_8.vsp">VX-S-8</ulink>.
+    </para>
+  </refsect1>
+</refentry>

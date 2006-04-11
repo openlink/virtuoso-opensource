@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_vd_remote_proc_wrapper">
+  <refmeta>
+    <refentrytitle>vd_remote_proc_wrapper</refentrytitle>
+    <refmiscinfo>rmt</refmiscinfo>
+  </refmeta>
+<!-- 
+
+Paramters:
+dsn - remote datasource name
+remote_name - name of remote procedure
+local name - name of PL wrapper to be created
+metadata - vector of vectors containing a parameters information
+each of vectors need to have following structure:
+type of parameter - 'IN'/'OUT'/'INOUT' 
+name of parameter - the name of parameter
+data type - SQL datatype of parameter as string (ie.'VARCHAR', "INT' etc.)
+SOAP type - a XSD/custom datatype for SOAP/WSDL actions (if not needed, must
+be empty string ie. '')
+
+status_code - returns status code of wrapper genearation
+error_message - returns error message if status code is different than 00000
+make_resultset - causes wrapper to be made to return result set.
+description - to add special comment to the wrapper for VSMX feature 
+
+example (usage in PL routine code):
+...
+declare state, msg varchar;
+vd_remote_proc_wrapper ('Northwind.dbo.Sales By Year;1', 'MS.SQL.SALES_BY_YEAR'
+, 'sql_lite', vector (vector ('IN', '_from', 'VARCHAR', ''), vector ('OUT',
+'_to', 'DATETIME', '')), state, msg , 1, 'This is a test');
+if (state <> '00000')
+signal (state, msg);
+...
+
+-->
+  <refnamediv>
+    <refname>vd_remote_proc_wrapper</refname>
+    <refpurpose>Creating a PL wrapper for remote procedure execution</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_vd_remote_proc_wrapper">
+      <funcprototype id="fproto_vd_remote_proc_wrapper">
+        <funcdef>varchar <function>vd_remote_proc_wrapper</function></funcdef>
+        <paramdef>in <parameter>dsn</parameter> varchar</paramdef>
+        <paramdef>in <parameter>remote_name</parameter> varchar</paramdef>
+        <paramdef>in <parameter>local_name</parameter> varchar</paramdef>
+        <paramdef>in <parameter>metadata</parameter> any</paramdef>
+        <paramdef>out <parameter>status_code</parameter> varchar</paramdef>
+        <paramdef>out <parameter>error_message</parameter> varchar</paramdef>
+        <paramdef>in <parameter>make_resultset</parameter> integer</paramdef>
+        <paramdef>in <parameter>description</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_vd_remote_proc_wrapper">
+    <title>Description</title>
+    <para>This is to create a PL stored procedure to execute a Remote Stored Procedures. It returns results as a SQL result set as well as an array(vector) depending of the 'make_resultset' flag.
+      </para>
+  </refsect1>
+  <refsect1 id="params_vd_remote_proc_wrapper">
+    <title>Parameters</title>
+    <refsect2>
+	<title>dsn</title>
+	<para>the remote datasource name</para>
+    </refsect2>
+    <refsect2>
+	<title>remote_name</title>
+	<para>name of the remote procedure</para>
+    </refsect2>
+    <refsect2>
+	<title>local_name</title>
+	<para>name of the PL wrapper to be created locally</para>
+    </refsect2>
+    <refsect2>
+	<title>metadata</title>
+	<para>A vector of vectors containing a parameters information
+	    each of vectors need to have following structure:
+	</para>
+	    <simplelist>
+		<member>type of parameter - 'IN'/'OUT'/'INOUT' </member>
+		<member>name of parameter - the name of parameter</member>
+		<member>data type - SQL datatype of parameter as string (for example 
+		    'VARCHAR', 'INT' etc.)</member>
+		<member>SOAP type - a XSD/custom datatype for SOAP/WSDL actions (if not needed, must
+		    be empty string ie. '')</member>
+	    </simplelist>
+    </refsect2>
+    <refsect2>
+	<title>status_code</title>
+	<para>returns SQL status code of the PL wrapper genearation</para>
+    </refsect2>
+    <refsect2>
+	<title>error_message</title>
+	<para>returns the error message if status code is different than 00000</para>
+    </refsect2>
+    <refsect2>
+	<title>make_resultset</title>
+	<para>A flag 0/1 default 0. If is true (1) the wrapper will be generated to return result set. Otherwise will be generated to return an array.</para>
+    </refsect2>
+    <refsect2>
+	<title>description</title>
+	<para>The text of a comment to added to the wrapper. It then will be shown as a method 
+	    description if the PL wrapper is published as a SOAP method.
+	</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="examples_vsp_calculate_digest"><title>Examples</title>
+      <example id="ex_vsp_calculate_digest"><title>Creating a PL wrapper which returns resultset</title>
+	  <para>The following example will create a PL wrapper 
+	      to invoke the MS SqlServer Stored Procedure 'Northwind.dbo.CustOrderHist'
+	</para>
+	<programlisting><![CDATA[
+-- the wrapper creation (fragment of Virtuoso/PL)   
+declare state, msg varchar;
+vd_remote_proc_wrapper ('Northwind.dbo.CustOrderHist', 'MS.SQL.CustOrderHist', 
+'sql_lite', vector (vector ('IN', '_CustomerID', 'VARCHAR', '')), state, msg , 1, 'This is a test');
+if (state <> '00000')
+  signal (state, msg);
+
+
+-- PL wrapper source that will be created   
+create procedure "MS"."SQL"."CustOrderHist" (IN "_CustomerID" VARCHAR) returns any array array
+{ 
+--PL Wrapper for remote procedure
+--##This is a test
+--"DSN:sql_lite PROCEDURE:Northwind.dbo.CustOrderHist"
+declare dta, mdta any; 
+declare params any; 
+params := vector ("_CustomerID"); 
+set_user_id ('dba');
+rexecute ('sql_lite', '{call "Northwind"."dbo"."CustOrderHist" (?)}', NULL, NULL, params, 0, mdta, dta); 
+exec_result_names(mdta[0]);
+declare i, l integer;
+i := 0; l := length (dta);
+ while(i<l) {
+   exec_result(dta[i]);
+   i:=i+1;
+ }
+}
+
+-- result from execution
+SQL> "MS"."SQL"."CustOrderHist" ('ALFKI');
+ProductName                               Total
+VARCHAR NOT NULL                          INTEGER
+_______________________________________________________________________________
+
+Aniseed Syrup                             6
+Chartreuse verte                          21
+Escargots de Bourgogne                    40
+Flotemysost                               20
+Grandma's Boysenberry Spread              16
+Lakkalikri                                15
+Original Frankfurter grne Soe             2
+Raclette Courdavault                      15
+Rssle Sauerkraut                          17
+Spegesild                                 2
+Vegie-spread                              20
+
+11 Rows. -- 18 msec.
+
+ 
+	  ]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_vsp_calculate_digest"><title>See Also</title>
+    <para>
+      <link linkend="fn_rexecute">rexecute</link>
+      <link linkend="fn_vd_remote_data_source">vd_remote_data_source</link>
+    </para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!--
+  Please use the following prefixes for IDs:
+    xpf_ for old XPATH functions,
+    xf_ for XPATH 2.0 & XQUERY 1.0 functions,
+    xsl_ for XSL elements,
+-->
+<refentry id="xpf_substring">
+  <refmeta> 
+    <refentrytitle>substring</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>substring</refname> 
+    <refpurpose>Returns the substring of the first argument starting at the position specified in the second argument with length specified in the third argument.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_substring">
+      <funcprototype id="xpf_proto_substring">
+        <funcdef>string <function>substring</function></funcdef>
+	<paramdef><parameter>strg</parameter> string</paramdef>
+	<paramdef><parameter>start</parameter> integer</paramdef>
+	<paramdef><optional><parameter>length</parameter> integer</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_substring"><title>Description</title>
+<para>
+The substring() XPATH function returns the substring of the <parameter>strg</parameter>
+starting at the position specified in <parameter>start</parameter> argument with length
+specified in <parameter>length</parameter> argument.
+If <parameter>length</parameter> is not specified,
+it returns the substring starting at the position specified in the <parameter>start</parameter> argument
+and continuing to the end of the string.
+</para>
+<para>
+XPATH 1.0 defines that &quot;each character in the string... is considered to have a numeric position: the position of the first character is 1, the position of the second character is 2 and so on.
+This differs from Java and ECMAScript, in which the String.substring method treats the position of the first character as 0.&quot;
+The returned substring contains those characters for which the position of the character is greater than or equal to <parameter>start</parameter> and,
+if <parameter>length</parameter> is specified, less than the sum of <parameter>start</parameter> and <parameter>length</parameter>.
+</para>
+<para>
+If <parameter>start</parameter> and/or <parameter>length</parameter> are not integers,
+they are converted to integers following rules for round() XPATH function, before doing any other processing.
+So they will be rounded first, and the sum of rounded values will be used as &quot;end position&quot;
+</para>
+<para>
+If <parameter>start</parameter> is greater than or equal to the length of string, the empty string is returned.
+If <parameter>length</parameter> is specified and the sum of <parameter>start</parameter> is less than or equal to 1, the empty string is returned, too.
+Otherwise, the result string will contains some characters even if <parameter>start</parameter> is less than 1.
+</para>
+<para>
+If <parameter>length</parameter> <parameter>start</parameter> is greater than or equal to the length of string, the empty string is returned.
+</para></refsect1>
+  <refsect1 id="xpf_params_substring"><title>Parameters</title>
+    <refsect2><title>strg</title>
+      <para>Source string. If the argument is not a string, it is converted to string first.</para></refsect2>
+    <refsect2><title>start</title>
+      <para>Position of first character of the substring in the source string.</para></refsect2>
+    <refsect2><title>length</title>
+      <para>Number of characters in the substring, if specified.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_substring"><title>Return Types</title><para>String</para></refsect1>
+  <refsect1 id="xpf_examples_substring"><title>Examples</title>
+    <example id="xpf_ex_substring"><title></title>
+      <para>The following expressions are all true:</para>
+      <screen>
+substring("12345", 2, 3) = "234"
+substring("12345", 2) = "2345"
+substring("12345", 1.5, 2.6) = "234"
+substring("12345", 0, 3) = "12"
+substring("12345", -2, 5) = "12"
+substring("12345", -2) = "12345"
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_substring"><title>See Also</title>
+    <para><link linkend="xpf_substring_before">substring-before()</link><link linkend="xpf_substring_after">substring-after()</link></para>
+  </refsect1>
+</refentry>
+

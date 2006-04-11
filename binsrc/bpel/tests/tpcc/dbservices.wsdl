@@ -1,0 +1,310 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+ xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+ xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:dime="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+ xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+ xmlns:content="http://schemas.xmlsoap.org/ws/2002/04/content-type/"
+ xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/"
+ xmlns:ns0="http://soapdb.org/"
+ xmlns:dl="http://soapdb.org/"
+ xmlns:tns="http://soapdb.org/"
+ targetNamespace="http://soapdb.org/"
+  name="VirtuosoDatabaseService" xmlns="http://schemas.xmlsoap.org/wsdl/"
+ xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/">
+
+
+	<types>
+	<schema targetNamespace="http://soapdb.org/"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+	<element name="sDelivery" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="orderID" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="districtID" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="cost" type="xsd:double" />
+		 <element minOccurs="1" maxOccurs="1" name="cID" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="sDeliveryResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="deliveryStart" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="entr" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="deliveryStartResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:int" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="orderLine" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="orderId" type="xsd:decimal" />
+		 <element minOccurs="1" maxOccurs="1" name="customerID" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="itemID" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="quantity" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="orderLineID" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="orderLineResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="payment" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="amount" type="xsd:double" />
+		 <element minOccurs="1" maxOccurs="1" name="orderID" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="customerID" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="paymentResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="orderFinal" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="orderId" type="xsd:decimal" />
+		 <element minOccurs="1" maxOccurs="1" name="customerID" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="lineTotal" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="orderFinalResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="delivered" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="orderID" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="deliveredResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	<element name="orderCancel" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs="1" maxOccurs="1" name="orderId" type="xsd:decimal" />
+		 <element minOccurs="1" maxOccurs="1" name="customerID" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="itemID" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="quantity" type="xsd:int" />
+		 <element minOccurs="1" maxOccurs="1" name="orderLineID" type="xsd:int" />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="orderCancelResponse" >
+	  <complexType>
+	    <all>
+		 <element minOccurs="1" maxOccurs="1" name="CallReturn" type="xsd:string" />
+	    </all>
+	  </complexType>
+	</element>
+	</schema>
+	</types>
+	<message name="sDeliveryRequest">
+		<part element="dl:sDelivery" name="parameters" />
+	</message>
+	<message name="sDeliveryResponse">
+		<part element="dl:sDeliveryResponse" name="parameters" />
+	</message>
+	<message name="deliveryStartRequest">
+		<part element="dl:deliveryStart" name="parameters" />
+	</message>
+	<message name="deliveryStartResponse">
+		<part element="dl:deliveryStartResponse" name="parameters" />
+	</message>
+	<message name="orderLineRequest">
+		<part element="dl:orderLine" name="parameters" />
+	</message>
+	<message name="orderLineResponse">
+		<part element="dl:orderLineResponse" name="parameters" />
+	</message>
+	<message name="paymentRequest">
+		<part element="dl:payment" name="parameters" />
+	</message>
+	<message name="paymentResponse">
+		<part element="dl:paymentResponse" name="parameters" />
+	</message>
+	<message name="orderFinalRequest">
+		<part element="dl:orderFinal" name="parameters" />
+	</message>
+	<message name="orderFinalResponse">
+		<part element="dl:orderFinalResponse" name="parameters" />
+	</message>
+	<message name="deliveredRequest">
+		<part element="dl:delivered" name="parameters" />
+	</message>
+	<message name="deliveredResponse">
+		<part element="dl:deliveredResponse" name="parameters" />
+	</message>
+	<message name="orderCancelRequest">
+		<part element="dl:orderCancel" name="parameters" />
+	</message>
+	<message name="orderCancelResponse">
+		<part element="dl:orderCancelResponse" name="parameters" />
+	</message>
+	<portType name="DatabaseServiceDocLiteralPortType">
+		<operation name="sDelivery">
+			<input message="tns:sDeliveryRequest" name="sDeliveryRequest" />
+			<output message="tns:sDeliveryResponse" name="sDeliveryResponse" />
+		</operation>
+		<operation name="deliveryStart">
+			<input message="tns:deliveryStartRequest" name="deliveryStartRequest" />
+			<output message="tns:deliveryStartResponse" name="deliveryStartResponse" />
+		</operation>
+		<operation name="orderLine">
+			<input message="tns:orderLineRequest" name="orderLineRequest" />
+			<output message="tns:orderLineResponse" name="orderLineResponse" />
+		</operation>
+		<operation name="payment">
+			<input message="tns:paymentRequest" name="paymentRequest" />
+			<output message="tns:paymentResponse" name="paymentResponse" />
+		</operation>
+		<operation name="orderFinal">
+			<input message="tns:orderFinalRequest" name="orderFinalRequest" />
+			<output message="tns:orderFinalResponse" name="orderFinalResponse" />
+		</operation>
+		<operation name="delivered">
+			<input message="tns:deliveredRequest" name="deliveredRequest" />
+			<output message="tns:deliveredResponse" name="deliveredResponse" />
+		</operation>
+		<operation name="orderCancel">
+			<input message="tns:orderCancelRequest" name="orderCancelRequest" />
+			<output message="tns:orderCancelResponse" name="orderCancelResponse" />
+		</operation>
+	</portType>
+	<binding name="DatabaseServiceDocLiteralBinding" type="tns:DatabaseServiceDocLiteralPortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<operation name="sDelivery">
+			<soap:operation soapAction="http://soapdb.org/#sDelivery" style="document" />
+			<input name="sDeliveryRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="sDeliveryResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="deliveryStart">
+			<soap:operation soapAction="http://soapdb.org/#deliveryStart" style="document" />
+			<input name="deliveryStartRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="deliveryStartResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="orderLine">
+			<soap:operation soapAction="http://soapdb.org/#orderLine" style="document" />
+			<input name="orderLineRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="orderLineResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="payment">
+			<soap:operation soapAction="http://soapdb.org/#payment" style="document" />
+			<input name="paymentRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="paymentResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="orderFinal">
+			<soap:operation soapAction="http://soapdb.org/#orderFinal" style="document" />
+			<input name="orderFinalRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="orderFinalResponse">
+				<soap:body use="literal" />
+		</output>
+		</operation>
+		<operation name="delivered">
+			<soap:operation soapAction="http://soapdb.org/#delivered" style="document" />
+			<input name="deliveredRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="deliveredResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+		<operation name="orderCancel">
+			<soap:operation soapAction="http://soapdb.org/#orderCancel" style="document" />
+			<input name="orderCancelRequest">
+				<soap:body use="literal" />
+			</input>
+			<output name="orderCancelResponse">
+				<soap:body use="literal" />
+			</output>
+		</operation>
+	</binding>
+	<service name="VirtuosoDatabaseService">
+		<documentation>Virtuoso SOAP services</documentation>
+		<port name="DatabaseServiceDocLiteralPort" binding="tns:DatabaseServiceDocLiteralBinding">
+			<soap:address location="http://localhost:HTTPPORTDB/TBPOINT" />
+		</port>
+	</service>
+        <plnk:partnerLinkType name="DBDriver">
+                <plnk:role name="DBDriverProvider">
+                        <plnk:portType name="tns:DatabaseServiceDocLiteralPortType" />
+                </plnk:role>
+        </plnk:partnerLinkType>
+</definitions>

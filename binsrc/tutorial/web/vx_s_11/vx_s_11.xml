@@ -1,0 +1,63 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VX-S-11">
+  <refmeta>
+      <refentrytitle>Using XForms VX-S-11</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+      <refname>XForms 1.0 rendering</refname>
+      <refpurpose>Rendering VSPX form controls as XForms 1.0 components</refpurpose>
+  </refnamediv>
+  
+  <refsect1 id="VS-S-1a">
+    <title>Preliminaries</title>
+    <para>
+	The VSPX (Virtuoso Server Pages Extensions) framework allows 
+	form controls to be rendered as XForms 1.0 components. 
+	This approach take an advantage to check input field's data-type 
+	and to restrict value using XML-Schema constraints. Thus 
+        it's possible to make user agent performs input validation 
+        before sending a data back to server.	
+	It's IMPORTANT that this approach is only possible with browsers
+	that have a plug-in or natively supports XForms 1.0.
+    </para>
+</refsect1>
+
+<refsect1 id="VX-S-11a">
+<title>VSPX to XForms input rendering</title>
+<itemizedlist mark="bullet">
+    <listitem>This example works with IE6 or greater with FormsPlayer installed.
+    </listitem>
+    <listitem>The example shows turning on the flag for XForms rendering : "connection_set ('RenderXForms', 1)"</listitem>
+    <listitem>In the simple form all generic input controls are represented.</listitem>
+    <listitem>When submit is performed, data as XML document will be sent back to server and 
+	will be prepared on server side as well-known 'params' array.
+    </listitem>
+</itemizedlist>
+<para>
+    As can be seen the XForms rendering do not require any changes to existing VSPX pages (except logic to turn it on).
+</para>
+</refsect1>
+</refentry>

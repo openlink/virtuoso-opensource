@@ -1,0 +1,3197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!-- the common template for VSPX documentation reference manual -->
+<!--
+			common info per element
+			<xs:appinfo>
+			    <refpurpose></refpurpose>
+			    <special-childs>
+				<child name="" />
+			    </special-childs>
+			</xs:appinfo>
+
+			this is to skip rendering of a element
+			<xs:appinfo>
+			  <no-render />
+			</xs:appinfo>
+			-->
+<xs:schema targetNamespace="http://www.openlinksw.com/vspx/" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vd="http://www.openlinksw.com/vspx/deps/" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <xs:annotation>
+    <xs:documentation>VSPX Syntax Reference</xs:documentation>
+  </xs:annotation>
+  <xs:annotation>
+    <xs:documentation>Types of VSPX attributes</xs:documentation>
+  </xs:annotation>
+  <xs:simpleType name="CalculateableValue" final="restriction">
+    <xs:annotation>
+      <xs:appinfo>global</xs:appinfo>
+      <xs:appinfo><refpurpose>The type of attribute that contains an expression to be calculated at run time.</refpurpose></xs:appinfo>
+      <xs:documentation>
+The type of a string constant or an expression.
+If the value of this type is started with '--', the rest of string
+is the text of an expression to be calculated in order to get the effective value of the property.
+If the value of this type is not started with '--', the effective value is the original string itself.
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:whiteSpace value="preserve"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ForcedCalculateableValue" final="restriction">
+    <xs:annotation>
+      <xs:appinfo>global</xs:appinfo>
+      <xs:appinfo><refpurpose>The type of attribute that contains an expression to be calculated at run time.</refpurpose></xs:appinfo>
+      <xs:documentation>
+The type of an expression.
+The value of this type must be started with '--', the rest of string
+is the text of an expression to be calculated in order to get the effective value of the property.
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:whiteSpace value="preserve"/>
+      <xs:pattern value='--([^&apos;&quot;]|([&apos;]([^&apos;]|([\\][&apos;]))*[&apos;])|([&quot;]([^&quot;]|([\\][&quot;]))*["]))+'/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ButtonStyle" final="restriction">
+    <xs:annotation>
+      <xs:documentation>
+Style of rendering of the button.
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="submit">
+        <xs:annotation>
+          <xs:documentation>This is a default style used, no special handling.
+The button will be rendered as a usual submit button.
+				</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="url">
+        <xs:annotation>
+          <xs:documentation>The button will be rendered as a link, furthermore client side JavaScript code will be produced to act as submit button.	</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="image">
+        <xs:annotation>
+          <xs:documentation>The button will be rendered as an image on the browser under link button. In that case value of button control must be link to the image file.
+				</xs:documentation>
+        </xs:annotation>
+        <!-- was icon? -->
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ButtonAction" final="restriction">
+    <xs:annotation>
+      <xs:documentation>
+VSPX type of the button.
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="simple">
+        <xs:annotation>
+          <xs:documentation>is a simple submit button, no special functions
+				</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="submit">
+        <xs:annotation>
+          <xs:documentation>an alias of 'simple' button, obsolete
+				</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="delete">
+        <xs:annotation>
+          <xs:documentation>a button for deleting a row in a data-set or data-grid control. This is represented as a submit button with a special on-post script. The delete function is performed based on table, key attributes. (check implementation!!)
+				</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="browse">
+        <xs:annotation>
+          <xs:documentation>Button that opens pup-up window using client-side javascript (browse-button).
+This control allows the designer to place some part of a form's input into a pop-up window. When the HTML page is rendered, this control puts a button and associated client-side javascript into the resulting page so clicking the button opens a child window.  </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="return">
+        <xs:annotation>
+          <xs:documentation>
+This is to be used on a page invoked for selecting from a browse button.  Specifies that the value of the fields designated by the field children are to be asigned to the corresponding fields of the invoking page.
+				</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="logout">
+        <xs:annotation>
+          <xs:documentation> This will terminate the current session when clicked.  Can only occur inside the login control.
+				</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SqlName" final="restriction">
+    <xs:annotation>
+      <xs:appinfo>global</xs:appinfo>
+      <xs:appinfo><refpurpose>The type of attribute that contains a name of the Virtuoso/PL UDT instance that should be created for the control.</refpurpose></xs:appinfo>
+      <xs:documentation>
+The type for a Virtuoso/PL name that should be used during code generation.
+KNOWN BUG: If double quotes are used in the value of this type then
+the generated code may be incorrect.
+This is why this schema restrictes the syntax of values of such type.
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1" fixed="false"/>
+      <xs:maxLength value="32" fixed="false"/>
+      <xs:pattern value="[A-Za-z0-9_]{1,32}"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SqlTableQname" final="restriction">
+    <xs:annotation>
+      <xs:documentation>
+The type for a Virtuoso table name in form 'database.user.localname'.
+KNOWN BUG: If double quotes are used in the value of this type then
+the generated code may be incorrect.
+This is  why this schema restricts the syntax of values of such type.
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z0-9_]{1,32}\.[A-Za-z0-9_]{0,32}\.[A-Za-z0-9_]{1,32}"/>
+      <xs:pattern value="[A-Za-z0-9_]{1,32}"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SqlCode" final="restriction">
+    <xs:annotation>
+      <xs:appinfo>global</xs:appinfo>
+      <xs:appinfo><refpurpose>The type of a string value that is a Text of a Virtuoso/PL procedure.</refpurpose></xs:appinfo>
+      <xs:documentation>Text of an event handler or other Virtuoso/PL procedure. This is
+expected to be a complete statement or sequence of statements, hence
+to be terminated like a statement, unlike the 'calculatable value'
+expression case.
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:whiteSpace value="preserve"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="LoginMode" final="restriction">
+    <xs:annotation>
+      <xs:documentation>Method of passing login information from page to page.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="digest">
+        <xs:annotation>
+          <xs:documentation>HTTP digest authentication is used and the session id will travel as the opaque data in the digest headers.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="url">
+        <xs:annotation>
+          <xs:documentation>The url mode means that URL poisoning is used and that the session id passes with the links, posts etc.  Some automation is offered for this by the vspx:url and vspx:form and derived controls.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="cookie">
+        <xs:annotation>
+	  <xs:documentation>The session id is set in a cookie on browser.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="QNameOrEmpty" final="restriction">
+    <xs:annotation>
+      <xs:documentation>
+The type for a name of redundand tags placed by WYSIWYG tools.
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(\w+[\w:.-]*)?"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Unused" final="restriction">
+    <xs:annotation>
+      <xs:documentation>Indicates that the attribute is never used.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:simpleType name="TreeOrientation" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="horizontal"/>
+      <xs:pattern value="vertical"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SqlExpressionType" final="restriction">
+    <xs:annotation>
+      <xs:documentation>
+Denotes the type of SQL expression
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="SQL">
+        <xs:annotation>
+          <xs:documentation>The expression is a SQL select statement</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="TABLE">
+        <xs:annotation>
+	  <xs:documentation>The expression is a table reference</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="PROCEDURE">
+        <xs:annotation>
+          <xs:documentation>The expression is a procedure call</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="ARRAY">
+        <xs:annotation>
+	  <xs:documentation>The rowset is already prepared and supplied as an array of arrays</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="PlCursorType" final="restriction">
+    <xs:annotation>
+      <xs:documentation>
+This defines the type of PL scrollable cursor used.  In all cases, the
+cursor is reopened at each invocation of the page and a
+bookmark is used to position it.  The dynamic type is
+recommended for performance, however this is efficient only if
+the table is being read in the order of some index.
+These must be fixed values, no data binding.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="static">
+        <xs:annotation>
+          <xs:documentation>A static cursor is used.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="dynamic">
+        <xs:annotation>
+          <xs:documentation>A dynamic cursor is used.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="keyset">
+        <xs:annotation>
+          <xs:documentation>A keyset cursor is used.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="DebugLogValue">
+    <xs:annotation>
+      <xs:documentation>This defines what sort of data are saved to the debugging log. The value of this type is a space-delimited list of types of events that should be saved to the log.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:NMTOKENS"/>
+  </xs:simpleType>
+  <!--
+;
+-->
+  <xs:simpleType name="OnOff">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="on"/>
+      <xs:enumeration value="off"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:attributeGroup name="HtmlGenAttributes">
+    <xs:annotation>
+      <xs:documentation>Commonly used attributes that configures the generated HTML layout. All of them have to begin with prefix 'xhtml_' and sufixed with HTML attribute name.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="xsd-stub-xhtml" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>This attribute is for internal use only. It has no effect if added to the source VSPX file.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="width" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Visible width of the control when it is displayed in WYSIWYG tools when the source VSPX text is edited.
+The value of this attribute will not be used when the resulting HTML is rendered.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="height" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Visible width of the control when it is displayed in WYSIWYG tools when the source VSPX text is edited.
+The value of this attribute will not be used when the resulting HTML is rendered.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <!--xs:attribute name="size" type="xs:string" use="optional"/-->
+  </xs:attributeGroup>
+  <xs:attributeGroup name="SqlGenAttributes">
+    <xs:annotation>
+      <xs:documentation>Commonly used attributes that configures the generated Virtuoso/PL code.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="v:SqlName" use="required">
+      <xs:annotation>
+        <xs:documentation>A page level unique name identifying a control.</xs:documentation>
+      </xs:annotation>
+      <!-- name of control is always required! -->
+    </xs:attribute>
+    <xs:attribute name="annotation" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>A human readable comment.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="initial-enable" type="v:CalculateableValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>Determines  whether  a control is initially visible. True by default. Could be data-bound to an SQL expression.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="enabled" type="v:CalculateableValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>Determines  whether  a control is visible. True by default. Could be data-bound to an SQL expression.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="instantiate" type="v:CalculateableValue" use="optional" default="true">
+      <xs:annotation>
+        <xs:documentation>Determines whether a control instantiate its children. It is true by default. It could be data-bound to an SQL expression. Unlike most of calcucateable attributes, the value of this attribute for a control is calcluated before calling 'on-init' event handler of the control; other values are calculated before calling 'before-data-bind' event handler.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="control-udt" type="v:SqlName" use="optional">
+      <xs:annotation>
+        <xs:documentation>At run time every control is represented as an instance of some user-defined type (UDT). VSPX compiles selects the UDT to use depending on name of the XML element that represents the control and maybe some of its attributes. In some specific cases the application developer may instruct VSPX compiler to use some other UDT, e.g. an application-specific UDT that is derived from the preset one. If specified, the value of 'control-udt' attribute should be equal to the name of the desired target UDT.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="SqlColumn">
+    <xs:attribute name="column" type="v:SqlName" use="optional">
+      <xs:annotation>
+        <xs:documentation>The name of the column bound.
+If nothing else is specified, the column meta data from the containing update form sets the field's attributes.
+</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="null-value" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>This value will be shown if value of the column is NULL, also
+	      value of the control will be set to null if this value is passed upon POST request.
+	  </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="UserInputAttributes">
+    <xs:annotation>
+      <xs:documentation>Attributes that configures reactions on user inputs.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="error-glyph" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>The character to be displayed near the resulting HTML input element if the test of v:validator of the element detects an error in the current value of the element.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="auto-submit" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation>Flag to auto submit the parent form if value of the control is changed.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!--
+;
+-->
+  <xs:attributeGroup name="FieldValue">
+    <xs:annotation>
+      <xs:documentation>Attributes to specify the value that is displayed (and modified) by an user input control.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="value" type="v:CalculateableValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>Data bindable value of control, represents value of HTML control to be drawn.
+The calculated value of this attribute is stored in the control in ufl_value field.
+</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="element-value" type="v:CalculateableValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>An XML entity that contains a value to be displayed by an HTML control.
+The calculated value is stored in ufl_element_value field of the control.
+This value is used only if ufl_value is null (e.g. if the 'value' attribute is not set at all), and the method vc_get_value_from_element() will be used to calculate ufl_value based on ufl_element_value, ufl_element_path and ufl_element_place.
+</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="element-place" type="v:CalculateableValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>The place of actual data inside an XML element. The calculated value of this attribute is stored in ufl_element_place field of the control. This is to process XMLSchema-compatible data without writing extra code for handling NULL values. The XML element can contain the value to be bound in either attribute or in an inner text node. XMLSchema treats missing attributes as NULL values. missing text node as an empty string value and if 'xsi:nil' attribute is 'true' then inner text value is NULL no matter if there are any text nodes. These self-evident rules are convenient for XQuery data retrieval but not for data update: an result of some XQuery expression can point to data but not to a place where data should occur in the future.
+The use of 'element-place' allows to eliminate the problem. Attributes 'element-value', 'element-path' and 'element-update-path' may locate an element that is always present whereas 'element-place' describes where the desired datum will occur in the element.
+The value of this attribute should be a string of syntax '@attributename' or 'text()'. If this is '@attributename' then the effective bound value is a value of the specified attribute or NULL if the specified attribute is missing. On update, either the attribute is created/edited in order to set non-NULL value or the attribute is deleted in order to set NULL.
+If text() is specified then both text value of the element and the value of its 'xsi:nil' are properly handled on both data bind and update.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="element-path" type="v:CalculateableValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>This is the path inside the entity that comes from 'element-value' attribute. The default path is 'self::node()'. This path is used to point precisely to an subentity that should actually be used for data binding. The calculated value of this attribute should be a string in XQuery syntax, and it is saved in ufl_element_path member of the control.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="element-params" type="v:CalculateableValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>This is the vector of parameter values of the path specified by 'element-path' attribute. The default is NULL indicating no parameters. The attribute is calculated but not used if 'element-path' attribute is missing. The calculated value of this attribute should be either NULL or a vector of even length whose items are parameter names and parameter values; refer to the description of xquery_eval() function for more details. The value of the attribute is saved in ufl_element_params member of the control.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="element-update-path" type="v:CalculateableValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>Like the value of 'element-path', this is the path inside the entity that comes from 'element-value' attribute. The difference is that 'element-path' is used inside 'vc_get_value_from_element() during data-bind to set ufl_value based on ufl_element_value whereas 'element-update-path' is used during data update inside 'vc_put_value_to_element() in order to save data inside the document that is referenced by ufl_element_value. The default path for update is equal to the path for data bind, i.e. it is the value of the calculated 'element-path' attribute or 'self::node()'. The calculated value of 'element-update-path' should be a string in XQuery syntax, and it is saved in ufl_element_update_path member of the control.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="element-update-params" type="v:CalculateableValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>This is the vector of parameter values of the path specified by 'element-update-path' attribute. The default is NULL indicating no parameters. The attribute is calculated but not used if 'element-update-path' attribute is missing (e.g. you should not try to specify 'element-path' without 'element-update-path' and both 'element-params' and 'element-update-params' in hope that values from 'element-update-params' will be passed to 'element-path' on update). The calculated value of this attribute should be either NULL or a vector of even length whose items are parameter names and parameter values; refer to the description of xquery_eval() function for more details. The value of the attribute is saved in ufl_element_update_params member of the control.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="fmt-function" type="v:CalculateableValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>This is to convert the value that is bound to the control into a string to use during the rendering. The value of this attribute should be a name of function that takes a single argument of the type that matches the type of ufl_value and returns a string. If this is used then the value of 'cvt-function' should probably be a name of function that converts the string back to the desired data type.
+If a control supports 'format' attribute then the format is applied to the result of 'fmt-function', so the value returned by fmt-function may be e.g. an integer to be formatted by '%d' format.
+The calculated value of this attribute is stored in ufl_fmt_fn field of the control.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="cvt-function" type="v:CalculateableValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>This is to convert a user input of type varchar into a value that should be stored in ufl_value (and e.g. placed into some database column by an update).
+The calculated value of this attribute is stored in ufl_cvt_fn field of the control.
+For more details, see the description of 'fmt_function' attribute above.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!--
+;
+-->
+  <xs:attributeGroup name="LoginParams">
+    <xs:annotation>
+      <xs:documentation>The description of login method</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="realm" type="xs:NMTOKEN" use="required"/>
+    <xs:attribute name="mode" type="v:LoginMode" use="required"/>
+    <xs:attribute name="user-password" type="xs:NMTOKEN" use="required"/>
+    <xs:attribute name="user-password-check" type="xs:NMTOKEN" use="required"/>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="BrowseButtonParams">
+    <xs:annotation>
+      <xs:documentation> These are used in browse-button that opens pup-up window using client-side javascript.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="child-window-options" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>Options for oppening a child pop-up window.This can be used only in conjuction with  action browse.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="browser-current" type="xs:int" use="optional" default="0">
+      <xs:annotation>
+        <xs:documentation>Current directory of browsing. Can be used only with browse button for WebDAV or File system resources.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="browser-filter" type="xs:string" use="optional" default="*">
+      <xs:annotation>
+        <xs:documentation>Filter expression(s) for browsing. (see above)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="browser-list" type="xs:string" use="optional" default="1">
+      <xs:annotation>
+        <xs:documentation>Type of browser list, 0 - short, 1 - long</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="browser-mode" type="xs:string" use="optional" default="RES">
+      <xs:annotation>
+        <xs:documentation>COL, RES or STANDALONE , for a file system or DAV browse button, this specifies whether to return an path name or internal ID.
+</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="browser-type" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>This designates the type of browser: dav or OS (filesystem).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="browser-xfer" type="xs:string" use="optional" fixed="DOM">
+      <xs:annotation>
+        <xs:documentation>For a browse button, this is the   means  of transferring the data between windows, DOM is default. No other options in current implementation.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="selector" type="xs:anyURI" use="optional">
+      <xs:annotation>
+        <xs:documentation>For a browse button this is the  URL that will be loaded into the pop up window.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="DebugAttributes">
+    <xs:annotation>
+      <xs:documentation>These attributes are for internal use only. The VSPX compiler adds them automatically to improve localization of errors in source VSPX pages.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="debug-srcfile" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>URI of the source document where the tag comes from.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="debug-srcline" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation>Line number in the source document where the tag comes from.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="debug-log" type="v:DebugLogValue" use="optional">
+      <xs:annotation>
+        <xs:documentation>This defines what sort of data are saved to the debugging log.
+</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="WmAttributes">
+    <xs:anyAttribute namespace="##other" processContents="skip"/>
+  </xs:attributeGroup>
+  <xs:group name="AnyHtmlContent">
+    <xs:annotation>
+      <xs:documentation>Arbitrary HTML tags.</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element ref="v:style"/>
+      <xs:element ref="v:placeholder"/>
+      <xs:element ref="v:xsd-stub"/>
+      <xs:element ref="v:xsd-stub-script"/>
+      <xs:any namespace="##other" processContents="skip"/>
+      <xs:any namespace="##local"/>
+    </xs:choice>
+  </xs:group>
+  <xs:annotation>
+    <xs:documentation>VSPX Event Handlers</xs:documentation>
+  </xs:annotation>
+  <xs:complexType name="EventHandler" mixed="true">
+    <xs:annotation>
+      <xs:documentation>Arbitrary event handler.</xs:documentation>
+    </xs:annotation>
+    <xs:choice minOccurs="0">
+      <xs:element ref="v:script"/>
+      <xs:element ref="v:xsd-stub-script"/>
+    </xs:choice>
+    <xs:attributeGroup ref="v:DebugAttributes"/>
+    <xs:attributeGroup ref="v:WmAttributes"/>
+    <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+  </xs:complexType>
+  <xs:element name="after-data-bind" type="v:EventHandler">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Container for code that should be executed after data bind.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+      <xs:documentation>
+The code contained in this element is executed after the default data bind processing on the returning edge of recursion.
+The context has self as the page, control as the control with this handler, event as the vspx_event which caused the page invocation.
+Any return value from the code is ignored.
+</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="before-data-bind" type="v:EventHandler">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Container for code that should be executed before data bind.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+      <xs:documentation>
+The code contained in this element is executed before the default data bind processing on the descending edge of recursion.
+The context has self as the page, control as the control with this handler, event as the vspx_event which caused the page invocation.
+A return value from the code if equal to 1 (one) will stop further data-bind processing of the
+containing control and it's children if any.
+</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="on-post" type="v:EventHandler">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Container for code that should be executed when the element gets a post.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+      <xs:documentation>
+The code contained in this element is executed when the element gets a post.
+For fields and forms, this is a context for an a SQL compound statement that will be executed.
+The statement should end with a return 1 or 0.  The implicit return is 0.  A return of 1 means that the post is fully handled here and not to be passed on to the parent chain.
+A 0 means that the post was not handled and the next control up the chain will try.
+</xs:documentation>
+      <xs:documentation>
+The context has a self which is the page, a vspx_control which is the control which defines this handler, and a origin_control, which is the control that first got the post event.  This will be a data field or button.  The vspx_event with the post's data will be in the variable event.
+</xs:documentation>
+      <xs:documentation>
+The interpretation of the return value is the same for other event handlers.  SQL
+conditions signalled will go to the page, these condition handlers are
+invoked in no special context, hence the declare handler for SQL
+construct should not be used to pass control between handlers, but only
+within handlers.
+</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <!--
+;
+-->
+  <xs:element name="before-render" type="v:EventHandler">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Container for code that should be executed before rendering.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+      <xs:documentation>
+The code contained in this element is executed on the descending edge of recursion when traversing the vspx control tree before rendering.
+This is expected to have side effects on vspx controls only, not to return anything or emit any output.
+Any return value from the code is ignored.
+</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="on-init" type="v:EventHandler">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Container for code that should be executed at the end of control instantiation.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+      <xs:documentation>The code contained in this element is executed at the end of the control's constructor.
+	This is expected to have additional initialization checking etc.
+</xs:documentation>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="on-init-container" type="v:EventHandler">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>This is identical to v:on-init.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="before-data-bind-container" type="v:EventHandler">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>This is identical to v:before-data-bind.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="after-data-bind-container" type="v:EventHandler">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>This is identical to v:after-data-bind.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="on-post-container" type="v:EventHandler">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>This is identical to v:on-post.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+    </xs:annotation>
+  </xs:element>
+  <xs:element name="before-render-container" type="v:EventHandler">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>This is identical to v:before-render.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+    </xs:annotation>
+  </xs:element>
+  <xs:group name="EventTarget">
+    <xs:annotation>
+      <xs:documentation>Something that may become an receiver of an event.</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element ref="v:on-init"/>
+      <xs:element ref="v:before-data-bind"/>
+      <xs:element ref="v:after-data-bind"/>
+      <xs:element ref="v:on-post"/>
+      <xs:element ref="v:before-render"/>
+      <xs:element ref="v:on-init-container"/>
+      <xs:element ref="v:before-data-bind-container"/>
+      <xs:element ref="v:after-data-bind-container"/>
+      <xs:element ref="v:on-post-container"/>
+      <xs:element ref="v:before-render-container"/>
+    </xs:choice>
+  </xs:group>
+  <xs:annotation>
+    <xs:documentation>VSPX Controls</xs:documentation>
+  </xs:annotation>
+  <!--
+;
+-->
+  <xs:element name="page">
+    <xs:annotation>
+      <xs:documentation>The container for the rest of the vspx code.
+The page or a subclass of it will be the outermost VSPX element  on any VSPX page.
+Each .vspx file defines explicitly one custom page class derived from vspx_page.
+This element can enclose all HTML elements or can be incorporated in it's children on place apropriate for
+rendering the VSPX controls, but one VSPX page must contain only one vspx:page element. and noe VSPX-specific element may appear outside the vspx:page. It can be placed in other HTML stuff or around it, doesnt' matter, but VSP &amp; VSPX code must be inside it (the same applies to customized HTML attributes, i.e. containing &lt;?V &amp; &lt;?U shortcuts).
+Note that when using 'include' or 'decoration' features the top level page element will be : in case of include - 'this' page, in case of 'decoration' - the decoration page.
+Also page variables, controls will be combined in all cases of inclusion or macro-expansion, so their names must not be duplicated; this means that names of variables introduced by macro expansion or inclusion must not conflict with cnames of variables or controls in the top level page or any included or macro content.
+</xs:documentation>
+      <xs:appinfo>
+        <refpurpose>Container of VSPX code.</refpurpose>
+        <tutorial id="VX-S-1">/tutorial/web/vx_s_1/simple.vspx</tutorial>
+        <tutorial id="VX-S-8">/tutorial/web/vx_s_8/formsty.vspx</tutorial>
+        <special-childs>
+          <child name="variable"/>
+        </special-childs>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attribute name="name" type="v:SqlName" use="required">
+        <xs:annotation>
+          <xs:documentation>The name of subclass of vspx_page to be generated. The name of class will be prefixed with 'page_' plus that name.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="decor" type="xs:anyURI" use="optional">
+        <xs:annotation>
+          <xs:documentation>This attribute specifies a 'decoration' page URL. The decoration page is a VSPX page that is wrapped around the including page.  The content of the including page is then put in the place indicated by a placeholder element in the decor page.  This is useful for defining enclosing tables, headers, footers and other repeating content.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="style" type="xs:anyURI" use="optional">
+        <xs:annotation>
+          <xs:documentation>This designates an external XSL-T style sheet to be apply over the page, before page compilation.  This is useful as a 'macro' feature.  The XSLT sheet may define rules for macroexpanding things in the page body.
+	  </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="on-error-redirect" type="xs:anyURI" use="optional">
+        <xs:annotation>
+          <xs:documentation>This specifies where to redirect the HTTP client in the event of an  an unhandled error.
+This  will pass a __SQL_STATE, __SQL_MESSAGE and __PAGE as parameters to the error page.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="on-deadlock-retry" type="xs:integer" use="optional" default="0">
+        <xs:annotation>
+          <xs:documentation>This specifies how many times to retry page execution upon deadlock.
+When the number of retries is reached, the behaviour will be as for other SQL errors.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="doctype" type="xs:string" use="optional" default="-//W3C//DTD HTML 4.0 Transitional//EN">
+        <xs:annotation>
+          <xs:documentation>This is to specify the resulting document type declaration (DTD) public URI.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="doctype-system" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>This is to specify the resulting document type declaration (DTD) system URI.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="page-subclass" type="v:SqlName" use="optional">
+        <xs:annotation>
+          <xs:documentation>The name of page subclass to be instantiated for processing.
+		The subclass with this name MUST already be  defined.
+		The subclass definition can be kept in a code-behind file (see code-file element).
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="file-name" type="xs:string" use="optional">
+        <xs:annotation>
+	  <xs:documentation>The name of page to be generated.
+	    Used by wizards to designate where generated page will be stored.
+	    This attribute do not affect VSPX processing.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="no-script-function" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>A function to enable or disable automatic NOSCRIPT element generation.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="include">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>A place where the source code of other page should be inserted.</refpurpose>
+      </xs:appinfo>
+      <xs:documentation>The VSPX compiler replaces this control with the content of another page.
+This will include the content from the specified url at this point of the page.  The url is relative to the page.
+The inclusion will be done before compilation of VSPX into Virtuoso/PL, hence the include can contain either vspx or static HTML  content.
+The only requirement is that the included file be well formed.
+Note also that if you are using vspx namespace in the include file, it must be declared as such.
+This element will not be instantiated.
+instead of instantiating it will be replaced with content of the specified document.
+The included page may or may not contain a 'page' element.
+If a 'page' element is found in the included file
+this will be skipped in the resulting page.
+Also names of controls in the included file   MUST NOT conflict with names of controls in the top level page or other included content.
+</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="url" type="xs:anyURI" use="required">
+        <xs:annotation>
+          <xs:documentation>URL of file to be included. If relative then the base is the page where the control resides.
+E.g. If '/home/pageA' includes 'subdir1/pageB' and the included page includes 'subdir2/pageC' then 'pageC' should reside
+in '/home/subdir1/subdir2', not in '/home/subdir2'.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="active" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>A data bound value to enable or disable the link. The default is '1' meaning 'enable'.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="initial-active" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>A data bound value to enable or disable the link. The default is '1' meaning 'enable'.
+Unlike 'active' attribute, this one is effective only when the page is displayed in the first time, not after user posts data back to the page.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="name" type="v:Unused" use="optional">
+        <xs:annotation>
+          <xs:documentation>This is not used; it is allowed for compatibility only.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="code-file">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Code-behind file containing SQL script.</refpurpose>
+      </xs:appinfo>
+      <xs:documentation>This element is used to load an external SQL
+	  script after page class compilation and before page execution.
+	  This script may contain page subclass or custom control definitions.
+	  In this way SQL code can be separated from VSPX markup, or in other words
+	  to separate page design from application logic.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="url" type="xs:anyURI" use="required">
+        <xs:annotation>
+          <xs:documentation>URL of file to be loaded after VSPX page compilation.
+		If relative then the base is the page where the control resides
+		(i.e. same URL resolution rules applied as for includes).
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="template">
+    <xs:annotation>
+      <xs:appinfo>
+        <refpurpose>Container for a group of controls and/or HTML code.</refpurpose>
+      </xs:appinfo>
+      <xs:documentation>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node representation)</xs:documentation>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="type" type="v:TemplateType" use="optional">
+        <xs:annotation>
+          <xs:documentation>The behaviour of the template.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="redirect" type="xs:anyURI" use="optional">
+        <xs:annotation>
+          <xs:documentation>The URL to which the user agent is redirected if not authenticated, applicable only when type is 'if-no-login'.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="condition" type="v:SqlCode" use="optional">
+        <xs:annotation>
+          <xs:documentation>This is a SQL expression to be tested for rendering the template</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="name-to-remove" type="v:QNameOrEmpty" use="optional">
+        <xs:annotation>
+          <xs:documentation>This works together with set-to-remove, see next.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="set-to-remove" type="v:TemplateSetToRemove" use="optional">
+        <xs:annotation>
+          <xs:documentation>This combined with name-to-remove gives posibility to remove a HTML elements from output.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="title" type="xs:string" use="optional">
+        <xs:annotation>
+	    <xs:documentation>When used inside tab control, this is used to show as label of the selector</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="TemplateType" final="restriction">
+    <xs:annotation>
+      <xs:documentation>
+The enumeration of allowed types of v:template.
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="simple">
+        <xs:annotation>
+          <xs:documentation>The template contains an arbitrary number of controls and HTML tags and  groups them together to control their processing, e.g. to enable or disable them altogether depending on some condition.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="repeat">
+        <xs:annotation>
+          <xs:documentation>A repeating row of v:data-set. The template of this type will be repeated for each row in the window of the data-set. It will be instantiated, data bound, rendered.  If the template contains forms and submits, they get the post method called as one would expect.
+On data binding, the parent of the template has its dg_current_row data member set to an array representing the selected row from left to right.
+</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="row">
+        <xs:annotation>
+          <xs:documentation>A repeating row of v:data-grid. The template of this type will be repeated for each row in the window of the v:data-grid. It will be instantiated, data bound, rendered.  If the template contains forms and submits, they get the post method called as one would expect.
+On data binding, the parent of the template has its dg_current_row data member set to an array representing the selected row from left to right.
+</xs:documentation>
+          <xs:documentation>
+The controls under this template (such as text, label, button etc.) can access data in current row in order as columns are given by referencing te_rowset member of row template.
+</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="frame">
+        <xs:annotation>
+          <xs:documentation>
+A non-repeating static content of v:data-grid.
+Content of this template represents view in page when rows are selected,
+position of scroll buttons, rowset and form for adding a record.
+</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="if-exists">
+        <xs:annotation>
+          <xs:documentation>
+Template that is enabled only if the resultset is not empty in v:data-set.
+</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="if-not-exists">
+        <xs:annotation>
+          <xs:documentation>Template that is enabled only if the resultset is empty in v:data-set.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="add">
+        <xs:annotation>
+          <xs:documentation>Template that is enabled when user adds new record in the resultset in v:data-set (if the resultset is not read-only).
+Similarly to templates of type 'edit', the 'add' template contains a vspx:form of type 'update' that is used to allow adding of rows in table as specified.
+Usually this form is a vspx_form + vspx_text constrained to columns and table selected in SQL expression of the parent vspx:data-set control with value of key attributes set to null. Please remember to set the 'if-not-exists' attribute of the form to 'insert'.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="browse">
+        <xs:annotation>
+          <xs:documentation>This type is meaningful only for templates right inside templates of type 'repeat'. When the template of type 'repeat' is used multiple times to display every row of a data-set, the template of type 'browse' expands only for those rows that are not currently editable.
+</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="edit">
+        <xs:annotation>
+          <xs:documentation>Template that is enabled when user edits an existing record in the resultset in v:data-set (if the resultset isnot read-only and if the 'edit' attribute of v:data-set is set to 'true').
+The template of this type usually contains a vspx:form of type 'update';
+the 'table' attribute of the form is the name of the table from 'sql' attribute of the v:data-set where the 'edit' template is located; controls of the form are usually constrained to columns of the SQL expression of that 'sql' attribute.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="if-login">
+        <xs:annotation>
+          <xs:documentation>Template that is enabled when user is logged in (e.g. for use in v:login. If the login is valid, the contents of this child will be instantiated.  This can be for example a button with 'action' attribute set to 'logout', a welcome message or such.  When using the vspx:login system, the user name is is obtained by connection_get ('vspx_user').</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="if-not-login">
+        <xs:annotation>
+          <xs:documentation>Template that is enabled when user is not yet logged in or is already logged out (e.g. for use in v:login.
+The template specifies what to do if there are no credentials with the page.
+If the 'redirect' attribute is given, then the entire page containing
+this is not processed at all but instead the page specified in the url
+is processed instead, with the context being that of the invocation of
+this page.  The redirect page can thus ask for the login and having
+checked it return to this page, since it knows the url for this.  In
+this way it is possible to bookmark places of which the uri's may
+expire, and accessing an expired place will just prompt for the login
+before going to the page.
+
+
+If the redirect is not specified, the content of the template is instantiated and shown. The content can be arbitrary, e.g. the vspx:login-form control can appear here, providing a standard login form that prompts for a user name and password and has a submit button.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="tree-node">
+        <xs:annotation>
+          <xs:documentation>
+Template for internal nodes of the tree in v:tree (i.e. for nodes with children).
+</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="tree-leaf">
+        <xs:annotation>
+          <xs:documentation>Template for terminal nodes of the tree in v:tree (i.e. for nodes without children).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="input">
+        <xs:annotation>
+          <xs:documentation>Template for input the SQL statement to execute it interactively in v:isql element.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="result">
+        <xs:annotation>
+          <xs:documentation>Template to show if v:isql returns result without an error.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="error">
+        <xs:annotation>
+          <xs:documentation>Template to be shown by v:isql if the user entered the SQL query and the execution of this query caused an error.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <!--
+;
+-->
+  <xs:simpleType name="TemplateSetToRemove" final="restriction">
+    <xs:annotation>
+      <xs:documentation>The set of HTML tags to be removed from the rendered text.</xs:documentation>
+      <xs:documentation>
+<para>When a v:template has 'name-to-remove' attribute, the rendered content will not
+contain the first opening tag and/or the last closing tag whose name is equal to
+the value of 'name-to-remove'.
+So the result of rendering of</para>
+<programlisting><![CDATA[
+<v:template name-to-remove='p' set-to-remove='bottom'	><p>[1A]</p><p>[1B]</p><p>[1C]</p></v:template>
+<v:template name-to-remove='p' set-to-remove='both'	><p>[2A]</p><p>[2B]</p><p>[2C]</p></v:template>
+<v:template name-to-remove='p' set-to-remove='top'	><p>[3A]</p><p>[3B]</p><p>[3C]</p></v:template>]]>
+</programlisting>
+<para> is </para><programlisting><![CDATA[
+<p>[1A]</p><p>[1B]</p><p>[1C][2A]</p><p>[2B]</p><p>[2C][3A]</p><p>[3B]</p><p>[3C]</p>]]></programlisting>
+<para>The typical use is composing of tables, lists etc. on per-line basis.</para>
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none">
+        <xs:annotation>
+          <xs:documentation>The rendered output of the enclosing template will not be affected by the 'name-to-remove' attribute of the template.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="top">
+        <xs:annotation>
+          <xs:documentation>The rendered output of the enclosing template should not contain the first opening tag whose name is equal to the value of 'name-to-remove' attribute of the template.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="bottom">
+        <xs:annotation>
+          <xs:documentation>
+The rendered output of the enclosing template should not contain the last closing tag whose name is equal to the value of 'name-to-remove' attribute of the template.
+</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="both">
+        <xs:annotation>
+          <xs:documentation>
+The rendered output of the enclosing template should not contain the both the first opening tag and the last closing tag whose name is equal to the value of 'name-to-remove' attribute of the template.
+</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="form">
+    <xs:annotation>
+      <xs:appinfo>
+        <target-udt>update_form</target-udt>
+        <refpurpose>Generic scriptable container for elements that may accept user's input.</refpurpose>
+        <tutorial id="VX-S-2">/tutorial/web/vx_s_2/form.vspx</tutorial>
+        <tutorial id="VX-S-3">/tutorial/web/vx_s_3/update_form.vspx</tutorial>
+        <special-childs>
+          <child name="key"/>
+          <child name="text"/>
+        </special-childs>
+      </xs:appinfo>
+      <xs:documentation>
+    This is a grouping element for controls that handle post data and validation of user's input. In case of type 'update', this is a single row update control for a database table.
+This retrieves the data from the row identified by the keys and shows the data in the column bound fields enclosed.  If responding to a post for a submit inside this form, the form updates/inserts the data and shows the resulting state at the render pass.
+</xs:documentation>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:FormSpecificContent"/>
+        <xs:group ref="v:FormNonSpecificContent"/>
+        <xs:group ref="v:UserInputTarget"/>
+        <xs:group ref="v:AnyHtmlContent"/>
+        <xs:element ref="v:template"/>
+        <xs:element ref="v:form"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="type" type="v:FormType" use="optional">
+        <xs:annotation>
+          <xs:documentation>Type of form, can be 'simple' or 'update'. When this is 'simple' the vspx_form class will be instantiated, otherwise in case of 'update' vspx_update_form subclass will be used.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="action" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>
+      A URL for processing. The data filled-in the form will be submitted to the 'action' page.
+      Therefore this is a page where the content of that form will be processed.
+      If it is empty, the target is a current page.
+				 </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="method" type="v:FormMethod" use="optional" default="POST">
+        <xs:annotation>
+          <xs:documentation>A method  of transferring the form data, can be POST or GET. The same as 'method' of HTML forms.</xs:documentation>
+          <xs:documentation>The use of 'GET' is not recommended because the length of the URI may easily exceed internal limits of the browser or an intermediate proxy server.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="table" type="v:SqlTableQname" use="optional">
+        <xs:annotation>
+          <xs:documentation>If the value of 'type' attribute is 'update', the form acts as a single row update control for a database table; and the value of 'table' attribute specifies the name of that table.
+It retrieves the data from the row identified by the keys and shows the data in the column bound fields enclosed.  If responding to a post for a submit inside this form, the form updates/inserts the data and shows the resulting state at the render pass.
+This attribute is required if 'type' is 'update' and prohibited otherwise.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="if-not-exists" type="v:FormUpdateIfNotExists" use="optional">
+        <xs:annotation>
+          <xs:documentation>If the keys do not select any row, and the value of this attribute is 'insert', the update form will be filled in with defaults filled in and will do an insert into the table when the form is submitted.
+In this case of course the keys will have to be defaulted after the post or will have to be supplied in the post as fields.
+Any defaulting should take place in the v:on-post handler which is before the insert or update in the event of the post.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="concurrency" type="xs:boolean" use="optional">
+        <xs:annotation>
+          <xs:documentation>If true and a previous value was shown in the form before the post being processed, this causes the system to check whether any of the data has been updated between getting it and the post at hand.
+This is a sort of optimistic concurrency control at the row level.  If an update is detected, the updated_meanwhile message is set as the error message of the form and no update is made.  The render pass may choose to process this message as it will, the default is to show it as any other error message for form level validation failure.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="triggers" type="v:OnOff" use="optional">
+    <xs:annotation>
+      <xs:documentation>This is applicable for update form only, when this is OFF no PL triggers
+	will be fired when inserting or updating.</xs:documentation>
+    </xs:annotation>
+  </xs:attribute>
+      <xs:attribute name="data-source" type="v:SqlName" use="optional">
+    <xs:annotation>
+      <xs:documentation>This is applicable to the update form and is
+	An alternative of 'table'. When is specified the value is suppsed to be
+	valid reference to existing data-source control. Further the given data-source
+	will be used to bind/update the data.
+      </xs:documentation>
+    </xs:annotation>
+  </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="FormType" final="restriction">
+    <xs:annotation>
+      <xs:documentation>The enumeration of allowed types of forms.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="simple">
+        <xs:annotation>
+          <xs:documentation>
+Form with no special data binding.
+</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="update">
+        <xs:annotation>
+          <xs:documentation>
+Form that may be used in templates of type 'update' or 'add'.
+</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="FormMethod" final="restriction">
+    <xs:annotation>
+      <xs:documentation>POST or GET</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="GET"/>
+      <xs:enumeration value="POST"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="VariableStorage" final="restriction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="session">
+        <xs:annotation>
+          <xs:documentation>keep the variable in the session; needs a login control to be present</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="pagestate">
+        <xs:annotation>
+          <xs:documentation>keep the variable in page view state</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="temp">
+        <xs:annotation>
+          <xs:documentation>do not keep variable</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="0">
+        <xs:annotation>
+          <xs:documentation>same as 'pagestate'</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="1">
+        <xs:annotation>
+          <xs:documentation>same as 'session'</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="FormUpdateIfNotExists" final="restriction">
+    <xs:annotation>
+      <xs:documentation>
+        <!-- TBD -->
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="insert"/>
+      <xs:enumeration value="nothing"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="tab">
+    <xs:annotation>
+      <xs:documentation>
+A container that contains some number of pages and displays them one by one.
+This can be used for multi-page forms or Windows style tabbed decks or making multi-part forms, alternative visualizations of the same data etc.
+</xs:documentation>
+      <xs:appinfo>
+        <refpurpose>Selects one of its children to be active at any one time.</refpurpose>
+        <tutorial id="VX-S-5">/tutorial/web/vx_s_5/tab.vspx</tutorial>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyHtmlContent"/>
+        <xs:element ref="v:template"/>
+        <xs:element ref="v:select-list"/>
+        <xs:element ref="v:data-list"/>
+        <xs:element ref="v:radio-group"/>
+        <xs:element ref="v:hidden"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="initial-active" type="v:SqlName" use="optional">
+        <xs:annotation>
+          <xs:documentation>
+This is the name of the child template which is active at the time and
+which thus will be rendered.  Whether inactive templates are
+instantiated and keep state is controlled by is-input.  The active
+attribute initializes the tb_active member of the vspx_tab instance.
+This is preserved in the view state. Data bindable.
+			    </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="style" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>
+This determines what HTML control is used to select which child is shown.
+If unspecified, there will be no such control and the program logic is responsible for flipping the pages.  Otherwise  "list" means there is a HTML select control showing the titles  of the tabs.  "radio" means the titles of the tabs are shown as a radio group.  If there is a tab selector widget, it is always above the tabs.
+			    </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="active" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+	  <xs:documentation>A data bound value to enable or disable the tab switch.
+	    The default is '1' meaning 'enable'.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="is-input" type="xs:boolean" use="optional">
+        <xs:annotation>
+	  <xs:documentation>If true, all the children are considered to be collectively a
+	    multipart form and each will be instantiated when the page is made and
+	    will get to retain a view state.  Although only one page of the form
+	    is shown at a time, the state of all is kept. Not data bindable.
+	    The default is '1' meaning 'template contains input'.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <!--
+;
+-->
+  <xs:element name="script">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>A (redundant) wrapper for SQL code, can be omitted.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+      <xs:documentation>
+This control can appear only inside event handling controls and it always contain SQL code to be executed when the event occurs.
+There is no difference for VSPX compiler whether SQL code is enclosed in 'script' control or not.
+Some WYSIWYG tools can display the enclosed SQL code to the application developer according to custom attributes of this control
+but it does not affect the generated Virtuoso/PL code of the page.
+</xs:documentation>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:any namespace="##any"/>
+      </xs:sequence>
+      <xs:attribute name="language" type="v:SqlName" use="optional">
+        <xs:annotation>
+	  <xs:documentation>Denotes the type of language,
+	    currently only Virtuoso/PL expressions are supported.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="variable">
+    <xs:annotation>
+      <xs:documentation>
+This element declares a data member for the page subclass corresponding to the containing page.
+The value of this data member can be preserved between consecutive postbacks.
+The attribute "persist" determine how to save the variable's value: to session table for inter-page usage, keep in page state only or do not keep it at all.
+Note that inter-page variable storage is available only when a vspx:login control is included on the page and authentication is performed; also the name of page variables in corresponding pages needs to be same.
+There is no special class for this control because only a data member will be added.
+Also the page defines two special variables 'sid' and 'realm' for login control.
+So when an existing login control is is in authenticated state, these will contain values for session id and application realm.
+Also every non-repeating control of the page will be represented as a page variable and thus be acessible as 'self.&lt;name_of_control&gt;' anywhere in the VSPX page after page initialization.
+</xs:documentation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Page variable - a user defined member of page class.</refpurpose>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:any namespace="##any"/>
+      </xs:sequence>
+      <xs:attribute name="name" type="v:SqlName" use="required">
+        <xs:annotation>
+          <xs:documentation>The name of page class member.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="type" type="v:SqlName" use="required">
+        <xs:annotation>
+          <xs:documentation>The SQL data type of the variable.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="default" type="v:SqlCode" use="optional">
+        <xs:annotation>
+          <xs:documentation>The default value. Must be a literal scalar value suitable for the default clause of a user defined type member.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="persist" type="v:VariableStorage" use="optional" default="pagestate"/>
+      <xs:attribute name="param-name" type="v:SqlName" use="optional">
+        <xs:annotation>
+	  <xs:documentation>This specifies an optional name of a URL parameter for setting the page variable value.
+            When this is specified and there is a parameter matching the name, the variable is set after it.  This is a shorthand for an explicit call of keyword_get.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="local-variable">
+    <xs:annotation>
+      <xs:documentation>
+This tag declares a control that can store a temporary value that can be accessed from other controls.
+Usually it is an intermediate value that is used by a group of controls of the same form. E.g. if
+controls of a form display various data stored in a complex object then it may be convenient to obtain this object once and place it
+into value of a local-variable control that is the first child control of a form. The rest of child controls may access the value
+from the first child to calculate their values.
+</xs:documentation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <target-udt>field_value</target-udt>
+        <refpurpose>Local variable - an invisible control to store a temporary value.</refpurpose>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:group ref="v:EventTarget" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:FieldValue"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="method">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Page method - a user defined member of page class.</refpurpose>
+      </xs:appinfo>
+      <xs:documentation>This creates a custom method of the page class.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="v:EventHandler">
+          <xs:attribute name="name" type="v:SqlName" use="required">
+	    <xs:annotation>
+	      <xs:documentation>The name of method to be created</xs:documentation>
+	    </xs:annotation>
+	  </xs:attribute>
+          <xs:attribute name="returns" type="v:SqlName" use="optional">
+	    <xs:annotation>
+	      <xs:documentation>Optional return datatype type</xs:documentation>
+	    </xs:annotation>
+	  </xs:attribute>
+          <xs:attribute name="arglist" type="xs:string" use="optional">
+	    <xs:annotation>
+	      <xs:documentation>comma-separated list of arguments. For example : "in arg1 varchar, out arg1 integer ..."</xs:documentation>
+	    </xs:annotation>
+	  </xs:attribute>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="validator">
+    <xs:annotation>
+      <xs:appinfo>
+        <target-udt>range_validator</target-udt>
+        <refpurpose>A validator that is applied to user input.</refpurpose>
+        <tutorial id="VX-S-2">/tutorial/web/vx_s_2/date.vspx</tutorial>
+      </xs:appinfo>
+      <xs:documentation>
+The validator objects are invoked when the element's control gets posted. the validator elements only make sense inside field or form types of controls.  the validators are invoked in the order given, and the first one to fail stops the invocation chain, so that no later ones are attempted.
+furthermore the vc_is_valid member of the containing page class instance will be reset to false (0) to stop further processing. see also error-summary element and error-glyph attribute of field element.
+</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="test" use="required">
+        <xs:annotation>
+          <xs:documentation>The type of test to be performed, can be 'length', 'value',  'regexp' or 'sql'.
+</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="length"/>
+            <xs:enumeration value="value"/>
+            <xs:enumeration value="regexp"/>
+            <xs:enumeration value="sql"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="min" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>A lower limit in value and length tests
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="max" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>The upper limit for value and length tests
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="regexp" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>The REGEXP pattern to match field value
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="expression" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>A SQL expression for validation
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="empty-allowed" type="xs:boolean" use="optional">
+        <xs:annotation>
+          <xs:documentation>If specified as true (1) this will allow submitting an empty field
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="message" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>The error message to be associated to parent control when the test represented by this validator fails.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="runat" type="v:ValidatorType" use="optional" default="server">
+        <xs:annotation>
+          <xs:documentation><para>Where to perform validation, at server side after posting, or at browser side when entering the values. Note that client side validators can be assigned only to input controls, hence client side form validators for inter-field integrity testing are not allowed.</para>
+	  <para>Client side validators will generate client side JavaScript.</para>
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="ValidatorType" final="restriction">
+    <xs:annotation>
+      <xs:documentation>server or client</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="server"/>
+      <xs:enumeration value="client"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:group name="UserInputTarget">
+    <xs:annotation>
+      <xs:documentation>Something that may be edited by a user.</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element ref="v:validator"/>
+    </xs:choice>
+  </xs:group>
+  <xs:element name="field">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Name of input to be sent to and back between pup-up and parent window.</refpurpose>
+      </xs:appinfo>
+      <xs:documentation>
+ This element may occur under browse-button or select button,
+ it enumerates the names of inputs to be sent between pop-up and parent window.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="ref" type="v:SqlName" use="optional">
+        <xs:annotation>
+	  <xs:documentation>When a field is used as child of and return button
+	    then this must contain valid reference to name of a input control
+	    (like text, select-list, data-list etc.) from current page. The referenced
+	    control's value will be used to set the value of control with name specified in
+	    attribute 'name' in the target page. The data will be set using automatically generated
+	    JavaScript function.
+	  </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="button">
+    <xs:annotation>
+      <xs:appinfo>
+        <target-udt>delete_button</target-udt>
+        <target-udt>logout_button</target-udt>
+        <target-udt>browse_button</target-udt>
+        <target-udt>return_button</target-udt>
+        <target-udt>submit</target-udt>
+        <refpurpose>Scriptable button.</refpurpose>
+        <tutorial id="VX-S-2">/tutorial/web/vx_s_2/form.vspx</tutorial>
+        <tutorial id="VX-S-7">/tutorial/web/vx_s_7/products.vspx</tutorial>
+      </xs:appinfo>
+      <xs:documentation>Scriptable version of Submit Button of the HTML form. Depending of
+'action' attribute it may have variants. In some of these variants the button will not have a submit function, as in select and browse buttons.  In these cases the button will use client JavaScript to pop up new windows or for setting values in other windows.
+</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:element ref="v:field"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attribute name="action" type="v:ButtonAction" use="required">
+        <xs:annotation>
+          <xs:documentation>This specifies the button subclass to use.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="value" type="v:CalculateableValue" use="required">
+        <xs:annotation>
+          <xs:documentation>Text of the label of the button.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="style" type="v:ButtonStyle" use="optional">
+        <xs:annotation>
+          <xs:documentation>A style of button, affects appearance.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="active" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>A data bound value to enable or disable the button. The default is '1' meaning 'enable'.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="initial-active" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>A data bound value to enable or disable the button. The default is '1' meaning 'enable'.
+Unlike 'active' attribute, this one is effective only when the page is displayed in the first time, not after user posts data back to the page.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:BrowseButtonParams"/>
+      <xs:attribute name="format" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>A sprintf format string for printing the value</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="radio-button">
+    <xs:annotation>
+      <xs:documentation>is a scriptable version of HTML radio button.</xs:documentation>
+      <xs:appinfo>
+        <refpurpose>Scriptable radio button.</refpurpose>
+        <tutorial id="VX-S-2">/tutorial/web/vx_s_2/radio.vspx</tutorial>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:UserInputTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+      <xs:attribute name="group-name" type="xs:NCName" use="optional">
+        <xs:annotation>
+          <xs:documentation>When several  check boxes are to be grouped, this is the  name of the group. Upon  post the name of the group will be submitted  instead of the  than name of the control. This also will restrict in the group to have more than one button on</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:FieldValue"/>
+      <xs:attribute name="initial-checked" type="xs:integer" use="optional" default="0">
+        <xs:annotation>
+          <xs:documentation>This flag specifies whther this control is initially checked.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="check-box">
+    <xs:annotation>
+      <xs:documentation>is a represantation of HTML check box. Scriptable, databindable.</xs:documentation>
+      <xs:appinfo>
+        <refpurpose>Scriptable check-box.</refpurpose>
+        <tutorial id="VX-S-2">/tutorial/web/vx_s_2/check_box.vspx</tutorial>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:UserInputTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+      <xs:attributeGroup ref="v:FieldValue"/>
+      <xs:attribute name="group-name" type="v:SqlName" use="optional">
+        <xs:annotation>
+          <xs:documentation>
+When several check boxes are grouped, this is the group name.
+This will be submitted instead of the control name on post.
+			     </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="initial-checked" type="v:CalculateableValue" use="optional" default="0">
+        <xs:annotation>
+          <xs:documentation>Specifies whether the control is initially checked.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="is-boolean" type="xs:boolean" use="optional">
+        <xs:annotation>
+          <xs:documentation>If this attribute is set to '1' then the check-box is forced to ignore its 'initial-checked' status and work using the data-bound value as the only criterion for enabling or disabling its 'checked' property. This mode is convenient for editing two-state data values. Before render, the control will check if the ufl_value is equal to 'true-value' or 'false-value', and it is displayed as checked if the ufl_value is equal to 'true-value' (or it is not equal to any of these two but is not a logical 'false'). On post, a new status of the checkbox is inspected, and the ufl_value is set to 'true-value' if it is checked or 'false-value' otherwise.
+The default value of this attribute is '0' meaning that there is no system-level relation between the 'checked' status and the 'value'.
+When the form with the check-box submits data, the submitted value of the attribute depends on its 'is-boolean' property. If it's '0' then the result of cast (control.ufl_value as varchar) is submitted; otherwise a string '1' is submitted.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="true-value" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>This attribute should be used if and only if 'is-boolean' attribute is set to '1'.
+The calculated value of this attribute is saved in ufl_true_value field of the control and is used to represent a logical 'true' for the control. The checkbox is displayed as checked if the bound value is equal to the ufl_true_value. If the checked checkbox is submitted then the bound value of the control is set to the ufl_true_value.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="false-value" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>This attribute should be used if and only if 'is-boolean' attribute is set to '1'.
+The calculated value of this attribute is saved in ufl_false_value field of the control and is used to represent a logical 'false' for the control. The checkbox is displayed as not checked if the bound value is equal to the ufl_valuse_value. If no checked checkbox is submitted by a form then the bound value of the control is set to ufl_false_value.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <!--
+;
+-->
+  <xs:element name="text">
+    <xs:annotation>
+      <xs:appinfo>
+        <refpurpose>Scriptable, data-bindable input control.</refpurpose>
+        <special-childs>
+          <child name="validator"/>
+        </special-childs>
+      </xs:appinfo>
+      <xs:documentation>Text input, with scripts and validation options but no implied database binding. String input of the HTML form.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType mixed="false">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:UserInputTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+      <xs:attribute name="type" type="v:TextInputType" use="optional" default="plain"/>
+      <xs:attribute name="default" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>The default value of input field.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:FieldValue"/>
+      <xs:attribute name="default-value" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+	  <xs:documentation>This is an expression for setting the default value of the text.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="default_value" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>This is deprecated alias for 'default-value' attribute (note the difference between minus sign and underscore).</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="format" type="v:CalculateableValue" use="optional"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="textarea">
+    <xs:annotation>
+      <xs:appinfo>
+        <refpurpose>Scriptable text-area input.</refpurpose>
+        <tutorial id="VX-S-2">/tutorial/web/vx_s_2/textarea.vspx</tutorial>
+        <special-childs>
+          <child name="validator"/>
+        </special-childs>
+      </xs:appinfo>
+      <xs:documentation>Scriptable, databindable   HTML text area.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:UserInputTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+      <xs:attribute name="type" type="v:TextInputType" use="optional" default="plain"/>
+      <xs:attribute name="default_value" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>The default value of the field. Can be accessed via control.ufl_value n data bind stage.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="default" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>Deprecated alias of 'default_value'.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:FieldValue"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="TextInputType">
+    <xs:annotation>
+      <xs:documentation>The way of displaying the value to the user.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="plain">
+        <xs:annotation>
+          <xs:documentation>The value is displayed in a usual way and user can edit it. This is the default value.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="password">
+        <xs:annotation>
+          <xs:documentation>The value is not shown on the screen to prevent occasional reading, only astericks are shown in the input field.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="hidden">
+        <xs:annotation>
+          <xs:documentation>The text is passed to the target page without displaying it to the user.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="item">
+    <xs:annotation>
+      <xs:documentation>
+Item representing a selection inside a select list.
+</xs:documentation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Item representing a selection inside a select list.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="name" type="v:SqlCode" use="required">
+        <xs:annotation>
+	  <xs:documentation>The visible value of the option, it will be shown
+	    in the option list.
+	  </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="value" type="xs:string" use="required">
+        <xs:annotation>
+	  <xs:documentation>The key value of the option, it will be assigned
+	    to the select control ufl_value is given option is seelcted.
+	  </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="select-list">
+    <xs:annotation>
+      <xs:documentation>This is a scriptable version of HTML select control.
+It shows a static list of items (see item element). Databind and on-post scripts are allowed.
+</xs:documentation>
+      <xs:appinfo>
+        <refpurpose>Fixed initialized select list.</refpurpose>
+        <tutorial id="VX-S-2">/tutorial/web/vx_s_2/select.vspx</tutorial>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:UserInputTarget"/>
+        <xs:element ref="v:item"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+      <xs:attribute name="multiple" type="xs:boolean" use="optional">
+        <xs:annotation>
+	  <xs:documentation>Used to designate a multiple selection list box.
+	    In this case the control's value will be an array of key data of selected items.
+	  </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:FieldValue"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="key">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>A key value of the vspx:form of type 'update'.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+      <xs:documentation>This control defines a key value of the vspx:form of type 'update'.
+All the vspx:key children together should select one or zero rows from the table.
+Controls inside the form will process fields of this selected row.
+</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="name" type="v:SqlName" use="optional">
+        <xs:annotation>
+          <xs:documentation>Not used</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="column" type="v:SqlName" use="required">
+        <xs:annotation>
+          <xs:documentation>Name of the column in the table to be updated.
+This may be either the name of a primary key column or an other column, as long as the selection specified by all vspx:key children of the vspx:form is unambiguous.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="value" type="v:CalculateableValue" use="required">
+        <xs:annotation>
+          <xs:documentation>The value of the key field referred to  by the 'column' attribute.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="default" type="v:CalculateableValue" use="optional" default="null">
+        <xs:annotation>
+	  <xs:documentation>The default value to be used when the 'value' expression returns NULL.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="FormSpecificContent">
+    <xs:annotation>
+      <xs:documentation>Elements that may appear only inside a form.</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element ref="v:button"/>
+      <xs:element ref="v:radio-group"/>
+      <xs:element ref="v:radio-button"/>
+      <xs:element ref="v:check-box"/>
+      <xs:element ref="v:select-list"/>
+      <xs:element ref="v:data-list"/>
+      <xs:element ref="v:textarea"/>
+      <xs:element ref="v:text"/>
+      <xs:element ref="v:key"/>
+      <xs:element ref="v:error-summary"/>
+      <xs:element ref="v:calendar"/>
+    </xs:choice>
+  </xs:group>
+  <xs:element name="label">
+    <xs:annotation>
+      <xs:appinfo>
+        <refpurpose>Generic scriptable text.</refpurpose>
+      </xs:appinfo>
+      <xs:documentation>This is for displaying a value as plain text.
+The underlying class is derived from VSPX_FIELD so the value to be displayed is accessible as a value of any VSPX field.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:FieldValue"/>
+      <xs:attribute name="format" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>A sprintf format string for printing the value</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="url">
+    <xs:annotation>
+      <xs:appinfo>
+        <refpurpose>Generic scriptable hypertext link.</refpurpose>
+      </xs:appinfo>
+      <xs:documentation>Dynamic data bindable hypertext link.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:FieldValue"/>
+      <xs:attribute name="format" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>A sprintf format string for printing the value</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="url" type="v:CalculateableValue" use="required">
+        <xs:annotation>
+          <xs:documentation>A data bound value to be printed in place of href attribute.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="active" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>A data bound value to enable or disable the url. The default is '1' meaning 'enable'.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <!--
+;
+-->
+  <xs:element name="data-list">
+    <xs:annotation>
+      <xs:appinfo>
+        <refpurpose>Select list initialized from database table.</refpurpose>
+        <tutorial id="VX-S-3">/tutorial/web/vx_s_3/selectdb.vspx</tutorial>
+      </xs:appinfo>
+      <xs:documentation>This control is used to make a select list, based on a SQL expression.
+      Also instead of SQL expression only table name could be given, so then control will compose apropriate select statement.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:UserInputTarget"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+      <xs:attributeGroup ref="v:SqlColumn"/>
+      <xs:attributeGroup ref="v:FieldValue"/>
+      <xs:attribute name="table" type="v:SqlTableQname" use="optional">
+        <xs:annotation>
+          <xs:documentation>A table name for select statement.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="key-column" type="v:SqlName" use="optional">
+        <xs:annotation>
+          <xs:documentation>A key column name.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="value-column" type="v:SqlName" use="optional">
+        <xs:annotation>
+          <xs:documentation>A value column name.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="sql" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+	  <xs:documentation>An alterantive of 'table' attribute, when this attribute
+	    is specified it must contains a valid select statement. The selection list
+	    will be instantiated using a cursor as this expression is defined.
+	  </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="defvalue" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>A default value for the control.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="multiple" type="xs:boolean" use="optional">
+        <xs:annotation>
+	  <xs:documentation>Used to desigante a multiple selection list box.
+	    In this case the control's value will be an array of key data of selected items.
+	  </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="list-document" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>This is to obtain all or some of items of the select-list from an XML document. If this attribute is specified then the value of the calculated attribute should be an XML entity and this entity will be saved in vsl_list_document field of the control; values of 'list-match', 'list-key-path' and 'list-value-path' arguments should specify XQuery expressions that should be used to retrieve keys and displayable values of items.
+All selection items composed from the value of 'list-document' will be listed before all items from 'table' or 'sql', if both methods of data retrieval are used.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="list-match" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>This is to calculate a string value that is an XQuery expression. The text of this expression will be saved in 'vsl_list_match' member of the control. This expression will be used during data binding to get array of displayable items from the value of 'list-document'. The expression should return a node-set using 'list-document' entity as a context mode; every item of the node-set will be converted into list item via 'list-key-path' and 'list-value-path' expressions.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="list-key-path" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>This is to specify the XQuery expression that calculates key value of a list item, using a result of 'list-match' as a context node. The text of the expression will be saved in 'vsl_list_key_path' member of the control.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="list-value-path" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>This is to specify the XQuery expression that calculates a displayable value of a list item, using a result of 'list-match' as a context node. The text of the expression will be saved in 'vsl_list_value_path' member of the control.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="node">
+    <xs:annotation>
+      <xs:documentation>This control indicates the place of a subtree inside a node template.</xs:documentation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>A place holder for rendering a tree node.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="void" type="xs:string" use="optional">
+        <xs:annotation>
+	  <xs:documentation>Not used.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="tree">
+    <xs:annotation>
+      <xs:appinfo>
+        <refpurpose>A container for displaying a tree of nested nodes.</refpurpose>
+        <tutorial id="VX-S-4">/tutorial/web/vx_s_4/tree.vspx</tutorial>
+      </xs:appinfo>
+      <xs:documentation>
+    <para>This can be used for hierarchical tables of contents,
+    directory browsing, hierarchical menus and such.
+    The tree can have either one or more branches open at any time, up to
+    the leaves.  The tree has a root, which may or may not be visible.
+    The contents of the tree can either be fixed, in which case these are an
+    XML tree, or dynamic, in which case these are generated level by level
+    by SQL functions attached to the tree. The tree can have various external appearences.</para>
+
+    <para>The tree is represented at run time by a vspx_tree instance.
+    Nodes of the tree are represented by vspx_tree_node objects,
+    which are childs of the vspx_tree.  The nodes hold an identifier (vc_instance_name)
+    of the corresponding tree branch, which is used to retrieve children of the node.
+    These also hold a flag (tn_open member) indicating if the node is open or not.</para>
+			</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:element ref="v:template"/>
+        <xs:element ref="v:node-template"/>
+        <xs:element ref="v:leaf-template"/>
+        <xs:element ref="v:horizontal-template"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="show-root" type="xs:boolean" use="optional">
+        <xs:annotation>
+          <xs:documentation>This attribute is obsolete and has no effect.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="multi-branch" type="xs:boolean" use="required">
+        <xs:annotation>
+          <xs:documentation>
+This determines whether more than one branches can be open at one time.
+The values are 0 and 1 (true and false).  The default is 0 (false).
+			   </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="orientation" type="v:TreeOrientation" use="required">
+        <xs:annotation>
+          <xs:documentation>
+      This can be 'horizontal' or 'vertical', the default is 'vertical'.
+      The tree can have different styles.  The default is a vertical arrangement
+      with open levels indented, the children under the parent node.
+      Each node template is a single line.  The horizontal style shows each level on a separate line.
+      In this case it is not allowed multiple open branches.  The children of the root will be
+      shown on one line.  When one is opened, its children will fill the next line.
+			   </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="root" type="v:SqlName" use="required">
+        <xs:annotation>
+          <xs:documentation><para>
+This is a SQL expression which produces the root object.
+This can be of any data type, a file system path is an example.
+</para>
+<programlisting>
+<![CDATA[
+create procedure root_node (in path varchar)
+{
+  declare i, l int;
+  declare ret, arr any;
+  arr :=
+    vector_concat (sys_dirlist (path, 0), sys_dirlist (path, 1));
+
+  return arr;
+};
+]]></programlisting>
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="child-function" type="v:SqlName" use="required">
+        <xs:annotation>
+          <xs:documentation>
+<para>Given the result of the root expression, this must generate an array
+of similar elements corresponing to the children of the node in
+question.  This same function should be applicable to each element of
+the array it returns.  If the array is empty then the node in question
+is a leaf.</para>
+<programlisting>
+<![CDATA[
+
+-- Example of this function
+
+create procedure child_node (in node_name varchar, in node varchar)
+{
+  declare i, l int;
+  declare ret, arr any;
+  declare exit handler for sqlstate '*'
+    {
+      return vector ();
+    };
+  if (isstring (file_stat (node_name, 3)))
+    return vector ();
+
+  arr :=
+    vector_concat (sys_dirlist (node_name, 0), sys_dirlist (node_name, 1));
+
+  return arr;
+}
+;
+]]></programlisting>
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="start-path" type="v:CalculateableValue" use="required">
+        <xs:annotation>
+	  <xs:documentation>This is an expression which will be evaluated and passed to the 'root' function as argument.
+                    </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="open-at" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+	  <xs:documentation>This is an expression which will be used as XPath
+	    expression to designate which branches of the tree are open
+	    and which are not initially.
+                    </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="error-summary">
+    <xs:annotation>
+      <xs:documentation>Placeholder for form error messages.
+This is used on a form  to mark where error messages resulting from field or form validation are to be placed.
+This   will be rendered if the vc_is_valid member of the enclosing page is false.
+If rendered, this prints an error message generated by a validator or a catch handler.
+This control wiil not be instantiated.  The error-summary may show errors for all controls or for a group of controls whose name matches a given regular expression.
+The vc_error_message members of all controls whose validation failed will be shown at the place marked by this control if attribute 'match' is not specified. Otherwise the vc_error_message of controls whose validation failed and 'name' matches the pattern specified will be shown.
+</xs:documentation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Placeholder for error messages.</refpurpose>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="match" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>
+This attribute specifies a regular expression to be matched against names of controls with failed validation.
+The expression may match more than one control name, concatenating the messages in document order of controls. In this way an error summary may appear in
+different places of the page to print errors for different controls.
+			   </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="FormNonSpecificContent">
+    <xs:annotation>
+      <xs:documentation>Elements that may appear both inside and outside a form.</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element ref="v:variable"/>
+      <xs:element ref="v:local-variable"/>
+      <xs:element ref="v:method"/>
+      <xs:element ref="v:label"/>
+      <xs:element ref="v:url"/>
+      <xs:element ref="v:data-grid"/>
+      <xs:element ref="v:data-set"/>
+      <xs:element ref="v:data-source"/>
+      <xs:element ref="v:tab"/>
+      <xs:element ref="v:tree"/>
+      <xs:element ref="v:include"/>
+      <xs:element ref="v:isql"/>
+      <xs:element ref="v:login"/>
+      <xs:element ref="v:vscx"/>
+      <xs:element ref="v:local-variable"/>
+    </xs:choice>
+  </xs:group>
+  <!--
+;
+-->
+  <xs:element name="login-form">
+    <xs:annotation>
+      <xs:documentation>
+login-form is the control for getting login information.  This may only appear inside a login.
+Its function will depend on the type of login being attempted.  If the type is digest, this is a button which, when submitted, will send the digest challenge.
+			</xs:documentation>
+      <xs:documentation>
+If the url or cookie session mode is chosen, this will be a form of 2 fields with user name and password and a submit button.
+			</xs:documentation>
+      <xs:documentation>
+if the standard form is not suitable, this can be an arbitrary form.  This must post  buttons values named "username" and "password" and a submit button named "login".  No children need be specified if the default form is OK.
+			</xs:documentation>
+      <xs:documentation>
+If the redirect attribute of template[@type=if-no-login] is not specified,
+the contents of this child are instantiated and shown in the place of the login control.
+This can be arbitrary content.
+			</xs:documentation>
+      <xs:appinfo>
+        <refpurpose>A form to be shown if the user is not logged in.</refpurpose>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="required" type="xs:boolean" use="required">
+        <xs:annotation>
+          <xs:documentation>
+If digest is the mode, then this means that the login is mandatory and that instead of displaying the login button which will send the challenge if pressed, the challenge will be sent automatically.
+			   </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="title" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>Title of login button if digest is attempted.
+			   </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="user-title" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>Title of user name field
+			   </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="password-title" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>Title of password field
+			   </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="submit-title" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>Title of submit button
+			   </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="login">
+    <xs:annotation>
+      <xs:appinfo>
+        <refpurpose>Authentication parameters of a page.</refpurpose>
+        <tutorial id="VX-S-6">/tutorial/web/vx_s_6/login.vspx</tutorial>
+        <special-childs>
+          <child name="button"/>
+        </special-childs>
+      </xs:appinfo>
+      <xs:documentation>
+<para>The login control controls authentication for its page.
+Depending on options this  may or may not be visible.
+This works together with a login-form and logout-button controls.  The storage of passwords and user names is left to the application, which can specify functions called by these widgets.
+The server keeps login information in the following table:</para>
+<programlisting>
+<![CDATA[
+create table VSPX_SESSION (VS_REALM varchar, VS_SID varchar, VS_UID varchar, VS_STATE long varchar,
+  primary key (VS_REALM, VS_SID));
+]]>
+</programlisting>
+<para> This table is shared between all vspx applications, each with their login differentiated by realm.
+The state is an array of name value pairs which will be accessed through connection_get and connection_set inside the page code.</para>
+<para>
+There are three methods of keeping session state:URL-poisoning, digest authentication and Cookies.The URL-poisoning scheme presents a login dialog form and sets a session ID as hidden form element.
+Digest authentication  uses an opaque value as session id and is available only for browsers that support standard HTTP 1.1 digest authentication. The Cookie is an analogue of URL poisoning, but in that case session ID is kept as a Cookie, thus cookies must be enabled on the browser.
+</para>
+
+<para>
+The login control is mandatory when using a persistent page variables (see persist="session" attribute of 'variable' control). This is because HTTP protocol is state-less; therefore value of such variables have to be stored in a table and restored on next hit with same session ID (and realm). Hence as login control maintains a session state (via some mechanism, see notes above), this capability is used to maintain persistent page variables.
+Note also that persistent page variables can be used between different pages, in that case all of those pages need to have login control (in most cases it is invisible).
+</para>
+</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:FormNonSpecificContent"/>
+        <xs:group ref="v:FormSpecificContent"/>
+        <xs:element ref="v:template"/>
+        <xs:element ref="v:login-form"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="realm" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation>This is the authentication realm name.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="mode" type="v:LoginMode" use="required">
+        <xs:annotation>
+          <xs:documentation>This specifies the preferred mode of keeping session and login information.
+In the case of url and cookie the name and password will have to be supplied in a form submit.  The vspx:login-form control provides a convenient way of doing this.  If passwords are transmitted in a form submit, it is best for security to have the login page accessed via SSL only. Many values may be separated by spaces.  This is the order of preference.  The system will use the first available depending on the user agent.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="user-password" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>
+<para>The name of a SQL function which will retrieve the password given a user name.  If digest authentication is to be possible, this function must be specified. Example:
+</para>
+<programlisting><![CDATA[
+create procedure
+sql_user_password (in name varchar)
+{
+  declare pass varchar;
+  pass := NULL;
+  whenever not found goto none;
+  select pwd_magic_calc (U_NAME, U_PASSWORD, 1) into pass
+          from SYS_USERS where U_NAME = name and U_SQL_ENABLE = 1 and U_IS_ROLE = 0;
+none:
+  return pass;
+}
+;]]></programlisting>
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="user-password-check" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:documentation>
+<para>This is a function which takes the user name and password (unencrypted) and returns true if these match, false otherwise.</para>
+
+<para>
+If the application will keep a session state  which will automatically be extracted from the application's user repository upon login, then either of these functions may set this using connection_set.  This will persist in the session if the login is successful and will be discarded otherwise.  An example of such information is a user privilege class, real name, email or such.
+These functions may be called one or more times during the session, but no more than one call at the start is guaranteed.</para>
+<para>Example:</para>
+<programlisting><![CDATA[
+
+create procedure
+sql_user_password_check (in name varchar, in pass varchar)
+{
+  if (exists (select 1 from SYS_USERS where U_NAME = name and U_SQL_ENABLE = 1 and U_IS_ROLE = 0 and
+        pwd_magic_calc (U_NAME, U_PASSWORD, 1) = pass))
+    return 1;
+  return 0;
+}
+;]]></programlisting>
+<para>Note: when the mode is digest the login control will only call user_password and in other modes  it will only call user_password_check.</para>
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:group name="AnyVspxPageContent">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:group ref="v:FormSpecificContent"/>
+      <xs:group ref="v:FormNonSpecificContent"/>
+      <xs:group ref="v:AnyHtmlContent"/>
+      <xs:element ref="v:node"/>
+      <xs:element ref="v:form"/>
+      <xs:element ref="v:template"/>
+      <xs:element ref="v:hidden"/>
+      <xs:element ref="v:login"/>
+      <xs:element ref="v:login-form"/>
+      <xs:element ref="v:code-file"/>
+    </xs:choice>
+  </xs:group>
+  <xs:element name="column">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>A column marker.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+      <xs:documentation>
+A column marker for use in v:data-set, v:data-grid and v:data-source.
+This element should exist for each selected column of the SQL expression of the data set.
+If this is specified under data-set, data-source or data-grid controls, this must be the exact same columns as in SQL statement to be evaluated. If those element is omitted in data-set or data-grid, the columns will be extracted from compilation of the SQL statement.
+However, this  will always be required for calls of stored procedures that return resultsets and for the data-source control.
+</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="name" type="v:SqlName" use="required">
+	<xs:annotation>
+	  <xs:documentation>The name of column
+	  </xs:documentation>
+	</xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="label" type="v:CalculateableValue" use="optional">
+	<xs:annotation>
+	  <xs:documentation>Alternate text which could be used to display in column headings.
+	  </xs:documentation>
+	</xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="input-format" type="xs:string" use="optional">
+	<xs:annotation>
+	  <xs:documentation>A sprintf format string for printing the input value
+	  </xs:documentation>
+	</xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="output-format" type="xs:string" use="optional">
+	<xs:annotation>
+	  <xs:documentation>A sprintf format string for printing the output value
+	  </xs:documentation>
+	</xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="data-set">
+    <xs:annotation>
+      <xs:documentation><para>A container for displaying and/or editing the content of a resultset.
+This is the generic multi-row database view control. It is used to show repeating data, as from tables
+or procedure views. Allows scrolling (paging) editing the data; adding a row or removal of existing rows.
+Usually this control generates a PL scrollable cursor of type. The number of rows shown is
+configurable via nrows attribute. Note also that column children elements are optional; they can be omitted
+so then VSPX engine will compute them from the specified SQL statement in 'sql' attribute.</para>
+
+<para>This control has the same functionality as the data-grid control but has different syntax, better suited for editing via plugins for 3-d party WYSWYG HTML authoring tools (as Addobe GoLive and similar).</para>
+
+<para>Specific to this control is to have several templates to present repeating and non-repeating groups of children elements. These templates are as follows: two generic templates to represent header and footer sections and one repeating template to enclose edit, add, not-exists and row (browse) sections. All of those templates are optional and their usage can be seen in examples.</para>
+
+<para>Also following the convention for names of controls must be followed: for scrolling buttons - [data-set name]'_prev', [data-set name]'_next', [data-set name]'_first' and [data-set name]'_last'; for editing buttons - [data-set name]'_edit' and [data-set name]'_delete'.</para>
+      </xs:documentation>
+      <xs:appinfo>
+        <refpurpose>Scrollable, multi-row data bound grid.</refpurpose>
+        <tutorial id="VX-S-3">/tutorial/web/vx_s_3/data_set.vspx</tutorial>
+        <special-childs>
+          <child name=""/>
+        </special-childs>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:element ref="v:column"/>
+        <xs:element ref="v:param"/>
+        <xs:element ref="v:key"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="sql" type="v:SqlCode" use="optional">
+        <xs:annotation>
+          <xs:documentation>The select statement that gets the data.
+Parameters to the statement MUST be specified as SQL identifiers prefixed with a colon.
+The values are given in the control's vspx:param children.  These specify the parameter name and a data bound expression for the value.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="data-source" type="v:SqlName" use="optional">
+        <xs:annotation>
+          <xs:documentation>A reference to a data-source, which wil lbe used to bind the data in data-set grid.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="data" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation><para>When this attribute is specified it must be an
+expression returning array of arrays. This is an alternative to specifying an
+SQL expression or data-source. The result then will be used to instantiate
+the repeating group. An example of such data is the result returned by 'exec' function:</para>
+<programlisting>
+(
+  ("ALFKI" "Alfreds Futterkiste" "030-0074321" )
+  ("ANATR" "Ana Trujillo Emparedados y helados" "(5) 555-4729" )
+)
+</programlisting>
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="meta" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation><para>This attribute is used together with 'data', so when is
+specified it needs to be an expression returning a meta-data for columns corresponding to the
+these returned by 'data' expression. In practice it's same as 1-st element of metadata returned by 'exec()' :
+</para>
+
+<programlisting>
+(
+  ("CustomerID" 182 0 5 0 1 1 "Demo" "CustomerID" "demo" "Customers" 0 )
+  ("CompanyName" 182 0 40 1 1 1 "Demo" "CompanyName" "demo" "Customers" 0 )
+  ("Phone" 182 0 24 1 1 1 "Demo" "Phone" "demo" "Customers" 0 )
+)
+</programlisting>
+
+<para>for details of metadata see 'exec()' function description.</para>
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="nrows" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>The maximum number of replicas of the row template to be made for rows selected.
+It is like the rowset size for a scrollable cursor.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="scrollable" type="xs:boolean" use="required">
+        <xs:annotation>
+          <xs:documentation>The setting controls whether next and previous page buttons are presented.  This can be on even if the cursor is not scrollable as such.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="cursor-type" type="v:PlCursorType" use="optional" default="dynamic"/>
+      <xs:attribute name="edit" type="xs:boolean" use="optional" default="false">
+        <xs:annotation>
+          <xs:documentation>Flags whether editing features are enabled on data grid control</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <!--
+;
+-->
+  <xs:element name="param">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Named parameter for the cursor.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+      <xs:documentation>Named parameter for execution of the cursor select statement. This must be the name of a parameter for SQL statement specified, but without leading colon.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attribute name="name" type="v:SqlName" use="required">
+        <xs:annotation>
+          <xs:documentation>Name of the parameter.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="value" type="v:CalculateableValue" use="required">
+        <xs:annotation>
+          <xs:documentation>Data bound value of the parameter.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="data-grid">
+    <xs:annotation>
+      <xs:documentation>
+<para>This is the generic multi-row database view control. It is used to show repeating data, as from tables
+or procedure views. Allows scrolling (paging) editing the data; adding a row or removal of existing rows.
+Usually this control generates a PL scrollable cursor of type as specified. The number of rows shown are
+configurable via nrows attribute. Note also that column children elements are optional; they can be omitted
+so then VSPX engine will compute them from specified SQL statement in 'sql' attribute.</para>
+<para>Specific to this control is to have row-template and frame-template, these are to present repeating and non-repeating groups of children elements. The frame-template will usually
+have a 'rowset' placeholder to designate the place where repeating group (row-template) will be instantiated. The control expects to find child controls with specific names. for scrolling buttons - [data-grid name]'_prev' and [data-grid name]'_next'; for editing buttons - [data-grid name]'_edit' and [data-grid name]'_delete'.</para>
+	</xs:documentation>
+      <xs:appinfo>
+        <refpurpose>Scrollable databound multi-row control.</refpurpose>
+        <special-childs>
+          <child name=""/>
+        </special-childs>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:element ref="v:column"/>
+        <xs:element ref="v:param"/>
+        <xs:element ref="v:key"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="data" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation><para>Expression which returns an array of rowset data, this is an alternative to specifying an SQL expression. The result then will be used to instantiate
+the repeating group. An example of such data is the result returned by 'exec' function:</para>
+<programlisting>
+(
+  ("ALFKI" "Alfreds Futterkiste" "030-0074321" )
+  ("ANATR" "Ana Trujillo Emparedados y helados" "(5) 555-4729" )
+)
+</programlisting>
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="meta" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation><para>This works with combination of data attribute, this expression must return an array of ro metadata. So when this is specified it needs to be an expression returning meta-data for columns. In practice this is the same as 1st element of metadata returned by 'exec()' :</para>
+
+<programlisting>
+(
+  ("CustomerID" 182 0 5 0 1 1 "Demo" "CustomerID" "demo" "Customers" 0 )
+  ("CompanyName" 182 0 40 1 1 1 "Demo" "CompanyName" "demo" "Customers" 0 )
+  ("Phone" 182 0 24 1 1 1 "Demo" "Phone" "demo" "Customers" 0 )
+)
+</programlisting>
+
+<para>
+for details of metadata see 'exec()' function description.</para>
+
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="nrows" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>The maximum number of replicas of the row template to be made for rows selected.
+This is like the rowset size for a scrollable cursor.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="sql" type="v:SqlCode" use="required">
+        <xs:annotation>
+          <xs:documentation>The select statement that gets the data.
+Parameters to the statement MUST be specified as SQL identifiers prefixed with a colon (named parameter).
+The values are given in the control's vspx:param children.  These specify the parameter name and a data bound expression for the value.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="scrollable" type="xs:boolean" use="optional">
+        <xs:annotation>
+          <xs:documentation>The setting controls whether next and previous page buttons are presented.  This can be on even if the cursor is not scrollable as such.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="cursor-type" type="v:PlCursorType" use="optional" default="dynamic"/>
+      <xs:attribute name="edit" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>Flags whether editing features are enabled on data grid control</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <!-- these are not implemented nor specified
+      xs:attribute name="select" type="xs:boolean" use="optional"/>
+      <xs:attribute name="column-titles" type="xs:boolean" use="optional"/>
+      <xs:attribute name="table" type="v:SqlTableQname" use="optional"/-->
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:anyAttribute namespace="##any"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="isql">
+    <xs:annotation>
+      <xs:appinfo>
+        <refpurpose>An interactive SQL control that allows the user to type an SQL statement and to see the result of its execution.</refpurpose>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:element ref="v:template"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="isolation" type="v:IsqlIsolation" use="optional">
+        <xs:annotation>
+	  <xs:documentation>Transaction isolation level to be used.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="timeout" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>Query time-out in seconds (currently not supported)</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="maxrows" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>Maximum number of rows to be displayed.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="user" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+	  <xs:documentation>SQL user account to perform the query, if not specified
+	    the SQL account used to run the VSPX page will be used.
+	  </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="password" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+	  <xs:documentation>When the 'user' attribute is supplied, this is
+	    the user's password.
+	  </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="IsqlIsolation">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="uncomitted">
+        <xs:annotation>
+          <xs:documentation>'uncomitted' transaction isolation level</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="committed">
+        <xs:annotation>
+          <xs:documentation>'committed' transaction isolation level</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="repeatable">
+        <xs:annotation>
+          <xs:documentation>'repeatable' transaction isolation level</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="serializable">
+        <xs:annotation>
+          <xs:documentation>'serializable' transaction isolation level</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="radio-group">
+    <xs:annotation>
+      <xs:documentation>
+      This control is used to group containing radio-buttons in a group.
+      This ensures that only one button is  selected  at a time.
+      Note: This control is not mandatory for making  such group of
+      buttons, another option is to use 'group-name' attribute of the radio-button control.
+      </xs:documentation>
+      <xs:appinfo>
+        <refpurpose>A group of radio-buttons.</refpurpose>
+        <tutorial id="VX-S-2">/tutorial/web/vx_s_2/radio_group.vspx</tutorial>
+        <tutorial id="VX-S-3">/tutorial/web/vx_s_3/update_radio.vspx</tutorial>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:UserInputTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:UserInputAttributes"/>
+      <xs:attribute name="column" type="v:SqlName" use="optional">
+      <xs:annotation>
+        <xs:documentation>The name of the column bound.
+	  If nothing else is specified, the column meta data from the
+	  containing update form sets the field's attributes.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="hidden">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>A wrapper that prevents WYSIWYG editors from displaying its content.</refpurpose>
+      </xs:appinfo>
+      <xs:documentation>This control does not affect the resulting HTML and Virtuoso/PL code. It is used by some WYSIWYG editors in order to temporarily hide details of the page fragment from the editor's drawing area.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:HtmlGenAttributes"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="style">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>A markup tag for use by 'macro stylesheets'.</refpurpose>
+      </xs:appinfo>
+      <xs:documentation>This control marks the enclosed content for special processing in the 'macro stylesheet' whose name is specified by 'style' attribute of v:page element.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:NMTOKEN" use="optional">
+        <xs:annotation>
+	  <xs:documentation>Optional name of the control which could be used
+	    in the macro expansion stylesheet assigned.
+	  </xs:documentation>
+	</xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <!--
+;
+-->
+  <xs:element name="placeholder">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>Placeholder for original page in the decoration page.</refpurpose>
+      </xs:appinfo>
+      <xs:documentation>This marks the place in the decoration page where the content of the original page should be placed.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="calendar">
+    <xs:annotation>
+      <xs:documentation>This is the generic calendar control.</xs:documentation>
+      <xs:appinfo>
+        <refpurpose>Databound calendar control.</refpurpose>
+        <special-childs>
+          <child name=""/>
+        </special-childs>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:element ref="v:param"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="initial-date" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>Expression which returns a date for setting initially the current date of the calendar.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:anyAttribute namespace="##any"/>
+    </xs:complexType>
+  </xs:element>
+  <!--
+;
+-->
+  <xs:element name="expression">
+    <xs:annotation>
+      <xs:documentation>A container for SQL statement generating a rowset or table name (see data-source).</xs:documentation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>An SQL statement that generates a rowset for v:data-source.</refpurpose>
+        <no-render/>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:any namespace="##any"/>
+      </xs:sequence>
+      <xs:attribute name="language" type="v:SqlName" use="optional">
+        <xs:annotation>
+	  <xs:documentation>Denotes the type of language,
+	    currently only SQL expressions are supported, see 'expression-type' attribute
+	    of the data-source control.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="data-source">
+    <xs:annotation>
+      <xs:documentation>Invisible multi-row data source.
+      This control is an invisible represantation of a result set. Also it offer a
+      number of methods for accessing and updating the data. It can be used as a source in
+      the data-set control or as a separate data source for various form controls (such as label, url etc.).
+      This control is using 'SELECT TOP N,M ..' statements to bind the data into the resultset (when source is a table or SQL statement), hence this should be taken into account when using it.
+      </xs:documentation>
+      <xs:appinfo>
+        <refpurpose>Scrollable multi-row data bound source.</refpurpose>
+        <special-childs>
+          <child name=""/>
+        </special-childs>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:element ref="v:column"/>
+        <xs:element ref="v:param"/>
+        <xs:element ref="v:expression"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="expression-type" type="v:SqlExpressionType" use="required">
+        <xs:annotation>
+          <xs:documentation>Denotes the type of 'expression'</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="nrows" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>The maximum number of rows to be selected.
+It is like the rowset size for a scrollable cursor.
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="initial-offset" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation>Number of record to start data binding of rowset</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="data" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation><para>When this attribute is specified it must be an
+expression returning array of arrays. This is an alternative to specifying an
+SQL expression or data-source. The result then will be used to instantiate
+the repeating group. An example of such data is the result returned by 'exec' function:</para>
+<programlisting>
+(
+  ("ALFKI" "Alfreds Futterkiste" "030-0074321" )
+  ("ANATR" "Ana Trujillo Emparedados y helados" "(5) 555-4729" )
+)
+</programlisting>
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="meta" type="v:CalculateableValue" use="optional">
+        <xs:annotation>
+          <xs:documentation><para>This attribute is used together with 'data', so when is
+specified it needs to be an expression returning a meta-data for columns corresponding to the
+these returned by 'data' expression. In practice it's same as 1-st element of metadata returned by 'exec()' :
+</para>
+
+<programlisting>
+(
+  ("CustomerID" 182 0 5 0 1 1 "Demo" "CustomerID" "demo" "Customers" 0 )
+  ("CompanyName" 182 0 40 1 1 1 "Demo" "CompanyName" "demo" "Customers" 0 )
+  ("Phone" 182 0 24 1 1 1 "Demo" "Phone" "demo" "Customers" 0 )
+)
+</programlisting>
+
+<para>for details of metadata see 'exec()' function description.</para>
+</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <!--
+;
+  xs:element name="grid">
+    <xs:annotation>
+      <xs:documentation>A simple data-set variant; no HTML code inside, expanded internally to a data-set</xs:documentation>
+      <xs:appinfo>
+        <refpurpose>scrollable, multi-row data bound grid</refpurpose>
+        <example-description>
+			    </example-description>
+        <example><![CDATA[
+				]]></example>
+        <special-childs>
+          <child name=""/>
+        </special-childs>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:element name="v:columns">
+           <xs:sequence>
+	     <xs:element ref="v:column" minOccurs="1" maxOccurs="unbounded" />
+	   </xs:sequence>
+        </xs:element>
+        <xs:element name="header"/>
+        <xs:element name="footer"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+   </xs:element
+;
+-->
+  <xs:element name="xsd-stub-top">
+    <xs:annotation>
+      <xs:documentation>
+This control should never appear in the VSPX source.
+It is for internal use only.
+Before applying XML schema validation to the page,
+Virtuoso replaces non-VSPX tags with this one when they reside outside v:page.
+</xs:documentation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>This is for internal use only.</refpurpose>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:element ref="v:page"/>
+        <xs:element ref="v:xsd-stub-top"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="xsd-stub">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+      </xs:appinfo>
+      <xs:documentation>
+This control should never appear in the VSPX source.
+It is for internal use only.
+Before applying XML schema validation to the page,
+Virtuoso replaces non-VSPX tags with this one when they reside inside v:page.
+</xs:documentation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>This is for internal use only.</refpurpose>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:AnyVspxPageContent"/>
+        <xs:group ref="v:EventTarget"/>
+        <!-- IMHO this is incorrect:
+ 	<xs:group ref="v:EventTarget"/>
+VSPX.XSL does not handle correclty events that are
+enclosed in HTML tags.
+If you see this, go fix the VSPX page or improve the VSPX.XSL.
+ -->
+      </xs:choice>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="xsd-stub-script">
+    <xs:annotation>
+      <xs:documentation>
+This control should never appear in the VSPX source.
+It is for internal use only.
+Before applying XML schema validation to the page,
+Virtuoso replaces non-VSPX tags with this one when they reside inside event script tag such as v:on-init.
+</xs:documentation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+        <refpurpose>This is for internal use only.</refpurpose>
+      </xs:appinfo>
+    </xs:annotation>
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="vscx">
+    <xs:annotation>
+      <xs:appinfo>
+        <no-default-target-udt/>
+      </xs:appinfo>
+      <xs:documentation>Custom control encapsulated in a separate VSPX page. This is a
+	  wrapper for custom control instantiation. The target URL MUST contain
+	  a valid VSPX page reference. In this way repeatable pieces of code can be reused in
+	  form of instantiation of their page class, this is different from inclusion.
+	  The target page variables can be initialized as attributes in this control, where
+	  name of attribute is a name of variable of target page and value is
+	  an expression to be assigned.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attribute name="url" type="xs:anyURI" use="required">
+        <xs:annotation>
+          <xs:documentation>Reference to a VSPX page to be instantiated as a control.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:anyAttribute namespace="##local" processContents="lax"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <!--
+;
+-->
+  <xs:annotation>
+    <xs:documentation>Deprecated VSPX Controls</xs:documentation>
+  </xs:annotation>
+  <xs:element name="node-template">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="leaf-template">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="horizontal-template">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:group ref="v:EventTarget"/>
+        <xs:group ref="v:AnyVspxPageContent"/>
+      </xs:choice>
+      <xs:attributeGroup ref="v:SqlGenAttributes"/>
+      <xs:attributeGroup ref="v:DebugAttributes"/>
+      <xs:attributeGroup ref="v:WmAttributes"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

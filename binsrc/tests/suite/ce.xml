@@ -1,0 +1,513 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<RDF xmlns:r="http://www.w3.org/TR/RDF/"
+     xmlns:d="http://purl.org/dc/elements/1.0/"  
+     xmlns="http://directory.mozilla.org/rdf">
+
+<Topic r:id="Top">
+  <tag catid="1"/>
+  <d:Title>Top</d:Title>
+</Topic>
+
+<Topic r:id="Top/Arts">
+  <tag catid="2"/>
+  <d:Title>Arts</d:Title>
+  <link r:resource="http://www3.bc.sympatico.ca/PHILLIPSHOTGLASS/GlassPage.html"/>
+</Topic>
+
+<ExternalPage about="http://www3.bc.sympatico.ca/PHILLIPSHOTGLASS/GlassPage.html">
+  <d:Title>John phillips Blown glass</d:Title>
+  <d:Description>A small display of glass by John Phillips</d:Description>
+</ExternalPage>
+
+<Topic r:id="Top/Business">
+  <tag catid="3"/>
+  <d:Title>Business</d:Title>
+</Topic>
+
+<Topic r:id="Top/Computers">
+  <tag catid="4"/>
+  <d:Title>Computers</d:Title>
+  <link r:resource="http://www.cs.tcd.ie/FME/"/>
+  <link r:resource="http://pages.whowhere.com/computers/pnyhlen/Timeline.html"/>
+</Topic>
+
+<ExternalPage about="http://www.cs.tcd.ie/FME/">
+  <d:Title>FME HUB</d:Title>
+  <d:Description>Formal Methods Europe (FME) is a European organization supported by the Commission of the European Union (via ESSI of the ESPRIT programme), with the mission of         promoting and supporting the industrial use of formal methods for computer systems development.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://pages.whowhere.com/computers/pnyhlen/Timeline.html">
+  <d:Title>Computer Timeline</d:Title>
+  <d:Description>A brief description of the eras in computing.</d:Description>
+</ExternalPage>
+
+<Topic r:id="Top/Games">
+  <tag catid="5"/>
+  <d:Title>Games</d:Title>
+</Topic>
+
+<Topic r:id="Top/Health">
+  <tag catid="6"/>
+  <d:Title>Health</d:Title>
+</Topic>
+
+<Topic r:id="Top/Home">
+  <tag catid="7"/>
+  <d:Title>Home</d:Title>
+  <link r:resource="http://www.homeideas.com/"/>
+  <link r:resource="http://www.housenet.com/"/>
+  <link r:resource="http://members.aol.com/yodapro/index.html"/>
+  <link r:resource="http://www.marthastewart.com"/>
+  <link r:resource="http://www.mfgsupply.com"/>
+  <link r:resource="http://www.bccondo.com"/>
+  <link r:resource="http://www.contractornet.com"/>
+  <link r:resource="http://www.kcweb.com/fl/freelance.htm"/>
+  <link r:resource="http://thefamilyrealtor.com"/>
+  <link r:resource="http://members.xoom.com/tipztime"/>
+  <link r:resource="http://www.cococo.net/~tj/house/"/>
+  <link r:resource="http://www.suite101.com/articles/article.cfm/7628"/>
+  <link r:resource="http://www.virtual.net.au/~belair"/>
+</Topic>
+
+<ExternalPage about="http://www.homeideas.com/">
+  <d:Title>Home Ideas: Home Improvement Ideas for Kitchen, Bath, Yard and Garden, etc.</d:Title>
+  <d:Description>The ultimate resource for home projects. Research projects using past issues of Today's Homeowner magazine, request free product literature, and link to over 700 industry websites.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.housenet.com/">
+  <d:Title>HouseNet.Com</d:Title>
+  <d:Description>Home improvement, Gardening, Decorating, Sewing, and Money Saving Information.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://members.aol.com/yodapro/index.html">
+  <d:Title>Pro Flooring</d:Title>
+  <d:Description>We sell and install all types of floor coverings.   Pergo, Ceramic Tile, Carpet and Vinyl. We offer free estimates and Shop @ Home services.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.marthastewart.com">
+  <d:Title>Martha Stewart Living</d:Title>
+</ExternalPage>
+
+<ExternalPage about="http://www.mfgsupply.com">
+  <d:Title>Manufacturer's Supply</d:Title>
+  <d:Description>Your one-stop source for lawnmower, chainsaw, and small engine parts. We offer online ordering of all our parts and great service too.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.bccondo.com">
+  <d:Title>BCCondo.com</d:Title>
+  <d:Description>Seeks to provide both prospective and current   condo owners with useful information on   condominium living in the province.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.contractornet.com">
+  <d:Title>ContractorNet</d:Title>
+  <d:Description>Search our database before you hire a residential or commercial contractor!   Each contractor listed has a current certificate of   insurance and copies of applicable licenses on file  with our office.  Other accessible info includes; years  in business, number of employees, professional affiliations,  and more.  Site features include; state licensing statutes   and government phone numbers, articles, archive of consumer  Q&amp;A's, message board.  If you're in the market for a contractor,  this is a must-see site!</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.kcweb.com/fl/freelance.htm">
+  <d:Title>Freelance! Free stuff for your home!</d:Title>
+  <d:Description>Very large selection of free samples and products. Updated daily!  Free samples, cd-roms, desktop themes, books, contests and more!</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://thefamilyrealtor.com">
+  <d:Title>TheFamilyRealtor.com</d:Title>
+</ExternalPage>
+
+<ExternalPage about="http://members.xoom.com/tipztime">
+  <d:Title>Tipz Time</d:Title>
+  <d:Description>Home on the web with tips and ideas for household including indoors and outdoors, chat, seasonal, and more!</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.cococo.net/~tj/house/">
+  <d:Title>Custom House Plans for .25 cents per square foot.</d:Title>
+  <d:Description>Why pay a fortune to have your new home designed.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.suite101.com/articles/article.cfm/7628">
+  <d:Title>Homeschooling Catholic</d:Title>
+  <d:Description>Why one family homeschools, a list of Catholic curriculums on the internet, a list of families with homeschooling web pages and FREEBIES for homeschooling families.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.virtual.net.au/~belair">
+  <d:Title>Belair Property Maintenance Services</d:Title>
+  <d:Description>Belair Property Maintenance specializes in lawn mowing, garden and turf maintenance in Melbournes outer eastern Suburbs.Our service also incorporates Integrated Pest Control in turf ,garden and horticultural situations using either biological and chemical applications.</d:Description>
+</ExternalPage>
+
+<Topic r:id="Top/News">
+  <tag catid="8"/>
+  <d:Title>News</d:Title>
+  <link r:resource="http://www.bcity.com/bollettino"/>
+  <link r:resource="http://news.bbc.co.uk"/>
+  <link r:resource="http://dailynews.yahoo.com/headlines/top_stories/"/>
+  <link r:resource="http://www.pressdigest.org/"/>
+  <link r:resource="http://www.cnn.com/"/>
+  <link r:resource="http://tvnews.vanderbilt.edu/"/>
+  <link r:resource="http://internetv.virtualspace.net"/>
+  <link r:resource="http://attention.hypermart.net"/>
+  <link r:resource="http://www.palmetto.org/noprint.htm"/>
+  <link r:resource="http://kresch.com/resources/Content/News_Tickers/newstickers.html"/>
+  <link r:resource="http://www.msnbc.com"/>
+  <link r:resource="http://burn.ucsd.edu/~mai/news.html"/>
+  <link r:resource="http://www.abilityinfo.com/ticker.html"/>
+  <link r:resource="http://www.obscurestore.com"/>
+  <link r:resource="http://www.pathfinder.com/welcome/"/>
+</Topic>
+
+<ExternalPage about="http://www.bcity.com/bollettino">
+  <d:Title>International Bulletin</d:Title>
+  <d:Description>International politics.  Italian, French and (some) English</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://news.bbc.co.uk">
+  <d:Title>BBC News</d:Title>
+  <d:Description>International news from the British Broadcasting Corporation</d:Description>
+  <priority>1</priority>
+</ExternalPage>
+
+<ExternalPage about="http://dailynews.yahoo.com/headlines/top_stories/">
+  <d:Title>Reuters News Online</d:Title>
+  <d:Description>This is Yahoo with Reuters news coverage and links to AP and other coverage. Reuters is a worldwide service that enjoys a solid reputation.</d:Description>
+  <priority>1</priority>
+</ExternalPage>
+
+<ExternalPage about="http://www.pressdigest.org/">
+  <d:Title>Pressdigest</d:Title>
+  <d:Description>International and multilingual press digest.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.cnn.com/">
+  <d:Title>CNN</d:Title>
+  <d:Description>CNN's comprehensive web site with links to many valuable services including very prompt sports, financial and breaking news reports. You may be able to wait until tomorrow for all the details but CNN can give you clear and fast news when you want it NOW.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://tvnews.vanderbilt.edu/">
+  <d:Title>Vanderbilt Television News Archive</d:Title>
+  <d:Description>Collection of network news   broadcasts -- ABC, CBS, NBC, CNN, PBS --  from 1968 to the present. Copies of videotape  available on loan basis. Fee charged.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://internetv.virtualspace.net">
+  <d:Title>Internet Television</d:Title>
+  <d:Description>International news in real audio and video.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://attention.hypermart.net">
+  <d:Title>@ttention News</d:Title>
+  <d:Description>news about politics, business, and technology</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.palmetto.org/noprint.htm">
+  <d:Title>Opinions newspaper editors rejected</d:Title>
+  <d:Description>Publishes letters and opinion-editorial items submitted to but rejected by newspapers, frequently with good reason. Read what the newspapers thought you could do without.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://kresch.com/resources/Content/News_Tickers/newstickers.html">
+  <d:Title>All News Tickers on One Page</d:Title>
+  <d:Description>Seven different news ticker styles, news headlines for your web site, free for the download.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.msnbc.com">
+  <d:Title>MS NBC</d:Title>
+  <d:Description>Provides up-to-date news and weather information from around the country. Other features include NBC news shows such as Dateline and the Today Show that you may prefer seeing on your television set. Also includes business news from CNBC and the Wall Street Journal.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://burn.ucsd.edu/~mai/news.html">
+  <d:Title>MA Infoshop News Kiosk</d:Title>
+  <d:Description>A frequently updated roundup of news and breaking events of interest to activists and police agencies. Lots on anarchy, some on radical feminism and other subjects.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.abilityinfo.com/ticker.html">
+  <d:Title>International Disability News Ticker</d:Title>
+  <d:Description>This constantly updated site tracks news stories from web based news sources pertaining to the area of disability.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.obscurestore.com">
+  <d:Title>Obscure Store and Reading Room</d:Title>
+  <d:Description>A daily collection of mostly off-beat news articles, essays and columns. This is an interesting collection of features that can relieve NewsTedium!</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.pathfinder.com/welcome/">
+  <d:Title>Time Warner's Pathfinder!</d:Title>
+  <d:Description>A gateway to news magazines and some online services.</d:Description>
+</ExternalPage>
+
+<Topic r:id="Top/Recreation">
+  <tag catid="9"/>
+  <d:Title>Recreation</d:Title>
+  <link r:resource="http://www.curiouscat.com/clubs/"/>
+</Topic>
+
+<ExternalPage about="http://www.curiouscat.com/clubs/">
+  <d:Title>Curious Cat Club Connections</d:Title>
+  <d:Description>Find local activities and contacts for local recreation  organizations worldwide such as dances, hiking   clubs, book discussion groups, learning   opportunities, charity work, ultimate clubs, singles   clubs...</d:Description>
+</ExternalPage>
+
+<Topic r:id="Top/Reference">
+  <tag catid="10"/>
+  <d:Title>Reference</d:Title>
+  <link r:resource="http://www.bookmagazine.com/"/>
+  <link r:resource="http://www.sosig.ac.uk/"/>
+  <link r:resource="http://www.mtnds.com/af/"/>
+  <link r:resource="http://www.infoplease.com"/>
+  <link r:resource="http://www-sci.lib.uci.edu/HSG/Ref.html"/>
+  <link r:resource="http://thorplus.lib.purdue.edu/reference/index.html"/>
+  <link r:resource="http://www.uky.edu/ArtsSciences/Classics/lexindex.html"/>
+  <link r:resource="http://www.dumblaws.com/"/>
+  <link r:resource="http://www.abp1.com/1getsmrt/index.html"/>
+  <link r:resource="http://www.cybergeography.org/atlas/atlas.html"/>
+  <link r:resource="http://www.sau.edu/CWIS/Internet/Wild/index.htm"/>
+</Topic>
+
+<ExternalPage about="http://www.bookmagazine.com/">
+  <d:Title>Book - The Magazine for the Reading Life</d:Title>
+</ExternalPage>
+
+<ExternalPage about="http://www.sosig.ac.uk/">
+  <d:Title>Social Science Information Gateway - SOSIG</d:Title>
+</ExternalPage>
+
+<ExternalPage about="http://www.mtnds.com/af/">
+  <d:Title>Acronym finder</d:Title>
+</ExternalPage>
+
+<ExternalPage about="http://www.infoplease.com">
+  <d:Title>Information Please</d:Title>
+  <d:Description>Combines an encyclopedia,  a dictionary, and several up-to-the minute almanacs.</d:Description>
+  <priority>1</priority>
+</ExternalPage>
+
+<ExternalPage about="http://www-sci.lib.uci.edu/HSG/Ref.html">
+  <d:Title>Martindale's The Reference Desk</d:Title>
+</ExternalPage>
+
+<ExternalPage about="http://thorplus.lib.purdue.edu/reference/index.html">
+  <d:Title>THOR+: The Virtual Reference Desk</d:Title>
+</ExternalPage>
+
+<ExternalPage about="http://www.uky.edu/ArtsSciences/Classics/lexindex.html">
+  <d:Title>What Do You Want to Know Today?</d:Title>
+  <d:Description>Ancient and classic culture, literature and languages search and retrieval tool.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.dumblaws.com/">
+  <d:Title>Dumb Laws</d:Title>
+  <d:Description>a huge collection of the most senseless laws in the entire United States.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.abp1.com/1getsmrt/index.html">
+  <d:Title>The Virtual Encyclopedia - brought to you by ABP</d:Title>
+</ExternalPage>
+
+<ExternalPage about="http://www.cybergeography.org/atlas/atlas.html">
+  <d:Title>An Atlas of Cyberspaces</d:Title>
+  <d:Description>An atlas of maps and graphic representations of the geographies of the new electronic territories of the Internet, WWW and other emerging Cyberspaces.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.sau.edu/CWIS/Internet/Wild/index.htm">
+  <d:Title>Best Information on the Net</d:Title>
+  <d:Description>A guide to high-quality information resources on the net, appropriate for college students,  faculty and administration, chosen by a librarian/information specialist.</d:Description>
+</ExternalPage>
+
+<Topic r:id="Top/Regional">
+  <tag catid="11"/>
+  <d:Title>Regional</d:Title>
+  <link r:resource="http://www.soon.org.uk/country/language.htm"/>
+</Topic>
+
+<ExternalPage about="http://www.soon.org.uk/country/language.htm">
+  <d:Title>Your own language and country</d:Title>
+  <d:Description>A growing set of pages for different countries.  Links for tourism, information, dictionaries,  learning English, search engines, life &amp; religion,  &amp; more.</d:Description>
+</ExternalPage>
+
+<Topic r:id="Top/Science">
+  <tag catid="12"/>
+  <d:Title>Science</d:Title>
+  <link r:resource="http://www.ibm.com/patents"/>
+  <link r:resource="http://www.sciencekomm.at"/>
+  <link r:resource="http://www.aaas.org/"/>
+  <link r:resource="http://www.techexpo.com/"/>
+  <link r:resource="http://www.csiro.au/"/>
+  <link r:resource="http://www.larc.nasa.gov/"/>
+  <link r:resource="http://www.carl.org/carlweb/"/>
+  <link r:resource="http://www.w3.org/hypertext/DataSources/bySubject/Overview.html"/>
+  <link r:resource="http://www.siec.k12.in.us/~west/sites/scigen.htm"/>
+  <link r:resource="http://www.ukoln.ac.uk/services/elib/"/>
+  <link r:resource="http://www.webcom.com/webscout/links/science/science.html"/>
+</Topic>
+
+<ExternalPage about="http://www.ibm.com/patents">
+  <d:Title>IBM Patent Server</d:Title>
+</ExternalPage>
+
+<ExternalPage about="http://www.sciencekomm.at">
+  <d:Title>science.komm</d:Title>
+  <d:Description>Bioscience and medical journal links, advice and links concerning research communication (writing, presenting etc.)</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.aaas.org/">
+  <d:Title>American Association for the Advancement of Science</d:Title>
+  <d:Description>Research news, issue papers. Educational programs, science policy (U.S. and international).</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.techexpo.com/">
+  <d:Title>Tech Expo</d:Title>
+  <d:Description>Exposition of high technology companies and products on the WWW</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.csiro.au/">
+  <d:Title>CSIRO Australia</d:Title>
+  <d:Description>The Commonwealth Scientific and Industrial Research Organization (CSIRO) is Australia's largest scientific research agency. Areas of research and development include agriculture, forestry, agribusiness, energy, manufacturing, environment, marine resources, climate and atmosphere, mining, petroleum, radio astronomy, pharmaceuticals, and information technology.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.larc.nasa.gov/">
+  <d:Title>NASA Langley Research Center</d:Title>
+  <d:Description>In Hampton, VA. Established in 1917 as the first national civil aeronautics                                                  laboratory, NASA Langley has become a world-class center for                                                  aeronautics, earth science, space technology and structures and                                                  materials research.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.carl.org/carlweb/">
+  <d:Title>CarlWeb</d:Title>
+  <d:Description>search databases for bibliography</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.w3.org/hypertext/DataSources/bySubject/Overview.html">
+  <d:Title>WWW Virtual Library</d:Title>
+  <d:Description>an expert-run catalog of the web</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.siec.k12.in.us/~west/sites/scigen.htm">
+  <d:Title>General Science Sites</d:Title>
+  <d:Description>an annotated list</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.ukoln.ac.uk/services/elib/">
+  <d:Title>eLib: Electronic Libraries Programme</d:Title>
+  <d:Description>the eLib programme consists of around 60 projects</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.webcom.com/webscout/links/science/science.html">
+  <d:Title>WebScout</d:Title>
+  <d:Description>A searchable index of the Web sites, discussion groups and archives.</d:Description>
+</ExternalPage>
+
+<Topic r:id="Top/Shopping">
+  <tag catid="13"/>
+  <d:Title>Shopping</d:Title>
+  <link r:resource="http://www.esmarts.com/"/>
+  <link r:resource="http://www.bdscodak.com"/>
+  <link r:resource="http://www.choicemall.com/"/>
+</Topic>
+
+<ExternalPage about="http://www.esmarts.com/">
+  <d:Title>eSmarts</d:Title>
+  <d:Description>eSmarts helps consumers find the lowest possible prices on the web. They compare prices at different Internet stores, list coupons (including many $10 off coupons), discuss sales and share great shopping tips.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.bdscodak.com">
+  <d:Title>BD Scodak - personalized children's books for your child's education</d:Title>
+  <d:Description>BD Scodak is your source for personalized children's books customized with your child's information right next to popular cartoon, religious, sports, and tv characters and themes.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.choicemall.com/">
+  <d:Title>Choice World</d:Title>
+  <d:Description>Choice Mall - The #1 global marketplace on the Internet.  Thousands of stores offer quality, unique products and services, art and entertainment, books and music, gifts, food, real estate, health, sports, and fitness -- all under one roof!</d:Description>
+</ExternalPage>
+
+<Topic r:id="Top/Society">
+  <tag catid="14"/>
+  <d:Title>Society</d:Title>
+  <link r:resource="http://www.yforum.com/"/>
+</Topic>
+
+<ExternalPage about="http://www.yforum.com/">
+  <d:Title>Y? The National Forum on People's Differences</d:Title>
+  <d:Description>The nation's only forum allowing people to ask and receive answers to the uncomfortable and even embarrassing questions they've always wanted to ask people who are different from themselves. All questions and answers are acceptable, as long as they promote dialogue and are not asked or answered out of hate.</d:Description>
+  <priority>1</priority>
+</ExternalPage>
+
+<Topic r:id="Top/Sports">
+  <tag catid="15"/>
+  <d:Title>Sports</d:Title>
+  <link r:resource="http://www.isportsnet.com"/>
+  <link r:resource="http://www.infoplease.com/sports.html"/>
+  <link r:resource="http://thor.prohosting.com/~sportiq/"/>
+  <link r:resource="http://www.sportsearch.com"/>
+</Topic>
+
+<ExternalPage about="http://www.isportsnet.com">
+  <d:Title>Internet Sports Awards</d:Title>
+  <d:Description>This site allows Internet users the opportunity  to vote for the best players, teams and websites  in the following sports: baseball, basketball,  golf, football, hockey, auto racing,tennis, soccer,  pro wrestling, sports media, sports products and boxing.  Over 600 awards will be announced on December 1st.  2 million plus to vote in the inaugural year of the awards.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.infoplease.com/sports.html">
+  <d:Title>Information Please</d:Title>
+  <d:Description>Information Please Sports Almanac  Facts, figures, scores. Find the facts about sports here.</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://thor.prohosting.com/~sportiq/">
+  <d:Title>Sports IQ Center</d:Title>
+  <d:Description>Find your sports IQ pick a sporting event champion get a sports penpal chat about sports and much more!!</d:Description>
+</ExternalPage>
+
+<ExternalPage about="http://www.sportsearch.com">
+  <d:Title>SportSearch.com -- Just Sports, Baby.</d:Title>
+  <d:Description>NewHoo! style sports search engine.</d:Description>
+</ExternalPage>
+
+<Topic r:id="Top/Test">
+  <tag catid="20"/>
+  <d:Title>Test</d:Title>
+  <link r:resource="http://skip.incog.com/"/>
+  <link r:resource="http://home.digitalcity.com/washington/"/>
+</Topic>
+
+<ExternalPage about="http://skip.incog.com/">
+  <d:Title>SKIP IP-level Encryption</d:Title>
+</ExternalPage>
+
+<ExternalPage about="http://home.digitalcity.com/washington/">
+  <d:Title>Digital City - Washington, DC</d:Title>
+  <priority>1</priority>
+</ExternalPage>
+
+<Topic r:id="Top/World">
+  <tag catid="16"/>
+  <d:Title>World</d:Title>
+  <link r:resource="http://directory.mozilla.org/World/world.html"/>
+</Topic>
+
+<ExternalPage about="http://directory.mozilla.org/World/world.html">
+  <d:Title>About the World Categories</d:Title>
+  <d:Description>Information about this section of the Open Directory, and how to submit  a new language category for inclusion here.</d:Description>
+</ExternalPage>
+
+<Topic r:id="Top/Private">
+  <tag catid="19"/>
+  <d:Title>Private</d:Title>
+</Topic>
+
+<Topic r:id="Top/Bookmarks">
+  <tag catid="18"/>
+  <d:Title>Bookmarks</d:Title>
+</Topic>
+
+
+</RDF>

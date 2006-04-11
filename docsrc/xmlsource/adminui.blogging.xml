@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect2 id="adminui.blogging">
+	<title>Weblog</title>
+
+  <sect3 id="adminui.blogging.admin"><title>Weblog Administration</title>
+
+  <para>The Blog system administration page can be found from the main menu 
+  of the Visual Server Administration Interface by expanding through: 
+  <computeroutput>Web Services >> Weblog</computeroutput>.</para>
+
+		<figure float="1"><title>Weblog UI - Blog Administration</title>
+          <graphic fileref="ui/blog002.jpg" width="356px" depth="157px"/></figure>
+
+  <para>This page lists all users that have a blog account enabled.  Blog users 
+  are created using the WebDAV Users Administration page and a few more 
+  options, as shown below.</para>
+
+  <para>Community blogging can be activitated using the 
+  <emphasis>Generate WebSite Pages</emphasis> button.  This will generate a 
+  DAV owned blog site that will host other blogs within a community.  It can be 
+  configured to allow anyone to register and begin blogging and/or existing 
+  blogs can be added to the community by making sure they are part of the 
+  same domain (see User Settings below).</para>
+
+		<figure float="1"><title>Weblog UI - Adding a WebDAV User with Weblog Support</title>
+          <graphic fileref="ui/blog001.jpg" width="451px" depth="375px"/></figure>
+
+  <para>You create or edit WebDAV users in the usual way, but to enable blog 
+  support you must supply the following:</para>
+
+  <simplelist>
+    <member><emphasis>Create home directory</emphasis> - check box must be enabled</member>
+    <member><emphasis>Home Directory</emphasis> - must be supplied to a 
+	location in DAV, preferably <computeroutput>/DAV/&lt;blog-username&gt;/</computeroutput>.</member>
+    <member><emphasis>Create Weblog</emphasis> - must also be checked.</member>
+  </simplelist>
+
+  <para>Having met this criteria the interface will save the details and create 
+  the default blog site within the home directory.  Once details have been set or
+  confirmed you should return the Blog Administration page to review the 
+  Blog User Settings, below:</para>
+
+  </sect3>
+
+  <sect3 id="adminui.blogging.userset"><title>Weblog User Settings</title>
+
+		<figure float="1"><title>Weblog UI - Blog User Settings</title>
+          <graphic fileref="ui/blog003.jpg" width="588px" depth="445px"/></figure>
+
+  <para>The user settings here are the same as those presented for the 
+  community blog (see later), only the layout is different.  These settings 
+  configure your blog site.</para>
+
+  <itemizedlist>
+    <listitem><formalpara><title>Title</title>
+	  <para>The front page title for the blog home page.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Description</title>
+	  <para>The description that will be accompanied with meta-data about the site, such as contained within RSS feeds.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Author's e-mail</title>
+	  <para>The email addess of the blog author.  This can be used for receiving notifications.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Owner</title>
+	  <para>The WebDAV owner for the site.  This is supplied as read-only for reference only.</para></formalpara>
+  </listitem>
+  
+    <!--listitem><formalpara><title></title>
+	  <para></para></formalpara>
+  </listitem-->
+  
+    <listitem><formalpara><title>Home page URL</title>
+      <para>If the blog user has another home page it can be supplied here for 
+	  blog readers to visit.  A valid URL should be supplied.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Copyrights; Disclaimers</title>
+      <para>Should the blog user wish to supply such details they can do so
+	  here, in plain-text.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Keywords</title>
+      <para>These are HTML META TAG keyword values 
+	  for the Blog Home Page; these are typically used by search engines 
+	  amongst other "web spiders" to determine page and keyword associations.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Upload Photo Image; Photo</title>
+      <para>You can supply a photo that will provide your site with a graphical 
+	  identity.  Use the browse button to select an image to upload.  Uploaded
+	  images are placed in the blog subdirectory of the users home.  You may 
+	  have more than one image in this directory so you must enter the filename 
+	  of photo you want displayed in the "Photo" field, relative to the blog subdirectory.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>XSL-T filter for Posts</title>
+      <para>The <computeroutput>*default*</computeroutput> option can be 
+	  replaced should a custom stylesheet be supplied for handling post output.  
+	  The filename and path relative to the &lt;home-dir&gt;/blog directory should 
+	  be supplied.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Domains</title>
+      <para>This selects the domains (on the left) that will provide access to 
+	  the blog site.  This option can be used to enable access to a single blog 
+	  from a variety of personal, community, and corporate domains, which may be 
+	  hosted on the same Virtuoso server instance using Virtuoso's Virtual 
+	  Host/Domain functionality.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Weblog pings</title>
+      <para>Enables automatic blog post notification to the central blog 
+	  post server at <computeroutput>http://weblogs.com/</computeroutput>.  
+	  This is one of the way of making the blogosphere aware of your blog posts.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Enable Contacts </title>
+      <para>This is how you add records to the Virtuoso Weblog susbsystem's 
+	  FOAF (Friend of A Friend) database.  The FOAF database like other weblog 
+	  gems is exposed to the web and blogosphere via a SQL-XML based RDF file. 
+	  FOAF is an application of the XML based RDF vocabulary for persisting and 
+	  sharing information about your contacts and associates.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>RSS file version</title>
+      <para>To maximise compatibilty with existing RSS aware technologies (e.g. 
+	  RSS Headline Readers and RSS Content Aggregators) a choice of RSS 
+	  formats provided for your blog posts (the system default is RSS 2.0).</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Enable Comments</title>
+      <para>When enabled allows readers of your blog to provide comments on 
+	  your site directly.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Enable Comment Post Notification via E-mail</title>
+      <para>When checked you will receive an e-mail notification (using the 
+	  blog e-mail account value provided above) every time a comment is posted 
+	  to your blog.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Time-zone</title>
+      <para>Allows you to set your time-zone.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Bridge Settings</title>
+      <para>Allows you to define upstreaming destinations and rules.  
+	  Upstreaming is how you enable Virtuoso to automatically route blog 
+	  posts to other blogs that you may own, the only requirement is that 
+	  these blog systems support any one of the following blog post APIs: 
+	  Blogger, Meta-Weblog, or Moveable Type.  This also implies that you 
+	  can use a single Blog Post Client (w.Bloggar, Newzcrawler, Zempt, 
+	  and others) to post to several blogs.  See Community Blog Upstreaming 
+	  below, the settings are identical.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Categories</title>
+      <para>Provides a simple interface for creating blog post categories. 
+	  It is important to note that the "enabled" and "disabled" attributes of 
+	  these categories determines if they allow upstreaming of posts of not. 
+	  Thus, when a category is set to "disabled" it means that any post that 
+	  falls into this category will not be upstreamed to blogs outside the current 
+	  server. When a category is set to "enabled" it means that although posts 
+	  are not automatically restricted to the host server, they may still be 
+	  excluded from upstreaming via an exception rule in an upstream 
+	  routing table.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Channels</title>
+      <para>Use this page to add RSS, OPML, OCS feeds to your blog home page. 
+	  The OPML and OCS feeds contain collections of RSS feeds (these are Group 
+	  Syndication Formats), and each RSS feed may or may not be a blog feed.  
+	  In cases where the feed is deemed to be a blog (you indicate this by 
+	  checking the "Is This a Blog" checkbox), it will be saved to Virtuoso's 
+	  WebDAV respository and automatically added to the blog home's 
+	  "Blogroll", otherwise they will be added to the "Channelroll" section of 
+	  the blog home page - which enumerates a collection RSS based content 
+	  sources.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Contacts</title>
+      <para>Your electronic contact details are provided here.</para></formalpara>
+	  </listitem>
+    </itemizedlist>
+
+  </sect3>
+
+  <sect3 id="adminui.blogging.blogentry"><title>Weblog Posting</title>
+
+		<figure float="1"><title>Weblog UI - Blog Entry Administration</title>
+          <graphic fileref="ui/blog004.jpg" width="527px" depth="460px"/></figure>
+
+  <para>This interface allows you to post blog entries to selected categories 
+  at a particular time.  You supply a title for the post and the main content 
+  in the description field.  The preview option lets you see how it will look 
+  without actually posting anything to the blog.</para>
+
+		<figure float="1"><title>Weblog UI - Blog Home Page</title>
+          <graphic fileref="ui/blog005.jpg" width="567px" depth="391px"/></figure>
+
+  <para>This is how the default generated blog home page will look.  This is 
+  completely customisable via XSL's and VSPX code that is copied into your 
+  blog directory in DAV without effecting other blogs.  You postings for the day 
+  will be displayed in the centre column, you can select other days using the 
+  calendar in the top right of the page.  Along the left column you have 
+  syndication options to your site, a collection of XML based feeds, such as RSS 
+  for other blog users to keep track of your blogging.</para>
+
+  <para>As the blog site grows in complexity, your channels and RSS feeds will 
+  be listed on the right-hand column of the page.</para>
+
+  </sect3>
+
+  <sect3 id="adminui.blogging.comblog"><title>Community Blog Posting</title>
+
+		<figure float="1"><title>Weblog UI - Community Blog Entry</title>
+          <graphic fileref="ui/blog006.jpg" width="674px" depth="469px"/></figure>
+
+  <para>The community blog site providers a login section in the top-left of 
+  the page.  Once a user is logged-in they can continue blogging as normal, but 
+  using the same "skin" as the home page.  Hence, the Community Blog Entry 
+  page that contains similar fields for authoring a blog post.</para>
+
+  <note><title>Note:</title>
+    <para>The left-hand column contains a configuration panel, used by bloggers 
+	to maintain their part of the community.</para></note>
+
+  <itemizedlist>
+    <listitem><formalpara><title>Channel Subscriptions</title>
+      <para>For subscribing to news feeds and other RSS's.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Upstreaming</title>
+      <para>So that your blogs on this community can be replicated to other blogs.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Categories</title>
+      <para>For maintaining your blog categories.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Preferences</title>
+      <para>For configuring you blog site details.</para></formalpara>
+	  </listitem>
+  </itemizedlist>
+
+  </sect3>
+
+  <sect3 id="adminui.blogging.comblogcats"><title>Community Blog - Categories</title>
+
+		<figure float="1"><title>Weblog UI - Community Categories</title>
+          <graphic fileref="ui/blog011.jpg" width="521px" depth="259px"/></figure>
+
+  <para>This page lets you define, remove and edit your blog categories.  You 
+  provide a description and use the drop-down list to choose whether you want 
+  the category to be included in any upstreaming configurations.  Click on the 
+  save button to add the category. </para>
+
+  <para>It is important to note that the "enabled" and "disabled" attributes of 
+  these categories determines if they allow upstreaming of posts of not. 
+  Thus, when a category is set to "disabled" it means that any post that 
+  falls into this category will not be upstreamed to blogs outside the current 
+  server. When a category is set to "enabled" it means that although posts 
+  are not automatically restricted to the host server, they may still be 
+  excluded from upstreaming via an exception rule in an upstream 
+  routing table.</para>
+
+  <para>Existing categories will be listed in a table on this page, the edit link
+  lets you alter its details, whilst the delete link lets you drop a category.</para>
+
+		<figure float="1"><title>Weblog UI - Community Category Posting</title>
+          <graphic fileref="ui/blog013.jpg" width="692px" depth="521px"/></figure>
+
+  <para>You post to a category by selecting it from the list next to the 
+  blog post description.</para>
+
+  </sect3>
+
+  <sect3 id="adminui.blogging.commblogchnl"><title>Community Blog - Channel Subscription</title>
+
+  <para>This page is used to add RSS, OPML, OCS feeds to your blog home page. 
+	  The OPML and OCS feeds contain collections of RSS feeds (these are Group 
+	  Syndication Formats), and each RSS feed may or may not be a blog feed.  
+	  In cases where the feed is deemed to be a blog (you indicate this by 
+	  checking the "Is This a Blog" checkbox), it will be saved to Virtuoso's 
+	  WebDAV respository and automatically added to the blog home's 
+	  "Blogroll", otherwise they will be added to the "Channelroll" section of 
+	  the blog home page - which enumerates a collection RSS based content 
+	  sources.</para>
+
+		<figure float="1"><title>Weblog UI - Community Channel Subscription</title>
+          <graphic fileref="ui/blog007.jpg" width="546px" depth="231px"/></figure>
+
+  <para>The channel subscription page lists in a table any RSS based feeds that 
+  have been subscribed to, and lets you add entries to that list.</para>
+
+		<figure float="1"><title>Weblog UI - Community Channel Subscription Settings</title>
+          <graphic fileref="ui/blog008.jpg" width="542px" depth="358px"/></figure>
+
+  <para>To add a channel to the list simply supply the URL to the RSS feed 
+  itself and click on retrieve.  After the RSS feed has been reviewed you will 
+  be presented with its details to review and confirm using the Save button, 
+  thus adding it to the list.</para>
+
+		<figure float="1"><title>Weblog UI - Community Channel Subscription Confirmation</title>
+          <graphic fileref="ui/blog009.jpg" width="595px" depth="227px"/></figure>
+
+<para>For each item in the list you can:</para>
+
+  <itemizedlist>
+    <listitem><formalpara><title>Edit</title>
+      <para>Its details, such as its update interval.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Delete</title>
+      <para>The entry altogether.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Fetch Posts</title>
+      <para>To fetch the latest RSS version from the server on demand, now.</para></formalpara>
+	  </listitem>
+  </itemizedlist>
+
+  </sect3>
+
+  <sect3 id="adminui.blogging.commblogups"><title>Community Blog - Upstreaming</title>
+
+		<figure float="1"><title>Weblog UI - Community Upstreaming</title>
+          <graphic fileref="ui/blog010.jpg" width="756px" depth="257px"/></figure>
+
+  <para>Upstreaming keeps your blogs synchronised amoungst your various blog 
+  sites, should you have more than one.  This allows you to maintain all of your
+  blogging centrally, and then upstream portions to appropriate servers 
+  based on whether they are private, public or for your organisation or of 
+  various topics.</para>
+
+  <para>Upstreaming is how you enable Virtuoso to automatically route blog 
+	  posts to other blogs that you may own, the only requirement is that 
+	  these blog systems support any one of the following blog post APIs: 
+	  Blogger, Meta-Weblog, or Moveable Type.  This also implies that you 
+	  can use a single Blog Post Client (w.Bloggar, Newzcrawler, Zempt, 
+	  and others) to post to several blogs.</para>
+
+  <itemizedlist>
+    <listitem><formalpara><title>Endpoint</title>
+      <para>Is the XML-RPC/SOAP endpoint that support SOAP based blogger API 
+	  for your blog site.  For Virtuoso servers the endpoint typically ends with 
+	  <computeroutput>/RPC2</computeroutput>, but this is configurable.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>User/Password</title>
+      <para>The credentials required for accessing your blog site.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Type</title>
+      <para>The Blog API system type.  One of: Blogger, MetaWebLog or 
+	  Moveable Type</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>BlogID</title>
+      <para>The system ID for your blog account on the server.  This is rarely 
+	  known so the Fetch button can be used to obtain it once the above 
+	  information has been provided.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Frequency</title>
+      <para>The interval in minutes that Virtuoso will re-sync your blog with 
+	  other sites.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Except</title>
+      <para>Is an exception list to remove categories from this upstream entry.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Action</title>
+      <para>The final step for adding your upstreaming entry is the Add 
+	  button.  The checkbox next to it can be toggled to activate or de-activite 
+	  an upstream entry as required.</para></formalpara>
+	  </listitem>
+  </itemizedlist>
+
+  </sect3>
+
+  <sect3 id="adminui.blogging.commblogusrprfs"><title>Community Blog - User Preferences</title>
+
+		<figure float="1"><title>Weblog UI - Community User Preferences</title>
+          <graphic fileref="ui/blog012.jpg" width="637px" depth="499px"/></figure>
+
+  <para>The user settings here are similar to those presented for the 
+  single-user blog (see above), only the layout is different.  These settings 
+  configure your part of blog community.</para>
+
+  <itemizedlist>
+    <listitem><formalpara><title>Title</title>
+	  <para>The front page title for the blog home page.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Description</title>
+	  <para>The description that will be accompanied with meta-data about the site, such as contained within RSS feeds.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Author's e-mail</title>
+	  <para>The email addess of the blog author.  This can be used for receiving notifications.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Home page URL</title>
+      <para>If the blog user has another home page it can be supplied here for blog readers to visit.  A valid URL should be supplied.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Copyrights; Disclaimers</title>
+      <para>Should the blog user wish to supply such details they can do so here, in plain-text.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Keywords</title>
+      <para>These are HTML META TAG keyword values 
+	  for the Blog Home Page; these are typically used by search engines 
+	  amongst other "web spiders" to determine page and keyword associations.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Upload Photo Image; Photo</title>
+      <para>You can supply a photo that will provide your site with a graphical 
+	  identity.  Use the browse button to select an image to upload.  Uploaded
+	  images are placed in the blog subdirectory of the users home.  You may 
+	  have more than one image in this directory so you must enter the filename 
+	  of photo you want displayed in the "Photo" field, relative to the blog subdirectory.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Ping Weblog.com using</title>
+      <para>Enables automatic blog post notification to the central blog 
+	  post server at <computeroutput>http://weblogs.com/</computeroutput>.  
+	  This is one of the way of making the blogosphere aware of your blog posts.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Enable Contacts </title>
+      <para>This is how you add records to the Virtuoso Weblog susbsystem's 
+	  FOAF (Friend of A Friend) database.  The FOAF database like other weblog 
+	  gems is exposed to the web and blogosphere via a SQL-XML based RDF file. 
+	  FOAF is an application of the XML based RDF vocabulary for persisting and 
+	  sharing information about your contacts and associates.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>RSS file version</title>
+      <para>To maximise compatibilty with existing RSS aware technologies (e.g. 
+	  RSS Headline Readers and RSS Content Aggregators) a choice of RSS 
+	  formats provided for your blog posts (the system default is RSS 2.0).</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Enable Comments</title>
+      <para>When enabled allows readers of your blog to provide comments on your site directly.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Enable Comment Post Notification via E-mail</title>
+      <para>When checked you will receive an e-mail notification (using the 
+	  blog e-mail account value provided above) every time a comment is posted 
+	  to your blog.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Time-zone</title>
+      <para>Allows you to set your time-zone.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Enable Trackback/Pingback</title>
+      <para>TrackBack provides a method of notification between blog sites.  
+	  it is a method of blog A saying to blog B, "This is something you may be interested in." - 
+	  so that referrals and comments let the blog user know another blogger 
+	  has used their blog.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Enable Referrals</title>
+      <para>Toggle to specify whether you want to display referral URL's on your blog page.</para></formalpara>
+	  </listitem>
+    <listitem><formalpara><title>Change password</title>
+      <para>Lets you change your password.  You have your old password in order to do this for security purposes.</para></formalpara>
+	  </listitem>
+    </itemizedlist>
+</sect3>
+</sect2>

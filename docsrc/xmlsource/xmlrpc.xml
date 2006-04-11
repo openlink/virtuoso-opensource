@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="xmlrpc"><title>XML-RPC support</title>
+
+<para>The XML-RPC is a remote procedure calling system via
+HTTP using XML as the encoding. It is very much like the SOAP protocol,
+but the data encoding rules are different.
+XML-RPC supports fewer data types than SOAP. The data is self-describing and
+position bound. </para>
+
+<para>The Virtuoso SOAP server can process XML-RPC requests using the
+XML-RPC to SOAP bridge. This is done with two filters : input and output filter.
+The input filter transforms XML-RPC into a SOAP PRC encoded message.  Then the
+transformed message is passed to the SOAP server for processing.
+The response from the SOAP server will be re-coded into XML-RPC format in the
+output filter. The combination of these filters constitutes the bridge.</para>
+
+<para>It is important to remember that XML-RPC defines two complex
+types : array and structure. These two types are represented by vector () and
+soap-structure respectively, when passing the data to the PL procedure in question.</para>
+
+<example id="ex_xmlrpc"><title>XML-RPC Procedure Definition</title>
+<para>An example of a PL procedure representing an
+XML-RPC method "echoXRtypes" is:</para>
+
+<programlisting><![CDATA[
+create procedure echoXRtypes (
+                                in  inInteger 	integer,
+                                in  inString 	varchar,
+                                in  inDate 	datetime,
+                                in  inDouble 	double precision,
+				in  inBoolean 	smallint,
+				in  inHex 	varchar,
+                                out outInteger 	integer,
+                                out outString 	varchar,
+                                out outDate 	datetime,
+                                out outDouble 	double precision,
+				out outBoolean 	smallint,
+				out outHex 	varchar __soap_type 'http://www.w3.org/2001/XMLSchema:base64Binary'
+ 			    )
+{
+    outInteger  := inInteger 	;
+    outString 	:= inString 	;
+    outDate 	:= inDate 	;
+    outDouble 	:= inDouble 	;
+    outBoolean 	:= soap_boolean (inBoolean);
+    outHex 	:= inHex 	;
+}
+;
+]]></programlisting>
+
+<para>Note that the definition of such procedures does not differ from those
+of SOAP procedures.</para>
+
+<para>An XML-RPC request may look like:</para>
+
+<programlisting><![CDATA[
+<?xml version="1.0"?>
+<methodCall>
+<methodName>echoXRtypes</methodName>
+<params>
+  <param> <value><i4>42</i4></value> </param>
+  <param> <value>String</value> </param>
+  <param> <value><dateTime.iso8601>1998-07-17T14:08:55</dateTime.iso8601></value> </param>
+  <param> <value><double>1234.567</double></value> </param>
+  <param> <value><boolean>1</boolean></value> </param>
+  <param> <value><base64>eW91IGNhbid0IHJlYWQgdGhpcyE=</base64></value> </param>
+</params>
+</methodCall>
+]]></programlisting>
+
+<para>The response for the above message will be :</para>
+
+<programlisting><![CDATA[
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<methodResponse>
+<params>
+<param> <value> <i4>42</i4> </value> </param>
+<param> <value> <string>String</string> </value> </param>
+<param> <value> <dateTime.iso8601>1998-07-17T14:08:55.000+03:00</dateTime.iso8601> </value> </param>
+<param> <value> <double>1234.567000</double> </value> </param>
+<param> <value> <boolean>1</boolean> </value> </param>
+<param> <value> <base64>eW91IGNhbid0IHJlYWQgdGhpcyE=</base64> </value> </param>
+</params>
+</methodResponse>
+]]></programlisting>
+</example>
+
+<para>Enabling the XML-RPC -> SOAP bridge is very simple.  You make a
+virtual directory with physical location pointing to /SOAP/ and specify the 'XML-RPC'
+SOAP option as 'yes'.  The following methods are available:</para>
+
+<orderedlist>
+ <listitem><formalpara><title>Virtual Directories Visual Administration Interface</title>
+  <para>From the main administration menu go to
+  <computeroutput>Web Servers -> Virtual Directories</computeroutput> and add
+  or configure a virtual directory.  For the directory definition add a new option in
+  SOAP options box: "<computeroutput>XML-RPC=yes;</computeroutput>".</para>
+  </formalpara></listitem>
+ <listitem><formalpara><title>The vhost_define() Function</title>
+  <para>Using the ISQL utility one can use the command:</para>
+  </formalpara>
+  <programlisting><![CDATA[
+SQL> vhost_define (lpath=>'/RPC2', ppath=>'/SOAP/', soap_user=>'dba',
+    soap_opts=>vector ('XML-RPC', 'yes'));
+]]></programlisting>
+</listitem>
+</orderedlist>
+
+<note><title>Note:</title>
+  <para>Virtual directories configured in this way can only be used for
+  XML-RPC calls. If you need to make SOAP requests, then another virtual
+  directory will be required.</para></note>
+</sect1>
+

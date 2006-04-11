@@ -1,0 +1,3092 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<rss version="0.91">
+  <channel>
+    <title>Copia   </title>
+    <link>http://copia.ogbuji.net/blog/index.rss</link>
+    <description>Ogbujis on just about everything</description>
+    <language>en</language>
+    <item>
+      <title>FuXi Trigrams in SVG</title>
+      <link>http://copia.ogbuji.net/blog/FuXiTrigrams.html</link>
+      <content>
+        <p>I had been looking for these for some time:</p>
+        <h3>Heaven</h3>
+        <p>
+          <img src="http://www.fileformat.info/info/unicode/char/2635/trigram_for_heaven.svg" alt="Trigram for Heaven" title=""/>
+        </p>
+        <h3>Earth</h3>
+        <p>
+          <img src="http://www.fileformat.info/info/unicode/char/2635/trigram_for_earth.svg" alt="Trigram for Heaven" title=""/>
+        </p>
+        <h3>Thunder</h3>
+        <p>
+          <img src="http://www.fileformat.info/info/unicode/char/2635/trigram_for_thunder.svg" alt="Trigram for Heaven" title=""/>
+        </p>
+        <h3>Wind</h3>
+        <p>
+          <img src="http://www.fileformat.info/info/unicode/char/2635/trigram_for_window.svg" alt="Trigram for Heaven" title=""/>
+        </p>
+        <h3>Mountain</h3>
+        <p>
+          <img src="http://www.fileformat.info/info/unicode/char/2635/trigram_for_mountain.svg" alt="Trigram for Heaven" title=""/>
+        </p>
+        <h3>Lake</h3>
+        <p>
+          <img src="http://www.fileformat.info/info/unicode/char/2635/trigram_for_lake.svg" alt="Trigram for Heaven" title=""/>
+        </p>
+        <h3>Water</h3>
+        <p>
+          <img src="http://www.fileformat.info/info/unicode/char/2635/trigram_for_water.svg" alt="Trigram for Heaven" title=""/>
+        </p>
+        <h3>Fire</h3>
+        <p>
+          <img src="http://www.fileformat.info/info/unicode/char/2635/trigram_for_fire.svg" alt="Trigram for Heaven" title=""/>
+        </p>
+      </content>
+    </item>
+    <item>
+      <title>Versa Diagrams</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-16/VersaDiagrams.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>I updated the Versa by Deconstruction <a href="http://copia.ogbuji.net/files/VersaPrimer.html">document</a> with diagrams for the
+forward traversal operator and the distribute function (probably the two most difficult / fundamental components of
+Versa).  They are both below:</p>
+        <p>
+          <img src="http://copia.ogbuji.net/files/Distribute.jpg" title="Distribute - as Cartesian Product"/>
+        </p>
+        <p>
+          <a href="http://copia.ogbuji.net/files/ForwardTraversalOperator.jpg">
+            <img src="http://copia.ogbuji.net/files/ForwardTraversalOperator-small.jpg" title="Forward Traversal Operator"/>
+          </a>
+        </p>
+      </content>
+    </item>
+    <item>
+      <title>Sane template-like output for Amara</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-16/Sane_templ.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>In <a href="/blog/2005-06-12/Amara_equi">this entry</a> I showed some Amara
+equivalents for XSLT 2 and XQuery examples.  I think the main
+disadvantage of Amara in these cases was the somewhat clumsy XML output
+generation syntax.  This is not an easy problem to fix.  XSLT and XQuery
+basically work XML syntax directly into the language, to make output
+specification very seamless.  This makes sense as long as they stick to
+the task of being very determinate black boxes taking one body of XML data
+and working it into another.  But often you turn to a language like
+Python for XML processing because you want to blow the lid off the
+determinate black boxes a bit: you want to take up all the power of
+general-purpose computing.</p>
+        <p>With this power comes the need to streamline and modularize, and the
+usual first principle for such streamlining is the principle of
+separating the model from presentation.  This is a much easier
+principle to state than to observe in real-life processing scenarios.
+We love template languages for XML and HTML generation because they are
+so convenient in solving real problems in the here and now.  We look
+askance at them, however, because we know that they come with a tendency
+to mix model and presentation, and that we might regret the solution
+once it comes time to maintain it when (as inevitable) model processing
+requirements change or presentation requirements change.</p>
+        <p>Well, that was a longer preamble than I'd originally had in mind, but
+it's all boils down to my basic problem: how do I make Amara's output
+mechanism more readable without falling into the many pitfalls of
+template systems?</p>
+        <p>Here is one of the XSLT 2 examples:</p>
+        <pre>
+          <code>&lt;xsl:for-each select="doc('auction.xml')/site/people/person"&gt;
+  &lt;xsl:variable name="p" select="."/&gt;
+  &lt;xsl:variable name="a" as="element(item)*"&gt;
+    &lt;xsl:for-each select="doc('auction.xml')/site/closed_auctions/closed_auction"&gt;
+      &lt;xsl:variable name="t" select="."/&gt;
+      &lt;xsl:variable name="n"
+           select="doc('auction.xml')/site/regions/europe/item
+                               [$t/itemref/@item = @id]"/&gt;
+      &lt;xsl:if test="$p/@id = $t/buyer/person"&gt;
+        &lt;item&gt;&lt;xsl:copy-of select="$n/name"/&gt;&lt;/item&gt;
+      &lt;/xsl:if&gt;
+  &lt;/xsl:variable&gt;
+  &lt;person name="{$p/name}"&gt;
+    &lt;xsl:copy-of select="$a"/&gt;
+  &lt;/person&gt;
+&lt;/xsl:for-each&gt;
+</code>
+        </pre>
+        <p>In Amara 1.0b3 it goes something like:</p>
+        <pre>
+          <code>def closed_auction_items_by_name():
+    doc = binderytools.bind_file('auction.xml')
+    newdoc = binderytools.create_document()
+    #Iterate over each person
+    for person in doc.xml_xpath(u'/site/people/person'):
+        #Prepare the wrapper element for each person
+        person_elem = newdoc.xml_element(
+            u'person',
+            attributes={u'name': unicode(person.name)}
+        )
+        newdoc.xml_append(person_elem)
+        #Join to compute all the items this person bought in Europe
+        items = [ unicode(item.name)
+          for closed in doc.xml_xpath (u'/site/closed_auctions/closed_auction')
+          for item in doc.xml_xpath(u'/site/regions/europe/item')
+          if (item.id == closed.itemref.item
+              and person.id == closed.buyer.person)
+        ]
+        #XML chunk with results of join
+        for item in items:
+            person_elem.xml_append(
+                newdoc.xml_element(u'item', content=item)
+            )
+    #All done.  Print out the resulting document
+    print newdoc.xml()
+</code>
+        </pre>
+        <p>The following snippet is a good example:</p>
+        <pre>
+          <code>        person_elem = newdoc.xml_element(
+            u'person',
+            attributes={u'name': unicode(person.name)}
+        )
+        newdoc.xml_append(person_elem)
+</code>
+        </pre>
+        <p>If I could turn all this into:</p>
+        <pre>
+          <code>        newdoc.xml_append_template("&lt;person name='{person.name}'/&gt;")
+</code>
+        </pre>
+        <p>This would certainly be a huge win for readability.  The curly brackets
+are borrowed from XSLT attribute value templates (AVTs), except that
+their contents are a Python expression rather than an XPath.  The person
+element created is empty for now, but it becomes just part of the data
+binding and you can access it using the expected <code>newdoc.person</code> or
+<code>newdoc.person.name</code>.</p>
+        <p>One important note: this is very different from `"&lt;person name='%
+s'/&gt;"%(person.name)`.  What I have in mind is a structured template that
+must be well-formed (it can have multiple root elements).  The
+replacement occurs within the perfectly well-formed XML structure of the
+template.  As with XSLT AVTs you can represent a literal curly bracket
+as <code>{{</code> or <code>}}</code>.</p>
+        <p>The other output generation part in the example:</p>
+        <pre>
+          <code>        for item in items:
+            person_elem.xml_append(
+                newdoc.xml_element(u'item', content=item)
+            )
+</code>
+        </pre>
+        <p>Would become</p>
+        <pre>
+          <code>        for item in items:
+            newdoc.person.xml_append_template("&lt;item&gt;{item}&lt;/item&gt;")
+</code>
+        </pre>
+        <p>This time we have the template substitution going on in the content
+rather than an attribute.  Again I would want to restrict this entire
+idea to a very clean and layered template with proper XML semantics.
+There would be no tricks such as
+<code>"&lt;{element_name}&gt;spam&lt;/{element_name}&gt;"</code>.  If you wanted that sort of
+thing you could use the existing API such as xml_element(element_name),
+or even use Python string operations directly.</p>
+        <p>The complete example using such a templating system would be:</p>
+        <pre>
+          <code>def closed_auction_items_by_name():
+    doc = binderytools.bind_file('auction.xml')
+    newdoc = binderytools.create_document()
+    #Iterate over each person
+    for person in doc.xml_xpath(u'/site/people/person'):
+        #Prepare the wrapper element for each person
+        newdoc.xml_append_template("&lt;person name='{person.name}'/&gt;")
+        #Join to compute all the items this person bought in Europe
+        items = [ unicode(item.name)
+          for closed in doc.xml_xpath (u'/site/closed_auctions/closed_auction')
+          for item in doc.xml_xpath(u'/site/regions/europe/item')
+          if (item.id == closed.itemref.item
+              and person.id == closed.buyer.person)
+        ]
+        #XML chunk with results of join
+        for item in items:
+            newdoc.person.xml_append_template("&lt;item&gt;{item}&lt;/item&gt;")
+    #All done.  Print out the resulting document
+    print newdoc.xml()
+</code>
+        </pre>
+        <p>I think that this example is indeed more readable than the XSLT version.</p>
+        <p>One tempting thing about this idea is that all the building blocks are
+there.  4Suite already gives me the ability to parse and process this
+template very easily, and I could implement this logic without much
+trouble.  But I also think that it deserves some serious thought (and, I
+hope, feedback from users).  There's no hurry: I don't plan to add this
+capability in the Amara 1.0 cycle.  I need to get Amara 1.0 out, and I'm
+expecting that 1.0b3 is the last stop before a release candidate.</p>
+        <p>So, things to ponder.</p>
+        <p><strong>Security</strong>.  Any time you support such arbitrary-code-in-template
+features the tainted string worry comes up: what happens if one is not
+careful with the expression that is used within a template?  I think
+that this issue is not really Amara's responsibility.  The developer
+using Amara should no more pass in untrusted Python expressions to a
+template than they would to an <code>exec</code> statement.  They should be aware
+that Amara templates will execute arbitrary Python expressions, if
+they're passed in, and they should apply the usual precautions against
+tainting.</p>
+        <p><strong>String or Unicode</strong>?  Should the templates be specified as strings or
+Unicode?  They are themselves well-formed XML, which makes me think they
+should be strings (XML is really defined in terms of encoded
+serialization, and the Unicode backbone is just an abstraction imposed
+on the actual encoded byte stream).  But is this confusing to users?
+I've always preached that XML APIs should use Unicode, and my products
+reflect that, and for a user that doesn't understand the nuances, this
+could seem like a confusing exception.  Then again, we already have this
+exception for 4Suite and Amara APIs that parse XML from strings.  My
+leaning would be to have the template expressed as a string, but to have
+the results of expressions within templates coerced to Unicode.  This is the right thing to do, and that's the strongest argument.</p>
+        <p><strong>separation of model and presentation</strong>.  The age-old question with
+such templates is whether they cause tangles that complicate
+maintenance.  I think one can often make an empirical check for such
+problems by imagining what happens in a scenario where the data model
+operations need to change, and another scenario where the presentation
+needs to change.</p>
+        <p>As an example of a model change, imagine that the source for the item
+info was moved from an XML document to a database.  I wouldn't need to
+change any of the templates as long as I could get the same values to
+pass in, and I think it's reasonable to assume I could do this.
+Basically, since my templates simply refer to host variables whose
+computation is nicely decoupled from the template code, the system
+passes the first test.</p>
+        <p>As an example of a presentation change, imagine that I now want to
+generate XHTML directly, rather than this <code>&lt;person&gt;&lt;item&gt;...</code> business.
+I think the system passes this test as well.  The templates themselves
+would have to change, but this change would be isolated from the
+computation of the host variables used by the templates.  Some people
+might argue that I'm grading these tests too leniently, and that it's
+already problematic that the computation and presentation occurs so
+close together, in the same function in the same code file.  I'm open to
+being convinced this is the case, but I'd want to hear of practical
+maintenance scenarios where this would be a definite problem.</p>
+        <p>So what do you think?</p>
+      </content>
+    </item>
+    <item>
+      <title>Don't buy batteries in Europe, if you can help it</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-15/Don_t_buy_.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>Just a simple practical tip, that's all.  The two times I can remember
+buying batteries in Europe, once in Loughborough, England, and the other
+time in Amsterdam, I've just about left the store in tears.  Accounting
+for the exchange rate in both cases it came to about $8.00 for 4 AAs for
+name brand batteries.  In the US a typical full price would be about
+$4.00 for 8.  If you're traveling from the U.S. to Europe, take a long
+some spares.  And if you're visiting the U.S. from Europe, consider
+taking back as many as your luggage allowance and scowling customs
+officers will allow.  F'real, though.</p>
+        <p>
+          <em>Disclaimer: I realize that generalizing two high street stores to an
+entire continent is so, like, Yankee gauche, but dammit, it's easier to
+sort the world out that way...  Hmm.  I wonder how many people use that
+excuse to form their impressions of the continent of Africa.</em>
+        </p>
+      </content>
+    </item>
+    <item>
+      <title>First post from Fedora Core 4</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-15/First_post.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>This is my first post from <a href="http://fedora.redhat.com/">Fedora Core 4</a>.
+I grabbed the DVD ISO via
+<a href="http://torrent.fedoraproject.org/">bittorrent</a> (I also seeded to a
+ration of 2:1, i.e. I served up twice as much DVD ISO goodness as I
+downloaded.  Please do the same if you can).  I then used the standard
+upgrade option to get my main desktop on point.  It went so smoothly
+that I threw caution to the wind and did the same for my laptop (<a href="http://www.oreillynet.com/pub/wlg/5918">see my
+post on the upgrade from FC2 to
+FC3</a>).  It's looking good on the
+laptop as well.  With the new kernel, <code>2.6.11-1.1369_FC4</code>, my Centrino
+(Intel PRO/Wireless 2100) wireless worked right out of the box (<a href="http://www.oreillynet.com/pub/wlg/5690">unlike
+with FC3</a>) and so did my
+Broadcomm B44 Ethernet driver (<a href="http://www.oreillynet.com/pub/wlg/5685">unlike with
+FC3</a>).  Now that's what software
+evolution is all about.  Speaking of Evolution, this time it was a
+smaller jump, from 2.0.4 to 2.2.2, and it went schmoovely  (<a href="http://www.oreillynet.com/pub/wlg/5919">unlike with
+FC3</a>).</p>
+        <p>I'll keep reporting on my experiences as I go along, but at the moment,
+FC4 gets both my thumbs up.  Besides giving me far fewer upgrade
+headaches than FC3, it looks a lot better and feels a lot snappier (the
+interminable boot process from FC3 seems to take half the time now).</p>
+      </content>
+    </item>
+    <item>
+      <title>Quot&#299;di&#275;</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-15/Quot_di_.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <blockquote>
+          <p>They dug a trench, and threw him in a grave <br/>
+  Shallow as youth; and poured the wine out <br/>
+  soaking the tunic and the dry air. <br/>
+  They covered him lightly, and left him there.</p>
+          <p>When music comes upon the airs of Spring, <br/>
+  Faith fevers the blood; counter to harmony, <br/>
+  The mind makes its rugged testaments. <br/>
+  Melancholy moves, preservative and predatory.</p>
+          <p>The light is a container of treachery, <br/>
+  The light is the preserver of the Parthenon. <br/>
+  The light is lost from that young eye. <br/>
+  Hearing music, I speak, lest he should die.</p>
+        </blockquote>
+        <p>&#8212;<a href="http://en.wikipedia.org/wiki/Richard_Eberhart">Richard
+Eberhart</a>&#8212;"A Young
+Greek, Killed in the Wars"&#8212;<a href="http://www.poetrymagazine.org/"><strong>Poetry</strong>
+magazine</a> (Volume 85, February 1955)</p>
+        <p><a href="http://en.wikipedia.org/wiki/Carl_Sandburg">Carl Sandburg</a> is often put
+forth as the Midwestern American poet <em>par excellence</em>, which annoys me
+to no end not just because I dislike Sandburg's work very much, but also
+because a lot about Sandburg's institutionalization says as much about
+why a great poet such as Richard Eberhart never gained the recognition
+he deserved.  Eberhart wasn't content to write the folksy, middle-
+American sentiment that people properly expected from farm country.  He
+insisted on breaking his bounds by writing about the big human themes
+with extraordinary craft and sensibility.  Richard Eberhart died on
+Sunday, 12 June 2005 at the age of 101.</p>
+        <p>Eberhart was born 5 April 1904, in Austin, Minnesota on a modest estate
+called Burr Oaks (later on the name of one of his books).  He was
+educated in the US (University of Minnesota, Dartmouth, Harvard) and
+England (St. John's College).  He served as private tutor to the son of
+<a href="http://en.wikipedia.org/wiki/Prajadhipok">King Prajadhipok</a> of Siam
+(Thailand) in the early 30s, and otherwise had a fairly adventurous
+youth, with stints as a sailor and gunnery instructor.</p>
+        <p>As for his poetry, I'll quote from one of my favorite critics.  John
+Wain's assessment is:</p>
+        <blockquote>
+          <p>His varied and energetic life comes through in his poetry, which is
+  rugged, inquisitive and forceful; clumsy in patches, supremely
+  felicitous in others.</p>
+        </blockquote>
+        <p>&#8212;Anthology of Modern Poetry (Hutchinson, 1963)</p>
+        <p>I think I'm lucky to have been spared Eberhart's clumsy patches: I've
+read him almost exclusively in anthology and journal.  I have found that
+he is one of the most affecting writers on the horrors of war.  His best
+known poem is this one.</p>
+        <blockquote>
+          <p>You would think the fury of aerial bombardment <br/>
+  Would rouse God to relent; the infinite spaces <br/>
+  Are still silent. He looks on shock-pried faces. <br/>
+  History, even, does not know what is meant.</p>
+          <p>You would feel that after so many centuries <br/>
+  God would give man to repent; yet he can kill <br/>
+  As Cain could, but with multitudinous will, <br/>
+  No farther advanced than in his ancient furies</p>
+          <p>Was man made stupid to see his own stupidity? <br/>
+  Is God by definition indifferent, beyond us all? <br/>
+  Is the eternal truth man's fighting soul <br/>
+  Wherein the Beast ravens in its own avidity?</p>
+          <p>Of Van Wettering I speak, and Averill, <br/>
+  Names on a list, whose faces I do not recall <br/>
+  But they are gone to early death, who late in school <br/>
+  Distinguished the belt feed lever from the belt holding pawl.</p>
+        </blockquote>
+        <p>&#8212;Richard Eberhart&#8212;"The Fury of Aerial Bombardment"</p>
+        <p>Eberhart was very generous in his criticism (that which I've read).  Too
+generous at times, in my opinion, given his approval of the mess made by Ginsberg
+and the Beat poets.  The AP article in which I read about Eberhart's
+death included a typical Eberhart quote:</p>
+        <blockquote>
+          <p>Poems in a way are spells against death,  They are milestones, to see
+  where you were then from where you are now. To perpetuate your feelings,
+  to establish them. If you have in any way touched the central heart of
+  mankind's feelings, you'll survive.</p>
+        </blockquote>
+        <p>And survive he did.  101 years is quite the achievement to be
+celebrated.  Soon (July 29) we'll be celebrating the centenary of
+another great poet <a href="http://en.wikipedia.org/wiki/Stanley_Kunitz">Stanley Kunitz</a>.  Kunitz's
+"Benediction" is one of my favorite poems to recite to my wife and sons.
+It's wonderful to see these poets live such complete lives, who have
+brought such feeling to the exploration of life's great themes.</p>
+        <p>I meant to link to "Benediction" but I can't find a respectable
+transcription of on-line.  It deserves its own entry, so some other day
+I'll type it in for Quotīdiē.  But I do want to mention that I found "A
+Young Greek, Killed in the Wars", "The Fury of Aerial Bombardment" and
+"Benediction" all in my favorite small poetry book, John Wain's
+Anthology of Modern Poetry (Hutchinson, 1963), ISBN 0090671317.  It's
+out of print and not easy to find, even used (<a href="http://www.amazon.co.uk/exec/obidos/tg/detail/offer-listing/-/0090671317/all//026-3285923-6964403">here are the listings on
+Amazon UK Marketplace</a>).  I bought it in 1988 at
+the University of Nigeria and it has been one of my most treasured books all this time.  It's
+a superb collection, and if you can lay your hands on a copy, I suggest
+you do so.</p>
+      </content>
+    </item>
+    <item>
+      <title>We need more solid guidelines for i18n in OSS projects</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-14/We_need_mo.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>Every time I'm about to tackle i18n in some project, I find myself
+filled with a bit of trepidation.  I actually know more than the average
+developer on the topic, but it's a hard topic, and there is quite the
+mystery around it.</p>
+        <p>One of the reasons for this mystery is that there are really few good
+resources to guide FOSS developers through the process of
+internationalizing their apps.  Gettext is the most common means for
+i18n and l10n in FOSS apps.  The master resource for this is the <a href="http://www.gnu.org/software/gettext/manual/">GNU
+gettext manual</a>, but that's
+a lot to bite off.  Poking around on Google, I found a <a href="http://www.onlamp.com/pub/a/php/2002/06/13/php.html?page=1">useful gettext
+overview for PHP
+folks</a>, the
+Ruby on Rails folks have a <a href="http://manuals.rubyonrails.com/read/chapter/82">nice chapter on the
+it</a> and there are a few other
+general intros (<a href="http://www.linuxjournal.com/article/6176">1</a>,
+<a href="http://fplanque.net/Blog/devblog/2003/08/18/p353">2</a>,
+<a href="http://oriya.sarovar.org/docs/gettext_single.html">3</a>).  Luis Miguel
+Morillas pointed out some for
+<a href="http://developer.gnome.org/projects/gtp/">GNOME</a>,
+<a href="http://i18n.kde.org/translation-howto/">KDE</a> and wxPython
+(<a href="http://wiki.wxpython.org/index.cgi/Internationalization">1</a>,
+<a href="http://wiki.wxpython.org/index.cgi/RecipesI18n">2</a>).</p>
+        <p>Python has the usual set of gettext-based facilities, which is great,
+but they are woefully documented.  In the <a href="http://docs.python.org/lib/module-gettext.html">library reference's section
+on gettext</a> you get a
+purported overview and a bunch of scattered notes on the API, but
+nothing that really coherently leads the developer through the concepts
+and process of i18n, as the PHP and Ruby folks seem to have.  It doesn't
+even seem as if buying a book helps much.  The books I most often
+recommend as Python intros don't seem to touch the subject, and the
+reference books seem to go not much deeper than the Python docs.  Even
+David Mertz's useful <a href="http://gnosis.cx/TPiP/">Text Processing in Python</a>
+doesn't cover i18n (this surprised me).</p>
+        <p>My <a href="/blog/2005-06-14/i18n_for_X">recent foray into i18n</a> actually
+straddled Python and XML worlds.  For XMLers, there are a few handy
+resources:</p>
+        <ul>
+          <li>
+            <a href="http://www-106.ibm.com/developerworks/xml/library/x-localis/">"XML in localisation: A practical
+analysis"</a>
+          </li>
+          <li>
+            <a href="http://www-106.ibm.com/developerworks/xml/library/x- localis2/">"XML in localisation: Use XLIFF to translate
+documents"</a>
+          </li>
+          <li>
+            <a href="http://www.idealliance.org/papers/dx_xmle04/papers/03-03-01/03-03-01.html">"Beyond Babel - Simplifying Translation with
+XML"</a>
+          </li>
+        </ul>
+        <p><a href="http://www.oasis-open.org/committees/xliff/">XLIFF</a> is of particular
+interest, but I decided not to use it for i18n in 4Suite/XSLT because I
+wanted to base my work on the Python facilities, which are well tested
+and based on the de facto standard gettext.</p>
+        <p>Anyway, am I missing something?  Are there all sorts of great resources
+out there that would slide Python developers right into the i18n groove?</p>
+      </content>
+    </item>
+    <item>
+      <title>i18n for XSLT in 4Suite</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-14/i18n_for_X.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>Prodded by <a href="http://groups- beta.google.com/group/cherrypy- users/browse_thread/thread/5564bf9f5b845c0f?tvc=2&amp;hl=en">discussion on the CherryPy list</a> I have
+implemented and checked in a 4Suite XSLT extension for
+internationalization using <a href="http://docs.python.org/lib/module-gettext.html">Python's gettext
+facilities</a> for the
+underlying support.  Here is how it works.  Sample XML:</p>
+        <pre>
+          <code>&lt;doc&gt;
+  &lt;msg&gt;hello&lt;/msg&gt;
+  &lt;msg&gt;goodbye&lt;/msg&gt;
+&lt;/doc&gt;
+</code>
+        </pre>
+        <p>Sample XSLT:</p>
+        <pre>
+          <code>&lt;xsl:stylesheet version="1.0"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:f="http://xmlns.4suite.org/ext"
+  extension-element-prefixes="f"
+&gt;
+  &lt;f:setup-translations domain="test"/&gt;
+  &lt;xsl:template match="msg"&gt;
+    &lt;f:gettext&gt;&lt;xsl:apply-templates/&gt;&lt;/f:gettext&gt;
+  &lt;/xsl:template&gt;
+&lt;/xsl:stylesheet&gt;
+</code>
+        </pre>
+        <p>The f:setup-translations and f:gettext extension elements are the key.
+The former looks up and installs the domain "test" for use in your XSLT.
+Replace it with the domain used by your application.  The latter
+extension evaluates its body to get a string value, and then looks up
+this string in the installed translation.</p>
+        <p>Assuming you have a test.mo installed in the right place, say that
+translates "hello" to "howdy" and "goodbye" to "so long".</p>
+        <pre>
+          <code>$ 4xslt test.xml test.xsl
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+howdy
+  so long
+</code>
+        </pre>
+        <p>I trimmed some white space for formatting, but you get the idea.  The
+translations are applied automatically according to your locale.</p>
+        <p>This operates via Python's gettext facilities which means that it's much
+more efficient than, say, the docbook XSLT approach to i18n.</p>
+        <p>For those who want to give it a whirl, here's a quick step-by-step.  All
+the needed files are <a href="/files/4suite-l10n">available here on copia</a>.</p>
+        <p>Create a sandbox locale directory:</p>
+        <p>mkdir -p /tmp/locale/en_US/LC_MESSAGES/</p>
+        <p>Copy in the catalog.  You may need to create a different catalog for
+your own language if your system will not be selecting en_US as locale
+(remember that you can hack the locale via the environment)</p>
+        <p>cp en_US.mo /tmp/locale/en_US/LC_MESSAGES/test.mo</p>
+        <p>Your locale is probably not en_US.  If not, you can:</p>
+        <ul>
+          <li>temporarily override your locale to en_us using <code>export LANG=en_US</code>,
+or the equivalent command for your shell</li>
+          <li>create translations for your locale (just two strings to translate).
+I use <a href="http://www.poedit.org/">poedit</a>, which is makes dealing with .pos
+simple enough.  Then replace en_US in all the above instructions with
+your own locale and the .mo file you created.</li>
+        </ul>
+        <p>Anyway, the f:setup-translations and f:gettext extensions are now
+checked into 4Suite.  You can either <a href="http://4suite.org/docs/4SuiteCVS.xml">update to current 4Suite
+CVS</a>, or just download the one
+changed file,
+<a href="http://cvs.4suite.org/viewcvs/4Suite/Ft/Xml/Xslt/BuiltInExtElements.py">Ft/Xml/Xslt/BuiltInExtElements.py</a> and copy it into your 4Suite codebase.  It works fine as a drop-in to 4Suite 1.0b1.</p>
+      </content>
+    </item>
+    <item>
+      <title>Rafting the crazy Clear Creek</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-13/Rafting_th.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>This weekend's adventure was white water rafting Clear Creek, between
+Idaho Springs, CO and Golden.  I drive by that creek all the time on
+I-70 and Route 6 on the way to and from snowboarding, and I've never
+thought of it as a big deal, but we've had an great year for snow and
+rain and this is high season, so it turns out that there are class 3
+through class 5 rapids to ride.  I've been rafting before, but class 3
+tops, so I figured it should be a blast, especially since I'm rather
+scared of water.</p>
+        <p>
+          <img src="/images/rafting-050611-2.jpg" alt="" title="Susan, Noah (hidden), Phillipe, Sean (our guide), Zelda (hidden), Melisse, Dawn and Uche"/>
+        </p>
+        <p>I got in a group with 12 of my friends, and we went for a full day trip Saturday.
+In the morning, we started off on the class 3s, and had a couple of
+incidents in class 4 areas.  Melisse fell out of the boat entirely at
+one point and Noah and Philippe had to haul her out of the water.  And then we
+wrapped our raft around a high rock, and had to do some very frantic
+"high-side" maneouvers to avoid flipping the entire rig.  I lost my
+paddle a couple of times, usually catching it on a rock in a middle of a
+stroke, but once I ditched it when Dawn lunged to prevent me from
+pitching off the boat as it lurched to port, and then I had to lunge to
+hold her in when the boat lurched back to starboard.</p>
+        <p>
+          <img src="/images/rafting-050611-4.jpg" alt="" title="We all hang on for dear life after a drop and slice (yeah, that's just the class 4 section)"/>
+        </p>
+        <p>It was wild fun, though.  Our guide Sean started by making us yell "Yee-
+haw" after we survived each class 4 section (he's from West Virginia but
+he's rafted a lot on the Zambezi).  We, being the group we are, decided
+that wasn't multi-culti enough and added a French "Hourah" and an Igbo
+"Chineke" (literally "GOD ALMIGHTY!")  Zelda said "I think 'Chineke' is
+the most satisfying yell", and indeed, we all practiced it a good deal.</p>
+        <p>
+          <img src="/images/rafting-050611-1.jpg" alt="" title=""/>
+        </p>
+        <p>So what, after lunch, do we do after all that?  Up it to class 4/5, of
+course.  Melisse, Maggie and Noah had had enough and bailed, but the
+rest of us tackled the bottom, harder part of the course.  Amazingly, though we
+went through ridiculously huge drops, spins and slides with names like
+"tornado turn", "guide ejector", "double knife", etc., we didn't eject
+anyone or flip the raft.  A bloody good thing because looking at that
+churning mess, it would have been a pretty dire situation if someone
+ended up in the water.  The guide company had a spotter/rescue dude with
+a mean hand at his kayak, but even he would have had difficulty getting
+to someone through all that.</p>
+        <p>
+          <img src="http://photos12.flickr.com/18787810_f3d5521f04.jpg" alt="" title="Phillipe, Dawn, Susan (hidden), Sean (our guide), Zelda, Kenny (hidden) and Uche"/>
+        </p>
+        <p>
+          <img src="http://photos15.flickr.com/18787469_78e9d3e54d.jpg" alt="" title="Down we go..."/>
+        </p>
+        <p>I had a serious case of omni-pain (a term, all too familiar to first-
+time snowboarders) all that night and the next day from all the hard
+paddling and lurching about, but man was that a rush.  I'll have to give
+it a go again, soon.  Especially if we see epic white water like that
+again.</p>
+        <p>Big up to our guide Sean who kept us undrowned, and to <a href="http://www.raftingcolorado.com/clearcreek.html">High side adventures</a>, the guide company.</p>
+        <p>
+          <a href="http://www.flickr.com/photos/21902936@N00/">More pictures on Flickr</a>
+        </p>
+      </content>
+    </item>
+    <item>
+      <title>Pakistani comedic class terms</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-13/Pakistani_.html</link>
+      <content>
+        <p><!-- -->
+Via <a href="http://itre.cis.upenn.edu/~myl/languagelog/archives/002242.html">Language
+Log</a> I
+came across <a href="http://www.paklinks.com/gs/showthread.php?t=146585">this delightful
+conversation</a> on
+some whimsical slang terms Pakistanis use to express class and class
+affectation.  It's a hilarious exchange in its own right, and as a bonus
+it makes me think of similar terms in Nigeria (although I'm over a
+decade dated in my Naija slang).</p>
+        <blockquote>
+          <p>[Mr. Fradia]: ...mummy-daddy refers to someone who is not
+  [independent] enough etc. Burger is used more for ppl who are stuck up
+  and wanna-be western types.</p>
+        </blockquote>
+        <p>There are many terms for both in naija slang, but it makes me think of
+the term (originally Lagosian, I think) <em>aje-butter</em>, which refers to
+someone who is a soft, namby-pamby, mama's boy as a result of having
+lived too much of the supposed good life in the US, UK, etc.  I know too
+well: I was viciously set upon as an aje-butter when we moved from
+Florida to Enugu, then Owerri, Nigeria in 1980.</p>
+        <blockquote>
+          <p>[Zakiii]: I can understand someone wanting to Black/Latino but why
+  English/American?</p>
+          <p>[Mr. Fradia (responding]: i suppose they want to be preppie rather
+  than ghetto [&lt;grin&gt;]</p>
+        </blockquote>
+        <p>This exchange intrigued me.  As far as I can tell these folks are all
+living in Pakistan.  I have been getting the sense recently that if US
+and UK culture seem to be universally soluble, that lately it's been
+urban Hip-Hop or yardie culture that has been filling the aspirational
+role for youngsters in developing nations.  I was early to Hip-Hop, and
+while others in my class wanted to be like Madonna (Travolta was never
+really that big there, as I recall), I was aspiring more toward The
+Furious Five and the Treacherous Three.  It looks like that dissonance
+was a microcosm of the trend that has culminated in statements such as
+"I can understand someone wanting to Black/Latino but why
+English/American?"</p>
+        <p>But is that a good thing, when it so often involves a gross distortion
+of what it really means to be Black or Latino in the US?  I suppose
+Madonna as picture of America is no less a distortion.</p>
+        <blockquote>
+          <p>[Mr. Fradia]: what teh diff between soemone pretending he is james
+  dean versus someone pretending he is anil kapoor (god knows there are
+  tons of them in karachi..or were rather) except that the james dean
+  wanna be probably does not smell as bad.</p>
+          <p>[ravage]: Those who ape Anil Kapoor are known as arsewipes in our
+  circle. Dunno if its a generally accepted term though.</p>
+        </blockquote>
+        <p>Ouch.  I was rolling in the aisles at this point.  You can't get laughs
+like this on your local corner.</p>
+        <blockquote>
+          <p>[ravage]: Mummy Daddy is a catalyst for burgerness, but one may be
+  mummy daddy without strictly belonging to the latter class. For instance
+  I have come across mummy-daddy abcds, Mummy Daddy paindoos, and Mummy
+  Daddy Nawab sahabs.</p>
+        </blockquote>
+        <p>And so it goes on through "galli ka londa types", "pindi walay" and
+always back to "burgher".</p>
+        <blockquote>
+          <p>[sadzzz]: The term Burgher was applied during the period of Dutch rule
+  to European nationals living in Sri Lanka...
+  ...the so called burghars of india are called "anglos"
+  [Hum Sa Ho To Samne Aaye (responding)]: Hey in Peshawar we call these
+  kinda people "tommy" [&lt;big grin&gt;]</p>
+        </blockquote>
+        <p>Back in Language Log <a href="http://dsal.uchicago.edu/cgi- bin/ddsa/getobject_? HTML.a.0:329./projects/artfl0/databases/dicos/philologic/hobson/IMAGE/">Hobson Jobson</a>
+is quoted as characterizing the term "burgher" (or "burghar") as
+follows.</p>
+        <blockquote>
+          <p>The Dutch admitted people of mixt descent to a kind of citizenship,
+  and these people were distinguished by this name from pure natives. The
+  word now indicates any persons who claim to be of partly European
+  descent, and is used in the same sense as 'halfcaste' and 'Eurasian' in
+  India Proper.</p>
+        </blockquote>
+        <p>I suppose that the two nuances of "burgher" in this entire thread tend
+to converge on the Hindi term "firanghi" (originally from Arabic, as I
+recall).  And while I'm on "firanghi", I'm sure I'm not the only
+language geek that finds it hard to suppress a smile whenever the
+"Ferengi" show up on Star Trek TNG.  The show was always cited for being
+culturally <em>avant-garde</em>, but not so often recognized for being
+culturally subversive.</p>
+      </content>
+    </item>
+    <item>
+      <title>Test post from Drivel</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-13/Test_post_from_Drivel.html</link>
+      <content>
+        <p><!-- -->
+This is the first attempt to post from the new <a href="http://www.dropline.net/drivel/">Drivel 2.0</a> weblogging tool and it will probably be the last.  For one thing, Drivel doesn't seem to support MetaWeblog, just Blogger 1.0 (I hope PyBlosxom gets Atom API supporrt soon).  And then when I started it up for the first time I found myself staring at a "Sending/Receiving...Retrieving journal entries..." app-modal dialog for over three minutes while the progress indicator crawled along.  Doesn't exactly fill me with confidence.  I've got into such a groove posting via e-mail that I'd have to be wowed from the get-go before I make a switch at this point.  Maybe Drivel 3.0?</p>
+      </content>
+    </item>
+    <item>
+      <title>Onye ma Uche?</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-13/Onye_ma_Uc.html</link>
+      <content>
+        <p><!-- --><a href="http://igbo- blog.igbonet.com/archives/uche_nworah/2005/01/04/the_mythology_of_igbo_names.php">"The Mythology of Igbo Names"</a>, Uche Nworah</p>
+        <p>One of my many namesakes muses about the name, and other Igbo names.
+Interestingly enough, it seems that his name is really just "Uche".
+Mine is actually "Uchenna", and it's not very usual for one to be given
+the name "Uche"&#8212;.  This bare form is much more common as a
+surname.  "Uche" is an Igbo word that approximates English words such as
+"will", "desire", "plan", "counsel", "intelligence", "knowledge", etc.
+It's sort of <em>sophia</em> meets <em>consilium</em> meets <em>in animo habere</em>.</p>
+        <p>As Uche Nworah says:</p>
+        <blockquote>
+          <p>There is uchenna, uchechukwu, and uchechi which a man or woman can
+  bear.</p>
+        </blockquote>
+        <p>Yes, and there's also "Uchendu" ("thinking about life"/"will for life",
+etc.), "Ucheoma" ("good will", "sound mind", etc.), and rare cases
+"Ucheji" ("will for yam", metonymic for "will for
+wealth") and "Uchegbum" ("Worries won't be the death of me").  Note: if
+you're wondering how Igbo packs so much meaning into such small
+packages, it's largely because of the tonality of the language.  So for
+example, the way the "e" is pronounced in "Uchegbum" actually serves two
+purposes, one of which is to express the negative sense of the phrase.</p>
+        <p>"Uchenna" in my experience is by far the most common "Uche" name.  I've
+probably known a hundred or more with that name.  I'd say they're three
+quarters male.  This makes it interesting that Nworah finds that people
+he encounters associate "Uche" with girls rather than boys.</p>
+        <blockquote>
+          <p>Igbo names like most other names (non-Igbo) have symbolic meanings.
+  These different versions of uche all mean the wishes or heart of God, As
+  some people may think, uchenna does not mean the wishes or heart of the
+  father of the child, Nna in this sense means God Almighty, if it meant
+  the former, then feminists would argue and demand for the naming of
+  children uchenne (the wishes of the mother). While there is no reason
+  not to, I am yet to encounter nor hear of anybody bearing it, a task for
+  modernists and feminists then, you may say.</p>
+        </blockquote>
+        <p>It is always dangerous to make such generalizations about Igbo names.
+They are almost always loose formulations upon which a range of meanings
+can be attached, depending on circumstance.  My own name is a counter-
+example to Nworah's assumption, with "Uchenna" literally meaning the
+will of my father, Dr. Ogbuji.  My mother wanted me to be a girl, my
+father wanted me to be a boy, it turned out as my father wished, so I
+was named "Uchenna".  Simple as that.  I think the fact that you don't
+see "Uchenne" as a name has more to do with arbitrary convention than
+any specific code attached to "nna".  After all, the name "Uchenna"
+predates the import of Christianity's single, male god into Igbo
+culture.  The narrow meaning Nworah cites for "Uchenna" is often
+translated into the English name "Godswill", which feels <strong>very</strong> alien
+to me as a translation of my name.</p>
+        <p>Nworah later on mention "Obiageli" and "Ifeoma" (also "Iheoma") as names
+reserved for girls, even though there is nothing in their meaning thet
+has to do with female sex .  Other such examples are "Nkechi" ("god's
+very own", "my spirit's own"), "Uloma" ("good house") and
+"Nkiruka" ("the future is bright", "the best is yet to come").  There
+are numerous examples the other way as well.</p>
+        <p>The rest of Nworah's article is interesting, but I wouldn't swallow it
+all whole.  There is a great deal of generalization in it, and I think
+in many cases it papers over the huge complexity of Igbo culture whether
+in pre-colonial or modern times.  He also laments a lack of Igbo
+scholarship over naming in our culture, which I think is very
+surprising.  There is a metric tonne of scholarship on Igbo naming (as
+with every other aspect of Igbo culture, it seems).  I often feel as if
+we have the most analyzed names on the planet, looking only at modern
+study.  Just a casual poke at Google reveals a lot of material on Igbo
+names, and I've seen four or five books on the topic.</p>
+        <p>BTW, the title of this piece means "Who knows Uche?".</p>
+      </content>
+    </item>
+    <item>
+      <title>Pythonic SPARQL API over rdflib</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-12/PythonicRDFQuerying.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>I've recently been investigating the possiblity of adapting an existing
+SPARQL parser/query engine on top of 4RDF - mostly for the eventual
+purpose of implementing a <em>sparql-eval</em> Versa extension function - was
+pleased to see there has already been some similar work done:</p>
+        <ul>
+          <li><a href="http://dev.w3.org/cvsweb/%7Echeckout%7E/2004/PythonLib-IH/Doc/sparqlDesc.html">SPARQL in RDFLib</a> V2 (usage)</li>
+          <li><a href="http://dev.w3.org/cvsweb/~checkout~/2004/PythonLib-IH/Doc/public/rdflibUtils-module.html">rdflibUtils</a> python
+package (the implementation)</li>
+        </ul>
+        <p>Although this isn't exactly what I had in mind (the more robust option
+would be to write an adaptor for Redland's model
+<a href="http://librdf.org/docs/api/model.html">API</a> and execute SPARQL queries
+via <a href="http://librdf.org/rasqal">rasqal</a> ), it provides an interesting
+pythonic analog to querying RDF.</p>
+        <p>--Chimezie</p>
+      </content>
+    </item>
+    <item>
+      <title>New life for PyXPCOM?</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-12/New_life_f.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>Way back in the day I wrote about
+<a href="http://www.mozilla.org/catalog/architecture/xpcom/pyxpcom/">PyXPCOM</a>, a
+means for using Python to script Mozilla browser.  and the project had a
+lot of promise.</p>
+        <ul>
+          <li>
+            <a href="http://www-106.ibm.com/developerworks/components/library/co- pyxp1.html">"Getting started with PyXPCOM, Part 1: Installation and
+Setup"</a>
+          </li>
+          <li>
+            <a href="http://www-106.ibm.com/developerworks/components/library/co- pyxp2.html">"Getting started with PyXPCOM, Part 2: Accessing Objects as a
+Client"</a>
+          </li>
+          <li>
+            <a href="http://www-106.ibm.com/developerworks/components/library/co- pyxp3/">"Getting started with PyXPCOM, Part 3: Implementing XPCOM components
+in Python"</a>
+          </li>
+        </ul>
+        <p>Mark Hammond was the considerable brains behind PyXPCOM, as well as the
+Win32 and .NET APIs through Python, and many other things.  Indeed, he
+received the 2003 <a href="http://www.activestate.com/Corporate/Communications/Releases/Press1057770084.html">ActiveState Active
+Award</a> in Python (the same year Mike Olson and I got one for XSLT).  Unfortunately, he has been way below the radar for the bast couple of years, and no one has really picked up the torch on PyXPCOM.  The project has been largely languishing for so long that it was quite exciting to see Brendan Eich, keeper of the Mozilla roadmap, including  <a href="http://weblogs.mozillazine.org/roadmap/archives/005689.html">"Mozilla 2.0 platform must-haves"</a>:</p>
+        <blockquote>
+          <p>8. Python support, perhaps via Mono (if so, along with other
+  programming languages).</p>
+        </blockquote>
+        <p>I'm not sure just how Mono would fit in.  Would they build a little CLR
+sandbox into Mozilla so that Python.NET code could run?</p>
+        <p>Anyway, if you care about being able to script Mozilla through Python
+(and I think you should), please leave a comment on Brendan's article.
+Here's a note about some of the comments already in place on the matter:</p>
+        <blockquote>
+          <p>#8 scares me <em>only</em> for the potentially huge installer file. If it
+  were optional this would be incredibly cool. If it were optional
+  developers would have a headache.</p>
+        </blockquote>
+        <p>I think it should be enough for Mozilla to include the PyXPCOM stubs,
+and use the user's own installed Python, which should alleviate this
+fear.</p>
+        <blockquote>
+          <p>Hmm. What do you think about Parrot (Perl 6) support? Soon, Parrot
+  will be something like [stable], and the hope is that it will support a
+  lot of languages, includes Python. I would give it a chance, sounds
+  good.</p>
+          <p>From what I've followed about Parrot and its intended use as a basis for
+  other languages such as Python, I'm not comfortable with such an
+  approach.</p>
+          <p>Python support can be provided via Jython which is much older than
+  the .NET python implementation.</p>
+        </blockquote>
+        <p>It seems people want to offer up every VM incarnation on the planet as a
+possible base for Mozilla/Python, but I'm spoiled by the potential I saw
+through Hammond's work, and I really would want the project to at least
+try picking up from there.  I was therefore glad to see Brendan's
+response:</p>
+        <blockquote>
+          <p>We already have Python integrated with XPCOM, thanks to Mark Hammond
+  and Active State. If nothing better comes along in the way of a unified
+  runtime, we will fully integrate Mark's work so you can write &lt;script
+  type="application/x-python"&gt; in XUL.</p>
+          <p>Whether Python support will be bundled in libxul or not, I'm pushing
+  for a scheme that lets extension languages be loaded dynamically. So if
+  you have connectivity or can deploy an extra file, you should be able to
+  use Python as well as JS from XUL. That's my goal, at least.</p>
+          <p>See my next entry for the Mozilla 2.0 "managed code" virtual machine
+  goals that any would-be universal runtime has to meet, or come close to
+  meeting, to win.</p>
+        </blockquote>
+        <p>This sounds just right, and I'll keep my eye open for the follow-up
+article he mentions.  Another poster mentions:</p>
+        <blockquote>
+          <p>I would like to see the ability to talk to Mozilla from outside Python
+  code. A program I am writing allows importing contacts from various data
+  sources. I can do Outlook and Evolution easily, but have given up on
+  Mozilla contacts.</p>
+          <p>In theory I need to use XPCom with the PyXPCom wrapper but I challenge
+  anyone to actually get that working on Windows, Linux and Mac and have a
+  redistributable program. (There are no binaries of PyXPCom for example).</p>
+        </blockquote>
+        <p>Yes, PyXPCOM does allow this in theory, and i think Brendan's entire
+point is that it's important for Mozilla developers to put in the work
+to address the problem stated in the second paragraph.</p>
+        <p>If you're trying to work with PyXPCOM, keep an eye on the <a href="http://listserv.activestate.com/mailman/listinfo/pyxpcom">mailing
+list</a>.  Folks
+have been posting their problems, and others have been sharing their
+recipes for getting PyXPCOM to work, including <a href="http://aspn.activestate.com/ASPN/Mail/Message/pyxpcom/2594190">Matt
+Campbell</a> and <a href="http://aspn.activestate.com/ASPN/Mail/Message/pyxpcom/2594298">Scott Robertson</a> and <a href="http://aspn.activestate.com/ASPN/Mail/Message/pyxpcom/2595951">Jean-François Rameau</a>, and
+Michael Thornhill
+(<a href="http://aspn.activestate.com/ASPN/Mail/Message/pyxpcom/2599348">1</a>
+<a href="http://aspn.activestate.com/ASPN/Mail/Message/pyxpcom/2598563">2</a>).</p>
+      </content>
+      <pubDate>Mon, 06 Jun 2005 16:47:24 GMT</pubDate>
+    </item>
+    <item>
+      <title>Wizard worries</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-12/Wizard_wor.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p><a href="http://seanmcgrath.blogspot.com/archives/2005_06_05_seanmcgrath_archive.html#111848442500091926">"Just
+because..."</a>&#8212;Sean McGrath</p>
+        <blockquote>
+          <p>Just because everyone can now create an XML schema because of all the
+  easy to use GUI tools, doesn't mean that everyone should create XML
+  schemas.</p>
+        </blockquote>
+        <p>Yes indeed.  This has been a growing problem for quite a while now as
+people give over their XML tasks to bottled genies.  As I concluded in
+<a href="http://www.adtmag.com/article.asp? id=7213">"The worry about program wizards"</a>:</p>
+        <blockquote>
+          <p>In the end, there is no substitute for programmer expertise and
+  experience. Wizards do have their place, but it seems that their
+  occasional convenience should not form a backbone consideration for the
+  development of any technology. In particular, it is dangerous to lead
+  developments in XML and Web services with a significant purpose of
+  reviving the great age of wizards.</p>
+        </blockquote>
+        <p>Sean again:</p>
+        <blockquote>
+          <p>I can use AutoCAD but I wouldn't dream of designing a house because I
+  don't know enough about houses or building or any of that stuff.</p>
+        </blockquote>
+        <p>Very well put, as usual.</p>
+      </content>
+    </item>
+    <item>
+      <title>Amara equivalents of Mike Kay's XSLT 2.0, XQuery examples</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-12/Amara_equi.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>Since <a href="/blog/2005-06-03/XTech__Mik">seeing Mike Kay's presentation  at XTech
+2005</a> I've been meaning to write up some
+<a href="http://uche.ogbuji.net/tech/4Suite/amara/">Amara</a> equivalents to the
+examples in the paper, <a href="http://idealliance.org/proceedings/xtech05/papers/02-03-01/">"Comparing XSLT and
+XQuery"</a>.
+Here they are.</p>
+        <p>This is not meant to be an advocacy piece, but rather a set of useful
+examples.  I think the Amara examples tend to be easier to follow for
+typical programmers (although they also expose some things I'd like to
+improve), but with XSLT and XQuery you get cleaner declarative
+semantics, and cross-language support.</p>
+        <blockquote>
+          <p>It is by no means always true that an XSLT stylesheet (whether 1.0 or
+  2.0) is longer than the equivalent in XQuery. Consider the simple task:
+  create a copy of a document that is identical to the original except
+  that all NOTE attributes are omitted. Here is an XSLT stylesheet that
+  does the job. It's a simple variation on the standard identity template
+  that forms part of every XSLT developer's repertoire:</p>
+        </blockquote>
+        <pre>
+          <code>&lt;xsl:stylesheet version="1.0"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"&gt;
+
+&lt;xsl:template match="*"&gt;
+  &lt;xsl:copy&gt;
+    &lt;xsl:copy-of select="@* except @NOTE"/&gt;
+    &lt;xsl:apply-templates/&gt;
+  &lt;/xsl:copy&gt;
+&lt;/xsl:template&gt;
+
+&lt;/xsl:stylesheet&gt;
+</code>
+        </pre>
+        <blockquote>
+          <p>In XQuery, lacking an apply-templates instruction and built-in
+  template rules, the recursive descent has to be programmed by hand:</p>
+        </blockquote>
+        <pre>
+          <code>declare function local:copy($node as element()) {
+  element {node-name($node)} {
+    (@* except @NOTE,
+    for $c in child::node
+    return typeswitch($c)
+      case $e as element() return local:copy($a)
+      case $t as text() return $t
+      case $c as comment() return $c
+      case $p as processing-instruction return $p
+  }
+};
+
+local:copy(/*)
+</code>
+        </pre>
+        <p>Here is Amara code to do the same thing:</p>
+        <pre>
+          <code>def ident_except_note(doc):
+    for elem in doc.xml_xpath(u'//*[@NOTE]'):
+        del elem.NOTE
+    print doc.xml()
+</code>
+        </pre>
+        <p>Later on in the paper:</p>
+        <blockquote>
+          <p>...nearly every FLWOR expression has a direct equivalent in XSLT. For
+  example, to take a query from the XMark benchmark:</p>
+        </blockquote>
+        <pre>
+          <code>for    $b in doc("auction.xml")/site/regions//item
+let    $k := $b/name
+order by $k
+return &lt;item name="{$k}"&gt;{ $b/location } &lt;/item&gt;
+</code>
+        </pre>
+        <blockquote>
+          <p>is equivalent to the XSLT code:</p>
+        </blockquote>
+        <pre>
+          <code>&lt;xsl:for-each select="doc('auction.xml')/site/regions//item"&gt;
+  &lt;xsl:sort select="name"/&gt;
+  &lt;item name="{name}"
+     &lt;xsl:value-of select="location"/&gt;
+  &lt;/item&gt;
+&lt;/xsl:for-each&gt;
+</code>
+        </pre>
+        <p>In Amara:</p>
+        <pre>
+          <code>def sort_by_name():
+    doc = binderytools.bind_file('auction.xml')
+    newdoc = binderytools.create_document()
+    items = doc.xml_xpath(u'/site/regions//item')
+    items.sort()
+    for item in items:
+        newdoc.xml_append(
+            newdoc.xml_element(u'item', content=item)
+        )
+    newdoc.xml()
+</code>
+        </pre>
+        <p>This is the first of a couple of examples from <a href="http://www.xml- benchmark.org/">XMark</a>.  To understand the examples more fully you might want
+to browse the paper, <a href="http://www.cwi.nl/htbin/ins1/publications? request=abstract&amp;key=ScWaKeFlMaCaBu:TR-CWI:01">"The XML Benchmark
+Project"</a>.  This was the first I'd
+heard of XMark, and it seems a pretty useful benchmarking test case,
+except that it's very heavy on records-like XML (not much on prosy,
+narrative documents with mixed content, significant element order, and
+the like).  As, such I think it could only ever be a sliver of one half
+of any comprehensive benchmarking framework.</p>
+        <p>I think the main thing this makes me wonder about Amara is whether there
+is any way to make the element creation API a bit simpler, but that's
+not a new point for me to ponder, and if I can think of anything nicer,
+I'll work on it post 1.0.</p>
+        <p>Kay's paper next takes on more complex example from XMark: "Q9: List the
+names of persons an the names of items they bought in Europe".  In
+database terms this is a joins across person, closed_auction and item
+element sets.  In XQuery:</p>
+        <pre>
+          <code>for $p in doc("auction.xml")/site/people/person
+let $a :=
+   for $t in doc("auction.xml")/site/closed_auctions/closed_auction
+   let $n := for $t2 in doc("auction.xml")/site/regions/europe/item
+                       where  $t/itemref/@item = $t2/@id
+                       return $t2
+       where $p/@id = $t/buyer/@person
+       return &lt;item&gt; {$n/name} &lt;/item&gt;
+return &lt;person name="{$p/name}"&gt;{ $a }&lt;/person&gt;
+</code>
+        </pre>
+        <p>Mike Kay's XSLT 2.0 equivalent.</p>
+        <pre>
+          <code>&lt;xsl:for-each select="doc('auction.xml')/site/people/person"&gt;
+  &lt;xsl:variable name="p" select="."/&gt;
+  &lt;xsl:variable name="a" as="element(item)*"&gt;
+    &lt;xsl:for-each
+        select="doc('auction.xml')/site/closed_auctions/closed_auction"&gt;
+      &lt;xsl:variable name="t" select="."/&gt;
+      &lt;xsl:variable name="n"
+           select="doc('auction.xml')/site/regions/europe/item
+                               [$t/itemref/@item = @id]"/&gt;
+      &lt;xsl:if test="$p/@id = $t/buyer/person"&gt;
+        &lt;item&gt;&lt;xsl:copy-of select="$n/name"/&gt;&lt;/item&gt;
+      &lt;/xsl:if&gt;
+  &lt;/xsl:variable&gt;
+  &lt;person name="{$p/name}"&gt;
+    &lt;xsl:copy-of select="$a"/&gt;
+  &lt;/person&gt;
+&lt;/xsl:for-each&gt;
+</code>
+        </pre>
+        <p>In Amara:</p>
+        <pre>
+          <code>def closed_auction_items_by_name():
+    doc = binderytools.bind_file('auction.xml')
+    newdoc = binderytools.create_document()
+    #Iterate over each person
+    for person in doc.xml_xpath(u'/site/people/person'):
+        #Prepare the wrapper element for each person
+        person_elem = newdoc.xml_element(
+            u'person',
+            attributes={u'name': unicode(person.name)}
+        )
+        newdoc.xml_append(person_elem)
+        #Join to compute all the items this person bought in Europe
+        items = [ unicode(item.name)
+          for closed in doc.xml_xpath(u'/site/closed_auctions/closed_auction')
+          for item in doc.xml_xpath(u'/site/regions/europe/item')
+          if (item.id == closed.itemref.item
+              and person.id == closed.buyer.person)
+        ]
+        #XML chunk with results of join
+        for item in items:
+            person_elem.xml_append(
+                newdoc.xml_element(u'item', content=item)
+            )
+    #All done.  Print out the resulting document
+    print newdoc.xml()
+</code>
+        </pre>
+        <p>I think the central loop in this case is much clearer as a Python list
+comprehension than in either the XQuery or XSLT 2.0 case, but I think
+Amara suffers a bit from the less literal element creation syntax, and
+for the need to "cast" to Unicode.  I would like to lay out cases where
+casts from bound XML structures to Unicode make sense, so I can get user
+feedback and implement accordingly.  Kay's final example is as follows.</p>
+        <blockquote>
+          <p>The following code, for example, replaces the text see [Kay, 93] with
+  see <citation><author>Kay</author><year>93</year></citation>.</p>
+        </blockquote>
+        <pre>
+          <code>&lt;xsl:analyze-string select="$input" regex="\[(.*),(.*)\]"&gt;
+&lt;xsl:matching-substring&gt;
+  &lt;citation&gt;
+    &lt;author&gt;&lt;xsl:value-of select="regex-group(1)"/&gt;&lt;/author&gt;
+    &lt;year&gt;&lt;xsl:value-of select="regex-group(2)"/&gt;&lt;/year&gt;
+  &lt;/citation&gt;
+&lt;/xsl:matching-substring&gt;
+&lt;xsl:non-matching-substring&gt;
+  &lt;xsl:value-of select="."/&gt;
+&lt;/xsl:non-matching-substring&gt;
+&lt;/xsl:analyze-string&gt;
+</code>
+        </pre>
+        <blockquote>
+          <p>The only way of achieving this transformation using XQuery 1.0 is to
+  write some fairly convoluted recursive functions.</p>
+        </blockquote>
+        <p>Here is the Amara version:</p>
+        <pre>
+          <code>import re
+PATTERN = re.compile(r'[(.*),(.*)]')
+def repl_func(m):
+    citation = doc.xml_element(u'item')
+    citation.xml_append(doc.xml_element(u'author', content=m.group (1)))
+    citation.xml_append(doc.xml_element(u'year', content=m.group (2)))
+    return citation.xml(omitXmlDeclaration=u'yes')
+text = u'see [Kay, 93]'
+print PATTERN.subn(repl_func, text)
+</code>
+        </pre>
+        <p>I think this is very smooth, with the only possible rough patch again
+being the output generation syntax.</p>
+        <p>I should mention that Amara's output syntax isn't really bad.  It's just
+verbose because of its Python idiom.  XQuery and XSLT have the advantage
+that you can pretty much write XML in-line into the code (the templating
+approach), whereas Python's syntax doesn't allow for this.  There has
+been a lot of discussion of more literal XML template syntax for Python
+and other languages, but I tend to think it's not worth it, even
+considering that it would simplify the XML generation syntax of tools
+such as Amara.  Maybe it would be nice to have a lightweight templating
+system that allows you to write XSLT template chunks in-line with Amara
+code for data processing, but then, as with most such templating
+systems, you run into issues of poor model/presentation separation.
+Clearly this is a matter for much more pondering.</p>
+      </content>
+    </item>
+    <item>
+      <title>Versa by Deconstruction</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-11/VersaByDeconstruction.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>I was recently compelled to write an introductory companion to the Versa
+<a href="http://copia.ogbuji.net/files/Versa.html">specification</a>.  The emphasis for this document
+(located <a href="http://copia.ogbuji.net/files/VersaPrimer.html">here</a>) is with readers with little to no experience with
+formal language specifications and/or with the RDF data model.  It is inspired by it's predecessors (which make good
+follow-up material):</p>
+        <ul>
+          <li>
+            <a href="http://www.w3.org/TR/rdf-primer">RDF Primer</a>
+          </li>
+          <li>
+            <a href="http://www.w3.org/2000/10/swap/Primer">N3 Primer</a>
+          </li>
+          <li>
+            <a href="http://www.ilrt.bris.ac.uk/discovery/2004/01/turtle">Turtle Text Syntax</a>
+          </li>
+        </ul>
+        <p>I initially started using Open Office <a href="http://www.openoffice.org/product/writer.html">Writer</a> to compose an Open Office
+Document and export it to an HTML document.  But I eventually decided to write it in
+<a href="http://daringfireball.net/projects/markdown">MarkDown</a> and use <a href="http://err.no/pymarkdown/pymarkdown.py">pymarkdown</a> to
+render it to an HTML document <a href="http://copia.ogbuji.net/files/VersaPrimer.html">stored</a> on Copia.</p>
+        <p>The original MarkDown source is <a href="http://copia.ogbuji.net/files/VersaPrimer.txt">here</a>.</p>
+        <p>-- Chimezie</p>
+      </content>
+    </item>
+    <item>
+      <title>Quot&#299;di&#275;</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-11/Quot_di_.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <blockquote>
+          <p>Mountain winter defies the order, <br/>
+  Denies the bonding of elements. <br/>
+  The wooded snow and the falling wind <br/>
+  Force the repentance of birdsong. <br/>
+  Unbroken sun razes gooseflesh, <br/>
+  Floods snow, and drowns the senses, <br/>
+  Pitched in broken bottle rainbow battle <br/>
+  With trenchant ice-cold mountain streams.</p>
+        </blockquote>
+        <p>&#8212;Uche Ogbuji&#8212;from <a href="http://copia.ogbuji.net/files/caramusis/mountain_summer.xml">"Mountain
+Summer"</a></p>
+        <p>Yesterday I happened to be going through some of my verse, and I noticed
+the date on which I wrote <a href="http://copia.ogbuji.net/files/caramusis/mountain_summer.xml">"Mountain
+Summer"</a>:
+11 June 1995.  A decade ago to the day, today.  Remarkable coincidence.
+I wrote it on a road trip with best friend Arild (who just became the
+father of twins Thursday), as well as Rachel and Dagmara.  A Nigerian,
+two Norwegians and a Pole: two guys, two gals, driving across the West.
+It was one of those magical trips that serve so many of us as a marker
+of our twenties.  We were lolling about at Yosemite National Park,
+where, even though it was the heart of Summer, we sought and found a few
+snowy peaks (we'd already found a touch of Summer Zero by hiking up to
+<a href="http://hikingincolorado.org/stmary.html">St. Mary's Glacier</a> in
+Colorado earlier on that trip).  While up there we saw a mother and
+child riding a saucer in the snow, and I was moved to write.</p>
+        <p>This poem and two others written at about the same time were published
+in <em>ELF: Eclectic Literary Forum</em>, a respected but now defunct lit mag,
+in early 1996.</p>
+        <p>In another neat bit of coincidence, for me, today was also a long-
+planned white-water rafting trip with a lot of my more recent friends.
+I certainly got to sample a good deal of the "trenchant ice-cold
+mountain streams".  In fact, I got soaked in it.  It was a glorious
+adventure, and it further reminded me of that other glorious adventure a
+decade ago, and the writing to which I was inspired back then.</p>
+      </content>
+    </item>
+    <item>
+      <title>Word to the Third</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-10/Word_to_th.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>No gas face here, gee.  Via <a href="http://zephyrfalcon.org/weblog2/arch_e10_00790.html#e793">Hans
+Nowak</a> I learn
+that one of my favorite groups back in the day now has a fan site that
+does them some justice.  <a href="http://3rdbass.disgruntledhuman.com/index.htm">3rd
+Bass</a> were always fun to
+listen to, what with their humor, and the killer hands they always had
+on the wheels and boards (The Bomb Squad, Prince Paul, and of course
+posse members Sam Sever and Daddy Rich).  The endless obsession with
+Vanilla Ice wore a bit thin at times, but that's a minor glitch in an
+otherwise stellar career.  Too bad they couldn't hold it all together
+for a few more albums.</p>
+        <p>Now all someone has to do is come up with a deserving site for the <a href="http://en.wikipedia.org/wiki/Poor_Righteous_Teachers">Poor
+Righteous
+Teachers</a>, and I
+think I'll be all set for my favorites from that period (others such as
+Public Enemy and BDP are already well represented on the 'net).</p>
+        <p>Note: see also Hans' <a href="http://zephyrfalcon.org/weblog2/arch_e10_00790.html#e790">pointer to the history of sampling</a>.</p>
+      </content>
+    </item>
+    <item>
+      <title>Push vs pull XSLT</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-10/Push_vs_pu.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>I often have to explain or refer to this distinction in XSLT programming
+style, and I've wanted a sort of all-in-one index of useful writing on
+the matter.</p>
+        <ul>
+          <li>The discussion I most often refer people to is <a href="http://www.xml.com/pub/a/2000/08/holman/? page=7">"2. Getting started
+with XSLT and XPath (cont'd)"</a> by XSL tutor <em>extraordinaire</em> Ken Holman of <a href="http://www.cranesoftwrights.com/">Crane Softwrights
+Ltd.</a>.  It's part of his long article
+<a href="http://www.xml.com/pub/a/2000/08/holman/index.html">"What is XSLT?"</a>.
+In this article subsection he starts by discussing the difference
+between "explicit" and "implicit" stylesheets.  The latter are what the
+<a href="http://www.w3.org/TR/xslt">XSLT 1.0 spec</a> calls "literal result element
+as root", and it's such a rare pattern in my observation that you might
+want to just skip to section 2.2.6, which is the relevant part for push
+vs. pull.</li>
+          <li><a href="http://www.dpawson.co.uk/xsl/sect2/sect21.html">Dave Pawson's XSLT
+FAQ</a> has one of the
+earliest attempts to gather <a href="http://www.dpawson.co.uk/xsl/sect2/pushpull.html">notes on the push/pull
+distinction</a></li>
+          <li>R. Alexander Milowski
+has a nice slide set, <a href="http://www.sims.berkeley.edu/academics/courses/is290-8/s04/lectures/5/dragons/allslides.html">"How Not to Use
+XSLT"</a>.  There are some other nice nuggest here besides illustration fo the push/pull distinction.</li>
+          <li>Hack #51 in <a href="http://www.oreilly.com/catalog/xmlhks/"><em>XML Hacks</em></a> is
+"Write Push and Pull Stylesheets", and is a decent discussion of the
+topic.</li>
+          <li>I reluctantly include <a href="http://www-106.ibm.com/developerworks/xml/library/x- xdpshpul.html">"XML for Data: XSL style sheets: push or
+pull?"</a>, by Kevin Williams in this round-up.  I personally am
+heavily biased towards push-style XSLT (as are most of my XSLT expert
+colleagues) and Kevin seems to be heavily biased towards pull.  I think
+his reasoning about the readability of pull is quite shallow, and might
+make sense to readers when dealing with simplistic transforms, but not
+with ones of more typical size and complexity.</li>
+        </ul>
+        <p>Way back in 2001 or so I <a href="http://www.biglist.com/lists/xsl- list/archives/200102/msg01119.html">wrote my reasons for preferring push over
+pull</a>.  Reviewing what I wrote I think it
+still covers my point of view:</p>
+        <blockquote>
+          <p>Pull is a bad idea from the didactic POV. If one wants people to learn
+  how to generate HTML and other simple documents as quickly as possible,
+  there is no doubt that most people with any background in the more
+  popular computer languages would catch on to pull more quickly than
+  push.</p>
+          <p>But it's a false simplicity. Pull is easy when the problem space is
+  simple, as is the case with so many toy examples necessary when teaching
+  beginners. But programming difficulty scales at an alarming rate with
+  the complexity of the problem space. It doesn't take long to run into
+  real-world examples where pull is nearly impossible to program
+  correctly.</p>
+          <p>Push on the other hand, while for some people more difficult at first,
+  is a much more powerful approach for solving complex problems. And in
+  almost all cases it is less prone to defect and easier to maintain.</p>
+          <p>This is not functional programming bigotry for its own sake. Since the
+  invasion of webmasters and amateurs of scripting, it is easy to forget
+  that document processing is one of the most delicate areas of inquiry in
+  computer science, and it has called for elegant solutions from Knuth's
+  TeX to Clark &amp; co's DSSSL, to XSLT. As Paul Tchistopolskii explained
+  here. XSLT at its best is about pipes and filters. XSLT's weakest points
+  are where this model breaks down.</p>
+          <p>Whether your favorite conceptual module is pipes and filters, tuple
+  spaces, or just good ol' lambdas, a fundamental understanding of push
+  techniques is essential if you want to ever do any serious development
+  in XSLT. New arrivals to this field take short-cuts only to get lost
+  later. From a purely practical point of view, I think it's important to
+  teach apply-templates, modes and friends well before for-each, and
+  bitchin' value-of tricks.</p>
+        </blockquote>
+        <p>If anyone wants to incorporate this stuff into Wikipedia, XSLT FAQ, or
+whatever, go right ahead: as with almost everything on Copia, it's CC
+attribution-sharealike (main task this weekend is to actually assert
+that properly in the templates).</p>
+      </content>
+    </item>
+    <item>
+      <title>Africa and business on Talk of the Nation</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-09/Africa_and.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>Good show on <a href="http://www.npr.org/templates/rundowns/rundown.php?prgId=5"><em>Talk of the
+Nation</em></a>
+Monday: <a href="http://www.npr.org/templates/story/story.php?storyId=4682506">"Seeking Good News in
+Africa"</a>.
+First of all, I want to say that ToTN is one of my favorite NPR/PRI
+shows (I also love <a href="http://www.theworld.org/"><em>The World</em></a> and
+<a href="http://marketplace.publicradio.org/"><em>Marketplace</em></a>, and Terry Gross is
+usually good on <a href="http://www.whyy.org/freshair/"><em>Fresh Air</em></a>).  Neil
+Conan is probably the most patient and likable call-in show host in my
+limited experience of talk radio.</p>
+        <p>The blurb for this program segment is:</p>
+        <blockquote>
+          <p>The next G8 summit in July will focus on poverty in Africa along with
+  war, famine and drought. But some are calling for a broader view of
+  Africa, citing its many qualities that go beyond famine and tragedy. We
+  discuss how to balance the bad news with the good from a continent in
+  need.</p>
+        </blockquote>
+        <p>It is nice to hear more than just the usual famine/jungle/war/safari
+image of sub-Saharan Africa in mainstream media (with nude children as
+the inexplicable universal extras).  It was a good discussion, and I
+highly recommend it.  Some of my own reaction...</p>
+        <p>"Jean" from the Cote d'Ivoire called in to advocate decentralization of
+power and local allocation of resources, which is precisely what we
+need, but he also admitted the down-side to this as over-simplified
+formula.   Often encouragement of local policy leads to fractious forces
+that cause tension and can lead all the way to Civil war.  Most African
+countries are unfortunate agglomerations of numerous rival ethnic
+groups, and a heavy-handed federalism can be the only way to ensure
+unity.  On the other hand such centralization is a huge obstacle to
+developmental progress.  Whoever can figure out a practical solution to
+this dilemma (besides the slow, assimilating force of time and
+demographics, which is what did the trick in old Europe) will have
+earned the Nobel Prize for peace as well as economics.</p>
+        <p>"James" from Ft. Lauderdale had an all-too-credible tale of attempting
+to do business in Nigeria, and being  defrauded time and time again, and
+permanently swearing off any sort of commerce anywhere in the African
+continent (bit of an overreaction, perhaps, but can you really blame
+him?).  This is the simple reality check.  We have a long way to go
+(especially in Nigeria) in dealing with fraud and lawlessness.  Right
+now there is no substitute for local (and wily) guidance if you want to
+do business in much of the continent.</p>
+        <p>The last caller was "Kehinde" (I think: he never himself said his name,
+so I had to go by Neil Conan's suspect pronunciation), also a Nigerian.
+He trotted out a line that's all too familiar: why are we, the huge
+African professional class in diaspora, just sitting here and
+complaining about the situation back home rather than going back, using
+our local knowledge to help grow business?</p>
+        <p>Sounds seductive, but I know I speak for many others when I point out
+that in 1980, I watched my parents go home on the wings of just such
+idealism.  My Father was becoming an internationally recognized
+Materials Engineer at the time, and figured his calling was to raise
+more such high-quality Engineers in Nigerian Universities.  Nigeria at
+that time was actually considered an emerging economic force, and the
+public order and standard of living back in '80 and '81 was very high.
+We could have been U.S. citizens, but my parents saw no reason to make
+such a move.  There were no barriers to coming back to the U.S. anyway,
+and we were committed to a future in Nigeria.  As experience grew with
+numerous political barriers, and as well-connected incompetents took
+over local and national affairs, my parents realized that there was no
+way to even make an honest difference without outside the oligarch
+network.  I don't think they ever looked to get rich, but rather to live
+a decent middle-class existence, while making the sort of meager
+difference that brings about basic professional satisfaction.</p>
+        <p>They had more local knowledge than I ever will have (I did spent eight
+years in school in Nigeria), and I can't imagine that I would be able to
+accomplish more than they did.  By the time my parents gave up
+(alongside numerous other highly talented professionals), and returned
+to the U.S. and Europe in the mid-to-late 80s the middle class was
+collapsing with the economy, and the desirable destination countries
+were already putting up barriers to immigration of Nigerian nationals,
+barriers through which we Ogbujis squeaked through (excepting my two
+brothers, who were born U.S. citizens).  My father immediately got a job
+at NASA, where he could immediately feel that he was making a
+difference&#8212;just not in the way he as a native Nigerian would wish.</p>
+        <p>I do dearly want to find a way to make a difference back home, and I'm
+sure I shall in time, but I really resent being scolded glibly: "go back
+to Africa, you prodigal dispersed".</p>
+        <p>There was one subtle touch in the program that I just <strong>loved</strong>.  They played a clip from the film <a href="http://www.africaopenforbusiness.com/"><em>Africa: Open for
+Business</em></a> (Flash site).  Sounds
+like an encouraging film, by the way:</p>
+        <blockquote>
+          <p>The world does not see Africa as a business destination, but savvy
+  investors know Africa offers the best return on direct investment in the
+  world&#8212;yes, in the world.</p>
+        </blockquote>
+        <p>In the ToTN clip you hear Adenike Ogunlesi, a fashion entrepreneur
+discuss her (happy) experience.  She starts out with the gorgeous,
+British-inflected English that many of us had pounded into our head in
+school (and that I have largely lost to an American accent):</p>
+        <blockquote>
+          <p>It was the first time that anyone had marketed children's clothes like
+  that...actually using Nigerian children.  The response...people actually
+  wanting the "made in Nigeria" garments...</p>
+        </blockquote>
+        <p>And then, at this point, she subtly switches to a bit of demotic
+Nigerian accent.  Not the pidgin language, just the accent that goes
+with it.  All of us in the hybrid Nigerian/foreign college-educated
+class adopt this affectation when expressing a quote from a supposed
+Nigerian man-on-the-street.</p>
+        <blockquote>
+          <p>"Where is the label.  I want the label outside.  I want everyone to
+  know I'm wearing 'Rough and Tumble'"</p>
+        </blockquote>
+        <p>I wonder if non-Nigerians would even detect that she changed accent (I
+suspect that now that I point it out, they would).  If you want to
+check, it's about 22m 30s into the program.</p>
+        <p>It's often the little things that make you homesick.</p>
+        <p>BTW, for a superlative source for information about practical commerce
+in sub-Saharan Africa, see Emeka Okafor's blog <a href="http://timbuktuchronicles.blogspot.com/">"Timbuktu
+Chronicles"</a>.</p>
+      </content>
+    </item>
+    <item>
+      <title>Python community: XIST</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-09/Python_com.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>
+          <a href="http://www.livinglogic.de/Python/xist/">XIST 2.10</a>
+        </p>
+        <p><a href="http://www.livinglogic.de/Python/xist/">XIST</a> (simple, free license) is
+a very capable package for XML and HTML processing and generation.  In
+the maintainers' words:</p>
+        <blockquote>
+          <p>XIST is an extensible HTML/XML generator written in Python. XIST is
+  also a DOM parser (built on top of SAX2) with a very simple and
+  Pythonesque tree API. Every XML element type corresponds to a Python
+  class, and these Python classes provide a conversion method to transform
+  the XML tree (e.g. into HTML). XIST can be considered "object oriented XSL".</p>
+        </blockquote>
+        <p>I covered it recently in <a href="http://www.xml.com/pub/a/2005/03/16/py-xml.html">"Writing and Reading XML with
+XIST"</a>. There are some
+API tweaks and bug fixes as well as some test suite infrastructure
+changes.  The full, long list of changes is given in <a href="http://mail.python.org/pipermail/xml-sig/2005- May/011117.html">Walter Dörwald's
+announcement</a>.</p>
+      </content>
+    </item>
+    <item>
+      <title>Dreaming of a useful HDTV PVR</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-08/Dreaming_o.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>I want an HDTV PVR as unencumbered as possible.  Ideally, it would sit
+by the TV/cable box and communicate closely with my Linux computer.
+Failing that, it could be a card in my Linux computer, and I'd just have
+to snake a cable from the living room to the computer room.
+Unfortunately, this is a much more complex matter than I would have
+thought.</p>
+        <p>The <a href="http://www.pvrblog.com/pvr/2005/05/broadcast_flag_.html">set-back to the broadcast
+flag</a> leads me
+to think I have more time to buy/build the right device, especially
+since <a href="http://blogs.zdnet.com/open-source/?p=310">it's unlikely to be reversed this
+year</a>, but I still
+don't see any coming solution to the basic technical problems.</p>
+        <p>The main resource I've checked out is the <a href="http://www.eff.org/broadcastflag/cookbook/">EFF's HDTV-PVR
+Cookbook</a>.  It makes it
+clear that the only real option for me is limited to "terrestrial
+broadcast (free over-the-air) digital television using an antenna."
+Cable apparently uses encryption.  Problem is that almost everything I'm
+interested in watching in HD is on a cable channel.</p>
+        <p>I suppose the fact that Tivo seems to be increasingly terrorized by big
+media and scorned by cable and satellite outfits renders unlikely our
+ever seeing an HD Tivo that allows capture to a Linux box.</p>
+      </content>
+    </item>
+    <item>
+      <title>Quot&#299;di&#275;</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-08/Quot_di_.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <blockquote>
+          <p>Cause yo, I got the hairsplitting, self-written unbitten style <br/>
+  That leaves the competition running scared and shaking in their
+  pants <br/>
+  You're best to set it off cause, black, it ain't no second chance <br/>
+  Once I'm open <br/>
+  All you doing is hoping <br/>
+  That the Live one <br/>
+  Will put the mic down, but son, don't try to snatch it after: <br/>
+  The laughter won't cease from the comparison; <br/>
+  How dare you, son, <br/>
+  Step around the booth when I'm on? <br/>
+  The microphone magician says "poof", you're gone
+  With the wind.  There's no trace of your friends <br/>
+  Cause you don't know where the beginning ends <br/>
+  Or where the end begins, <br/>
+  But you see that's the difference, you get sold, I get paid <br/>
+  Black I told you, get paid; <br/>
+  If you're broke I'll have to rain on your parade. <br/>
+  You belong in Special Ed if you think you Got It Made <br/>
+  J-Live with the mic is like the chef with the blade <br/>
+  Cause suckers get sliced and sautéed <br/>
+  Yeah, you thought your joint was fly but the flight was delayed</p>
+        </blockquote>
+        <p>&#8212;<a href="http://www.j-livemusic.com/">J-Live</a>&#8212;from
+"Braggin' Writes"&#8212;<a href="http://www.epinions.com/The_Best_Part_-_J-Live/display_~reviews"><em>The Best
+Part</em></a></p>
+        <p>As I demonstrate in Quotīdiē from time to time, contemporary Hip-Hop has
+some incredible wordsmiths (most of whom most people have never heard
+of, although it's good to see <a href="/blog/2005-06-06/Quot_di_">Common</a>
+breaking into the mainstream).  When you get to the cream of Hip-Hop
+lyricists, it becomes very hard to start working out who's really the
+best.  How does one compare</p>
+        <ul>
+          <li><a href="http://en.wikipedia.org/wiki/Talib_Kweli">Talib Kweli</a> with <a href="http://en.wikipedia.org/wiki/Big_Boi">Big
+Boi</a>?</li>
+          <li><a href="http://en.wikipedia.org/wiki/Mr._Lif">Mr. Lif</a> with <a href="http://www.hiphop-elements.com/article/read/6/5237/1/">Apani B
+Fly</a>?</li>
+          <li>Evocalist with D-Wyze (both of
+<a href="http://brokebboys.blogspot.com/2005/01/10-years-in-lyfe-n- tyme.html">B.U.M.S.</a>)?</li>
+          <li><a href="http://www.bigdada.com/artist.php?id=33">Ty</a> with
+<a href="http://www.epinions.com/The_Sagas_Of_- _Klashnekoff/display_~reviews">Klashnekoff</a>? with <a href="http://en.wikipedia.org/wiki/Roots_manuva">Roots
+Manuva</a>?</li>
+          <li><a href="http://en.wikipedia.org/wiki/Saul_Williams">Saul Williams</a> with
+<a href="http://en.wikipedia.org/wiki/Black_Thought">Black Thought</a>?</li>
+          <li>Chali 2na (of <a href="http://en.wikipedia.org/wiki/Jurassic_5">Jurassic 5</a>)
+with <a href="http://en.wikipedia.org/wiki/Skillz">Skillz</a>?</li>
+          <li><a href="http://www.wordsworthmusic.com/">Wordsworth</a> with <a href="http://en.wikipedia.org/wiki/El-Producto">El-
+P</a>?</li>
+          <li><a href="http://en.wikipedia.org/wiki/Common_%28rapper%29">Common</a> with <a href="http://en.wikipedia.org/wiki/Jean_Grae">Jean
+Grae</a>?</li>
+          <li>Boots (of <a href="http://en.wikipedia.org/wiki/The_Coup">The Coup</a> with <a href="http://en.wikipedia.org/wiki/Mos_Def">Mos
+Def</a>?</li>
+        </ul>
+        <p>And that's just rappers in English (<a href="http://www.passiweb.com/">Passi</a>,
+en français, anyone?),  and that's off-head, so I'm definitely
+forgetting some people.  These folks are all clustered at the acme of
+lyrical skill.  So where does <a href="http://en.wikipedia.org/wiki/J- live">J-Live</a> fit in?  I think it's enough to say that there isn't a better
+lyricist than J-Live, in any genre of music.  His mastery of words is
+just amazing.  A friend once marveled at how J-Live worked
+"amniocentesis" so effortlessly into "Braggin' Writes", but I maintain
+that it's not just J-Live's vocabulary that earns him the laurels (after
+all, <a href="http://www.montrealmirror.com/ARCHIVES/2002/091202/music2.html">he is an English
+teacher</a>: he should command the language), but more importantly his effortless command of flow, Hip-Hop's prosody.  (As the chorus of "Braggin' Writes" states: "everybody's rapping, and only few can flow".)</p>
+        <p>The "Braggin' Writes" quote above is ample example (and again you have
+to hear it to really appreciate it).  Just to touch on one point, the
+line</p>
+        <blockquote>
+          <p>You belong in Special Ed if you think you Got It Made</p>
+        </blockquote>
+        <p>Works fine as direct (uncapitalized) statement, but is also a clever
+allusion to old school rapper <a href="http://www.amazon.com/exec/obidos/tg/stores/artist/glance/-/39709/ref=m_art_dp/102-3031803-2966543">Special
+Ed</a>'s song "I Got it Made".</p>
+        <blockquote>
+          <p>I’m your idol, the highest title, <em>numero uno</em> <br/>
+  I’m not a Puerto Rican, but I’m speaking so that you know <br/>
+  And understand I got the gift of speech <br/>
+  And it’s a blessing, so listen to the lesson I preach <br/>
+  I talk sense condensed into the form of a poem <br/>
+  Full of knowledge from my toes to the top of my dome <br/>
+  I’m kinda young--but my tongue speaks maturity <br/>
+  I’m not a child, I don’t need nothing for security <br/>
+  I get paid when my record is played
+  To put it short: I got it made.</p>
+        </blockquote>
+        <p>&#8212;Special Ed&#8212;from "I Got It Made"&#8212;<a href="http://www.amazon.com/exec/obidos/tg/detail/-/B000000CER/">"Youngest in
+Charge"</a></p>
+        <p><a href="http://www.j-livemusic.com/tours.php"><img style="float: right; margin: 10px; border: none;" src="http://www.j-livemusic.com/images/bdrs.jpg" title="The Best Damn Rap Tour"/></a>
+Last night I went to the <a href="http://www.foxtheater.com/">Fox Theater</a> see
+"The Best Damn Rap Tour", headlined by <a href="http://www.j- livemusic.com/">J-Live</a> (although it's mostly in support of <a href="http://en.wikipedia.org/wiki/Vast_Aire">Vast
+Aire</a>'s new album <a href="http://www.amazon.com/exec/obidos/tg/detail/-/B0007NOLC8/"><em>The Best
+Damn Rap
+Show</em></a>).  It
+was a long line-up of underground hip-hop stars.  The kind of MCs and
+DJs who rule the ears of rap nerds like me, but who can't seem to get on
+first base in the unfriendly game of record label baseball.</p>
+        <p>Vast Aire is best known as front-man for underground sensation <a href="http://www.definitivejux.net/jukies/cannibal_ox/">Cannibal
+Ox</a>, and his
+counterpart Vordul Megilah was first up, spitting classic Can Ox in his
+trademark cadaver-focus style.  Up next was <a href="http://www.definitivejux.net/jukies/c_rayz/">C-Rayz
+Walz</a> with tracks from his
+new joint <a href="http://www.amazon.com/exec/obidos/ASIN/B0008F10Y2/"><em>Year of the
+Beast</em></a>.  I've heard
+of C-Rayz Walz, but had never listened to him.  I definitely have to cop
+that album.  And the man definitely has more energy than he knows what
+to do with: he stomped, stalked, swaggered and staggered all over the
+stage, often telling the DJ to cut the track so the crowd could hear his
+lunatic lyrics.  Vast Aire was up after that, and again based on his set
+I'll have to cop his new album (The month's salary goes all to music, at
+this rate).</p>
+        <p><img style="float: left; margin: 10px; border: none;" src="http://upload.wikimedia.org/wikipedia/en/thumb/e/eb/180px- Jlive.jpg" title="J-Live meditates"/>
+The crowd was a bit slow to get into the mood, which is unusual for
+Boulder.  When J-Live came out to start his set, most folks in the front
+row had gone off to get drinks, or to hang with the earlier acts, who
+all got off stage to mingle.  It only took the duration of the first
+song before it became a proper audience for J-Live, though.  He did his
+amazing thing, rocking "MC", "Like this Anna", and "Satisfied?" to the
+jumping delight of the crowd (and me), there was an impromptu
+competition in the front row with folks trying to rap along to "One for
+the Griot".
+But the highlight of the night was when J-Live did something I've only
+ever seen him do (I saw him do this trick once before (with Chime and
+Davina) when he came to CU with Talib Kweli and others for a free
+<img style="float: right; margin: 10px; border: none;" src="http://www.dustygroove.com/images/products/j/jlive~~~~~~_bestpart~_101b.jpg" title="The Best Part"/>
+concert).  He rapped "Braggin' Writes" while dee-jaying the track <strong>at
+the same time</strong> (for the track he used Nas's "Thief's Theme", only the
+most banging beat of the new millennium), which hardly seems possible.
+And he didn't just prod occasionally at the wheels of steel: no, he was
+scratching and cutting almost throughout the song, without missing a
+beat in his rapping.  Amazing!</p>
+        <p>I've already mentioned how down to earth all the acts were.  J-Live was
+manning his own merchandise stand before the show, lounging in the same
+jeans, white tee and open red and white button-down flannel shirt in
+which he'd later perform.  I asked him about "The Best Part", his first
+album, which never saw its way to stores because of record label
+troubles, and bought the last copy he'd brought along (duh!  I should
+have had him autograph it).  I considered asking him who his favorite
+poet was, but I didn't want to bug him before his performance.</p>
+        <p><img style="float: right; margin: 10px; border: none;" src="http://www.allhiphop.com/CelebImages/feat_vastaire.gif" title="Vast Aire"/>
+One more quote to leave off with.  This one Vast Aire's from an
+<a href="http://www.allhiphop.com/features/?ID=1035">AllHipHop.com interview</a>.
+He was asked whether he disliked that most of his fan base is white.</p>
+        <blockquote>
+          <p>I don't even care about all that racism, it's all bulls..t. It’s a
+  trick! It’s a demonic trick and it's disgusting. It separates people.
+  Come on, remember Blondie? F..k Eminem, look at Blondie. F..k Vanilla
+  Ice and Snow, look at Rick Rubin. When you wanna think about White
+  people in Hip-Hop, think about the Beastie Boys. White people have
+  already proven themselves in this. There should be way more White
+  rappers, and way more woman in Hip-Hop today. But you have the powers
+  that be. Hip-Hop is dominated by Nubian and Latino men. Where are the
+  women at? All the women that are out now are damn near veterans, and
+  that is sad. So I don't like any of that. I grew up in uptown New York.
+  I grew up with a bunch of Latin and Nubian kids. Eventually, we got cool
+  with two White kids, this kid Ralphie and his cousin, which was my first
+  experience. And ever since that day, White people were more than
+  Superman to me. At first, a White person is Superman, He-Man, a cop, or
+  a bus driver. At first, you don't know a White kid. You have to meet and
+  get cool with one, meet their family, and the next thing you know you
+  have a friend. You are not looking at color then. And that is what
+  happened to me. That kid was poor, that is the color we were. F..k all
+  this racist bulls..t, we are the same color. So technically, we bonded
+  because we were in the same class. It's class that truly brought us
+  together. And I imagine the same thing happens to White people. A Black
+  person has to be more than just Mike Tyson or Michael Jackson. You have
+  to meet them, and invest time in them.</p>
+        </blockquote>
+        <p><strong>Co-sign</strong> (bowdlerization by AllHipHop.com, not me).  Interesting to mention that in my list of top lyricists
+above there is one white guy (EL-P) and two women (Apani B. Fly and Jean
+Grae).  Two other women (Bahamadia and Rah Diggah) are near misses.  I
+don't go as far as to say "fuck Eminem": he's very talented, but he's
+just not in the same class as the folks I mentioned.  It's a very tall
+barrier to be a top Hip-Hop lyricist.</p>
+      </content>
+    </item>
+    <item>
+      <title>"Ooh!  Free iPod if I shoot the Duck?  It's my lucky day!"</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-07/_Ooh___Fre.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>My favorite strip is often politically controversial, but yesterday it
+was just plain funny in a Web-age-morbid sort of way.</p>
+        <p>
+          <img src="http://images.ucomics.com/comics/bo/2005/bo050606.gif" alt="" title="Ooh!  Free iPod if I shoot the Duck?  It's my lucky day!"/>
+        </p>
+        <p>There's a <a href="http://www.ucomics.com/boondocks/2005/06/07/">follow-up
+today</a>.  Unfortunately a case of funnier-to-imagine-the-conclusion-than-to-have-it-shown.</p>
+      </content>
+    </item>
+    <item>
+      <title>First lady megrims</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-07/First_lady.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>Nancy Reagan's megrim was drugs, especially child drug use.</p>
+        <p>Hillary Clinton's obsession was everything (well, hey, that's why she
+went into office for dolo: so she could wrap up the bits of everything
+she'd left unaddressed as Dame the First).</p>
+        <p>Laura Bush's are the vagaries of peril that confront American boys
+(WTF?).  I guess there's also using her intelligence as distraction from
+her husband's nescience.</p>
+        <p>What was Barabara Bush's?  I can't think of anything.</p>
+      </content>
+    </item>
+    <item>
+      <title>Quot&#299;di&#275;</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-07/Quot_di_.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <blockquote>
+          <p>The only map is the map of the bear. <br/>
+  Your best hope is to follow it closely, <br/>
+  Closer than dogs.  It's engraved with your spoor, <br/>
+  You wake in the night to find it partly <br/>
+  Charred by the dying fire.  The only</p>
+          <p>Map is the map of the bear.  Follow <br/>
+  It closer than dogs.  Your best hope is <br/>
+  To read the part engraved below <br/>
+  The surface of the fire.  Sleepless, <br/>
+  You move by night.  The only map is</p>
+          <p>The map of the bear.  Dogs know, <br/>
+  That's why they follow with no hope <br/>
+  The dying spoor.  You're passing through <br/>
+  Fire, you've passed through sleep, <br/>
+  Now the only map is the map</p>
+          <p>Of the bear.  Now hope gives up <br/>
+  Its secrets, now you follow where <br/>
+  Dogs won't go, even in sleep. <br/>
+  Above, the route's engraved on fire. <br/>
+  The only map is the map of the bear.</p>
+        </blockquote>
+        <p>&#8212;<a href="http://www.opus40.org/tadrichards/">Tad Richards</a>&#8212;<a href="http://www.fieralingue.it/corner.php? pa=printpage&amp;pid=314">"The
+Map of the Bear"</a></p>
+        <p><a href="http://www.saint- andre.com/blog/2005-06.html#2005-06-01T14:49">Peter Saint-Andre mentioned</a> the <a href="http://wiz.cath.vt.edu/mailman/listinfo/new-poetry">New Poetry discussion
+list</a>, which he
+learned about in an <a href="/blog/2005-05-30/Quot_di_">earlier Quotīdiē</a>.  I'd
+been living in a bit of a shell regarding contemporary poetry  before I
+joined that list.  (Upon arriving in the U.S. in 1989 I looked around,
+aghast at mainstream verse, and retreated quickly to past classics).
+The list has been a good way to bring energy back to my study of poetry,
+and to keep in touch with contemporary work.  It turns out that there
+are some very good poets on that list, though I didn't recognize them by
+name, because of my ignorance of the contemporary scene.  I do recognize
+the quality of their work, and today's Quotīdiē is a piece by a regular
+on the list, <a href="http://www.opus40.org/tadrichards/">Tad Richards</a>.  In
+addition to being posted on the list, it was also hosted on <a href="http://www.fieralingue.it/modules.php?name=poetshome">The Poets'
+Corner</a> by <a href="http://annyballardini.blogspot.com/">Anny
+Ballardini</a>, another regular.  The
+list is a very rich find.  I'll later post links to other good poems
+posted to the list.</p>
+        <p>Refrain-like verse forms are very popular in modern poetry, from
+Villanelle to Pantoum and so on.  (I somtimes call these poetic fugues).
+It seems that in the past couple of decades poets have become especially
+skilled with the use of partial refrains.  "The Map of the Bear" teases
+out a sense of desultory restlessness with its partial refrains.  The
+meter is accentual, with four accents per line.  This is a very
+versatile framework, but I've always found it easiest to hear gothic
+tones in it, and in this poem, that feeling is particularly apt.
+Another poem that struck me immediately because of its partial refrains
+is Dana Gioia's <a href="http://www.danagioia.net/poems/countrywife.htm">"The Country
+Wife"</a>.</p>
+        <blockquote>
+          <p>She makes her way through the dark trees <br/>
+  Down to the lake to be alone. <br/>
+  Following their voices on the breeze, <br/>
+  She makes her way. Through the dark trees <br/>
+  The distant stars are all she sees. <br/>
+  They cannot light the way she's gone. <br/>
+  She makes her way through the dark trees <br/>
+  Down to the lake to be alone.</p>
+        </blockquote>
+        <p>&#8212;<a href="http://www.danagioia.net/">Dana Gioia</a>&#8212;from <a href="http://www.danagioia.net/poems/countrywife.htm">"The Country
+Wife"</a></p>
+        <p>Peter later <a href="http://www.saint- andre.com/blog/2005-06.html#2005-06-01T21:53">followed up</a> on my observations on how
+poetry slows down perceptions, leading to richer understanding and
+appreciation.</p>
+        <blockquote>
+          <p>The other day, Uche argued for the continued relevance -- indeed, the
+  increased importance -- of poetry in today's fast-paced times, since the
+  concentrated and often difficult nature of poetic language forces the
+  reader to slow down. Yet (as Uche knows) it is more than just diction:
+  it is also the meter (or, more broadly, the rhythm) that induces a kind
+  of slow time when one reads a poem. Poetry is a temporal art in much the
+  same way music is -- and in one respect, a poem enforces slow time even
+  more viscerally than a piece of music does because usually you perform
+  the poem (by reading it silently or aloud to yourself) rather than
+  having it performed for you at a poetry reading or by means of a
+  recording. The post-modernists would call this co-creating the work, and
+  for once they would be right!</p>
+        </blockquote>
+        <p>Peter is right that rhythm is the primary tool for the slowing and
+enriching effects of poetry.  I also agree that meter is the most
+established form of rhythm, and that it's harder for non-metrical rhythm
+to bring this richness.  Peter is also right to reiterate that Poetry is
+a mere shadow without its performance (whether it's the reader sounding
+out the poem in his head, or in public performance).  With all that in
+mind, I quite consider "The Map of the Bear" an example of how a poem
+can work such slow enrichment outside classical framework.  Accentual
+meter is quite respectably meter for me, and the partial refrain,
+especially when read aloud, serves to deepen the incantatory mood.  "The
+Country Wife" is also accentual.  There is much more of an iambic
+tetrameter basis, as one would expect from a formalist such as Gioia,
+but it is still variant enough to be more accentual than accentual-
+syllabic, and I think this suits that poem well.  Interesting, this
+juxtaposition of accentual meter and partial refrain&#8212;It makes me
+think of fugue, a baroque musical form, not just because of the echoing
+phrases (to go with the echoing melodies in fugue), but also because of
+the overstatement (in a positive sense) suggested by the four-stress
+line.  It is an approach I shall have to explore more fully in my own
+verse.</p>
+        <p>A final note of interest is that "The Map of the Bear" originated from a
+misreading of a trite phrase.  In Richards' own words:</p>
+        <blockquote>
+          <p>I do have a poem based on a misread statement that was sorta
+  interesting. Reading an article about a performance artist, I came
+  across the statement that she explored a territory where the only map is
+  the map of the bear.</p>
+          <p>I thought this was one of the most fascinating ideas I'd ever read. Then I looked again and saw that it actually said she explored a territory where the only map is the map of the heart. This was a territory, I realized, which held no interest whatever for me. But what about that  territory where the only map is the map of the bear? I wanted to know more about that...a territory where the wilderness mapped itself. I had been deeply moved by Kurosawa's great movie, Dersu Uzala, where mapmaking becomes a symbol for both exploration and limitation, and I started to feel that I had to know more about the territory mapped only by the bear. This was the poem that came of it.</p>
+        </blockquote>
+      </content>
+    </item>
+    <item>
+      <title>What's up with the dc:type value recommendations?</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-06/What_s_up_.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>In my work at Sun we've been looking for better ways to rationalize
+content purpose metadata for management of aggregated XML records.  I
+had occasion to look at the <a href="http://dublincore.org/documents/dcmi-type-vocabulary/">DCMI Type Vocabulary. DCMI
+Recommendation</a>.
+This is an ancient document, and was not sure what to make of it.  One
+thing for sure is that we can't use it, or anything like it.  We'll have
+to come up with our own values.  I do wonder about the rationale behind
+that list.  It seems quite the hotch-potch:</p>
+        <ul>
+          <li>http://purl.org/dc/dcmitype/Collection</li>
+          <li>http://purl.org/dc/dcmitype/Dataset</li>
+          <li>http://purl.org/dc/dcmitype/Event</li>
+          <li>http://purl.org/dc/dcmitype/Image</li>
+          <li>http://purl.org/dc/dcmitype/InteractiveResource</li>
+          <li>http://purl.org/dc/dcmitype/MovingImage</li>
+          <li>http://purl.org/dc/dcmitype/PhysicalObject</li>
+          <li>http://purl.org/dc/dcmitype/Service</li>
+          <li>http://purl.org/dc/dcmitype/Software</li>
+          <li>http://purl.org/dc/dcmitype/Sound</li>
+          <li>http://purl.org/dc/dcmitype/Image</li>
+          <li>http://purl.org/dc/dcmitype/Text</li>
+        </ul>
+        <p>Now the <a href="http://dublincore.org/documents/dces/#type">definition of
+dc:type</a> is: "The nature or
+genre of the content of the resource".  I can see how one could fit
+parts of the above list into this definition, but when I read this
+definition before seeing the list, I assumed I'd see things such as
+"poem", "short story", "essay", "news report", etc.  From the business
+point of view, I'd be looking for "brochure", "white paper", "ad copy",
+"memo", etc.  I tend to think this would be more generally useful (if
+<strong>much</strong> harder to standardize).  Maybe ease of standardization was the
+rationale for the above?  But even if so, it seems an odd mix.  I've run
+out of time for now to ponder the matter further (gotta get back to that
+client work), but do I wonder whether there are recommendations for
+dc:type that more closely meet my expectations.</p>
+      </content>
+    </item>
+    <item>
+      <title>Quot&#299;di&#275;</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-06/Quot_di_.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <blockquote>
+          <p>The court awaited <br/>
+  As the foreman got the verdict from the bailiff, <br/>
+  Emotional outbursts, tears and smeared makeup. <br/>
+  They stated, he was guilty on all charges. <br/>
+  She's shaking like she took it the hardest&#8212; <br/>
+  A spin artist, she brought her face up laughing. <br/>
+  That's when the prosecutor realized what happened&#8212; <br/>
+  All that speaking her mind testifying and crying, <br/>
+  When this bitch did the crime&#8212;the queenpin...</p>
+        </blockquote>
+        <p>&#8212;<a href="http://www.common-music.com/">Common</a>&#8212;from
+"Testify"&#8212;
+<a href="http://www.amazon.com/exec/obidos/ASIN/B0009FGWIK"><em>BE</em></a></p>
+        <p><img style="float: left; margin: 10px; border: none;" src="http://cms.gffn.com/images/local/100/B0009FGWIK.01._SCLZZZZZZZ_.jpg" title="BE album cover"/>
+Common is one of my favorite musicians, and so I'm really pleased to see
+his new baby, <a href="http://www.amazon.com/exec/obidos/ASIN/B0009FGWIK"><em>BE</em></a>
+emerge to commercial success (#2 on the overall album charts in the week
+of release) as well as critical praise.  I <a href="/blog/2005-06-04/Good_times">was in Amsterdam the week
+<em>BE</em> came out</a>, and I was too busy to look
+for it there.  I did see it at the Heathrow HMV on my way back home, but
+it was crazy-dear (excuse me?  �13.00?).  I bought <a href="http://www.amazon.co.uk/exec/obidos/ASIN/B0007S682Y">Blak Twang's
+latest (<em>The Rotton
+Club</em>)</a> at U.K.
+prices while there (can't get that ish in the US) but Common could wait
+12 hours.  I'm back and I've been listening to <em>BE</em> on heavy rotation for a week now.</p>
+        <p>A lot of fans have expressed relief that Common has retreated to home
+base.  With Kanye West replacing former gurus No I.D. and Doug Infinite,
+BE feels like the extrapolation of the straight line from <a href="http://www.amazon.com/exec/obidos/tg/detail/-/B000003BZO/"><em>One Day
+It'll All Make
+Sense</em></a>
+through <a href="http://www.amazon.com/exec/obidos/tg/detail/-/B00004S51H/"><em>Like Water for
+Chocolate</em></a>,
+and <em>Electric Circus</em> ends up stranded as an outlier.  Common has
+confirmed that he has turned his back on the crazy next ish of <em>EC</em>.
+From <a href="http://www.allhiphop.com/features/?ID=1083">a recent AllHipHop.com interview</a>:</p>
+        <blockquote>
+          <p><strong>AllHipHop.com</strong>: How would you rate your albums from least favorite
+  to greatest?</p>
+          <p><strong>Common</strong>: Well my favorite albums would have to be Like Water for
+  Chocolate and BE, my second is Resurrection, and my third is One Day It
+  Will All Make Sense and then, Can I Borrow a Dollar, and Electric Circus
+  is my least.</p>
+        </blockquote>
+        <p>This is very sad, and Common has taken a <strong>bad</strong> knock on the head when
+he rates <em>EC</em> lower than <em>Can I Borrow a Dollar</em> (the only Common album
+even I won't buy, not even used).  I don't know whether to be happy that
+Common has released a tight album with <em>BE</em> or bitter that he has
+abandoned the risk that was so fertile in <em>EC</em>.  I had intended this
+article to be a review of <em>BE</em>, but I couldn't help its turning into a
+sort of measuring of <em>BE</em> against <em>EC</em>.  I've already <a href="/blog/2005-04-29/Quotidie">rhapsodized about
+<em>EC</em> here</a> so no doubt where I stand on that
+album.  <em>BE</em> is a major swerve from <em>EC</em>.</p>
+        <p>Don't get me wrong.  I love <em>BE</em>.  It is a lot smoother than <em>EC</em>.  It's
+much more focused.  We've seen this pattern before.  With
+<a href="http://www.amazon.com/exec/obidos/tg/detail/-/B00007B9DP/"><em>Phrenology</em></a> The Roots broke their bounds and put us on some next shit.  After the same mixed critical and fan reaction (though much less bloodthirsty than the reaction to <em>EC</em>), the Roots backed off from the experimental and produced an extremely focused and cohesive <a href="http://www.amazon.com/exec/obidos/tg/detail/-/B0002A2WAY/"><em>The Tipping Point</em></a>.  <em>BE</em> is as tight, coherent and cohesive.  The sonic texture is pure Chi-Town soul from track 1 through 11.  Chi-Town soul is rich and diverse enough the this never leaves your ears tired, and each song has an ingenious little touch that sets it apart from the rest (an example apropos of the main quote is the plaintive battology of the sample in "Testify").  In contrast <em>EC</em> was all over the place sonically, and in one place, "Jimi was a Rock Star" was so far out to the left that it falls off the face of the Earth (and we don't miss it).  <em>EC</em> has that one fast-forward moment, and <em>BE</em> has none, so <em>BE</em> is better, right?</p>
+        <p><img style="float: left; margin: 10px; border: none;" src="http://www.mcarecords.com/MCAImageUpload/1232538-Full.jpg" title="Common fly style"/>
+In thinking about this all I can think is: where in <em>BE</em> is the
+"Aquarius" (Common spits hard about his craft and definitely non-sullen
+art); where is the "Electric! Wire! Hustle! Flower!" (Common zaps us
+with shock therapy using the sharp honesty of his internal <em>paysage
+moralisé</em>); where is the "New Wave" (Common turns this exploration to
+the world at large, with the help of spaced out Moog synth and the
+marvelously affecting crooning by Laetitia Sadier of StereoLab); where
+is the "I am Music" (Common, still bent on exploration, journeys on all
+the many axes of 20th century popular music history).  There is no one
+track on <em>BE</em> quite as powerful as these.  In achieving greater
+consistency, Common has also shaved off the peaks a bit.  He takes fewer
+risks, and it shows in the more modest rewards.  Continuing with the
+Roots comparison, even though <em>The Tipping Point</em> is much less
+experimental than <em>Phrenology</em>, The Roots retain in the former a lot
+more of the edge that they bled into the latter.  See the madhouse
+genius Sly Stone mash-up "Everybody is a Star" for easy evidence.</p>
+        <p>One of the things that fascinates me about <em>EC</em> is that Common drops a
+lot of easter eggs in the lyrics.  The following lines are from
+"Aquarius".</p>
+        <blockquote>
+          <p>Playing with yourself, thinking the game is just wealth&#8212; <br/>
+  Hot for a minute, watch your name just melt. <br/>
+  Same spot where its joyous is where the pain is felt <br/>
+  As you build and destroy yo remain yourself <br/>
+  They say I'm slept on, now I'm bucking in dreams, <br/>
+  And rhyme with the mind of a hustler's schemes</p>
+        </blockquote>
+        <p>Listening to that just gives me a <em>frisson</em>.  You feel everything Common
+is saying in the very fabric of the song.  Indeed, you feel how Common
+has just summarized the entire creative impetus behind <em>EC</em>.  He wants to
+build a lasting edifice in art, like Horace, and he doesn't care if the
+present audience writes him off as a day-dreamer.  Common writes into
+<em>EC</em> a lot of other such apt lines to justify his eclecticism.  From
+"New Wave":</p>
+        <blockquote>
+          <p>How could a nigga be so scared of change <br/>
+  That's what you hustle for in front of currency exchange <br/>
+  Ya'll rich, we could beef curry in the game <br/>
+  out your mouth: Ain't nobody hurrying my name <br/>
+  [...]
+  Seen hype become fame against the grain become main- <br/>
+  stream.  It all seems mundane in the scope of thangs.</p>
+        </blockquote>
+        <p>I could go on with these examples.</p>
+        <p>He is a great deal less introspective on <em>BE</em>, and he calls this fact out loudly.</p>
+        <blockquote>
+          <p>I rap with the passion of Christ, nigga cross me <br/>
+  Took it outer space and niggas thought they'd lost me <br/>
+  I'm back like a chiropract with b-boy survival rap <br/>
+  This ain't '94 Joe we can't go back <br/>
+  The game need a makeover <br/>
+  My man retired, I'm a take over</p>
+        </blockquote>
+        <p>&#8212;from "Chi-City"</p>
+        <p><img style="float: right; margin: 10px; border: none;" src="http://www.mcarecords.com/MCAImageUpload/1179385-Full.jpg" title="The Common mind"/>
+He has come out of his
+dreams in <em>BE</em>, and how he has more material aspirations, as the reference to Jay-Z in the last line hints.  And even though I'm rocking out to it f'sure, I just feel
+that I'm not experiencing the same level of magic as with <em>EC</em>, which certainly "took it outer space" but didn't lose everyone.  <em>EC</em> brings
+me to mind of Gerald Manley Hopkins' poems.  What would Hopkins have
+accomplished if he had the time and encouragement to work on sprung
+rhythm further?  We got some superb poems out of his oeuvre, but nothing
+that quite matched up to Hopkins' claims for sprung rhythm.  You get the
+sense that he could have built it into a new major branch of metrics in
+English.  I feel that if Common had the time and encouragement to build
+on <em>EC</em>'s approach, we would have not just one superb album, but an
+entirely new subgenre of hip-hop.  Do I exaggerate?  The reaction of
+people whose opinions I respect, to whom I play <em>EC</em> bears me out.  I
+think being a long-time Common fan can give you a touch of tunnel vision
+when you first listen to it.  A fresh ear recognizes the originality and
+genius.</p>
+        <p>Anyway, <em>LWfC</em> and <em>EC</em> are still my favorite Common albums, with <em>BE</em>
+close behind, and then <em>SiWaMS</em> followed by <em>Resurrection</em> (although the
+latter contains one of the all-time Hip-Hop classics in "I Used to Love
+H.E.R.").  Despite Common's disappointing ranking of <em>EC</em> in the
+interview I mentioned, he also shows that deep down, he knows better.</p>
+        <blockquote>
+          <p><strong>AllHipHop.com</strong>: I know a lot of critics weren't feeling Electric
+  Circus, but I liked the fact that it was very artistic and pushed your
+  creative ability as an MC. Overall though, what has changed between
+  Electric Circus and BE to cause such a distinction between the two
+  albums?</p>
+          <p><strong>Common</strong>: Exactly. I think Electric Circus  was just a part of my
+  evolution and my experimentation as an artist and it was kind of like
+  since this was my fifth album I was trying to continue to grow and
+  elevate in what I was doing. To me what changed the most is that I got
+  more in tune with myself and more grounded. Electric Circus was me and I
+  don't apologize for it, it is was it is and it's something I created, so
+  it's a piece of my art. With this album I did something simple and raw
+  because it felt good to me at this time. When I did Electric Circus I
+  wanted to go way out there because I was tired of how Hip-Hop was
+  sounding, that's why I did it like that. But with BE, I actually like
+  some of the Hip-Hop now, but besides that I am more hungry on the
+  creative side.</p>
+        </blockquote>
+        <p>We were all tired of how Hip-Hop was sounding.  We all needed <em>EC</em>.
+Don't you ever forget that, Common.</p>
+        <blockquote>
+          <p><strong>AllHipHop.com</strong>: How do you think Electric Circus will be treated in
+  time?</p>
+          <p><strong>Common</strong>: It's hard for me to say how it will be looked upon, but I hope
+  that people will look back and say, “Man, this was an innovative album.”
+  I feel that as an artists you should be able to paint a picture, so that
+  even if people aren't feeling it now, they can go back with a different
+  perspective later on and feel what you were saying because they are at a
+  different point in their life. That's my goal when I create music.</p>
+        </blockquote>
+        <p>Right.  Right.  And it wouldn't be our beloved Common if he didn't say:</p>
+        <blockquote>
+          <p><strong>AllHipHop.com</strong>: Do sales play into your satisfaction of the albums?</p>
+          <p><strong>Common</strong>: People always looked at me like, “Aw man, you don't care about
+  record sales.” I do want to sell records but I won't give up what I
+  believe in, or take away from the integrity of my music to sell. I'm
+  worth more than that.</p>
+        </blockquote>
+        <p><img style="float: right; margin: 10px; border: none;" src="http://www.mcarecords.com/MCAImageUpload/1179362-Full.jpg" title="Eat at Common's"/>
+But I'm determined to at least close with a bit of appraisal of <em>BE</em>.
+The master quote above is from "Testify", my favorite track.  I
+<strong>cannot</strong> listen to this song as background music.  I always have to
+stop and concentrate on listening.  I already mentioned the foundational
+sample, and within that frame lies Common's softly-told story.  You're
+all into the tragedy of this lady's predicament, until the sharply
+executed twist at the end, when you realize that she's sold her man off
+to prison.  It's brilliantly done.  Other favorites for me are "The
+Corner", "GO!", "Chi-City", "Real People" and "They Say", which I've
+heard somewhere else before (I can't remember where right now).  And oh
+yeah, Pops is back in "It's your World".  I just love Pops.  That strong
+and dignified voice says so much about the nurturing of Common's agile
+mind.  If you're a Hip-Hop fan, or a Soul fan you shouldn't be sleeping
+on <em>BE</em>, but then again, based on those sales figures, you probably
+aren't.</p>
+      </content>
+    </item>
+    <item>
+      <title>Dare on problems with mainstream Web services</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-04/Dare_on_pr.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>
+          <a href="http://www.25hoursaday.com/weblog/PermaLink.aspx? guid=f1733c70-14fd-47bb-99ad-20dba2686de7">"Can XML Web Services Move Beyond the Twin Burdens of XSD and
+WSDL?"</a>
+          <a href="http://www.25hoursaday.com/weblog/PermaLink.aspx? guid=e0788af8-2e1c-4c07-a5bb-5f54f9b7fec3">"There is no Substitute for Good
+Documentation"</a>
+        </p>
+        <p>Dare discusses how "XML Web Services and how the technologies have been
+handicapped by the complexities of the W3C's XML Schema Definition
+Language (XSD) and Microsoft &amp; IBM's Web Service Definition Language
+(WSDL)."  Yes, some of us have been complaining about this for years.
+Dare has always helped point out where his experience corroborates or
+counters some of our warnings.  His perspective is extremely valuable
+because he has thousands of customers that he just needs to find a way
+to make happy.  From that perspective, it looks gloomier than ever for
+mainstream Web services.</p>
+        <blockquote>
+          <p>These are definitely interesting times for XML Web Services. The
+  complexity of the technologies that form the foundations of SOA is now
+  pretty much acknowledged across the industry. At the same time more and
+  more people are taking the idea of building web services using REST very
+  seriously. I suspect that there might be an opportunity here for
+  Microsoft to miss the boat if we aren't careful.</p>
+        </blockquote>
+        <p>Well, at least MS has one prominent voice trying to prevent that, but it
+still has several other prominent voices lubricated with Web services
+kool-aid, one of which commented on Dare's posting (although I'm not
+sure I can make out just what he was saying).  In another comment, <a href="http://www.megginson.com/blogs/quoderat/">Dave
+Megginson</a>, always a good one
+to listen to, said:</p>
+        <blockquote>
+          <p>I'm still puzzled that so many people missed the simplest lesson of
+  XML's success: we did away with mandatory DTDs, and suddenly everyone
+  was excited about using markup. Perhaps the WS-* people could apply the
+  same idea to WSDL, XSD, and friends.</p>
+        </blockquote>
+        <p>Dare quotes from <a href="http://pluralsight.com/blogs/tewald/default.aspx">Tim
+Ewald</a>:</p>
+        <blockquote>
+          <p>In many cases, developers start using POX over HTTP to build systems.
+  When people want to re-purpose those services, its hard because they
+  don't have a lot of information about what message formats and exchange
+  patterns they support. In many cases there is no documentation for that,
+  other than the code and, in that sense, those systems are closed. XSD
+  and WSDL help open them up by providing metadata about what those
+  services do. In some cases that metadata is also useful for finding
+  services that do interesting things. For many of our customers, that is
+  the reason they are migrating from existing POX over HTTP systems to
+  SOAP-based Web services.</p>
+        </blockquote>
+        <p>I'm surprised at the idea that many of anyone's customers have existing
+Plain ol' XML (POX) over HTTP systems, and very suspicious of the claim
+that people who did have one in place and working are looking to spend a
+lot of resources migrating to SOAP/WSDL.  Dare responds:</p>
+        <blockquote>
+          <p>...I wouldn't consider an XSD or WSDL file as being sufficient
+  documentation [for either internal or external web services]. They are
+  definitely better than nothing but they are a far cry from providing
+  enough metadata for users of a service to determine how to properly
+  interact with a service especially when dealing with operations that
+  have to be performed in a series of steps (e.g. uploading a photo or
+  enclosure to a user's home directory then attaching it to a subsequent
+  blog entry).</p>
+        </blockquote>
+        <p>Right, although no one should take this as excuse for why we have the WS
+description stack from hell: "business process", "business activity",
+"coordination", "experience",  "choreography", "policy framework",
+"eventing" (we should find whoever came up with that ghastly usage, and
+put them on the gibbet), etc.  Cue Sean McGrath on WS-
+YouGottaBekiddingMe (and people say CORBA was complex).  This is all
+hard stuff, but there is also a lot of hair-splitting and redundancy
+between the mountain of WS specs, and the REST crowd <em>can</em> easily come
+up with simpler and fewer description languages if they aren't overcome
+by politics and bloated committees as the WS space has been.  Dare
+again, with the crux:</p>
+        <blockquote>
+          <p>If your organization is having problems with poorly documented
+  internal services then the answer is to document them NOT to rely on
+  WSDL &amp; XSD files as documentation.</p>
+        </blockquote>
+        <p>Nuff said.</p>
+      </content>
+    </item>
+    <item>
+      <title>Good times in Amsterdam</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-04/Good_times.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>
+          <img src="http://photos13.flickr.com/16818246_6c08ac201a.jpg" alt="" title="From Steve Pemberton's roof towards my hotel (near Centraal station)"/>
+        </p>
+        <p>I already <a href="/blog/2005-06-03/Scattered_">posted my notes</a> about the XTech
+conference itself, but there was more to the trip than that.  I had a
+wonderful time in a wonderful city.  Edd is not much for nocturnes and
+other night-time events, and I think this is the way it should be.
+After attending sessions from 9 through 5, who has the brain cells left
+to think more about XML?  Time to hit the streets.  (All pictures have
+titles: hold your mouse pointer over them).</p>
+        <p>
+          <img src="http://photos9.flickr.com/16818138_a1fd1a6a99.jpg" alt="" title="Libby, Damian, DanCon, Peter, DanBri, Ian, Max and Rich"/>
+        </p>
+        <p>I stayed at the <a href="http://www.hotels- holland.com/amsterdam/barbizon-palace.htm">Hotel Barbizon</a>.  I am not recommending it
+(it does beat the goo out of the Novotel at the RAI, though).  Next time
+I go, if they have a reasonable rate available, I'm staying where Damien
+Steer and Libby Miller did, at the <a href="http://www.bookings.net/hotel/nl/american.html">Amsterdam American
+Hotel</a>.  Great location
+(right on the Leidesplein).  It turned out to be a common meeting place</p>
+        <p>
+          <img src="http://photos12.flickr.com/16818501_b12640c8f5.jpg" alt="" title="Dom, Hugo, Dave, Leigh, Damian and Libby, Ian and Ralph chill at the Café Americain at the Leidseplein"/>
+        </p>
+        <p><img style="float: right; margin: 10px; border: none;" src="http://photos9.flickr.com/15683484_21848a5628_m.jpg" title="Damian and Libby"/>
+As <a href="http://swordfish.rdfweb.org/photos/2002/05/26/index.html">always</a><a href="http://swordfish.rdfweb.org/photos/2002/05/24/index.html">at</a><a href="http://swordfish.rdfweb.org/photos/2004/04/22/index.html">these</a><a href="http://swordfish.rdfweb.org/photos/2004/04/20/index.html">conferences</a>,
+I hung out a good deal with Libby and Damian (They also hung out with
+Lori, the kids, DanBri, Max and me <a href="http://swordfish.rdfweb.org/photos/2003/07/10/index.html">in Bath in
+2003</a>).
+They're a lot of fun to explore and chill with.  The XML crowd is, in
+general.  I've always been impressed by the backgrounds of people in the
+XML circle.  To a much greater extent than most expert developer scenes
+they come from backgrounds from literature, visual art and graphic
+design, music and theater, relational and object-oriented methodologies,
+engineering, and more.</p>
+        <p>
+          <img src="http://photos11.flickr.com/15999938_24262c57c8.jpg" alt="" title="Libby, Damian and Uche chilling it at the park, chilling it la la la..."/>
+        </p>
+        <p>I also met a lot of new folks, which is always cool.
+<img style="float: right; margin: 10px; border: none;" src="http://photos12.flickr.com/16000037_5eca97117f_m.jpg" title="Sarah and Ian"/>
+<a href="http://www.cubicgarden.com/blojsom/blog/cubicgarden/">Ian Forrester</a>
+and and his wife Sarah were the highlight, I think.  Sarah is from
+Racine, Wisconsin, and reminds me a lot of my clever, hilarious, strong-
+willed, energetic wife Lori.  I've found there's a definite class of
+women from Wisconsin with those impressive characteristics.
+<a href="http://blogs.sun.com/roller/page/kristenh">Kristen</a>, Fourthought's
+current manager at Sun, is another.  Next time Lori and I head to the UK
+(next year, prolly), we're hunting down Ian and Sarah to hang out with
+(whether they like it or not).  I also met and had a good time with
+<a href="http://ralphm.net/blog/">Ralph Meijer</a>, who was presenting in place of
+my friend <a href="http://www.saint- andre.com/blog/about.html">Peter Saint-Andre</a>, Ruud Steltenpool who was pimping <a href="http://www.svgopen.org/2005">SVG Open
+2005</a> and who was kind enough to bring a
+basketball (I'd <a href="/blog/2005-05-22/Shaking_th">asked for ideas on exercise
+opportunities</a>), <a href="http://people.w3.org/~dom/">Dominique Hazaël-
+Massieux</a>, Håkon Lie, Michael Day, yet
+another Dan and yet another Matt (both Brits whose surnames I forget).
+I met in person for the first time electronic acquaintances Mark Baker
+and Sebastian Schnitzenbaumer.  There were also usual compadres Edd,
+Eric, Leigh, Micah (The XMLHACK gang), DanBri, MattB, Dahobe, DanCon,
+Liam, Ricko, Liz, etc.</p>
+        <p>
+          <a href="http://www.flickr.com/photos/cubicgarden/15684975/">
+            <img src="http://photos9.flickr.com/15684975_93e539ac51_m.jpg" alt="" title="RalphM and RuudS"/>
+          </a>
+          <a href="http://www.flickr.com/photos/cubicgarden/16000083/">
+            <img src="http://photos12.flickr.com/16000083_40743e4ada_m.jpg" alt="" title="Matt and Uche"/>
+          </a>
+        </p>
+        <p><img style="float: right; margin: 10px; border: none;" src="http://photos14.flickr.com/16817967_3623534153_m.jpg" title="The ever popular George Bush near Amsterdam Centraal station"/>
+Amsterdam doesn't seem to have as much fly graffiti as, say Paris or
+London, but then again I haven't explored it as widely as London.  Norm,
+who clearly has a good photographer's eye, did find a good deal of
+<a href="http://norman.walsh.name/2005/05/27/urbanart">street art</a> (<a href="http://www.flickr.com/photos/ndw/sets/406578/">a good deal
+indeed</a>), mostly in the
+form of stickers.  Last year Libby <a href="http://swordfish.rdfweb.org/photos/2004/04/23/2004-04-23- Pages/Image1.html">captured a
+beaut</a>.  I did find a stenciled cut at Bush and a few other
+bits, but nothing very exciting.</p>
+        <p>Thursday night the afters consisted of a party at Steve Pemberton's
+spacious apartment.  The views from his roof are spectacular (see top
+image, for example).  On Friday, after some tapas a large group of
+XTechers lolled about at Het Vondelpark.  I was still craving exercise,
+so I wandered around until I found a bunch of (I think) Surinamese
+playing keepie-uppie (a.k.a. juggling) with a soccer ball.  They were
+pretty damned good, but I'm decent enough, so I asked to join them, and
+did.  I then returned to the group of XTechers.</p>
+        <p>
+          <img src="http://photos14.flickr.com/16818075_47887f90d6.jpg" alt="" title="Tons of XTech folks at the Vondelpark"/>
+        </p>
+        <p>After an Italian dinner we all split up and I went to check out the
+clubs near Leidseplein and the Reguilerswaarstraat (or something like
+that).  It was fun, except that I was lacking a bit of steam.  I noticed
+that a very weird combination of Samba and Euro electro seemed to be all
+the rage.  Saturday, after a gratifying sleep-in I joined Damien, Libby
+and DanBri at the Leidseplein.  We did some shopping, made an abortive
+attempt to go on a cruise (line was too long), and, joined by Liam and
+Mark Baker strolled around until we got to a BarBQ to which Liz and Dave
+had kindly invited us.  We were joined by some of a very fun collective
+called, apparently, "Hippies from Hell", ate, chatted, joked, and
+recited poetry in English and Dutch (Liz treated us to <a href="http://www.contemporarywriters.com/authors/?p=auth174">Wendy
+Cope</a>, for
+example), and that closed off my trip <strong>very</strong> pleasantly.</p>
+        <p>
+          <img src="http://photos12.flickr.com/16817740_ffb2a21c05.jpg" alt="" title="BarBQ at Liz's"/>
+          <img src="http://photos9.flickr.com/16817676_e62653b340.jpg" alt="" title="Cheers, skål, nestrovia, prost, kwenu..."/>
+        </p>
+        <p>For more pictures check out the <a href="http://www.flickr.com/photos/tags/xtech/">Flickr XTech
+tag</a>.</p>
+      </content>
+    </item>
+    <item>
+      <title>Quot&#299;di&#275;</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-04/Quot_di_.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <blockquote>
+          <p>We were supposed to to have our fence painted <br/>
+  By this weekend.  The letter warned of fines. <br/>
+  That idle council, declaring suburban <br/>
+  Heresy&#8212;dire tone <br/>
+  Of grey flanking our homes&#8212; <br/>
+  Proclaimed a ceremonial purge for the times.</p>
+        </blockquote>
+        <p>&#8212;Uche Ogbuji&#8212;from "<a href="http://copia.ogbuji.net/files/caramusis/may_day_flakes.xml">May Day
+Flakes</a>"</p>
+        <p>My plan was to post a new poem a week, and it's been two, so here are
+two:</p>
+        <ul>
+          <li>
+            <a href="http://copia.ogbuji.net/files/caramusis/epitaph.xml">"Epitaph (après Villon,
+maître)"</a>
+          </li>
+          <li>
+            <a href="http://copia.ogbuji.net/files/caramusis/may_day_flakes.xml">"May Day
+Flakes"</a>
+          </li>
+        </ul>
+        <p>I already posted the first stanza of "Epitaph" in <a href="/blog/2005-05-12/Quot_di_">an earlier
+Quotīdiē</a> of Villon.   In the third I have the line:</p>
+        <blockquote>
+          <p>Charnel birds have plucked eyes from each face,</p>
+        </blockquote>
+        <p>I'm having a lot of trouble deciding between "charnel" and "carrion".
+The latter word has the effect of playing on "crone" in the previous
+line ("crone" comes from old Norman "caroigne" which can mean "carrion"
+as well as "old bitty"), but "charnel" feels more expressive of the
+horror.  Then again, John Cowan mentioned that he appreciated the
+matter-of-fact tone of the poem (gratifying, because that was my intent,
+and certainly the effect of the original Villon), and "carrion" is the
+more matter-of-fact word.</p>
+      </content>
+    </item>
+    <item>
+      <title>Ghough and other wacky woids</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-03/Ghough_and.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>John Cowan blogged the <a href="http://recycledknowledge.blogspot.com/2005/06/spelling.html">infamous case of the "ough"
+words</a>
+which is the standard example of how much of a tricky jackal English can
+be to poor ESL (EXL?) students.  By coincidence this is just a day after
+I ran into <a href="http://encyclopedia.laborlawtalk.com/List_of_unusual_English_words">"List of unusual English words in the LaborLaw
+Encyclopedia"</a> (strange provenience for such content).  One of the entries in on that page is the infamous "ough" gang, but there is also a lot of other really interesting Engligh trivia, some of which I've come across, and some of which I haven't, but all of which makes for fun reading.  One thing did surprise me.  I'd always carried "set" in my head as the English word with the most definition, but this page has it as second, after run (76 to 63), based on the OED.  I wonder whether my memory was from a discussion based on another dictionary, or perhaps is was another measure such as longest actual line count for the dictionary entry.</p>
+        <p>BTW, re: the title.  Back in secondary school a bunch of us were riffing
+off the joke of spelling "fish" "ghoti", and had a competition for who
+could come up with the coolest words only based on the crazy phonetics
+of the "ough" gang.  "ghough" was one of the entries (mine, if I recall
+rightly), pronounced "few".  There are some even cooler ones, but I
+leave those as an exercise for readers and commenters.  You can use
+Cowan's list as a cheat sheet (he keeps things a bit simpler than the
+LaborLaw page).</p>
+      </content>
+    </item>
+    <item>
+      <title>XTech: Mike Kay on XQuery and XSLT 2.0</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-03/XTech__Mik.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>As I mentioned in my <a href="/blog/2005-06-03/Scattered_">more complete report</a>
+<a href="http://www.saxonica.com/">Mike Kay</a>'s presentation was worth a further
+entry (besides, my note-taking discipline went to hell right after his
+talk, so I don't have as much to work with on the rest).</p>
+        <p>The title was <a href="http://www.xtech- conference.org/2005/wednesday.asp#1">Comparing XSLT and XQuery</a>.  Much of what Mike discussed
+applies to XSLT 1.0 as well as 2.0.  He did spend some time talking
+about the role of XPath 2.0 as the basis of both XSLT 2.0 and XQuery.
+As he puts it XSLT 2.0 is a 2-language system.  You call XPath from
+specific constructs within XSLT.  XQuery on the other hand has XPath
+incorporated into basic language.  The way I think of it, XSLT is a host
+language for XPath, while XQuery is a (greatly) extended version of
+XPath.</p>
+        <p>I think the most important contribution Mike made in this paper was a
+very sober appraisal of the barriers to learning XSLT and XQuery.  The
+difficulties developers have with XSLT are well known: we've had some 6
+years to discuss them them.  Mike summarizes them as follows:</p>
+        <ol>
+          <li>XML fundamentals: encoding, entities, white space, namespaces, etc.</li>
+          <li>Declarative programming: variables, recursion, paths, grouping</li>
+          <li>Data model: the mental shift from the angle brackets they see to the
+abstraction of nodes
+<ul><li>confusion between what devs see in the XML versus what their
+program sees</li><li>confusion over proper output, e.g. subtlety that creating an
+element in the output tree is not the same thing as creating text
+containing angle brackets</li></ul></li>
+          <li>Rule-based programming:
+<ul><li>template dispatch, which forces a non-linear way of thinking about
+transforms.  Mike Kay mentioned the parallels with GUI programming.  (I
+tend to think this common comparison is generally right, but is just
+stretched enough to be unhelpful in determining how to get developers in
+the right mind-set).</li></ul></li>
+        </ol>
+        <p>Mike Kay had <a href="http://www.cranesoftwrights.com/bio/gkholman.htm">Ken
+Holman</a> in the
+audience so he did the sensible thing in asking the foremost expert on
+XML-related training.  Ken agreed: "Yep.  That hits the high points of
+the first day of getting people to know what's going on in XSLT."</p>
+        <p>In my opinion, there is one more category of difficulty, which is
+capability limitations in XSLT 1.0 (most of which are addressed in EXSLT
+or XSLT 2.0).  This includes frustrations such as the result tree
+fragment/node set split, the poor facilities for string manipulation,
+node set operations, date/time processing, etc.</p>
+        <p>Mike feels that XQuery only eliminates the 4th barrier (it has no
+templates).  Reading between the lines, this is a powerful indictment of
+the idea of a separate XQuery.  I think it's hard to argue that we need
+such a complex separate language purely from the pedagogical viewpoint
+(no, I'm <strong>not</strong> saying "andragogical").</p>
+        <p>Mike pointed out that people coming to XQuery from SQL tend to write
+everything in FLWOR expressions (rather than, say XPath with
+predicates).  FLOWR is comfy and SQLey, but this just annoys me.  I've
+pointed out in my <a href="/blog/2005-05-19/SPARQL_ver">bemoaning of SPARQL</a> how
+unfortunate I think it is that SQL people insist on turning all other
+languages into some nasty mutation of SQL.  I was suitably entertained
+by seeing Mike demonstrate how easy it is to get caught up in the subtle
+differences between SQL and FLOWR.  Again I'm reading between the lines,
+but I got the sense that Mike was himself not unamused by the task of
+pointing out such trip-wires.</p>
+        <p>Mike finished up with a benchmark which he prefaced with an armload of
+caveats (a healthy practice, as I've learned from experiences in
+benchmarking).  Saxon running XSLT trounced all processors except for
+MSXML on a certain task involving the XSLT analogue of a relational
+join, and with document sizes of 1MB, 4MB and 10MB.  In a surprise
+result, Saxon running XSLT even beat Saxon running XQuery (As Mike said,
+"in the XQuery world implementors look to optimize joins").  All the
+XSLT processors suffered N^2 performance degradation with doc size.  But
+strangely enough some of the XQuery tools did as well, including Galax.
+Qizx did show linear characteristics.</p>
+        <p>Kay then proved that there is no reason one cannot optimize joins for
+XSLT by writing a join optimizer for Saxon/XSLT.  When he updated the
+benchmark result slide to show the fruit of this join optimization, we
+were all astonished to see how thoroughly Saxon ended up trouncing
+<strong>everything</strong> in the field at all three doc sizes.  Now <strong>that</strong>, my
+friends, is the work of a superstar developer.</p>
+        <p>I'll be tinkering with how Amara handles some of Mike's XSLT and XQuery
+examples in a coming entry.</p>
+        <p><a href="http://www.adtmag.com/article.asp?id=7620"><img style="float: right; margin: 10px; border: none;" src="http://www.101com.com/images/pub//adtmag/knifespot.jpg" title="omni-tool"/></a>
+See also:</p>
+        <ul>
+          <li><a href="http://www.adtmag.com/article.asp?id=7620">"Is XQuery an omni-tool?"</a>
+&#8212;me</li>
+          <li><a href="http://www.adtmag.com/article.asp? id=6965">"XML class warfare"</a>&#8212;me</li>
+          <li><a href="http://www.adtmag.com/article.asp? id=10196">"XML's growing pains"</a>&#8212;me</li>
+          <li><a href="http://www.xml.com/pub/a/2004/12/29/deviant.html">"XQuery's
+Niche"</a>&#8212;Edd
+Dumbill</li>
+          <li>
+            <a href="http://saxon.sourceforge.net/">Saxon</a>
+          </li>
+        </ul>
+      </content>
+    </item>
+    <item>
+      <title>Scattered notes from XTech</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-03/Scattered_.html</link>
+      <pubDate>Mon, 06 Jun 2005 16:47:24 GMT</pubDate>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>
+          <a href="http://www.flickr.com/photos/ldodds/16926377/">
+            <img src="http://photos12.flickr.com/16926377_0c57487a48.jpg" alt="" title="We're in Amsterdam.  Nyah nyah nyah."/>
+          </a>
+        </p>
+        <p><a href="http://www.xtech-conference.org/">XTech 2005</a>.  Amsterdam.  Lovely
+time.  But first of all, I went for a conference.  <a href="http://usefulinc.com/edd/blog">Edd
+Dumbill</a> outdid himself this time.  The
+first <em>coup de maître</em> was sculpting the tracks to increase the
+interdisciplinary energy of the meet.  The browser track brought out a
+lot of new faces and provided a jolt of energy.  There did seem to be a
+bit of a divide between the browser types and the XML types, but only as
+much as one would expect from the fact that XML types tend to know each
+other, and ditto browser types.  There was plenty of crosstalk between
+the disciplines as well.</p>
+        <p>Second touch: focus on open data, and all the excitement in that area
+(Creative Commons, remixing/mash-ups, picture sharing, multimedia
+sharing, microformats, Weblogging, content syndication, Semantic
+technology, podcasting, screencasting, personal information spaces,
+corporate info spaces, public info spaces, etc.) and watch the BBC take
+over (with they bad selves).  And don't fret: "damn, maybe we should
+lighten up on the BBC bias it he speakers".  No, just go with it.
+Recognize that they are putting forth great topics, and that everyone is
+amped about how the BBC is leading the way on so many information
+technology and policy fronts.</p>
+        <p>Third touch: foster collaboration.  Put up a
+<a href="http://wiki.usefulinc.com/XTech_2005">Wiki</a>, encourage folks to an IRC
+channel, aggregate people's Weblog postings and snapshots into one
+place, <a href="http://www.planetxtech.org/">Planet XTech</a>, and cook
+up a fun little challenge to go with the theme of open data.  For that
+last bit Edd put out an XML representation of the conference schedule
+and <a href="http://usefulinc.com/edd/blog/contents/2005/04/16-xtech- schedule/read">asked folks to do something cool with
+it</a>.  I didn't do as much with it as I'd hoped.  When I
+finally got my presentation going I used the posted
+<a href="http://usefulinc.com/edd/blog/contents/2005/04/grid.xml">grid.xml</a> as a
+demo file for playing with
+<a href="http://uche.ogbuji.net/tech/4Suite/amara/">Amara</a>, but I wished it had
+more content, especially mixed content (it's very attribute heavy).
+I've suggested on the XTech Wiki that if Edd does the same thing next
+time, that he work in paper abstracts, or something like that, to get in
+more text content.</p>
+        <p>
+          <a href="http://www.flickr.com/photos/ldodds/16926377/">
+            <img src="http://photos13.flickr.com/16818201_e989dc4314.jpg" alt="" title="Ralph, Max and DanCon right outside the RAI. Check out Ralph's killer t-shirt."/>
+          </a>
+        </p>
+        <p>I said "When I finally got my presentation going", which hints at the
+story of my RAI (venue for XTech) jinx.  Last year in Amsterdam I
+couldn't get my Dell 8600 running Fedora Core 3 to agree with the
+projectors at the RAI.  As Elliotte Rusty Harold understates in his
+<a href="http://www.cafeconleche.org/oldnews/news2004April20.html">notes from the 2004
+conference</a>:</p>
+        <blockquote>
+          <p>After some technical glitches, Uche Ogbuji is talking about XML good
+  practices and antipatterns in a talk entitled "XML Design Principles for
+  Form and Function"</p>
+        </blockquote>
+        <p>In fact I ended up having to switch to OpenOffice on Windows, and the
+attendees endured a font only a hippie could love (Apparently Luxi Sans
+is not installed by default on Windows and OO/Win has a very strange way
+of finding a substitute).  I'm vain enough not to miss quoting another
+bit about my talk from Elliotte:</p>
+        <blockquote>
+          <p>A very good talk. I look forward to reading the paper. FYI, he's a
+  wonderful speaker; probably the best I've heard here yet.</p>
+        </blockquote>
+        <p>Gratifying to know I managed a good talk under pressure.  I hope I did
+so again this time, because the RAI projectors were no more friendly.
+The topic was <a href="http://xtech.org/2005/wednesday.asp#21">"Matching
+Python idioms to XML idioms"</a>.  Remembering the last year's headache
+I asked about a projector to use to test out my presentation (I was on
+the first day, Weds).  Usually conference speakers' rooms have a spare
+projector for this purpose, but it looks as if the RAI couldn't supply
+one.  I crossed my fingers and arrived for my talk the dutiful 15
+minutes early.  Eric van der Vlist was up before me in the block.  The
+AV guy came along and they spent quite a while struggling with Eric's
+laptop (Several speakers had trouble with the RAI projectors).  They
+finally worked out a 640x480 arrangement that caused him to have to pan
+around his screen.  This took a while, and the AV guy bolted right
+afterward and was not there to help me set up my own laptop.  Naturally,
+neither I nor the very helpful <a href="http://www.coolheads.com/mb.htm">Michel
+Biezunski</a> (our session chair) were
+able to get it to work, and we had to turn things over to Eric to start
+his talk.</p>
+        <p>We then both went in search of the AV guy, and it took forever to find
+him.  No, they didn't have a spare projector that we could use to set up
+my laptop in time for my talk.  We'd just have to wait for Eric to
+finish and hope for the best (insert choice sailor's vocabulary here).
+My time slot came and we spent 20 minutes trying every setting on my
+laptop and every setting on their projector.  The AV guys (yeah, when it
+was crisis time, they actually found they had more than one) muttered
+taunts about Linux, and it's a lucky thing I was bent on staying calm.
+I present quite often, and I do usually have to try out a few settings
+to get things to work, but in my encounters it's only the RAI projectors
+that seem completely incapable to project from my Linux laptop.  In all,
+I witnessed 4 speakers (3 on Linux and surprisingly one on Mac OS X) who
+had big problems with the RAI projectors, including one of the keynote
+speakers.  I suspect others had problems as well.</p>
+        <p>I couldn't take the obvious escape route of borrowing someone else's
+laptop because the crux of my talk was a demo of Amara and I'd have to
+install all that as well (Several kind volunteers including Michel had
+4Suite installed, but not Amara).  After 20 minutes, we agreed that I'd
+go on with my talk on Michel's computer (Thinkpad running Red Hat 9 and
+it worked with the projector immediately!), skip the demo, and we'd find
+another time slot for me to give the entire talk the next day.  Quite a
+few people stuck around through this mess and I'm grateful to them.</p>
+        <p>The next day we installed Amara on Michel's computer and I gave the
+presentation in its proper form right after lunch.  There was great
+attendance for this reprise, considering everything.  The Amara demo
+went fine, except that the grid.xml I was using as a sample gave too few
+opportunities to show off text manipulation.  I'll post a bit later on
+thoughts relating to Amara, stemming from the conference.  Norm Walsh
+was especially kind and encouraging about my presentation woes, and he
+has also been kind in his notes on XTech 2005:</p>
+        <blockquote>
+          <p>The presentation [deities] did not smile on Uche Ogbuji. He struggled
+  mightily to get his presentation of Matching Python Idioms to XML Idioms
+  off the ground. In vain, as it turned out (AV problems were all too
+  common for a modern conference center), but he was generous enough try
+  again the next day and it was worth it (thanks Uche!). I'm slowly
+  becoming a Python convert and some of the excellent work that he's done
+  at Fourthought to provide Python access to standard XML in ways that
+  feel natural in Python is part of the appeal.</p>
+        </blockquote>
+        <p>That's the precise idea.  A tool for processing XML that works for both
+Python heads and XML heads.  The whole point of my presentation was how
+hard this is to accomplish, and how just about every Python tool
+(including earlier releases of 4Suite) accommodates one side and not the
+other.  The response to Amara from both the Python heads and XML heads
+makes me feel I've finally struck the right balance.</p>
+        <p>I got a lot out of the other XTech talks.  Read Norm on the keynotes: he
+pretty much had the same impressions as I did.  Props to Michael Kay for
+his great presentation comparing XSLT 2.0 and XML Query.  I took enough
+notes at that one for a separate entry, which will follow this one.  I
+missed a lot of the talks between Kay's and my own while I was trying
+(unsuccessfully) to head off the AV gremlins.</p>
+        <p>Other talks to highlight: <a href="http://blog.trowbridge.org/index.php">Jon
+Trowbridge</a>'s on Beagle (who, you
+guessed it, had AV problems that ate up a chunk of his time slot).  From
+the <a href="http://beaglewiki.org/Main_Page">project Wiki</a>:</p>
+        <blockquote>
+          <p>Beagle is a search tool that ransacks your personal information space
+  to find whatever you're looking for. Beagle can search in many different
+  <a href="http://beaglewiki.org/Supported_Filetypes">domains: documents, emails, web history, IM/IRC conversation, source
+  code, images, music files, applications and [much
+  more</a>]</p>
+        </blockquote>
+        <p>Edd had already introduced me to Beagle, but it was really cool to see
+it in action.  I'll have to check it out.  Jon also pointed out
+<a href="http://www.beatniksoftware.com/tomboy/">TomBoy</a>, "a desktop note-taking
+application for Linux and Unix. Simple and easy to use, but with
+potential to help you organize the ideas and information you deal with
+every day."  Two projects I'll have to give a spin.  Props to Jon for
+shrugging off the AV woes and giving a fun and relaxed talk.</p>
+        <p><a href="http://weblogs.mozillazine.org/roc">Robert O'Callahan</a>'s talk on the new <code>canvas</code> tag for Mozilla and Safari
+was memorable if for nothing else than the experience of <a href="http://weblogs.mozillazine.org/roc/archives/2005/05/xtech.html">surfing Google
+at a 45�
+angle</a>,
+with no apparent loss in snappiness.  This canvas thingie looks wicked
+cool, and it's good to see them working to incorporate SVG.  I've heard
+a lot of grumbling from W3C types about canvas, and all we poor browser
+users in the middle can hope for is some rapid conversion of cool
+technologies such as XAML, XUL, canvas, SVG, etc.  Others have blogged
+about the opportunities and anxieties opened up by the
+<a href="http://www.whatwg.org/">WHATWG</a>, which one commentator said should have
+been the "WHAT Task Force" because "WTF" would have been a better
+acronym.  I'm a neutral in these matters, except that I really do with
+browser folks would do what they can to push people along to XHTML 2.0
+rather than cooking up HTML 5.0 and such.</p>
+        <p><a href="http://www.hackdiary.com/">Matt Biddulph</a> was one of the BBC Massive on
+hand, and his talk "The Application of Weblike Design to Data -
+Designing Data for Reuse" offered a lot of practical tips on how to
+usefully open up a large body of data from a large organization.</p>
+        <p><a href="http://www.w3.org/People/Dom/">Dominique Hazaël-Massieux</a> gave a talk
+on <a href="http://www.w3.org/2005/Talks/xtech-grddl/all.html">GRDDL</a> (O most
+unfortunate project name), which was my first hearing of the technology.
+My brief characterization of <a href="http://www.w3.org/TR/grddl/">GRDDL</a> is as
+an attempt to pull the Wild West ethos of
+<a href="http://www.xml.com/pub/a/2005/03/23/deviant.html">microformats</a> into
+the rather more controlled sphere of RDF.  It touches on topics in which
+I've been active for years, including tools for mapping XML to RDF.
+I've <a href="http://www.oreillynet.com/pub/wlg/5940">argued all these years</a>
+that RDF folks will have to embrace general XML in place of the RDF/XML
+vocabulary if they are to make much progress.  They will have to foster
+tools that make extracting RDF model data from XML a no-brainer.  It's
+great to see the W3C finally stirring in this direction.  Dom's
+presented very well.  I asked about the use of other systems, such as
+schema annotation, for the XML to RDF mapping.  It seemed to me that
+GRDDL was mostly geared towards XSLT.  Dom said it is meant to be
+independent of the mapping mechanism, but in my post-conference reading
+I'm not so sure.  I'll have to ponder this matter more and perhaps post
+my thoughts.  Dom also mentioned
+<a href="http://simile.mit.edu/piggy-bank/">PiggyBank</a>, "the Semantic Web
+extension for Firefox".  <a href="http://www.openlinksw.com/blog/~kidehen/index.vspx?page=&amp;id=850">Kingsley
+Idehen</a>
+has a nice blurb on this software.  I do hesitate to use it because
+someone mentioned to me how PiggyBank had gone into crazy thrash mode at
+one point.  I don't muck with my FireFox set-up lightly.</p>
+        <p>Rick Jelliffe showed off Topologi's lightweight browser
+<a href="http://www.topologi.com/products/treeworld.html">TreeWorld</a>, which is
+XML-oriented and suitable for embedding into other applications.</p>
+        <p>
+          <img src="http://photos13.flickr.com/17216940_4b5ffb98d6.jpg" alt="" title="Ricko brings it to a close"/>
+        </p>
+        <p>Others have blogged Jean Paoli's closing keynote
+(<a href="http://www.ldodds.com/blog/archives/000206.html, [Daniel](http://glazman.org/weblog/dotclear/index.php?2005/05/29/1059-adam-3">Leigh</a>, etc.).  Seems I'm not the only one who was put off by the
+straight-up product pitch.  At least he did a bit of a service by
+clearly saying "Binary XML: No please".  Check out <a href="http://wiki.usefulinc.com//Quotes">more quotes from
+XTech</a>.</p>
+        <p>The conference was superb.  Do be sure not to miss it next year.  It's
+looking like Amsterdam will be the venue again.  And what of Amsterdam?
+Besides the conference I had a great time with friends.  I'll post on
+that later.</p>
+        <p>For the most comprehensive report I've seen to date, see <a href="http://www.xml.com/pub/a/2005/06/01/deviant.html">Micah Dubinko's article</a>.</p>
+      </content>
+    </item>
+    <item>
+      <title>Hacking in the name of IE</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-02/Hacking_in.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>I finally broke down and made Copia safe for MSIE.  When I first set up
+the site, I tweaked the IE look a bit, but it was such a frustrating
+exercise that I gave up once satisfied with its appearance on FireFox
+and Safari (I need to install Opera for testing).  Last night I found
+<a href="http://css-discuss.incutio.com/? page=BoxModelHack">this excellent Wiki resource</a> and soon got things sorted out.  In the process I was
+alerted to the fact that Copia gets rendered in quirks mode, which is
+not what we want.  I think I know how to fix most of the problems, but
+some issues are buried in PyBlosxom and plug-ins code, I think, so it
+may have to wait until my next burst of energy before we can sport one
+of those fly "valid ?HTML ?" icons.</p>
+      </content>
+    </item>
+    <item>
+      <title>FuXi v0.6 - Rearchitected / Repackaged</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-01/FuXi_Repackaged.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>I've been experimenting with the use of FuXi as an alternative in situations
+where I had been manipulating application-specific RDF content using
+Versa within a host language (XSLT).  In some cases I've been able to
+reduce a very complex set of XSLT logic to 1-2 queries on RDF models
+extended via a handful of very concise rules (expressed as N3).  I'm
+hoping to build some usecases to demonstrate this later.</p>
+        <p>The result is that I've rearchitected FuXi to work as a blackbox
+<em>directly</em> with a 4RDF
+<a href="http://cvs.4suite.org/viewcvs/4Suite/Ft/Rdf/Model.py?view=markup">Model</a>
+instance (it is now query agnostic, so it can be plugged in as an
+extension library to any other/future RDF querying language bound to a
+4RDF model).  Prior to this version, it was extracting formulae
+statements by Versa queries instead of directly through the Model
+interfaces.</p>
+        <p>Right now I primarily use it through a single Versa function
+<em>prospective-query</em>.  Below is an excerpt from the
+<a href="/files/FuXi/README.txt">README.txt</a> describing it's parameters:</p>
+        <h3>prospective-query</h3>
+        <p><em>prospective-query</em>(
+  <strong>ruleGraph</strong>,
+  <strong>targetGraph</strong>,
+  <strong>expr</strong>,
+  <strong>qScope</strong>=None)</p>
+        <p>Using FuXi, it takes all the facts from the current query context
+(which may or may not be scoped)
+, the rules from the &lt;<em>ruleGraph</em>&gt; scope and invokes/executes the Rete
+reasoner.  It adds the inferred
+statements to the &lt;<em>targetGraph</em>&gt; scope.  Then, it performs the query
+&lt;expr&gt; within the &lt;<em>qScope</em>&gt;
+(or the entire model if None), removing the inferred statements upon exit</p>
+        <hr/>
+        <p>FuXi is is now a proper python package (with a setup.py) and I've moved it
+(permanently - I hope) to:
+<a href="http://copia.ogbuji.net/files/FuXi">http://copia.ogbuji.net/files/FuXi</a></p>
+        <p>I was a little unclear on Pychinko's specific dependencies with rdflib and cwm
+in my previous <a href="http://copia.ogbuji.net/blog/2005-05-29/FuXi">post</a>,
+but Yarden Katz cleared up the confusion in his comments (thanks).</p>
+        <p>The installation and use of FuXi should be significantly easier than
+before with the
+<a href="http://lists.fourthought.com/pipermail/4suite-checkins/2005-May/006450.html">recent</a>
+inclusion of the N3 deserializer/parser into 4Suite.</p>
+        <p>-- Chimezie</p>
+      </content>
+    </item>
+    <item>
+      <title>The feckless rump of our so-called Justice Department...</title>
+      <link>http://copia.ogbuji.net/blog/2005-06-01/The_feckle.html</link>
+      <content>
+        <p><!-- -->
+Has fancied for itself the time and energy to do <strong>what</strong>?  Wait.  Hold up.
+There's a Quotīdiē in here.</p>
+        <blockquote>
+          <p>There were lights and sirens, gunshots firing <br/>
+  Cover your eyes as I describe a scene so violent <br/>
+  Seemed like a bad dream, she, laid in a blood puddle <br/>
+  Blood bubbled in her chest, cold air brushed against open flesh <br/>
+  No room to rest,
+  Pain consumed each breath <br/>
+  Shot twice with her hands up <br/>
+  Police questioned but shot before she answered <br/>
+  One panther lost his life, the other ran for his <br/>
+  Scandalous the police were as they kicked and beat her <br/>
+  Comprehension she was beyond <br/>
+  Trying to hold on <br/>
+  To life. she thought she’d live with no arm <br/>
+  That’s what it felt like, got to the hospital, eyes held tight <br/>
+  They moved her room to room-she could tell by the light <br/>
+  Handcuffed tight to the bed, through her skin it bit <br/>
+  Put guns to her head, every word she got hit <br/>
+  "Who shot the trooper?" they asked her <br/>
+  Putting mace in her eyes, threatened to blast her <br/>
+  Her mind raced till things got still <br/>
+  Opened her eyes, realized she’s next to her best friend who got killed <br/>
+  She got chills.  They told her: that’s where she would be next <br/>
+  Hurt mixed wit anger&#8212;survival was a reflex <br/>
+  They lied and denied visits from her lawyer <br/>
+  But she was building as they tried to destroy her <br/>
+  If it wasn’t for this German nurse they would have served her worse <br/>
+  I read this sister’s story, knew that it deserved a verse <br/>
+  I wonder what would happen if that woulda been me? <br/>
+  All this shit so we could be free, so dig it, y’all.</p>
+        </blockquote>
+        <p>[SNIP the verse about further abuse and imprisonment of Assata]</p>
+        <blockquote>
+          <p>From North Carolina her grandmother would bring <br/>
+  News that she had had a dream <br/>
+  Her dreams always meant what they needed them to mean <br/>
+  What made them real was the action in between <br/>
+  She dreamt that Assata was free in their old house in Queens <br/>
+  The fact that they always came true was the thing <br/>
+  Assata had been convicted of a murder she couldn't have done <br/>
+  Medical evidence shown she couldn't have shot the gun <br/>
+  It’s time for her to see the sun from the other side <br/>
+  Time for her daughter to be by her mother’s side <br/>
+  Time for this beautiful woman to become soft again <br/>
+  Time for her to breathe, and not be told how or when <br/>
+  She untangled the chains and escaped the pain <br/>
+  How she broke out of prison I could never explain <br/>
+  And even to this day they try to get to her <br/>
+  But she’s free with political asylum in Cuba.</p>
+        </blockquote>
+        <p>&#8212;Common&#8212;"A Song for Assata", <a href="http://www.amazon.com/exec/obidos/tg/detail/-/B00004S51H">"Like Water For
+Chocolate"</a></p>
+        <p>I'm a bit ashamed that I'm only now hearing that on May 2, 2005 a $1
+million bounty was placed on the head of Assata Shakur, and that she was
+added to the FBI's Domestic Terrorist List, alongside Osama bin Laden
+(how dare they trivialize in this way the atrocities that bin Laden
+committed in Nairobi, Dar es Salaam and New York City, among other
+places)?  I suppose I'm more a slave to mainstream media than I'd
+thought.</p>
+        <p>As I listened to Common's heart-wrenching song over and over again this
+morning, I found myself in tears.  America has to varying extent
+venerated Martin Luther King, Malcolm X, despite the fact that they were
+technically criminals in their time (peace to <a href="http://en.wikipedia.org/wiki/C%E9sar_Ch%E1vez">César
+Chávez</a> who astonishes me
+with how much he accomplished acting entirely within the law).  We
+accept the justness of their challenge to lawfulness because of what we
+have distilled from their struggle&#8212;Basic civil rights enjoyed by
+Black Americans&#8212;Basic civil rights for people such as me who can
+safely come to a country that has through most of its history shown people of
+my ethnicity nothing but savagery and violence.  I'm grateful, and not
+just to the big names of the struggle, but also to the many who suffered
+horrifically in the name of freedom, and whose lesser fame has not
+spared them continuing injustice.</p>
+        <p>The personal story of <a href="http://en.wikipedia.org/wiki/Assata_Shakur">Assata
+Shakur</a> (see her <a href="http://www.assatashakur.org/">home
+page</a> and
+<a href="http://isbn.nu/1556520743">autobiography</a>), like that of most of the
+Black Panthers, makes for dreadful reading.  These people paid a high
+price for being part of a pincer movement that shamed and threatened
+America into civility (and no, I do <strong>not</strong> believe that either the
+shame from the non-violent movement or the threat from the militant
+movement would have been as effective alone).  I accept a lot of the
+past horror of what they endured (easy for me, who didn't personally
+suffer this) as inevitable loss in battle, as much as I view the
+extensive casualties of the Colonies' minutemen during the Revolutionary
+war.  But for me to witness the recent action of a U.S. regime, in 2005
+against one of the hapless combatants in the battle for for civil rights
+is entirely  unbearable.  We are in the midst of a loudly proclaimed war
+on terrorism which we the Americans of African descent are supposed to
+heartily endorse, and the Justice Department sees fit to address its
+resources towards settling old white supremacist scores?  Unbearable.</p>
+        <p>There has been plenty of injustice of all variety to go around in the
+U.S., and abroad in recent years, and in some respects this resumed
+persecution is just another story to be swallowed up in the ennui of the
+American public.  It would almost be better if people came off their
+couches to cheer these abominations.  At least we would recognize our
+times as a genuine struggle over the character of civilization rather
+than the reign of an arrogant cadre that recognizes opportunity in a
+population gorged and jaded <em>propter panem et circenses</em>.</p>
+        <p>It is furthermore intolerable to be so completely shamed by the vicious
+and autocratic regime of Fidel Castro.  Assata Shakur ran to Cuba as one
+of the only places where she could find some escape from U.S.
+persecution.  There was an unfortunate strain of communism that ran
+through the Black Panther Party, but this is no more remarkable, for
+example, than the fact that such a Communist strain ran through Jewish
+intellectuals in the mid 20th century.  Intellect frustrated by
+oppression and alienation often drifts towards communist ideals.  Only a
+vision of utopia sustains hope reared in ghetto soil.  As oppression and
+alienation decrease, it becomes easier to see the evils of Communism.
+It is important to point this out because people are already conflating
+the campaign against Shakur with the campaign against her present
+benefactors.   We perjure ourselves when we fling slogans and sanctions
+at the cause of freedom in Cuba while showing nothing but contempt for
+the freedom of one of our own in that very country, who has already
+suffered at our hands so much more than she could possibly deserve.</p>
+        <p>I urge anyone moved by curiosity of what I've written to learn more
+about this story.  Look at both sides of the story.  I certainly did.
+I'm no knee-jerk anti-establishment polemicist.  This matter says as
+much about America (whether or not you support the actions of the
+Justice Department) as do the other handful of stories our media has
+deemed worthy of presenting to you.</p>
+      </content>
+    </item>
+    <item>
+      <title>Towards EXSLT "1.0"</title>
+      <link>http://copia.ogbuji.net/blog/2005-05-30/Towards_EX.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <p>For a backgrounder on EXSLT, see my article <a href="http://www-106.ibm.com/developerworks/xml/library/x-exslt.html">"EXSLT by
+example"</a>.  EXSLT was born of general contribution of the community on
+the <a href="http://www.mulberrytech.com/xsl/xsl-list">XSL mailing list</a>.  <a href="http://www.ruminate.co.uk/">Jim
+Fuller</a>, <a href="http://nodesets.blogspot.com/">Dave
+Pawson</a> and <a href="http://www.jenitennison.com/">Jeni
+Tennison</a> started off a private thread to
+turn the list discussion into action, and I soon joined them.  The
+result was the exslt <a href="http://exslt.org/">web site</a>, <a href="http://lists.fourthought.com/mailman/listinfo/exslt">mailing
+list</a> and initial
+set of extension specifications.  We all agree that Jeni put the most
+work into it, and is the leading light of EXSLT, but she has been very
+busy lately (genius tends to occupy itself in overwhelming volume), and
+the rest of us have also had a hard time giving EXSLT the effort it
+desires.  Last week, however, Jim Fuller and I decided to take some
+steps towards getting EXSLT back on course.  In part, this is because
+some people want to get things moving on EXSLT for XSLT 2.0.</p>
+        <p>Here is a list of the things we're considering taking on in order to get
+to something we can call "EXSLT 1.0".</p>
+        <h4>Clearing up licensing</h4>
+        <p>I have proposed switching from the intended (but unstated) public domain
+to a <a href="http://creativecommons.org/licenses/by/2.0/">CC attribution
+license</a> for all EXSLT work
+products.  It seems everyone accepts this, but the main remaining
+question is assignment of copyright.  Some of the suggestions:</p>
+        <ul>
+          <li>Assign to all the four managers.  But do copyright decisions then have
+to be unanimous amongst us?  Is it a problem that we reside in different
+countries?</li>
+          <li>Assign to Jeni Tennison alone.  But does she have the bandwidth to
+dispatch all copyright matters?</li>
+          <li>Assign to the EXSLT.org domain.  I can't now find who suggested this
+to me, but my main question is the legality of such a move.</li>
+        </ul>
+        <p>Creating some caretaker foundation for EXSLT is not really an option,
+because no one (I think) has time for all the work that entails.</p>
+        <h4>Improving the information content of the EXSLT Web site</h4>
+        <p>We need a good overview.  We need news that we can keep up to date
+without too much effort, including references to the many good articles
+on EXSLT.  We need better documentation for almost all modules (the
+perennial example is that users get confused as to whether or not they
+have to download stuff from EXSLT.org in order to use the extensions).
+We need a better way to manage information about implementations.  We
+need a FAQ.  We should address outdated URLs from EXSLT specs (e.g.
+http://lists.fourthought.com/pipermail/exslt/2005-January/002169.html).</p>
+        <p>We also need to think about the confusion between the namespaces URLs
+used in EXSLT.  The extension URIs are different from the specification
+URLs.  I understand how this distinction came about, but I think it has
+proven too confusing in practice.  I suggest that we should put a
+<a href="http://www.rddl.org/">RDDL</a> gloss at all the namespace URL end
+locations, including a summary of the extension module and a pointer to
+the specifications.</p>
+        <h4>Packaging EXSLT</h4>
+        <p>We need to provide a package we can call "EXSLT 1.0".  Something clear,
+recognizable and ready for download.  It should include at least
+documentation on modules that proved useful over time.  We should update
+the reference stylesheet implementations and examples (see e.g.
+http://lists.fourthought.com/pipermail/exslt/2005-February/002174.html).</p>
+        <p>There have also been suggestions and proposals for new modules on the
+list, including:</p>
+        <ul>
+          <li>URI parsing and handling ( http://lists.fourthought.com/pipermail/exslt/2005-May/002210.html )</li>
+          <li>trig funcs ( http://lists.fourthought.com/pipermail/exslt-manage/2005-January/001224.html )</li>
+          <li>environment variables ( http://lists.fourthought.com/pipermail/exslt/2004-December/002158.html )</li>
+          <li>error handling ( http://lists.fourthought.com/pipermail/4suite-dev/2002-July/002192.html , thread at http://lists.xml.org/archives/xml-dev/200412/msg00797.html )</li>
+        </ul>
+        <p>My feeling is that we should go to 1.0 with the stuff that's already
+established on the site.  We can add modules for a 1.1. release.</p>
+        <p>And then we would set up for EXSLT 2.0 extensions, which I understand
+people are itching to seed (I'll probably watch from the side lines as I
+work through my <a href="/blog/2005-05-20/XSLT_2_0_m">overall opinions on XSLT
+2.0</a>).</p>
+        <p>Jim has <a href="http://lists.fourthought.com/pipermail/exslt/2005-May/002205.html">promised</a> to jump-start all these tasks.  I'll keep folks posted.</p>
+        <p>I welcome comments on this topic here on Copia, but if you really want
+to help, or want to engage in discussion with the overall community,
+please do join the mailing list and chip in.</p>
+      </content>
+    </item>
+    <item>
+      <title>Quot&#299;di&#275;</title>
+      <link>http://copia.ogbuji.net/blog/2005-05-30/Quot_di_.html</link>
+      <content>
+        <p>
+<!-- -->
+        </p>
+        <blockquote>
+          <p>One of the great practical uses of the literary disciplines, of
+  course, is to resist glibness—to slow language down and make it
+  thoughtful.   This accounts, particularly, for the influence of verse,
+  in its formal aspect, within the dynamics of the growth of language:
+  verse checks the merely impulsive flow of speech, subjects it to another
+  pulse, to measure, to extralinguistic consideration; by inducing the
+  hesitations of difficulty, it admits into language the influence of the
+  Muse and of musing.</p>
+        </blockquote>
+        <p>&#8212;<a href="http://en.wikipedia.org/wiki/Wendell_Berry">Wendell
+Berry</a>&#8212;<a href="http://isbn.nu/1593760558"><em>Standing By
+Words</em></a></p>
+        <p>via <a href="http://www.ripon.edu/faculty/GrahamD/index.html">David Graham</a>, on
+the New Poetry mailing list</p>
+        <p>No sooner have I returned from Amsterdam (more on all that later) than
+juicy morsel falls straight in my lap for the neglected Quotīdiē.
+Wendell Berry is not the most interesting poet to me.  I find him much
+like our current Poet Laureate <a href="http://www.americanlifeinpoetry.org/">Ted
+Kooser</a>&#8212;Intelligently
+stated, but with nothing particularly compelling to offer for theme or
+diction.  Not all bucolics have to be as majestic, as, say Vergil's, but
+I think more of our poets should look to (to give a parallel example)
+Horace for an example of how to personalize bucolics while still keeping
+them interesting.</p>
+        <p>But the quote is not from Berry's poetry, but from his prose, and it
+compels me to seek out more of Berry's philosophical essays.  Many
+commentators have noted the role of poetry in presenting ideas in a form
+that requires such care to digest that they become more clearly
+communicated to the reader.  This is so even if, paradoxically,
+obscurity is one of these tools of clear communication.  Obscurity slows
+things down in the reader's apprehension in order not to lose the
+nuances.  A perfect antonym of poetry from this viewpoint is the sound
+bite, and I think this comparison is also a good argument as to why
+poetry is as important today as it has ever been.</p>
+        <h3>Poetry for new media culture</h3>
+        <p>The problem has always been how to make the reader accept the braking
+effect of poetry on the digestion of information.  I don't think it's
+engaging in too much Luddite hand wringing to say that these days people
+prefer their information in easily (and indeed trivially) digestible
+form.  This is in part a natural reaction to high volume ("information
+overload" in the jargon).  Most people, even among the trendiest of
+techies, are quick to praise the resource that presents a topic in both
+depth and breadth, and in coherent form.  They find such treatment a
+necessary check on the dissociating effects of the contemporary
+knowledge feed&#8212;rapidly evolving blips of high sugar information.
+They accept a slow-down of perception and carefully read such resources,
+but only when advised by their peers to do so.  They slow down because
+the "buzz factor" has compelled them to do so.</p>
+        <p>Poetry serves the same end, and buzz can certainly be important for
+leading people to poetry, but what really makes it compelling enough for
+the reader to accept the slow-down in apprehension is concentrated
+beauty of language.  If the musical force of the words is strong enough,
+the intelligent reader will be obliged to dig more deeply.  The reader
+will have gained a superficial aesthetic reward from the piece, in the
+sound, and such a reward as they never receive from their more quotidian
+resources.  This reward is very satisfying, even if superficial, and it
+promises of richer reward, in the matter, once one has taken the time to
+consider the piece more carefully, most likely through multiple
+readings, and discussion with peers.  And with the best poetry, we learn
+that the reward in the sound is not really superficial at all, but is
+the key to better memory of the idea as well as greater enjoyment in its
+presentation.</p>
+        <p>This is all well and good, of course, but the question is exactly where
+will the mastery come from to work new media concerns into compelling
+poetry?  Is any such venture doomed by popular stereotype of poetry,
+especially its association with the mid-20th century cadre of slovenly,
+mentally unstable, kvetching pop art beatniks?  From what I've
+<a href="http://www.npr.org/templates/story/story.php?storyId=4575085">heard</a>
+and read of Paglia's <a href="http://isbn.nu/0375420843"><em>Break, Blow, Burn</em></a>,
+she opens up a useful discussion along these lines (yet another book on
+my really-should-read-soon list).  I must also say that the same
+discussion leads me to question whether she has the critical acumen to
+help direct the class of potential poets who can serve the world in this
+time of great need.</p>
+      </content>
+    </item>
+  </channel>
+</rss>

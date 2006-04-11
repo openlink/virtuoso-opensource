@@ -1,0 +1,35 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+<sect1 id="plinks">
+    <title>OpenLink BPEL Process Manager Partner Links</title>
+    <para>This page shows information about Partner Links for a BPEL process.</para>
+    <simplelist>
+      <member>Click <ulink url="i/prefs_16.png" alt="Properties"/> to view the properties of the Partner Link. This will go to a separate page showing the properties for the Parner Link such as WS-Addressing, Delivery Execution, WS-Security, etc.</member>
+      <member>Click <ulink url="i/sinfo_16.png" alt="View"/> to view the WSDL file for the current Partner Link. This will go to a page showing the wsdl content of the process.</member>
+      <member>Click <ulink url="i/edit_record_16.png" alt="Edit"/> to change the Endpoint, the Backup or the Debug values.</member>
+      <member>Click <ulink url="i/cancl_16.png" alt="Cancel"/> to cancel the changes.</member>
+    </simplelist>
+  </sect1>
+</HelpTopic>

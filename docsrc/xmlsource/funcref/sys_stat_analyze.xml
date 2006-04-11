@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_sys_stat_analyze">
+  <refmeta>
+    <refentrytitle>sys_stat_analyze</refentrytitle>
+    <refmiscinfo>sql</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>sys_stat_analyze</refname>
+    <refpurpose>Collects statistics on a table and its columns for use in SQL optinmization</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_sys_stat_analyze">
+      <funcprototype id="fproto_sys_stat_analyze">
+        <funcdef><function>sys_stat_analyze</function></funcdef>
+        <paramdef>in <parameter>table_name</parameter> varchar</paramdef>
+        <paramdef><optional>in <parameter>pcnt</parameter> integer</optional></paramdef>
+        <paramdef><optional>in <parameter>ignore_vdb</parameter> integer</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+<para>
+This function collects (or updates) column statistics for the table columns.  
+It collects minimum, maximum average and distinct values for a column and a 
+row count for the table and inserts the data into the DB.DBA.SYS_COL_STAT table.  
+It does not make historgrams for the columns.</para>
+	<para>
+The statistics are then used by the Optimized SQL compiler. All the cached compilations are
+discarded, because some of them may compile differently in the light of the new data.
+</para>
+  <para>This function will normally consider the entire database with the exception 
+  of remote tables.  Since you may be concerned about time or remote tables this 
+  operation is configurable using the optional parameters, 
+  <parameter>pcnt</parameter> and <parameter>ignore_vdb</parameter>.</para>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>table_name</title>
+      <para>The full name of the table exactly as in the KEY_TABLE column of SYS_KEYS.</para></refsect2>
+    <refsect2><title>pcnt</title>
+      <para>Determines how much of the database to gather statistics for.  
+	  Legal values are 0, or between 5 - 500.  Any non-zero value will gather 
+	  information on a random subset of the database tables, the greater the value, 
+	  the larger the subset.</para></refsect2>
+    <refsect2><title>ignore_vdb</title>
+      <para>Determines whether remote tables are considered.  By default 
+	  remote tables (ignore_vdb = 1) are ignored.  Setting this value to 0 
+	  will cause this function to gather statistical information for remote 
+	  tables also.</para></refsect2>
+ </refsect1>
+	
+ <!--
+  <refsect1 id="errors"><title>Errors</title>
+    <table><title>Errors signalled by sys_stat_analyze</title>
+      <tgroup cols="4">
+      <thead>
+	  <row><entry>SQL State</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row>
+     </thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  -->
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_sys_stat_histogram">sys_stat_histogram</link></para>
+    <para><link linkend="fn_SYS_DB_STAT">SYS_DB_STAT()</link></para>
+  </refsect1>
+</refentry>
+
+

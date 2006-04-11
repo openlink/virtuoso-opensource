@@ -1,0 +1,84 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+<wml>
+<head>
+<meta http-equiv="Cache-Control" content="no-cache" />
+</head>
+
+<?vsp
+   declare _user_name varchar;
+  declare _user_pass varchar;
+ declare _string1 varchar;
+  declare _num1 integer;
+  declare _num2 varchar;
+  declare _random1 integer;
+  _random1 := rnd(9999999);
+   _user_name := get_keyword('USERNAME', params, '');
+   _user_pass := get_keyword('POPPASS', params, '');
+?>
+<card id="Welcome" title="OpenLink">
+ <p mode="nowrap"><b>OpenLink Demo</b></p>
+ <p><a href="#Signup" title="Sign Up">Sign up</a></p>
+ <p><a href="#Login" title="Login">Login</a></p>
+</card>
+
+<card id="Login" title="OpenLink">
+ <do type="accept" label="Continue">
+     <go href="login.vsp?USERNAME=$(username1:escape)&amp;POPPASS=$(poppass1:escape)&amp;REF=<?=_random1?>">
+    </go>
+ </do>
+ <do type="options" label="Cancel">
+  <prev/>
+ </do>
+    <p>User Name:<input name="username1" title="Login Name" value="<?= _user_name ?>" format="x*x" maxlength="30" /></p>
+    <p>Password:<input name="poppass1" title="Password" value="<?= _user_pass ?>" type="password" format="x*x" maxlength="30" /></p>
+ <p><a href="login.vsp?USERNAME=$(username1:escape)&amp;POPPASS=$(poppass1:escape)&amp;REF=<?=_random1?>" title="Continue">Continue</a></p>
+ <p><a href="#Welcome" title="Cancel">Cancel</a></p>
+</card>
+
+<card id="Signup" title="OpenLink">
+ <do type="accept" label="Submit">
+     <go href="signup.vsp?USERNAME=$(username1:escape)&amp;POPPASS=$(poppass1:escape)&amp;POPPASS1=$(poppass2:escape)&amp;FIRSTNAME=$(firstname:escape)&amp;REF=<?=_random1?>&amp;EMAIL=$(email1:escape)">
+   <setvar name="username1" value="" />
+   <setvar name="poppass1" value="" />
+   <setvar name="poppass2" value="" />
+   <setvar name="email1" value="" />
+      </go>
+ </do>
+ <do type="options" label="Back">
+  <prev/>
+ </do>
+    <p>Your Full Name : <input name="firstname" title="Login Name" format="X*m" value="$(firstname)" tabindex="1" maxlength="30" /></p>
+    <p>Enter User Name : <input name="username1" title="Login Name" value="<?=_user_name?>" tabindex="2" maxlength="30" /></p>
+    <p>Enter Password :<input name="poppass1" title="Password" value="<?=_user_pass?>" type="password" tabindex="3" maxlength="30" /></p>
+    <p>Re-type Password :<input name="poppass2" title="Password"  value="<?=_user_pass?>" type="password" tabindex="4" maxlength="30" /></p>
+    <p>Return Email : <input name="email1" title="Email Address" value="$(email1)" tabindex="5" maxlength="30" /></p>
+  <p><a href="signup.vsp?USERNAME=$(username1:escape)&amp;POPPASS=$(poppass1:escape)&amp;POPPASS1=$(poppass2:escape)&amp;FAMILYNAME=$(familyname:escape)&amp;FIRSTNAME=$(firstname:escape)&amp;REF=<?=_random1?>&amp;EMAIL=$(email1:escape)" title="Continue">Continue</a></p>
+  <p><a href="#Welcome" title="Cancel">Cancel</a></p>
+</card>
+
+</wml>

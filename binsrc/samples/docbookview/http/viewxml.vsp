@@ -1,0 +1,14 @@
+<?vsp
+declare _fullname varchar;
+declare _text long varchar;
+declare _xml any;
+_fullname := {?'name'};
+DBV.DBV.LOAD_TEXT (_fullname);
+DBV.DBV.PARSE_XML (_fullname);
+select xml_persistent(ORIG_XML) into _xml from DBV.DBV.SOURCE where FULLNAME=_fullname;
+?>
+<?vsp DBV.DBV.VSP_HEADER (path,params,lines, concat(_fullname, ' | Serialized XML from plain parser')); ?>
+<XMP>
+<?= _xml ?>
+</XMP>
+<?vsp DBV.DBV.VSP_FOOTER (path,params,lines); ?>

@@ -1,0 +1,140 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<body>
+<v:page name="form_demo" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+<p>
+  <?vsp http ('<H3>Simple page to demonstrate generic VSPX form control</H3>'); --dbg_obj_print (params);
+  ?>
+</p>
+
+<p>
+<font style="color:red"><v:error-summary /></font>
+</p>
+
+<!--
+<v:form name="sf" type="simple" action="form.vspx" method="POST" xhtml_enctype="multipart/form-data">
+-->
+<v:form name="sf" type="simple" action="form.vspx" method="POST">
+      <v:text name="txt2" default="*none*" type="hidden" />
+  <P>
+  <v:label name="label1" value="--concat ('name of current control : ', control.vc_name)" />
+  </P>
+  <table>
+  <tr>
+    <td>
+      <v:text name="txt" default_value="1200" xhtml_size="40%" >
+       <v:validator test="regexp" regexp="^[0-9]+$" message="only digits are allowed" />
+      </v:text>
+      <v:text name="txt1" default_value="1200" xhtml_size="40%" >
+       <v:validator test="value" min="10" max="20" message="10 - 20 range" empty-allowed="1" />
+      </v:text>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <v:button name="submit2" action="simple" value="OK" initial-enable="--1" />
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <v:label name="label2" value="--concat ('name of vspx:page control : ', control.vc_page.vc_name)" />
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <v:button name="submit1" action="simple" style="image" xhtml:alt="This is a test button" value="--'plus.gif'" initial-enable="--1" >
+  <v:before-data-bind>
+    dbg_obj_print ('before-data-bind', control.vc_name);
+  </v:before-data-bind>
+  <v:after-data-bind>
+    dbg_obj_print ('after-data-bind', control.vc_name);
+  </v:after-data-bind>
+  <v:on-post>
+    dbg_obj_print ('on-post', control.vc_name);
+  </v:on-post>
+      </v:button>
+    </td>
+  </tr>
+  </table>
+  <v:on-init>
+    dbg_printf ('ON-INIT script');
+    control.vc_add_handler ('before-data-bind', 'bf_bind');
+    control.vc_add_handler ('before-data-bind', 'bf_bind1');
+    control.vc_add_handler ('after-data-bind', 'af_bind');
+    control.vc_add_handler ('after-data-bind', 'af_bind1');
+    control.vc_add_handler ('on-post', 'userpost');
+    control.vc_add_handler ('before-render', 'prerender');
+    control.vc_add_handler ('on-init', 'initf');
+  </v:on-init>
+  <v:before-data-bind>
+    dbg_obj_print ('before-data-bind', control.vc_name);
+  </v:before-data-bind>
+  <v:after-data-bind>
+    dbg_obj_print ('after-data-bind', control.vc_name);
+  </v:after-data-bind>
+  <v:on-post>
+    dbg_obj_print ('on-post', control.vc_name);
+  </v:on-post>
+</v:form>
+
+  <v:method name="bf_bind" arglist="inout control vspx_control">
+    dbg_obj_print ('bf_bind method');
+  </v:method>
+  <v:method name="initf" arglist="inout control vspx_control">
+    dbg_obj_print ('INIT method call');
+  </v:method>
+  <v:method name="bf_bind1" arglist="inout control vspx_control">
+    dbg_obj_print ('bf_bind1 method');
+  </v:method>
+  <v:method name="af_bind" arglist="inout control vspx_control">
+    dbg_obj_print ('af_bind method');
+  </v:method>
+  <v:method name="af_bind1" arglist="inout control vspx_control">
+    dbg_obj_print ('af_bind1 method');
+  </v:method>
+  <v:method name="userpost" arglist="inout control vspx_control">
+    dbg_obj_print ('userpost method');
+  </v:method>
+  <v:method name="prerender" arglist="inout control vspx_control">
+    dbg_obj_print ('prerender method');
+  </v:method>
+
+<v:include url="footer.xml"/>
+  <v:before-data-bind>
+    dbg_obj_print ('before-data-bind', control.vc_name);
+  </v:before-data-bind>
+  <v:after-data-bind>
+    dbg_obj_print ('after-data-bind', control.vc_name);
+  </v:after-data-bind>
+  <v:on-post>
+    dbg_obj_print ('on-post', control.vc_name);
+  </v:on-post>
+  <v:on-init>
+    dbg_obj_print ('http_full_request', http_full_request(0));
+  </v:on-init>
+</v:page>
+</body>
+</html>
+

@@ -1,0 +1,434 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare cnt, res, _del integer;
+  declare _u_name, _os_name, _os_password, _u_group, _u_id, _u_data, b_text, _u_groups varchar;
+  declare _evt_name, _is_edit varchar;
+  declare _is_add_group, _is_del_group integer;
+
+  if (not adm_check_auth (lines))
+    {
+      adm_tell_unauth(lines);
+      return (0);
+    }
+
+  if ('' <> get_keyword ('DEL', params, ''))
+      {
+        _del := atoi (get_keyword ('DEL', params, ''));
+	select u_name into _u_name from sys_users where u_id = _del;
+      	goto comf_page;
+      }
+
+  if (length (get_keyword ('add_group', params, '')) > 0)
+    _is_add_group := 1;
+  else
+    _is_add_group := 0;
+  if (length (get_keyword ('remove_group', params, '')) > 0)
+    _is_del_group := 1;
+  else
+    _is_del_group := 0;
+
+  if (_is_del_group or _is_add_group)
+    {
+      _u_name := get_keyword ('u_name', params, '');
+      _os_name := get_keyword ('os_name', params, '');
+      _os_password := get_keyword ('os_password', params, '');
+      _u_id := get_keyword ('u_id', params, '');
+      _u_data := get_keyword ('u_data', params, '');
+    }
+  else
+    _u_name := _os_name := _os_password := _u_group := _u_id := _u_data := '';
+
+  b_text := 'Add';
+  cnt := 0;
+
+  res := adm_users_action (params);
+  _u_groups := get_keyword ('_u_groups', params, '');
+
+  --- check the "primary" group
+  _u_group := get_keyword ('u_group', params, '');
+  _u_id := atoi(get_keyword ('u_id', params, ''));
+  _is_edit := get_keyword ('EDIT', params, '');
+  if ('** NONE **' = _u_group)
+    _u_group := _u_id;
+  else
+    _u_group := atoi (_u_group);
+
+  if ('' <> _is_edit)
+    {
+      _u_id := atoi (_is_edit);
+    }
+
+  if ('' <> _is_edit and not (isstring (_u_groups) and length (_u_groups) > 0))
+    {
+      _u_groups := vector ();
+      for (select UG_GID, U2.U_NAME as UG_GNAME from DB.DBA.SYS_USERS U2, DB.DBA.SYS_USER_GROUP
+	where UG_GID = U2.U_ID and UG_UID = _u_id and U2.U_SQL_ENABLE = 1) do
+	  {
+            _u_groups := vector_concat (_u_groups, vector (UG_GID + 1, UG_GNAME));
+	  }
+    }
+  else
+    {
+      if (isstring (_u_groups) and length (_u_groups) > 0)
+	_u_groups := deserialize (decode_base64 (_u_groups));
+      else
+	_u_groups := vector ();
+    }
+
+  if (length (get_keyword ('add_group', params, '')) > 0)
+   {
+     declare add_u_id integer;
+     add_u_id := atoi (get_keyword ('u_groups_add_group', params, ''));
+
+     if (add_u_id > 0 and (add_u_id - 1) <> _u_group)
+       {
+	 declare _inx, _found integer;
+         _inx := 0;
+         _found := 0;
+	 while (_found = 0 and _inx < length (_u_groups))
+	   {
+	     if (_u_groups[_inx] = add_u_id)
+	       _found := 1;
+	     else
+               _inx := _inx + 2;
+	   }
+	 if (_found = 0)
+	   _u_groups := vector_concat (_u_groups,
+	       vector (add_u_id,
+		 (select U_NAME from DB.DBA.SYS_USERS where U_ID = add_u_id - 1)));
+       }
+   }
+  if (length (get_keyword ('remove_group', params, '')) > 0)
+   {
+     declare remove_u_id integer;
+     remove_u_id := atoi (get_keyword ('u_groups', params, ''));
+     if (remove_u_id > 0)
+       {
+	 declare _inx, _found integer;
+         _inx := 0;
+         _found := 0;
+	 while (_found = 0 and _inx < length (_u_groups))
+	   {
+	     if (_u_groups[_inx] = remove_u_id)
+	       _found := 1;
+	     else
+               _inx := _inx + 2;
+	   }
+	 if (_found = 1)
+	   _u_groups := vector_concat (subseq (_u_groups, 0, _inx), subseq (_u_groups, _inx + 2));
+       }
+   }
+
+  if (res < 0)
+    {
+      _u_name := get_keyword ('u_name', params, '');
+      _u_id :=  get_keyword ('u_id', params, '');
+      _u_group :=  get_keyword ('u_group', params, '');
+      _u_data :=  get_keyword ('u_data', params, '');
+      b_text := 'Retry';
+    }
+
+  if (res = 0)
+    {
+      if ('' <> (_u_id := get_keyword ('EDIT', params, '')))
+        {
+	  declare _stat, _msg, _inx, _all_opts varchar;
+          _os_password := NULL;
+	  select u_name, u_group, adm_users_def_qual(u_data),
+	    deserialize (u_opts)
+	    into _u_name, _u_group, _u_data, _all_opts
+	    from sys_users
+	    where u_id = atoi (_u_id);
+
+	  if (_all_opts is not NULL)
+	     {
+		_os_password := get_keyword ('SYSTEM_UPASS', _all_opts, '');
+		_os_name := get_keyword ('SYSTEM_UNAME', _all_opts, '');
+		_os_password := pwd_magic_calc (_u_name, _os_password, 1);
+		_os_name := pwd_magic_calc (_u_name, _os_name, 1);
+	     }
+
+	  b_text := 'Accept';
+          for (select U_NAME as UG_GNAME from DB.DBA.SYS_USERS, DB.DBA.SYS_USER_GROUP
+		where UG_GID = U_ID and UG_UID = atoi (_u_id)) do
+	    {
+	      if (0 <> exec (sprintf ('delete user group "%I" "%I"', _u_name, UG_GNAME), _stat, _msg))
+		{
+		  b_text := 'Retry';
+	          goto after_loop;
+		}
+	    }
+          _inx := 0;
+          while (_inx < length (_u_groups))
+            {
+	      if (0 <> exec (sprintf ('add user group "%I" "%I"', _u_name, _u_groups[_inx + 1]), _stat, _msg))
+		{
+		  b_text := 'Retry';
+	          goto after_loop;
+		}
+              _inx := _inx + 2;
+	    }
+after_loop:
+          _inx := 0;
+	}
+    }
+  if (res = 0 and '' <> get_keyword ('add', params, ''))
+    {
+	_u_name := _os_name := _os_password := _u_group := _u_id := _u_data := '';
+      _is_edit := '';
+      _u_groups := vector ();
+    }
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>User Accounts</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="User Account Management for Virtuoso DB">
+  </head>
+  <BODY>
+<?vsp adm_page_header('User Administration', 'dbusersandgroups'); ?>
+
+<?vsp
+    http (adm_users_error_msg (res));
+-- Bugzilla #2291
+    if (res = -5)
+      b_text := 'Add';
+?>
+
+    <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+<?vsp
+      if ('' = _u_name)
+        {
+?>
+      <TR><TD class="genhead" COLSPAN="2">New User</TD></TR>
+<?vsp
+        }
+      else
+        {
+?>
+      <TR><TD class="genhead" COLSPAN="2">Edit User</TD></TR>
+<?vsp
+        }
+?>
+      <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+      <form method="POST" action="admin_users.vsp">
+      <input type="hidden" name="u_id" value="<?= _u_id ?>">
+      <tr>
+        <td class="genlisthead">Name</td>
+<?vsp     if (is_empty_or_null (_u_name) or res = -6)
+            {
+?>
+	      <td class="geninput"><input type="text" name="u_name" value="<?= _u_name ?>">
+<?vsp       }
+          else
+            {
+?>
+	      <td class="gendata"><input type="hidden" name="u_name" value="<?= _u_name ?>">
+	      <?= _u_name ?></input>
+<?vsp
+            }
+?>
+        </td>
+      </tr><tr>
+         <td class="genlisthead">Password</td><td class="geninput"><input type="password" name="u_password" value="<?vsp if (_u_name <> '') http('__not_changed'); else http(''); ?>"></td>
+      </tr><tr>
+         <td class="genlisthead">Confirm Password</td><td class="geninput"><input type="password" name="u_password2" value="<?vsp if (_u_name <> '') http('__not_changed'); else http(''); ?>"></td>
+      </tr><tr>
+<?vsp
+    if (sys_stat('st_build_opsys_id') = 'Win32')
+         {
+?>
+         <td class="genlisthead">OS user name</td><td class="geninput"><input type="text" name="os_name" value="<?= _os_name ?>"></td>
+      </tr><tr>
+         <td class="genlisthead">OS Password</td><td class="geninput"><input type="password" name="os_password" value="<?= _os_password ?>"></td>
+      </tr><tr>
+<?vsp
+         }
+?>
+         <td class="genlisthead">Group</td>
+	 <td class="genselect">
+	   <select name="u_group">
+	     <?vsp adm_u_group_options (_u_group); ?>
+	   </select>
+	 </td>
+      </tr><tr>
+         <td class="genlisthead">Additional groups</td>
+	 <td class="genselect">
+	    <table>
+	      <tr>
+	        <td colspan=4>
+		    <input type="hidden" name="_u_groups" value="<?=encode_base64 (serialize (_u_groups)) ?>">
+<?vsp
+		    if (_is_edit <> '')
+		      {
+?>
+                        <input type="hidden" name="EDIT" value="<?=_is_edit ?>">
+<?vsp
+                      }
+?>
+		    <select name="u_groups" size=5>
+<?vsp
+                    if (length (_u_groups) = 0)
+                      {
+?>
+			<option value="*** NONE ***">*** NONE ***</option>
+<?vsp
+		      }
+		    declare _u_group_inx integer;
+                    _u_group_inx := 0;
+		    while (_u_group_inx < length (_u_groups))
+		      {
+?>
+			<option value="<?= _u_groups[_u_group_inx] ?>"><?= _u_groups[_u_group_inx + 1] ?></option>
+<?vsp
+			 _u_group_inx := _u_group_inx + 2;
+		      }
+?>
+		    </select>
+		</td>
+		<td>
+		  <table>
+		    <tr><td><input type="submit" name="add_group"    value="&lt;-"></td></tr>
+		    <tr><td><input type="submit" name="remove_group" value="-&gt;"></td></tr>
+		  </table>
+		</td>
+		<td colspan=4>
+		   <select name="u_groups_add_group">
+<?vsp
+		   for (select u_name, u_id from sys_users where u_id = u_group and u_sql_enable = 1) do
+		     {
+?>
+		       <option value="<?= u_id + 1?>"><?= u_name ?></option>
+<?vsp
+		     }
+?>
+		   </select>
+		</td>
+	      </tr>
+	    </table>
+	 </td>
+      </tr><tr>
+        <td class="genlisthead">Default Qualifier</td><td class="geninput"><input type="text" name="u_data" value="<?= _u_data ?>"></td>
+      </tr><tr>
+        <td colspan="2" align="center">
+			<input type="submit" name="add" value="<?= b_text ?>">
+			<input type="submit" name="cancel" value="Cancel">
+        </td>
+      </tr>
+      </form>
+    </TABLE>
+
+</TD>
+
+<?vsp adm_page_break(); ?>
+
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="6">Current User Accounts</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="6"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+<?vsp
+    for (select u_name, u_id, u_group, u_data, u_dav_enable from sys_users where u_sql_enable = 1 and u_is_role = 0) do
+      {
+        cnt := cnt + 1;
+        if (cnt = 1)
+          {
+?>
+            <tr>
+		<th class="genlistheadt">Name</th>
+		<th class="genlistheadt">Group</th>
+		<th class="genlistheadt">Default Qualifier</th>
+		<th class="genlistheadt">Web access</th>
+		<th class="genlistheadt" colspan="2">Actions</th>
+            </tr>
+<?vsp
+          }
+?>
+        <tr>
+		 <td class="gendata"><a href="admin_users.vsp?EDIT=<?/ u_id ?>"><?= u_name ?></a></td>
+        <td class="gendata"><?vsp adm_users_u_group (u_group); ?></td>
+        <td class="gendata"><?= adm_users_def_qual (u_data) ?></td>
+        <td class="gendata"><?= case when u_dav_enable = 1 then 'yes' else 'no' end ?></td>
+        <td class="gendata">
+	<?vsp if (u_id <> 0 and u_id <> http_dav_uid ()) {  ?>
+	<a class="tablelistaction" href="admin_users.vsp?DEL=<?/ u_id ?>">remove</a>
+	<?vsp } ?>
+	</td>
+		 <td class="gendata">
+	<?vsp if (u_dav_enable <> 1) {  ?>
+<a class="tablelistaction" href="admin_users.vsp?EDIT=<?/ u_id ?>">edit</a>
+	<?vsp } else http ('*'); ?>
+</td>
+		 </tr>
+<?vsp
+      }
+    if (cnt = 0)
+      {
+?>
+        <tr><td class="errorhead" colspan="5">*** No users!!! ***</td></tr>
+<?vsp
+      }
+?>
+    </TABLE>
+<?vsp adm_page_break(); ?>
+    <small>The web enabled account can be edited via WebDAV user accounts</small>
+<?vsp adm_page_footer(); ?>
+  </body>
+</html>
+<?vsp
+return;
+comf_page:;
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Confirmation</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Deleting Database User">
+  </head>
+  <BODY>
+<?vsp adm_page_header(concat ('Deleting Database User ', _u_name), NULL); ?>
+    <form method="POST" action="admin_users.vsp" name="delete_trig">
+    <table border="0" width="60%">
+      <tr><td class="genlistheadt">You are about to delete the database user <?= _u_name ?>. This deletion cannot be undone. Do you wish to continue?</td></tr>
+      <input type="hidden" name="DEL2" value="<?= _del ?>">
+      <tr>
+      <td align="center">
+         <input type="submit" name="proceed" value="Delete">&nbsp;
+	 <input type="submit" name="proceed" value="Cancel"></td>
+      </tr>
+    </form>
+    </table>
+</TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+</TABLE>
+<?include admin_footer.vsp ?>
+  </body>
+</html>
+

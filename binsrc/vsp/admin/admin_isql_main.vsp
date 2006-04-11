@@ -1,0 +1,208 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!- -*- html -*- ->
+<?vsp adm_pre_page(lines);
+
+  declare _stmt varchar;
+  declare _maxres integer;
+  declare m_dta, m_dta_col, result, exp_result any;
+  declare inx, jnx, n_cols integer;
+  declare col_names varchar;
+  declare col_types varchar;
+  declare res_row varchar;
+  declare res_col varchar;
+  declare res_cols integer;
+  declare err_sqlstate, err_msg varchar;
+  declare _exec_dsn varchar;
+
+--
+-- Reset initializes fields to default values
+--
+  if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+
+  _exec_dsn := get_keyword ('exec_dsn', params, '');
+  if (not is_empty_or_null (get_keyword ('reset', params)))
+    {
+      _maxres := 100;
+      _stmt := '';
+      _exec_dsn := '';
+    }
+
+  else
+
+    {
+      _maxres := get_keyword ('maxres', params);
+      if (atoi (_maxres) < 0)
+         _maxres := '100';
+      else if (atoi (_maxres) > 200)
+	{
+	  _maxres := '200';
+	}
+      _stmt := get_keyword ('stmt', params);
+    }
+?>
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function savetemplate (what)
+{
+  if (document.forms[0].exec_dsn.value != '')
+    alert ('unable to store remote queries');
+  else
+    {
+      document.forms[0].action = '/admin/admin_dav/admin_xml_template.vsp';
+      document.forms[0].load_template.value = what;
+      document.forms[0].submit;
+    }
+}
+function disable_save (inx)
+{
+  document.forms[0].save.disabled = (inx != 0);
+}
+// -->
+</SCRIPT>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Interactive SQL using Virtuoso VSP">
+    <title>Virtuoso Interactive SQL using VSP</title>
+  </head>
+<?vsp adm_page_header('Interactive SQL', NULL); ?>
+<?include adm_js_check.vsp ?>
+
+    <form method="POST" action="admin_isql_main.vsp">
+    <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+      <tr>
+        <td ALIGN="right">
+          <table BORDER="0" CELLPADDING="0" CELLSPACING="2">
+	    <tr><td CLASS="genlisthead">Max. no of results (200 max.)</td>
+                <td><input type="text" name="maxres" value="<?= coalesce(_maxres,100) ?>"></td>
+            </tr>
+	  </table>
+	</td>
+      </tr>
+      <tr>
+        <td CLASS="genlistheadt">SQL Statement</td>
+      </tr>
+      <tr>
+        <td><textarea name="stmt" rows="5" cols="64"><?= coalesce(_stmt, '') ?></textarea></td>
+      </tr>
+      <tr ALIGN="right">
+        <td>
+        <table BORDER="0" CELLPADDING="0" CELLSPACING="2"><tr>
+	    <td><p>Execute in DSN :</p></td><td><select name="exec_dsn" onchange="disable_save (this.selectedIndex)">
+              <option <?=case _exec_dsn when '' then 'selected' else '' end ?>></option>
+<?vsp
+              for select DS_DSN from DB.DBA.SYS_DATA_SOURCE do {
+?>
+              <option <?=case _exec_dsn when DS_DSN then 'selected' else '' end ?> ><?=DS_DSN ?></option>
+<?vsp
+              }
+?>
+
+	    </select></td>
+	    <td ALIGN="right">
+		<input type=hidden name=caller_uri value="/admin/admin_isql_main.vsp?qtype=sql">
+		<input type="hidden" name="load_template" value="">
+		<input type="hidden" name="saved_file" value="<?= get_keyword ('saved_file', params, '') ?>">
+		<input type="submit" name="execute" value="Execute">
+		<input type="submit" name="save" value="Save" onClick="savetemplate('');" <?= case _exec_dsn when '' then '' else 'disabled' end ?> >
+		<input type="submit" name="load" value="Load" onClick="savetemplate('query');">
+		<input type="submit" name="reset" value="Reset">
+	     </td>
+	</tr></table>
+	</td>
+      </tr>
+  </table>
+
+<?vsp adm_page_break(); ?>
+
+<?vsp
+
+  if (not is_empty_or_null (get_keyword ('execute', params)))
+    {
+
+      if (not is_empty_or_null (_stmt))
+      {
+	declare err_sqlstate1, err_msg1 varchar;
+	  err_sqlstate := '00000';
+	  err_msg := 'none';
+          err_sqlstate1 := '00000';
+          err_msg1 := 'none';
+
+--
+--        a fresh transaction, right out of the oven...
+--
+	  commit work;
+          if (_exec_dsn <> '')
+	      _stmt := sprintf ('DB.DBA.RSTMTEXEC (''%S'', ''%S'')',
+		    _exec_dsn, rtrim(trim(_stmt), ';'));
+
+	  exec (rtrim(trim(_stmt), ';'), err_sqlstate, err_msg, vector(),
+		atoi (_maxres), m_dta, result);
+
+          {
+	      declare exit handler for sqlstate '*' {
+		 rollback work;
+		 err_sqlstate1 := __SQL_STATE;
+		 err_msg1 := __SQL_MESSAGE;
+	      };
+	      exec ('commit work');
+          }
+	  if ('00000' <> err_sqlstate)
+	    {
+              http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+              http ('<TR><TD CLASS="errorhead" COLSPAN="2">Execution Error</TD></TR>');
+	      http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%V</TD></TR>',
+		    err_sqlstate));
+	      http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%V</TD></TR>',
+		    err_msg));
+	      if ('00000' <> err_sqlstate1)
+		{
+		  http (sprintf ('<TR><TD CLASS="genlisthead">Txn SQL State</TD><TD CLASS="gendata">%V</TD></TR>',
+			err_sqlstate1));
+		  http (sprintf ('<TR><TD CLASS="genlisthead">Txn Error Message</TD><TD CLASS="gendata">%V</TD></TR>',
+			err_msg1));
+		}
+	      http('</TABLE>');
+	    }
+	  else
+	    {
+	      declare sqlc any;
+	      adm_result_to_table(result, m_dta);
+              sqlc := sql_parse (rtrim(trim(_stmt), ';'));
+              if (0 and isarray(sqlc) and sqlc[0] = 100)
+		{
+?>
+                 <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+		 <TR><TD CLASS="genlisthead"><A href="admin_dav/admin_dav_xslt.vsp?stmt=<?=rtrim(trim(_stmt), ';')?>&imd=xmlt&permis=111101000N&own=dav">Save Query in a XML template</A></TD></TR>
+		 </TABLE>
+<?vsp
+		}
+	    }
+	  }
+    }
+?>
+&nbsp;<?vsp adm_page_break(); ?>&nbsp;
+<?vsp adm_page_footer(); ?>
+</html>

@@ -1,0 +1,98 @@
+#
+# $Id$
+#
+
+CSC=mcs
+
+#CSFLAGS=-debug+ /d:MONO /d:DEBUG /d:DEBUG_IO
+CSFLAGS=/optimize+ /d:MONO
+
+SOURCES=\
+ ArrayOfLongPacked.cs\
+ AssemblyInfo.cs\
+ BlobHandle.cs\
+ BufferType.cs\
+ CLI.cs\
+ ConnectionOptions.cs\
+ ConnectionPool.cs\
+ ConnectionStringParser.cs\
+ DataType.cs\
+ DateTimeMarshaler.cs\
+ Diagnostics.cs\
+ DTC.cs\
+ ExplicitString.cs\
+ Future.cs\
+ FutureList.cs\
+ IConvertData.cs\
+ ICreateErrors.cs\
+ IInnerCommand.cs\
+ IInnerConnection.cs\
+ IMarshal.cs\
+ ISession.cs\
+ InnerConnectionBase.cs\
+ MD5.cs\
+ ManagedCommand.cs\
+ ManagedConnection.cs\
+ ManagedErrors.cs\
+ Marshaler.cs\
+ MemoryHandle.cs\
+ OdbcCommand.cs\
+ OdbcConnection.cs\
+ OdbcErrors.cs\
+ ParameterData.cs\
+ Platform.cs\
+ RPC.cs\
+ Service.cs\
+ StatementList.cs\
+ TcpConnection.cs\
+ TcpSession.cs\
+ Unix.cs\
+ VirtDbType.cs\
+ VirtuosoCommand.cs\
+ VirtuosoCommandBuilder.cs\
+ VirtuosoConnection.cs\
+ VirtuosoDataAdapter.cs\
+ VirtuosoDataReader.cs\
+ VirtuosoError.cs\
+ VirtuosoErrorCollection.cs\
+ VirtuosoException.cs\
+ VirtuosoInfoMessage.cs\
+ VirtuosoParameter.cs\
+ VirtuosoParameterCollection.cs\
+ VirtuosoPermission.cs\
+ VirtuosoPermissionAttribute.cs\
+ VirtuosoTransaction.cs\
+ SqlXml.cs\
+ VirtuosoWarning.cs\
+ IVirtuosoError.cs\
+ Win32.cs
+
+REFERENCES=/r:System.Data /r:System.EnterpriseServices
+
+RESOURCES=
+# /resource:OpenLink.Data.VirtuosoClient.VirtuosoConnection.bmp\
+# /resource:OpenLink.Data.VirtuosoClient.VirtuosoCommand.bmp\
+# /resource:OpenLink.Data.VirtuosoClient.VirtuosoDataAdapter.bmp
+
+all: OpenLink.Data.Virtuoso.dll OpenLink.Data.VirtuosoClient.dll OpenLink.Data.VirtuosoOdbcClient.dll
+
+OpenLink.Data.Virtuoso.dll: $(SOURCES) 
+	$(CSC) /unsafe /target:library /out:$@ $(CSFLAGS) $(SOURCES) $(REFERENCES) $(RESOURCES)
+
+OpenLink.Data.VirtuosoClient.dll: $(SOURCES) 
+	$(CSC) /unsafe /target:library /out:$@ /define:CLIENT $(CSFLAGS) $(SOURCES) $(REFERENCES) $(RESOURCES)
+
+OpenLink.Data.VirtuosoOdbcClient.dll: $(SOURCES) 
+	$(CSC) /unsafe /target:library /out:$@ /define:ODBC_CLIENT $(CSFLAGS) $(SOURCES) $(REFERENCES) $(RESOURCES)
+
+clean:
+	rm -rf \
+		OpenLink.Data.Virtuoso.dll \
+		OpenLink.Data.VirtuosoClient.dll \
+		OpenLink.Data.VirtuosoOdbcClient.dll \
+		OpenLink.Data.Virtuoso.Design.dll \
+		OpenLink.Data.Virtuoso.pdb \
+		OpenLink.Data.VirtuosoClient.pdb \
+		OpenLink.Data.VirtuosoOdbcClient.pdb \
+		OpenLink.Data.Virtuoso.Design.pdb \
+		VirtuosoConnection.resx

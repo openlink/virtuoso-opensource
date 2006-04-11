@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="webappdevelopment.xml" id="webappdevelopment"><title>Web Application Development</title>
+
+<abstract>
+ <para>This chapter deals with the Virtuoso HTTP Server, its Dynamic Page 
+ generation and components used to configure it.  The HTTP Servers features 
+ include:</para>
+
+ <simplelist>
+  <member>Web server configuration and access control.</member>
+  <member>Multihosting, Virtual Hosting and Virtual Directories - A single Virtuoso 
+  server can map requests into multiple spaces of web pages based on the 
+  interface to which the requests come (multihosting) or on the Host 
+  HTTP/1.1 header (virtual hosting).</member>
+  <member>HTTP/1.0 and HTTP/1.1 support, keep alive connections and pipelining.</member>
+  <member>Proxying - Virtuoso can automatically redirect requests to certain 
+  resources or directories to another web server.</member>
+  <member>Authentication and security - Specific directories can be made to 
+  require authentication (basic or digest) or may be restricted to SSL only.  
+  Authentication can also be totally user defined.</member>
+  <member>SOAP - given directories can be defined as containing SOAP services, 
+  which can be accessed by SOAP clients, invoking Virtuoso stored procedures.</member>
+  <member>Dynamic content - Given paths can be executable, allowing 
+  defining VSP, and VSPX pages that generate HTML or XML using embedded 
+  Virtuoso/PL.</member>
+  <member>WebDAV - Paths can be mapped into DAV collections maintained inside  
+  the database.  Virtuoso WebDav is a Unix file system-like mechanism allows 
+  specifying access rights and ownership of DAV resources.</member>
+  <member>WebDAV resources may optionally be indexed in a free text index.</member>
+  <member>A web robot allows copying external web resources into Virtuoso WebDAV.</member>
+ </simplelist>
+
+</abstract>
+
+  <para>Virtuoso provides a full function web server with dynamic web page
+  generation capability using SQL procedures embedded in HTML or XML via VSP or 
+  VSPX.  Runtime hosting allows Virtuoso to generate dynamic web pages from 
+  other sources also, such as ASP.Net, PHP or JSP.  </para>
+
+  <para>Out-of-the-box Virtuoso listens for HTTP requests on the port defined 
+  in the HTTP Server section of the Virtuoso INI file.  The Visual Server 
+  Administration Interface is available at this port and can be used to further 
+  configure the web server.</para>
+
+  <para>Web resources can be based on the file system, reside in the database or 
+  in WebDAV or any combination of all of them.  WebDAV space can be specified 
+  at the path level, by default, paths beginning with /DAV are mapped to the 
+  WebDAV root collection (directory) and all other paths are assumed to be file 
+  system based.  By default / is mapped to the directory specified as ServerRoot in 
+  the HTTP Server section of the virtuoso.ini file.</para>
+
+  <para>Virtual Directories provide a way to make mappings from paths to other 
+  resources such as specific file system or WebDAV locations, other HTTP Servers 
+  acting as a proxy or to alter specific processing or authentication rules for a 
+  directory.</para>
+
+&webserver;
+
+&web_acl;
+
+&vsp;
+
+&vspx;
+
+&rth.aspx;
+
+<sect1 id="asmxhosting"><title>ASMX Web Service Hosting</title>
+
+  <para>Microsoft ASMX Web Services can be hosted in exactly the same way as 
+  ASPX Applications can be.  A ASMX Web Services Project created in Visual Studio
+  can be copied to either the file system (under the VSPROOT directory) or the 
+  Virtuoso WebDAV repository.  You must copy the project directory to the 
+  required location and then make a Virtual Directory pointing to it.  If the 
+  location is in WebDAV then ensure that execute permissions are set for 
+  any .asmx files.</para>
+
+  <tip><title>See Also:</title>
+    <para><link linkend="rthwritaspxapps">ASP.Net Web Application Hosting</link></para></tip>
+
+</sect1>
+
+&blogger;
+
+&php; 
+
+&jsphosting;
+
+&perl;
+
+&python;
+
+&ruby;
+
+</chapter>

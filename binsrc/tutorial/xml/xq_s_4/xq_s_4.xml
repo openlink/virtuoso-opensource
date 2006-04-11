@@ -1,0 +1,68 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XQ-S-4">
+  <refmeta>
+    <refentrytitle>XQuery document function</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>OPML file generation from XHTML source</refname>
+    <refpurpose>document usage example</refpurpose>
+  </refnamediv>
+
+  <refsect1 id="XQ-S-4a">
+      <title>Example</title>
+      <para>
+	  The demo retrieve a HTML pages containing attendees or bloggers listings and convert them to OPML.
+	  The conversion is done with XQuery and user-defined XPath functions to resolve the feeds URLs. 
+      </para>
+      <para>
+	  The demo also retrieve few OPML files and re-construct them having the feeds URLs if they are missing.
+      </para>
+      <para>
+	  When setting the initial state, the demo starts to retrieve pages from the different sites. 
+	  It could take a long time depending on the Internet connection of the machine that Virtuoso is running on. 
+	  It is safe to leave the pop-up open without waiting it to finish and press on the "Run" links,
+	  however if this is the first time you run the initial state, the demo will show only partial results.
+	  Once the feeds are resolved they will be cached locally in a database table and the generated OPML files will
+	  be stored as a WebDAV resources.
+      </para>
+      <para>
+	  The following are source references used in the demo:
+      </para>
+      <itemizedlist mark="bullet">
+	  <listitem>http://wiki.techcrunch.com/third_meetup 				        </listitem>
+	  <listitem>http://news.com.com/html/ne/blogs/CNETNewsBlog100.opml			</listitem>
+	  <listitem>http://conferences.oreillynet.com/pub/w/23/speakers.html                    </listitem>
+	  <listitem>http://conferences.oreillynet.com/pub/w/38/speakers.html                    </listitem>
+	  <listitem>http://www.alwayson-network.com/comments.php?id=10852_0_11_0_C              </listitem>
+	  <listitem>http://www.gnomedex.com/holdings/br_2005%20Gnomedexers.opml			</listitem>
+	  <listitem>http://www.web2con.com/pub/w/40/speakers.html                               </listitem>
+	  <listitem>http://www.thenewpr.com/wiki/pmwiki.php?pagename=Resources.CEOBlogsList     </listitem>
+	  <listitem>http://nwr.cowblock.net/index.php?action=list				</listitem>
+	  <listitem>http://okrasoup.typepad.com/black_looks/2005/05/naija_blogs.html		</listitem>
+	  <listitem>http://allafrica.com/afdb/blogs/blogafrica.opml                             </listitem>
+      </itemizedlist>
+  </refsect1>
+</refentry>

@@ -1,0 +1,124 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare this, saved_pars, b64_pars varchar;
+declare _u_id integer;
+_u_id := DB.DBA.adm_dav_check_auth (lines);
+if (_u_id <> 1)
+  {
+    adm_tell_unauth_dav (lines);
+    return (0);
+  }
+this := http_path();
+--dbg_obj_print (this, ': ', params);
+
+if ({?'host'} is not null)
+  {
+    saved_pars := params;
+    b64_pars := encode_base64 (serialize(params));
+  }
+this := 'admin_virt_dir.vsp';
+
+?>
+<HTML>
+<HEAD>
+    <script language="javascript" src="../admin_utils.js"></script>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+<TITLE>Select Procedure</TITLE>
+</HEAD>
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+// -->
+</SCRIPT>
+<?vsp adm_page_header('Virtual Directories: Unpublishing SOAP Services', 'virtdir'); ?>
+<?include ../adm_js_check.vsp ?>
+
+<form name="pform" method="POST" action="<?=this?>">
+<input type="hidden" name="q" value="__any__">
+<input type="hidden" name="b64_pars" value="<?=b64_pars?>">
+<?vsp
+if ({?'host'} is not null)
+  {
+    declare ix, len integer;
+    ix := 0; len := length (saved_pars);
+    while (ix < len)
+      {
+?>
+       <input type="hidden" name="<?=saved_pars[ix]?>" value="<?=saved_pars[ix+1]?>">
+<?vsp
+        ix := ix + 2;
+      }
+  }
+?>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+<TR><TD CLASS="genhead" COLSPAN="3">Published procedures &amp; User Defined Types for <?= {?'soap'} ?></TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD CLASS="genlistheadt">
+  <input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)">
+  </TD>
+  <TD CLASS="genlistheadt">Type</TD>
+  <TD CLASS="genlistheadt">Name</TD>
+</TR>
+
+<?vsp
+    declare _u_id integer;
+    select U_ID into _u_id from SYS_USERS where U_NAME = {?'soap'};
+    for select P_NAME from DB.DBA.SYS_PROCEDURES, DB.DBA.SYS_GRANTS
+    where G_USER = _u_id and G_OP = 32 and G_OBJECT = P_NAME
+    union select G_OBJECT as P_NAME from DB.DBA.SYS_GRANTS where
+    G_USER = _u_id and G_OP = 32 and __proc_exists (G_OBJECT) is not null
+    and not exists (select 1 from SYS_PROCEDURES where G_OBJECT = P_NAME)
+       do {
+?>
+  <TR>
+    <TD CLASS="gendata"><input type="checkbox" name="PROC_<?=P_NAME?>"></TD>
+    <TD CLASS="gendata">SP</TD>
+    <TD CLASS="gendata"><?=P_NAME?></TD>
+  </TR>
+<?vsp
+          }
+?>
+
+<?vsp
+       for select SUP_CLASS from SYS_SOAP_UDT_PUB where SUP_LHOST = {?'lhost'} and SUP_HOST = {?'host'}
+		and SUP_END_POINT = {?'lpath'}
+       do {
+?>
+  <TR>
+    <TD CLASS="gendata"><input type="checkbox" name="METH_<?=SUP_CLASS?>"></TD>
+    <TD CLASS="gendata">UDT</TD>
+    <TD CLASS="gendata"><?=SUP_CLASS?></TD>
+  </TR>
+<?vsp
+          }
+?>
+
+<TR><TD ALIGN="right" COLSPAN="3"><input type="submit" name="no_publish" value="Cancel" />
+  <input type="submit" name="unpublish" value="unPublish" /><TD></TR>
+
+</TABLE>
+
+</form>
+<BR />
+<?vsp adm_page_footer(); ?>
+</HTML>

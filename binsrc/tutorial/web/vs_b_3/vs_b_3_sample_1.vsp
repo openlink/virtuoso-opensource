@@ -1,0 +1,79 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!--
+    Calculator example
+    This example demonstrates using the VSP parameters from a form posting
+ -->
+<?vsp
+ declare number1, number2, result float;
+ declare operation,thisvsp varchar;
+
+ thisvsp := aref(path,length(path)-1);
+ number1 := atod (get_keyword ('number1', params, '0'));
+ number2 := atod (get_keyword ('number2', params, '0'));
+ operation := get_keyword ('operation', params, '?');
+ if (get_keyword ('execute', params, '') <> '')
+    result := case when operation = '+' then number1 + number2
+                when operation = '-' then number1 - number2
+                when operation = '*' then number1 * number2
+                when operation = '/' then number1 / number2
+		else 'Error' end;
+  else
+    result := 0;
+
+ if (get_keyword ('reset', params, '') <> '')
+   {
+     number1 := 0;
+     number2 := 0;
+   }
+?>
+<HTML>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<BODY>
+<H2>Simple calculator</H2>
+<form method="POST" action="<?=thisvsp?>">
+<table class="tableentry">
+<tr><td>1. enter number</td><td align="right"><input type="text" name="number1" value="<?=number1?>"></td></tr>
+<tr>
+  <td>2. pick operation</td>
+  <td align="right">
+    <select name="operation">
+      <option value="+">+</option>
+      <option value="-">-</option>
+      <option value="*">*</option>
+      <option value="/">/</option>
+    </select>
+  </td>
+</tr>
+<tr><td>3. enter number</td><td align="right"><input type="text" name="number2" value="<?=number2?>"></td></tr>
+<tr>
+  <td>4. hit "="</td><td align="right">
+    <input type="submit" value="=" name="execute">
+    <input type="submit" value="C" name="reset">
+  </td>
+</tr>
+<tr><td>5. Get result</td><td align="right"><b><?=result?></b></td></tr>
+</table>
+</form>
+</BODY>
+</HTML>

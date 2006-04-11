@@ -1,0 +1,3 @@
+SET TRIGGERS OFF;
+insert replacing DB.DBA.VSPX_SESSION values('vspx', 'b233ccba6a18691e853364934488c627', 'dba', NULL, now());
+update DB.DBA.VSPX_SESSION set VS_STATE = (select top 1 VS_STATE from DB.DBA.VSPX_SESSION where VS_STATE is not NULL) where VS_STATE is NULL;

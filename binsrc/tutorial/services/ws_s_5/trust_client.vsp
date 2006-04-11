@@ -1,0 +1,98 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare result any;
+declare resp, inp, outp any;
+declare debug, title, content any;
+
+debug := atoi (get_keyword ('debug', params, '1'));
+title := get_keyword ('title', params, 'type title here');
+content := get_keyword ('cont', params, '<p>some post data</p>');
+
+resp := null;
+if ({?'exec'} is not null)
+  {
+    resp := TRUST_CLIENT ( {?'title'}, {?'cont'}, atoi({?'debug'}));
+  }
+?>
+<html>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+<body>
+<H3>Secure Weblog client</H3>
+<form method="post" action="<?= http_path() ?>" name="mform">
+<table class="tableentry">
+<tr><td>1. Enter the post title</td><td>
+<input type="text" name="title" size="60" value="<?V title ?>" />
+</td></tr>
+<tr><td>2. Enter the post content</td><td>
+<textarea name="cont" rows="15" cols="60"><?vsp http_value (content); ?></textarea>
+</td></tr>
+<tr><td>3. Show</td><td>
+Token Issuer response <input type="radio" name="debug" value="1" <?V case when debug = 1 then 'checked' else '' end ?>/>
+Weblog service response <input type="radio" name="debug" value="2" <?V case when debug = 2 then 'checked' else '' end ?>/>
+</td></tr>
+<tr><td>4. Call the secure service</td><td><input type="submit" name="exec" value="Add Entry"></td></tr>
+</table>
+</form>
+<?vsp
+  if (resp is not null) {
+  declare inx, oux, atts any;
+  inp := resp[1];
+  outp := resp[2];
+  atts := resp[4];
+  inx := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (inp), vector ('body', 0));
+  oux := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (outp), vector ('body', 0));
+?>
+  <table>
+  <tr>
+    <td>
+    Request
+    </td>
+  </tr>
+  <tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (inx, null); ?>
+    </div>
+    </td>
+  </tr>
+  <tr>
+  <tr>
+    <td>
+    Response
+    </td>
+  </tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (oux, null); ?>
+    </div>
+    </td>
+  </tr>
+  </table>
+<?vsp
+  }
+?>
+
+
+</body>
+</html>

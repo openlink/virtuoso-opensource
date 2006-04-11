@@ -1,0 +1,63 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+
+  declare server varchar;
+  declare message any;
+  declare err varchar;
+
+  err := '';
+  server := get_keyword ('server_name', params, 'news.openlinksw.co.uk:119');
+
+  if ('' <> get_keyword ('post', params, ''))
+    {
+       declare exit handler for sqlstate '*' { err := __SQL_MESSAGE; };
+	 {
+	    message := concat ('From: ', {?'from'});
+	    message := concat (message, '\r\n\Subject: ', {?'subject'});
+	    message := concat (message, '\r\nNewsgroups: ', {?'group_name'});
+	    message := concat (message, '\r\n\r\n', {?'body'});
+	    message := concat (message, '\r\n\r\n.\r\n');
+	    nntp_post (server, message);
+	    err := 'Message successfully sent';
+	 }
+    }
+?>
+<HTML>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+<BODY>
+  <FORM method="POST"  name="nntp_post" action="nn_s_2_sample_1.vsp">
+  <H3>Simple NNTP message composer</H3>
+  <p style="color: red"><?=err?></p>
+    <TABLE class="tableentry">
+    <tr><td>1. Enter the News Server &amp; port:</td><td><INPUT type="text" name="server_name" value="<?=server?>" size="35"></td></tr>
+    <tr><td>2. Enter the News Group name</td><td><INPUT type="text" name="group_name" value="openlink.public.test" size="35"></td></tr>
+    <tr><td>3. Enter the sender email (From:)</td><td><INPUT type="text" name="from" value="myname@mydomain.com" size="35"></td></tr>
+    <tr><td>4. Enter the Subject</td><td><INPUT type="text" name="subject" size="35"></td></tr>
+    <tr><td colspan="2">5. Type simple message here:<br />
+    <TEXTAREA WRAP="off" NAME="body" COLS="80" ROWS="10"></TEXTAREA></td></tr>
+    <tr><td>6. Post the message</td><td><INPUT type="submit" name="post", value="Post"></td></tr>
+  </TABLE>
+  <FORM>
+</BODY>
+</HTML>

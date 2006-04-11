@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_soap_dt_define">
+  <refmeta>
+    <refentrytitle>soap_dt_define</refentrytitle>
+    <refmiscinfo>soap</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>soap_dt_define</refname>
+    <refpurpose>define re-define or erase the complex datatype definition for SOAP calls</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_soap_dt_define">
+      <funcprototype id="fproto_soap_dt_define">
+        <funcdef><function>soap_dt_define</function></funcdef>
+        <paramdef>in <parameter>name</parameter>varchar</paramdef>
+        <paramdef>in <parameter>schema_string</parameter>varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+		<para>This defines a new complex SOAP datatype (usualy array of structure) named 'name'.</para>
+    <para>The schema_string string represents definition as complexType element from XML Schema.
+The only complexContent, all and sequence elements can be used within the complexType. This means that 
+optional elements in the defined datattype are not supported as a variant of the SOAP paramter datatype.
+If the schema descritopns contains an unsuported element , the SQL error will be signalled and error message 
+will explain what element is wrong.</para>
+</refsect1>
+  <refsect1 id="params_">
+    <title>Parameters</title>
+    <refsect2><title>name</title>
+      <para>A varchar containing the expanded name of SOAP type to be 
+      defined/removed or an empty string ('').  If an empty string is supplied 
+      this function will try to extract it from the given schema_string schema 
+      fragment (attribute @name').  Name cannot be an empty string for removing 
+      SOAP types.</para>
+      <para>his function is implemented as a stored procedure and hence should 
+      be referenced fully qualified as DB.DBA.soap_dt_define() if the current
+      catalogue cannot be guaranteed to be DB.</para>
+    </refsect2>
+    <refsect2><title>schema_string</title>
+      <para>XMLSchema excerpt as varchar or NULL (null is used for removal).</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_"><title>Return Types</title>
+    <para>This function returns a varchar of the name of the registered 
+    SOAP type.</para>
+  </refsect1>
+  <refsect1 id="errors_">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <msgentry>
+      <msg><msgmain><msgtext><errorcode>SODT1</errorcode><errortype>22023</errortype>
+        <errorname>The element &lt;element name&gt; is not supported [&lt;as child of complexContent&gt;]</errorname>
+      </msgtext></msgmain></msg>
+    </msgentry>
+  </refsect1>
+
+<refsect1 id="examples"><title>Examples</title>
+    <example ID="VDOCS-SOAP-DT-01"><title>Definition of an Array</title>
+<programlisting>
+<![CDATA[
+
+<!-- file float_array.xsd -->
+<complexType name="ArrayOffloat"
+   xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/" 
+   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+   xmlns="http://www.w3.org/2001/XMLSchema"
+   xmlns:tns="services.wsdl">
+   <complexContent>
+   <restriction base="enc:Array">
+   <sequence>
+   <element name="item" type="float" minOccurs="0" maxOccurs="unbounded" nillable="true"/>
+   </sequence>
+   <attributeGroup ref="enc:commonAttributes"/>
+   <attribute ref="enc:offset"/>
+   <attribute ref="enc:arrayType" wsdl:arrayType="float[]"/>
+   </restriction>
+   </complexContent>
+</complexType>
+<!-- eof float_array.xsd -->
+
+can be defined from ISQL tool or in the PL procedure
+SQL> DB.DBA.soap_dt_define ('ArrayOffloat', file_to_string ('float_array.xsd'));
+
+]]>
+</programlisting>
+    </example>
+<example ID="VDOCS-SOAP-DT-02"><title>Definition of an Structure</title>
+<programlisting>
+<![CDATA[
+
+<!-- file struct.xsd -->
+<complexType name="PERSON"
+   xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/" 
+   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+   xmlns="http://www.w3.org/2001/XMLSchema"
+   xmlns:tns="services.wsdl">
+
+   <sequence>
+     <element name="firstName" type="string"/>
+     <element name="lastName" type="string"/>
+     <element name="ageInYears" type="int"/>
+     <element name="weightInLbs" type="float"/>
+     <element name="heightInInches" type="float"/>
+   </sequence>
+</complexType>
+<!-- eof struct.xsd -->
+
+can be defined from ISQL tool or in the PL procedure
+SQL> DB.DBA.soap_dt_define ('PERSON', file_to_string ('struct.xsd'));
+
+]]>
+</programlisting>
+    </example>
+<example ID="VDOCS-SOAP-DT-03"><title>Definition of composite type array of structures</title>
+<programlisting>
+<![CDATA[
+
+<!-- file array_struct.xsd -->
+<complexType name="ArrayOfPERSON"
+   xmlns:enc="http://schemas.xmlsoap.org/soap/encoding/" 
+   xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+   xmlns="http://www.w3.org/2001/XMLSchema"
+   xmlns:tns="services.wsdl">
+   
+   <complexContent>
+   <restriction base="enc:Array">
+   <sequence>
+   <element name="item" type="tns:PERSON" minOccurs="0" maxOccurs="unbounded" nillable="true"/>
+   </sequence>
+   <attributeGroup ref="enc:commonAttributes"/>
+   <attribute ref="enc:offset"/>
+   <attribute ref="enc:arrayType" wsdl:arrayType="tns:PERSON[]"/>
+   </restriction>
+   </complexContent>
+
+</complexType>
+<!-- eof array_struct.xsd -->
+
+can be defined from ISQL tool or in the PL procedure
+SQL> DB.DBA.soap_dt_define ('ArrayOfPERSON', file_to_string ('array_struct.xsd'));
+
+]]>
+</programlisting>
+    </example>
+</refsect1>
+</refentry>
+

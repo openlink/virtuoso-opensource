@@ -1,0 +1,89 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="processes_page" decor="bpel_decor.vspx" style="bpel_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:on-init>
+    set isolation='committed';
+  </v:on-init>
+  <vm:pagetitle>OpenLink BPEL Process Manager Process Status</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:pagebody>
+      <?vsp
+        declare aData any;
+        declare iID,iInstID, stepping, inst_state int;
+        declare activs, links varbinary;
+        declare sName, sError varchar;
+
+        if ({?'id'} is not null)
+          iID := {?'id'};
+
+        if ({?'nid'} is not null)
+          iInstID := {?'nid'};
+
+        if ({?'delinst'} is not null) {
+          BPEL..instance_delete(iInstID);
+          BPEL.BPEl.do_redirect(sprintf('process.vspx?id=%s',iID),{?'sid'},{?'realm'});
+        }
+        if ({?'step'} is not null)
+	  {
+	    BPEL.BPEL.inst_step (atoi(iInstID));
+	  }
+
+        for (select bi_activities_bf, bi_link_status_bf, bi_error, bi_state from BPEL.BPEL.instance where bi_id = iInstID ) do
+        {
+          activs := bi_activities_bf;
+          links := bi_link_status_bf;
+	  sError :=  BPEL..get_err_msg (bi_error);
+	  inst_state := bi_state;
+        };
+
+        for ( select bsrc_text from BPEL..script_source where bsrc_script_id = iID and bsrc_role = 'bpel-exp')do
+        {
+           aData := bsrc_text;
+        };
+
+        for ( select bs_name, bs_step_mode from BPEL.BPEL.script where bs_id = iID)do
+        {
+	   sName := bs_name;
+	   if (inst_state = 0)
+	     stepping := bs_step_mode;
+        };
+
+        http_value (xslt (BPEL.BPEL.res_base_uri () || 'bpel4ws/1.0/bpelstatus.xsl', aData,
+           vector ('sid',{?'sid'},
+                   'realm',{?'realm'},
+                   --'script_name', bs_name,
+                   'id', cast(iID as varchar),
+                   'nam', sName,
+                   'nid', cast(iInstID as varchar),
+                   'activs',activs,
+                   'links',links,
+		   'error',either(isnull(sError),'',sError),
+		   'is_step', stepping
+                )));
+
+        return;
+      ?>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

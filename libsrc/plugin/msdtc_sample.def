@@ -1,0 +1,3 @@
+LIBRARY MSDTC_SAMPLE
+EXPORTS
+  msdtc_sample_check @1

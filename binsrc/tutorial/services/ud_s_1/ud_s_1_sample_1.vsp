@@ -1,0 +1,77 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+
+  declare server varchar;
+
+  server := get_keyword ('server_name', params, 'http://localhost:8890/SOAP');
+
+?>
+
+<HTML>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+  <BODY bgcolor="white">
+  <FORM method="POST"  action="ud_s_1_sample_1.vsp">
+   <H3>UDDI</H3>
+    <TABLE class="tableentry">
+        <TD>
+	1. View the SOAP request
+        </TD>
+        <TD>
+	  <INPUT type="submit" name="query1", value="View">
+	</TD>
+      </TR>
+      <TR>
+        <TD>
+	1. Execute save_business
+        </TD>
+        <TD>
+	  <INPUT type="submit" name="query2", value="Execute">
+	</TD>
+      </TR>
+    </TABLE>
+
+<?vsp
+    if (get_keyword ('query1', params, '') <> '')
+      {
+?>
+   <table class="tableresult">
+   <tr><td><b>save_business request</b></td></tr>
+   <tr><td>
+   <pre><?=query()?></pre>
+   </td></tr>
+   </table>
+<?vsp
+      }
+
+    if (get_keyword ('query2', params, '') <> '')
+      {
+?>
+        <h4>The UDDI server returns</h4>
+        <?=demo1()?>
+<?vsp
+      }
+?>
+  </FORM>
+  </BODY>
+</HTML>

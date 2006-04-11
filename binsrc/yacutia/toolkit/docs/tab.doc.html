@@ -1,0 +1,60 @@
+<h2>tab.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>Provides tab functionality.</p>
+<hr/>
+
+<h3>Objects</h3>
+<ul>
+	<li><a href="#tab">Tab(element)</a></li>
+</ul>
+
+<h3>Methods</h3>
+<ul>
+	<li><a href="#go">Tab::go(index)</a></li>
+	<li><a href="#add">Tab::add(clicker, window)</a></li>
+</ul>
+
+<h3>CSS classes</h3>
+<ul>
+	<li>.tab</li>
+	<li>.tab_selected</li>
+</ul>
+
+<hr/>
+
+<h3><a name="tab">Tab(element)</a></h3>
+<p>Creates Tab object. The <em>element</em> specifies a container where tab contents will be placed.</p>
+
+<h3><a name="add">Tab::add(clicker, window)</a></h3>
+<p>Adds a new <em>clicker</em> - <em>window</em> pair, i.e. when user click <em>clicker</em>, <em>window</em> will be shown.</p>
+
+<h3><a name="go">Tab::go(index)</a></h3>
+<p>Switches to tab, according to <em>index</em>.</p>
+
+<p class="code">
+var t = new Tab("content");<br/>
+t.add("header_1","window_1");<br/>
+t.add("header_2","window_2");<br/>
+t.go(0);
+</p>

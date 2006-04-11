@@ -1,0 +1,111 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<schema 
+        xmlns="http://www.w3.org/2001/XMLSchema" 
+	targetNamespace="http://soapinterop.org/attachments/xsd" 
+	elementFormDefault="qualified" attributeFormDefault="qualified"
+	xmlns:types="http://soapinterop.org/attachments/xsd" 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" 
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+	xmlns:dime="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/" 
+	xmlns:content="http://schemas.xmlsoap.org/ws/2002/04/content-type/" 
+	xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/"
+	>
+	<import namespace="http://schemas.xmlsoap.org/ws/2002/04/reference/"/>
+	<import namespace="http://schemas.xmlsoap.org/ws/2002/04/content-type/"/>
+    <complexType name="ReferencedBinary_doclit">
+	    <simpleContent>
+		    <restriction base="xsd:base64Binary">
+			    <annotation>
+				    <appinfo>
+					    <content:mediaType value="application/octetstream"/>
+				    </appinfo>
+			    </annotation>
+			    <attribute ref="ref:location" use="optional"/>
+		    </restriction>
+	    </simpleContent>
+    </complexType>
+    <complexType name="ReferencedText_doclit">
+	    <simpleContent>
+		    <restriction base="xsd:base64Binary">
+			    <annotation>
+				    <appinfo>
+					    <content:mediaType value="text/plain"/>
+				    </appinfo>
+			    </annotation>
+			    <attribute ref="ref:location" use="optional"/>
+		    </restriction>
+	    </simpleContent>
+    </complexType>
+    <element name="EchoAttachment" type="types:EchoAttachment"/>
+    <element name="EchoAttachmentResponse" type="types:EchoAttachmentResponse"/>
+    <complexType name="EchoAttachment">
+	    <sequence>
+		    <element name="In" type="types:ReferencedBinary_doclit"/>
+	    </sequence>
+    </complexType>
+    <complexType name="EchoAttachmentResponse">
+	    <sequence>
+		    <element name="Out" type="types:ReferencedBinary_doclit"/>
+	    </sequence>
+    </complexType>
+    <element name="EchoAttachments" type="types:Attachments"/>
+    <element name="EchoAttachmentsResponse" type="types:Attachments"/>
+    <complexType name="Attachments">
+	    <sequence>
+		    <element name="Item" minOccurs="0" maxOccurs="unbounded" type="types:ReferencedBinary_doclit"/>
+	    </sequence>
+    </complexType>
+    <element name="EchoAttachmentAsBase64" type="types:EchoAttachment"/>
+    <element name="EchoAttachmentAsBase64Response" type="types:base64Out"/>
+    <element name="EchoBase64AsAttachment" type="types:base64In"/>
+    <element name="EchoBase64AsAttachmentResponse" type="types:EchoAttachmentResponse"/>
+    <complexType name="base64In">
+	    <sequence>
+		    <element name="In" type="xsd:base64Binary"/>
+	    </sequence>
+    </complexType>
+    <complexType name="base64Out">
+	    <sequence>
+		    <element name="Out" type="xsd:base64Binary"/>
+	    </sequence>
+    </complexType>
+    <element name="EchoUnrefAttachments" type="types:emptyType"/>
+    <element name="EchoUnrefAttachmentsResponse" type="types:emptyType"/>
+    <complexType name="emptyType">
+	    <sequence/>
+    </complexType>
+    <element name="EchoAttachmentAsString" type="types:EchoAttachmentAsString"/>
+    <element name="EchoAttachmentAsStringResponse" type="types:EchoAttachmentAsStringResponse"/>
+    <complexType name="EchoAttachmentAsString">
+	    <sequence>
+		    <element name="In" type="types:ReferencedText_doclit"/>
+	    </sequence>
+    </complexType>
+    <complexType name="EchoAttachmentAsStringResponse">
+	    <sequence>
+		    <element name="Out" type="xsd:string"/>
+	    </sequence>
+    </complexType>
+</schema>

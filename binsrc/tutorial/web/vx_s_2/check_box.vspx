@@ -1,0 +1,62 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <head>
+    <link href="../demo.css" type="text/css" rel="stylesheet"/>
+  </head>
+  <body>
+    <p>
+      <v:page name="vx_s_2_01" xmlns:v="http://www.openlinksw.com/vspx/">
+        <v:form name="form01" type="simple" method="POST">
+          <h2>VSPX check-box control</h2>
+          <table class="tableentry">
+            <tr>
+              <td>1. Select a state</td>
+              <td>
+                <v:check-box name="cb01" value="not-checked" />
+              </td>
+            </tr>
+            <tr>
+              <td>2. Execute</td>
+              <td>
+                <v:button name="bt01" action="simple" value="OK" style="url">
+		  <v:on-post>
+		  self.label01.ufl_value := case when self.cb01.ufl_selected then 'CHECKED' else 'not-checked' end;
+		  </v:on-post>
+		</v:button>
+              </td>
+            </tr>
+          </table>
+          <table class="tableresult">
+            <tr>
+              <td>State :</td>
+              <td>
+                <v:label name="label01" value="--self.cb01.ufl_value" format="%s"/>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+      </v:page>
+    </p>
+  </body>
+</html>

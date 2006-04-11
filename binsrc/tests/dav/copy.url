@@ -1,0 +1,2 @@
+localhost 6666
+1 COPY /DAV/Dav_Coll_Moved/ HTTP/1.0

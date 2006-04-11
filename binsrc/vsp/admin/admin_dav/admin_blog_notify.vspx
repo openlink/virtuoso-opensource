@@ -1,0 +1,287 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="blog_bridge" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//IETF//DTD HTML//EN">
+  <v:variable name="blogid" type="varchar" default="null"/>
+  <v:on-init>
+  if (self.blogid is null)
+    self.blogid := {?'bid'};
+</v:on-init>
+  <html>
+    <head>
+      <link rel="stylesheet" type="text/css" href="&lt;?V adm_what_css() ?>"/>
+      <title>BLOG Administration</title>
+      <meta name="AUTHOR" content="OpenLink Software"/>
+      <meta name="DESCRIPTION" content="BLOG Management for Virtuoso DB"/>
+    </head>
+    <body>
+      <?vsp adm_page_header('BLOG Administration', ''); ?>
+      <H4>Weblog Notification Setup</H4>
+      <p style="color: red;">
+        <v:error-summary/>
+      </p>
+      <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+        <TR>
+          <TD class="genhead">BLOG Notification</TD>
+        </TR>
+        <TR>
+          <TD CLASS="AdmBorders">
+            <IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""/>
+          </TD>
+        </TR>
+        <TR>
+          <TD>
+            <v:form name="form1" type="simple">
+              <!-- DATASET -->
+              <v:data-set name="ds" sql="select R_DESTINATION_ID, R_DESTINATION, RP_NAME,
+					R_AUTH_USER, R_AUTH_PWD, R_JOB_ID, R_ITEM_ID, R_FREQUENCY, R_EXCEPTION_ID
+      					from SYS_ROUTING, SYS_ROUTING_PROTOCOL where R_ITEM_ID = :thisblogid and RP_ID = R_PROTOCOL_ID and R_TYPE_ID = 2 order by R_JOB_ID" nrows="10" scrollable="1" cursor-type="keyset" edit="1" width="80">
+                <v:param name="thisblogid" value="--self.blogid"/>
+                <v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table class="genlist" BORDER="0" CELLPADDING="0">
+                    <tr>
+                      <td class="genlistheadt">
+                Action
+              </td>
+                      <td class="genlistheadt">
+                        <v:label name="label1" value="'Mail server'" format="%s" width="80"/>
+                      </td>
+                      <td class="genlistheadt">
+                        <v:label name="label3" value="'Type'" format="%s" width="80"/>
+                      </td>
+                      <td class="genlistheadt">
+                        <v:label name="label6" value="'Frequency (minutes)'" format="%s" width="80"/>
+                      </td>
+                      <td class="genlistheadt">
+                        <v:label name="label7" value="'Except'" format="%s" width="80"/>
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+                <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+                  <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
+                    <table width="400" border="1" cellspacing="2" cellpadding="0">
+                      <tr>
+                        <td nowrap="1">
+                          <v:button name="ds_edit" action="simple" value="Edit"/>
+                          <v:button name="ds_delete" action="simple" value="Delete">
+                            <v:on-post>
+                              <v:script><![CDATA[
+                    {
+                      delete from SYS_ROUTING where R_JOB_ID = (control.vc_parent as vspx_row_template).te_rowset[5];
+		      declare add_form vspx_control;
+		      add_form := self.ds.vc_find_control ('add');
+                      self.ds.vc_data_bind(e);
+                      add_form.vc_enabled := 1;
+
+                    }
+                  ]]></v:script>
+                            </v:on-post>
+                          </v:button>
+                        </td>
+                        <td align="left" nowrap="1" class="gendata">
+                          <v:label name="label51" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
+                        </td>
+                        <td align="left" nowrap="1" class="gendata">
+                          <v:label name="label71" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s"/>
+                        </td>
+                        <td align="left" nowrap="1" class="gendata">
+                          <v:label name="label710" value="--(control.vc_parent as vspx_row_template).te_rowset[7]" format="%d"/>
+                        </td>
+                        <td align="left" nowrap="1" class="gendata">
+                          <v:label name="label711" value="" format="%s">
+			  <v:after-data-bind>
+			  <![CDATA[
+			  declare txt, eids any;
+			  txt := '';
+			  eids := coalesce (split_and_decode ((control.vc_parent as vspx_row_template).te_rowset[8], 0, '\0\0;'), vector ());
+			  for select MTC_NAME from MTYPE_CATEGORIES where position (MTC_ID, eids) do
+			   {
+				txt := txt || MTC_NAME || ';';
+			   }
+                          if (txt = '')
+			    txt := 'none';
+			  control.ufl_value := txt;
+			  ]]>
+		  	  </v:after-data-bind>
+			  </v:label>
+                        </td>
+                      </tr>
+                    </table>
+                  </v:template>
+                  <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                    <table width="400" border="2" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td align="center" colspan="5" class="gendata">Notification is disabled.</td>
+                      </tr>
+                    </table>
+                  </v:template>
+                  <v:template name="template5" type="edit" name-to-remove="" set-to-remove="">
+                    <v:form name="upd" type="update" table="SYS_ROUTING" if-not-exists="none">
+                      <v:key column="R_JOB_ID" value="--self.ds.ds_current_row.te_rowset[5]" default="null"/>
+		      <v:on-post>
+		      <![CDATA[
+		    if (control.vc_focus and self.vc_is_valid)
+    		      {
+			declare i int;
+			declare val, eid any;
+ 			eid := ''; i := 0;
+                        while (0 <> (val := adm_next_keyword ('b_cat1', e.ve_params, i)))
+			  {
+			    eid := eid || val || ';';
+			  }
+ 			if (eid <> '')
+			  {
+		  	    update SYS_ROUTING set R_EXCEPTION_ID = eid where R_JOB_ID = self.b_id1.ufl_value;
+			    self.ds.vc_data_bind (e);
+			  }
+		      }
+		      ]]>
+		      </v:on-post>
+                      <v:template name="template6" type="simple" name-to-remove="table" set-to-remove="both">
+                        <table>
+                          <tr>
+                            <td nowrap="nowrap">
+                              <v:button name="upd_button" action="submit" value="Update"/>
+                              <input type="submit" name="ds_cancel" value="Cancel"/>
+                              <v:text name="b_id1" column="R_JOB_ID" type="hidden" />
+			      <!--v:check-box name="initall1" initial-checked="0" /-->
+                            </td>
+                            <td nowrap="nowrap" class="geninput">
+                              <v:text name="b_endpoint1" column="R_DESTINATION" xhtml_size="35%"/>
+                              <v:text name="b_self1" column="R_ITEM_ID" type="hidden" value="--self.blogid"/>
+                              <v:text name="b_typ1" column="R_TYPE_ID" type="hidden" value="--2"/>
+                            </td>
+                            <td class="geninput">
+                              <v:data-list name="b_type1" column="R_PROTOCOL_ID" sql="select * from SYS_ROUTING_PROTOCOL where RP_ID in (4)" key-column="RP_ID" value-column="RP_NAME"/>
+                            </td>
+                            <td nowrap="nowrap" class="geninput" width="5">
+                              <v:text name="b_freq1" column="R_FREQUENCY" xhtml_size="5" default_value="60"/>
+                            </td>
+                            <td nowrap="nowrap" class="geninput">
+                              <select name="b_cat1"
+				size="5" multiple="multiple"
+			      	>
+				<?vsp
+				declare eids, sel any;
+
+			        eids := coalesce (split_and_decode (self.ds.ds_current_row.te_rowset[8], 0, '\0\0;'), vector ());
+			        for select '' MTC_ID, 'none' MTC_NAME from SYS_BLOG_INFO where BI_BLOG_ID = self.blogid union select MTC_ID, MTC_NAME||case when MTC_ROUTING then '*' else '' end as MTC_NAME from MTYPE_CATEGORIES where MTC_BLOG_ID = self.blogid do {
+				    if (position (MTC_ID, eids) and MTC_ID <> '')
+				      sel := 'selected="selected"';
+				    else
+			      	      sel := '';
+				    http (sprintf ('<option value="%s" %s>%s</option>',
+					  	MTC_ID, sel, MTC_NAME));
+				}
+				?>
+			      </select>
+                            </td>
+                          </tr>
+                        </table>
+                      </v:template>
+                    </v:form>
+                  </v:template>
+                  <v:template name="template8" type="add" name-to-remove="" set-to-remove="">
+                    <v:form name="add" type="update" table="SYS_ROUTING" if-not-exists="insert" >
+		      <v:before-data-bind>
+		      control.vc_enabled := case when self.ds.ds_rows_fetched = 0 then 1 else 0 end;
+	      	      </v:before-data-bind>
+		      <v:on-post>
+		      <![CDATA[
+		    if (control.vc_focus and self.vc_is_valid)
+    		      {
+			declare i int;
+			declare val, eid any;
+ 			eid := ''; i := 0;
+                        while (0 <> (val := adm_next_keyword ('b_cat', e.ve_params, i)))
+			  {
+			    eid := eid || val || ';';
+			  }
+ 			if (eid <> '')
+			  {
+		  	    update SYS_ROUTING set R_EXCEPTION_ID = eid where R_JOB_ID = self.b_id.ufl_value;
+			    self.ds.vc_data_bind (e);
+			  }
+		      }
+		      ]]>
+		      </v:on-post>
+                      <v:key column="R_JOB_ID" value="--null" default="null"/>
+                      <v:template name="template9" type="simple" name-to-remove="table" set-to-remove="both">
+                        <table>
+                          <tr>
+                            <td nowrap="nowrap">
+                              <v:button name="add_button" action="submit" value="Add"/>
+			      <!--v:check-box name="initall" initial-checked="0" /><small>(<a href="#note">i</a>)</small-->
+                            </td>
+                            <td nowrap="nowrap" class="geninput">
+                              <v:text name="b_endpoint" column="R_DESTINATION" xhtml_size="35%"/>
+                              <v:text name="b_self" column="R_ITEM_ID" type="hidden" value="--self.blogid"/>
+                              <v:text name="b_id" column="R_JOB_ID" type="hidden" value="">
+                                <v:after-data-bind>
+                         if (not isinteger (control.ufl_value))
+ 			 control.ufl_value :=
+				coalesce((select top 1 R_JOB_ID from SYS_ROUTING order by R_JOB_ID desc), 0)+1;
+                         control.vc_data_bound := 1;
+			</v:after-data-bind>
+                              </v:text>
+                              <v:text name="b_typ" column="R_TYPE_ID" type="hidden" value="--2"/>
+                            </td>
+                            <td class="geninput">
+                              <v:data-list name="b_type" column="R_PROTOCOL_ID" sql="select * from SYS_ROUTING_PROTOCOL where RP_ID in (4)" key-column="RP_ID" value-column="RP_NAME"/>
+                            </td>
+                            <td nowrap="nowrap" class="geninput" width="5">
+                              <v:text name="b_freq" column="R_FREQUENCY" xhtml_size="5" default_value="60"/>
+                            </td>
+                            <td nowrap="nowrap" class="geninput">
+                              <v:data-list name="b_cat" column="R_EXCEPTION_ID"
+			        sql="select '' MTC_ID, 'none' MTC_NAME from SYS_BLOG_INFO where BI_BLOG_ID = self.blogid union select MTC_ID, MTC_NAME||case when MTC_ROUTING then '*' else '' end as MTC_NAME from MTYPE_CATEGORIES where MTC_BLOG_ID = self.blogid" key-column="MTC_ID" value-column="MTC_NAME"
+				xhtml_size="5" xhtml_multiple="multiple"
+			      	/><small>(<a href="#note">ii</a>)</small>
+                            </td>
+                          </tr>
+                        </table>
+                      </v:template>
+                    </v:form>
+                  </v:template>
+                </v:template>
+                <v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
+                  <table>
+                  </table>
+                </v:template>
+              </v:data-set>
+              <!-- END DATASET -->
+            </v:form>
+          </TD>
+        </TR>
+      </TABLE>
+      <!--div style="margin-top: 30px; margin-left: 46px; margin-right: 40px; text-align: left;"><a name="note">
+      		<b><i>Notes:</i></b></a>
+      <ol type="i">
+       <li>Initialize routing job log with existing posts</li>
+       <li>* Denotes upstreaming is enabled for post category</li>
+      </ol>
+      </div-->
+      <?vsp adm_page_footer(); ?>
+    </body>
+  </html>
+</v:page>

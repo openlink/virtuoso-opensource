@@ -1,0 +1,116 @@
+<SCRIPT language="JavaScript">
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+var browsertype;
+if (document.implementation.createDocument)
+{ 
+   if(document.location.href.indexOf('?')>0){
+      document.location=document.location.href.substring(0,document.location.href.indexOf('?'));
+   }
+
+   browsertype='Mozila';
+   // Mozilla, create a new DOMParser 
+   var parser = new DOMParser();
+   var xsltProcessor = new XSLTProcessor(); 
+
+
+    // load the xslt file
+    var myXMLHTTPRequest = new XMLHttpRequest();
+    myXMLHTTPRequest.open("GET", "sr.xsl", false);
+    myXMLHTTPRequest.send(null);
+    
+    // parse XSLT text to XML DOM(when not local responseXML is set null ???)
+    xslDoc = parser.parseFromString(myXMLHTTPRequest.responseText, "text/xml");
+  
+    xsltProcessor.importStylesheet(xslDoc);
+    
+}
+else if (window.ActiveXObject)
+{ 
+  browsertype='IE';
+  var xslDoc = new ActiveXObject("Microsoft.XMLDOM");
+  var xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+  xslDoc.async = false;
+  xmlDoc.async = false;
+  xslDoc.load("sr.xsl");
+
+}
+
+function mResultsAjax(result)
+{
+         try
+	       {
+             if(browsertype=='IE')
+             {
+               xmlDoc.loadXML (result);
+               document.getElementById('divMenuToken').innerHTML = xmlDoc.transformNode(xslDoc.documentElement);
+             }
+             else
+             {  
+               xmlDoc = parser.parseFromString(result, "text/xml");
+
+         			 var resultDocument = xsltProcessor.transformToFragment(xmlDoc, document);
+       				 document.getElementById("divMenuToken").innerHTML='';
+      				 document.getElementById("divMenuToken").appendChild(resultDocument);
+             }   
+	       }
+         catch (e)
+	       {
+	        alert('Parser:'+e.description);
+         }
+}
+
+</SCRIPT>
+<html>
+<HEAD>
+  <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
+  <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=SOAP_SO_S_10/services.wsdl&xslt_type=simple"></script>
+  <link rel="stylesheet" type="text/css" href="../demo.css" />
+</HEAD>
+<body>
+<H3>AJAX behaviours to Web Services</H3>
+<form method="POST" name="quotes">
+<table class="tableentry">
+<tr>
+  <td>1. Enter a symbol to get the stock quotes report</td>
+  <td><input type="text" name="symbol" id="symbol" size="15" value="MSFT,ORCL"/></td>
+</tr>
+<tr>
+  <td>2. Call the get_NasdaqQuotes_10</td>
+  <td><input type="button" name="exec" value="Get data" onClick="ajax.Start(get_NasdaqQuotes_10,'')"></td>
+</tr>
+</table>
+</form>
+      <script defer="defer" type="text/javascript">
+          var get_NasdaqQuotes_10 = {
+            delay: 200,
+            prepare: function() {return Array(document.getElementById('symbol').value);},
+            call: proxies.SOAP.get_NasdaqQuotes_10,
+            finish: function(p){mResultsAjax(p);},
+            onException: proxies.alertException
+          }
+      </script>
+<DIV ID="divMenuToken"></DIV>
+</body>
+</html>

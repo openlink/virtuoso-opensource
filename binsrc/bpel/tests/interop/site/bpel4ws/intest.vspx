@@ -1,0 +1,76 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="intest_page" decor="interop_decor.vspx" style="interop_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>OpenLink BPEL Interoperability Testing</vm:pagetitle>
+  <vm:pagewrapper>
+    <v:variable persist="temp" name="r_count" type="integer" default="0"/>
+    <vm:pagebody>
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+        <tr><th class="info" colspan="2">Tests List</th></tr>
+        <tr>
+          <td>
+          <v:template name="t_template2" type="simple">
+            <v:data-set name="ds"
+             sql="select tt_id, tt_name from BPWSI..tests order by tt_id" nrows="10" scrollable="1" cursor-type="dynamic" edit="1" width="80">
+              <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="ds_header_template">
+                <tr>
+                  <th>No</th>
+                  <th>Test Name</th>
+                </tr>
+              </v:template>
+              <v:template type="repeat" name-to-remove="" set-to-remove="" name="ds_repeat_template">
+                <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="ds_if_not_exists_template">
+                  <tr>
+                    <td colspan="2">
+                      No tests available
+                    </td>
+                  </tr>
+                </v:template>
+                <v:template type="browse" name-to-remove="table" set-to-remove="both" name="ds_browse_template">
+                  <?vsp
+                    self.r_count := self.r_count + 1;
+                    http (sprintf ('<tr bgcolor="%s">', case when mod (self.r_count, 2) then '#fefefe' else '#efefef' end));
+                  ?>
+                  <td align="center">
+                    <v:label name="label5ctr"
+                         value="--(control.vc_parent as vspx_row_template).te_ctr + self.ds.ds_rows_offs + 1"
+                         format="%d" width="80"/>.
+                  </td>
+                  <td align="left">
+                    <v:url name="prc" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
+                    url="--sprintf('%s?id=%d','view.vspx',(control.vc_parent as vspx_row_template).te_rowset[0])"/>
+                  </td>
+                  <?vsp
+                    http('</tr>');
+                  ?>
+                </v:template>
+              </v:template>
+            </v:data-set>
+          </v:template>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

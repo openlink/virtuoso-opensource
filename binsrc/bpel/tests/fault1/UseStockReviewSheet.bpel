@@ -1,0 +1,89 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<!-- UseStockReviewSheet BPEL Process -->
+<process xmlns:tns="http://samples.cxdn.com" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" name="UseStockReviewSheet" targetNamespace="http://samples.cxdn.com" suppressJoinFailure="yes">
+<!-- List of services participating in this BPEL process -->
+  <partnerLinks>
+<!--
+        The 'client' role represents the requester of this service. It is 
+        used for callback. The location and correlation information associated
+        with the client role are automatically set using WS-Addressing.
+        -->
+    <partnerLink name="client" partnerLinkType="tns:UseStockReviewSheet" myRole="UseStockReviewSheetProvider" partnerRole="UseStockReviewSheetRequester"/>
+  </partnerLinks>
+<!-- List of messages and XML documents used as part of this 
+         BPEL process 
+         -->
+  <variables>
+<!-- Reference to the message passed as input during initiation -->
+    <variable name="input" messageType="tns:UseStockReviewSheetRequestMessage"/>
+<!-- Reference to the message that will be sent back to the 
+             requestor during callback
+             -->
+    <variable name="output" messageType="tns:UseStockReviewSheetResultMessage"/>
+  </variables>
+<!-- Orchestration Logic -->
+  <sequence>
+<!-- Receive input from requestor. 
+             Note: This maps to operation defined in UseStockReviewSheet.wsdl 
+             -->
+    <receive name="receiveInput" partnerLink="client" portType="tns:UseStockReviewSheet" operation="initiate" variable="input" createInstance="yes"/>
+<!-- Generate content of output message based on the content of the
+             input message.
+             -->
+    <assign>
+      <copy>
+        <from>
+          <stockReviewSheet xmlns="http://samples.cxdn.com">
+            <symbol xmlns="http://samples.cxdn.com/finance"/>
+            <targetPrice xmlns="http://samples.cxdn.com/finance">0.0</targetPrice>
+            <currentPrice xmlns="http://samples.cxdn.com/finance">0.0</currentPrice>
+            <action xmlns="http://samples.cxdn.com/finance"/>
+            <quantity xmlns="http://samples.cxdn.com/finance">0</quantity>
+          </stockReviewSheet>
+        </from>
+        <to variable="output" part="parameters" query="/useStockReviewSheetResult/stockReviewSheet"/>
+      </copy>
+    </assign>
+    <assign>
+      <copy>
+        <from variable="input" part="parameters" query="/useStockReviewSheetRequest/symbol"/>
+        <to variable="output" part="parameters" query="/useStockReviewSheetResult/stockReviewSheet/symbol"/>
+      </copy>
+      <copy>
+        <from variable="input" part="parameters" query="/useStockReviewSheetRequest/targetPrice"/>
+        <to variable="output" part="parameters" query="/useStockReviewSheetResult/stockReviewSheet/targetPrice"/>
+      </copy>
+      <copy>
+        <from variable="input" part="parameters" query="/useStockReviewSheetRequest/currentPrice"/>
+        <to variable="output" part="parameters" query="/useStockReviewSheetResult/stockReviewSheet/currentPrice"/>
+      </copy>
+    </assign>
+<!-- Asynchronous callback to the requester.
+             Note: the callback location and correlation id is transparently handled 
+             using WS-addressing.
+             -->
+    <invoke name="replyOutput" partnerLink="client" portType="tns:UseStockReviewSheetCallback" operation="onResult" inputVariable="output"/>
+  </sequence>
+</process>

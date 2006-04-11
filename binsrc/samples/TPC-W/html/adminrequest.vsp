@@ -1,0 +1,66 @@
+<?vsp
+    declare shopping_id numeric(20);
+    shopping_id:=atoi(get_keyword('Shopping_Id',params,'0'));
+    declare cid numeric(10);
+    cid:=atoi(get_keyword('C_ID',params,'0'));
+    declare iid numeric(10);
+    declare title varchar(60);
+    declare author_id numeric(10);
+    declare srp numeric(15,2);
+    declare cost numeric(15,2);
+    declare book_info cursor for select I_TITLE, I_A_ID, I_SRP, I_COST
+	from ITEM where I_ID=iid;
+    iid := atoi(get_keyword ('I_ID', params, '0'));
+    if (iid > 0)
+    {
+	whenever not found goto not_found_any;
+	open book_info (prefetch 1);
+	fetch book_info into title,author_id,srp, cost;
+not_found_any:
+	close book_info;
+	goto display_page;
+    }
+display_page:
+?>
+<HTML>
+  <HEAD><TITLE>TPC-W Admin Request Page</TITLE></HEAD>
+  <BODY BGCOLOR="#FFFFFF">
+  <H1 ALIGN="CENTER">TPC Web Commerce Benchmark (TPC-W)</H1>
+  <H2 ALIGN="CENTER"><IMG SRC="images/tpc_logo.jpg" ALIGN="BOTTOM" BORDER="0" WIDTH="288" HEIGHT="67"></H2>
+  <H2 ALIGN="CENTER">Admin Request Page</H2>
+  <H2 ALIGN="CENTER">Title: <?= title?></H2>
+<?vsp
+    declare fname varchar(20);
+    declare lname varchar(20);
+    select A_FNAME,A_LNAME into fname, lname from AUTHOR where A_ID=author_id;
+?>
+  <PALIGN="LEFT">Author: <?= fname?> <?= lname  ?><BR></P>
+  <IMG SRC="imagegen/i_<?=iid?>.jpg" ALIGN="RIGHT" BORDER="0" WIDTH="200" HEIGHT="200">
+  <IMG SRC="imagegen/t_<?=iid?>.jpg" ALIGN="RIGHT" BORDER="0" WIDTH="100" HEIGHT="150">
+  <P><BR><BR></P>
+  <FORM ACTION="adminconfirm.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>&I_ID=<?/iid?>" METHOD="POST">
+    <TABLE BORDER="0">
+      <TR>
+        <TD><B>Suggested Retail:</B></TD>
+        <TD><B><?=srp?></B></TD></TR>
+     <TR>
+        <TD><B>Our Current Price:</B></TD>
+        <TD><FONT COLOR="#dd0000"><B><?=cost?></B></FONT></TD></TR>
+     <TR>
+       <TD><B>Enter New Price</B></TD>
+       <TD ALIGN="RIGHT">$<INPUT TYPE="text" NAME="price"></TD></TR>
+     <TR>
+       <TD><B>Enter New Picture</B></TD>
+       <TD ALIGN="RIGHT"><INPUT TYPE="text" NAME="pic"></TD></TR>
+     <TR>
+       <TD><B>Enter New Thumbnail</B></TD>
+       <TD ALIGN="RIGHT"><INPUT TYPE="text" NAME="pic"></TD>
+     </TR>
+    </TABLE>
+  <P ALIGN="CENTER">
+<INPUT TYPE="IMAGE" NAME="Submit Changes" SRC="images/submit_changes.jpg" BORDER="0" HEIGHT="30" WIDTH="130">
+<A HREF="searchrequest.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/search.jpg" ALT="Search" BORDER="0" WIDTH="120" HEIGHT="30"></A>
+<A HREF="index.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG SRC="images/home.jpg" ALT="Home" BORDER="0" VSPACE="0" HSPACE="0" WIDTH="120" HEIGHT="30"></A></P>
+</FORM>
+</BODY>
+</HTML>

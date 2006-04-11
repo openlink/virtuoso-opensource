@@ -1,0 +1,165 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="post_page" decor="interop_decor.vspx" style="interop_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<v:method name="do_redirect" arglist="in url varchar"><![CDATA[
+  url := vspx_uri_add_parameters (url, '');
+  http_request_status ('HTTP/1.1 302 Found');
+  http_header ('Location: '||url||'\r\n');
+]]></v:method>
+
+  <vm:pagetitle>OpenLink BPEL Interoperability Post Test Results</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:pagebody>
+      <v:form name="upl" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+          <tr>
+            <th class="info">Details</th>
+          </tr>
+           <tr>
+             <td>
+               Posted test results will be approved by moderator.
+             </td>
+           </tr>
+           <tr>
+             <td>
+               <table width="100%" border="0" cellpadding="0" cellspacing="0" id="contentlist">
+                 <tr>
+                   <th colspan="2">
+                     Post test results form
+                   </th>
+                 </tr>
+                 <tr>
+                   <td colspan="2">
+                     <font style="color:red"><v:error-summary /></font>
+                     <font style="color:red"><v:label name="success" value="''"/></font>
+                   </td>
+                 </tr>
+                 <tr>
+                   <td width="20%"><b><v:label name="label1" value="Manufacturer" format="%s"/></b></td>
+                   <td><v:text name="manf" xhtml_tabindex="1" xhtml_size="70"/></td>
+                 </tr>
+                 <tr>
+                   <td><b><v:label name="label2" value="Product" format="%s"/></b></td>
+                   <td><v:text name="prct" xhtml_tabindex="2" xhtml_size="70"/></td>
+                 </tr>
+                 <tr>
+                   <td><b><v:label name="label3" value="Version" format="%s"/></b></td>
+                   <td><v:text name="vrsn" xhtml_tabindex="3" xhtml_size="70"/></td>
+                 </tr>
+                 <tr>
+                   <td><b><v:label name="label4" value="Interop Process Test" format="%s"/></b></td>
+                   <td><v:text name="pname" xhtml_tabindex="4" xhtml_size="70"/></td>
+                 </tr>
+                 <tr>
+                   <td><b><v:label name="label5" value="Process Endpoint Url" format="%s"/></b></td>
+                   <td><v:text name="pend" xhtml_tabindex="5" xhtml_size="70"/></td>
+                 </tr>
+                 <tr>
+                   <td><b><v:label name="label6" value="WSDL, XML and BPEL Documents" format="%s"/></b></td>
+                   <td><v:textarea name="fils" xhtml_tabindex="6" xhtml_size="70" xhtml_rows="4" xhtml_cols="80" xhtml_class="m_e"/></td>
+                 </tr>
+                 <tr>
+                   <td><b><v:label name="label7" value="Date Created" format="%s"/></b></td>
+                   <td>
+                     <v:text name="dates" xhtml_size="20" xhtml_tabindex="7" value="''" error-glyph="-&gt;">
+                       <v:validator test="regexp" regexp="^[0-9][0-9][0-9][0-9]-[0-9][0-9]?\-[0-9][0-9]?\$" message="YYYY-MM-DD expected" runat='client'/>
+                     </v:text>
+                     * use format mask: YYYY-MM-DD
+                   </td>
+                 </tr>
+                 <tr>
+                   <td><b><v:label name="label8" value="Comments" format="%s"/></b></td>
+                   <td><v:textarea name="comt" xhtml_tabindex="8" xhtml_size="70" xhtml_rows="4" xhtml_cols="80" xhtml_class="m_e"/></td>
+                 </tr>
+                 <tr>
+                   <td><b><v:label name="label9" value="Contact email" format="%s"/></b></td>
+                   <td>
+                     <v:text name="cmail" xhtml_tabindex="9" xhtml_size="20" error-glyph="-&gt;">
+		      <v:validator test="regexp" regexp="^[^\ \t].*@[^\ \t].*$" message="Invalid E-mail address" runat='client'/>
+		     </v:text>
+                   </td>
+                 </tr>
+                 <tr>
+                   <td>&nbsp;</td>
+                   <td align="left">
+                     <v:button action="submit" name="Send" value="Send" xhtml_title="Send" xhtml_alt="Send">
+                       <v:on-post>
+                         <![CDATA[
+                         declare  aRes any;
+                         declare sServer, sSender, sErr varchar;
+
+                         sServer := 'mail2.openlinksw.com';
+                         sSender := 'rtsekova@openlinksw.com';
+                         sErr := '';
+
+                        if (not self.vc_is_valid)
+                           return;
+
+                         aRes := XMLELEMENT('InteropTest', XMLELEMENT('Manifactor',self.manf.ufl_value),
+                                                           XMLELEMENT('Product',self.prct.ufl_value),
+                                                           XMLELEMENT('Version',self.vrsn.ufl_value),
+                                                           XMLELEMENT('InteropTestName',self.pname.ufl_value),
+                                                           XMLELEMENT('EndPoint',self.pend.ufl_value),
+                                                           XMLELEMENT('Files',self.fils.ufl_value),
+                                                           XMLELEMENT('Date',self.dates.ufl_value),
+                                                           XMLELEMENT('Comments',self.comt.ufl_value),
+                                                           XMLELEMENT('Contact',self.cmail.ufl_value));
+                           declare exit handler for sqlstate '*' { self.success.ufl_value := __SQL_MESSAGE; };
+                             {
+                               smtp_send (sServer, sSender, sSender, serialize_to_UTF8_xml(aRes));
+                               self.success.ufl_value := 'Message is sent successfully.';
+                             };
+                         ]]>
+                       </v:on-post>
+                     </v:button>
+                     <v:button action="submit" name="Clear" value="Clear" xhtml_title="Clear" xhtml_alt="Clear">
+                       <v:on-post>
+                         <![CDATA[
+                           self.do_redirect ('post.vspx');
+                         ]]>
+                       </v:on-post>
+                     </v:button>
+                   </td>
+                 </tr>
+                 <tr>
+                   <td align="left">
+                     <v:button action="simple" name="back" xhtml_class="m_e" value="back_16.png" style="image" xhtml_title="Back" xhtml_alt="Back" text="&#160;Back">
+                       <v:on-post>
+                         <v:script>
+                           <![CDATA[
+                             self.do_redirect ('tstsum.vspx');
+                           ]]>
+                         </v:script>
+                       </v:on-post>
+                     </v:button>
+                   </td>
+                 </tr>
+               </table>
+             </td>
+           </tr>
+         </table>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

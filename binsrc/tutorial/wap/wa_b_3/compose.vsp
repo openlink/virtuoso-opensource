@@ -1,0 +1,145 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+ declare _mm_bcc, _mm_body, _mm_cc, _mm_fld, _mm_from, _mm_own, _mm_rec_date, _mm_snd_time, _mm_subj, _mm_to varchar;
+ declare _mm_id, _mm_is_readed, _is_draft varchar;
+   declare _user_name, _user_pass, _login_ok varchar;
+  declare  _counter1, _num_of_msg, _how_many_to_count, _offset integer;
+
+   _mm_to := get_keyword ( 'TO', params, '');
+   _mm_body := get_keyword ( 'MSG', params,  '');
+   _is_draft := get_keyword ( 'DRAFT', params, '');
+   _mm_subj := get_keyword ( 'SUBJ', params,'');
+ declare _login_ok varchar;
+  declare _num1, _counter1, _list integer;
+  declare _num2 varchar;
+  declare _sid, _folder varchar;
+  declare _random1 integer;
+
+  _random1 := rnd(9999999);
+
+  _sid := '';
+  _sid := get_keyword('SESS', params);
+   _mm_body := get_keyword('MSG', params);
+   _login_ok := 'NO';
+   _counter1 := 1;
+
+ if (_sid   <> '') {
+  for select * from wapsession where sid = _sid  do
+  {
+   _login_ok := 'YES';
+   _user_name := _username;
+   _user_pass := _userpass;
+   _folder := _sess_folder;
+   _list := _sess_list;
+   update wapsession set _time_last_active = datestring ( now() ) where  sid = _sid;
+  }
+  }else{
+    _login_ok := 'NO';
+
+  }
+
+  if (_is_draft = 'YES')
+  {
+   for select * from MAIL_MESSAGE where MM_OWN = _user_name and MM_ID = atoi(get_keyword('MSG_ID', params, '')) and MM_FLD = 'Draft' do
+   {
+    _mm_to := MM_TO;
+    _mm_subj := MM_SUBJ;
+      _offset := (strstr(MM_BODY, '\r\n\r\n')) + 4;
+    _mm_body :=  subseq (MM_BODY, _offset);
+
+   }
+  }
+?>
+<?vsp
+if(_login_ok <> 'NO' )
+{  http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+<?vsp
+if(  ( _mm_to = '' )    )
+{
+?>
+<card id="compose" title="Write Mail">
+  <do type="options" label="Options">
+   <go href="#opt"/>
+  </do>
+    <p>To :</p>
+    <p><a href="#compose1" title="New Addr">New Address</a></p>
+    <?vsp
+   for select * from wapaddresses where _username = _user_name do
+   {
+   http(sprintf('<p><a href="compose.vsp?SESS=%s&amp;TO=%s&amp;RAN=%d" title="To:">%s</a></p>',_sid, _email_address, _random1, _email_address));
+   }
+     ?>
+</card>
+<?vsp
+}
+?>
+<card id="compose1" title="Write Mail">
+  <onevent type="onenterforward">
+          <refresh>
+   <setvar name="to" value="<?=_mm_to?>"/>
+   <setvar name="subj" value="<?=_mm_subj?>"/>
+   <setvar name="msg_body" value="<?=_mm_body?>"/>
+          </refresh>
+   </onevent>
+   <do type="help" label="Options">
+    <go href="#opt"/>
+   </do>
+    <p>
+ To:<input name="to" title="To:" value="$(to)" tabindex="1" maxlength="100" /><br/>
+ Subj: <input name="subj" value="$(subj)" tabindex="2" maxlength="100" /><br/>
+ Write Msg: <input name="msg_body" value="$(msg_body)" tabindex="3" maxlength="500" /><br/>
+    </p>
+ <p><a href="send.vsp?SESS=<?=_sid?>&amp;TO=$(to:e)&amp;MSG=$(msg_body:e)&amp;SUBJ=$(subj:e)&amp;ACTION=SEND&amp;MSG_ID=0" title="Send">Send</a></p>
+ <p><a href="save_draft.vsp?SESS=<?=_sid?>&amp;TO=$(to:e)&amp;MSG=$(msg_body:e)&amp;SUBJ=$(subj:e)&amp;ACTION=SAVE_DRAFT&amp;MSG_ID=<?=get_keyword('MSG_ID',params,'')?>" title="Save">Save Draft</a></p>
+ <p><a href="checkmail.vsp?SESS=<?=_sid?>&amp;REFRESH=<?vsp http(sprintf('%d',_random1));?>" title="Cancel">Cancel</a></p>
+</card>
+
+<card id="opt">
+ <p><a href="checkmail.vsp?SESS=<?=_sid?>&amp;REFRESH=<?vsp http(sprintf('%d',_random1));?>" title="Mail Menu">Mail Menu</a></p>
+ <p><a href="#compose1" title="Exit">Exit</a></p>
+</card>
+</wml>
+<?vsp
+}
+if(_login_ok = 'NO'){ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="P1" title="Wrong" >
+    <p mode="nowrap">
+   Wrong Login
+    </p>
+  </card>
+</wml>
+<?vsp
+}
+?>
+

@@ -1,0 +1,31 @@
+
+
+
+
+
+
+GET /XML?XPATH=/category/@description HTTP/1.0
+
+
+GET /XML?XPATH=/category[@CategoryID=$CID]&$CID=1 HTTP/1.0
+
+
+
+GET /XML?XPATH=/category[@description+LIKE+$CID]/@description&$CID=%25Sea%25 HTTP/1.0
+
+
+GET /XML?XPATH=/category[@description+LIKE+$CID]/@description&$CID=%25Sea%25&set_tag=LIST&result_tag=LI&stylesheet=cstyle.xml HTTP/1.0
+
+
+
+
+GET /XML?XPATH=//product&doc=cat1 HTTP/1.0
+
+
+GET /XML?XPATH=//product[../@description+like+'Sea%25']&doc=cat1 HTTP/1.0
+
+GET /XML?XPATH=/*&doc=localhost:1122/docsrc/repl.xml HTTP/1.0
+
+
+
+

@@ -1,0 +1,1811 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="repl.xml" id="repl">
+	<title>Data Replication, Synchronization and Transformation Services</title>
+	<abstract>
+<para>This chapter describes how to replicate data between Virtuoso and non-Virtuoso servers.</para>
+<para>
+The material in this chapter covers the programmatic means of performing
+these  operations.  You can also use the graphical interface to do
+replication and synchronization.  This is covered in the <link
+linkend="adminuireplicationandsynchronization">Replication &amp;
+Synchronization section</link> of the Visual Server Administration
+Interface chapter.
+</para>
+</abstract>
+<sect1 id="replintro">
+<title>Introduction</title>
+<para>Virtuoso provides several replication methods:</para>
+<sect2 id="PREFACE_SNAPSHOT">
+  <title>Snapshot replication</title>
+  Virtuoso provides the following flavors of snapshot replication:
+  <simplelist>
+  <member>
+    <para>Non-incremental snapshot replication</para>
+    <para>Non-incremental snapshot replication is useful when the data
+    is changed infrequently or when data is modified in large portions
+    at a time.
+    </para>
+  </member>
+  <member>
+    <para>Incremental snapshot replication</para>
+    <para>Incremental snapshot replication is useful when
+    the data is changed frequently and implements incremental
+    updates using a snapshot log.</para>
+  </member>
+  <member>
+    <para>Bi-directional snapshot replication</para>
+    <para>Bi-directional snapshot replication allows data to be modified
+    on both publisher and subscribers. This  is useful 
+     read-write access to the replicas is needed.</para>
+  </member>
+  </simplelist>
+  <note><title>Note:</title>
+  <para>Snapshot replication can be used in heterogeneous environments
+  to set up replication between non-Virtuoso databases.</para>
+  </note>
+</sect2>
+<sect2 id="PREFACE_TRX">
+  <title>Transactional replication</title>
+  <para>Transactional replication allows subscribers to receive data
+  in near-real time. ACID properties of transactions are maintained
+  in transactional replication as well. Virtuoso implements the following
+  flavors of transactional replication:
+  <simplelist>
+  <member>
+    <para>Ordinary transactional replication</para>
+    <para>Ordinary transactional replication flavor implements one-way data
+    replication and is useful when data can be modified on only one server
+    with other servers participating in replication providing read-only
+    data access.</para>
+  </member>
+  <member>
+    <para>Bi-directional transactional replication</para>
+    <para>Bi-directional transactional replication is useful when there is
+    a requirement to allow data updates on multiple servers.</para>
+  </member>
+  </simplelist>
+  </para>
+</sect2>
+</sect1>
+	<!-- ======================================== -->
+	<sect1 id="SNAPSHOT">
+		<title>Snapshot Replication</title>
+		<sect2 id="NONINC">
+			<title>Non incremental snapshot replication</title>
+			<para>
+The Virtuoso Server periodically evaluates a query and inserts the result into a table,
+replacing the content. The source and target can be anywhere but typically will
+be on different databases of which at least one is remote.
+</para>
+			<para>This makes a two party distributed transaction. Only one of the transaction
+branches is writing, hence this goes with a one phase commit.
+</para>
+			<note>
+				<title>Note:</title>
+				<para>
+This can be used to replicate between two non-Virtuoso databases.
+</para>
+			</note>
+			<para>
+The prerequisite of this mode of replication is that all tables exist.
+The schema is never replicated.
+</para>
+		</sect2>
+		<sect2 id="INC">
+			<title>Incremental snapshot replication</title>
+			<para>
+A table can be replicated from a generic, possibly non-Virtuoso source in an
+incremental fashion if the data source meets certain criteria:
+</para>
+			<para>
+The data should come from a single table.
+</para>
+			<para>
+The source table should have an explicit primary key.
+</para>
+			<para>
+There source query should have the form
+</para>
+			<programlisting>SELECT fields FROM source_table WHERE scalar_conditions
+</programlisting>
+			<para>
+A snapshot log on the source table should exist.
+</para>
+			<para>
+There should be insert, delete and update triggers on the source table to update the snapshot log.
+</para>
+			<para>
+The incremental update is done in the following way:
+</para>
+			<para>
+All the changed records with a snaptime greater or equal from REPL_START_TIME(SN_LAST_TS) are processed.
+If the record to insert already exists, then it is updated. If the record to update does not
+exist in the destination table, then it is inserted. This contributes for conflict resolving.
+</para>
+		</sect2>
+		<sect2 id="COMMANDS">
+			<title>Command reference</title>
+			<sect3 id="CREATELOG">
+				<title>CREATE SNAPSHOT LOG FOR source_table</title>
+				<programlisting>CREATE SNAPSHOT LOG FOR source_table</programlisting>
+				<programlisting>repl_create_snapshot_log(in source_table varchar)</programlisting>
+				<para>
+Creates a snapshot log of a native (non VDB) table and the appropriate log update triggers.
+</para>
+				<para>
+Note that when replicating data from a remote Virtuoso a snapshot log table can be created on the
+remote virtuoso and then the source and log tables can be attached into the local Virtuoso. However
+the snapshot log table and the update triggers should be created manually on a non-Virtuoso data source.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+create snapshot log for Orders;
+</programlisting>
+			</sect3>
+			<sect3 id="DROPLOG">
+				<title>DROP SNAPSHOT LOG FOR source_table</title>
+				<programlisting>DROP SNAPSHOT LOG FOR source_table</programlisting>
+				<programlisting>repl_drop_snapshot_log(in source_table varchar)</programlisting>
+				<para>
+Drops a snapshot log of a table and the log update triggers.
+</para>
+				<para>
+This results in 4 SQL commands :
+</para>
+				<programlisting>
+drop trigger xxx_I_log;
+drop trigger xxx_U_log;
+drop trigger xxx_D_log;
+drop table RLOG_xxx;
+</programlisting>
+				<para>
+where xxx is the source table name (fully qualified - DB.DBA.Orders becomes DB_DBA_Orders).
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+drop snapshot log for Orders;
+</programlisting>
+			</sect3>
+			<sect3 id="PURGELOG">
+				<title>PURGE SNAPSHOT LOG FOR source_table</title>
+				<programlisting>PURGE SNAPSHOT LOG FOR source_table</programlisting>
+				<programlisting>repl_purge_snapshot_log(in source_table varchar)</programlisting>
+				<para>
+There can be old snapshot log rows which have been replayed in all the snapshots of a given source table.
+These rows are no longer needed and can be purged from the snapshot log for faster operation.
+</para>
+				<para>
+This command checks if there are any rows in SYS_REPLICATION referring to that source table and if there
+are, then it deletes all the rows in the log table with SNAPTIME earlier then REPL_START_TIME(MIN(SN_LAST_TS)).
+</para>
+				<para>
+If there are no rows in SYS_SNAPSHOT it assumes that the log is used for &quot;pull&quot; replication
+and does not do anything.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+purge snapshot log for Orders;
+</programlisting>
+			</sect3>
+			<sect3 id="CREATENONINC">
+				<title>CREATE NONINCREMENTAL SNAPSHOT</title>
+				<programlisting>CREATE NONINCREMENTAL SNAPSHOT dest_table as &apos;query_def&apos;</programlisting>
+				<programlisting>repl_create_snapshot(in query_def varchar, in dest_table varchar)</programlisting>
+				<para>
+Creates a non-incremental snapshot log of the data returned by the query query_def.
+</para>
+				<para>
+The server first checks for the existence of a table with the same name. If it does not exist,
+then a table with a layout to accommodate the resultset produced by query_def is created.
+</para>
+				<para>
+Then a entry containing query_def and tablename is added to SYS_SNAPSHOT and the destination table
+is filled in with an insert into tablename query_def.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>create nonincremental snapshot sub_orders as
+		&apos;select * from Orders where OrderID &lt; 5&apos;
+</programlisting>
+			</sect3>
+			<sect3 id="CREATEINC">
+				<title>CREATE INCREMENTAL SNAPSHOT</title>
+				<programlisting>CREATE SNAPSHOT dest_table FROM source_table [ &apos;source_column_list&apos; ]
+		[ WHERE &apos;condition&apos; ]</programlisting>
+				<programlisting>repl_create_inc_snapshot(
+    in source_column_list varchar,
+    in source_table varchar,
+    in condition varchar,
+    in dest_table varchar)</programlisting>
+				<para>
+Creates a incremental snapshot log using source query like that :
+</para>
+				<programlisting>
+SELECT source_table_pk_cols, source_column_list FROM source_table WHERE condition
+</programlisting>
+				<para>
+If the dest table already exists, then it&apos;s column count is checked to be greater than the
+primary key parts count of the source table.
+</para>
+				<para>
+If the source_column_list is omitted, then the destination table is created to have the same
+columns as the source table.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+CREATE SNAPSHOT sub_orders FROM Orders WHERE &apos;OrderID &lt; 5&apos;
+</programlisting>
+			</sect3>
+			<sect3 id="UPDATESNAP">
+				<title>UPDATE SNAPSHOT</title>
+				<programlisting>UPDATE SNAPSHOT snapshot_table_name [ AS NONINCREMENTAL ]</programlisting>
+				<programlisting>repl_refresh_inc_snapshot(
+    in snapshot_table_name varchar)</programlisting>
+				<programlisting>repl_refresh_noninc_snapshot(
+    in snapshot_table_name varchar)</programlisting>
+				<para>
+Without the optional argument updates the snapshot according to it&apos;s type.
+If an incremental snapshot needs to be updated as a nonincremental, then the full form should be used.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+UPDATE SNAPSHOT sub_orders
+</programlisting>
+			</sect3>
+			<sect3 id="DROPSNAP">
+				<title>DROP SNAPSHOT</title>
+				<programlisting>DROP SNAPSHOT snapshot_table_name [ WITH DELETE ]</programlisting>
+				<programlisting>repl_drop_snapshot(
+    in snapshot_table_name varchar,
+    in delete integer)</programlisting>
+				<para>
+Removes a snapshot definition from SYS_SNAPSHOT and optionally drops the snapshot destination table.
+</para>
+				<para>
+Examples (based on Virtuoso demo database):
+</para>
+				<programlisting>
+DROP SNAPSHOT sub_orders WITH DELETE
+</programlisting>
+			</sect3>
+		</sect2>
+                &bidirrepl;
+<sect2 id="snpreg">
+<title>Registry variables</title>
+<simplelist>
+<member>
+  <para><emphasis>snp_repl_tolerance_offset</emphasis> (default 15)</para>
+  <para>In incremental and bi-directional snapshot time stamp of
+  last replayed snapshot log entry (LAST_TS) is kept in system tables.
+  LAST_TS is used to determine the starting point of the next update. 
+  This value can't be used as is for the following reasons:
+  <simplelist>
+    <member>
+      <para>Local time may be adjusted occasionally on the servers which
+      participate in replication.
+      </para>
+    </member>
+    <member>
+      <para>Virtuoso snapshot replication triggers use
+      <function>now()</function> function to get snapshot log entry time stamp.
+      If transaction is started before updating snapshot log and ended
+      after updating snapshot log is finished,
+      data modifications made in this transaction will be missed.</para>
+    </member>
+  </simplelist>
+  In order to resolve the issues mentioned above Virtuoso reads snapshot
+  logs starting from LAST_TS minus some tolerance offset. The value
+  of tolerance offset (in minutes) is kept in "snp_repl_tolerance_offset"
+  registry variable. For the reasons mentioned above tolerance offset should be
+  longer than length of any transaction which modifies published tables.
+  </para>
+</member>
+<member>
+  <para><emphasis>snp_repl_purge_offset</emphasis> (default 30)</para>
+  <para>In order to prevent snapshot log entries to be replayed more than
+  once Virtuoso keeps log of replayed snapshot log entries (rplog).
+  Rplog entries need to be purged periodically. Virtuoso automatically
+  schedules rplog purger when snapshot log for some table is created.
+  All the records in rplog with time stamp less than MIN(LAST_TS) minus
+  some offset are purged. The value of purge offset (in minutes) is kept in
+  "snp_repl_purge_offset" registry variable. Normally, purge offset
+  should be greater than tolerance offset.
+  </para>
+</member>
+</simplelist>
+</sect2>
+<sect2 id="snpheter">
+  <title>Heterogeneous snapshot replication</title>
+  <para>
+  Virtuoso allows incremental and bi-directional snapshot replication
+  flavors to be used with non-Virtuoso databases.
+  </para>
+  <para>
+  The following databases are supported in incremental snapshot replication:
+  <simplelist>
+    <member><para>SQL Server 2000 and later</para></member>
+    <member><para>Oracle 8i and later</para></member>
+    <member><para>IBM DB2 8.1 and later</para></member>
+    <member><para>Informix IDS 9.40 and later</para></member>
+  </simplelist>
+  </para>
+  <para>
+  The following databases are supported in bi-directional snapshot replication:
+  <simplelist>
+    <member><para>SQL Server 2000 and later</para></member>
+    <member><para>Oracle 8i and later</para></member>
+    <member><para>IBM DB2 8.1 and later</para></member>
+  </simplelist>
+  </para>
+  <para>
+  DBMS-specific notes:
+  <simplelist>
+    <member>
+      <para><emphasis>SQL Server 2000 and later</emphasis></para>
+      <para>Bi-directional snapshot triggers for SQL Server require
+      "nested triggers" server option to be "On" (which is "On" by default).
+      </para>
+    </member>
+    <member>
+      <para><emphasis>Oracle 8i</emphasis></para>
+      <simplelist>
+        <member>
+          <para>Oracle 8i does not have support for "localtimestamp"
+          data type out of box. Required functionality can be enabled by editing
+          $ORACLE_HOME/rdbms/admin/standard.sql script. The following statement
+          </para>
+<programlisting>
+pragma new_names('8.1.6',
+                 dbtimezone, sessiontimezone, localtimestamp,
+                 localtime, to_local_tz, to_db_tz,
+                 cube, rollup, grouping, "TIMESTAMP WITH LOCAL TIME ZONE");
+</programlisting>
+          <para>
+          should be changed to
+          </para>
+<programlisting>
+--pragma new_names('8.1.6',
+--                 dbtimezone, sessiontimezone, localtimestamp,
+--                 localtime, to_local_tz, to_db_tz,
+--                 cube, rollup, grouping, "TIMESTAMP WITH LOCAL TIME ZONE");
+</programlisting>
+          <para>
+          After $ORACLE_HOME/rdbms/admin/standard.sql is edited it should be
+          executed with SYS user privileges:</para>
+<programlisting>
+$sqlplus SYS/CHANGE_ON_INSTALL @$ORACLE_HOME/rdbms/admin/standard.sql
+</programlisting>
+          <para>where "CHANGE_ON_INSTALL" is password for user SYS.</para>
+          <para>Oracle 9i and later has this type in the default installation
+          and this step is not necessary.</para>
+        </member>
+        <member>
+          <para>ODBC driver from Oracle 8.1.6 (and earlier versions) is known
+          to be buggy and may cause Virtuoso server to crash when snapshot
+          replication with Oracle database is set up. ODBC driver from
+          Oracle 8.1.7 and later is recommended.</para>
+        </member>
+        <member>
+          <para>Oracle ODBC driver uses Oracle NLS settings by default for
+          determining decimal separator. If decimal separator in the locale
+          is not '.' (period) there will be interoperability errors with
+          Virtuoso. Oracle ODBC driver can be forced to use US Settings for
+          numerics: open Oracle ODBC driver configuration dialog,
+          select "Application" tab and set "Numeric Settings" to
+          "Use US Settings".</para>
+        </member>
+      </simplelist>
+    </member>
+    <member>
+      <para><emphasis>DB2 8.1 ESE</emphasis></para>
+      <simplelist>
+      <member>
+        <para>FixPak 3 is recommended because ODBC driver from earlier
+        DB2 8 versions may cause Virtuoso server to crash when BLOB columns
+        exist in replicated tables.</para>
+      </member>
+      <member>
+        <para>DB2 CLI/ODBC driver uses default locale's decimal separator.
+        If decimal separator in the locale is not '.' (period) Virtuoso fails
+        to parse numeric values. The default behavior of the DB2 CLI/ODBC
+        driver can be modified by specifying PATCH2 CLI/ODBC configuration
+        keyword in the db2cli.ini initialization file. Add the following line
+        to your DSN config in db2cli.ini:
+        </para>
+<programlisting>
+PATCH2=15
+</programlisting>
+        <para>This will force DB2 CLI/ODBC driver to always use period ('.')
+        as decimal separator.</para>
+      </member>
+      </simplelist>
+    </member>
+    <member>
+      <para><emphasis>Informix IDS 9.40</emphasis></para>
+      <para>Informix IDS can't report current time in UTC. This may cause
+      snapshot replication to fail when timezone change occurs.
+      In order to set up snapshot replication with Informix server properly
+      any of the following steps must be taken:
+      <simplelist>
+        <member>Informix server must be run in UTC time zone.</member>
+        <member>"snp_repl_time_offset" registry variable should be set
+        to value greater than 60.</member>
+      </simplelist>
+      The second method may cause additional system load on updates
+      and will cause transactions to be replayed out of order when
+      timezone change occurs.
+      </para>
+    </member>
+  </simplelist>
+  </para>
+</sect2>
+<sect2 id="snpmap">
+  <title>Data type mappings</title>
+  <para>Heterogeneous replication requires data type mapping to be performed
+  when Virtuoso table is created on replica.</para>
+  <table>
+    <title>Data type mappings</title>
+    <tgroup cols="5">
+    <tbody>
+    <row>
+      <entry><emphasis>Virtuoso</emphasis></entry>
+      <entry><emphasis>SQL Server</emphasis></entry>
+      <entry><emphasis>Oracle</emphasis></entry>
+      <entry><emphasis>DB2</emphasis></entry>
+      <entry><emphasis>Informix</emphasis></entry>
+    </row>
+    <row>
+      <entry><emphasis>varchar</emphasis></entry>
+      <entry>varchar(8000)</entry>
+      <entry>VARCHAR2(4000)</entry>
+      <entry>VARCHAR(32000)</entry>
+      <entry>VARCHAR(254)</entry>
+    </row>
+    <row>
+      <entry><emphasis>varchar(n)</emphasis></entry>
+      <entry>varchar(n)</entry>
+      <entry>VARCHAR2(n)</entry>
+      <entry>VARCHAR(n)</entry>
+      <entry>VARCHAR(n)</entry>
+    </row>
+    <row>
+      <entry><emphasis>integer</emphasis></entry>
+      <entry>int</entry>
+      <entry>INTEGER</entry>
+      <entry>INTEGER</entry>
+      <entry>INTEGER</entry>
+    </row>
+    <row>
+      <entry><emphasis>smallint</emphasis></entry>
+      <entry>smallint</entry>
+      <entry>SMALLINT</entry>
+      <entry>SMALLINT</entry>
+      <entry>SMALLINT</entry>
+    </row>
+    <row>
+      <entry><emphasis>real</emphasis></entry>
+      <entry>real</entry>
+      <entry>FLOAT</entry>
+      <entry>REAL</entry>
+      <entry>SMALLFLOAT</entry>
+    </row>
+    <row>
+      <entry><emphasis>double precision</emphasis></entry>
+      <entry>float</entry>
+      <entry>DOUBLE PRECISION</entry>
+      <entry>DOUBLE</entry>
+      <entry>FLOAT</entry>
+    </row>
+    <row>
+      <entry><emphasis>numeric</emphasis></entry>
+      <entry>numeric(38, 15)</entry>
+      <entry>NUMERIC(38, 15)</entry>
+      <entry>NUMERIC(32, 15)</entry>
+      <entry>DECIMAL(31, 15)</entry>
+    </row>
+    <row>
+      <entry><emphasis>numeric(p, s)</emphasis></entry>
+      <entry>numeric(p, s)</entry>
+      <entry>NUMERIC(p, s)</entry>
+      <entry>NUMERIC(p, s)</entry>
+      <entry>DECIMAL(p, s)</entry>
+    </row>
+    <row>
+      <entry><emphasis>date</emphasis></entry>
+      <entry>datetime</entry>
+      <entry>DATE</entry>
+      <entry>DATE</entry>
+      <entry>DATE</entry>
+    </row>
+    <row>
+      <entry><emphasis>time</emphasis></entry>
+      <entry>datetime</entry>
+      <entry>DATE</entry>
+      <entry>TIME</entry>
+      <entry>DATETIME HOUR TO SECOND</entry>
+    </row>
+    <row>
+      <entry><emphasis>datetime, timestamp</emphasis></entry>
+      <entry>datetime</entry>
+      <entry>DATE</entry>
+      <entry>TIMESTAMP</entry>
+      <entry>DATETIME YEAR TO FRACTION(5)</entry>
+    </row>
+    <row>
+      <entry><emphasis>varbinary</emphasis></entry>
+      <entry>varbinary(8000)</entry>
+      <entry>RAW(2000)</entry>
+      <entry>VARCHAR(32000) FOR BIT DATA</entry>
+      <entry>BYTE</entry>
+    </row>
+    <row>
+      <entry><emphasis>varbinary(n)</emphasis></entry>
+      <entry>varbinary(n)</entry>
+      <entry>RAW(n)</entry>
+      <entry>VARCHAR(n) FOR BIT DATA</entry>
+      <entry>BYTE</entry>
+    </row>
+    <row>
+      <entry><emphasis>long varbinary</emphasis></entry>
+      <entry>image</entry>
+      <entry>BLOB</entry>
+      <entry>BLOB</entry>
+      <entry>BYTE</entry>
+    </row>
+    <row>
+      <entry><emphasis>long varchar</emphasis></entry>
+      <entry>text</entry>
+      <entry>CLOB</entry>
+      <entry>CLOB</entry>
+      <entry>TEXT</entry>
+    </row>
+    <row>
+      <entry><emphasis>nvarchar</emphasis></entry>
+      <entry>nvarchar(4000)</entry>
+      <entry>NVARCHAR2(4000)</entry>
+      <entry>VARCHAR(32000) FOR MIXED DATA</entry>
+      <entry>NVARCHAR(254)</entry>
+    </row>
+    <row>
+      <entry><emphasis>nvarchar(n)</emphasis></entry>
+      <entry>nvarchar(n)</entry>
+      <entry>NVARCHAR2(n)</entry>
+      <entry>VARCHAR(n) FOR MIXED DATA</entry>
+      <entry>NVARCHAR(n)</entry>
+    </row>
+    <row>
+      <entry><emphasis>long nvarchar</emphasis></entry>
+      <entry>ntext</entry>
+      <entry>NCLOB</entry>
+      <entry>DBCLOB</entry>
+      <entry>TEXT</entry>
+    </row>
+    </tbody>
+    </tgroup>
+  </table>
+</sect2>
+<sect2 id="snpincobj">
+  <title>Objects created by incremental snapshot replication</title>
+  <para>Table "DB.DBA.RPLOG_&lt;name&gt;" (replay log) is created in
+  Virtuoso database for replayed snapshot log entries.</para>
+  <para>Table "RLOG_&lt;name&gt;" (snapshot log) is created in the source DSN.
+  This table is attached as "&lt;qual&gt;"."&lt;dsn&gt;"."RLOG_&lt;name&gt;"
+  if source table is an attached table.
+  Other objects created by incremental snapshot replication in the source
+  DSN are:</para>
+  <simplelist>
+    <member>
+      <para><emphasis>Virtuoso</emphasis></para>
+      <para>Triggers "&lt;qual&gt;_&lt;owner&gt;_&lt;name&gt;_I_log",
+        "&lt;qual&gt;_&lt;owner&gt;_&lt;name&gt;_U_log" and
+        "&lt;qual&gt;_&lt;owner&gt;_&lt;name&gt;_D_log" on replicated table.
+      </para>
+    </member>
+    <member>
+      <para><emphasis>SQL Server</emphasis></para>
+      <para>Triggers "&lt;name&gt;_I_log", "&lt;name&gt;_U_log"
+      and "&lt;name&gt;_D_log" on replicated table.</para>
+    </member>
+    <member>
+      <para><emphasis>Oracle</emphasis></para>
+      <para>Triggers "&lt;name&gt;_I_log", "&lt;name&gt;_U_log"
+      and "&lt;name&gt;_D_log" on replicated table.</para>
+      <para>Function OPL_GETUTCDATE().</para>
+    </member>
+    <member>
+      <para><emphasis>DB2</emphasis></para>
+      <para>Triggers "&lt;name&gt;_I", "&lt;name&gt;_U"
+      and "&lt;name&gt;_D" on replicated table.</para>
+      <para>Sequence opl_seq_rowguid.</para>
+    </member>
+    <member>
+      <para><emphasis>Informix</emphasis></para>
+      <para>Triggers "&lt;name&gt;_I_log", "&lt;name&gt;_U_log"
+      and "&lt;name&gt;_D_log" on replicated table.</para>
+      <para>Sequence opl_seq_rowguid.</para>
+      <para>Stored procedures "&lt;name&gt;_R_proc" and "&lt;name&gt;_U_proc".
+      </para>
+    </member>
+  </simplelist>
+</sect2>
+<sect2 id="snpbidirobj">
+  <title>Objects created by bi-directional snapshot replication</title>
+  <para>Table "DB"."DBA"."RPLOG_&lt;name&gt;" (replay log) is created in
+  Virtuoso database for replayed snapshot log entries.</para>
+  <para>Table "RLOG_&lt;name&gt;" (snapshot log) is created on the publisher
+  and on subscribers. "RLOG_&lt;name&gt;" table and replicated table
+  itself are attached from subscribers as
+  "&lt;qual&gt;"."&lt;dsn&gt;"."RLOG_&lt;name&gt;" and
+  "&lt;qual&gt;"."&lt;dsn&gt;"."&lt;name&gt;" respectively.
+  Other objects created by bi-directional snapshot replication on the publisher
+  and on subscribers are:</para>
+  <simplelist>
+    <member>
+      <para><emphasis>Virtuoso</emphasis></para>
+      <para>Triggers "&lt;qual&gt;_&lt;owner&gt;_&lt;name&gt;_I_log",
+        "&lt;qual&gt;_&lt;owner&gt;_&lt;name&gt;_U_log" and
+        "&lt;qual&gt;_&lt;owner&gt;_&lt;name&gt;_D_log" on replicated table.
+      </para>
+    </member>
+    <member>
+      <para><emphasis>SQL Server</emphasis></para>
+      <para>Triggers "&lt;name&gt;_I_log", "&lt;name&gt;_U_log"
+      and "&lt;name&gt;_D_log" on replicated table.</para>
+    </member>
+    <member>
+      <para><emphasis>Oracle</emphasis></para>
+      <para>Triggers "&lt;name&gt;_I_log", "&lt;name&gt;_IR_log",
+      "&lt;name&gt;_U_log", "&lt;name&gt;_UR_log",
+      "&lt;name&gt;_UD_log", "&lt;name&gt;_UDR_log",
+      and "&lt;name&gt;_D_log" on replicated table.</para>
+      <para>Function OPL_GETUTCDATE().</para>
+      <para>Global temporary table "DLOG_&lt;name&gt;".</para>
+    </member>
+    <member>
+      <para><emphasis>DB2</emphasis></para>
+      <para>Triggers "&lt;name&gt;_I", "&lt;name&gt;_U", "&lt;name&gt;_UD"
+      and "&lt;name&gt;_D" on replicated table.</para>
+      <para>Sequence opl_seq_rowguid.</para>
+    </member>
+  </simplelist>
+</sect2>
+		<sect2 id="replSYSTABLES">
+			<title>Replication system tables</title>
+			<sect3 id="replSYS_SNAPSHOT">
+			<title>SYS_SNAPSHOT</title>
+			<programlisting>
+CREATE TABLE SYS_SNAPSHOT (
+    SN_NAME	VARCHAR(255),
+    SN_QUERY    VARCHAR(1024),
+    SN_LAST_TS	VARBINARY(30),
+    SN_IS_INCREMENTAL	INTEGER,
+    SN_SOURCE_TABLE	VARCHAR(255),
+    PRIMARY KEY (SN_NAME))
+</programlisting>
+			<para>
+This table describes all defined snapshot replication relations.
+SN_NAME is the snapshot&apos;s name (destination table name). SN_QUERY is the query to get the data from.
+SN_LAST_TS is the time of the last update reflected for incremental snapshots (from the snapshot log&apos;s SNAPTIME).
+SN_IS_INCREMENTAL is null for nonincremental snapshots and non-null for the incremental ones.
+SN_SOURCE_TABLE is the source table for the incremental snapshots, NULL otherwise.
+</para>
+			<para>
+This implies that an incremental snapshot can be updated in two ways - incrementally and nonincrementally
+as the nonincremental definition is a subset of the incremental definition.
+</para>
+			</sect3>
+			<sect3 id="replSYS_SNAPSHOT">
+			<title>SYS_SNAPSHOT_LOG</title>
+			<programlisting>
+CREATE TABLE SYS_SNAPSHOT_LOG (
+    SNL_SOURCE	varchar (320) NOT NULL,
+    SNL_RLOG	varchar (320) NOT NULL,
+    SNL_RPLOG	varchar (320) NOT NULL,
+    primary key (SNL_SOURCE)
+)
+</programlisting>
+			<para>
+This table describes all defined snapshot replication relation logs.
+SNL_SOURCE is the base table for witch a snapshot log is defined. 
+SNL_RLOG is the name of the RLOG snapshot log auxilary table.
+SNL_RPLOG is the name of the RPLOG snapshot log auxilary table.
+</para>
+			</sect3>
+		</sect2>
+		<sect2 id="SNLOG">
+			<title>Table snapshot logs</title>
+			<para>
+In order to be able to create incremental snapshots on a table there should be
+a snapshot log table defined in the following fashion:
+</para>
+			<programlisting>
+create table RLOG_sourcetable (
+RLOG_sourcetable_primarykey_parts,
+...
+SNAPTIME DATETIME,
+DMLTYPE	 CHAR(1),
+RLOG_ROWGUID VARCHAR(255),
+PRIMARY KEY (RLOG_*));
+</programlisting>
+			<para>
+The name of the snapshot log table is constructed from the name of the source table by
+prefixing it with RLOG_ .
+</para>
+			<para>
+Snapshot log table contains all the primary key parts of the source table prefixed with RLOG_ .
+</para>
+			<para>
+Snapshot log table contains at most one row per updated source table row with the update time
+and update type in DMLTYPE (I - for insert, U - for update, D - for delete).
+</para>
+<para>
+Snapshot log table contains RLOG_ROWGUID column which uniquely identifies
+this snapshow log row.
+</para>
+<para>An updating procedure for incremental snapshot or bi-directional
+snapshot (table case) reads records from
+snapshot log table, ordered by SNAPTIME. Commits are performed each time
+an updating procedure notices that SNAPTIME has changed.
+In Virtuoso case (when native table is snapshot-replicated) all snapshot log
+records with equal SNAPTIME belong to the same transaction and all such
+records constitute almost a transaction (it is not exactly a transaction
+because only the last DML operation for each primary key in the source table
+is recorded in snapshot log table). So in Virtuoso case an updating procedure
+commits almost per transaction on source table.
+Snapshot log records are not transaction-bound in heterogeneous case however.
+Nevertheless, the technique used to determine when to commit described above
+prevents running out of transaction log or deadlocks even in heterogeneous
+case.</para>
+<para>Replay log is created on the server which performs sync (server on which
+snapshot log was create in ordinary case, publisher in bi-directional snapshot
+case) to handle correct snapshot log replaying. Replay log
+is purged periodically using <function>REPL_PURGE_RPLOGS()</function> function
+in ordinary case and <function>REPL_PURGE_URPLOGS()</function> in
+bi-directional case. The calls to this functions are automatically scheduled
+when snapshot log or bi-directional snapshot publication is created and
+there is no need to call them manually.
+</para>
+			<para>
+There should be triggers on the source table to update the log like that:
+</para>
+			<programlisting>
+create trigger xxx_I_log after insert on xxx
+{
+  insert replacing RLOG_xxx values (xxx_pk, now(), &apos;I&apos;, uuid());
+};
+
+create trigger xxx_D_log after delete on xxx
+{
+  insert replacing RLOG_xxx values (xxx_pk, now(), &apos;D&apos;, uuid());
+};
+
+create trigger xxx_U_log after update on xxx
+{
+  if (OLD.xxx_pk differs from NEW.xxx_pk)
+    {
+      insert replacing RLOG_xxx values (OLD.xxx_pk, now(), &apos;D&apos;, uuid());
+      insert replacing RLOG_xxx values (NEW.xxx_pk, now(), &apos;I&apos;, uuid());
+    }
+  else
+    insert replacing RLOG_xxx values (xxx_pk, now(), &apos;U&apos;, uuid());
+};
+</programlisting>
+			<para>
+where xxx is the source table name, RLOG_xxx is the snapshot log table name, xxx_pk is a comma separated list
+of the source table&apos;s primary key parts. The names of the triggers are constructed from the fully qualified name
+(DB.DBA.Orders makes DB_DBA_Orders_I_log).
+</para>
+<para>Table snapshot logs and triggers are created automatically for Virtuoso
+and databases listed in
+<link linkend="snpheter">Heterogeneous Snapshot Replication</link> section.
+</para>
+		</sect2>
+	</sect1>
+	<sect1 id="proctransrepl">
+		<title>Transactional Replication </title>
+		<para>
+The unit of replication is a publication. A publication is an ordered sequence
+of transaction entries.  One database transaction can add data to
+zero or more publications. The data contributed to a publication by a
+transaction is appended to the publication at the time of commit.
+Because commits are serialized database wide, items in a publication
+have a well defined order.
+</para>
+		<para>
+Each transaction entry in a publication has a unique sequence number
+within the publication.  Each subscriber of a publication has a level of
+synchronization, which is the serial number of the last transaction from the publication which this
+subscriber has processed.
+</para>
+		<para>
+Each publication has exactly one publisher and zero or more subscribers. Any
+multi-master merge replication schemes will be based on this notion, with data to be
+merged back into the original source regarded as a separate publication and the merge
+regarded as a process between publications.
+</para>
+		<para>
+In order to publish data for replication by others a server must have a unique
+name within the group of servers participating in the replication.  This server name is
+assigned to the server in its virtuoso.ini file in the DBName setting.
+</para>
+		<para>
+To publish data the publishing server initializes a publication with the repl_publish function, where
+it names the publication and assigns a log file name for it.  The server can then
+start adding transactions to the publication, which can happen either under
+application control or implicitly.
+</para>
+<tip><title>Tip</title>
+<para>See the <link linkend="TransReplPublishFunctions">repl_text</link> function.</para>
+</tip>
+		<para>
+To subscribe to publications a server must also have a distinct DBName.  It identifies
+the publishing server by associating a host name and port number to its logical
+name with the repl_server function.  It can then call
+<function>repl_subscribe()</function>. Replication feeds from publisher
+are replayed by 'dba' user by default. The default can be changed
+(see <link linkend="fn_repl_subscribe">repl_subscribe()</link> function).
+for each of the publications it subscribes to.  A publication is uniquely
+identified on the subscriber with the publishing server name and the
+publication name.  Note that several servers in a network may publish like named
+publications and these will be logically distinct, having each their own distinct publisher.
+</para>
+		<para>
+A subscriber may or may not be connected to the publisher at any point in time.
+If a subscriber is connected to the publisher it may either be &apos;in sync&apos; or syncing&apos;.  In the
+syncing state it is receiving transaction entries with numbers consecutive from its sync
+level up until the last committed serial number committed on the server.
+</para>
+		<para>
+At the start of the sync communication the subscriber indicates the level of the last successfully
+processed transaction in the publication. The sync exchange terminates when the subscriber reaches
+the last committed item on the publication. At this point the subscriber is said to be &apos;in sync&apos;.
+The connection to the publisher is then maintained by default and is used to send sync information as it
+becomes available.  This means that once an entry is appended to the publication by a committing
+a transaction it is sent to the &apos;in sync&apos; subscribers without separate request.
+</para>
+		<para>
+The publisher can terminate the replication feed by unilateral decision.  It will do it
+if the sending of the message times out for too long or if the queue of &apos;to be sent&apos; replication
+records exceeds a settable threshold.  This essentially happens with communication failures
+or if the subscriber continuously processes the feed at a speed lower than the
+feed production speed of the publisher.  A disconnected subscriber can reconnect at will, in
+which case it enters the &apos;syncing&apos; state and will receive transactions from the point where the feed
+was cut.
+</para>
+		<para>
+A subscriber can disconnect from the publisher at any time without ill effect.
+</para>
+
+<para>A table</para>
+
+<programlisting>
+SYS_REPL_ACCOUNTS (
+    SERVER varchar,
+    ACCOUNT varchar,
+
+    NTH integer,
+    LEVEL integer,
+    IS_MANDATORY integer,
+    IS_UPDATEABLE integer,
+    SYNC_USER varchar,
+
+    P_MONTH integer,
+    P_DAY integer,
+    P_WDAY integer,
+    P_TIME time,
+    
+    primary key (SERVER, ACCOUNT))
+</programlisting>
+
+<para>is used to store information about published accounts and accounts
+this server is subscribed to.</para>
+
+<para>A table</para>
+
+<programlisting>
+SYS_REPL_SUBSCRIBERS (
+    RS_SERVER varchar,
+    RS_ACCOUNT varchar,
+    RS_SUBSCRIBER varchar not null,
+
+    RS_LEVEL integer NOT NULL,
+    RS_VALID integer NOT NULL,
+	
+    primary key (RS_SERVER, RS_ACCOUNT, RS_SUBSCRIBER))
+</programlisting>
+
+<para>is used to store subscribers' status (pushback
+accounts for updateable subscriptions are there too).
+Subscribers for an account are added to this table automatically on each
+request to sync an account from subscriber or manually from Admin UI.</para>
+
+<para>SYS_REPL_SUBSCRIBERS.RS_VALID column is be used to designate
+subscribers whose replication account level is valid (lags not more than
+REPL_MAX_DELTA behind the publisher's level).</para>
+
+<para>RS_VALID state of subscriber is checked and updated on every sync request
+from subscriber. If subscriber is found to be invalid
+all further sync requests from it are ignored. Such subscriber need to
+be reinitialized manually and marked as valid using Admin UI.</para>
+
+
+
+
+
+<sect2 id="pubitems">
+<title>Publishable Items</title>
+
+<para>
+Tables, stored procedures and DAV collections may be added to a
+transactional publication.  When a table is added, triggers are
+created for capturing changes to the table.  When a procedure is
+added, all calls to this procedure will be recorded in the
+publication's log and the same procedure will be called on the
+subscriber.  When a procedure is published in this manner, actions
+performed inside the procedure are not themselves recorded even if
+they touch on items that are part of a publication.  It is assumed
+that the procedure on the subscriber will produce the equivalent
+effect.  When a DAV collection is published, operations on direct and
+indirect members of the collection are logged into the publication's
+log.  When this is replayed on the subscriber, the operations are
+repeated on like-named DAV resources, creating collections and
+resources as needed.
+</para>
+
+<para>
+When a table or procedure is added to a publication, the creating
+statement is added also, so that the subscribers come to create the
+table or procedure before receiving any replication operations on said
+table or procedure.  Also when the table or precedure is altered, the
+altering statements are added to the publication so s to be reflected
+on all subscribers.  This can be overridden for procedures, since in
+some cases it is desirable to have a different definition on the
+subscriber.  Table constraints are also replicated, except for foreign
+key constraints with tables outside the publication, since these would
+not be meaninfgful on the subscriber, as there is no knowledge on what
+tables may exist there outside of the ones in the publication.
+Changes to schema on subscribers are never replicated to the
+publisher, even if we had bidirectional replication.  Identity and
+timestamp columns are replicated so that the vaues on the subscriber
+are assigned by the publisher.
+</para>
+
+<para>
+When a procedure is published, it is possible to specify whether the
+definitions, calls or both are replicated.  Usually specifying both
+calls and definition is reasonable, sometimes only calls are to be
+replicated if the procedure intentionally has a different definition
+in the subscriber.  This is useful for example when the subscriber
+gathers statistics or maintains a data warehouse where the storage
+schema is not identifcal with that of the publisher.  Only procedures
+with input parameters can be replicated.  The rationale is that
+replication is a one way stream and no return values, result sets or
+output parameters can be captured by either publisher or subscriber.
+Procedure calls cannot be replicated bidirectionally, these go from publisher to subscriber exclusively.
+</para>
+
+<para>
+Even though replication can carry schema changes, it is in no way a means of keping software installations in sync.  Many schema elements such as triggers are not covered and a software upgrade is more complex than can be represented by replication alone.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Errors in Replication</title>
+<para>
+A statement received for replication from a publisher may encounter an
+error.  All Such errors are logged into the subscriber's error log
+file.  If the error is retryable, like a deadlock, retries are made
+until the operation succeeds.  If Other errors are simply skipped and
+replication proceeds.  A replication subscription can be permanently
+broken and out of sync if for example columns are dropped from the
+subscriber copy of the tables or if the subscriber runs out of disk and can replay some transactions but not all.  Note that in such situations gaps may be formed into the received transaction sequence.  In such cases, it is best to drop the
+subscription, drop the tables and remake the subscription.
+
+</para>
+
+
+</sect2>
+
+
+		<sect2 id="TransReplPublishFunctions">
+			<title>Publisher Transactional Replication Functions</title>
+			<para>
+The most generic form of the replication element is a stored procedure call. This associates
+a procedure name and set of parameters to a publication inside a transaction.  When the transaction commits, all the
+publication entries are appended to the publication, forming a replication entry with
+its unique number.
+</para>
+<para>
+These functions are available to the publishing Virtuoso server.</para>
+
+<link linkend="fn_repl_publish"><function>repl_publish()</function></link>
+
+<link linkend="fn_repl_unpublish"><function>repl_unpublish()</function></link>
+
+<link linkend="fn_repl_pub_add"><function>repl_pub_add()</function></link>
+
+<link linkend="fn_repl_pub_remove"><function>repl_pub_remove()</function></link>
+
+<link linkend="fn_repl_pub_init_image"><function>repl_pub_init_image()</function></link>
+
+<link linkend="fn_repl_new_log"><function>repl_new_log()</function></link>
+
+<link linkend="fn_repl_text"><function>repl_text()</function></link>
+
+<link linkend="fn_repl_grant"><function>repl_grant()</function></link>
+
+<link linkend="fn_repl_revoke"><function>repl_revoke()</function></link>
+
+</sect2>
+
+<sect2 id="SubscriberFunctions">
+<title>Subscriber Functions</title>
+<para>
+These are the functions that are available to the subscribing Virtuoso server.
+</para>
+
+<link linkend="fn_repl_server"><function>repl_server()</function></link>
+
+<link linkend="fn_repl_subscribe"><function>repl_subscribe()</function></link>
+
+<link linkend="fn_repl_unsubscribe"><function>repl_unsubscribe()</function></link>
+
+<link linkend="fn_repl_init_copy"><function>repl_init_copy()</function></link>
+
+<link linkend="fn_repl_sync"><function>repl_sync()</function></link>
+
+<link linkend="fn_repl_sync_all"><function>repl_sync_all()</function></link>
+
+<link linkend="fn_repl_sched_init"><function>repl_sched_init()</function></link>
+
+<link linkend="fn_sub_schedule"><function>sub_schedule()</function></link>
+
+<link linkend="fn_repl_disconnect"><function>repl_disconnect()</function></link>
+
+<link linkend="fn_repl_this_server"><function>repl_this_server()</function></link>
+<link linkend="fn_repl_purge"><function>repl_purge()</function></link>
+
+</sect2>
+
+<sect2 id="ReplStatusFunctions">
+<title>Common Status Functions</title>
+
+<link linkend="fn_repl_stat"><function>repl_stat()</function></link>
+
+<link linkend="fn_repl_status"><function>repl_status()</function></link>
+
+	<para>
+The status () function shows a replication status summary.
+The same data can be obtained with the repl_stat and repl_status procedures.
+</para>
+		</sect2>
+                &bidirtransrepl;
+<sect2 id="trxlogpurger">
+<title>Purging replication logs</title>
+
+<para>Every replication account has an associated sequence which holds
+replication account level (basically, transaction number).
+Each subscriber also maintains a sequence where it stores
+its replication account level.</para>
+
+<para>When subscriber issues a sync request for an account it submits its
+replication account level so publisher can find a point in time from where
+it should start to submit replication logs to publisher.</para>
+
+<para>Replication account level can roll over REPL_WRAPAROUND (0x7fffffff)
+to 1. Old replication logs need to be purged to allow this to work
+correctly. Procedure <link linkend="fn_repl_purge">repl_purge()</link> purges
+replication logs for a specified account.</para>
+
+<para>Columns needed to store purger configuration in SYS_REPL_ACCOUNTS table
+are:
+<simplelist>
+<member>P_MONTH integer (month, nullable)</member>
+<member>P_DAY integer (day of month, nullable)</member>
+<member>P_TIME time (time, nullable)</member>
+</simplelist>
+</para>
+
+<para>
+If P_TIME is NULL log purger will not be scheduled to run at all.
+If P_TIME is not NULL there can be the following combinations of P_MONTH,
+P_DAY and P_WDAY ('*' means NULL value, 'x' means any value):
+
+<table><title>Purger config settings</title>
+<tgroup cols="4">
+<tbody>
+  <row>
+    <entry><emphasis>P_MONTH</emphasis></entry>
+    <entry><emphasis>P_DAY</emphasis></entry>
+    <entry><emphasis>P_WDAY</emphasis></entry>
+    <entry><emphasis>meaning</emphasis></entry>
+  </row>
+  <row>
+    <entry>month</entry>
+    <entry>day</entry>
+    <entry>x</entry>
+    <entry>purger is run yearly on specified month and day</entry>
+  </row>
+  <row>
+    <entry>month</entry>
+    <entry>*</entry>
+    <entry>x</entry>
+    <entry>purger is run yearly on 1st of month</entry>
+  </row>
+  <row>
+    <entry>*</entry>
+    <entry>day</entry>
+    <entry>x</entry>
+    <entry>purger is run monthly on specified day of month</entry>
+  </row>
+  <row>
+    <entry>*</entry>
+    <entry>*</entry>
+    <entry>wday</entry>
+    <entry>purger is run weekly on specified day of week</entry>
+  </row>
+  <row>
+    <entry>*</entry>
+    <entry>*</entry>
+    <entry>*</entry>
+    <entry>purger is run daily</entry>
+  </row>
+</tbody>
+</tgroup>
+</table>
+</para>
+
+<para>
+An entry to call purger is inserted (or updated) into SYS_SCHEDULED_EVENT
+after each modification of purger settings for an account (from Admin UI)
+or after each successful run of repl_purge() for this account.
+</para>
+</sect2>
+<sect2 id="trxobj">
+  <title>Objects created by transactional replication</title>
+  <para>Virtuoso creates triggers "&lt;name&gt;_I",
+  "&lt;name&gt;_U" and "&lt;name&gt;_D" for every published table.
+  On subscriber "DB"."DBA"."SYS_REPL_ACCOUNTS" table and
+  "DB"."DBA"."TP_ITEM" view are attached from publisher as
+  "DB"."&lt;dsn&gt;"."SYS_REPL_ACCCOUNTS" and "DB"."&lt;dsn&gt;"."TP_ITEM"
+  respectively.</para>
+  <para>If publication is updateable Virtuoso additionally creates
+  the following objects:
+  <simplelist>
+  <member>
+    <para>"&lt;qual&gt;"."&lt;owner&gt;"."replcr_&lt;name&gt;_I",
+    "&lt;qual&gt;"."&lt;owner&gt;"."replcr_&lt;name&gt;_U" and
+    "&lt;qual&gt;"."&lt;owner&gt;"."replcr_&lt;name&gt;_D" procedures
+    for every published table. These procedures are used for conflict
+    resolution.</para>
+  </member>
+  <member>
+    <para>Triggers "&lt;name&gt;_I", "&lt;name&gt;_U" and "&lt;name&gt;_D"
+    for every subscribed table.</para>
+  </member>
+  </simplelist>
+  </para>
+</sect2>
+	</sect1>
+	<!-- ======================================== -->
+	<sect1 id="SCHEDULER">
+		<title>Virtuoso scheduler</title>
+		<para>
+Virtuoso scheduler allows an arbitrary SQL command to be run at certain intervals.
+</para>
+		<para>
+The scheduler process wakes up every n minutes, scans the SYS_SCHEDULED_EVENT table and
+executes each command which applies to the current time. Note that overdue commands are executed
+only once.
+</para>
+		<para>
+There is a virtuoso.ini parameter &quot;Scheduler interval&quot; under &quot;Parameters&quot; section which defines
+the scheduler wake-up interval. Set this to 0 (the default) to disable the scheduler.
+</para>
+		<sect2 id="replschSYSTABLES">
+			<title>SYS_SCHEDULED_EVENT</title>
+			<programlisting>
+CREATE TABLE SYS_SCHEDULED_EVENT(
+    SE_NAME		varchar,
+    SE_START		datetime,
+    SE_SQL		varchar,
+    SE_LAST_COMPLETED	datetime,
+    SE_INTERVAL		integer,
+    PRIMARY KEY(SE_NAME));
+</programlisting>
+			<para>
+This table describes each scheduled SQL command. SE_NAME is the name of the scheduled event.
+SE_START is the first schedule execution time.
+SE_SQL is the text of the SQL command to be executed.
+SE_LAST_COMPLETED is the last time when the SQL command was executed successfully.
+SE_INTERVAL is the interval between the runs of the SQL command in minutes.
+</para>
+			<para>
+Defining a new scheduled event means adding a row to the SYS_SCHEDULED_EVENT with an insert statement like this:
+</para>
+			<programlisting>
+INSERT INTO SYS_SCHEDULED_EVENT (SE_NAME, SE_SQL, SE_START, SE_INTERVAL)
+		VALUES (.....)
+</programlisting>
+		</sect2>
+	</sect1>
+<sect1 id="replexamples">
+<title>Transactional Replication Example</title>
+<programlisting>
+-- ================================
+-- ON PUBLISHER SIDE (named 'rep1')
+-- ================================
+set DSN=1111;
+reconnect;
+-- Create test tables &amp; fill with data
+create table DB.DBA.TEST (id integer, name varchar, tm datetime,
+	content long varchar, primary key (id, name));
+create table "ab ""cd" ("id key" integer, "ef ""gh" varchar, primary key ("id key"));
+insert into DB.DBA.TEST values (1, 'a', now(), 'xxx');
+insert into DB.DBA.TEST values (1, 'b', now(), 'xxx');
+insert into DB.DBA.TEST values (1, 'c', now(), 'xxx');
+insert into DB.DBA.TEST values (1, 'd', now(), 'xxx');
+insert into "ab ""cd" values (1,'1');
+-- Public one account named 'dav'
+REPL_PUBLISH ('dav', 'dav.log');
+-- Add an existing collection '/DAV/repl' into the 'dav' publication
+REPL_PUB_ADD ('dav', '/DAV/repl/', 1, 0, null);
+-- Public second account named 'tbl' for tables'
+REPL_PUBLISH ('tbl', 'tbl.log');
+-- Add 'TEST' table into the 'tbl' publication account
+REPL_PUB_ADD ('tbl', 'DB.DBA.TEST', 2, 0, null);
+-- Add 'ab "cd' table into the 'tbl' publication account
+REPL_PUB_ADD ('tbl', 'DB.DBA.ab "cd', 2, 0, null);
+</programlisting>
+
+<programlisting>
+-- ================================
+-- ON SUBSCRIBER SIDE (named 'rep2')
+-- ================================
+set DSN=1112;
+reconnect;
+-- Add publication server named 'rep1' with DSN '1111' placed
+-- on 'localhost' machine and using port '1111'
+REPL_SERVER ('rep1', '1111', 'localhost:1111');
+-- Add subscription for 'dav' publication account
+REPL_SUBSCRIBE ('rep1', 'dav', null, null, 'dba', 'dba');
+-- Perform initial copy of publication 'dav' data
+DB..REPL_INIT_COPY ('rep1', 'dav');
+-- Add subscription for 'tbl' publication
+REPL_SUBSCRIBE ('rep1', 'tbl', null, null, 'dba', 'dba');
+-- Perform initial copy of publication 'tbl' data
+DB..REPL_INIT_COPY ('rep1', 'tbl');
+
+-- Now we look at copied data (should return 4)
+select count(*) from TEST;
+-- And second table (should return 1)
+select count(*) from "ab ""cd";
+
+-- Turn subscription in 'SYNC'
+SYNC_REPL();
+</programlisting>
+
+<programlisting>
+-- ================================
+-- ON PUBLISHER SIDE (named 'rep1')
+-- ================================
+set DSN=1111;
+reconnect;
+-- Insert an additional data
+insert into DB.DBA.TEST values (7,'a',now(), repeat('x',1000000));
+insert into "ab ""cd" values (2,'2');
+insert into "ab ""cd" values (3,'3');
+insert into "ab ""cd" values (4,'4');
+delete from "ab ""cd" where "id key" = 4;
+update "ab ""cd" set "ef ""gh" = '4' where "id key" = 3;
+</programlisting>
+
+<programlisting>
+-- ================================
+-- ON SUBSCRIBER SIDE (named 'rep2')
+-- ================================
+set DSN=1112;
+reconnect;
+-- make a procedure to check status of subscription
+create procedure WAIT_FOR_SYNC (in srv varchar, in acct varchar)
+{
+  declare level, stat integer;
+  stat := 0;
+  while (level &lt; 6)
+    {
+      repl_status (srv, acct, level, stat);
+      if (stat = 3)
+	SYNC_REPL ();
+    }
+};
+-- run it till subscription got the right level of synchronization
+WAIT_FOR_SYNC ('rep1', 'tbl');
+
+-- Check the data (should return 5)
+select count (*) from DB.DBA.TEST;
+-- Check the data (should return 3)
+select count(*) from "ab ""cd";
+
+-- Check the new data entered on publisher (will return 4)
+select "ef ""gh" from "ab ""cd" where "id key" = 3;
+
+-- Check the old data deleted from publisher (will return 0)
+select count(*) from "ab ""cd" where "id key" = 4;
+</programlisting>
+
+<programlisting>
+-- ================================
+-- ON PUBLISHER SIDE (named 'rep1')
+-- ================================
+set DSN=1111;
+reconnect;
+-- Create an table to use for procedure calls
+create table p_test (id integer, dt varchar, primary key (id));
+insert into  p_test values (1, '1');
+insert into  p_test values (2, '2');
+insert into  p_test values (3, '3');
+insert into  p_test values (4, '4');
+insert into  p_test values (5, '5');
+-- And an procedure which inserts records in p_test table
+create procedure t_proc (in i integer)
+{
+  declare d varchar;
+  select dt into d from p_test where id = i;
+  d := concat (d, d);
+  update p_test set dt = d where id = i;
+};
+
+-- Make an account named 'proc' for procedure replication
+REPL_PUBLISH ('proc', 'proc.log');
+-- Add 't_proc' procedure into 'proc' publication
+REPL_PUB_ADD ('proc', 'DB.DBA.t_proc', 3, 0, 3);
+</programlisting>
+
+<programlisting>
+-- ================================
+-- ON SUBSCRIBER SIDE (named 'rep2')
+-- ================================
+set DSN=1112;
+reconnect;
+-- crate the same table on subscriber
+create table p_test (id integer, dt varchar, primary key (id));
+-- insert an data into it
+insert into  p_test values (1, '1');
+insert into  p_test values (2, '2');
+insert into  p_test values (3, '3');
+insert into  p_test values (4, '4');
+insert into  p_test values (5, '5');
+-- Add subscription for 't_proc' publication
+REPL_SUBSCRIBE ('rep1', 'proc', null, null, 'dba', 'dba');
+-- Perform initial copy of procedure definition
+DB..REPL_INIT_COPY ('rep1', 'proc');
+-- Turn all subscriptions in 'SYNC' state
+SYNC_REPL();
+</programlisting>
+
+<programlisting>
+-- ================================
+-- ON PUBLISHER SIDE (named 'rep1')
+-- ================================
+set DSN=1111;
+reconnect;
+-- call 5 times 't_proc'
+t_proc(1);
+t_proc(2);
+t_proc(3);
+t_proc(4);
+t_proc(5);
+</programlisting>
+
+<programlisting>
+-- ================================
+-- ON SUBSCRIBER SIDE (named 'rep2')
+-- ================================
+set DSN=1112;
+reconnect;
+-- create an procedure to check synchronization level
+create procedure WAIT_FOR_SYNC (in srv varchar, in acct varchar, in n integer)
+{
+  declare level, stat integer;
+  stat := 0;
+  while (level &lt; n)
+    {
+      repl_status (srv, acct, level, stat);
+    }
+};
+-- and run it till level set to 5
+WAIT_FOR_SYNC ('rep1', 'proc', 5);
+
+-- check local data (should return 5)
+select count(*) from p_test where length (dt) = 2;
+</programlisting>
+
+<programlisting>
+-- ================================
+-- ON PUBLISHER SIDE (named 'rep1')
+-- ================================
+set DSN=1111;
+reconnect;
+-- modify procedure to insert 123 new records
+create procedure t_proc (in i integer)
+{
+  declare d varchar;
+  declare n integer;
+  n := 128;
+  while (n &gt; 5)
+    {
+      insert into p_test (id, dt) values (n, cast (n as varchar));
+      n := n - 1;
+    }
+};
+-- and call it once
+t_proc (1);
+</programlisting>
+
+<programlisting>
+-- ================================
+-- ON SUBSCRIBER SIDE (named 'rep2')
+-- ================================
+set DSN=1112;
+reconnect;
+-- and run check routine till level set to 7
+WAIT_FOR_SYNC ('rep1', 'proc', 7);
+-- check  local data (should return 128, old 5 + 123 new records)
+select count(*) from p_test;
+</programlisting>
+
+<sect2 id="objectsexample">
+<title>Transactional Replication Objects Example</title>
+
+<para>Preconditions</para>
+<simplelist>
+<member>publisher named 'rep' with replication address 'localhost:1111'</member>
+<member>subscriber named 'sub'</member>
+<member>on subscriber should be defined DSN for rep named '1111'</member>
+</simplelist>
+
+<formalpara>
+<title>On publisher side</title>
+
+<para>
+Creating publication
+</para>
+
+<programlisting>
+SQL&gt; REPL_PUBLISH ('pub', 'pub.log');
+
+-- Add row in SYS_REPL_ACCOUNTS table
+SQL&gt; select SERVER, ACCOUNT from SYS_REPL_ACCOUNTS
+	where ACCOUNT = 'pub';
+
+SERVER ACCOUNT
+--------------
+rep    pub
+</programlisting>
+
+<simplelist>
+<member>started new replication log file in server working directory named 'pub.log'</member>
+<member>add entry in repl.cfg in server working directory</member>
+</simplelist>
+
+<para>
+Adding items to the publication
+</para>
+
+<programlisting>
+SQL&gt; REPL_PUB_ADD ('pub', 'DB.DBA.TEST', 2, 0, null);
+</programlisting>
+
+<para>Add row in SYS_TP_ITEM</para>
+
+<programlisting>
+SQL&gt; select * from SYS_TP_ITEM;
+
+TI_SERVER TI_ACCT TI_TYPE TI_ITEM     TI_OPTIONS TI_IS_COPY
+___________________________________________________________
+rep       pub     2       DB.DBA.TEST NULL       0
+</programlisting>
+</formalpara>
+
+<formalpara>
+<title>On Subscriber Side</title>
+
+<para>Adding a new publisher</para>
+
+<programlisting>
+SQL&gt; REPL_SERVER ('rep', '1111', 'localhost:1111');
+
+-- Add row in SYS_SERVERS
+
+SQL&gt; select * from SYS_SERVERS;
+
+SERVER                    DB_ADDRESS                REPL_ADDRESS
+----------------------------------------------------------------
+rep                       1111                      localhost:1111
+</programlisting>
+
+<para>
+Making a subscription
+</para>
+
+<programlisting>
+   SQL&gt; REPL_SUBSCRIBE ('rep', 'pub', 'dav', 'dav_group', 'uid_for_rep', 'uid_pwd_for_rep');
+</programlisting>
+
+<para>This may signal an SQL error if a precondition is not met.</para>
+
+<simplelist>
+<member>'publication and subscription servers have identical names.' if subscriber and publisher have the same names.</member>
+<member>'Publishing server must be declared with REPL_SERVER before subscribing' if publisher 'rep' is not defined from previous step.</member>
+<member>'The subscription 'pub' already exist' if on subscriber 'sub' already exists subscription 'pub'</member>
+<member>'User name and password should be supplied when subscribe to new publisher' if 'uid_for_rep' or 'uid_pwd_for_rep' not supplied</member>
+<member>'The table 'DB.DBA.TEST' already exists' if on subscriber 'sub' already exist table in subscription. </member>
+<member>'The WebDAV collection '/DAV/rep/' already exists' if on 'sub' already exist WebDAV collection in subscription.</member>
+<member>a VDB error message if subscriber 'sub' cannot perform attaching TI_ITEM view from publisher 'pub' </member>
+</simplelist>
+
+<para>Add row in SYS_TP_ITEM and row in SYS_REPL_ACCOUNTS</para>
+
+<programlisting>
+SQL&gt; select * from SYS_TP_ITEM where TI_ACCT = 'pub'
+
+TI_SERVER TI_ACCT TI_TYPE TI_ITEM    TI_OPTIONS TI_IS_COPY TI_DAV_USER TI_DAV_GROUP
+____________________________________________________________________________________
+rep       pub     2       DB.DBA.TEST NULL       0           dav       dav_group
+
+SQL&gt; select SERVER, ACCOUNT from SYS_REPL_ACCOUNTS where ACCOUNT = 'pub';
+
+SERVER ACCOUNT
+--------------
+rep    pub
+</programlisting>
+</formalpara>
+</sect2>
+
+</sect1>
+
+<sect1 id="replsample">
+<title>Replication Logger Sample</title>
+
+	<para>
+The logger directory in the samples in the distribution contains a simple
+load balancing sample.  It implements a simplified web site hit log where there is a
+count of hits maintained per user name and origin IP of each hit.
+</para>
+	<para>
+Thus the transaction being replicated between the servers consists of incrementing
+an IP's hit count and then incrementing a user's hit count.  If either
+IP or user do not have a count, a row is added with a count of 1.  The transaction is
+then logged for replication, so that all servers get all hits, no matter which of the
+replicating servers processes the hit.
+</para>
+	<programlisting>
+create table wl_ip_cnt (ic_ip varchar, ic_cnt integer,
+       primary key (ic_ip));
+</programlisting>
+	<programlisting>
+create table wl_user (wu_user varchar, wu_cnt integer,
+       primary key (wu_user));
+</programlisting>
+	<programlisting>
+create procedure wl_hit_repl (in ip varchar, in usr varchar)
+{
+  set isolation = 'serializable';
+  update wl_ip_cnt set ic_cnt = ic_cnt + 1 where ic_ip = ip;
+  if (0 = row_count ())
+    insert into wl_ip_cnt (ic_ip, ic_cnt) values (ip, 1);
+  update wl_user set wu_cnt = wu_cnt + 1 where wu_user = usr;
+  if (0 = row_count ())
+    insert into wl_user (wu_user, wu_cnt) values (usr, 1);
+}
+</programlisting>
+	<programlisting>
+create procedure wl_hit (in ip varchar, in usr varchar)
+{
+  wl_hit_repl (ip, usr);
+  repl_text ('hits', 'wl_hit_repl (?, ?)', ip, usr);
+}
+</programlisting>
+	<para>
+The application client calls wl_hit on one of the mutually replicating
+servers to log an event.  The event's trace will then be propagated to all other servers.
+The wl_hit_repl function does the actual work. The top level function
+calls this plus logs the call with its arguments on the local server's hits publication
+for distribution to other servers.
+</para>
+	<sect2 id="loggercfg">
+	<title>Configuration of the Sample</title>
+	<para>
+The following sequence of calls can be used to define a network
+of four servers, each replicating every other server. For the sake of example,
+they are all on localhost and listen at ports 2001 through 2004.
+</para>
+	<programlisting>
+repl_server ('log1', 'localhost:2001');
+repl_server ('log2', 'localhost:2002');
+repl_server ('log3', 'localhost:2003');
+repl_server ('log4', 'localhost:2004');
+</programlisting>
+	<programlisting>
+repl_publish ('hits', 'hits.log');
+</programlisting>
+	<programlisting>
+repl_subscribe ('log1', 'hits');
+repl_subscribe ('log2', 'hits');
+repl_subscribe ('log3', 'hits');
+repl_subscribe ('log4', 'hits');
+</programlisting>
+	<para>
+First all the servers are identified.  Next the local server declares that it has
+a publication 'hits'.  Next it subscribes to the hits publications of
+all other servers.  In the process it also subscribes to itself, which signals an
+error and has no other effect.
+</para>
+	<para>
+In this way all servers share one configuration.  Each server knows which of the
+servers it is based on the DBName setting in its virtuoso.ini file.
+</para>
+</sect2>
+
+	<sect2 id="loggersync">
+	<title>Synchronization</title>
+
+	<programlisting>
+create procedure log_sync ()
+{
+  for select SERVER, ACCOUNT from SYS_REPL_ACCOUNTS do
+    {
+      if (SERVER &lt;&gt; repl_this_server ())
+	{
+	  declare err, msg varchar;
+	  err := '00000';
+	  exec ('repl_sync (?, ?, ?, ?)', err, msg, vector (SERVER, ACCOUNT, 'dba', 'dba'), 0);
+	}
+    }
+}
+</programlisting>
+	<para>
+This procedure will go through all subscriptions and request sync for each.
+Note that the repl_sync function is called inside exec to catch any possible
+exceptions, as servers may not be available etc.  For the sake of simplicity
+this supplies the literal default dba login 'dba', 'dba' as authentication.
+</para>
+	<para>
+The replication sample schedules a call to this function to be made every minute
+as a background job.  if all replication servers are on line and
+in sync or syncing the function will return without delay or effect. Otherwise
+it will keep trying until it gets a connection.
+</para>
+</sect2>
+
+	<sect2 id="runninglogger">
+	<title>Running the Sample</title>
+
+	<para>
+The logger directory contains various scripts for starting and stopping
+servers etc.
+</para>
+	<para>
+<emphasis>log_init.sh</emphasis>	- Creates the databases with tables and procedures loaded in the
+ l1, l2, l3 and  l4 subdirectories.
+</para>
+	<para>
+<emphasis>log_start.sh</emphasis>	- starts the 4 servers and leaves them running in the background.
+</para>
+	<para>
+<emphasis>log_shut.sh</emphasis>	- Shuts down the 4 test servers.
+</para>
+	<para>
+<emphasis>hits.sh</emphasis>	&lt;hist-per-hour&gt; &lt;no-of-hits&gt;
+</para>
+	<para>
+Starts the hits program on each of the 4 servers.  The first
+  command line argument gives the test transaction rate for each client and the next
+gives the duration as a transaction count.
+</para>
+
+	<screen>
+hits &lt;dsn&gt; &lt;uid&gt; &lt;pwd&gt; &lt;hits-per-hour&gt; &lt;no-of-hits&gt;
+</screen>
+
+	<para>
+The hits executable repeatedly calls wl_hit with random arguments and
+collects statistics on call times. If calls complete at a rate faster
+than the requested rate this periodically sleeps to keep the rate
+close to the requested rate.  It prints statistics every 1000 hits.
+</para>
+</sect2>
+
+	<sect2 id="loggerdynamics">
+	<title>Notes on the Sample's Dynamics</title>
+	<para>
+When the network initially starts all the publications are at level 0 and
+in sync.  When transactions are fed into the network at a sufficiently slow
+rate all the servers get to process all transactions in real time.  Note that the
+structure is such that every server does everybody else's work in addition to its
+own. Thus the insertion rate of the network can't be expected to be higher than
+that of an individual server.  However read load can be spread across servers, so
+that this type of configuration is effective for balancing query load but not
+for balancing update load.
+</para>
+	<para>
+As we increase the transaction rate at each server we reach a point at which
+the queue of locally committed but un-replicated transactions grows faster than
+the other servers will absorb the feed.  The servers will each eventually disconnect
+all synced replication to stop the queue from growing.  Once the queue that no longer
+grows goes empty the subscribers get disconnected. At this
+point all servers only process their own load without any other distraction.
+</para>
+	<para>
+Next each server will notice that it is disconnected from the network and will
+attempt a resync as a result of the periodic scheduled call to log_sync.
+Each server will then re-establish a connection to every other server and
+start resyncing.  This will lead to the network being again in
+sync if the per server transaction rate slows down sufficiently to allow
+replicators to catch up.  If this does not happen the syncing can stay in progress
+indefinitely, until it either reaches sync or is terminated.
+</para>
+	<para>
+Typically a server's capacity for processing local transactions is greater
+than its capacity for replaying replication feed.  This is because one thread is
+responsible for all replay activity while many threads can process local
+transactions.
+</para>
+	<para>
+The net result of this scheduling policy is that even a heavily replicated
+network will scale to high peak loads and will automatically return to sync state
+as soon as the peak is over.  If guaranteed transaction level synchronicity
+must be maintained between servers then the application should not be written
+using transactional replication but rather with distributed transactions,
+where each commit makes sure the transaction is fully processed on each participant before
+returning to the client.  This is however up to several times slower and
+will stop the entire network if a single node fails.
+</para>
+</sect2>
+</sect1>
+
+
+<!--
+The commit length is set at commit inside the trail mtx.
+The sync message is sent inside this same trail mtx.
+
+The commit is inside map which goes inside the trail mtx and then inside the queue mtx.
+The send end check is inside the trail mtx which goes inside the queue mtx.
+The map mtx can't therefore be acquired inside trail mtx (registry_set inside sub_queue_synced).
+-->
+
+</chapter>

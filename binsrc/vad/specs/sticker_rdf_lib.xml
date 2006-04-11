@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="ASCII" ?>
+<!DOCTYPE sticker SYSTEM "vad_sticker.dtd">
+<sticker version="1.0.010505A" xml:lang="en-UK">
+ <!-- Name and version; common data about the package -->
+ <caption>
+  <name package="rdf_lib">
+   <prop name="Title" value="RDF Support Library" />
+   <prop name="Developer" value="OpenLink Software" />
+   <prop name="Copyright" value="(C) 2001 OpenLink Software" />
+   <prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
+   <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
+  </name>
+  <version package="3.14">
+   <prop name="Release+Date" value="2001-05-05" />
+   <prop name="Build" value="Release, optimized" />
+  </version>
+ </caption>
+ <!-- This package requires no other packages,
+but it conflicts with package virtodp of versions
+from 1.00 to 2.17, inclusive -->
+ <dependencies>
+  <allow>
+   <name package="virtodp"></name>
+   <versions_earlier package="1.00"></versions_earlier>
+  </allow>   
+  <conflict>
+   <name package="virtodp">
+    <prop name="Title" value="Virtuoso ODP Sample" />
+   </name>
+   <versions_earlier package="2.17">
+    <prop name="Date" value="2001-01-26" />
+    <prop name="Comment" value="An incompartible version of RDF library is included in some old versions of virtodp " />
+   </versions_earlier>
+  </conflict>
+ </dependencies>
+ <!-- There are no installation procedures, other than DDLs -->
+ <procedures uninstallation="supported"></procedures>
+ <!-- There are some procedures, which may be re-applying and (maybe) reverted automatically -->
+ <ddls>
+  <sql purpose="pre-install">
+   "DB"."DBA"."VAD_CREATE_TABLE" ('DB', 'DBA', 'RDF_SCHEDULED_IMPORTS',
+      'ID integer, URI varchar, CALLBACK varchar, VERSION varchar, REPORT long varchar, primary key (ID)');
+  </sql>
+  <sql purpose="post-install">
+   "DB"."DBA"."VAD_LOAD_RESOURCE" ('rdf_functions');
+  </sql>
+ </ddls>
+ <!-- Resources include... -->
+ <resources>
+  <!-- ...documentation, ... -->
+  <file type="doc" target_uri="rdf_lib/1.1/intro.dxt" />
+  <file type="doc" target_uri="rdf_lib/1.1/interface.dxt" />
+  <file type="doc" target_uri="rdf_lib/1.1/implementation.dxt" />
+  <file type="doc" target_uri="rdf_lib/1.1/sample_app.dxt" />
+  <!-- ...the file of commonly-useful functions, ... -->
+  <file package_id="rdf_functions"
+    type="code" target_uri="rdf_lib/1.1/rdf_lib.sql" />
+  <!-- ...pages of the sample application, named rdf_edit, ... -->
+  <file type="http" target_uri="rdf_lib/rdf_edit/default.htm" />
+  <file type="http" target_uri="rdf_lib/rdf_edit/browse.vsp" />
+  <file type="http" target_uri="rdf_lib/rdf_edit/edit.vsp" />
+  <!-- ...a DAV resource with sample RDF data, ... -->
+  <file type="dav" target_uri="rdf_lib/sample_odp_structure.rdf" />
+  <!-- ...two files of sample application's functions. -->
+  <file type="code" target_uri="rdf_lib/1.1/rdf_edit/content_level.sql" />
+  <file type="code" target_uri="rdf_lib/1.1/rdf_edit/view_level.sql" />
+ </resources>
+ <!-- There are no application-specific registry items in this package -->
+</sticker>

@@ -1,0 +1,6 @@
+localhost 6666
+1 MKCOL /DAV/Dav_Coll/ HTTP/1.0
+1 MKCOL /DAV/Dav_Coll/Coll_First_Level/ HTTP/1.0
+1 MKCOL /DAV/Dav_Coll/Coll2_First_level/ HTTP/1.0
+1 MKCOL /DAV/Dav_Coll/Coll_First_Level/Coll_Second_Level/ HTTP/1.0
+1 MKCOL /DAV/Dav%20Coll%20with%20Long%20Name/ HTTP/1.0

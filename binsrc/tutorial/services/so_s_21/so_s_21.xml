@@ -1,0 +1,98 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-21">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>SOAP services</refname>
+    <refpurpose>Google API demo</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-21a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+  <listitem>
+  This example demonstrates the ability to access the SOAP API provided by
+  <ulink url="http://www.google.com/">Google</ulink>.</listitem>
+  <listitem>
+  <para>The Google API has three services:</para>
+	<itemizedlist mark="bullet">
+	  <listitem>Search for text on the web.</listitem>
+	  <listitem>Check details of a page cached by Google.</listitem>
+	  <listitem>Find correct spelling for a partial word.</listitem>
+	</itemizedlist>
+  </listitem>
+  <listitem>
+  The service requests may be configured in various ways by the parameters
+  supplied to the API.
+  </listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-21b">
+<title>Google Registration</title>
+<itemizedlist mark="bullet">
+  <listitem>Google API home page
+  <ulink url="http://www.google.com/apis/" target="_blank">http://www.google.com/apis/</ulink>
+  has details about the services offered by Google.</listitem>
+  <listitem>You must register with Google to be authorized to use the API.
+  You can sign up for a new account from the Google API home page.</listitem>
+  <listitem>Verify your email address by accessing a page, as indicated in the
+  email sent by Google.</listitem>
+  <listitem>Collect the license key in a subsequent email from Google.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-21c">
+<title>Search Demo</title>
+<orderedlist>
+  <listitem>Enter the registration key for your personal Google account.
+  The key is stored in a browser cookie, and is loaded when the tutorial
+  is run again.
+  </listitem>
+  <listitem>Check the box if you wish to view the result as raw XML format.
+  </listitem>
+  <listitem>
+  Enter some text to be searched, and press the search button.
+  The raw XML result shows the overview of the search results.
+  If XML view is not checked, then only the number of pages found is shown.
+  </listitem>
+  <listitem>
+  Enter a url of a page that is likely to be cached by Google.
+  Then press the button to get the details of this page.
+  The raw XML result will contain the page typically encoded in Base64.
+  If XML view is not checked, then only the size of the page is shown.
+  </listitem>
+  <listitem>
+  Enter one or more words to have the spelling verified. A partial word is
+  possible. Then press the button to verify the spelling.
+  The raw XML result shows the suggested spelling.
+  If XML view is not checked, then only the suggested spelling is shown.
+  </listitem>
+</orderedlist>
+</refsect1>
+
+</refentry>

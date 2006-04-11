@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_min">
+  <refmeta>
+    <refentrytitle>min</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>min</refname>
+    <refpurpose>Returns minimum value among all its arguments.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_min">
+      <funcprototype id="xpf_proto_min">
+        <funcdef>number <function>min</function></funcdef>
+	<paramdef><parameter>arg1</parameter> any</paramdef>
+	<paramdef><parameter>arg2</parameter> any</paramdef>
+	<paramdef><parameter>...</parameter></paramdef>
+	<paramdef><parameter>argN</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_min"><title>Description</title>
+<para>
+The function returns the minimum value among all values in all its arguments,
+For each node in every argument node-set, it converts the string-value of the node to a number.
+If some arguments are not node-sets, they are converted to numbers.
+The minimum number found is returned.
+</para>
+<para>
+This function is not a part of XPATH 1.0 standard library.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_min"><title>Parameters</title>
+    <refsect2><title>argI</title>
+      <para>A node-set of nodes whose string values must be converted to numbers and added to the result, or single value.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_min"><title>Return Types</title><para></para></refsect1>
+    <table><title>Errors signalled by min()</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>XP001</errorcode></entry>
+	    <entry><errorcode>XPF04</errorcode></entry>
+	    <entry><errorname>Nonempty sequence of values expected as argument of XPATH function min(); min() of nothing is senseless</errorname></entry>
+	    <entry>This happens if the function is called without arguments, or with all arguments set to empty node-sets.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  <refsect1 id="xpf_examples_min"><title>Examples</title>
+    <example id="xpf_ex_min"><title></title>
+      <para></para>
+      <screen>min(/report[@type="daily-sales"]/total)</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_min"><title>See Also</title>
+    <para><link linkend="xpf_sum">sum</link><link linkend="xpf_avg">avg</link><link linkend="xpf_max">max</link></para>
+  </refsect1>
+</refentry>
+

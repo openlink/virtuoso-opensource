@@ -1,0 +1,143 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="data_set_page" xmlns:v="http://www.openlinksw.com/vspx/" >
+  <v:variable name="all_cols" type="xml" default="null" persist="pagestate"/>
+  <v:variable name="orderby" type="xml" default="null" persist="pagestate"/>
+  <v:on-init><![CDATA[
+    if (self.all_cols is null)
+    self.all_cols := xtree_doc ('<table><column name="First"/><column name="Second"/><column name="Third"/><column name="Fourth"/></table>');
+    if (self.orderby is null)
+    self.orderby := xtree_doc ('<order-by/>');
+    ]]></v:on-init>
+  <html>
+    <head>
+      <title>Editing of ordered list</title>
+    </head>
+    <body bgcolor="#ffffff">
+      <v:form name="fadd" type="simple">
+	<v:data-list name="ladd" list-document="--self.all_cols" list-match="/table/column" list-key-path="@name" list-value-path="@name">
+	</v:data-list>
+	<v:button name="badd" action="submit" value="append to the order-by list">
+	  <v:on-post><![CDATA[
+	    declare added_name varchar;
+	    added_name := get_keyword ('ladd', e.ve_params, NULL);
+	    if (xpath_eval (sprintf('count(/order-by/column[@name="%s"])', added_name), self.orderby) = 0)
+	    {
+	    declare oby, ncol any;
+	    oby := self.orderby;
+	    ncol := xpath_eval (sprintf('/table/column[@name="%s"]', added_name), self.all_cols);
+	    XMLAppendChildren (xpath_eval ('/order-by', oby), ncol);
+	    self.orderby := oby;
+	    }
+	    self.vc_find_descendant_control('ds').vc_data_bind(e);]]>
+	  </v:on-post>
+	</v:button>
+      </v:form>
+      <v:data-set name="ds" data="--xpath_eval ('/order-by/column', self.orderby, 0)" meta="--get_xml_meta()" nrows="10" scrollable="0" width="80">
+	<v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
+	  <h4><v:label name="label03" value="--(control.vc_parent.vc_parent as vspx_data_set).ds_rows_offs" format="That Is Header - rowset offset : %d" width="80"/></h4>
+	  <table width="400" border="2" cellspacing="0" cellpadding="0">
+	    <tr>
+	      <td align="center"><b>#</b></td>
+	      <td align="center"><b>Column name</b></td>
+	      <td align="center"><b>Actions</b></td>
+	    </tr>
+	  </table>
+	</v:template>
+	<v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+	  <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+	    <table width="400" border="2" cellspacing="0" cellpadding="0">
+	      <tr>
+		<td align="center" colspan="5">
+		  <b>The order-by list is empty</b>
+		</td>
+	      </tr>
+	    </table>
+	  </v:template>
+	  <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
+	    <table width="400" border="1" cellspacing="2" cellpadding="0">
+	      <tr>
+		<td align="right" nowrap="1">
+		  <v:label name="label5ctr" value="--(control.vc_parent as vspx_row_template).te_ctr + (control.vc_parent.vc_parent as vspx_data_set).ds_rows_offs + 1" format="%d" width="80"/>.
+		</td>
+		<td align="left" nowrap="1">
+		  <v:label name="label5" element-value="--(control.vc_parent as vspx_row_template).te_rowset" element-place="@name" format="%s"/>
+
+		</td>
+		<td align="left" nowrap="1">
+		  <v:button name="del" action="simple" value="Remove from list" style="url">
+		    <v:on-init>control.vc_parent.vc_focus := 1;</v:on-init>
+		    <v:on-post>
+		      declare c any;
+		      c := (control.vc_parent as vspx_row_template).te_rowset;
+		      XMLReplace(self.orderby, c, null);
+		      self.vc_find_descendant_control('ds').vc_data_bind(e);
+		    </v:on-post>
+		  </v:button>
+		  <v:button name="up" action="simple" value="Move UP" style="url">
+		    <v:on-init>control.vc_parent.vc_focus := 1;</v:on-init>
+		    <v:on-post>
+		      declare c, cprec any;
+		      c := (control.vc_parent as vspx_row_template).te_rowset;
+		      cprec := xpath_eval('preceding-sibling::*',c);
+		      if (cprec)
+		      {
+		      XMLInsertAfter(c,cprec);
+		      XMLReplace(self.orderby, xpath_eval('preceding-sibling::*',c), null);
+		      self.vc_find_descendant_control('ds').vc_data_bind(e);
+		      }
+		    </v:on-post>
+		  </v:button>
+		  <v:button name="dn" action="simple" value="Move DOWN" style="url">
+		    <v:on-init>control.vc_parent.vc_focus := 1;</v:on-init>
+		    <v:on-post>
+		      declare c, cfoll any;
+		      c := (control.vc_parent as vspx_row_template).te_rowset;
+		      cfoll := xpath_eval('following-sibling::*',c);
+		      if (cfoll)
+		      {
+		      XMLInsertAfter(cfoll,c);
+		      XMLReplace(self.orderby, xpath_eval('preceding-sibling::*',cfoll), null);
+		      self.vc_find_descendant_control('ds').vc_data_bind(e);
+		      }
+		    </v:on-post>
+		  </v:button>
+		</td>
+	      </tr>
+	    </table>
+	  </v:template>
+	</v:template>
+	<v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
+	  <table width="400" border="1" cellspacing="2" cellpadding="0">
+	    <tr>
+	      <td colspan="3">
+		<v:button name="ds_prev" action="simple" value="&lt;&lt;" />
+		<v:button name="ds_next" action="simple" value="&gt;&gt;" />
+	      </td>
+	    </tr>
+	  </table>
+	</v:template>
+      </v:data-set>
+    </body>
+  </html>
+</v:page>

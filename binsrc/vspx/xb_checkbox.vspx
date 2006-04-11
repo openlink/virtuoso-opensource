@@ -1,0 +1,190 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="data_set_page" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vd="http://www.openlinksw.com/vspx/deps/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openlinksw.com/vspx/
+file://G:/binsrc/vspx/vspx.xsd"
+debug-log="ctor init data-bind post method state value" >
+    <v:variable name="all_cols" type="xml" default="null" persist="pagestate"/>
+    <v:variable name="unused_cols" type="xml" default="null" persist="temp"/>
+    <v:variable name="orderby" type="xml" default="null" persist="pagestate"/>
+    <v:method name="set_unused_cols" arglist=""><![CDATA[
+       self.unused_cols := xml_cut(xquery_eval('<table>{for $c in /table/column[not (@name = $oby/order-by/column/@name)] return $c}</table>', self.all_cols, 1, vector ('oby', self.orderby)));
+       dbg_obj_print ('self.unused_cols', self.unused_cols,__tag(self.unused_cols));
+]]>
+    </v:method>
+    <v:on-init><![CDATA[
+    if (self.all_cols is null)
+      self.all_cols := xtree_doc ('<table><column name="First"/><column name="Second"/><column name="Third"/><column name="Fourth"/></table>');
+    if (self.orderby is null)
+      self.orderby := xtree_doc ('<order-by/>');
+    dbg_obj_print ('self.orderby', self.orderby,__tag(self.orderby));
+    self.set_unused_cols();
+    self.vc_debug_log('hello','text', 1);
+--    dbg_obj_print('log', self.vc_get_debug_log('log'));
+]]></v:on-init>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=iso-8859-1"/>
+    <title>Editing of order-by list</title>
+  </head>
+  <body bgcolor="#ffffff">
+     <v:form name="fadd" type="simple">
+       <v:data-list name="ladd"
+element-value="--self.unused_cols" element-path="/table/column[position()=last()]" element-place="@name"
+list-document="--self.unused_cols" list-match="/table/column" list-key-path="@name" list-value-path="@name">
+       </v:data-list>
+       <v:button name="badd" action="submit" value="append to the order-by list" active="--xpath_eval('not empty (/table/column)', self.unused_cols)">
+       <v:on-post><![CDATA[
+declare added_name varchar;
+added_name := get_keyword ('ladd', e.ve_params, NULL);
+if (added_name is not null and xpath_eval ('count(/order-by/column[@name=$addedname])', self.orderby, 1, vector('addedname', added_name)) = 0)
+  {
+    declare oby, ncol any;
+    oby := self.orderby;
+    ncol := xpath_eval ('/table/column[@name=$addedname]', self.all_cols, 1, vector('addedname', added_name));
+    dbg_obj_print ('ncol', ncol);
+    XMLAppendChildren (xpath_eval ('/order-by', oby), ncol);
+    dbg_obj_print ('oby', oby);
+    self.orderby := oby;
+    self.set_unused_cols();
+    self.vc_find_descendant_control('ladd').vc_data_bind(e);
+    self.vc_find_descendant_control('badd').vc_data_bind(e);
+  }
+self.vc_find_descendant_control('ds').vc_data_bind(e);
+]]>
+       </v:on-post>
+       </v:button>
+     </v:form>
+        <v:data-set name="ds" data="--xpath_eval ('/order-by/column', self.orderby, 0)" meta="--get_xml_meta()" nrows="10" scrollable="0" width="80">
+        <v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
+          <h4><v:label name="label03" value="--(control.vc_parent.vc_parent as vspx_data_set).ds_rows_offs" format="That Is Header - rowset offset : %d" width="80"/></h4>
+          <table width="400" border="2" cellspacing="0" cellpadding="0">
+            <tr>
+              <td align="center"><b>#</b></td>
+              <td align="center"><b>Column name</b></td>
+              <td align="center"><b>Descending</b></td>
+              <td align="center"><b>Actions</b></td>
+            </tr>
+          </table>
+        </v:template>
+        <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+          <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table width="400" border="2" cellspacing="0" cellpadding="0">
+              <tr>
+                <td align="center" colspan="5">
+                  <b>The order-by list is empty</b>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+          <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
+            <table width="400" border="1" cellspacing="2" cellpadding="0">
+              <tr>
+                <td align="right" nowrap="1">
+                  <v:label name="label5ctr" value="--(control.vc_parent as vspx_row_template).te_ctr + (control.vc_parent.vc_parent as vspx_data_set).ds_rows_offs + 1" format="%d" width="80"/>.
+                </td>
+                <td align="left" nowrap="1">
+                  <v:label name="colname" element-value="--(control.vc_parent as vspx_row_template).te_rowset" element-place="@name" format="%s" width="80">
+                    <v:before-render>dbg_obj_print('(control.vc_parent as vspx_row_template).te_rowset',(control.vc_parent as vspx_row_template).te_rowset);</v:before-render>
+                  </v:label>
+                <td align="right" nowrap="1">
+                  <v:check-box name="desc" element-value="--(control.vc_parent as vspx_row_template).te_rowset" element-place="@desc" is-boolean="1" true-value="--'true'" false-value="--null" width="80">
+                    <v:on-init>control.vc_parent.vc_focus := 1;</v:on-init>
+                    <v:before-render>
+dbg_obj_print('before render(A):',(control.vc_parent as vspx_row_template).te_rowset);
+dbg_obj_print('control.ufl_is_boolean', control.ufl_is_boolean);
+dbg_obj_print('control.ufl_value', control.ufl_value);
+dbg_obj_print('control.ufl_selected', control.ufl_selected);
+control.vc_get_selected_from_value();
+dbg_obj_print('control.ufl_value', control.ufl_value);
+dbg_obj_print('control.ufl_selected', control.ufl_selected);
+		    </v:before-render>
+                    <v:on-post>
+ control.vc_put_value_to_element();		    
+		    dbg_obj_print('on post:',(control.vc_parent as vspx_row_template).te_rowset);
+		    </v:on-post>
+                  </v:check-box>
+                </td>                  
+                </td>
+                <td align="left" nowrap="1">
+                   <v:button name="del" action="simple" value="Remove from list" style="url">
+                     <v:on-init>control.vc_parent.vc_focus := 1;</v:on-init>
+                     <v:on-post>
+declare c any;
+c := (control.vc_parent as vspx_row_template).te_rowset;
+XMLReplace(self.orderby, c, null);
+dbg_obj_print ('\nDeleted:', self.orderby, c);
+self.vc_find_descendant_control('ds').vc_data_bind(e);
+self.set_unused_cols();
+self.vc_find_descendant_control('ladd').vc_data_bind(e);
+self.vc_find_descendant_control('badd').vc_data_bind(e);
+                     </v:on-post>
+                   </v:button>
+                   <v:button name="up" action="simple" value="Move UP" style="url">
+                     <v:on-init>control.vc_parent.vc_focus := 1;</v:on-init>
+                     <v:on-post>
+declare c, cprec any;
+c := (control.vc_parent as vspx_row_template).te_rowset;
+cprec := xpath_eval('preceding-sibling::*',c);
+if (cprec)
+  {
+    XMLInsertAfter(c,cprec);
+    XMLReplace(self.orderby, cprec, null);
+    self.vc_find_descendant_control('ds').vc_data_bind(e);
+  }
+                     </v:on-post>
+                   </v:button>
+                   <v:button name="dn" action="simple" value="Move DOWN" style="url">
+                     <v:on-init>control.vc_parent.vc_focus := 1;</v:on-init>
+                     <v:on-post>
+declare c, cfoll any;
+c := (control.vc_parent as vspx_row_template).te_rowset;
+cfoll := xpath_eval('following-sibling::*',c);
+if (cfoll)
+  {
+    XMLInsertAfter(cfoll,c);
+    XMLReplace(self.orderby, c, null);
+    self.vc_find_descendant_control('ds').vc_data_bind(e);
+  }
+                     </v:on-post>
+                   </v:button>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+        </v:template>
+        <v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
+          <table width="400" border="1" cellspacing="2" cellpadding="0">
+            <tr>
+              <td colspan="3">
+                <v:button name="ds_prev" action="simple" value="&lt;&lt;" xhtml:size="10pt"/>
+                <v:button name="ds_next" action="simple" value="&gt;&gt;" xhtml:size="10pt"/>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+      </v:data-set>
+      <v:include name="include1" url="footer.xml"/>
+    </body>
+  </html>
+</v:page>

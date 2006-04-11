@@ -1,0 +1,54 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  if (not adm_check_auth(lines))
+    {
+      adm_unauth_response ();
+      return(0);
+    }
+  declare oper_vector any;
+  oper_vector := "PUMP"."DBA"."RESTORE_TABLES_AND_PARS_RETRIEVE" (params);
+  declare host varchar;
+  host:="PUMP"."DBA"."EXTRACT_HOST_FROM_LINES" (lines);
+?>
+
+<html>
+  <HEAD>
+    <LINK REL="stylesheet" TYPE="text/css" HREF="<?=adm_what_css()?>">
+    <title>OpenLink Interactive SQL (Virtuoso), dbpump version 0.1.: Tables Restore Results</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <META NAME="DESCRIPTION" CONTENT="Virtuoso DBPUMP">
+  </HEAD>
+<?vsp "PUMP"."DBA"."HTML_HEADER_OUT" (oper_vector, 'Tables Restore Results','222222212'); ?>
+<script>document.forms[0].action="restore_tables.vsp";</script>
+
+</td></tr></table>
+<?vsp "PUMP"."DBA"."HTML_LARGETEXT_OUT" (oper_vector, 'result_txt', 'Result:', NULL, NULL, ' rows=25 cols=80 width=100% '); ?>
+<table width=100%>
+<TR><TD CLASS="CtrlMain" COLSPAN="2" ALIGN="middle">
+<br>
+<?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'OK', 'this.form.submit();', NULL, NULL); ?>
+
+<?vsp "PUMP"."DBA"."HTML_FOOTER_OUT" (oper_vector); ?>
+
+</html>

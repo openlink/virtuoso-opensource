@@ -1,0 +1,159 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<body bgcolor="white">
+<v:page name="templ_browse_demo" xmlns:v="http://www.openlinksw.com/vspx/">
+
+<p><H3>Simple page to demonstrate VSPX template browser</H3></p>
+
+<table>
+  <v:form name="frm" type="simple" action="vdir.vspx" method="POST">
+  <tr>
+    <td>
+      <v:label name="label0" value="--'File system path'" format="%s"/>
+    </td>
+    <td>
+      <v:text name="fdirname" value="" />
+      <v:browse-button name="fdcmb" selector="vdir_browser.vspx"
+        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+        value="Browse..."
+        browser-options="caption=Choose+path&amp;dir-separator=/&amp;quote-char=&amp;filter-char=*&amp;content-proc=db.dba.fs_browse_proc&amp;content-meta-proc=db.dba.fs_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=1&amp;start-path=&amp;retname=fdirname"
+      >
+        <v:field name="fdirname" />
+      </v:browse-button>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <v:label name="label00" value="--'File system file'" format="%s"/>
+    </td>
+    <td>
+      <v:text name="ffilename" value="" />
+      <v:browse-button name="ffcmb" selector="vdir_browser.vspx"
+        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+        value="Browse..."
+        browser-options="caption=Choose+file&amp;dir-separator=/&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.fs_browse_proc&amp;content-meta-proc=db.dba.fs_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;start-path=&amp;retname=ffilename"
+      >
+        <v:field name="ffilename" />
+      </v:browse-button>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <v:label name="label1" value="--'Schema path'" format="%s"/>
+    </td>
+    <td>
+      <v:text name="sdirname" value="" />
+      <v:browse-button name="sdcmb" selector="vdir_browser.vspx"
+        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+        value="Browse..."
+        browser-options="caption=Choose+table&amp;dir-separator=.&amp;quote-char=%22&amp;filter-char=%25&amp;content-proc=db.dba.vdir_browse_proc&amp;content-meta-proc=db.dba.vdir_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=1&amp;start-path=&amp;retname=sdirname"
+      >
+        <v:field name="sdirname" />
+      </v:browse-button>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <v:label name="label2" value="--'Schema table'" format="%s"/>
+    </td>
+    <td>
+      <v:text name="sfilename" value="" />
+      <v:browse-button name="sfcmb" value="Browse..."
+       selector="vdir_browser.vspx"
+       child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+       browser-options="caption=Choose+table&amp;dir-separator=.&amp;quote-char=%22&amp;filter-char=%25&amp;content-proc=db.dba.vdir_browse_proc&amp;content-meta-proc=db.dba.vdir_browse_proc_meta&amp;multi-sel=0&amp;start-path=&amp;retname=sfilename"
+      >
+        <v:field name="sfilename" />
+      </v:browse-button>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <v:label name="label3" value="--'Schema view'" format="%s"/>
+    </td>
+    <td>
+      <v:text name="vfilename" value="" />
+      <v:browse-button name="vfcmb" value="Browse..."
+       selector="vdir_browser.vspx"
+       child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+       browser-options="caption=Choose+view&amp;dir-separator=.&amp;quote-char=%22&amp;filter-char=%25&amp;content-proc=db.dba.vview_browse_proc&amp;content-meta-proc=db.dba.vview_browse_proc_meta&amp;multi-sel=0&amp;start-path=&amp;retname=vfilename"
+      >
+        <v:field name="vfilename" />
+      </v:browse-button>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <v:label name="label4" value="--'Schema procedure'" format="%s"/>
+    </td>
+    <td>
+      <v:text name="pfilename" value="" />
+      <v:browse-button name="pfcmb" value="Browse..."
+       selector="vdir_browser.vspx"
+       child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+       browser-options="caption=Choose+table&amp;dir-separator=.&amp;quote-char=%22&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;start-path=&amp;retname=pfilename"
+      >
+        <v:field name="pfilename" />
+      </v:browse-button>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <v:label name="label5" value="--'DAV path'" format="%s"/>
+    </td>
+    <td>
+      <v:text name="ddirname" value="" />
+      <v:browse-button name="ddcmb" selector="vdir_browser.vspx"
+        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+        value="Browse..."
+        browser-options="caption=Choose+DAV+path&amp;dir-separator=/&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.dav_browse_proc&amp;content-meta-proc=db.dba.dav_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=1&amp;start-path=/DAV&amp;retname=ddirname"
+      >
+        <v:field name="ddirname" />
+      </v:browse-button>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <v:label name="label6" value="--'DAV document'" format="%s"/>
+    </td>
+    <td>
+      <v:text name="dfilename" value="" />
+      <v:browse-button name="dfcmb" value="Browse..."
+       selector="vdir_browser.vspx"
+       child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+       browser-options="caption=Choose+DAV+document&amp;dir-separator=/&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.dav_browse_proc&amp;content-meta-proc=db.dba.dav_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;start-path=/DAV&amp;retname=dfilename"
+      >
+        <v:field name="dfilename" />
+      </v:browse-button>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2"><v:button name="submit" action="simple" value="OK" /></td>
+  </tr>
+  </v:form>
+</table>
+
+</v:page>
+</body>
+</html>

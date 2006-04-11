@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_boolean">
+  <refmeta>
+    <refentrytitle>boolean</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>boolean</refname>
+    <refpurpose>Converts its argument to boolean</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_boolean">
+      <funcprototype id="xpf_proto_boolean">
+        <funcdef>boolean <function>boolean</function></funcdef>
+	<paramdef><parameter>obj</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_boolean"><title>Description</title>
+<para>
+The function converts its argument to a boolean as follows:
+</para>
+<itemizedlist mark="bullet" spacing="compact">
+<listitem><para>
+A number is true if and only if it is neither zero nor NaN.</para></listitem>
+<listitem><para>
+A node-set is true if and only if it is non-empty.</para></listitem>
+<listitem><para>
+A string is true if and only if its length is non-zero.</para></listitem>
+<listitem><para>
+An object of a type other than the four basic types is converted to a boolean in a way that is dependent on that type.</para></listitem>
+</itemizedlist>
+</refsect1>
+  <refsect1 id="xpf_params_boolean"><title>Parameters</title>
+    <refsect2><title>obj</title>
+      <para>The object to be converted into boolean.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_boolean"><title>Return Types</title><para>Boolean</para></refsect1>
+  <refsect1 id="xpf_examples_boolean"><title>Examples</title>
+    <example id="xpf_ex_boolean"><title></title>
+      <para>The following expressions are true:</para>
+      <screen>
+boolean('aaa') = true()
+boolean('false') = true()
+boolean(false()) = false()
+boolean(.) = true()
+boolean('0') = true()
+boolean(0) = false()
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_boolean"><title>See Also</title>
+    <para><link linkend="xpf_string">string()</link><link linkend="xpf_number">number()</link></para>
+  </refsect1>
+</refentry>
+

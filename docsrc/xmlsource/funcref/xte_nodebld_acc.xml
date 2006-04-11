@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_xte_nodebld_acc">
+  <refmeta>
+    <refentrytitle>xte_nodebld_acc</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xte_nodebld_acc</refname>
+    <refpurpose>Adds to the first arguments all remaining arguments </refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_xte_nodebld_acc">
+      <funcprototype id="fproto_xte_nodebld_acc">
+        <funcdef><function>xte_nodebld_acc</function></funcdef>
+        <paramdef>in <parameter>acc</parameter> any</paramdef>
+        <paramdef>in <parameter>arg1</parameter> any</paramdef>
+        <paramdef> <parameter>...</parameter> </paramdef>
+        <paramdef>in <parameter>argN</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_xte_nodebld_acc"><title>Description</title>
+    <para> The xte_nodebld_acc() function successively adds  
+    the remaining arguments to the first one.
+    If the last items of the first argument and some following arguments are strings,
+    they are concatenated. All succesive strings are concatenated.
+    The value of the first item is the number of the non-empty items in the 
+    returned vector. The length of the returned vector is the sum of the length 
+    of the first argument and number of the remaining arguments.
+    </para>
+  </refsect1>
+  <refsect1 id="xte_nodebld_acc"><title>Parameters</title>
+    <refsect2><title>acc</title>
+      <para>A vector initiated by xte_nodebld_init() function and filled by 
+    xte_nodebld_acc() functions
+    </para>
+    </refsect2>
+    <refsect2><title>argI</title>
+      <para>A string or a vector returned by xte_node_from_nodebld or 
+	  xte_node functions</para>
+    </refsect2>
+  </refsect1>
+
+  <refsect1 id="errors_xte_nodebld_acc">
+    <title>Errors</title>
+    <table><title>Errors signalled by <function>xte_nodebld_acc</function></title>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry>
+	  </row>
+	</thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>22003</errorcode></entry>
+	    <entry><errorcode>SR345</errorcode></entry>
+	    <entry><errorname>Too few arguments for xte_nodebld_acc</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22003</errorcode></entry>
+	    <entry><errorcode>SR346</errorcode></entry>
+	    <entry><errorname>The first argument of xte_nodebld_acc is not made by xte_nodebld_init() function</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  <para></para>
+  </refsect1>
+  <refsect1 id="xte_nodebld_acc"><title>Examples</title>
+    <example id="ex_xte_nodebld_acc"><title></title>
+      <screen>create procedure test_nodebld()
+              {
+                declare acc any;
+                xte_nodebld_init (acc);
+                xte_nodebld_acc (acc,'string1', string2');
+                xte_nodebld_acc(acc, 'string3',xte_node(xte_head ('supplier', 'CompanyName','Seller')));
+		. . . 
+	      } 
+     </screen>
+      <para>The length of the vector acc as the result of the two xte_nodebld_acc() calls below is equal to 4, but only
+      three items are not empty:</para>
+      <para> '3' (number of not empty elements of the vector including this item)</para>
+      <para> 'string1string2string3' (the result of concatenation)</para>
+      <para> vector corresponding the following XML element:
+             &lt;supplier  CompanyName="Seller"&gt;  &lt;/supplier&gt;
+      </para>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_xte_nodebld_acc"><title>See Also</title>
+    <para><link linkend="fn_xte_head">xte_head()</link></para>
+    <para><link linkend="fn_xte_node">xte_node()</link></para>
+    <para><link linkend="fn_xte_node_from_nodebld">xte_node_from_nodebld()</link></para>
+    <para><link linkend="fn_xte_nodebld_final">xte_nodebld_final()</link></para>
+    <para><link linkend="fn_xte_nodebld_init">xte_nodebld_init()</link></para>
+  </refsect1>
+
+</refentry>
+

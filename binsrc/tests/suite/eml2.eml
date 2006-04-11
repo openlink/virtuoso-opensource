@@ -1,0 +1,262 @@
+From aaa@aaa Mon Jan 01 00:00:00 1997
+Return-Path: <pvk@pobox.com>
+Received: from plovdiv.techno-link.com (kgeorge@localhost [127.0.0.1])
+	by home.techno-link.com (8.8.6/8.8.6) with ESMTP id LAA00289
+	for <kgeorge@localhost>; Mon, 31 Aug 1998 11:09:40 +0300
+Received: from plovdiv.techno-link.com
+	by localhost (fetchmail-4.3.0 POP3 run by kgeorge)
+	for <kgeorge@localhost> (single-drop); Mon Aug 31 11:09:40 1998
+Received: from smtp3.xs4all.nl (unverified [194.109.6.53]) by plovdiv.techno-link.com
+ (EMWAC SMTPRS 0.83) with SMTP id <B0000291830@plovdiv.techno-link.com>;
+ Fri, 28 Aug 1998 16:16:56 +0300
+Received: from roadrunner.pvk.openlinksw.com (roady.xs4all.nl [194.109.62.170])
+	by smtp3.xs4all.nl (8.8.8/8.8.8) with ESMTP id PAA28167;
+	Fri, 28 Aug 1998 15:18:27 +0200 (CEST)
+Received: from roadrunner.pvk.openlinksw.com (localhost [127.0.0.1])
+	by roadrunner.pvk.openlinksw.com (8.8.5/8.8.5) with ESMTP id PAA17639;
+	Fri, 28 Aug 1998 15:18:20 +0200
+Message-Id: <199808281318.PAA17639@roadrunner.pvk.openlinksw.com>
+X-Mailer: exmh version 2.0.2 2/24/98
+To: "Paul Nieuwdorp" <pnieuw@xs4all.nl>,
+ "Orri Erling" <erling@xs4all.nl>,
+ "Yrjänä Rankka" <ghard@zonk.net>,
+ "George Kodinov" <kgeorge@plovdiv.techno-link.com>
+Subject: PGP keys for other Virtuoso team members
+Mime-Version: 1.0
+Content-Type: multipart/mixed ;
+	boundary="==_Exmh_-14309983840"
+Date: Fri, 28 Aug 1998 15:18:20 +0200
+From: Patrick van Kleef <pvk@pobox.com>
+Return-Receipt-To: 
+Cc: 
+Bcc: 
+Reply-To: 
+X-Mozilla-Status: 8001
+X-Mozilla-Status2: 00000000
+Status: RO
+X-Status: 
+X-Keywords:
+X-UID: 4
+
+This is a multipart MIME message.
+
+--==_Exmh_-14309983840
+Content-Type: text/plain; charset=us-ascii
+
+Hi Guys,
+
+I just finished signing the keys for Yrjana and Orri.
+
+Here are all the public keys for the members of our team.
+
+If you have setup the KCA key we verified to be an introducer to other 
+keys, you should not have any problems in importing these keys into the 
+set.
+
+>From now on we can communicate source code etc securely between all 
+members of our team.
+
+Best regards,
+
+Patrick
+
+
+--==_Exmh_-14309983840
+Content-Type: application/octet-stream ; name="pvk.asc"
+Content-Description: pvk.asc
+Content-Disposition: attachment; filename="pvk.asc"
+
+Type Bits/KeyID    Date       User ID
+pub  2048/D271C9ED 1995/12/27 Patrick van Kleef <pkleef@xs4all.nl>
+                              Patrick van Kleef <pvk@pobox.com>
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: 2.6.3ia
+
+mQENAjDhbBIAAAEIANv5PtdgljyPAsEpNC8Bb2WXD3a/GwQuldl5gVSPIvabNO4+
+snJWUINKjCXa2Gv365Iv1Ff420iJLcxaf/yC08N4QWjBSPtI5XhvTYwylhkKlS2N
+SlJTwNfp4cM9SxXrtgkhZ0QEcLF6Q9lcGzVgotbsP4/Ow9A7fO1ACpLn+pVo70/W
+XoFtDq3Qh1/jWHXt0S1ywQdsU/52wQUQr91t4ukUlcAyGBF3wp4jKcAzUmMfDtHc
+0z8KUQ+9dn7QvtSr9311eSViIIWIsZiE3tjJTLLYSD77dUrTfQkCEFeoxnsCGVye
+dWAWo2LkL5cfn1no0cpBLff933gL1yaAGNJxye0ABRO0JFBhdHJpY2sgdmFuIEts
+ZWVmIDxwa2xlZWZAeHM0YWxsLm5sPokBFQIFEDDxI8yWzJDyfrdE9QEB7uYH/jIV
+mNtwgc3C8H48ani4ipjY1H+Y1MlZ/Vi7tDfJIwp5t1q2sN+ms3vby1wQ04mLyLQ+
+eJ9uaCA570zrbzGIMX8H5tc6eeEs9umI+7LK7mqaz7GF0qa9sq6pCXqjuSBqTdcQ
+zGTVJoz1EtKBq0Aithqb0knRl/7Lw+xhpBwoThIbZ0NGevzhJgnvEJddmMsCTdu+
+OSgEB4K96ufzw+uc60z8AkWhwwrRYGI0RYModC0tkkdAuDDqpb9U479erFsTZHyb
+n27B/AqUwJfn+7F1PiJbMVNe/9xrlE6y2sfTmYqZUlv7xvRM2CC44dy/qCwrZc21
+nzo768yIRcQJ8/rtfrq0IVBhdHJpY2sgdmFuIEtsZWVmIDxwdmtAcG9ib3guY29t
+PokBFQIFEDOnjMrXJoAY0nHJ7QEBRrIH/1MvJhjS+ebUyFRNbTP5ge/ffnPqJ8Ai
+jiYMdE80cW6twW8R8rAuzEYNGt9I0O02qrm8DqnlTHru1fXG55L6lIDrrkaH6fEU
+LpR4tdYZF43kzqbPG/guUIesx3cGz5FeS5BY3hlPMQkHzDEZkuStQL8XvPF3QQV9
+cwz/PihgV/UTZ+5zDEeiwSX0QN8MVPDDq/ng7jpVPBLvPB9Gy7RON1Bp9QLi4kXa
+n+dDQsqbmv+RywZXx/7oD0oTFDF4Usr9ORgysXnxNaiWkkAa9FLBKU3azyGCliDb
+fwSNsZmSk5Aw5MMf8DB8SkqgBE3ArK5qZqL5XGGpYcMyqV3bvNx0f0Y=
+=ZMdM
+-----END PGP PUBLIC KEY BLOCK-----
+
+--==_Exmh_-14309983840
+Content-Type: application/octet-stream ; name="pmn.asc"
+Content-Description: pmn.asc
+Content-Disposition: attachment; filename="pmn.asc"
+
+Type Bits/KeyID    Date       User ID
+pub  1024/6CE20981 1996/01/17 Paul M. Nieuwdorp <pnieuw@openlink.co.uk>
+                              Paul M. Nieuwdorp <100106.2444@compuserve.com>
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: 2.6.3ia
+
+mQCNAjD8yzQAAAEEALoADV5f09M3ZXSHaumS/iuOhqNykwa0O5tpaJPe0J9jznl3
+kOaPP1yEuM5F1D9N+q9YEupi2yejAj2G1hT4OjyPJLovUvAJZyiaX/PMMTw20fdZ
+f+TrCO/+uHcbNgj+Rh3XujX7fP73WGK+BJLudRqU/cupy3k1UUvThRBs4gmBAAUR
+tClQYXVsIE0uIE5pZXV3ZG9ycCA8cG5pZXV3QG9wZW5saW5rLmNvLnVrPokBFQIF
+EDD+KEWBvvqhTwGIJQEBwIQIAI7P9fYHm7QVeiOdSf5cfte+ShNeT6kw6CzLfkpC
+nuPmSjM7U3zCFpyNfnzq/A1rQ0fbPOn34qQgG+pIql3K1qnedsq3T1Bo3lNN1LWI
+vRllMy/Y+oPfy9EArZAWLUyUGzPGOzFBrfp+Sn/tXuDngHzIzaFXk3LrbtrxeNO1
+bHt1On0FtmmRlFGcAFNI6CNhBOkNNq4JHuKDV0C1lhc4wIbUCsMaJH2wLd82Y0E2
+0BaSyqFM27tWOjhoWSDBl+fSSFEgwRYahgybRuQTvHRrD1IIlyiPXj1Sp8CvPq32
+ZhZ5qjfyKbjt/37TkCgMqhQaEx3cMJM2nXJm+T/1UcEnbtuJARUCBRAw/igwlsyQ
+8n63RPUBAbJHB/4rkmgSOlC8wl0u3AI46kr+J6r8aZvV0/azVtFgMQ/wVQJNVdp/
+2uve1VbogtRwtZUfTEUbdkTz068isxNI8PXMlxrvcIgWLc7+Kypy/EZPIor79p3L
+/209BihE6/h3K97GdmmgomCX1wMQs4WWmrKssnLpAK8HV2mK6rVExONT7SkbADv9
+nKe6+vsP4leA4EoFv0BPqKhdXkfZyFE7gvbPvPJbQV4pn272zYE8udEj0gnri11L
+7ha6s0sauQ4Qx6cqgsnzKFhIuGpb/c+F6R2Fdsjm4nGp36DDbIR2AirhiVGdCePx
+FIodwQvTtVqFmDM4nkI9jBYdSTUgrVudEQs6tC5QYXVsIE0uIE5pZXV3ZG9ycCA8
+MTAwMTA2LjI0NDRAY29tcHVzZXJ2ZS5jb20+iQCVAgUQMPzLiUvThRBs4gmBAQGu
+iQQAofxmXRKV691vgdccfcMzm3t6G2j788DgSCa9YDXTBigm6TpUUCVUs50Z0zp0
+VnfmmSaQx/P4GesvP/HxXxht+4JxOUiv4LzKLkcobX0JWX5lAOIUdmabTMfXeYN8
+wMiEmJK5CIbKibv2xuS9aBeeng/8JWBTrdPb4htZUsyvttE=
+=2kDH
+-----END PGP PUBLIC KEY BLOCK-----
+
+--==_Exmh_-14309983840
+Content-Type: application/octet-stream ; name="orri.asc"
+Content-Description: orri.asc
+Content-Disposition: attachment; filename="orri.asc"
+
+Type Bits/KeyID    Date       User ID
+pub  2048/F963A155 1998/04/01 erling@openlinksw.com
+                              Orri Erling <erling@infosto.fi>
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: 2.6.3ia
+
+mQENAzUh90YAAAEIALzB3TwQdsIgXXqop957bQolcTK4Hdbomro6Mc3yJPVq6Zlp
+yuk0tMKiMrGX/m8xiJ1xfXZc93/Xgf+gjCe81kJxxEPIOKyH4slNBo+jlsiTlS1z
+WmM6Fj3HgN8kG3XL9QZ9k8JdEVZDEuWSwCM2q9WJ1VZzjZctl8CCf+83zVIXywrD
+vevz7kjX3tz9FSFRti1FLH5o3r165kpewZespRBWLoy9lVDb8xfLupjjiQ7nFV81
+P7vVPGWEeFAeHeHtgk+V7b/sSwzLuMH3WdOKTZZVaXuTsp9QzwktjoUOlZ6EBOM+
++WWsk6ZIP9ykbBbTc28PaAuJNzP8DN6WlPljoVUABRG0FWVybGluZ0BvcGVubGlu
+a3N3LmNvbYkBFQIFEDXmrDOWzJDyfrdE9QEBFfgH+wSRit90Ij+VekYYjmV6M8WA
+fupHwhq5dLUt7D0guljZaijqdxoQZcNZ5sq9+6VJLXA03CiY14fT//7CUrnikaES
+eimKHL3ya9Nh+bCLTlzuaxeLX7HiGLTxX+8m9Ikt99uorNs0z9Pq/OCniTTDKq4j
+00lC9YbW4UNsK7uT01hIPABh143fIbmJevsd75XEb4L6rY5Mro2/IttumQ7fp09t
+VfOAsLXpBI1sRCAWu8Hvj5Y2nzaP5FgJ3fG9v9SeQneCte1XqLy5r/qp/04CKcOF
+lau9MehcAWuC95KYKWSArcpwBPfQnIyJVWsu8X5Yso4fLJu8VqdMATNyl0byDkGJ
+ARUDBRA15sOLDN6WlPljoVUBAXt5CACzmx1jyy1GjcBLgmEYbWG3WAeeuHE2T9cK
+Si3/twsw8+Flqt5VNkVHyqseF3SSrjT8sm7XLsnWt0+TjKIwN9w08goPfK1mEsEs
+BIT+tSDFEwS8IWvw+J8z6RfZ4I46OUFTH6CHRQGhuTRzCkJL/RW7l+JGMotLyWXR
+17iuCXk9X9Zp+bGylYziv7xMpa8ec5ypVowUk1IwSoQVlMKgV2GZeaA9O3ON772F
+gSeuoSbWeG6hKplB44HeHX1OAb71PGEIVVsbP9H2nNmbpRr72FLXTQZjhTaHss/0
+5i8XQUzzfVQIRczUYYuT1CnQWeded4hkzGE6Fu3O2imRW7Mv8DYAtB9PcnJpIEVy
+bGluZyA8ZXJsaW5nQGluZm9zdG8uZmk+iQEVAwUQNSH3kzVL16xo+YLxAQFYSwf/
+edTYtUtGpKaRqNCbFtgXVHk5gGeMVyGImQD5BTJYxzRX9LOWxHixWTVaSjWkDggE
+FrWb8i8INTSGKq8lqluqaDrP3HXffsdlcn0PgFpAoREK1kwqDL5YcPqpOtwkKtRm
+TqmtO4gL5XgvNsKXS0kNEsE1bFB3Cwou7vghe0nXS7iEdLiz/sw5CfTOsrvBMszK
+Wwv5UplJdF23xAYggKe1QgRudithA5cHFI/lDX/YUE42qiGeiUIPAHyI2M19ekwA
+HVINX85LHAJRuEXRduRFvbDRSDp5bMfk4r18pC7xn+m8QHs8OobrfRthhZePHLaA
+BRNUcjilCZ2lR4gyxc/lqokBFQMFEDUh90YM3paU+WOhVQEBoMUIAJk9b7A/TVoE
+KHINnI47TkPJFykw4y1CJveisR8B928jE4tgHiz2rkYpM1VdvSCYWeU6BfSRFX0W
+l2Ge5CpTCNlqopepb72/caEe0/S04sfH1xISyUnYKRuTFEXv1pJQ2g4H4rjtpHsU
+0yHQ8FZcCCnF1E2p/8r/H0rSaOSTwDUCvcjEJE2T9f0dEUkX75XbdCSAbQLaEYlu
+DKWxAEI3T5ZeXOJt1S4Q8WhFoXCM2jjoM0COaN6RuZhzWASaGdjKrB9TvuUcK5QU
+W6WlollhomHDEyZD1Bu6xokUqsFlbHon7N/SfC4LaBmT7PSJ9k63Lj5cAkgJqsCy
+lxxnQRReWps=
+=m4Fp
+-----END PGP PUBLIC KEY BLOCK-----
+
+--==_Exmh_-14309983840
+Content-Type: application/octet-stream ; name="ghard.asc"
+Content-Description: ghard.asc
+Content-Disposition: attachment; filename="ghard.asc"
+
+Type Bits/KeyID    Date       User ID
+pub  2048/68F982F1 1997/05/26 Yrjana Rankka <ghard@zonk.net>
+                              Yrjana Rankka <ghard@cute.fi>
+                              Yrjana Rankka <ghard@infosto.fi>
+                              Yrjana Rankka <ghard@openlinksw.com>
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: 2.6.3ia
+
+mQENAzOJjfIAAAEIAK/2pPzKf55wek4716CcxIET3GYdRpvZxLbOH99+Z2nRIyT5
+5RRKImAQDLnA1tfiikcsB8z1Rrt2iH2QlGbBrdv6eciXI9vzIAjUbAwRcIz9UU9t
+JVoo5k6LUvRVY879a+8OBuOqlFnhuBnVzodCF0hdu8/lHwlgZn/ACUWftopvxULt
+Ar6TZQfbRxgBdnaTyCL+cuhnN4uTeJoPJGrTGILq/7FJeaAINLTVO6dKSLOvJ2ah
+upuUJNd2St+ozrzKNC9jKhLvbkpD3Jzx25nC474dkc29NC3BWhJszw6pmOHQcqBU
+2CO2BXM7kjOmcI1h4uYA4a+GpauENUvXrGj5gvEABRG0HllyamFuYSBSYW5ra2Eg
+PGdoYXJkQHpvbmsubmV0PokBFQIFEDXmq02WzJDyfrdE9QEBky4H/jyYInnuhWts
+9PEgMWWkHdazRXIKL4jtAB4F0BEdF/ogBRbMFVZbrRIwe7aKLhm1Qgesu7lUPzfV
+7pJYcKoitb5BYV3tAB/Yu0meLE7WfyCEiLfLX0XRnafVok0TvY1QOZa+Iifvwxjg
+l4n4JRjlrrp9swtur5qJWZEtFDjFyPZcWYNtwC61iDGXyEMyAvWSY052P7cI31Ug
+VApXDA+WphoQwIJIcTgA3TUySxj9+XnxGz1bO30RpGBW73LAO193ttCtbxSy8s9X
+VJbiDIfRpxkK9jpfZZ1aPyNayDN7YbfQ4PLgTi3T/BdhSTq5Or7RzKGtHdIh5rll
+xZD4/Dpo7kaJARUDBRA1fkytNUvXrGj5gvEBAWY7CACgJHlJYYoafrNTBe7tGiKO
+UVu+YcsIkwl0MNa8/anT8TgYpJ6XbDWrL5HSaf6JfJyXVbZmN2pPXrxO/T7TRCxm
+F6Z6UPTmTvyPjTYP/hqMAZztV4ih+VncSCj0kaNocNjBfWUzmjZYxwWLrh+VM99p
+yRprujtLaoT/Vyu5a2JbxvlFLnHNNiWEWbDz3yV23VOkswMwbsN8xW2Lvs8HDv+r
+VeMmwVLWKRFybh+0k2odHmS/vB33xHgLh2zv603dc/ozfITckosmTNWis6iOq0ZJ
+XOeUPLN8OZOX+Ai8bMPvwOfrDuEEYNJlmVJ/GxpYH0g/eoepH3XMG+A3k98x9gBM
+tB1ZcmphbmEgUmFua2thIDxnaGFyZEBjdXRlLmZpPokBFQMFEDOJmu01S9esaPmC
+8QEBH1cIAJGE3MhZHXwJCOB27Tn4zpxYr7KMCCsA81n8wbPRMYd9bCNwFo7MEr77
+8N9EetJ6lB0oBncL/PTBAEgoWiVR/5hrwpm+oMnd/Xi4yMu5Xe707d2WFR8gJ2oP
+oDSvVrUWRK1OiTez5VXd7e4j8Tp27o9DQNr7O/78sWysohXPf3yFBhsvJtzNtTbz
+UEgH8/rV1lTnVmn3kegefIcZ/fLduJsCybTe4BeCPQ7FlP7RyEN6uZklv1IqufDX
+QbA2hyAPNd3TxjfsiCE6mVva+qNVVQ/Dzfnhs/xKzAYcQDU9gmnBk6w/zDFWf81/
+CZb2mod0bbVvLPs6+uEoooBaUuGAjDi0IFlyamFuYSBSYW5ra2EgPGdoYXJkQGlu
+Zm9zdG8uZmk+iQEVAwUQM4mN8jVL16xo+YLxAQGluAf+J2rnYrPcR39U8VPgFL+G
+RqM06Iayeu7ItcTO2fHI1NqyqA4vRCwRE/BwxqMgUPgsBErWBq7IA7EunuhKsabn
+B2gS39dW0wR8JjlJZDr9kzicWduZWLyulfT90ZAxgrSowL2tNfFrI3cubXq4+izV
+rEGhoMjjoiifnFy1VkOeuoeta8Kw1Q8mDQ0psUbkiZ/cXBaOGrU7aowqCaMZLhyA
+cYZuBgrmVP8z/F+fVs2NNl7b3096Wa986z+pkStfv4NLEBjP6zKI3KwWyLSmsyHE
+DV4UzU6MewmQIz/HpEYxj7edg7KPXF0fKssN0G3+3xly0s5DgQPe5rntpI0zrErO
+gLQkWXJqYW5hIFJhbmtrYSA8Z2hhcmRAb3Blbmxpbmtzdy5jb20+iQEVAwUQNX5M
+zjVL16xo+YLxAQHh9gf/buijlu7DAntUa/YfpIKV608ONSGJisIHgY0a9fse2TNY
+Bf48l7g+JUKB7/LDiUcXd+Ue2X3vKTzbLavPx8yZsLhlJ7QFtcpxTR19zmjTAQBe
+REGh5W/FH6JlbJdvtJbZVqGuxyuoeOimE+CZBKbGSeZIuUKdBmIGmg2hgsc8cnjl
+4GaU4OZBmqDxtSlIxXGqnpfXuSwjNeclGQWxjscf59gdFyoA7879BprgE28UXZQJ
+fg7kz+Vl33ZJlPYq5Xdbc9/OInCr8nvT0lS3R4pVomqQ12xvLf+7EEu9KW6kkSnX
+RvJK5GD99eKVmavlbZX2C1rpBiUsnaXXUCpo98l7cA==
+=2RFA
+-----END PGP PUBLIC KEY BLOCK-----
+
+--==_Exmh_-14309983840
+Content-Type: application/octet-stream ; name="george.asc"
+Content-Description: george.asc
+Content-Disposition: attachment; filename="george.asc"
+
+Type Bits/KeyID    Date       User ID
+pub  1024/9A8B2AE9 1998/01/23 George Kodinov <kgeorge@plovdiv.techno-link.com>
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: 2.6.3ia
+
+mQCNAzTI25IAAAEEALHbAiBhXQ+c/eVNpe4wVU/xcTuMpxp0TmYmSFM2giB3HtGe
+DB4WAPsurQMe9AAcy4nbd+JfLem0k5YKFuQA9N9xbpx6WTEsFiLAvvamKT5e+Mlc
+/2LriKjGoCrenXxec34KafMsr8aeX2gkKx/iCl+xSFYFk5AZP4yTnq+aiyrpAAUR
+tDBHZW9yZ2UgS29kaW5vdiA8a2dlb3JnZUBwbG92ZGl2LnRlY2huby1saW5rLmNv
+bT6JARUCBRA12WYrlsyQ8n63RPUBAVTKCADNWAgrfZzhXc8gD9Dic78xkoJONCTl
+pZsGzJIU9O+JIWZUDkybByxB+MWFhxYLg1uOmck5jp7tQqKHeB8zUgU+jco4arE7
+IFtBVFYR2hpmNJhgbGcvcoudDX/RTgM2XFtjsZip3L9Zvc4F5SYpdicyTlx3KJPR
+cgNF7zz6F1NFfESdR+/A1oDXeW5R0Z1AYpE+uNwfjRUTOXRQvPOi11SgTb9RUlu+
+jGkntVlqMHLku2ReKLRXSfFcLP+NOmwx1hWkzfkGsY5doPdK+VdEpwwzbF0uylrY
+U1i9o7zOUW/t2YDnVQlzqcx4X5eVAuUTWkgRqbwMbAm7S13R63xy43+giQCUAwUQ
+NMjbkoyTnq+aiyrpAQH72QP4uSZcVhiZ05Vd7EqIJFeBtMUL6AJnF4mNpVPFwZt6
+4jFa+ApbyZRrvMzNqFThvW9NwXcHsoMfKKh375F7mjnWdr2pPSKoW/EoWYplq46j
+fciOhVyzCFmzzOZfhx4+Rfx1nvln7a2o0Css21vP/VL4S1qYr4T/jrRePP5wR+ml
+0g==
+=KgNP
+-----END PGP PUBLIC KEY BLOCK-----
+
+--==_Exmh_-14309983840--

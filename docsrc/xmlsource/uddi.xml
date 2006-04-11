@@ -1,0 +1,615 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="uddi"><title>UDDI</title>
+
+<sect2 id="uddiconcepts"><title>Concepts</title>
+  <para>
+Universal Description, Discovery and Integration (UDDI) is the name of a
+web-based service that exposes information about a business or other entities
+and its technical interfaces or APIs.  These services are run by UDDI-enabled
+servers,  and can be used by any business that wants to make their information
+available, as well as anyone who wants to find that information.  There is no
+charge for using the basic services of these sites.
+</para>
+  <para>
+By accessing any of the public sites, anyone can search for
+information about web services that are made available by or on behalf
+of a business.  This provides a mechanism that allows others to
+discover what technical programming interfaces are provided for
+interacting with a business for such purposes as electronic commerce.
+The benefit to the individual business is increased exposure in an
+electronic commerce enabled world.
+</para>
+  <para>
+Businesses can register several kinds of simple data to help others
+answer questions of &quot;who, what, where and how.&quot; Simple
+information about a business - information such as name, business
+identifiers (D&amp;B D-U-N-S Number(R), etc.), and contact information
+answers the question &quot;Who.&quot;  &quot;What&quot; involves classification
+information including industry codes and product classifications,
+as well as descriptive information about the services that are
+available for electronic interchange.  Answering the question &quot;Where&quot;
+involves registering information about the URL or email address (or
+other address) through which each type of service may be accessed.
+Finally, the question &quot;How&quot; is answered by registering references to
+information about specifications that describe how a particular
+software package or technical interface functions.  These references
+are called '<parameter>tModels</parameter>' in the documentation.
+</para>
+</sect2>
+
+<sect2 id="uddisoap"><title>Dealing with SOAP</title>
+  <para>
+UDDI API functions are exposed as SOAP v1.1 messages over the HTTP
+protocol.  In version 1, the <literal>SOAPAction</literal> HTTP Header
+is required.  The value passed in this HTTP Header must be an empty
+string that is surrounded by double quotes.
+</para>
+
+<example id="ex_uddisoap"><title>UDDI and Soap</title>
+<programlisting>
+POST /UDDI/inquiry HTTP/1.1
+Host: www.foo.com
+Content-Type: text/xml
+Content-Length: nnnn
+SOAPAction: ""
+
+.... body follows ....
+</programlisting>
+</example>
+
+  <para>
+SOAP is used in conjunction with HTTP to provide a simple mechanism for
+passing XML messages to UDDI-enabled servers using a standard HTTP-POST
+protocol.  Unless specified, all responses will be returned in the normal HTTP
+response document.
+</para>
+
+<tip><title>See Also:</title>
+  <para>
+For more information about Virtuoso's SOAP Implementation see the
+<link linkend="soap">SOAP Services</link> section.</para></tip>
+</sect2>
+
+<sect2 id="uddiapisupport"><title>Supported API Calls</title>
+  <para>
+The UDDI APIs always return a SOAP entity body which contains messages
+as described in UDDI v1 XML Schema  (uddi_1.xsd).
+</para>
+
+<itemizedlist mark="bullet">
+<listitem><para><emphasis>Authorization API</emphasis> - Used to establish
+authentication mechanism (tokens), dropping already established connections.</para>
+
+  <itemizedlist mark="dash">
+    <listitem><emphasis>discard_authToken:</emphasis> Used to inform a UDDI
+enabled server that a previously provided authentication token is no longer valid.
+  </listitem>
+    <listitem><emphasis>get_authToken:</emphasis> Used to request an authentication
+token from a UDDI-enabled server.  Authentication tokens are required to use all
+other APIs defined in the publishers API.  This function serves as the
+program's equivalent of a login request.
+  </listitem>
+    <listitem><emphasis>get_registeredInfo:</emphasis> Used to request an
+abbreviated synopsis of all information currently managed by a given individual.
+  </listitem>
+  </itemizedlist>
+</listitem>
+<listitem><para><emphasis>Searching API</emphasis> The publicly accessible queries are:</para>
+
+  <itemizedlist mark="dash">
+    <listitem><emphasis>find_binding:</emphasis> Used to locate specific bindings
+within a registered <parameter>businessService</parameter>.  Returns a <parameter>bindingDetail</parameter> message.
+  </listitem>
+    <listitem><emphasis>find_business:</emphasis> Used to locate information
+about one or more businesses .  Returns a <parameter>businessList</parameter> message.
+  </listitem>
+    <listitem><emphasis>find_service:</emphasis> Used to locate specific services
+within a registered <parameter>businessEntity</parameter>.  Returns a <parameter>serviceList</parameter> message.
+  </listitem>
+    <listitem><emphasis>find_tModel:</emphasis> Used to locate one or more <parameter>tModel</parameter>
+information structures.  Returns a <parameter>tModelList</parameter> structure.
+  </listitem>
+    <listitem><emphasis>get_bindingDetail:</emphasis> Used to get full <parameter>bindingTemplate</parameter>
+information suitable for making one or more service requests.  Returns a
+<parameter>bindingDetail</parameter> message.
+  </listitem>
+    <listitem><emphasis>get_businessDetail:</emphasis> Used to get  full
+<parameter>businessEntity</parameter> information for one or more businesses.  Returns a <parameter>businessDetail</parameter>
+message.
+  </listitem>
+    <listitem><emphasis>get_businessDetailExt:</emphasis> Used to get extended
+<parameter>businessEntity</parameter> information.  Returns a <parameter>businessDetailExt</parameter> message.
+  </listitem>
+    <listitem><emphasis>get_serviceDetail:</emphasis> Used to get full details
+for a given set of registered <parameter>businessService</parameter> data.  Returns a <parameter>serviceDetail</parameter>
+message.
+  </listitem>
+    <listitem><emphasis>get_tModelDetail:</emphasis> Used to get full details for
+a given set of registered <parameter>tModel</parameter> data.  Returns a <parameter>tModelDetail</parameter> message.
+  </listitem>
+  </itemizedlist>
+
+</listitem>
+<listitem><para><emphasis>Repository Manipulation API</emphasis></para>
+
+  <itemizedlist mark="dash">
+    <listitem><emphasis>delete_binding:</emphasis> Used to remove an existing <parameter>bindingTemplate</parameter>
+from the <parameter>bindingTemplate</parameter>s collection that is part of a specified <parameter>businessService</parameter>
+structure.
+  </listitem>
+    <listitem><emphasis>delete_business:</emphasis> Used to delete registered <parameter>businessEntity</parameter>
+information from the registry.
+  </listitem>
+    <listitem><emphasis>delete_service:</emphasis> Used to delete an existing <parameter>businessService</parameter>
+from the businessServices collection that is part of a specified <parameter>businessEntity</parameter>.
+  </listitem>
+    <listitem><emphasis>delete_tModel:</emphasis> Used to delete registered information about a
+<parameter>tModel</parameter>.  If there are any references to a <parameter>tModel</parameter> when this call is made, the <parameter>tModel</parameter>
+will be marked deleted instead  of being physically removed.
+  </listitem>
+    <listitem><emphasis>save_binding:</emphasis> Used to register new <parameter>bindingTemplate</parameter> information
+or update existing <parameter>bindingTemplate</parameter> information.  Use this to control information
+about technical capabilities  exposed by a registered business.
+  </listitem>
+    <listitem><emphasis>save_business:</emphasis> Used to register new <parameter>businessEntity</parameter> information
+or update existing <parameter>businessEntity</parameter> information.  Use this to control the overall
+information about the entire  business.  Of all the save APIs this one has the broadest
+effect.
+  </listitem>
+    <listitem><emphasis>save_service:</emphasis>  Used to register or update complete information
+about a <parameter>businessService</parameter> exposed by a specified <parameter>businessEntity</parameter>.
+  </listitem>
+    <listitem><emphasis>save_tModel:</emphasis>  Used to register or update complete information
+about a <parameter>tModel</parameter>.
+  </listitem>
+  </itemizedlist>
+</listitem>
+</itemizedlist>
+</sect2>
+
+<sect2 id="uddiauthmech"><title>Authorization Mechanism</title>
+  <para>
+The Publishers API describes the messages that are used to control the content
+contained within  a UDDI-enabled server, and can be used by compliant non-operator
+implementations that adhere to the behaviors described in this programmer's reference
+specification.
+</para>
+  <para>
+All calls made to UDDI-enabled servers that use the messages defined in the
+publisher's API will be transported using SSL encryption.  UDDI-enabled servers
+will each provide a service description that exposes a <parameter>bindingTemplate</parameter> that
+makes use of HTTPS and SSL to secure the transmission of data.
+</para>
+
+<sect3 id="uddiauth"><title>Authentication</title>
+  <para>
+Each of the calls in the publisher's API that change information at a given
+UDDI-enabled server requires the use of an opaque authentication token.  These
+tokens are generated by or provided by each UDDI-enabled server independently,
+and are passed from the caller to the UDDI-enabled server in the element
+named <parameter>authInfo</parameter>.
+</para>
+  <para>
+These tokens are meaningful only to the  UDDI-enabled server that provided
+them and are to be used  according to the published policies of a given
+UDDI-enabled server.
+</para>
+  <para>
+Each party that has been granted publication access to a given UDDI-enabled
+server will be provided a token by the site.  The methods for obtaining this token are
+specific to each UDDI-enabled server.
+</para>
+</sect3>
+
+<sect3 id="uddiestcreds"><title>Establishing Credentials</title>
+  <para>
+Before any party can publish data within a UDDI-enabled server,
+credentials and permission to publish must be supplied with the
+individual operator.  Generally, you will only need to interact with
+one UDDI-enabled server because all data published at any UDDI-enabled
+server are replicated automatically to all other such servers.
+Establishing publishing credentials involves providing some verifiable
+identification information, contact information, and establishing
+security credentials with the individual server.  The specifics of
+these establishing credentials is server-dependent, and all valid
+UDDI-enabled servers provide a Web-based user interface through which
+you can establish an identity and secure permission to publish data.
+</para>
+  <para>
+Every registry implementation that adheres to these specifications
+establishes its own mechanism for token generation and authentication.
+The only requirement placed on token generation for use with the publisher's
+API is that the tokens themselves must be valid string text that can be placed
+within the <parameter>authInfo</parameter> XML element.  Given that binary-to-string translations are
+well-understood and in common use, this requirement will not introduce hardships.
+</para>
+  <para>
+Authentication tokens are not required to be valid except at the UDDI-enabled server
+or implementation from which they originated.  These tokens need only have meaning
+at a single UDDI-enabled server or implementation, and should not be expected
+to work across sites.
+</para>
+</sect3>
+
+<sect3 id="genauthtokens"><title>Generating Authentication Tokens</title>
+  <para>
+Many implementations are expected to require a login step.  The
+<parameter>get_authToken</parameter> message is  provided to accommodate implementations that
+desire a login step.  Security schemes  based on
+exchanging User ID and password credentials fall into this category.  For
+implementations that desire this kind of security, the <parameter>get_authToken</parameter> API is
+provided as a means of generating a temporary authentication token.
+</para>
+  <para>
+Certificate-based authentication and similar security mechanisms do not
+require this additional step of logging in. Instead, they can pass
+compatible authentication token information such as a certificate value
+within the <parameter>authInfo</parameter> element provided on each of the
+publisher's API messages.  If certificate-based authentication or similar
+security is employed the use of the <parameter>get_authToken</parameter>
+and <parameter>discard_authToken</parameter> messages is optional.
+</para>
+</sect3>
+</sect2>
+
+<sect2 id="uddiapicalls"><title>UDDI API Calls</title>
+
+<para>
+This section describes the Virtuoso UDDI-related messages.  These messages
+are divided into APIs for authentication, inquiry, and publication.
+</para>
+
+<sect3 id="authapis"><title>Authorization API</title>
+
+&uddi_get_authToken;
+&uddi_get_registeredInfo;
+&uddi_discard_authToken;
+
+</sect3>
+<sect3 id="uddisearchapi"><title>Inquiry API Functions</title>
+  <para>
+The inquiry API messages <parameter>find_binding</parameter>,
+<parameter>find_business</parameter>, <parameter>find_service</parameter>,
+and <parameter>find_tModel</parameter> all accept an optional element
+named <parameter>findQualifiers</parameter>.  This argument provides a
+means to allow the caller to override default search behaviors.
+</para>
+  <para>
+The messages in this section represent inquiries that anyone can make of
+any UDDI-enabled server at any time.  These messages all behave synchronously
+and are required to be exposed via HTTP POST only.  Other synchronous or
+asynchronous mechanisms may be provided at the discretion of the individual
+UDDI-enabled server or compatible registry.
+</para>
+  <para>
+The publicly accessible queries are:
+</para>
+<itemizedlist mark="bullet">
+  <listitem><emphasis>find_binding:</emphasis> Used to locate specific bindings
+within a registered <parameter>businessService</parameter>.  Returns a <parameter>bindingDetail</parameter> message.
+</listitem>
+  <listitem><emphasis>find_business:</emphasis> Used to locate information
+about one or more businesses.  Returns a <parameter>businessList</parameter> message.
+</listitem>
+  <listitem><emphasis>find_service:</emphasis> Used to locate specific
+services within a registered <parameter>businessEntity</parameter>.  Returns a <parameter>serviceList</parameter> message.
+</listitem>
+  <listitem><emphasis>find_tModel:</emphasis> Used to locate one or more
+<parameter>tModel</parameter> information structures.  Returns a <parameter>tModelList</parameter> structure.
+</listitem>
+  <listitem><emphasis>get_bindingDetail:</emphasis> Used to get full
+<parameter>bindingTemplate</parameter> information suitable for making one or more service requests.
+Returns a <parameter>bindingDetail</parameter> message.
+</listitem>
+  <listitem><emphasis>get_businessDetail:</emphasis> Used to get the full
+<parameter>businessEntity</parameter> information for a one or more businesses.  Returns a
+<parameter>businessDetail</parameter> message.
+</listitem>
+  <listitem><emphasis>get_businessDetailExt:</emphasis> Used to get extended
+<parameter>businessEntity</parameter> information.  Returns a <parameter>businessDetailExt</parameter> message.
+</listitem>
+  <listitem><emphasis>get_serviceDetail:</emphasis> Used to get full details
+for a given set of registered <parameter>businessService</parameter> date.  Returns a <parameter>serviceDetail</parameter>
+message.
+</listitem>
+  <listitem><emphasis>get_tModelDetail:</emphasis> Used to get full details
+for a given set of registered <parameter>tModel</parameter> data.  Returns a <parameter>tModelDetail</parameter> message.
+</listitem>
+</itemizedlist>
+
+&uddi_find_binding;
+
+&uddi_find_business;
+
+&uddi_find_service;
+
+&uddi_find_tModel;
+
+&uddi_get_bindingDetail;
+
+&uddi_get_businessDetail;
+
+&uddi_get_businessDetailExt;
+
+&uddi_get_serviceDetail;
+
+&uddi_get_tModelDetail;
+
+</sect3>
+
+<sect3 id="uddipublishingfuncs"><title>Publishing API Functions</title>
+  <para>
+The messages in this section represent inquiries that require authenticated access
+to an operator site.  Each business should initially select one UDDI-enabled server
+to host their information.  Once chosen, information can only be updated at the site
+originally selected.
+</para>
+  <para>
+The messages defined in this section all behave synchronously and are only
+callable via HTTP-POST.  HTTPS is used exclusively for all the calls
+defined in this publisher's API.
+</para>
+
+<itemizedlist mark="bullet">
+<listitem><emphasis>save_binding:</emphasis> Used to register new <parameter>bindingTemplate</parameter> information
+or update existing <parameter>bindingTemplate</parameter> information.  Use this to control information about
+technical capabilities exposed by a registered business.
+  </listitem>
+<listitem><emphasis>save_business:</emphasis> Used to register new <parameter>businessEntity</parameter> information
+or update existing <parameter>businessEntity</parameter> information.  Use this to control the overall information
+about the entire business.  Of all the save messages, this one has the broadest effect.
+  </listitem>
+<listitem><emphasis>save_service:</emphasis> Used to register or update complete information
+about a <parameter>businessService</parameter> exposed by a specified <parameter>businessEntity</parameter>.
+  </listitem>
+<listitem><emphasis>save_tModel:</emphasis> Used to register or update complete
+information about a <parameter>tModel</parameter>.
+  </listitem>
+<listitem><emphasis>delete_binding:</emphasis> Used to remove an existing <parameter>bindingTemplate</parameter>
+from the bindingTemplates collection that is part of a specified <parameter>businessService</parameter>
+structure.
+  </listitem>
+<listitem><emphasis>delete_business:</emphasis> Used to delete registered <parameter>businessEntity</parameter>
+information from the registry.
+  </listitem>
+<listitem><emphasis>delete_service:</emphasis> Used to delete an existing <parameter>businessService</parameter>
+from the businessServices collection that is part of a specified <parameter>businessEntity</parameter>.
+  </listitem>
+<listitem><emphasis>delete_tModel:</emphasis> Used to delete registered information about
+a <parameter>tModel</parameter>.  If there are any references to a <parameter>tModel</parameter> when this call is made, the <parameter>tModel</parameter>
+will be marked deleted instead of being physically removed.
+  </listitem>
+</itemizedlist>
+
+&uddi_save_binding;
+
+&uddi_save_business;
+
+&uddi_save_service;
+
+&uddi_save_tModel;
+
+&uddi_delete_binding;
+
+&uddi_delete_business;
+
+&uddi_delete_service;
+
+&uddi_delete_tModel;
+
+</sect3>
+</sect2>
+
+<sect2 id="uddiexamples"><title>Examples</title>
+
+<example id="ex_uddi_genfind"><title>Generic Find</title>
+<para>Finds all registry entries for names beginning with 'M':</para>
+<programlisting>
+select http_get ('http://localhost:6666/SOAP', null, 'POST',
+  'Content-Type: text/xml\r\nSOAPAction: ""',
+  '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+&lt;Body&gt;
+&lt;find_business xmlns="urn:uddi-org:api" generic="1.0"&gt;
+&lt;name&gt;M&lt;/name&gt;
+&lt;/find_business&gt;
+&lt;/Body&gt;
+&lt;/Envelope&gt;');
+</programlisting>
+</example>
+
+<example id="ex_uddi_findbyname1"><title>Find By Name 1</title>
+<para>Find by name with sort options by name and date, both ascending:</para>
+
+<programlisting>
+select http_get ('http://localhost:6666/SOAP', null, 'POST',
+  'Content-Type: text/xml\r\nSOAPAction: ""',
+  '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+&lt;Body&gt;
+&lt;find_business xmlns="urn:uddi-org:api" generic="1.0"&gt;
+&lt;findQualifiers&gt;
+&lt;findQualifier&gt;sortByNameAsc&lt;/findQualifier&gt;
+&lt;findQualifier&gt;sortByDateAsc&lt;/findQualifier&gt;
+&lt;/findQualifiers&gt;
+&lt;name&gt;&lt;/name&gt;
+&lt;/find_business&gt;
+&lt;/Body&gt;
+&lt;/Envelope&gt;');
+</programlisting>
+</example>
+
+<example id="ex_uddi_findbyname2"><title>Find By Name 2</title>
+<para>Find by name, sorted by name descending and date ascending:</para>
+<programlisting>
+select http_get ('http://localhost:6666/SOAP', null, 'POST',
+  'Content-Type: text/xml\r\nSOAPAction: ""',
+  '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+&lt;Body&gt;
+&lt;find_business xmlns="urn:uddi-org:api" generic="1.0"&gt;
+&lt;findQualifiers&gt;
+&lt;findQualifier&gt;sortByNameDesc&lt;/findQualifier&gt;
+&lt;findQualifier&gt;sortByDateAsc&lt;/findQualifier&gt;
+&lt;/findQualifiers&gt;
+&lt;name&gt;&lt;/name&gt;
+&lt;/find_business&gt;
+&lt;/Body&gt;
+&lt;/Envelope&gt;');
+</programlisting>
+</example>
+
+<example id="ex_uddi_findbynameematch"><title>Find By Name 3</title>
+<para>Find by exact name match, case-sensitive, and sorted by name and
+date ascending:</para>
+<programlisting>
+select http_get ('http://localhost:6666/SOAP', null, 'POST',
+  'Content-Type: text/xml\r\nSOAPAction: ""',
+  '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+&lt;Body&gt;
+&lt;find_business xmlns="urn:uddi-org:api" generic="1.0"&gt;
+&lt;findQualifiers&gt;
+&lt;findQualifier&gt;exactNameMatch&lt;/findQualifier&gt;
+&lt;findQualifier&gt;caseSensitiveMatch&lt;/findQualifier&gt;
+&lt;findQualifier&gt;sortByNameAsc&lt;/findQualifier&gt;
+&lt;findQualifier&gt;sortByDateAsc&lt;/findQualifier&gt;
+&lt;/findQualifiers&gt;
+&lt;name&gt;Microsoft Corporation&lt;/name&gt;
+&lt;/find_business&gt;
+&lt;/Body&gt;
+&lt;/Envelope&gt;');
+</programlisting>
+</example>
+
+<example id="ex_uddi_findbyidbay"><title>Find By <parameter>identifierBag</parameter> Element 'DUNS':</title>
+<programlisting>
+select http_get ('http://localhost:6666/SOAP', null, 'POST',
+  'Content-Type: text/xml\r\nSOAPAction: ""',
+  '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+&lt;Body&gt;
+&lt;find_business xmlns="urn:uddi-org:api" generic="1.0"&gt;
+&lt;findQualifiers&gt;
+&lt;findQualifier&gt;exactNameMatch&lt;/findQualifier&gt;
+&lt;findQualifier&gt;caseSensitiveMatch&lt;/findQualifier&gt;
+&lt;findQualifier&gt;sortByNameAsc&lt;/findQualifier&gt;
+&lt;findQualifier&gt;sortByDateAsc&lt;/findQualifier&gt;
+&lt;/findQualifiers&gt;
+&lt;identifierBag&gt;
+&lt;keyedReference keyName="D-U-N-S" keyValue="08-146-6849"
+  tModelKey="UUID:8609C81E-EE1F-4D5A-B202-3EB13AD01823"/&gt;
+&lt;/identifierBag&gt;
+&lt;/find_business&gt;
+&lt;/Body&gt;
+&lt;/Envelope&gt;');
+</programlisting>
+</example>
+
+<example id="ex_uddi_findbytmodel"><title>Find by <parameter>tModel</parameter></title>
+<programlisting>
+select http_get ('http://localhost:6666/SOAP', null, 'POST',
+  'Content-Type: text/xml\r\nSOAPAction: ""',
+  '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+&lt;Body&gt;
+&lt;find_business xmlns="urn:uddi-org:api" generic="1.0"&gt;
+&lt;findQualifiers&gt;
+&lt;findQualifier&gt;exactNameMatch&lt;/findQualifier&gt;
+&lt;findQualifier&gt;caseSensitiveMatch&lt;/findQualifier&gt;
+&lt;findQualifier&gt;sortByNameAsc&lt;/findQualifier&gt;
+&lt;findQualifier&gt;sortByDateAsc&lt;/findQualifier&gt;
+&lt;/findQualifiers&gt;
+&lt;tModelBag&gt;
+&lt;tModelKey&gt;UUID:68DE9E80-AD09-469D-8A37-088422BFBC36&lt;/tModelKey&gt;
+&lt;/tModelBag&gt;
+&lt;/find_business&gt;
+&lt;/Body&gt;
+&lt;/Envelope&gt;');
+</programlisting>
+</example>
+
+<example id="ex_uddi_findbydiscovery"><title>Find by discovery URL</title>
+<programlisting>
+select http_get ('http://localhost:6666/SOAP', null, 'POST',
+  'Content-Type: text/xml\r\nSOAPAction: ""',
+  '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+&lt;Body&gt;
+&lt;find_business xmlns="urn:uddi-org:api" generic="1.0"&gt;
+&lt;findQualifiers&gt;
+&lt;findQualifier&gt;exactNameMatch&lt;/findQualifier&gt;
+&lt;findQualifier&gt;caseSensitiveMatch&lt;/findQualifier&gt;
+&lt;findQualifier&gt;sortByNameAsc&lt;/findQualifier&gt;
+&lt;findQualifier&gt;sortByDateAsc&lt;/findQualifier&gt;
+&lt;/findQualifiers&gt;
+&lt;discoveryURLs&gt;
+&lt;discoveryURL&gt;
+http://uddi.microsoft.com/discovery?businessKey=D94B25A4-BD6D-4426-AEAC-1087DCC21421
+&lt;/discoveryURL&gt;
+&lt;/discoveryURLs&gt;
+&lt;/find_business&gt;
+&lt;/Body&gt;
+&lt;/Envelope&gt;');
+</programlisting>
+</example>
+
+<example id="ex_uddi_getauth"><title>Get authentication token</title>
+<programlisting>
+select http_get ('http://localhost:6666/SOAP', null, 'POST',
+  'Content-Type: text/xml\r\nSOAPAction: ""',
+  '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+&lt;Body&gt;
+&lt;get_authToken xmlns="urn:uddi-org:api" generic="1.0"&gt;
+&lt;userID&gt;dav&lt;/userID&gt;
+&lt;cred&gt;dav&lt;/cred&gt;
+&lt;/get_authToken&gt;
+&lt;/Body&gt;
+&lt;/Envelope&gt;');
+</programlisting>
+</example>
+
+<example id="ex_uddi_discardauth"><title>Discard Authentication Token</title>
+<programlisting>
+select http_get ('http://localhost:6666/SOAP', null, 'POST',
+  'Content-Type: text/xml\r\nSOAPAction: ""',
+  '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+&lt;Body&gt;
+&lt;discard_authToken xmlns="urn:uddi-org:api" generic="1.0"&gt;
+&lt;authInfo&gt;71255ffc5b0a22b4699bfcee74cba97f&lt;/authInfo&gt;
+&lt;/discard_authToken&gt;
+&lt;/Body&gt;
+&lt;/Envelope&gt;');
+</programlisting>
+</example>
+
+</sect2>
+
+<tip><title>See Also:</title>
+<para><link linkend="uddischema">UDDI System Tables</link></para></tip>
+</sect1>

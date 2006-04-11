@@ -1,0 +1,51 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<body>
+<p>
+<v:page name="data_set_page" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD HTML 4.0 Transitional//EN">
+
+   <v:data-source name="datasource1" expression-type="sql" nrows="5" initial-offset="0">
+     <v:expression> <![CDATA[ select * from Demo.demo.Customers where CustomerID like \'%\']]> </v:expression>
+     <v:column name="CustomerID" label="Customer ID" input-format="%s" output-format="%s"></v:column>
+     <v:column name="CompanyName" label="Company Name" input-format="%s" output-format="%s"></v:column>
+     <v:column name="Phone" label="Telephone" input-format="%s" output-format="%s" />
+   </v:data-source>
+
+   <v:grid name="grid1"  data-source="self.datasource1"
+   	style="Z-INDEX: 101; LEFT: 50px; POSITION: absolute; TOP: 50px"
+	bgcolor="white" bgimage="plus.gif"
+	BorderColor="Blue" BorderStyle="Dotted" BorderWidth="2px" Font-Italic="True"
+	ForeColor="#FFFFC0" ShowFooter="True" AllowSorting="True" border="1" CELLPADDING="2" CELLSPACING="0">
+     <v:header bgcolor="skyblue"/>
+     <v:columns>
+       <v:column name="CustomerID" nowrap="nowrap" />
+       <v:column name="CompanyName" nowrap="nowrap" />
+       <v:column name="Phone" nowrap="nowrap" />
+     </v:columns>
+     <v:footer align="center" bgcolor="skyblue"/>
+   </v:grid>
+</v:page>
+</p>
+</body>
+</html>

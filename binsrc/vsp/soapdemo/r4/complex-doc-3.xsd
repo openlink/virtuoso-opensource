@@ -1,0 +1,61 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<schema targetNamespace="http://soapinterop.org/types/requestresponse" xmlns:ns4="http://soapinterop.org/types/requestresponse" xmlns:ns3="http://soapinterop.org/types/part" xmlns:ns2="http://soapinterop.org/types" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://soapinterop.org/types/requestresponse" xmlns="http://www.w3.org/2001/XMLSchema">
+  <element name="echoSOAPStructFaultRequest" type="ns2:SOAPStruct"/>
+  <element name="echoSOAPStructFaultResponse">
+    <complexType/>
+  </element>
+  <element name="echoBaseStructFaultRequest" type="ns2:BaseStruct_literal"/>
+  <element name="echoBaseStructFaultResponse">
+    <complexType/>
+  </element>
+  <element name="echoExtendedStructFaultRequest" type="ns2:ExtendedStruct_literal"/>
+  <element name="echoExtendedStructFaultResponse">
+    <complexType/>
+  </element>
+  <element name="echoMultipleFaults1Request_complex">
+    <complexType>
+      <sequence>
+        <element name="whichFault" type="xsd:int"/>
+        <element name="param1" type="ns2:SOAPStruct"/>
+        <element name="param2" type="ns2:BaseStruct_literal"/>
+      </sequence>
+    </complexType>
+  </element>
+  <!--element name="echoMultipleFaults1Response">
+    <complexType/>
+  </element-->
+  <element name="echoMultipleFaults2Request_complex">
+    <complexType>
+      <sequence>
+        <element name="whichFault" type="xsd:int"/>
+        <element name="param1" type="ns2:BaseStruct_literal"/>
+        <element name="param2" type="ns2:ExtendedStruct_literal"/>
+        <element name="param3" type="ns2:MoreExtendedStruct_literal"/>
+      </sequence>
+    </complexType>
+  </element>
+  <!--element name="echoMultipleFaults2Response">
+    <complexType/>
+  </element-->
+</schema>

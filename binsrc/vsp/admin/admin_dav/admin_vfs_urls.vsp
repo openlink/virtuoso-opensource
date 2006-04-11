@@ -1,0 +1,78 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<?vsp adm_pre_page(lines);
+
+declare _count integer;
+_count := 0;
+if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+  {
+    adm_tell_unauth_dav (lines);
+    return (0);
+  }
+?>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Web robot downloaded sites list">
+<title>Web sites list</title>
+</head>
+<?vsp adm_page_header('Retrieved Sites', 'webdataimportsexports'); ?>
+
+<!--A href="vfs.html"><img src="/images/home.gif"></A-->
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="6">Site List</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="6"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+<tr>
+<th class="genlistheadt">Description</th>
+<th class="genlistheadt">Host</th>
+<th class="genlistheadt">URL</th>
+<th class="genlistheadt">Collection</th>
+<th class="genlistheadt">Total pages</th>
+<th class="genlistheadt">Action</th>
+</tr>
+<?vsp
+for select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE do {
+  select count (*) into _count from WS.WS.VFS_URL where VU_HOST = VS_HOST and VU_ROOT = VS_ROOT;
+  http (concat (
+	'<tr><td class="gendata">',
+	VS_DESCR,
+	'</td><td class="gendata">',
+	VS_HOST,
+	'</td><td class="gendata">',
+	VS_URL,
+	'</td><td class="gendata">',
+	VS_ROOT,
+	'</td><td class="gendata" align="right">',
+	cast (_count as varchar),
+	'</td><td class="gendata" align="center">',
+	'<a class="tablelistaction" href="vfs_urls_list.vsp?host=',VS_HOST,'&root='));
+	http_url (VS_ROOT);
+	http ('">Edit URLs</a></td></tr>');
+}
+?>
+</table>
+<?vsp adm_page_footer(); ?>
+</html>

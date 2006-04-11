@@ -1,0 +1,113 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="view_page" decor="interop_decor.vspx" style="interop_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>OpenLink BPEL Interoperability View Test</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:pagebody>
+      <?vsp
+        declare aXML, aXMLs, aDesc, ses, sClient any;
+        declare iID, iTestId int;
+        declare sDir varchar;
+
+        iID := null;
+        if ({?'id'} is not null) {
+          iID := atoi ({?'id'});
+        };
+
+        sDir := '';
+        aXml := '';
+        aDesc := '';
+        sClient := '';
+
+        for select tt_id, tt_name, tt_info from BPWSI..tests where tt_id = iID  do
+        {
+          iTestId :=tt_id;
+
+          if (tt_id = 1)
+          {
+            sDir := 'echo';
+            sClient := '/bpel4ws/interop/clients/echoUI.vspx';
+          }
+          else if (tt_id = 2)
+          {
+            sDir := 'Aecho';
+            sClient := '/bpel4ws/interop/clients/aechoUI.vspx';
+          }
+          else if (tt_id = 3)
+          {
+            sDir := 'SecAecho';
+            sClient := '/bpel4ws/interop/clients/secechoUI.vspx';
+          }
+          else if (tt_id = 4)
+          {
+            sDir := 'RMecho';
+            sClient := '/bpel4ws/interop/clients/rmechoUI.vspx';
+          }
+          else if (tt_id = 5)
+          {
+            sDir := 'SecLoan';
+            sClient := '/bpel4ws/interop/clients/secloanUI.vspx';
+          }
+          else if (tt_id = 6)
+          {
+            sDir := 'RMLoan';
+            sClient := '/bpel4ws/interop/clients/rmloanUI.vspx';
+          }
+          else if (tt_id = 7)
+          {
+            sDir := 'SecRMLoan';
+            sClient := '/bpel4ws/interop/clients/secrmloanUI.vspx';
+          }
+
+          if (sDir <> '')
+          {
+            sDir := concat('file://',sDir,'/desc.xml');
+            aDesc := db.dba.xml_uri_get('',sDir);
+            aDesc := xml_tree_doc(aDesc);
+          };
+
+          for select XMLAGG (XMLELEMENT ('source', XMLATTRIBUTES (ts_id as "Id",
+                                                                  ts_text as "Info",
+                                                                  tl_url as "Url"))) as result
+                from BPWSI..test_source, BPWSI..test_link
+               where ts_test_id = iTestId
+                 and ts_id = tl_ts_id
+                  and tl_tt_id = iTestId do
+          {
+            aXMLs := result;
+          };
+
+          aXML := XMLELEMENT('page',XMLELEMENT('test', XMLATTRIBUTES(tt_id as "Id",
+                                                                      tt_name as "Name",
+                                                                      tt_info as "Info",
+                                                                      sClient as "Client"),
+                                        XMLELEMENT('refentry',aDesc),aXMLs ));
+        };
+        aXML := xml_tree_doc(aXML);
+        http_value(xslt('file://bpel4ws/view.xsl' , aXML));
+
+      ?>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

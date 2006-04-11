@@ -1,0 +1,248 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _uid, _catid, _chid, _chcnt, _catcnt, _menu, _tcnt integer;
+  declare _cat, _channel, _first, _last, _pid varchar;
+  _uid := cast(get_keyword('UID', params) as integer);
+  _pid := (select PWD from eNews..registry where UID = _uid);
+  _catid := cast({?'CAT'} as integer);
+  _chcnt := (select count(distinct ChID) from eNews..newsInfo
+                    where UID=_uid);
+  select First, Last into _first, _last from eNews..registry
+         where UID = _uid;
+?>
+<html>
+<head>
+<style type="text/css">
+a
+{
+  text-decoration: none;
+}
+
+a.smenu:hover
+{
+ color : #808000
+}
+
+.title
+{
+  position: absolute;
+  width: 200px;
+  height: 20px;
+  left: 10px;
+  z-index: 10;
+  font-family: verdana, helvetica, sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+  visibility: visible;
+}
+
+.user
+{
+  position: absolute;
+  width: 200px;
+  height: 60px;
+  left: 10px;
+  font-family: verdana, helvetica, sans-serif;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.submenu
+{
+  position: absolute;
+  left: 25px;
+  width: 220px;
+  font-family: verdana, helvetica, sans-serif;
+  font-size: 10px;
+  visibility: hidden;
+}
+</style>
+<script language="javascript1.2" src="dhtml.js"></script>
+<SCRIPT Language="JavaScript">
+var nom = <?= _chcnt+1 ?>; //number of menus
+var ttls = new Array(); // An array for the title objects
+var subs = new Array(); // An array for the submenu objects
+var lastn;
+var lastmove;
+
+for (var i = 1; i <= nom; i++)
+{
+  ttls[i] = ('title' + i);
+  subs[i] = ('submenu' +i);
+}
+
+function picopen(n)
+{
+  if (n == nom)
+    return;
+  title = ('title' + n);
+  pic = ('pic' + n);
+  if (isNav4)
+  {
+    document.layers[title].document.images[pic].src = "opened.gif";
+  }
+  else if (isNav5 || isIE4 || isIE5)
+  {
+    document.images[pic].src = "opened.gif";
+  }
+}
+
+function picclose(n)
+{
+  if (n == nom)
+    return;
+  title = ('title' + n);
+  pic = 'pic' + n;
+  if (isNav4)
+  {
+    document.layers[title].document.images[pic].src = "closed.gif";
+  }
+  else if (isNav5 || isIE4 || isIE5)
+  {
+    document.images[pic].src = "closed.gif";
+  }
+}
+
+lastn = (nom + 1);
+lastmove = 0;
+
+function lasttoggle(n,move)
+{
+  var submenu, tObj, sObj
+  if (n <= nom)
+  {
+    menu = ('submenu' + n);
+    submenu = new CSSObject(menu, document);
+
+    if (submenu.css.visibility == visible)
+    {
+      submenu.css.visibility = hidden;
+      picclose(n); // Remove this if you don't use pictures
+      for (var i = (n+1); i <= nom; i++)
+      {
+        tObj = new CSSObject(ttls[i], document);
+        sObj = new CSSObject(subs[i], document);
+        tObj.verticleMoveBy(-move);
+        sObj.verticleMoveBy(-move);
+      }
+    }
+  }
+}
+
+function toggle(n,move)
+{
+  var submenu, tObj, sObj
+  menu = ('submenu' + n);
+
+  submenu = new CSSObject(menu, document);
+
+  if (submenu.css.visibility == visible)
+  {
+    submenu.css.visibility = hidden;
+    picclose(n);
+    for (var i = (n+1); i <= nom; i++)
+    {
+      tObj = new CSSObject(ttls[i], document);
+      sObj = new CSSObject(subs[i], document);
+      tObj.verticleMoveBy(-move);
+      sObj.verticleMoveBy(-move);
+    }
+  }
+  else
+  {
+    submenu.css.visibility = visible;
+    picopen(n);
+
+    for (var i = (n+1); i <= nom; i++)
+    {
+      tObj = new CSSObject(ttls[i], document);
+      sObj = new CSSObject(subs[i], document);
+      tObj.verticleMoveBy(move);
+      sObj.verticleMoveBy(move);
+    }
+  }
+  lastn = n;
+  lastmove = move;
+}
+function Nav5Visible()
+{
+  if (isNav5)
+  {
+    var tobj;
+    for(var i=1; i <= nom; i ++)
+    {
+      tobj = new CSSObject('title' + i, document);
+      tobj.css.visibility = visible;
+    }
+  }
+}
+</script>
+</HEAD>
+<body bgcolor="#FFFFFF" onload="Nav5Visible();">
+<?vsp
+  http(sprintf('<div class="user" style="top: 20px"> %s %s<br /></div>', _first, _last));
+  _menu := 1;
+  for (select distinct ChID, Channel from eNews..newsInfo
+              where UID=_uid order by Channel) do
+  {
+    _chid := ChID;
+    _channel := Channel;
+    _catcnt := (select count(*) from eNews..newsInfo
+                       where UID=_uid and ChID = _chid);
+    if (_menu = 1)
+      _tcnt := _catcnt;
+?>
+<div class="title" id="title<?= _menu ?>" style="top: <?= (_menu - 1) * 20 + 80 ?>px">
+<a href="javascript: toggle(<?= _menu ?>, <?= 12 * _catcnt + 8 ?>)"><img name="pic<?= _menu ?>" src="closed.gif" border="0"><?vsp http(_channel); ?></a>
+</div>
+
+<div class="submenu" id="submenu<?= _menu ?>" style="top: <?= _menu * 20 + 80 ?>px">
+<?vsp
+    for (select CatID, Category from eNews..newsInfo
+                where UID = _uid and Channel = _channel
+                order by Category) do
+    {
+      _cat := Category;
+      _catid := CatID;
+?>
+<a class="smenu" href="newsview.vsp?CAT=<?= _catid ?>&UID=<?=_uid?>" target="newsright"><?vsp http(_cat); ?></a><br />
+<?vsp
+    }
+?>
+</div>
+<?vsp
+    _menu := _menu + 1;
+  }
+?>
+
+<div class="title" id="title<?=_menu ?>" style="top: <?= (_menu - 1) * 20 + 90 ?>px">
+<a href="javascript: toggle(<?=_menu ?>, 20)">User Options</a>
+</div>
+
+<div class="submenu" id="submenu<?=_menu ?>" style="top: <?= _menu * 20 + 90 ?>px">
+
+<a class="smenu" href="changeNews.vsp?UID=<?= _uid ?>&P=<?= _pid?>" target="_parent">Change Selections</a><br />
+
+</div>
+</body></html>

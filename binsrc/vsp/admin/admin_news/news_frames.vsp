@@ -1,0 +1,66 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare _group integer;
+  declare _ng_name varchar;
+
+  _group := atoi (get_keyword ('Group', params, ''));
+  select NG_NAME into _ng_name FROM DB.DBA.NEWS_GROUPS WHERE NG_GROUP = _group;
+
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<HTML>
+  <HEAD>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Virtuoso News</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="">
+  </HEAD>
+
+<frameset border="0" frameborder="0" framespacing="0" rows="45,250,*">
+<!--<frameset border="0" frameborder="0" framespacing="0" rows="250,*">-->
+  <frameset border="0" frameborder="0" framespacing="0">
+    <frame src="news_read_banner.vsp?Group=<?=_ng_name?>" name="banner" marginheight="0" target="mainfr" scrolling="no">
+    <frame src="news_read.vsp?Group=<?=_group?>" name="main1" marginheight="0" target="mainfr" scrolling="auto">
+    <frame src="mime_display.vsp" name="main2" marginheight="0" target="mainfr" scrolling="auto">
+  <noframes>
+  <body bgcolor="#FFFFFF">
+  <p><!--webbot bot="PurpleText" preview="The frameset on this page can be edited with the FrontPage Frames Wizard; use the Open or Open With option from the FrontPage Explorer's edit menu. This page must be saved to a web before you can edit it with the Frames Wizard. Browsers that don't support frames will display the contents of this page, without these instructions. Use the Frames Wizard to specify an alternate page for browsers without frames." s-viewable=" " -->  </p>
+  <p><font size="3" face="Arial"><em><strong>This web page uses frames, but your browser
+  doesn't support them.</strong></em></font></p>
+  <p><strong><font color="#008080" size="3" face="Arial">IMPORTANT:</font><font color="#008080" size="2" face="Arial"> Please bookmark the page loaded from the link
+  below, this will act as your start point for non frame navigation of our site.</font></strong></p>
+  <p><font size="2" face="Arial"><em><strong>Please Note:</strong></em> When using our no
+  frame site, please do not click on the <img src="images/home.gif" width="35" height="30">
+  graphic as this will try to reload the frameset.</font></p>
+  <p><font size="2" face="Arial"><strong>Please go to our <a href="noframe.htm">No-Frame
+  Site</a></strong></font></p>
+  <p><font size="2" face="Arial"><strong>Thank You</strong></font></p>
+  </body>
+  </noframes>
+</frameset>
+
+</HTML>

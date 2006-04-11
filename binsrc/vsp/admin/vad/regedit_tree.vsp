@@ -1,0 +1,135 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _maxdepth integer;
+  declare _ctx_key varchar;
+  declare _ctx_path any;
+  declare _match_ctr integer;
+  declare _idx integer;
+  declare _spot_depth integer;
+  declare _spot_len integer;
+  declare _spot_end varchar;
+  declare _tableparams varchar;
+  declare __spot integer;
+  _ctx_path := vector();
+  __spot := {?'spot'};
+  if (__spot is null)
+    __spot := '';
+  _spot_end := concat (__spot, '~');
+  _spot_len := length (__spot);
+?>
+<HTML>
+<HEAD>
+</HEAD>
+<BODY>
+<?vsp
+-- Starting table of keys
+  if (__spot = '')
+    _tableparams := ' BGCOLOR="#EEFFFF"';
+  else
+    _tableparams := '';
+  http('<TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH="100%"><TR><TD VALIGN=TOP>');
+  http('<IMG SRC="rkey_i.gif" HEIGHT=16 WIDTH=20 BORDER=0 ALT="[it is not an actual registry key]" />');
+  http('</TD><TD WIDTH="100%"><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH="100%"'); http(_tableparams); http ('><TR><TD COLSPAN=2>');
+  http('<A HREF="regedit.vsp');
+  http("WS"."WS"."SPRINT_PARAMS"("WS"."WS"."MERGE_PARAMS"(params, vector('spot', null))));
+  http('" TARGET="_top" TITLE="Whole VAD Registry">[Root]</A></TD></TR>');
+  _ctx_path := "DB"."DBA"."VAD_RKEY_PATH_COMPONENTS"(__spot);
+  _spot_depth := length (_ctx_path);
+  _ctx_key := '';
+  _match_ctr := 0;
+  while (_match_ctr < _spot_depth)
+    {
+      _ctx_key := concat (_ctx_key, '/', aref (_ctx_path, _match_ctr));
+        "DB"."DBA"."VAD_REGEDIT_PRINT_BRANCH_BEGIN" ( path,params,lines,
+          _ctx_key, _match_ctr, _spot_depth, _ctx_path, null, null, '?', '?');
+        _match_ctr := _match_ctr+1;
+    }
+-- Spotted keys
+for
+  select
+    "R_KEY" as _r_key,
+    "R_TYPE" as _r_type,
+    "R_VALUE" as _r_value
+  from "DB"."DBA"."VAD_REGISTRY"
+  where
+    ("R_KEY" >= __spot) and
+    ("R_KEY" < _spot_end) and
+    (("R_KEY" = __spot) or
+     (strchr ('/?#', chr ( aref ("R_KEY", _spot_len))) is not null) )
+  order by
+    replace (
+      replace ("R_KEY", '#', '\1'),
+      '?', '\2')
+do
+  {
+     declare _rkey_path any;
+     declare _rkey_params varchar;
+     declare _rkey_anchor varchar;
+     _rkey_path := "DB"."DBA"."VAD_RKEY_PATH_COMPONENTS"(_r_key);
+     _rkey_params := "DB"."DBA"."VAD_RKEY_PARAMS"(_r_key);
+     _rkey_anchor := "DB"."DBA"."VAD_RKEY_ANCHOR"(_r_key);
+     _ctx_key := '';
+     _match_ctr := 0;
+     while (
+       (_match_ctr < length (_ctx_path)) and 
+       (_match_ctr < length (_rkey_path)) and
+       (aref (_ctx_path, _match_ctr) = aref (_rkey_path, _match_ctr)) )
+       {
+         _ctx_key := concat (_ctx_key, '/', aref (_rkey_path, _match_ctr));
+         _match_ctr := _match_ctr+1;
+       }
+     _idx := _match_ctr;
+     while (_idx < length (_ctx_path))
+       {
+?>
+</TABLE></TD></TR>
+<?vsp
+         _idx := _idx+1;
+       }
+    _ctx_path := _rkey_path;
+    _idx := _match_ctr;
+    while (_idx < length (_rkey_path))
+      {
+        _ctx_key := concat (_ctx_key, '/', aref (_rkey_path, _idx));
+        "DB"."DBA"."VAD_REGEDIT_PRINT_BRANCH_BEGIN" ( path,params,lines,
+          _ctx_key, _idx, _spot_depth, _rkey_path, _rkey_params, _rkey_anchor, _r_type, _r_value );
+        _idx := _idx+1;
+      }
+  }
+-- Terminating the table of keys
+  _idx := _match_ctr;
+  while (_idx < length (_ctx_path))
+    {
+?>
+</TABLE></TD></TR>
+<?vsp
+      _idx := _idx+1;
+   }
+?>
+</TABLE></TD></TR></TABLE>
+<?vsp
+-- Table of keys terminated
+?>
+</BODY>
+</HTML>

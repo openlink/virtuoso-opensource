@@ -1,0 +1,50 @@
+#
+#  $Id$
+#
+#  CREDITS
+#
+#  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+#  project.
+#
+#  Copyright (C) 1998-2006 OpenLink Software
+#
+
+The OpenLink Software Virtuoso Open-Source (VOS) project wishes to
+acknowledge incorporation of code from the following projects:
+
+* OpenSSL
+    This product includes software developed by the OpenSSL Project
+    for use in the OpenSSL Toolkit (http://www.openssl.org/).
+    This product includes cryptographic software written by Eric Young
+    (eay@cryptsoft.com).  This product includes software written by Tim
+    Hudson (tjh@cryptsoft.com)
+
+* GD
+    This product includes the "graphics draw" library by Boutell.Com, Inc
+    and others (http://www.boutell.com/gd/).
+
+* Tidy - HTML parser and pretty printer
+    This product includes Tidy (http://www.w3.org/People/Raggett/tidy/),
+    developed by the World Wide Web Consortium.
+
+* Zlib - compression library
+    This product includes the Zlib library (http://www.zlib.net/) developed
+    by Jean-loup Gailly and Mark Adler.
+
+* Kupu and Sarissa
+    This product includes the Kupu web-based editor and related Sarissa XML
+    library (http://kupu.oscom.org/ and http://sarissa.sourceforge.net/).
+
+* Rendezvous
+    This product includes the Rendezvous network-discovery library
+    (http://www.opensource.apple.com/projects/rendezvous) by Apple
+    Computer, Inc.
+
+* PCRE
+    This product includes the Perl-Compatible Regular-Expression Library
+    (PCRE, http://www.pcre.org/) by Phillip Hazel.
+
+* IE7
+    This product uses the IE7 JavaScript library
+    (http://dean.edwards.name/IE7) by Dean Edwards to make IE behave
+    (almost) like a standards-compliant browser.

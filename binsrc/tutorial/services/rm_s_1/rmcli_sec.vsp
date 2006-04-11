@@ -1,0 +1,172 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+
+declare seq, _from, _to, _reply_to, _fault_to, host, err, msg, _from1 any;
+
+host := http_request_header (lines, 'Host');
+_from1 := 'http://'||host||'/replyto';
+_to := 'http://'||host||'/wsrmsec';
+
+err := null;
+
+declare exit handler for sqlstate '*'
+{
+  rollback work;
+  err := __SQL_STATE;
+  msg := __SQL_MESSAGE;
+  goto errors;
+};
+
+_reply_to := _fault_to := null;
+
+if (_from1 is not null)
+  {
+    declare tmp any;
+    _from := _from1;
+    tmp := coalesce (_from, '');
+    if (_from = '' or get_keyword ('ack', params) is null)
+      _from := 'http://schemas.xmlsoap.org/ws/2004/03/addressing/role/anonymous';
+
+    if (tmp <> '' and get_keyword ('reply', params) is not null)
+      _reply_to := tmp;
+
+    if (tmp <> '' and get_keyword ('fault', params) is not null)
+      _fault_to := tmp;
+
+
+  }
+
+if ({?'url'} is not null)
+  _to := {?'url'};
+
+seq := {?'seq'};
+
+if ({?'exec'} is not null)
+  {
+     seq := null;
+     seq := WSRMTest_PingSec (_to, _from, atoi ({?'ntimes'}), _reply_to, _fault_to);
+  }
+
+errors:;
+?>
+
+
+<html>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+<body>
+<H3>WS-Reliable Messaging demo using WS-Security</H3>
+
+  <?vsp
+    if (err is not null)
+     {
+       ?>
+	<table border="0">
+	  <tr><td class="heading">SQL State</td><td class="error"><?=err?></td></tr>
+	  <tr><td class="heading">SQL Message</td><td class="error"><?=msg?></td></tr>
+	</table>
+       <?vsp
+     }
+  ?>
+
+<form method="post" action="<?= http_path() ?>" name="mform">
+<input type="hidden" name="seq" value="<?=seq?>">
+<table class="tableentry">
+<tr>
+<td>1. Enter the receiver's endpoint URL</td>
+<td><input type="text" name="url" value="<?=_to?>" size="70"><br/>
+<select name="predef" onchange="this.form.elements['url'].value=this[this.selectedIndex].value;">
+  <option value="<?=_to?>"><?=_to?></option>
+<?vsp 
+  if (_to <> concat('http://',host,'/wsrmsec')) {
+?>
+	<option value="<?='http://'||host||'/wsrmsec'?>"><?='http://'||host||'/wsrmsec'?></option>
+<?vsp } ?>
+  <option value="http://demo.openlinksw.com:8890/wsrm">http://demo.openlinksw.com:8890/wsrm</option>
+</select>
+</td>
+</tr>
+<!--tr>
+<td>1a. Enter the sender's pingback URL</td>
+<td><input type="text" name="from" value="<?=_from?>" size="70"></td>
+</tr-->
+<tr>
+<td>2. Select a number of Ping's to issue</td>
+<td>
+   <select name="ntimes">
+	<option value=1<?vsp if ({?'ntimes'} = '1') http (' selected'); ?>>1</option>
+	<option value=2<?vsp if ({?'ntimes'} = '2') http (' selected'); ?>>2</option>
+	<option value=3<?vsp if ({?'ntimes'} = '3' or {?'ntimes'} is null) http (' selected'); ?>>3</option>
+	<option value=4<?vsp if ({?'ntimes'} = '4') http (' selected'); ?>>4</option>
+	<option value=5<?vsp if ({?'ntimes'} = '5') http (' selected'); ?>>5</option>
+	<option value=6<?vsp if ({?'ntimes'} = '6') http (' selected'); ?>>6</option>
+	<option value=7<?vsp if ({?'ntimes'} = '7') http (' selected'); ?>>7</option>
+	<option value=8<?vsp if ({?'ntimes'} = '8') http (' selected'); ?>>8</option>
+	<option value=9<?vsp if ({?'ntimes'} = '9') http (' selected'); ?>>9</option>
+   </select>
+</td>
+</tr>
+
+<tr><td>Async ACKs(non-anon-From):</td><td><input type="checkbox" name="ack" <?vsp if ({?'ack'} is not null) http ('checked'); ?>></td></tr>
+<tr><td>Async Replies(non-anon-ReplyTo):</td><td><input type="checkbox" name="reply"  <?vsp if ({?'reply'} is not null) http ('checked'); ?>></td></tr>
+<tr><td>Async Faults(non-anon-FaultTo):</td><td><input type="checkbox" name="fault"  <?vsp if ({?'fault'} is not null) http ('checked'); ?>></td></tr>
+<tr><td>Send messages in order:</td><td><input type="checkbox" name="ord"  <?vsp if ({?'ord'} is not null) http ('checked'); ?>></td></tr>
+
+<tr><td>3. Call</td><td><input type="submit" name="exec" value="Execute"></td></tr>
+</table>
+
+<?vsp if (seq is not null)
+        {
+	   http ('<p>Click on <input type="submit" name="refresh" value="Refresh"> to update the results as reply can be asyncronous.</p> ');
+	   http (sprintf ('<H4>Sequence Identifier: %s</H4>', seq));
+	   http ('<table class="tableresult">');
+	   http ('<tr><th>Message #</th><th>Timestamp</th><th>State</th><th>Return (echoString)</th></tr>');
+	   for select OML_MESSAGE_ID, OML_SEND_DATE, OML_STATE, OML_RESPONSE from SYS_WSRM_OUT_MESSAGE_LOG where
+		OML_INDENTIFIER = seq order by OML_MESSAGE_ID do
+		{
+                  declare txt any;
+		  declare st varchar;
+		  st := 'error';
+		  if (OML_STATE = 1)
+ 		    st := 'pending';
+		  else if (OML_STATE = 2)
+ 		    st := 'retry';
+		  else if (OML_STATE = 3)
+ 		    st := 'accepted';
+
+		  txt := '';
+                  if (OML_RESPONSE is not null)
+		    txt := xpath_eval ('//Text/text()',OML_RESPONSE);
+?>
+		<tr><td><?=OML_MESSAGE_ID?></td><td><?=OML_SEND_DATE?></td><td><?=st?></td><td><?=txt?></td></tr>
+<?vsp
+                }
+	   http ('</table>');
+	}
+?>
+
+
+</form>
+</body>
+</html>
+

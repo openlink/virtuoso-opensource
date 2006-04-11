@@ -1,0 +1,43 @@
+-- ActiveBPEL Workflow
+
+Main url: http://www.activebpel.org
+
+The following workflow results are done upon ActiveBPEL engine v0.9.3 (2004-08-02) distr activebpel-0.9.3-all.zip.
+The url for download is: http://www.activebpel.org/download/download.php
+
+Requirements:
+-- Ant       - downloaded jakarta-ant-1.5.1-bin.zip.
+-- Tomcat    - downloaded jakarta-tomcat-5.0.25.zip file.
+-- JDK 1.4.1 - downloaded j2sdk-1_4_2_04-windows-i586-p.exe
+
+Additional links for the engine:
+- engine install: http://www.activebpel.org/docs/install.html
+- ActiveWebFlow Proffesional - not free for download, may be delivered by phone call (
+  contact: Andrew Dennis
+           VP Corporate Development
+           Active Endpoints, Inc.
+           www.active-endpoints.com
+           Email: andrew.dennis@active-endpoints.com
+           Office: 203-929-9400 x 229
+  This tool is BPEL Moddeler which is using for creating the BPEL script with Eclipse and some ActiveBPEL plugins.
+  IT creates the needed pdd file, but in more details this can be described after having an workflow experience with it.
+
+Samples:
+The AciveBPEL engine gives only one example for run:
+suppose the root dir is activeBPEL. The sample is at 'C:\activeBPEL\samples\loan_approval'.
+Additional info for running the sample can be found at: http://www.activebpel.org/docs/samples.html
+
+After deploying the sample loan_approval,
+the client url where the user can send message is: http://localhost:8080/bpel_example_client_page/index.jsp
+The BpelAdmin url is: http://localhost:8080/BpelAdmin/. Here can be found the deployed process and instances with different states.
+Also there is other addtional statistic info and configure options.
+
+The type of file format is a little bit different from the format Oracle BPEL Manager for example uses - bpel-name.bpel, bpel-name.wsdl.
+At the ActiveBpel there has to be created dir with name: bpel_process, and under it to be created subfolders: bpel, META-INF, wsdl where the
+needed files has to be put.
+
+If take the loan_approval sample, there is also 5 more folders:
+-- classes, dist, jsp, src, web_services
+Here has been put the needed files for running the client UI.
+
+ActiveBpel do not have client UI for each process has been deployed, so this has to be written manually for each script.

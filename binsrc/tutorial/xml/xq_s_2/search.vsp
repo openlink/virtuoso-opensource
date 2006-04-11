@@ -1,0 +1,165 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+	<head>
+	<link rel="stylesheet" type="text/css" href="../demo.css">
+	<?vsp http(XQ..GET_SCRIPT()); ?>
+	</head>
+	<body>
+<?vsp
+if ({?'sid'} is not null) {
+ declare _q, _as_html, _collection varchar;
+ declare _sid, _realm varchar;
+ declare _resource int;
+ declare _home, _user varchar;
+ declare _javascript_popup_func varchar;
+ declare _as_html_type varchar;
+
+ _resource := 0;
+ _q := coalesce ({?'q'}, '');
+ _collection := coalesce ({?'coll'}, 'http://local.virt/DAV/feeds/');
+ _as_html := coalesce ({?'enc'}, 0);
+ _as_html_type := 'type="checkbox" style="visibility:visible;"';
+ _sid := {?'sid'};
+ _realm := {?'realm'};
+
+
+ if ( {?'collopt'} is not null)
+   {
+	if  ({?'collopt'} like 'http://local.virt/DAV/home/%/MyItems%')
+		_resource := 2;
+	if ({?'collopt'} like '{Empty}')
+	  {
+	 	_resource := 1;
+		_as_html_type := 'type="checkbox" style="visibility:hidden;"';
+	  }
+   }
+ _user := (select VS_UID from VSPX_SESSION where VS_REALM = _realm and VS_SID = _sid);
+ _home := coalesce ((select U_HOME from SYS_USERS where U_NAME = _user), '/DAV/home/');
+ _collection :=  coalesce ({?'coll'}, _home || 'Items/');
+ if ({?'coll'} = '{Own}')
+   _collection := _home||'Items/';
+
+ insert soft VSPX_SESSION (VS_SID, VS_REALM, VS_UID) values (_sid, 'virtuoso_admin', _user);
+
+ _javascript_popup_func := 'javascript: transform2(document.queryList.collopt.value, 0); window.coll_url_path=document.queryList[\'coll\']; window.open (\'/conductor/popup_browser.vspx?sid=' || _sid || '&realm=' || 'virtuoso_admin' || '&coll_url_path=/DAV&ses_type=yacutia&list_type=details&flt=yes&flt_pat=&path=' || _home ||'&browse_type=both&style_css=&w_title=DAV Browser&title=DAV Browser&advisory=mega advisory text&lang=en&retname=coll_url_path&view=\', \'brws_btn_window\', \'scrollbars=auto, resizable=yes, menubar=no, height=600, width=800\')';
+?>
+	<h3>XQuery search:</h3>
+ <form name="queryList" method="POST" action="search.vsp">
+   <script language="JavaScript" type="text/javascript">
+      <!--
+       function do_post (f)
+         {
+           f.q.value = '';
+           f.submit();
+	 } 
+      //-->
+   </script>
+   <input name="sid" type="hidden" value="<?={?'sid'}?>"/>
+   <input name="realm" type="hidden" value="<?={?'realm'}?>"/>
+  <table class="tableentry">
+      <tr>
+	  <td>1. Choose collection </td>
+	  <td><select name="collopt" 
+		  onChange="javascript:transform2(document.queryList.collopt.value, document.queryList.collopt.selectedIndex); init(); do_post (this.form)"><?vsp http (XQ..GET_RESOURCES (10, 1, {?'collopt'})); ?></select> 
+	      or enter new one 
+	      <input name="coll" size="40" value="<?= _collection ?>"/>
+	      <input type="button" name="brws_btn" value="Browse..." onclick="<?vsp http( _javascript_popup_func); ?>" />. 
+	  </td>
+      </tr>
+      <tr>
+	  <td>2. Use stored XPath query from the list</td>
+	  <td> <select name="qopt" 
+		  onChange="javascript:transform(document.queryList.coll.value, document.queryList.qopt.value); init()">
+		  <?vsp http(replace (replace (XQ..GET_RESOURCES(_resource), '\\n', '\n'), '\\044', '\044')); ?>
+	      </select> 
+	  </td>
+      </tr>
+      <tr>
+	  <td colspan="2">  or enter a new one <br/><textarea name="q" cols="120" rows="20" ><?= _q ?></textarea> </td>
+      </tr>
+   <tr><td>3. Show as HTML </td><td>
+<?vsp   if (_as_html = 0) { ?>
+        <input <?vsp http(_as_html_type); ?> name="enc"/>
+<?vsp   } else { ?>
+        <input <?vsp http(_as_html_type); ?> name="enc" checked="1"/>
+<?vsp   } ?>
+    </td></tr>
+    <tr><td colspan="2"><input name="_submit" type="submit" value="Search" /></td></tr>
+    <table>
+ </form>
+ <br/>
+ <a href="text.vsp?sid=<?=_sid?>&realm=<?=_realm?>"> Text Search </a>
+
+<?vsp
+ whenever sqlstate '*' goto print_err;
+ if (({?'_submit'} is not null) and (trim (_q) <> '')){
+	declare _res, _res_xml, st, en any;
+	declare _num int;
+	_num := 0;
+	http ('<br/>');
+
+        st := msec_time ();
+	_res := xquery_eval (_q, xtree_doc ('<stub/>'));
+        en := msec_time ();
+	_res_xml := _res;
+	if (not isentity (_res_xml))
+	  _num := 0;
+	else 
+	  _num := cast (xpath_eval ('count (/*/*)', _res_xml) as int);
+--	if (_num = 0)
+--	  http ('No results found<br/>');
+--	else
+	  http (sprintf ('executed for %d msec, [%d] results found:<br/>', (en - st), _num));
+	if (_res is not null)
+	  {
+	    _res := serialize_to_UTF8_xml (_res);
+	    if ({?'enc'} is null) {
+	    	http ('<pre>');
+        http_value (_res);
+	    	http ('</pre>');
+	    } else 
+				http (_res);
+	  }
+    }
+  }
+else
+    {
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header ('Location: /wa/login.vspx?URL='|| http_path() || '\r\n');
+      return;
+    }
+if (1=0)
+  {
+print_err:
+	http ('<div class="error">[' || __SQL_STATE || ']&nbsp;[' || __SQL_MESSAGE || ']</div>');
+  }
+ ?>
+</body>
+</html>
+
+
+
+
+
+

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_id">
+  <refmeta> 
+    <refentrytitle>id</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>id</refname> 
+    <refpurpose>Returns an entities whose ID attributes are in the given list</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv> 
+    <funcsynopsis id="xpf_syn_id"> 
+      <funcprototype id="xpf_proto_id">
+        <funcdef>sequence <function>id</function></funcdef> 
+	<paramdef><parameter>ids</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_id"><title>Description</title>
+<para>
+The function gets a list of strings, where every string is a list of IDs delimited by whitespace characters.
+For every listed ID, the function checks if the document that contains the context entity also contains
+an entity with such ID; if the entity with the listed ID exists, it is added into the sequence.
+</para>
+<para>
+To avoid searches of every ID inside the whole document, the function uses &quot;ID cache&quot; that is
+created if &quot;IdCache=ENABLE&quot; DTD configuration option is specified in the call of function that
+parses the XML document. In some cases, it is possible to build such cache on demand if it is not built
+by a parser, but it consumes time and in any case it requires the saved DTD information from the XML parser,
+so the parser should be specially configured anyway.
+</para>
+<para>
+Note that any attribute of types ID, IDREF or IDREFS is a good input string for the function id().
+So while XQuery &quot;pointer operator&quot; is not available in XPath expression, the id() function
+is a good replacement for it.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_id"><title>Parameters</title>
+    <refsect2><title>ids</title>
+      <para>The list of strings that consist of IDs</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_id"><title>Return Types</title><para></para></refsect1>
+  <refsect1 id="xpf_errors_id"><title>Errors</title>
+    <para>The function ignores any sort of syntax errors on input.</para>
+  </refsect1>
+  <refsect1 id="xpf_examples_id"><title>Examples</title>
+    <example id="xpf_ex_id"><title>List errors in census data</title>
+      <para>List every person who is not a spouse of his own spouse.</para>
+      <screen>document (&quot;census.xml&quot;)//person[@spouse and not (. = id (id (@spouse)/person/@spouse)]</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_id"><title>See Also</title>
+    <para><link linkend="xpf_document">document()</link></para>
+  </refsect1>
+</refentry>

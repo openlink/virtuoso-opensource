@@ -1,0 +1,31 @@
+div.help_viewport
+{
+  background-color: yellow;
+  border: 2px solid green;
+  margin-top: 0.5ex;
+  margin-bottom: 0.5ex;
+}
+
+div.help_title
+{
+  margin-top: 0,5ex;
+  background-color: orange;
+}
+
+div.help_footer
+{
+  margin-top: 0.5ex;
+  margin-bottom: 0.5ex;
+}
+
+a.help_dismiss
+{
+  text-decoration: none;
+  color: blue;
+}
+
+a.help_dismiss:hover
+{
+  text-decoration: underline;
+}
+

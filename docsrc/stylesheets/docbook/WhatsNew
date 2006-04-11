@@ -1,0 +1,91 @@
+Changes since version 1.11 (2000-04-06)
+
+Changes to docbook/*
+
+  | 2000-05-07  Norman Walsh  <ndw@nwalsh.com>
+  | 
+  | 	* VERSION: Version 1.12 released
+  | 
+
+Changes to docbook/bin/*
+
+  | 2000-05-07  Norman Walsh  <ndw@nwalsh.com>
+  | 
+  | 	* chunk.pl: Improved cross-platform support in a trivial way
+  | 
+
+Changes to docbook/common/*
+
+  | 2000-04-19  Norman Walsh  <ndw@nwalsh.com>
+  | 
+  | 	* common.xsl: Moved IDREF checking code into common.xsl
+  | 
+  | 	* fr.xml: Fixed typo in gentext key
+  | 
+
+Changes to docbook/fo/*
+
+  | 2000-05-07  Norman Walsh  <ndw@nwalsh.com>
+  | 
+  | 	* admon.xsl, autotoc.xsl, biblio.xsl, block.xsl,
+  | 	  component.xsl, division.xsl, docbook.xsl, footnote.xsl,
+  | 	  glossary.xsl, graphics.xsl, index.xsl, info.xsl, inline.xsl,
+  | 	  lists.xsl, param.xsl, refentry.xsl, synop.xsl,
+  | 	  titlepage.xsl, verbatim.xsl, xref.xsl: Fixed XSL 1.0 PR FOs
+  | 
+  | 	* table.xsl: Fixed column-numbering on fo:table-columns
+  | 
+  | 2000-04-19  Norman Walsh  <ndw@nwalsh.com>
+  | 
+  | 	* biblio.xsl: Add ID to biblioentries
+  | 
+  | 	* docbook.xsl: Add indent=yes to xsl:output
+  | 
+  | 	* formal.xsl: Better support for proportional column widths
+  | 
+  | 	* lists.xsl: Fixed simplelist formatting
+  | 
+  | 	* param.xsl: Added check.idref
+  | 
+  | 	* table.xsl: Added comment
+  | 
+  | 	* xref.xsl: Improved XREF handling
+  | 
+
+Changes to docbook/html/*
+
+  | 2000-05-07  Norman Walsh  <ndw@nwalsh.com>
+  | 
+  | 	* xtchunk.xsl: Strip dbhtml PIs from the HTML output after
+  | 	  chunking
+  | 
+  | 2000-04-19  Norman Walsh  <ndw@nwalsh.com>
+  | 
+  | 	* ebnf.xsl: More hacking
+  | 
+  | 	* glossary.xsl: Glossary title formatting made to conform to
+  | 	  the model of other titles
+  | 
+  | 	* lists.xsl: Added ids to listitems; fixed simplelist
+  | 	  formatting
+  | 
+  | 	* xref.xsl: Some templates moved to common; support endterm
+  | 
+
+Changes to docbook/lib/*
+
+  | 2000-04-19  Norman Walsh  <ndw@nwalsh.com>
+  | 
+  | 	* lib.xsl: Added xpointer.idref
+  | 
+
+Changes to docbook/test/*
+
+  | 2000-04-19  Norman Walsh  <ndw@nwalsh.com>
+  | 
+  | 	* book2.xml: Remove broken tables; PassiveTeX can't handle
+  | 	  them at all
+  | 
+  | 	* test.xml: Hackery
+  | 
+

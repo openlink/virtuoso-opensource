@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_XMLType.getSchemaURL">
+  <refmeta>
+    <refentrytitle>XMLType.getSchemaURL</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XMLType.getSchemaURL</refname>
+    <refpurpose>Returns the URL of the XML schema definition for schema based instances, NULL for non-schema based.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_XMLType.getSchemaURL">
+      <funcprototype id="fproto_XMLType.getSchemaURL">
+        <funcdef><function>XMLType.getSchemaURL</function></funcdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_XMLType.getSchemaURL">
+    <title>Description</title>
+    <para>The function returns the URL of the XML Types associate XML schema.  
+	This applies only to schema based instances.  It will return NULL for non-schema based types.</para>
+  </refsect1>
+  <refsect1 id="ret_XMLType.getSchemaURL"><title>Return Types</title>
+    <para>The function returns string.</para>
+  </refsect1>
+  <refsect1 id="examples_XMLType.getSchemaURL">
+    <title>Examples</title>
+    <example id="ex_XMLType.getSchemaURL"><title>Simple test</title>
+      <para>The call of XMLType constructor creates an schema-based instance and
+<function>getSchemaURL()</function> returns the specified URL</para>
+      <screen><![CDATA[
+select XMLType('<sample />', 'file://xmlschema/test0001/clean.xsd').getSchemaURL()
+callret
+VARCHAR
+_______________________________________________________________________________
+
+file://xmlschema/test0001/clean.xsd
+
+1 Rows. -- 00000 msec.
+ ]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_XMLType.getSchemaURL">
+    <title>See Also</title>
+    <para><link linkend="fn_XMLType.isSchemaBased"><function>XMLType.isSchemaBased()</function></link></para>
+  </refsect1>
+</refentry>

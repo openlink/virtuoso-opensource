@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_make_string">
+  <refmeta>
+    <refentrytitle>make_string</refentrytitle>
+    <refmiscinfo>string</refmiscinfo>
+    <refmiscinfo>type</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>make_string</refname>
+    <refpurpose>make a string</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_make_string">
+      <funcprototype id="fproto_make_string">
+        <funcdef><function>make_string</function></funcdef>
+        <paramdef>in <parameter>count</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>count</title>
+      <para>Length of the string to be generated.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret"><title>Return Values</title>
+    <para>A string with defined length is returned.</para>
+  </refsect1>
+  <refsect1 id="desc"><title>Description</title>
+    <para>make_string returns a new string of length count, filled with
+    binary zeros.</para>
+    <para>If count is zero, an empty string '' is returned.</para>
+  </refsect1>
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_">
+      <title>Using <function>make_string</function> and
+      <function>aref</function></title>
+      <para>Make a string and fill it with character sequence
+      containing the alphabet upper case characters from A to Z.</para>
+      <screen>
+SQL> create procedure
+alphabet_string ()
+{
+  declare _inx integer;
+  declare _str varchar;
+  _str := make_string (26);
+
+  while (_inx &lt; 26)
+    {
+      aset (_str, _inx, _inx + 65);
+      _inx := _inx + 1;
+    }
+  return (_str);
+}
+;
+
+Done. -- 6 msec.
+SQL> select alphabet_string ();
+callret
+VARCHAR NOT NULL
+_______________________________________________________________________________
+
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+1 Rows. -- 4 msec.
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_vector"><function>vector()</function></link>,
+    <link linkend="fn_aref"><function>aref</function></link>,
+    <link linkend="fn_aset"><function>aset</function></link></para>
+  </refsect1>
+</refentry>
+
+

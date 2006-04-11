@@ -1,0 +1,47 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<id-test schemaLocation="id-test.xsd">
+ <ids-decl>
+  <idholder uid="1"/>
+  <idholder uid="2"/>
+  <idholder uid="3"/>
+  <idholder uid="4"/>
+  <idholder uid="5"/>
+  <idholder uid="6"/>
+  <idholder uid="7"/>
+  <idholder uid="8"/>
+  <idholder uid="9"/>
+  <idholder uid="10"/>
+  <idholder uid="11"/>
+ </ids-decl>
+ <generated uid="1"/>
+ <generated uid="1"/>
+ <generated uid="1"/>
+ <generated uid="1"/>
+ <generated uid="1"/>
+ <generated uid="1"/>
+ <generated uid="1"/>
+ <generated uid="normalexception0"/>
+ <generatedlar uids="1 2 normalexception1 normalexception2 4 5  11"/>
+</id-test>

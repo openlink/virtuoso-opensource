@@ -1,0 +1,8 @@
+# Microsoft Developer Studio Generated Dependency File, included by bif_sample.mak
+
+.\bif_sample.c : \
+	".\include\dkbox.h"\
+	".\include\dktypes.h"\
+	".\include\ksrvext.h"\
+	".\include\widv.h"\
+	

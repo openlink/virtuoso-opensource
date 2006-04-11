@@ -1,0 +1,87 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines);
+
+  declare _q, _all varchar;
+
+  if (not adm_check_auth (lines))
+    return 0;
+
+  _q := get_keyword ('q', params, '');
+  _all := '';
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <!--script language="javascript" src="admin_tables.js"></script-->
+    <title>Confirmation</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+  </head>
+  <BODY>
+<?vsp adm_page_header('Delete User Defined Type Confirmation', NULL); ?>
+
+    <form method="POST" action="admin_user_types.vsp" name="delete_udt">
+    <input type="hidden" name="q" value="<?= _q ?>">
+
+<TABLE class="genlist" BORDER="0" CELLPADDING="0" WIDTH="60%">
+      <tr><td class="genlistheadt">Dropping User Defined Types</td></tr>
+<?vsp
+  declare idx integer;
+  declare vwname varchar;
+  idx := 0;
+
+  while (vwname := adm_next_checkbox ('CB_', params, idx))
+    {
+       http (sprintf ('<tr><td CLASS="gendata">%s<input type="hidden" name="udts" value="%s"></td></tr>',
+     vwname, vwname));
+       if (_all = '')
+         _all := vwname;
+       else
+         _all := concat (_all, ', ', vwname);
+    }
+      if (_all = '')
+        {
+?>
+	   <script language="JavaScript">
+		document.delete_udt.submit ();
+	   </script>
+<?vsp   }      ?>
+      <tr>
+       <tr><td>
+        <P>You are about to drop the User Defined Type(s) <?= _all ?> from the database.
+	This deletion cannot be undone. Do you wish to continue?</P>
+      </td></tr>
+      <td align="center">
+        <input type="submit" name="proceed" value="Drop">&nbsp;
+	<input type="submit" name="proceed" value="Cancel"></td>
+      </tr>
+    </table>
+<?vsp adm_page_footer(); ?>
+  </body>
+</html>
+

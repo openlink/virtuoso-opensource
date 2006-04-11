@@ -1,0 +1,90 @@
+/*
+ *  multibyte.h
+ *
+ *  $Id$
+ *  
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *  
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *  
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  
+ *  
+*/
+
+#ifndef __MULTIBYTE_H
+#define __MULTIBYTE_H
+
+#include "libutil.h"
+
+typedef struct wcharset_s {
+  char chrs_name[100];
+  wchar_t chrs_table[256];
+  dk_hash_t *chrs_ht;
+  caddr_t *chrs_aliases;
+} wcharset_t;
+
+#define CHARSET_UTF8	(((wcharset_t *)NULL)+1)
+
+#define CHARSET_NAME(c,d) ((char *) (c != NULL ? \
+    (((wcharset_t *)c) != CHARSET_UTF8 ? ((wcharset_t *)c)->chrs_name : "UTF-8") : d))
+
+/* size_t virt_mbsrtowcs (wchar_t *dst, unsigned char **src, size_t len, virt_mbstate_t *ps);
+size_t virt_wcsrtombs (unsigned char *dst, wchar_t **src, size_t len, virt_mbstate_t *ps); */
+
+wchar_t *virt_wcschr (wchar_t *__wcs, wchar_t __wc);
+wchar_t *virt_wcsrchr (wchar_t *__wcs, wchar_t __wc);
+wchar_t *virt_wcsstr (wchar_t *__wcs, wchar_t *__wc);
+size_t virt_wcslen (wchar_t *__wcs);
+int virt_wcsncmp (wchar_t *from, wchar_t *to, size_t len);
+
+caddr_t box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp);
+caddr_t t_box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp);
+caddr_t box_wide_as_utf8_char (ccaddr_t _wide, size_t wide_len, dtp_t dtp);
+wchar_t CHAR_TO_WCHAR (unsigned char uchar, wcharset_t *charset);
+unsigned char WCHAR_TO_CHAR (wchar_t wchar, wcharset_t *charset);
+
+int wide_serialize (caddr_t wide_data, dk_session_t *ses);
+void *box_read_wide_string (dk_session_t *ses, dtp_t macro);
+void *box_read_long_wide_string (dk_session_t *ses, dtp_t macro);
+int wide_atoi (caddr_t data);
+
+wchar_t *virt_wcsdup(const wchar_t *s);
+int virt_wcscasecmp(const wchar_t *s1, const wchar_t *s2);
+
+/* long blob_fill_buffer_from_wide_string (caddr_t bh, caddr_t buf, int *at_end, long *char_len); moved to blob.c as static and excluded */
+size_t wide_char_length_of_utf8_string (unsigned char *str, size_t utf8_length);
+
+wcharset_t * wide_charset_create (char *name, wchar_t *table, int nelems, caddr_t *chrs_aliases);
+void wide_charset_free (wcharset_t *charset);
+
+size_t cli_wide_to_narrow (wcharset_t * charset, int flags, const wchar_t *src, size_t max_wides,
+    unsigned char *dest, size_t max_len, char *default_char, int *default_used);
+size_t cli_narrow_to_wide (wcharset_t *charset, int flags, const unsigned char *src, size_t max_wides,
+    wchar_t *dest, size_t max_len);
+size_t cli_wide_to_escaped (wcharset_t *charset, int flags, const wchar_t *src, size_t max_wides,
+    unsigned char *dest, size_t max_len, char *default_char, int *default_used);
+
+char *cli_box_wide_to_narrow (const wchar_t * in);
+wchar_t *cli_box_narrow_to_wide (const char * in);
+
+size_t cli_utf8_to_narrow (wcharset_t *charset, const unsigned char *str, size_t max_len, unsigned char *dst, size_t max_narrows);
+size_t cli_narrow_to_utf8 (wcharset_t *charset, const unsigned char *_str, size_t max_narrows, unsigned char *dst, size_t max_utf8);
+wcharset_t *sch_name_to_charset (char *name);
+
+size_t wide_as_utf8_len (caddr_t _wide);
+caddr_t box_wide_string (const wchar_t *wstr);
+
+#endif /* _MULTIBYTE_H */

@@ -1,0 +1,200 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp   http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+
+ declare _login_ok varchar;
+  declare _msg_id, _msg_no  varchar;
+  declare _sid varchar;
+   declare _user_name, _user_pass varchar;
+  declare _counter1 integer;
+  declare _start_from, _end_with integer;
+  declare _body_length integer;
+  declare _msg_read_size integer;
+  declare _list_begins_at integer;
+  declare _message long varchar;
+  declare _offset, _page integer;
+  declare _folder varchar;
+  declare _random1 integer;
+
+  _random1 := rnd(9999999);
+
+  _msg_read_size := 250;
+
+  _sid := '';
+  _sid := get_keyword('SESS', params);
+ _page := 1;
+ if (length(get_keyword('PAGE',params)) > 0) _page := atoi(get_keyword('PAGE',params, '1'));
+   _msg_no := get_keyword('MSG', params);
+   _msg_id := get_keyword('MSG_ID', params);
+
+   _login_ok := 'NO';
+   _counter1 := 1;
+
+ if (_sid  <> '') {
+  if (exists (select * from wapsession where sid = _sid ))
+  {
+   update wapsession set _time_last_active = datestring ( now() ) where  sid = _sid;
+   for select * from wapsession where sid = _sid do
+   {
+    if ( _sess_msg_id = atoi(_msg_id) )
+    {
+     _login_ok := 'YES';
+     _user_name := _username;
+     _user_pass := _userpass;
+     _folder := _sess_folder;
+     _offset := _sess_offset;
+     _list_begins_at := _sess_list;
+     update wapsession set _sess_msg_id = _msg_id, _sess_page = _page where sid = _sid;
+    }
+    else{
+     _login_ok := 'YES';
+     _user_name := _username;
+     _user_pass := _userpass;
+     _folder := _sess_folder;
+     _list_begins_at := _sess_list;
+     update wapsession set _sess_msg_id = _msg_id, _sess_page = 1, _sess_offset = 0 where sid = _sid;
+     _offset := 0;
+     _page := 1;
+    }
+   }
+  }
+  }else{
+    _login_ok := 'NO';
+  }
+
+?>
+
+<?vsp
+   if ( _login_ok = 'YES' )
+   { http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="part1" title="Reading Mail" >
+    <do type="options" label = "Options">
+     <go href="#Menu"/>
+    </do>
+    <p>
+    <?vsp
+ for select * from MAIL_MESSAGE where MM_OWN = _user_name and MM_ID = atoi (_msg_id) and  MM_FLD = _folder do
+     {
+      update MAIL_MESSAGE set MM_IS_READED = 1 where MM_OWN = _user_name and MM_ID = atoi(_msg_id) and  MM_FLD = _folder;
+
+       _page := (select _sess_page from wapsession where sid = _sid);
+
+    if ( _offset < 10)
+    {
+      _offset := (strstr(MM_BODY, '\r\n\r\n')) + 4;
+      update wapsession set _sess_offset = _offset where sid = _sid;
+    }
+
+  _body_length := length(MM_BODY);
+    _start_from := _offset + (_page -1 ) * _msg_read_size;
+    _end_with := _start_from + _msg_read_size;
+    _message := substring (MM_BODY, _start_from, _msg_read_size);
+
+         if (_page = 1)
+         {
+   http_value(sprintf('From: %s', MM_FROM)); http(sprintf('<br/>To:'));
+   http_value(sprintf('%s', MM_TO));
+   if(not (isnull(MM_REC_DATE))){http(sprintf('<br/>Date:')); http_value(sprintf('%s', MM_REC_DATE));}  http(sprintf('<br/>Subj:'));
+   http_value(sprintf('%s', MM_SUBJ));  http(sprintf('</p><p>Msg:<br/>'));
+         }else{
+            http('...');
+                }
+   http_value( sprintf( '%s', _message )  );
+
+
+       if (_body_length > _end_with)
+       {
+        http(sprintf('<br/><a href="read.vsp?MSG_ID=%s&amp;SESS=%s&amp;PAGE=%d&amp;OFFSET=%d&amp;RAN=%d" title="Next Page">..Next Page..</a>\n',
+          _msg_id,  _sid, (_page + 1), _offset, _random1) );
+       }
+
+       if (_page > 1)
+       {
+        http(sprintf('<br/><a href="read.vsp?MSG_ID=%s&amp;SESS=%s&amp;PAGE=%d&amp;OFFSET=%d&amp;RAN=%d" title="Prev Page">..Prev Page..</a>\n',
+          _msg_id, _sid, (_page - 1), _offset, _random1) );
+       }
+    }
+    ?>
+    </p>
+  </card>
+
+  <card id="Menu" title="Menu">
+     <do type="options" label="Back">
+    <prev/>
+   </do>
+   <?vsp
+  http(sprintf('<p><a href="reply.vsp?MSG_ID=%s&amp;SESS=%s&amp;START=%d&amp;LIST=%d&amp;TO_DO=REPLY&amp;FOLDER=%s" title="Reply">Reply</a></p>\n',
+    _msg_id, _sid, _start_from, _list_begins_at, _folder));
+  http(sprintf('<p><a href="reply.vsp?MSG_ID=%s&amp;SESS=%s&amp;START=%d&amp;LIST=%d&amp;TO_DO=FORWARD&amp;FOLDER=%s" title="Forward">Forward</a></p>\n',
+    _msg_id, _sid, _start_from, _list_begins_at, _folder));
+  http(sprintf('<p><a href="delete.vsp?MSG_ID=%s&amp;SESS=%s&amp;START=%d&amp;LIST=%d&amp;FOLDER=%s" title="Delete">Delete</a></p>\n',
+    _msg_id, _sid, _start_from, _list_begins_at, _folder));
+  http(sprintf('<p><a href="#Move" title="Move">Move To Folder</a></p>\n'));
+  http(sprintf('<p><a href="checkmail.vsp?SESS=%s&amp;OPEN=%s" title="Mail Menu">Mail Menu</a></p>\n',
+    _sid,_folder));
+  http(sprintf('<p><a href="#part1" title="Exit">Exit</a></p>\n'));
+   ?>
+  </card>
+
+  <card id="Move" title="Move To Folder">
+   <do type="options" label="Back">
+    <prev/>
+   </do>
+  <p> Select a Folder:</p>
+    <?vsp
+   http(sprintf('<p><a href="move.vsp?MSG_ID=%s&amp;SESS=%s&amp;LIST=%d&amp;TO_DO=MOVE&amp;FOLDER=%s&amp;TO_FOLDER=%s">%s</a></p>\n',
+           _msg_id, _sid, _list_begins_at, _folder, 'Inbox', 'Inbox'));
+   http(sprintf('<p><a href="move.vsp?MSG_ID=%s&amp;SESS=%s&amp;LIST=%d&amp;TO_DO=MOVE&amp;FOLDER=%s&amp;TO_FOLDER=%s">%s</a></p>\n',
+           _msg_id, _sid, _list_begins_at, _folder, 'Draft', 'Draft'));
+     for select wap_folder from wapfolders where wap_username = _user_name and wap_folder <> 'Inbox' and wap_folder <> 'Draft' and wap_active = 1  do
+     {
+      http(sprintf('<p><a href="move.vsp?MSG_ID=%s&amp;SESS=%s&amp;LIST=%d&amp;TO_DO=MOVE&amp;FOLDER=%s&amp;TO_FOLDER=%s">%s</a></p>\n',
+               _msg_id, _sid, _list_begins_at, _folder, wap_folder, wap_folder));
+     }
+    ?>
+  </card>
+
+</wml>
+<?vsp
+ }
+if(_login_ok = 'NO'){ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="P1" title="Wrong" >
+    <p mode="nowrap">
+   Wrong Login
+    </p>
+  </card>
+</wml>
+<?vsp
+}
+?>
+

@@ -1,0 +1,102 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+   declare srv, acct, curr, item varchar;
+   declare refr, cnt, curri, st int;
+   declare stat any;
+
+   refr := 1;
+   srv := {?'srv'};
+   acct := {?'acct'};
+
+   curr := registry_get (sprintf ('repl_%s_%s_state', srv, acct));
+   if (not isstring (curr))
+     {
+       refr := 0;
+       curr := serialize (vector ('0', '*not set*'));
+     }
+   stat := deserialize (curr);
+
+   if (not isarray (stat))
+     {
+       signal ('22023', 'No state available');
+     }
+   else if (length (stat) = 2 and isstring (stat[1]))
+     {
+       if (stat[1] = '*all*')
+         {
+           refr := 0;
+           st := 1;
+         }
+       else
+         st := 0;
+     }
+   else
+     {
+       st := 2;
+       refr := 0;
+     }
+?>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Transactional replication initial copy status">
+<?vsp if (refr) { ?>
+    <META HTTP-EQUIV="REFRESH" CONTENT="5">
+<?vsp } ?>
+<title>Initial copy status</title>
+</head>
+<?vsp adm_page_header('Intial Copy Status', ''); ?>
+
+<?vsp
+   if (refr)
+     select count(*) into cnt from SYS_TP_ITEM where TI_SERVER = srv and TI_ACCT = acct;
+
+   if (not st)
+     {
+?>
+<h4>Inital copy in progress, please wait ...</h4>
+<p>Copy of "<?V stat[1] ?>"</p>
+   <p><?V stat[0] ?> of <?V cnt ?> copied</p>
+<?vsp
+     }
+   else
+     {
+        if (st = 2)
+          {
+            declare errors any;
+            errors := stat;
+	    http_rewrite ();
+?>
+<?include sub_error.vsp ?>
+<?vsp
+	    return;
+          }
+?>
+   <h4>Initial copy finished with success</h4>
+   <p>Back to subscriptions <a href="trx_sub.vsp">page</a></p>
+<?vsp
+     }
+adm_page_footer(); ?>
+</html>

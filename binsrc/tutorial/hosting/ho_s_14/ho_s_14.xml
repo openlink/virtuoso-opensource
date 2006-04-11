@@ -1,0 +1,83 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="HO-S-14">
+    <refmeta>
+	<refentrytitle>Making Table valued functions in C#</refentrytitle>
+	<refmiscinfo>tutorial</refmiscinfo>
+    </refmeta>
+    <refnamediv>
+	<refname>Making Table valued functions in C#</refname>
+	<refpurpose>Using C# Objects to make table valued functions.</refpurpose>
+    </refnamediv>
+    <refsect1 id="HO-S-14a_overview">
+	<title>Overview</title>
+	<para>The following tutorial demonstrates how Virtuoso can be extended 
+	    through the use of a .NET bound language such as C# to create resultsets. </para>
+	<para>The demonstrations in this section highlight transparent integration 
+	    (hosting) between Virtuoso and the Microsoft .NET and Mono implementations of 
+	    the ECMA Common Language Infrastructure (CLI) as well as how to use the Virtuoso
+	    in-process ODBC client to call back the server from hosted managed code. </para>
+    </refsect1>
+    <refsect1 id="HO-S-14a_prerequisites">
+	<title>Prerequisites</title>
+	<para>The following prerequisites ensure the usability of these  
+	    tutorial demos on Windows or Linux (and in other future Mono implementations): </para>
+	<itemizedlist>
+	    <listitem>Linux
+		<itemizedlist>
+		    <listitem>Mono Runtime and Frameworks (ideally the version bundled with Virtuoso)</listitem>
+		    <listitem>Mono SDK (if you seek to write your own Objects for integration with Virtuoso)</listitem>
+		    <listitem>Virtuoso Universal Server for Linux with Mono Hosting</listitem>
+		    <listitem>Virtuoso .NET provider</listitem>
+		</itemizedlist>
+	    </listitem>
+	    <listitem>Windows
+		<itemizedlist>
+		    <listitem>.NET Runtime and Frameworks</listitem>
+		    <listitem>.Net Runtime and Framework SDK (if you seek to write your own Objects for integration with Virtuoso)</listitem>
+		    <listitem>Virtuoso Universal Server for Windows with .NET CLR Hosting</listitem>
+		    <listitem>Virtuoso .NET provider</listitem>
+		</itemizedlist>
+	    </listitem>
+	</itemizedlist>
+    </refsect1>
+    <refsect1 id="HO-S-14a">
+	<title>Tutorial Example</title>
+	<para>The following tutorial shows how C# classes can interact with the Virtuoso server. </para>
+	<para>Please follow the steps below to maximize the value of this tutorial:</para>
+	<orderedlist>
+	    <listitem>Copy the file ho_s_14.dll next to the OpenLink.Data.VirtuosoClient.dll (if not allready there).</listitem>
+	    <listitem>Click on the "Set Initial State" link which registers the C# class with Virtuoso. Click on the "ho_s_14.sql" link to see the code behind this step </listitem>
+	    <listitem>Click on the "Run" links to actually experience the demo</listitem>
+	</orderedlist>
+	<para>Demo Breakdown</para>
+	<orderedlist>
+	    <listitem>"ho_s_14.sql" registers the "openlink.virtuoso.tutorial.ho_s_14.add_data" C# static method with Virtuoso. Click 
+		on the "ho_s_14.cs" link to see the C# source code of this class</listitem>
+	    <listitem>	"vsp1.vsp" uses the static method "add_data" of the "openlink.virtuoso.tutorial.ho._s_14" class to 
+		make a resultset (like a SQL function would) through an in-process connection to the server. Take note of the
+		usage of "OpenLink.Virtuoso.InProcessPort" key from AppDomain.GetData() to get the port on which the hosting Virtuoso server is listening at.</listitem>
+	</orderedlist>
+    </refsect1>
+</refentry>

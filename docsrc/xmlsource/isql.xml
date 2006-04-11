@@ -1,0 +1,867 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="isql" >
+	<title>Interactive SQL Utility</title>
+
+<para>ISQL/ISQLO/ISQLU/isql-iodbc/isql-udbc</para>
+
+	<para>
+The Virtuoso ISQL utility allows users to execute queries &amp; scripts against
+the Virtuoso or other SQL servers (depending on the suffix).
+It also supports a large number of options and it's own commands.
+</para>
+	<para>
+ISQL parses it's input for CREATE (PROCEDURE|TRIGGER|FUNCTION), '{', '}', ';',
+double and single quotes and comments to detect where the current command starts and finishes.
+If it's in a PROCEDURE|TRIGGER|FUNCTION declaration it changes it's command line prompt to
+'&lt;procedure_name&gt;(&lt;curly_brace_nesting_level&gt;)' to help the user enter the correct command.
+Otherwise it considers semicolon (;) as the statement end and executes the statement.
+</para>
+	<para>
+ISQL also has a form of script language by itself.
+</para>
+
+
+	<sect2 id="invokingisql">
+	<title>Invoking ISQL</title>
+
+	<para>
+ISQL is invoked from the command line of the operating system.  It is a text-mode application with support
+of readline library (where available).
+</para>
+	<para>
+Specify the --help or the -? option to view the usage:
+</para>
+<programlisting><![CDATA[
+bash$ ./bin/isql --help
+OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+
+   Usage :
+isql <HOST>[:<PORT>] <UID> <PWD> file1 file2 ...
+
+isql -H <server_IP> [-S <server_port>] [-U <UID>] [-P <PWD>]
+     [-E] [-X <pkcs12_file>] [-K]
+     [-u <name>=<val>]* [-i <param1> <param2>]
+
+     isql -?
+Connection options:
+
+  -?                  - This help message
+  -U username         - Specifies the login user ID
+  -P password         - Specifies the login password
+  -H server_addr      - Specifies the Server address (IP)
+  -S server port      - Specifies the TCP port to connect to
+  -E                  - Specifies that encryption will be used
+  -C                  - Specifies that password will be sent in cleartext
+  -X pkcs12_file      - Specifies that encryption & X509 certificateswill
+                        be used
+  -T server_cert      - Specifies that CA certificate file to be used
+  -b size             - Specifies that large command buffer to be used
+                        (in KBytes)
+  -K                  - Shuts down the virtuoso on connecting to it
+
+Parameter passing options:
+
+  -u name1=val1... - Everything after -u is stored to associative array U,
+                        until -i is encountered. If no equal sign then value
+                        is NULL
+  -i                  - Ignore everything after the -i option, after which
+                        comes arbitrary input parameter(s) for isql procedure,
+                        which can be referenced with $ARGV[$I] by the
+                        ISQL-commands.
+  <OPT>=<value>       - Sets the ISQL options
+
+  Note that if none of the above matches then the non-options go as
+  <HOST>[:<PORT>] <UID> <PWD> file1 file2 ...
+]]></programlisting>
+
+	<para>
+If the command line option is not one of the above it is considered a "non-option" parameter.
+If the non-option parameter contains the equal sign ('=') then it's considered an ISQL option value assignment.
+For example 'MAXROWS=10' limits the number of rows returned for a resultset to 10 instead of the default 0.
+</para>
+	<para>
+Otherwise ISQL treats the "non-option" parameters (identified by their position) as follows :
+</para>
+<simplelist>
+<member>Position 1 - &lt;Host&gt; or &lt;port&gt; or &lt;Host:port&gt; (native), DSN (ISQLO/ISQLU/isql-iodbc/isql-udbc)</member>
+<member>Position 2 - &lt;user_id&gt;</member>
+<member>Position 3 - &lt;password&gt;</member>
+<member>Position 4 and later - script file name to load</member>
+</simplelist>
+
+	<para>
+Let us consider the following command line:
+</para>
+	<programlisting>
+isql 1111 dba dba VERBOSE=OFF 'EXEC=status()' test.sql test2.sql -i arg1 arg2
+</programlisting>
+
+	<para>
+The '1111' is the first "non-option", so it represents the connection host:port (This is all digits
+so the virtuoso CLI prepends this with 'localhost', i.e. this is an shortcut for 'localhost:1111').
+</para>
+	<para>
+The first 'dba' is the second "non-option", so it is used as User ID.
+</para>
+	<para>
+The second 'dba' is the third "non-option", so it is used as Password.
+</para>
+	<para>
+'VERBOSE=OFF' is a "non-option", but it has an equal sign in it, so this becomes an ISQL option SET statement.
+In this particular case this disables the output of "Done xxx msec" messages after each command.
+</para>
+	<para>
+'EXEC=status()' is a "non-option", but again has again an equal sign in it.  EXEC is a special option.
+Setting it to a value means executing that value as an SQL command.  The result of this is that
+status() gets executed and it's results shown.
+</para>
+	<para>
+'test.sql' is the fourth "non-option" and it specifies a file name to load a script from and execute.
+</para>
+	<para>
+'test2.sql' is the fifth "non-option" and it again specifies a file name to load a script from and execute.
+</para>
+	<para>
+'-i' specifies that the script argument list starts.  So every option after the -i is filled in the ISQL $ARGV[] array.
+</para>
+	<para>
+The order of execution is:
+</para>
+
+<para>
+<orderedlist>
+<listitem>Connect to 'localhost:1111' using UserID/Password dba/dba.</listitem>
+<listitem>Set the VERBOSE ISQL flag to OFF.</listitem>
+<listitem>Set the $ARGV[0]=arg1 and $ARGV[1]=arg2.</listitem>
+<listitem>Execute status() and display the results.</listitem>
+<listitem>Execute the script in test.sql and display the results.</listitem>
+<listitem>Execute the script in test2.sql and display the results.</listitem>
+<listitem>Disconnect and exit the ISQL</listitem>
+</orderedlist>
+</para>
+
+</sect2>
+
+	<sect2 id="isqlcommands">
+	<title>ISQL Commands</title>
+
+	<programlisting>
+&lt;SQL_command&gt; &amp;
+</programlisting>
+	<para>
+Spawns a new copy of ISQL as a background OS process to execute the command.
+The new copy will make its own connection and will terminate after the
+command completes.  The isql instance which received the command prompts
+for the next command without waiting for the spawned isql instance
+</para>
+	<programlisting>
+! &lt;command&gt; (;|&amp;)
+</programlisting>
+	<para>
+Executes an OS command
+</para>
+	<programlisting>
+SET &lt;ISQL_OPTION&gt;( |=)&lt;VALUE&gt;
+</programlisting>
+	<para>
+sets the ISQL variable or associative array U value, if it is recognized as
+such. Otherwise passed to the server.
+</para>
+
+<example><title>Examples</title>
+	<programlisting>
+SET U{test} 5; sets the associative array U's 'test' to have value of 5
+</programlisting>
+</example>
+
+	<programlisting>
+SHOW [&lt;ISQL_OPTION&gt;]
+</programlisting>
+	<para>
+shows the value of an ISQL option, if it is recognized as such. Otherwise passed to the server.
+</para>
+<programlisting>
+NOP
+</programlisting>
+	<para>
+no-operation. Useful sometimes in an $IF command.
+</para>
+<programlisting>
+(ECHO|ECHOLN) [STDOUT|STDERR|ERROR_STREAM|BOTH] string1 string2 ...
+</programlisting>
+	<para>
+echoes it's arguments into the specifies output stream (defaults to STDOUT if not specified)
+If ECHOLN is used it appends a new line after the last character printed.
+</para>
+<programlisting>
+WAIT_FOR_CHILDREN
+</programlisting>
+	<para>
+Waits for background ISQL subcommands spawned by specifying an &amp; instead of ; at the end of the statement.
+</para>
+<programlisting>
+LOAD &lt;file_name&gt;
+</programlisting>
+	<para>
+Executes each statement of the specified file.  Statements end in a
+semicolon or at the closing curly brace for procedure or trigger definitions.
+</para>
+<programlisting>
+HELP [&lt;isql-command&gt;]
+</programlisting>
+	<para>
+Prints general or command specific help texts.
+</para>
+<programlisting>
+(EXIT|QUIT) [NOT]
+</programlisting>
+	<para>
+Exits ISQL
+</para>
+	<para>
+EXIT NOT is a NO-OP, allowing statements like:
+EXIT $IF $EQU $ARGV[0] 10 $ARGV[0] NOT;
+which exits with exit code 10 if $ARGV[0] is ten
+(presumably keeping a some-kind of failure counter)
+but otherwise does nothing special, and continues
+from the next statement.
+</para>
+<programlisting>
+SLEEP [&lt;seconds&gt;]
+</programlisting>
+	<para>
+sleeps for the specified number of seconds or until an OS signal arrives.
+If seconds is not specified it's considered 0 and the behavior is OS dependent
+(the OS sleep function on Unixes, Sleep() in the Windows API).
+</para>
+<programlisting>
+CONNECT [&lt;conn_str&gt;]
+</programlisting>
+	<para>
+Without arguments forces the connection to be made with an ordinary
+way with SQLConnect and so-far specified connection details.
+With an argument uses SQLDriverConnect, giving that argument as
+a connection string (e.g. "DSN=Virtuoso;UID=DBA,PWD=DBA")
+If we are already connected, then is just NO-OP which is silently
+ignored.
+</para>
+<programlisting>
+RECONNECT [&lt;User_ID&gt;]
+</programlisting>
+	<para>
+If the ISQL is already connected then disconnects.
+After that it tries connecting to the same data source, but with
+using its argument as a user name. If none specified it gets
+the user name/password from the UID and PWD ISQL variables.
+</para>
+<programlisting>
+FOREACH [LINE|INTEGER|BLOB|TIMESTAMP|DATE|TIME]
+	[FOLLOWING|IN (-|-b|&lt;file_name&gt;)|BETWEEN &lt;n1&gt; &lt;n2&gt;]
+	&lt;statement_with_params&gt; &lt;statement_with_params&gt; ... [END]
+</programlisting>
+	<para>
+This command executes the &lt;statement_with_params&gt; in a loop, after binding the parameters specified in it to
+values specified in the command.
+</para>
+	<para>
+Parameters are specified as follows :
+</para>
+
+<simplelist>
+<member>? - an ordinary parameter bound to the foreach value</member>
+<member>?C - the count of successful operations</member>
+</simplelist>
+
+<simplelist>
+<member>LINE processes the input line by line</member>
+<member>INTEGER converts the input into integer and then processes it.</member>
+<member>BLOB reads the entire input and sets it as an blob parameter using SQLPutData</member>
+<member>TIMESTAMP is the same as LINE, bit binds to a TIMESTAMP SQL Type</member>
+<member>DATE is the same as LINE, but binds to a DATE SQL Type</member>
+<member>TIME is the same as LINE, bit binds to a TIME SQL Type</member>
+</simplelist>
+
+<simplelist>
+<member>IN specifies a set of items terminated by an END</member>
+<member>BETWEEN specifies integer set starting from n1 and ending on n2</member>
+<member>FOLLOWING as as IN but skips the input till the END keyword</member>
+</simplelist>
+
+<example><title>Examples:</title>
+<programlisting>
+foreach integer between 1 10 insert into num_tb values (?);
+</programlisting>
+	<para>Inserts 10 rows from 1 to 10 into the num_tb</para>
+<programlisting>
+foreach line in my_text_file.txt insert into str_tb (line_no, data) values (?C, ?);
+</programlisting>
+	<para>
+Inserts each line of the text file my_text_file.txt into str_tb's
+data column and puts line number in line_no column
+</para>
+<programlisting>
+foreach blob in my_text_file.txt insert into file_tb values (?);
+</programlisting>
+	<para>
+inserts a row into the file_tb with the contents of the my_text_file.txt
+as a single blob value.
+</para>
+</example>
+
+<programlisting>
+SHUTDOWN
+</programlisting>
+	<para>
+Passes this through to the server as a command
+</para>
+	<programlisting>
+CALL &lt;SQL statement&gt;
+</programlisting>
+	<para>
+Tries to bind &amp; print the SQL_RETURN_VALUE and display multiple resultsets (if any) after executing the statement.
+</para>
+	<programlisting>
+COLUMNS [&lt;table_mask&gt;][/&lt;column_mask&gt;]
+</programlisting>
+	<para>
+Calls SQLColumns ODBC
+</para>
+	<programlisting>
+TABLES [&lt;table_mask&gt;]
+</programlisting>
+	<para>
+Calls SQLTables ODBC
+</para>
+	<programlisting>
+PRIMARYKEYS [&lt;table_mask&gt;]
+</programlisting>
+	<para>
+Calls SQLPrimaryKeys ODBC
+</para>
+	<programlisting>
+COLUMNPRIVILEGES [&lt;table_mask&gt;]/[&lt;procedure_column_mask&gt;]
+</programlisting>
+	<para>
+Calls SQLColumnPrivileges ODBC
+</para>
+	<programlisting>
+PROCEDURES [&lt;procedure_mask&gt;]
+</programlisting>
+	<para>
+Calls SQLProcedures ODBC
+</para>
+	<programlisting>
+PROCEDURECOLUMNS [&lt;procedure_mask&gt;]/[&lt;procedure_column_mask&gt;]
+</programlisting>
+	<para>
+Calls SQLProcedureColumns ODBC
+</para>
+	<programlisting>
+TABLEPRIVILEGES [&lt;table_mask&gt;]
+</programlisting>
+	<para>
+Calls SQLTablePrivileges ODBC
+</para>
+	<programlisting>
+GETTYPEINFO
+</programlisting>
+	<para>
+Calls SQLGetTypeInfo (SQL_ALL_TYPES) ODBC
+</para>
+	<programlisting>
+STATISTICS [&lt;table_mask&gt;] [/U]
+</programlisting>
+	<para>
+Calls SQLStatistics ODBC. U means show only unique indexes otherwise all
+</para>
+	<programlisting>
+SPECIALCOLUMNS [&lt;table_mask&gt;] [/(B?S?T?N?)]
+</programlisting>
+	<para>
+Calls SQLSpecialColumns ODBC.
+</para>
+<simplelist>
+<member>B means BEST_ROWID, otherwise ROWVER.</member>
+<member>S means Session scope, T means transaction scope, otherwise current row.</member>
+<member>N means No Nulls, otherwise Nullable.</member>
+</simplelist>
+</sect2>
+
+	<sect2 id="isqlmacrodef">
+	<title>ISQL Macro Substitution</title>
+
+	<para>
+Before executing commands ISQL  expands macros in statement text.
+The  following macros and macro related commands are available:
+</para>
+<simplelist>
+<member>$LOADEXPR - the current script startup command</member>
+<member>$LINENO - the current line number</member>
+<member>$YYYYMMDD - the current date in the same format</member>
+<member>$HHMMSS - the current time in the same format</member>
+</simplelist>
+
+<programlisting>
+$IF &lt;cond&gt; &lt;THEN_RESULT&gt; [&lt;ELSE_RESULT&gt;]
+</programlisting>
+	<para>
+If the condition evaluates to non-empty and is not the literal 0 the value of the $IF
+is the &lt;THEN_RESULT&gt; else the &lt;ELSE_RESULT&gt;.
+</para>
+<programlisting>
+$(+|-) &lt;arg1&gt; &lt;arg2&gt;
+</programlisting>
+	<para>
+result is the addition or substitution of the arg1 and arg2
+</para>
+<programlisting>
+$LAST[&lt;n&gt;]
+</programlisting>
+	<para>
+an array of the last resultset row
+</para>
+<programlisting>
+$ARGV[&lt;n&gt;]
+</programlisting>
+	<para>
+an array of the command line arguments
+</para>
+<programlisting>
+$U[&lt;name&gt;]
+</programlisting>
+	<para>
+prints the user associative array U value for the name &lt;name&gt;
+</para>
+<programlisting>
+$&lt;ISQL_Variable&gt;
+</programlisting>
+	<para>
+returns the value of that variable
+</para>
+<programlisting>
+$LT &lt;v1&gt; &lt;v2&gt;
+</programlisting>
+	<para>
+returns 1 if the &lt;v1&gt; is lower that &lt;v2&gt;, empty otherwise
+</para>
+<programlisting>
+$GT &lt;v1&gt; &lt;v2&gt;
+</programlisting>
+	<para>
+returns 1 if the &lt;v1&gt; is greater than &lt;v2&gt;, empty otherwise
+</para>
+<programlisting>
+$GTE &lt;v1&gt; &lt;v2&gt;
+</programlisting>
+	<para>
+returns 1 if the &lt;v1&gt; is greater or equal than &lt;v2&gt;, empty otherwise
+</para>
+<programlisting>
+$LTE &lt;v1&gt; &lt;v2&gt;
+</programlisting>
+	<para>
+returns 1 if the &lt;v1&gt; is lower or equal than &lt;v2&gt;, empty otherwise
+</para>
+<programlisting>
+$EQU &lt;v1&gt; &lt;v2&gt;
+</programlisting>
+	<para>
+returns 1 if the &lt;v1&gt; is equal to &lt;v2&gt;, empty otherwise
+</para>
+<programlisting>
+$NEQ &lt;v1&gt; &lt;v2&gt;
+</programlisting>
+	<para>
+returns 1 if the &lt;v1&gt; is not equal to &lt;v2&gt;, empty otherwise
+</para>
+
+<example><title>Examples:</title>
+<programlisting>
+ECHO $IF $EQU 1 2 "True" "False";
+</programlisting>
+<para>prints "False" to the standard output</para>
+<programlisting>
+EXIT $IF $NEQ 1 2 NOT;
+</programlisting>
+<para>never exits</para>
+<programlisting>
+ECHO $IF $EQU $ARGV[1] 1 "One" $IF $EQU $ARGV[1] "Two" "Unknown;
+</programlisting>
+<para>prints the "one" on 1 as arg 1, "two" on 2 as arg 1 otherwise "Unknown"</para>
+</example>
+</sect2>
+
+<sect2 id="isqlvariables">
+<title>ISQL Variables</title>
+
+	<para>
+These variables are sometimes set as a side effect of executing statements, e.g. rowcnt
+and sometimes should be explicitly set by the user to control the operation of isql, e.g. maxrows.
+</para><para>
+The variable names are case insensitive.  Like in UNIX shells, the variable name
+in an expression must be prefixed by a $ to return its value.
+Variables do not have an explicit data type. Like Unix shell variables they have string
+values which are sometimes interpreted as numbers and sometimes as booleans.
+Generally an on/off choice is represented by the values ON/OFF.  The ON/OFF values are case insensitive.
+</para>
+
+<example><title>Example:</title>
+<programlisting>
+SQL&gt; SET AUTOCOMMIT ON;
+SQL&gt; echo $autocommit;
+ON
+SQL&gt; set U{var} foo;
+SQL&gt; echo $u{VAR};
+foo
+</programlisting>
+<para>
+Note that the $u{&lt;var&gt;} notation is a general purpose text substitution macro
+without arguments.  The expansion takes place regardless of SQL syntactic context.
+</para>
+</example>
+
+<example><title>Example:</title>
+<programlisting>
+set u{table} SYS_KEYS;
+select count (*) from $u{table};
+</programlisting>
+</example>
+
+		<sect3 id="varref">
+		<title>Variable Reference</title>
+
+<programlisting>
+RETVAL
+</programlisting>
+	<para>
+Function called return value
+</para>
+<programlisting>
+RETVALLEN
+</programlisting>
+	<para>
+Function called return value length
+</para>
+<programlisting>
+ROWCNT
+</programlisting>
+	<para>
+Number of rows in the last result set.  If the statement was an insert, update or delete this is the number of rows affected.
+</para>
+<programlisting>
+COLCNT
+</programlisting>
+	<para>
+Number of columns in the last resultset
+</para>
+<programlisting>
+ARGC
+</programlisting>
+	<para>
+Number of ISQL command line arguments
+</para>
+<programlisting>
+I
+</programlisting>
+	<para>
+Number of script arguments (after -i)
+</para>
+<programlisting>
+LIF
+</programlisting>
+	<para>
+Result of the last $IF
+</para>
+<programlisting>
+INPUTLINE
+</programlisting>
+	<para>
+Current executed line
+</para>
+<programlisting>
+STATE
+</programlisting>
+	<para>
+SQL State (defaults to OK)
+</para>
+<programlisting>
+SQLSTATE
+</programlisting>
+	<para>
+Same as state.
+</para>
+<programlisting>
+MESSAGE
+</programlisting>
+	<para>
+the SQL error message from the last operation.
+</para>
+<programlisting>
+DRIVER
+</programlisting>
+	<para>
+The Driver name
+</para>
+<programlisting>
+LWE
+</programlisting>
+	<para>
+Last ECHO output
+</para>
+<programlisting>
+DSN
+</programlisting>
+	<para>
+The DSN or host address used/to be used in connecting to the server.
+Use this with uid and pwd before the connect or reconnect command to change the connected server.
+This is useful for scripts which access multiple servers.
+</para>
+<programlisting>
+UID
+</programlisting>
+	<para>
+The User ID used/to be used in connecting to the server
+</para>
+<programlisting>
+PWD
+</programlisting>
+	<para>
+The Password used/to be used in connecting to the server
+</para>
+<programlisting>
+ERRORS
+</programlisting>
+	<para>
+The current stream for errors (STDIN, STDOUT, STDERR or a file name)
+</para>
+<programlisting>
+PROMPT
+</programlisting>
+	<para>
+Prints the PROMPT or not
+</para>
+<programlisting>
+EMPTY
+</programlisting>
+	<para>
+The current empty string value
+</para>
+<programlisting>
+VERSION
+</programlisting>
+	<para>
+ISQL version
+</para>
+<programlisting>
+BLOBS
+</programlisting>
+	<para>
+When ON binds prints the BLOB resultset values when printing the resultset. Otherwise prints 'BLOB x chars'
+</para>
+<programlisting>
+ECHO
+</programlisting>
+	<para>
+When ON prints the commands to the standard output before executing
+</para>
+<programlisting>
+BANNER
+</programlisting>
+	<para>
+When ON prints the column names &amp; types banner when printing the resultset
+</para>
+<programlisting>
+TYPES
+</programlisting>
+	<para>
+When ON prints the Type information in the resultset's banner
+</para>
+<programlisting>
+VERBOSE
+</programlisting>
+	<para>
+When ON Prints the Timing row after the resultset output
+</para>
+<programlisting>
+TIMESTOSTRINGS
+</programlisting>
+	<para>
+When ON binds the SQL_DATE, SQL_TIME &amp; SQL_TIMESTAMP columns to strings
+</para>
+<programlisting>
+TRAILING_NEWLINES
+</programlisting>
+	<para>
+When ON prints new line after the row's end
+</para>
+<programlisting>
+DEADLOCK_RETRIES
+</programlisting>
+	<para>
+How many times to retry the statement if deadlock occurred
+</para>
+<programlisting>
+MACRO_SUBSTITUTION
+</programlisting>
+	<para>
+When ON ISQL does understand &amp; process $ macros
+</para>
+<programlisting>
+IGNORE_PARAMS
+</programlisting>
+	<para>
+When ON passes the ? through to the server instead of returning an error for unbound ?
+</para>
+<programlisting>
+BIND_RETURN_VALUES
+</programlisting>
+	<para>
+When ON binds a buffer to SQL_RETURN_VALUE
+</para>
+<programlisting>
+AUTOCOMMIT
+</programlisting>
+	<para>
+When ON ISQL executes statements  in autocommit mode.  By default isql executes statements in
+manual commit mode, following each execution with a SQLTransact call to commit.
+The difference is not visible most of the time.
+</para>
+<programlisting>
+ACCESSMODE
+</programlisting>
+	<para>
+Sets the ODBC access mode (RW, RO)
+</para>
+<programlisting>
+TIMEOUT
+</programlisting>
+	<para>
+ODBC Query timeout
+</para>
+<programlisting>
+MAXROWS
+</programlisting>
+	<para>
+Print only the first so many rows. If 0 - unlimited.
+</para>
+<programlisting>
+CURRENT_QUALIFIER
+</programlisting>
+	<para>
+Prints the current ODBC SQLGetInfo client Qualifier
+</para>
+<programlisting>
+INFO_DATABASE_NAME
+</programlisting>
+	<para>
+Prints the current ODBC SQLGetInfo Database name
+</para>
+<programlisting>
+INFO_USER_NAME
+</programlisting>
+	<para>
+Prints the current ODBC SQLGetInfo user name
+</para>
+<programlisting>
+INFO_GETDATA_EXTENSTIONS
+</programlisting>
+	<para>
+Prints the current ODBC SQLGetInfo SQLGetData extensions flag
+</para>
+<programlisting>
+COMMAND_TEXT_ON_ERROR
+</programlisting>
+	<para>
+When OFF ISQL does not print the text of the command in the error messages
+</para>
+</sect3>
+</sect2>
+
+<sect2 id="isqlgentesttool">
+<title>Using isql as a General Purpose Test Driver</title>
+
+	<para>
+isql can be used to automatically run SQL scripts which execute statements, perform
+simple tests on the results and generate a report.  This can be used to automate tests of stored
+procedures or to benchmark them.
+</para>
+	<para>
+Also note the use of &amp; at the end of a command to spawn multiple isql instances
+on the background.  This is useful for automatically creating concurrency situations for testing.
+</para>
+	<para>
+Consider the script:
+</para>
+	<programlisting>
+drop table tt;
+create table tt (id int identity not null primary key, ctr int);
+create procedure tt_fill (in n int)
+{
+  declare ctr int;
+  ctr := 0;
+  while (ctr &lt; n){
+    insert into tt (ctr) values (ctr);
+    ctr := ctr + 1;
+  }
+}
+
+tt_fill (10000) &amp;
+tt_fill (10000) &amp;
+tt_fill (10000) &amp;
+tt_fill (10000) &amp;
+
+wait_for_children;
+select count (*), count (distinct ctr)  from tt;
+
+echo both $if $equ $last[1] 40000 "PASSED" "***FAILED";
+echo both " Inserted " $last[1] " rows\n";
+echo both $if $equ $last[2] 10000 "PASSED" "***FAILED";
+echo both " Inserted " $last[2] " distinct ctr values\n";
+</programlisting>
+
+	<para>
+Now suppose the above text were in the file test.sql.
+The command
+</para>
+
+<programlisting>
+isql 1111 errors=stdout &lt;test.sql &gt;test.out
+</programlisting>
+
+	<para>
+would print the diagnostics to the standard error and the full trace to
+test.out.  Note the errors=stdout would
+direct the error message for no table in the initial drop table to the text.out file,
+so the console would just print:
+</para>
+
+<programlisting>
+PASSED Inserted 40000 rows
+PASSED Inserted 10000 distinct ctr values
+</programlisting>
+</sect2>
+</sect1>
+
+

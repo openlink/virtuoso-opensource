@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="xsql"><title>XSQL</title>
+
+<para>XSQL is an XML-based format for describing simple stored procedures that
+can parse XML data, query or update database tables and compose XML output.
+Both input and output XMLs of such procedures are usually standard three-level
+documents: a top-level <computeroutput>ROWSET</computeroutput> element contains
+some number of <computeroutput>ROW</computeroutput> elements and every
+<computeroutput>ROW</computeroutput> contains one element per database field.
+XSQL lets the application developer avoid writing routine code for parsing
+and composing such documents:
+the server translates a short and self-evident XSQL description into a relatively long Virtuoso/PL procedure.</para>
+
+<para>
+XSQL pages are usually executed from XSLT stylesheets by calling
+<link linkend="xpf_processXSQL"><function>processXSQL()</function></link> XPATH function.
+When the page is executed, it can access an XML entity that is context entity of the
+<function>processXSQL()</function> call. This entity is used inside the page as an
+implicit parameter called &quot;context XML&quot;.</para>
+
+<para>An XSQL document that describes one procedure is called &quot;XSQL page&quot;.
+A page consists of small directives.
+Every directive is written as a single XML element from namespace &quot;urn:oracle-xsql&quot; (the typical namespace prefix is &quot;xsql&quot;).
+Every directive describes one standard operation.
+The resulting Virtuoso/PL procedure will execute all directives in turn.
+Directives are of four sorts:</para>
+
+<simplelist>
+  <member>Parameter assignments create and initialize local variables (&quot;page parameters&quot;) that can be used in the rest of page.</member>
+  <member>Data modification requests can insert, delete or update data in database tables.</member>
+  <member>XML generators can query database or page parameters and produce XML fragments. These fragments form
+the resulting XML that is returned by the procedure.</member>
+  <member>DML directives let the author to put arbitrary Virtuoso/PL code in the procedure.</member>
+</simplelist>
+<para>
+All directives are children of one op-level element called &apos;xsql:page&apos;.
+This element can have any number of attributes but no one attribute is used by Virtuoso.
+These attributes may be used by specialized XSQL editors and standalone XSQL processors that should
+establish a database connection to read and write data so store connection details as
+attributes of &apos;xsql:page&apos;.
+</para>
+
+<para>The XSQL development cycle consists of editing &apos;.xsql&apos; resources in the
+file system or Virtuoso DAV.  The editing can take place using a
+regular text editor or a supporting XML editor or some specialized third-party XSQL tool.</para>
+
+ <sect2 id="xsqlsyntax"><title>XSQL Syntax</title>
+   <para>Properties of each XSQL directives are specified by XML attributes.
+These attributes are of different types, mostly SQL expressions, calculateable strings,
+SQL names and lists of names (e.g., name of a database table or a list of columns of a table).
+   </para>
+   <para>
+In some cases, SQL expressions are long and it is not convenient to place them into attribute values.
+Such expressions are written as text content of the XSQL directive element.
+   </para>
+   <formalpara><title>SQL expressions</title>
+   <para>XSQL allows slightly extended syntax of SQL expressions. If X is a name of page parameter made by xsql:set-page-param then
+special notation &quot;{@X}&quot; stands for the reference to the parameter value.
+This notation can be used in any place where a variable name is acceptable.
+In addition, this notation can be used inside string literals, such a literal is translated into
+a string contatenation expression; e.g., <computeroutput>&apos;text-head{@X}text-middle{@Y}text-tail&apos;</computeroutput> is converted into
+<computeroutput>concat (&apos;text-head&apos;, cast ({@X} as varchar), &apos;text-middle&apos;, cast ({@Y} as varchar), &apos;text-tail&apos;)</computeroutput>.
+   </para></formalpara>
+   <formalpara><title>Calculateable strings</title>
+   <para>Some attribute values are strings like resource URIs or XML names to be used in the output generated by a page.
+They are usually written 'as is' but they can use &quot;{@X}&quot; notation to insert the value of page parameter into the
+resulting string. The actual value of a calculateable string is compiled only once even if it appears many times in the
+XML output of the page.
+   </para></formalpara>
+   <formalpara><title>Names of SQL columns</title>
+   <para>Some attributes are not arbitrary SQL expressions but only SQL column names. These names are written 'as is'.
+Only unqualified names are allowed, not in form &apos;table.column&apos;.
+No &quot;{@X}&quot; is allowed for obvious reasons.
+If SQL name is case-sensitive or contains nonalphabetical characters
+then the name should be enclosed in double quotes.
+For readability, use single quotes to surround attribute value to not mix them with possible double quotes used in SQL name.
+Whitespace characters are not allowed in these names because these will not make proper names of XML elements.
+</para></formalpara>
+   <formalpara><title>Names of SQL tables</title>
+   <para>SQL table names are also written 'as is', with the same rules for double quotes around case-sensitive parts of the name.
+Both qualified and unqualified names are allowed. </para></formalpara>
+   <formalpara><title>Lists of names of SQL columns</title>
+   <para>When the value of attribute lists one or more column names,
+white space characters or commas delimit column names.
+The list should be space-delimited like &apos;COL1 COL2 COL3&apos; or comma-delimited like &apos;COL1, COL2, COL3&apos;
+but not a mix of them like &apos;COL1, COL2 COL3&apos;.</para></formalpara>
+ </sect2>
+ <sect2 id="xsqldirectives"><title>XSQL Directives</title>
+
+   <sect3 id="xsql_delete_request"><title>xsql:delete-request</title>
+    <para>Deletes the rows listed in the context XML.</para>
+    <programlisting><![CDATA[
+<xsql:delete-request
+  table="table_name"
+  key-columns="column_list"
+  [ transform="calculateable_URI_string" ]
+/>
+]]></programlisting>
+    <para>If &apos;transform&apos; URI is specified then it is used as a name of XSLT stylesheet that is applied to the
+context XML before the rest of processing. The result of that stylesheet should be in standard ROWSET/ROW form.
+The result may also contain elements with other names but they will be silently ignored.
+</para>
+    <para>After this optional XSLT transformation, the XSQL procedure gets all ROW elements in all top-level ROWSET
+elements of the source XML. For each such element it parses all subelements whose names match column names listed in
+the &apos;key-columns&apos; attribute.
+It is legal to have a ROW element that does not contain an element that matches a particular column; the missing element is
+treated as a database NULL. If a subelement of ROW has attribute &apos;NULL&apos; equal to &apos;Y&apos; then it is also treated as
+database NULL.</para>
+    <para>When required subelements of ROW are parsed, the procedure deletes all rows from the specified table that have all specified column values equal to values specified
+by ROW subelements. When the delete operation is complete, the procedure parses all subelements of the next ROW element in
+queue and so on.</para>
+    <programlisting><![CDATA[
+<xsql:delete-request table='"Demo"."demo"."Customers"' key-columns='"CustomerID"'/>
+]]></programlisting>
+    </sect3>
+
+   <sect3 id="xsql_dml"><title>xsql:dml</title>
+    <para>Executes an arbitrary fragment of Virtuoso/PL code.</para>
+    <programlisting><![CDATA[
+<xsql:dml>
+One or more Virtuoso/PL statements, {@X} syntax is allowed.
+</xsql:dml>
+]]></programlisting>
+    <para>The XSQL procedure will contain the text of the directive &apos;as is&apos;; the only change is that
+<computeroutput>{@X}</computeroutput> notation is replaced with appropriate Virtuoso/PL variables.
+Note that the use of <computeroutput>&lt;![CDATA[...]]&gt;</computeroutput> XML syntax is very convenient here.
+</para>
+    <programlisting><![CDATA[
+<xsql:set-page-param name="X" value="2"/>
+<xsql:set-page-param name="Y" value="2"/>
+<xsql:dml><![CDATA[
+-- This will simply print the string on server's console:
+dbg_obj_print ('Hello World\n');
+-- This will compose a string '2 * 2 =' and print on console:
+dbg_obj_print ('{@X} * {@Y} = ');
+-- This will calculate and print a well-known product.
+-- Note that attempt to write {@X * @Y} or {@X * Y} results in a syntax error.
+dbg_obj_print ({@X} * {@Y}, '\n');
+]]>]]&gt;<![CDATA[
+</xsql:dml>
+]]></programlisting>
+    </sect3>
+
+   <sect3 id="xsql_include_owa"><title>xsql:include-owa</title>
+    <para>This Oracle-specific directive is not implemented.</para>
+    </sect3>
+
+
+   <sect3 id="xsql_include_param"><title>xsql:include-param</title>
+    <para>Puts the value of the spacefied page parameter into the resulting XML of the page.</para>
+    <programlisting><![CDATA[
+<xsql:include-param name="page_param_name"/>
+]]></programlisting>
+    <para>This writes the value of the specified page parameter as an element whose name is made from
+the name of parameter. NULL value results in an empty element that has attribute named 'NULL' with value 'Y'.</para>
+    <para>Note that XML elements ROWSET and ROW have special use in XSQL pages. The use of parameter names
+ROWSET and ROW is legal but may cause undesired effects.</para>
+    <programlisting><![CDATA[
+<xsql:set-page-param name="an-int" value="2"/>
+<xsql:set-page-param name="an-xml" value="xtree_doc('<sample>text</sample>')"/>
+<xsql:set-page-param name="a-null" value="NULL"/>
+<!-- This will form an element <an-int>2</an-int> -->
+<xsql:include-param name="an-int"/>
+<!-- This will form an element <an-xml><sample>text</sample></an-xml> -->
+<xsql:include-param name="an-xml"/>
+<!-- This will form an element <a-null NULL="Y"/> -->
+<xsql:include-param name="a-null"/>
+]]></programlisting>
+    </sect3>
+
+   <sect3 id="xsql_include_request_params"><title>xsql:include-request-params</title>
+    <para>This directive is not implemented in this version.</para>
+    </sect3>
+
+   <sect3 id="xsql_include_xml"><title>xsql:include-xml</title>
+    <para>This directive is not implemented in this version.</para>
+    </sect3>
+
+   <sect3 id="xsql_include_xsql"><title>xsql:include-xsql</title>
+    <para>This directive is not implemented in this version.</para>
+    </sect3>
+
+   <sect3 id="xsql_insert_param"><title>xsql:insert-param</title>
+    <para>Inserts rows listed in XML that is stored in page parameter.</para>
+    <programlisting><![CDATA[
+<xsql:insert-param
+  name="parameter_XML_name"
+  table="table_name"
+  [ mode="enum" (could be "into", "soft" or "replacing", default is "into") ]
+  [ columns="column_list" ]
+  [ date-format="string" (allowed but ignored) ]
+  [ transform="calculateable_URI_string" ]
+/>
+]]></programlisting>
+    <para>The directive inserts into a table all data rows listed in the value of a page parameter that is named by &apos;name&apos; attribute.
+The destination table is specified by &apos;table&apos; attribute.
+</para>
+    <para>If &apos;transform&apos; URI is specified then it is used as a name of XSLT stylesheet that is applied to the
+source data before the rest of processing. The result of that stylesheet should be in standard ROWSET/ROW form.
+The result may also contain redundant elements but they will be silently ignored.
+</para>
+    <para>After this optional XSLT transformation, the XSQL procedure gets all ROW elements in all top-level ROWSET
+elements of the source. For each such element it parses all subelements whose names match column names listed in
+the &apos;columns&apos; attribute; if the &apos;columns&apos; attribute is not specified then all column names from
+the destination table are used.
+It is legal to have a ROW element that does not contain an element that matches a particular column; the missing element is
+treated as a database NULL. If a subelement of ROW has attribute &apos;NULL&apos; equal to &apos;Y&apos; then it is also treated as
+database NULL.</para>
+    <para>When required subelements of ROW are parsed, the procedure adds a row to the table.
+It executes INSERT INTO, INSERT SOFT or INSERT REPLACING statement depending on the value of &apos;mode&apos; attribute.
+When the insert operation is complete, the procedure parses all subelements of the next ROW element in queue and so on.</para>
+    <programlisting><![CDATA[
+<xsql:insert-param name="customer-details" table='"Demo"."demo"."Customers"' />
+]]></programlisting>
+    </sect3>
+
+   <sect3 id="xsql_insert_request"><title>xsql:insert-request</title>
+    <para>Inserts the rows listed in context XML.</para>
+    <programlisting><![CDATA[
+<xsql:insert-request
+  table="table_name"
+  [ mode="enum" (could be "into", "soft" or "replacing", default is "into") ]
+  [ columns="column_list" ]
+  [ date-format="string" (allowed but ignored) ]
+  [ transform="calculateable_URI_string" ]
+/>
+]]></programlisting>
+    <para>The directive inserts into a table all data rows listed in context XML.
+The destination table is specified by &apos;table&apos; attribute.
+</para>
+    <para>If &apos;transform&apos; URI is specified then it is used as a name of XSLT stylesheet that is applied to the
+context XML before the rest of processing. The result of that stylesheet should be in standard ROWSET/ROW form.
+The result may also contain redundant elements but they will be silently ignored.
+</para>
+    <para>After this optional XSLT transformation, the XSQL procedure gets all ROW elements in all top-level ROWSET
+elements of the source. For each such element it parses all subelements whose names match column names listed in
+the &apos;columns&apos; attribute; if the &apos;columns&apos; attribute is not specified then all column names from
+the destination table are used.
+It is legal to have a ROW element that does not contain an element that matches a particular column; the missing element is
+treated as a database NULL. If a subelement of ROW has attribute &apos;NULL&apos; equal to &apos;Y&apos; then it is also treated as
+database NULL.</para>
+    <para>When required subelements of ROW are parsed, the procedure adds a row to the table.
+It executes INSERT INTO, INSERT SOFT or INSERT REPLACING statement depending on the value of &apos;mode&apos; attribute.
+When the insert operation is complete, the procedure parses all subelements of the next ROW element in queue and so on.</para>
+    <programlisting><![CDATA[
+<xsql:insert-request table='"Demo"."demo"."Customers"' columns='"CustomerID", "Phone", "Fax"'/>
+]]></programlisting>
+    </sect3>
+
+   <sect3 id="xsql_query"><title>xsql:query</title>
+    <para>This executes an SELECT statement and writes its result set into the resulting XML in some sort of ROWSET/ROW format.</para>
+    <programlisting><![CDATA[
+<xsql:query
+  [ fetch-size="integer" (allowed but ignored) ]
+  [ id-attribute="calculateable_XML_NAME_string" ]
+  [ id-attribute-column="SQL_column_name" ]
+  [ max-rows="integer_SQL_expn" (default is no limit) ]
+  [ null-indicator="boolean" (default value is "no") ]
+  [ row-element="calculateable_XML_NAME_string" (default value is "ROW") ]
+  [ rowset-element="string" (default value is "ROWSET") ]
+  [ skip-rows="integer_SQL_expn" (default is no skip) ]
+  [ tag-case="enum" (could be "lower" or "upper", default is "lower") ]
+>
+Text of SELECT statement, {@X} syntax is allowed.
+</xsql:query>
+]]></programlisting>
+    <para>When no attributes is specified, the directive executes the SELECT statement and composes an XML fragment that
+consists of ROWSET element that have one ROW child element per row of the result set of the executed statement.
+Every ROW has one child element per result set column. The name of each element is made by converting column name to lowercase
+and element values are serializations of result set fields. The procedure does not create elements for fields with NULL values
+so an element with no text inside means empty string value but the totally missing element means NULL.
+In addition, ROW element have so-called &quot;id attribute&quot; whose name is &apos;num&apos; and value is a number of the row in the result set.
+    </para>
+    <para>If attribute &apos;null-indicator&apos; is equal to '1' or 'yes' then elements are created for both non-NULL and NULL field values.
+Unlike elements that represent empty strings, element that represent NULL will have an attribute with name &apos;NULL&apos; and value &apos;Y&apos;.
+    </para>
+    <para>Attributes &apos;id-attribute&apos; and &apos;id-attribute-column&apos; configures the composing of &quot;id attribute&quot;.
+&apos;id-attribute-column&apos; instructs to use the value specified SQL column as a value of attribute, &apos;id-attribute&apos; can specify
+an attribute name other than default &apos;num&apos;.
+    </para>
+    <para>Attribute &apos;tag-case&apos; specifies the character case of elements for columns. This does not affect names for ROW and ROWSET elements.
+    </para>
+    <para>Element names ROW and ROWSET can be changed to whatever else by specifying attributes &apos;row-element&apos; and &apos;rowset-element&apos;.
+Either or both of these elements can be omitted at all by specifying empty string value for appropriate attributes; this will prevent the result set from
+proper parsing by some standard tools but may be convenient for special purposes.
+Note that If &apos;row-element&apos; is empty string and ROW should not be created then attributes &apos;id-attribute&apos; and &apos;id-attribute-column&apos; should not be used.
+    </para>
+    <para>Attributes &apos;max-rows&apos; and &apos;skip-rows&apos; adds TOP N and SKIP N clauses to the specified SELECT statement.
+They are supported mostly for compatibility. Attribute &apos;fetch-size&apos; is ignored at all.</para>
+    <para>Note that Oracle allows the xsql:query to contain any code that produces a result set whereas Virtuoso allows only SELECT statement.</para>
+    <programlisting><![CDATA[
+<xsql:set-page-param name="usermask" value="'%DAV%'"/>
+<xsql:query>
+-- This will produce the following XML fragment:
+-- <ROWSET>
+--   <ROW num="1"><u_id>3</u_id><u_name>administrators</u_name>
+--      <u_full_name>WebDAV Administrators</u_full_name><ROW>
+--   <ROW num="2"><u_id>3</u_id><u_name>dav</u_name>
+--      <u_full_name>WebDAV System Administrator</u_full_name><ROW>
+-- </ROWSET>
+SELECT U_ID, U_NAME, U_FULL_NAME from SYS_USERS where U_FULL_NAME like {@usermask}
+</xsql:query>
+]]></programlisting>
+    </sect3>
+
+   <sect3 id="xsql_ref_cursor"><title>xsql:ref-cursor-function</title>
+    <para>This directive is not implemented in this version of Virtuoso Server.</para>
+    </sect3>
+
+   <sect3 id="xsql_set_cookie"><title>xsql:set-cookie</title>
+    <para>This Oracle-specific directive is not implemented.</para>
+    </sect3>
+
+   <sect3 id="xsql_set_page_param"><title>xsql:set-page-param</title>
+    <para>Declares a page parameter and assigns a value to it.</para>
+    <programlisting><![CDATA[
+<xsql:set-page-param
+  name="XML_name"
+  [ ignore-empty-value="boolean" ]
+  [ value="SQL_expression" ]
+  [ xpath="XPATH_expression" ]
+>
+SQL expression, {@X} syntax is allowed, but only
+for names that were declared above the current one.
+</xsql:set-page-param>
+]]></programlisting>
+    <para>The declaration should contain either &apos;value&apos; attribute or &apos;xpath&apos; attribute or a SQL expression as a text inside element,
+but not two or three of them simultaneously. The specified expression is calculated and the result is saved as a page variable with name specified by
+&apos;name&apos; attribute. The resulting page variable can be used in other SQL expressions and calculateable strings of the page via
+&apos;{@X}&apos; notation described in <link linkend="xsqlsyntax">XSQL Syntax</link> subsection above.</para>
+    <para>If the directive uses &apos;xpath&apos; attribute, the XPATH expression is applied to the context XML of the page.
+To apply an XPATH expression to some other XML entity, use <link linkend="fn_xpath_eval()"><function>xpath_eval()</function></link>
+function in SQL expression specified by &apos;value&apos; attribute or text inside the element.</para>
+    <para>If attribute &apos;ignore-empty-value&apos; is set to &apos;yes&apos; or &apos;1&apos; and the value of the calculated expression is
+an empty string then the page parameter is set to NULL.
+This may be convenient for handling default values that are passed to the page from HTML forms.</para>
+    <para>It is recommended to have names of parameters compatible with &quot;XML 1.1 unqualified name&quot; syntax.
+Hence, it is better to use minus sign instead of underscore and avoid using unusual characters like spaces.
+This become important when you use xsql:include-param because the name of create XML element will be equal to the name of parameter.</para>
+    <programlisting><![CDATA[
+<!-- string constant '%DAV%' is an SQL expression -->
+<xsql:set-page-param name="user-mask" value="'%DAV%'"/>
+<!-- SELECT statement is an expression too, but only when enclosed in parenthesis.
+  Without parenthesis, it is an SQL operator but not an SQL expression. -->
+<xsql:set-page-param name="user-id">
+(select U_ID from SYS_USERS where U_FULL_NAME like {@user-mask})
+</xsql:set-page-param>
+<!-- This copies implicit page argument 'context XML'
+  into plain page parameter 'my-context' -->
+<xsql:set-page-param name="my-context" xpath="." />
+]]></programlisting>
+    </sect3>
+
+   <sect3 id="xsql_set_session_param"><title>xsql:set-session-param</title>
+    <para>This Oracle-specific directive is not implemented.</para>
+    </sect3>
+
+   <sect3 id="xsql_set_stylesheet_param"><title>xsql:set-stylesheet-param</title>
+    <para>This directive is not implemented.</para>
+    </sect3>
+
+   <sect3 id="xsql_update_request"><title>xsql:insert-request</title>
+    <para>Updates the rows listed in context XML.</para>
+    <programlisting><![CDATA[
+<xsql:update-request
+  key-columns="column_list"
+  table="table_name"
+  [ columns="column_list" ]
+  [ date-format="string" (allowed but ignored) ]
+  [ transform="calculateable_URI_string" ]
+/>
+]]></programlisting>
+    <para>The directive updates a table by changing rows listed in the context XML.
+The destination table is specified by &apos;table&apos; attribute.
+</para>
+    <para>If &apos;transform&apos; URI is specified then it is used as a name of XSLT stylesheet that is applied to the
+context XML before the rest of processing. The result of that stylesheet should be in standard ROWSET/ROW form.
+The result may also contain redundant elements but they will be silently ignored.
+</para>
+    <para>After this optional XSLT transformation, the XSQL procedure gets all ROW elements in all top-level ROWSET
+elements of the source. For each such element it parses all subelements whose names match column names listed in
+the &apos;key-columns&apos; attribute or in the &apos;columns&apos; attribute;
+if the &apos;columns&apos; attribute is not specified then it works as if all column names from the destination table are listed in &apos;columns&apos;.
+It is legal to have a ROW element that does not contain an element that matches a particular column; the missing element is
+treated as a database NULL. If a subelement of ROW has attribute &apos;NULL&apos; equal to &apos;Y&apos; then it is also treated as
+database NULL.</para>
+    <para>When required subelements of ROW are parsed, the procedure updates all rows in the table that have all values of key columns equal to
+values listed in ROW. All these rows are updated by values from subelements of ROW.
+If &apos;columns&apos; is specified then only named fields are updated; otherwise, the update operation changes all fields of a table.</para>
+    <para>
+When the update operation is complete, the procedure parses all subelements of the next ROW element in queue and so on.</para>
+    <programlisting><![CDATA[
+<xsql:insert-request table='"Demo"."demo"."Customers"' columns='"CustomerID", "Phone", "Fax"'/>
+]]></programlisting>
+    </sect3>
+
+ </sect2>
+</sect1>

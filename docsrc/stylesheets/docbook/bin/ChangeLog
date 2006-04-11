@@ -1,0 +1,86 @@
+2000-05-07  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: Improved cross-platform support in a trivial way
+
+2000-04-03  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: Added support for doctype specification in chunk control file
+
+2000-01-27  Norman Walsh  <ndw@nwalsh.com>
+
+	* dbchunk.xml: Added removexmlns
+
+	* removexmlns.pl: New file.
+
+2000-01-10  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: Insignificant changes; debugging aids
+
+1999-12-22  Norman Walsh  <ndw@nwalsh.com>
+
+	* dbchunk.xml: Handle the copyright character
+
+1999-12-03  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: Many improvements
+
+	* dbchunk.xml: Added character mapping
+
+	* dingbat.pl, docbook.pl: Completely changed library API
+
+1999-11-03  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: More updates (still needs work)
+
+1999-10-28  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: Commented out some debugging code
+
+	* dingbat.pl: Check node type
+
+1999-10-22  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: Debugging...
+
+1999-09-24  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl, docbook.pl: More updates to the chunker
+
+1999-08-11  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: Added support for automatically selecting a temporary name for the XT output
+
+	* chunk.pl: Added support for subtitle keyword
+
+	* dbart.xml: New file.
+
+	* dbchunk.xml: Fixed namespace prefix typo
+
+	* dbref.xml: New file.
+
+1999-07-27  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl, dbchunk.xml, dingbat.pl, docbook.pl: Modularized to use libraries for more configurability
+
+1999-07-15  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: Fix bug in linking
+
+1999-07-06  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: Fixed filenaming bug in verbose mode; remodularized a bit--more to come
+
+1999-07-02  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: Lots of fixes. Dingbat support. Date magling for web display
+
+1999-06-14  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: Long options; added default ctrlfile
+
+1999-06-09  Norman Walsh  <ndw@nwalsh.com>
+
+	* chunk.pl: New file.
+
+	* dbchunk.xml: New file.
+

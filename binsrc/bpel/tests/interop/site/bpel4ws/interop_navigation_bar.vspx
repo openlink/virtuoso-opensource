@@ -1,0 +1,113 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:variable name="nav_pos_fixed" type="int" default="0" xmlns:v="http://www.openlinksw.com/vspx/"/>
+<v:variable name="nav_top" type="int" default="0" xmlns:v="http://www.openlinksw.com/vspx/"/>
+<v:variable name="nav_tip" type="varchar" default="''" xmlns:v="http://www.openlinksw.com/vspx/"/>
+<v:form name="nav_bar_form" method="POST" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:v="http://www.openlinksw.com/vspx/" type="simple">
+  <table class="nav_bar">
+    <v:tree name="nav_bar" show-root="0" multi-branch="0" orientation="horizontal" root="BPWSI.BPWSI.interop_navigation_root" start-path="" child-function="BPWSI.BPWSI.interop_navigation_child">
+      <v:before-data-bind>
+        <v:script>
+          <![CDATA[
+            self.nav_pos_fixed := 0;
+            if (not self.nav_top and BPWSI.BPWSI.interop_get_page_name () <> '')
+            {
+              declare grp varchar;
+              declare xe any;
+              xe := xml_tree_doc (BPWSI.BPWSI.interop_menu_tree());
+              grp := xpath_eval (sprintf ('/interop_menu_tree/node[.//*[@url = "%s"]]/@allowed', BPWSI.BPWSI.interop_get_page_name()), xe, 1);
+              grp := cast (grp as varchar);
+              self.nav_pos_fixed := 1;
+              control.vc_open_at (sprintf ('//*[@url = "%s"]', BPWSI.BPWSI.interop_get_page_name ()));
+            }
+          ]]>
+        </v:script>
+      </v:before-data-bind>
+      <v:node-template name="nav_bar_node">
+        <?vsp
+          if ((control as vspx_tree_node).tn_open = 1)
+            http('<td align="left" nowrap="nowrap" class="nav_lvl_1_sel">');
+          else
+            http('<td align="left" nowrap="nowrap" class="nav_lvl_1">');
+        ?>
+
+        <v:button name="nav_bar_toggle" action="simple" style="url" xhtml_class="nav_link" value="--(control.vc_parent as vspx_tree_node).tn_value">
+          <v:after-data-bind>
+            <v:script>
+              <![CDATA[
+                  declare grp varchar;
+                  grp :=  xpath_eval('/node/@allowed', (control.vc_parent as vspx_tree_node).tn_element, 1);
+                  grp := cast (grp as varchar);
+                  if ((control.vc_parent as vspx_tree_node).tn_open = 1)
+                    control.ufl_active := 0;
+                  else
+                    control.ufl_active := 1;
+              ]]>
+            </v:script>
+          </v:after-data-bind>
+          <v:on-post>
+            <v:script>
+              <![CDATA[
+                declare node vspx_tree_node;
+                declare tree vspx_control;
+                self.nav_tip := xpath_eval('/node/@tip', (control.vc_parent as vspx_tree_node).tn_element, 1);
+                self.nav_pos_fixed := 0;
+                node := control.vc_parent;
+                tree := node.tn_tree;
+                node.tn_tree.vt_open_at := NULL;
+                self.nav_top := 1;
+                tree.vc_data_bind (e);
+              ]]>
+            </v:script>
+          </v:on-post>
+        </v:button>
+        <?vsp
+          http('</td>');
+        ?>
+      </v:node-template>
+      <v:leaf-template name="nav_bar_leaf">
+        <?vsp
+          if( (control as vspx_tree_node).tn_open = 1 )
+            http('<td align="left" nowrap="nowrap" class="nav_lvl_2_sel">');
+          else
+            http('<td align="left" nowrap="nowrap" class="nav_lvl_2">');
+        ?>
+        <v:button action="simple" name="nav_bar_toggle1" style="url" xhtml_class="nav_link" value="--(control.vc_parent as vspx_tree_node).tn_value" />
+        <?vsp
+          http('</td>');
+        ?>
+      </v:leaf-template>
+      <v:horizontal-template name='ht'>
+          <tr align="left">
+          <td align="left">
+            <table align="left" width="100%" border="0" cellspacing="0" cellpadding="0">
+              <tr align="left">
+                <v:node-set />
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </v:horizontal-template>
+    </v:tree>
+  </table>
+</v:form>

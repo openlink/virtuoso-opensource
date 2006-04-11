@@ -1,0 +1,30 @@
+   * If you don't know how to format your text:
+      * start each line without spaces
+      * separate paragraphs with a blank line
+
+   * You can produce better hypertext by using WikiWords (concatenated capitalized words):
+      * WikiWords will be shown as hyperlinks
+      * WikiWords are especially usefull if they are meaningful and used uniformly across the whole site
+      * The 'WikiWord' is WikiWord hyperlink by itself. Follow it to learn more :)
+
+   * For *external site links*, you can type URLs directly into the text - =http://etcete.ra/...= - it'll clear to anyone where they're headed on click. 
+
+   * If a *discussion* is going on:
+      * separate each follow-up with a space
+      * add your WikiName and the date at the end
+      * OR, by all means, insert your comment where it seems to fit best:
+         * you may want to inset it with a bullet and/or _set it in italics_ so it's clear (always sign and date)
+         * if a sub-topic develops, separate it with a horizontal rule at beginning and end
+
+   * To start a new discussion:
+      * start with a brief, factual introduction, followed by double horizontal rules
+      * let the discussion begin
+
+   * When a discussion is complete, boil down the key points:
+      * reduce the noise
+      * move offtopic facts to appropriate pages
+      * if you merge or delete comments, group credit =Contributors:= at the end of the page
+
+   * *Please*, avoid typing dates in national formats. Please use either an *standard date format* like 01 Sep 2001 or ISO (2001-09-01 or 2001-Sep-01).
+   * *Please*, avoid words like 'next version' or 'year ago' whenever possible, even if it seemes to you that the reader will know the context.
+'Absolute' references are much better than 'relative'.

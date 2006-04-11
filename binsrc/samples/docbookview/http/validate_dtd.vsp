@@ -1,0 +1,13 @@
+<?vsp
+declare _name varchar;
+declare _id integer;
+declare _text long varchar;
+_name := {?'name'};
+select ORIG_TEXT into _text from DBV.DBV.SOURCE where NAME=_name;
+?>
+<?vsp DBV.DBV.VSP_HEADER (path,params,lines, concat(_name, ' | Source text')); ?>
+<PRE>
+<?= xml_validate_dtd (_text,  0, 'file://xmlsource', 'UTF-8', 'x-any', 'Validation=SGML Input=DTD FsaBadWs=IGNORE MaxErrors=10000 MaxWarnings=10000') ?>
+</PRE>
+<?vsp DBV.DBV.VSP_FOOTER (path,params,lines); ?>
+

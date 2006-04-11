@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!--
+<chapter label="xpfs.xml" id="xpfs">
+	<title>Virtuoso XPATH &amp; XQUERY Functions Guide</title>
+	<bridgehead>XPATH &amp; XQUERY Functions Reference</bridgehead>
+	<abstract>
+<para>Virtuoso XPATH &amp; XQUERY Functions Guide comprises a list of the built-in functions
+of the Virtuoso XPATH Processor, their syntax, descriptions of how to use them
+complete with examples.
+These functions may be used in XPATH and XQUERY expressions,
+including XPATH expressions in XSLT stylesheets.
+</para>
+</abstract>
+-->
+<!-- To create a fresh list of all files with descriptions of XPATH function,
+cd xmlref and redirect to a file the result of
+ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\&\1;/g'
+-->
+&xpf__sql__column;
+&xpf_and;
+&xpf_append;
+&xpf_assign;
+&xpf_avg;
+&xpf_boolean;
+&xpf_ceiling;
+&xpf_collection;
+&xpf_concat;
+&xpf_contains;
+&xpf_count;
+&xpf_create_attribute;
+&xpf_create_comment;
+&xpf_create_element;
+&xpf_create_pi;
+&xpf_current;
+<!-- &xpf_deass; -->
+&xpf_distinct;
+&xpf_doc;
+&xpf_document;
+&xpf_document_literal;
+&xpf_empty;
+&xpf_ends_with;
+&xpf_every;
+&xpf_except;
+&xpf_false;
+&xpf_filter;
+&xpf_floor;
+&xpf_for;
+&xpf_format_number;
+&xpf_function_available;
+&xpf_generate_id;
+&xpf_id;
+&xpf_if;
+&xpf_intersect;
+&xpf_is_after;
+&xpf_is_before;
+<!-- &xpf_iterate; -->
+<!-- &xpf_iterate_rev; -->
+&xpf_key;
+&xpf_lang;
+&xpf_last;
+&xpf_let;
+&xpf_list;
+&xpf_local_name;
+&xpf_max;
+&xpf_min;
+&xpf_name;
+&xpf_namespace_uri;
+&xpf_normalize_space;
+&xpf_not;
+&xpf_number;
+&xpf_or;
+&xpf_position;
+&xpf_processXQuery;
+&xpf_processXSLT;
+&xpf_processXSQL;
+&xpf_progn;
+&xpf_replace;
+&xpf_round;
+&xpf_serialize;
+&xpf_shallow;
+&xpf_some;
+&xpf_starts_with;
+&xpf_string;
+&xpf_string_length;
+&xpf_substring;
+&xpf_substring_after;
+&xpf_substring_before;
+&xpf_sum;
+&xpf_system_property;
+&xpf_text_contains;
+&xpf_translate;
+&xpf_true;
+&xpf_tuple;
+&xpf_union;
+&xpf_unordered;
+&xpf_unparsed_entity_uri;
+&xpf_urlify;
+&xpf_xmlview;
+<!-- </chapter> -->
+

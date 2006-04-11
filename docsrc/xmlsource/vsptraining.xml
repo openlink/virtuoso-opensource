@@ -1,0 +1,1009 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="vspguide">
+<title>VSP Guide</title>
+
+<sect2 id="vspintro"><title>Introduction</title>
+  <para>
+Virtuoso Server Pages are the equivalent of a stored procedure
+in a Web page that is compiled when it is first read by the Virtuoso
+server.  Virtuoso detects when  the '.vsp' file is modified
+and recompiles the procedure.
+Since VSP is essentially Virtuoso PL in a Web page you can do anything
+that PL can, either directly or from interaction with the user.
+VSP gives you the advantage of not having to worry about making
+connections to the database. You also avoid the overhead of RPCs
+because the HTTP server is built into Virtuoso.  When you write a VSP page the
+connection is automatic since you are already in Virtuoso.
+</para>
+  <para>
+VSP is server script and is therefore executed in the server as it is
+encountered on the page.  For this reason client (JavaScript) and server
+script cannot directly interact but can supplement each other.  You can
+call JavaScript inside a VSP loop, for example, to manipulate something
+that already exists on the page but you cannot pass variables by reference
+from VSP directly to JavaScript or vice versa.
+</para>
+  <para>
+Page flow control can be managed using FORMs.  The state of the page is
+defined in form fields such as INPUT boxes and TEXTAREA boxes and then
+passed to the next form or page using POST.
+</para>
+</sect2>
+
+<sect2 id="htmlusage">
+<title>Simple HTML FORM usage</title>
+
+  <para>
+We start with a small example that shows the source of a page including a
+FORM with data from the user being sent when a submit button is pressed.
+We then examine the elements and attributes of this simple form that are
+important to us at this stage.
+</para>
+
+<sect3 id="basicform"><title>Basic Forms</title>
+
+<example><title>Simple Forms</title>
+<programlisting>
+&lt;HTML&gt;
+  &lt;HEAD&gt;
+    &lt;TITLE&gt;Simple FORM demo&lt;/TITLE&gt;
+  &lt;/HEAD&gt;
+  &lt;BODY&gt;
+  &lt;FORM METHOD=&quot;POST&quot; ACTION=&quot;formdemo_receiver.vsp&quot;&gt;
+    &lt;P&gt;Test form, type some info and click Submit&lt;/P&gt;
+    &lt;INPUT TYPE=&quot;TEXT&quot; NAME=&quot;myInput&quot; /&gt;
+    &lt;INPUT TYPE=&quot;SUBMIT&quot; NAME=&quot;submit&quot; VALUE=&quot;Submit&quot; /&gt;
+  &lt;/FORM&gt;
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+</programlisting>
+</example>
+  <para>
+The METHOD attribute of a FORM TAG in a VSP page can be either GET or POST.  The GET method allows the form submission to
+be contained completely in a URL; this can be advantageous because it permits bookmarking in browsers,
+but it also prevents form data from containing non
+
+ASCII characters such as accented leters and special symbols
+and restricts the amount of form data that can be handled.  The GET method is l
+
+
+
+mited by the maximum length of the URL that the
+server and browser can process. To be safe, any form whose input might contain non-ASCII
+characters or more than 100 characters should use METHOD=&quot;POST&quot;.
+</para>
+  <para>
+With the POST method, the form input is submitted as an HTTP POST request with the form data sent in the
+body of the request.  Most current browsers are unable to bookmark POST requests,
+but POST does not entail the character encoding and length restrictions imposed by GET.
+</para>
+  <para>
+The ACTION attribute of FORM specifies the URI of the form handler.  This will usually be another web page that
+performs some action based on the data that is sent from the originating form.  The URI could point to the same page
+as the data originated and for pages that perform a well-defined small set of functions it usually does.
+When a page needs to manage multiple states there needs to be some flow control that can determine how the page
+was reached; for example, to differentiate whether it arrived at as a result of someone clicking on the submit button or it is the first time the page has
+been visited.
+</para>
+</sect3>
+
+<sect3 id="formvalues"><title>Exchanging Values in Forms</title>
+  <para>
+Now we add some VSP to check the values of the parameters in the form.  VSP markup is typically
+contained in &lt;?vsp ... ?&gt; blocks.
+</para>
+
+<example><title>Forms and Values</title>
+<programlisting>
+&lt;HTML&gt;
+  &lt;HEAD&gt;
+    &lt;TITLE&gt;Simple FORM demo&lt;/TITLE&gt;
+  &lt;/HEAD&gt;
+  &lt;BODY&gt;
+  &lt;P&gt;Last value sent:
+
+  &lt;?vsp
+    http(get_keyword('myInput', params, 'no value'));
+   ?&gt;
+
+&lt;/P&gt;
+
+  &lt;FORM METHOD=&quot;POST&quot; ACTION=&quot;formdemo.vsp&quot;&gt;
+    &lt;P&gt;Test form, type some info and click Submit&lt;/P&gt;
+    &lt;INPUT TYPE=&quot;TEXT&quot; NAME=&quot;myInput&quot; /&gt;
+    &lt;INPUT TYPE=&quot;SUBMIT&quot; NAME=&quot;submit&quot; VALUE=&quot;Submit&quot; /&gt;
+  &lt;/FORM&gt;
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+</programlisting>
+</example>
+  <para>
+This is the same example as above but now it uses the same page for the
+form handler and displays the parameters each time.  Clicking the Submit
+button takes you to the same page and displays whatever you typed in
+the field last time.
+</para>
+  <para>
+The VSP block uses two nested functions.  The <function>http()</function>
+function allows you to send data to the HTTP client, the browser.
+What we send to the browser is the result of the <function>get_keyword()</function>
+function, which has three parameters:
+<parameter>search_for</parameter>, <parameter>source_array</parameter>,
+and <parameter>default_val</parameter>.  It searches
+for the keyword-value pair (keyword=value) where the keyword matches
+the <parameter>search_for</parameter> parameter (in this case 'myInput')
+in the array passed in the <parameter>source_array</parameter> parameter.
+It returns the value
+if one is found; otherwise returns the <parameter>default_val</parameter> parameter in the
+function, in this case 'no value'.
+The<parameter> params</parameter> argument is a special array that contains
+all page parameters from the previous FORM state.
+</para>
+</sect3>
+
+<sect3 id="formandvspconditions"><title>Conditional Processing</title>
+
+  <para>
+Now we extend this further to add some conditional control so that
+if a value was entered we can respond directly to it.
+We will also use a variable this time, which must be declared first.
+</para>
+
+<example><title>Conditional Processing Using IF</title>
+<programlisting>
+&lt;HTML&gt;
+  &lt;HEAD&gt;
+    &lt;TITLE&gt;Simple FORM demo&lt;/TITLE&gt;
+  &lt;/HEAD&gt;
+  &lt;BODY&gt;
+
+  &lt;?vsp
+	declare _myInput varchar;
+
+	_myInput := get_keyword('myInput', params, '');
+
+    if (_myInput &lt;&gt; '')
+	{	http('&lt;P&gt;Hello, ');
+		http(_myInput);
+		http('&lt;/P&gt;');
+	}
+	else
+	{	http('&lt;P&gt;Please enter your name&lt;/P&gt;');
+	}
+   ?&gt;
+
+  &lt;FORM METHOD=&quot;POST&quot; ACTION=&quot;formdemo.vsp&quot;&gt;
+    &lt;INPUT TYPE=&quot;TEXT&quot; NAME=&quot;myInput&quot; VALUE=&quot;&quot; /&gt;
+    &lt;INPUT TYPE=&quot;SUBMIT&quot; NAME=&quot;submit&quot; VALUE=&quot;Submit&quot; /&gt;
+  &lt;/FORM&gt;
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+</programlisting>
+</example>
+</sect3>
+
+<sect3 id="vsppgctrl"><title>Further Page Control</title>
+
+  <para>
+We now extend this to control the whole content of the page.
+In this example we see that VSP and HTML can be interleaved.
+</para>
+
+<example><title>Page Control</title>
+<programlisting>
+&lt;HTML&gt;
+  &lt;HEAD&gt;
+    &lt;TITLE&gt;Simple FORM demo&lt;/TITLE&gt;
+  &lt;/HEAD&gt;
+  &lt;BODY&gt;
+
+  &lt;?vsp
+	declare _myInput varchar;
+	declare Mode varchar;
+
+	_myInput := get_keyword('myInput', params, '');
+	Mode := get_keyword('submit', params, '');
+
+    if (Mode = 'Submit')
+	{
+   ?&gt;
+    &lt;P&gt;Hello, &lt;?vsp http(_myInput); ?&gt;
+	&lt;/P&gt;
+
+&lt;FORM METHOD=&quot;POST&quot; ACTION=&quot;demo4.vsp&quot;&gt;
+&lt;INPUT TYPE=&quot;HIDDEN&quot; NAME=&quot;myInput&quot; VALUE=&quot;&quot; /&gt;
+&lt;INPUT TYPE=&quot;SUBMIT&quot; NAME=&quot;submit&quot; VALUE=&quot;Again&quot; /&gt;
+&lt;/FORM&gt;
+
+  &lt;?vsp
+	}
+	  else
+	{
+   ?&gt;
+
+  &lt;P&gt;Please enter you name&lt;/P&gt;
+  &lt;FORM METHOD=&quot;POST&quot; ACTION=&quot;demo4.vsp&quot;&gt;
+    &lt;INPUT TYPE=&quot;TEXT&quot; NAME=&quot;myInput&quot; /&gt;
+    &lt;INPUT TYPE=&quot;SUBMIT&quot; NAME=&quot;submit&quot; VALUE=&quot;Submit&quot; /&gt;
+  &lt;/FORM&gt;
+
+  &lt;?vsp
+    }
+  ?&gt;
+  &lt;/BODY&gt;
+&lt;/HTML&gt;
+</programlisting>
+</example>
+
+  <para>We start by setting the mode based on whether the Submit
+  button has been pressed.  When the mode has changed a different version of the page
+  is sent to the browser.  In the new version, the Again button the appears, to return you
+  to the previous state when pressed.</para>
+</sect3>
+
+<sect3 id="params"><title>Communicating Parameters Between Pages</title>
+<para>Now we will use two pages to do the same job as in the demo above.</para>
+<example><title>Using more than one page</title>
+
+<para>Page 1</para>
+<programlisting>
+<![CDATA[
+<HTML>
+  <HEAD>
+    <TITLE>Multi Page Demo</TITLE>
+  </HEAD>
+  <BODY>
+  <P>Please enter you name</P>
+  <FORM METHOD="POST" ACTION="demo5_2.vsp">
+    <INPUT TYPE="TEXT" NAME="myInput" />
+    <INPUT TYPE="SUBMIT" NAME="submit" VALUE="Submit" />
+  </FORM>
+  </BODY>
+</HTML>
+]]>
+</programlisting>
+<para>Page 2</para>
+<programlisting>
+<![CDATA[
+<HTML>
+  <HEAD>
+    <TITLE>Multi Page Demo</TITLE>
+  </HEAD>
+  <BODY>
+  <P>The value you entered was:
+  <?vsp
+    http(get_keyword('submit', params, 'no data'));
+  ?>
+  </P>
+  <FORM METHOD="POST" ACTION="demo5_1.vsp">
+    <INPUT TYPE="SUBMIT" NAME="submit" VALUE="Back" />
+  </FORM>
+  </BODY>
+</HTML>
+]]>
+</programlisting>
+</example>
+</sect3>
+
+<sect3 id="formsandjs"><title>Using JavaScript to Control Forms</title>
+<para>JavaScript is a programming language that can be used in the browser
+and is useful for client-side programming.   It is  useful to be able
+to do some work on the
+client machine before making another round trip to the server for more processing.
+JavaScript is also useful for making things more appealing to the Web
+page viewer. </para>
+<para>JavaScript can be made to respond to events within the browser such as
+when the mouse is moved over a link, a graphic or a button or when the mouse is
+clicked on some part of the page.  This can be achieved by using event
+handlers within the HTML tags and placing JavaScript code in their content.
+Common event handlers are <emphasis>onMouseOver</emphasis>, <emphasis>onMouseClick</emphasis>,
+<emphasis>onMouseOut</emphasis>, <emphasis>onChange</emphasis>, and the
+like.</para>
+
+<para>A simple but useful example of this would be to simplify one of the
+previous examples by placing a handler on the text box so that you do not have to
+press the submit button to send the form to the server:</para>
+<programlisting><![CDATA[
+  <FORM METHOD="POST" ACTION="demo5_2.vsp" NAME="demo5_2">
+    <INPUT TYPE="TEXT" NAME="myInput" onChange="document.demo5_2.submit()" />
+    <INPUT TYPE="SUBMIT" NAME="submit" VALUE="Submit" />
+  </FORM>
+]]></programlisting>
+
+</sect3>
+
+<!--
+<sect3 id="basicvspexamples"><title>Basic VSP Examples</title>
+simple interactive forms that bounce some values around (mostly done)
+</sect3>
+-->
+</sect2>
+
+<sect2 id="dbinteraction"><title>Interacting with the Database</title>
+
+<para>This section describes manipulating data within Virtuoso
+from VSP.  Unless the required tables already exist, new ones will need to be
+created.  This example will involve a simple table of people and a series
+of pages for adding, editing, viewing, and deleting its entries.</para>
+
+<sect3 id="basiccreatetable"><title>Creating a Table</title>
+<para>Tables should be created so that their entries can be uniquely identified.
+This is very important so that if we need to edit or delete one particular entry
+we can distinguish it from other entries.  A <emphasis>primary key</emphasis>
+is how a database enforces unique rows, by refusing to allow
+duplicate data to be inserted.  It is up to the user to choose a column in the
+table to act as a primary key.  Sometimes one or more of the columns of data are naturally
+unique either singularly or in composite; other times it is necessary
+to add a column to contain unique codes for each row.</para>
+<tip><title>See Also:</title>
+<para><link linkend="pkeycons">Primary Keys</link></para>
+</tip>
+<para>Here is the definition of the simple table that will be used:</para>
+<programlisting>
+CREATE TABLE DB.DBA.DEMO_PEOPLE (
+  EMAIL VARCHAR(255) PRIMARY KEY,
+  FORENAME VARCHAR(100),
+  SURNAME VARCHAR(100)
+);
+</programlisting>
+<para>The email address has been selected as a primary key.</para>
+</sect3>
+
+<sect3 id="insertingvalues"><title>Basic Form Input Page</title>
+<para>After the table has been created &mdash; for example via Virtuoso's
+iSQL utility &mdash; it will need some data.
+For this we create a &quot;New Person&quot; page.  This page uses form
+inputs and some VSP code to determine whether
+an insert button was pressed.  If the insert button is pressed then the
+page takes submitted values from the POST and uses them to construct
+an SQL statement that inserts a new row into the table.  This is
+demonstrated below:</para>
+<programlisting><![CDATA[
+<HTML>
+  <HEAD>
+    <TITLE>New Person Page</TITLE>
+  </HEAD>
+  <BODY>
+  <?vsp
+
+    declare _email, _forename, _surname varchar;
+
+    _email := get_keyword('email', params, '');
+    _forename := get_keyword('forename', params, '');
+    _surname := get_keyword('surname', params, '');
+
+    -- insert new person if we came from the insert button
+    if ('' <> get_keyword('ins_button', params, ''))
+    {
+      INSERT INTO DB.DBA.DEMO_PEOPLE(EMAIL, FORENAME, SURNAME)
+        VALUES(_email, _forename, _surname);
+    }
+  ?>
+  <P>Please enter the details of new person:</P>
+
+  <FORM METHOD="POST" ACTION="demo_people_add.vsp">
+  <TABLE>
+    <TR><TH>Email:</TH><TD><INPUT TYPE="TEXT" NAME="email" /></TD></TR>
+    <TR><TH>Forename:</TH><TD><INPUT TYPE="TEXT" NAME="forename" /></TD></TR>
+    <TR><TH>Surname:</TH><TD><INPUT TYPE="TEXT" NAME="surname" /></TD></TR>
+  </TABLE>
+
+  <INPUT TYPE="SUBMIT" NAME="ins_button" VALUE="Insert" />
+  </FORM>
+
+  </BODY>
+</HTML>
+]]></programlisting>
+
+<para>The underscores were added to this example to keep the param
+variables and page variables visibly distinguishable.</para>
+</sect3>
+
+<sect3 id="retrtabvals"><title>Displaying Table Data in a VSP Page</title>
+<para>Now that some data exists in the table we need a way to
+display it.  The FOR ... DO construct is used to construct the insides of
+an HTML table:</para>
+<programlisting><![CDATA[
+<HTML>
+  <HEAD>
+    <TITLE>The People Page</TITLE>
+  </HEAD>
+  <BODY>
+  <P>The Peoples' Details</P>
+
+  <TABLE>
+    <TR><TH>Email</TH><TH>Forename</TH><TH>Surname</TH></TR>
+  <?vsp
+    FOR (SELECT EMAIL, FORENAME, SURNAME FROM DB.DBA.DEMO_PEOPLE) DO
+    {
+  ?>
+    <TR><TD><?=EMAIL?></TD><TD><?=FORENAME?></TD><TD><?=SURNAME?></TD></TR>
+  <?vsp
+    }
+  ?>
+  </TABLE>
+  </BODY>
+</HTML>
+]]></programlisting>
+</sect3>
+
+<sect3 id="deletevals"><title>Simple Form Delete Page</title>
+<para>The page above can easily be extended to allow deletion.  For each row an 'action' link is added.  The action
+Remove link hardwires a form GET on the URL.  This is then
+intercepted by the IF condition looking for the <parameter>remove</parameter> parameter. </para>
+<programlisting><![CDATA[
+<HTML>
+  <HEAD>
+    <TITLE>The People Page With Deletion</TITLE>
+  </HEAD>
+  <BODY>
+  <?vsp
+    declare deleteme varchar;
+
+    deleteme := get_keyword('remove', params, '');
+    if ('' <> deleteme)
+      DELETE FROM DB.DBA.DEMO_PEOPLE WHERE EMAIL = deleteme;
+  ?>
+
+  <FORM METHOD="POST" ACTION="demo_people_view2.vsp">
+  <P>The Peoples' Details</P>
+
+  <TABLE>
+    <TR><TH>Email</TH><TH>Forename</TH><TH>Surname</TH>
+      <TH>Action</TH></TR>
+  <?vsp
+    FOR (SELECT EMAIL, FORENAME, SURNAME FROM DB.DBA.DEMO_PEOPLE) DO
+    {
+  ?>
+    <TR><TD><?=EMAIL?></TD><TD><?=FORENAME?></TD><TD><?=SURNAME?></TD>
+      <TD><A HREF="?remove=<?=EMAIL?>">Remove</A></TD></TR>
+  <?vsp
+    }
+  ?>
+  </TABLE>
+  </FORM>
+  </BODY>
+</HTML>
+]]></programlisting>
+</sect3>
+
+<sect3 id="editvals"><title>Simple Form Edit Page</title>
+<para>The last step is to have a way to edit rows of the
+table.  To do this, we combine everything that we have so far
+and use the SQL UPDATE statement to update the row.  The EMAIL
+column is not made updateable since this is the primary key.
+</para>
+<programlisting><![CDATA[
+<HTML>
+  <HEAD>
+    <TITLE>The People Page With Deletion</TITLE>
+  </HEAD>
+  <BODY>
+  <FORM METHOD="POST" ACTION="demo_people_view3.vsp">
+  <?vsp
+    declare deleteme, editme, edt_email, edt_forename, edt_surname,
+            save_email, save_forename, save_surname varchar;
+
+    deleteme := get_keyword('remove', params, '');
+    if ('' <> deleteme)
+      DELETE FROM DB.DBA.DEMO_PEOPLE WHERE EMAIL = deleteme;
+
+    if ('' <> get_keyword('save_button', params, ''))
+    {
+      save_email := get_keyword('email', params, '');
+      save_forename := get_keyword('forename', params, '');
+      save_surname := get_keyword('surname', params, '');
+
+      update DB.DBA.DEMO_PEOPLE
+        SET FORENAME = save_forename, SURNAME=save_surname
+        WHERE EMAIL = save_email ;
+    }
+
+    editme := get_keyword('edit', params, '');
+    if ('' <> editme)
+    {
+      SELECT EMAIL, FORENAME, SURNAME
+        INTO edt_email, edt_forename, edt_surname
+        FROM DB.DBA.DEMO_PEOPLE WHERE EMAIL = editme;
+  ?>
+  <TABLE>
+    <TR><TH>Email:</TH><TD><INPUT DISABLED TYPE="TEXT" NAME="email" VALUE="<?=edt_email?>" /></TD></TR>
+    <TR><TH>Forename:</TH><TD><INPUT TYPE="TEXT" NAME="forename" VALUE="<?=edt_forename?>" /></TD></TR>
+    <TR><TH>Surname:</TH><TD><INPUT TYPE="TEXT" NAME="surname" VALUE="<?=edt_surname?>" /></TD></TR>
+  </TABLE>
+  <INPUT TYPE="SUBMIT" NAME="save_button" VALUE="Save" />
+  <?vsp
+    }
+  ?>
+
+  <P>The Peoples' Details</P>
+
+  <TABLE>
+    <TR><TH>Email</TH><TH>Forename</TH><TH>Surname</TH>
+      <TH>Action</TH></TR>
+  <?vsp
+    FOR (SELECT EMAIL, FORENAME, SURNAME FROM DB.DBA.DEMO_PEOPLE) DO
+    {
+  ?>
+    <TR><TD><?=EMAIL?></TD><TD><?=FORENAME?></TD><TD><?=SURNAME?></TD>
+      <TD><A HREF="?remove=<?=EMAIL?>">Remove</A> <A HREF="?edit=<?=EMAIL?>">Edit</A></TD></TR>
+  <?vsp
+    }
+  ?>
+  </TABLE>
+  </FORM>
+  </BODY>
+</HTML>
+]]></programlisting>
+</sect3>
+
+</sect2>
+
+
+<!--
+Data Validity
+Table constraints
+Trapping Errors
+Datatype traps and avoidance (coalesce)
+
+Free Text
+
+XML
+
+XSL
+-->
+<!-- ############################################# -->
+
+<!--
+<sect2 id="tut_web_basic_vsp"><title>Basic VSP Programming</title>
+&vs_b_1; &vs_b_2; &vs_b_3; &vs_b_4; &vs_b_5; &vs_b_6; &vs_b_7; &vs_b_8; &vs_b_9;
+</sect2>
+
+<sect2 id="tut_web_special_ctrl"><title>Special Control Functions</title>
+&vs_c_1;
+</sect2>
+
+<sect2 id="tut_web_dav_maint"><title>DAV Maintenance</title>
+&vs_d_1; &vs_d_2; &vs_d_3; &vs_d_4; &vs_d_5; &vs_d_6; &vs_d_7; &vs_d_8;
+</sect2>
+-->
+
+<!-- ############################################# -->
+
+<sect2 id="vspforumsapp"><title>The Forums Application</title>
+<para>
+The "Forums" Application is a World Wide Web Application for posting, reading
+and searching of messages developed under the Virtuoso VDBMS with a wide usage
+of Virtuoso Server Pages (VSP) and server-side XSL-T transformation.
+</para>
+  <para>
+Messages in the forums are classified to forums and sub-forums by
+interest.  Posting is only allowed for registered users.  Registration is
+performed via a registration form.  Every registered user can create new a
+theme, post new messages to an existing theme or reply to an existing
+message.  Unregistered users can only search, browse, and read existing
+themes and messages.
+</para>
+<sect3 id="forumsprinciples"><title>Principles</title>
+<para>
+The application is based on VSPs, XML and XSLT transformations.  The
+VSPs are used to produce XML documents that are transformed to HTML using
+server side XSLT.  The design and appearance of the
+application depends solely on XSLT style sheets.  This allows us to divide
+the development into two distinct parts: layout and design, and
+functionality of the application.
+</para>
+  <para>
+Session management is based on URL manipulation and persistent HTTP session
+variables.  The messages are stored in Database as XML documents with a free-text
+index applied over them.
+</para>
+</sect3>
+
+<sect3 id="forumsnav"><title>Navigation</title>
+
+<para>
+The application consists of four main pages:
+</para>
+
+<orderedlist>
+<listitem><para><emphasis>home.vsp</emphasis> - the main page introduces the
+forums with the following information:</para>
+  <simplelist>
+	  <member>Forums: name of each forum with link to the relevant sub-forums.</member>
+	  <member>Total: total number of messages for this forum.</member>
+		<member>New: new messages for this forum within the last day.</member>
+		<member>Last: number of the last message inserted in the forum.</member>
+		<member>Total users: count of registered users.</member>
+		<member>Options: login if the user is already registered in the forums.</member>
+		<member>Registration: add a new user.</member>
+		<member>Search: search in the messages.</member>
+  </simplelist>
+</listitem>
+
+<listitem><para><emphasis>subforums.vsp</emphasis> - sub-forums
+of the current forum with the following information:</para>
+<simplelist>
+<member>Subforum: name of each sub-forum with links to relevant themes.</member>
+<member>Total: total number of messages for this forum.</member>
+<member>New: new messages for this forum within the last day.</member>
+<member>Last: number of the last message inserted in the forum.</member>
+  <member>Options: login if the user is already registered in the forums.</member>
+	<member>Registration: add a new user</member>
+	<member>Search: search in the messages.</member>
+	<member>Forums path: links to the home page and to the forum to
+	which the current sub-forums belong.</member>
+</simplelist>
+</listitem>
+
+<listitem>
+  <para><emphasis>forum.vsp</emphasis> - themes of the current
+	sub-forum with the following information:</para>
+  <simplelist>
+	  <member>Theme: name of each theme with links to its messages.</member>
+		<member>Total: total number of messages for this theme.</member>
+		<member>New: new messages for this theme within the last day.</member>
+		<member>Last: number of the last message inserted in the theme.</member>
+	  <member>Options: login if the user is already registered in the forums.</member>
+		<member>Registration: add a new user.</member>
+		<member>Search: search in the messages.</member>
+		<member>Forums path: links to the home page, to the forum and to the
+		sub-forum to which the current themes belong.</member>
+	</simplelist>
+</listitem>
+
+<listitem>
+  <para><emphasis>thread.vsp</emphasis> - messages of the current
+	theme with the following information:</para>
+
+	<simplelist>
+	  <member>Message: name of each message with a link to its
+ properties.  When the link is activated the same page is presented, but
+		with the tree of messages for which the current message is
+ the parent.</member>
+		<member>Author: the name of the author of the current message.</member>
+		<member>Date: posting date of the message.</member>
+	  <member>Options: login if the user is already registered in the forums.</member>
+		<member>Registration: add a new user.</member>
+		<member>Search: search in the messages.</member>
+		<member>Forums path: links to the home page, to the forum and to the
+		sub-forum to which the current message belongs.  Also for the current
+		message, the parent message's name is presented. As users
+ move lower in the tree, they can go
+		back using this path.</member>
+	</simplelist>
+</listitem></orderedlist>
+</sect3>
+
+<sect3 id="forumsremarks"><title>Remarks</title>
+
+<para>
+The basic principles of the application's implementation are:
+</para>
+<simplelist>
+<member>The result of a VSP execution is a well-formed XML document.</member>
+<member>Use the Virtuoso server to do server-side XSLT transformations
+with appropriate style sheets whenever needed.</member>
+<member>Use URL manipulations for session management.</member>
+<member>Use post-processing functions to provide commonly used
+parameters (such as user ID) as session variables.</member>
+</simplelist>
+
+<para>
+If users are not logged in they can access all pages of the site, but if
+they want to insert a new theme or create a new message, they have to log
+in.  When users attempt to create or insert, they will be prompted with
+the login page.  When they log in, the forums application will take them
+directly to the form for inserting messages or themes.
+If users are not logged in, the name 'anonymous' is displayed, instead of
+the e-mail address that would be displayed if they were logged in.
+</para>
+
+</sect3>
+
+<sect3 id="forumssrchpg"><title>The Search Page</title>
+<para>Users can search in three ways:</para>
+	<simplelist>
+	  <member>Theme title: titles of message that are titles of themes.</member>
+		<member>Message title: titles of message that have the current theme as parent.</member>
+		<member>Message body: bodies of messages that have different themes as parents.</member>
+	</simplelist>
+
+	<para>Search results contain information about how many hits were
+	found, and for each hit the following:</para>
+	<simplelist>
+	  <member>Message title: the title of the current message.  When you search
+		in message bodies, the message titles are displayed.</member>
+		<member>Time: date the message or theme was inserted.</member>
+		<member>Author: author of the message or theme.</member>
+	</simplelist>
+
+  <para>
+	The search page provides the interface for searching contents of forums
+	including messages and titles.</para>
+
+<programlisting>
+&lt;?vsp
+  declare id, acount, aresults integer;
+  declare aquery, awhat, askiped, search_res, sid, uid, url, usr varchar;
+
+  -- &gt; at this point we instruct server to do server-side XSLT transformation
+	-- &gt;    over resultant document
+  -- &gt; The transformation will be done before sending the document to the user-agent
+  -- &gt;    and after page execution is done.
+	-- &gt; To provide flexible file location we use a registry setting for XSLT
+	-- &gt;    style sheets
+  http_xslt(sprintf ('file:%s/search.xsl', registry_get ('app_forums_xslt_location')));
+
+  -- &gt; because the application does URL poisoning for session management
+  -- &gt; we must retrieve the request parameters:
+
+  -- &gt; the session ID
+  sid      := get_keyword('sid', params, '0');
+  -- &gt; the query text
+  aquery   := get_keyword('q',params,'');
+  -- &gt; the query locator (for what we searching)
+  awhat    := get_keyword('wh',params,'t');
+  -- &gt; how many records to skip
+  askiped  := atoi (get_keyword('sk',params,'0'));
+  -- &gt; how many results to return
+  aresults := atoi (get_keyword('rs',params,'10'));
+  -- &gt; hits count
+  acount   := atoi (get_keyword('c',params,'0'));
+
+  url := 'thread.vsp';
+
+  -- &gt; also we get the user ID from the session variables
+  uid := connection_get ('pid');
+  usr := connection_get ('usr');
+
+  -- &gt; now we are ready and call the stored procedure that returns the result from search
+  search_res := FORI_SEARCH_RES (aquery, awhat, askiped, aresults, acount);
+?&gt;
+&lt;!-- now we produce the result as well-formed XML document --&gt;
+&lt;?xml version="1.0"?&gt;
+&lt;page&gt;
+&lt;sid&gt;&lt;?=sid?&gt;&lt;/sid&gt;
+&lt;usr&gt;&lt;?=usr?&gt;&lt;/usr&gt;
+&lt;url&gt;&lt;?=url?&gt;&lt;/url&gt;
+&lt;nav_2&gt;&lt;?vsp http(FORI_SEARCH_FORM (sid, aquery, awhat, askiped, aresults, acount)); ?&gt;&lt;/nav_2&gt;
+&lt;css_1/&gt;
+&lt;squery&gt;&lt;?=aquery?&gt;&lt;/squery&gt;
+&lt;swhat&gt;&lt;?=awhat?&gt;&lt;/swhat&gt;
+&lt;sskiped&gt;&lt;?=askiped?&gt;&lt;/sskiped&gt;
+&lt;sresults&gt;&lt;?=aresults?&gt;&lt;/sresults&gt;
+&lt;scount&gt;&lt;?=acount?&gt;&lt;/scount&gt;
+&lt;?vsp http (search_res); ?&gt;
+&lt;?vsp http (FORI_SEARCH_NAVIGATION (
+  sprintf('search.vsp?q=%s&amp;wh=%s&amp;rs=%d&amp;c=%d&amp;sid=%s&amp;', aquery, awhat, aresults, acount, sid),
+	  acount, askiped, aresults)); ?&gt;
+&lt;/page&gt;
+</programlisting>
+</sect3>
+
+<sect3 id="forumssrchdesc"><title>Search Page Analysis</title>
+  <para>
+	First we declare the variables used inside the page.  In VSP, variables can be
+	defined at any time, but it is generally good practice is to declare them
+	near the top.
+</para>
+	<para>
+	We call <function>http_xslt()</function> with a file URL parameter.  This instructs the Virtuoso
+	server to do XSLT transformation on the server side before sending output
+	to the client, and after execution of the page.  Hence we will produce
+	an XML document.
+</para>
+  <para>
+	After this we need to get the input parameters session_id, query text,
+	how many records to skip, and how many records to display.  We do this
+	by calling <function>get_keyword()</function> and passing it the 'params' array.
+	Every VSP page has <parameter>params</parameter>,
+	<parameter>path</parameter>, and <parameter>lines</parameter> as
+	input parameters.  For
+	each call we supply a default value in case the variable has not been used.  For
+	some of the parameters we need an integer, but varchars are always returned,
+	so we use <function>atoi()</function> on the result to convert it to an integer.
+</para>
+	<para>
+	Next we retrieve the persistent variables <parameter>user id</parameter> and <parameter>user name</parameter>.  We do this
+	by calling <function>connection_get()</function> with the session variable name.
+</para>
+  <para>
+	After this preparation, we are ready to perform the searching by calling the PL stored procedure
+	<function>FORI_SEARCH_RES()</function>.  This procedure returns the XML entities that contain
+	the results from the search.
+</para>
+  <para>
+	Once we have results, we want to produce the XML document that will be used in the
+	XSLT transformation.  We do this part of the work using the shortcuts to the
+	<function>http_value()</function> function: '&lt;?= ?&gt;' pairs, and
+	also in some places '&lt;?vsp ?&gt;' to call the <function>FORI_SEARCH_FORM()</function> and
+	<function>FORI_SEARCH_NAVIGATION()</function> procedures and
+	output their results.
+</para>
+  <para>
+	The main benefits to this approach are:
+	</para>
+	<simplelist>
+	  <member>design independency of VSP content: if we need a different design
+		we only need to change the XSLT style sheet;</member>
+		<member>different style sheets can represent different
+		themes.  If we pass an additional 'theme' parameter, for example, we can
+		associate a new theme with a different style sheet.  This way we have a fast
+		approach to customizing the look of the page;
+		</member>
+	  <member>browser independence: because we do server-side XSLT transformation
+		we do not need the browser to support XSLT or XML at all.</member>
+	</simplelist>
+  <para>
+	If we comment out the line that instructs
+	Virtuoso to perform the XSLT transformation (<function>http_xslt()</function>)
+	we will get the following document:
+</para>
+
+<programlisting>
+&lt;?xml version="1.0"?&gt;
+&lt;page&gt;
+&lt;sid&gt;0&lt;/sid&gt;
+&lt;usr&gt;anonymous&lt;/usr&gt;
+&lt;url&gt;thread.vsp&lt;/url&gt;
+&lt;nav_2&gt;&lt;search_form&gt;
+&lt;hidden&gt;
+&lt;hidden_input type="hidden" name="sid" value="0" /&gt;
+&lt;hidden_input type="hidden" name="sk" value="0" /&gt;
+&lt;hidden_input type="hidden" name="rs" value="10" /&gt;
+&lt;hidden_input type="hidden" name="c" value="0" /&gt;
+&lt;/hidden&gt;
+&lt;select name="wh"&gt;
+&lt;option value="t" selected="1"&gt;theme title&lt;/option&gt;
+&lt;option value="mt"&gt;message title&lt;/option&gt;
+&lt;option value="mb"&gt;message body&lt;/option&gt;
+&lt;/select&gt;
+&lt;/search_form&gt;
+&lt;/nav_2&gt;
+&lt;css_1/&gt;
+&lt;squery&gt;&lt;/squery&gt;
+&lt;swhat&gt;t&lt;/swhat&gt;
+&lt;sskiped&gt;0&lt;/sskiped&gt;
+&lt;sresults&gt;10&lt;/sresults&gt;
+&lt;scount&gt;0&lt;/scount&gt;
+&lt;search_result&gt;
+&lt;no_hits/&gt;
+&lt;/search_result&gt;
+&lt;navigation pages="0"&gt;
+&lt;/navigation&gt;
+&lt;/page&gt;
+</programlisting>
+
+<para>If we re-enable the XSLT transformation the user agent will
+receive the following HTML content:
+</para>
+
+<programlisting>
+&lt;html&gt;&lt;head&gt;
+&lt;style type="text/css"&gt;
+a:hover{color:#a2a2a2}
+.id{font-size:12px;font-family:arial,sans-serif;font-weight:bold;color:#004C87}
+.ie{font-size:12px;font-family:verdana,sans-serif;color:#FFFFFF}
+.ir{font-size:14px;font-weight:bold;font-family:verdana,sans-serif;color:#FFFFFF}
+.if{font-size:12px;text-decoration:none;font-family:verdana,sans-serif;
+   font-weight:bold;color:#E1F2FE}
+.iname{font-size:12px;font-weight:bold;font-family:verdana,sans-serif;color:#FFFFFF}
+.ipath{font-size:12px;text-decoration:none;font-weight:bold;
+   font-family:verdana,sans-serif;color:#004C87}
+.inew {font-size:12px;text-decoration:none;font-weight:bold;
+   font-family:verdana,sans-serif;color:#FFC600}
+.text {font-size:12px;text-decoration:none;font-family:Arial,sans-serif;color:#004C87}
+&lt;/style&gt;
+&lt;/head&gt;
+  &lt;body&gt;
+    &lt;TABLE WIDTH="100%" BGCOLOR="#004C87" CELLPADDING="0" CELLSPACING="0" BORDER="0"&gt;
+     &lt;TR&gt;
+      &lt;form action="search.vsp" method="post"&gt;
+        &lt;TD WIDTH="20%" VALIGN="top"&gt;
+          &lt;IMG SRC="i/logo_n.gif" HEIGHT="49" WIDTH="197" BORDER="0"&gt;&lt;/TD&gt;
+	&lt;TD WIDTH="40%" ALIGN="center"&gt;
+	  &lt;input type="text" name="q" size="36" value=""&gt;&lt;/TD&gt;
+	&lt;TD WIDTH="25%" ALIGN="center"&gt;
+	   &lt;select name="wh"&gt;
+	      &lt;option value="t" selected&gt;theme title&lt;/option&gt;
+	      &lt;option value="mt"&gt;message title&lt;/option&gt;
+	      &lt;option value="mb"&gt;message body&lt;/option&gt;
+	   &lt;/select&gt; &lt;input type="hidden" name="sid" value="0"&gt;
+	   &lt;input type="hidden" name="sk" value="0"&gt;
+	   &lt;input type="hidden" name="rs" value="10"&gt;
+	   &lt;input type="hidden" name="c" value="0"&gt;
+	&lt;/TD&gt;
+	&lt;TD WIDTH="15%"&gt;
+	&lt;input type="image" name="search" src="i/search.gif" border="0"&gt;&lt;/TD&gt;
+	&lt;/form&gt;
+      &lt;/TR&gt;
+   &lt;/TABLE&gt;
+    &lt;TABLE WIDTH="100%" BGCOLOR="#02A5E4" CELLPADDING="0" CELLSPACING="0" BORDER="0"&gt;
+      &lt;TR&gt;
+	&lt;TD&gt;
+	    &lt;IMG SRC="i/str.gif" HEIGHT="12" WIDTH="35"&gt;
+	    &lt;a class="id" href="home.vsp?sid=0"&gt;Home&lt;/a&gt;
+       &lt;/TD&gt;
+       &lt;TD HEIGHT="22" class="iname" ALIGN="right"&gt;anonymous &lt;/TD&gt;
+      &lt;/TR&gt;
+      &lt;/TABLE&gt;
+      &lt;TABLE BGCOLOR="#E1F2FE" ALIGN="center" WIDTH="100%" CELLPADDING="0" CELLSPACING="0" BORDER="0"&gt;
+       &lt;TR&gt;
+         &lt;TD COLSPAN="3"&gt;
+ 	    &lt;IMG SRC="i/c.gif" HEIGHT="12" WIDTH="1"&gt;
+         &lt;/TD&gt;
+       &lt;/TR&gt;
+       &lt;TR&gt;
+        &lt;TR BGCOLOR="#0073CC"&gt;
+         &lt;TD WIDTH="60%" HEIGHT="24" class="ie"&gt; message title&lt;/TD&gt;
+         &lt;TD WIDTH="20%" class="ie"&gt;time&lt;/TD&gt;
+         &lt;TD WIDTH="20%" class="ie"&gt;author&lt;/TD&gt;
+       &lt;/TR&gt;
+      &lt;TR&gt;
+        &lt;TD COLSPAN="3"&gt;
+          &lt;IMG SRC="i/c.gif" HEIGHT="2" WIDTH="1"&gt;
+        &lt;/TD&gt;
+      &lt;/TR&gt;
+      &lt;TR&gt;
+        &lt;TD align="left" class="id" COLSPAN="3"&gt;No hits found&lt;/TD&gt;
+      &lt;/TR&gt;
+      &lt;TR&gt;
+       &lt;TD HEIGHT="18" colspan="3" BGCOLOR="#0073CC" class="id"&gt;
+       &lt;/TD&gt;
+      &lt;/TR&gt;
+     &lt;/TR&gt;
+     &lt;TR&gt;
+       &lt;TD COLSPAN="3"&gt;
+         &lt;IMG SRC="i/c.gif" HEIGHT="2" WIDTH="1"&gt;
+       &lt;/TD&gt;
+     &lt;/TR&gt;
+     &lt;TR&gt;
+      &lt;TD COLSPAN="3" BGCOLOR="#0073CC"&gt;
+        &lt;IMG SRC="i/c.gif" HEIGHT="1" WIDTH="1"&gt;
+      &lt;/TD&gt;
+     &lt;/TR&gt;
+    &lt;/TABLE&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</programlisting>
+
+	<para>The page sources are available in the default distribution under the
+	samples directory.</para>
+
+	<tip><title>See Also:</title><para>
+	For more information about the functions used see:
+	<link linkend="fn_http_xslt">http_xslt()</link>,
+	<link linkend="fn_http">http()</link>,
+	<link linkend="fn_http_value">http_value()</link>.
+  </para>
+	<para>For more information about VSP in general go the
+	<link linkend="vsp1">VSP Section</link>.</para></tip>
+
+</sect3>
+</sect2>
+
+</sect1>

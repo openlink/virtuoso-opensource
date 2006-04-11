@@ -1,0 +1,79 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions name="Pick"
+        targetNamespace="http://samples.otn.com"
+        xmlns:tns="http://samples.otn.com"
+        xmlns="http://schemas.xmlsoap.org/wsdl/"
+        xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+        xmlns:s1="http://www.autoloan.com/ns/autoloan"
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+        >
+        
+  <types>
+    <schema attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://www.autoloan.com/ns/autoloan" xmlns="http://www.w3.org/2001/XMLSchema">
+      <element name="loanApplication" type="s1:LoanApplicationType"/>
+      <element name="loanApplication_resp" type="s1:LoanApplicationType"/>
+      
+      <complexType name="LoanApplicationType">
+          <sequence>
+            <element name="SSN" type="string"/>
+            <element name="email" type="string"/>
+            <element name="customerName" type="string"/>
+            <element name="loanAmount" type="double"/>
+            <element name="carModel" type="string"/>
+            <element name="carYear" type="string"/>
+            <element name="creditRating" type="int"/>
+          </sequence>
+      </complexType>
+    </schema>
+  </types>
+
+  <message name="PickRequestMessage">
+    <part name="payload" element="s1:loanApplication"/>
+  </message>
+  <message name="PickResultMessage">
+    <part name="payload" element="s1:loanApplication_resp"/>
+  </message>
+
+  <portType name="Pick">
+    <operation name="initiate">
+      <input message="tns:PickRequestMessage"/>
+    </operation>
+  </portType>
+  <portType name="PickCallback">
+    <operation name="onResult">
+      <input message="tns:PickResultMessage"/>
+    </operation>
+  </portType>
+
+  <plnk:partnerLinkType name="Pick">
+    <plnk:role name="PickProvider">
+      <plnk:portType name="tns:Pick"/>
+    </plnk:role>
+    <plnk:role name="PickRequester">
+      <plnk:portType name="tns:PickCallback"/>
+    </plnk:role>
+  </plnk:partnerLinkType>  
+
+</definitions>

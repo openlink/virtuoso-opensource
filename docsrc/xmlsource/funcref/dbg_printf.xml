@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_dbg_printf">
+  <refmeta>
+    <refentrytitle>dbg_printf</refentrytitle>
+    <refmiscinfo>debug</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>dbg_printf</refname>
+    <refpurpose>print formatted output onto the system console</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_dbg_printf">
+      <funcprototype id="fproto_dbg_printf">
+        <funcdef><function>dbg_printf</function></funcdef>
+        <paramdef>in <parameter>format</parameter> varchar</paramdef>
+        <paramdef>in <parameter>arg1</parameter> any</paramdef>
+        <paramdef><parameter>...</parameter></paramdef>
+        <paramdef>in <parameter>argn</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params_dbg_printf"><title>Parameters</title>
+    <refsect2><title>format</title>
+      <para>a C sprintf -style format <type>string</type></para>
+    </refsect2>
+    <refsect2><title>argn</title>
+      <para>The arguments to format and print in any type</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_dbg_printf"><title>Return Values</title>
+    <para>None</para>
+  </refsect1>
+  <refsect1 id="desc_dbg_printf"><title>Description</title>
+      <para><function>dbg_printf</function> prints a variable number
+      (max. eight) of arguments to the system console of Virtuoso server,
+      each argument formatted in C <function>printf</function> style,
+      according to the format string specified in the first argument.</para>
+  </refsect1>
+  <refsect1 id="examples_dbg_printf"><title>Examples</title>
+    <example id="ex_dbg_printf_1"><title>Simple example</title>
+      <para>The frammitz just zilched!</para>
+      <screen>
+if (frammitz_status 0)
+  {
+    dbg_printf ('Error: Frammitz status: %d.\nProgram terminated',
+                frammitz_status);
+    signal ('42666', 'Frammitz zilched');
+  }
+</screen>
+      <para>Hitting these lines would cause something like this in a client:</para>
+      <screen>*** Error 42666: [Virtuoso Driver][Virtuoso Server]Frammitz zilched at line 84 (84) of Top-Level: zappi()
+</screen>
+      <para>The console output would look like this:</para>
+      <screen>Error: Frammitz status: 2.
+Program terminated
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_dbg_printf"><title>See Also</title>
+    <para><link linkend="fn_sprintf">sprintf</link></para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,89 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<process name="While"
+    targetNamespace="http://samples.cxdn.com"
+    suppressJoinFailure="yes"
+    xmlns:tns="http://samples.cxdn.com"
+    xmlns:services="http://services.cxdn.com"
+    xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/">
+
+    <!--
+    This process just do a loop
+    -->
+
+    <partnerLinks>
+	<partnerLink name="client"
+	    partnerLinkType="tns:While"
+	    myRole="WhileProvider"
+	    partnerRole="WhileRequester"/>
+    </partnerLinks>
+
+    <variables>
+	<variable name="input" messageType="tns:WhileRequestMessage"/>
+	<variable name="output" messageType="tns:WhileResultMessage"/>
+	<variable name="request" messageType="services:IncrementServiceRequestMessage"/>
+    </variables>
+
+    <sequence>
+
+	<receive name="receiveInput" partnerLink="client"
+	    portType="tns:While"
+	    operation="initiate" variable="input"
+	    createInstance="yes"/>
+
+	<assign>
+	    <copy>
+		<from expression="0"/>
+		<to variable="request" part="payload" query="/value"/>
+	    </copy>
+	</assign>
+
+	<while condition=
+	    "getVariableData('input', 'payload', '/value') > getVariableData('request', 'payload', '/value')">
+		<sequence>
+
+		    <assign>
+			<copy>
+			    <from expression="1 + number(getVariableData('request', 'payload', '/value'))"/>
+			    <to variable="request" part="payload" query="/value"/>
+			</copy>
+		    </assign>
+
+		</sequence>
+	</while>
+
+	<assign>
+	    <copy>
+		<from variable="request" part="payload" query="/value"/>
+		<to variable="output" part="payload" query="/result"/>
+	    </copy>
+	</assign>
+
+        <reply name="replyOutput" partnerLink="client"
+            portType="tns:While"
+            operation="initiate" variable="output"/>
+
+	</sequence>
+
+    </process>
+

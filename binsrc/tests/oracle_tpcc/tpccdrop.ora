@@ -1,0 +1,10 @@
+drop table customer;
+drop table orders;
+drop table new_order;
+drop table order_line;
+drop table warehouse;
+drop table district;
+drop table history;
+drop table item;
+drop table stock;
+exit;

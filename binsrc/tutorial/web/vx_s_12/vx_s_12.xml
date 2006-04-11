@@ -1,0 +1,63 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VX-S-12">
+  <refmeta>
+      <refentrytitle>VX-S-12</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+      <refname>XML data binding</refname>
+      <refpurpose>Using XML data for VSPX data-binding</refpurpose>
+  </refnamediv>
+
+  <refsect1 id="VS-S-1a">
+    <title>Preliminaries</title>
+    <para>Usually data-bound controls as data-list, data-set etc. are 
+	using a relational data (from tables, local or remote). But in some cases data
+	is available as XML, which is most convenient to use as such instead of 
+	filling and using an intermediate table as data source. 
+	For this cases VSPX components (which allows data-binding) supports special 
+	set of attributes (see documentation for details). With these attributes 
+  it is possible to bind XML data to the control's value, row-set etc.  	
+    </para>
+</refsect1>
+
+<refsect1 id="VX-S-12a">
+    <title>Repeatable content based on XML data</title>
+    <para>The following approaches are demonstrated:</para> 
+<itemizedlist mark="bullet">
+    <listitem>Binding a XML data to VSPX components, instead of using relational data</listitem>
+    <listitem>Using XML manipulation routines to insert update or delete 
+    XML data.</listitem>
+</itemizedlist>
+<para>
+    In details example itself shows:
+</para>
+<itemizedlist>
+    <listitem>Filling a select list from XML document</listitem>
+    <listitem>Filling a repeatable control (data-set) with XML data.</listitem>
+    <listitem>Custom ordering functionality in repeatable control, using XML manipulation routines.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

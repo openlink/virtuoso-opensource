@@ -1,0 +1,72 @@
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+create procedure LOAD_SCHEMA_DECL(in prefix varchar, in base varchar, in filen varchar, in id integer)
+{
+  if ( not exists (select xt_id from xml_text where xt_id=id) )
+  {
+    insert into xml_text (xt_id, xt_file, xt_prefix, xt_base, xt_text) 
+	values (id, filen, prefix, base, 'not loaded');
+  };
+  return;
+};
+
+LOAD_SCHEMA_DECL('file://xmlsource/','schema','schema.xsd', 200);
+LOAD_SCHEMA_DECL('file://xmlsource/','schema','xml.xsd', 201);
+LOAD_SCHEMA_DECL('file://xmlsource/','schema','datatypes.xsd', 202);
+
+LOAD_SCHEMA_DECL('file://xmlsource/','test0000','test0000.xsd', 300);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0000','test0002.xsd', 301);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0000','tmain.xsd', 302);
+
+LOAD_SCHEMA_DECL('file://xmlsource/','docbook4.1.2.3','docbook.xsd', 401);
+LOAD_SCHEMA_DECL('file://xmlsource/','docbook4.1.2.3','soextblx.xsd', 402);
+
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','keys-primer.xsd', 501);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','all-particle.xsd', 502);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','empty.xsd', 503);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','clean.xsd', 504);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','group-ref.xsd', 505);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','att-groups.xsd', 506);
+
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','clean-000.xsd', 510);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','clean-001.xsd', 511);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','clean-002.xsd', 512);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','clean-003.xsd', 513);
+
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','choice-bug1.xsd', 514);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','id-test.xsd', 515);
+
+
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','persons.xml', 550);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','persons-000.xml', 551);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','persons-001.xml', 552);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','persons-002.xml', 553);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','persons-003.xml', 554);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','persons-group-ref.xml', 560);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','persons-group-ref-000.xml', 561);
+
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','att-groups.xml', 570);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','choice-bug1.xml', 580);
+
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','id-test.xml', 590);
+LOAD_SCHEMA_DECL('file://xmlsource/','test0001','internal-el.xml', 600);
+
+LOAD_SCHEMA_DECL('file://xmlsource/','docbook4.1.2.3','test.xml', 1000);

@@ -1,0 +1,95 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _list, _case, _text varchar;
+  declare _comments, _items any;
+  declare _ctr integer;
+  declare _case_pattern, _datafile_pattern varchar;
+  _list := {?'list'};
+  if (_list is null)
+    _list := '';
+  _comments := "XP"."XP"."LIST_CASE_COMMENTS"();
+  _items := "XP"."XP"."LIST_MENU_ITEMS"();
+  ?>
+<HTML>
+<BODY TEXT="#000000" LINK="#0000CC" VISITED="#3300CC" BGCOLOR="#EEEEEE" TOPMARGIN=0>
+<?vsp
+  _ctr := 0;
+  while (_ctr < length (_comments))
+    {
+      declare _cmt any;
+      _cmt := aref (_comments, _ctr);
+      _ctr := _ctr + 1;
+      if (aref (_cmt, 1) = _list)
+	{
+	  ?><H3><?= _list ?> -- <?= aref (_cmt, 2) ?></H3><P ALIGN=RIGHT><?vsp http(replace (aref (_cmt, 3), ', ', '<BR>')); ?></P><?vsp
+	  ?><P><?vsp http(replace ( replace (aref (_cmt, 4), '<', '&lt;'), '\x0A', '</P><P>')); ?></P><?vsp
+	}
+    }
+?>
+<TABLE BORDER="0">
+<?vsp
+  _ctr := 0;
+  while (_ctr < length (_items))
+    {
+      declare _item any;
+      declare _type integer;
+      _item := aref (_items, _ctr);
+      _type := aref (_item, 0);
+      _ctr := _ctr + 1;
+      if (10 = _type)
+	{
+	  _case_pattern := aref (_item, 2);
+	  _datafile_pattern := aref (_item, 3);
+	  if (aref (_item, 1) = _list and exists (select * from "XP"."XP"."TEST_CASES" where "NAME" like _case_pattern))
+	    {
+	      ?><TR><TD COLSPAN=2><FONT SIZE="+1"><B>Sample queries</B></FONT></TD></TR><?vsp
+	      for select "NAME" as _name, xpath_eval('string(.)', "DESCR") as _descr, "ORIGIN" as _origin from "XP"."XP"."TEST_CASES" where "NAME" like _case_pattern order by "ID" do
+		{
+		  _descr := cast (_descr as varchar);
+		  _descr := replace (_descr, '\n', ' ');
+		  _descr := replace (_descr, '\t', ' ');
+		  _descr := replace (_descr, '    ', ' ');
+		  _descr := replace (_descr, '  ', ' ');
+		  ?><TR VALIGN="TOP"><TD><A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?= _name ?>" TARGET="_top"><?= _name ?></A></TD><TD><?= _descr ?></TD></TR><?vsp
+		}
+	    }
+	  if (aref (_item, 1) = _list and exists (select * from "XP"."XP"."TEST_FILES" where "COMMENT" like _datafile_pattern))
+	    {
+	      ?><TR><TD COLSPAN=2><FONT SIZE="+1"><B>Available data files</B></FONT></TD></TR><?vsp
+	      for select "NAME" as _name, "COMMENT" as _comment from "XP"."XP"."TEST_FILES" where "COMMENT" like _datafile_pattern order by "NAME" do
+		{
+		  _comment := cast (_comment as varchar);
+		  _comment := replace (_comment, '\n', ' ');
+		  _comment := replace (_comment, '\t', ' ');
+		  _comment := replace (_comment, '    ', ' ');
+		  _comment := replace (_comment, '  ', ' ');
+		  ?><TR><TD><A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?= _name ?>" TARGET="_top"><?= replace (_name, 'xpdemo/', '') ?></A></TD><TD><?= _comment ?></TD></TR><?vsp
+		}
+	    }
+	}
+    }
+?>
+</TABLE>
+</BODY>
+</HTML>

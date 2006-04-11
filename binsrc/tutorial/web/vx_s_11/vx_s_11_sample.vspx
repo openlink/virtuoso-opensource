@@ -1,0 +1,71 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<html>
+  <body>
+    <v:page xmlns:v="http://www.openlinksw.com/vspx/" name="form_demo">
+      <v:on-init>
+      -- enable XForms rendering
+      connection_set ('RenderXForms', 1);
+    </v:on-init>
+      <h3>
+	 Rendering VSPX form controls as XForms 1.0
+      </h3>
+      <!-- ensure FormsPlayer plugin is available -->
+      <object id="FormsPlayer" classid="CLSID:4D0ABA11-C5F0-4478-991A-375C4B648F58">
+	  <b><p style="color: red">FormsPlayer has failed to load! Please check your installation.</p></b>
+      </object>
+      <?import namespace="xforms" implementation="#FormsPlayer"?>
+      <p>
+        <font style="color:red">
+          <v:error-summary/>
+        </font>
+      </p>
+      <v:form name="sf" type="simple" action="vx_s_11_sample.vspx" method="POST">
+	  hidden: <v:text name="txt2" default_value="*none*" type="hidden"/>
+	  <br/>
+	  password: <v:text name="pass2" default_value="secret" type="password"/>
+	  <br/>
+	  label: <v:label name="label1" value="--concat ('name of current control : ', control.vc_name)"/>
+	  <br/>
+	  text: <v:text name="txt" default_value="1200" xhtml_size="40%"><v:validator test="regexp" regexp="^[0-9]+" message="only digits are allowed"/></v:text>
+	  <br/>
+	  text (2):&quot; <v:text name="txt1" default_value="12" xhtml_size="40%"><v:validator test="value" min="10" max="20" message="10 - 20 range" empty-allowed="1"/></v:text>
+	  <br/>
+	  textarea :<v:textarea name="ta1" default="enter your text here" value="--coalesce ({?'ta1'}, control.ufl_value)" xhtml_cols="50" xhtml_rows="5"><v:validator name="ta1v1" test="length" min="0" max="50" message="max 50 chars."/></v:textarea>
+	  <br/>
+	  select list (multiple): <v:select-list name="sel" multiple="1"><v:item name="*default*" value="0"/><v:item name="FIRST" value="1"/><v:item name="SECOND" value="2"/></v:select-list>
+	  <br/>
+	  data list (singel selection): <v:data-list name="vdatalist1" sql="select * from Demo.demo.Customers where CustomerID like 'L%'" key-column="CustomerID" value-column="CompanyName"/><br/>
+      check-box : <v:check-box name="cb1" value="true"/><br/>
+      radio :  <v:radio-group name="rg1">
+	  	<v:radio-button name="rad1" value="one"/>
+		<v:radio-button name="rad2" value="two"/>
+	    </v:radio-group>
+      <br/>
+      button:   <v:button name="submit2" action="simple" value="OK" initial-enable="--1"></v:button>
+      <br/>
+      </v:form>
+    </v:page>
+  </body>
+</html>

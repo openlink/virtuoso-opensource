@@ -1,0 +1,91 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml-stylesheet type="text/xsl" href="ledger.xsl"?>
+<ledger>
+	<opening-balance>
+		<date>3/8/98</date>
+		<category>Opening Balance</category>
+		<amount>1200.00</amount>
+	</opening-balance>
+	<atm>
+		<number>980309-01</number>
+		<date>3/9/98</date>
+		<payee>Gasomatic</payee>
+		<category>Auto Fuel</category>
+		<memo>fill-up</memo>
+		<amount>17.42</amount>
+	</atm>
+	<check>
+		<number>1001</number>
+		<date>3/9/98</date>
+		<payee>Boggyfield Apartments</payee>
+		<category>Rent</category>
+		<memo>March rent payment</memo>
+		<amount>1045.00</amount>
+	</check>
+	<check>
+		<number>1002</number>
+		<date>3/9/98</date>
+		<payee>Bogland Electric Co.</payee>
+		<category>Utilities</category>
+		<memo>Electric/Gas</memo>
+		<amount>89.00</amount>
+	</check>
+	<check>
+		<number>1003</number>
+		<date>3/14/98</date>
+		<payee>BoggyBank VISA</payee>
+		<category>Miscellaneous</category>
+		<memo>February VISA bill</memo>
+		<amount>169.00</amount>
+	</check>
+	<atm>
+		<number>980310-01</number>
+		<date>3/14/98</date>
+		<payee>Gasomatic</payee>
+		<category>Auto Fuel</category>
+		<memo>fill-up</memo>
+		<amount>112.55</amount>
+	</atm>
+	<deposit>
+		<number>980315-01</number>
+		<date>3/15/98</date>
+		<payee>Paycheck</payee>
+		<category>Paycheck</category>
+		<memo>Week ending 3/15</memo>
+		<amount>500.00</amount>
+	</deposit>
+	<deposit>
+		<number>980315-02</number>
+		<date>3/15/98</date>
+		<payee>Grandma</payee>
+		<category>Gifts Received</category>
+		<memo>Birthday money</memo>
+		<amount>20.00</amount>
+	</deposit>
+	<bank-charge>
+		<date>3/15/98</date>
+		<category>Service Charge</category>
+		<amount>10.00</amount>
+	</bank-charge>
+</ledger>

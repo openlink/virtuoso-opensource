@@ -1,0 +1,97 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp 
+  declare n,uname, _forum_desc, uemail, subm, _sid, raddr, usr, l_all varchar;
+  declare ulog,pkind,_forum_id,pid,cusr,cmsg,cnew integer;
+  declare maxmg datetime;
+  
+  _sid   := get_keyword ('sid', params, ''); 
+  pkind  := atoi (get_keyword('pkind', params,'0')); 
+    
+  if (_sid <> '') 
+    { 
+	if (pkind = 1) 
+	  { --the user wants to logout   	 
+	    SESS_EXPIRE(_sid);
+	    MISC_REDIRECT(sprintf('home.vsp'));           
+	    return;
+	  }
+	else
+	  { 
+	    pid := connection_get ('pid'); 
+	    if (pid = -1) 
+	      { --there's no session in the database
+		raddr := 'home.vsp';
+		MISC_REDIRECT(sprintf('%s?k=%s&raddr=%s','login.vsp','1',raddr));           
+		return;
+	      }
+	    else 
+	      n := '2';
+	  }   
+    } 
+  else   
+    n := '1';
+     
+  SELECT count(*) INTO cusr FROM authors;
+  http_xslt (sprintf ('file:%s/home.xsl', registry_get ('app_forums_xslt_location')));  
+  
+  ?> 
+
+  <?xml version="1.0"?>
+  <page>
+  <sid><?=_sid?></sid>
+  
+  <?vsp
+  usr := connection_get ('usr');
+  FOR SELECT FORUM_ID, FORUM_DESC FROM FORUMS WHERE PARENT_ID  IS NULL ORDER BY FORUM_DESC DO
+    {
+      _forum_id   := FORUM_ID;
+      _forum_desc := FORUM_DESC;
+		   
+
+      SELECT count(*)INTO cmsg FROM MESSAGES M, FORUMS F
+	  WHERE M.PARENT_ID IS NOT NULL AND M.FORUM_ID = F.FORUM_ID AND F.PARENT_ID = _forum_id; 
+      SELECT MAX(M.TIME_CHANGED)INTO maxmg FROM MESSAGES M, FORUMS F
+	  WHERE M.PARENT_ID IS NOT NULL AND M.FORUM_ID = F.FORUM_ID AND F.PARENT_ID = _forum_id;       
+      SELECT count(*) INTO cnew FROM MESSAGES M, FORUMS F
+	  WHERE M.PARENT_ID IS NOT NULL AND M.FORUM_ID = F.FORUM_ID AND F.PARENT_ID = _forum_id 
+	  AND datediff ('hour', M.TIME_CHANGED, now()) <= 24;        
+      if (cmsg <> 0)
+	l_all := CONVERT_DATE(maxmg);	
+
+      maxmg := case when cmsg = 0 then '-' else l_all end; 
+      ?>	     
+      <forum>
+      <id><?=_forum_id?></id>
+      <n><?=n?></n>
+      <cusr><?=cusr?></cusr>
+      <usr><?=usr?></usr>
+      <cmsg><?=cmsg?></cmsg>
+      <maxmg><?=maxmg?></maxmg>
+      <cnew><?=cnew?></cnew>
+      <name><?=_forum_desc?></name>
+      </forum>
+      <?vsp
+    };
+?>
+</page>

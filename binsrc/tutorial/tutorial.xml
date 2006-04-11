@@ -1,0 +1,434 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<tutorial>
+  <section Title="Data Management">
+    <subsection Title="SQL Database" fspath="hosting">
+      <group Title="User Defined Types">
+        <group Title=".NET CLR Runtime Hosting">
+    			<example id="HO-S-2" fspath="hosting/ho_s_2"></example>
+    			<example id="HO-S-3" fspath="hosting/ho_s_3"></example>
+    			<example id="HO-S-4" fspath="hosting/ho_s_4"></example>
+    			<example id="HO-S-5" fspath="hosting/ho_s_5"></example>
+    			<example id="HO-S-10" fspath="hosting/ho_s_10"></example>
+    			<example id="HO-S-11" fspath="hosting/ho_s_11"></example>
+    			<example id="HO-S-14" fspath="hosting/ho_s_14"></example>
+    			<example id="HO-S-15" fspath="hosting/ho_s_15"></example>
+        </group>
+        <group Title="JAVA Runtime Hosting">
+    			<example id="HO-S-1" fspath="hosting/ho_s_1"></example>
+    			<example id="HO-S-13" fspath="hosting/ho_s_13"></example>
+        </group>
+      </group>
+    </subsection>
+    <subsection Title="XML Database" fspath="xml">
+    <!--<subsection Title="SQLX" fspath="xml">-->
+      <group Title="XML Database">
+        <group Title="XML Query (XQuery) Language">
+					<example id="XQ-S-1" fspath="xml/xq_s_1"></example>
+					<example id="XQ-S-2" fspath="xml/xq_s_2"></example>
+					<example id="XQ-S-2A" fspath="xml/xq_s_2a"></example>
+					<example id="XQ-S-3" fspath="xml/xq_s_3"></example>
+					<example id="XQ-S-4" fspath="xml/xq_s_4"></example>
+        </group>
+        <group Title="SPARQL Query Language">
+					<example id="RQ-S-1" fspath="xml/rq_s_1"></example>
+        </group>
+      </group>
+      <group Title="SQLX"> 
+	      <group Title="XMLELEMENT, XMLAGG and other SQL-XML composing functions">
+					<example id="SX-E-0" fspath="xml/sx_e_0"></example>
+					<example id="SX-E-1" fspath="xml/sx_e_1"></example>
+					<example id="SX-E-2" fspath="xml/sx_e_2"></example>
+					<example id="SX-E-3" fspath="xml/sx_e_3"></example>
+					<example id="SX-E-4" fspath="xml/sx_e_4"></example>
+					<example id="SX-E-5" fspath="xml/sx_e_5"></example>
+					<example id="SX-E-6" fspath="xml/sx_e_6"></example>
+					<example id="SX-E-7" fspath="xml/sx_e_7"></example>
+					<example id="SX-E-8" fspath="xml/sx_e_8"></example>
+					<example id="SX-E-9" fspath="xml/sx_e_9"></example>
+					<example id="SX-F-1" fspath="xml/sx_f_1"></example>
+					<example id="SX-G-1" fspath="xml/sx_g_1"></example>
+					<example id="SX-H-1" fspath="xml/sx_h_1"></example>
+	      </group>
+      </group>
+      <group Title="SQL-XML"> 
+	      <group Title="XML Examples">
+					<example id="XS-S-1" fspath="xmlsql/xs_s_1"></example>
+					<example id="XS-S-2" fspath="xmlsql/xs_s_2"></example>
+					<example id="XS-S-3" fspath="xmlsql/xs_s_3"></example>
+					<example id="XS-S-4" fspath="xmlsql/xs_s_4"></example>
+					<example id="XS-S-5" fspath="xmlsql/xs_s_5"></example>
+					<example id="XS-S-6" fspath="xmlsql/xs_s_6"></example>
+					<example id="XS-S-7" fspath="xmlsql/xs_s_7"></example>
+					<example id="XS-S-8" fspath="xmlsql/xs_s_8"></example>
+					<example id="XS-S-9" fspath="xmlsql/xs_s_9"></example>
+	      </group>
+	      <group Title="Using Annotated XSD Schemas for Creating XML Views">
+					<example id="MS-A-1"  fspath="xmlsql/ms_a_1"></example>
+					<example id="MS-A-2"  fspath="xmlsql/ms_a_2"></example>
+					<example id="MS-A-3"  fspath="xmlsql/ms_a_3"></example>
+					<example id="MS-A-3A" fspath="xmlsql/ms_a_3a"></example>
+					<example id="MS-A-3B" fspath="xmlsql/ms_a_3b"></example>
+					<example id="MS-A-4"  fspath="xmlsql/ms_a_4"></example>
+					<example id="MS-A-5"  fspath="xmlsql/ms_a_5"></example>
+	      </group>
+	      <group Title="Using XPath queries to XML views">
+					<example id="XP-V-1" fspath="xmlsql/xp_v_1"></example>
+					<example id="XP-V-2" fspath="xmlsql/xp_v_2"></example>
+					<example id="XP-V-3" fspath="xmlsql/xp_v_3"></example>
+	      </group>
+	      <group Title="Updategrams">
+					<example id="XS-U-1" fspath="xmlsql/xs_u_1"></example>
+					<example id="XS-U-2" fspath="xmlsql/xs_u_2"></example>
+					<example id="XS-U-3" fspath="xmlsql/xs_u_3"></example>
+	      </group>
+      </group>
+      <group Title="XSLT Transformation">
+	      <group Title="FOR XML SQL Clause">
+					<example id="XS-F-1" fspath="xmlxslt/xs_f_1"></example>
+					<example id="XS-F-2" fspath="xmlxslt/xs_f_2"></example>
+	      </group>
+      </group>
+    </subsection>
+    <!-- We keep those because of the old implementation -->
+    <subsection Title="SQL-XML" fspath="xmlsql" ref="xml"/>
+    <!-- /We keep those because of the old implementation -->
+    <subsection Title="Data Replication" fspath="repl">
+      <group Title="Data Replication">
+      <group Title="Bidirectional Transactional Replication (Updateable Subscriptions)">
+				<example id="RE-XB-1" fspath="repl/re_xb_1"></example>
+				<example id="RE-XB-2" fspath="repl/re_xb_2"></example>
+				<example id="RE-XB-3" fspath="repl/re_xb_3"></example>
+				<example id="RE-XB-4" fspath="repl/re_xb_4"></example>
+      </group>
+      <group Title="Bidirectional Snapshot Replication">
+				<example id="RE-SB-1" fspath="repl/re_sb_1"></example>
+				<example id="RE-SB-2" fspath="repl/re_sb_2"></example>
+				<example id="RE-SB-3" fspath="repl/re_sb_3"></example>
+				<example id="RE-SB-4" fspath="repl/re_sb_4"></example>
+      </group>
+      <group Title="Bidirectional Snapshot DAV Replication">
+				<example id="RE-SD-1" fspath="repl/re_sd_1"></example>
+				<example id="RE-SD-2" fspath="repl/re_sd_2"></example>
+				<example id="RE-SD-3" fspath="repl/re_sd_3"></example>
+      </group>
+      <group Title="SyncML">
+				<example id="RE-SM-1" fspath="repl/re_sm_1"></example>
+      </group>
+      <group Title="DSN Replication Demo">
+				<example id="RE-DS-1" fspath="repl/re_ds_1"></example>
+      </group>
+      </group>
+    </subsection>
+  </section>
+  <section Title="Web Services">
+    <subsection Title="SOAP Services" fspath="services">
+      <group Title="Web Services (SOAP,WSDL,UDDI)">
+	      <group Title="SOAP Services">
+					<example id="SO-S-1" fspath="services/so_s_1"></example>
+					<example id="SO-S-2" fspath="services/so_s_2"></example>
+					<example id="SO-S-3" fspath="services/so_s_3"></example>
+					<example id="SO-S-4" fspath="services/so_s_4"></example>
+					<example id="SO-S-14" fspath="services/so_s_14"></example>
+					<example id="SO-S-17" fspath="services/so_s_17"></example>
+					<example id="SO-S-20" fspath="services/so_s_20"></example>
+					<example id="SO-S-21" fspath="services/so_s_21"></example>
+					<example id="SO-S-22" fspath="services/so_s_22"></example>
+					<example id="SO-S-23" fspath="services/so_s_23"></example>
+					<example id="SO-S-24" fspath="services/so_s_24"></example>
+					<example id="SO-S-25" fspath="services/so_s_25"></example>
+					<example id="SO-S-26" fspath="services/so_s_26"></example>
+					<example id="SO-S-27" fspath="services/so_s_27"></example>
+					<example id="SO-S-28" fspath="services/so_s_28"></example>
+					<example id="SO-S-29" fspath="services/so_s_29"></example>
+					<example id="SO-S-34" fspath="services/so_s_34"></example>
+					<example id="SO-S-35" fspath="services/so_s_35"></example>
+					<example id="SO-S-36" fspath="services/so_s_36"></example>
+					<example id="SO-S-37" fspath="services/so_s_37"></example>
+	      </group>
+	      <group Title="User defined types and SOAP Services">
+					<example id="SO-S-30" fspath="services/so_s_30"></example>
+					<example id="SO-S-31" fspath="services/so_s_31"></example>
+					<example id="SO-S-32" fspath="services/so_s_32"></example>
+					<example id="SO-S-33" fspath="services/so_s_33"></example>
+	      </group>
+	      <group Title="WSDL compliant SOAP Services">
+					<example id="SO-S-5" fspath="services/so_s_5"></example>
+					<example id="SO-S-6" fspath="services/so_s_6"></example>
+					<example id="SO-S-7" fspath="services/so_s_7"></example>
+					<example id="SO-S-11" fspath="services/so_s_11"></example>
+					<example id="SO-S-18" fspath="services/so_s_18"></example>
+	      </group>
+	      <group Title="Hosting Services in WebDAV Repository">
+					<example id="SO-S-8" fspath="services/so_s_8"></example>
+					<example id="SO-S-9" fspath="services/so_s_9"></example>
+	      </group>
+	      <group Title="WS-Reliable Messaging">
+					<example id="RM-S-1" fspath="services/rm_s_1"></example>
+	      </group>
+	      <group Title="WS-Routing">
+					<example id="RP-S-1" fspath="services/rp_s_1"></example>
+					<example id="RP-S-2" fspath="services/rp_s_2"></example>
+	      </group>
+	      <group Title="Web Page Components and Direct SOAP Service Interaction">
+					<example id="SO-S-10" fspath="services/so_s_10"></example>
+					<example id="SO-S-12" fspath="services/so_s_12"></example>
+					<example id="SO-S-15" fspath="services/so_s_15"></example>
+					<example id="SO-S-16" fspath="services/so_s_16"></example>
+					<example id="SO-S-19" fspath="services/so_s_19"></example>
+	      </group>
+	      <group Title="Secure SOAP Services">
+					<example id="SO-S-13" fspath="services/so_s_13"></example>
+	      </group>
+	      <group Title="Secure SOAP Services (WS-Security)">
+					<example id="WS-S-1" fspath="services/ws_s_1"></example>
+					<example id="WS-S-2" fspath="services/ws_s_2"></example>
+					<example id="WS-S-3" fspath="services/ws_s_3"></example>
+					<example id="WS-S-4" fspath="services/ws_s_4"></example>
+					<example id="WS-S-4a" fspath="services/ws_s_4a"></example>
+					<example id="WS-S-5" fspath="services/ws_s_5"></example>
+	      </group>
+	      <group Title="UDDI Services (Client and Server/Registry)">
+					<example id="UD-S-1" fspath="services/ud_s_1"></example>
+					<example id="UD-S-2" fspath="services/ud_s_2"></example>
+					<example id="UD-S-3" fspath="services/ud_s_3"></example>
+	      </group>
+      </group>
+    </subsection>
+    <subsection Title="Wireless Access Protocols" fspath="wap">
+      <group Title="Wireless Services">
+	      <group Title="WAP Services">
+					<example id="WA-B-1" fspath="wap/wa_b_1"></example>
+					<example id="WA-B-2" fspath="wap/wa_b_2"></example>
+					<example id="WA-B-3" fspath="wap/wa_b_3"></example>
+	      </group>
+      </group>
+    </subsection>
+  </section>
+  <section Title="Business Process Integration">
+    <subsection Title="BPEL" fspath="bpeldemo">
+      <group Title="BPEL4WS">
+	      <group Title="Quick Start">
+					<example id="echo" fspath="bpeldemo/echo"></example>
+					<example id="fi" fspath="bpeldemo/fi"></example>
+					<example id="LoanFlow" fspath="bpeldemo/LoanFlow"></example> 		
+					<example id="SecLoan" fspath="bpeldemo/SecLoan"></example>
+					<example id="RMLoan" fspath="bpeldemo/RMLoan"></example>
+					<example id="SecRMLoan" fspath="bpeldemo/SecRMLoan"></example>
+					<example id="sqlexec" fspath="bpeldemo/sqlexec"></example>
+					<example id="UseCases" fspath="bpeldemo/UseCases"></example>
+					<example id="java_exec" fspath="bpeldemo/java_exec"></example>
+					<example id="clr_exec" fspath="bpeldemo/clr_exec"></example>
+					<example id="processXSLT" fspath="bpeldemo/processXSLT"></example>
+					<example id="processXQuery" fspath="bpeldemo/processXQuery"></example>
+					<example id="processXSQL" fspath="bpeldemo/processXSQL"></example>
+	      </group>
+      </group>
+    </subsection>
+  </section>
+  <section Title="Development">
+    <subsection Title="Web 1.0" fspath="web">
+      <group Title="Web 1.0">
+	      <group Title="Basic VSP Programming">
+					<example id="VS-B-1" fspath="web/vs_b_1"></example>
+					<example id="VS-B-2" fspath="web/vs_b_2"></example>
+					<example id="VS-B-3" fspath="web/vs_b_3"></example>
+					<example id="VS-B-4" fspath="web/vs_b_4"></example>
+					<example id="VS-B-5" fspath="web/vs_b_5"></example>
+					<example id="VS-B-6" fspath="web/vs_b_6"></example>
+					<example id="VS-B-7" fspath="web/vs_b_7"></example>
+					<example id="VS-B-8" fspath="web/vs_b_8"></example>
+					<example id="VS-B-9" fspath="web/vs_b_9"></example>
+	      </group>
+	      <group Title="Basic VSPX programming">
+					<example id="VX-S-1" fspath="web/vx_s_1"></example> 
+					<example id="VX-S-2" fspath="web/vx_s_2"></example> 
+					<example id="VX-S-3" fspath="web/vx_s_3"></example> 
+					<example id="VX-S-10" fspath="web/vx_s_10"></example>
+					<example id="VX-S-11" fspath="web/vx_s_11"></example>
+					<example id="VX-S-12" fspath="web/vx_s_12"></example>
+	      </group>
+	      <group Title="Advanced VSPX controls">
+					<example id="VX-S-4" fspath="web/vx_s_4"></example>
+					<example id="VX-S-5" fspath="web/vx_s_5"></example>
+					<example id="VX-S-6" fspath="web/vx_s_6"></example>
+					<example id="VX-S-7" fspath="web/vx_s_7"></example>
+					<example id="VX-S-9" fspath="web/vx_s_9"></example> 
+	      </group>
+	      <group Title="VSPX macro expansion">
+					<example id="VX-S-8" fspath="web/vx_s_8"></example>    
+	      </group>
+	      <group Title="Web Server Setup, Security, HTTPS, Multihosting">
+					<example id="VS-S-1" fspath="web/vs_s_1"></example>
+					<example id="VS-S-2" fspath="web/vs_s_2"></example>
+					<example id="VS-S-3" fspath="web/vs_s_3"></example>
+					<example id="VS-S-4" fspath="web/vs_s_4"></example>
+					<example id="VS-S-5" fspath="web/vs_s_5"></example>
+					<example id="VS-S-6" fspath="web/vs_s_6"></example>
+					<example id="VS-S-7" fspath="web/vs_s_7"></example>
+	      </group>
+	      <group Title="Session Management in Web Applications">
+					<example id="VS-U-1" fspath="web/vs_u_1"></example>
+					<example id="VS-U-2" fspath="web/vs_u_2"></example>
+					<example id="VS-U-3" fspath="web/vs_u_3"></example>
+					<example id="VS-U-4" fspath="web/vs_u_4"></example>
+					<example id="VS-U-5" fspath="web/vs_u_5"></example>
+					<example id="VS-U-7" fspath="web/vs_u_7"></example>
+	      </group>
+	      <group Title="Using XSL-T for Web Page Postprocessing">
+					<example id="VS-X-1" fspath="web/vs_x_1"></example>
+					<example id="VS-X-2" fspath="web/vs_x_2"></example>
+					<example id="VS-X-3" fspath="web/vs_x_3"></example>
+	      </group>
+	      <group Title="Managing WebDAV Content and WebDAV Users">
+					<example id="VS-D-1" fspath="web/vs_d_1"></example>
+					<example id="VS-D-2" fspath="web/vs_d_2"></example>
+					<example id="VS-D-3" fspath="web/vs_d_3"></example>
+					<example id="VS-D-4" fspath="web/vs_d_4"></example>
+					<example id="VS-D-5" fspath="web/vs_d_5"></example>
+					<example id="VS-D-6" fspath="web/vs_d_6"></example>
+					<example id="VS-D-7" fspath="web/vs_d_7"></example>
+					<example id="VS-D-8" fspath="web/vs_d_8"></example>
+	      </group>
+	      <group Title="Web Server Control">
+					<example id="VS-C-1" fspath="web/vs_c_1"></example>
+	      </group>
+	      <group Title="Importing Web Content">
+					<example id="VS-R-1" fspath="web/vs_r_1"></example>
+	      </group>
+	      <group Title="XML for Analysis Services">
+					<example id="XA-S-1" fspath="services/xa_s_1"></example>
+      </group>
+	      </group>
+    </subsection>
+    <subsection Title="Web 2.0" fspath="web2">
+      <group Title="Web 2.0">
+        <group Title="Applications">
+  		    <example id="BLOG" fspath="apps/blog"></example>
+  		    <example id="BLOG-BRIDGE" fspath="apps/blog_bridge"></example>
+  		    <example id="BLOG-QUERY" fspath="apps/blog_query"></example>
+  		    <example id="FORUMS" fspath="apps/forums"></example>
+  		    <example id="RSS-FEED" fspath="apps/rss_feed"></example>
+        </group>
+        <group Title="AJAX">
+					<example id="SO-S-24" fspath="services/so_s_24"></example>
+					<example id="SO-S-10" fspath="services/so_s_10"></example>
+					<example id="SO-S-17" fspath="services/so_s_17"></example>
+					<example id="SO-S-12" fspath="services/so_s_12"></example>
+					<example id="SO-S-16" fspath="services/so_s_16"></example>
+					<example id="SO-S-2" fspath="services/so_s_2"></example>
+					<example id="SO-S-21" fspath="services/so_s_21"></example>
+					<example id="SO-S-27" fspath="services/so_s_27"></example>
+					<example id="SO-S-28" fspath="services/so_s_28"></example>
+					<example id="SO-S-7" fspath="services/so_s_7"></example>
+					<example id="SO-S-15" fspath="services/so_s_15"></example>
+					<example id="SO-S-19" fspath="services/so_s_19"></example>
+        </group>
+	      <group Title="Generating XML reports">
+					<example id="VS-XR-1" fspath="web/vs_xr_1"></example>
+					<example id="VS-XR-2" fspath="web/vs_xr_2"></example>
+	      </group>
+      </group>
+    </subsection>
+    <subsection Title="XML" fspath="xmlxslt">
+      <group Title="XML">
+	      <group Title="Text and XML Triggers">
+					<example id="XS-T-1" fspath="xmlxslt/xs_t_1"></example>
+	      </group>
+	      <group Title="Encodings">
+					<example id="XS-E-1" fspath="xmlxslt/xs_e_1"></example>
+      </group>
+	      <group Title="DTD Validation">
+					<example id="XS-D-1" fspath="xmlxslt/xs_d_1"></example>
+	      </group>
+	      <group Title="Large Documents">
+					<example id="XS-L-1" fspath="xmlxslt/xs_l_1"></example>
+	      </group>
+      </group>
+    </subsection>
+    <subsection Title="Internet Protocols (NNTP)" fspath="intprot">
+      <group Title="Internet Protocols (NNTP)">
+	      <group Title="SMTP & POP3 Services">
+					<example id="SM-S-1" fspath="intprot/sm_s_1"></example>
+					<example id="SM-S-2" fspath="intprot/sm_s_2"></example>
+					<example id="SM-S-3" fspath="intprot/sm_s_3"></example>
+					<example id="SM-S-4" fspath="intprot/sm_s_4"></example>
+					<example id="SM-S-5" fspath="intprot/sm_s_5"></example>
+					<example id="SM-S-6" fspath="intprot/sm_s_6"></example>
+					<example id="SM-S-7" fspath="intprot/sm_s_7"></example>
+	      </group>
+	      <group Title="NNTP Service">
+					<example id="NN-S-1" fspath="intprot/nn_s_1"></example>
+					<example id="NN-S-2" fspath="intprot/nn_s_2"></example>
+	      </group>
+      </group>
+    </subsection>
+  </section>
+  <section Title="Demo applications">
+    <subsection Title="Framework Hosting" fspath="apps">
+      <group Title="Framework Hosting">
+        <group Title="Hosted applications">
+		    <example id="IBUYSPY" fspath="apps/ibuyspy"></example>
+		    <example id="PETSHOP" fspath="apps/petshop"></example>
+      </group>
+        <group Title="HTML Script Language Hosting">
+          <group Title="ASP.NET Hosting">
+      			<example id="HO-S-12" fspath="hosting/ho_s_12"></example>
+      			<example id="HO-S-6" fspath="hosting/ho_s_6"></example>
+      			<example id="HO-S-7" fspath="hosting/ho_s_7"></example>
+          </group>
+          <group Title="PHP Scripted Hosting">
+      			<example id="HO-S-30" fspath="hosting/ho_s_30"></example>
+          </group>
+          <group Title="Perl Runtime Hosting">
+      			<example id="HO-S-8" fspath="hosting/ho_s_8"></example>
+          </group>
+          <group Title="Python Runtime Hosting">
+      			<example id="HO-S-9" fspath="hosting/ho_s_9"></example>
+          </group>
+          <group Title="Ruby Runtime Hosting">
+      			<example id="HO-S-16" fspath="hosting/ho_s_16"></example>
+          </group>
+        </group>
+      </group>
+    </subsection>
+    <subsection Title="XML Data Access" fspath="xmlapps">
+      <group Title="XML Data Access">
+        <group Title="XML Query (XQuery) Language">
+  				<example id="XQ-S-1" fspath="xml/xq_s_1"></example>
+  				<example id="XQ-S-2" fspath="xml/xq_s_2"></example>
+  				<example id="XQ-S-2A" fspath="xml/xq_s_2a"></example>
+  				<example id="XQ-S-3" fspath="xml/xq_s_3"></example>
+  				<example id="XQ-S-4" fspath="xml/xq_s_4"></example>
+        </group>
+      </group>
+    </subsection>
+    <subsection Title="Semantic Web" fspath="semweb">
+      <group Title="Semantic Web">
+        <group Title="SPARQL Query Language">
+					<example id="RQ-S-1" fspath="xml/rq_s_1"></example>
+	      </group>
+      </group>
+    </subsection>
+  </section>
+</tutorial>

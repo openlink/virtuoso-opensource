@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_substring_before">
+  <refmeta> 
+    <refentrytitle>substring-before</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>substring-before</refname>
+    <refpurpose>Returns the substring of the first argument string that precedes the first occurrence of the second argument string in the first argument string.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_substring_before">
+      <funcprototype id="xpf_proto_substring_before">
+        <funcdef>string <function>substring-before</function></funcdef>
+	<paramdef><parameter>source_strg</parameter> string</paramdef>
+	<paramdef><parameter>sub_strg</parameter> string</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_substring_before"><title>Description</title>
+<para>
+If the <parameter>source_strg</parameter> does not contain <parameter>sub_strg</parameter>,
+the function returns the empty string.
+Otherwise, it finds the first occurence of <parameter>sub_strg</parameter> and returns
+the pert of <parameter>source_strg</parameter> that precedes the occurence.
+If any argument is not a string, it is converted to string using rules for string() XPATH function.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_substring_before"><title>Parameters</title>
+    <refsect2><title>source_strg</title>
+      <para>String where the search is performed</para></refsect2>
+    <refsect2><title>sub_strg</title>
+      <para>String to search</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_substring_before"><title>Return Types</title><para>String</para></refsect1>
+  <refsect1 id="xpf_examples_substring_before"><title>Examples</title>
+    <example id="xpf_ex_substring_before"><title></title>
+      <para>Extract year (&quot;1999&quot; substring) from ISO date string</para>
+      <screen>substring-before('1999-12-31','-')</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_substring_before"><title>See Also</title>
+    <para><link linkend="xpf_string">string()</link><link linkend="xpf_substring">substring()</link><link linkend="xpf_substring_after">substring-after()</link></para>
+  </refsect1>
+</refentry>
+

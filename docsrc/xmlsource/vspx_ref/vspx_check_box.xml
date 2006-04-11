@@ -1,0 +1,123 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_check_box">
+<refmeta>
+  <refentrytitle>vspx_check_box</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_check_box</refname>
+  <refpurpose>scriptable check-box</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_check_box">
+    <funcprototype id="proto_vspx_check_box">
+      <funcdef>
+        <function>check-box</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>value (required) </attribute>
+        <attribute>group-name (optional) </attribute>
+        <attribute>initial-checked (optional) </attribute>
+      </attributes>
+      <childs>
+        <child>after-data-bind</child>
+        <child>after-data-bind-container</child>
+        <child>before-data-bind</child>
+        <child>before-data-bind-container</child>
+        <child>on-post</child>
+        <child>on-post-container</child>
+        <child>before-render</child>
+        <child>before-render-container</child>
+      </childs>
+      <class>
+        <screen><![CDATA[
+				
+			    create type vspx_check_box under vspx_field
+			    self as ref temporary
+			    constructor method vspx_check_box (name varchar, parent vspx_control),
+			    overriding method vc_render () returns any,
+			    overriding method vc_pre_render () returns any,
+			    overriding method vc_view_state (stream any) returns any,
+			    overriding method vc_set_view_state (e vspx_event) returns any
+			    ;
+				
+			    ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_check_box">
+  <title>Description</title>
+  <para>
+    <function>vspx_check_box</function>is a represantation of HTML check box. Scriptable, databindable.</para>
+</refsect1>
+<refsect1 id="attrs_vspx_check_box">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>value</title>
+    <para>Data bindable value of control, represents value of HTML control to be drawn.</para>
+  </refsect2>
+  <refsect2>
+    <title>group-name</title>
+    <para>When more check boxes needs to be grouped, this is a name of group. When post such control name of group will be received on post rather than name of control.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-checked</title>
+    <para>This flag designate is that particular item is checked initially or not.</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_check_box">
+  <title>Children</title>
+</refsect1>
+<refsect1 id="examples_vspx_check_box">
+  <title>Examples</title>
+  <example id="ex_vspx_check_box">
+    <title>Simple example</title>
+    <para>This is to draw single check-box
+			    </para>
+    <screen><![CDATA[
+				
+<v:check-box name="cb1" initial-checked="0" value="-- case control.ufl_selected when 1 then 'abc' else 'cde' end"  />
+				
+			    ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

@@ -1,0 +1,395 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../demo.css"/>
+  </head>
+  <body>
+    <v:page name="pagecal1" xmlns:v="http://www.openlinksw.com/vspx/">
+      <v:variable name="tdate" type="date" default="NULL"/>
+      <v:variable name="newpost" type="int" default="1"/>
+      <v:variable name="postid" type="varchar" default="null"/>
+      <v:variable name="endpoint" type="varchar" default="'http://localhost:8890/RPC2'" persist="1"/>
+      <v:variable name="fordate" type="date" default="NULL" persist="1"/>
+      <v:variable name="appkey" type="varchar" default="'appKey'" persist="1"/>
+      <v:variable name="blogid" type="varchar" default="null" persist="1"/>
+      <v:variable name="uid" type="varchar" default="null" persist="1"/>
+      <v:variable name="pwd" type="varchar" default="null" persist="1"/>
+      <v:variable name="uname" type="varchar" default="'Anonimous'"/>
+      <v:variable name="adays" type="any" default="null"/>
+      <v:on-init>
+  self.tdate := NULL;
+  if (get_keyword ('tdate', params) &lt;&gt; '')
+    {
+      declare cal vspx_calendar;
+      self.tdate := stringdate (get_keyword ('tdate', params));
+      cal := self.vc_find_descendant_control ('cal1');
+      cal.cal_date := self.tdate;
+    }
+  self.endpoint := 'http://localhost:'||server_http_port()||'/RPC2';
+</v:on-init>
+      <!-- LOGIN -->
+      <v:login name="login1" realm="blog" mode="url" user-password-check="BLOG..blog_user_password_check">
+        <v:template type="if-no-login" redirect="blog_login.vspx"/>
+        <v:template type="if-login"/>
+        <v:after-data-bind><![CDATA[
+	if (self.vc_authenticated)
+	  {
+	    self.uid := connection_get ('vspx_user');
+	    self.pwd := blog_user_password (self.uid);
+	  }
+        for select bs_appkey, bs_blogid, bs_endpoint from blog_settings where bs_uid = self.uid do
+	  {
+	    self.endpoint := bs_endpoint;
+	    self.appkey := bs_appkey;
+	    self.blogid := bs_blogid;
+	  }
+
+	connection_set ('endpoint', self.endpoint);
+	connection_set ('appkey', self.appkey);
+	connection_set ('blogid', self.blogid);
+	connection_set ('uid', self.uid);
+	connection_set ('pwd', self.pwd);
+	self.uname := coalesce ((select U_FULL_NAME from SYS_USERS where U_NAME = self.uid), self.uname);
+       ]]></v:after-data-bind>
+      </v:login>
+      <!-- END LOGIN -->
+      <div align="center">
+        <div align="left" style="margin-left: 100px;">
+          <H2>
+            <?V self.uname ?>'s Weblog</H2>
+	</div>
+	<div align="left" style="margin-left: 100px;">
+	  <p style="color:red;">
+	    <v:label name="warn1" value="The settings are incorrect; please set up the blogid via Settings menu."
+	      enabled="--case when self.blogid is null then 1 else 0 end" />
+	  </p>
+	</div>
+        <v:form name="form1" type="simple" action="blog_home.vspx">
+          <table border="0" cellpadding="2" cellspacing="2" width="80%">
+            <tr>
+              <td valign="top">
+                <table border="0" cellpadding="0" cellspacing="0" width="70%">
+                  <tr>
+                    <td>
+                      <table width="80%" border="0" cellspacing="0" cellpadding="4" class="tableentry">
+                        <tr>
+                          <td valign="top">
+                            <v:textarea name="msg" xhtml_rows="10" xhtml_cols="70">
+                              <v:after-data-bind>
+		       if ({?'pid'} is not null)
+		         {
+			   declare exit handler for sqlstate '*' { goto endb;  };
+			   declare mblog BLOG..blogPost;
+                           mblog := BLOG.blogger.get_Post (self.endpoint,
+			       BLOG..blogRequest (self.appkey, self.blogid, {?'pid'},
+				 self.uid, self.pwd));
+		           control.ufl_value := mblog.content;
+			   self.newpost := 0;
+			   self.postid := {?'pid'};
+			endb:;
+			 }
+		     </v:after-data-bind>
+                            </v:textarea>
+                            <p style="color: red;">
+                              <v:error-summary/>
+                            </p>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td valign="top">
+			    <v:button name="save" action="simple" value="Post to Weblog"
+			      enabled="--case when self.blogid is null then 0 else 1 end">
+                              <v:on-post>
+		     declare msg vspx_textarea;
+                     msg := control.vc_parent.vc_find_control ('msg');
+		     --dbg_obj_print ('msg:', msg.ufl_value);
+		     --dbg_obj_print ('self.newpost', self.newpost);
+		     if (msg.ufl_value &lt;&gt; '')
+		       {
+			 if (self.newpost)
+			   {
+			     BLOG.blogger.new_Post (self.endpoint,
+				 BLOG..blogRequest (self.appkey, self.blogid, '', self.uid, self.pwd),
+				 msg.ufl_value);
+			   }
+			 else
+			   {
+			     BLOG.blogger.edit_Post (self.endpoint,
+			     BLOG..blogRequest (self.appkey, self.blogid, self.postid,
+			         self.uid, self.pwd),
+				 msg.ufl_value);
+			   }
+		       }
+                     else
+		       {
+			 self.vc_is_valid := 0;
+			 msg.vc_error_message := 'Can not post to weblog an empty message';
+			 return;
+		       }
+		     self.newpost := 1;
+		     {
+		       declare ctrl vspx_control;
+		       ctrl := self.vc_find_descendant_control ('ds');
+		       ctrl.vc_data_bind (e);
+		     }
+ 		     msg.ufl_value := '';
+		     </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+      &amp;nbsp;
+      </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <!-- DATASET -->
+                      <table cellspacing="0" cellpadding="0">
+                        <tr bgcolor="DCDCDC">
+                          <td>
+                            <v:data-set name="ds" data="--bb_get (dt)" meta="--bb_meta (dt)" nrows="10" scrollable="0">
+                              <v:param name="dt" value="--self.fordate"/>
+                              <v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
+                                <table border="0" cellspacing="1" cellpadding="5" class="tableresult">
+                                  <tr>
+                                    <td colspan="4" align="center">
+                                      <v:label name="label03" value="--b_tit_fmt (self.fordate)" format="%s"/>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </v:template>
+                              <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+                                <v:template name="template7" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                                  <table>
+                                    <tr bgcolor="FFFFFF">
+                                      <td align="center" colspan="4">
+                                        <b>No postings</b>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                </v:template>
+                                <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
+                                  <table>
+                                    <tr bgcolor="FFFFFF">
+                                      <td>
+                                        <v:check-box name="cb1" value="--cal_icell (control, 2)" group-name="cb1">
+                                          <v:after-data-bind>
+		      control.ufl_selected := 0;
+		    </v:after-data-bind>
+                                        </v:check-box>
+                                      </td>
+                                      <td align="left">
+                                        <v:label name="label5" value="--cal_icell (control, 0)" format="%s"/>
+                                      </td>
+                                      <td align="left" nowrap="1" colspan="1">
+                                        <v:label name="label6" value="--cal_icell (control, 1)" format="%s" fmt-function="b_date_fmt"/>
+                                      </td>
+                                      <td nowrap="1">
+                                        <v:url name="edit" value="EDIT" url="--concat ('blog_home.vspx?pid=', cal_icell (control, 2), '&amp;tdate=', datestring(coalesce(self.tdate, now())))"/>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                </v:template>
+                              </v:template>
+                              <v:template name="template8" type="simple" name-to-remove="table" set-to-remove="top">
+                                <table>
+            </table>
+                              </v:template>
+                            </v:data-set>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>&amp;nbsp;</td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <v:button action="simple" name="delete" value="Delete">
+                              <v:on-post>
+	      declare i, deleted int;
+              i := 0; deleted := 0;
+	      while (1)
+                {
+                  i := position ('cb1', params, i);
+		  if (i = 0)
+		    goto endp;
+                  deleted := deleted + 1;
+		  BLOG.blogger.delete_Post (self.endpoint,
+		     BLOG..blogRequest (self.appkey, self.blogid, params[i], self.uid, self.pwd));
+                  i := i + 1;
+		}
+             endp:
+
+	      if (deleted &gt; 0)
+	        {
+		  declare ctrl vspx_control;
+                  ctrl := self.vc_find_descendant_control ('ds');
+                  ctrl.vc_data_bind (e);
+	        }
+	    </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
+                      </table>
+                      <!-- END DATASET -->
+                    </td>
+                  </tr>
+                </table>
+              </td>
+              <td valign="top" width="130">
+                <v:calendar name="cal1" initial-date="--coalesce (self.tdate, now())">
+                  <v:before-data-bind><![CDATA[
+	    set isolation = 'committed';
+	    declare adays any;
+	    declare m, y int;
+	    declare dt date;
+
+
+	    dt := coalesce (control.cal_date, self.fordate);
+	    m := month (dt);
+	    y := year (dt);
+
+	    adays := vector ();
+	    for select distinct dayofmonth (B_TS) DDAY from BLOG..SYS_BLOGS
+	      where B_BLOG_ID = self.blogid and year (B_TS) = y and month (B_TS) = m do
+	      {
+	        adays := vector_concat (adays, vector (cast (DDAY as varchar)));
+	      }
+	    self.adays := adays;]]></v:before-data-bind>
+                  <v:after-data-bind>
+       self.tdate := control.cal_date;
+      </v:after-data-bind>
+      <v:template type="simple" name="chead1" name-to-remove="table" set-to-remove="bottom">
+
+                    <table id="calendar">
+                      <tr>
+                        <td align="center">
+                          <v:button name="pmon" value="&amp;lt;" action="simple" style="url">
+                            <!--v:before-render>
+	    declare cal vspx_calendar;
+	    cal := control.vc_parent.vc_parent;
+	    control.ufl_value := substring (monthname (dateadd ('month', -1, cal.cal_date)), 1, 3);
+	    </v:before-render-->
+                            <v:on-post>
+	    declare cal vspx_calendar;
+	    declare ctrl vspx_control;
+	    cal := control.vc_parent.vc_parent;
+	    cal.cal_date := dateadd ('month', -1, cal.cal_date);
+	    ctrl := cal;
+	    ctrl.vc_data_bind (e);
+            ctrl := self.vc_find_descendant_control ('ds');
+	    ctrl.vc_data_bind (e);
+	    </v:on-post>
+                          </v:button>
+                        </td>
+                        <td colspan="5" align="center">
+                          <B>
+                            <?V monthname((control.vc_parent as vspx_calendar).cal_date) ?>
+                            <?V year((control.vc_parent as vspx_calendar).cal_date) ?>
+                          </B>
+                        </td>
+                        <td align="center">
+                          <v:button name="nmon" value="&amp;gt;" action="simple" style="url">
+                            <v:on-post>
+	    declare cal vspx_calendar;
+	    declare ctrl vspx_control;
+	    cal := control.vc_parent.vc_parent;
+	    cal.cal_date := dateadd ('month', 1, cal.cal_date);
+	    ctrl := cal;
+	    ctrl.vc_data_bind (e);
+            ctrl := self.vc_find_descendant_control ('ds');
+	    ctrl.vc_data_bind (e);
+	    </v:on-post>
+                          </v:button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="realsmall">Sun</td>
+                        <td class="realsmall">Mon</td>
+                        <td class="realsmall">Tue</td>
+                        <td class="realsmall">Wed</td>
+                        <td class="realsmall">Thu</td>
+                        <td class="realsmall">Fri</td>
+                        <td class="realsmall">Sat</td>
+                      </tr>
+                    </table>
+                  </v:template>
+                  <v:template type="repeat" name="cbody1" name-to-remove="" set-to-remove="">
+                    <v:template type="browse" name="crow1" name-to-remove="table" set-to-remove="both">
+                      <table>
+                        <tr>
+                          <td class="&lt;?V cell_fmt((control as vspx_row_template).te_rowset[0], self.adays) ?>">
+                            <v:button style="url" action="simple" name="b1" value="--cal_icell(control, 0)" active="--position(control.ufl_value, self.adays)"/>
+                          </td>
+                          <td class="&lt;?V cell_fmt((control as vspx_row_template).te_rowset[1], self.adays) ?>">
+                            <v:button style="url" action="simple" name="b2" value="--cal_icell(control, 1)" active="--position(control.ufl_value, self.adays)"/>
+                          </td>
+                          <td class="&lt;?V cell_fmt((control as vspx_row_template).te_rowset[2], self.adays) ?>">
+                            <v:button style="url" action="simple" name="b3" value="--cal_icell(control, 2)" active="--position(control.ufl_value, self.adays)"/>
+                          </td>
+                          <td class="&lt;?V cell_fmt((control as vspx_row_template).te_rowset[3], self.adays) ?>">
+                            <v:button style="url" action="simple" name="b4" value="--cal_icell(control, 3)" active="--position(control.ufl_value, self.adays)"/>
+                          </td>
+                          <td class="&lt;?V cell_fmt((control as vspx_row_template).te_rowset[4], self.adays) ?>">
+                            <v:button style="url" action="simple" name="b5" value="--cal_icell(control, 4)" active="--position(control.ufl_value, self.adays)"/>
+                          </td>
+                          <td class="&lt;?V cell_fmt((control as vspx_row_template).te_rowset[5], self.adays) ?>">
+                            <v:button style="url" action="simple" name="b6" value="--cal_icell(control, 5)" active="--position(control.ufl_value, self.adays)"/>
+                          </td>
+                          <td class="&lt;?V cell_fmt((control as vspx_row_template).te_rowset[6], self.adays) ?>">
+                            <v:button style="url" action="simple" name="b7" value="--cal_icell(control, 6)" active="--position(control.ufl_value, self.adays)"/>
+                          </td>
+                        </tr>
+                      </table>
+                    </v:template>
+                  </v:template>
+                  <v:template type="simple" name="cbott1" name-to-remove="table" set-to-remove="top">
+                    <table>
+      </table>
+                  </v:template>
+                </v:calendar>
+	       <hr />
+	       <b align="center"><v:url name="work" url="blog_setup.vspx" value="Settings"/></b>
+              </td>
+            </tr>
+          </table>
+          <v:on-post>
+      declare cal vspx_calendar;
+      cal := control.vc_find_control ('cal1');
+      if (cal.vc_focus and cal.cal_selected is not null)
+       {
+         declare ctrl vspx_control;
+	 self.fordate := cal.cal_selected;
+         ctrl := control.vc_find_control ('ds');
+         ctrl.vc_data_bind (e);
+       }
+      </v:on-post>
+        </v:form>
+      </div>
+    </v:page>
+  </body>
+</html>

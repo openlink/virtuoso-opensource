@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_assign">
+  <refmeta>
+    <refentrytitle>assign</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>assign</refname>
+    <refpurpose>Creates a local variable and assign a value to it.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_assign">
+      <funcprototype id="xpf_proto_assign">
+        <funcdef>null <function>assign</function></funcdef>
+	<paramdef><parameter>var_name</parameter> string</paramdef>
+	<paramdef><parameter>var_value</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_assign"><title>Description</title>
+<para>
+This function calculates the first argument, <parameter>var_name</parameter>,
+and converts it to the string, if needed.
+Then it checks if there is a local variable or parameter with such name.
+If not found, it checks if there is a global variable or parameter with such name.
+If nothing found in both cases, a new local variable is created with this name.
+The the value of found or created variable is changed to the value of
+the second argument, <parameter>var_value</parameter>.
+</para>
+<para>
+The value of the variable may be accessed like the value of any varuable created
+by &lt;xsl:variable&gt; XSL element or FLWR operator of XQUERY.
+The same $name should be used to get the value.
+</para>
+<para>
+In XSLT, common rules for local variables are used for variables created by assign() function.
+</para>
+<para>
+This function is not a part of XPATH 1.0 or XQUERY 1.0 libraries of standard functions.
+It may produce strange results if
+used in XQUERY expressions in order to change the value of local variable created
+by FLWR expression.
+It may cause infinite loop if
+used in XSLT expressions in order to change the value of a variable used in
+currently executed &lt;xsl:apply-templates&gt; instruction.
+For both safety and portability, it is much better to use &lt;xsl:variable&gt; and
+&lt;xsl:param&gt; XSL elements in stylesheets or LET operator in XQUERY expressions.
+In addition, let() function is not portable,
+but it may be used in XPATH or XSLT without the risk of
+undesired effects.</para>
+  </refsect1>
+  <refsect1 id="xpf_params_assign"><title>Parameters</title>
+    <refsect2><title>var_name</title>
+      <para>The name of variable which must be found or created.</para></refsect2>
+    <refsect2><title>var_value</title>
+      <para>The value which should be assigned to the variable.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_assign"><title>Return Types</title><para>Null</para></refsect1>
+  <refsect1 id="xpf_examples_assign"><title>Examples</title>
+    <example id="xpf_ex_assign"><title></title>
+      <para>Increment local variable $counter by 1.</para>
+      <screen>
+	assign('counter', $counter+1);
+      </screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_assign"><title>See Also</title>
+    <para><link linkend="xpf_let">let()</link></para>
+  </refsect1>
+</refentry>
+

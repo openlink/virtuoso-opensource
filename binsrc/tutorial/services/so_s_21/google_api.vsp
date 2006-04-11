@@ -1,0 +1,147 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare cookie, googlecookie, googlekey varchar;
+  declare cookielist any;
+  declare i integer;
+
+  cookie := http_request_header (lines, 'Cookie', null, '');
+
+  if (cookie <> '')
+    googlecookie := get_keyword ('googlekey', split_and_decode (cookie, 0, '\0\0;='), '');
+  else
+    googlecookie := '';
+
+  googlekey := get_keyword('key', params, googlecookie);
+  if (googlekey = '')
+    googlekey := '<obtain from Google email>';
+
+  http_header (sprintf ('Set-cookie: googlekey=%s; path;\r\n', googlekey));
+?>
+<html>
+<head>
+     <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
+     <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=/services/services.wsdl&xslt_type=complex"></script>
+     <link rel="stylesheet" type="text/css" href="/tutorial/services/demo.css">
+
+<SCRIPT language="JavaScript">
+var int_rawxml=0;
+function gsResultsAjax(result)
+{
+  document.getElementById('resContainer').innerHTML=result;
+};
+
+function cpResultsAjax(result)
+{
+  document.getElementById('resContainer').innerHTML=result;
+};
+function ssResultsAjax(result)
+{
+  document.getElementById('resContainer').innerHTML=result;
+};
+
+
+</SCRIPT>
+</head>
+<body>
+<H3>Google Web APIs demo</H3>
+<form method=post>
+<table border=0 class="tableentry">
+<tr>
+ <td>1.</td>
+ <td>Get license key:</td>
+ <td>See <a target="_blank" href="http://www.google.com/apis/">Google Web API</a> page
+ </td>
+</tr>
+
+<tr>
+ <td>2.</td>
+ <td>Enter license key:</td>
+ <td><input type=text name="key" id="key" size="40" onchange="this.form.submit()" value="<?=googlekey?>">
+ </td>
+</tr>
+
+<tr>
+ <td>3.</td>
+ <td>Show Response as XML:</td>
+ <td>
+   <input type=checkbox name="rawxml" id="rawxml" onClick="int_rawxml=Number(this.checked);">
+ </td>
+</tr>
+
+
+<tr>
+ <td valign="top">4a.</td>
+ <td valign="top" colspan="2">Enter text to search:</br>
+   <input type=text name="q" id="q" size="36" value="OpenLink Software">
+ <input type=button name="excute" value="Search Web" onClick="ajax.Start(doGoogleSearch,'')">
+ </td>
+</tr>
+
+<tr>
+ <td valign="top">4b.</td>
+ <td valign="top" colspan="2">Enter url of page cached by Google:</br>
+   <input type=text name="url" id="url" size="36" value="http://www.openlinksw.com/">
+ <input type=button name="excute" value="Detail Cached Site" onClick="ajax.Start(doGetCachedPage,'')">
+ </td>
+</tr>
+
+<tr>
+ <td valign="top">4c.</td>
+ <td valign="top" colspan="2">Enter text to check for spelling:</br>
+   <input type=text name="phrase" id="phrase" size="36" value="OpenLin Softwa">
+ <input type=button name="excute" value="Check Spelling" onClick="ajax.Start(doSpellingSuggestion,'')">
+ </td>
+</tr>
+
+</form>
+      <script defer="defer" type="text/javascript">
+          var doGoogleSearch = {
+            delay: 200,
+            prepare: function() {return Array('Search Web',document.getElementById('key').value,document.getElementById('q').value,int_rawxml);},
+            call: proxies.SOAP.GOOGLEAPI_PROXY,
+            finish: function(p){gsResultsAjax(p);},
+            onException: proxies.alertException
+          }
+
+          var doGetCachedPage = {
+            delay: 200,
+            prepare: function() {return Array('Detail Cached Site',document.getElementById('key').value,document.getElementById('url').value,int_rawxml);},
+            call: proxies.SOAP.GOOGLEAPI_PROXY,
+            finish: function(p){cpResultsAjax(p);},
+            onException: proxies.alertException
+          }
+
+          var doSpellingSuggestion = {
+            delay: 200,
+            prepare: function() {return Array('Check Spelling',document.getElementById('key').value,document.getElementById('phrase').value,int_rawxml);},
+            call: proxies.SOAP.GOOGLEAPI_PROXY,
+            finish: function(p){ssResultsAjax(p);},
+            onException: proxies.alertException
+          }
+
+      </script>
+</table>
+<div id="resContainer"></div>
+</body>
+</html>

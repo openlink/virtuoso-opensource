@@ -1,0 +1,15 @@
+.libs
+.deps
+include
+langfunc_templ.c
+language__en_UK.c
+lib
+*.o
+Makefile.in
+Makefile
+sql_code_clr.c
+sql_code_javavm.c
+sql_code_xslt.c
+virtuoso-javavm-t
+virtuoso-sample-t
+virtuoso-iodbc-sample-t

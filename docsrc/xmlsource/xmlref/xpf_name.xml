@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_name">
+  <refmeta> 
+    <refentrytitle>name</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>name</refname> 
+    <refpurpose>Returns the expanded name of the argument.</refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv> 
+    <funcsynopsis id="xpf_syn_name"> 
+      <funcprototype id="xpf_proto_name">
+        <funcdef>string <function>name</function></funcdef> 
+	<paramdef><optional><parameter>node_obj</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_name"><title>Description</title>
+<para>For given node, it returns extended name of the node,
+i.e. the name of given attribute or element with namespace prefix replaced
+with namespace URI string.
+If the argument is node-set, first node of the node-set will be considered.
+Empty string is returned if the argument is an empty node-set, a node without
+name or if the argument is not a node.</para>
+<para>If the argument is omitted, context node is used instead as if it is a node-set of one element.</para>
+</refsect1>
+  <refsect1 id="xpf_params_name"><title>Parameters</title>
+    <refsect2><title>node_obj</title>
+      <para>Node whose name is to be returned.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_name"><title>Return Types</title><para>String</para></refsect1>
+  <refsect1 id="xpf_examples_name"><title>Examples</title>
+    <example id="xpf_ex_name"><title></title>
+      <para>Find all elements whose namespace URIs or local names contain &quot;html&quot; substring</para>
+      <screen>//*[contains(name(),'html')]</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_name"><title>See Also</title>
+    <para><link linkend="xpf_local_name">local-name()</link><link linkend="xpf_namespace_uri">namespace_uri()</link></para>
+  </refsect1>
+</refentry>

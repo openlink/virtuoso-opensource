@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_exec_close">
+  <refmeta>
+    <refentrytitle>close</refentrytitle>
+    <refmiscinfo>sql</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>exec_close</refname>
+    <refpurpose>Closes cursor created by exec()</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_exec_close">
+      <funcprototype id="fproto_exec_close">
+        <funcdef><function>exec_close</function></funcdef>
+        <paramdef>in <parameter>cursor_handle</parameter> long</paramdef>
+			
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_exec_rclose"><title>Description</title>
+    <para>Closes the cursor opened by the exec() function.</para>
+  </refsect1>
+  <refsect1 id="params_exec_rclose">
+    <title>Parameters</title>
+    <refsect2>
+      <title>cursor_handle</title>
+      <para>The cursor handle used.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="seealso_exec_close"><title>See Also</title>
+    <para><link linkend="fn_exec_next"><function>exec_next()</function></link></para>
+    <para><link linkend="fn_exec"><function>exec()</function></link></para>
+    </refsect1>
+</refentry>

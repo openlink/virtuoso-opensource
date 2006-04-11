@@ -1,0 +1,55 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XS-S-8">
+  <refmeta>
+    <refentrytitle>XML Examples</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Freetext indexing hooks</refname>
+    <refpurpose>Building a freetext index using a custom PL indexing hooks</refpurpose>
+  </refnamediv>
+
+<refsect1 id="XS-S-8a">
+<title>Freetext Index</title>
+<itemizedlist mark="bullet">
+  <listitem>The freetext index has a default mechanism for indexing and unindexing.</listitem>
+  <listitem>By default indexing/unindexing is performed over data column.</listitem>
+  <listitem>A custom PL hook can be made for indexing/unindexing, and be associated to the 
+   freetext index definition.</listitem>
+  <listitem>The data from additional columns can be indexed in the custom PL hooks.</listitem>
+  <listitem>Working together with off-band data columns to make index sensitive to changes in the additional columns data 
+  they should be declared as off-band data.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="XS-S-8b">
+<title>Example</title>
+<para>The example SQL script does the following steps:</para>
+<itemizedlist mark="bullet">
+  <listitem>Definition of the hooks</listitem>
+  <listitem>Making of text index</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

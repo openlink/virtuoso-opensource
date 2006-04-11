@@ -1,0 +1,601 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="sqloptimizer"><title>Virtuoso SQL Optimization</title>
+
+  <para>Virtuoso provides a cost based SQL optimizer which performs the following
+  types of query transformation:</para>
+
+  <simplelist>
+    <member>Join Order</member>
+    <member>Loop Invariants</member>
+    <member>Opening derived tables</member>
+    <member>Migrating enclosing predicates into derived tables or unions</member>
+    <member>Dropping unreferenced columns or results</member>
+    <member>Detection of identically false predicates</member>
+    <member>Index selection</member>
+    <member>Grouping of co-located remote tables into single remote statements</member>
+    <member>Selection of join algorithm</member>
+  </simplelist>
+
+  <para>Virtuoso evaluates various permutations of joined tables against its
+  cost model and determines the best fit, from which it generates a query graph.
+  This query graph can be returned as a result set by the
+  <link linkend="fn_explain"><function>explain()</function></link> SQL function.
+  The cost model is based on table row counts, defined indices and uniqueness
+  constraints, and column cardinalities, i.e. counts of distinct values in
+  columns.  Additionally, histograms can be made for value distribution of
+  individual columns.</para>
+
+  <para>The stored procedure:</para>
+  <para><link linkend="fn_sys_stat_analyze"><function>DB.DBA.SYS_STAT_ANALYZE
+    <paramdef>in <parameter>full_table_name</parameter> varchar</paramdef>
+    <paramdef>in <parameter>prec</parameter> integer</paramdef>
+    </function></link></para>
+
+  <para>constructs the basic table statistics and feeds it into the
+  DB.DBA.SYS_COL_STAT system table.</para>
+
+  <para>The stored procedure:</para>
+  <para><link linkend="fn_sys_stat_histogram"><function>DB.DBA.SYS_STAT_HISTOGRAM
+    <paramdef>in <parameter>full_table_name</parameter> varchar</paramdef>
+    <paramdef>in <parameter>full_column_name</parameter> varchar</paramdef>
+    <paramdef>in <parameter>n_buckets</parameter> integer</paramdef>
+    <paramdef>in <parameter>prec</parameter> integer</paramdef>
+    </function></link></para>
+
+  <para>constructs table column histogram and feeds it into the
+  DB.DBA.SYS_COL_HIST system table.  The default value of prec, in both cases,
+  is 1, which implies that all rows will be examine.</para>
+
+<example id="ex_sqlopt1"><title>Demonstration of the STAT_ANALYSE &amp; STAT_HISTOGRAM Procedures</title>
+<para>The following script is intended for use with the ISQL program as the
+user dba, in the DB qualifier.  The foreach statement is a special feature of
+the ISQL utility.</para>
+
+<programlisting><![CDATA[
+create table "DB"."DBA"."DTTEST" ("ID" integer primary key);
+foreach integer between 1 10 insert into "DB"."DBA"."DTTEST" ("ID") values (?);
+sys_stat_analyze ('DB.DBA.DTTEST');
+select * from DB.DBA.SYS_COL_STAT;
+sys_stat_histogram ('DB.DBA.DTTEST', 'ID', 2);
+select * from DB.DBA.SYS_COL_HIST;
+]]></programlisting>
+
+<para>
+That yields:
+</para>
+
+<screen>
+Resultset 1 (from DB.DBA.SYS_COL_STAT)
+----------------------------------------
+CS_TABLE         CS_COL           CS_N_DISTINCT CS_MIN  CS_MAX  CS_N_VALUES CS_N_ROWS
+VARCHAR NOT NULL VARCHAR NOT NULL INTEGER       VARCHAR VARCHAR INTEGER     INTEGER
+_______________________________________________________________________________
+
+DB.DBA.DTTEST    ID               10            1       10      10          10
+
+Resultset 2 (from DB.DBA.SYS_COL_HIST)
+---------------------------------------
+CH_TABLE          CH_COL            CH_NTH_SAMPLE     CH_VALUE
+VARCHAR NOT NULL  VARCHAR NOT NULL  INTEGER NOT NULL  VARCHAR
+_______________________________________________________________________________
+
+DB.DBA.DTTEST     id                0                 1
+DB.DBA.DTTEST     id                5                 6
+DB.DBA.DTTEST     id                10                0
+</screen>
+</example>
+
+  <sect2 id="opttechniques"><title>Optimization Techniques</title>
+
+  <sect3 id="joinorder"><title>Join Order</title>
+  <para>The SQL compiler constructs permutations of tables in the FROM clause
+  of a query.  The qualified inner join (x inner join y on p syntax) does not
+  dictate a join order but the outer join syntax does.  Otherwise join order is
+  subject to change by the compiler's decision.  This can be disabled with the
+  OPTION (ORDER) global query option, see sections below.</para>
+
+  <para>The first order tried by the optimizer is the initial left to right
+  order of the FROM clause.  The compiler remembers its best result so
+  far attained in trying various compilations, so it will not explore
+  branches of the table permutation tree which, while incomplete, exceed
+  the cost of the best complete result so far.  Thus a good guess of
+  initial table order by the programmer may save compilation time.</para>
+  </sect3>
+
+  <sect3 id="loopinvariants"><title>Loop Invariants</title>
+  <para>The compiler will evaluate all expressions and predicates as early as
+  possible.</para>
+
+  <para>Consider the query:</para>
+
+  <programlisting><![CDATA[
+select count (*) from item where i_price > (select avg (i_price) from item);
+]]></programlisting>
+
+  <para>The compiler will detect that the sub query is data-independent from
+  the main from and thus will compute the average price before starting the
+  select for the count.  Thus the above query executes in time linear to the
+  item table count instead of quadratic time, as it would without the removal
+  of the invariant.</para>
+  </sect3>
+
+  <sect3 id="openderivedtablesviews"><title>Opening Derived Tables &amp; Views</title>
+  <para>Views are initially opened into equivalent derived tables.  If a
+  derived table in a FROM clause is sufficiently simple, i.e.  has no distinct,
+  top, group by, and is not a multiple query expression such as a union, it can
+  be in-lined.</para>
+
+  <example id="ex_derivedtablesviews"><title>Derived Tables &amp; Views</title>
+
+<programlisting>
+create view i as select * from item;
+
+select i_id from i;
+</programlisting>
+
+<para>becomes</para>
+
+<programlisting>
+select i_id from (select * from item) xx;
+</programlisting>
+
+<para>which becomes</para>
+
+<programlisting>
+select i_id from item;
+</programlisting>
+
+<para>In joins involving views representing joins, the in-lining of a derived
+table will add degrees of freedom to join order selection, since the tables
+joined in the view will not have to be laid out contiguously.</para>
+</example>
+  </sect3>
+
+  <sect3 id="migencpreds"><title>Migrating Enclosing Predicates</title>
+  <para>When there is a derived table or view expansion which cannot be in-lined,
+  i.e. it has a group by or is a union or such, predicates of the enclosing
+  WHERE phrase are migrated into the derived table itself.  The set of
+  predicates that may be thus migrated will be a function of the join order,
+  thus different combinations will be tried.</para>
+
+  <example id="ex_migpreds"><title>Example of Migrating Predicates</title>
+<programlisting>
+select i_id from (select * from item1 union all select * from item2) f where i_id = 11;
+</programlisting>
+
+<para>becomes</para>
+
+<programlisting>
+select i_id from (select i_id from item1
+  where i_id = 11 union all select i_id from item2 where i_id = 11) f;
+</programlisting>
+  </example>
+  </sect3>
+
+  <sect3 id="dropunrefed"><title>Dropping Unreferenced Columns or Results</title>
+  <para>It may happen as a result of view expansion that columns get introduced
+  into derived table selection which are nowhere referenced in the actual query.
+  The compiler will detect this and will not compile code accessing these.
+  (see above for example)</para>
+  </sect3>
+
+  <sect3 id="detoffalsepreds"><title>Detection of Identically False Predicates</title>
+  <para>It is possible that view expansions introduce predicates that are never
+  simultaneously true with predicates of the enclosing query.  This is recognized
+  and can result in an empty query being produced or in union terms being dropped.</para>
+
+  <para>The rules for combining predicates are as follows:</para>
+
+<programlisting><![CDATA[
+- a < b and a < c -> a < min (a, b)
+]]></programlisting>
+
+  <para>And similarly for &lt;=, &gt;, and &gt;=.</para>
+
+<programlisting>
+a in (constant1) and a in (constant2)
+</programlisting>
+  <para>becomes identically false if the intersection of the constant lists is empty.</para>
+
+<programlisting>
+- a = b and a = c
+</programlisting>
+  <para>becomes identically false if b and c are different constants.</para>
+
+  <para>This can lead to transformations such as</para>
+
+<programlisting>
+select * from (select * from item where i_type = 2 union all
+  select * from item where i_type = 3) xx where i_type = 2;
+</programlisting>
+
+  <para>becomes</para>
+
+<programlisting>
+select * from (select * from item where i_type = 2 ) xx where i_type = 2;
+</programlisting>
+</sect3>
+
+  <sect3 id="indexselect"><title>Index Selection</title>
+  <para>Once a join order is hypothesized, the compiler picks various indices
+  to use for accessing tables.  The predicates applicable to the table
+  in the specific join order being considered, as well as a possible
+  ORDER BY clause affect the index choice.  If there is an ORDER BY and
+  there is an index which can be used to directly satisfy this, the
+  compiler tries this index as well as the index which seems best in the
+  light of the available predicates.  Thus having an applicable ORDER BY
+  does not always imply index selection.  If there is a restrictive
+  index for row selection and an order by which could be done by
+  following an index for which there are no predicates, the restrictive
+  index plus sorting will be preferred.</para>
+
+  <para>The general rules for index selection based on predicates are:</para>
+  <simplelist>
+    <member>Primary key is preferred if 2 equally good choices exist.</member>
+    <member>Equality conditions are preferred over all others.</member>
+    <member>Uniqueness of an index is a plus.</member>
+  </simplelist>
+  </sect3>
+
+  <sect3 id="grpcolocatedtables"><title>Grouping Co-Located Tables</title>
+  <para>In queries involving distributed data the principal cost factor is
+  often the RPC latency between the participating databases.  In a local
+  area network environment with no other load we estimate one RPC to be
+  about 5 times longer than the selection of a single row on primary key
+  from a table of 1 million, not counting disk I/O.  In wide area
+  contexts and with effective load the difference is still more marked.
+  Thus when considering a loop join between a local and a remote table, it
+  becomes obvious that the remote table should be the outer loop, unless there
+  are extremely restrictive criteria on the local table.  The cost model takes
+  such considerations into account.</para>
+
+  <para>The best case of remote statement compilation is when the statement can
+  be passed through as is to the remote.  This is first checked for the whole
+  query and subsequently for each sub query or derived table.  The pass-through
+  is not possible if:</para>
+
+  <simplelist>
+    <member>The expression involves tables from multiple
+      remotes or local and remote ones.</member>
+    <member>The expression involves predicates or functions
+      or SQL constructs which do not exist on the remote.</member>
+  </simplelist>
+
+  <para>Even if a derived table or sub query can be passed through the normal
+  SQL optimization applies, thus Virtuoso will import predicates and suggest
+  a join order for these cases, so that the query gets rewritten with the
+  suggested join order left to right in the text.</para>
+
+  <para>If one join has multiple tables from the same remote but also other
+  tables, the optimizer will attempt to group the co-located tables together.</para>
+
+<programlisting>
+select * from r1 join t1 on r1.k = t1.k join r2 on r1.k = r2.k;
+</programlisting>
+
+  <para>will preferentially be compiled as</para>
+
+<programlisting>
+select * from (select r1.k as r1_k, ... from r1, r2
+  where r1.k = r2.k) xx, t1 where r1_k = t1.k;
+</programlisting>
+
+  <para>Note that above the join order is meant left to right and that the
+  derived table of r1, r2 is passed through as a unit.  This becomes the
+  leading loop in the join because fewer RPC's are likely to be needed then due
+  to row prefetch.  As for placing function calls, the general rule is to
+  place them where the arguments are, thus passed through to the remote if they
+  are defined there.  On the other hand, if these are invariant they are always
+  computed locally.  The explain function can be used to see the details of the
+  compilation.  If a function is described as being defined on the particular
+  remote database, this information is taken into account when compiling.</para>
+  </sect3>
+
+  <sect3 id="jointypeselect"><title>Join Type Selection</title>
+  <para>Starting with Virtuoso 3.0, hash joins are used  where appropriate.
+  A hash join is about three to four times faster for a local table than with
+  a loop join using an exact match of primary key, thus the gain is substantial.</para>
+
+  <para>A hash join works by scanning the shorter of two joined tables and
+  making a hash table from the join columns.  This is only possible for
+  joins involving equality, but most joins tend to have equalities in practice.</para>
+
+  <note><title>Note:</title>
+  <para>A hash join does not need indices to be defined and the hash table
+  constructed for one hash join may be reused by another if the table is not
+  modified in-between.</para></note>
+
+  <para>A hash join will be preferred if there is a sufficient number of
+  estimated accesses to the joined table in the query.  If a table is expected
+  to be accessed only once, there is less point in making the temporary
+  hash table.</para>
+
+  <para>The hash join temporary structures are disk based and reside in the
+  temporary side of the database.  They do not survive a database restart
+  but will be ad hoc reused if such are left over from earlier queries
+  and there is no change in the base table between the construction of
+  the hash and its reuse.</para>
+
+  <para>A hash join may be specially beneficial if a remote table is on the
+  inner loop of a loop join.  The n random accesses can then be replaced with
+  a single sequential scan of the remote table.</para>
+
+  <para>The selected join type can be seen in the explain output.  The WITH
+  keyword can be used to explicitly specify a join type for a table, see query
+  options below.</para>
+  </sect3>
+  </sect2>
+
+  <sect2 id="queryoptions"><title>Query Options</title>
+  <para>These are effective from Virtuoso 3.0 onwards.
+  <!-- New options are expected to be added. --></para>
+
+<programlisting><![CDATA[
+<sql_option>:
+	TABLE OPTION (<table option>,...)
+
+<table option>:
+	HASH | LOOP | INDEX index_name | INDEX PRIMARY KEY | INDEX TEXT KEY
+
+<option clause>:
+	OPTION (<query_option>,...)
+
+<query_option>:
+	ORDER
+]]></programlisting>
+
+  <para>The TABLE OPTION  clause can follow a table's correlation name in a FROM clause.
+  The OPTION clause can appear at the end of the query, after all ORDER BY and
+  FOR specifications.</para>
+
+  <para>The INDEX table option is used to control
+  witch index is choosen by the optimized SQL compiler for a given table (when you
+  want to override the one chosen automatically).</para>
+
+  <simplelist>
+    <member>INDEX index_name - selects a named table index (unprefixed - same name as in
+    create index).</member>
+    <member>INDEX PRIMARY KEY - selects the primary key</member>
+    <member>INDEX TEXT KEY  - selects the free-text index as a driving one if there's a
+    free-text condition over that table in the statement.</member>
+  </simplelist>
+
+  <example id="ex_optclause"><title>Use of the OPTION &amp; TABLE OPTION clauses</title>
+<programlisting>
+select count (*) from t1 a, t1 b table option  (hash) where .row_no = b.row_no option(order)
+</programlisting>
+
+  <para>This forces the a, b join order and specifies that the join will be
+  a hash join.</para>
+  </example>
+  </sect2>
+
+  <sect2 id="vdbcoststats"><title>VDB Statistics for the SQL Compiler Collection</title>
+
+<para>In order to correctly estimate the cost of the VDB operations overhead the optimized SQL
+compiler should have information for the time it takes to make a "round trip" - send message
+and receive responce from a given remote database.</para>
+
+<para>Virtuoso will automatically collect such information when you first attach a table from
+the remote data source.  The information will be cached in the
+<computeroutput>DS_CONN_STR</computeroutput> field of the
+<computeroutput>SYS_DATA_SOURCE</computeroutput> system table.</para>
+
+<para>Sometimes it may be desirable to update that values manually, for example
+when you change the network connection etc.  Virtuoso provides, for the purpose,
+the stored procedure:</para>
+
+<para><link linkend="fn_vd_statistics"><function>vd_statistics (in <parameter>_dsn</parameter> varchar := '%',in <parameter>vd_table_mask</parameter> varchar := '%')</function></link></para>
+
+<para>The <parameter>_dsn</parameter> parameter is a LIKE-mask for the name of
+the DSN as stored in DS_DSN column of SYS_DATA_SOURCE system table.  Its default
+value is '%' having the effect to update the "round trip" times for all the
+remote data sources.</para>
+
+<para>The <parameter>vd_table_mask</parameter> parameter is a LIKE mask for the name of the table ,
+	  as stored in RT_NAME column of SYS_DATA_SOURCE system table.  Its
+	  default value of '%' means update all tables.</para>
+
+
+<para>The current round trip time can be recalculated using the function:</para>
+
+<para><link linkend="fn_vdd_measure_rpc_time"><function>vdd_measure_rpc_time (in <parameter>_dsn</parameter> varchar)</function></link></para>
+
+<para>This will return the estimated round-trip time in milliseconds.  Calling this
+function will not alter the cached statistics for the datasource.</para>
+
+<!--  VDB &amp; The Optimized compiler -->
+
+<para>Before collecting statistics data by quering the (potentially very large) remote
+tables the Virtuoso VDB will try to collect the statistics in various less
+resource extensive ways.</para>
+
+<para>Generally speaking some of the statistics  the  SQL compiler needs in
+order to do cost based optimization are available through one of the following
+channels (in order of preference):</para>
+<simplelist>
+<member>by quering the remote DBMS statistics system tables: This will provide
+a varying amount  of information depending on the remote and the mapping function.</member>
+<member> through SQLStatistics() ODBC call CARDINALITY column : A platform/remote
+independant way. This will provide information for the row count only.</member>
+<member>by quering the remote table to collect various aggregate functions values
+(like COUNT (*), AVG() etc) : most complete, but may be very slow for large
+remote tables.</member>
+</simplelist>
+
+<para>Unfortunately the first method  is DBMS dependant.  Therefore  some extra setup is to be done
+before this can return meaningful data.  This is supported off the shelf for Oracle and Virtuoso.</para>
+<para>The <link linkend="fn_sys_stat_analyze"><function>SYS_STAT_ANALYZE()</function></link>
+Virtuoso function will do a lookup of the remote DBMS
+name and version (as returned by SQL_DBMS_NAME and SQL_DBMS_VER SQLGetInfo ()
+ODBC call) in the system table DB.DBA.SYS_STAT_VDB_MAPPERS to find a Virtuoso/PL
+stored procedure to call for that DBMS to retrieve the statistics data from the
+remote DBMS'es system tables in DBMS dependant way.</para>
+
+<para>The DB.DBA.SYS_STAT_VDB_MAPPERS has the following layout:</para>
+<programlisting>
+create table SYS_STAT_VDB_MAPPERS (
+   SVDM_TYPE varchar,
+   SVDM_PROC varchar not null,
+   SVDM_DBMS_NAME_MASK varchar not null,
+   SVDM_DBMS_VER_MASK varchar not null,
+   primary key (SVDM_TYPE, SVDM_DBMS_NAME_MASK, SVDM_DBMS_VER_MASK))
+</programlisting>
+<simplelist>
+<member>SVDM_TYPE is the type of the statistics returned by the procedure. Currently
+only 'SYS_COL_STAT' is supported.</member>
+<member>SVDM_PROC is the Fully-qualified-name of the Virtuoso/PL stored procedure to be
+called.</member>
+<member>SVDM_DBMS_NAME_MASK is the LIKE kind of mask used to check the SQL_DBMS_NAME
+SQLGetInfo() returned string (in uppercase).</member>
+<member>SQL_DBMS_VER_MASK is the LIKE kind of mask use to check the SQL_DBMS_VER
+SQLGetInfo() returned string (in uppercase)</member>
+</simplelist>
+<para>The <link linkend="fn_sys_stat_analyze"><function>SYS_STAT_ANALYZE()</function></link>
+will use the first matching row in the order of the primary key.</para>
+
+<para>The procedure that collects the remote DBMS statistics (usually by doing
+rexecute() agains the remote) has the following signature:</para>
+<programlisting>
+create procedure DB.DBA.__VIRTUOSO_SYS_COL_STAT (
+    in DSN varchar,
+    in RT_NAME varchar,
+    in RT_REMOTE_NAME varchar
+)</programlisting>
+<para>Here:</para>
+<simplelist>
+<member>DSN is the Virtuoso dsn name.</member>
+<member>RT_NAME is the local Virtuoso table name of the attached table (as in the RT_NAME of SYS_REMOTE_TABLE system table).</member>
+<member>RT_REMOTE_NAME is the name of the attached table in the remote DBMS (as in RT_REMOTE_NAME of SYS_REMOTE_TABLE system table).</member>
+</simplelist>
+
+<para>The procedure may return a resultset that will be written into the SYS_COL_STAT
+system table. The resultset has to have a row for each attached table column and
+the following layout:</para>
+<simplelist>
+<member>CS_COL - this is the column name</member>
+<member>CS_N_DISTINCT - the number of distinct non-null values in that column</member>
+<member>CS_MIN - minimum value</member>
+<member>CS_MAX - maximum value</member>
+<member>CS_AVG_LEN - average data length</member>
+<member>CS_N_VALUES - number of non-null values</member>
+<member>CS_N_ROWS - total number of rows</member>
+</simplelist>
+
+<para>Virtuoso predefines two such procedures - one for another virtuoso as a remote
+and the second for an Oracle DBMS. Other DBMSes can be freely added.</para>
+
+<programlisting><![CDATA[
+create procedure DB.DBA.__ORACLE_SYS_COL_STAT (in DSN varchar, in RT_NAME
+varchar, in RT_REMOTE_NAME varchar)
+returns ANY
+{
+  declare _meta, _res any;
+
+  rexecute (DSN,
+    'select c.COLUMN_NAME, c.NUM_DISTINCT, NULL, NULL, c.AVG_COL_LEN, t.NUM_ROWS - c.NUM_NULLS, t.NUM_ROWS ' ||
+    ' from ALL_TABLES t, ALL_TAB_COLUMNS c where t.TABLE_NAME = c.TABLE_NAME and t.OWNER = c.OWNER and ' ||
+    '  t.OWNER = ? and t.TABLE_NAME = ?',
+    NULL, NULL, vector (name_part (RT_REMOTE_NAME, 1, NULL), name_part(RT_REMOTE_NAME, 2, NULL)), NULL, _meta, _res);
+
+  if (isarray (_res) and length (_res) > 0 and isarray (_res[0]) and isarray(_meta) and isarray (_meta[0]))
+    {
+      declare _inx, _len integer;
+      _inx := 0;
+      _len := length (_res);
+      exec_result_names (_meta[0]);
+      while (_inx < _len)
+        {
+          exec_result (_res[_inx]);
+          _inx := _inx + 1;
+        }
+    }
+  return NULL;
+};]]></programlisting>
+
+<programlisting><![CDATA[
+create procedure DB.DBA.__VIRTUOSO_SYS_COL_STAT (in DSN varchar, in RT_NAME
+varchar, in RT_REMOTE_NAME varchar)
+returns ANY
+{
+  declare _meta, _res any;
+
+  rexecute (DSN,
+    'select CS_COL, CS_N_DISTINCT, encode_base64 (serialize (CS_MIN)), encode_base64 (serialize (CS_MAX)), ' ||
+    ' CS_AVG_LEN, CS_N_VALUES, CS_N_ROWS from ALL_COL_STAT where CS_TABLE = complete_table_name (?, 1)',
+    NULL, NULL, vector (RT_REMOTE_NAME), NULL, _meta, _res);
+
+  if (isarray (_res) and length (_res) > 0 and isarray (_res[0]) and isarray(_meta) and isarray (_meta[0]))
+    {
+      declare _inx, _len integer;
+      _inx := 0;
+      _len := length (_res);
+      exec_result_names (_meta[0]);
+      while (_inx < _len)
+        {
+          declare _res_row any;
+          _res_row := _res[_inx];
+          _res_row[2] := deserialize (decode_base64 (_res_row[2]));
+          _res_row[3] := deserialize (decode_base64 (_res_row[3]));
+          exec_result (_res_row);
+          _inx := _inx + 1;
+        }
+    }
+  return NULL;
+};]]></programlisting>
+
+<para>And here are the respecitve registration INSERT statements for the above
+procedures:</para>
+<programlisting>
+insert soft SYS_STAT_VDB_MAPPERS (SVDM_TYPE, SVDM_PROC, SVDM_DBMS_NAME_MASK, SVDM_DBMS_VER_MASK)
+ values ('SYS_COL_STAT', 'DB.DBA.__ORACLE_SYS_COL_STAT', '%ORACLE%', '%');
+
+insert soft SYS_STAT_VDB_MAPPERS (SVDM_TYPE, SVDM_PROC, SVDM_DBMS_NAME_MASK, SVDM_DBMS_VER_MASK)
+ values ('SYS_COL_STAT', 'DB.DBA.__VIRTUOSO_SYS_COL_STAT', '%VIRTUOSO%', '%');
+</programlisting>
+
+<para>In order to facilitate the access to statistics in Virtuoso the following four
+views are created with SELECT granted to PUBLIC:</para>
+<simplelist>
+<member>ALL_COL_STAT - subset of SYS_COL_STAT (same row layout) but only returning data
+for the tables the user has access to.</member>
+<member>USER_COL_STAT - subset of SYS_COL_STAT (same row layout) but returns rows only
+for the user-owned tables</member>
+<member>ALL_COL_HIST - subset of SYS_COL_HIST (same row layout) but only returing data
+for the tables the user has access to.</member>
+<member>USER_COL_HIST - subset of SYS_COL_HIST (same row layout) but returns rows only
+for the user-owned tables</member>
+</simplelist>
+
+
+</sect2>
+
+
+  </sect1>
+
+
+
+

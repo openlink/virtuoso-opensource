@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_for">
+  <refmeta>
+    <refentrytitle>for</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>for</refname>
+    <refpurpose>Repeats some calculation for every item of a given sequence</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_for">
+      <funcprototype id="xpf_proto_for">
+        <funcdef>any <function>for</function></funcdef>
+	<paramdef><parameter>varname</parameter> string</paramdef>
+	<paramdef><parameter>source_set</parameter> sequence</paramdef>
+	<paramdef><parameter>mapping_expn</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_for"><title>Description</title>
+<para>
+The function creates a temporary local variable, whose name is specified by
+<parameter>varname</parameter> argument.
+Then, for every item of <parameter>source_set</parameter> sequence it
+calculates the value of <parameter>mapping_expn</parameter> expression
+having set the created variable to that &quot;current&quot; item.
+It returns the &quot;flattened&quot; sequence of values returned by
+<parameter>mapping_expn</parameter> in the same order as they are calculated.
+&quot;Flattened&quot; means that if <parameter>mapping_expn</parameter>
+returns an sequence, items of this sequence will be added into the end of
+resulting sequence, one by one, instead of adding one item of type &quot;sequence&quot;.
+</para>
+<para>
+The temporary variable is destroyed on return.
+</para>
+<para>
+This function is used in the implementation of
+&quot;FOR&quot; control operator in XQUERY,
+so you will probably use that operator in XQUERY expessions, not the function.
+This function may be useful in XPATH expressions and in XSLT stylesheets.
+It is not a part of library of standard XQUERY 1.0 functions.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_for"><title>Parameters</title>
+    <refsect2><title>varname</title>
+      <para>Name of temporary variable</para></refsect2>
+    <refsect2><title>source_set</title>
+      <para>Sequence of items; every item will cause one call of <parameter>mapping_expn</parameter></para></refsect2>
+    <refsect2><title>mapping_expn</title>
+      <para>An expression which should be calculated for items of <parameter>source_set</parameter>.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_for"><title>Return Types</title><para>Sequence</para></refsect1>
+  <refsect1 id="xpf_examples_for"><title>Examples</title>
+    <example id="xpf_ex_for"><title></title>
+      <para>These two expressions are equivalent,
+but first may be used in any XPATH while second is written in XQUERY syntax</para>
+<screen>
+for('itm', /bid/item, 0.20 * $itm/price)
+FOR $itm IN /bid/item RETURN 0.20 * $bid_item/price
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_for"><title>See Also</title>
+    <para><link linkend="xpf_let">let()</link></para>
+    <para><link linkend="xpf_some">some()</link></para>
+    <para><link linkend="xpf_every">every()</link></para>
+  </refsect1>
+</refentry>
+

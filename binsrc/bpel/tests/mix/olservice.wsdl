@@ -1,0 +1,123 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<definitions
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+ xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" 
+ xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:dime="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+ xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" 
+ xmlns:content="http://schemas.xmlsoap.org/ws/2002/04/content-type/" 
+ xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/" 
+ xmlns:plt="http://schemas.xmlsoap.org/ws/2003/05/partner-link/" 
+ xmlns:ns0="http://temp.org"
+ xmlns:dl="http://temp.org" 
+ xmlns:tns="http://localhost:6666/OSvc/services.wsdl"
+ targetNamespace="http://localhost:6666/OSvc/services.wsdl"
+ name="OrderService" xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+	<types>
+	<schema targetNamespace="http://temp.org"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+	<element name="OrderLineCancel" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs='1' maxOccurs='1' name='OrderId' type='xsd:int' />
+		 <element minOccurs='1' maxOccurs='1' name='ItemId' type='xsd:int' />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="OrderLineCancelResponse" >
+	  <complexType>
+	    <all>
+	    </all>
+	  </complexType>
+	</element>
+	<element name="OrderLine" >
+	  <complexType>
+	    <sequence>
+		 <element minOccurs='1' maxOccurs='1' name='OrderId' type='xsd:int' />
+		 <element minOccurs='1' maxOccurs='1' name='ItemId' type='xsd:int' />
+		 <element minOccurs='1' maxOccurs='1' name='Qty' type='xsd:int' />
+		 <element minOccurs='1' maxOccurs='1' name='Price' type='xsd:decimal' />
+	    </sequence>
+	  </complexType>
+	</element>
+	<element name="OrderLineResponse" >
+	  <complexType>
+	    <all>
+	    </all>
+	  </complexType>
+	</element>
+	</schema>
+	</types>
+	<message name="OrderLineCancelRequest">
+		<part element="dl:OrderLineCancel" name="parameters" />
+	</message>
+	<message name="OrderLineCancelResponse">
+		<part element="dl:OrderLineCancelResponse" name="parameters" />
+	</message>
+	<message name="OrderLineRequest">
+		<part element="dl:OrderLine" name="parameters" />
+	</message>
+	<message name="OrderLineResponse">
+		<part element="dl:OrderLineResponse" name="parameters" />
+	</message>
+	<portType name="OrderServiceDocLiteralPortType">
+		<operation name="OrderLineCancel">
+			<input message="tns:OrderLineCancelRequest" name="OrderLineCancelRequest" />
+		</operation>
+		<operation name="OrderLine">
+			<input message="tns:OrderLineRequest" name="OrderLineRequest" />
+		</operation>
+	</portType>
+	<binding name="OrderServiceDocLiteralBinding" type="tns:OrderServiceDocLiteralPortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<operation name="OrderLineCancel">
+			<soap:operation soapAction="http://temp.org#OrderLineCancel" style="document" />
+			<input name="OrderLineCancelRequest">
+				<soap:body use="literal" />
+			</input>
+		</operation>
+		<operation name="OrderLine">
+			<soap:operation soapAction="http://temp.org#OrderLine" style="document" />
+			<input name="OrderLineRequest">
+				<soap:body use="literal" />
+			</input>
+		</operation>
+	</binding>
+	<service name="OrderService">
+		<documentation>Virtuoso SOAP services</documentation>
+		<port name="OrderServiceDocLiteralPort" binding="tns:OrderServiceDocLiteralBinding">
+			<soap:address location="http://localhost:6666/OSvc" />
+		</port>
+	</service>
+	<plt:partnerLinkType name='OrderService'>
+		<plt:role name='OrderServiceProvider'>
+			<plt:portType name='tns:OrderServiceDocLiteralPortType'/>
+		</plt:role>
+	</plt:partnerLinkType>
+</definitions>

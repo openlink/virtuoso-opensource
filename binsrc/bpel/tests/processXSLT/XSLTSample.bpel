@@ -1,0 +1,99 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<process name="XSLTSample"
+  targetNamespace="http://samples.openlinksw.com/bpel"
+  suppressJoinFailure="yes"
+  xmlns:virt="http://samples.openlinksw.com/bpel"
+  xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+  xmlns:bpelv="http://www.openlinksw.com/virtuoso/bpel"
+  xmlns:services="http://services.openlinksw.com"
+  xmlns:serv="services.wsdl">
+
+    <partnerLinks>
+      <partnerLink name="creditRatingService"
+        partnerLinkType="services:CreditRatingService"
+        partnerRole="CreditRatingServiceProvider"/>
+
+      <partnerLink name="client"
+        partnerLinkType="virt:XSLTSample"
+        myRole="XSLTSampleProvider"
+        partnerRole="XSLTSampleRequester"/>
+    </partnerLinks>
+
+    <variables>
+        <variable name="input"
+          messageType="virt:XSLTSampleRequestMessage"/>
+        <variable name="output"
+          messageType="virt:XSLTSampleResultMessage"/>
+        <variable name="crInput"
+          messageType="services:CreditRatingServiceRequestMessage"/>
+        <variable name="crOutput"
+          messageType="services:CreditRatingServiceResponseMessage"/>
+        <variable name="reqwr"
+          messageType="virt:XSLTSampleRequestWithRateMessage"/>
+
+    </variables>
+    <sequence name="main">
+        <receive name="receiveInput" partnerLink="client"
+                 portType="virt:XSLTSample"
+                 operation="initiate" variable="input"
+                 createInstance="yes"/>
+
+        <assign>
+          <copy>
+            <from variable="input" part="payload" query="/virt:request/virt:ssn"/>
+            <to variable="crInput" part="payload" query="/serv:ssn"/>
+          </copy>
+        </assign>
+
+        <invoke name="invokeCR"
+          partnerLink="creditRatingService"
+          portType="services:CreditRatingService"
+          operation="process"
+          inputVariable="crInput"
+          outputVariable="crOutput"/>
+        <assign>
+          <copy>
+            <from variable="crOutput" part="payload" query="/serv:rating"/>
+            <to variable="reqwr" part="payload" query="/virt:requestwithrate/virt:rating"/>
+          </copy>
+          <copy>
+            <from variable="input" part="payload" query="/virt:request"/>
+            <to variable="reqwr" part="payload" query="/virt:requestwithrate/virt:request"/>
+          </copy>
+          <copy>
+            <from expression="bpelv:processXSLT('XSLTSample.xslt',bpws:getVariableData('reqwr','payload') )"/>
+            <to variable="output" part="payload"/>
+          </copy>
+        </assign>
+
+
+        <reply name="receiveInput"
+		operation="initiate"
+                partnerLink="client"
+                portType="virt:XSLTSample"
+                variable="output"
+                />
+    </sequence>
+</process>
+

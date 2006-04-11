@@ -1,0 +1,126 @@
+<HTML>
+<HEAD>
+<TITLE>OpenLink Virtuoso Documentation</TITLE>
+<STYLE>
+.index_body
+{
+    BACKGROUND-COLOR: #336799;
+    COLOR: white;
+    FONT-FAMILY: Verdana, Tahoma;
+    FONT-SIZE: 80%
+}
+.index_link
+{
+    COLOR: silver;
+    PADDING-LEFT: 10px
+}
+.index_link2
+{
+    COLOR: silver;
+    PADDING-LEFT: 50px
+}
+TD
+{
+    TEXT-ALIGN: center
+}
+H1
+{
+    COLOR: white;
+    FONT-FAMILY: Verdana;
+    FONT-SIZE: 110%
+}
+H2
+{
+    COLOR: navy;
+    FONT-FAMILY: Verdana;
+    FONT-SIZE: 100%
+}
+.title_graphic
+{
+    FLOAT: none;
+    POSITION: relative;
+    TEXT-ALIGN: center;
+    TOP: 5%
+}
+.copyright
+{
+	BORDER-TOP: solid silver 1px;
+	TEXT-ALIGN: right;
+    FONT-FAMILY: Verdana, Arial;
+    FONT-SIZE: 70%
+}
+A
+{
+    COLOR: yellow;
+    FONT-FAMILY: Verdana, Arial;
+    TEXT-DECORATION: none
+}
+A:hover
+{
+    COLOR: navy;
+    TEXT-DECORATION: underline
+}
+
+</STYLE>
+</HEAD>
+
+<BODY CLASS="index_body" background="../images/line.gif" >
+<center><P ALIGN="center">
+<IMG SRC="../images/vdoctitle1.jpg" ALT="OpenLink Virtuoso">
+<TABLE border="0" width="60%">
+<TR><TH>&nbsp;</TH><TH valign="bottom">HTML</TH><TH valign="bottom">PDF<sup>*</sup></TH>
+<TH valign="bottom">Tutorials</TH></TR>
+<TR>
+<TH>Local Offline</TH>
+<?vsp
+
+declare doc_installed integer;
+doc_installed := case when DB.DBA.vad_check_version ('doc') is not null then 1 else 0 end;
+
+if (doc_installed)
+{
+  if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/doc/html/index.html'))
+  http('<TD><A HREF="html/index.html" TARGET="_blank">View</A></TD>');
+  else
+    http('<TD>Not installed</TD>');
+}else{
+  if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/doc/html/index.html'))
+    http('<TD><A HREF="html/index.html" TARGET="_blank">View</A></TD>');
+  else
+  http('<TD>Not installed</TD>');
+};
+
+if (isstring(file_stat (concat (http_root(),'/doc/pdf/virtdocs.pdf'))))
+  http('<TD><A HREF="pdf/virtdocs.pdf" TARGET="_blank">View</A></TD>');
+else
+  http('<TD>Not installed</TD>');
+if (exists (select 1 from HTTP_PATH where HP_LPATH = '/tutorial' and HP_HOST = '*ini*'))
+  http('<TD><A HREF="../tutorial/" TARGET="_top">View</A></TD>');
+else
+  http('<TD>Not installed</TD>');
+?>
+</TR>
+<TR><TD colspan="4">&nbsp;</TD></TR>
+<TR>
+  <TH>Online</TH>
+  <TD><A HREF="http://docs.openlinksw.com/virtuoso/index.html" TARGET="_blank">View</A></TD>
+  <TD><A HREF="http://docs.openlinksw.com/pdf/virtdocs.pdf" TARGET="_blank">View</A></TD>
+  <TD>&nbsp;</TD>
+</TR>
+<TR><TD colspan="4"><font size="-2">* PDF requires <A HREF="http://www.adobe.com/">Adobe Acrobat Reader</A> 3.0 or above.</font></TD></TR>
+</TABLE>
+
+
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD WIDTH="50"></TD>
+<TD WIDTH="80%">
+<DIV CLASS="copyright">Copyright&copy; 2005 OpenLink Software</DIV>
+</TD>
+<TD WIDTH="50"/>
+</TR>
+</TABLE>
+
+</P>
+</CENTER>
+</BODY>
+</HTML>

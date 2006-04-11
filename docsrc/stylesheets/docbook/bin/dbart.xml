@@ -1,0 +1,92 @@
+<?xml version='1.0'?>
+
+<!-- Note: the perl version of the chunker doesn't do namespaces, so 
+     this is sortof imaginary. The chunker actually cares about and
+     uses the namespace prefix at the moment. -->
+
+<chunk-control xmlns="http://nwalsh.com/docbook/xsl/chunker/1.0"
+	       xmlns:ch="http://nwalsh.com/docbook/xsl/chunker/1.0"
+               xmlns:html="http://www.w3.org/TR/REC-html40"
+               chunk-extension=".html"
+               transclude="1">
+
+<chunk-library src="n:/share/xsl/docbook/bin/dingbat.pl"/>
+<chunk-library src="n:/share/xsl/docbook/bin/docbook.pl"/>
+
+<chunk-elements>
+  <element name="article" abbrev="ar"/>
+</chunk-elements>
+
+<chunk-enumeration-nesting>
+  <nest-reset name="book">
+    <element name="appendix"/>
+    <element name="article"/>
+    <element name="bibliography"/>
+    <element name="chapter"/>
+    <element name="colophon"/>
+    <element name="glossary"/>
+    <element name="index"/>
+    <element name="part"/>
+    <element name="preface"/>
+    <element name="refentry"/>
+    <element name="reference"/>
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="reference">
+    <element name="refentry"/>
+  </nest-reset>
+
+  <nest-reset name="partintro">
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="section">
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="appendix">
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="article">
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="chapter">
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+
+  <nest-reset name="preface">
+    <element name="sect1"/>
+    <element name="section"/>
+  </nest-reset>
+</chunk-enumeration-nesting>
+
+<empty-elements>
+  <element name="br"/>
+  <element name="hr"/>
+  <element name="img"/>
+  <element name="link"/>
+  <element name="meta"/>
+</empty-elements>
+
+<ch:chunk-head xmlns="http://www.w3.org/TR/REC-html40">
+<title>{title}<ch:if ch:test="subtitle">: {subtitle}</ch:if></title>
+</ch:chunk-head>
+
+<ch:chunk-header-navigation xmlns="http://www.w3.org/TR/REC-html40">
+</ch:chunk-header-navigation>
+
+<ch:chunk-foot xmlns="http://www.w3.org/TR/REC-html40">
+</ch:chunk-foot>
+
+<ch:chunk-footer-navigation xmlns="http://www.w3.org/TR/REC-html40">
+</ch:chunk-footer-navigation>
+
+</chunk-control>

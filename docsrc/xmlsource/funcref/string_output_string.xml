@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_string_output_string">
+  <refmeta>
+    <refentrytitle>string_output_string</refentrytitle>
+    <refmiscinfo>string</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>string_output_string</refname>
+    <refpurpose>produce a string out of a string output stream</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_string_output_string">
+      <funcprototype id="fproto_string_output_string">
+        <funcdef><function>string_output_string</function></funcdef>
+        <paramdef>in <parameter>string_out</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>string_out</title>
+      <para>The string output stream</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret"><title>Return Values</title>
+    <para>A <type>varchar</type> with the contents of the string output
+    stream.</para>
+  </refsect1>
+  <refsect1 id="desc"><title>Description</title>
+    <para>This function is used to produce a string from contents of a
+    string output stream. See
+    <link linkend="fn_string_output"><function>string_output</function></link>
+    for more information about string output streams.</para>
+  </refsect1>
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_string_output_string"><title>Convert string output stream into a string</title>
+      <para>Create a string output, write 'foo' and ' bar' into it, convert
+      to string and produce a result.</para>
+      <screen>
+SQL> create procedure
+ex_string_output_string ()
+{
+  declare s_out any; s_out := string_output();
+  declare s varchar;
+
+  result_names (s);
+  http('foo', s_out);
+  http(' bar', s_out);
+  s := string_output_string (s_out);
+  result (s);
+}
+;
+
+SQL> ex_string_output_string ();
+s
+VARCHAR NOT NULL
+_______________________________________________________________________________
+
+foo bar
+
+1 Rows. -- 5 msec.
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_string_output"><function>string_output</function>
+    </link>, <link linkend="fn_http"><function>http</function></link>,
+    <link linkend="fn_http_value"><function>http_value</function></link>,
+    <link linkend="fn_http_rewrite"><function>http_rewrite</function></link>.
+    </para>
+  </refsect1>
+</refentry>

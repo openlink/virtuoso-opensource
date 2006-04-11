@@ -1,0 +1,958 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<s:schema xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:s0="http://s.mappoint.net/mappoint-30/" elementFormDefault="qualified" targetNamespace="http://s.mappoint.net/mappoint-30/">
+  <s:element name="GetVersionInfo">
+    <s:complexType/>
+  </s:element>
+  <s:element name="GetVersionInfoResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="GetVersionInfoResult" type="s0:ArrayOfVersionInfo"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="ArrayOfVersionInfo">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="VersionInfo" nillable="true" type="s0:VersionInfo"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="VersionInfo">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Component" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Version" type="s:string"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="UserInfoHeader" type="s0:UserInfoHeader"/>
+  <s:complexType name="UserInfoHeader">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Culture" type="s0:CultureInfo"/>
+      <s:element minOccurs="1" maxOccurs="1" name="DefaultDistanceUnit" type="s0:DistanceUnit"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Context" type="s0:CountryRegionContext"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="CultureInfo">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Lcid" type="s:int"/>
+    </s:sequence>
+  </s:complexType>
+  <s:simpleType name="DistanceUnit">
+    <s:restriction base="s:string">
+      <s:enumeration value="Kilometer"/>
+      <s:enumeration value="Mile"/>
+    </s:restriction>
+  </s:simpleType>
+  <s:complexType name="CountryRegionContext">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" default="0" name="EntityID" type="s:int"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Iso2" type="s:string"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="GetCountryRegionInfo">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="entityIDs" type="s0:ArrayOfInt"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="ArrayOfInt">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="int" type="s:int"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="GetCountryRegionInfoResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="GetCountryRegionInfoResult" type="s0:ArrayOfCountryRegionInfo"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="ArrayOfCountryRegionInfo">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="CountryRegionInfo" nillable="true" type="s0:CountryRegionInfo"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="CountryRegionInfo">
+    <s:sequence>
+      <s:element minOccurs="1" maxOccurs="1" name="EntityID" type="s:int"/>
+      <s:element minOccurs="0" maxOccurs="1" name="LatLong" type="s0:LatLong"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Iso2" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Iso3" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="FriendlyName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="OfficialName" type="s:string"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="LatLong">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" default="0" name="Latitude" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" default="0" name="Longitude" type="s:double"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="GetEntityTypes">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="dataSourceName" type="s:string"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="GetEntityTypesResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="GetEntityTypesResult" type="s0:ArrayOfEntityType"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="ArrayOfEntityType">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="EntityType" nillable="true" type="s0:EntityType"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="EntityType">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="DisplayName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="ParentName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Definition" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Properties" type="s0:ArrayOfEntityProperty"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ArrayOfEntityProperty">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="Property" nillable="true" type="s0:EntityProperty"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="EntityProperty">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="DisplayName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="DataType" type="s:string"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="GetDataSourceInfo">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="dataSourceNames" type="s0:ArrayOfString"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="ArrayOfString">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="s:string"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="GetDataSourceInfoResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="GetDataSourceInfoResult" type="s0:ArrayOfDataSource"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="ArrayOfDataSource">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="DataSource" nillable="true" type="s0:DataSource"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="DataSource">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Version" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Description" type="s:string"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Capability" type="s0:DataSourceCapability"/>
+      <s:element minOccurs="0" maxOccurs="1" name="EntityExtent" type="s0:ArrayOfInt"/>
+    </s:sequence>
+  </s:complexType>
+  <s:simpleType name="DataSourceCapability">
+    <s:list>
+      <s:simpleType>
+        <s:restriction base="s:string">
+          <s:enumeration value="CanDrawMaps"/>
+          <s:enumeration value="CanFindPlaces"/>
+          <s:enumeration value="CanFindNearby"/>
+          <s:enumeration value="CanRoute"/>
+          <s:enumeration value="CanFindAddress"/>
+          <s:enumeration value="HasIcons"/>
+          <s:enumeration value="DataServiceQuery"/>
+        </s:restriction>
+      </s:simpleType>
+    </s:list>
+  </s:simpleType>
+  <s:element name="GetGreatCircleDistances">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="latLongs" type="s0:ArrayOfLatLong"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="ArrayOfLatLong">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="LatLong" nillable="true" type="s0:LatLong"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="GetGreatCircleDistancesResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="GetGreatCircleDistancesResult" type="s0:ArrayOfDouble"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="ArrayOfDouble">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="double" type="s:double"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="Find">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="specification" type="s0:FindSpecification"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="FindSpecification">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="InputPlace" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="EntityTypeNames" type="s0:ArrayOfString"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Options" type="s0:FindOptions"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="FindOptions">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Range" type="s0:FindRange"/>
+      <s:element minOccurs="1" maxOccurs="1" name="SearchContext" type="s:int"/>
+      <s:element minOccurs="1" maxOccurs="1" name="ResultMask" type="s0:FindResultMask"/>
+      <s:element minOccurs="0" maxOccurs="1" default="0.85" name="ThresholdScore" type="s:double"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="FindRange">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" default="0" name="StartIndex" type="s:int"/>
+      <s:element minOccurs="0" maxOccurs="1" default="25" name="Count" type="s:int"/>
+    </s:sequence>
+  </s:complexType>
+  <s:simpleType name="FindResultMask">
+    <s:list>
+      <s:simpleType>
+        <s:restriction base="s:string">
+          <s:enumeration value="LatLongFlag"/>
+          <s:enumeration value="EntityFlag"/>
+          <s:enumeration value="AddressFlag"/>
+          <s:enumeration value="BestMapViewFlag"/>
+        </s:restriction>
+      </s:simpleType>
+    </s:list>
+  </s:simpleType>
+  <s:element name="FindResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="FindResult" type="s0:FindResults"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="FindResults">
+    <s:sequence>
+      <s:element minOccurs="1" maxOccurs="1" name="NumberFound" type="s:int"/>
+      <s:element minOccurs="1" maxOccurs="1" name="StartIndex" type="s:int"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Results" type="s0:ArrayOfFindResult"/>
+      <s:element minOccurs="1" maxOccurs="1" name="TopScore" type="s:double"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ArrayOfFindResult">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="FindResult" nillable="true" type="s0:FindResult"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="FindResult">
+    <s:sequence>
+      <s:element minOccurs="1" maxOccurs="1" name="Score" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" name="FoundLocation" type="s0:Location"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="Location">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="LatLong" type="s0:LatLong"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Entity" type="s0:Entity"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Address" type="s0:Address"/>
+      <s:element minOccurs="0" maxOccurs="1" name="BestMapView" type="s0:MapViewRepresentations"/>
+      <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="Entity">
+    <s:sequence>
+      <s:element minOccurs="1" maxOccurs="1" name="ID" type="s:int"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="DisplayName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="TypeName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Properties" type="s0:ArrayOfEntityPropertyValue"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ArrayOfEntityPropertyValue">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="Property" nillable="true" type="s0:EntityPropertyValue"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="EntityPropertyValue">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Value"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="Address">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="AddressLine" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="PrimaryCity" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="SecondaryCity" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Subdivision" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="PostalCode" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="CountryRegion" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="FormattedAddress" type="s:string"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="MapViewRepresentations">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="ByScale" type="s0:ViewByScale"/>
+      <s:element minOccurs="0" maxOccurs="1" name="ByHeightWidth" type="s0:ViewByHeightWidth"/>
+      <s:element minOccurs="0" maxOccurs="1" name="ByBoundingRectangle" type="s0:ViewByBoundingRectangle"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ViewByScale">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" default="0" name="MapScale" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" name="CenterPoint" type="s0:LatLong"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ViewByBoundingLocations">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Locations" type="s0:ArrayOfLocation"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ArrayOfLocation">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="Location" nillable="true" type="s0:Location"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ViewByBoundingRectangle">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="BoundingRectangle" type="s0:LatLongRectangle"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="LatLongRectangle">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Southwest" type="s0:LatLong"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Northeast" type="s0:LatLong"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ViewByHeightWidth">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" default="0" name="Height" type="s:double"/>
+          <s:element minOccurs="0" maxOccurs="1" default="0" name="Width" type="s:double"/>
+          <s:element minOccurs="0" maxOccurs="1" name="CenterPoint" type="s0:LatLong"/>
+        </s:sequence>
+  </s:complexType>
+  <s:complexType name="MapPointConstants">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" default="6378.2" name="EarthRadiusInKilometers" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" default="3.1415926535897931" name="Pi" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" default="0.017453292519943295" name="RadiansPerDegree" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" default="57.295779513082323" name="DegreesPerRadian" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" default="0.621371192237334" name="MilesPerKilometer" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" default="1.609344" name="KilometersPerMile" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" default="0.0003048" name="KilometersPerFoot" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" default="3280.8398950131232" name="FeetPerKilometer" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" default="0.85" name="FindScoreThreshold" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" default="96" name="AssumedDpi" type="s:int"/>
+      <s:element minOccurs="0" maxOccurs="1" default="3.280839895013123" name="FeetPerMeter" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" default="0.3048" name="MetersPerFoot" type="s:double"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="FindAddress">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="specification" type="s0:FindAddressSpecification"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="FindAddressSpecification">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="InputAddress" type="s0:Address"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Options" type="s0:FindOptions"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="FindAddressResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="FindAddressResult" type="s0:FindResults"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="ParseAddress">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="inputAddress" type="s:string"/>
+        <s:element minOccurs="0" maxOccurs="1" name="countryRegion" type="s:string"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="ParseAddressResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="ParseAddressResult" type="s0:Address"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="GetLocationInfo">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="location" type="s0:LatLong"/>
+        <s:element minOccurs="0" maxOccurs="1" name="dataSourceName" type="s:string"/>
+        <s:element minOccurs="0" maxOccurs="1" name="options" type="s0:GetInfoOptions"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="GetInfoOptions">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" default="true" name="IncludeAddresses" type="s:boolean"/>
+      <s:element minOccurs="0" maxOccurs="1" default="true" name="IncludeAllEntityTypes" type="s:boolean"/>
+      <s:element minOccurs="0" maxOccurs="1" name="EntityTypesToReturn" type="s0:ArrayOfString"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="GetLocationInfoResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="GetLocationInfoResult" type="s0:ArrayOfLocation"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="FindNearby">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="specification" type="s0:FindNearbySpecification"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="FindNearbySpecification">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="LatLong" type="s0:LatLong"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Distance" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Filter" type="s0:FindFilter"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Options" type="s0:FindOptions"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="FindFilter">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="EntityTypeName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="PropertyNames" type="s0:ArrayOfString"/>
+      <s:element minOccurs="0" maxOccurs="1" name="WhereClause" type="s0:WhereClause"/>
+      <s:element minOccurs="0" maxOccurs="1" name="SortProperties" type="s0:ArrayOfSortProperty"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Expression" type="s0:FilterExpression"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="WhereClause">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="SearchProperties" type="s0:ArrayOfEntityPropertyValue"/>
+      <s:element minOccurs="1" maxOccurs="1" name="SearchOperator" type="s0:SearchOperatorFlag"/>
+    </s:sequence>
+  </s:complexType>
+  <s:simpleType name="SearchOperatorFlag">
+    <s:restriction base="s:string">
+      <s:enumeration value="And"/>
+      <s:enumeration value="Or"/>
+    </s:restriction>
+  </s:simpleType>
+  <s:complexType name="ArrayOfSortProperty">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="SortProperty" nillable="true" type="s0:SortProperty"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="SortProperty">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="PropertyName" type="s:string"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Direction" type="s0:SortDirection"/>
+    </s:sequence>
+  </s:complexType>
+  <s:simpleType name="SortDirection">
+    <s:restriction base="s:string">
+      <s:enumeration value="Ascending"/>
+      <s:enumeration value="Descending"/>
+    </s:restriction>
+  </s:simpleType>
+  <s:complexType name="FilterExpression">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Text" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Parameters" type="s0:ArrayOfAnyType"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ArrayOfAnyType">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="anyType" nillable="true"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="FindNearbyResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="FindNearbyResult" type="s0:FindResults"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="FindByProperty">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="specification" type="s0:FindByPropertySpecification"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="FindByPropertySpecification">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Filter" type="s0:FindFilter"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Options" type="s0:FindOptions"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="FindByPropertyResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="FindByPropertyResult" type="s0:FindResults"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="FindByID">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="specification" type="s0:FindByIDSpecification"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="FindByIDSpecification">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Filter" type="s0:FindFilter"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Options" type="s0:FindOptions"/>
+      <s:element minOccurs="0" maxOccurs="1" name="EntityIDs" type="s0:ArrayOfInt"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="FindByIDResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="FindByIDResult" type="s0:FindResults"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="FindNearRoute">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="specification" type="s0:FindNearRouteSpecification"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="FindNearRouteSpecification">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Distance" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Filter" type="s0:FindFilter"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Options" type="s0:FindOptions"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Route" type="s0:Route"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="Route">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Specification" type="s0:RouteSpecification"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Itinerary" type="s0:RouteItinerary"/>
+      <s:element minOccurs="0" maxOccurs="1" name="CalculatedRepresentation" type="s0:CalculatedRouteRepresentation"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="RouteSpecification">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Segments" type="s0:ArrayOfSegmentSpecification"/>
+      <s:element minOccurs="1" maxOccurs="1" name="ResultMask" type="s0:RouteResultMask"/>
+      <s:element minOccurs="0" maxOccurs="1" name="DataSourceName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="DriverProfile" type="s0:DriverProfile"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ArrayOfSegmentSpecification">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="SegmentSpecification" nillable="true" type="s0:SegmentSpecification"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="SegmentSpecification">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Waypoint" type="s0:Waypoint"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Options" type="s0:SegmentOptions"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="Waypoint">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Location" type="s0:Location"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Snap" type="s0:SnapType"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Name" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="CalculatedLocation" type="s0:Location"/>
+    </s:sequence>
+  </s:complexType>
+  <s:simpleType name="SnapType">
+    <s:restriction base="s:string">
+      <s:enumeration value="Normal"/>
+      <s:enumeration value="City"/>
+    </s:restriction>
+  </s:simpleType>
+  <s:complexType name="SegmentOptions">
+    <s:sequence>
+      <s:element minOccurs="1" maxOccurs="1" name="Preference" type="s0:SegmentPreference"/>
+      <s:element minOccurs="0" maxOccurs="1" default="true" name="CalculateSegmentMapView" type="s:boolean"/>
+      <s:element minOccurs="0" maxOccurs="1" default="true" name="CalculateDirectionMapView" type="s:boolean"/>
+    </s:sequence>
+  </s:complexType>
+  <s:simpleType name="SegmentPreference">
+    <s:restriction base="s:string">
+      <s:enumeration value="Quickest"/>
+      <s:enumeration value="Shortest"/>
+    </s:restriction>
+  </s:simpleType>
+  <s:simpleType name="RouteResultMask">
+    <s:list>
+      <s:simpleType>
+        <s:restriction base="s:string">
+          <s:enumeration value="Itinerary"/>
+          <s:enumeration value="CalculatedRouteRepresentation"/>
+        </s:restriction>
+      </s:simpleType>
+    </s:list>
+  </s:simpleType>
+  <s:complexType name="DriverProfile">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" default="-1" name="DayStartTime" type="s:int"/>
+      <s:element minOccurs="0" maxOccurs="1" default="-1" name="DayEndTime" type="s:int"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="RouteItinerary">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Segments" type="s0:ArrayOfSegment"/>
+      <s:element minOccurs="1" maxOccurs="1" name="TripTime" type="s:long"/>
+      <s:element minOccurs="1" maxOccurs="1" name="DrivingTime" type="s:long"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Distance" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" name="View" type="s0:MapViewRepresentations"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ArrayOfSegment">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="Segment" nillable="true" type="s0:Segment"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="Segment">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Waypoint" type="s0:Waypoint"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Directions" type="s0:ArrayOfDirection"/>
+      <s:element minOccurs="1" maxOccurs="1" name="TripTime" type="s:long"/>
+      <s:element minOccurs="1" maxOccurs="1" name="DrivingTime" type="s:long"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Distance" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" name="View" type="s0:MapViewRepresentations"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ArrayOfDirection">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="Direction" nillable="true" type="s0:Direction"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="Direction">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="LatLong" type="s0:LatLong"/>
+      <s:element minOccurs="1" maxOccurs="1" name="DirectionType" type="s0:DirectionType"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Action" type="s0:DirectionAction"/>
+      <s:element minOccurs="1" maxOccurs="1" name="BearingOutOfTurn" type="s:float"/>
+      <s:element minOccurs="1" maxOccurs="1" name="BearingIntoTurn" type="s:float"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Duration" type="s:long"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Distance" type="s:double"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Towards" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Instruction" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="FormattedInstruction" type="s:string"/>
+      <s:element minOccurs="1" maxOccurs="1" name="ID" type="s:int"/>
+      <s:element minOccurs="0" maxOccurs="1" name="View" type="s0:MapViewRepresentations"/>
+    </s:sequence>
+  </s:complexType>
+  <s:simpleType name="DirectionType">
+    <s:restriction base="s:string">
+      <s:enumeration value="Driving"/>
+      <s:enumeration value="Border"/>
+      <s:enumeration value="StartOfDay"/>
+      <s:enumeration value="EndOfDay"/>
+      <s:enumeration value="Warning"/>
+      <s:enumeration value="Waypoint"/>
+    </s:restriction>
+  </s:simpleType>
+  <s:simpleType name="DirectionAction">
+    <s:restriction base="s:string">
+      <s:enumeration value="Other"/>
+      <s:enumeration value="Depart"/>
+      <s:enumeration value="Arrive"/>
+      <s:enumeration value="TurnLeft"/>
+      <s:enumeration value="TurnRight"/>
+      <s:enumeration value="BearLeft"/>
+      <s:enumeration value="BearRight"/>
+      <s:enumeration value="Merge"/>
+      <s:enumeration value="Continue"/>
+      <s:enumeration value="TurnBack"/>
+      <s:enumeration value="TakeRoundabout"/>
+      <s:enumeration value="ConstructionDelay"/>
+      <s:enumeration value="ConstructionStop"/>
+      <s:enumeration value="NameChange"/>
+      <s:enumeration value="LeftLeft"/>
+      <s:enumeration value="LeftRight"/>
+      <s:enumeration value="RightLeft"/>
+      <s:enumeration value="RightRight"/>
+      <s:enumeration value="TakeRamp"/>
+      <s:enumeration value="TakeRampLeft"/>
+      <s:enumeration value="TakeRampRight"/>
+      <s:enumeration value="KeepStraight"/>
+      <s:enumeration value="KeepLeft"/>
+      <s:enumeration value="KeepRight"/>
+    </s:restriction>
+  </s:simpleType>
+  <s:complexType name="CalculatedRouteRepresentation">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Bits" type="s:base64Binary"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="FindNearRouteResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="FindNearRouteResult" type="s0:FindResults"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="CalculateSimpleRoute">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="latLongs" type="s0:ArrayOfLatLong"/>
+        <s:element minOccurs="0" maxOccurs="1" name="dataSourceName" type="s:string"/>
+        <s:element minOccurs="1" maxOccurs="1" name="preference" type="s0:SegmentPreference"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="CalculateSimpleRouteResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="CalculateSimpleRouteResult" type="s0:Route"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="CalculateRoute">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="specification" type="s0:RouteSpecification"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="CalculateRouteResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="CalculateRouteResult" type="s0:Route"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="MapOptions">
+    <s:sequence>
+      <s:element minOccurs="1" maxOccurs="1" name="RouteHighlightColor" type="s0:RouteHighlightColor"/>
+      <s:element minOccurs="1" maxOccurs="1" name="ConstructionDelayHighlightColor" type="s0:RouteHighlightColor"/>
+      <s:element minOccurs="1" maxOccurs="1" name="ConstructionClosureHighlightColor" type="s0:RouteHighlightColor"/>
+      <s:element minOccurs="0" maxOccurs="1" default="Smaller" name="FontSize" type="s0:MapFontSize"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Format" type="s0:ImageFormat"/>
+      <s:element minOccurs="0" maxOccurs="1" default="false" name="IsOverviewMap" type="s:boolean"/>
+      <s:element minOccurs="0" maxOccurs="1" default="ReturnImage" name="ReturnType" type="s0:MapReturnType"/>
+      <s:element minOccurs="1" maxOccurs="1" name="PanHorizontal" type="s:double"/>
+      <s:element minOccurs="1" maxOccurs="1" name="PanVertical" type="s:double"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Style" type="s0:MapStyle"/>
+      <s:element minOccurs="0" maxOccurs="1" default="1" name="Zoom" type="s:double"/>
+    </s:sequence>
+  </s:complexType>
+  <s:simpleType name="RouteHighlightColor">
+    <s:restriction base="s:string">
+      <s:enumeration value="DefaultColor"/>
+      <s:enumeration value="Green"/>
+      <s:enumeration value="Yellow"/>
+      <s:enumeration value="Cyan"/>
+      <s:enumeration value="Red"/>
+    </s:restriction>
+  </s:simpleType>
+  <s:simpleType name="MapFontSize">
+    <s:restriction base="s:string">
+      <s:enumeration value="Smallest"/>
+      <s:enumeration value="Smaller"/>
+      <s:enumeration value="Medium"/>
+      <s:enumeration value="Larger"/>
+      <s:enumeration value="Largest"/>
+    </s:restriction>
+  </s:simpleType>
+  <s:complexType name="ImageFormat">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" default="image/gif" name="MimeType" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" default="240" name="Height" type="s:int"/>
+      <s:element minOccurs="0" maxOccurs="1" default="296" name="Width" type="s:int"/>
+    </s:sequence>
+  </s:complexType>
+  <s:simpleType name="MapReturnType">
+    <s:restriction base="s:string">
+      <s:enumeration value="ReturnImage"/>
+      <s:enumeration value="ReturnUrl"/>
+      <s:enumeration value="ReturnSecureUrl"/>
+    </s:restriction>
+  </s:simpleType>
+  <s:simpleType name="MapStyle">
+    <s:restriction base="s:string">
+      <s:enumeration value="DefaultStyle"/>
+      <s:enumeration value="Locator"/>
+      <s:enumeration value="Terrain"/>
+      <s:enumeration value="Road"/>
+      <s:enumeration value="Political"/>
+      <s:enumeration value="Small"/>
+      <s:enumeration value="LocatorBW"/>
+      <s:enumeration value="TerrainBW"/>
+      <s:enumeration value="RoadBW"/>
+      <s:enumeration value="PoliticalBW"/>
+      <s:enumeration value="SmallBW"/>
+      <s:enumeration value="Comprehensive"/>
+      <s:enumeration value="PhysicalFeatures"/>
+      <s:enumeration value="Tectonic"/>
+      <s:enumeration value="EarthByDay"/>
+      <s:enumeration value="EarthByNight"/>
+      <s:enumeration value="Ecoregions"/>
+      <s:enumeration value="Climate"/>
+      <s:enumeration value="TemperatureJanuary"/>
+      <s:enumeration value="TemperatureJuly"/>
+      <s:enumeration value="PrecipitationJanuary"/>
+      <s:enumeration value="PrecipitationJuly"/>
+      <s:enumeration value="PrecipitationAnnual"/>
+      <s:enumeration value="Languages"/>
+      <s:enumeration value="Religions"/>
+      <s:enumeration value="PopulationDensity"/>
+      <s:enumeration value="Parks"/>
+      <s:enumeration value="TimeZones"/>
+      <s:enumeration value="Outline"/>
+      <s:enumeration value="Phone"/>
+      <s:enumeration value="PhoneBW"/>
+    </s:restriction>
+  </s:simpleType>
+  <s:complexType name="ArrayOfPushpin">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="Pushpin" nillable="true" type="s0:Pushpin"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="Pushpin">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="IconDataSource" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="IconName" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Label" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="LatLong" type="s0:LatLong"/>
+      <s:element minOccurs="0" maxOccurs="1" name="PinID" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Pixel" type="s0:PixelCoord"/>
+      <s:element minOccurs="1" maxOccurs="1" name="ReturnsHotArea" type="s:boolean"/>
+      <s:element minOccurs="1" maxOccurs="1" name="LabelNearbyRoads" type="s:boolean"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="PixelCoord">
+    <s:sequence>
+      <s:element minOccurs="1" maxOccurs="1" name="X" type="s:int"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Y" type="s:int"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="MapImage">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="HotAreas" type="s0:ArrayOfHotArea"/>
+      <s:element minOccurs="0" maxOccurs="1" name="MimeData" type="s0:MimeData"/>
+      <s:element minOccurs="0" maxOccurs="1" name="View" type="s0:MapViewRepresentations"/>
+      <s:element minOccurs="0" maxOccurs="1" name="Url" type="s:string"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ArrayOfHotArea">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="HotArea" nillable="true" type="s0:HotArea"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="HotArea">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="IconRectangle" type="s0:PixelRectangle"/>
+      <s:element minOccurs="0" maxOccurs="1" name="LabelRectangle" type="s0:PixelRectangle"/>
+      <s:element minOccurs="0" maxOccurs="1" name="PinID" type="s:string"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="PixelRectangle">
+    <s:sequence>
+      <s:element minOccurs="1" maxOccurs="1" name="Bottom" type="s:int"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Left" type="s:int"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Right" type="s:int"/>
+      <s:element minOccurs="1" maxOccurs="1" name="Top" type="s:int"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="MimeData">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="1" name="Bits" type="s:base64Binary"/>
+      <s:element minOccurs="0" maxOccurs="1" name="ContentID" type="s:string"/>
+      <s:element minOccurs="0" maxOccurs="1" name="MimeType" type="s:string"/>
+    </s:sequence>
+  </s:complexType>
+  <s:complexType name="ArrayOfMapImage">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="MapImage" nillable="true" type="s0:MapImage"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="GetMapResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="GetMapResult" type="s0:ArrayOfMapImage"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:complexType name="ArrayOfPixelCoord">
+    <s:sequence>
+      <s:element minOccurs="0" maxOccurs="unbounded" name="PixelCoord" nillable="true" type="s0:PixelCoord"/>
+    </s:sequence>
+  </s:complexType>
+  <s:element name="ConvertToPointResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="ConvertToPointResult" type="s0:ArrayOfPixelCoord"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="ConvertToLatLongResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="ConvertToLatLongResult" type="s0:ArrayOfLatLong"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="GetBestMapView">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="locations" type="s0:ArrayOfLocation"/>
+        <s:element minOccurs="0" maxOccurs="1" name="dataSourceName" type="s:string"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+  <s:element name="GetBestMapViewResponse">
+    <s:complexType>
+      <s:sequence>
+        <s:element minOccurs="0" maxOccurs="1" name="GetBestMapViewResult" type="s0:MapViewRepresentations"/>
+      </s:sequence>
+    </s:complexType>
+  </s:element>
+</s:schema>

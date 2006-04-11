@@ -1,0 +1,103 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+   declare _user_name, _login_ok varchar;
+  declare _sid, _folder varchar;
+  declare _err long varchar;
+  declare _random1 integer;
+
+  _random1 := rnd(9999999);
+  _sid := '';
+  _sid := get_keyword('SESS', params);
+
+   _login_ok := 'NO';
+
+ if (_sid   <> '')
+ {
+  for select _username, _userpass from wapsession where sid = _sid  do
+  {
+   _login_ok := 'YES';
+   _user_name := _username;
+   update wapsession set _time_last_active = datestring ( now() ) where  sid = _sid;
+  }
+  }else{
+    _login_ok := 'NO';
+  }
+?>
+
+<?vsp
+if (_login_ok = 'YES')
+{  http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="page1" title="Update Personal Data">
+     <do type="accept" label="Update">
+     <go href="personal_update.vsp?SESS=<?=_sid?>&amp;LASTNAME=$(lname1:e)&amp;FIRSTNAME=$(fname1:e)&amp;RETURN_EMAIL=$(return_email1:e)&amp;COUNTRY=$(country1:e)&amp;STATE=$(state1:e)&amp;TEL=$(tel1:e)&amp;REF=<?=_random1?>"></go>
+   </do>
+   <do type="help" label="Options">
+  <go href="#opt"/>
+   </do>
+   <?vsp
+    for select * from wapsetting where _username = _user_name do {
+   ?>
+   <p>Family Name:<input name="lname1" value="<?=_lname?>" maxlength="30" /></p>
+   <p>First Name:<input name="fname1" value="<?=_fname?>" maxlength="30" /></p>
+   <p>Return Email Address:<input name="return_email1" value="<?=_return_email?>" maxlength="30" /></p>
+   <p>Country:<input name="country1"  value="<?=_country?>" maxlength="30" /></p>
+   <p>State:<input name="state1"  value="<?=_state?>"  maxlength="30" /></p>
+   <p>Telephone:<input name="tel1"  value="<?=_tel?>" maxlength="30" /></p>
+   <?vsp } ?>
+      <p><a href="personal_update.vsp?SESS=<?=_sid?>&amp;LASTNAME=$(lname1:e)&amp;FIRSTNAME=$(fname1:e)&amp;RETURN_EMAIL=$(return_email1:e)&amp;COUNTRY=$(country1:e)&amp;STATE=$(state1:e)&amp;TEL=$(tel1:e)&amp;REF=<?=_random1?>" title="Update">Update</a></p>
+        <p><a href="checkmail.vsp?SESS=$(sid:e)&amp;REF=<?=_random1?>&amp;OPEN=Inbox" title="Cancel">Cancel</a></p>
+  </card>
+
+  <card id="opt" title="Options">
+     <do type="options" label="Exit">
+      <go href="#page1"/>
+     </do>
+       <p mode="nowrap"><a href="checkmail.vsp?SESS=$(sid:e)&amp;REF=<?=_random1?>&amp;OPEN=Inbox">Mail Menu</a></p>
+    <p><a href="login.vsp?SESS=$(sid:e)&amp;REF=<?=_random1?>">Top Menu</a></p>
+  <p><a href="logout.vsp?SESS=$(sid:e)&amp;REF=<?=_random1?>">Logout</a></p>
+  <p><a href="#page1">Exit</a></p>
+  </card>
+</wml>
+<?vsp
+}else{ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="P1" title="Wrong" >
+    <p mode="nowrap">
+   Wrong Login
+    </p>
+  </card>
+</wml>
+<?vsp
+}
+?>
+

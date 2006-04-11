@@ -1,0 +1,143 @@
+<HTML><HEAD><TITLE>WebCalendar README</TITLE></HEAD>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<BODY BGCOLOR="#FFFFFF">
+<H2>WebCalender README</H2>
+
+<TABLE BORDER="0" CELLPADDING="10" WIDTH="100%">
+<TR><TD VALIGN="top"><B>URL:</B></TD>
+<TD><A HREF="http://webcalendar.sourceforge.net">http://webcalendar.sourceforge.net</A></TD></TR>
+
+<TR><TD VALIGN="top"><B>Author:</B></TD>
+<TD VALIGN="top">Craig Knudsen, <A HREF="mailto:cknudsen@radix.net">cknudsen@radix.net</A><BR><A HREF="http://www.radix.net/~cknudsen/">http://www.radix.net/~cknudsen/</A></TD></TR>
+
+<TR><TD VALIGN="top"><B>Documentation:</B></TD>
+<TD VALIGN="top"><A HREF="INSTALL.html">Installation Instructions</A><BR>
+	<A HREF="FAQ.html">Frequently Asked Questions</A><BR>
+	<A HREF="UPGRADING.html">Upgrading Instructions</A><BR>
+	<A HREF="GPL.html">License</A><BR>
+	<A HREF="ChangeLog">History of Changes</A><BR>
+	<A HREF="http://webcalendar.sourceforge.net/demo/">Online Demo</A>
+</TD></TR>
+
+<TR><TD VALIGN="top"><B>Developer Resources:</B></TD>
+	<TD VALIGN="top"><A HREF="http://sourceforge.net/projects/webcalendar/">SourceForge Home</A><BR>
+	<TD VALIGN="top"><A HREF="http://webcalendar.sourceforge.net/docs/database.html">WebCalendar Database Documentation</A><BR>
+	<A HREF="http://sourceforge.net/forum/forum.php?forum_id=11588">Help/Troubleshooting Forum</A><BR>
+	<A HREF="http://sourceforge.net/forum/forum.php?forum_id=11587">Open Discussion Forum</A><BR>
+	<A HREF="http://sourceforge.net/tracker/?group_id=3870&atid=103870">Bug Reports</A><BR>
+	<A HREF="http://sourceforge.net/tracker/?group_id=3870&atid=303870">Patches</A><BR>
+	<A HREF="https://sourceforge.net/project/showfiles.php?group_id=3870">Latest Version</A>
+</TD></TR>
+</TABLE>
+
+<P>
+
+WebCalender is an open source PHP-based multi-user calendar.
+
+<P>
+<B>Features:</B>
+<UL>
+<LI> Multi-user support
+<LI> Group support
+<LI> View day-at-glance
+<LI> View month-at-glance
+<LI> View week-at-glance
+<LI> View year-at-glance
+<LI> View another user's calendar
+<LI> View multiple users' calendars at the same time
+<LI> View one or more users' calendar via layers on top of your own calendar
+<LI> Public calendar (that requires no login) where anonymous users
+  submit events that are approved by an administrator.
+<LI> Add/Edit/Delete users
+<LI> Add/Edit/Delete events
+<LI> Repeating events
+<LI> Custom event fields
+<LI> Search interface for calendar entries
+<LI> User-configurable preferences for colors, 12/24 time format,
+  Week start on Sun or Mon, default work hours
+<LI> Online help
+<LI> Checks for scheduling conflicts
+<LI> Support for multiple timezones
+<LI> Users can accept or reject events added by another user to their calendar
+<LI> Email reminders
+<LI> Email notifications for new events
+<LI> Support for 23 different languages: Traditional Chinese (Big5),
+  Simplified Chinese (GB2312), Czech, Danish, Dutch,
+  English, French, Galician, German, Hungarian, Icelandic, Italian,
+  Japanese, Korean, Norwegian, Polish, Portuguese, Portuguese/Brazil,
+  Russian, Spanish, Swedish, Turkish, Welsh
+<LI> Exporting to Palm Pilot (via install-datebook, part of pilot-link)
+  Note: install-datebook must be patched and rebuilt since it has
+  a big old bug in it.  See <A HREF="INSTALL.html">INSTALL.html</A>
+  for instructions.
+<LI> Export to iCal
+<LI> Authentication using LDAP, HTTP authentication, NIS, or web-based.
+<LI> Activity log that tracks event creation, update, accept, reject,
+  email notifications, and email reminders
+</UL>
+
+<P>
+
+<B>System Requirements:</B>
+<UL>
+<LI> PHP (3 or 4)
+<LI> Database: MySQL, Oracle, PostgreSQL, Interbase or
+  ODBC (PHP ODBC includes support for Adabas D, IBM DB2, Solid and
+  Sybase SQL Anywhere as well as ODBC)
+<LI> JavaScript-enabled browser
+</UL>
+See <A HREF="INSTALL.html">installation instructions</A> for more
+specific PHP requirements.
+
+<P>
+
+<B>Recommended:</B>
+<UL>
+<LI> CSS-enabled browser
+<LI> Cookie-enabled browser
+<LI> pilot-link (if exporting to Palm):
+<A HREF="http://sourceforge.net/project/?group_id=2158">http://sourceforge.net/project/?group_id=2158</A>
+</UL>
+
+<P>
+
+<B>Outstanding issues:</B>
+<UL>
+<LI> Updated translatations (some are slightly out of date)
+</UL>
+
+<P>
+
+<B>Possible features for future releases:</B>
+<UL>
+<LI> Custom access restrictions that can be defined by each user
+<LI> Add comments to entries that will show up on the view page
+<LI> Allow users to upload documents for events
+<LI> Data import (from Netscape Calendar's tab-delimted export or maybe
+  from a Palm Pilot data file)
+<LI> Holidays
+<LI> Generate PDF output for use in day planner
+</UL>
+
+</BODY></HTML>

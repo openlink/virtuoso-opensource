@@ -1,0 +1,102 @@
+<!-- $Id$ -->
+<v:page xmlns:v="http://www.openlinksw.com/vspx/" name="message_page" on-deadlock-retry="3">
+  <v:variable name="wsdl" type="any" default="null" persist="session"/>
+  <v:variable name="loc" type="any" default="null" persist="session"/>
+  <v:variable name="mode" type="int" default="0" persist="session"/>
+  <html>
+    <head>
+      <link rel="stylesheet" href="default.css" type="text/css"/>
+    </head>
+    <body onload="popUpck()">
+      <script type="text/javascript"><![CDATA[
+	function popUpck () {
+	  if (opener == null)
+	    {
+	      document.getElementById('close_btn').innerHTML = '';
+	    }
+	}
+	]]></script>
+      <v:form name="f1" type="simple" method="POST">
+	<v:login name="l1" realm="vsmx" mode="url" user-password-check="vsmx_user_check"/>
+	<v:local-variable name="dummy">
+	  <v:before-data-bind><![CDATA[
+	    if (isstring (self.wsdl))
+	    self.wsdl := xtree_doc (self.wsdl);
+	    ]]></v:before-data-bind>
+	</v:local-variable>
+	<a id="close_btn" href="javascript: void(0);" onclick="javascript: if (opener != null) opener.focus(); window.close()" class="close_btn">
+	  <img src="close_16.gif" border="0" class="dialog_icon"/>Close
+	</a>
+	<div class="head1"><h1>Web Services Test Page (VSMX)</h1></div>
+	<table cellpadding='10' cellspacing='0' border='0' width='100%'>
+	  <tr>
+	    <td>
+	      <table cellpadding="0" cellspacing="0" border="0">
+		<tr>
+		  <td class="page_tab<?V case when self.mode = 0 then '_selected' else '' end ?>">
+		    <v:button action="simple" name="sw1"
+		      value="Basic view"
+		      style="url"
+		      active="--equ (self.mode, 1)"
+		      >
+		      <v:on-post>
+			self.mode := 0;
+			control.vc_data_bind (e);
+			self.sw2.vc_data_bind (e);
+		      </v:on-post>
+		    </v:button>
+		  </td>
+		  <td class="page_tab<?V case when self.mode = 1 then '_selected' else '' end ?>">
+		    <v:button action="simple" name="sw2"
+		      value="Enhanced view"
+		      style="url"
+		      active="--equ(self.mode,0)"
+		      >
+		      <v:on-post>
+			self.mode := 1;
+			control.vc_data_bind (e);
+			self.sw1.vc_data_bind (e);
+		      </v:on-post>
+		    </v:button>
+		  </td>
+		  <td class="page_tab_empty" align="center" width="100%">
+		    <table cellpadding="0" cellspacing="0">
+		      <tr>
+			<td width="100%">
+			</td>
+		      </tr>
+		    </table>
+		  </td>
+		</tr>
+	      </table>
+	      <table class="tab_page" border="0">
+		<tr><td>&#160;</td></tr>
+		<tr>
+		  <td>
+		    <span class="schemaHeader2">WSDL Location </span>
+		    <span class="schemaHeader"><v:url name="wsd1l" value="--self.loc" url="--self.loc" render-only="1"/></span>
+		  </td>
+		</tr>
+		<tr>
+		  <td>
+		      <v:template name="w1" type="simple">
+			<?vsp
+			declare xs any;
+			xs := xslt ('file:/vsmx/vsmx_oper.xsl', self.wsdl,
+			vector ('loc', self.loc, 'sid', self.sid, 'realm', self.realm, 'mode', self.mode));
+			http_value (xs);
+			?>
+		      </v:template>
+		  </td>
+		</tr>
+	      </table>
+	    </td>
+	  </tr>
+	</table>
+      </v:form>
+      <div class="foot">
+	<span class="foot">Virtuoso Universal Server <?V sys_stat('st_dbms_ver')?> - Copyright&copy; 1999-2005 OpenLink Software.</span>
+      </div>
+    </body>
+  </html>
+</v:page>

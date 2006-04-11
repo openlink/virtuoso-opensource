@@ -1,0 +1,228 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_form">
+<refmeta>
+  <refentrytitle>vspx_form</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_form</refname>
+  <refpurpose>generic scriptable container
+		</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_form">
+    <funcprototype id="proto_vspx_form">
+      <funcdef>
+        <function>form</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>type (optional) </attribute>
+        <attribute>action (optional) </attribute>
+        <attribute>method (optional) </attribute>
+        <attribute>table (optional) </attribute>
+        <attribute>if-not-exists (optional) </attribute>
+      </attributes>
+      <childs>
+        <child>after-data-bind</child>
+        <child>after-data-bind-container</child>
+        <child>before-data-bind</child>
+        <child>before-data-bind-container</child>
+        <child>on-post</child>
+        <child>on-post-container</child>
+        <child>before-render</child>
+        <child>before-render-container</child>
+        <child>radio-button</child>
+        <child>button</child>
+        <child>check-box</child>
+        <child>select-list</child>
+        <child>textarea</child>
+        <child>text</child>
+        <child>update-field</child>
+        <child>key</child>
+        <child>variable</child>
+        <child>label</child>
+        <child>url</child>
+        <child>data-grid</child>
+        <child>data-set</child>
+        <child>data-list</child>
+        <child>tab</child>
+        <child>tree</child>
+        <child>include</child>
+        <child>error-summary</child>
+        <child>template</child>
+      </childs>
+      <class>
+        <screen><![CDATA[
+		
+		-- the form super class
+		create type vspx_form under vspx_control
+		as
+		(
+		 uf_action varchar default '',  	-- target URI
+		 uf_method varchar default 'POST',	-- HTTP transfer method
+		 uf_inside_form int default 0,		-- designate is under other form, if true will not be printed
+		 uf_validators any			-- internal use	
+		) temporary self as ref
+		;
+
+		-- the updatable form subclass
+		create type vspx_update_form under vspx_form
+		as (
+		    uf_keys  any,			-- key column names
+		    uf_fields any,			-- data column names
+		    uf_row any,				-- internal use
+		    uf_table varchar,			-- target table 
+		    uf_if_not_exists int,		-- what to do if no data found
+		    uf_concurrency int			-- internal use
+		   ) temporary self as ref
+		overriding method vc_view_state (stream any) returns any
+		;
+
+		
+		]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_form">
+  <title>Description</title>
+  <para>
+    <function>vspx_form</function>is a container for elements that may accept user&#39;s input.
+    The basic functionality is to be a grouping element for controls that handles post data and validation of user&#39;s input. In case of type &#39;update&#39;, this is a single row update control for a database table.
+This retrieves the data from the row identified by the keys and shows the data in the column bound fields enclosed.  If responding to a post for a submit inside this form, the form updates/inserts the data and shows the resulting state at the render pass.
+</para>
+</refsect1>
+<refsect1 id="attrs_vspx_form">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>type</title>
+    <para>A type of form, can be &#39;simple&#39; or &#39;update&#39;. When it&#39;s &#39;simple&#39; the vspx_form class will be instantiated, otherwise in case of &#39;update&#39; vspx_update_form subclass will be used.</para>
+    <para>
+         &#39;simple&#39; : 
+Form with no special data binding.
+</para>
+    <para>
+         &#39;update&#39; : 
+Form that may be used in templates of type &#39;update&#39; or &#39;add&#39;.
+</para>
+  </refsect2>
+  <refsect2>
+    <title>action</title>
+    <para>
+      A URL for processing. The data filled-in the form will be submitted to the &#39;action&#39; page.
+      Therefore this is a page where will be processed the content of that form.
+      If it&#39;s empty, the target is a current page.
+				 </para>
+  </refsect2>
+  <refsect2>
+    <title>method</title>
+    <para>A way of transferring the form data, can be POST or GET. The same as &#39;method&#39; of HTML forms.
+				 </para>
+    <para>
+         &#39;GET&#39; : </para>
+    <para>
+         &#39;POST&#39; : </para>
+  </refsect2>
+  <refsect2>
+    <title>table</title>
+    <para>If the value of &#39;type&#39; attribute is &#39;update&#39;, the form acts as a single row update control for a database table; and the value of &#39;table&#39; attribute specifies the name of that table.
+It retrieves the data from the row identified by the keys and shows the data in the column bound fields enclosed.  If responding to a post for a submit inside this form, the form updates/inserts the data and shows the resulting state at the render pass.
+This attribute is required if &#39;type&#39; is &#39;update&#39; and prohibited otherwise.</para>
+  </refsect2>
+  <refsect2>
+    <title>if-not-exists</title>
+    <para>If the keys do not select any row, and the value of this attribute is &#39;insert&#39;, the update form will be filled in with defaults filled in and will do an insert into the table when the form is submitted.
+In this case of course the keys will have to be defaulted after the post or will have to be supplied in the post as fields.
+Any defaulting should take place in the v:on-post handler which is before the insert or update in the event of the post.
+</para>
+    <para>
+         &#39;insert&#39; : </para>
+    <para>
+         &#39;none&#39; : </para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_form">
+  <title>Children</title>
+  <refsect2>
+    <title>template</title>
+    <para>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node represantation)</para>
+  </refsect2>
+  <refsect2>
+    <title>key</title>
+    <para>Defines a key value of the vspx:form of type &#39;update&#39;.
+All the vspx:key children together should select one or zero rows from the table.
+</para>
+  </refsect2>
+  <refsect2>
+    <title>update-field</title>
+    <para>The vspx:update-field is used to bind to individual columns of a table.
+It may appear only inside the vspx:form of type &#39;update&#39;.
+At posting time the post message is
+addressed to the button first, then to the fields then to the form.
+Validators can appear as children of the form.
+The field validation is invoked before the form gets control.
+For the form, all validators are evaluated first and if successful the post
+processing of the form continues.
+</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="examples_vspx_form">
+  <title>Examples</title>
+  <example id="ex_vspx_form">
+    <title>Simple example</title>
+    <para>This is to build simple entry form</para>
+    <screen><![CDATA[
+<html>
+<body>
+<v:page name="page01" xmlns:v="http://www.openlinksw.com/vspx/" >
+  <v:form name="form01" type="simple" action="" method="POST">
+    <v:label name="label01" value="--'Simple form'" />
+    <v:text name="txt01" default="" />
+    <v:text name="txt02" default="" />
+    <v:button name="submit01" action="simple" value="OK" />
+  </v:form>
+</v:page>
+</body>
+</html>
+		]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

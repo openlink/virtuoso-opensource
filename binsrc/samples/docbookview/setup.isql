@@ -1,0 +1,49 @@
+set echo=off;
+set verbose=on;
+set banner=on;
+set types=off;
+
+sequence_set('_', 1,0);
+sequence_next('_');
+
+ECHO "\n(Loading RDF library...";
+load rdf_lib.sql;
+ECHO " done)";
+
+ECHO "\n(Loading bootstrap procedures...";
+load dbv_boot.sql;
+ECHO " done)";
+
+ECHO "\n(Schema (re-)creation..." ;
+DBV.DBV.CREATE_SCHEMA ();
+ECHO " done)";
+
+ECHO "\n(Loading DBV library...";
+load dbv_lib.sql;
+ECHO " done)";
+
+ECHO "\n(Loading DBV VSP functions...";
+load dbv_vsp.sql;
+ECHO " done)";
+
+DBV.DBV.ADDCFG ('Version/Schema', DBV.DBV.CODE_VERSION());
+DBV.DBV.SETCFG ('Version/Code', DBV.DBV.CODE_VERSION());
+
+DB.DBA.RDF_ASSERT2 (
+  lte (DBV.DBV.GETCFG ('Version/Schema'), DBV.DBV.GETCFG ('Version/Code')),
+  'Version of DBV.DBV schema is newer than version of SQL code' );
+
+ECHO "\n(Loading configuration...";
+load _current_config.sql;
+ECHO " done)";
+
+ECHO "\n\n\n\tCurrent configuration\n\n";
+select PARAM as "Parameter", VALUE as "Value" from DBV.DBV.CONFIG order by PARAM;
+ECHO "\n";
+
+ECHO "\n(Checkpoint...";
+CHECKPOINT;
+ECHO " done)";
+
+ECHO "\n"
+

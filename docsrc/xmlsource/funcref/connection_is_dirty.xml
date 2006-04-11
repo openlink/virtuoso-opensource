@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_connection_is_dirty">
+  <refmeta>
+    <refentrytitle>connection_is_dirty</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>connection_is_dirty</refname>
+    <refpurpose>check if current session connection variables have been altered</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_connection_is_dirty">
+      <funcprototype id="fproto_connection_is_dirty">
+        <funcdef>integer <function>connection_is_dirty</function></funcdef>
+	<paramdef />
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_connection_is_dirty"><title>Description</title>
+    <para>This function is used to determine if the session variables
+    have changed between a call to
+    <link linkend="fn_connection_vars_set"><function>connection_vars_set</function></link> and current point of execution. A call to
+    <link linkend="fn_connection_vars_set">connection_vars_set</link>
+    will cause subsequent calls to <function>connection_is_dirty</function>
+    to return true.</para>
+    <para>The function is useful in postprocessing functions
+    for making conditional storage of session variables in a database
+    table.</para>
+  </refsect1>
+  <refsect1 id="ret_connection_is_dirty"><title>Return Values</title>
+    <para>An <type>INTEGER</type> indicating true (1) or false (0).</para>
+  </refsect1>
+  <refsect1 id="examples_connection_is_dirty"><title>Examples</title>
+    <example id="ex_connection_is_dirty_1"><title>Checking Connection Variables</title>
+      <programlisting>
+  &lt;?vsp
+    declare rc integer;
+    connection_vars_set ();
+    rc := connection_is_dirty (); -- rc is equal to 0
+    connection_set ('ID', 14);
+    rc := connection_is_dirty (); -- rc is equal to 1
+  ?&gt;
+</programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_connection_is_dirty"><title>See Also</title>
+    <para><link linkend="fn_connection_get">connection_get</link></para>
+    <para><link linkend="fn_connection_set">connection_set</link></para>
+    <para><link linkend="fn_connection_vars">connection_vars</link></para>
+    <para><link linkend="fn_connection_vars_set">connection_vars_set</link></para>
+  </refsect1>
+</refentry>
+

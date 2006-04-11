@@ -1,0 +1,97 @@
+<?vsp
+   declare shopping_id numeric(20);
+   declare cid numeric(10);
+   shopping_id:=atoi(get_keyword('Shopping_Id',params,'0'));
+   cid:=atoi(get_keyword('C_ID',params,'0'));
+   declare checked1,checked2 varchar(20);
+   declare ret_flag numeric(10);
+   if (cid=0)
+   {
+       checked1:='UNCHECKED';
+       checked2:='CHECKED';
+   }
+   else
+   {   
+       checked1:='CHECKED';
+       checked2:='UNCHECKED';
+   }
+?>
+<HTML>
+  <HEAD><TITLE>Customer Registration Page</TITLE></HEAD>
+  <BODY BGCOLOR="#ffffff">
+  <H1 ALIGN="center">TPC Web Commerce Benchmark (TPC-W)</H1>
+  <HR WIDTH="700" COLOR="#202020">
+  <H1 ALIGN="center"><IMG SRC="images/tpc_logo.jpg" ALIGN="BOTTOM" BORDER="0" WIDTH="288" HEIGHT="67"></H1>
+  <H2 ALIGN="center">Customer Registration Page</H2>
+  <FORM ACTION="buyrequest.vsp?" METHOD="GET">
+<INPUT TYPE="HIDDEN" NAME="C_ID" VALUE="<?=cid?>">
+<INPUT TYPE="HIDDEN" NAME="Shopping_Id" VALUE="<?=shopping_id?>">
+    <BLOCKQUOTE>
+      <BLOCKQUOTE>
+      <HR>
+      <TABLE BORDER="0">
+        <TR>
+          <TD><INPUT <?= checked1 ?> NAME="RETURNING_FLAG" TYPE="radio" VALUE="Y"> I am an existing customer</TD>
+        </TR>
+        <TR>
+          <TD><INPUT <?= checked2 ?> NAME="RETURNING_FLAG" TYPE="radio" VALUE="N"> I am a first time customer</TD>
+        </TR>
+      </TABLE>
+      <HR>
+      <P><B>If you're an existing customer, enter your Username and Password:</B><BR><BR></P>
+      <TABLE>
+        <TR ALIGN="left">
+          <TD>Username:<INPUT NAME="username" SIZE="23"></TD></TR>
+         <TR ALIGN="left">
+           <TD>Password:<INPUT NAME="password" SIZE="14" TYPE="password" VALUE="password"></TD>
+         </TR>
+      </TABLE>
+<HR>
+<P><B>If you're a first time customer, enter the details below:</B><BR>      
+  </P>
+     <TABLE>
+       <TR>
+         <TD>Enter your birth date (mm/dd/yyyy):</TD>
+         <TD><INPUT NAME="birthday" SIZE="10"></TD></TR>
+      <TR>
+        <TD>Enter your First Name:</TD>
+        <TD><INPUT NAME="firstname" SIZE="15"></TD></TR>
+      <TR>
+        <TD>Enter your Last Name:</TD>
+        <TD><INPUT NAME="lastname" SIZE="15"></TD></TR>
+      <TR>
+        <TD>Enter your Address 1:</TD>
+        <TD><INPUT NAME="address1" SIZE="40"></TD></TR>
+      <TR>
+        <TD>Enter your Address 2:</TD>
+        <TD><INPUT NAME="address2" SIZE="40"></TD></TR>
+      <TR>
+        <TD>Enter your City, State, Zip:</TD>
+        <TD> <INPUT NAME="city" SIZE="30">                    
+          <INPUT NAME="state"> <INPUT NAME="zip" SIZE="10"></TD></TR>
+      <TR>
+        <TD>Enter your Country:</TD>
+        <TD><INPUT NAME="country" SIZE="50"></TD></TR>
+      <TR>
+        <TD>Enter your Phone:</TD>
+        <TD><INPUT NAME="phone" SIZE="16"></TD></TR>
+      <TR>
+        <TD>Enter your E-mail:</TD>
+        <TD><INPUT NAME="email" SIZE="50"></TD></TR>
+      </TABLE>
+    <HR>
+      <TABLE>
+       <TR>
+        <TD COLSPAN="2">Other Customer Data:
+          <TEXTAREA COLS="65" NAME="data" ROWS="4"></TEXTAREA></TD></TR>
+      </TABLE>
+    <HR>
+   </BLOCKQUOTE></BLOCKQUOTE>
+
+<CENTER>
+  <INPUT TYPE="IMAGE" NAME="Enter Order" SRC="images/submit.jpg" BORDER="0" HEIGHT="30" WIDTH="120">
+  <A HREF="searchrequest.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG
+     SRC="images/search.jpg" ALT="Search Item" BORDER="0" HSPACE="0" WIDTH="120" HEIGHT="30"></A>
+  <A HREF="index.vsp?C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>"><IMG
+    SRC="images/home.jpg" ALT="Home Page" BORDER="0" HSPACE="0" WIDTH="120" HEIGHT="30"></A>
+<P></P></CENTER></FORM></BODY></HTML>

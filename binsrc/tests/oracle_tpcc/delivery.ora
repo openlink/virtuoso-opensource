@@ -1,0 +1,107 @@
+-- /* File:        DELIVERY.SQL */
+-- /* Purpose:     Delivery transaction for Microsoft TPC-C Benchmark Kit */
+ 
+create or replace procedure delivery  ( w_id_ in integer, o_carrier_id_ in integer )
+as
+            d_id_		integer;
+            o_id_		integer;
+            c_id_		integer;
+            total_		numeric(12,2);
+            oid1_		integer;
+            oid2_		integer;
+            oid3_		integer;
+            oid4_		integer;
+            oid5_		integer;
+            oid6_		integer;
+            oid7_		integer;
+            oid8_		integer;
+            oid9_		integer;
+            oid10_		integer;
+			ol_total_	numeric(12,2);
+begin
+        d_id_ := 0;
+--set transaction;
+        while d_id_ < 10 loop
+            d_id_  := d_id_ + 1;
+            total_ := 0;
+            o_id_  := 0;
+
+            select min(no_o_id)
+				   into o_id_
+                   from new_order
+                   where no_w_id = w_id_ and no_d_id = d_id_; -- for update;
+
+--			dbms_output.put_line(o_id_);
+
+            if(sql%rowcount <> 0) then
+         
+--              /* claim the order for this district */
+                delete from new_order
+                       where no_w_id = w_id_ and no_d_id = d_id_
+                         and no_o_id = o_id_;
+--              /* set carrier_id on this order (and get customer id) */
+                update orders
+                       set o_carrier_id = o_carrier_id_
+                       where o_w_id = w_id_ and o_d_id = d_id_
+                             and o_id = o_id_ returning o_c_id into c_id_;
+
+--      /* set date in all lineitems for this order (and sum amounts) */
+
+				ol_total_ := 0;
+                update order_line
+                       set ol_delivery_d = sysdate
+                       where ol_w_id = w_id_ and
+                             ol_d_id = d_id_ and
+                             ol_o_id = o_id_;
+
+				select sum(ol_amount) into ol_total_
+					   from order_line  
+                       where ol_w_id = w_id_ and
+                       ol_d_id = d_id_ and
+                       ol_o_id = o_id_;
+
+							 
+--				returning ol_amount into ol_total_;
+				total_ := total_ + ol_total_;
+--      /* accumulate lineitem amounts for this order into customer */
+
+                update customer
+                       set c_balance      = c_balance + total_,
+                           c_cnt_delivery = c_cnt_delivery + 1
+                       where c_w_id = w_id_ and
+                             c_d_id = d_id_ and
+                             c_id = c_id_;
+
+            end if;
+
+
+			if d_id_ = 1  then oid1_ := o_id_; 
+			elsif d_id_ = 2  then oid2_ := o_id_; 
+			elsif d_id_ = 3  then oid3_ := o_id_; 
+			elsif d_id_ = 4  then oid4_ := o_id_; 
+			elsif d_id_ = 5  then oid5_ := o_id_; 
+			elsif d_id_ = 6  then oid6_ := o_id_; 
+			elsif d_id_ = 7  then oid7_ := o_id_; 
+			elsif d_id_ = 8  then oid8_ := o_id_; 
+			elsif d_id_ = 9  then oid9_ := o_id_; 
+			elsif d_id_ = 10 then oid10_ := o_id_; end if;
+
+--			goto end_case_
+--			<<end_case_>>
+
+        end loop;
+
+    commit;
+
+/*    select oid1_,
+           oid2_,
+           oid3_,
+           oid4_,
+           oid5_,
+           oid6_,
+           oid7_,
+           oid8_,
+           oid9_,
+           oid10_ */
+end delivery;
+/

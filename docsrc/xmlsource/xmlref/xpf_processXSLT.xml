@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!--
+  Please use the following prefixes for IDs:
+    xpf_ for old XPATH functions,
+    xf_ for XPATH 2.0 & XQUERY 1.0 functions,
+    xsl_ for XSL elements,
+-->
+<refentry id="xpf_processXSLT">
+  <refmeta>
+    <refentrytitle>processXSLT</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>processXSLT</refname>
+    <refpurpose>Applies stylesheet to given XML entity and returns the result.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_processXSLT">
+      <funcprototype id="xpf_proto_processXSLT">
+        <funcdef>entity <function>processXSLT</function></funcdef>
+	<paramdef><parameter>stylesheet_uri</parameter> string</paramdef>
+	<paramdef><optional><parameter>source</parameter> entity</optional></paramdef>
+	<paramdef><optional><parameter>param1_name</parameter> string</optional></paramdef>
+	<paramdef><optional><parameter>param1_value</parameter> any</optional></paramdef>
+	...
+	<paramdef><optional><parameter>paramN_name</parameter> string</optional></paramdef>
+	<paramdef><optional><parameter>paramN_value</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_processXSLT"><title>Description</title>
+    <para>
+This function takes the URI of a stylesheet and an XML entity and
+produces an XML entity representing the transformation result of the
+given entity with the given stylesheet.  The result tree is separate
+from the argument tree and the only reference to it is the returned
+entity.  Errors occurring in the transformation will be signalled as
+SQL states, with XML or XSLT specific conditions beginning with XS or
+XP.
+    </para>
+    <para>
+The stylesheet is applied to the value of <parameter>source</parameter> parameter.
+Obviously, <parameter>source</parameter> must be an entity.
+If <parameter>source</parameter> is not specified then the stylesheet is applied to the current entity.
+    </para>
+    <para>
+Parameters can be passed to the stylesheet by specifying additional arguments
+to <function>processXSLT()</function>.
+The values can be referenced from inside XPath expressions in
+the stylesheet. The names of parameters should appear in argument list without the leading '$' sign.
+Unlike <link linkend="fn_xslt"><function>xslt()</function></link> function, parameter
+can not be ignored depending on the type of its value.
+If the same name appears more than once in the vector, the last name/value pair is
+used and all preceding pairs with this name are silently ignored.
+Obviously, names should be strings that are valid XPath variable names.
+    </para>
+    <para>
+The function uses the cache of compiled stylesheets, see description of
+<link linkend="fn_xslt"><function>xslt()</function></link> Virtuoso/PL function
+for more details.
+    </para>
+    <para>
+For compatibility, the <function>processXSLT()</function>   function can also be called as
+<function>http://schemas.oracle.com/xpath/extension:processXSLT()</function>.
+    </para>
+  </refsect1>
+  <refsect1 id="xpf_params_processXSLT"><title>Parameters</title>
+    <refsect2><title>stylesheet_uri</title>
+      <para>URI pointing to the location of an XSL stylesheet. It can be absolute or relative.
+A relative <title>stylesheet_uri</title> should be resolved before use, this requires base URI information.
+The base URI can be declared explicitly with the &quot;__base_uri&quot; parameter in XPATH or
+&quot;declare base-uri&quot; setter in XQuery.
+If not declared but the expression is a part of some stylesheet or XQuery module then the URI of module is
+used as a base URI.
+A run-time error is signalled if the URI is relative and the expression does not contain explicit declaration and the expression is neither in a stylesheet nor in a module.
+      </para></refsect2>
+    <refsect2><title>source</title>
+      <para>XML entity that is the source of XSL transformation. If the function is called with only one argument then the context node is used as a source.</para></refsect2>
+    <refsect2><title>paramI_name</title>
+      <para>Name of parameter to be passed to the
+    XSLT engine for use in the transformation.</para></refsect2>
+    <refsect2><title>paramI_value</title>
+      <para>Value of parameter with name specified by <parameter>paramI_name</parameter>.</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_processXSLT"><title>Return Types</title><para>The function returns an XML entity that is the root entity of
+the resulting document of an XSL transformation.</para></refsect1>
+<!--
+  <refsect1 id="xpf_errors_processXSLT"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+-->
+  <refsect1 id="xpf_examples_processXSLT"><title>Examples</title>
+    <example id="xpf_ex_processXSLT"><title>XSLT inside XQuery expression</title>
+      <para>The query composes a single document that contain a list of labels for parcels.
+Depending on destination country and the state value of the parcel, the query applies one of three stylesheets that make a label from the address data;
+the query makes a label from every item of sequence $orders.</para>
+      <screen><![CDATA[
+<parcel-labels>
+for $order in $orders let $customer := $customers/customer [ @CustId = $order/@CustId ] return
+  if ($customer/address/@Country = "US")
+    if ($order/sum >= 50.0)
+      processXSLT ("file://registered-parcel.xsl", $customer/address, "value", $order/sum)
+    else
+      processXSLT ("file://plain-parcel.xsl", $customer/address)
+  else
+    processXSLT ("file://foreign-parcel.xsl", $customer/address, "value", $order/sum)
+</parcel-labels>
+]]></screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_processXSLT"><title>See Also</title>
+    <para><link linkend="fn_xslt"><function>xslt()</function></link></para>
+    <para><link linkend="xpf_processXQuery"><function>processXQuery()</function></link></para>
+    <para><link linkend="xpf_processXSQL"><function>processXSQL()</function></link></para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_row_count">
+  <refmeta>
+    <refentrytitle>row_count</refentrytitle>
+    <refmiscinfo>sql</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>row_count</refname>
+    <refpurpose>returns number of rows affected by the previous DML statement in a procedure body</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_row_count">
+      <funcprototype id="fproto_row_count">
+        <funcdef>integer <function>row_count</function></funcdef>
+        <paramdef />
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_row_count"><title>Description</title>
+  <para>This function returns the count of rows affected by the previous DML 
+  statement in a procedure body.  The scope is local to the procedure.  Calling 
+  this from ODBC will always return 0.  This is the PL equivalent of the 
+  SQLRowCount ODBC function.  The count is set after any in-line searched or 
+  positioned update, insert or delete.  This is also set by the exec function.  
+  The count stays set until overwritten by the next DML operation.  This is not 
+  set by rexecute.</para>
+  </refsect1>
+  <refsect1 id="ret_row_count"><title>Return Types</title>
+    <para>An integer representing the number of affected rows from a previous 
+    query.</para>
+  </refsect1>
+  <!--
+  <refsect1 id="errors_row_count">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+  <refsect1 id="examples_row_count">
+    <title>Examples</title>
+    <example id="ex_"><title></title>
+      <para></para>
+      <screen><![CDATA[
+]]>
+</screen>
+    </example>
+  </refsect1>
+  -->
+  <!--
+  <refsect1 id="seealso_row_count">
+    <title>See Also</title>
+    <para><link linkend="fn"><function></function></link></para>
+  </refsect1>  
+  -->
+</refentry>
+
+

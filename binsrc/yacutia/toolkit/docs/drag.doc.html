@@ -1,0 +1,61 @@
+<h2>drag.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>Provides dragging (moving) capability for any DOM node</p>
+<hr/>
+
+<h3>Functions</h3>
+<ul>
+	<li><a href="#create">Drag.create(clicker, mover, optObj)</a></li>
+	<li><a href="#remove">Drag.remove(clicker, mover)</a></li>
+	<li><a href="#removeall">Drag.removeAll(clicker)</a></li>
+</ul>
+
+<h3>Constants</h3>
+<ul>
+	<li>Drag.TYPE_X</li>
+	<li>Drag.TYPE_Y</li>
+	<li>Drag.TYPE_XY</li>
+</ul>
+
+<hr/>
+
+<h3><a name="create">Drag.create(clicker, mover, optObj)</a></h3>
+<p>Modifies element <em>mover</em> such that clicking and moving on <em>clicker</em> will cause it to move. 
+Additional options can be specified using <em>optObj</em> object:</p>
+<ul>
+	<li>type - one of the constants, specifies direction in which the dragging will be possible</li>
+	<li>restrictionFunction - callback which spcifies movement restriction</li>
+</ul>
+<p class="code">
+var header = Dom.create("div"); <br/>
+var body = Dom.create("div"); <br/>
+body.appendChild(header); <br/>
+Drag.create(header, body, {type:TYPE_XY});
+</p>
+
+<h3><a name="#remove">Drag.remove(clicker, mover)</a></h3>
+<p>Removes dragging relation between <em>clicker</em> and <em>mover</em>.
+
+<h3><a name="#removeall">Drag.removeAll(clicker)</a></h3>
+<p>Removes all dragging relations from <em>clicker</em>.

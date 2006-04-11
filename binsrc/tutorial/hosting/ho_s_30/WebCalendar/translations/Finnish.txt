@@ -1,0 +1,1309 @@
+# Use this as a starting point to translate this application into
+# another language.  The format is "English text: translated text"
+# There cannot be a ":" in the English text.
+# Translated by:
+#	Ari Vaulo and ari.vaulo@tol.oulu.fi
+# Last update: 06 Dec 2001
+# Translation last updated on 11-30-2002
+
+
+###############################################
+# Page: admin.php
+#
+#
+# << MISSING >>
+# Server URL is required:
+#
+# << MISSING >>
+# Server URL must end with '/':
+Invalid color for document background: Taustaväri on virheellinen
+Invalid color for document title: Otsikon väri on virheellinen
+Invalid color for table cell background: Ruudukon taustaväri on virheellinen
+#
+# << MISSING >>
+# Invalid color for table grid:
+#
+# << MISSING >>
+# Invalid color for table header background:
+#
+# << MISSING >>
+# Invalid color for table text background:
+#
+# << MISSING >>
+# Invalid color for event popup background:
+#
+# << MISSING >>
+# Invalid color for event popup text:
+Invalid color for table cell background for today: Kuluvan päivän taustaväri on virheellinen
+Color format should be '#RRGGBB': Värikoodin tulee olla muotoa '#RRGGBB'
+#
+# << MISSING >>
+# System Settings:
+You are not authorized: Käyttöoikeus puuttuu
+#
+# << MISSING >>
+# Note:
+#
+# << MISSING >>
+# Your user preferences:
+#
+# << MISSING >>
+# may be affecting the appearance of this page.:
+#
+# << MISSING >>
+# Click here:
+#
+# << MISSING >>
+# to not use your user preferences when viewing this page:
+#
+# << MISSING >>
+# are being ignored while viewing this page.:
+#
+# << MISSING >>
+# to load your user preferences when viewing this page:
+Save: Talleta
+Help: Ohjeita
+Settings: Yleisasetukset
+#
+# << MISSING >>
+# app-name-help:
+# English text: Specifies the name of the application that will appear in the browser title bar for all pages and on the login page.  The value you specify here will be looked up in the translations file allowing you to provide different titles for different languages.
+#
+#
+# << MISSING >>
+# Application Name:
+#
+# << MISSING >>
+# server-url-help:
+# English text: Specifies the base URL for the application.  This will be included when sending out email reminders and notifications.
+#
+#
+# << MISSING >>
+# Server URL:
+language-help: Määrittelee käytettävän kielen.
+Language: Kieli
+Your browser default language is: Selaimen oletuskieli on
+#
+# << MISSING >>
+# fonts-help:
+# English text: Specifies a list of system fonts to use (such as "Arial, Helvetica")
+#
+#
+# << MISSING >>
+# Fonts:
+preferred-view-help: Määrittelee oletusnäkymän (Päivä, Viikko, Kuukausi tai Vuosi).
+Preferred view: Oletusnäkymä
+Day: Päivä
+Week: Viikko
+Month: Kuukausi
+Year: Vuosi
+#
+# << MISSING >>
+# display-weekends-help:
+# English text: Include weekends when viewing a week.
+#
+#
+# << MISSING >>
+# Display weekends in week view:
+Yes: Kyllä
+No: Ei
+#
+# << MISSING >>
+# date-format-help:
+# English text: Specifies the preferred date format.
+#
+#
+# << MISSING >>
+# Date format:
+December: Joulukuu
+time-format-help: Määrittelee ajan esitysmuodon, <BR><I>12 tuntia</I> <BR><I>24 tuntia</I>
+Time format: Ajan esitystapa
+12 hour: 12 tuntia
+24 hour: 24 tuntia
+#
+# << MISSING >>
+# time-interval-help:
+# English text: Specifies how long the time blocks in the week view and day view will be.
+#
+#
+# << MISSING >>
+# Time interval:
+#
+# << MISSING >>
+# hour:
+minutes: minuuttia
+#
+# << MISSING >>
+# auto-refresh-help:
+# English text: When enabled, the day view, week view, month view, and list aunapproved pages will all automatically refresh themselves periodically.
+#
+#
+# << MISSING >>
+# Auto-refresh calendars:
+#
+# << MISSING >>
+# auto-refresh-time-help:
+# English text: If Auto-refresh is enabled, this specifies the time between each refresh.
+#
+#
+# << MISSING >>
+# Auto-refresh time:
+#
+# << MISSING >>
+# require-approvals-help:
+# English text: When enabled, a user must approve an event before it is displayed on their calendar (unless Display unapproved is enabled).  Note setting this to "No" will not turn off approvals for the Public Access calendar (if the Public Access calendar is enabled).
+#
+#
+# << MISSING >>
+# Require event approvals:
+display-unapproved-help: Määrittelee näytetäänkö hyväksymättömät tapahtumat kalenterissa. <BR>Jos valittu "Kyllä", niin hyväksymättömät tapahtumat näytetään (eri värillä).<BR>Jos valittu "Ei", niin tapahtumat tulee hyväksyä ennenkuin ne näkyvät kalenterissa. 
+Display unapproved: Näytä hyväksymättömät tapahtumat
+display-week-number-help: Määrittelee näytetäänkö viikonnumero (1-52) kuukausi- ja viikkonäkymässä. 
+Display week number: Näytä viikonnumero
+display-week-starts-on: Määrittelee viikon alkamispäiväksi joko sunnuntai tai maanantai. Jos maanantai valittu, niin viikonnumero lasketaan ISO-järjestelmän mukaisesti.
+Week starts on: Viikon ensimmäinen päivä
+Sunday: Sunnuntai
+Monday: Maanantai
+work-hours-help: Määrittelee päivänäkymässä esitettävät tunnit.
+Work hours: Työtunnit
+From: Alkaen
+to: ulottuen
+#
+# << MISSING >>
+# disable-priority-field-help:
+# English text: Selecting "Yes" will remove the "Priority" field from event information pages, providing a simpler interface for novices.
+#
+#
+# << MISSING >>
+# Disable Priority field:
+#
+# << MISSING >>
+# disable-access-field-help:
+# English text: Selecting "Yes" will remove the "Access" field from event information pages, providing a simpler interface for novices.
+#
+#
+# << MISSING >>
+# Disable Access field:
+#
+# << MISSING >>
+# disable-participants-field-help:
+# English text: Selecting "Yes" will remove the "Particpants" field from event information pages, preventing users from adding other users to their events.  If you enable this option, you may want to also disable the "Allow viewing other user's calendars" field also.
+#
+#
+# << MISSING >>
+# Disable Participants field:
+#
+# << MISSING >>
+# disable-repeating-field-help:
+# English text: Selecting "Yes" will remove the "Repeating" field when adding events.  This will provide a simpler interface for novices.
+#
+#
+# << MISSING >>
+# Disable Repeating field:
+#
+# << MISSING >>
+# allow-view-other-help:
+# English text: Specifies whether one user may view another user's calendar.
+#
+#
+# << MISSING >>
+# Allow viewing other user's calendars:
+#
+# << MISSING >>
+# allow-public-access-help:
+# English text: When enabled, the calendar can be used as a read-only public calendar that does not require users to login.
+#
+#
+# << MISSING >>
+# Allow public access:
+#
+# << MISSING >>
+# public-access-view-others-help:
+# English text: When access the system with public access, specifies whether the user can view the calendar of another calendar user.
+#
+#
+# << MISSING >>
+# Public access can view other users:
+#
+# << MISSING >>
+# public-access-can-add-help:
+# English text: When enabled, users that access the system through Public Access will be able to add new events, but they will not show up in the calendar until an administrator approves the new event.
+#
+#
+# << MISSING >>
+# Public access can add events:
+#
+# << MISSING >>
+# public-access-add-requires-approval-help:
+# English text: Specifies whether events added via the public access account require approval before being displayed.
+#
+#
+# << MISSING >>
+# Public access new events require approval:
+# English text: Public access new events require approval:
+#
+#
+# << MISSING >>
+# allow-view-add-help:
+# English text: A '+' icon will be included in views, allowing users to quickly add events to other users' calendars.
+#
+#
+# << MISSING >>
+# Include add event link in views:
+#
+# << MISSING >>
+# allow-external-users-help:
+# English text: Specifies whether a non-calendar user can be added to an event.  This allows non-calendar users to be listed as event participants.
+#
+#
+# << MISSING >>
+# Allow external users:
+#
+# << MISSING >>
+# external-can-receive-notification-help:
+# English text: When external users are enabled and email usage is enabled, external users can receive email notifications when the event is added, updated or delete (if the external user's email address is provided).
+#
+#
+# << MISSING >>
+# External users can receive email notifications:
+#
+# << MISSING >>
+# external-can-receive-reminder-help:
+# English text: When external users are enabled and email usage is enabled, external users can receive email reminders (if the external user's email address is provided).
+#
+#
+# << MISSING >>
+# External users can receive email reminders:
+#
+# << MISSING >>
+# remember-last-login-help:
+# English text: When enabled, the user's login will be filled in for them on the login page (but not the password), and the user's preferences will be loaded (including their preferred colors and language selection).
+#
+#
+# << MISSING >>
+# Remember last login:
+#
+# << MISSING >>
+# conflict-check-help:
+# English text: Check for event conflicts (two events scheduled for the same time for the same person).  If you set this to "Yes", you will still be able to schedule two events at the same time after confirming a warning. If you set this to "No", no checking for conflicts will be done.  You probably want to set this to "Yes", so conflict checking occurs.
+#
+#
+# << MISSING >>
+# Check for event conflicts:
+#
+# << MISSING >>
+# conflict-months-help:
+# English text: If conflict checking is in place ("Check for event conflicts" is set to "No"), this specifies how many months into the future we should check for conflicts.  If you find adding events is taking a long time to process, reduce this number.
+#
+#
+# << MISSING >>
+# Conflict checking months:
+#
+# << MISSING >>
+# conflict-check-override-help:
+# English text: Allows users to override event conflicts and schedule two or more events for the same time.
+#
+#
+# << MISSING >>
+# Allow users to override conflicts:
+#
+# << MISSING >>
+# limit-appts-help:
+# English text: Allows the system administrator to set a system-wide limit on the number of appointments a single user can have on any single day.
+#
+#
+# << MISSING >>
+# Limit number of timed events per day:
+#
+# << MISSING >>
+# limit-appts-number-help:
+# English text: Specifies the maximum number of timed events a user can have in a single day.
+#
+#
+# << MISSING >>
+# Maximum timed events per day:
+#
+# << MISSING >>
+# Plugins:
+#
+# << MISSING >>
+# plugins-enabled-help:
+# English text: Enable plugin applications.
+#
+#
+# << MISSING >>
+# Enable Plugins:
+#
+# << MISSING >>
+# plugins-sort-key-help:
+# English text: Specifies a sort key for the plugin.  This allows the plugins to appear in a specific order.
+#
+#
+# << MISSING >>
+# Plugin:
+#
+# << MISSING >>
+# Groups:
+#
+# << MISSING >>
+# groups-enabled-help:
+# English text: Enables group support, allowing users to select users by groups.
+#
+#
+# << MISSING >>
+# Groups enabled:
+#
+# << MISSING >>
+# user-sees-his-group-help:
+# English text: If enabled, users will not see calendar users that are not in at least one of their groups.
+#
+#
+# << MISSING >>
+# User sees only his groups:
+#
+# << MISSING >>
+# Categories:
+#
+# << MISSING >>
+# categories-enabled-help:
+# English text: Enables support for event categories.
+#
+#
+# << MISSING >>
+# Categories enabled:
+Email: Sähköposti-ilmoitukset
+#
+# << MISSING >>
+# email-enabled-help:
+# English text: Turn on or off all sending of email for notification and reminders.  Set to "no", if your server is not properly setup to send mail.
+#
+#
+# << MISSING >>
+# Email enabled:
+#
+# << MISSING >>
+# email-default-sender:
+# English text: Specifies the email address to specify as the sender when sending out reminders.
+#
+#
+# << MISSING >>
+# Default sender address:
+#
+# << MISSING >>
+# Default user settings:
+email-event-reminders-help: Määrittelee lähetetäänkö tapahtumamuistutuksia vai ei
+Event reminders: Tapahtumamuistutukset
+email-event-added: Määrittelee lähetetäänkö sähköpostilla tiedote lisätyistä kalenterimerkinnöistä.
+Events added to my calendar: Kalenterimerkintöjä lisätty
+email-event-updated: Määrittelee lähetetäänkö sähköpostilla tiedote muutetuista kalenterimerkinnöistä.
+Events updated on my calendar: Kalenterimerkintöjä muutettu
+email-event-deleted: Määrittelee lähetetäänkö sähköpostilla tiedote poistetuista kalenterimerkinnöistä.
+Events removed from my calendar: Kalenterimerkintöjä poistettu
+email-event-rejected: Määrittelee lähetetäänkö sähköpostilla tiedote ryhmän jäsenten hylkäämistä kalenterimerkinnöistä.
+Event rejected by participant: Ryhmän jäsen hylkäsi tapahtuman
+colors-help: Kaikki värit määritellään koodaamalla ne heksadesimaalinumeroksi #RRGGBB-muotoon. (RR-punainen, GG-vihreä ja BB-sininen arvo (00-FF)). 
+Colors: Värit
+#
+# << MISSING >>
+# Allow user to customize colors:
+Document background: Sivun pohja
+Select: Valitse
+Document title: Sivun otsikko
+#
+# << MISSING >>
+# Document text:
+#
+# << MISSING >>
+# Table grid color:
+#
+# << MISSING >>
+# Table header background:
+#
+# << MISSING >>
+# Table header text:
+Table cell background: Taulukon tausta
+Table cell background for current day: Kuluvan päivän tausta
+#
+# << MISSING >>
+# Table cell background for weekends:
+#
+# << MISSING >>
+# Event popup background:
+#
+# << MISSING >>
+# Event popup text:
+
+
+###############################################
+# Page: activity_log.php
+#
+#
+# << MISSING >>
+# Activity Log:
+User: Käyttäjä
+#
+# << MISSING >>
+# Calendar:
+Date: Pvm
+Time: Klo
+#
+# << MISSING >>
+# Event:
+#
+# << MISSING >>
+# Action:
+#
+# << MISSING >>
+# Event created:
+#
+# << MISSING >>
+# Event approved:
+#
+# << MISSING >>
+# Event rejected:
+#
+# << MISSING >>
+# Event updated:
+#
+# << MISSING >>
+# Event deleted:
+#
+# << MISSING >>
+# Notification sent:
+#
+# << MISSING >>
+# Reminder sent:
+Database error: Tietokantavirhe
+#
+# << MISSING >>
+# Next:
+
+
+###############################################
+# Page: add_entry.php
+#
+Invalid entry id: Väärä tunnus
+This is a private event and may not be added to your calendar.: Tämä on henkilökohtainen merkintä, eikä sitä voi kopioida kalenteriisi.
+Error adding event: Virhe merkintää lisättäessä
+
+
+###############################################
+# Page: admin_handler.php
+#
+Error: Virhe
+The following error occurred: Tapahtui virhe
+
+
+###############################################
+# Page: approve_entry.php
+#
+Error approving event: Merkintää ei hyväksytty
+
+
+###############################################
+# Page: category.php
+#
+#
+# << MISSING >>
+# Add:
+#
+# << MISSING >>
+# Category Name:
+#
+# << MISSING >>
+# Global:
+Delete: Poista
+Are you sure you want to delete this entry?: Haluatko varmasti poistaa tämän merkinnän?
+#
+# << MISSING >>
+# Add New Category:
+
+
+###############################################
+# Page: category_handler.php
+#
+
+
+###############################################
+# Page: colors.php
+#
+
+
+###############################################
+# Page: datesel.php
+#
+#
+# << MISSING >>
+# Previous:
+
+
+###############################################
+# Page: day.php
+#
+#
+# << MISSING >>
+# Assistant mode:
+Generate printer-friendly version: Luo tulostusversio
+Printer Friendly: Tulostusversio
+
+
+###############################################
+# Page: del_entry.php
+#
+Hello: Hei
+An appointment has been canceled for you by: Kalenterimerkintä on poistettu -
+The subject was: Otsikko
+Notification: Muistutus
+
+
+###############################################
+# Page: del_layer.php
+#
+
+
+###############################################
+# Page: edit_entry.php
+#
+You have not entered a Brief Description: Selite puuttuu
+You have not entered a valid time of day: Kellonaika puuttuu
+The time you have entered begins before your preferred work hours.  Is this correct?: Alkuaika on ennen normaalin työajan alkua. Onko se oikein?
+Edit Entry: Muokkaa merkintää
+Add Entry: Lisää merkintä
+brief-description-help: Kalenterimerkinnän otsikko (noin 20 merkkiä). Näytetään kalenteritaulukossa.
+Brief Description: Selite
+full-description-help: Sisältää tapahtuman tiedot. Nämä näytetään kun käyttäjä katsoo kalenterimerkinnän tietoja.
+Full Description: Selitys
+date-help: Määrittelee tapahtuman päivämäärän.
+time-help: Määrittelee tapahtuman ajan. <BR><I>(Voidaan jättää tyhjäksi)</I>
+am: am
+pm: pm
+#
+# << MISSING >>
+# Untimed event:
+#
+# << MISSING >>
+# Timed event:
+#
+# << MISSING >>
+# All day event:
+duration-help: Määrittelee tapahtuman keston (tunteina ja minuutteina). <BR><I>(Voidaan jättää tyhjäksi)</I>
+Duration: Kesto
+hours: tuntia
+priority-help: Määrittelee tapahtuman prioriteetin. Tärkeimmät näytetään lihavoituna.
+Priority: Prioriteetti
+Low: Pieni
+Medium: Keskinkertainen
+High: Suuri
+access-help: Määrittelee tapahtuman näkyvyyden.<BR> <I>Julkinen</I>: Kaikki näkevät kaikki tapahtuman tiedot.  <BR><I>Luottamuksellinen</I>: Muut näkevät vain tapahtuman päivämäärän ja ajan, mutta ei muita tietoja.
+Access: Saantioikeus
+Public: Julkinen
+Confidential: Luottamuksellinen
+#
+# << MISSING >>
+# category-help:
+# English text: Specifies the category of the event.
+#
+#
+# << MISSING >>
+# Category:
+days: päivää
+before event: ennen
+participants-help: Luetteloi tapahtuman osanottajat.
+Participants: Ryhmän jäsenet
+#
+# << MISSING >>
+# external-participants-help:
+# English text: Specifies a list of participants for the event that are not calendar users.  The users should be listed one per line and can include an email address.  If an email address is specified, the user is eligible to receive notications and reminders.
+#
+#
+# << MISSING >>
+# External Participants:
+repeat-type-help: Valitaan kuinka usein tapahtuma toistetaan.<I>Kuukausittain (viikonpäivän mukaan)</I> mahdollistaa merkinnän toistamisen
+Repeat Type: Toiston tyyppi
+None: Ei mitään
+Daily: Päivittäin
+Weekly: Viikottain
+Monthly: Kuukausittainen
+by day: viikonpäivän mukaan
+by date: päivän mukaan
+Yearly: Vuosittain
+repeat-end-date-help: Määrittelee päivämäärän mihin asti tapahtumaa toistetaan.
+Repeat End Date: Toiston lopetuspäivä
+Use end date: Käytä lopetuspäivää
+repeat-day-help: Määrittelee viikonpäivä, joina tapahtumaa toistetaan. Käytettävissä vain kun <I>Toistotyypiksi</I> on asetettu <I>Viikottain</I>.
+Repeat Day: Toista viikonpäivittäin
+for weekly: viikottain
+Tuesday: Tiistai
+Wednesday: Keskiviikko
+Thursday: Torstai
+Friday: Perjantai
+Saturday: Lauantai
+repeat-frequency-help: Määrittelee tapahtuman toistotiheyden. Oletusarvo 1 tarkoittaa toistoa joka kerta, 2 joka toinen kerta (esim. joka toinen viikko tai kuukausi), jne.
+Frequency: Tiheys
+Delete entry: Poista merkintä
+You are not authorized to edit this entry: Sinulla ei ole oikeutta muokata tätä merkintää
+
+
+###############################################
+# Page: edit_entry_handler.php
+#
+The following conflicts with the suggested time: Ehdotettuna aikana on seuraavat muut merkinnät
+Unnamed Event: Nimetön merkintä
+#
+# << MISSING >>
+# The description is:
+Title: WebCalendar
+A new appointment has been made for you by: Sinulle on lisätty uusi kalenterimerkintä - 
+An appointment has been updated by: Kalenterimerkintää on muutettu -
+The subject is: Otsikko
+Please look on: Tarkista
+to accept or reject this appointment: ja hyväksy tai hylkää merkintä
+to view this appointment: tarkista kalenterimerkintä
+Scheduling Conflict: Aikataulussa ristiriita
+Your suggested time of: Ehdottamasi aika
+conflicts with the following existing calendar entries: on ristiriidassa seuraavien merkintöjen kanssa
+Cancel: Kumoa
+
+
+###############################################
+# Page: edit_layer.php
+#
+Invalid color: Virheellinen värikoodi
+Edit Layer: Muokattava taso
+Add Layer: Lisää taso
+Source: Lähde
+Color: Väri
+Duplicates: Päällekkäisiä
+Show layer events that are the same as your own: Näytä kaikki tason tapahtumat, jotka ovat samoja kuin omat
+Are you sure you want to delete this layer?: Haluatko poistaa tämän tason?
+Delete layer: Poista taso
+
+
+###############################################
+# Page: edit_layer_handler.php
+#
+#
+# << MISSING >>
+# You cannot create a layer for yourself:
+#
+# << MISSING >>
+# You can only create one layer for each user:
+
+
+###############################################
+# Page: edit_user.php
+#
+Edit User: Muokkaa käyttäjäntietoja
+Add User: Lisää käyttäjä
+Username: Käyttäjätunnus
+First Name: Etunimi
+Last Name: Sukunimi
+E-mail address: Sähköposti
+Password: Salasana
+again: uudestaan
+Admin: Ylläpito
+Disabled for demo: Toiminto ei käytössä (demoversio)
+Change Password: Vaihda salasana
+New Password: Uusi salasana
+Set Password: Aseta salasana
+
+
+###############################################
+# Page: edit_user_handler.php
+#
+#
+# << MISSING >>
+# Deleting users not supported:
+The passwords were not identical: Salasanat eivät vastaa toisiaan
+You have not entered a password: salasanaa ei ole syötetty
+
+
+###############################################
+# Page: export.php
+#
+Export: Talleta
+Export format: Talletusmuoto
+Palm Pilot: Palm Pilot
+Export all dates: Talleta kaikki päiväysmerkinnät
+Start date: Alkupäivä
+End date: Lopetustuspäivä
+Modified since: Viimeksi muokattu
+
+
+###############################################
+# Page: export_handler.php
+#
+
+
+###############################################
+# Page: group_edit.php
+#
+#
+# << MISSING >>
+# Unnamed Group:
+#
+# << MISSING >>
+# Add Group:
+#
+# << MISSING >>
+# Edit Group:
+#
+# << MISSING >>
+# Group name:
+Updated: Päivittänyt
+Created by: Luonut
+Users: Käyttäjät
+
+
+###############################################
+# Page: group_edit_handler.php
+#
+#
+# << MISSING >>
+# You must specify a group name:
+
+
+###############################################
+# Page: groups.php
+#
+#
+# << MISSING >>
+# Add New Group:
+
+
+###############################################
+# Page: help_admin.php
+#
+
+
+###############################################
+# Page: pref.php
+#
+Preferences: Asetukset
+#
+# << MISSING >>
+# to modify the preferences for the Public Access calendar:
+#
+# << MISSING >>
+# tz-help:
+# English text: Specifies how many hours to adjust the time from server time to local time.
+#
+#
+# << MISSING >>
+# Timezone Offset:
+#
+# << MISSING >>
+# Add N hours to:
+#
+# << MISSING >>
+# Subtract N hours from:
+#
+# << MISSING >>
+# same as:
+#
+# << MISSING >>
+# server time:
+#
+# << MISSING >>
+# Default Category:
+Sun: Su
+Mon: Ma
+Tue: Ti
+Wed: Ke
+Thu: To
+Fri: Pe
+Sat: La
+Save Preferences: Talleta asetukset
+
+
+###############################################
+# Page: help_bug.php
+#
+#
+# << MISSING >>
+# Report Bug:
+
+
+###############################################
+# Page: help_edit_entry.php
+#
+Adding/Editing Calendar Entries: Lisää/Muuta kalenterimerkintöjä
+
+
+###############################################
+# Page: help_index.php
+#
+Help Index: Ohjehakemisto
+Layers: Tasoja
+
+
+###############################################
+# Page: help_layers.php
+#
+#
+# << MISSING >>
+# Layers are useful for displaying other users' events in your own calendar.  You can specifiy the user and the color the events will be displayed in.:
+#
+# << MISSING >>
+# Add/Edit/Delete:
+#
+# << MISSING >>
+# Clicking the Edit Layers link in the admin section at the bottom of the page will allow you to add/edit/delete layers.:
+#
+# << MISSING >>
+# Specifies the user that you would like to see displayed in your calendar.:
+#
+# << MISSING >>
+# The text color of the new layer that will be displayed in your calendar.:
+#
+# << MISSING >>
+# If checked, events that are duplicates of your events will be shown.:
+#
+# << MISSING >>
+# Disabling:
+#
+# << MISSING >>
+# Press the Disable Layers link in the admin section at the bottom of the page to turn off layers.:
+#
+# << MISSING >>
+# Enabling:
+#
+# << MISSING >>
+# Press the Enable Layers link in the admin section at the bottom of the page to turn on layers.:
+
+
+###############################################
+# Page: help_pref.php
+#
+#
+# << MISSING >>
+# default-category-help:
+# English text: Specifies the category a new event should default to.
+#
+
+
+###############################################
+# Page: week.php
+#
+#
+# << MISSING >>
+# cont.:
+
+
+###############################################
+# Page: index.php
+#
+
+
+###############################################
+# Page: layers.php
+#
+#
+# << MISSING >>
+# to modify the layers settings for the:
+Layers are currently: Tasot ovat
+Enabled: Käytössä
+Disabled: Poistettu käytöstä
+Disable Layers: Poista tasot käytöstä
+Enable Layers: Ota tasot käyttöön
+Layer: Taso
+Edit layer: Muokkaa tasoa
+Add layer: Lisättävä taso
+
+
+###############################################
+# Page: layers_toggle.php
+#
+
+
+###############################################
+# Page: list_unapproved.php
+#
+View this entry: Näytä merkintä
+Approve this entry?: Hyväksytäänkö merkintä?
+Approve/Confirm: Hyväksy/Vahvista
+Reject this entry?: Hylätäänkö merkintä?
+Reject: Hylkää
+#
+# << MISSING >>
+# No unapproved events for:
+Unapproved Events: Hyväksymättömät tapahtumat
+#
+# << MISSING >>
+# Public Access:
+
+
+###############################################
+# Page: login.php
+#
+You must enter a login and password: Syötä käyttäjätunnus ja salasana
+Save login via cookies so I don't have to login next time: Talleta kirjautuminen evästeeseen
+Login: Kirjoittaudu
+#
+# << MISSING >>
+# Access public calendar:
+cookies-note: <B>Huom:</B> Tätä sovellusta käytettäessä piparien pitää olla käytössä.
+
+
+###############################################
+# Page: view_v.php
+#
+
+
+###############################################
+# Page: month.php
+#
+
+
+###############################################
+# Page: pref_handler.php
+#
+
+
+###############################################
+# Page: reject_entry.php
+#
+An appointment has been rejected by: Kalenterimerkintä on hylätty
+
+
+###############################################
+# Page: search.php
+#
+Search: Etsi
+#
+# << MISSING >>
+# Advanced Search:
+Keywords: Hakusanat
+
+
+###############################################
+# Page: search_handler.php
+#
+You must enter one or more search keywords: Syötä yksi tai useampi hakusana
+Search Results: Haun tulokset
+match found: kohde löytyi
+matches found: kohdetta löytyi
+No matches found: Kohteita ei löytynyt
+
+
+###############################################
+# Page: select_user.php
+#
+View Another User's Calendar: Näytä toisen käyttäjän kalenteri
+Go: Mene
+
+
+###############################################
+# Page: set_entry_cat.php
+#
+#
+# << MISSING >>
+# You have not added any categories:
+#
+# << MISSING >>
+# Set Category:
+
+
+###############################################
+# Page: users.php
+#
+denotes administrative user: tarvitaan pääkäyttäjän oikeudet
+Add New User: Lisää uusi käyttäjä
+
+
+###############################################
+# Page: usersel.php
+#
+#
+# << MISSING >>
+# All:
+#
+# << MISSING >>
+# Reset:
+#
+# << MISSING >>
+# Remove:
+#
+# << MISSING >>
+# Ok:
+
+
+###############################################
+# Page: view_entry.php
+#
+every: joka
+1st: 1.
+2nd: 2.
+3rd: 3.
+4th: 4.
+5th: 5.
+Description: Kuvaus
+#
+# << MISSING >>
+# Status:
+#
+# << MISSING >>
+# Waiting for approval:
+#
+# << MISSING >>
+# Deleted:
+Rejected: Hylätty
+#
+# << MISSING >>
+# External User:
+Approve/Confirm entry: Hyväksy/Vahvista merkintä
+Reject entry: Hylkää merkintä
+#
+# << MISSING >>
+# Set category:
+#
+# << MISSING >>
+# Edit repeating entry for all dates:
+#
+# << MISSING >>
+# Edit entry for this date:
+This will delete this entry for all users.: Tämä merkintä poistetaan kaikilta käyttäjiltä.
+#
+# << MISSING >>
+# Delete repeating event for all dates:
+#
+# << MISSING >>
+# Delete entry only for this date:
+Edit entry: Muokkaa merkintää
+This will delete the entry from your calendar.: Poistetaan merkintä kalenteristasi.
+Do you want to add this entry to your calendar?: Haluatko lisätä tämän merkinnän kalenteriisi?
+This will add the entry to your calendar.: Lisätään merkintä kalenteriisi.
+Add to My Calendar: Lisää kalenteriin
+#
+# << MISSING >>
+# Email all participants:
+#
+# << MISSING >>
+# Show activity log:
+#
+# << MISSING >>
+# Hide activity log:
+
+
+###############################################
+# Page: view_m.php
+#
+
+
+###############################################
+# Page: view_w.php
+#
+
+
+###############################################
+# Page: views.php
+#
+#
+# << MISSING >>
+# Views:
+#
+# << MISSING >>
+# Add New View:
+
+
+###############################################
+# Page: views_edit.php
+#
+#
+# << MISSING >>
+# Unnamed View:
+#
+# << MISSING >>
+# Add View:
+#
+# << MISSING >>
+# Edit View:
+#
+# << MISSING >>
+# View Name:
+#
+# << MISSING >>
+# View Type:
+
+
+###############################################
+# Page: views_edit_handler.php
+#
+#
+# << MISSING >>
+# You must specify a view name:
+
+
+###############################################
+# Page: week_details.php
+#
+New Entry: Uusi merkitä
+Private: Yksityinen
+
+
+###############################################
+# Page: week_ssi.php
+#
+
+
+###############################################
+# Page: year.php
+#
+
+
+###############################################
+# Page: assistant_edit.php
+#
+#
+# << MISSING >>
+# Yours assistants:
+#
+# << MISSING >>
+# Assistants:
+
+
+###############################################
+# Page: assistant_edit_handler.php
+#
+
+
+###############################################
+# Page: purge.php
+#
+
+
+###############################################
+# Page: includes/trailer.php
+#
+Go to: Siirry
+Back to My Calendar: Palaa kalenterisivulle
+My Calendar: Kalenteri
+Logout: Lopeta
+Another User's Calendar: Toisen käyttäjän kalenteri
+Add New Entry: Lisää uusi merkintä
+#
+# << MISSING >>
+# Manage Views:
+Edit Layers: Muokkaa tasoja
+Account: Käyttäjän tiedot
+Current User: Käyttäjä
+#
+# << MISSING >>
+# Manage calendar of:
+
+
+###############################################
+# Page: includes/connect.php
+#
+
+
+###############################################
+# Page: includes/functions.php
+#
+This event is confidential: Luottamuksellinen merkintä
+#
+# << MISSING >>
+# exceeds limit of XXX events per day:
+#
+# << MISSING >>
+# You have XXX unapproved events:
+January: Tammikuu
+February: Helmikuu
+March: Maaliskuu
+April: Huhtikuu
+May_: Toukokuu
+June: Kesäkuu
+July: Heinäkuu
+August: Elokuu
+September: Syyskuu
+October: Lokakuu
+November: Marraskuu
+Jan: Tammi
+Feb: Helmi
+Mar: Maalis
+Apr: Huhti
+May: Touko
+Jun: Kesä
+Jul: Heinä
+Aug: Elo
+Sep: Syys
+Oct: Loka
+Nov: Marras
+Dec: Joulu
+
+
+###############################################
+# Page: includes/user.php
+#
+Invalid login: Kirjoittauminen järjestelmään ei onnistunut
+#
+# << MISSING >>
+# Invalid user login:
+
+
+###############################################
+# Page: includes/site_extras.php
+#
+Send Reminder: Lähetä muistutus
+
+
+###############################################
+# Page: includes/translate.php
+#
+
+
+###############################################
+# Page: includes/validate.php
+#
+
+
+###############################################
+# Page: includes/user-ldap.php
+#
+
+
+###############################################
+# Page: includes/user-nis.php
+#
+
+
+###############################################
+# Page: includes/help_trailer.php
+#
+
+
+###############################################
+# Page: includes/config.php
+#
+
+
+###############################################
+# Page: includes/index.php
+#
+
+
+###############################################
+# Page: includes/js.php
+#
+
+
+###############################################
+# Page: includes/php-dbi.php
+#
+
+
+###############################################
+# Page: includes/styles.php
+#
+
+
+###############################################
+# Page: includes/dbtable.php
+#
+
+
+###############################################
+# Page: tools/send_reminders.php
+#
+This is a reminder for the event detailed below.: Muistutus alla esitetystä tapahtumasta.
+Reminder: Muistutus

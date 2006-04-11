@@ -1,0 +1,1545 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="virtwhitepaper.xml" id="virtwhitepaper">
+	<title>White Paper</title>
+	<abstract>
+<para>The OpenLink Virtuoso white paper.  Universal Data Access Without Boundaries&#153;</para>
+
+<para>Prepared By: Kingsley Idehen, President &amp; CEO OpenLink Software</para>
+</abstract>
+	<!-- ======================================== -->
+	<sect1 id="vwpneed4vdb">
+		<title>The Need For Virtual Database Engines</title>
+		<sect2 id="vwpsitanal">
+			<title>Situation Analysis</title>
+			<para>As computer hardware, network protocols,
+    database engines, applications, application servers, and desktop productivity tools,
+    proliferate the enterprise, integration of disparate applications from disparate vendors
+    is becoming an all too common problem. </para>
+			<para>Add the emergence of standards based Distributed Computing galvanized by the Internet
+    infrastructure and associated Internet protocols to this picture, and the need for
+    Integration is even higher.</para>
+			<para>Increasing the industry at large is looking to a new technology deliverable known as
+    Universal Data Access Middleware to address these systems integration pains. </para>
+			<para>&quot;With Universal Data Access (UDA), customers receive all of the benefits of a
+    high-level and consistent Application Programming Interface (API) that abstracts all the
+    database complexities while providing a capability that can be specified, controlled, and
+    managed on its own to optimize the near universal need of programs for data access&quot;. </para>
+			<para>
+				<emphasis>Source IDC, 1998 Middleware Markets &amp; Trends </emphasis>
+			</para>
+			<para>At OpenLink Software, it is our opinion that a new genre of UDA middleware called the
+    &quot;Virtual Database&quot;, is set to emerge as the dominant UDA middleware solution for
+    addressing the integration challenges as they exist today, and tomorrow. This new UDA
+    middleware format plays the role of a Universal Data Access manager, fusing traditional
+    database functionality and traditional data access middleware functionality into a single
+    independent packaged software solution.</para>
+		</sect2>
+		<!-- ###################################################### -->
+		<sect2 id="vdbedef">
+			<title>Virtual Database Engines Defined</title>
+			<para>A Virtual Database (VDB) Engine is a UDA middleware
+    format that transparently brings local and or remote heterogeneous databases together
+    using logical database references called Data Source Names (DSN&apos;s). A VDB Engine exposes
+    Metadata and Data held within these heterogeneous DSN&apos;s to clients applications and
+    services homogeneously. </para>
+			<para>VDB Engines presume the existence of a number of Database Engines and Data Access
+    Drivers provided by a variety of database vendors within an organization. VDB Engines
+    provide transparent access to these heterogeneous databases via DSN&apos;s associated with the
+    relevant data access drivers without exposing end-users or developers to the intricacies
+    of heterogeneous data access.</para>
+		</sect2>
+		<sect2 id="dsns">
+			<title>Data Source Names (DSN&apos;s)</title>
+			<para>A Data Source Name is a logical reference that
+    exposes database to standards compliant or native data access drivers. DSN&apos;s provide a
+    flexible naming and binding service for database driven applications developers and
+    end-users alike. Applications no longer need to be inextricably linked to specific
+    database names or specific database engines.</para>
+		</sect2>
+		<!-- ###################################################### -->
+		<figure id="imagewp01" float="1">
+			<title>Distributed Computing Infrastructure Incorporating A Virtual Database Engine</title>
+			<graphic fileref="wpImage18.gif" width="782px" depth="539px"/>
+		</figure>
+	</sect1>
+	<!-- ###################################################### -->
+	<sect1 id="vwpfirstvdbps">
+		<title>First Generation Virtual Database Products</title>
+		<para>Although the strict VDB definition may be new,
+    there are a number of products that have been around for a while that attempt to address
+    VDB issues. The list of such products includes The Microsoft JET Engine, Borland Database
+    Engine (BDE), and IBM DataJoiner.</para>
+		<sect2 id="msjet">
+			<title>Microsoft JET</title>
+			<para>The Microsoft JET Engine lies at the heart of
+    Microsoft Access, it is the piece of technology that allows you to link external and
+    typically remote database tables into your local Access space via ODBC Data Sources. Once
+    this link process has been completed, Access allows you to build Queries, Reports, Forms
+    etc. using these external database tables as though they were Local Access tables. JET can
+    also link to external tables hosted within desktop database engines via native interfaces.</para>
+			<para>The Microsoft JET Engine services are exposed via Microsoft provided data access
+    interfaces such as: DAO, ADO, and OLE-DB. These interfaces are integral parts of most
+    Microsoft applications, thereby exposing the benefits of the JET VDB transparently.</para>
+		</sect2>
+		<sect2 id="borlandbde">
+			<title>Borland Database Engine</title>
+			<para>The Borland Database Engine (BDE) from Inprise
+    like the Microsoft JET Engine also facilitates external table linkage via ODBC Data
+    Sources. The BDE also lets you link to external database tables via native database
+    interfaces and there is no restriction to desktop database engines when you adopt this
+    approach.</para>
+			<para>Although the BDE has a published set of APIs, it is predominantly used by Inprise
+    applications in very much the same way JET is used by Microsoft applications.</para>
+		</sect2>
+		<sect2 id="ibmdj">
+			<title>IBM DataJoiner</title>
+			<para>DataJoiner from IBM provides the ability
+    access heterogeneous data sources via IBM DB/2 Client Application Enablers. It does
+    support ODBC and JDBC as client interfaces and makes use of Native or ODBC based data
+    access for external Data I/O.</para>
+		</sect2>
+	</sect1>
+	<!-- ###################################################### -->
+	<sect1 id="vdbimpliss">
+		<title>VDB Implementation Issues</title>
+		<para>The essential components that affect the
+    implementation of VDB Engines are, High-Level Data Access Interfaces, Low-Level Data
+    Access Interfaces and Traditional Database Functionality.
+</para>
+		<sect2 id="hilevdai">
+			<title>High-Level Data Access Interfaces</title>
+			<para>A VDB Engine&apos;s capabilities are exposed via High
+    Level Data Access interfaces. For the purpose of this document, a high level data access
+    interface is an interface utilized predominantly by applications, as opposed to middleware
+    developers for achieving application database independence. A high level data access
+    interface sits atop Low-Level data access interfaces, providing an abstraction layer that
+    serves to simplifying the process of database independent application development.</para>
+			<para>A number of High Level Data Access standards exist today, the more prevalent being:</para>
+			<simplelist>
+				<member>
+					<ulink url="http://www.microsoft.com/vbasic/techmat/whitepapers/ado20/">Data Access Objects (DAO)</ulink>
+				</member>
+				<member>
+					<ulink url="http://www.microsoft.com/vbasic/techmat/whitepapers/ado20/">Remote Data Objects (RDO)</ulink>
+				</member>
+				<member>
+					<ulink url="http://www.microsoft.com/data/ado/">ActiveX Data Objects (ADO)</ulink>
+				</member>
+				<member>
+					<ulink url="http://www.microsoft.com/data/oledb/">OLE-DB</ulink>
+				</member>
+				<member>
+					<ulink url="http://java.sun.com/products/java-blend/index.html">JavaBlend</ulink>
+				</member>
+				<member>
+					<ulink url="http://java.sun.com/beans/infobus/index.html">InfoBus</ulink>
+				</member>
+			</simplelist>
+			<para>It is important to note that low-level Data access interfaces such as ODBC, UDBC, JDBC
+    and OLE-DB transparently serve the high-level interfaces mentioned in the section above.
+    Thus, in most cases VDB vendors will treat ODBC, UDBC, JDBC, and OLE-DB as high-level
+    interfaces by providing VDB data access drivers conforming to these standards as part of
+    the VDB deliverable.</para>
+		</sect2>
+		<sect2 id="ibmdj">
+			<title>Low-Level Data Access Interfaces</title>
+			<para>A VDB Engine&apos;s data I/O occurs via
+    low-level data access interfaces to underlying database engines or data sources. In recent
+    times the Open Database Connectivity (<ulink url="http://www.microsoft.com/data/">ODBC</ulink>)
+    API and the X/Open <ulink url="http://www.jcc.com/sql_stnd.html">SQL</ulink> Call Level Interface
+    (CLI) have emerged as the dominant industry wide Low-Level Data Access Standards. OLE-DB
+    from Microsoft is also emerging as a new low-level data access standard for relational and
+    non-relational data in the Microsoft Component Object Model (COM) world. While JDBC is
+    emerging like wise as the low-level data access standard for the burgeoning Java world.</para>
+			<para>A VDB may also be a Native Database Interface Client, making use of database engine
+    vendor provided data access interfaces. Native interfaces are based upon Embedded SQL, an
+    older format Low-Level data access interface that preceded the X/Open SQL CLI. It is
+    important to note that ODBC from Microsoft, JDBC from JavaSoft, and UDBC from OpenLink
+    Software are all derived from the X/Open SQL CLI.</para>
+		</sect2>
+		<sect2 id="ibmdj">
+			<title>Traditional Database Functionality</title>
+			<para>The degree to which a VDB implements a traditional
+    database engine&apos;s functionality has a direct bearing on the intrinsic value of a VDB
+    engine. Traditional database functionality is extensive, but for the purposes of this
+    document, a core set of functionality common to all commercial database engines has been
+    assembled. The functionality list includes:</para>
+			<formalpara>
+				<title>Query Language Support</title>
+				<para>standard syntax for interrogating, manipulating,
+    describing, and securing data contained within a database. Examples include the Structured
+    Query Language (SQL) for relational databases and the Object Query Language (OQL) for
+    Object and Object-Relational Databases.</para>
+			</formalpara>
+			<formalpara>
+				<title>Query Processor</title>
+				<para>the mechanism used by a database engine to convert Query
+    Language Statements into actual data retrieval instructions. In addition, this database
+    component is responsible for ensuring Query Language syntax conformance, Query Execution
+    Plan Assembly and Query Fulfillment. </para>
+			</formalpara>
+			<formalpara>
+				<title>Standard Data Types Support</title>
+				<para>data contained within a database must be
+    describable using standard data types e.g. Character, Number, Date, etc.</para>
+			</formalpara>
+			<formalpara>
+				<title>VIEW Support</title>
+				<para>pre constructed query statements stored within a database,
+    for the purpose of query simplification, or content and structural security.</para>
+			</formalpara>
+			<formalpara>
+				<title>Stored Procedure Support</title>
+				<para>Stored Procedures facilitate the embedding of
+    application programming logic within a database. Their pre-compiled nature enhances data
+    access performance by reducing message hops between database servers and database clients.</para>
+			</formalpara>
+			<formalpara>
+				<title>Scrollable Cursor Support</title>
+				<para>the process by which the result of a database
+    query (known as a result-set) is traversed. Traversal occurs in either direction,
+    backwards or forwards, using result-set chunks (known as row-sets). Resultset scrolling
+    occurs when database engines exchange data with database clients.</para>
+			</formalpara>
+			<formalpara>
+				<title>Concurrency Control</title>
+				<para>the process through which a database engine supports
+    multiple sessions running concurrently, across multiple database users and database client
+    applications without compromising underlying data integrity or introducing quantum
+    increases in application response times.</para>
+			</formalpara>
+			<formalpara>
+				<title>Transaction Support</title>
+				<para>ensures that database instructions can be grouped into
+    logical units of execution that are Atomic, Consistent, Isolated from the effect of other
+    units of execution affecting the same underlying data, and Durable.</para>
+			</formalpara>
+			<formalpara>
+				<title>Transaction Isolation</title>
+				<para>describes the ability of a database engine to provide
+    transaction process partitioning options called Isolation Levels, that offer different
+    ways of managing the effects of multiple and concurrent transactions affecting the same
+    underlying data.</para>
+			</formalpara>
+			<formalpara>
+				<title>Distributed Transaction Support</title>
+				<para>describes the ability to preserve
+    transaction atomicity, consistency, integrity, and durability across database servers
+    hosted on the same or different database server machines within a networked environment.
+    This involves supporting transaction Commits and Rollbacks using a 2-phase commit
+    protocol.</para>
+			</formalpara>
+			<formalpara>
+				<title>User Definable Type Support</title>
+				<para>this is how a database engine allows
+    end-users extend its base functionality. This is achieved by providing interfaces that
+    allow end-users create new ways in which a database engine&apos;s data is described and
+    manipulated.</para>
+			</formalpara>
+			<formalpara>
+				<title>Federated Database Support</title>
+				<para>data access and manipulation across database
+    servers resident on the same machine.</para>
+			</formalpara>
+			<formalpara>
+				<title>Distributed Database Support</title>
+				<para>data access, and manipulation across database
+    servers resident on the different machines within a networked environment.</para>
+			</formalpara>
+			<formalpara>
+				<title>Security</title>
+				<para>the process by which data, and data transmission is protected
+    using a combination of database and operating system privileges, roles and roles
+    hierarchies. It also includes the ability of a database engine to protect data transmitted
+    to its clients using data encryption.</para>
+			</formalpara>
+		</sect2>
+	</sect1>
+	<!-- ###################################################### -->
+	<sect1 id="vdbcomponents">
+		<title>Virtual Database Engine Components</title>
+		<para>The prior section outlined the critical implementation
+    issues that affect the development and implementation of VDB Engines. These issues form
+    the basis around which a component based framework for depicting VDB architectures has
+    been derived. </para>
+		<para>The components that comprise a VDB Engine framework are as follows:</para>
+		<sect2 id="dadrvr">
+			<title>Data Access Drivers</title>
+			<para>The VDB component that forms the entry point
+    to the VDB Engine&apos;s services, these drivers may or may not conform to industry
+    standards. Applications and Services that sit atop a VDB Engine must have their data
+    access layers written to the same Application Programming Interfaces (APIs) implemented by
+    the Data Access Drivers provided by a VDB engine.</para>
+		</sect2>
+		<sect2 id="secman">
+			<title>Security Manager</title>
+			<para>The VDB component that is responsible for
+    protecting data and data transmission (using encryption) within the VDB Engine&apos;s
+    domain. It is also responsible for managing Application, User, Group, Role and Domain
+    privileges as they relate to the creation, manipulation and destruction of VDB data and
+    metadata.</para>
+		</sect2>
+		<sect2 id="qrymangr">
+			<title>Query Manager</title>
+			<para>The VDB component that handles queries
+    presented to it by the VDB Engine&apos;s data access drivers. It provides query syntax
+    checking, query execution plan compilation, and query fulfillment services. A query
+    processor is built in conformance to one or more query language specifications, the most
+    notable being the Structured Query Language (SQL) for relational database engines, and the
+    Object Query Language (OQL) for Object-Relational and Object Database engines.</para>
+		</sect2>
+		<sect2 id="metadmngr">
+			<title>Meta Data Manager</title>
+			<para>The VDB component that provides the Query
+    Processor with information about the data entities from which the Query Processor&apos;s
+    execution plan is derived. Metadata managers are also the components responsible for
+    linking external data sources into the VDB domain and directing the Query Processor to the
+    appropriate Data I/O manager. </para>
+		</sect2>
+		<sect2 id="tranmgr">
+			<title>Transaction Manager</title>
+			<para>The Transaction Manager component ensures that
+    transactions are Atomic (clearly distinguishable units), Consistent (thereby preserving
+    integrity of data), Isolated from the effect of other transactions, and Durable (such that
+    the effects of committed transactions survive failure). The Transaction Manager ensures
+    VDB Engines are capable of supporting Online Transaction Processing (OLTP) and Distributed
+    Transaction oriented applications and services. Transaction Managers may be standards
+    based implementing X/Open&apos;s XA Resource Manager Specifications. Distributed
+    transaction support is implemented by using a two-phase commit protocol.</para>
+		</sect2>
+		<sect2 id="concmngr">
+			<title>Concurrency Manager</title>
+			<para>The VDB component that ensures client applications and
+    services are capable of opening multiple concurrent sessions that execute data INSERTS,
+    UPDATES and DELETIONS, without implicitly reducing application response times or
+    compromising data integrity. Concurrency control is delivered in one of two formats,
+    Optimistic or Pessimistic depending on the response times desired by VDB client
+    applications or services.</para>
+		</sect2>
+		<sect2 id="localiomngr">
+			<title>Local Data I/O Manager</title>
+			<para>VDB Engine&apos;s that provide local data
+    storage uses this component for reading and writing data to disk. This is how a VDB
+    provides traditional database engine data storage services. </para>
+		</sect2>
+		<sect2 id="extiomngr">
+			<title>External Data I/O Manager</title>
+			<para>VDB component that handles data reads and
+    writes to external data sources. The External Data I/O Manager be implemented using
+    standard data access interfaces such as ODBC, JDBC, UDBC, OLE-DB or Native data source
+    interfaces. </para>
+		</sect2>
+		<sect2 id="rplmgr">
+			<title>Replication Manager</title>
+			<para>Component that manages data migration and
+    synchronization across two or more VDB servers within a distributed computing environment.
+    This component acts as a data coordinator between the activities of Local Data I/O and
+    External Data I/O Managers across VDB servers. The Replication Manager enables a VDB
+    Engine offer automated bi-directional data, and metadata transformation services across
+    heterogeneous data sources without end-user or developer intervention.</para>
+			<figure id="imagewp02" float="1">
+				<title>Virtual Database Engine Architecture &amp; Components</title>
+				<graphic fileref="wpImage19.gif" width="563px" depth="468px"/>
+			</figure>
+			<!-- ###################################################### -->
+		</sect2>
+		<sect2 id="vdbimplappro">
+			<title>VDB Implementation Approaches</title>
+			<para>There are no golden VDB implementation specifications,
+    but the implementation of a VDB has a direct impact the degree to which you realize
+    desired value from the VDB concept as a whole. </para>
+			<para>The VDB value proposition is simply stated as follows: </para>
+			<para>&quot;To provide transparent access to heterogeneous data sources, independent of host
+        operating system and underlying database engines &quot;.</para>
+			<para>VDB implementations can be categorized as follows:</para>
+			<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+				<title>VDB Implementation Categories</title>
+				<tgroup align="char" charoff="50" char="." cols="4">
+					<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+					<thead>
+						<row>
+							<entry/>
+							<entry>VDB Data Access Interface</entry>
+							<entry>VDB External Data I/O</entry>
+							<entry>Traditional Database Functionality</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>Type 1</entry>
+							<entry>Native</entry>
+							<entry>Native</entry>
+							<entry>Partial</entry>
+						</row>
+						<row>
+							<entry>Type 2</entry>
+							<entry>Native</entry>
+							<entry>Native</entry>
+							<entry>Full</entry>
+						</row>
+						<row>
+							<entry>Type 3</entry>
+							<entry>Native</entry>
+							<entry>Standards Based</entry>
+							<entry>Partial</entry>
+						</row>
+						<row>
+							<entry>Type 4</entry>
+							<entry>Native</entry>
+							<entry>Standards Based</entry>
+							<entry>Full</entry>
+						</row>
+						<row>
+							<entry>Type 5</entry>
+							<entry>Standards Based</entry>
+							<entry>Native</entry>
+							<entry>Partial</entry>
+						</row>
+						<row>
+							<entry>Type 6</entry>
+							<entry>Standards Based</entry>
+							<entry>Native</entry>
+							<entry>Full</entry>
+						</row>
+						<row>
+							<entry>Type 7</entry>
+							<entry>Standards Based</entry>
+							<entry>Standards Based</entry>
+							<entry>Partial</entry>
+						</row>
+						<row>
+							<entry>Type 8</entry>
+							<entry>Standards Based</entry>
+							<entry>Standards Based</entry>
+							<entry>Full</entry>
+						</row>
+						<row>
+							<entry>Type 9</entry>
+							<entry>Standards Based</entry>
+							<entry>Standards Based or Native</entry>
+							<entry>Partial</entry>
+						</row>
+						<row>
+							<entry>Type 10</entry>
+							<entry>Standards Based</entry>
+							<entry>Standards Based or Native</entry>
+							<entry>Full</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+			<para>The sections that follow provide illustrations of the
+    different VDB formats, depicting the components that provide the basis for the
+    categorization used in the table above.</para>
+			<!-- ###################################################### -->
+			<sect3 id="t1vdbngin">
+				<title>Type 1 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via Native and Proprietary
+    high-level data access interfaces. Data I/O is achieved via native, proprietary, and data
+    source specific low-level data access interfaces. This category of VDB does not possess a
+    complete set of traditional database engine components.</para>
+				<figure id="imagewp03" float="1">
+					<title>Type 1 VDB Engine Architecture</title>
+					<graphic fileref="wpImage20.gif" width="596px" depth="494px"/>
+				</figure>
+			</sect3>
+			<sect3 id="t2vdbngin">
+				<title>Type 2 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via Native and Proprietary
+    high-level data access interfaces. External data I/O is achieved via native, proprietary,
+    and data source specific low-level data access interfaces. This category of VDB possesses
+    a complete set of traditional database engine components.</para>
+				<!-- ###################################################### -->
+				<figure id="imagewp04" float="1">
+					<title>Type 2 VDB Engine Architecture</title>
+					<graphic fileref="wpImage21.gif" width="597px" depth="494px"/>
+				</figure>
+			</sect3>
+			<sect3 id="t3vdbngin">
+				<title>Type 3 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via Native and Proprietary
+    high-level data access interfaces. Data I/O is achieved via Open, Standards based, and
+    Database Independent low-level data access interfaces. This category of VDB does not
+    possess a complete set of traditional database engine components.</para>
+				<!-- ###################################################### -->
+				<figure id="imagewp05" float="1">
+					<title>Type 3 VDB Engine Architecture</title>
+					<graphic fileref="wpImage22.gif" width="596px" depth="494px"/>
+				</figure>
+			</sect3>
+			<sect3 id="t4vdbngin">
+				<title>Type 4 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via Native and Proprietary
+    high-level data access interfaces. External data I/O is achieved via Open, Standards
+    based, and Database Independent low-level data access interfaces. This category of VDB
+    possesses a complete set of traditional database engine components.</para>
+				<!-- ###################################################### -->
+				<figure id="imagewp06" float="1">
+					<title>Type 4 VDB Architecture</title>
+					<graphic fileref="wpImage23.gif" width="574px" depth="468px"/>
+				</figure>
+			</sect3>
+			<sect3 id="t5vdbngin">
+				<title>Type 5 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via open and standards based
+    high-level data access Interfaces. Data I/O is achieved via native, proprietary, and data
+    source specific low-level interfaces. This category of VDB does not possess a complete set
+    of traditional database engine components.</para>
+				<figure id="imagewp07" float="1">
+					<title>Type 5 VDB Engine Architecture</title>
+					<graphic fileref="wpImage24.gif" width="614px" depth="494px"/>
+				</figure>
+				<!-- ###################################################### -->
+			</sect3>
+			<sect3 id="t6vdbngin">
+				<title>Type 6 VDB Engine</title>
+				<para>This category of VDB exposes its services to clients via
+    open, standards based, high and low-level Interfaces. External data I/O is achieved via
+    native, proprietary, and data source specific low-level interfaces. This category of VDB
+    possesses a complete set of traditional database engine components.</para>
+				<figure id="imagewp08" float="1">
+					<title>Type 6 - VDB Engine Architecture</title>
+					<graphic fileref="wpImage25.gif" width="588px" depth="494px"/>
+				</figure>
+			</sect3>
+			<sect3 id="t7vdbngin">
+				<title>Type 7 VDB Engine</title>
+				<para>This category of VDB exposes its services via open, standards based high-level data
+    access interfaces. Data I/O is achieved via Open, Standards based, and Database
+    Independent low-level data access interfaces. This category of VDB does not possess a
+    complete set of traditional database engine components.</para>
+				<figure id="imagewp09" float="1">
+					<title>Type 7 VDB Engine Architecture</title>
+					<graphic fileref="wpImage26.gif" width="614px" depth="494px"/>
+				</figure>
+				<!-- ###################################################### -->
+			</sect3>
+			<sect3 id="t8vdbngin">
+				<title>Type 8 VDB Engine</title>
+				<para>This category of VDB exposes its services via open,
+    standards based, high and low-level interfaces. External data I/O is achieved via Open,
+    Standards based, and Database Independent low-level data access interfaces. This category
+    of VDB does possess a complete set of traditional database engine components.</para>
+				<figure id="imagewp10" float="1">
+					<title>Type 8 VDB Engine Architecture</title>
+					<graphic fileref="wpImage27.gif" width="614px" depth="548px"/>
+				</figure>
+			</sect3>
+			<sect3 id="t9vdbngin">
+				<title>Type 9 VDB Engine</title>
+				<para>This category of VDB exposes its services via Open, Standards based, high-level
+    data access interfaces. Data I/O is achieved by using either Open, Standards based, and
+    Database Independent low-level data access interfaces or Native, Proprietary, and Database
+    Specific low-level data access interfaces. This category of VDB does not possess a
+    complete set of traditional database engine components.</para>
+				<figure id="imagewp11" float="1">
+					<title>Type 9 VDB Architecture</title>
+					<graphic fileref="wpImage28.gif" width="570px" depth="484px"/>
+				</figure>
+				<!-- ###################################################### -->
+			</sect3>
+			<sect3 id="t10vdbngin">
+				<title>Type 10 VDB Engine</title>
+				<para>This category of VDB exposes its services via Open,
+    Standards based, high-level data access interfaces. External data I/O is achieved by using
+    either Open, Standards based, and Database Independent low-level data access interfaces or
+    Native, Proprietary, and Database Specific low-level data access interfaces. This category
+    of VDB possesses a complete set of traditional database engine components.</para>
+				<figure id="imagewp12" float="1">
+					<title>Type 10 VDB Architecture</title>
+					<graphic fileref="wpImage29.gif" width="613px" depth="494px"/>
+				</figure>
+			</sect3>
+		</sect2>
+	</sect1>
+	<sect1 id="Vnxtgenvdb">
+		<title>OpenLink Virtuoso&#153; - Next Generation Virtual Database Engine</title>
+		<para>Virtuoso is a revolutionary, next generation,
+    high-performance virtual database engine for the Distributed Computing Age. It is an
+    essential universal data access middleware technology set to accelerate our advance
+    towards the emerging Information Age.</para>
+		<para>Virtuoso provides transparent access to your existing data sources, which are logical
+    references to databases from different database vendors, exposed by data access drivers
+    also provided by different vendors. </para>
+		<para>Through a single connection, Virtuoso will simultaneously connect your ODBC, JDBC,
+    UDBC, OLE-DB client applications and services to data within Oracle, Microsoft SQL Server,
+    DB/2, Informix, Progress, CA-Ingres, Sybase, PostgreSQL, Solid, Velocis and other ODBC
+    compliant database engines. </para>
+		<para>Virtuoso provides the end-user or applications developer with a one application or
+    development environment to many database engines relationship abstracting either party
+    from the complexities of heterogeneous data access. </para>
+		<para>Virtuoso allows end-users and application developers to retain a single data source or
+    database focus, at the same time exposing either party to the benefits of heterogeneous
+    data access, without introducing proportional increases in complexity. </para>
+		<para>Virtuoso is a type 10 VDB Engine, exposing its services via standards based data access
+    interfaces such as ODBC, JDBC, UDBC, and OLED-DB and performing external Data I/O occurs
+    via ODBC, UDBC, or Native data access interfaces.</para>
+		<!-- ###################################################### -->
+		<sect2 id="dsngoals">
+			<title>Design Goals</title>
+			<para>Virtuoso has been developed with the following goals in mind:</para>
+			<orderedlist>
+				<listitem>
+					<para>Operating System Independence - support for all main stream operating systems</para>
+				</listitem>
+				<listitem>
+					<para>Small Memory Footprint - no more than 2MB of memory for basic operations</para>
+				</listitem>
+				<listitem>
+					<para>Small Binary Distribution - maximum of 10MB of disk space for base product
+        installation</para>
+				</listitem>
+				<listitem>
+					<para>High-Performance - deliver performance levels required by enterprise-wide solutions</para>
+				</listitem>
+				<listitem>
+					<para>Standards Based data I/O - use standard such as ODBC from Microsoft and UDBC from
+        OpenLink Software for low-level data access</para>
+				</listitem>
+				<listitem>
+					<para>Standards based Interfaces to services - expose Virtual Database functionality via
+        ODBC, UDBC, JDBC, and OLE-DB data access drivers</para>
+				</listitem>
+				<listitem>
+					<para>Web Based Configuration &amp; Management - a Web Browser as the standard
+        administration and configuration interface</para>
+				</listitem>
+			</orderedlist>
+		</sect2>
+		<sect2 id="arch">
+			<title>Architecture</title>
+			<para>Virtuoso&apos;s VDB type 8 architecture is depicted below. </para>
+			<figure id="imagewp13" float="1">
+				<title>OpenLink Virtuoso&#153; VDB Architecture</title>
+				<graphic fileref="wpImage30.gif" width="632px" depth="494px"/>
+			</figure>
+			<note>
+				<title>Note:</title>
+				<para>support for JDBC and OLE-DB based external data I/O is still being developed.</para>
+			</note>
+		</sect2>
+		<!-- ###################################################### -->
+		<sect2 id="virtcompon">
+			<title>Virtuoso Components</title>
+			<sect3 id="dataadrvs">
+				<title>Data Access Drivers</title>
+				<para>ODBC, JDBC, UDBC, and OLE-DB Drivers for Virtuoso are
+    an integral part of the OpenLink Virtuoso&#153; product set. Client applications and
+    services consume the virtual database services provided by Virtuoso using one or more of
+    these drivers.</para>
+				<para>The features of these drivers are listed below:</para>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>Blistering Performance</para>
+					</listitem>
+					<listitem>
+						<para>ODBC Drivers are ODBC v2.5 compliant </para>
+					</listitem>
+					<listitem>
+						<para>ODBC Drivers implement driver based Scrollable Cursors</para>
+					</listitem>
+					<listitem>
+						<para>Drivers for JDBC are JDBC v1.02, v1.1, and v2.0 compliant </para>
+					</listitem>
+					<listitem>
+						<para>Drivers for JDBC implement driver based Scrollable Cursors</para>
+					</listitem>
+					<listitem>
+						<para>OLE-DB Data Providers are OLE-DB 2.0 compliant.</para>
+					</listitem>
+				</itemizedlist>
+			</sect3>
+			<sect3 id="vcsecman">
+				<title>Security Manager</title>
+				<para>Virtuoso&apos;s security features are listed below:</para>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>User Login and Password Verification</para>
+					</listitem>
+					<listitem>
+						<para>Role definition and privilege control</para>
+					</listitem>
+					<listitem>
+						<para>Table and Column Level Privilege control</para>
+					</listitem>
+					<listitem>
+						<para>Logical &quot;Rules Based&quot; Security - enabling
+        security to be devised around custom rules that derive security conditions from a
+        combination user, client applications, client operating system, and network address
+        parameters if required</para>
+					</listitem>
+					<listitem>
+						<para>Data Encryption - data transmission between Virtuoso
+        and its clients can be secured via encryption.</para>
+					</listitem>
+				</itemizedlist>
+			</sect3>
+			<sect3 id="vcqmgr">
+				<title>Query Manager</title>
+				<para>Virtuoso&apos;s query manager features are as follows: </para>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>Supports ANSI SQL 92</para>
+					</listitem>
+					<listitem>
+						<para>Parallel Query processing - enabling parallel
+        execution plan assembly, query execution, and query fulfillment. </para>
+					</listitem>
+					<listitem>
+						<para>Asynchronous Operation - all activities occur
+        asynchronous except for transaction commits and rollbacks which occur synchronously.</para>
+					</listitem>
+					<listitem>
+						<para>Distributed Join Optimizer - enabling high-performance
+        heterogeneous joins across disparate database engines. </para>
+					</listitem>
+					<listitem>
+						<para>Scrollable Cursor Engine - facilitates scrollable cursor
+        support across heterogeneous database engines. This mechanism allows the manipulation of
+        ResultSet subsets call RowSets that span multiple data sources and database engines. This
+        sophisticated featured reduces record fetch overhead by migrating chunks of data in
+        parallel from external data sources into Virtuoso and then out again to client
+        applications and services. Virtuoso supports Static, Keyset, Mixed, and Dynamic Cursors.</para>
+					</listitem>
+					<listitem>
+						<para>Heterogeneous VIEWS support - enabling the development of
+        logical data snapshots that transcend disparate database engines. These VIEWS aren&apos;t
+        updatable</para>
+					</listitem>
+					<listitem>
+						<para>Generic Stored Procedure Language - enables the
+        development of stored procedures that allow application logic to be stored and implemented
+        at the VDB level, these stored procedures can reference tables hosted in disparate
+        database engines. Virtuoso Stored Procedures are sensitive to metadata changes that occur
+        within externally linked tables.</para>
+					</listitem>
+				</itemizedlist>
+			</sect3>
+			<sect3 id="vcmetatdatamgr">
+				<title>Metadata Manager</title>
+				<para>The Virtuoso Metadata Manger acts as the repository of all Virtuoso&apos;s database
+    objects, this includes Metadata from external tables linked into Virtuoso, Native Tables,
+    Stored Procedures, Views, Object Privileges, Indexes, Referential Integrity constraints,
+    and Database Statistics.</para>
+				<para>The Metadata Manager does not affect any of the external tables linked into Virtuoso.
+    Thus, an external object dropped by the Metadata Manager simply equates to a reference
+    drop within Virtuoso as opposed to an actual object drop within an external database
+    linked into Virtuoso.</para>
+			</sect3>
+			<sect3 id="vctransman">
+				<title>Transaction Manager</title>
+				<para>The Virtuoso transaction manager possesses the following capabilities:</para>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>Commits &amp; Rollbacks - Transactions are either fully completed or not at all,
+        when dealing with externally linked tables this behavior is preserved, but not to the
+        point of a full 2-phase commit, this functionality will be available is a subsequent
+        product release</para>
+					</listitem>
+					<listitem>
+						<para>Supports read-only transactions, which provide no lock overhead and add flexibility to
+        the VDB transaction model.</para>
+					</listitem>
+					<listitem>
+						<para>Before &amp; After Image Transaction Logging - Virtuoso maintains database state
+        logs before and after transactions. Thus, in time of failure it is possible to Roll the
+        database back to a prior state preceding VDB server initialization. Virtuoso also allows
+        you to roll forward your database by committing all uncommitted transactions held in After
+        Image transaction logs when recovering from system failure.</para>
+					</listitem>
+					<listitem>
+						<para>Supports Dirty Read, Read Committed, Repeatable Read, and Serializable transaction
+        isolation levels</para>
+					</listitem>
+				</itemizedlist>
+			</sect3>
+			<sect3 id="vcsecman">
+				<title>Concurrency Manager</title>
+				<para>The concurrency manager ensures that Virtuoso is capable of supporting multiple
+    concurrent database sessions that execute data INSERTS, UPDATES and DELETIONS access
+    without compromising data integrity or implicitly increasing application or service
+    latency.</para>
+				<para>The Virtuoso Concurrency Manager supports Optimistic and Pessimistic (Locking)
+    concurrency. </para>
+				<para>Database Rows, Pages, or Tables aren&apos;t locked when Optimistic concurrency is in
+    use, rather UPDATES or DELETIONS are simply rejected on the bases of other user process
+    modifying the same record(s) that you are about to UPDATE or DELETE. Optimistic
+    concurrency presumes low record UPDATE and DELETE frequency.</para>
+				<para>Pessimistic concurrency on the other hand presumes a high level frequency of record
+    UPDATE and DELETION activity. The Virtuoso concurrency manager implements Page Level
+    locking, and these locks have configurable timeout settings, which reduce the probability
+    of record deadlock which inadvertently introduce application latency. </para>
+				<para>Row level locking is currently in development.</para>
+			</sect3>
+			<sect3 id="vclocaliomgr">
+				<title>Local Data I/O Manager</title>
+				<para>Virtuoso posses full native database engine capabilities, the local I/O Manager is
+    responsible for writing data to local storage when Virtuoso is being used as an Embedded
+    Database Engine. This feature of Virtuoso enables it to serve Application Server solutions
+    as an embedded database engine outside the corporate firewall, providing these solutions
+    with local storage at the same time reducing workload on the corporate databases behind
+    the company firewall. </para>
+			</sect3>
+			<sect3 id="vcextiomgr">
+				<title>External Data I/O Manager</title>
+				<para>Virtuoso reads and writes data to external database engines using ODBC or UDBC as
+    its external data I/O interface (supported for JDBC and OLE-DB based I/O is also planned).
+    </para>
+				<para>ODBC support enables Virtuoso to link and manipulate data held in ODBC compliant
+    database engines, implying any database with an ODBC driver is accessible from Virtuoso.</para>
+				<para>UDBC support enables Virtuoso to be hosted on operating system where ODBC is not&apos;t
+    supported, it also enables Virtuoso to communicate with external databases using their
+    native interfaces.</para>
+			</sect3>
+			<sect3 id="vcreplman">
+				<title>Data Replication Manager</title>
+				<para>The Virtuoso Replication Manager enables the automatic synchronization of data
+    across Virtuoso Servers within your computing infrastructure. The replication process is
+    bi-directional and is capable of replicating data across externally linked tables. </para>
+				<para>Synchronization of replicated databases is
+    automatic should one of the database within a replica group encounter system failure. </para>
+			</sect3>
+			<sect3 id="vcconductor">
+				<title>Virtuoso Conductor</title>
+				<para>This is a HTML based Administrative console that provides a graphical user
+    interface for attaching and detaching external tables associated with your Virtuoso
+    database engine. It also includes configuration wizards and a query editor that enables
+    intuitive configuration and testing of the ODBC and UDBC data sources names that you plan
+    to use with Virtuoso.</para>
+			</sect3>
+		</sect2>
+		<!-- ###################################################### -->
+		<sect2 id="implissschklst">
+			<title>Implementation Issues Checklist</title>
+			<para>Key</para>
+			<simplelist>
+				<member>Implemented - I</member>
+				<member>Partially Implemented - PI </member>
+				<member>Planned - P</member>
+			</simplelist>
+			<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+				<title>Implementation Checklist</title>
+				<tgroup align="char" charoff="50" char="." cols="2">
+					<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+					<thead>
+						<row>
+							<entry>VDB Implementation Issue</entry>
+							<entry>Status</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>ODBC, UDBC, JDBC, OLE-DB based interface to VDB</entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>ODBC &amp; UDBC based external data I/O</entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>JDBC based external data I/O</entry>
+							<entry>P</entry>
+						</row>
+						<row>
+							<entry>OLE-DB based external data I/O</entry>
+							<entry>P</entry>
+						</row>
+						<row>
+							<entry>SQL Support </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>OQL Support</entry>
+							<entry>P</entry>
+						</row>
+						<row>
+							<entry>Query Processor </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>Heterogeneous Scrollable Cursor Support </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>Standard Data Types Support </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>VIEW Support </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>Stored Procedure Support </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>Concurrency Control </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>Transaction Isolation </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>Distributed Transaction Support </entry>
+							<entry>PI</entry>
+						</row>
+						<row>
+							<entry>User Definable Type Support </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>Federated Database Support </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>Distributed Database Support </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>Security </entry>
+							<entry>I</entry>
+						</row>
+						<row>
+							<entry>Replication Manager</entry>
+							<entry>PI</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+		</sect2>
+		<!-- ###################################################### -->
+		<sect2 id="featurebenanaly">
+			<title>Feature &amp; Benefits Analysis (Virtual Database Functionality)</title>
+			<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+				<title>VDB Implementation Categories</title>
+				<tgroup align="char" charoff="50" char="." cols="2">
+					<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+					<thead>
+						<row>
+							<entry>Feature</entry>
+							<entry>Benefit</entry>
+						</row>
+					</thead>
+					<tbody>
+						<row>
+							<entry>Transparent concurrent access
+        to heterogeneous data sources and backend database engines.</entry>
+							<entry>Cost effective mechanism for
+        harnessing information from your existing databases and data sources in real-time.</entry>
+						</row>
+						<row>
+							<entry>ODBC, JDBC, UDBC, and OLE-DB
+        Driver availability.</entry>
+							<entry>Provides exposure of virtual
+        database services to the plethora of commercial ODBC, JDBC, UDBC, and OLE-DB based
+        solutions currently in existence.</entry>
+						</row>
+						<row>
+							<entry>ODBC, UDBC, or Native external
+        Data I/O.</entry>
+							<entry>Freedom to Mix &amp; Match the
+        best combination of database engines and data access types for your organization</entry>
+						</row>
+						<row>
+							<entry>Cross platform support
+        (95/98/NT, Linux, Solaris, HP-UX, AIX, Digital UNIX, IRIX, SCO Unix, SCO Unixware, DG_UX,
+        Dynix/PTX, BSDI, with VMS, MacOS, OS2, OS400, OS390 planned).</entry>
+							<entry>Freedom to Mix &amp; Match the
+        best combination of Application and Database server operating systems for your
+        organization.</entry>
+						</row>
+						<row>
+							<entry>Multiple database and ODBC data
+        source name support:
+	Virtuoso Native DBMS Server, Oracle(6/7/8), MS SQL
+        Server(4/6.x/7.x), Informix(4/5/6/7), Progress (6/7/8/9), CA-Ingres (6.4), CA-OpenIngres
+        (1.1/2.x), DB2 (2.12 &amp; 5.x), Sybase SQL Server (4.x/10.x/11.x), PostgreSQL, Solid,
+        Velocis, and third party ODBC Drivers.</entry>
+							<entry>Sustains or bolsters database
+        independence within your organization.  This also ensures that new database driven
+        technologies are usable with your existing database engines and data sources, thereby
+        preserving database investments made in prior years.</entry>
+						</row>
+						<row>
+							<entry>Multi Threaded Virtual Database
+        Server.</entry>
+							<entry>Parallel execution of data
+        access instructions with minimal system overhead resulting in high-performance data
+        throughput even when concurrent user counts are high.</entry>
+						</row>
+						<row>
+							<entry>Asynchronous Data I/O.</entry>
+							<entry>All data I/O except transaction
+        commits and rollbacks are Asynchronous. Thus, reducing the probability of data I/O blocks
+        that increase VDB server latency. </entry>
+						</row>
+						<row>
+							<entry>Scrollable Cursors Support.</entry>
+							<entry>Enables the use of High-Level
+        data access interfaces such as RDO, ADO, OLE-DB, JDBC 2.0 against your existing databases
+        and data sources. </entry>
+						</row>
+						<row>
+							<entry>Sophisticated Concurrency
+        Control.</entry>
+							<entry>Provides scalability to your
+        VDB based solutions.</entry>
+						</row>
+						<row>
+							<entry>Stored Procedure Support.</entry>
+							<entry>You can develop database
+        independent stored procedures that can traverse all the databases in your organization
+        using common stored procedure language.</entry>
+						</row>
+						<row>
+							<entry>Sophisticated rules based
+        security.</entry>
+							<entry>You can control user
+        privileges, define roles, and generally tighten security by adopting a &quot;Rule
+        Book&quot; approach. This allows your security infrastructure be both logical and physical
+        in nature, and driven by rules that you define. </entry>
+						</row>
+						<row>
+							<entry>Centralized or Decentralized
+        infrastructure management via Web Browser</entry>
+							<entry>You can manage one or more
+        geographically dispersed Virtuoso Servers from a single location or multiple locations
+        through your Web Browser.  Zero Admin solution.</entry>
+						</row>
+						<row>
+							<entry>Bi-Directional Heterogeneous
+        Replication</entry>
+							<entry>Allows numerous Virtuoso and
+        non-Virtuoso database tables to be kept in sync throughout your distributed computing
+        infrastructure without user intervention.  Reduces the cost typically associated with
+        data transformation and migration. It also enables the development of sophisticated data
+        caching for store-and-forward solutions. </entry>
+						</row>
+						<row>
+							<entry>Full Relational and
+        Object-Relational Database functionality</entry>
+							<entry>Flexibility to build database
+        solutions using relational or object-relational models.  Future proofs your applications
+        development at the data access level.</entry>
+						</row>
+						<row>
+							<entry>Small footprint </entry>
+							<entry>Can operate within 2MB of RAM
+        and consumes no more than 10MB of disk space for entire product installation.  This makes
+        Virtuoso embeddable with solutions that are hosted on devices that have minimal memory and
+        persistent storage capacity.</entry>
+						</row>
+					</tbody>
+				</tgroup>
+			</table>
+		</sect2>
+		<!-- ###################################################### -->
+		<sect2 id="prodpack">
+			<title>Product Packaging</title>
+			<para>Virtuoso is available in 3 distinct product formats: </para>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>OpenLink Virtuoso&#153; Lite Edition</para>
+				</listitem>
+				<listitem>
+					<para>OpenLink Virtuoso&#153; Workgroup Edition</para>
+				</listitem>
+				<listitem>
+					<para>OpenLink Virtuoso&#153; Enterprise Edition</para>
+				</listitem>
+			</itemizedlist>
+			<sect3 id="oplvirtlite">
+				<title>OpenLink Virtuoso&#153; Lite Edition</title>
+				<para>This is an entry-level product comprising the following components: </para>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>HTML based Interactive ODBC compliant Query Console</para>
+					</listitem>
+					<listitem>
+						<para>Virtual Database Server </para>
+					</listitem>
+					<listitem>
+						<para>Virtuoso Conductor - HTML based remote database management console</para>
+					</listitem>
+					<listitem>
+						<para>OpenLink Virtuoso&#153; Single Tier ODBC &amp; UDBC Drivers </para>
+					</listitem>
+					<listitem>
+						<para>OpenLink Virtuoso&#153; Type 4 Drivers for JDBC.</para>
+					</listitem>
+					<listitem>
+						<para>Lightweight Thread Manager.</para>
+					</listitem>
+				</itemizedlist>
+				<para>OpenLink Virtuoso&#153; Lite presumes the existence of ODBC or UDBC drivers within your
+    existing IS infrastructure. It only includes ODBC and JDBC drivers for accessing the
+    Virtual Database Server. It is important to note that prior to using Virtuoso, you must
+    install and configure database specific network communications software and ODBC drivers
+    provided by each of the database vendors whose products you will be exposing to Virtuoso.</para>
+				<para>Examples of such database vendor provided products include: Oracle SQL*Net, Oracle
+    Net8, Informix I-Connect, Ingres NET, Microsoft NETLIB, Sybase Open Client, Progress
+    Client Networking, DB2 client enablers etc. Each of these products typically includes a
+    free ODBC Driver.</para>
+				<para>This product set supports the following operating systems:</para>
+				<para>Windows 95/98/NT, Linux, Solaris (Sparc &amp; x86), AIX, HP-UX, IRIX, Dynix/PTX, DG-UX,
+    Digital UNIX. MacOS, OS/2, and VMS ports are planned.</para>
+			</sect3>
+			<sect3 id="oplvirtwg">
+				<title>OpenLink Virtuoso&#153; Workgroup Edition</title>
+				<para>This is a departmental or small Internet/Intranet/Extranet server solution
+    comprising the following components: </para>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>HTML based Interactive ODBC compliant Query Console</para>
+					</listitem>
+					<listitem>
+						<para>Virtual Database Server </para>
+					</listitem>
+					<listitem>
+						<para>Virtuoso Conductor - HTML based remote database management console</para>
+					</listitem>
+					<listitem>
+						<para>OpenLink Virtuoso&#153; Single Tier ODBC &amp; UDBC Drivers </para>
+					</listitem>
+					<listitem>
+						<para>OpenLink Virtuoso&#153; Type 1, 2, and 4 Drivers for JDBC.</para>
+					</listitem>
+					<listitem>
+						<para>OpenLink Data Access Driver Suite (Lite Edition) supporting: Oracle, Microsoft SQL
+        Server, Informix, Sybase, CA-Ingres, Progress, DB2, PostgreSQL, Velocis, and Solid</para>
+					</listitem>
+					<listitem>
+						<para>Lightweight Thread Manager.</para>
+					</listitem>
+				</itemizedlist>
+				<para>OpenLink Virtuoso&#153; Workgroup Edition includes OpenLink Software&apos;s
+    high-performance Single Tier ODBC &amp; JDBC Drivers (a.k.a. OpenLink Lite). These drivers
+    enable you to expose your existing database engines to Virtuoso right out of the box. It
+    is important to note that prior to using Virtuoso, you must install and configure database
+    specific network communications software and ODBC drivers provided by each of the database
+    vendors whose products you will be exposing to Virtuoso.</para>
+				<para>Examples of such database vendor provided products include: Oracle SQL*Net, Oracle
+    Net8, Informix I-Connect, Ingres NET, Microsoft NETLIB, Sybase Open Client, Progress
+    Client Networking, DB2 client enablers etc. Each of these products typically includes a
+    free ODBC Driver.</para>
+				<para>This product set supports the following operating systems:</para>
+				<para>Windows NT, Linux, Solaris (Sparc &amp; x86), AIX, HP-UX, IRIX, Dynix/PTX, DG-UX,
+    Digital UNIX. MacOS, OS/2, and VMS ports are planned.</para>
+			</sect3>
+			<sect3 id="oplvirtenterprise">
+				<title>OpenLink Virtuoso&#153; Enterprise Edition</title>
+				<para>This is an enterprise wide or large Internet/Intranet/Extranet server solution comprising
+    the following components:</para>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>HTML based Interactive ODBC compliant Query Console</para>
+					</listitem>
+					<listitem>
+						<para>Virtual Database Server - Implemented as an OpenLink Request Broker service</para>
+					</listitem>
+					<listitem>
+						<para>Virtuoso Conductor - HTML based remote database management console</para>
+					</listitem>
+					<listitem>
+						<para>OpenLink Virtuoso&#153; Multi-Tier ODBC &amp; UDBC Drivers </para>
+					</listitem>
+					<listitem>
+						<para>OpenLink Virtuoso&#153; Type 1,2,3 &amp; 4 Drivers for JDBC</para>
+					</listitem>
+					<listitem>
+						<para>OpenLink Data Access Drivers Suite (Multi-Tier Edition) supporting: Oracle, Microsoft
+        SQL Server, Informix, Sybase, CA-Ingres, Progress, DB2, PostgreSQL, Velocis, Solid, and 3rd
+        Party ODBC Drivers</para>
+					</listitem>
+					<listitem>
+						<para>Heavyweight POSIX or Native Thread Manager.</para>
+					</listitem>
+				</itemizedlist>
+				<para>OpenLink Virtuoso&#153; Enterprise Edition includes OpenLink Software&apos;s
+    high-performance Multi-Tier ODBC &amp; JDBC Drivers. These drivers enable you to expose
+    your existing database engines to Virtuoso right out of the box, without inherent
+    dependencies on database vendor provided network software for remote database connections.
+    </para>
+				<para>Examples of such database vendor provided products include: Oracle SQL*Net, Oracle
+    Net8, Informix I-Connect, Ingres NET, Microsoft NETLIB, Sybase Open Client, Progress
+    Client Networking, DB2 client enablers etc.</para>
+				<para>This product set supports the following operating systems:</para>
+				<para>Windows NT, Linux, Solaris (Sparc &amp; x86), AIX, HP-UX, IRIX, Dynix/PTX, DG-UX,
+    Digital UNIX. MacOS, OS/2, and VMS ports are planned.</para>
+			</sect3>
+		</sect2>
+		<sect2 id="galvanizer">
+			<title>Galvanizing Your Enterprise with OpenLink Virtuoso&#153;</title>
+			<para>Virtuoso enables you to maximize the benefits
+    of new distributed computing technologies and paradigms with minimum disruption, if any,
+    to your existing computing infrastructure. The situation examples in the sections that
+    follow demonstrate how Virtuoso fulfills this value proposition.</para>
+		</sect2>
+		<!-- ###################################################### -->
+		<sect2 id="mpwrknldgwkr">
+			<title>Empowering Knowledge Workers</title>
+			<para>Your organization seeks to empower its knowledge workers
+    by providing transparent access to corporate information so that they can make timely and
+    accurate decisions. </para>
+			<sect3 id="infrachal">
+				<title>Infrastructure Challenges</title>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>Your organizations core business solutions are all driven by database engines
+        provided by different database vendors</para>
+					</listitem>
+					<listitem>
+						<para>The disparate application databases are hosted on a range of different database server
+        machines running different operating systems</para>
+					</listitem>
+				</itemizedlist>
+			</sect3>
+			<sect3 id="critisucfctr">
+				<title>Critical Success Factors</title>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>To maximize the uptake of this initiative, the knowledge workers must be abstracted
+        from the intricacies of heterogeneous data access.</para>
+					</listitem>
+					<listitem>
+						<para>Information must be available in real-time</para>
+					</listitem>
+					<listitem>
+						<para>Information must be accurate</para>
+					</listitem>
+					<listitem>
+						<para>Knowledge workers must be able to manipulate information and make decisions using their
+        existing &quot;off the shelf&quot; desktop productivity tools.</para>
+					</listitem>
+				</itemizedlist>
+			</sect3>
+			<sect3 id="techchal">
+				<title>Technology Challenges</title>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>The data residing in disparate data sources needs to be pulled together in real time
+        to produce information</para>
+					</listitem>
+					<listitem>
+						<para>High throughput transmission of information culled from disparate application databases
+        to desktop productivity tools being used by the knowledge workers.</para>
+					</listitem>
+				</itemizedlist>
+			</sect3>
+			<sect3 id="techsoln">
+				<title>Technology Solution</title>
+				<para>Implement a 3-tier distributed computing architecture utilizing ODBC, JDBC, or
+    OLE-DB for data access and OpenLink Virtuoso&#153; as your &quot;Data Junction Box&quot;.</para>
+			</sect3>
+			<sect3 id="solimpl">
+				<title>Solution Implementation</title>
+				<para>The infrastructure required in order to fulfill the objectives set would be assembled
+    as follows: </para>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>Creation of &quot;Data Junction Box&quot; using a OpenLink Virtuoso&#153;, that holds
+        references to tables hosted by your application database engines</para>
+					</listitem>
+					<listitem>
+						<para>Hosting one or more of your OpenLink Virtuoso&#153; servers on one or more designated
+        server machines. These machines could be dedicated application servers or one of the many
+        database servers currently in use</para>
+					</listitem>
+					<listitem>
+						<para>Creation of ODBC or UDBC data source names on the same machine as the OpenLink
+        Virtuoso&#153; server. These data sources names will connect OpenLink Virtuoso&#153; to
+        the different application databases within your computing infrastructure</para>
+					</listitem>
+					<listitem>
+						<para>Creation of ODBC, JDBC, or OLE-DB data source names that reside on the desktop machines
+        used by your knowledge workers. The data source names created will be used to connect
+        ODBC, JDBC, and OLE-DB based desktop productivity tools to your OpenLink Virtuoso&#153;
+        servers.</para>
+					</listitem>
+				</itemizedlist>
+				<para>Once the infrastructure has been assembled in the manner described in the previous
+    section, the stage is set for your knowledge workers to commence exploiting the benefits
+    of transparent access to information culled from heterogeneous data sources. The entire
+    process occurs via the use of their chosen &quot;off the shelf&quot; desktop productivity
+    tools. </para>
+				<para>The entire solution, its infrastructure, and constituent components are depicted below.</para>
+				<figure id="imagewp14" float="1">
+					<title>Virtuoso Empowering Knowledge Workers</title>
+					<graphic fileref="wpImage31.gif" width="766px" depth="534px"/>
+				</figure>
+				<note>
+					<title>Note:</title>
+					<para>Databases depicted could be replaced with any ODBC compatible database engine.</para>
+				</note>
+			</sect3>
+		</sect2>
+		<!-- ###################################################### -->
+		<sect2 id="imprvcustprosp">
+			<title>Improving Customer &amp; Prospect Interaction via Your Corporate Web Site</title>
+			<para>Your organization seeks to increase customer
+    and prospect intimacy by implementing a database driven web site. The site offers
+    customers and prospects online support, quotations, order processing, and product
+    information.</para>
+			<sect3 id="icpinfrachal">
+				<title>Infrastructure Challenges</title>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>Your organizations core business solutions are all driven by database engines
+        provided by different database vendors</para>
+					</listitem>
+					<listitem>
+						<para>The disparate application databases are hosted on a range of different database server
+        machines running different operating systems</para>
+					</listitem>
+					<listitem>
+						<para>Security implications of corporate database exposure to the Internet</para>
+					</listitem>
+					<listitem>
+						<para>Availability of &quot;Web to Database&quot; middleware for your Web Server.</para>
+					</listitem>
+				</itemizedlist>
+			</sect3>
+			<sect3 id="icpcritsucfctr">
+				<title>Critical Success Factors</title>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>Data transmission throughput between internal databases and web pages</para>
+					</listitem>
+					<listitem>
+						<para>Scalability of Web Servers, underlying &quot;Web to Database&quot; middleware, and
+        participating database engines</para>
+					</listitem>
+					<listitem>
+						<para>Information accuracy</para>
+					</listitem>
+					<listitem>
+						<para>Data updates by site visitors must be routed to the appropriate internal database(s).</para>
+					</listitem>
+				</itemizedlist>
+			</sect3>
+			<sect3 id="icptechchal">
+				<title>Technology Challenges</title>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>The data residing in disparate data sources needs to be pulled together in real time
+        to produce information</para>
+					</listitem>
+					<listitem>
+						<para>Delivery of high-performance information access to numerous concurrent site visitors</para>
+					</listitem>
+					<listitem>
+						<para>Availability of operating system independent &quot;Web to Database&quot; middleware,
+        providing you with the freedom to chose the most suitable operating system for the job at
+        hand.</para>
+					</listitem>
+				</itemizedlist>
+			</sect3>
+			<sect3 id="icptechsoln">
+				<title>Technology Solution</title>
+				<para>Implement a 3-tier distributed computing architecture utilizing ODBC, JDBC, or
+    OLE-DB for data access and OpenLink Virtuoso&#153; as your &quot;Data Junction Box&quot;.</para>
+			</sect3>
+			<sect3 id="icpsolimpl">
+				<title>Solution Implementation</title>
+				<para>The infrastructure required in order to fulfill the objectives set would be assembled
+    as follows: </para>
+				<itemizedlist mark="bullet">
+					<listitem>
+						<para>Creation of &quot;Data Junction Box&quot; using a OpenLink Virtuoso&#153;, that holds
+        references to tables hosted by your application database engines</para>
+					</listitem>
+					<listitem>
+						<para>Hosting one or more of your OpenLink Virtuoso&#153; servers on one or more designated
+        server machines. These machines could be dedicated application servers, the same machine
+        hosting your Web Server, or one of the many database servers residing behind your
+        corporate firewall</para>
+					</listitem>
+					<listitem>
+						<para>Creation of ODBC or UDBC data source names on the same machine as the OpenLink
+        Virtuoso&#153; server. These data sources names should point to the different application
+        databases within your computing infrastructure.</para>
+					</listitem>
+					<listitem>
+						<para>&quot;Web to Database&quot; middleware and Application Server Development kit selection.
+      </para>
+					</listitem>
+					<listitem>
+						<para>Creation of ODBC, JDBC, or OLE-DB data source names on your Web Server for use by your
+        &quot;Web to Database&quot; middleware for connectivity to OpenLink Virtuoso&#153; </para>
+					</listitem>
+					<listitem>
+						<para>Use the OpenLink Virtuoso&#153; Stored Procedure language to implement the data access
+        and manipulation aspects of your application logic.</para>
+					</listitem>
+				</itemizedlist>
+				<para>Once the infrastructure has been assembled in the manner described above, the stage is
+    set for you to develop and implement your database driven web. The application development
+    process retains a single as opposed to multiple database focus due to the sophisticated
+    VDB Engine functionality provided by OpenLink Virtuoso&#153; without compromises in
+    performance, security, or scalability. </para>
+				<para>The entire solution, its infrastructure, and constituent components are depicted in the
+    illustration that follows.</para>
+				<figure id="imagewp15" float="1">
+					<title>Internet Application Server Solution</title>
+					<graphic fileref="wpImage32.gif" width="780px" depth="536px"/>
+				</figure>
+			</sect3>
+		</sect2>
+	</sect1>
+	<!-- ###################################################### -->
+	<sect1 id="featfunc">
+		<title>Feature &amp; Functionality Comparisons</title>
+		<para>There are a number of competing products that exist
+    today, even though these products may not identify themselves as Virtual Database
+    products. </para>
+		<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+			<title>Features Comparison</title>
+			<tgroup align="char" charoff="50" char="." cols="12">
+				<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+				<thead>
+					<row>
+						<entry/>
+						<entry>VDB Type</entry>
+						<entry>Heterogeneous Joins</entry>
+						<entry>ODBC Based Ext. data I/O</entry>
+						<entry>Native data I/O</entry>
+						<entry>ODBC Driver available</entry>
+						<entry>JDBC Driver available</entry>
+						<entry>OLE-DB Provider available</entry>
+						<entry>Web Browser based Admin</entry>
+						<entry>Cross Platform Support</entry>
+						<entry>Full Database Functionality</entry>
+						<entry>Multi- Threaded</entry>
+					</row>
+				</thead>
+				<tbody>
+					<row>
+						<entry>OpenLink Virtuoso&#153;</entry>
+						<entry>10</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>y</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+					</row>
+					<row>
+						<entry>Microsoft SQL Server 7</entry>
+						<entry>8</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>N</entry>
+						<entry>Y</entry>
+						<entry>N</entry>
+						<entry>Y</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+					</row>
+					<row>
+						<entry>IBM DataJoiner</entry>
+						<entry>10</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>P</entry>
+						<entry>P</entry>
+						<entry>N</entry>
+					</row>
+					<row>
+						<entry>Inprise BDE</entry>
+						<entry>3</entry>
+						<entry>N</entry>
+						<entry>Y</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+					</row>
+					<row>
+						<entry>Microsoft JET</entry>
+						<entry>4</entry>
+						<entry>Y</entry>
+						<entry>Y</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>Y</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>P</entry>
+						<entry>N</entry>
+					</row>
+					<row>
+						<entry>Symantec DBAnywhere</entry>
+						<entry>5</entry>
+						<entry>N</entry>
+						<entry>Y</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>Y</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+						<entry>N</entry>
+					</row>
+				</tbody>
+			</tgroup>
+		</table>
+	</sect1>
+	<!-- #################################################### -->
+	<sect1 id="cnclsn">
+		<title>Conclusion</title>
+		<para>Virtual Database technology is clearly
+    critical technology with inherent impact on Universal Data Access, Distributed Computing
+    and the emerging Information Age. </para>
+		<para>The Internet as the distributed computing medium of choice will continue to create
+    insatiable demand for information. This simply increases the pressure on information
+    producers and consumers to retrieve data and then rapidly convert into information at ever
+    increasing rates.</para>
+		<para>Internet/Intranet/Extranet sites will emerge as the dominant medium through which
+    information is exchanged. Information once obtained would then be rapidly converted in to
+    knowledge the ultimate basis of competitive advantage and power.</para>
+		<para>If the Information Age is the next point of call, and we accept that all Information
+    comes from data? Then it is rational to conclude that Virtual Databases will lie at the
+    heart of the Information Age. In short, there is a limited Information Age at best without
+    the prevalence of Internet/Intranet/Extranet sites driven by Virtual Database Engines.</para>
+	</sect1>
+</chapter>

@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?> <!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="webdavserver">
+<title>WebDAV Server</title>
+<para>Virtuoso supports the WebDAV protocol, which is an extension of HTTP for
+cooperative work on the Internet.  DAV resources can be of any mime type,
+including binary types.
+The DAV resources are stored in the Virtuoso database
+as large objects, they are not in the file system and can only be accessed
+through the DAV protocol.  Direct SQL access to the DAV tables is also possible, so
+there's a set of Virtuoso/PL procedures that acts as DAV API to let server-side applications access DAV.
+Virtuoso DAV can be extended by virtual collections. Instead of accessing DAV tables,
+DAV server can retrieve data from applications,
+thus an application can generate documents on demand and these documents will be available  via DAV
+as well as plain DAV resources. Moreover, resources can be submitted directly to the application via DAV.
+Virtuoso DAV provides settable access rights and ownership of resources.
+Access rights as such are not covered by the DAV specification but Virtuoso implements both ACLs (access control lists) and a Unix
+file system like scheme for ownership and permissions.
+SQL accounts enabled for DAV are valid owners of DAV resources.  A resource has both a user owner and a group owner, plus an optional access control list that can grant privileges to users and roles alike.
+A user can have DAV-only access, SQL/ODBC-only access, both of them or neither.
+User account information is stored in relational tables and can be manipulated from SQL or
+through a Web UI.</para>
+<para>
+Virtuoso DAV can store metadata about resources. These metadata are extracted from resources automatically,
+and can be edited by users. In addition, users can place public and personal &apos;tags&apos; on resources to
+categorize data according for personal needs without interference between users.
+Virtuoso DAV has a powerful and scaleable search engine that let application locate resources that match given list of criteria.
+The search can process both plain DAV resources and data published by applications in virtual collections.
+Search criteria can check for resource properties, content, metadata and tags.
+</para>
+<para>Certain special processing is provided for the following types
+of DAV resources:</para>
+<simplelist>
+<member>Any textual content types are automatically indexed in a free text index.</member>
+<member>Any XML content types are indexed in the same free text index as other
+  text plus can be queried  with the <emphasis>xcontains</emphasis>
+  SQL predicate.</member>
+<member>Some well-known types of documents are parsed in order to extract metadata,
+such as author of MS Office document or musical genre of MP3 audio file or resolution of an image.</member>
+<member>VSP/VSPX pages - DAV resources can be dynamic web pages written in VSP
+  or VSPX. Requesting such a page with GET or POST will execute the logic on
+  the page. This is very convenient way of building web allications.
+  </member>
+</simplelist>
+<para>DAV resources are stored in an ordinary relational table.  The text and
+XML query features used with DAV are separately usable from SQL on any table
+with the appropriate indexes and are thus not intrinsically related to DAV.</para>
+<para>WebDAV (Web Distributed Authoring and Versioning) is a communication
+protocol for the Internet implemented as an extension to HTTP 1.1.  The WebDAV
+specification was published by the Internet Engineering Task Force (IETF) in
+February 1999.</para>
+<para>Most operating systems have support for accessing data hosted on DAV servers.</para>
+<para>DAV was designed to provide more methods for handling server resources.
+In addition to the usual HTTP methods such as GET, POST, HEAD, PUT, DELETE,
+OPTIONS are methods for making directories (or collections), a lock mechanism, copying of
+resources and  collections, predefined and userd-defined properties of resources and collections.</para>
+<para>DAV consists of HTTP extensions, often with a message body containing XML.
+DAV also provides a basic schema for resource metadata by allowing arbitrary XML properties to  be attached to resources.
+</para>
+<para>
+Virtuoso supports the following HTTP methods:
+</para>
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle"
+		orient="land" pgwide="0">
+<title>Features List - Virtuoso Web DAV HTTP Method Support</title>
+<tgroup align="char" charoff="50" char="." cols="2">
+<colspec align="left" colnum="1" colsep="0" colwidth="20pc" />
+<thead>
+<row>
+<entry>HTTP Method</entry>
+<entry>Description</entry>
+</row>
+</thead>
+<tbody>
+<row>
+<entry>HEAD</entry>
+<entry>Meta method for examining server properties or network behavior.</entry>
+</row>
+<row>
+<entry>GET</entry>
+<entry>Retrieves documents from the server</entry>
+</row>
+<row>
+<entry>POST, PUT</entry>
+<entry>Posts or puts documents on the server</entry>
+</row>
+<row>
+<entry>MKCOL</entry>
+<entry>Creates a collection</entry>
+</row>
+<row>
+<entry>MOVE</entry>
+<entry>For moving resources and/or collections within the server</entry>
+</row>
+<row>
+<entry>DELETE</entry>
+<entry>Removes resources or collections of resources from the server</entry>
+</row>
+<row>
+<entry>LOCK, UNLOCK</entry>
+<entry>Locks or unlocks a resource or collection to protect from modification by others</entry>
+</row>
+<row>
+<entry>PROPFIND, PROPPATCH</entry>
+<entry>Retrieves and sets properties for collections and/or resources.  In addition to arbitrary user-defined properties,
+Virtuoso supports two sets of predefined properties: standard DAV properties (type, creation time, modification time, size etc.) and
+Virtuoso-specific DAV properties (access control, tags, extensions for virtual collections.)</entry>
+</row>
+<row>
+<entry>MGET (experimantal)</entry>
+<entry>Retrieves RDF metadata of a document according to URIQA rules</entry>
+</row>
+<row>
+<entry>MPUT/MDELETE (experimantal)</entry>
+<entry>Updates RDF metadata of a document according to URIQA rules and appropriate RDF Schemas</entry>
+</row>
+</tbody>
+</tgroup>
+</table>
+<tip>
+<title>See Also: External References</title>
+<para>
+<ulink url="http://www.rfc-editor.org/rfc/rfc2616.txt">IETF RFC 2616 regarding HTTP 1.1</ulink>
+</para>
+<para>
+<ulink url="http://www.rfc-editor.org/rfc/rfc2518.txt">IETF RFC 2518 regarding WebDAV Specification</ulink>
+</para>
+</tip>
+<sect2 id="davaccountsforwebuser">
+<title>DAV User Accounts</title>
+<para>Any non-disabled SQL account with the U_DAV_ENABLE column set to non-zero is a valid DAV account.
+The administration user interface provides a check box for enabling DAV access and will make a default home collection etc.
+Alternately, regular SQL can be used for setting the DAV flag on.  The DAV API or protocol requests can be used for
+creating collecions and resources for the user.
+</para>
+<para>
+Any non-disabled SQL account with the U_DAV_ENABLE column set to non-zero is a valid DAV account.
+The administration user interface provides a check box for enabling DAV access and will make a default home collection etc.
+Alternately, regular SQL can be used for setting the DAV flag on.  The DAV API or protocol requests can be used for
+creating collecions and resources for the user.
+</para>
+<para>There is an automatically created initial DAV enabled account called "dav".  This has general administration privileges over all DAV.</para>
+<para>There are four predefined DAV accounts.</para>
+<simplelist>
+<member>User &quot;dav&quot; is the most powerful DAV account.</member>
+<member>
+DAV group &quot;administrators&quot; usually consists of &quot;dav&quot; only; membership in this group does not give any special priviledges
+but this group is assigned by default to resources that are owned by &quot;dav&quot;.
+Thus group access rights to resources owned by &quot;dav&quot; can be used solely by
+users that are added to &quot;administrators&quot;.</member>
+<member>User &quot;nobody&quot; is a special account that acts as owner of all resources that have no real owner person or owner application.
+It is impossible to log on as &quot;nobody&quot; so it's impossible to use owner permissions of the resource.
+</member>
+<member>
+Group account &quot;nogroup&quot; always consists of only one user &quot;nobody&quot;;
+User &quot;nobody&quot; can not become a member of any other group.
+It is impossible to add other users to &quot;nogroup&quot; or add &quot;nogroup&quot; to some role.
+</member>
+</simplelist>
+<note>
+<title>Note:</title>
+<para>The WebDAV admin user "dav" can be deleted. However, after a server restart
+  the initial setting of this account will be added again.</para>
+</note>
+<para>
+<important>It is strongly recommended that the Virtuoso administrator
+  change the default account password of the DAV administrative user after
+  installation.</important>
+</para>
+<example id="davusrsbyhand">
+<title>Manipulating WebDAV Users By Hand</title>
+<programlisting>
+USER_CREATE ('user', 'userpassword',
+  vector ('SQL_ENABLE', 0, 'DAV_ENABLE', 1, 'PERMISSIONS', '110100000RR', 'DISABLED', 0));
+</programlisting>
+<para>This will create a new account named 'user' with password 'upwd', default
+  permissions for new resources created by the account will be rw-r---- and the account is
+  enabled and ready to use.</para>
+<programlisting>
+DAV_ADD_USER ('user', 'userpassword', '110100000RR', 0, '/DAV/home/user/',
+  'Full User Name', 'user@example.com', 'dav', 'davpassword');
+</programlisting>
+<para>this will do almost the same but it will describe the user in more details and require no
+DBA provileges -- only DAV password. In addition, DAV_ADD_USER () can both create a new user and
+grant DAV permissions to an already existing SQL user.</para>
+<para>The following statement is used to grant role 'administrators' to the 'user' account.</para>
+<programlisting>
+      GRANT ADMINISTRATORS TO "user";
+</programlisting>
+<para>or</para>
+
+<programlisting>
+      USER_GRANT_ROLE ('user', 'administrators');
+</programlisting>
+<para>The following will disable the account 'user' until 'DISABLED' option is returned
+  to zero.</para>
+<programlisting>
+    USER_SET_OPTION ('user', 'DISABLED', 1);
+</programlisting>
+<para>DAV access permissions can be revoked permanently:</para>
+<programlisting>
+    DAV_DELETE_USER ('user' , 'dav', 'davpassword');
+</programlisting>
+</example>
+<tip>
+<title>See Also:</title>
+<para>
+<link linkend="davsystables">WS &amp; DAV System Tables</link>
+</para>
+</tip>
+</sect2> <!-- This is obsolete
+ <sect2 id="davquota"><title>WebDav Quota</title>
+
+  <para>The Virtuoso administrator can enforce a quota on all DAV accounts, apart
+  from the "dav" administration user, using the <computeroutput>DAVQuotaEnabled</computeroutput>
+  parameter set in the <computeroutput>HTTPServer</computeroutput> section of
+  the Virtuoso INI file.  This can be used restricts the amount of space a DAV
+  user can consume in their DAV home directory.
+  When the <computeroutput>DAVQuotaEnabled</computeroutput> parameter is set
+  to one (1) quotas are enabled, when this parameter is set to zero (0), they
+  are disabled.  The default quota value is five Megabytes (5MB) but can be
+  defined for each user.  Every user has a quota except "dav", which is unlimited.
+  Dav quotas are disabled by default if the <computeroutput>DAVQuotaEnabled</computeroutput>
+  parameter is not specified for backwards compatibility.</para>
+
+  <para>For existing users there are two functions for setting and retrieving
+  user options, these are:</para>
+  <para><link linkend="fn_USER_SET_OPTION"><function>user_set_option()</function></link></para>
+  <para><link linkend="fn_USER_GET_OPTION"><function>user_get_option()</function></link></para>
+
+  <para>respectively.  The option name to set is "<computeroutput>DAVQuota</computeroutput>"
+  which takes an integer value corresponding to the size limit in bytes.</para>
+<programlisting><![CDATA[
+SQL> db..user_set_option ('myuser', 'DAVQuota', 5242880);
+]]></programlisting>
+<para>Would enforce a quota limit of 5meg on the 'myuser' user.</para>
+
+ </sect2>
+-->
+<sect2 id="davauth">
+<title>WebDAV Authentication</title>
+<para>Virtuoso WebDAV offers two types of authentication dependant on the
+ connecting clients abilities.  These are:</para>
+<simplelist>
+<member><emphasis>Basic (Clear Text) Authentication</emphasis> - sends
+	 passwords over the connection in clear text. Clear text passwords can be
+	 intercepted and read so should be avoided or used only if you encrypt
+	 passwords through SSL.</member>
+<member><emphasis>Digest Authentication</emphasis> - passwords are always transmitted in an MD5 hash.</member>
+</simplelist>
+<sect3 id="davbasicauth">
+<title>Basic Authentication</title>
+<para>Basic Authentication is a widely used, industry-standard method for
+ collecting user name and password information.  The following steps outline
+ how a client is authenticated using Basic authentication:</para>
+<orderedlist>
+<listitem>The client browser displays a dialog box for a user to enter
+  a user name and password (his/her credentials).</listitem>
+<listitem>The client browser then attempts to establish a connection to
+  the server using the user's credentials. The clear text password is
+  Base64-encoded before it is sent over the network.</listitem>
+<listitem>If a user's credentials are rejected, the client may re-display
+  the authentication dialog box to re-enter the user's credentials.  Failing
+  to supply correct details will terminate the connection, reporting an
+  error to the user. </listitem>
+<listitem>When Virtuoso verifies that the user name and password are
+  valid, a connection is established.</listitem>
+</orderedlist>
+<para>The advantage of Basic authentication is that most clients support it.
+ The disadvantage is that it transmits passwords in an unencrypted form.
+ Simple network monitoring can easily reveal your password.  Basic
+ authentication is not recommended unless you are confident that the
+ connection between the user and Virtuoso is secure. </para>
+<note>
+<title>Note:</title>
+<para>Base64 encoding is not encryption.  A Base64-encoded password can be
+	easily intercepted by a network sniffer and easily decoded.</para>
+</note>
+</sect3>
+<sect3 id="davdigestauth">
+<title>Digest Authentication</title>
+<para>Digest authentication provides a security improvement over Basic
+ authentication in how a user's credentials are sent across the network.
+ Digest authentication transmits credentials across the network as an MD5 hash,
+ or message digest, where the original username and password cannot be
+ deciphered from the hash.  Digest authentication reiles on the HTTP 1.1
+ protocol as defined in RFC 2617, which not all browsers support.</para>
+<para>The following steps outline how a client is authenticated using Digest authentication:</para>
+<figure id="figdavdigestauth" float="1">
+<title>Digest Authentication</title>
+<graphic fileref="digestauth.jpg" format="jpeg"></graphic>
+</figure>
+<orderedlist>
+<listitem>The client requests a file or connection from Virtuoso.</listitem>
+<listitem>Virtuoso challenges the request, informing that client: Digest is in use, what the realm name is.</listitem>
+<listitem>The client prompts the user for credentials.  The client creats an MD5 hash of the credentials and the realm name and resubmits the request, this time supplying the MD5 hash.</listitem>
+<listitem>If Virtuoso approves the credentials then the resource or connection is granted to the client, and the data is returned.</listitem>
+</orderedlist>
+</sect3>
+</sect2>
+<sect2 id="davsymboliclinks">
+<title>WebDAV Symbolic Links</title>
+<para>Virtuoso supports a special type of WebDAV resources, a redirect
+  reference resource, named WebDAV links.  This is to extend the WebDAV service
+  to enable clients to create new access paths to existing resources.</para>
+<para>The redirect reference resources are resources whose default response
+  is an HTTP/1.1 302 (Found) status code, redirecting the client to a different
+  resource, the target resource.  A redirect reference makes it possible to
+  access the target resource indirectly, through any URI mapped to the redirect
+  reference resource.  The integrity is not guaranteed for associated redirect
+  reference resources.</para>
+<para>The example of working of links is:</para>
+<screen>/a/b.html [linked to /c/d/f.html]</screen>
+<para>When the user-agent requests /a/b.html it will receive '302 Found' and
+  the Location header will be set to the /c/d/f.html.  Hence it will go to
+  /c/d/f.html.  This behavior is equivelent to UNIX symbolic links.</para>
+<para>WebDAV links behaviour in resource manipulation requests.  When some
+  link is moved the target will have the same properties as source, ie. it will
+  be a link.  When copy operation is made the target will have content of
+  the reference ie. it will be a resource, not a link.  Delete operation on
+  link will remove only the redirect reference resource , not the referenced
+  target itself.  Content upload requests will change the content of the
+  reference target.</para>
+<para>This functionality is achieved by adding a special WebDAV property
+  'redirectref'.  Its value must contain the reference target URL.  Hence the
+  WebDAV links can be targeted not only to the WebDAV repository itself, they
+  can be targeted to any HTTP accessible resource.</para>
+<para>The WebDAV links can be made with DAV API function DAV_PROP_SET(),
+  or can be done via the <link linkend="contentmanagement">Content Management</link>
+  interface of the Admin UI.  In the admin UI select
+  WebDAV/WebDAV Services/Content Management and press on the
+  <emphasis>Create Link</emphasis> button to create a link.  In the form choose
+  the target, permissions, owner and enter the name of the link.  Pressing
+  the <emphasis>Add</emphasis> button will create the new link in the current
+  WebDAV folder.</para>
+<para>To create the same link via PL or directly from the ISQL tool, the
+  following statement can be executed:</para>
+<programlisting><![CDATA[
+SQL> select DAV_RES_UPLOAD ('/DAV/link','','','110100000NN',
+  [dav_owner_uid], [dav_owner_pwd], [dav_admin_uid], [dav_admin_pwd]);
+
+SQL> DAV_PROP_SET ('/DAV/link', 'redirectref',
+  '[URL for the target]', [dav_owner_uid], [dav_owner_pwd]);
+]]></programlisting>
+</sect2>
+<sect2 id="accesspermofwebres">
+<title>Access Right Permissions of Web Resources</title>
+<para>
+The WebDAV resources have two sorts of access right permissions.
+&apos;Classical&apos; UNIX filesystem style permissions let assign different permissions for owner user, owner group and public access.
+Access Control Lists (ACLs) let assign permissions in more flexible Windows style but they are less convenient for simple tasks.
+Both set of permissions can be applied to the same resource or collection.
+In any case, each resource or collection (directory/folder) can have defined Read, Write and Execute permissions.
+The write permission applies to operations which perform content or property
+change or locking as PUT, PROPPATCH, MOVE, destination URI in COPY, LOCK, UNLOCK, DELETE, MPUT and MUPDATE.
+The read permission applies to read operations as GET, POST, PROPFIND, HEAD, source URI in COPY and MGET;
+read permission is also required for any write operation.
+</para>
+<tip>
+<title>See Also</title>
+<para><ulink url="http://www.rfc-editor.org/rfc/rfc2518.txt">RFC2518</ulink>
+for more details of methods/operations</para>
+</tip>
+<para>
+The execute permission applies only to the active content stored in the WebDAV
+domain. If a VSP or VSPX page stored in a WebDAV domain has execute permissions
+then retrieval of that page will perform execution of active content.  Note also a
+special flag to the virtual directory which can override the execution flags for
+active pages. (for the details how this flag can be set see 'options' in
+VHOST_DEFINE() function). If such a flag is set to the virtual directory, then
+all active pages under that directory (direct and indirect children) will be treated
+as execution flag of the resource is set. In almost any case, user should have both read
+and execute permissions to access active content.
+</para>
+<para>
+Resources with the following extensions are treated as executable content: .vsp, .vspx, .xml  if this has the XML template properties set.
+Any other extension is also considered executable if there is a corresponding WS.WS.&quot;__http_handler_&lt;extension&gt;&quot; PL procedure.
+</para>
+<para>
+The UNIX style permissions can be set for user, group or public access.
+ACL consists of records called Access Control Entries (ACEs). Every ACE allow or deny some sorts of access to an individual user or to a group.
+Resource owner or administrator can add an &quot;explicit&quot; ACE to the ACL of particular resource or &quot;recursively&quot;
+add &quot;implicit&quot; ACEs to every resource and subcollection of some collection.
+The server checks permissions in the following order:
+</para>
+<orderedlist>
+<listitem>match the user part of UNIX-style permissions to the specific operation, if user is the
+owner of the resource.</listitem>
+<listitem>match the user group part of UNIX-style permissions to the specific operation, if user
+belongs to a group which owns the  resource.</listitem>
+<listitem>match the public part of UNIX-style permissions to the specific operation.</listitem>
+<listitem>If Access Control List is not empty, scan ACEs from the beginning of the list to the end.
+The loop stops at the first ACE that mentions either the user in question or one of the roles granted to it.
+Depending on the type of the ACE, the access is either granted or denied and the rest of list has no effect.</listitem>
+<listitem>If ACL contains no appropriate ACE then the access is denied.</listitem>
+</orderedlist>
+<para>
+According to these rules, the order of records in ACL is important. ACEs are ordered following two rules:
+&quot;deny&quot; ACEs has higher priority than &quot;allow&quot; ACEs; &quot;local&quot; rules has higher
+priority that &quot;global&quot;:
+</para>
+<orderedlist>
+<listitem>All explicit ACEs are placed in a group before any inherited ACEs.</listitem>
+<listitem>Within the group of explicit ACEs, access-denied ACEs are placed before access-allowed ACEs.</listitem>
+<listitem>Inherited ACEs are placed in the order in which they are inherited. ACEs inherited from the child object's parent come first, then ACEs inherited from the grandparent, and so on up the tree of objects.</listitem>
+<listitem>For each level of inherited ACEs, access-denied ACEs are placed before access-allowed ACEs.</listitem>
+</orderedlist>
+<para>
+New resources and collections take their initial permissions from the user default permissions mask, U_DEFAULT_PERMS of SYS_USERS.
+(see: <link linkend="davuseradm">WebDAV Users Administration</link>).
+In the case of a resource created as public or a collection mask of 'rw-rw-rw',
+then everybody can read and write it.
+</para>
+<example>
+<title>WebDAV Permissions</title>
+<para>
+Consider a resource with the following permissions:
+</para>
+<screen>
+'rwxrw-r--'
+</screen>
+<para>
+This can be executed, read and written to by the owner, group members can read
+and write to it, and non authenticated (public) users or users not belonging to
+the group group can only read it.
+</para>
+</example>
+<para>
+Every resource or collection has two additional flags in permissions, that instruct the server whether resources should
+be indexed for free-text search and whether resources should be parsed to extract metadata:
+</para>
+<para>
+Free-text indexing flag can take one of three values: &quot;N&quot;, &quot;R&quot; and &quot;T&quot;.
+If a resource has this flag set to R or T then the resource will be free-text indexed.
+If a collection has this flag set to T then resources directly contained within the collection will be free-text indexed.
+If a collection has this flag set to R then resources contained within the
+collection will be free-text indexed, and the setting will be applied to all
+members and collections underneath recursively.  New resources and collections
+acquire this setting from their parent collection.
+</para>
+<para>
+Similarly, metadata extraction flag can take one of three values: &quot;N&quot;, &quot;R&quot; and &quot;M&quot;.
+If a resource has this flag set to R or M then its metadata are extracted.
+If a collection has this flag set to T then metadata are extracted from resources directly contained within the collection.
+If a collection has this flag set to R then metadata are extracted from resources contained within the
+collection, and the setting will be applied to all
+members and collections underneath recursively.  New resources and collections
+acquire this setting from its parent collection.
+</para>
+</sect2>
+<sect2 id="customattofwebres">
+<title>Special Attributes of Web Resources</title>
+<para>The Virtuoso WebDAV implementation provides a set of special attributes (properties)
+  for the resources to manipulate the retrival of XML documents.  Properties can be
+  set generate dynamic content based on XML/SQL queries.   Special properties
+  can also be applied to WebDAV folders for storing XML data in a special pre-parsed persistent XML format. </para>
+<para>The following special properties are supported:</para>
+<itemizedlist mark="bullet">
+<listitem>
+<formalpara>
+<title>xml-stylesheet</title>
+<para>must contain a valid URL to an XSLT
+  style sheet.  Upon request of an XML document with this property set,
+  the WebDAV server will automatically perform the transformation of the XML document and will
+  send the result of transformation to the user-agent instead of the original XML source.  This
+  property is only settable for documents having MIME type text/xml.</para>
+</formalpara>
+</listitem>
+<listitem>
+<formalpara>
+<title>xml-sql</title>
+<para>must contain a valid
+  XML/SQL query (see also: <link linkend="forxmlforsql">FOR XML statements</link>).  When this
+  property is set the server will execute the query and the XML result will be sent to
+  the client.  Note that if xml-stylesheet is also supplied for this resource the
+  result will be transformed and then sent to the client.</para>
+</formalpara>
+</listitem>
+<listitem>
+<formalpara>
+<title>xml-sql-root</title>
+<para>specifies the root element
+  name of automatically generated XML resources when xml-sql is specified.  Otherwise
+  it has no effect.</para>
+</formalpara>
+</listitem>
+<listitem>
+<formalpara>
+<title>xml-sql-dtd</title>
+<para>can be specified as a string
+  value 'on' or valid URL.  When the value is 'on' the DTD declaration will be implied
+  in the automatically generated XML resource. Otherwise when the URL is supplied
+  this URL will be included in the DTD declaration of the automatically generated XML
+  resource.  If xml-sql is not specified this property has no effect.</para>
+</formalpara>
+</listitem>
+<listitem>
+<formalpara>
+<title>xml-sql-schema</title>
+<para>specifies the URI for the
+  XML Schema.  This schema URI will be included in the XML header, to allow
+  client-side schema validation.  If xml-sql is not specified this property has no effect.</para>
+</formalpara>
+</listitem>
+<listitem>
+<formalpara>
+<title>xper</title>
+<para>can be specified for a collection (folder).
+  When this property is set on a WebDAV collection, the direct resource members will be
+  stored and updated as persistent XML.  Note that existing resources will not be changed
+  until they are  updated.  The reversal of this property for collections will not change
+  the resources at the same time, they will be reverted to the text/xml storage on first
+  update operation.  Resources already stored as XML persistent documents also have the
+  xper property set, but manipulation  of this property must not be used to revert the storage.</para>
+</formalpara>
+</listitem>
+</itemizedlist>
+</sect2>
+</sect1>

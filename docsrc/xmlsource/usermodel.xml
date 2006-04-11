@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="usermodel"><title>Virtuoso User Model</title>
+
+<para>The Virtuoso User Model is designed to support:</para>
+
+<simplelist>
+ <member>Use of an external server for password and user account base maintenance 
+ for example an LDAP server, another database server etc.  This allows user accounts to be 
+ verified against security information stored in some  centralized repository, 
+ allowing integration into existing security infrastructure .</member>
+ <member>Single namespace for users and groups for SQL and web service access.  
+ In this  way the local security info is stored in one place and allows 
+   enabling SQL account to work as a web account or a web account as an SQL 
+ account. This enforces unique names for users and roles in the database.</member>
+ <member>Extensibility of user information retrieval  and checking.</member>
+ <member>Extensibility of user account and group attributes.</member>
+</simplelist>
+
+<para>There is a set of functions for administering the users and groups 
+(roles) of a Virtuoso database.  All the user administration functions are restricted to
+members of the dba group only.</para>
+ 
+<note><title>Note:</title>
+<para>The terms 'role' and 'group' are identical in their usage in this document.  
+The terms security object or grantee refer collectively to users and 
+groups.</para></note>
+
+<para>User manipulation functions do not generally return values.  In case of 
+error an error condition will be signaled.</para>
+
+<para>Users and roles are in the same namespace and are identified by name.  
+One name will not both designate a user and a group.  A user or group may be 
+SQL enabled.  A name that identifies a role (group) does not have a password 
+and is not a valid login name.</para>
+
+<para>A user may belong to multiple roles.  A role may inherit multiple other 
+roles.  One role may be inherited or directly granted to a security object 
+multiple times.  The order of granting is not relevant.  The effective 
+privileges of a user are those granted to public, those granted to the user 
+plus those granted to a direct or indirect role of the user.  The relationship 
+between users and roles is many to many.  A role can be granted multiple other 
+roles as well as direct permissions.  Cycles in granting roles are not allowed, 
+an error will be signaled if an operation would result in a cycle in the 
+role inheritance graph.</para>
+
+<para>When SQL procedures or queries are executing, the effective privileges 
+are those granted to the owner of the procedure or view.  A top level 
+dynamic SQL statement executes with the effective privileges of the logged in 
+user.  If a SQL statement executes as a result of an HTTP request, the 
+applicable virtual directory specifies on behalf of which SQL account the SQL is 
+executed.  A role cannot be the owner of procedures, views or other executable 
+SQL entities.</para>
+
+<sect2 id="vumsecobjects"><title>Security Objects Management</title>
+
+<para>The following functions allow for creation and deletion of security objects 
+and roles, and for assigning or removing roles from security objects:</para>
+
+<simplelist>
+  <member><link linkend="fn_USER_CREATE"><function>USER_CREATE()</function></link></member>
+  <member><link linkend="fn_USER_ROLE_CREATE"><function>USER_ROLE_CREATE()</function></link></member>
+  <member><link linkend="fn_USER_DROP"><function>USER_DROP()</function></link></member>
+  <member><link linkend="fn_USER_ROLE_DROP"><function>USER_ROLE_DROP()</function></link></member>
+  <member><link linkend="fn_USER_CHANGE_PASSWORD"><function>USER_CHANGE_PASSWORD()</function></link></member>
+  <member><link linkend="fn_USER_SET_QUALIFIER"><function>USER_SET_QUALIFIER()</function></link></member>
+  <member><link linkend="fn_USER_GRANT_ROLE"><function>USER_GRANT_ROLE()</function></link></member>
+  <member><link linkend="fn_USER_REVOKE_ROLE"><function>USER_REVOKE_ROLE()</function></link></member>
+  <member><link linkend="fn_USER_SET_OPTION"><function>USER_SET_OPTIONS()</function></link></member>
+  <member><link linkend="fn_USER_GET_OPTION"><function>USER_GET_OPTIONS()</function></link></member>
+</simplelist>
+
+<para>The security objects and roles data are contained in the system tables 
+described in the <link linkend="UserSysTables">User System Tables</link> Section 
+of the Appendix</para>
+
+</sect2>
+
+<sect2 id="vumuseroptions"><title>User Options</title>
+
+<itemizedlist>
+ <listitem><formalpara><title>PASSWORD_MODE</title>
+  <para>Function for checking a given password on SQL or DAV login.  See below.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>PASSWORD_MODE_DATA</title>
+  <para>Application specific data for the Password Mode hook.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>LOGIN_QUALIFIER</title>
+  <para>Default qualifier for SQL session.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>SQL_ENABLE</title>
+  <para>If set SQL login is granted.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>DAV_ENABLE</title>
+  <para>If set the user account can be user for web authentication.</para>
+  </formalpara></listitem>
+  
+ <listitem><formalpara><title>DISABLED</title>
+	 <para>If set the user account is locked and cannot be used to 
+	     login as SQL or Web user (depends of SQL_ENABLE and DAV_ENABLE flags). 
+	     If the account in question is SQL enabled the DBA group can switch 
+	     the execution identity to it (see set_user_id () function).
+	     This is useful when we need an account to execute Web pages (VSP/VSPX)
+	     with some execution permissions but we do not 
+	     want to allow it to login via SQL/ODBC. 
+	 </para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>PRIMARY_GROUP</title>
+  <para>This is the primary group of the user.  This is no different from 
+  other group memberships.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>GET_PASSWORD</title>
+  <para>Function that will retrieve the password.  If not defined the password 
+  is assumed to be in the SYS_USERS table.  This allows for custom encrypted 
+  storage of passwords etc.  This is simpler to use than the check hook.  
+  Note that for security configurations where the server never does know the 
+  passwords of user accounts, no digest based authentication schemes can be used, 
+	including the HTTP digest authentication, since the digests cannot be computed 
+  and checked without knowing the password.  Possible users of this feature  
+  are  DBEV_LOGIN or HTTP login hooks.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>E-MAIL</title>
+  <para>informative: e-mail of that user.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>FULL_NAME</title>
+  <para>informative: full name of the user.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>HOME</title>
+  <para>WebDAV home directory of the account, it is meaningful  only if the 
+  account is web enabled.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>PERMISSIONS</title>
+  <para>WebDAV default permissions for new WebDAV objects created by the user.  
+  This is only meaningful when web access is enabled.</para>
+  </formalpara></listitem>
+</itemizedlist>
+
+<para>The functions for setting/getting these options will accept any 
+other named values, the above list only being those reserved for Virtuoso so far.</para>
+</sect2>
+
+
+<sect2 id="vumloginexthook"><title>Login Extension PL Hook</title>
+    
+<para><function>DB.DBA.USER_FIND
+    <paramdef>in <parameter>name</parameter> varchar</paramdef>
+    </function></para>
+
+<para>This is a user-defined PL function hook which, if it exists, will be 
+executed before doing the SQL/ODBC login.  In this hook the user can find a 
+user account from some other server and register it in the local database.  Or, 
+this can be used to perform some pre-login actions.  It is similar to the 
+DBEV_LOGIN, but it does not change any account validation rule, it is 
+purely for pre-processing.</para>
+
+<tip><title>See Also:</title>
+<para>The <link linkend="hooks">Database Event Hooks</link> chapter.</para></tip>
+
+<sect3 id="vumplhooksxmpls"><title>PL Hooks Examples</title>
+
+<example id="vumqryldap"><title>Querying an LDAP Server</title>
+
+<programlisting><![CDATA[
+create procedure DB.DBA.LDAP_SEARCH (inout user_name varchar, in digest varchar)
+{
+  whenever sqlstate '28000' goto ldap_validation_failure;
+  if (lcase(user_name) <> 'dba')) 
+    {
+      ldap_search('foo.bar.com', 0, 'o=organization', '(cn=a*)',
+		sprintf('uid=%s,ou=users,o=organization', user_name), pwd_magic_calc(user_name,digest,1));
+      user_name := 'dba';
+      return 1; -- force validation as dba
+    }
+  else 
+    {
+      -- bypassing ldap authentication for dba, let validation occur normally
+      return -1; 
+    }
+
+ldap_validation_failure:
+  return -1; -- try to validate normally
+}]]></programlisting>
+
+<programlisting><![CDATA[
+create procedure DB.DBA.DBEV_LOGIN (inout user_name varchar, in digest varchar, in session_random varchar) 
+{
+  declare get_pwd varchar;
+  get_pwd := user_get_option (user_name, 'PASSWORD_MODE'); 
+  if (get_pwd is not null)
+    {
+      declare rc integer;
+      rc := call (get_pwd) (user_name, digest);
+      return rc;	  
+    }    
+  return -1;
+};]]></programlisting>
+
+<programlisting><![CDATA[
+user_create ('test_ldap', 'secret', vector ('PASSWORD_MODE', 'DB.DBA.LDAP_SEARCH'));
+]]></programlisting>
+</example>
+
+<example id="vumuserfindhook"><title>USER_FIND PL Hook Example</title>
+
+<programlisting><![CDATA[
+create table 
+MY_DBA_USERS (M_NAME varchar primary key, M_PASSWORD varchar);]]></programlisting>
+
+<programlisting><![CDATA[
+create procedure 
+DB.DBA.USER_FIND (in name varchar)
+{
+  -- do nothing for existing users
+  if (exists (select 1 from SYS_USERS where U_NAME = name))
+    return;
+  -- if there is in custom table
+  if (exists (select 1 from MY_DBA_USERS where M_NAME = name))
+    {
+      declare pwd varchar;
+      -- get password
+      select M_PASSWORD into pwd from from MY_DBA_USERS where M_NAME = name;
+      -- create a new SQL user based on external data
+      USER_CREATE (name, pwd, NULL);
+    }
+};]]></programlisting>
+</example>
+</sect3>
+</sect2>
+
+<sect2 id="vumrolesemantics"><title>SQL Role Semantics</title>
+
+<para>The terms user group and role are used interchangeably.  Roles can be 
+nested.  There is a many to many relationship between users and roles.  There 
+is likewise a similar, acyclic many to many relationship between roles.  Each 
+role has a component role list of its granted (parent) roles, recursively, 
+no cycles allowed.</para>
+
+<para>All role grants are listed in the roles system table whether they be
+explicitly granted or only as a result of granting a group with groups
+granted to it.  The role grant graph has an explicit edge for each
+role membership, direct or otherwise.  The GI_DIRECT flag is true if
+the grant is direct.  Only direct role grants can be revoked.</para>
+
+<tip><title>See Also:</title>
+<para>The role system table description can be found in the appendix 
+under <link linkend="UserSysTables">System Tables</link>.</para></tip>
+
+<para>The following SQL statements deal with roles.  To create a new 
+role (group) object the following  statement can be used:</para>
+
+<programlisting><![CDATA[CREATE ROLE <NAME>]]></programlisting>
+
+<para>The &lt;NAME&gt; is a name of role to be created.  It must be unique 
+in space of all security objects.</para>
+
+<example id="vumcreaterole"><title>Creating a security role</title>
+<programlisting><![CDATA[SQL> create role admins;]]></programlisting>
+</example>
+
+<para>Use the following statement to remove an existing role from the 
+security schema. </para>
+
+<programlisting><![CDATA[DROP ROLE <NAME>]]></programlisting>
+
+<example id="vumrmrole"><title>Removing a security role</title>
+<programlisting><![CDATA[SQL> drop role admins;]]></programlisting>
+</example>
+
+<para>The GRANT and REVOKE statements are used for controlling role membership as follows:
+To assign a new 
+group, or list of groups (&lt;ROLE&gt;,...) to user &lt;USER&gt; use:</para>
+
+<programlisting><![CDATA[GRANT <ROLE> [, <ROLE>] TO <USER> [WITH ADMIN OPTION];]]></programlisting>
+
+<para>If the admin option is specified, the grantee can grant this same 
+privilege further to other grantees.</para>
+
+<para>Roles can be revoked using:</para>
+
+<programlisting><![CDATA[REVOKE <ROLE> [, <ROLE>] FROM <USER>;]]></programlisting>
+
+<example id="vumgranting"><title>Granting &amp; revoking security roles</title>
+<programlisting><![CDATA[SQL> grant admins, users to demo;]]></programlisting>
+<programlisting><![CDATA[SQL> revoke admins from demo;]]></programlisting>
+</example>
+
+<para>Only the dba group accounts may administer roles.</para>
+
+<para>The dba group is not physically a role.  When an empty database is created, it will have the dba account with full privileges.  To grant these same full privileges to another user, the dba uses the grant all privileges to &lt;grantee&gt;. statement.  This 
+will give the grantee full dba privileges, or in other words, add to the dba group.  This may be reversed with the revoke all privileges from &lt;grantee&gt; statement.
+</para>
+
+<para>The GRANT statement accepts any valid SQL security object in the TO clause. 
+One cannot log in or perform any operations as a role.  Roles are exclusively 
+shorthands for specific sets of permissions which are changed together and 
+are needed for multiple users. </para>
+</sect2>
+
+</sect1>
+
+
+
+

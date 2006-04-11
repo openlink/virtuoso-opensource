@@ -1,0 +1,5 @@
+<!ELEMENT reviews (entry*)>
+<!ELEMENT entry   (title, price, review)>
+<!ELEMENT title   (#PCDATA)>
+<!ELEMENT price   (#PCDATA)>
+<!ELEMENT review  (#PCDATA)>

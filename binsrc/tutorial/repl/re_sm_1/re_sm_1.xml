@@ -1,0 +1,156 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="RE-SM-1">
+  <refmeta>
+    <refentrytitle>SyncML Server Setup</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>SyncML Server</refname>
+    <refpurpose>Setting up SyncML server</refpurpose>
+  </refnamediv>
+
+<refsect1 id="RE-SM-1a">
+<title>Preliminaries</title>
+<para>SyncML is a protocol for syncronizing
+    data between two devices called server and client.
+    Usually as client we may consider PDA, mobile phone
+    or a workstation that have the ability to syncoronize their
+    contacts, calendar etc. databases using SyncML protocol.
+    On the other hand the server have ability to recoginize
+    such requests and to store the data into the repository.
+    Basically this is a protocol for data replication,
+    oriented to the portable devices.
+</para>
+
+<para>
+    The usual message flow is:
+</para>
+
+<itemizedlist mark="bullet">
+  <listitem>Initial request from client</listitem>
+  <listitem>Server response asking for credentials, if not supplied</listitem>
+  <listitem>Client sends credentials included in the request</listitem>
+  <listitem>Server accepts or rejects the sync request.</listitem>
+  <listitem>When request for sync is accepted, then server
+      checks what sync to perform: slow two-way (full data) or two-way sync.</listitem>
+  <listitem>Client send the items that are changed or all items depending of sync type</listitem>
+  <listitem>Server sends items that are changed or all items depending of sync type requested.</listitem>
+</itemizedlist>
+
+		<para>
+    The Virtuoso WebDAV repository can be used to keep
+    such data. The server will recognize SyncML request by MIME
+    content type 'application/vnd.syncml+xml' or 'application/vnd.syncml+wbxml'
+    upon POST request and will act then as SyncML server over HTTP.
+    </para>
+    <para>Shortly: on server side are needed:</para>
+		<itemizedlist mark="bullet">
+    	<listitem>1.WebDAV collection with permisions for given accounts </listitem>
+    	<listitem>2.Virtual directory assigned to it.</listitem>
+		</itemizedlist>
+    <para>
+    Optionally virtual host can be defined in order to work with
+    clients that do not have the ability to specify URL, such clients can work
+    only with virtual root collection. Note that WebDAV collection(s) creation is a
+    vital step; apropriate rights MUST be set before using it with SyncML client;
+    clients can only store items(resources), they can't make sub-folders.
+		</para>
+
+</refsect1>
+
+<refsect1 id="RE-SM-1b">
+    <title>Instructions for setting SyncML server and client</title>
+<orderedlist>
+    <listitem>Create a new folder named '/DAV/sync/' under WebDAV root. This can be done via Conductor UI going to the "WebDAV &amp; HTTP" tab and then going to the "WebDAV Content Management" tab.</listitem>
+    <listitem>Create subfolders calendar and contacts under /DAV/sync/</listitem>
+    <listitem>Create a new virtual host with virtual root assigned to /DAV/sync/ WebDAV collection. Please reffer to the documentation for more information.</listitem>
+</orderedlist>
+
+<para>Nokia 92x0 Communicator
+</para>
+<orderedlist>
+    <listitem>In Extras menu open "Remote sync"</listitem>
+    <listitem>In "Profile settings" choose "New Profile"</listitem>
+    <listitem>Select apropriate internet access</listitem>
+    <listitem>Enter the Virtuso HTTP server address and port values as you created them earlier.</listitem>
+    <listitem>Enter username and password for account which have permissions to the
+	'/DAV/sync/' and descendants.</listitem>
+    <listitem>Select tab "Data"</listitem>
+    <listitem>Choose Calendar and enter for "Remote calendar" './calendar/'.</listitem>
+    <listitem>Choose Contacts and enter for "Remote contacts" './contacts/'.</listitem>
+    <listitem>Close the Sync Profile menus, confirm saving</listitem>
+    <listitem>Select "Sync" option.</listitem>
+    <listitem>Verify that items are uploaded into WebDAV collections: /DAV/sync/calendar/ and /DAV/sync/contacts/. For this  you can use Conductor's WebDAV content management UI</listitem>
+    <listitem>Edit some of Contacts/Events on device and perform Sync again. Check the repository as in previous step.</listitem>
+    <listitem>Note: Editing the items on the server needs knowlage of VCARD/VCALENDAR formats as they can be edited as text files.</listitem>
+</orderedlist>
+
+<para>Siemens SX1</para>
+
+<orderedlist>
+<listitem>Select "menu" button</listitem>
+<listitem>Choose "Organizer"</listitem>
+<listitem>Choose "Sync"</listitem>
+<listitem>Select from menu "Options", "New sync profile"</listitem>
+<listitem>Give a meaningful name for this profile in "Sync profile name"</listitem>
+<listitem>Bearer type: Internet</listitem>
+<listitem>Access point: choose some predefined</listitem>
+<listitem>Host address: URL to the SyncML server without HTTP port number</listitem>
+<listitem>Port: SyncML HTTP port number</listitem>
+<listitem>User name: username for account which have permissions to the '/DAV/sync/' and descendants.</listitem>
+<listitem>Password: password for the account</listitem>
+<listitem>Calendar: Yes</listitem>
+<listitem>Remote calendar: ./calendar</listitem>
+<listitem>Contacts: Yes</listitem>
+<listitem>Remote contacts: ./contacts</listitem>
+<listitem>HTTP authentication: No</listitem>
+<listitem>HTTP user name: blank</listitem>
+<listitem>HTTP password: blank</listitem>
+<listitem>Select "Back" from menu</listitem>
+<listitem>New profile should exists. Click on it to perform syncronization.</listitem>
+</orderedlist>
+
+<para>Sony Ericsson P900</para>
+<orderedlist>
+    <listitem>From main menu choose "Remote Sync"</listitem>
+    <listitem>Via menu "Edit" - "Preferences"</listitem>
+    <listitem>Server address: [type URL to the SyncML server]</listitem>
+    <listitem>User Name:</listitem>
+    <listitem>Password:</listitem>
+    <listitem>Press button "Done"</listitem>
+    <listitem>Click on "Contacts"</listitem>
+    <listitem>Enable task: on</listitem>
+    <listitem>Server database: ./contacts</listitem>
+    <listitem>Press button "Done"</listitem>
+    <listitem>To perform Sync on defined items, press button "Sync"</listitem>
+</orderedlist>
+
+<para>Important: Internet connection must be alredy defined and must work with
+    device's browser.
+</para>
+
+</refsect1>
+
+</refentry>

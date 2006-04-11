@@ -1,0 +1,2043 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="installation.xml" id="installation">
+	<title>Installation Guide</title>
+	<abstract>
+<para>This chapter applies exclusively to the various commercial releases of Virtuoso.  If you are working with the open source version, please refer to the instructions on the web site where you obtained it.  
+</para>
+<para>
+This chapter describes how to install OpenLink Virtuoso VDBMS.  It 
+contains both a quick start install guide and full walk through install guides 
+for major platforms.</para>
+</abstract>
+
+  <para>Virtuoso has been designed from the ground-up to be easy to implement.</para>
+	<para>The installation generally runs without problems, run the setup program or script and follow
+	the on screen instruction prompts.  You will be asked some questions, if in any doubt please follow
+	the instructions in this guide in order to install and configure your Virtuoso components correctly. </para>
+
+	<para>Once installed, each instance of Virtuoso is controlled by an
+INI (initialization) file.  This file links the Virtuoso Server
+process with an actual database file or device.  For example, the demo
+instance of Virtuoso on all platforms is controlled by the demo.ini
+file that is found in the demo directory along with the demo.db and
+related files.  There is a one-to-one relationship between server
+processes and database files.</para>
+
+<para>The INI file is a text file consisting of keys and key values.
+You will set several of these values during installation.  At any time
+thereafter, their values can be changed by editing the INI file with a
+standard text editor.</para>
+
+<para>The details of the INI file sections, keys, and the meanings of
+the key values are described in the <link
+linkend="configsrvstupfiles">Configuring Server Startup Files</link>
+section.
+</para>
+
+	<sect1 id="installwin32">
+		<title>Virtuoso for Windows 95/98/NT/2000/XP</title>
+			<sect2 id="doyouwannamigrate">
+				<title>Existing Virtuoso 2.7 Users</title>
+				<para>You can migrate your existing Virtuoso servers to 3.0 using 
+        the migration utility.  The Virtuoso database file structure has been considerably 
+        altered between versions.  Please consult the 
+        <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
+        section for more details.</para>
+			</sect2>
+		<sect2 id="b4ustart">
+			<title>Before You Start</title>
+			<para>To ensure a smooth installation, please review the
+    following checklist before you start the setup program.</para>
+			<sect3 id="haveudld">
+				<title>Have you downloaded the software?</title>
+				<para>If you have not already done so, please download your copy of OpenLink
+    Virtuoso from the OpenLink web site.  The URL is 
+    <ulink url="http://www.openlinksw.com">http://www.openlinksw.com</ulink>.
+    When you visit the site, select &quot;Software availability and download&quot;. </para>
+	<para>The Windows file is a single executable for example ntvez30z.exe</para>
+			</sect3>
+<!--
+			<sect3 id="douhaveunzipsw">
+				<title>Do you have WinZip or other unzip software?</title>
+				<para>Virtuoso is delivered as a zip file.  You will likely already have
+    software to extract the files from the archive.  However, if you do not, you should
+    install a zip extraction utility.  One such product is 
+    <ulink url="http://www.winzip.com/">Winzip</ulink>, which is also available for
+    evaluation from numerous shareware sites such as 
+    <ulink url="http://www.shareware.com">http://www.shareware.com</ulink>.
+     Of course, OpenLink makes no claims regarding the unzip software that you use, or
+    where you acquire it.</para>
+			</sect3>
+-->
+			<sect3 id="douhavelic">
+				<title>Do you have the License file?</title>
+				<para>The server will need a license file, and this is automatically delivered by email
+				as part of the download process. It is therefore important to supply a valid email
+				address. The installer will prompt for the license file location.</para>
+			</sect3>
+			<sect3 id="reinstvirt">
+				<title>Reinstalling Virtuoso?</title>
+				<para>If you are reinstalling Virtuoso, you must first shutdown any
+    additional database servers you have configured on non default ports.
+    The databases on port 1111 and 1112 will automatically be stopped during the install process.
+    On Windows NT/2000/XP, go to the services applet in the Control Panel.  There 
+    you can stop services that appear with names of the form &quot;OpenLink 
+    Virtuoso DBMS Server [instance name]&quot;.</para>
+				<para>On Windows NT/2000/XP you can also shut them down with the following
+    commands in the Virtuoso\bin directory:</para>
+				<programlisting>
+virtuoso-odbc-t.exe +service stop
+virtuoso-odbc-t.exe +instance myinstance +service stop
+virtuoso-odbc-t.exe +instance anotherinstance +service stop
+</programlisting>
+
+<note><title>Note:</title>
+<para>There is an alternative executable available for Virtuoso 
+called: virtuoso-odbc-f.exe, which you may have installed.  This version is 
+designed for versions of Windows that offer no native threading support 
+such as Windows 98, and offers no advantages over virtuoso-odbc-t.exe 
+for Windows NT/2000/XP.</para></note>
+
+				<para>You can list the services with their status using:</para>
+				<programlisting>virtuoso +service list</programlisting>
+			</sect3>
+			<sect3 id="allocoftcpports">
+				<title>Allocation of TCP/IP ports</title>
+				<para>The Default and Demo databases have the following port allocations:</para>
+<table><title>Port Usage</title>
+  <tgroup cols="2">
+ <thead><row><entry>Port</entry><entry>Used by</entry></row></thead>
+ <tbody>
+<row>
+  <entry>1111</entry>
+  <entry>Default Virtuoso Server port</entry></row>
+<row>
+  <entry>8889</entry>
+  <entry>Default Virtuoso Visual Server Administration Interface HTTP port</entry></row>
+<row>
+  <entry>1112</entry>
+  <entry>Demo Virtuoso Server port</entry></row>
+<row>
+  <entry>8890</entry>
+  <entry>Demo Virtuoso Visual Server Administration Interface HTTP port</entry></row>
+    </tbody>
+  </tgroup>
+</table>
+<para>
+    During the installation you will be prompted for the HTTP port number on which the Virtuoso System
+    manager will listen. If the port is already in use, you will encounter problems, and should
+    choose another free port when you are prompted.</para>
+				<para>By default, the Virtuoso DBMS listens on port 1111 and the Demo
+    database on 1112. These port numbers are not selectable at install time.
+    If the port is currently in use by another server then after the installation completes
+    you will need to change the port number in the Local Virtuoso ODBC DSN that is created
+    during the installation process, and also in the following file:</para>
+				<programlisting>
+C:\Program Files\OpenLink\Virtuoso\bin\virtuoso.ini
+</programlisting>
+				<para>To check if a port is in use on NT, you can use the
+    following command, and review the output:</para>
+				<programlisting>
+netstat -an | more
+</programlisting>
+			</sect3>
+			<sect3 id="prevworkodbcdsn">
+				<title>Do you already have an ODBC Data Source Name (DSN) that works?</title>
+				<para>The Virtual Database aspects of the Virtuoso for ODBC assumes that you already
+	have an ODBC driver on your machine from a database vendor, OpenLink Software, or from another 3rd party vendor.
+	It is a useful sanity-check to ensure that you have an ODBC System Data Source Name (DSN) on your
+    machine, and that it successfully connects to your database, and that it retrieve
+    data.  Any ODBC compliant tool can be used to test that your ODBC Data Source Name
+    (DSN) works, such as the sample application we provide - C++ Demo32, and that it is
+    sufficiently robust to operate with Virtuoso. Virtuoso is ODBC Driver Independent and
+    certified to work with any drivers that are ODBC level 1 or higher.</para>
+			</sect3>
+		</sect2>
+		<sect2 id="knowthywinvirt">
+			<title>Getting To Know Your Virtuoso Components</title>
+			<para>Virtuoso is made up of several components, these components
+    fall into two distinct categories: Client Components and Server Components.</para>
+			<sect3 id="clicomppack">
+				<title>Client Components Package</title>
+				<para>These are the components typically used to communicate with
+    a local or remote Virtuoso server, this includes: </para>
+				<simplelist>
+					<member>Virtuoso Drivers for ODBC</member>
+					<member>Virtuoso Drivers for JDBC</member>
+					<member>ISQL Utility</member>
+					<member>ISQLO Utility</member>
+					<member>Documentation</member>
+					<member>Samples</member>
+				</simplelist>
+			</sect3>
+			<sect3 id="srvcomp">
+				<title>Server Components</title>
+				<para>These are the components that service Virtuoso clients,
+				    these include:</para>
+				<simplelist>
+					<member>
+					Virtuoso Virtual Database Servers for: ODBC based
+					interfaces - the files &quot;virtuoso-odbc-f&quot; (for Virtuoso Lite)
+				        and &quot;virtuoso-odbc-t&quot; (For Virtuoso Enterprise Edition).
+					</member>
+					<member>Virtuoso HTTP Server.
+					</member>
+					<member>Virtuoso System Manager to configure the database
+					through the HTTP interface.
+					</member>
+				</simplelist>
+			</sect3>
+		</sect2>
+		<sect2 id="InstallStepsWin">
+			<title>Installation Steps</title>
+			<para>You can install Virtuoso in any one of the following
+    configurations: Stand-Alone, 2-Tier Client-Server, or 3-Tier Client-Server.</para>
+			<sect3 id="standalone">
+				<title>Stand-Alone Configuration</title>
+				<para>In this scenario you have one machine making up your entire
+    solution, which implies that your Applications, Virtuoso&apos;s client and server components,
+    and the back end database engine(s) that you want to access via Virtuoso all reside on the
+    same machine. </para>
+				<orderedlist>
+<!--
+					<listitem>
+						<para>Extract contents of ZIP archive into a temporary installation directory</para>
+					</listitem>
+ -->
+					<listitem>
+						<para>Run the installer program, for example &quot;ntvez30z.exe&quot;</para>
+					</listitem>
+					<listitem>
+						<para>The install engine will load.</para>
+						<figure id="wininst002" float="1">
+							<title>The Prepare Screen</title>
+							<graphic fileref="inst/02prepare.png" width="384" depth="191"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>This installer might have been compiled for an older version of
+						the installer engine than the one on your system. This will be the
+						case on an XP system without the Service Pack 1. Just confirm OK
+						and continue with installation. It is not a serious problem.</para>
+						<figure id="wininst003" float="1">
+							<title>Engine version Warning</title>
+							<graphic fileref="inst/03engine.png" width="324" depth="199"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>Follow the installers on-screen instructions.</para>
+						<figure id="wininst010" float="1">
+							<title>The Welcome Screen</title>
+							<graphic fileref="inst/10welcome.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>You read the full license agreement information and make sure 
+            that you agree with all the terms and conditions before proceeding 
+            with the installation.</para>
+						<figure id="wininst011" float="1">
+							<title>License Agreement</title>
+							<graphic fileref="inst/11license.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>Choose the installation type that you want to install.  The 
+            "Client Only" option is for installing other client machines that 
+            will be used to access Virtuoso remotely, and so do not need the 
+            database installed.</para>
+						<figure id="wininst013" float="1">
+							<title>Setup Type</title>
+							<graphic fileref="inst/13installtype.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>You can transparently integrate Virtuoso with various
+						hosting environments.
+						Your system may show a subset of the available environments
+						that are listed in the figure below.</para>
+						<figure id="wininst014" float="1">
+							<title>Supported Hosting Environments</title>
+							<graphic fileref="inst/14support.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>Choose the destination directory for the installation.  The 
+            installer will create the installation structure below this.</para>
+						<figure id="wininst017" float="1">
+							<title>Choose Destination Location</title>
+							<graphic fileref="inst/17destination.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>If you have already got files at this location, you will be warned.
+						</para>
+						<figure id="wininst018" float="1">
+							<title>Choose Destination Location</title>
+							<graphic fileref="inst/18filesexist.png" width="404" depth="126"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>Select the components that you want to install.
+            Each selected item will have a tick in the tick-box.  These are 
+            the only items that will be installed.</para>
+						<figure id="wininst020" float="1">
+							<title>Select Components</title>
+							<graphic fileref="inst/20feature.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>This warning may appear to inform you that the Virtuoso installer 
+            cannot find the Microsoft SMTP service.  If you will not be using 
+            the SMTP features of Virtuoso this message can be ignored.  If you 
+            will be using an alternative SMTP server possibly on another machine 
+            you can ignore this message.  The installation will proceed in 
+            either case.</para>
+						<figure id="wininst021" float="1">
+							<title>SMTP Service Warning </title>
+							<graphic fileref="inst/21smtp.png" width="622" depth="101"/>
+						</figure>
+					</listitem>
+<!--
+					<listitem>
+						<para>If you earlier chose to install more than one Java class versions 
+            then you will be presented with this dialog to choose how you want 
+            the installer to update your environment to include the Virtuoso 
+            JDBC driver.</para>
+						<figure id="wininst022" float="1">
+							<title>Select Classpath</title>
+							<graphic fileref="inst/22jdk.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+ -->
+					<listitem>
+						<para>If you are installing to a directory that contained a previous 
+            installation of Virtuoso the installer may find that you already 
+            a demo database .db file.  This prompt confirms whether you want 
+            it replaced.</para>
+						<figure id="wininst023" float="1">
+							<title>Demo DB Overwrite Question</title>
+							<graphic fileref="inst/23demooverwrite.png" width="599" depth="126"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>The default database server requires a valid license file 
+            (virtuoso.lic) before it will successfully start.  This file is usually 
+            delivered by email.  If you are not in possession of a license file 
+            at this time then you can install it later manually.</para>
+						<figure id="wininst024" float="1">
+							<title>Select License File</title>
+							<graphic fileref="inst/24licfile.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>Use this dialog to locate the license file that you wish to 
+            use.  If you do not have a license file you will need to install 
+            it later, in which case you can cancel this dialog.</para>
+						<figure id="wininst025" float="1">
+							<title>Select License File</title>
+							<graphic fileref="inst/25licfile2.png" width="563" depth="419"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>After the installation has completed you may want one of the 
+            installed Virtuoso servers to be started.  Choose the appropriate 
+            action.</para>
+						<figure id="wininst030" float="1">
+							<title>Select Startup Database</title>
+							<graphic fileref="inst/30startdb.png" width="504" depth="386"/>
+						</figure>
+						<para>Virtuoso is installed as a Windows Service which can be started 
+            manually or automatically at boot time.  These options let you choose 
+            which.</para>
+					</listitem>
+					<listitem>
+						<para>Choose the server variant you wish to use for the default server.
+						The list will only show supported environments as indicated earlier.</para>
+						<figure id="wininst032" float="1">
+							<title>Select Default Server</title>
+							<graphic fileref="inst/32selectdef.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>Choose the server variant you wish to use for the demo server.
+						The list will only show supported environments as indicated earlier.</para>
+						<figure id="wininst034" float="1">
+							<title>Select Demo Database Server</title>
+							<graphic fileref="inst/34selectdemo.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para></para>
+						<figure id="wininst036" float="1">
+							<title>Select Service Startup Type</title>
+							<graphic fileref="inst/36startuptype.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>Shortcuts to the program and documentation will be contained 
+            under a subdirectory of the Start Menu.  Choose the name of the 
+            directory.</para>
+						<figure id="wininst040" float="1">
+							<title>Select Program Folder</title>
+							<graphic fileref="inst/40menufolder.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>Press Next to begin copying files or press Back to change 
+            any of the settings of the installer.</para>
+						<figure id="wininst050" float="1">
+							<title>Start Copying Files</title>
+							<graphic fileref="inst/50startcopy.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>Before any files can be copied the installer must make sure that 
+            there are now running Virtuoso services that will lock files that 
+            must be overwritten.</para>
+						<figure id="wininst055" float="1">
+							<title>Preparing to Copy Files</title>
+							<graphic fileref="inst/55serviceconflict.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>This will give an indication of the progress of the file 
+            copying process.</para>
+						<figure id="wininst058" float="1">
+							<title>Copying Files Progress</title>
+							<graphic fileref="inst/58copyfiles.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>The Virtuoso includes a web server that can be used for 
+            administering the server remotely.  You must choose a free TCP/IP 
+            port number for the web server listener to use.  This is for the 
+            default Virtuoso server.</para>
+						<figure id="wininst060" float="1">
+							<title>Database Server HTTP Port Select</title>
+							<graphic fileref="inst/60defhttp.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>The Virtuoso Default server listens on a specific port for
+						commands. You must choose a free TCP/IP port number for this.</para>
+						<figure id="wininst062" float="1">
+							<title>Database Server Port Select</title>
+							<graphic fileref="inst/62defport.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>Set the Administration password for the Default Virtuoso Server.
+						Repeat the password to make sure you enter it correctly.</para>
+						<figure id="wininst064" float="1">
+							<title>Default Server Administration Password</title>
+							<graphic fileref="inst/64defdba.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>Set the DAV password for the Default Virtuoso Server.
+						Repeat the password to make sure you enter it correctly.</para>
+						<figure id="wininst066" float="1">
+							<title>Default Server DAV Password</title>
+							<graphic fileref="inst/66defdav.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>If the Demo database was selected then this is configured in a similar
+						way to the Default database. Set the Admin interface HTTP port.</para>
+						<figure id="wininst070" float="1">
+							<title>Demo Database Server HTTP Port Select</title>
+							<graphic fileref="inst/70demohttp.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>Set the port for the Demo server.</para>
+						<figure id="wininst072" float="1">
+							<title>Demo Database Server Port Select</title>
+							<graphic fileref="inst/72demoport.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>Set the Administration password for the Demo Virtuoso Server.
+						Repeat the password to make sure you enter it correctly.</para>
+						<figure id="wininst074" float="1">
+							<title>Demo Server Administration Password</title>
+							<graphic fileref="inst/74demodba.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>Set the DAV password for the Demo Virtuoso Server.
+						Repeat the password to make sure you enter it correctly.</para>
+						<figure id="wininst076" float="1">
+							<title>Demo Server DAV Password</title>
+							<graphic fileref="inst/76demodav.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>As per your selection earlier, Virtuoso services will now be started.</para>
+						<figure id="wininst080" float="1">
+							<title>Starting Demo Service</title>
+							<graphic fileref="inst/80demostart.png" width="301" depth="104"/></figure>
+					</listitem>
+					<listitem>
+						<para>The final confirmation of the completion of the installation.  
+            You may need to reboot the machine for the client drivers to be 
+            correctly installed.</para>
+						<figure id="wininst091" float="1">
+							<title>Setup Complete</title>
+							<graphic fileref="inst/91complete.png" width="504" depth="386"/></figure>
+					</listitem>
+					<listitem>
+						<para>If a server was started during the install, then the
+						Administration page is shown in a web browser.</para>
+						<figure id="wininst095" float="1">
+							<title>Administration Page</title>
+							<graphic fileref="inst/95admingui.png" width="553" depth="385"/></figure>
+					</listitem>
+				</orderedlist>
+			</sect3>
+			<sect3 id="TwoTierConfigInst">
+			<title>2-Tier Client-Server Configuration</title>
+			<para>In this scenario you have two logically distinct machine
+    types making up your total solution, one machine hosts your Applications and Virtuoso
+    client components, while the other hosts your Virtuoso and back-end Database Servers. This
+    installation configuration format will allow Windows client machines to communicate with non
+    Windows server machines running Virtuoso, it also allows Virtuoso clients on non Windows
+    client machines to connect to Virtuoso servers on Windows server machines.</para>
+			<sect4 id="twotierclicomp">
+				<title>Client Components:</title>
+				<orderedlist>
+					<listitem>
+						<para>Move the Virtuoso installation archive into a temporary
+					        installation folder on your Client machine</para>
+					</listitem>
+					<listitem>
+						<para>Choose the Client install option.
+						No further component selection will be required.</para>
+						<figure id="wininst103" float="1">
+							<title>Setup Screens</title>
+							<graphic fileref="inst/12clienttype.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>The installer will now extract and install your Virtuoso Client components</para>
+					</listitem>
+				</orderedlist>
+			</sect4>
+			<sect4 id="twotiersrvcomp">
+				<title>Server Components:</title>
+				<orderedlist>
+					<listitem>
+						<para>Move the Virtuoso installation archive into a temporary
+					        installation folder on your Server machine.</para>
+					</listitem>
+					<listitem>
+						<para>Choose the Server install option.</para>
+						<figure id="wininst203" float="1">
+							<title>Setup Screens</title>
+							<graphic fileref="inst/13installtype.png" width="504" depth="386"/>
+						</figure>
+					</listitem>
+					<listitem>
+						<para>At the component selection, uncheck the &quot;Virtuoso Drivers for ODBC&quot;
+						and &quot;Virtuoso Drivers for JDBC&quot; and the &quot;Samples&quot; check-boxes
+						since you are only installing Virtuoso&apos;s Server components on this machine.</para>
+					</listitem>
+					<listitem>
+						<para>The installer will now extract and install your Virtuoso Server components.</para>
+					</listitem>
+				</orderedlist>
+			</sect4>
+			</sect3>
+			<sect3 id="ThreeTierConfigInst">
+				<title>3-Tier Client-Server Configuration</title>
+				<para>In this scenario you have three logically distinct machine
+    types making up your total solution, the first machine hosts your Applications and
+    Virtuoso client components (Client Machine), the second hosts your Virtuoso server,
+    (Middle Tier Server Machine) and the third machine your back end Database Server (Database
+    Server Machine). This installation configuration format will allow Windows client machines
+    to communicate with non Windows middle-tier server machines running Virtuoso, as well as
+    allowing Virtuoso clients on non Windows client machines to connect to Virtuoso servers on
+    windows based middle-tier server machines. </para>
+				<sect4 id="threetierclicomp">
+					<title>Client Components:</title>
+					<orderedlist>
+						<listitem>
+							<para>Move the Virtuoso installation archive into a temporary
+						        installation folder on your Client machine</para>
+						</listitem>
+						<listitem>
+							<para>Choose the Client install option.
+							No further component selection will be required.</para>
+							<figure id="wininst303" float="1">
+								<title>Setup Screens</title>
+								<graphic fileref="inst/12clienttype.png" width="504" depth="386"/>
+							</figure>
+						</listitem>
+						<listitem>
+							<para>The installer will now extract and  install your Virtuoso Client components</para>
+						</listitem>
+					</orderedlist>
+				</sect4>
+				<sect4 id="threetiermidsrccomp">
+					<title>Middle-Tier Server Components:</title>
+					<para>You need to install both the Virtuoso client and server
+    components on this machine. This is due to the fact that in many cases this server will
+    double as an Application Server, which entails having  clients connecting to an
+    application service that uses Virtuoso for data access.</para>
+					<orderedlist>
+						<listitem>
+							<para>Move the Virtuoso installation archive into a temporary
+        installation folder on your Server machine.</para>
+						</listitem>
+						<listitem>
+							<para>Choose the Server install option.</para>
+							<figure id="wininst403" float="1">
+								<title>Setup Screens</title>
+								<graphic fileref="inst/13installtype.png" width="504" depth="386"/>
+							</figure>
+						</listitem>
+						<listitem>
+							<para>At the component selection, uncheck the &quot;Sample Application&quot; check-box then the
+		&quot;Virtuoso Driver for ODBC&quot; and &quot;Virtuoso Drivers for JDBC&quot;
+		check-boxes since you are only installing Virtuoso&apos;s Server components on this machine.</para>
+						</listitem>
+						<listitem>
+							<para>The installer will now extract and install your Virtuoso Server components.</para>
+						</listitem>
+					</orderedlist>
+					<para>You will not need to install anything on the remote database server since you will be connecting to remote
+    database either via ODBC or Native Drivers installed on this Server.</para>
+				</sect4>
+			</sect3>
+		</sect2>
+		<sect2 id="startvdbms">
+			<title>Starting Your Virtuoso Server</title>
+			<para>Due to subtle differences between Windows 95/98 and Windows
+    NT it is necessary to address the issue of starting and stopping your Virtuoso server for
+    each one of these Windows variants separately.</para>
+			<sect3 id="winnt">
+				<title>Windows NT/2000/XP</title>
+				<para>You can start your Virtuoso server in one of two ways,
+    automatically or manually, the default mode configured by your installer is Automatic.</para>
+				<sect4 id="winntautostart">
+					<title>Automatic Startup</title>
+					<para>Your Virtuoso servers (default and demonstration databases)
+    are configured at installation time as &quot;Automatic Startup&quot; services. Thus,
+    rebooting your machine after installation is all that is required in order for your
+    Virtuoso servers to be ready to start receiving connections from client applications.
+    The service is actually started during the installation, however some files may be locked, so
+    a reboot is required to complete the install.</para>
+				</sect4>
+				<sect4 id="winntmanstart">
+					<title>Manual Startup</title>
+					<para>You can manually start your Virtuoso server in one of two
+    ways, either via the &quot;services&quot; control panel applet or from within a DOS shell.
+    When doing this via the &quot;Services&quot; control panel Applet you need to simply open
+    up your control panel and click on the &quot;services&quot; applet. This will present you
+    with a screen similar to the one below:</para>
+					<figure id="inst016" float="1">
+						<title>Services Applet</title>
+						<graphic fileref="virtinst12.gif" width="505" depth="277"/>
+					</figure>
+					<para>Click the &quot;Start&quot; or &quot;Stop&quot; button in
+    order to start or stop a highlighted Virtuoso Server.</para>
+					<para>To start your Virtuoso servers manually using DOS command
+    prompts, start a DOS shell and then enter the following command:</para>
+					<programlisting>virtuoso-odbc-f +service start</programlisting>
+				</sect4>
+			</sect3>
+			<sect3 id="win9x">
+				<title>Windows 95/98</title>
+				<para>You can start your Virtuoso server under Windows 95/98 in
+    one of two ways, automatically or manually, the default mode configured by your installer
+    is Automatic.</para>
+				<sect4 id="win9xautostart">
+					<title>Automatic Startup</title>
+					<para>Your Virtuoso servers (default and demonstration databases)
+    are configured at installation time as &quot;Automatic Startup&quot; services. Thus,
+    rebooting your machine after installation is all that is required in order for your
+    Virtuoso servers to be ready to start receiving connections from client applications.</para>
+					<para>If Virtuoso does not start  automatically on Windows
+    95/98 after installation you will need to add the following line to the system's
+    &quot;autoexec.bat&quot; file (assuming you have installed Virtuoso using the installers
+    default installation folder):</para>
+					<programlisting>C:\Program Files\OpenLink\Virtuoso\bin\virtuoso-odbc-f +service start</programlisting>
+				</sect4>
+				<sect4 id="sect4win9xmanstart">
+					<title>Manual Startup</title>
+					<para>You can start your Virtuoso servers manually by
+					entering the following commands at the DOS command line prompt:</para>
+					<programlisting>
+virtuoso-odbc-f +service start
+virtuoso-odbc-f +instance demo +service start
+</programlisting>
+					<note>
+						<title>Note:</title>
+						<para>If you encounter a &quot;Program
+    Not Found&quot; error this is because your Virtuoso installation&apos;s &quot;bin&quot;
+    sub-directory is not part of your PATH environment variable. </para>
+					</note>
+				</sect4>
+			</sect3>
+		</sect2>
+		<sect2 id="postinstsanitywin32">
+			<title>Post-Installation Sanity Check</title>
+			<para>A quick way to check that the database is running, is to point a browser to the
+			http port. The following example URLs will show the System Manager for
+			the default, and the demo Virtuoso databases:</para>
+			<programlisting>http://localhost:8889
+http://localhost:8890
+http://a_virtuoso_server.org:8890</programlisting>
+			<para>See the following Quick Start chapter for further ways to verify the database.</para>
+		</sect2>
+		<sect2 id="CreatingDeletingServices">
+			<title>Creating and Deleting Virtuoso Services </title>
+			<para>At sometime you may need to have multiple Virtuoso server
+    processes running on your Windows servers or simply need to add or delete existing
+    Virtuoso servers that have been registered with the &quot;Services&quot; control panel
+    applet. You do this by executing the following commands:</para>
+			<para>Adding new Virtuoso Server service: virtuoso-odbc-f +service create -I &lt;your chosen service name&gt;</para>
+			<para>Deleting an existing Virtuoso service: virtuoso-odbc-f +service delete -I &lt;service that you are deleting&gt;</para>
+			<para>Starting a new Virtuoso service manually: virtuoso-odbc-f +service start -I &lt;service name&gt; </para>
+			<para>Showing a list of existing Virtuoso services: virtuoso-odbc-f +service list</para>
+			<note>
+				<title>Note:</title>
+				<para>This functionality is only available on Windows NT/2000/XP.</para>
+        <para>Ensure that the services applet from the control panel is closed while 
+        issuing the above commands to prevent locking.</para>
+			</note>
+		</sect2>
+		<sect2 id="ConfiguringVirtuosoClients">
+			<title>Configuring Virtuoso Client Components</title>
+			<para>The Virtuoso client components set consists of the following:</para>
+
+      <simplelist>
+				<member>Virtuoso Driver for ODBC</member>
+				<member>Virtuoso Driver for JDBC</member>
+				<member>Native Virtuoso Interactive SQL Query (ISQL)</member>
+				<member>ODBC based Interactive SQL Query Utility (ISQLO)</member>
+			</simplelist>
+
+      <para>The sections that follow address the configuration and
+    utilization of each one of these client components separately.</para>
+			<sect3 id="VirtuosoDriverODBC">
+				<title>Virtuoso Driver for ODBC</title>
+				<para>The Virtuoso Driver for ODBC conforms to both the ODBC
+    1.x,2.x,and 3.x versions of the ODBC specification, it implements Core, Level 1, Level 2,
+    and Extensions functionality. This driver enables you to communicate with local or remote
+    Virtuoso servers across any combination of platforms supported by Virtuoso.</para>
+				<para>At installation time two ODBC data source names (DSN&apos;s)
+    are created with default values by the Virtuoso installer, the first DSN named &quot;Local
+    Virtuoso&quot; provides a link to a local default Virtuoso database server instance, while
+    the other named &quot;Local Virtuoso Demo&quot; provides a link to a local Virtuoso server
+    for the Virtuoso demonstration database.</para>
+    <tip><title>See Also:</title>
+    <para>the <link linkend="virtdsnsetup">Data Access Interfaces</link> chapter for more detailed information
+    regarding the Virtuoso ODBC Driver setup</para>
+    </tip>
+			</sect3>
+			<sect3 id="VirtuosoDriverJDBC">
+				<title>Virtuoso Drivers for JDBC</title>
+				<para>The Virtuoso Drivers for JDBC are available in
+    &quot;jar&quot; file formats for the JDBC 1.x, JDBC 2.x and JDBC 3.x JDBC specifications. These
+    are Type 4 Drivers implying that utilization is simply a case of adding the relevant
+    &quot;jar&quot; file to your CLASSPATH and then providing an appropriate JDBC URL format
+    in order to establish a JDBC session with a local or remote Virtuoso server. It is
+    important to note that when you make a JDBC connection to a Virtuoso Server, you do also
+    have access to Native and External Virtuoso tables. Thus, you actually have a type 4 JDBC
+    Driver for any number of different database types that have been linked into Virtuoso.</para>
+
+    <tip><title>See Also:</title>
+    <para>The <link linkend="VirtuosoDriverJDBC">JDBC Driver</link> section in 
+    the Access Interfaces chapter.</para></tip>
+
+    </sect3>
+
+			<sect3 id="ISQL">
+				<title>Native Virtuoso Interactive SQL Query (ISQL)</title>
+				<para>To assist you with the use of Virtuoso an
+    interactive SQL interpreter utility called &quot;ISQL&quot; is bundled with all Virtuoso
+    installations. This utility allows you to enter and execute SQL statements from a command
+    line prompt against a local or remote Virtuoso server.</para>
+				<para>The command line format for executing this utility is: </para>
+				<programlisting>
+isql [&lt;hostname&gt;][:&lt;port#&gt;]</programlisting>
+				<para>The steps that follow guide you through the process of
+    using ISQL to verify your Virtuoso installation:</para>
+				<orderedlist>
+					<listitem>
+						<para>Open up a DOS shell</para>
+					</listitem>
+					<listitem>
+						<para>Move into the &quot;bin&quot; sub-directory of your
+        Virtuoso installation</para>
+					</listitem>
+					<listitem>
+						<para>Type the following command: isql</para>
+						<para>This will connect you to the default Virtuoso server at port &quot;1111&quot;, if you want
+        to connect to your demonstration Virtuoso database (which listens at port 1112 by default)
+        then enter: isql 1112</para>
+					</listitem>
+					<listitem>
+						<para>At the ISQL command line prompt type in the following
+        command: </para>
+						<programlisting>
+tables ;</programlisting>
+						<para>This will produce a list of tables in the current Virtuoso database, you can also enter
+        other SQL statements e.g.: </para>
+						<programlisting>
+select * from Customers</programlisting>
+						<para>This will produce a listing of records in the &quot;Customers&quot; table.</para>
+					</listitem>
+					<listitem>
+						<para>If you are not able to perform these task that it implies
+        that your Virtuoso database server is not running or that it has not been installed
+        properly.</para>
+					</listitem>
+				</orderedlist>
+			</sect3>
+			<sect3 id="ISQLO">
+				<title>ODBC based Interactive SQL Query Utility (ISQLO)</title>
+				<para>In addition to a Native ISQL utility, your Virtuoso
+    installation includes an ODBC based version of &quot;ISQL&quot; called &quot;ISQLO&quot;,
+    this enable you to connect to ODBC DSN&apos;s rather than Virtuoso only. To use this program
+    perform the following steps: </para>
+				<orderedlist>
+					<listitem>
+						<para>Open up a DOS shell</para>
+					</listitem>
+					<listitem>
+						<para>Move into the &quot;bin&quot; sub-directory of your
+        Virtuoso installation</para>
+					</listitem>
+					<listitem>
+						<para>Type the following command :</para>
+						<programlisting>
+isqlo &lt;enter a valid ODBC Data Source Name&gt;</programlisting>
+						<note>
+							<title>Note:</title>
+							<para>If your DSN contains spaces you will need to enclose it within
+        double quotes when passing it as a parameter to ISQLO</para>
+						</note>
+					</listitem>
+					<listitem>
+						<para>Enter any valid SQL at the ISQLO command line prompt.</para>
+					</listitem>
+					<listitem>
+						<para>You can also use this utility from within the Virtuoso Conductor</para>
+					</listitem>
+				</orderedlist>
+			</sect3>
+		</sect2>
+		<sect2 id="defpasschgwin">
+			<title>Default passwords</title>
+			<para>See the following Quick Start chapter for very important information about
+			<link linkend="defpasschange">changing the default passwords</link>.</para>
+		</sect2>
+
+	</sect1>
+	<!-- ############################################################# -->
+	<sect1 id="linuxinstall">
+		<title>Virtuoso for Linux</title>
+			<sect2 id="lindoyouwannamigrate">
+				<title>Existing Virtuoso 2.7 Users</title>
+				<para>You can migrate your existing Virtuoso servers to 3.0 using 
+        the migration utility.  The Virtuoso database file structure has been considerably 
+        altered between versions.  Please consult the 
+        <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
+        section for more details.</para>
+			</sect2>
+		<sect2 id="b4instlin">
+			<title>Before You Install</title>
+			<para>To ensure a smooth installation, please review the
+      following checklist before you start the setup program.</para>
+			<sect3 id="linhavudld">
+				<title>Have you downloaded the software?</title>
+				<para>If you have not already done so, please download your copy of OpenLink
+      Virtuoso from the Virtuoso web site.  The URL is
+		<ulink url="http://www.openlinksw.com/virtuoso/">http://www.openlinksw.com/virtuoso/</ulink>.
+		When you visit the site, select &quot;Software Download&quot;.</para>
+			</sect3>
+			<sect3 id="linreinstvirt">
+				<title>Reinstalling Virtuoso?</title>
+				<para>If you are reinstalling Virtuoso, you must first stop
+      the Database Servers. You can shut these services down with the following command
+      executed from your Linux shell prompt:</para>
+				<para>Beta 1 Users</para>
+				<programlisting>sh virtuoso-lite.rc stop</programlisting>
+				<para>or</para>
+				<programlisting>virtuoso-lite.rc stop</programlisting>
+				<para>or</para>
+				<programlisting>./virtuoso-lite.rc stop</programlisting>
+				<para>Beta 2 Users</para>
+				<programlisting>sh virtuoso-stop.sh</programlisting>
+				<para>or</para>
+				<programlisting>virtuoso-stop.sh</programlisting>
+				<para>or</para>
+				<programlisting>./virtuoso-stop.sh</programlisting>
+				<para>You may also want to first uninstall prior Virtuoso RPM packages.</para>
+				<para>The following command (executed as root) can be used to uninstall the package:</para>
+				<programlisting>rpm -e virtuoso-lite-1.1-3_glibc2</programlisting>
+				<para>or</para>
+				<programlisting>rpm -e virtuoso-enterprise-1.1-3_glibc2</programlisting>
+				<para>or</para>
+				<programlisting>rpm -e virtuoso-lite-1.1-3_libc5</programlisting>
+				<para>depending on Linux system and Virtuoso Server being used.</para>
+			</sect3>
+			<sect3 id="linportsfree">
+				<title>Are ports 1111,1112, 8889 and 8890 free?</title>
+				<para>During the installation you will be prompted for an HTTP port number for
+				use by each Virtuoso System Manager. If you are already running a web server
+      or other listener on that port, you will encounter problems, and should choose another
+      free port when you are prompted.  </para>
+				<para>By default, the Virtuoso DBMS listens on port 1111, and the Demo Database
+      on 1112. If these ports is currently in use by another server then after the installation completes,
+      you will need to change the port numbers in the Local Virtuoso ODBC or UDBC DSN that is
+      created during the installation process, and also in the following file:</para>
+				<programlisting>$&lt;Directory where Virtuoso is installed&gt;/bin/virtuoso.ini</programlisting>
+				<para>typically</para>
+				<programlisting>/usr/local/virtuoso</programlisting>
+				<para>but can of course be any location of your choosing.</para>
+				<para>To check if a port is in use you can use the following command, and review the output:</para>
+				<programlisting>netstat -an | more </programlisting>
+			</sect3>
+			<sect3 id="lindouvirtuser">
+				<title>Do you already have a &quot;virtuoso&quot; user account on your Linux system?</title>
+				<para>Although this is no longer a requirement of the installation it
+may be suitable to create a new Virtuoso user account for administering the Virtuoso
+server.</para>
+			</sect3>
+			<sect3 id="liniodbc">
+				<title>Do you already have functional iODBC data sources on your system?</title>
+				<para>The OpenLink Virtuoso for Linux installation presumes the following:</para>
+				<simplelist>
+					<member>You intend to connect to a Local Virtuoso server using iODBC
+          or OpenLink  UDBC</member>
+					<member>You intend to connect to one or more Remote Virtuoso servers
+          on your network using iODBC or UDBC </member>
+					<member>You intend to Attach tables hosted within non-local or
+          Remote Virtuoso database servers, into a Local or Remote Virtuoso Server</member>
+					<member>The existence of functional OpenLink or third-party iODBC
+          drivers for Linux that connect to the non database servers referred to above.</member>
+					<member>In the absence of iODBC drivers for your non Virtuoso
+          database, that a functional OpenLink or third-party UDBC Drivers exists for these database
+          servers. </member>
+				</simplelist>
+				<para>Instructions on how to manually configure iODBC Data Source
+      Names is available at the following URL:
+      <ulink url="http://www.openlinksw.com/info/docs/rel3doc/unix/odbcsdk.htm">http://www.openlinksw.com/info/docs/rel3doc/unix/odbcsdk.htm</ulink>
+      If you are using OpenLink Multi-Tier ODBC
+      Drivers for your remote database connections then we highly recommend the use of the Virtuoso
+      System Manager for creating iODBC Data Source Names.</para>
+			</sect3>
+			<sect3 id="liniodbcdsnfunc">
+				<title>Are your iODBC Data Source Names functional?</title>
+				<para>It is a useful sanity-check to ensure that your iODBC or UDBC
+      data sources are functional, OpenLink provides an &quot;odbctest&quot; program for
+      verifying basic usability of iODBC data sources. Both of these programs reside in the
+      &quot;samples&quot; directory situated beneath the directory into which RPM installs
+      Virtuoso.</para>
+			</sect3>
+		</sect2>
+		<sect2 id="instproclinux">
+			<title>Installation Process</title>
+			<para>Once you have downloaded the required tar file from the
+web or ftp site and have placed the file in a designated installation directory you are
+ready to commence the Virtuoso installation process. </para>
+			<para>You may want to specify a new user to own the Virtuoso
+installation and then you can place the installation tar file into that users home
+directory.</para>
+<orderedlist>
+  <listitem><para>First step is to un-tar the file to obtain the install script 
+  and archive file.  Use the following command:</para>
+  <programlisting>tar xvf &lt;tar file&gt;.tar</programlisting>
+  <para>replacing &lt;tar file&gt; with the relevant name of the file you downloaded.</para></listitem>
+  <listitem><para>run the install script using the following command:</para>
+<programlisting>[virtuoso@myserver virtuoso]$ sh /install.sh</programlisting>
+  <para>The installation process will now begin and prompt you for required information.</para>
+</listitem>
+
+<listitem>
+<para>The install script will first try and detect running Virtuoso server instances.  
+In cases where an old Virtuoso server is being upgraded you must ensure that 
+the old Virtuoso is first shutdown.  It is advisable that you backup up your 
+systems before continuing.</para>
+<programlisting><![CDATA[
+Checking requested components
+Checking for existing installations and/or instances of Virtuoso...
+ 7269 ?        00:06:23 virtuoso
+/proc/net/tcp: Permission denied
+
+** Alert: [running processes; ]
+
+** Warning: You have Virtuoso previously installed on this machine.
+** 
+** To avoid existing data being overwritten or lost, you may press ^C to
+** exit this installer, terminate and remove the existing installation,
+** or proceed taking care to enter non-conflicting data below, by pressing
+** Enter.
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>If you are upgrading a server then the installer will save copies of 
+old configuration data for later use.</para>
+<programlisting><![CDATA[
+Preserving any existing configurations...
+find: db: No such file or directory
+find: demo: No such file or directory
+find: bin: No such file or directory
+0 blocks
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>You should have received a license file via email.  This file should be 
+copied to the server installation directory prior to installation.  The installer 
+will ask you for its location if none is found.  If you do not have the license 
+file at this time the installer will still continue.</para>
+<programlisting><![CDATA[
+Checking licensing...
+
+A license file is required for the Virtuoso Server Instance(s) to
+start. Please enter the full path and name of a valid Virtuoso
+license file [./virtuoso.lic]:
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Now the installer will continue to install files from the package.  Every 
+file installed will be echoed to the screen.  </para>
+<programlisting><![CDATA[
+Unpacking enterprise.tar.Z
+bin/
+bin/v27/
+bin/v27/bin/
+...
+...
+vsp/releasenotes.css
+vsp/releasenotes.html
+vsp/vsp_auth.sql
+...done
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>When the files have been installed from the package the location 
+supplied for the license file will be checked.  If one is not found then you will 
+receive the following warning:</para>
+<programlisting><![CDATA[
+**
+**  WARNING: The license file entered is not valid or does not exist.
+**           You will need to copy a valid license file manually 
+**           to the demo and db directories after the Virtuoso installation completes.
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The Virtuoso server installation has a few variations.  The next question 
+from the installer asks which one you want to make default.  Even though each 
+variation is installed, a convenient symbolic link will be made to 
+<computeroutput>bin/virtuoso</computeroutput> from the selected type.  
+Running <computeroutput>ls -l</computeroutput> in the bin directory after 
+installation will reveal all.</para>
+<programlisting><![CDATA[
+Checking for installed optional components...
+Please choose which Virtuoso server you wish to install:
+  1) Universal Server
+  2) Universal Server with iODBC
+  3) Universal Server with iODBC and support for Java
+  4) Universal Server with iODBC and support for PHP
+  5) Universal Server with iODBC and support for Java and PHP
+  6) Universal Server with iODBC and support for CLR Hosting via Mono
+  7) Universal Server with iODBC and support for CLR and Java
+  8) Universal Server with iODBC and support for CLR, Java and PHP4
+
+[8] :
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The installer will search for required third-party components 
+depending on which option is selected in the previous step.  For example, choosing 
+the Virtuoso with Java support will require a Java runtime.  Results of the 
+search are listed as suggestions from which you can confirm or type 
+the actual location.</para>
+<programlisting><![CDATA[
+Attempting to locate the java runtime library (libjvm.so)...
+
+Suggested file locations: 
+/usr/local/lib
+/usr/local/jdk1.3/jre/lib/i386/classic
+/usr/local/jdk1.3/jre/lib/i386/server
+/usr/local/jdk1.3/jre/lib/i386/client
+/usr/opt/blackdown-jdk-1.3.1/jre/lib/i386/classic
+/usr/opt/blackdown-jdk-1.3.1/jre/lib/i386/server
+/usr/opt/blackdown-jdk-1.3.1/jre/lib/i386/client
+/usr/local/jdk1.3/jre/lib/i386/classic
+/usr/local/jdk1.3/jre/lib/i386/server
+/usr/local/jdk1.3/jre/lib/i386/client
+
+Please select one of the above locations or press Enter to use
+the default (/usr/local/jdk1.3/jre/lib/i386/client):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The Virtuoso installer includes a Mono runtime distribution, since 
+Mono is a developing platform you may have your own installation that you 
+can supply the path to here.</para>
+<programlisting><![CDATA[
+Please enter the full path to the Mono installation directory or
+Enter to use the default (/home/openlink/virtuoso/mono)
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Virtuoso now has enough information to configure its environment and 
+startup scripts.</para>
+<programlisting><![CDATA[
+Setting up initial values in scripts and config files
+Setting up file bin/odbc.ini
+Setting up file bin/odbcinst.ini
+Setting up file bin/demo-start.sh
+Setting up file bin/demo-stop.sh
+Setting up file bin/virtuoso-start.sh
+Setting up file bin/virtuoso-stop.sh
+Setting up file db/virtuoso.ini
+Setting up file demo/demo.ini
+Setting up file mono/bin/mcs
+Setting up file virtuoso-enterprise.csh
+Setting up file virtuoso-enterprise.sh
+Setting up file initd_startup.template
+Setting up file initd_startup_demo.template
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The installer will now ask a series of questions for configuring the 
+Virtuoso .INI files.  First confirm or alter the default database SQL listener 
+port number.  This is the port number that this database will be available for 
+ODBC connections and iSQL sessions.</para>
+<programlisting><![CDATA[
+Configuring port numbers for default and demo databases
+
+Please enter a port on which to run the default database
+SQL listener (default 1111):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Now you must specify the port number of the default database HTTP 
+listener.  This is the HTTP port that Virtuoso will listen on by default, you web-based 
+administration interface for Virtuoso will be found here.  If you confirm the 
+default of 8889, then your Virtuoso will be available from: 
+<computeroutput>http://server:8889/</computeroutput>, changing 
+server to the name of your machine appropriately.</para>
+<programlisting><![CDATA[
+Please enter a port on which to run the default database
+HTTP listener (default 8889):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Now you must supply a friendly name that you wish to identify 
+your Virtuoso server by on the network using Zero Configuration.  </para>
+<tip><title>See Also:</title>
+<para>The <link linkend="rendezvous">Zero Configuration</link> section.</para></tip>
+<programlisting><![CDATA[
+Please enter a name for default database Zero Configuration
+(default "Virtuoso Universal Server at myserver:1111"):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The Zero Configuration details need a default username to make the connection with.</para>
+<programlisting><![CDATA[
+Please enter a user name for default database Zero Configuration
+(default "dba"):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Now we have all of the above details to supply again for the Demo Virtuoso 
+database.  The port number supplied here must be different to those supplied previously.</para>
+<programlisting><![CDATA[
+Please enter a port on which to run the demo database
+SQL listener (default 1112):
+
+Please enter a port on which to run the demo database
+HTTP listener (default 8890):
+
+Please enter a name for demonstration database Zero Configuration
+(default Virtuoso Universal Server (demonstration) at myserver:1112):
+
+Please enter a user name for demonstration database Zero Configuration
+(default demo):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The Virtuoso servers have default administrator usernames of "dba".  
+The "dba" accounts have the default password of "dba".  It is recommended that 
+you alter this as soon as possibly for security.  The installer now provides the 
+opportunity to do this the first time the server is started.</para>
+<programlisting><![CDATA[
+Changing passwords for the Database Universal Server
+
+Please enter a replacement for the Default Database Server's
+SQL Administrative (dba) account password (twice) :
+Confirm Password : 
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The Virtuoso servers have default WebDAV administrator usernames 
+of "dav".   The "dav" accounts have the default password of "dav".  It is 
+recommended that you alter this as soon as possibly for security.  
+The installer now provides the opertunity to do this the first time 
+the server is started.</para>
+<programlisting><![CDATA[
+Please enter a replacement for the Default Database's
+WebDAV administrative (dav) account password (twice) :
+Confirm Password : 
+
+Please wait while the passwords are changed:
+
+Changing passwords for the Demo Universal Server
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Likewise for the Demo server, you can change the default passwords:</para>
+<programlisting><![CDATA[
+Please enter a replacement for the Demonstration Database Server's
+SQL Administrative (dba) account password (twice) :
+Confirm Password : 
+
+Please enter a replacement for the Demonstration Database Server's
+WebDAV Administrative (dav) account password (twice) :
+Confirm Password : 
+
+Please wait while the passwords are changed:
+done.
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The file owner and group is changed at the end of the installation.  You 
+can choose what these shall be set to.  By default the current user is selected.</para>
+<programlisting><![CDATA[
+Please enter the username:group for the user and group who should own
+files in this installation (default: openlink:openlink) :
+Setting owners:  
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Finally the installer can start Virtuoso servers installed for you, but 
+only if a valid license key has been supplied.</para>
+<programlisting><![CDATA[
+The Virtuoso Installer has not offered to start a database as
+no license key was found. Evaluation users should receive
+one via e-mail; in case of difficulties please contact 
+<Technical.Support@openlinksw.com>.
+]]></programlisting>
+</listitem>
+</orderedlist>
+		</sect2>
+		<sect2 id="linpostchck">
+			<title>Post-Installation Sanity Check</title>
+			<para>A quick way to check that the database is running, is to point a browser to the
+			http port. The following example URLs will show the System Manager for
+			the default, and the demo Virtuoso databases:</para>
+			<programlisting>http://localhost:8889
+http://localhost:8890
+http://a_virtuoso_server.org:8890</programlisting>
+			<para>See the following Quick Start chapter for further ways to verify the database.</para>
+		</sect2>
+    <sect2 id="linautovirt"><title>Starting Virtuoso Automatically on Reboot</title>
+
+    <para>Two files, named initd_startup.template and 
+    initd_startup_demo.template, are placed in the top level of the
+    Virtuoso installation directory.  On systems using SysVinit (most Linux
+    distributions, Solaris) the appropriate one should be copied into
+    /etc/init.d/ and symlinks created in the rcN.d/ directories, e.g.:</para>
+
+<programlisting><![CDATA[
+bash# cp initd_startup.template /etc/init.d/virtuoso
+]]></programlisting>
+
+    <para>Perform some sanity checks here, that the directory it uses exists, etc:</para>
+
+<programlisting><![CDATA[
+bash# vi /etc/init.d/virtuoso
+]]></programlisting>
+
+    <para>Test that it works correctly:</para>
+
+<programlisting><![CDATA[
+bash# /etc/init.d/virtuoso stop
+bash# /etc/init.d/virtuoso start
+]]></programlisting>
+
+    <para>Finally, create symbolic links in the regular runlevel directories
+    pointing to that script:</para>
+
+<programlisting><![CDATA[
+bash# cd /etc/rc2.d ; ln -s ../init.d/virtuoso S99virtuoso
+bash# cd /etc/rc3.d ; ln -s ../init.d/virtuoso S99virtuoso
+bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
+]]></programlisting>
+
+    <para>Virtuoso should now start when the service is restarted.</para>
+    </sect2>
+
+		<sect2 id="defpasschglin">
+			<title>Default passwords</title>
+			<para>See the following Quick Start chapter for very important information about
+			<link linkend="defpasschange">changing the default passwords</link>.</para>
+		</sect2>
+	</sect1>
+	<sect1 id="unxinstvirt">
+		<title>Virtuoso for Unix</title>
+			<sect2 id="unixdoyouwannamigrate">
+				<title>Existing Virtuoso 2.7 Users</title>
+				<para>You can migrate your existing Virtuoso servers to 3.0 using 
+        the migration utility.  The Virtuoso database file structure has been considerably 
+        altered between versions.  Please consult the 
+        <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
+        section for more details.</para>
+			</sect2>
+		<sect2 id="b4instunx">
+			<title>Before You Install</title>
+			<para>To ensure a smooth installation, please review the
+      following checklist before you start the setup program.</para>
+			<sect3 id="unxdldsw">
+				<title>Have you downloaded the software?</title>
+				<para>If you have not already done so, please download your copy of OpenLink
+      Virtuoso from the Virtuoso web site.  The URL is
+		<ulink url="http://www.openlinksw.com/virtuoso/">http://www.openlinksw.com/virtuoso/</ulink>.
+		When you visit the site, select &quot;Software Download&quot;.</para>
+			</sect3>
+			<sect3 id="unxreinstvirt">
+				<title>Reinstalling Virtuoso?</title>
+				<para>If you are reinstalling Virtuoso, you must first stop the Database Servers.
+				You can shut these services down with the following command
+				executed from your UNIX shell prompt:</para>
+				<programlisting>sh virtuoso-stop.sh </programlisting>
+				<para>or</para>
+				<programlisting>virtuoso-stop.sh</programlisting>
+				<para>or</para>
+				<programlisting>./virtuoso-stop.sh</programlisting>
+			</sect3>
+			<sect3 id="unxfreeports">
+				<title>Are ports 1111, 1112, 8889 and 8890 free?</title>
+				<para>During the installation you will be prompted for an HTTP port number for
+				use by each Virtuoso System Manager. If you are already running a web server
+      or other listener on that port, you will encounter problems, and should choose another
+      free port when you are prompted.  </para>
+				<para>By default, the Virtuoso DBMS listens on port 1111.
+      If this port is currently in use by another server then after the installation completes
+      you will need to change the port number in the Local Virtuoso ODBC or UDBC DSN that is
+      created during the installation process, and also in the following file:</para>
+				<programlisting>
+$&lt;Installation Directory&gt;/bin/virtuoso.ini</programlisting>
+				<para>typically</para>
+				<programlisting>/usr/home/virtuoso</programlisting>
+				<para>To check if a port is in use you can use the following
+      command, and review the output:</para>
+				<programlisting>netstat -an | more </programlisting>
+			</sect3>
+			<sect3 id="unxvirtuser">
+				<title>Do you already have a &quot;virtuoso&quot; user
+      account on your UNIX system ?</title>
+				<para>Please create a UNIX user account called &quot;virtuoso&quot;.</para>
+			</sect3>
+			<sect3 id="unxiodbcexist">
+				<title>Do you already have functional iODBC data sources
+      on your system ?</title>
+				<para>The OpenLink Virtuoso for UNIX installation presumes the following:</para>
+				<simplelist>
+					<member>You intend to connect to a Local Virtuoso server using iODBC
+          or OpenLink  UDBC</member>
+					<member>You intend to connect to one or more Remote Virtuoso servers
+          on your network using iODBC or UDBC</member>
+					<member>You intend to Attach tables hosted within non-local or
+          Remote Virtuoso database servers, into a Local or Remote Virtuoso Server</member>
+					<member>The existence of functional OpenLink or third-party iODBC
+          drivers for UNIX that connect to the non database servers referred to above.</member>
+					<member>In the absence of iODBC drivers for your non Virtuoso
+          database, that a functional OpenLink or third-party UDBC Drivers exists for these database
+          servers. </member>
+				</simplelist>
+				<para>If you are using OpenLink Multi-Tier ODBC
+      Drivers for your remote database connections then we highly recommend the use of the Web
+      Assistant for creating iODBC Data Source Names.</para>
+			</sect3>
+			<sect3 id="unxiodbcfunc">
+				<title>Are your iODBC Data Source Names functional ?</title>
+				<para>It is a useful sanity-check to ensure that your iODBC or UDBC
+      data sources are functional, OpenLink provides an &quot;odbctest&quot; program for
+      verifying basic usability of iODBC data sources. Both of these programs reside in the
+      &quot;samples&quot; directory situated beneath the directory into which Virtuoso is
+      installed.</para>
+			</sect3>
+		</sect2>
+		<sect2 id="instprocunx"><title>Installation Process</title>
+			<para>Once you have downloaded the required tar file from the
+web or ftp site and have placed the file in a designated installation directory you are
+ready to commence the Virtuoso installation process. </para>
+			<para>You may want to specify a new user to own the Virtuoso
+installation and then you can place the installation tar file into that users home
+directory.</para>
+<orderedlist>
+  <listitem><para>First step is to un-tar the file to obtain the install script 
+  and archive file.  Use the following command:</para>
+  <programlisting>tar xvf &lt;tar file&gt;.tar</programlisting>
+  <para>replacing &lt;tar file&gt; with the relevant name of the file you downloaded.</para></listitem>
+  <listitem><para>run the install script using the following command:</para>
+<programlisting>[virtuoso@myserver virtuoso]$ sh /install.sh</programlisting>
+  <para>The installation process will now begin and prompt you for required information.</para>
+</listitem>
+
+<listitem>
+<para>The install script will first try and detect running Virtuoso server instances.  
+In cases where an old Virtuoso server is being upgraded you must ensure that 
+the old Virtuoso is first shutdown.  It is advisable that you backup up your 
+systems before continuing.</para>
+<programlisting><![CDATA[
+Checking requested components
+Checking for existing installations and/or instances of Virtuoso...
+ 7269 ?        00:06:23 virtuoso
+/proc/net/tcp: Permission denied
+
+** Alert: [running processes; ]
+
+** Warning: You have Virtuoso previously installed on this machine.
+** 
+** To avoid existing data being overwritten or lost, you may press ^C to
+** exit this installer, terminate and remove the existing installation,
+** or proceed taking care to enter non-conflicting data below, by pressing
+** Enter.
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>If you are upgrading a server then the installer will save copies of 
+old configuration data for later use.</para>
+<programlisting><![CDATA[
+Preserving any existing configurations...
+find: db: No such file or directory
+find: demo: No such file or directory
+find: bin: No such file or directory
+0 blocks
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>You should have received a license file via email.  This file should be 
+copied to the server installation directory prior to installation.  The installer 
+will ask you for its location if none is found.  If you do not have the license 
+file at this time the installer will still continue.</para>
+<programlisting><![CDATA[
+Checking licensing...
+
+A license file is required for the Virtuoso Server Instance(s) to
+start. Please enter the full path and name of a valid Virtuoso
+license file [./virtuoso.lic]:
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Now the installer will continue to install files from the package.  Every 
+file installed will be echoed to the screen.  </para>
+<programlisting><![CDATA[
+Unpacking enterprise.tar.Z
+bin/
+bin/v27/
+bin/v27/bin/
+...
+...
+vsp/releasenotes.css
+vsp/releasenotes.html
+vsp/vsp_auth.sql
+...done
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>When the files have been installed from the package the location 
+supplied for the license file will be checked.  If one is not found then you will 
+receive the following warning:</para>
+<programlisting><![CDATA[
+**
+**  WARNING: The license file entered is not valid or does not exist.
+**           You will need to copy a valid license file manually 
+**           to the demo and db directories after the Virtuoso installation completes.
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The Virtuoso server installation has a few variations.  The next question 
+from the installer asks which one you want to make default.  Even though each 
+variation is installed, a convenient symbolic link will be made to 
+<computeroutput>bin/virtuoso</computeroutput> from the selected type.  
+Running <computeroutput>ls -l</computeroutput> in the bin directory after 
+installation will reveal all.</para>
+<programlisting><![CDATA[
+Checking for installed optional components...
+Please choose which Virtuoso server you wish to install:
+  1) Universal Server
+  2) Universal Server with iODBC
+  3) Universal Server with iODBC and support for Java
+  4) Universal Server with iODBC and support for PHP
+  5) Universal Server with iODBC and support for Java and PHP
+  6) Universal Server with iODBC and support for CLR Hosting via Mono
+  7) Universal Server with iODBC and support for CLR and Java
+  8) Universal Server with iODBC and support for CLR, Java and PHP4
+
+[8] :
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The installer will search for required third-party components 
+depending on which option is selected in the previous step.  For example, choosing 
+the Virtuoso with Java support will require a Java runtime.  Results of the 
+search are listed as suggestions from which you can confirm or type 
+the actual location.</para>
+<programlisting><![CDATA[
+Attempting to locate the java runtime library (libjvm.so)...
+
+Suggested file locations: 
+/usr/local/lib
+/usr/local/jdk1.3/jre/lib/i386/classic
+/usr/local/jdk1.3/jre/lib/i386/server
+/usr/local/jdk1.3/jre/lib/i386/client
+/usr/opt/blackdown-jdk-1.3.1/jre/lib/i386/classic
+/usr/opt/blackdown-jdk-1.3.1/jre/lib/i386/server
+/usr/opt/blackdown-jdk-1.3.1/jre/lib/i386/client
+/usr/local/jdk1.3/jre/lib/i386/classic
+/usr/local/jdk1.3/jre/lib/i386/server
+/usr/local/jdk1.3/jre/lib/i386/client
+
+Please select one of the above locations or press Enter to use
+the default (/usr/local/jdk1.3/jre/lib/i386/client):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The Virtuoso installer includes a Mono runtime distribution, since 
+Mono is a developing platform you may have your own installation that you 
+can supply the path to here.</para>
+<programlisting><![CDATA[
+Please enter the full path to the Mono installation directory or
+Enter to use the default (/home/openlink/virtuoso/mono)
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Virtuoso now has enough information to configure its environment and 
+startup scripts.</para>
+<programlisting><![CDATA[
+Setting up initial values in scripts and config files
+Setting up file bin/odbc.ini
+Setting up file bin/odbcinst.ini
+Setting up file bin/demo-start.sh
+Setting up file bin/demo-stop.sh
+Setting up file bin/virtuoso-start.sh
+Setting up file bin/virtuoso-stop.sh
+Setting up file db/virtuoso.ini
+Setting up file demo/demo.ini
+Setting up file mono/bin/mcs
+Setting up file virtuoso-enterprise.csh
+Setting up file virtuoso-enterprise.sh
+Setting up file initd_startup.template
+Setting up file initd_startup_demo.template
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The installer will now ask a series of questions for configuring the 
+Virtuoso .INI files.  First confirm or alter the default database SQL listener 
+port number.  This is the port number that this database will be available for 
+ODBC connections and iSQL sessions.</para>
+<programlisting><![CDATA[
+Configuring port numbers for default and demo databases
+
+Please enter a port on which to run the default database
+SQL listener (default 1111):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Now you must specify the port number of the default database HTTP 
+listener.  This is the HTTP port that Virtuoso will listen on by default, you web-based 
+administration interface for Virtuoso will be found here.  If you confirm the 
+default of 8889, then your Virtuoso will be available from: 
+<computeroutput>http://server:8889/</computeroutput>, changing 
+server to the name of your machine appropriately.</para>
+<programlisting><![CDATA[
+Please enter a port on which to run the default database
+HTTP listener (default 8889):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Now you must supply a friendly name that you wish to identify 
+your Virtuoso server by on the network using Zero Configuration.  </para>
+<tip><title>See Also:</title>
+<para>The <link linkend="rendezvous">Zero Configuration</link> section.</para></tip>
+<programlisting><![CDATA[
+Please enter a name for default database Zero Configuration
+(default "Virtuoso Universal Server at myserver:1111"):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The Zero Configuration details need a default username to make the connection with.</para>
+<programlisting><![CDATA[
+Please enter a user name for default database Zero Configuration
+(default "dba"):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Now we have all of the above details to supply again for the Demo Virtuoso 
+database.  The port number supplied here must be different to those supplied previously.</para>
+<programlisting><![CDATA[
+Please enter a port on which to run the demo database
+SQL listener (default 1112):
+
+Please enter a port on which to run the demo database
+HTTP listener (default 8890):
+
+Please enter a name for demonstration database Zero Configuration
+(default Virtuoso Universal Server (demonstration) at myserver:1112):
+
+Please enter a user name for demonstration database Zero Configuration
+(default demo):
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The Virtuoso servers have default administrator usernames of "dba".  
+The "dba" accounts have the default password of "dba".  It is recommended that 
+you alter this as soon as possibly for security.  The installer now provides the 
+opportunity to do this the first time the server is started.</para>
+<programlisting><![CDATA[
+Changing passwords for the Database Universal Server
+
+Please enter a replacement for the Default Database Server's
+SQL Administrative (dba) account password (twice) :
+Confirm Password : 
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The Virtuoso servers have default WebDAV administrator usernames 
+of "dav".   The "dav" accounts have the default password of "dav".  It is 
+recommended that you alter this as soon as possibly for security.  
+The installer now provides the opertunity to do this the first time 
+the server is started.</para>
+<programlisting><![CDATA[
+Please enter a replacement for the Default Database's
+WebDAV administrative (dav) account password (twice) :
+Confirm Password : 
+
+Please wait while the passwords are changed:
+
+Changing passwords for the Demo Universal Server
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Likewise for the Demo server, you can change the default passwords:</para>
+<programlisting><![CDATA[
+Please enter a replacement for the Demonstration Database Server's
+SQL Administrative (dba) account password (twice) :
+Confirm Password : 
+
+Please enter a replacement for the Demonstration Database Server's
+WebDAV Administrative (dav) account password (twice) :
+Confirm Password : 
+
+Please wait while the passwords are changed:
+done.
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>The file owner and group is changed at the end of the installation.  You 
+can choose what these shall be set to.  By default the current user is selected.</para>
+<programlisting><![CDATA[
+Please enter the username:group for the user and group who should own
+files in this installation (default: openlink:openlink) :
+Setting owners:  
+]]></programlisting>
+</listitem>
+
+<listitem>
+<para>Finally the installer can start Virtuoso servers installed for you, but 
+only if a valid license key has been supplied.</para>
+<programlisting><![CDATA[
+The Virtuoso Installer has not offered to start a database as
+no license key was found. Evaluation users should receive
+one via e-mail; in case of difficulties please contact 
+<Technical.Support@openlinksw.com>.
+]]></programlisting>
+</listitem>
+</orderedlist>
+		</sect2>
+		<sect2 id="postinstsanityunx">
+			<title>Post-Installation Sanity Check</title>
+			<para>A quick way to check that the database is running, is to point a browser to the
+			http port. The following example URLs will show the System Manager for
+			the default, and the demo Virtuoso databases:</para>
+			<programlisting>http://localhost:8889
+http://localhost:8890
+http://a_virtuoso_server.org:8890</programlisting>
+			<para>See the following Quick Start chapter for further ways to verify the database.</para>
+		</sect2>
+    <sect2 id="unxautovirt"><title>Starting Virtuoso Automatically on Reboot</title>
+
+    <para>Two files, named initd_startup.template and 
+    initd_startup_demo.template, are placed in the top level of the
+    Virtuoso installation directory.  On systems using SysVinit (most Linux
+    distributions, Solaris) the appropriate one should be copied into
+    /etc/init.d/ and symlinks created in the rcN.d/ directories, e.g.:</para>
+
+<programlisting><![CDATA[
+bash# cp initd_startup.template /etc/init.d/virtuoso
+]]></programlisting>
+
+    <para>Perform some sanity checks here, that the directory it uses exists, etc:</para>
+
+<programlisting><![CDATA[
+bash# vi /etc/init.d/virtuoso
+]]></programlisting>
+
+    <para>Test that it works correctly:</para>
+
+<programlisting><![CDATA[
+bash# /etc/init.d/virtuoso stop
+bash# /etc/init.d/virtuoso start
+]]></programlisting>
+
+    <para>Finally, create symbolic links in the regular runlevel directories
+    pointing to that script:</para>
+
+<programlisting><![CDATA[
+bash# cd /etc/rc2.d ; ln -s ../init.d/virtuoso S99virtuoso
+bash# cd /etc/rc3.d ; ln -s ../init.d/virtuoso S99virtuoso
+bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
+]]></programlisting>
+
+    <para>Virtuoso should now start when the service is restarted.</para>
+    </sect2>
+
+    <sect2 id="defpasschgunx">
+			<title>Default passwords</title>
+			<para>See the following Quick Start chapter for very important information about
+			<link linkend="defpasschange">changing the default passwords</link>.</para>
+		</sect2>
+	</sect1>
+
+<sect1 id="installmacosx"><title>Virtuoso for Mac OS X</title>
+
+			<sect2 id="macxdoyouwannamigrate">
+				<title>Existing Virtuoso 2.7 Users</title>
+				<para>You can migrate your existing Virtuoso servers to 3.0 using 
+        the migration utility.  The Virtuoso database file structure has been considerably 
+        altered between versions.  Please consult the 
+        <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
+        section for more details.</para>
+			</sect2>
+  <sect2 id="macosxbeforeuinst"><title>Before You Install</title>
+
+  <para>Before installing the Virtuoso software for Mac OS X you must ensure
+  that you have the correct package from the <ulink url="http://www.openlinksw.com/">OpenLink</ulink>
+  Web Site.</para>
+
+  <para>The following packages are available for download, with their respective
+  disk image filenames:</para>
+
+  <simplelist>
+    <member>OpenLink Virtuoso Enterprise v3.0 - VirtuosoEnterprise-3.0.dmg</member>
+    <member>OpenLink Virtuoso Client v3.0 - VirtuosoClient-3.0.dmg</member>
+  </simplelist>
+
+  <para>The Enterprise Edition of Virtuoso using the systems native
+	threading architecture to provide a truly scalable solution for supporting
+	potentially large systems whereas the Lite version uses a customized library
+	developed by OpenLink for good performance on smaller systems.  For most
+	evaluation purposes there will not be that much difference.</para>
+
+	<para>You will need an ODBC Driver Manager to make use of ODBC Data sources.
+	You can download the iODBC Driver Manager from the <ulink url="http://www.iodbc.org">iODBC</ulink>
+	Web Site</para>
+
+	<para>The Virtuoso server once installed will attempt to bind to the TCP/IP ports
+	1111, 1112, 8889, and 8890 by default, so you will have to determine whether
+	these are already in use by other services or you will need to change the default
+	settings during the installation process.</para>
+
+	</sect2>
+
+  <sect2 id="macosxinst"><title>Installation Process</title>
+
+  <para>Once the image file has been downloaded and saved to a convenient location you
+  will have to mount the disk image by double-clicking on the file.  Once mounted you
+  will need to launch the installer program, which will be one of the following
+  depending on the image downloaded:</para>
+
+  <simplelist>
+    <member>VirtuosoEnterprise-3.0.mpkg</member>
+    <member>VirtuosoLite-3.0.mpkg</member>
+    <member>VirtuosoClient-3.0.mpkg</member>
+  </simplelist>
+
+  <figure id="macinstall01" float="1"><title>Mounting the Disk Image</title>
+    <graphic fileref="mac/install01.jpg" /></figure>
+
+  <para>In order for the system to allow you to install a new package you are
+	required to be identified as an administrator.  To do this you have to click
+	the lock icon at the bottom of the Installer dialog box.</para>
+
+  <figure id="macinstall02" float="1"><title>Identifying yourself as Administrator</title>
+    <graphic fileref="mac/install02.jpg"/></figure>
+
+	<para>Once your authentication is accepted, you will be presented with the
+	Installer introduction page.</para>
+
+  <figure id="macinstall03" float="1"><title>Installer Introduction Page</title>
+    <graphic fileref="mac/install.jpg"/></figure>
+
+  <para>Please read the Important Information.</para>
+
+  <figure id="osximage01" float="1"><title>Important Information</title>
+    <graphic fileref="mac/osximage01.gif"/></figure>
+
+  <para>Please read the Software License Agreement.</para>
+
+  <figure id="osximage02" float="1"><title>Software License Agreement</title>
+    <graphic fileref="mac/osximage02.gif"/></figure>
+
+  <para>You must agree to the terms of the license in order to install.</para>
+
+  <figure id="osximage03" float="1"><title>Confirm Acceptance</title>
+    <graphic fileref="mac/osximage03.gif"/></figure>
+
+	<para>Continue with the installation by choosing <emphasis>Select Destination</emphasis>
+	and choose the destination drive where you wish to install the OpenLink
+	Virtuoso product.</para>
+
+  <figure id="macinstall04" float="1"><title>Select Destination</title>
+    <graphic fileref="mac/install09.jpg"/></figure>
+
+	<para>You can choose the <emphasis>Installation Type</emphasis> to be either
+	Easy Install, taking the defaults, or Customize your installation to your needs.
+	The following screens assume a custom Install. Click on Customize to proceed.</para>
+
+  <figure id="osximage05" float="1"><title>Selecting the Type of Installation</title>
+    <graphic fileref="mac/osximage05.gif" /></figure>
+
+	<para>Chose the packages you wish to install.</para>
+
+  <figure id="macinstall05" float="1"><title>Customizing the Installation</title>
+    <graphic fileref="mac/install11.jpg" /></figure>
+
+	<para>Installer prepares for file transfer.</para>
+
+  <figure id="osximage07" float="1"><title>Preparing files</title>
+    <graphic fileref="mac/osximage07.gif" /></figure>
+
+	<para>During the installation you will need to enter your passphrase.</para>
+
+  <figure id="osximage08" float="1"><title>Enter Passphrase</title>
+    <graphic fileref="mac/osximage08.gif" /></figure>
+
+	<para>The installer will continue installing files</para>
+
+  <figure id="osximage09" float="1"><title>Installing...</title>
+    <graphic fileref="mac/osximage09.gif" /></figure>
+
+	<para>Select the database to startup at the end of the install.</para>
+
+  <figure id="osximage10" float="1"><title>Starup choice</title>
+    <graphic fileref="mac/osximage10.gif" /></figure>
+
+	<para>A license file is required to use the server.
+	During the download process, a license file is emailed to you.</para>
+
+  <figure id="osximage11" float="1"><title>License intro</title>
+    <graphic fileref="mac/osximage11.gif" /></figure>
+
+	<para>Choose folder for license file.</para>
+
+  <figure id="osximage12" float="1"><title>Choose license folder</title>
+    <graphic fileref="mac/osximage12.gif" /></figure>
+
+	<para>Choose license file.</para>
+
+  <figure id="osximage13" float="1"><title>Choose license folder</title>
+    <graphic fileref="mac/osximage13.gif" /></figure>
+
+
+	<para>You now have to configure the Virtuoso.</para>
+
+  <figure id="osximage14" float="1"><title>Main Server</title>
+    <graphic fileref="mac/osximage14.gif" /></figure>
+
+  <figure id="osximage15" float="1"><title>Demo Server</title>
+    <graphic fileref="mac/osximage15.gif" /></figure>
+
+  <figure id="osximage16" float="1"><title>Account Password</title>
+    <graphic fileref="mac/osximage16.gif" /></figure>
+
+  <figure id="osximage17" float="1"><title>Zero Config</title>
+    <graphic fileref="mac/osximage17.gif" /></figure>
+
+  <figure id="osximage18" float="1"><title>Server Tab</title>
+    <graphic fileref="mac/osximage18.gif" /></figure>
+
+	<para>The installation is now complete.</para>
+
+  <figure id="osximage19" float="1"><title>Success</title>
+    <graphic fileref="mac/osximage19.gif" /></figure>
+
+	<para>If a server was instructed to start at the end of the install,
+	then the web browser is shown on the Administration page for the server.</para>
+
+  <figure id="osximage20" float="1"><title>Admin Assistant</title>
+    <graphic fileref="mac/osximage20.gif" /></figure>
+
+
+
+	<para>Once the installation has finished it is safe to unmount the
+	disk image directory by dragging and dropping the directory in the trash icon
+	of the dock.</para>
+
+	</sect2>
+
+	<sect2 id="macosxodbcdsnconf"><title>Configuring an ODBC Data Source</title>
+
+	  <para>Launch the iODBC Administrator, assuming that you have the iODBC
+		Administrator installed.</para>
+
+		<para>On some Mac OS X systems installed on an HFS partition, the icons may
+		not be displayed correctly or at all, due to a Mac OS X bug.  In such cases
+		a simple reboot of your system should correct this.</para>
+
+		<para>Once the iODBC Administrator window has appeared you can press the
+		<emphasis>Add</emphasis> button on the either the <emphasis>User DSN</emphasis>
+		or the <emphasis>System DSN</emphasis> panel to add a new Data Source entry.</para>
+
+  <figure id="macconfig01" float="1"><title>ODBC Administrator</title>
+    <graphic fileref="mac/config01.jpg"/></figure>
+
+		<para>Choose the driver that you wish to create a Data Source for, in this
+		case the Virtuoso Driver (3.0).</para>
+
+  <figure id="macconfig02" float="1"><title>ODBC Administrator - Choose Virtuoso Driver</title>
+    <graphic fileref="mac/config03.jpg"/></figure>
+
+		<para>Provide all required details in the fields provided by the setup panel.</para>
+
+  <figure id="macconfig03" float="1"><title>ODBC Administrator - Configure Virtuoso DSN</title>
+    <graphic fileref="mac/config04.jpg"/></figure>
+
+	<para>The server can be picked from the list of Zero Configuration Datasources
+	that is discovered.</para>
+
+  <figure id="osximage23" float="1"><title>Pick Zero Config</title>
+    <graphic fileref="mac/osximage23.gif" /></figure>
+
+	<para>Alternatively a manual selection can be made for the server.</para>
+
+  <figure id="osximage25" float="1"><title>Pick manual mode</title>
+    <graphic fileref="mac/osximage25.gif" /></figure>
+
+	<para>In this case enter the hostname (or IP) and port number.</para>
+
+  <figure id="osximage34" float="1"><title>Manual Server Entry</title>
+    <graphic fileref="mac/osximage34.gif" /></figure>
+
+
+  <figure id="macconfig04" float="1"><title>ODBC Administrator - Configure Virtuoso DSN</title>
+    <graphic fileref="mac/config05.jpg"/></figure>
+
+  <figure id="macconfig06" float="1"><title>ODBC Administrator - Configure Virtuoso DSN</title>
+    <graphic fileref="mac/config06.jpg"/></figure>
+
+		<para>Press the <emphasis>Finish</emphasis> button to save the Data Source
+		information.</para>
+
+	</sect2>
+
+	<sect2 id="macosxodbcdsntest"><title>Testing an ODBC Data Source</title>
+
+		<para>Select the Data Source from the DSN list, and press the <emphasis>Test</emphasis>
+		button.</para>
+
+		<para>You will be prompted for a username and password to establish a
+		connection with the Data Source.</para>
+
+  <figure id="macconfig07" float="1"><title>Login - Identity Tab</title>
+    <graphic fileref="mac/config07.jpg" /></figure>
+
+<para>The login dialogue also allows you to
+		alter the configuration if required.</para>
+
+		<para>Under the Connection Tab are the fields for the remote server,
+		and the authentication method. Typically the defaults are used.</para>
+
+  <figure id="macconfig30" float="1"><title>Login - Connection Tab</title>
+    <graphic fileref="mac/osximage30.gif" /></figure>
+
+		<para>The Options page has Database, Charset and daylight savings
+		configuration. Typically the deafults are used.</para>
+
+  <figure id="macconfig31" float="1"><title>Login - Options Tab</title>
+    <graphic fileref="mac/osximage31.gif" /></figure>
+
+		<para>The About page shows the software details.</para>
+
+  <figure id="macconfig32" float="1"><title>Login - About</title>
+    <graphic fileref="mac/osximage32.gif" /></figure>
+
+		<para>The result of the test is shown in a popup window.</para>
+
+  <figure id="macconfig33" float="1"><title>Test Result</title>
+    <graphic fileref="mac/osximage33.gif" /></figure>
+
+	</sect2>
+
+	<sect2 id="postinstsanitymac">
+		<title>Post-Installation Sanity Check</title>
+		<para>A quick way to check that the database is running, is to point a browser to the
+		http port. The following example URLs will show the System Manager for
+		the default, and the demo Virtuoso databases:</para>
+		<programlisting>http://localhost:8889
+http://localhost:8890
+http://a_virtuoso_server.org:8890</programlisting>
+		<para>See the following Quick Start chapter for further ways to verify the database.</para>
+	</sect2>
+	<sect2 id="defpasschgmac">
+		<title>Default passwords</title>
+		<para>See the following Quick Start chapter for very important information about
+		<link linkend="defpasschange">changing the default passwords</link>.</para>
+	</sect2>
+
+</sect1>
+
+</chapter>

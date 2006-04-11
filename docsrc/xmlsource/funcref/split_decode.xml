@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_split_and_decode">
+  <refmeta>
+    <refentrytitle>split_and_decode</refentrytitle>
+    <refmiscinfo>encoding</refmiscinfo>
+    <refmiscinfo>string</refmiscinfo>
+    <refmiscinfo>array</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>split_and_decode</refname>
+    <refpurpose>converts escaped var=val pairs to a vector of strings</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_split_and_decode">
+      <funcprototype id="fproto_split_and_decode">
+        <funcdef>vector or string <function>split_and_decode</function></funcdef>
+        <paramdef>in <parameter>coded_str</parameter> varchar</paramdef>
+        <paramdef><optional>in <parameter>case_mode</parameter> integer</optional></paramdef>
+        <paramdef><optional>in <parameter>str</parameter> varchar</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>coded_str</title>
+      <para>Input string to be converted.</para></refsect2>
+    <refsect2><title>case_mode</title>
+      <para>This optional second argument, if present should be an integer
+   either 0, 1 or 2, which tells whether "variable name"-parts
+   (those at the left side of the fourth character given in
+   third argument (or = if using the default URL-decoding))
+   are converted to UPPERCASE (1), lowercase (2) or left intact
+   (0 or when the second argument is not given).</para>
+    <para>This avoids all hard-coded limits for the length
+   of elements, by scanning the inputs string three times.
+   First for the total number of elements (the length of vector
+   to allocate), then calculating the length of each string element
+   to be allocated, and finally transferring the characters of elements
+   to the allocated string elements.
+	</para>
+</refsect2>
+    <refsect2><title>str</title>
+      <para>If this argument is a string of less than three characters then
+      this function will only decode without splitting and will return a string.</para></refsect2>
+  </refsect1>
+	<refsect1 id="desc"><title>Description</title>
+			<para>
+   split_and_decode converts the escaped var=val pair inputs text to a
+   corresponding vector of string elements. If the optional third
+   argument is a string of less than three characters, then does only
+   the decoding (but no splitting) and returns back a string.
+	</para>
+   </refsect1>
+  <refsect1 id="examples"><title>Examples</title>
+<example id="ex_split_and_decode"><title>Using split_and_decode</title>
+<programlisting>
+   split_and_decode("Tulipas=Taloon+kumi=kala&amp;Joka=haisi
+		+pahalle&amp;kuin&amp;%E4lymyst&ouml;porkkana=ilman ruuvausta",1)
+   produces a vector:
+   ("TULIPAS" "Taloon kumi=kala" "JOKA" "haisi pahalle" "KUIN" NULL
+   "&Auml;LYMYST&Ouml;PORKKANA" "ilman ruuvausta")
+</programlisting>
+  <programlisting>
+   split_and_decode(NULL)   =&gt; NULL
+   split_and_decode("")     =&gt; NULL
+   split_and_decode("A")    =&gt; ("A" NULL)
+   split_and_decode("A=B")  =&gt; ("A" "B")
+
+   split_and_decode("A&amp;B")  =&gt; ("A" NULL "B" NULL)
+   split_and_decode("=")    =&gt; ("" "")
+   split_and_decode("&amp;")    =&gt; ("" NULL "" NULL)
+   split_and_decode("&amp;=")   =&gt; ("" NULL "" "")
+   split_and_decode("&amp;=&amp;")  =&gt; ("" NULL "" "" "" NULL)
+   split_and_decode("%")    =&gt; ("%" NULL)
+   split_and_decode("%%")   =&gt; ("%" NULL)
+   split_and_decode("%41")  =&gt; ("A" NULL)
+   split_and_decode("%4")   =&gt; ("%4" NULL)
+   split_and_decode("%?41") =&gt; ("%?41" NULL)
+</programlisting>
+  <para>
+   Can also work like Perl's split function (we define the escape prefix
+   and space escape character as NUL-characters, so that they will not be
+   encountered at all:
+  </para>
+  <programlisting>
+   split_and_decode('Un,dos,tres',0,'\0\0,') =&gt; ("Un" "dos" "tres")
+   split_and_decode("Un,dos,tres",1,'\0\0,') =&gt; ("UN" "DOS" "TRES")
+   split_and_decode("Un,dos,tres",2,'\0\0,') =&gt; ("un" "dos" "tres")
+</programlisting>
+			<para>
+   Can also be used as replace and ucase (or lcase) together,
+   for example, here we use the comma as space-escape instead of
+   element-separator: (not recommended, use replace and ucase instead.
+	</para>
+			<programlisting>
+   split_and_decode("Un,dos,tres",0,'\0,')   =&gt; "Un dos tres"
+   split_and_decode("Un,dos,tres",1,'\0,')   =&gt; "UN DOS TRES"
+</programlisting>
+			<para>
+   Can be also used for decoding (some of) MIME-encoded mail-headers:
+	</para>
+			<programlisting>
+   split_and_decode('=?ISO-8859-1?Q?Tiira_lent=E4=E4_taas?=',0,'=_')
+   =&gt;  "=?ISO-8859-1?Q?Tiira lent&auml;&auml; taas?="
+
+   split_and_decode('Message-Id: &lt;199511141036.LAA06462@correo.unet.ar&gt;\n
+		From: "=?ISO-8859-1?Q?Jorge_Mo=F1as?=" &lt;jorgem@unet.ar&gt;\n
+		To: "Jore Carvajal" &lt;carvajal@wanabee.fr&gt;\nSubject: RE: Um-pah-pah\n
+		Date: Wed, 12 Nov 1997 11:28:51 +0100\n
+		X-MSMail-Priority: Normal\nX-Priority: 3\n
+		X-Mailer: Molosoft Internet Mail 4.70.1161\nMIME-Version: 1.0\n
+		Content-Type: text/plain; charset=ISO-8859-1\n
+		Content-Transfer-Encoding: 8bit\nX-Mozilla-Status: 0011',
+   1,'=_\n:');
+   =&gt; ('MESSAGE-ID' ' &lt;199511141036.LAA06462@correo.unet.ar&gt;'
+   'FROM' ' "=?ISO-8859-1?Q?Jorge Mo&ntilde;as?=" &lt;jorgem@unet.ar&gt;'
+   'TO' ' "Jore Carvajal" &lt;carvajal@wanabee.fr&gt;'
+   'SUBJECT' ' RE: Um-pah-pah'
+   'DATE' ' Wed, 12 Nov 1997 11:28:51 +0100'
+   'X-MSMAIL-PRIORITY' ' Normal'
+   'X-PRIORITY' ' 3'
+   'X-MAILER' ' Molosoft Internet Mail 4.70.1161'
+   'MIME-VERSION' ' 1.0'
+   'CONTENT-TYPE' ' text/plain; charset=ISO-8859-1'
+   'CONTENT-TRANSFER-ENCODING' ' 8bit'
+   'X-MOZILLA-STATUS' ' 0011')
+</programlisting>
+			<para>
+   Same, but let's use space, not colon as a variable=value separator:
+</para>
+			<programlisting>
+   split_and_decode('Message-Id: &lt;199511141036.LAA06462@correo.unet.ar&gt;\n
+		From: "=?ISO-8859-1?Q?Jorge_Mo=F1as?=" &lt;jorgem@unet.ar&gt;\n
+		To: "Jore Carvajal" &lt;carvajal@wanabee.fr&gt;\nSubject: RE: Um-pah-pah\n
+		Date: Wed, 12 Nov 1997 11:28:51 +0100\n
+		X-MSMail-Priority: Normal\nX-Priority: 3\n
+		X-Mailer: Molosoft Internet Mail 4.70.1161\nMIME-Version: 1.0\n
+		Content-Type: text/plain; charset=ISO-8859-1\n
+		Content-Transfer-Encoding: 8bit\nX-Mozilla-Status: 0011',
+   1,'=_\n ')
+   =&gt; ('MESSAGE-ID:' '&lt;199511141036.LAA06462@correo.unet.ar&gt;'
+   'FROM:' '"=?ISO-8859-1?Q?Jorge Mo&ntilde;as?=" &lt;jorgem@unet.ar&gt;'
+   'TO:' '"Jore Carvajal" &lt;carvajal@wanabee.fr&gt;'
+   'SUBJECT:' 'RE: Um-pah-pah'
+   'DATE:' 'Wed, 12 Nov 1997 11:28:51 +0100'
+   'X-MSMAIL-PRIORITY:' 'Normal'
+   'X-PRIORITY:' '3'
+   'X-MAILER:' 'Molosoft Internet Mail 4.70.1161'
+   'MIME-VERSION:' '1.0'
+   'CONTENT-TYPE:' 'text/plain; charset=ISO-8859-1'
+   'CONTENT-TRANSFER-ENCODING:' '8bit'
+   'X-MOZILLA-STATUS:' '0011')
+</programlisting>
+			<para>
+   Of course this approach does not work with multiline headers, except
+   somewhat kludgously.
+   If the lines are separated by CR+LF, there is left one trailing
+   CR at the end of each value part string.
+</para>
+</example>
+
+	</refsect1>
+</refentry>
+

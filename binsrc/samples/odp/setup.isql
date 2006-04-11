@@ -1,0 +1,157 @@
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+set echo=off;
+set verbose=on;
+set banner=on;
+set types=off;
+set timeout 720000;
+
+sequence_set('_', 1,0);
+sequence_next('_');
+
+ECHO "\n(Checkpoint...";
+CHECKPOINT;
+ECHO " done)";
+
+ECHO "\n(Disabling regular checkpoints...";
+checkpoint_interval(0);
+ECHO " done)";
+
+ECHO "\n(Loading RDF library...";
+load rdf_lib.sql;
+ECHO " done)";
+
+ECHO "\n(Loading bootstrap procedures...";
+load odp_boot.sql;
+ECHO " done)";
+
+ECHO "\n(Schema (re-)creation..." ;
+ODP.ODP.CREATE_SCHEMA ();
+ECHO " done)";
+
+ECHO "\n(Loading ODP library...";
+load odp_lib.sql;
+ECHO " done)";
+
+ECHO "\n(Loading ODP VSP functions...";
+load odp_vsp.sql;
+ECHO " done)";
+
+ODP.ODP.ADDCFG ('Version/Schema', ODP.ODP.CODE_VERSION());
+ODP.ODP.SETCFG ('Version/Code', ODP.ODP.CODE_VERSION());
+
+DB.DBA.RDF_ASSERT2 (
+  lte (ODP.ODP.GETCFG ('Version/Schema'), ODP.ODP.GETCFG ('Version/Code')),
+  'Version of ODP.ODP schema is newer than version of SQL code' );
+  
+ECHO "\n(Loading configuration...";
+load _current_config.sql;
+ECHO " done)";
+
+ECHO "\n\n\n\tCurrent configuration\n\n";
+select PARAM as "Parameter", VALUE as "Value" from ODP.ODP.CONFIG order by PARAM;
+ECHO "\n";
+
+ECHO "\n(Preparing for RDF reading...";
+ODP.ODP.ADD_SOURCE (1	, 'Content'	);
+ODP.ODP.ADD_SOURCE (2	, 'Profiles'	);
+ODP.ODP.ADD_SOURCE (3	, 'Redirect'	);
+ODP.ODP.ADD_SOURCE (4	, 'Structure'	);
+ODP.ODP.ADD_SOURCE (5	, 'Terms'	);
+ECHO " done)";
+
+ECHO "\n(Checkpoint...";
+CHECKPOINT;
+ECHO " done)";
+
+ECHO "\n(Loading 'Terms' RDF, pass 1...";
+ODP.ODP.LOAD_RDF1 (5	, 'Terms'	, ODP.ODP.GETCFG ('RDF/Files/Terms')		);
+ECHO " Checkpoint...";
+CHECKPOINT;
+ECHO " Pass 2...";
+ODP.ODP.LOAD_RDF2 (5	, 'ODP.ODP.REFILL_TERMS()'	, 'PASS 1 OK'	, 'PUBLISHED'	);
+ECHO " Checkpoint...";
+CHECKPOINT;
+ECHO " done)";
+
+ECHO "\n(Loading 'Profiles' RDF, pass 1...";
+ODP.ODP.LOAD_RDF1 (2	, 'Profiles'	, ODP.ODP.GETCFG ('RDF/Files/Profiles')		);
+ECHO " Checkpoint...";
+CHECKPOINT;
+ECHO " Pass 2...";
+ODP.ODP.LOAD_RDF2 (2	, 'ODP.ODP.REFILL_PROFILES()'	, 'PASS 1 OK'	, 'PUBLISHED'	);
+ECHO " Checkpoint...";
+CHECKPOINT;
+ECHO " done)";
+
+ECHO "\n(Loading 'Redirect' RDF, pass 1...";
+ODP.ODP.LOAD_RDF1 (3	, 'Redirect'	, ODP.ODP.GETCFG ('RDF/Files/Redirect')		);
+ECHO " Checkpoint...";
+CHECKPOINT;
+ECHO " Pass 2...";
+ODP.ODP.LOAD_RDF2 (3	, 'ODP.ODP.REFILL_REDIRECT()'	, 'PASS 1 OK'	, 'PUBLISHED'	);
+ECHO " Checkpoint...";
+CHECKPOINT;
+ECHO " done)";
+
+ECHO "\n(Loading 'Structure' RDF, pass 1...";
+ODP.ODP.LOAD_RDF1 (4	, 'Structure'	, ODP.ODP.GETCFG ('RDF/Files/Structure')	);
+ECHO " Checkpoint...";
+CHECKPOINT;
+ECHO " Pass 2...";
+ODP.ODP.LOAD_RDF2 (4	, 'ODP.ODP.REFILL_STRUCTURE()'	, 'PASS 1 OK'	, 'PUBLISHED'	);
+ECHO " Checkpoint...";
+CHECKPOINT;
+ECHO " done)";
+
+ECHO "\n(Loading 'Content' RDF, pass 1...";
+ODP.ODP.LOAD_RDF1 (1	, 'Content'	, ODP.ODP.GETCFG ('RDF/Files/Content')		);
+ECHO " Checkpoint...";
+CHECKPOINT;
+-- Uncomment either these two lines...
+--ECHO " Pass 2...";
+--call ODP.ODP.LOAD_RDF2 (1	, 'ODP.ODP.REFILL_CONTENT()'	, 'PASS 1 OK'	, 'PUBLISHED'	);
+-- ...or these five lines...
+ECHO " Pass 2A...";
+call ODP.ODP.LOAD_RDF2 (1	, 'ODP.ODP.REFILL_TOPIC_CONTENT()'	, 'PASS 1 OK'	, 'PASS 2A OK'	);
+ECHO " Checkpoint...";
+ECHO " Pass 2B...";
+call ODP.ODP.LOAD_RDF2 (1	, 'ODP.ODP.REFILL_PAGE_CONTENT()'	, 'PASS 2A OK'	, 'PUBLISHED'	);
+
+ECHO " Checkpoint...";
+CHECKPOINT;
+ECHO " done)";
+
+-- ECHO "\n(Updating text XML index on RDFs...";
+-- VT_INC_INDEX_ODP_ODP_SOURCE (0);
+-- ECHO " ...Checkpoint...";
+-- CHECKPOINT;
+-- ECHO " ...done)";
+
+ECHO "\n\n\n\tCurrent set of source files\n\n";
+select ID, NAME, LOADPATH, VERSION, REFILL_STATUS, REFILL_ERROR, ERROR_VERSION from ODP.ODP.SOURCE;
+ECHO "\n";
+
+ECHO "\n(Enabling regular checkpoints back...";
+checkpoint_interval(60);
+ECHO " ...done)";
+
+ECHO "\n"

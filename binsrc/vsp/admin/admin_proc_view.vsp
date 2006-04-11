@@ -1,0 +1,228 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+
+  declare _q varchar;
+  declare _proc varchar;
+  declare _stmt varchar;
+  declare _stage integer;
+  declare fits_for_proc_view integer;
+  declare fits_for_proc_view_reason varchar;
+  declare proc_view_create varchar;
+  declare _pview_name varchar;
+
+  fits_for_proc_view := 1;
+  if (not adm_check_auth (lines))
+    {
+      adm_tell_unauth (lines);
+      return 0;
+    }
+
+  _q := get_keyword ('q', params, '');
+
+  if ('' = _q)
+    _q := 'db';
+
+  _proc := get_keyword ('proc', params, '');
+  _stage := atoi (get_keyword ('stage', params, '1'));
+
+  if (_stage = 1)
+    {
+      declare cols any;
+      declare call_stmt varchar;
+      declare cols_inx, cols_prt_inx int;
+      cols := procedure_cols (_proc);
+
+      call_stmt := 'call (?) (';
+      if (not isarray (cols))
+        {
+           fits_for_proc_view := 0;
+           fits_for_proc_view_reason := 'Procedure not defined';
+	   goto proc_check_done;
+	}
+      cols_inx := 0;
+      while (cols_inx < length (cols))
+        {
+	  declare param_type integer;
+	  param_type := cols[cols_inx][4];
+	  if (param_type <> 1 and param_type <> 5 and param_type <> 3) -- SQL_PARAM_INPUT, SQL_RETURN_VALUE, SQL_RESULT_COL
+	    {
+	      fits_for_proc_view := 0;
+              fits_for_proc_view_reason := sprintf ('Parameter %s is not an INPUT parameter', cols[cols_inx][3]);
+	      goto proc_check_done;
+	    }
+	  cols_inx := cols_inx + 1;
+	  if (param_type = 1)
+	    {
+	      if (call_stmt <> 'call (?) (')
+	        call_stmt := concat (call_stmt, ', ');
+	      call_stmt := concat (call_stmt, 'NULL');
+	    }
+	  call_stmt := concat (call_stmt, ')');
+        }
+proc_check_done:;
+        if (fits_for_proc_view and get_keyword ('save', params, '') = 'Generate')
+	  {
+	    declare res_meta any;
+	    declare exit handler for SQLSTATE '*' {
+              rollback work;
+              fits_for_proc_view := 0;
+	      fits_for_proc_view_reason := sprintf ('Error in executing %s : [%s] %s', call_stmt, __SQL_STATE, __SQL_MESSAGE);
+              goto  proc_check_done;
+	    };
+
+	    exec (call_stmt, NULL, NULL, vector (_proc), 0, res_meta);
+
+            _pview_name := get_keyword ('pview_name', params, _proc);
+	    proc_view_create := sprintf (
+				'CREATE PROCEDURE VIEW %I as %I (', _pview_name, _proc);
+
+	    cols_inx := 0;
+	    cols_prt_inx := 0;
+	    while (cols_inx < length (cols))
+	      {
+	        if (cols[cols_inx][4] = 1)
+		  {
+		    if (cols_prt_inx > 0)
+		      proc_view_create := proc_view_create || ',';
+		    proc_view_create := proc_view_create || sprintf ('%I', cols[cols_inx][3]);
+		    cols_prt_inx := cols_prt_inx + 1;
+		  }
+	        cols_inx := cols_inx + 1;
+	      }
+	    proc_view_create := proc_view_create || ') (';
+	    cols_inx := 0;
+	    declare col_meta any;
+	    col_meta := res_meta[0];
+	    while (cols_inx < length (col_meta))
+	      {
+	        if (cols_inx > 0)
+		  proc_view_create := proc_view_create || ',';
+		proc_view_create := proc_view_create || sprintf ('%I %s', col_meta[cols_inx][0],
+				  internal_type_name (col_meta[cols_inx][1]));
+		if (upper (internal_type_name (col_meta[cols_inx][1])) = 'VARCHAR' and
+		  col_meta[cols_inx][3] > 0)
+		  proc_view_create := proc_view_create || sprintf ('(%d)', col_meta[cols_inx][3]);
+		else if (upper (internal_type_name (col_meta[cols_inx][1])) = 'NUMERIC')
+		  proc_view_create := proc_view_create || sprintf ('(%d, %d)', col_meta[cols_inx][3], col_meta[cols_inx][2]);
+                cols_inx := cols_inx + 1;
+	      }
+	    proc_view_create := proc_view_create || ')';
+	    _stage := 2;
+	  }
+      }
+    else if (_stage = 2)
+      {
+        declare _create_view_stmt varchar;
+        _create_view_stmt := get_keyword ('create_view_stmt', params, '');
+        declare exit handler for sqlstate '*'
+          {
+            rollback work;
+            fits_for_proc_view := 0;
+            _stage := 0;
+	    fits_for_proc_view_reason := sprintf ('Error in executing %s : [%s] %s', _create_view_stmt, __SQL_STATE, __SQL_MESSAGE);
+            goto  proc_check_done;
+	  };
+
+        exec (_create_view_stmt);
+        commit work;
+        _stage := 3;
+      }
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <!--script language="javascript" src="admin_tables.js"></script-->
+    <title>CREATE PROCEDURE VIEW for <?= _proc ?></title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="CREATE PROCEDURE VIEW generator">
+  </head>
+  <BODY>
+<?vsp adm_page_header(concat('CREATE PROCEDURE VIEW generator for ', _proc), NULL); ?>
+
+<?vsp if (_stage = 3) { ?>
+  <p>The procedure view <?= get_keyword ('pview_name', params, '') ?> for procedure <?= _proc?> has been created successfully.<p>
+  <form method="POST" action="admin_procs.vsp">
+      <input type="hidden" name="q" value="<?=_q?>">
+      <input type="hidden" name="proc" value="<?=_proc?>">
+      <input type="submit" name="OK" value="OK">
+  </form>
+<?vsp } else if (fits_for_proc_view = 0) { ?>
+  <p>The procedure <?= _proc?> cannot be used for a procedure view by this wizzard, because <?= fits_for_proc_view_reason ?>.<p>
+  <p>Try writing the CREATE PROCEDURE VIEW STATEMENT manually</p>
+  <form method="POST" action="admin_procs.vsp">
+      <input type="hidden" name="q" value="<?=_q?>">
+      <input type="hidden" name="proc" value="<?=_proc?>">
+    <input type="submit" name="OK" value="OK">
+  </form>
+<?vsp  } else { ?>
+
+  <form method="POST" action="admin_proc_view.vsp">
+    <input type="hidden" name="q" value="<?=_q?>">
+    <input type="hidden" name="stage" value="<?=_stage?>">
+    <input type="hidden" name="proc" value="<?=_proc?>">
+
+<?vsp
+    if (_stage = 1)
+      {
+?>
+      <TABLE CLASS="genlist">
+	<TR><TD>
+	  <table BORDER="0" CELLPADDING="0" CELLSPACING="2">
+	  <tr><td CLASS="genlisthead">Procedure view name</td>
+	  <td><input type="text" name="pview_name" witdh="40" value="<?= concat (_proc, '_VIEW') ?>"></td>
+	  </tr></table>
+        </TD></TR>
+
+        <TR><TD ALIGN="right">
+	 <input type="submit" name="save" value="Generate">
+	 <input type="submit" name="save" value="Cancel">
+	</TD></TR>
+      </TABLE>
+<?vsp } else if (_stage = 2) { ?>
+      <TABLE CLASS="genlist">
+	<TR><TD>
+	Generated SQL
+        </TD></TR>
+	<TR><TD>
+	<input type="hidden" name="pview_name" value="<?= _pview_name ?>">
+	<textarea readonly name="create_view_stmt" rows="5" cols="64"><?= proc_view_create ?></textarea>
+        </TD></TR>
+
+        <TR><TD ALIGN="right">
+	 <input type="submit" name="save" value="Execute">
+	 <input type="submit" name="save" value="Cancel">
+	</TD></TR>
+      </TABLE>
+
+  </form>
+<?vsp } ?>
+<?vsp } ?>
+<?vsp
+adm_page_footer(); ?>
+  </body>
+</html>

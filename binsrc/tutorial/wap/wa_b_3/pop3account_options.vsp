@@ -1,0 +1,252 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp http_rewrite();
+http_header('Content-type: text/vnd.wap.wml\r\n');
+declare _user_name varchar;
+
+declare _user_name, _login_ok varchar;
+declare _sid varchar;
+declare _err long varchar;
+declare _pop3old, _pop3new, _poppassold, _poppassnew, _to_do varchar;
+
+declare _popserver, _popport, _popusername, _poppassword varchar;
+declare _popid integer;
+
+declare _allowed, _num_of_popaccount, _random1 integer;
+declare _allow_to_add varchar;
+declare _popserver1, _popusername1 varchar;
+
+declare _err_msg varchar;
+
+_random1 := rnd(9999999);
+_sid := '';
+_sid := get_keyword('SESS', params);
+_to_do := get_keyword('TO_DO', params);
+_popid := atoi(get_keyword('POPID', params));
+
+_login_ok := 'NO';
+
+if (_sid   <> ''){
+  for select _username, _userpass from wapsession where sid = _sid  do {
+   _login_ok := 'YES';
+   _user_name := _username;
+   update wapsession set _time_last_active = datestring ( now() ) where  sid = _sid;
+  }
+ if(exists(select * from wappop3account where _username = _user_name and _pop_id = _popid)) {
+   for select * from wappop3account where _username = _user_name and _pop_id = _popid do {
+    _popserver := _pop_server;
+    _popusername := _pop_login_name;
+    _popport := _pop_port;
+    _user_name := _username;
+    _popid := _pop_id;
+    _poppassword := _pop_password;
+   }
+  }
+ }else{
+   _login_ok := 'NO';
+ }
+
+if (_login_ok = 'YES'){
+  if(_to_do = 'OPTIONS'){
+    --displaying what options can be performed on the folder
+    http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+<wml>
+ <card id="page1" title="Pop Account" >
+   <onevent type="onenterforward">
+          <refresh>
+   <setvar name="sid" value="<?=_sid?>"/>
+   <setvar name="popserver1" value="<?=_popserver?>"/>
+   <setvar name="popusername1" value="<?=_popusername?>"/>
+   <setvar name="popport1" value="<?=_popport?>"/>
+   <setvar name="poppassword1" value="<?=_poppassword?>"/>
+          </refresh>
+   </onevent>
+ <do type="option" label="Options">
+  <go href="#opt"/>
+   </do>
+     <p>
+   Login: <?=_popusername?><br/>
+   Server: <?=_popserver?><br/>
+   Port#: <?=_popport?>
+   </p>
+ <p><a href="#modify" title="Modify">Modify Account</a></p>
+ <p><a href="#delete" title="Delete">Delete Account</a></p>
+  </card>
+
+  <card id="opt">
+     <do type="options" label="Exit">
+  <prev/>
+   </do>
+     <p><a href="checkmail.vsp?SESS=<?=_sid?>&amp;OPEN=Inbox&amp;REF=<?=_random1?>">Mail Menu</a></p>
+     <p><a href="setting.vsp?SESS=<?=_sid?>&amp;REF=<?=_random1?>">Setting Menu</a></p>
+
+  </card>
+
+  <card id="modify" title="Modify Pop Account">
+   <onevent type="onenterforward">
+          <refresh>
+   <setvar name="sid" value="<?=_sid?>"/>
+   <setvar name="popserver1" value="<?=_popserver?>"/>
+   <setvar name="popusername1" value="<?=_popusername?>"/>
+   <setvar name="popport1" value="<?=_popport?>"/>
+   <setvar name="poppassword1" value="<?=_poppassword?>"/>
+          </refresh>
+   </onevent>
+     <do type="accept" label="Update">
+     <go href="pop3account_options.vsp?SESS=<?=_sid?>&amp;TO_DO=UPDATE&amp;POPID=<?=_popid?>&amp;POPSERVER=$(popserver1)&amp;POPUSERNAME=$(popusername1)&amp;POPPORT=$(popport1)&amp;POPPASSWORD=$(poppassword1)"></go>
+   </do>
+   <do type="help" label="Cancel">
+  <go href="#page1"/>
+   </do>
+     <p>Pop Server Name:<input name="popserver1" value="$(popserver1)" maxlength="30" /></p>
+     <p>Pop User Name:<input name="popusername1" value="$(popusername1)" maxlength="30" /></p>
+     <p>Pop Port:<input name="popport1" value="$(popport1)" maxlength="6" /></p>
+     <p>Pop Password:<input name="poppassword1"  value="$(poppassword1)" type="password" maxlength="30" /></p>
+     <p><a href="pop3account_options.vsp?SESS=<?=_sid?>&amp;TO_DO=UPDATE&amp;POPID=<?=_popid?>&amp;POPSERVER=$(popserver1)&amp;POPUSERNAME=$(popusername1)&amp;POPPORT=$(popport1)&amp;POPPASSWORD=$(poppassword1)" title="Update">Update</a></p>
+     <p><a href="#page1" title="Cancel">Cancel</a></p>
+  </card>
+
+  <card id="delete" title="Are you sure?">
+   <do type="accept" label="Delete Now">
+  <go href="pop3account_options.vsp?SESS=%s&amp;TO_DO=DELETE&amp;POPID=<?=_popid?>"/>
+   </do>
+   <do type="options" label="Cancel">
+     <go href="#page1"/>
+   </do>
+   <p>Are you sure to delete <?=_popusername?><br/><?=_popserver?>? </p>
+ <p><a href="pop3account_options.vsp?SESS=<?=_sid?>&amp;TO_DO=DELETE&amp;POPID=<?=_popid?>" title="Yes">Yes</a></p>
+ <p><a href="#page1" title="No">No</a></p>
+  </card>
+</wml>
+<?vsp
+ }
+ if (_to_do = 'UPDATE') {
+  if (exists (select 1 from wappop3account where _username = _user_name and _pop_id = _popid))
+  {
+   --when it is ok to rename the folder
+    _popserver := get_keyword('POPSERVER', params);
+    _popusername := get_keyword('POPUSERNAME', params);
+    _poppassword := get_keyword('POPPASSWORD', params);
+     _popport := get_keyword('POPPORT', params);
+   update wappop3account set _pop_login_name = _popusername, _pop_server = _popserver, _pop_password = _poppassword, _pop_port = _popport
+    where _username = _user_name and _pop_id = _popid;
+  http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+ <card id="page1" title="Pop Account Updated" >
+   <onevent type="onenterforward">
+          <refresh>
+   <setvar name="sid" value="<?=_sid?>"/>
+   <setvar name="popserver1" value=""/>
+   <setvar name="popusername1" value=""/>
+   <setvar name="popport1" value=""/>
+   <setvar name="poppassword1" value=""/>
+          </refresh>
+   </onevent>
+ <do type="accept" label="Mail Menu">
+          <go href="checkmail.vsp?SESS=<?=_sid?>&amp;LIST=1&amp;FOLDER=Inbox"></go>
+   </do>
+     <p>Pop Account Updated.</p>
+ <p><a href="checkmail.vsp?SESS=<?=_sid?>&amp;LIST=1&amp;FOLDER=Inbox" title="Mail Menu">Mail Menu</a></p>
+  </card>
+</wml>
+<?vsp
+  }
+  else
+  {  --when it is NOT ok to rename the folder cos' the new name is already in the database
+  http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+ <card id="page1" title="21231" >
+ <do type="accept" label="Mail Menu">
+ <?vsp
+  http(sprintf('<go href="checkmail.vsp?SESS=%s&amp;LIST=1&amp;FOLDER=%s"></go>\n',_sid, 'Inbox'));
+ ?>
+   </do>
+   <do type="options" label="Back">
+    <prev/>
+   </do>
+    <p>
+  Wrong Parameters Collected.
+    </p>
+  </card>
+</wml>
+<?vsp
+  }
+ }
+ if (_to_do = 'DELETE')
+ {
+  -- when the user wants to delete a folder
+  delete from wappop3account where _username = _user_name and _pop_id = _popid;
+  http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+ <card id="page1" title="Pop Deleted" >
+   <onevent type="onenterforward">
+          <refresh>
+   <setvar name="sid" value="<?=_sid?>"/>
+   <setvar name="popserver1" value=""/>
+   <setvar name="popusername1" value=""/>
+   <setvar name="popport1" value=""/>
+   <setvar name="poppassword1" value=""/>
+          </refresh>
+   </onevent>
+ <do type="accept" label="Mail Menu">
+         <go href="checkmail.vsp?SESS=<?=_sid?>&amp;LIST=1&amp;FOLDER=Inbox&amp;RAN=RAN"></go>
+   </do>
+    <p>Pop Account Deleted </p>
+    <p><a href="checkmail.vsp?SESS=<?=_sid?>&amp;LIST=1&amp;FOLDER=Inbox&amp;RAN=RAN" title="Mail Menu">Mail Menu</a></p>
+  </card>
+</wml>
+<?vsp
+ }
+}
+?>
+<?vsp
+if(_login_ok = 'NO'){ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="P1" title="Wrong" >
+    <p mode="nowrap">
+   Wrong Login
+    </p>
+  </card>
+</wml>
+<?vsp
+}
+?>

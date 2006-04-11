@@ -1,0 +1,120 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+
+   declare _user_name, _user_pass, _logout_ok varchar;
+  declare _sid varchar;
+  declare _random1 integer;
+
+  _random1 := rnd(9999999);
+  _sid := '';
+  _sid := get_keyword('SESS', params);
+  _user_name := get_keyword('USERNAME', params);
+   _logout_ok := 'NO';
+
+ if (_sid <> '')
+ {
+  if (exists ( select _username, _userpass from wapsession where sid = _sid) )
+  {
+   _logout_ok := 'YES';
+   _user_name := (select _username from wapsession where sid = _sid);
+   delete from wapsession where sid = _sid;
+  }
+  }
+?>
+
+<?vsp
+   if ( 1 = 1)
+   { http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="menu1" title="OpenLink" >
+ <onevent type ="onenterforward">
+  <refresh>
+   <setvar name="sid" value=""/>
+   <setvar name="username1" value=""/>
+   <setvar name="poppass1" value=""/>
+  </refresh>
+   </onevent>
+       <do type="accept" label="Login">
+      <go href="#Welcome"/>
+     </do>
+   <p>
+   Thank you, <?=_user_name?>
+   for using OpenLink Demo
+   </p>
+  </card>
+
+<card id="Welcome" title="OpenLink">
+     <do type="options" label="Help">
+      <go href="help.vsp"/>
+     </do>
+ <p mode="nowrap"><b>OpenLink Demo</b></p>
+ <p><a href="#Signup">Sign up</a></p>
+ <p><a href="#Login">Login</a></p>
+</card>
+
+<card id="Login" title="OpenLink">
+ <do type="accept" label="Continue">
+     <go href="login.vsp?USERNAME=$(username1:escape)&amp;POPPASS=$(poppass1:escape)">
+    </go>
+ </do>
+ <do type="options" label="Cancel">
+  <prev/>
+ </do>
+    <p>User Name:<input name="username1" title="Login Name" value="<?= _user_name ?>" format="x*x" maxlength="30" /></p>
+    <p>Password:<input name="poppass1" title="Password" value="<?= _user_pass ?>" type="password" format="x*x" maxlength="30" /></p>
+    <p>$(username1) </p>
+
+ <p><a href="login.vsp?USERNAME=$(username1:escape)&amp;POPPASS=$(poppass1:escape)">Continue</a></p>
+ <p><a href="#Welcome">Cancel</a></p>
+</card>
+
+<card id="Signup" title="OpenLink">
+ <do type="accept" label="Yes">
+     <go href="signup.vsp?USERNAME=$(username1:escape)&amp;POPPASS=$(poppass1:escape)&amp;POPPASS1=$(poppass2:escape)&amp;FIRSTNAME=$(firstname:escape)">
+  <setvar name="username1" value="" />
+  <setvar name="poppass1" value="" />
+  <setvar name="poppass2" value="" />
+    </go>
+ </do>
+
+ <do type="options" label="No">
+  <prev/>
+ </do>
+    <p>Your Full Name : <input name="firstname" title="Login Name" format="X*m" value="$(firstname)" tabindex="2" maxlength="30" /></p>
+    <p>Enter User Name : <input name="username1" title="Login Name" format="m*m" value="<?=_user_name?>" tabindex="2" maxlength="30" /></p>
+    <p>Enter Password :<input name="poppass1" title="Password" format="m*m" value="<?=_user_pass?>" type="password" tabindex="3" maxlength="30" /></p>
+    <p>Re-type Password :<input name="poppass2" title="Password" format="m*m" value="<?=_user_pass?>" type="password" tabindex="3" maxlength="30" /></p>
+    <p>Continue ? </p>
+
+  <p><a href="signup.vsp?USERNAME=$(username1:escape)&amp;POPPASS=$(poppass1:escape)&amp;POPPASS1=$(poppass2:escape)&amp;FAMILYNAME=$(familyname:escape)&amp;FIRSTNAME=$(firstname:escape)">Yes </a></p>
+  <p><a href="#Welcome">No</a></p>
+</card>
+</wml>
+<?vsp
+ }
+?>

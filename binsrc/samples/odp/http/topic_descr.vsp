@@ -1,0 +1,61 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _r_id varchar;
+  declare _topic_nodeid integer;
+  declare _is_first integer;
+  declare _struct_frag any;
+  declare _struct_descr varchar;
+  declare _struct_lastupd varchar;
+  declare _epage_nodeid integer;
+  declare _epage_title long varchar;
+  declare _epage_descr long varchar;
+  declare _prev_tag_typ varchar;
+  _r_id := {?'r_id'};
+  _topic_nodeid := ODP.ODP.TOPIC__NODE_GET(_r_id);
+  whenever not found goto nf_error;
+?>
+<?vsp ODP.ODP.VSP_HEADER(path,params,lines,_r_id); ?>
+<TABLE BORDER=0 WIDTH="100%"><TR><TH ALIGN=LEFT><FONT SIZE=+1><?vsp ODP.ODP.VSP_TOPIC_PATH_HREFS(path,params,lines,concat(_r_id,'/ (description)')); ?></FONT></TH></TABLE>
+<?vsp
+  whenever not found goto nf_error;
+  select xml_persistent(XPER) into _struct_frag from ODP.ODP.TOPIC_STRUCTURE where NODEID=_topic_nodeid;
+  _struct_descr := xpath_eval('//Description', _struct_frag);
+  if(_struct_descr is null)
+    return ODP.ODP.VSP_ERROR(path,params,lines,'Database contains no description for this topic');
+  ?><P><?vsp
+  http(
+    replace (
+      replace (
+        replace (cast(_struct_descr as varchar), '&apos;', '\''),
+        '&lt;', '<' ),
+      '&gt;', '>' )
+   );
+  ?></P><?vsp
+ODP.ODP.VSP_FOOTER(path,params,lines); ?>
+<?vsp
+  return;
+nf_error: ;
+  return ODP.ODP.VSP_ERROR(path,params,lines,'Database contains no topic matching you request');
+?>
+

@@ -1,0 +1,259 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!-- $Id$ -->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="configure_page" decor="bpel_decor.vspx" style="bpel_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<v:method name="do_redirect" arglist="in url varchar"><![CDATA[
+  url := vspx_uri_add_parameters (url, sprintf ('sid=%s&realm=%s',self.sid,self.realm));
+  http_request_status ('HTTP/1.1 302 Found');
+  http_header ('Location: '||url||'\r\n');
+  ]]>
+</v:method>
+<v:on-init>
+    set isolation='committed';
+</v:on-init>
+<vm:pagewrapper>
+  <v:variable persist="temp" name="r_count" type="integer" default="0"/>
+  <vm:pagetitle>OpenLink BPEL Process Manager Configuration</vm:pagetitle>
+  <vm:pagebody>
+
+    <v:form name="upl" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+<!--      <v:text name="pop" type="hidden" value="'&id='"/>
+      <v:text name="por" type="hidden" value="'role='"/> -->
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+        <tr>
+          <th class="info" colspan="3">Configuration </th>
+        </tr>
+        <tr>
+	  <td>
+	    <!--v:url name="u1" value="Refresh page" url="configure.vspx" /> to see possible changes.-->
+	    <font style="color:red"><v:error-summary /></font>
+	  </td>
+	</tr>
+        <tr>
+          <td>
+            <?vsp http(sprintf('<a target="_blank"  href="help.vspx?id=configure&sid=%s&realm=%s\r\n"><img title="Help" alt="Help" src="i/help_24.gif" border="0" /></a>', self.sid ,self.realm));?>
+            <?vsp http(sprintf('<a target="_blank"  href="help.vspx?id=configure&sid=%s&realm=%s\r\n"> Help</a>', self.sid ,self.realm));?>
+          </td>
+        </tr>
+        <tr><td><table width="100%" border="0" cellpadding="0" cellspacing="0" id="contentlist">
+            <tr>
+              <th width="20%" align="left">
+                <v:label name="label1" value="Option" format="%s"/>
+              </th>
+              <th width="70%" align="left">
+                <v:label name="label3" value="Value" format="%s"/>
+              </th>
+	    </tr>
+	    <v:form name="upd1" type="update" table="BPEL..configuration" if-not-exists="insert">
+	      <v:key column="conf_name" value="null" default="'EngineMailAddress'"/>
+	      <v:template name="updtmpl11" type="if-exists">
+		<tr bgcolor="#fefefe">
+		  <td width="20%" align="left">
+                    <v:url name="l11" column="conf_desc" url="--sprintf('help.vspx?id=configure&name=f_oemail')" xhtml_target="_blank"/>
+		  </td>
+		  <td width="70%" align="left">
+		    <v:text name="l12" column="conf_value" null-value="''" xhtml_tabindex="1" xhtml_size="60" error-glyph="*">
+		      <v:validator test="regexp" regexp="^[^\ \t].*@[^\ \t].*$" empty-allowed="1" message="Invalid E-mail address" />
+		    </v:text>
+		  </td>
+		</tr>
+	      </v:template>
+	    </v:form>
+	    <v:form name="upd2" type="update" table="BPEL..configuration" if-not-exists="insert">
+	      <v:key column="conf_name" value="null" default="'MailServer'"/>
+	      <v:template name="updtmpl21" type="if-exists">
+		<tr bgcolor="#efefef">
+		  <td width="20%" align="left">
+                    <v:url name="l21" column="conf_desc" url="--sprintf('help.vspx?id=configure&name=f_oss')" xhtml_target="_blank"/>
+		  </td>
+		  <td width="70%" align="left">
+		    <v:text name="l22" column="conf_value" null-value="''" xhtml_tabindex="2" xhtml_size="60"/>
+		  </td>
+		</tr>
+	      </v:template>
+	    </v:form>
+
+	    <v:form name="upd1n" type="update" table="BPEL..configuration" if-not-exists="insert">
+	      <v:key column="conf_name" value="null" default="'CommonEmailHeader'"/>
+	      <v:template name="updtmpl1n" type="if-exists">
+		<tr bgcolor="#fefefe">
+		  <td width="20%" align="left">
+                    <v:url name="l1n" column="conf_desc" url="--sprintf('help.vspx?id=configure&name=f_eh')" xhtml_target="_blank"/>
+		  </td>
+		  <td width="70%" align="left">
+		    <v:textarea name="l2n" column="conf_value" null-value="''" xhtml_tabindex="3" xhtml_rows="2" xhtml_cols="60" xhtml_class="m_e"/>
+		  </td>
+		</tr>
+	      </v:template>
+	    </v:form>
+	    <v:form name="upd3n" type="update" table="BPEL..configuration" if-not-exists="insert">
+	      <v:key column="conf_name" value="null" default="'AlertSubject'"/>
+	      <v:template name="updtmpl3n" type="if-exists">
+		<tr bgcolor="#efefef">
+		  <td width="20%" align="left">
+                    <v:url name="l31n" column="conf_desc" url="--sprintf('help.vspx?id=configure&name=f_eh')" xhtml_target="_blank"/>
+		  </td>
+		  <td width="70%" align="left">
+		    <v:text name="l32n" column="conf_value" null-value="''" xhtml_tabindex="4" xhtml_size="60"/>
+		  </td>
+		</tr>
+	      </v:template>
+	    </v:form>
+
+	    <v:form name="upd3" type="update" table="BPEL..configuration" if-not-exists="insert">
+	      <v:key column="conf_name" value="null" default="'ErrorAlertSkeleton'"/>
+	      <v:template name="updtmpl31" type="if-exists">
+		<tr bgcolor="#fefefe">
+		  <td width="20%" align="left">
+                    <v:url name="l31" column="conf_desc" url="--sprintf('help.vspx?id=configure&name=f_ert')" xhtml_target="_blank"/>
+		  </td>
+		  <td width="70%" align="left">
+		    <v:textarea name="l32" column="conf_value" null-value="''" xhtml_tabindex="5" xhtml_rows="5" xhtml_cols="60" xhtml_class="m_e"/>
+		  </td>
+		</tr>
+	      </v:template>
+	    </v:form>
+	    <v:form name="upd2n" type="update" table="BPEL..configuration" if-not-exists="insert">
+	      <v:key column="conf_name" value="null" default="'ErrorSubject'"/>
+	      <v:template name="updtmpl2n" type="if-exists">
+		<tr bgcolor="#efefef">
+		  <td width="20%" align="left">
+                    <v:url name="l21n" column="conf_desc" url="--sprintf('help.vspx?id=configure&name=f_sem')" xhtml_target="_blank"/>
+		  </td>
+		  <td width="70%" align="left">
+		    <v:text name="l22n" column="conf_value" null-value="''" xhtml_tabindex="6" xhtml_size="60"/>
+		  </td>
+		</tr>
+	      </v:template>
+	    </v:form>
+	    <v:form name="upd4" type="update" table="BPEL..configuration" if-not-exists="insert">
+	      <v:key column="conf_name" value="null" default="'ErrorReportSkeleton'"/>
+	      <v:template name="updtmpl41" type="if-exists">
+		<tr bgcolor="#fefefe">
+		  <td width="20%" align="left">
+                    <v:url name="l41" column="conf_desc" url="--sprintf('help.vspx?id=configure&name=f_sen')" xhtml_target="_blank"/>
+		  </td>
+		  <td width="70%" align="left">
+		    <v:textarea name="l42" column="conf_value" null-value="''" xhtml_tabindex="7" xhtml_rows="5" xhtml_cols="60" xhtml_class="m_e"/>
+		  </td>
+		</tr>
+	      </v:template>
+	    </v:form>
+	    <v:form name="upd5" type="update" table="BPEL..configuration" if-not-exists="insert">
+	      <v:key column="conf_name" value="null" default="'InstanceExpiryDelay'"/>
+	      <v:template name="updtmpl51" type="if-exists">
+		<tr bgcolor="#efefef">
+		  <td width="20%" align="left">
+                    <v:url name="l51" column="conf_desc" url="--sprintf('help.vspx?id=configure&name=f_sei')" xhtml_target="_blank"/>
+		  </td>
+		  <td width="70%" align="left">
+		    <v:text name="l52" column="conf_value" null-value="''" xhtml_tabindex="8">
+		      <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" />
+		    </v:text>
+		  </td>
+		</tr>
+	      </v:template>
+	    </v:form>
+	    <v:form name="upd6" type="update" table="BPEL..configuration" if-not-exists="insert">
+	      <v:key column="conf_name" value="null" default="'Statistics'"/>
+	      <v:template name="updtmpl61" type="if-exists">
+		<tr bgcolor="#fefefe">
+		  <td width="20%" align="left">
+                    <v:url name="l61" column="conf_desc" url="--sprintf('help.vspx?id=configure&name=f_seg')" xhtml_target="_blank"/>
+		  </td>
+		  <td width="70%" align="left">
+		    <v:check-box name="l62" column="conf_value" null-value="''" xhtml_tabindex="9" is-boolean="1" true-value="1" false-value="0"/>
+		  </td>
+		</tr>
+	      </v:template>
+	    </v:form>
+	    <v:form name="upd7" type="update" table="BPEL..configuration" if-not-exists="insert">
+	      <v:key column="conf_name" value="null" default="'CLRAssembliesDir'"/>
+	      <v:template name="updtmpl71" type="if-exists">
+		<tr bgcolor="#fefefe">
+		  <td width="20%" align="left">
+                    <v:url name="l71" column="conf_desc" url="--sprintf('help.vspx?id=configure&name=f_clr')" xhtml_target="_blank"/>
+		  </td>
+		  <td width="70%" align="left">
+		    <v:text name="l72" column="conf_value" null-value="''" xhtml_tabindex="10" xhtml_size="60" error-glyph="*">
+		    </v:text>
+		  </td>
+		</tr>
+	      </v:template>
+	    </v:form>
+	    <tr bgcolor="#efefef">
+              <td align="left">Action</td>
+	      <td width="20%" align="left">
+	        <v:button action="submit" name="okb" value="i/save_16.png" style="image" xhtml_title="Save" xhtml_alt="Save" text="&#160;Save">
+	          <v:after-data-bind>
+	            if (not control.vc_focus)
+	              return;
+	            self.upd1.vc_focus := 1;
+	            self.upd2.vc_focus := 1;
+	            self.upd3.vc_focus := 1;
+	            self.upd4.vc_focus := 1;
+	            self.upd5.vc_focus := 1;
+	            self.upd6.vc_focus := 1;
+	            self.upd7.vc_focus := 1;
+	            self.upd1n.vc_focus := 1;
+	            self.upd2n.vc_focus := 1;
+	            self.upd3n.vc_focus := 1;
+	            self.upd1.vc_set_childs_focus (1, e);
+	            self.upd2.vc_set_childs_focus (1, e);
+	            self.upd3.vc_set_childs_focus (1, e);
+	            self.upd4.vc_set_childs_focus (1, e);
+	            self.upd5.vc_set_childs_focus (1, e);
+	            self.upd6.vc_set_childs_focus (1, e);
+	            self.upd7.vc_set_childs_focus (1, e);
+	            self.upd1n.vc_set_childs_focus (1, e);
+	            self.upd2n.vc_set_childs_focus (1, e);
+	            self.upd3n.vc_set_childs_focus (1, e);
+	          </v:after-data-bind>
+	        </v:button>
+                <?vsp
+                  http('&nbsp;');
+                  http(sprintf('<a href="configure.vspx?sid=%s&realm=%s\r\n"><img title="Cancel" alt="Cancel" src="i/cancl_16.png" border="0" /></a>', self.sid ,self.realm));
+                  http(sprintf('<a href="configure.vspx?sid=%s&realm=%s\r\n"> Cancel</a>', self.sid ,self.realm));
+                ?>
+	      </td>
+	    </tr>
+            <tr>
+              <td>&nbsp;</td>
+              <td>
+                <v:button action="simple" value="Restore defaults" name="enbl" xhtml_class="m_e">
+                  <v:on-post>
+                    BPEL.BPEL.conf_default ();
+                    self.do_redirect ('configure.vspx');
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </v:form>
+ </vm:pagebody>
+</vm:pagewrapper>
+</v:page>

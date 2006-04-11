@@ -1,0 +1,62 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<body>
+<v:page name="error_test" xmlns:v="http://www.openlinksw.com/vspx/"
+	doctype="-//W3C//DTD HTML 4.0 Transitional//EN"
+	on-error-redirect="error.vsp" on-deadlock-retry="3" >
+
+<p>
+<?vsp http ('<H3>Simple page to demonstrate simple VSPX controls</H3>'); ?>
+</p>
+
+
+<p>
+<div><font style="color: red"><v:error-summary match="label1" /></font></div>
+A string "<v:label name="label1" value="'123'" format="%s" >"
+  <v:after-data-bind>
+  declare exit handler for sqlstate '*', not found { self.vc_is_valid := 0; control.vc_error_message := 'Error: ' || cast (__SQL_STATE as varchar); };
+  select U_NAME into control.ufl_value from SYS_USERS  where  U_ID = 222;
+  </v:after-data-bind>
+</v:label>
+</p>
+
+<p>
+<div><font style="color: red"><v:error-summary match="label2" /></font></div>
+A string "<v:label name="label2" value="'123'" format="%s" >"
+  <v:after-data-bind>
+ -- declare exit handler for sqlstate '*', not found { self.vc_is_valid := 0; control.vc_error_message := 'Error: ' || cast (__SQL_STATE as varchar);  };
+  select sprintf ('%s', U_ID) into control.ufl_value from SYS_USERS  where  U_ID = 222;
+  </v:after-data-bind>
+</v:label>
+</p>
+
+<v:include url="footer.xml"/>
+<v:after-data-bind>
+ ; --dbg_obj_print ('Txn error test');
+ --signal ('40001', 'Txn error test');
+</v:after-data-bind>
+</v:page>
+</body>
+</html>
+

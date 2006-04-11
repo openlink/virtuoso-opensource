@@ -1,0 +1,58 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare id, acount, aresults integer;         
+  declare aquery, awhat, askipped, search_res, sid, uid, url, usr varchar;
+
+  http_xslt(sprintf ('file:%s/search.xsl', registry_get ('app_forums_xslt_location')));
+
+  sid      := get_keyword('sid', params, '0');
+  aquery   := get_keyword('q',params,''); 
+  awhat    := get_keyword('wh',params,'t');
+  askipped  := atoi (get_keyword('sk',params,'0'));
+  aresults := atoi (get_keyword('rs',params,'10'));
+  acount   := atoi (get_keyword('c',params,'0'));
+    
+  url := 'thread.vsp';
+  -- check session if need
+
+  uid := connection_get ('pid');
+  usr := connection_get ('usr'); 
+  
+  search_res := FORI_SEARCH_RES (aquery, awhat, askipped, aresults, acount);
+?>                                     
+<?xml version="1.0"?>
+<page>
+<sid><?=sid?></sid>
+<usr><?=usr?></usr>
+<url><?=url?></url>  
+<nav_2><?vsp http(FORI_SEARCH_FORM (sid, aquery, awhat, askipped, aresults, acount)); ?></nav_2>
+<css_1/>
+<squery><?=aquery?></squery>
+<swhat><?=awhat?></swhat>
+<sskiped><?=askipped?></sskiped>
+<sresults><?=aresults?></sresults>
+<scount><?=acount?></scount>
+<?vsp http (search_res); ?>  
+<?vsp http (FORI_SEARCH_NAVIGATION (sprintf('search.vsp?q=%s&wh=%s&rs=%d&c=%d&sid=%s&', aquery, awhat, aresults, acount, sid), acount, askipped, aresults)); ?>        
+</page>

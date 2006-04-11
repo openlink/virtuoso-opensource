@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_registry_get_all">
+  <refmeta>
+    <refentrytitle>registry_get_all</refentrytitle>
+    <refmiscinfo>sql</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>registry_get_all</refname>
+    <refpurpose>Returns a vector of all registry settings</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_registry_get_all">
+      <funcprototype id="fproto_registry_get_all">
+        <funcdef>vector <function>registry_get_all</function></funcdef>
+	<paramdef></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_registry_get_all">
+    <title>Description</title>
+    <para>The function returns a vector of even length that contains
+two elements for every registry setting that is now stored in the database:
+the name and the current value of the setting.
+The order of 'name-value' pairs in the resulting vector may vary from call to call.
+To search such a vector by a setting name,
+the vector can be passed as a second argument to the function <function>get_keyword</function>().
+</para>
+<para>The returned vector is a full copy of the content of the registry. To change the
+actual registry, use <function>registry_set</function>.
+</para>
+  </refsect1>
+  <refsect1 id="ret_registry_get_all"><title>Return Types</title>
+    <para>The function returns a vector of even length.</para>
+  </refsect1>
+  <refsect1 id="seealso_registry_get_all">
+    <title>See Also</title>
+    <para><link linkend="fn_registry_get"><function>registry_get</function></link></para>
+    <para><link linkend="fn_registry_set"><function>registry_set</function></link></para>
+    <para><link linkend="fn_registry_name_is_protected"><function>registry_name_is_protected</function></link></para>
+    <para><link linkend="fn_registry_remove"><function>registry_remove</function></link></para>
+    <para><link linkend="fn_sequence_get_all"><function>sequence_get_all</function></link></para>
+    <para><link linkend="fn_sequence_next"><function>sequence_next</function></link></para>
+    <para><link linkend="fn_sequence_set"><function>sequence_set</function></link></para>
+    <para><link linkend="fn_sequence_remove"><function>sequence_remove</function></link></para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,199 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+  <body>
+    <v:page name="data_set_page" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+      <v:variable name="curtbl" type="any" default="null" />
+      <v:on-init>
+	if (self.curtbl is null)
+	self.curtbl := xddl_get_tables ('//table[@name = "Demo.demo.Customers"]');
+	else if (isstring (self.curtbl))
+	self.curtbl := xml_tree_doc (self.curtbl);
+      </v:on-init>
+      <font color="red">
+	<b>
+	  <v:error-summary/>
+	</b>
+      </font>
+      <table width="400" border="2" cellspacing="0" cellpadding="0">
+	<v:data-set name="ds" data="-- xpath_eval ('/tables/table[1]/column', self.curtbl, 0)" meta="--get_xml_meta()" nrows="-1" scrollable="1" edit="1">
+	  <v:template name="template1" type="simple">
+	    <tr>
+	    <td align="center">
+	      <b>Action</b>
+	    </td>
+	    <td align="center">
+	      <b>
+		<v:label name="label1" value="ColumnName" format="%s" width="80"/>
+	      </b>
+	    </td>
+	    <td align="center">
+	      <b>
+		<v:label name="label2" value="ColumnType" format="%s" width="80"/>
+	      </b>
+	    </td>
+	    <td align="center">
+	      <b>
+		<v:label name="label3" value="Scale" format="%s" width="80"/>
+	      </b>
+	    </td>
+	  </tr>
+	</v:template>
+	<v:template name="repeater" type="repeat">
+	  <v:template name="no_rows" type="if-not-exists">
+	    <tr>
+	      <td align="center" colspan="5">
+		<b>No rows selected</b>
+	      </td>
+	    </tr>
+	  </v:template>
+	  <v:template name="template4" type="browse">
+	    <tr>
+	      <td nowrap="1">
+		<v:button name="ds_edit" action="simple" value="Edit"/>
+		<v:button name="ds_delete" action="simple" value="Delete">
+		    <v:on-post><![CDATA[
+		      declare ent any;
+		      declare ncol any;
+		      ent := self.curtbl;
+		      XMLReplace (ent, self.ds.ds_current_row.te_rowset, null);
+		      self.curtbl := ent;
+		      self.ds.vc_data_bind (e);
+		      ]]></v:on-post>
+		</v:button>
+	      </td>
+	      <td align="left" nowrap="1">
+		<v:label name="label5" value="--xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset)" format="%s" width="80"/>
+	      </td>
+	      <td align="left" nowrap="1">
+		<v:label name="label6" value="--xpath_eval('@type-text',(control.vc_parent as vspx_row_template).te_rowset)" null-value="[NULL]"/>
+	      </td>
+	      <td align="left" nowrap="1">
+		<v:label name="label7" value="--xpath_eval('@scale',(control.vc_parent as vspx_row_template).te_rowset)" format="%s" width="80" />
+	      </td>
+	    </tr>
+	  </v:template>
+	  <v:template name="template8" type="add">
+	    <v:form name="add" type="update"  if-not-exists="insert">
+	      <tr>
+		<td nowrap="1">
+		  <v:button name="add_btn" action="simple" value="Add">
+		    <v:on-post><![CDATA[
+		      declare ent any;
+		      declare ncol any;
+		      ent := self.curtbl;
+		      ncol := xml_tree_doc (
+		        sprintf ('<column name="%s" type-text="%s" scale="%s"/>',
+		          self.col_name.ufl_value,
+			  self.col_type.ufl_value,
+			  self.col_prec.ufl_value
+			)
+		      );
+
+		      XMLAppendChildren (xpath_eval ('/tables/table', ent), ncol);
+		      self.curtbl := ent;
+		      self.ds.vc_data_bind (e);
+		      ]]></v:on-post>
+		  </v:button>
+		</td>
+		<td align="left" nowrap="1">
+		  <v:text name="col_name" value="" format="%s" width="80">
+		    <v:validator test="length" min="1" max="255" message="Invalid column name"/>
+		  </v:text>
+		</td>
+		<td align="left" nowrap="1">
+		  <v:text name="col_type" value=""/>
+		</td>
+		<td align="left" nowrap="1">
+		  <v:text name="col_prec" value="" format="%s" width="80" null-value="NULL" />
+		</td>
+	      </tr>
+	    </v:form>
+	  </v:template>
+	  <v:template name="template9" type="edit">
+	    <v:form name="edit" type="update"  if-not-exists="insert">
+	      <tr>
+		<td nowrap="1">
+		  <v:local-variable name="currow" value="--self.ds.ds_current_row.te_rowset"/>
+		  <v:button name="update_btn" action="simple" value="Update">
+		    <v:on-post><![CDATA[
+		      declare ent any;
+		      declare ncol, ocol any;
+		      declare fld vspx_field_value;
+
+		      ent := self.curtbl;
+		      fld := control.vc_parent.vc_find_control ('currow');
+		      ocol := fld.ufl_value;
+		      ncol := xml_tree_doc (
+		        sprintf ('<column name="%s" type-text="%s" scale="%s"/>',
+		          self.col_name1.ufl_value,
+			  self.col_type1.ufl_value,
+			  self.col_prec1.ufl_value
+			)
+		      );
+
+		      XMLReplace (ent, ocol, ncol);
+		      self.curtbl := ent;
+		      self.ds.vc_data_bind (e);
+		      ]]></v:on-post>
+		  </v:button>
+		  <v:button name="cncl" value="Cancel" action="simple"/>
+		</td>
+		<td align="left" nowrap="1">
+		  <v:text name="col_name1" value="--xpath_eval('@name',self.ds.ds_current_row.te_rowset)" format="%s" width="80">
+		    <v:validator test="length" min="1" max="255" message="Invalid column name"/>
+		  </v:text>
+		</td>
+		<td align="left" nowrap="1">
+		  <v:text name="col_type1" value="--xpath_eval('@type-text',self.ds.ds_current_row.te_rowset)"/>
+		</td>
+		<td align="left" nowrap="1">
+		  <v:text name="col_prec1" value="--xpath_eval('@scale',self.ds.ds_current_row.te_rowset)" format="%s" width="80" null-value="NULL" />
+		</td>
+	      </tr>
+	    </v:form>
+	  </v:template>
+	</v:template>
+	<v:template name="template3" type="simple">
+	  <tr>
+	    <td>
+	    </td>
+	    <td align="right">
+	      <v:button name="ds_first" action="simple" value="&lt;&lt;&lt;" xhtml:size="10pt"/>
+	      <v:button name="ds_prev" action="simple" value="&lt;&lt;" xhtml:size="10pt"/>
+	    </td>
+	    <td align="left">
+	      <v:button name="ds_next" action="simple" value="&gt;&gt;" xhtml:size="10pt"/>
+	      <v:button name="ds_last" action="simple" value="&gt;&gt;&gt;" xhtml:size="10pt"/>
+	    </td>
+	    <td align="right">
+	    </td>
+	  </tr>
+	</v:template>
+      </v:data-set>
+    </table>
+    <?vsp ; --dbg_obj_print (self.curtbl) ;
+    ?>
+  </v:page>
+</body>
+  </html>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_md5_init">
+  <refmeta>
+    <refentrytitle>md5_init</refentrytitle>
+    <refmiscinfo>hash</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>md5_init</refname>
+    <refpurpose>returns the string serialization of a new md5 context</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_md5_init">
+      <funcprototype id="fproto_md5_init">
+        <funcdef>new md5 checksum context<function>md5_init</function></funcdef>
+      </funcprototype>
+    </funcsynopsis>
+
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>
+This function initializes an MD5_CTX, converts it into varchar form and returns
+this representation. Should be used with md5_update/md5_final.
+    </para>
+  </refsect1>
+
+  <refsect1 id="seealso_md5_init"><title>See Also</title>
+    <para>
+      <link linkend="fn_md5_update">md5_update</link>,
+      <link linkend="fn_md5_final">md5_final</link>
+    </para>
+  </refsect1>
+</refentry>
+
+

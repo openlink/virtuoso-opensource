@@ -1,0 +1,59 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="XA-S-1">
+  <refmeta>
+    <refentrytitle>XMLA</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XML for Analysis</refname>
+    <refpurpose>XML for Analysis</refpurpose>
+  </refnamediv>
+
+<refsect1 id="XA-S-1">
+<title>Example</title>
+<para>
+The Virtuoso server can act as XML for Analysis (XMLA) tabular data provider.
+XML for Analysis is a SOAP based XML API, 
+designed specifically for data access interaction between a 
+client application and a data provider working over the Web. 
+The client application can do discovery of data provider information 
+and execute of SQL statements. The result sets from server to client can be 
+Multidimensonal and Tabular, at current state only Tabular is supported.
+To setup an virtual directory to act as XMLA data provider, it needs to be 
+defined as SOAP one and Discover and Execute procedures needs to be granted to the 
+user account for SOAP execution.</para>
+<itemizedlist mark="bullet">
+
+ <listitem>The example shows how SOAP enabled virtual directory can be exposed for XMLA.</listitem>
+ <listitem>The SQL statements for setting up the virtual directory are shown in the .sql file</listitem>
+ <listitem>In addition to the virtual directory setup, there is a grant to the Northwind Customers table 
+ to be able to invoke select on that table via Execute method.
+ </listitem>
+ <listitem>The example XMLA client is a simplest browser of XMLA provider</listitem>
+ <listitem>It allows to browse the data, do execute of SQL statements and such</listitem>
+ <listitem>To try the example do load the script, start the VSP example and follow the steps</listitem>
+</itemizedlist> 
+</refsect1>
+</refentry>

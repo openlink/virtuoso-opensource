@@ -1,0 +1,4 @@
+*.vspx-m
+*.vspx-sql
+.vspxmeta
+vspxmeta.xml

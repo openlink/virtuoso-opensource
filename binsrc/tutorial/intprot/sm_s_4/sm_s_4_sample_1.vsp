@@ -1,0 +1,73 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  if ({?'add'} = 'Add')
+    {
+      insert soft MAIL_AUTO_REPLY (MA_NAME) values ({?'acc'});
+    }
+  if (isstring ({?'del'}))
+    {
+      delete from MAIL_AUTO_REPLY where MA_NAME = {?'del'};
+    }
+
+?>
+<html>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+<body>
+<H3>Incoming mail automatic processing</H3>
+<p>Choose the WebDAV account for automatic processing of the incoming mail traffic</p>
+<p>All messages to this account if contains a valid SOAP requests will be processed.</p>
+<p>The response or failure will be returned to the sender</p>
+<p>To setup this example you may needed to apply the sm_s_4.sql</p>
+<form action="sm_s_4_sample_1.vsp" method="post">
+<table class="tableentry">
+<tr><td>1. Choose the WebDAV account</td><td>
+<select name="acc">
+ <?vsp
+     for select U_NAME from WS.WS.SYS_DAV_USER do {
+ ?>
+   <option value="<?=U_NAME?>"><?=U_NAME?></option>
+ <?vsp
+     }
+ ?>
+</select>
+</td></tr>
+<tr><td>2. Setup Inbox </td><td><input type="submit" name="add" value="Add"></td><td></td></tr>
+</table>
+</form>
+<hr />
+  <table class="tableresult">
+  <th>Assigned to</th>
+  <th>Action</th>
+<?vsp
+  for select MA_NAME from MAIL_AUTO_REPLY do
+     {
+?>
+   <tr><td><?=MA_NAME?></td><td><a href="sm_s_4_sample_1.vsp?del=<?=MA_NAME?>">Delete</a></td></tr>
+
+ <?vsp
+     }
+ ?>
+  </table>
+</body>
+</html>

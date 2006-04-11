@@ -1,0 +1,314 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!--
+    This example demonstrate the init part for replicate from two DSNs.
+ -->
+<?vsp
+
+  declare _cnt integer;
+  declare ds1, ds2, ddl1, ddl2, ddl_init1, ddl_init2, ds1_t, ds2_t, att_ds1, att_ds2, err_st, dsn_msg varchar;
+  declare err_sqlstate, err_msg, rowsout, m_dta, result, sql, ds_uname, ds_pass any;
+
+  ddl_init1 := 'create table RE_DS_1 (LAST_UPDATE TIMESTAMP, TEXT_ID VARCHAR (36), RND_VAL INTEGER, PRIMARY KEY (TEXT_ID))';
+  ddl_init2 := 'create table RE_DS_1 (LAST_UPDATE TIMESTAMP, TEXT_ID VARCHAR (36), RND_VAL INTEGER, PRIMARY KEY (TEXT_ID))';
+
+  ds1 := get_keyword ('dsns1', params, '');
+  ds2 := get_keyword ('dsns2', params, '');
+  ddl1 := get_keyword ('ddl1', params, ddl_init1);
+  ddl2 := get_keyword ('ddl2', params, ddl_init2);
+
+  ds1_t := ds2_t := att_ds1 := att_ds2 := 0;
+  err_sqlstate := '00000';
+  sql := err_msg := dsn_msg := '';
+
+-- CHECK EXECUTION STATE
+
+  if (isinteger (registry_get ('__re_ds_1_is_started')))
+     registry_set ('__re_ds_1_is_started', serialize (vector (http_pending_req (1)[0][0], now())));
+  else
+   {
+      declare _state any;
+      _state := deserialize (registry_get ('__re_ds_1_is_started'));
+
+      if (datediff('minute', _state[1], now()) < 1 and http_pending_req (1)[0][0] <> _state[0])
+        dsn_msg := 'Some other use this tutorial at the moment. Please try again later.';
+      else
+	registry_set ('__re_ds_1_is_started', serialize (vector (http_pending_req (1)[0][0], now())));
+   }
+
+  if (get_keyword ('rep_demo', params, '') <> '')
+    {
+       exec ('delete from RE_DS_1_DSN1');
+       exec ('delete from RE_DS_1_DSN2');
+       exec ('delete from LOG_RE_DS_1');
+       exec ('insert into RE_DS_1_DSN1 (TEXT_ID, RND_VAL) values (uuid(), rnd(100))');
+       exec ('insert into RE_DS_1_DSN1 (TEXT_ID, RND_VAL) values (uuid(), rnd(100))');
+       exec ('insert into RE_DS_1_DSN1 (TEXT_ID, RND_VAL) values (uuid(), rnd(100))');
+       http_rewrite ();
+       http_request_status ('HTTP/1.1 302 Found');
+       http_header ('Location: re_ds_1_sample_repl.vsp\r\n');
+    }
+
+  if (get_keyword ('exec_ddl_1', params, '') <> '')
+    rexecute (ds1, ddl1, err_sqlstate, err_msg, vector(), rowsout, m_dta, result);
+
+  if (get_keyword ('exec_ddl_2', params, '') <> '')
+    rexecute (ds2, ddl2, err_sqlstate, err_msg, vector(), rowsout, m_dta, result);
+
+  if (get_keyword ('unlink1', params, '') <> '')
+    exec ('drop table RE_DS_1_DSN1');
+
+  if (get_keyword ('unlink2', params, '') <> '')
+    exec ('drop table RE_DS_1_DSN2');
+
+  if (get_keyword ('attach1', params, '') <> '')
+    {
+       select DS_UID, pwd_magic_calc (DS_UID, DS_PWD, 1) into ds_uname, ds_pass
+	 from SYS_DATA_SOURCE where DS_DSN = ds1;
+       sql := sprintf ('attach table RE_DS_1 as RE_DS_1_DSN1 from ''%s'' user ''%s'' password ''%s''',
+			ds1, ds_uname, ds_pass);
+       exec (sql, err_sqlstate, err_msg, vector(), rowsout, m_dta, result);
+    }
+
+  if (get_keyword ('attach2', params, '') <> '')
+    {
+       select DS_UID, pwd_magic_calc (DS_UID, DS_PWD, 1) into ds_uname, ds_pass
+	 from SYS_DATA_SOURCE where DS_DSN = ds2;
+       sql := sprintf ('attach table RE_DS_1 as RE_DS_1_DSN2 from ''%s'' user ''%s'' password ''%s''',
+			ds2, ds_uname, ds_pass);
+       exec (sql, err_sqlstate, err_msg, vector(), rowsout, m_dta, result);
+    }
+
+  err_st := '00000';
+
+  if (ds1 <> '')
+    {
+      rexecute (ds1, 'select 1 from RE_DS_1', err_st , err_msg, vector(), rowsout, m_dta, result);
+      if (err_st = '00000') ds1_t := 1;
+    }
+
+
+  err_st := '00000';
+
+  if (ds2 <> '')
+    {
+      rexecute (ds2, 'select 1 from RE_DS_1', err_st, err_msg, vector(), rowsout, m_dta, result);
+      if (err_st = '00000') ds2_t := 1;
+    }
+
+
+  err_st := '00000';
+
+  exec ('select 1 from RE_DS_1_DSN1', err_st, err_msg, vector(), rowsout, m_dta, result);
+
+  if (err_st = '00000')
+    att_ds1 := 1;
+
+
+  err_st := '00000';
+
+  if (ds2 <> '')
+    {
+       exec ('select 1 from RE_DS_1_DSN2', err_st, err_msg, vector(), rowsout, m_dta, result);
+       if (err_st = '00000') att_ds2 := 1;
+    }
+
+  select count (*) into _cnt from SYS_DATA_SOURCE;
+
+  if (_cnt < 2)
+    dsn_msg := 'You must have two connected DSNs to use this sample.';
+
+  _cnt := 0;
+?>
+
+<HTML>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<BODY>
+<H2>DSN Replication Sample Init.</H2>
+<form method="POST" action="re_ds_1_sample_init.vsp">
+<table class="tableentry">
+  <tr>
+   <td colspan="2" align="center">
+<?vsp
+	if (err_sqlstate <> '00000')
+	  {
+	     http (sprintf ('<hr><strong>SQL Error:</strong> sqlstate %s, %s', err_sqlstate, err_msg));
+      	     http ('</td></tr><tr><td><input type="submit" name="back" value="Back"></td></tr></table></form>');
+             return;
+          }
+
+	if (dsn_msg <> '')
+	  {
+	     http (sprintf ('<hr> %s </td></tr></table></form>', dsn_msg));
+             return;
+          }
+
+	if (ds1 <> '')
+	  {
+?>
+	Status:
+   </td>
+  </tr>
+  <tr>
+   <td>
+        Table on '<?=ds1?>'
+   </td>
+   <td>
+        <?=either (ds1_t, 'OK', 'FAILED')?>
+   </td>
+  </tr>
+<?vsp
+     if (ds2 <> '')
+	{
+?>
+  <tr>
+   <td>
+        Table on '<?=ds2?>'
+   </td>
+   <td>
+        <?=either (ds2_t, 'OK', 'FAILED')?>
+   </td>
+  </tr>
+
+  <tr>
+   <td>
+        Attach table from '<?=ds1?>'
+   </td>
+   <td>
+        <?=either (att_ds1, 'OK', 'FAILED')?>
+   </td>
+  </tr>
+
+  <tr>
+   <td>
+        Attach table from '<?=ds2?>'
+   </td>
+   <td>
+        <?=either (att_ds2, 'OK', 'FAILED')?>
+   </td>
+  </tr>
+<?vsp	    }  ?>
+  <tr>
+   <td>
+<?vsp	 }     ?>
+   <select name="dsns1">
+<?vsp
+      	for (select DS_DSN from SYS_DATA_SOURCE) do
+      	  {
+      	    _cnt := _cnt + 1;
+      	    http (sprintf ('<option %s >%V</option>', select_if (ds1, DS_DSN), DS_DSN));
+      	  }
+      	if (0 = _cnt)
+      	  http ('<option>No Data Sources</option></select>');
+?>
+   </td>
+   <td>
+      <input type="submit" name="select_ds_1" value="Select First DSN">
+   </td>
+  </tr>
+
+<?vsp if (ds1 <> '') { ?>
+  <tr>
+    <td>
+        DLL Statment fror First DSN:
+   </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <textarea name="ddl1" rows="5" cols="70"><?=ddl1?></textarea>
+    </td>
+  </tr>
+  <tr>
+   <td>-</td>
+     <td>
+        <input type="submit" name="exec_ddl_1" value="Execute">
+    </td>
+   </tr>
+  <tr>
+   <td>
+   <select name="dsns2">
+<?vsp
+      	for (select DS_DSN from SYS_DATA_SOURCE) do
+      	  {
+	    if (DS_DSN <> ds1)
+      	      http (sprintf ('<option %s >%V</option>', select_if (ds2, DS_DSN), DS_DSN));
+      	  }
+?>
+   </td>
+   <td>
+      <input type="submit" name="select_ds_2" value="Select Second DSN">
+   </td>
+  </tr>
+<?vsp } ?>
+<?vsp if (ds1 <> '' and ds2 <> '') { ?>
+  <tr>
+    <td>
+        DLL Statment fror Second DSN:
+   </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <textarea name="ddl2" rows="5" cols="70"><?=ddl2?></textarea>
+    </td>
+  </tr>
+  <tr>
+   <td>-</td>
+     <td>
+        <input type="submit" name="exec_ddl_2" value="Execute">
+    </td>
+   </tr>
+  <tr>
+     <td>
+        <input type="submit" name="attach1" value="Attach table from '<?=ds1?>'">
+     </td>
+     <td>
+        <input type="submit" name="attach2" value="Attach table from '<?=ds2?>'">
+    </td>
+   </tr>
+  <tr>
+     <td>
+        <input type="submit" name="unlink1" value="Unlink table from '<?=ds1?>'">
+     </td>
+     <td>
+        <input type="submit" name="unlink2" value="Unlink table from '<?=ds2?>'">
+    </td>
+   </tr>
+  <tr>
+     <td>
+        <input type="submit" name="state" value="Check state">
+     </td>
+     <td>
+<?vsp
+	if (ds1_t and ds1_t and att_ds1 and att_ds2)
+          http ('<input type="submit" name="rep_demo" value="Goto Replication Page">');
+	else
+          http ('<b>Warning:</b> Some checks FAILED.');
+?>
+    </td>
+   </tr>
+<?vsp } ?>
+</table>
+</form>
+
+</BODY>
+</HTML>

@@ -1,0 +1,56 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _uid, _catid integer;
+  declare _fname, _sname, _pid varchar;
+  _uid := atoi(get_keyword('UID', params));
+  _pid := get_keyword('P', params);
+  if (not exists(select 1 from eNews..registry where UID = _uid and PWD = _pid))
+  {
+    http_request_status ('HTTP/1.1 302 Found');
+    http_header ('Location: newslogin.vsp\r\n');
+  }
+  else if (not exists(select 1 from eNews..userNews where UID = _uid))
+  {
+    http_request_status ('HTTP/1.1 302 Found');
+    http_header (sprintf('Location: changeNews.vsp?UID=%d&P=%s\r\n', _uid, _pid));
+  }
+  else
+  {
+    for (select First, Last  from eNews..registry where UID=_uid) do
+    {
+      _fname := First;
+      _sname := Last;
+    }
+    _catid := coalesce((select Last_Viewed from eNews..registry where UID = _uid), (select CatID from eNews..newsInfo where UID = _uid order by Channel, Category));
+?>
+<html>
+<title>OpenLink eNews for <?= _fname ?> <?= _sname ?></title>
+<frameset framespacing="0" border="0" frameborder="0" cols="250, *">
+  <frame src="newsmenu.vsp?UID=<?=_uid?>" noresize name="newsleft">
+  <frame src="newsview.vsp?CAT=<?=_catid?>&UID=<?=_uid?>" name="newsright">
+</frameset>
+<?vsp
+  }
+?>
+</html>

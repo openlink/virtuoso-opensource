@@ -1,0 +1,186 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=iso-8859-1"/>
+    <meta name="generator" content="Adobe GoLive 6"/>
+    <title>Welcome to Virtuoso Dinamic Pages (VSPX)</title>
+  </head>
+
+  <body>
+		<v:page name="colored_data_set_page1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+			
+<font color="red">
+				<v:error-summary/>
+			</font>
+			<v:data-set name="ds" sql="select CustomerID, CompanyName, Phone from Demo.demo.Customers" nrows="10" scrollable="1" cursor-type="keyset" edit="1" width="80">
+				<v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
+					<table width="70%" border="1" cellspacing="0" cellpadding="0">
+						<tr>
+							<td align="center" valign="middle" width="15%"><b>Action</b></td>
+							<td align="center" valign="middle" width="25%"><b><v:label name="label1" value="'CustomerID'" format="%s" width="91" height="24"/></b></td>
+							<td align="center" valign="middle" nowrap="nowrap" width="35%"><b><v:label name="label2" value="'CompanyName'" format="%s" width="116" height="24"/></b></td>
+							<td align="center" valign="middle" width="25%"><b><v:label name="label3" value="'Phone'" format="%s" width="80"/></b></td>
+						</tr>
+					</table>
+				</v:template>
+				<v:template name="template2" type="repeat" name-to-remove="table" set-to-remove="none">
+					<v:template name="template8" type="add" name-to-remove="table" set-to-remove="none">
+						<v:form name="form2" type="update" method="POST" action="" table="Demo.demo.Customers" if-not-exists="insert">
+							<v:key name="CustomerID" column="CustomerID" value="--''" default="null" width="0" height="0" />
+							<v:template name="template9" type="simple" name-to-remove="table" set-to-remove="both">
+								<table width="70%" border="1" cellspacing="0" cellpadding="0">
+									<tr>
+										<td align="center" valign="middle" width="15%">
+											<v:button name="add_button" action="submit" value="Add" width="80"></v:button></td>
+										
+										<td align="right" valign="middle" width="25%">
+											<v:update-field name="cust_id2" column="CustomerID" width="80"></v:update-field></td>
+										
+										<td align="left" valign="middle" nowrap="nowrap" width="35%">
+											<v:update-field name="company_name2" column="CompanyName" width="80"></v:update-field></td>
+										
+										<td align="left" valign="middle" width="25%">
+											<v:update-field name="phone2" column="Phone" width="80"></v:update-field></td>
+										
+									</tr>
+								</table></v:template>
+							
+						</v:form>
+					</v:template>
+					<v:template name="template4" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+						<table width="70%" border="1" cellspacing="0" cellpadding="0">
+							<tr>
+								<td colspan="4" align="center" valign="middle">No rows selected</td>
+							</tr>
+						</table>
+					</v:template>
+					<v:template name="template6" type="edit" name-to-remove="table" set-to-remove="none">
+						<v:form name="form1" type="update" method="POST" action="" table="Demo.demo.Customers" if-not-exists="nothing">
+							<v:template name="template7" type="simple" name-to-remove="table" set-to-remove="both">
+								<table width="70%" border="1" cellspacing="0" cellpadding="0">
+									<tr>
+										<td align="left" valign="middle"><v:button name="update_btn" action="submit" value="OK" width="42" height="24"></v:button><input type="submit" name="cancel_btn" value="Cancel" border="0"/></td>
+										<td>
+											<v:update-field name="cust_id" column="CustomerID" width="80"></v:update-field>
+										</td>
+										<td>
+											<v:update-field name="company_name" column="CompanyName" width="80"></v:update-field>
+										</td>
+										<td>
+											<v:update-field name="phone" column="Phone" width="80"></v:update-field>
+										</td>
+									</tr>
+								</table>
+							</v:template>
+							<v:key name="CustomerID" column="CustomerID" value="--((self.vc_find_control('ds') as vspx_data_set).ds_current_row.te_rowset[0])" default="null" width="0" height="16" />
+						</v:form>
+					</v:template>
+					<v:template name="template5" type="browse" name-to-remove="table" set-to-remove="both">
+						<table width="70%" border="1" cellspacing="0" cellpadding="0">
+<tr bgcolor="
+<?vsp
+{
+  declare flag any;
+  declare ds vspx_data_set;
+  declare row vspx_row_template;
+  ds := self.vc_find_control('ds');
+  row := ds.ds_current_row;
+  if(mod(row.te_ctr, 2) = 0) {
+    http('skyblue');
+  }
+  else {
+    http('palegreen');
+  }
+}
+?>">
+								<td align="center">
+									<table width="100%" border="1" cellspacing="0" cellpadding="0">
+										<tr>
+											<td align="right" width="50%"><v:button name="ds_edit" action="simple" value="Edit" width="60" height="24"></v:button></td>
+											<td align="left" width="50%"><v:button name="ds_delete" action="simple" value="Delete" width="64" height="24">
+													<v:on-post width="0" height="16">
+														<v:script><![CDATA[declare ds vspx_data_set;
+ds := self.vc_find_control('ds');
+delete from Demo.demo.Customers where CustomerID = ds.ds_current_row.te_rowset[0];
+ds.vc_data_bind(e);
+]]></v:script>
+													</v:on-post>
+												</v:button></td>
+										</tr>
+									</table>
+</td>
+<td>
+<v:label name="label4" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" width="80"/>
+</td>
+<td>
+<v:label name="label5" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
+</td>
+<td>
+<v:label name="label6" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s" width="80"/>
+</td>
+							</tr>
+						</table>
+					</v:template>
+				</v:template>
+				<v:template name="template3" type="simple" name-to-remove="table" set-to-remove="top">
+					<table width="70%" border="1" cellspacing="0" cellpadding="0">
+						<tr>
+							<td/>
+							<td align="right" valign="middle"><v:button name="ds_prev" action="simple" value="Prev" width="80"></v:button></td>
+							<td align="left" valign="middle"><v:button name="ds_next" action="simple" value="Next" width="80"></v:button></td>
+							<td align="right">That is footer</td>
+						</tr>
+					</table>
+				</v:template>
+			</v:data-set>
+			<v:include name="include1" url="footer.xml"/>
+		</v:page></body>
+	
+		
+	
+		
+	
+		
+	
+		
+	
+		
+	
+		
+	
+		
+	
+		
+	
+		
+	
+		
+	
+
+
+</html>	

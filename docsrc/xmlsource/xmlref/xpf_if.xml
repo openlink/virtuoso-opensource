@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_if">
+  <refmeta>
+    <refentrytitle>if</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>if</refname>
+    <refpurpose>If the boolean value is true then calculates one expression, otherwise calculates another expression.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_if">
+      <funcprototype id="xpf_proto_if">
+        <funcdef>any <function>if</function></funcdef>
+	<paramdef><parameter>test</parameter> boolean</paramdef>
+	<paramdef><parameter>then_branch</parameter> any</paramdef>
+	<paramdef><parameter>else_branch</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_if"><title>Description</title>
+<para>
+This function calculates the value of <parameter>test</parameter> argument.
+If the value is true, the function calculates the <parameter>then_branch</parameter>
+expression and returns its value.
+If the value is false, the function calculates the <parameter>else_branch</parameter>
+expression and returns its value.
+</para>
+<para>
+Note that unlike other programming languages, <parameter>else_branch</parameter>
+is required argument, not optional.
+</para>
+<para>
+This function is used in the implementation of
+&quot;IF&quot; control operator in XQUERY,
+so you will probably use that operator in XQUERY expessions, not the function.
+This function may be useful in XPATH expressions and in XSLT stylesheets.
+It is not a part of library of standard XQUERY 1.0 functions.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_if"><title>Parameters</title>
+    <refsect2><title>test</title>
+      <para>Boolean value used to choose an expression to execute</para></refsect2>
+    <refsect2><title>then_branch</title>
+      <para>Expression which is calculated if <parameter>test</parameter> argument is true</para></refsect2>
+    <refsect2><title>else_branch</title>
+      <para>Expression which is calculated if <parameter>test</parameter> argument is false</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_if"><title>Return Types</title><para>Any</para></refsect1>
+  <refsect1 id="xpf_examples_if"><title>Examples</title>
+    <example id="xpf_ex_if"><title></title>
+      <para>These two expressions are equivalent,
+but first may be used in any XPATH while second is written in XQUERY syntax:</para>
+<screen>
+if (2 * 2 = 4, 'I think so', 'Unbelievable!')
+IF 2 * 2 = 4 THEN 'I think so' ELSE 'Unbelievable!'
+</screen>
+</example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_if"><title>See Also</title>
+    <para><link linkend="xpf_and">and()</link><link linkend="xpf_or">or()</link></para>
+  </refsect1>
+</refentry>
+

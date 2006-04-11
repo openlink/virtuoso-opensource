@@ -1,0 +1,158 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+
+   declare _user_name, _login_ok varchar;
+  declare _sid varchar;
+  declare _err long varchar;
+  declare _pop3old, _pop3new, _poppassold, _poppassnew, _to_do varchar;
+ declare _popserver, _popport, _popusername, _poppassword varchar;
+ declare _allowed, _num_of_popaccount integer;
+  declare _allow_to_add varchar;
+
+  declare _err_msg varchar;
+
+  _to_do := get_keyword('TO_DO', params);
+  _sid := '';
+  _sid := get_keyword('SESS', params);
+   _login_ok := 'NO';
+
+ if (_sid   <> '')
+ {
+  for select _username, _userpass from wapsession where sid = _sid  do
+  {
+   _login_ok := 'YES';
+   _user_name := _username;
+   update wapsession set _time_last_active = datestring ( now() ) where  sid = _sid;
+  }
+  }else{
+    _login_ok := 'NO';
+  }
+?>
+
+<?vsp
+if (_login_ok = 'YES' and (is_empty_or_null(_to_do)))
+{ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+<card id="list">
+  <onevent type="onenterforward">
+          <refresh>
+   <setvar name="popserver1" value=""/>
+   <setvar name="popusername1" value=""/>
+   <setvar name="popport1" value=""/>
+   <setvar name="poppassword1" value=""/>
+          </refresh>
+   </onevent>
+ <do type="options" label="Option">
+  <go href="#opt"/>
+ </do>
+ <p><b>Pop Accounts:</b></p>
+ <p><a href="#add" title="Add">Add Account</a></p>
+ <?vsp
+ if (exists(select * from wappop3account where _username = _user_name))
+ {
+  for select * from wappop3account where _username = _user_name do
+  {
+   http(sprintf('
+   <p mode="nowrap"><a href="pop3account_options.vsp?SESS=%s&amp;POPID=%d&amp;TO_DO=OPTIONS" title="Edit">%s{%s}
+   </a></p>\n',_sid, _pop_id, _pop_login_name, _pop_server));
+  }
+ }
+ ?>
+</card>
+
+<card id="opt">
+ <do type="options" label="Exit">
+  <go href="setting.vsp?SESS=<?=_sid?>"/>
+ </do>
+
+   <p><a href="#add">Add</a></p>
+   <p><a href="#delete">Delete</a></p>
+   <p><a href="setting.vsp?SESS=<?=_sid?>">Exit</a></p>
+</card>
+
+<card id="add">
+   <onevent type="onenterforward">
+          <refresh>
+   <setvar name="popserver1" value=""/>
+   <setvar name="popusername1" value=""/>
+   <setvar name="popport1" value=""/>
+   <setvar name="poppassword1" value=""/>
+          </refresh>
+   </onevent>
+    <p>Pop Server Name:<input name="popserver1" value="" maxlength="30" /></p>
+    <p>Pop User Name:<input name="popusername1" value="" maxlength="30" /></p>
+    <p>Pop Port:<input name="popport1" value="110" maxlength="6" /></p>
+    <p>Pop Password:<input name="poppassword1"  value="" type="password" maxlength="30" /></p>
+    <p> Add Pop Account: $(popusername1) ?</p>
+
+      <p><a href="pop3account_add.vsp?SESS=<?=_sid?>&amp;TO_DO=UPDATE&amp;POPSERVER=$(popserver1:e)&amp;POPUSERNAME=$(popusername1:e)&amp;POPPASSWORD=$(poppassword1:e)&amp;POPPORT=$(popport1:e)" title="Yes">Yes</a></p>
+      <p><a href="#list" title="No">No</a></p>
+</card>
+
+<card id="delete">
+   <do type="options" label ="Exit">
+  <go href="#list"/>
+   </do>
+   <do type="help" label ="Exit">
+  <go href="#list"/>
+   </do>
+   <?vsp
+    if(exists(select * from wappop3account where _username = _user_name ))
+    {
+     http(sprintf('<p>Delete an Account:</p>'));
+   for select * from wappop3account where _username = _user_name  do
+   {
+    http(sprintf('<p><a href="pop3account_options.vsp?SESS=%s&amp;TO_DO=DELETE&amp;POPID=%d" title="Delete">%s{%s}</a></p>', _sid, _pop_id, _pop_login_name, _pop_server));
+                 }
+               }else{
+                http(sprintf('<p>There is no account avaliable for deletion</p>'));
+               }
+    ?>
+</card>
+</wml>
+<?vsp
+}
+?>
+<?vsp
+if(_login_ok = 'NO')
+{ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+  <card id="P1" title="Wrong" >
+    <p>
+   Wrong Login
+    </p>
+  </card>
+</wml>
+<?vsp
+}
+?>
+

@@ -1,0 +1,66 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare cookie, value, thisvsp varchar;
+  declare i, l integer;
+
+  thisvsp := aref(path,length(path)-1);
+  cookie := http_request_header (lines, 'Cookie', null, '');
+
+  if (cookie <> '')
+    value := get_keyword ('vs_b_9_sample_1', split_and_decode (cookie, 0, '\0\0;='), '');
+
+  if (value = '')
+    http_header ('Set-cookie: vs_b_9_sample_1=cookie_value\r\n');
+?>
+
+<HTML>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css"></HEAD>
+<BODY>
+
+<?vsp if (value <> '') { ?>
+  <P>Cookie string: <b> <?= cookie ?> </b></P>
+  <P>Cookie value: <b> <?= value ?> </b></P>
+<?vsp } else { ?>
+  <P>The cookie has just been set. Click <a href="<?=thisvsp?>">here</a> to reload the page, and get the cookie string.</P>
+<?vsp } ?>
+
+<TABLE class="tableresult" BORDER="0">
+<TR><TH align="left">The request header</TH></TR>
+<TR>
+  <TD><UL>
+  <?vsp
+    i := 0;
+    l := length (lines);
+    while (i < l)
+      {
+        http_value(aref (lines, i), 'li');
+        i := i + 1;
+      }
+  ?>
+  </UL></TD>
+</TR>
+</TABLE>
+
+</BODY>
+</HTML>

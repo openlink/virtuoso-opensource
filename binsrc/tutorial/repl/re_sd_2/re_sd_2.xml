@@ -1,0 +1,107 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="RE-SD-2">
+  <refmeta>
+    <refentrytitle>Bidirectional Snapshot Replicaton Setup</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Publishing a DAV collection</refname>
+    <refpurpose>Defining conflict resolvers</refpurpose>
+  </refnamediv>
+
+<refsect1 id="RE-SD-2a">
+<title>Preliminaries</title>
+<para>Every DAV collection on publisher can have a number of conflict resolvers
+which are used for conflict resolution. Each conflict resolver has an
+integer number (order) associated with it. Conflict resolvers are applied
+in ascending order.</para>
+
+<para>Conflict resolver is a Virtuoso/PL procedure which receives conflicting
+DAV resource. DAV conflict resolver signatures are described in Virtuoso
+documentation. Conflict resolver can modify the resource which is passed in
+as 'inout' arguments. Conflict resolver should return an integer value which
+will be used for conflict resolution. Possible return values and their meaning
+are described in Virtuoso documentation.</para>
+
+<para>There is a possibility to automatically generate some types of
+conflict resolvers. Automatically generated conflict resolver classes are:
+</para>
+
+<itemizedlist mark="bullet">
+  <listitem>max_mtime - 
+    <para>resource with maximum modification time wins</para></listitem>
+  <listitem>min_mtime - 
+    <para>resource with minumum modification time wins</para></listitem>
+  <listitem>max_ctime - 
+    <para>resource with maximum creation time wins</para></listitem>
+  <listitem>min_ctime - 
+    <para>resource with minumum creation time wins</para></listitem>
+  <listitem>backup - 
+    <para>backup of resource that lost conflict resolution will be performed,
+      conflict resolution will continue
+    </para>
+  </listitem>
+  <listitem>notify - 
+    <para>
+      owner of resource will be notified if his resource lost conflict
+      resolution
+    </para>
+  </listitem>
+  <listitem>pub_wins - 
+    <para>publisher always wins</para></listitem>
+  <listitem>sub_wins - 
+    <para>subscriber always wins</para></listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="RE-SD-2b">
+<title>Example defining a conflict resolver</title>
+<orderedlist>
+  <listitem>Login to the Conductor UI using the dba account.</listitem>
+  <listitem>Go to the "Replication" tab and then go to the "Bidirectional Snapshot" tab.</listitem>
+  <listitem>Click "Conflict Resolvers" for desired published DAV collection ("/DAV/doc").</listitem>
+  <listitem>Press "New Resolver" button.</listitem>
+  <listitem>Enter conflict resolver name suffix (enter "max_mtime"),
+  select conflict resolver class (select "max_mtime"). You can optionally
+  specify conflict resolver order (default is 100).</listitem>
+  <listitem>Press "Add" button. A conflict resolver will be added. You
+  can view and edit conflict resolver code by selecting the link with
+  its name from the list of conflict resolvers.</listitem>
+</orderedlist>
+</refsect1>
+
+<refsect1 id="RE-SD-2c">
+<title>Equivalent SQL commands to above</title>
+<orderedlist>
+  <listitem>Connect to the Virtuoso server via ISQL utility as DBA user.</listitem>
+  <listitem>Create a conflict resolver for collection "/DAV/doc"
+    that will choose a resource with maximum modification time
+    (more recent resource).
+  <programlisting>
+SQL&gt; REPL_ADD_DAV_CR ('/DAV/doc', 'max_mtime', 100, 'max_mtime');
+  </programlisting></listitem>
+</orderedlist>
+</refsect1>
+</refentry>

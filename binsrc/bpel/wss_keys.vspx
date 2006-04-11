@@ -1,0 +1,152 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="plinks_page" decor="bpel_decor.vspx" style="bpel_style_new.xsl" xmlns:v="http://www.openlinksw.com/vspx/"  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <v:on-init><![CDATA[
+      set isolation='committed';
+      self.get_keys ('');
+    ]]></v:on-init>
+  <v:method name="get_keys" arglist="in nam any"><![CDATA[
+    declare opts, keys any;
+    opts := coalesce (DB.DBA.USER_GET_OPTION ('BPEL', 'keys'), vector ());
+    keys := '<keys>';
+    foreach (any k in opts) do
+      {
+        if (isstring (k))
+	  keys := keys || sprintf ('<key name="%s"/>', k);
+      }
+    if (length (nam))
+      keys := keys || sprintf ('<key name="%s"/>', nam);
+    keys := keys || '</keys>';
+    self.keys := xtree_doc (keys);
+    ]]></v:method>
+
+<vm:pagewrapper>
+  <v:variable name="keys" type="any" default="null" />
+
+  <vm:pagetitle>OpenLink BPEL Process Manager Security Tokens</vm:pagetitle>
+
+  <vm:pagebody>
+    <v:form name="upl" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+	<tr>
+	  <td>
+	    <table border="0" cellpadding="0" cellspacing="0" id="contentlist">
+	<tr>
+	  <th class="info" colspan="2">Security tokens </th>
+	</tr>
+        <tr>
+          <td colspan="2">
+            <?vsp http(sprintf('<a target="_blank" href="help.vspx?id=wss_keys&sid=%s&realm=%s\r\n"><img title="Help" alt="Help" src="i/help_24.gif" border="0" /></a>', self.sid ,self.realm));?>
+            <?vsp http(sprintf('<a target="_blank" href="help.vspx?id=wss_keys&sid=%s&realm=%s\r\n"> Help</a>', self.sid ,self.realm));?>
+          </td>
+        </tr>
+	<tr>
+	  <td colspan="2" style="color:red"><v:error-summary/></td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="wXCERT" value="X.509 Certificate file" url="--sprintf('help.vspx?id=wss_keys&name=pu_xcert')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:text name="certin" value="" type="file" xhtml_class="m_e" xhtml_size="50" error-glyph="*"/>
+	  </td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="wFTYPE" value="File type" url="--sprintf('help.vspx?id=wss_keys&name=pu_ftype')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:select-list name="certty" xhtml_class="m_e">
+	      <v:item name="PKCS12" value="PKCS12"/>
+	      <v:item name="DER" value="DER"/>
+	      <v:item name="PEM" value="PEM"/>
+	    </v:select-list>
+	  </td>
+	</tr>
+	<tr>
+	  <td align="right">
+            <v:url name="wPWSD" value="Password for Private key unlocking type" url="--sprintf('help.vspx?id=wss_keys&name=pu_pswd')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:text name="certpass" value="" type="password" xhtml_size="50"/>
+	  </td>
+	</tr>
+	<tr>
+          <td align="right">&nbsp;</td>
+	  <td>
+	    <v:button name="upl1" action="simple" value="i/import_data_16.png" style="image" xhtml_title="Upload" xhtml_alt="Upload" text="&#160;Upload">
+	      <v:on-post>
+		declare cf, nam, ty any;
+		nam := get_keyword ('filename', get_keyword ('attr-certin', e.ve_params, vector ()));
+		--dbg_obj_print (nam);
+		ty := case self.certty.ufl_value when 'PKCS12' then 2 when 'DER' then 1 else 0 end;
+		cf := get_certificate_info (6, self.certin.ufl_value, ty, self.certpass.ufl_value);
+		if (cf is null)
+		  {
+		    self.certin.vc_error_message := 'Invalid certificate file or wrong password';
+		    self.vc_is_valid := 0;
+		  }
+		else
+		  {
+		    self.get_keys (nam);
+		    self.wkey.ufl_value := null;
+		    self.wkey.vc_data_bind (e);
+		    set_user_id ('BPEL');
+		    DB.DBA.USER_KEY_LOAD (nam, self.certin.ufl_value,
+		    'X.509', self.certty.ufl_value, self.certpass.ufl_value, null, 1);
+		  }
+	     </v:on-post>
+	   </v:button>
+	 </td>
+       </tr>
+	<tr>
+	  <td align="right">
+            <v:url name="wEKEY" value="Select existing key" url="--sprintf('help.vspx?id=wss_keys&name=pu_wkey')" xhtml_target="_blank"/>
+          </td>
+	  <td>
+	    <v:data-list name="wkey"
+	      list-document="--self.keys" list-match="/keys/key" list-key-path="@name" list-value-path="@name"
+	      value="--case when e.ve_is_post = 0 then get_keyword ('wskey',e.ve_params) else control.ufl_value end"
+	      xhtml_class="m_e"/>
+	  </td>
+	</tr>
+	<tr>
+	  <td colspan="2">
+            <v:button action="simple" name="bt2" xhtml_onclick="window.close();" value="i/back_16.png" style="image" xhtml_title="Back" xhtml_alt="Back"/>
+            <v:url name="Backs" value="Back" url="#" xhtml_onclick="window.close();"/>
+	    <v:button action="return" name="bt1" value="i/save_16.png" style="image" xhtml_title="Save" xhtml_alt="Save" text="&#160;Save">
+	      <v:field name="wskey" ref="wkey"/>
+	    </v:button>
+            <v:button action="simple" name="bt3" xhtml_onclick="window.close();" value="i/cancl_16.png" xhtml_title="Cancel" style="image" xhtml_alt="Cancel"/>
+            <v:url name="Cancels" value="Cancel" url="#" xhtml_onclick="window.close();"/>
+	  </td>
+	</tr>
+    </table>
+  </td>
+</tr>
+      </table>
+    </v:form>
+  </vm:pagebody>
+</vm:pagewrapper>
+</v:page>

@@ -1,0 +1,68 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SO-S-6">
+  <refmeta>
+    <refentrytitle>SOAP</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>WSDL service</refname>
+    <refpurpose>Generating HTML based Service interactions from a WSDL file</refpurpose>
+  </refnamediv>
+
+<refsect1 id="SO-S-6a">
+<title>Web services architecture</title>
+<itemizedlist mark="bullet">
+  <listitem>Service providers deploy and publish services by registering them with the Service broker.</listitem>
+  <listitem>Service requesters find services by searching the Service broker's registry of published services.</listitem>
+  <listitem>Service requesters bind to the Service provider and consume the available services.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="SO-S-6b">
+<title>Technology Uses</title>
+In the world of Web services, each of these three operations involves three complimentary yet distinct technologies:
+<itemizedlist mark="bullet">
+  <listitem>Publishing services uses the Universal Description, Discovery and Integration (UDDI) API</listitem>
+  <listitem>Locating services uses a combination of UDDI and the Web Services Description Language (WSDL)</listitem>
+  <listitem>Binding to services leverages WSDL and the Simple Object Access Protocol (SOAP).</listitem>
+</itemizedlist>
+<para>At the most basic level, the Binding operation is the most important of the three.</para>
+</refsect1>
+
+<refsect1 id="SO-S-6c">
+<title>Example</title>
+<itemizedlist mark="bullet">
+  <listitem>The example will create a SOAP based interface and WSDL description for searching an existing Customer Order</listitem>
+  <listitem>New orders can be added into the demo database.</listitem>
+  <listitem>The first page renders the WSDL as an HTML form for selecting the SOAP method.</listitem>
+  <listitem>The second page renders the WSDL again to make a form for input parameters. Note that on this 
+      entry form needs to be entered valid _CustomerID (for example ALFKI) and _ProductID (for example is 1).
+      Otherwise the servce will generate SOAP Fault message. Also _ShipVia needs to have a correct value 
+      to be entered (for example 1,2 or 3).  
+  </listitem>
+  <listitem>Final page displays the result from the SOAP call.</listitem>
+</itemizedlist> 
+</refsect1>
+</refentry>

@@ -1,0 +1,66 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  if ({?'trf'} = 'Transform')
+    {
+      set http_charset={?'enc'};
+?>
+<html><head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+	    <body><H3>Transformed text</H3><p>
+		<?vsp http ({?'txt'}); ?>
+</p></H3></body></html>
+<?vsp
+      return;
+    }
+?>
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+<H3>HTTP charset example</H3>
+<form action="xs_e_1_sample_3.vsp" method="get">
+<table class="tableentry">
+
+<tr><td>1. Choose the output encoding</td><td><select name=enc>
+  <?vsp
+    declare cs any;
+    declare i, l integer;
+    cs := charsets_list (0);
+    i := 0; l := length (cs);
+    while (i < l)
+      {
+	http (sprintf ('<option value="%s">%s</option>', cs[i], cs[i]));
+        i := i + 1;
+      }
+  ?>
+</select></td></tr>
+
+
+<tr><td colspan="2">2. Enter the text to display</td></tr>
+<tr><td colspan="2"><textarea name=txt cols="50" rows="5"></textarea></td></tr>
+
+<tr><td>3. Transform</td><td><input type=submit name=trf value="Transform"></td></tr>
+</table>
+
+</form>
+</body>
+</html>

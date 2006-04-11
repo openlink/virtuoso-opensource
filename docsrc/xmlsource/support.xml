@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="support"><title>Product Support</title>
+
+	<!-- ======================================== -->
+	<sect2 id="discussionforums">
+		<title>OpenLink Discussion Forums</title>
+
+    <para>If your browser does not parse the Network
+    News Transport Protocol (NNTP) URL's used in the hyperlinks below, then simply point your
+    news client to one of the following news servers: <emphasis>news.openlinksw.com</emphasis> or 
+<emphasis>news.openlinksw.co.uk</emphasis>.</para>
+
+<sect3 id="virtnews">
+<title>OpenLink Virtuoso</title>
+	<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+	<title>Virtuoso Newsgroups</title>
+	<tgroup align="char" charoff="50" char="." cols="4">
+		<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+		<thead>
+		<row>
+			<entry>Newsgroup Description</entry>
+			<entry>Newsgroup URL</entry>
+		</row>
+		</thead>
+		<tbody>
+		<row>
+			<entry>OpenLink Virtuoso</entry>
+			<entry><para><emphasis><ulink url="news://news.openlinksw.com/openlink.public.virtuoso">openlink.public.virtuoso</ulink></emphasis></para></entry>
+		</row>
+	</tbody>
+	</tgroup>
+	</table>
+</sect3>
+
+<sect3 id="udalitenews">
+<title>OpenLink Data Access (Lite Edition)</title>
+<para>
+Dedicated to Database Connectivity issues that relate to OpenLink Data Access Drivers (PC based) that depend on: 
+</para>
+	<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+	<title>OpenLink Data Access Newsgroups</title>
+	<tgroup align="char" charoff="50" char="." cols="4">
+		<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+		<thead>
+		<row>
+			<entry>Newsgroup Description</entry>
+			<entry>Newsgroup URL</entry>
+		</row>
+		</thead>
+		<tbody>
+      <row>
+        <entry><emphasis>Oracle SQL*Net</emphasis>
+        for remote Oracle Database Engine Connectivity.</entry>
+        <entry><para><emphasis><ulink url="news://news.openlinksw.com/openlink.public.lite.oracle">openlink.public.lite.oracle</ulink></emphasis></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>Sybase Open Client</emphasis> 
+        for remote Sybase Database Engine Connectivity.</entry>
+        <entry><para><emphasis><ulink url="news://news.openlinksw.com/openlink.public.lite.sybase">openlink.public.lite.sybase</ulink></emphasis></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>Progress Client
+        Networking</emphasis> for remote Progress Database Engine Connectivity.</entry>
+        <entry><para><emphasis><ulink url="news://news.openlinksw.com/openlink.public.lite.progress">openlink.public.lite.progress</ulink></emphasis></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>Informix I-Net or
+        I-Connect</emphasis> for remote Informix Database Engine Connectivity.</entry>
+        <entry><para><emphasis><ulink url="news://news.openlinksw.com/openlink.public.lite.informix">openlink.public.lite.informix</ulink></emphasis></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>Microsoft NETLIB</emphasis>
+        for remote MS SQL Server Database Engine Connectivity</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.lite.ms-sqlserver"><emphasis>openlink.public.lite.ms-sqlserver</emphasis></ulink></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>IBM DB2 Client Networking</emphasis>
+        for remote DB2 Database Engine Connectivity</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.lite.db2"><emphasis>openlink.public.lite.db2</emphasis></ulink></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>CA-Ingres Net</emphasis>
+        for remote CA-Ingres &amp; CA-OpenIngres Database Engine Connectivity.</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.lite.ingres"><emphasis>openlink.public.lite.ingres</emphasis></ulink></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>3rd Party ODBC Drivers </emphasis>for
+        remote Database Engine Connectivity.</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.lite.odbc-agent"><emphasis>openlink.public.lite.odbc-agent</emphasis></ulink></para></entry>
+      </row>
+	</tbody>
+	</tgroup>
+	</table>
+</sect3>
+
+<sect3 id="udamtnews">
+<title>OpenLink Data Access (Multi Tier Edition)</title>
+<para>
+Dedicated to Database Connectivity issues that relate to OpenLink Data Access Drivers  that depend on
+</para>
+	<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+	<title>OpenLink Data Access Newsgroups</title>
+	<tgroup align="char" charoff="50" char="." cols="4">
+		<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+		<thead>
+		<row>
+			<entry>Newsgroup Description</entry>
+			<entry>Newsgroup URL</entry>
+		</row>
+		</thead>
+		<tbody>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote Oracle Database Engine Connectivity.</entry>
+        <entry><para><emphasis><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.oracle">openlink.public.multi-tier.oracle</ulink></emphasis></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote Sybase Database Engine Connectivity.</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.sybase"><emphasis>openlink.public.multi-tier.sybase</emphasis></ulink></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote Informix Database Engine
+        Connectivity.</entry>
+        <entry><para><emphasis><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.informix">openlink.public.multi-tier.informix</ulink></emphasis></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote Progress Database Engine
+        Connectivity.</entry>
+        <entry><para><emphasis><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.progress">openlink.public.multi-tier.progress</ulink></emphasis></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote CA-Ingres Database Engine
+        Connectivity.</entry>
+        <entry><para><emphasis><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.ingres">openlink.public.multi-tier.ingres</ulink></emphasis></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote MS SQL Server Database Engine
+        Connectivity.</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.ms-sqlserver"><emphasis>openlink.public.multi-tier.ms-sqlserver</emphasis></ulink></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote DB2 Database Engine
+        Connectivity.</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.db2"><emphasis>openlink.public.multi-tier.db2</emphasis></ulink></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote Unify 2000 Database Engine
+        Connectivity.</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.unify"><emphasis>openlink.public.multi-tier.unify</emphasis></ulink></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote PostgreSQL Database Engine
+        Connectivity.</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.postgres"><emphasis>openlink.public.multi-tier.postgres</emphasis></ulink></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote Solid Database Engine Connectivity.</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.solid"><emphasis>openlink.public.multi-tier.solid</emphasis></ulink></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote Kubl Database Engine Connectivity.</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.kubl"><emphasis>openlink.public.multi-tier.kubl</emphasis></ulink></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote Velocis Database Engine Connectivity.</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.velocis"><emphasis>openlink.public.multi-tier.velocis</emphasis></ulink></para></entry>
+      </row>
+      <row>
+        <entry><emphasis>OpenLink's Database
+        Independent Communications Layer</emphasis> for remote ODBC Data Source Connectivity using
+        3rd Party ODBC Drivers.</entry>
+        <entry><para><ulink url="news://news.openlinksw.com/openlink.public.multi-tier.odbc-agent"><emphasis>openlink.public.multi-tier.odbc-agent</emphasis></ulink></para></entry>
+      </row>
+	</tbody>
+	</tgroup>
+	</table>
+</sect3>
+</sect2>
+</sect1>

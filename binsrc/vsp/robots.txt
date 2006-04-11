@@ -1,0 +1,11 @@
+User-agent: *
+Disallow: /admin
+Disallow: /tutorial
+Disallow: /eNews
+Disallow: /IBuySpy
+Disallow: /PortalCS
+Disallow: /jdbcdemo
+Disallow: /forums
+Disallow: /xslt
+Disallow: /webapp
+Disallow: /xqdemo

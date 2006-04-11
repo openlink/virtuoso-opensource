@@ -1,0 +1,108 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="petshop">
+  <refmeta>
+    <refentrytitle>"PetShop"</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>PetShop application</refname>
+    <refpurpose>Running ASPX based applications</refpurpose>
+  </refnamediv>
+
+<refsect1 id="petshopa">
+<title>Overview</title>
+<para>
+The PetShop application developed by Microsoft using ASP .Net and C# used in this tutorial is another demonstration of Virtuoso's ability to host ASP .Net projects.   This ASP .Net data driven shopping cart application for browsing and adopting Pets utilizes Virtuoso's 3rd Party hosting feature as well as the Virtuoso database as the data store. 
+</para>
+<para>
+This demonstration is completely configurable and can be modified easily to change the data store to Microsoft SQL Server.
+
+</para>
+</refsect1>
+
+
+<refsect1 id="petshopc">
+<title>Prerequisites</title>
+<para>The following prerequisites should be used to make sure your computer has the appropriate operating system and software to demonstrate the PetShop application using Virtuoso running on the Windows.</para>
+<itemizedlist mark="bullet">
+<listitem> Windows 2000/XP</listitem>
+<listitem> Virtuoso Universal Servers Microsoft ASP .Net enabled binary</listitem>
+<listitem> Microsoft ASP .Net Framework SDK</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="petshopb">
+<title>Installation and Configuration</title>
+<para>
+This demonstration is based on the Virtuoso Universal Server running in a Windows operating system environment and includes configuration steps to run the PetShop application.   If you have installed the demonstration database and have an environment already running the Virtuoso demo instance, the SQL scripts and configuration files are already loaded and the virtual directory has been created as part of the installation.
+</para>
+<para>
+If you are not running in this environment perform the following steps to demonstrate the PetShop Application
+</para>
+ 
+<orderedlist>
+<listitem>In the folder vsp/Petshop under the Virtuoso Universal Server installation directory unpack and extract the OLEDB the .ZIP archive.</listitem>
+
+<listitem>Register the PetShop.Components.dll as COM object using regsvcs utility, which is required to start the application.</listitem>
+
+<listitem>Create the PetShop database schemas (MSPetShop and MSPetShopOrders), including tables and stored procedures and populate the databases using the following supplied SQL scripts located in the PetShop\DatabaseScripts\SQL subdirectory.  These scripts can be loaded using the OpenLink Virtuoso Interactive SQL Interface (ISQL) tool available from the OpenLink Virtuoso start menu using the DBA account.
+<itemizedlist>
+<listitem>CreateDBLogin1.sql</listitem>
+<listitem>CreateTables1.sql</listitem>
+<listitem>CreateTables2.sql</listitem>
+<listitem>LoadTables1.sql</listitem>
+</itemizedlist>
+</listitem>
+<listitem> Define a new virtual directory pointing to the (HTTP root)/PetShop/Web. (For instructions on creating an executable virtual directory see the Web applications tutorials (LINK))</listitem>
+
+<listitem> Edit two connection strings in Web.config file which is located under the vsp/PetShop/Web directory.  Add two entries with same values for the address set to the Virtuoso server location (host name and ODBC/SQL port), the account and password (UID and PWD) and the change the name of each of the databases; one for "MSPetShop" and one for MSPetShopOrders the appSettings section, key="ConnectionString" element
+
+                <para>Example:</para>
+                <programlisting><![CDATA[ 
+                <add key="ConnString1" value="HOST=localhost:1112;UID=petshop;PWD=password;Database=MSPetShop" />
+                <add key="ConnString2"value="HOST=localhost:1112;UID=petshop;PWD=password;Database=MSPetShopOrders" />]]>
+		</programlisting>
+</listitem>
+</orderedlist>
+<para>Once configured, the PetShop application Web UI will be accessible from the URL <ulink url="/PetShop/">http://[host:port]/PetShop/</ulink></para>
+
+
+</refsect1>
+
+<refsect1 id="petshopd">
+<title>Configuration Options</title>
+<para>Database</para>
+<para>
+The PetShop application is designed to be configurable and is easily modified.   Should you choose to switch the database data store to Microsoft SQL Server, you will need to install the complete PetShop application, which can be downloaded from <ulink url="http://www.gotdotnet.com/team/compare/petshop.aspx">http://www.gotdotnet.com/team/compare/petshop.aspx</ulink>.</para>
+</refsect1>
+
+<refsect1 id="petshope"> 
+<title>Limits/Restrictions</title>
+<para>
+In Virtuoso, the PetShop application is available only with .NET provider.</para>
+</refsect1>
+
+
+</refentry>

@@ -1,0 +1,66 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<html>
+<body bgcolor="white">
+<v:page name="browse_demo" xmlns:v="http://www.openlinksw.com/vspx/">
+
+<p>
+<?vsp http ('<H3>Simple page to demonstrate VSPX browse button</H3>'); ?>
+</p>
+
+<table>
+  <v:form name="frm" type="simple" action="combo.vspx" method="POST">
+  <tr>
+    <td>
+      <v:label name="label2" value="--'Company Name'" format="%s"/>
+    </td>
+    <td>
+      <v:text name="fld2" value="" />
+      <v:browse-button name="cmb" selector="sel_datagrid.vspx" child-window-options="scrollbars=yes, menubar=no, height=630, width=600" value="Browse">
+        <v:field name="fld2" />
+        <v:field name="fld1" />
+      </v:browse-button>
+      <v:browse-button name="cmb2" selector="sel_datagrid.vspx" child-window-options="scrollbars=yes, menubar=no, height=630, width=600" value="Browse">
+        <v:field name="fld2" />
+        <v:field name="fld1" />
+      </v:browse-button>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <v:label name="label1" value="--'Customer ID'" format="%s"/>
+      <small>(enter a part of Company Name for search)</small>
+    </td>
+    <td>
+      <v:text name="fld1" value="" />
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2"><v:button name="submit" action="simple" value="OK" /></td>
+  </tr>
+  </v:form>
+</table>
+
+<v:include url="footer.xml"/></v:page>
+</body>
+</html>

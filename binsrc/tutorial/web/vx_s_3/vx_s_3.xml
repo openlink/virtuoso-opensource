@@ -1,0 +1,88 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VX-S-3">
+  <refmeta>
+    <refentrytitle>Basic VSPX programming</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Data-bound VSPX controls</refname>
+    <refpurpose>Linking a DB data into a VSPX controls</refpurpose>
+  </refnamediv>
+  <refsect1 id="VS-S-3a">
+    <title>Select list initialized from SQL select statement</title>
+    <para>
+    The power of VSPX controls is easy way to bind to a Database objects as tables.
+    In the selectdb.vspx file is shown an easy way to initialize a simple select list from database data. 
+    This example shows Products from Nortwind database rendered as select list.
+    The focus on this control is vspx:data-list control. It's initialized with select statement,
+     so the key and value attributes are used to designate what to be used for the drop-down box.
+    </para>
+  </refsect1>
+  <refsect1 id="VS-S-3b">
+    <title>Updating a Database table row via VSPX update form</title>
+    <para>
+    Beside showing a data in a form, the database data need to be changed via forms. 
+    The most easy way to do that is to use vspx:form with modifier attribute "type" with value of 'update'.
+    The vspx:form[type='update'] used as container of few more elements:
+    </para>
+    <itemizedlist mark="bullet">
+    <listitem>vspx:key - binder to a specific row, can be one or more. Usually it's a primary key. Note that this is a not a control, it's a marker in the update form.</listitem>
+    <listitem>vspx:template[type='if-exists'] - this is a wrapper class for content to be shown under specific condition. In that case as if-not-exists template is not specified, content of this will be shown in both situations. In other words this example will show content of that template always. The difference will be in value of the fields inside it.</listitem>
+    <listitem>vspx:text - it's used to show the data on the row, and accept the data to be updated. These fields have attribute "column" which designate column to be used for data rendition and update. Actually they are inside a template, but logically they are linked to the update form.</listitem>
+    <listitem>vspx:button - this is a submit button used to submit the form. </listitem>
+    </itemizedlist>
+    <para>The example will:</para>
+    <itemizedlist>
+ 			<listitem>insert a record in Demo.demo.Customers table if CustomerID doesn'y exists </listitem>
+ 			<listitem>will update the CompanyName column if CustomerID is set.</listitem>
+    </itemizedlist>
+
+  </refsect1>
+  <refsect1 id="VS-S-3c">
+    <title>Updating a enumerated values in a Database table</title>
+    <para>To run this example we will first need to setup the initial state (using the link beside SQL script, see bellow). This action will cerate a simple table for the next experiment with update form. In some cases we need to enumerate values to the given column in Database table. In this example we will use a vspx:radio-button bound to the column to represent the data value and to allow it's modification to the some degree. (The degree is possible values allowed by group of radio-buttons).
+    </para>
+    <para>
+    In practice we are repeating the previous example but instead using of vspx:text to enter the data , we will use a vspx:radio-button for the second column. The pane at the bottom of demo page shows the result of update, clicking a link of a 'e-id' will load appropriate record to the update form. The button is used to update the data row as in previous example.
+    </para>
+  </refsect1>
+  <refsect1 id="VS-S-3d">
+    <title>Simple scroll-able edit-able data grid (vspx:data-set)</title>
+    <para>The most complex control used to view and modify the data in a Database tables is vspx:data-set.
+    This control represents a result set from a SQL select statement as a table (or some other form depending of templates used) and allows scrolling, editing, inserting or deleting a row. In practice it's a combination of scroll-able grid plus one or two update forms. In the example data_set.vspx is shown navigation over Northwind's Customers table. So the following should be noticed in the demo source:
+    </para>
+    <itemizedlist mark="bullet">
+    <listitem>The vspx:data-set contains a two simple templates for the header and footer.</listitem>
+    <listitem>The middle template is special denoted by "repeat" value of "type" attribute, it's used to render the row in a grid, form to insert, update form in place of a row in a focus and for case of empty result.</listitem>
+    <listitem>The repeat template contains four templates for each case as discussed above</listitem>
+    <listitem>The template[if-not-exists] will be rendered when no data found</listitem>
+    <listitem>The template[edit] will be displayed when edit button is selected</listitem>
+    <listitem>The template[add] will be always displayed, if specified</listitem>
+    <listitem>The template[browse] is a one per row to show the content on each row</listitem>
+    <listitem>The buttons for scrolling as [ds]_next and [ds]_prev must be defined with these suffixes.</listitem>
+    <listitem>The above applies to [ds]_edit, [ds]_delete and [ds]_select. In other words some buttons in data-set must have special names.</listitem>
+    </itemizedlist>
+  </refsect1>
+</refentry>

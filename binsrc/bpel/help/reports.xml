@@ -1,0 +1,63 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+<sect1 id="reports">
+    <title>OpenLink BPEL Process Manager Reports</title>
+    <para>This page shows information about the deployed BPEL processes on this server.</para>
+    <simplelist>
+      <member><ulink url="i/find_16.png" alt="Filter"/> Click to filter the instances list.</member>
+      <member><ulink url="i/cancl_16.png" alt="Clear"/> Click to clear Reports Search criteria form. This will go to the page showing information of the instances for the uploaded BPEL processes on this server.</member>
+      <member>To view the current status of an instance click the value on the Instance ID's row in the listing. This will go to a separate page showing the state of each activity of the instance, including variable values, partner links etc.</member>
+      <member>To view the process info page click the name of the process on the Process name's row in the listing. This will go to a separate page showing the state of each activity of the instance, including variable values, partner links etc.</member>
+      <member><ulink url="i/first_16.png" alt="First"/><ulink url="i/previous_16.png" alt="Previous"/><ulink url="i/next_16.png" alt="Next"/><ulink url="i/last_16.png" alt="Last"/> Click to navigate among the list of processes.</member>
+    </simplelist>
+    <sect2 id="fields">
+      <title>Form fields</title>
+      <sect3 id="f_name">
+          <title>Process name</title>
+          <para>When specified, the list of values for the field Version will be the versions of the specified process.</para>
+      </sect3>
+      <sect3 id="f_version">
+          <title>Version </title>
+          <para>This is the list of versions for the specified process. It is disabled when no process is specified.</para>
+      </sect3>
+      <sect3 id="f_istate">
+          <title>Instance State </title>
+          <para>This is the list of the instance states.</para>
+      </sect3>
+      <sect3 id="f_time">
+          <title>Time</title>
+          <para>This is the list for the instance when it is started and when it is finished.</para>
+      </sect3>
+      <sect3 id="f_date">
+          <title>Date</title>
+          <para>This is the date field.</para>
+      </sect3>
+      <sect3 id="f_ord">
+          <title>Order by Instance</title>
+          <para>When specified, the result will be order by the choosen value.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+</HelpTopic>

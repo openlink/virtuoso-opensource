@@ -1,0 +1,51 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-U-3">
+  <refmeta>
+    <refentrytitle>Maintaining Session State in a VSP Application</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Basics</refname>
+    <refpurpose>Cookie example</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-U-3a">
+<title>Preliminaries</title>
+<itemizedlist mark="bullet">
+    <listitem>The cookies can be used to keep session id between two HTTP requests.</listitem>
+    <listitem>If the target browser can work with cookies, this method can be used instead of URL poisoning.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-U-3b">
+<title>Session state in a cookie example</title>
+<itemizedlist mark="bullet">
+    <listitem>On login or register, the set-cookie header writes a new session id.</listitem>
+    <listitem>The authentication function extracts the cookie value from the HTTP header.</listitem>
+    <listitem>If the session id is not valid, then the browser is redirected to the login page.</listitem>
+    <listitem>The post processing function is the same as in URL poisoning example.</listitem>
+</itemizedlist>
+</refsect1>
+</refentry>

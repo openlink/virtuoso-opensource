@@ -1,0 +1,1657 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="coredbengine"><title>Core Database Engine</title>
+	<!-- ======================================== -->
+	<sect2 id="LogicalDataModel">
+		<title>Logical Data Model</title>
+		<para>Virtuoso provides an extended Object Relational model which offers all
+the flexibility of relational access with inheritance, run time data
+typing, late binding, identity based access.
+</para>
+		<sect3 id="LDMTable">
+			<title>Table</title>
+			<para>
+A table is a uniquely named entity that has the following characteristics:
+</para>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>Zero or more columns</para>
+				</listitem>
+				<listitem>
+					<para>One primary key</para>
+				</listitem>
+				<listitem>
+					<para>Zero or more keys (indices)</para>
+				</listitem>
+				<listitem>
+					<para>An optional super table from which this inherits properties</para>
+				</listitem>
+				<listitem>
+					<para>An optional object ID key, which may or may not be the primary key</para>
+				</listitem>
+				<listitem>
+					<para>Various SQL table constraints, e.g. CHECK&apos;s</para>
+				</listitem>
+			</itemizedlist>
+			<para>A table will then have zero or more rows. The relationship of a table
+and its rows can be thought of as a class-instance relationship.
+</para>
+		</sect3>
+		<sect3 id="LDMCols">
+			<title>Column</title>
+			<para>
+A column is always defined in one table and has a name that is unique
+within that table. A column may appear in more than one table as a
+result of inheritance but always has one place of definition. i.e.
+one database wide &apos;identity&apos;.
+</para>
+			<para>
+A column has the following characteristics:
+</para>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>Table</para>
+				</listitem>
+				<listitem>
+					<para>Name inside the table</para>
+				</listitem>
+				<listitem>
+					<para>database wide ID</para>
+				</listitem>
+				<listitem>
+					<para>Data type</para>
+				</listitem>
+				<listitem>
+					<para>Various SQL constraints, e.g. DEFAULT, CHECK etc.</para>
+				</listitem>
+			</itemizedlist>
+		</sect3>
+		<sect3 id="LDMKey">
+			<title>Key</title>
+			<para>
+A key or index is the means by which tables manifest themselves in the
+physical database. A key is always defined with respect to one table
+but may occur in several as a result of inheritance. Keys have unique
+names inside the table. A key has the following characteristics:
+</para>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>A database wide key ID</para>
+				</listitem>
+				<listitem>
+					<para>One or more &apos;significant&apos; key parts, which are columns of the defining table or super tables</para>
+				</listitem>
+				<listitem>
+					<para>Zero or more &apos;trailing&apos; key parts, columns of the defining table or supertables.</para>
+				</listitem>
+				<listitem>
+					<para>Whether the key is primary</para>
+				</listitem>
+				<listitem>
+					<para>Whether the key is unique</para>
+				</listitem>
+				<listitem>
+					<para>How the key is clustered</para>
+				</listitem>
+				<listitem>
+					<para>Whether the key is an object ID key</para>
+				</listitem>
+			</itemizedlist>
+		</sect3>
+		<sect3 id="LDMSubtable">
+			<title>Subtable</title>
+			<para>
+A subtable is a table that inherits all columns, the primary key and
+all other keys from another table, called the super table.
+</para>
+			<para>
+A subtable can define its own columns and keys which add themselves to
+those of the super table. No primary key can be redefined, though.
+</para>
+			<para>
+The inheritance relationship between tables is manifested by a key-subkey
+relationship between the tables&apos; primary and other keys.
+</para>
+			<para>
+   A table has at most one supertable.
+</para>
+		</sect3>
+		<sect3 id="LDMObjectID">
+			<title>Object ID</title>
+			<para>
+A table does not necessarily declare a primary key.  Even so, the table must
+have a primary key &mdash; in this case a synthetic record ID which is defined
+as primary key. The record ID  is an autoincrementing column that is normally
+invisible but, if present, can be accessed by explicit reference. One should
+not rely on this feature being available, though.
+</para>
+			<para>
+Thus
+</para>
+			<programlisting>
+create table nokey (a integer);
+</programlisting>
+			<para>
+expands to
+</para>
+			<programlisting>
+create table nokey (a integer, _IDN integer identity, primary key (_IDB));
+</programlisting>
+			<para>
+The first unique index to be defined will become the primary key if the table
+is empty at the time of definition.
+</para>
+			<para>
+Thus
+</para>
+			<programlisting>
+create unique index a on nokey (a);
+</programlisting>
+			<para>
+will change the nokey table to be as if defined by
+</para>
+			<programlisting>
+create table nokey (a integer, primary key (a));
+</programlisting>
+			<para>
+Having a primary key other than _IDN is always better than the default primary key.
+Declaring a primary key is therefore always advisable.
+</para>
+		</sect3>
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="DataTypes">
+		<title>Data Types</title>
+		<para>Virtuoso supports most SQL 92 data types.</para>
+		<sect3 id="DTCharVChar">
+			<title>CHARACTER &amp; VARCHAR</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>CHARACTER</para>
+				</listitem>
+				<listitem>
+					<para>VARCHAR</para>
+				</listitem>
+				<listitem>
+					<para>VARCHAR &apos;(&apos; INTNUM &apos;)&apos;</para>
+				</listitem>
+				<listitem>
+					<para>VARCHAR</para>
+				</listitem>
+				<listitem>
+					<para>NVARCHAR &apos;(&apos; INTNUM &apos;)&apos;</para>
+				</listitem>
+				<listitem>
+					<para>CHARACTER &apos;(&apos; INTNUM &apos;)&apos;</para>
+				</listitem>
+			</itemizedlist>
+			<para>The CHAR, CHARACTER and VARCHAR datatypes are implemented as a
+single string type with dynamic length.  The precision that may be specified controls how
+the column is described by <function>SQLColumns()</function>,
+<function>SQLDescribeCol()</function> and so on.  If a precision is not
+specified for a VARCHAR then the default precision will be 0, which means do not check.
+If a precision is not specified for a CHARACTER then Virtuoso sets the precision to 1.  An
+explicit precision of 0 can be specified to turn off length checking for values
+stored in the column.  If a value other than string or NULL is assigned to
+the column it is cast to a varchar (using CAST internally) and then stored into the
+column.  If the value is not castable to a varchar then Virtuoso returns
+an error.  Additionally if the column precision is greater than 0 and the value
+string length is greater than the column precision Virtuoso will also return an error.
+</para>
+<para>The length is stored separately.  Space required is 2+length for 
+</para>
+<para>A varchar column may contain binary 0 bytes.</para>
+<para>A string literal is delimited by single quotes.</para>
+		</sect3>
+		<sect3 id="DTAny">
+			<title>ANY</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>ANY</para>
+				</listitem>
+			</itemizedlist>
+			<para>The ANY datatype is implemented as a single binary string type
+with dynamic length.  It is reported as a VARCHAR in
+<function>SQLColumns()</function>, <function>SQLDescribeCol()</function>
+and so on.
+The precision returned by these columns is 24 but has no effect.
+This type can contain arbitrary binary data, including zeros.
+</para>
+<para>The length is stored separately.  The space required is 2+length
+
+</para>
+		</sect3>
+		<sect3 id="DTNumeric">
+			<title>NUMERIC &amp; DECIMAL</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>NUMERIC</para>
+				</listitem>
+				<listitem>
+					<para>NUMERIC &apos;(&apos; INTNUM &apos;)&apos;</para>
+				</listitem>
+				<listitem>
+					<para>NUMERIC &apos;(&apos; INTNUM &apos;,&apos; INTNUM &apos;)&apos;</para>
+				</listitem>
+				<listitem>
+					<para>DECIMAL</para>
+				</listitem>
+				<listitem>
+					<para>DECIMAL &apos;(&apos; INTNUM &apos;)&apos;</para>
+				</listitem>
+				<listitem>
+					<para>DECIMAL &apos;(&apos; INTNUM &apos;,&apos; INTNUM &apos;)&apos;</para>
+				</listitem>
+			</itemizedlist>
+			<para>The various forms of NUMERIC and DECIMAL refer to one variable-precision
+floating point decimal data type that provides accurate arithmetic and decimal rounding.
+The default maximum precision and scale are 40 and 20. The
+precision is the number of decimal digits used in the computation. The scale is the maximum number of
+decimal digits to the right of the decimal point. Internal calculations
+are always precise but
+numbers are truncated to the column&apos;s precision and scale when stored.  If a value being stored
+has more digits to the left of the decimal point than allowed in the
+column, Virtuoso signals an error.
+If a number being stored has more digits to the right of the decimal point than allowed in a column the decimal part is rounded to the precision of the column.
+</para>
+			<para>
+The space consumption of a number is <screen>3 + precision / 2</screen> bytes.
+The precision and scale of a column of this type are returned by functions
+such as <function>SQLColumns()</function> and <function>SQLDescribeCol()</function>.
+</para>
+			<para>
+A DECIMAL or NUMERIC with precision &lt;= 9 and scale = 0 is transformed to INTEGER.
+</para>
+<para>Literal numbers outside of the 32 bit signed integer range are of type 
+decimal.  Any numeric literals with a decimal point are of type decimal.  
+Literals with an exponent are of type double precision.</para>
+		</sect3>
+		<sect3 id="DTInt">
+			<title>INTEGER &amp; SMALLINT</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>INT</para>
+				</listitem>
+				<listitem>
+					<para>INTEGER</para>
+				</listitem>
+				<listitem>
+					<para>SMALLINT</para>
+				</listitem>
+			</itemizedlist>
+			<para>These types are represented as a 32-bit
+signed binary integer, described as
+having a precision of 9 and a scale of 0, although the range is +/- 2**31. Storage space is 2 bytes
+for SMALLINT and 4 bytes otherwise.
+</para>
+			<para>
+A column declared SMALLINT is described as SQL_SMALLINT. A column declared INTEGER or INT is
+described as SQL_INTEGER.  
+</para>
+<para>Literals composed of of an optional sign and digits are of the integer 
+type if they fit in the 32 bit range.</para>
+ 		</sect3>
+		<sect3 id="DTFLOAT">
+			<title>FLOAT &amp; DOUBLE</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>FLOAT</para>
+				</listitem>
+				<listitem>
+					<para>FLOAT &apos;(&apos; INTNUM &apos;)&apos;</para>
+				</listitem>
+				<listitem>
+					<para>DOUBLE PRECISION</para>
+				</listitem>
+			</itemizedlist>
+			<para>These types refer to the 64-bit IEEE floating-point number, the C <parameter>double</parameter> type. This is a fixed-precision
+binary floating point number is described as having a precision of 15 and
+a scale of 0.  This type is preferable to NUMERIC if
+decimal rounding is not required since it is precise enough for
+most uses and more efficient  than NUMERIC.  The storage requirement is 8 bytes.
+</para>
+<para>Any number literal with an exponent has the double type, e.g. 2e9.</para>
+  </sect3>
+		<sect3 id="DTREAL">
+			<title>REAL</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>REAL</para>
+				</listitem>
+			</itemizedlist>
+			<para>This type is the 32-bit IEEE floating point number corresponding to the C <parameter>float</parameter> type.  The storage requirement is 5 bytes.
+</para>
+		</sect3>
+		<sect3 id="DTLONG">
+			<title>LONG VARCHAR &amp; LONG VARBINARY</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>LONG VARCHAR</para>
+				</listitem>
+				<listitem>
+					<para>LONG VARBINARY</para>
+				</listitem>
+			</itemizedlist>
+			<para>
+These types implement a binary large object (BLOB) type. The length can be
+up to 2**31 bytes (2GB).
+If manipulated with the <function>SQLGetData()</function> and <function>SQLPutData()</function> ODBC functions a BLOB need not fit in the DBMS&apos;s or the client&apos;s memory.
+The LONG VARCHAR and LONG VARBINARY types are distinct only because certain ODBC applications
+gain from being able to distinguish long text from long binary. The types are described as SQL_LONGVARCHAR and SQL_LONGVARBINARY respectively, with a precision of 2GB.
+</para>
+			<para>
+Several long columns may exist on a single row. A long column may not
+be a key part in an index or primary key.
+</para>
+			<para>
+Data in long columns is stored as a linked list of database pages.  Thus, a long column
+that does not fit in-line on the containing row will require an integer number of 8K
+database pages.  If a long column&apos;s value is short enough to fit within the row
+containing it, the BLOB will be stored on the row and will not take more space than a VARCHAR of the
+same length.  A long column fits on a row if the sum of the lengths of columns, including the long column, is
+under 4070 bytes.
+</para>
+<para>ORDER BY, GROUP BY and DISTINCT may not reference long data types.  
+Comparison of long data is not allowed unless first converted to the 
+corresponding short type (varchar, nvarchar or varbinary).  This conversion 
+is only possible if the value is under 10MB in size.  String functions accept 
+long varchars and long nvarchars and convert them to varchar and nvarchar 
+automatically.  There is no long literal type per se, the corresponding character 
+or binary type is assignable to a long type.</para>
+ 		</sect3>
+		<sect3 id="DTVARBINARY">
+			<title>VARBINARY</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>VARBINARY</para>
+				</listitem>
+			</itemizedlist>
+			<para>
+This type is internally like VARCHAR but is distinct for compatibility
+with ODBC applications. A VARBINARY column is described as SQL_BINARY to ODBC clients.  The
+storage requirement is the same as for a corresponding VARCHAR column. VARBINARY and
+VARCHAR data are never equal even if the content is the same, but they can be cast to
+each other.  VARBINARY data sorts in the unsigned order of the bytes
+comprising the data.
+</para>
+<para>A varbinary literal is introduced by 0x followed by a hexadecimal 
+representation of the bytes, 2 characters per byte, e.g. 0x0123456789abcdef.</para>
+</sect3>
+		<sect3 id="DTTIMESTAMP">
+			<title>TIMESTAMP; DATE &amp; TIME</title>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>TIMESTAMP</para>
+				</listitem>
+				<listitem>
+					<para>DATETIME</para>
+				</listitem>
+				<listitem>
+					<para>TIME</para>
+				</listitem>
+				<listitem>
+					<para>DATE</para>
+				</listitem>
+			</itemizedlist>
+			<para>
+All the time- and date-related types are internally represented as a
+single 'datetime' type consisting of a Julian day, hour, minute, second, 6-digit fraction and timezone.
+The range of the year is from 0 to over 9999. This type can accommodate all values of any SQL92 time-related type.
+</para>
+			<para>
+Although the internal representation is the same, a column of a time-related type is described
+as being of the appropriate ODBC type, i.e. SQL_TIMESTAMP for TIMESTAMP and DATETIME and SQL_DATE for DATE and SQL_TIME for TIME.
+</para>
+			<para>
+A DATETIME is described as precision 19, a DATE as precision 10 and a TIME as precision 8.
+</para>
+			<para>
+A column declared a TIMESTAMP is automatically set to the timestamp of the transaction that inserts or
+updates any column of the table containing it. The timestamp of a transaction is guaranteed to be distinct from that of
+any other transaction.  For compatibility reasons a TIMESTAMP column is described to ODBC clients as a binary
+of 10 bytes. It is possible to use any date-related functions on TIMESTAMPs and to bind
+a TIMESTAMP column to a DATE or DATETIME variable (SQL_C_TIMESTAMP type in ODBC).  Binding to a binary will also work but
+the data will then be opaque.
+</para>
+			<para>
+SQL92 provides for types with a timezone. Although the ODBC API does not expose the timezone, it is stored with
+these types and can be retrieved with the <function>timezone()</function> function. The timezone has a precision of minutes from UTC.
+</para>
+			<para>
+The storage requirement for these types is 10 bytes.
+</para>
+<para>There is no date literal per se, but the ODBC shorthand for datetime 
+literals can be used.  The datetime/timestamp literal is of the form 
+{dt 'YYYY-MM-DD HH:MM.SS'}.  The date literal is of the form 
+{d 'YYYY-MM-DD'}.  Dates and datetimes may be compared between themselves but 
+not with other types without explicit casting.</para>
+</sect3>
+	<sect3 id="twobyteunicode">
+		<title>Unicode Support</title>
+		<para>
+Virtuoso allows 30-bit Unicode data to be stored and retrieved from database fields.
+The data are stored internally as UTF-8 encoded strings for storage space optimization.
+Unicode fields are easily intermixable with other character data as all SQL functions
+support wide-string case and convert to the most wide character representation on demand.
+The native width of the wide character type may differ between platforms.  Windows has a 16 bit
+wide character, whereas some Unixes have a 32 bit wide character type. The native width applies 
+to the Virtuoso NVARCHAR data type when used as SQL data. </para>
+			<para>
+There are 3 additional data types to enable storing of Unicode data:
+</para>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>NCHAR</para>
+				</listitem>
+				<listitem>
+					<para>NVARCHAR</para>
+				</listitem>
+				<listitem>
+					<para>LONG NVARCHAR</para>
+				</listitem>
+			</itemizedlist>
+			<para>
+All the Unicode types are equivalent to their corresponding
+&quot;narrow&quot; type &mdash; CHAR,
+VARCHAR and LONG VARCHAR &mdash; except that instead of storing data as one byte they allow
+Unicode characters. Their lengths are defined and returned in characters instead of bytes.
+They collate according to the active wide character collation, if any.  By 
+default this is the order of the Unicode serialization values.  These types 
+can be used anywhere the narrow character types can be used, except in LIKE 
+conditions.</para>
+  <para>Unicode literals are introduced by n&apos; and closed with &apos; 
+  (single quote).  See Internationalization section on the interpretation of 
+  wide literals.  This may be either UTF-8 according to some character set.</para>
+			<para>
+When there is a need to convert a wide string to a narrow one or vice versa,  a character set is
+used.  A character set returns a wide string code for a wide char. For
+example there can be a definition of the
+ISO-8859-5 &quot;narrow&quot; character set which describes mapping of non-ASCII character codes
+to their Unicode equivalents.  Virtuoso relies on the fact that the ASCII character codes are represented
+in Unicode by type-casting and in UTF8 as one-byte tokens with the same value as in ASCII.
+</para>
+			<para>
+When conversion is done on the server-side using cast or some of the SQL
+built-in functions, the wide
+characters are converted to narrow using a system-independent server-side character set. In the
+absence of such a character set, Virtuoso uses the Latin1 character set to
+project narrow character codes into the Unicode space
+as equally valued wide-character codes.
+</para>
+			<para>
+When conversion is done client-side &mdash; for example, when binding a VARCHAR to a
+wide buffer &mdash; the default client&apos;s system character set is used.
+</para>
+			<para>
+Wide-character literals have ANSI SQL92 syntax: N&apos;xxx&apos; (prefixing normal literals
+with the letter N).  These strings process escapes with a values large enough to represent all the
+Unicode characters.
+</para>
+		</sect3>
+
+    <sect3 id="conceptsudt"><title>User Defined Types</title>
+    <para>Virtuoso supports user-definable data types that can be based 
+    on any hosted language or classes such as C#.  New types can be 
+    further derived producing sub-types.  User-defined types can include 
+    methods and constructors to create any potentially complicated system 
+    to house data as exactly required.</para>
+
+    <para>User defined types can be used to defined database table columns.</para>
+
+    <tip><title>See Also:</title>
+    <para>The <link linkend="udt">User Defined Types</link> section.</para></tip>
+    </sect3>
+
+		<sect3 id="widefunc">
+			<title>Built-in SQL Functions and Wide Characters</title>
+			<para>
+All the built-in SQL functions that take character attributes and have a
+character input calculate their output type such that if any attribute is
+a wide string or a wide BLOB, then the result is a wide string; otherwise,
+the output character type is narrow.
+</para>
+			<para>
+Functions like <function>make_string()</function> that have character
+result types but that do not have character parameters produce narrow
+strings. Virtuoso provides equivalent functions for wide output, such as
+<function>make_wstring()</function>.
+</para>
+		</sect3>
+		<sect3 id="wideodbc">
+			<title>Client-side changes to support wide characters</title>
+			<para>
+Virtuoso' ODBC client implements the SQL...W functions (like <function>SQLConnectW()</function>) that take Unicode arguments.
+This enables faster wide-character processing and allows binding of the SQL_C_WCHAR output type.
+Since Virtuoso's SQL parser does not allow Unicode data in SQL commands, they should be bound as parameters
+or should be represented as escapes.
+</para>
+		</sect3>
+		<sect3 id="nvdb">
+			<title>Virtual Database and National Language Support</title>
+			<para>
+Attached tables use the default collation of the data source for narrow
+strings.
+Virtuoso maps Wide-string columns in remote tables to the appropriate local wide-character type.
+The data are then passed intact in case of wide-to-wide mapping. When data are converted
+client-side in the VDB the Server&apos;s system character set is used (where available).
+</para>
+		</sect3>
+
+		<sect3 id="lrgdtrelations">
+			<title>Operations Between Large Objects, Varchars and String Outputs</title>
+
+			<para>
+</para>
+			<para>
+The built-in data types denoting sequences of characters, wide or narrow,
+long or short, are:
+</para>
+			<simplelist>
+			<member>
+<emphasis>Varchar</emphasis>: a string of 8-bit characters, including 0's,
+up to 16MB long.  These are contiguously stored, so long contents, such as
+in the megabytes, will be inefficient.
+</member>
+			<member>
+<emphasis>NVARCHAR</emphasis>: A string of wide characters, of 2 or 4 bytes each, depending on the
+platform.  Because of the 16MB limit, the longest strings will be of 4M or
+8M characters, depending on the platform.  Again long strings are not recommended
+due to inefficiencies.
+</member>
+			<member>
+<emphasis>Binary</emphasis>: A string of 8-bit bytes, up to 16 MB long, like a varchar but not
+usable for character functions.  There is a distinct binary type only for
+compatibility with the SQL92 standard and ODBC, where the binary type is
+treated differently in parameter binding.
+</member>
+			<member>
+<emphasis>Long varchar, long nvarchar</emphasis>: These are long data types, stored persistently
+as a series of linked pages and accessible to clients in fragments using the
+<function>SQLGetData()</function> and <function>SQLPutData()</function> calls. The length limit is 2GB.  The wide variant, LONG NVARCHAR, is internally stored as UTF8.
+</member>
+			<member>
+<emphasis>String_output</emphasis>: This is not a database column type but
+a run-time object that
+can be used in stored procedures for accumulating a long sequence of 8-bit bytes,
+including 0's.  This type is not contiguously stored, hence it stays efficient for
+large output and has no built-in size limit; however, it is not automatically
+paged to disk, so it will consume virtual memory for all its length.  This type is
+useful for buffering output for a next processing step.
+</member>
+			<member>
+<emphasis>Long varbinary</emphasis>: This is a binary BLOB, identical to long varchar but distinct for
+reasons of compatibility with SQL92 and ODBC, where this can behave differently
+from long varchar for parameter binding.
+</member>
+			<member>
+<emphasis>XML Entity</emphasis>: This type is a pointer to an element of an XML tree.  The XML
+tree itself may be either memory- or disk-based. In both cases there is a
+reference-counted set of XML entities for each tree that Virtuoso uses to reference individual
+elements of the tree.  These are used for navigating an XML tree in XPath
+or XSLT;
+hence, one entity gives access to it parents, siblings, and so on.  This is not properly a
+string type, but it can be converted to one, producing the XML string value.
+</member>
+</simplelist>
+			<para>
+All these types have the common trait of representing sequences of characters and
+hence some common operations and conversions are possible between them.
+</para>
+			<sect4 id="storageindb">
+				<title>Storage in Database</title>
+				<para>
+The descriptions below apply to insert and update operations for these types:
+</para>
+
+<itemizedlist mark="bullet">
+<listitem><para>Long varchar = x, where x is:</para>
+<simplelist>
+<member>varchar &mdash; The text is stored as is.</member>
+<member>Long varchar &mdash; the text is stored as is.</member>
+<member>string output &mdash; the contents in the string output are stored as the value,
+unchanged.  The state of the string output is not changed. </member>
+<member>XML entity &mdash; The XML tree rooted at the entity is stored
+as persistent XML (disk-based) if the entity references a persistent XML tree.
+Note that this may either extract a subtree or copy a tree, depending on whether
+the entity references the root.  If the entity references a memory-based tree,
+the text of the tree with the element as the topmost (document) element is
+produced and set as the value of the column.</member>
+<member>Nvarchar &mdash; The text is stored as wide, thus the value is internally a
+long nvarchar although the declared column type is long varchar.</member>
+<member>Long nvarchar &mdash; The value is stored as a long nvarchar, as with an nvarchar.</member>
+</simplelist>
+</listitem>
+
+<listitem><para>Long nvarchar = x</para>
+<para>
+The cases are identical to long varchar.  Thus a wide value stays wide
+and a narrow value stays narrow. Specifically, a string output and XML
+entity result in a narrow value, although the character combination in the
+XML entity may be interpreted as wide.
+</para>
+</listitem>
+
+<listitem>
+<para>Long varbinary = x</para>
+<para>Identical to long varchar.  The binary type is only distinct in
+column metadata for ODBC clients, where its type conversions may be different.
+</para>
+</listitem>
+
+<listitem>
+<para>Varchar = x, where x is:</para>
+<simplelist>
+<member>long varchar, string output, XML entity &mdash; as with long varchar.</member>
+<member>Nvarchar, Long nvarchar &mdash; the text is stored as wide; no information is lost.</member>
+</simplelist>
+</listitem>
+
+<listitem>
+<para>Nvarchar = x, where x is:</para>
+<simplelist>
+<member>Long varchar, varchar &mdash; the string is converted to wide
+according to the character set effective in the connection.
+</member>
+<member>Long nvarchar, Nvarchar &mdash; The text is stored as is.</member>
+</simplelist>
+</listitem>
+</itemizedlist>
+
+			<para>
+'String output' and 'XML entity' are not valid types for a column.  These types are
+only created by evaluating SQL expressions and are converted as specified above
+if stored as a column value.
+</para>
+</sect4>
+			<sect4 id="retrcolvals">
+				<title>Retrieving Column Values</title>
+	<para>
+A BLOB column (long varchar, long nvarchar, long varbinary) may return
+either a long varchar or a long nvarchar BLOB handle.  If the actual value
+is short enough to be inlined, a varchar or nvarchar value can be returned as
+the column value instead. These are indistinguishable for assignment and as
+arguments to SQL functions or for returning to a client application.  Only
+specific SQL functions (<function>isblob()</function>,
+<function>isstring()</function>, etc.) allow you to determine the
+difference at run time. One exception is persistent XML entities, which
+come back as persistent XML entities and are not compatible with string
+functions but are assignable to various character columns.
+</para>
+	<para>
+An nvarchar column is always nvarchar.
+</para>
+<para>
+A varchar value is either varchar or nvarchar.  If the value stored was a
+memory-based XML tree entity it comes back as a long varchar.  If it was a
+persistent XML tree, it comes back as an XML entity.  </para>
+</sect4>
+		<sect4 id="assignments">
+			<title>Assignment</title>
+			<para>
+PL variables are typed at run time.
+</para>
+<para>
+A string (varchar, nvarchar, or varbinary) can be freely assigned and
+passed as parameter.  This makes a copy, except for reference (inout)
+parameters.
+</para>
+			<para>
+A BLOB (long varchar, long nvarchar, long varbinary) is a reference to a
+disk based structure, unless stored inline. Therefore, passing these as
+parameters does not take significant time. If these are inline, these are
+strings of under 4K bytes; hence assigning them is still efficient,
+although it involves copying.
+</para>
+			<para>
+A string output cannot be assigned between two variables, though it can be
+passed as a reference (inout) parameter in a PL procedure call.  Copying
+streams has problematic semantics and can be very resource-consuming.
+</para>
+			<para>
+An XML entity can be assigned and passed as parameter without restrictions.
+</para>
+</sect4>
+		<sect4 id="builtinsqlfuncs">
+			<title>Built-In SQL Functions</title>
+			<para>
+All SQL92 string functions will accept varchar, long varchar, nvarchar or
+long nvarchar arguments.  If the argument is long and its actual length is
+above the maximum length of a varchar, the conversion fails and Virtuoso
+signals an error.  You can interchange long and varchar types as long as the
+length remains under the varchar maximum of 16MB.</para>
+<note><title>Note:</title>
+<para>Varchars or nvarchars stored in columns have a much lower limit due to the 4K row length
+limit.  Intermediate results or values converted from long columns are not
+affected by this limit.
+</para></note>
+			<para>
+If Virtuoso converts a value from long varchar to varchar or from
+long nvarchar to nvarchar when passing the value as an argument to a string
+function, the value changes in place. This has the
+effect of replacing the handle with the string.  Users normally do not see
+this, but may detect it with type test functions such as <function>isblob()</function>.
+</para>
+</sect4>
+		<sect4 id="longrowlenlim">
+			<title>Long Strings and Row Length Limit</title>
+			<para>
+You can declare string values that might be long and that do not have to
+be key parts in indices as long varchar.  These will
+automatically be inlined if the row with the data inlined will fit within
+the 4K limit.  Otherwise the long values will be stored as separate LOBs.
+The difference between varchar and long varchar is distinguishable only
+with special test functions if the length is under the varchar limit.
+</para>
+			<para>
+A varchar column is sometimes substantially faster on
+update than a long varchar column, even if the value ends up inlined.  If the
+value is inlined there is no difference in retrieval speed.
+</para>
+</sect4>
+		<sect4 id="handlinglongdt4inou">
+			<title>Handling Long Data for Input and Output</title>
+			<para>
+LOBs of up to 2GB can be handled as streams without demand on memory
+from ODBC clients using <function>SQLGetData()</function> and
+<function>SQLPutData()</function>.  All other ways of
+processing long data will need to make either a contiguous or non-contiguous
+copy in memory.
+</para>
+			<para>
+To transfer long data between PL procedures and files one can use the 
+<link linkend="fn_string_to_file"><function>string_to_file()</function></link>
+function, which will accept a handle and will not need to copy the content to
+memory in order to write it.
+</para>
+			<para>
+To read a large object from a file to a table, you can use the 
+<link linkend="fn_file_to_string_output"><function>file_to_string_output()</function></link> 
+function to get contents that may be longer than the varchar
+limit into a string output.  This can then be assigned to a BLOB column.
+</para>
+			<para>
+For long file-resident XML data you can use the <link linkend="fn_xml_persistent">
+<function>xml_persistent()</function></link> function with the
+file:// protocol.
+</para>
+<tip><title>See Also:</title>
+<para>The <link linkend="webandxml">XML Support</link> chapter.</para></tip>
+</sect4>
+</sect3>
+	</sect2>
+	<!-- ======================================== -->
+	<sect2 id="Locking">
+		<title>Locking</title>
+		<para>
+Virtuoso offers a dynamic locking strategy that combines
+the high resolution of row-level locking with the performance of
+page locking for large transactions.
+</para>
+		<sect3 id="IsoLevels">
+			<title>Isolation Levels</title>
+			<para>
+Virtuoso has a full range of isolation options, ranging from <parameter>dirty read</parameter> to
+<parameter>serializable</parameter>. The default isolation is <parameter>repeatable read</parameter>, which is adequate
+for most practical applications.
+</para>
+			<para>Isolation is set at the connection,
+i.e. transaction, level.  Variously isolated
+transactions may coexist and each will behave consistently with its semantic.
+</para>
+			<para><parameter>Repeatable read</parameter> and <parameter>serializable</parameter> transactions are susceptible at any time to
+termination by deadlock, SQL state 40001.  Other transactions are susceptible
+to deadlock if they own locks as a result of insert, update or delete.  Deadlocks are
+resolved in favor of the older of the contending transactions. A transaction&apos;s age is
+the count of reads performed + 2 * the count of rows inserted, deleted or updated.
+</para>
+			<para>Any transaction that has modified the database may be rolled back; all transactions
+maintain a rollback log.  This is a memory-based data structure that contains the
+state of changed rows as they were before the transaction first affected them. This
+leads to potential transient memory consumption.
+All transactions that have changed the database also have a roll-forward log,
+used to recreate the effects of the transaction during roll-forward recovery.
+</para>
+			<sect4 id="ReadUncommit">
+				<title>Read Uncommitted</title>
+				<para>This corresponds to SQL_TXN_READ_UNCOMMITTED.  A read
+is never prevented by locking, nor do read rows stay locked. The data being read
+may or may not be committed, hence there is no guarantee of transaction integrity.
+</para>
+			</sect4>
+			<sect4 id="ReadCommit">
+				<title>Read Committed</title>
+				<para>Reading will wait for access to exclusively locked rows. Such rows
+are ones that have been read FOR UPDATE, updated or inserted.  Reading a row does not
+leave a lock in place; therefore, some other transaction may modify a row that has been read
+in a <parameter>read committed</parameter> transaction while the latter is in progress.
+</para>
+			</sect4>
+			<sect4 id="RepeatableRead">
+				<title>Repeatable Read</title>
+				<para>The transaction will wait for access to exclusively locked rows
+and will lock all rows it reads.  The locking of read rows can be shared or exclusive depending
+on the FOR UPDATE clause in the SELECT or the SQL_CONCURRENCY statement option.  In the case
+of a select over a range of rows where not all rows match selecting criteria,
+only matching rows are locked.  This mode guarantees that any row locked by the
+reading transaction can be re-read on the basis of its identity (primary key) and will not have
+been changed by any other transaction while the locking transaction is in progress.
+This mode does not prevent another transaction from inserting new rows
+(phantoms) between rows locked by the original transaction.
+</para>
+			</sect4>
+			<sect4 id="Serializable">
+				<title>Serializable</title>
+				<para>This mode guarantees that concurrent transactions will look as if
+the next transaction started only after the previous terminated. This is like <parameter>repeatable read</parameter>
+but prevents phantoms.  Space found to be empty
+in one read will remain empty in the next read while the transaction is ongoing.
+</para>
+				<para>Serializable isolation is implemented by locking all ranges of rows matching
+criteria pertaining to the ordering index in a select. The range here includes the last row
+before the first in the range.  An empty range can be locked by locking the row before the range
+by a special follow lock, which prevents insertions to the right of the locked row.  A by-product
+of this is that serializable locking guarantees that a select count will give the same result repeatedly unless the transaction itself affect the rows counted.
+</para>
+			</sect4>
+			<para><parameter>Serializable</parameter>
+isolation is slower than <parameter>repeatable read</parameter> and not
+required by most applications.
+</para>
+			<para>All insert, delete and update operations make an exclusive row lock on the rows
+they operate on, regardless of specified isolation.
+</para>
+		</sect3>
+		<sect3 id="LockExtent">
+			<title>Lock Extent</title>
+			<para>
+If a transaction is the exclusive owner of locks on a database page and a sufficient percentage
+of the rows are locked, it makes sense to replace distinct row locks
+with a single page lock.  The LOCK_ESCALATION_PCT parameter controls the threshold for doing
+this. See the SET statement for details.
+</para>
+			<para>
+If a cursor reads data serially and has a history of locking a high percentage of rows on
+each page it traverses, it will start setting page level locks as its first choice.
+It will do this when entering a new page where there are no row-level locks.
+</para>
+		</sect3>
+		<sect3 id="TransactionSize">
+			<title>Transaction Size</title>
+			<para>
+There is no limit in Virtuoso to the transaction size, though the
+underlying software or hardware may impose limits.  Memory consumed by a transaction
+is proportional to its number of locks held and number of changed rows (insert, update, delete).
+BKLOBs manipulated by a transaction do not contribute to memory
+consumption, because they are always disk-based.
+</para>
+		</sect3>
+	</sect2>
+	<!-- ======================================== -->
+	<!-- ======================================== -->
+<!-- This section superceeded by the new Usermodel section in admin
+  <sect2 id="UserGroupPriv">
+		<title>Users &amp; Group Privileges</title>
+		<para>
+Virtuoso's support for users, user groups and their security
+is similar to that found in most SQL databases.
+</para>
+		<para>
+When a database is created it contains one user account named 'dba'.  The
+initial password is 'dba'. When subsequent users are created, the user
+name is the default password and users always initially belong to their
+own group as its only member. These users only have the privileges granted
+to PUBLIC.  The dba user and users moved to the dba group have unlimited
+privileges.
+</para>
+		<sect3 id="UserSchemaObj">
+			<title>Users and Schema Objects</title>
+			<para>
+Any user can create schema objects such as tables, views, and procedures. A non-dba
+user is only permitted to create objects whose owner is the user; thus, the owner part of the
+qualified object name defaults to the login name of the creating user.  A dba user can also create objects with other owners.
+</para>
+			<para>
+A user irrevocably has all privileges to objects it owns.
+This includes further granting these privileges.
+</para>
+			<para>
+A stored procedure or view has the privileges of its owner.
+It is therefore possible to grant access to a view or procedure without granting access to the
+schema objects referenced by it.
+</para>
+		</sect3>
+		<sect3 id="UsersGroups">
+			<title>Users and Groups</title>
+			<para>
+A user is characterized by a unique user name, a unique user id, and a
+group id. 
+
+There is a one-to-one correspondence between the user name and
+user id. A user account can be used as a user group.   User group ids are
+normal user ids. A user has all the privileges granted to it, all the
+privileges granted to the user whose user id appears as its group id and
+all the privileges granted to PUBLIC. Additionally if the user is dba
+&mdash; which Virtuoso sets as id 0 &mdash; or if its group id is 0, then
+it has all privileges.
+</para>
+			<para>
+To use a group, you create a user account for the group and then create
+the group members.  After that, the members can be added to the group. For
+example, to create a group &apos;staff&apos; with users 'jim' and 'john,'
+you would execute the following statements with dba privilege:
+</para>
+			<screen id="createuser">
+create user staff;
+create user jim;
+create user john;
+set user group jim staff;
+set user group john staff;
+</screen>
+			<para>
+Now the dba can grant privileges to staff and those will apply to users
+logged in as either jim or john. Note that since staff is a user account
+one can also log in as staff. To grant select on STOCK to staff, one can execute:
+</para>
+			<screen id="grant">
+grant select on STOCK to staff;
+</screen>
+			<para>
+The passwords of the accounts default to the user names. It is advisable
+to set the password to something else immediately after creating the
+accounts.  Users of the dba group can set or change the password of any
+user using the following function:
+</para>
+
+&user_set_password;
+
+			<para>
+Users can change their own passwords when logged in. The SET PASSWORD
+statement changes the password associated with the user who executes it.
+</para>
+			<screen id="setpwd">
+SET PASSWORD &lt;old password&gt; &lt;new password&gt;
+</screen>
+		</sect3>
+		<sect3 id="multipleusergroups">
+			<title>User Roles</title>
+		<para>
+
+Virtuoso supports a SQL 2K compatible role based security model.  This
+is the Virtuoso 3.0 replacement for the multiple group membership
+feature in Virtuoso 2.7.  A role is a grantee in the same nemespace as
+users but is itself not a user account.  Thus one cannot login as a
+role.  A role is a grantable object.  Any role or user may be granted
+an arbitrary number of roles.  The effective privileges of a role or
+of a user having roles are the union of the effective privileges of
+all directly or indirectly granted roles plus grants to public plus
+direct grants to the grantee in question.  Role grants may not form cycles.
+</para>
+<para>
+This is not the same as multiple user groups, since indirect memberships are not considered in the multiple groups case. The multiple user groups feature is  deprecated.  
+See the CREATE ROLE, DROP ROLE statements.
+</para>
+<para>
+There is no dba role.  The GRANT ALL PRIVILEGES statement is the official way of adding a user account to the dba group.
+</para>
+</sect3>
+		<sect3 id="multipleusergroups">
+			<title>Multiple User Groups</title>
+		<para>
+Virtuoso implements UNIX-style group memberships: a user belongs to a
+'primary' group and a set of 'secondary' groups.
+Note that grants can be made to a group and will affect users who have that group as a secondary.
+This is not recursive, so the following will <emphasis>not</emphasis> work:
+</para>
+
+		<programlisting>
+grant all on table secret to secret_group;
+add user group public_group secret_group;
+add user group user public_group;
+connect user
+select * from secret
+</programlisting>
+		<para>
+The command:
+</para>
+		<programlisting>
+SET USER GROUP &lt;user&gt; &lt;group&gt;
+</programlisting>
+<para>
+sets the primary group for a user.  The command:
+</para>
+		<programlisting>
+ADD USER GROUP &lt;user&gt; &lt;group&gt;
+</programlisting>
+		<para>
+adds the user <parameter>user</parameter> to a secondary group
+<parameter>group</parameter>.  Note that if the user's primary group is
+the same as the <parameter>group</parameter> parameter specified, the
+statement will generate an error.
+</para>
+		<programlisting>
+DELETE USER GROUP &lt;user&gt; &lt;group&gt;
+</programlisting>
+		<para>
+deletes the user <parameter>user</parameter> from a secondary group <parameter>group</parameter>.
+</para>
+</sect3>
+		<sect3 id="ProcsSecurity">
+			<title>Procedures and Security</title>
+			<para>
+A stored procedure may perform all actions granted to the user who
+created it.  Execution privileges can be granted on procedures by
+users with dba priveleges.  A non-dba user may perform actions through stored procedures
+that it could not perform by executing individual statements.
+</para>
+			<para>
+For the most part, Virtuoso checks privileges at compile time; however,
+procedure permissions are checked at invocation time.
+</para>
+		</sect3>
+		<sect3 id="RevokingPrivs">
+			<title>Revoking Privileges</title>
+			<para>
+Only a privilege that has been granted can be revoked.	More precisely,
+the privilege and grantee in a REVOKE statement must be the same as in
+a previous GRANT statement. For example:
+</para>
+			<screen>
+grant select  (S_I_ID, S_LEVEL), update (S_LEVEL) to staff;
+</screen>
+			<para>and </para>
+			<screen>
+revoke update on STOCK from jim;
+</screen>
+			<para>
+are incompatible, first because &apos;update on STOCK&apos; was never granted and
+because nothing was ever granted to jim.  Instead, you should use:
+</para>
+			<screen>
+revoke update (S_LEVEL) on STOCK from staff;
+</screen>
+			<para>
+To revoke a user&apos;s privileges, you should first set the user&apos;s group
+to the user itself. This will cause the user to have only the privileges
+specifically granted to it or to PUBLIC. Then you can revoke the privileges
+of the user one by one. 
+</para>
+			<tip>
+				<title>See Also:</title>
+				<para><link linkend="GRANT">GRANT, REVOKE</link>, <link linkend="UserGroupPriv">SET PASSWORD, CREATE USER, DELETE USER</link></para>
+			</tip>
+		</sect3>
+		<sect3 id="CreateUserStmts">
+			<title>CREATE USER, DELETE USER, SET PASSWORD, SET USER GROUP statement</title>
+			<para>
+These statements are used to manage user accounts. Only users with dba
+privileges may invoke them, with the exception of SET PASSWORD.
+</para>
+<para>
+	<programlisting>SET PASSWORD &lt;user&gt; &lt;pass&gt;</programlisting>
+</para>
+<para>
+	<programlisting>CREATE USER &lt;user&gt;</programlisting>
+</para>
+<para>
+	<programlisting>DELETE USER &lt;user&gt;</programlisting>
+</para>
+<para>
+	<programlisting>SET USER GROUP &lt;user&gt; &lt;group&gt;</programlisting>
+</para>
+<para>
+CREATE USER makes a new user account. The password defaults to the user name.
+DELETE USER deletes a user account. The account being dropped may not
+have privileges granted to it nor can it be the user group of any user except itself.
+Note that user names and passwords are identifiers. This means that they can
+be converted to upper case unless quoted if the global CaseMode setting is 1.
+</para>
+			<para>
+SET USER GROUP assigns a group to a user.  By default a user belongs to
+its own group. Changing a user&apos;s group to be another user causes the
+member user&apos;s effective privileges to be those of the group plus
+those granted specifically to the member user.  Privileges are only
+inherited from the immediate group, not from the group&apos;s group etc.
+</para>
+			<para>
+The following example illustrates how to use these statements:
+</para>
+			<example id="VDOCS-UGMAINT-05"><title>Creating New Users &amp; Assigning Permissions</title>
+				<programlisting>create user &quot;Accounting&quot;;
+create user &quot;AcctMgr&quot;;
+set user group &quot;AcctMgr&quot; &quot;Accounting&quot;;
+grant select on &quot;Orders&quot; to &quot;Accounting&quot;;
+grant select on &quot;Employees&quot; to &quot;Accounting&quot;;
+grant update (&quot;Salary&quot;) on &quot;Employee&quot; to &quot;AcctMgr&quot;;
+</programlisting>
+			</example>
+			<para>
+After you execute these statements, 'AcctMgr' will have select privileges
+on 'Employee' as a result of belonging to the 'Accounting' group
+and will have update privileges on 'Salary' by virtue of the direct grant.
+</para>
+		</sect3>
+	</sect2>
+-->
+<!-- no longer pertinent bug 3515
+	<sect2 id="objexts">
+		<title>Virtuoso Object Extensions</title>
+		<para>
+The row string is the internal representation of a row of a database. It can be retrieved and passed
+in an argument as a single value.   When selecting from a table with subtables, the row string
+allows you to determine which table each row actually came from and which column values
+are not defined in the supertable given in the select.
+</para>
+		<para>
+A row identity string is the part of a row string that contains the table information and the
+primary key. Each row in a database has a unique row identity string. The row identity string
+is a regular varchar object that can appear as a column value.  This is a generalization of a
+foreign key &mdash; a single column reference to an entity whose type is determined at run time.
+</para>
+		<para>
+The object ID is a special data type that resembles a string in that it contains a variable
+number of binary bytes.  However, strings and object IDs are distinct and a string is never
+equal to an object ID, even if the characters are the same.  An object ID can appear as a
+column value, in which case it is a foreign key to another table or a key part of a special
+OBJECT_ID index.  The object ID is similar to a row identity string in concept but more restricted
+in that it can only reference tables that have a primary key or other index with the OBJECT_ID option on.
+The object ID is slightly shorter than a row identity string.
+</para>
+		<sect3 id="whatrobjs4">
+			<title>What Are Objects Useful For?</title>
+			<para>
+Suppose you have a database of companies and products that the companies sell.
+You might have keywords associated with both, forming a many-to-many relationship
+between the keywords and the union of companies and products.  You could then ask
+questions like &apos;what is xyz&apos;, retrieving data from either or both of the tables.
+</para>
+			<programlisting>
+Create table product (c_id integer, p_id integer, p_desc varchar,
+	primary key (c_id, p_id));
+create table company (c_id integer, c_name varchar, c_desc varchar,
+	primary key (c_id));
+create table keywords (keyword varchar, item varchar,
+        primary key (keyword, item));
+
+create procedure describe (in item varchar)
+{
+   if (item is null) return (&apos;-deleted -&apos;);
+   if (&apos;company&apos; = row_table (item)) return (row_column (item, &apos;company&apos;, &apos;c_desc&apos;));
+   if (&apos;product&apos; = row_table (item)) return (row_column (item,  &apos;product&apos;, &apos;p_desc&apos;));
+   return (row_table (item));
+}
+
+select describe (row_deref (item, 0)) from keywords where keyword = &apos;foo&apos;;
+</programlisting>
+			<para>
+This query lists the descriptions of all items for which there is an entry with the keyword 'foo'.
+The <function>describe()</function> procedure is a generic function in that it decides its action based on the
+type of the argument.
+</para>
+			<para>
+This is a trivial example of the use of late binding and polymorphism in Virtuoso.
+We can expand the case by dividing products into subclasses, each with a different subtable
+with different columns. We can then add cases to <function>describe()</function> for each.
+We could also use computed function calls to dispatch on the type if the item.
+</para>
+			<para>
+We could write:
+</para>
+			<programlisting>
+create procedure describe (in item varchar)
+{
+   return (call (concatenate (row_table (item), &apos;_desc&apos;)) (item));
+}
+</programlisting>
+			<para>
+Then we could have procedures named <function>company_desc()</function> and <function>product_desc()</function>
+that would perform different functions.  Calling an undefined function would signal an SQL STATE.
+</para>
+		</sect3>
+		<sect3 id="objref">
+			<title>Object Reference</title>
+
+<para>Refer to the following functions:</para>
+
+<itemizedlist>
+  <listitem><link linkend="fn__row">_row()</link></listitem>
+  <listitem><link linkend="fn_row_table">row_table()</link></listitem>
+  <listitem><link linkend="fn_row_column">row_column()</link></listitem>
+  <listitem><link linkend="fn_row_identity">row_identity()</link></listitem>
+</itemizedlist>
+
+		</sect3>
+	</sect2>
+-->
+
+<sect2 id="internationalization">
+<title>Internationalization &amp; Unicode</title>
+
+<para>
+National strings are best represented as Unicode (NCHAR/LONG NVARCHAR) columns.
+There is no guarantee that values stored inside narrow (VARCHAR/LONG VARCHAR)
+columns will get correctly represented.  If the client application is also
+Unicode then no internationalization conversions take place.
+Unfortunately, most current applications still use narrow characters.
+</para>
+<para>
+The national character set defines how strings will get converted from narrow to wide
+characters and back throughout Virtuoso.
+A character set is an array of 255 (without the zero) Unicode codes
+describing the location of each character from the narrow character set in the Unicode
+space.  It has a &quot;primary&quot; or &quot;preferred&quot; name and a list of aliases.
+</para>
+	<para>
+Character sets in Virtuoso are kept inside the system table SYS_CHARSETS. Its layout is :
+</para>
+<programlisting>
+CREATE TABLE SYS_CHARSETS (
+    CS_NAME varchar,			-- The &quot;preferred&quot; charset name
+    CS_TABLE long nvarchar,		-- the mapping table of length 255 Wide chars
+    CS_ALIASES long varchar		-- serialized vector of aliases
+);
+</programlisting>
+	<para>
+The CS_NAME and CS_ALIASES colums are SELECTable by PUBLIC.
+To simplify retrieval of all official and unofficial names of character
+sets, Virtuoso provides the following function:
+</para>
+
+<para><link linkend="fn_charsets_list"><function>charsets_list()</function></link></para>
+
+	<para>
+There are a number of character set definitions preloaded in the SYS_CHARSETS 
+table. Currently these are:</para>
+
+<simplelist>
+<member>GOST19768-87</member>
+<member>IBM437, IBM850, IBM855, IBM866, IBM874</member>
+<member>ISO-8859-1, ISO-8859-2, ISO-8859-3, ISO-8859-4, ISO-8859-5,
+ISO-8859-6, ISO-8859-7, ISO-8859-8, ISO-8859-9, ISO-8859-10, ISO-8859-11,
+ISO-8859-13, ISO-8859-14, ISO-8859-15</member>
+<member>KOI-0, KOI-7, KOI8-A, KOI8-B, KOI8-E, KOI8-F, KOI8-R, KOI8-U</member>
+<member>MAC-UKRAINIAN</member>
+<member>MIK</member>
+<member>WINDOWS-1250, WINDOWS-1251, WINDOWS-1252, WINDOWS-1257</member>
+</simplelist>
+
+	<para>
+New character sets can be defined using the following function:
+</para>
+
+<para><link linkend="fn_charset_define"><function>charset_define()</function></link></para>
+
+	<para>
+User-defined character sets can be dropped by deleting the row from the SYS_CHARSETS table
+and restarting the server.
+</para>
+	<para>
+Virtuoso performs all translations in accordance with a &quot;current
+charset&quot;.  This is a connection attribute. It gets its value as
+follows:
+</para>
+<simplelist>
+	<member>
+1. If the client supplies a CHARSET ODBC Connect string attribute either from the
+DSN definition or as an argument to a
+<function>SQLDriverConnect()</function> call, Virtuoso searches for the
+name in SYS_CHARSETS and, if there is a match, that character set becomes
+the default.
+</member>
+	<member>
+2. If the database default character set ('Charset' parameter in the
+'Parameters' section of virtuoso.ini) is defined, it becomes the default.
+</member>
+	<member>
+3. If neither of these conditions is met, then Virtuoso uses ISO-8859-1 as
+the default character set; this maps the narrow chars as wide using
+equality.
+</member>
+</simplelist>
+
+<para>
+At any time the user can explicitly set the character set either with a
+call to
+</para>
+<programlisting>
+SQLSetConnectAttr (HDBC, SQL_CHARSET (=5002), CharacterSetString, StringLength)
+</programlisting>
+<para>
+or by executing the interactive SQL command:
+</para>
+<programlisting>
+SET CHARSET='&lt;name&gt;|&lt;alias&gt;'
+</programlisting>
+	<para>
+The current character set &quot;preferred&quot; name (as a string) is
+returned by the following system function:
+</para>
+
+<para><link linkend="fn_current_charset"><function>current_charset()</function></link></para>
+
+	<para>
+Virtuoso has a default character set that gets used if the client
+does not supply its own and in some special cases, like XML Views and FOR
+XML AUTO statements.
+</para>
+
+<para>
+    The HTTP character set can be changed during an HTTP session using: 
+</para>
+	   
+<programlisting>
+SET HTTP_CHARSET='&lt;name&gt;|&lt;alias&gt;'
+</programlisting>
+
+<para>Example:</para>
+<programlisting><![CDATA[
+     <?vsp 
+         set http_charset = 'ISO-CELTIC';
+     ?>
+     <html><body><h1>Cén chaoi 'bhfuil tú?</h1></body></htm
+    ]]></programlisting>
+
+
+
+	<para>
+Virtuoso supports the following types of translations from Unicode
+characters to narrow characters:
+</para>
+
+<itemizedlist mark="bullet">
+<listitem>
+<para>String translation:</para>
+  <simplelist>
+    <member>If the Unicode represents a part of the US-ASCII (0-127)
+    character set then its value gets used;</member>
+    <member>If the Unicode has a mapping to narrow in the character set then use it;</member>
+    <member>If neither of the above then the narrow '?' is returned.</member>
+  </simplelist>
+</listitem>
+<listitem>
+<para>Command translation:</para>
+  <simplelist>
+    <member>If the Unicode represents a part of the US-ASCII (0-127) character set then its value gets used;</member>
+    <member>If the Unicode has a mapping to narrow in the character set then use it;</member>
+    <member>If neither of the above then the Unicode gets escaped using the form \xNNNN (hexadecimal).</member>
+  </simplelist>
+</listitem>
+<listitem>
+<para>HTTP/XML translation:</para>
+  <simplelist>
+    <member>If the Unicode represents a part of the US-ASCII (0-127)
+character set then its value gets used after replacing the special symbols
+(&lt;, &gt;, &amp; etc.) with their entity references;</member>
+    <member>If the Unicode has a mapping to narrow in the character set
+then use it.  The narrow char is then checked to see if needs to be escaped;</member>
+    <member>If none of the above then the Unicode gets escaped  using the form &amp;#DDDDDD; (decimal)</member>
+  </simplelist>
+
+</listitem>
+</itemizedlist>
+
+<sect3 id="charsetclientusage">
+<title>Character Set Use in ODBC/UDBC/CLI Clients</title>
+
+	<para>
+This section describes where a translation is done in the case of an ODBC/UDBC/CLI client.
+These are described as solution because the Virtuoso CLI is the same as
+the ODBC/UDBC interface.
+</para>
+
+	<para>
+For the functions <function>SQLPrepareW()</function>,
+<function>SQLExecDirectW()</function>,  and
+<function>SQLNativeSQLW()</function> any Unicode arguments will become
+narrow strings by using the command translation described above.</para>
+	<para>
+When doing the bindings
+</para>
+<programlisting>
+SQL_C_WCHAR -&gt; SQL_xxx
+</programlisting>
+<para>and</para>
+<programlisting>
+SQL_Nxxx -&gt; SQL_C_xxx (except SQL_C_WCHAR)
+</programlisting>
+<para>
+Virtuoso converts Unicode strings to narrow strings using the string
+translation described above.
+</para>
+</sect3>
+
+<sect3 id="charsetserverusage">
+<title>Character Set Use in the ODBC/UDBC/CLI Server</title>
+
+	<para>
+The server uses the character set in the CAST operator when converting
+NCHAR/LONG NVARCHAR to any other type.
+</para>
+</sect3>
+
+<sect3 id="charsethttpusage">
+<title>Character Set Use in the HTTP Server</title>
+
+	<para>
+The HTTP server appends a <screen>charset=xxxx</screen> attribute to the
+<screen>Content-Type:</screen> HTTP header field  when
+returning the HTTP header to the client.  This can be overriden by calling
+functions such as <function>http_header()</function>.
+</para>
+<para>
+The HTTP server uses the character set mainly to format correctly
+values using the <function>http_value()</function> function or its VSP
+equivalent &lt;?= ...&gt;.
+In these cases wide values and XML entities &mdash; the result of XML
+processing function like <function>xpath_contains()</function> &mdash; get
+represented using the HTTP/XML translation rules described above.
+The same rules apply for results returned by the FOR XML directive, by XML
+Views, and for WebDAV content.
+</para>
+
+</sect3>
+<sect3 id="charsetxmlproc">
+<title>Character Set Use in the XML Processor</title>
+
+	<para>
+The Virtuoso embedded XML parser correctly processes all encodings defined
+in the SYS_CHARSETS table and UTF8.
+</para>
+</sect3>
+
+<sect3 id="gensql">
+<title>Generation of SQL</title>
+
+<para>The <function>xpath()</function> and
+<function>xpath_contains()</function> functions translate their expressions as follows:</para>
+<sect4 id="inputproc">
+<title>Input Processing</title>
+<simplelist>
+	<member>
+Narrow strings are these get translated to Unicode as per the character set
+and then to UTF-8, which is the internal encoding used by the Virtuoso XML tools.
+</member>
+	<member>
+SQL Views and FOR XML directives take their values from narrow columns by firstly
+converting them to Unicode based on the database character set and then to UTF-8.
+</member>
+</simplelist>
+</sect4>
+
+<sect4 id="outputproc">
+<title>Output Processing</title>
+<simplelist>
+<member>
+Almost all the XML processors and generators return their values as type
+DV_XML_ENTITY (__tag() 230). If such a value's character
+representation is requested either by CAST or by
+<function>http_value()</function> then Virtuoso converts it to narrow
+characters using the HTTP/XML translation rules given above.
+</member>
+<member>
+XPath expressions that return string values are returned as NCHAR values
+to the clients, which then convert them to
+narrow character if needed.
+</member>
+</simplelist>
+
+</sect4>
+</sect3>
+</sect2>
+
+	<sect2 id="dbccollationsdef">
+		<title>Creating A Collation</title>
+			<para>
+Virtuoso supports collation orders for CHAR and VARCHAR fields that are
+different from the binary, as per ANSI SQL92.  When comparing strings
+using a collation, Virtuoso compares the &quot;weights&quot; of the
+characters instead of their codes.  This allows programs to make different
+characters compare as equal (example: case-insensitive comparisons).
+</para>
+		<para>
+A collation can be created by supplying a collation definition text file to
+the <function>collation_define()</function> SQL function.  The collation definition file contains a list of
+the exceptions to the binary collation order.  An exception consists of &lt;character
+code&gt; = &lt;collation weight&gt; pairs.  For example a case-insensitive collation can be defined by specifying
+all the lower case letters to have the same collation weights as the corresponding uppercase ones.
+</para>
+		<sect3 id="coldeffile">
+			<title>Collation Definition File</title>
+			<para>
+The collation definition file should follow the following guidelines:
+</para>
+			<itemizedlist mark="bullet">
+				<listitem>
+					<para>Each definition should reside on a separate line.</para>
+				</listitem>
+				<listitem>
+					<para>The format of the definition is: &lt;CHAR&gt;=&lt;CODE&gt;, 
+          where <parameter>CHAR</parameter> and <parameter>CODE</parameter> can 
+          be either the letters themselves, or their decimal codes.  For 
+          example: '67=68' is the same as 'C=D' using the ASCII character set.  
+          For Unicode collations the codes can exceed the byte boundary.</para>
+				</listitem>
+			</itemizedlist>
+<para>You can define a new collation using the following function:
+</para>
+<para><link linkend="fn_collation_define">
+  <function>collation_define (
+    <parameter>COLLATION_NAME</parameter>
+    <parameter>FILE_PATH</parameter>
+    <parameter>ADD_TYPE</parameter>)</function>
+  </link></para>
+		</sect3>
+		<sect3 id="dbconssys_collations">
+			<title>Collations System Table</title>
+			<para>
+The SYS_COLLATIONS system table holds the data for all defined collations. It has the following structure:
+</para>
+			<programlisting>
+CREATE TABLE SYS_COLLATIONS (
+    COLL_NAME VARCHAR,
+    COLL_TABLE LONG VARBINARY,
+    COLL_IS_WIDE INTEGER);
+</programlisting>
+			<para>
+<parameter>COLL_NAME</parameter> is the fully qualified name of the
+collation &mdash; its identifier.
+</para>
+			<para>
+<parameter>COLL_TABLE</parameter> holds the collation table itself.  This
+is 256 bytes or 65536 wide chars.
+</para>
+			<para>
+<parameter>COLL_IS_WIDE</parameter> holds the collation&apos;s type: 0 for
+CHAR and 1 for NCHAR. An 8-bit collation cannot be used by anything that
+requires NCHAR data and vice versa.
+</para>
+			<para>
+A collation can be deleted by deleting its row from SYS_COLLATIONS.
+</para>
+<note><title>Note</title>
+<para>The collation will still be available until the server is restarted,
+as it&apos;s definition is cached in memory.
+</para>
+</note>
+		</sect3>
+		<sect3 id="collation">
+			<title>Collations and Column Data</title>
+			<para>
+The collation is a property of the column holding the data. This means that all comparisons including
+that column will use its collation. SQL functions will strip collation data from the
+column; for example, if a column &quot;CompanyName&quot; has an assigned collation &quot;Spanish&quot;
+then the SQL call <programlisting>LEFT (CompanyName, 10);</programlisting> will use the default collation).
+</para>
+			<para>
+Collations can be defined on a per-column basis, at table creation time,
+and on a per-database basis as a configuration parameter.
+There is a special form of the CAST operator that allows casting a column
+to a collation.
+</para>
+			<para>
+A collation identifier has the same form as any other SQL identifier
+(&lt;qualifier&gt;.&lt;owner&gt;.&lt;name&gt;) and it can be
+escaped with the same syntax as other identifiers.
+</para>
+			<sect4 id="tablecoll">
+				<title>Defining a Collation for a Table Column</title>
+				<para>
+You may assign a collation to a column at table creation using the following syntax:
+</para>
+				<programlisting>
+create table TABLE_NAME (
+...
+COLLATED   VARCHAR(50) COLLATE Spanish,
+COLLATED   CHAR(20) COLLATE DB.DBA.Spanish,
+....
+)
+</programlisting>
+				<para>
+Assigning a collation to a non-character column gives an error.
+</para>
+				<para>
+If the COLLATE is omitted, the default database collation is used.
+</para>
+				<para>
+On database start-up the collation for each table&apos;s column is loaded from the SYS_COLLATIONS table
+and if not found, the COLLATE attribute is ignored until the next restart.
+</para>
+			</sect4>
+			<sect4 id="dbcoll">
+				<title>Defining Database-Wide Collations</title>
+				<para>
+The database&apos;s default collation is defined by the configuration 
+parameter &quot;Collation&quot; in the &quot;Parameters&quot; section of 
+the <link linkend="VIRTINI">virtuoso.ini</link> file.  This database wide 
+collation is the default system collation used where none other is specified.  
+This setting can only be changed in the virtuoso.ini file and hence requires 
+a Virtuoso server restart.  As with all collations, legal values are those 
+contained in the DB.DBA.SYS_COLLATIONS table.  The list can be retrieved using 
+<link linkend="fn_charsets_list"><function>charsets_list(1)</function></link></para>
+			</sect4>
+		</sect3>
+	</sect2>
+</sect1>
+
+
+

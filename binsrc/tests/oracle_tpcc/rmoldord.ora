@@ -1,0 +1,45 @@
+create or replace procedure oldord (
+    to_del  in integer
+	 )
+as
+type tord_c is ref cursor;
+  first_o integer; 
+  total integer;
+  o_id_ integer;
+  o_d_id_ integer;
+  o_w_id_ integer;
+  cord  tord_c;  
+  n integer;
+  to_del_ integer;
+  cc integer;
+begin
+  if to_del < 1 then 
+   to_del_ := 30;
+else 
+   to_del_ := to_del;
+   end if;
+   
+  select count(*) into total from orders;
+  if total < to_del_ then 
+    goto exit_p; 
+  end if;
+
+open cord for select o_id,o_w_id,o_d_id from orders;
+
+n := 0;
+while n <= to_del_ loop
+fetch cord into o_id_, o_w_id_, o_d_id_;
+ delete from orders where o_id = o_id_ and o_w_id = o_w_id_ and o_d_id = o_d_id_;
+ delete from order_line where ol_o_id = o_id_ and ol_w_id = o_w_id_ and ol_d_id = o_d_id_;
+n := n + 1;
+cc : cc + 1;
+if cc = 100 then 
+commit;
+cc := 0;
+end if;
+
+end loop;
+<<exit_p>>	
+	commit;
+end oldord;
+/

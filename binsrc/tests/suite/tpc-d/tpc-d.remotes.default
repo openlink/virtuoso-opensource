@@ -1,0 +1,3 @@
+mssql;tpcd;tpcd;mssql.sql;tpcd;
+ora;tpcd;tpcd;ora.sql;TPCD;
+msaccess;tpcd;tpcd;msaccess.sql;;

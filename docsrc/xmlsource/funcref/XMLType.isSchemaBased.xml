@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_XMLType.isSchemaBased">
+  <refmeta>
+    <refentrytitle>XMLType.isSchemaBased</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XMLType.isSchemaBased</refname>
+    <refpurpose>Returns 1 if the given XMLType instance is schema-based, otherwise returns 0.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_XMLType.isSchemaBased">
+      <funcprototype id="fproto_XMLType.isSchemaBased">
+        <funcdef><function>XMLType.isSchemaBased</function></funcdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_XMLType.isSchemaBased">
+    <title>Description</title>
+    <para>Returns 1 if the given XMLType instance is schema-based, i.e. if it has
+    a URI of an XML schema that can be used for schema validation via 
+	<function>XMLType.schemaValidate()</function>.
+</para>
+  </refsect1>
+  <refsect1 id="ret_XMLType.isSchemaBased"><title>Return Types</title>
+    <para>The function returns 1 or 0.</para>
+  </refsect1>
+  <refsect1 id="examples_XMLType.isSchemaBased">
+    <title>Examples</title>
+    <example id="ex_XMLType.isSchemaBased"><title>Simple tests</title>
+      <para>The following three calls display the behaviour of the <function>isSchemaBased()</function>.
+Note that it does no actual checks whether the document is valid against the declared schema or even 
+the validity of schema URI itself.</para>
+      <screen><![CDATA[
+select XMLType('<clean />').isSchemaBased()
+callret
+INTEGER
+_______________________________________________________________________________
+
+0
+
+1 Rows. -- 00000 msec.
+
+select XMLType('<clean />', 'file://xmlschema/test0001/clean.xsd').isSchemaBased()
+callret
+INTEGER
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 00000 msec.
+
+select XMLType('<clean />', 'http://no.such.schema.exists').isSchemaBased()
+callret
+INTEGER
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 00000 msec.
+ ]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_XMLType.isSchemaBased">
+    <title>See Also</title>
+    <para><link linkend="fn_XMLType.getSchemaURL"><function>XMLType.getSchemaURL()</function></link></para>
+  </refsect1>
+</refentry>

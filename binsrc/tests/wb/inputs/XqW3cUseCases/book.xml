@@ -1,0 +1,72 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0"?>
+<!DOCTYPE book SYSTEM "book.dtd">
+<book>
+  <title>Data on the Web</title>
+  <author>Serge Abiteboul</author>
+  <author>Peter Buneman</author>
+  <author>Dan Suciu</author>
+  <section id="intro" difficulty="easy" >
+    <title>Introduction</title>
+    <p>Text ... </p>
+    <section>
+      <title>Audience</title>
+      <p>Text ... </p>
+    </section>
+    <section>
+      <title>Web Data and the Two Cultures</title>
+      <p>Text ... </p>
+      <figure height="400" width="400">
+        <title>Traditional client/server architecture</title>
+        <image source="csarch.gif"/>
+      </figure>
+      <p>Text ... </p>
+    </section>
+  </section>
+  <section id="syntax" difficulty="medium" >
+    <title>A Syntax For Data</title>
+    <p>Text ... </p>
+    <figure height="200" width="500">
+      <title>Graph representations of structures</title>
+      <image source="graphs.gif"/>
+    </figure>
+    <p>Text ... </p>
+    <section>
+      <title>Base Types</title>
+      <p>Text ... </p>
+    </section>
+    <section>
+      <title>Representing Relational Databases</title>
+      <p>Text ... </p>
+      <figure height="250" width="400">
+        <title>Examples of Relations</title>
+        <image source="relations.gif"/>
+      </figure>
+    </section>
+    <section>
+      <title>Representing Object Databases</title>
+      <p>Text ... </p>
+    </section>       
+  </section>
+</book>

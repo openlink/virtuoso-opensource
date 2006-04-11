@@ -1,0 +1,63 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<HTML>
+<HEAD>
+<TITLE>XQDemo Check</TITLE>
+    <link rel="stylesheet" type="text/css" href="../admin/admin_style.css">
+</HEAD>
+<BODY BGCOLOR=#FFFFFF FGCOLOR=#000000 LINK=#0000FF VLINK=#0000FF>
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING=0 CELLSPACING=0>
+<TR><TD CLASS="admpagestitle" COLSPAN="2"><H2>XQuery Demo database check</H2></TD></TR>
+<TR><TD CLASS="admborders" COLSPAN="2"><IMG SRC="admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD CLASS="demomain" COLSPAN="2"><IMG SRC="admin/images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR><TD CLASS="demomain" ALIGN="LEFT" COLSPAN="2">
+
+<center>
+<table width="60%">
+<tr><td>
+<P>This page checks your database for existance of XQDemo tables.
+It should automatically direct your browser to the real demo top page within a few seconds.</P>
+<P>If it fails to do so, please check if you are using demo base indeed.</P>
+</td></tr></table>
+<?vsp
+
+declare tmpstr varchar;
+whenever not found goto smth;
+select "TABLE" into tmpstr from SYS_COLS where "TABLE"='XQ.XQ.TEST_CASES';
+
+http('<script>');
+http('window.location.href="../xqdemo";');
+http('</script>');
+
+http('<P><HR></P>');
+http('<P><A HREF="../xqdemo">Something wrong with your JavaScript, please click here</A>.</P>');
+
+goto fin;
+
+smth:
+http('<P><HR></P>');
+http('Alas, XQdemo tables not found.');
+fin:
+?>
+</body>
+</html>

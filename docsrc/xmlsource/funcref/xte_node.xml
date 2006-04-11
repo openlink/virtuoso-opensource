@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_xte_node">
+  <refmeta>
+    <refentrytitle>xte_node</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>xte_node</refname>
+    <refpurpose>Returns the vector corresponding to a XML element </refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_xte_node">
+      <funcprototype id="fproto_xte_node">
+        <funcdef><function>xte_node</function></funcdef>
+        <paramdef>in <parameter>head</parameter> any</paramdef>
+        <paramdef><optional>in <parameter>arg1</parameter> any</optional></paramdef>
+        <paramdef><parameter>...</parameter> </paramdef>
+        <paramdef><optional>in <parameter>argN</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_xte_node"><title>Description</title>
+    <para>This function returns the vector which corresponds to a XML element. The first
+    parameter is a head of the element. The remaining parameters are optional. 
+    Each optional parameter either is a XML element or a string. Two or more succesive strings are 
+    concatenated.
+    </para>
+  </refsect1>
+  <refsect1 id="xte_node"><title>Parameters</title>
+    <refsect2><title>argI</title>
+      <para>A XML element  or a string</para></refsect2>
+  </refsect1>
+
+  <refsect1 id="errors_xte_node">
+    <title>Errors</title>
+    <table><title>Errors signalled by <function>xte_node</function></title>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry>
+	  </row>
+	</thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>XTE02</errorcode></entry>
+	    <entry><errorname>Function <function>xte_node</function> should have at least one parameter</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  <para></para>
+  </refsect1>
+  <refsect1 id="xte_node"><title>Examples</title>
+    <example id="ex_xte_node"><title></title>
+      <para>The xte_node() call </para> 
+      <screen>xte_node(xte_head ('supplier', 'CompanyName', 'Seller'), 'this string will be ', 'concatenated with it')</screen>
+      <para>produces a vector corresponding the following XML element: </para>
+      <para> &lt;supplier  CompanyName="Seller"&gt;this string will be concatenated with it &lt;/supplier&gt;</para>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_xte_node"><title>See Also</title>
+    <para><link linkend="fn_xte_head">xte_head</link></para>
+    <para><link linkend="fn_xte_node_from_nodebld">xte_node_from_nodebld</link></para>
+    <para><link linkend="fn_xte_nodebld_acc">xte_nodebld_acc</link></para>
+    <para><link linkend="fn_xte_nodebld_final">xte_nodebld_final</link></para>
+    <para><link linkend="fn_xte_nodebld_init">xte_nodebld_init</link></para>
+  </refsect1>
+
+</refentry>
+

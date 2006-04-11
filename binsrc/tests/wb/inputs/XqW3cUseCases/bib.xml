@@ -1,0 +1,59 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE bib SYSTEM "bib.dtd">
+<bib>
+    <book year="1994">
+        <title>TCP/IP Illustrated</title>
+        <author><last>Stevens</last><first>W.</first></author>
+        <publisher>Addison-Wesley</publisher>
+        <price> 65.95</price>
+    </book>
+ 
+    <book year="1992">
+        <title>Advanced Programming in the Unix environment</title>
+        <author><last>Stevens</last><first>W.</first></author>
+        <publisher>Addison-Wesley</publisher>
+        <price>65.95</price>
+    </book>
+ 
+    <book year="2000">
+        <title>Data on the Web</title>
+        <author><last>Abiteboul</last><first>Serge</first></author>
+        <author><last>Buneman</last><first>Peter</first></author>
+        <author><last>Suciu</last><first>Dan</first></author>
+        <publisher>Morgan Kaufmann Publishers</publisher>
+        <price> 39.95</price>
+    </book>
+ 
+    <book year="1999">
+        <title>The Economics of Technology and Content for Digital TV</title>
+        <editor>
+               <last>Gerbarg</last><first>Darcy</first>
+                <affiliation>CITI</affiliation>
+        </editor>
+            <publisher>Kluwer Academic Publishers</publisher>
+        <price>129.95</price>
+    </book>
+ 
+</bib>

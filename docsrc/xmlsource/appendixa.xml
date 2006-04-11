@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="appendixa.xml" id="appendixa">
+  <abstract>
+    <para>This reference chapter contains information that needs to be found quickly
+    and accurately without specific guide lines to the topics in question.  This
+    chapter contains the SQL Grammar, listings of all system errors messages, release
+    notes for the product, how to get support on the product and a list of the
+    system tables and there schema definitions.</para>
+  </abstract>
+
+<title>Appendix</title>
+
+ &yacgrammar;
+ &errors;
+ &relnotes;
+ &support;
+ &systemtables;
+&migrate27to30;
+
+<sect1 id="apndxregexp"><title>Basic Syntax of Regular Expressions</title>
+
+<para>The two special symbols: <computeroutput>'^'</computeroutput> and 
+<computeroutput>'$'</computeroutput> indicate the <emphasis>start</emphasis> 
+and the <emphasis>end</emphasis> of a string respectively, like so:</para>
+
+<simplelist>
+  <member><computeroutput>^The</computeroutput>: matches any string 
+  that starts with The;</member>
+  <member><computeroutput>of despair$</computeroutput>: matches a 
+  string that ends in the substring of despair;</member>
+  <member><computeroutput>^abc$</computeroutput>: a string that 
+  starts and ends with abc -- that could only be abc itself!</member>
+  <member><computeroutput>notice</computeroutput>: a string that 
+  has the text notice in it.</member>
+</simplelist>
+
+<para>Without either of the above special character you are allowing the pattern 
+to occur anywhere inside the string.</para>
+
+<para>The symbols <computeroutput>'*'</computeroutput>, <computeroutput>'+'</computeroutput>, 
+and <computeroutput>'?'</computeroutput> denote the number of times a character 
+or a sequence of characters may occur.  What they mean is: zero or more, one or 
+more, and zero or one.  Here are some examples:</para>
+
+<simplelist>
+  <member><computeroutput>ab*</computeroutput>: matches a string 
+  that has an <emphasis>a</emphasis> followed by zero or more 
+  <emphasis>b</emphasis>'s (a, ab, abbb, etc.);</member>
+  <member><computeroutput>ab+</computeroutput>: same, but there is 
+  at least one <emphasis>b</emphasis> (ab, abbb, etc.);</member>
+  <member><computeroutput>ab?</computeroutput>: there might be a 
+  <emphasis>b</emphasis> or not;</member> 
+  <member><computeroutput>a?b+$</computeroutput>: a possible <emphasis>a</emphasis> 
+  followed by one or more <emphasis>b</emphasis>'s ending a string.</member>
+</simplelist>
+
+<para>You can also use <emphasis>bounds</emphasis>, which come inside braces 
+and indicate ranges in the number of occurences: </para>
+
+<simplelist>
+  <member><computeroutput>ab{2}</computeroutput>: matches a string that has an 
+  <emphasis>a</emphasis> followed by exactly two <emphasis>b</emphasis>'s 
+  (abb);</member>
+  <member><computeroutput>ab{2,}</computeroutput>: there are at least two 
+  <emphasis>b</emphasis>'s (abb, abbbb, etc.);</member>
+  <member><computeroutput>ab{3,5}</computeroutput>: from three to five 
+  <emphasis>b</emphasis>'s (abbb, abbbb, or abbbbb).</member>
+</simplelist>
+
+<para>Note, that you must always specify the first number of a range 
+(i.e, <computeroutput>{0,2}</computeroutput>, not <computeroutput>{,2}</computeroutput>).  
+Also, as you may have noticed, the symbols '*', '+', and '?' have the same effect 
+as using the bounds <computeroutput>{0,}</computeroutput>, 
+<computeroutput>{1,}</computeroutput>, and <computeroutput>{0,1}</computeroutput>, 
+respectively.</para>
+
+<para>Now, to quantify a sequence of characters, put them inside parentheses:</para>
+
+<simplelist>
+  <member><computeroutput>a(bc)*</computeroutput>: matches a string that has 
+  an <emphasis>a</emphasis> followed by zero or more copies of the sequence bc;</member>
+  <member><computeroutput>a(bc){1,5}</computeroutput>: one through five copies of bc.</member>
+</simplelist>
+
+<para>There's also the '|' symbol, which works as an OR operator:</para>
+
+<simplelist>
+  <member><computeroutput>hi|hello</computeroutput>: matches a string that has 
+  either hi or hello in it;</member>
+  <member><computeroutput>(b|cd)ef</computeroutput>: a string that has either 
+  bef or cdef;</member>
+  <member><computeroutput>(a|b)*c</computeroutput>: a string that has a 
+  sequence of alternating <emphasis>a</emphasis>'s and <emphasis>b</emphasis>'s 
+  ending in a <emphasis>c</emphasis>;</member>
+</simplelist>
+
+<para>A period ('.') stands for any single character:</para>
+
+<simplelist>
+  <member><computeroutput>a.[0-9]</computeroutput>: matches a string that has 
+  an <emphasis>a</emphasis> followed by one character and a digit;</member>
+  <member><computeroutput>^.{3}$</computeroutput>: a string with exactly 3 characters.</member>
+</simplelist>
+
+<para><emphasis>Bracket expressions</emphasis> specify which characters are 
+allowed in a single position of a string: </para>
+
+<simplelist>
+  <member><computeroutput>[ab]</computeroutput>: matches a string that has 
+  either an <emphasis>a</emphasis> or a <emphasis>b</emphasis>
+    (that's the same as <computeroutput>a|b</computeroutput>);</member>
+  <member><computeroutput>[a-d]</computeroutput>: a string that has lowercase 
+  letters 'a' through 'd' (that's equal to <computeroutput>a|b|c|d</computeroutput> 
+  and even <computeroutput>[abcd]</computeroutput>);</member>
+  <member><computeroutput>^[a-zA-Z]</computeroutput>: a string that starts with a letter;</member>
+  <member><computeroutput>[0-9]%</computeroutput>: a string that has a single 
+  digit before a percent sign;</member>
+  <member><computeroutput>,[a-zA-Z0-9]$</computeroutput>: a string that ends in 
+  a comma followed by an alphanumeric character.</member>
+</simplelist>
+
+<para>You can also list the characters that do NOT want -- just use a '^' as 
+the first symbol in a bracketted expression (i.e., 
+<computeroutput>%[^a-zA-Z]%</computeroutput> matches a string with a character 
+that is not a letter between two percent signs).</para>
+
+<para>Do not forget that bracket expressions are an exception to that 
+rule--inside them, all special characters, including the backslash ('\'), 
+lose their special powers (i.e., <computeroutput>[*\+?{}.]</computeroutput> 
+matches exactly any of the characters inside the brackets).  
+To include a literal ']' in the list, make it the first character 
+(following a possible '^'). To include a literal '-', make it the first or last 
+character, or the second endpoint of a range.</para>
+
+</sect1>
+
+<sect1 id="apndxclientcompilance"><title>Server &amp; client versions compatibility</title>
+    <para>
+	The RPC protocol has changed between 2.7 and 3.0 versions.  Thus, not all 
+	clients can connect to all servers.  For best results, the version should be identical on 
+	both ends of ODBC and JDBC connections.  However, the following table shows which 
+	combinations should generally be successful.
+    </para>
+      <table>
+	<tgroup cols="9">
+	  <tbody>
+	      <row>
+		  <entry>Driver/Server</entry>
+		  <entry>4.0</entry>
+		  <entry>3.5</entry>
+		  <entry>3.2</entry>
+		  <entry>3.1</entry>
+		  <entry>3.0</entry>
+		  <entry>2.7</entry>
+		  <entry>2.5</entry>
+		  <entry>2.1</entry>
+	      </row>
+	      <row>
+		  <entry>4.0</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+	      </row>
+	      <row>
+		  <entry>3.5</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+	      </row>
+	      <row>
+		  <entry>3.2</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+	      </row>
+	      <row>
+		  <entry>3.1</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+	      </row>
+	      <row>
+		  <entry>3.0</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+	      </row>
+	      <row>
+		  <entry>2.7</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+	      </row>
+	      <row>
+		  <entry>2.5</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+	      </row>
+	      <row>
+		  <entry>2.1</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>N</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+		  <entry>Y</entry>
+	      </row>
+	  </tbody>
+	</tgroup>
+      </table>
+</sect1>
+
+</chapter>

@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="functions.xml" id="functions">
+	<title>Virtuoso Functions Guide</title>
+	<bridgehead>Functions Reference</bridgehead>
+	<abstract>
+<para>The Virtuoso SQL Functions Guide contains  reference manual entries  for  
+built-in SQL functions and procedures.
+</para>
+<para>The Virtuoso XPATH &amp; XQUERY Functions Guide contains  reference manual entries   of the
+built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH, XSLT, XQuery.
+
+</para>
+</abstract>
+
+<!-- keep the following list up to date with any new categories
+     this how the titles are kept for the cat abbrevs -->
+
+<docinfo>
+  <keywordset>
+    <keyword id="admin">Administration</keyword>
+    <keyword id="aggr">Aggregate Functions</keyword>
+    <keyword id="array">Array Manipulation</keyword>
+    <keyword id="backup">Backup</keyword>
+    <keyword id="bpel">BPEL APIs</keyword>
+    <keyword id="bif">Virtuoso Server Extension Interface (VSEI)</keyword>
+    <keyword id="compression">Compression</keyword>
+    <keyword id="cursors">Cursor</keyword>
+    <keyword id="time">Date &amp; Time Manipulation</keyword>
+    <keyword id="debug">Debug</keyword>
+    <keyword id="encoding">Encoding &amp; Decoding</keyword>
+    <keyword id="file">File Manipulation</keyword>
+    <keyword id="ft">Free Text</keyword>
+    <keyword id="hash">Hashing / Cryptographic</keyword>
+    <keyword id="jvmpl">Virtuoso Java PL API</keyword>
+    <keyword id="ldap">LDAP</keyword>
+    <keyword id="localization">Locale</keyword>
+    <keyword id="mail">Mail</keyword>
+    <keyword id="number">Number</keyword>
+<!--    <keyword id="object">Object</keyword>-->
+    <keyword id="repl">Replication</keyword>
+    <keyword id="rmt">Remote Data Source</keyword>
+    <keyword id="soap">SOAP</keyword>
+    <keyword id="sql">SQL</keyword>
+<!--    <keyword id="stream">Stream</keyword>-->
+    <keyword id="string">String</keyword>
+    <!--keyword id="time">Time Manipulation</keyword-->
+    <keyword id="txn">Transaction</keyword>
+    <keyword id="type">Type Mapping</keyword>
+    <keyword id="uddi">UDDI</keyword>
+    <keyword id="udt">User Defined Types &amp; The CLR</keyword>
+    <keyword id="ws">Web Server &amp; Internet</keyword>
+    <keyword id="xml">XML</keyword>
+    <keyword id="XPATH">XPATH &amp; XQUERY</keyword>
+    <keyword id="misc">Miscellaneous</keyword>
+  </keywordset>
+</docinfo>
+
+<!-- Aggregate Functions -->
+&var; &var_samp; &var_pop; &stddev; &stddev_samp; &stddev_pop;
+&regr_syy; &regr_sxx; &regr_sxy; &regr_avgx; &regr_avgy;
+&regr_r2; &regr_count; &regr_intercept; &regr_slope;
+&covar_samp; &covar_pop; &corr;
+
+&abs; &any_grants; &aref; &ascii; &aset; &atof; &atoi; &att_local_name;
+
+&backup; &backup_online; &backup_context_clear; &bif_funcs;
+&bit_and; &bit_or; &bit_not; &bit_shift; &bit_xor;
+&blob_to_string; &blob_to_string_output; &bookmark;
+
+&ceiling; &cfg_item_count; &cfg_item_name; &cfg_item_value;
+&cfg_section_count; &cfg_section_name; &cfg_write;
+&charset_define; &charset_recode; &charsets_list; &checkpoint_interval; &chr; &client_attr;
+&collation_define; &complete_table_name; &composite; &composite_ref;
+&concat; &concatenate; &connection_get; &connection_id; &connection_is_dirty;
+&connection_set; &connection_vars; &connection_vars_set; &contains;
+&cov_load; &cov_report; &cov_store; &createXML; &curdate;
+&current_charset;
+
+&dateadd; &datediff; &datestring; &datestring_gmt;
+&dav_api_add; &dav_api_change; &dav_api_lock; &dav_api_search; &dav_api_user;
+&dav_exp; &dayname; &dayofmonth; &dayofweek; &dayofyear;
+&dbg_obj_print; &dbg_printf;
+&dbname; &delay; &disconnect_user; &dt_set_tz; &dvector;
+
+&end_result; &either; &elh_get_handler; &elh_load_handler; &encode_base64;
+&equ; &exec; &exec_close; &exec_next; &exec_result; &exec_result_names;
+&exp; &explain;
+
+&file_delete; &file_dirlist; &file_mkdir; &file_mkpath; &file_stat;
+&file_to_string; &file_to_string_output; &file_unlink;
+&fk_check_input_values; &floor;
+&ftp_get; &ftp_ls; &ftp_put;
+
+&get_certificate_info; &get_keyword; &get_keyword_ucase; &get_timestamp;
+&getdate; &gz_compress; &gz_uncompress;
+
+&hour; &http; &http_acl_get; &http_body_read; &http_client; &http_client_ip;
+&http_debug_log; &http_enable_gz; &http_file; &http_flush;
+&http_get; &http_header; &http_header_get; &http_kill; &http_listen_host; &http_map_table;
+&http_map_get; &http_param; &http_path; &http_pending_req; &http_physical_path; &http_proxy;
+&http_request_header; &http_request_status; &http_request_get; &http_rewrite; &http_root; &http_value;
+&http_url; &http_xslt;
+
+&identity_value; &import_clr; &import_jar; &initcap; &internal_to_sql_type; &internal_type;
+&internal_type_name; &isarray; &isblob; &isbinary; &isdouble; &isentity;
+&isfloat; &isinteger; &isnull; &isnumeric; &isstring; &iszero;
+
+&java_call_method; &java_set_property; &java_get_property;
+&java_load_class; &java_new_object; &java_vm_attach; &java_vm_detach;
+&jvm_ref_import;
+
+&lcase; &ldap_search; &ldap_delete; &ldap_add; &ldap_modify;
+&left; &length; &lfs_exp; &lh_get_handler; &lh_load_handler;
+&locate; &log; &log10; &log_enable; &log_text;
+&lower; &ltrim;
+
+&make_array; &make_string; &md5; &md5_init; &md5_update;
+&md5_final; &mime_body; &mime_part; &mime_tree; &minute; &mod; &month;
+&monthname; &msec_time; &mts_connect; &mts_get_timeout;
+&mts_set_timeout; &mts_status;
+
+&name_part; &nntp_auth_get; &nntp_auth_post; &nntp_get; &nntp_post; &now;
+
+<!-- &openxml; -->
+&os_chmod; &os_chown;
+
+&pem_certificates_to_array; &pldbg_stats; &pldbg_stats_load; &pop3_get;
+&position; &power; &prof_enable; &prof_sample;
+
+&quarter; &quote_dotted;
+
+&randomize; &rclose; &regexp_match; &regexp_parse; &regexp_substr;
+&regexp_replace; &regexp_instr; &regexp_like;
+&registry_get; &registry_get_all; &registry_name_is_protected; &registry_set;
+&registry_remove;
+&repeat; &replace; &replay; &repl_disconnect; &repl_grant;
+&repl_init_copy; &repl_new_log; &repl_publish; &repl_pub_add;
+&repl_pub_init_image; &repl_pub_remove; &repl_revoke; &repl_sched_init;
+&repl_server; &repl_server_rename; &repl_stat; &repl_status; &repl_subscribe;
+&repl_sync; &repl_sync_all; &repl_text; &repl_this_server; &repl_unpublish;
+&repl_unsubscribe; &repl_purge;
+&REPL_CREATE_SNAPSHOT_PUB; &REPL_CREATE_SNAPSHOT_SUB;
+&REPL_DROP_SNAPSHOT_SUB; &REPL_DROP_SNAPSHOT_PUB; &REPL_INIT_SNAPSHOT;
+&REPL_UPDATE_SNAPSHOT; &REPL_SNP_SERVER; &REPL_SERVER_NAME;
+&REPL_ADD_CR; &REPL_ADD_DAV_CR; &REPL_ADD_SNAPSHOT_CR;
+&result; &result_names; &rexecute; &rstmtexec; &right; &rmoreresults;
+&rnd; &rnext; &row_count; &rtrim;
+
+&search_excerpt;
+&second;
+&sequence_get_all;  &sequence_next; &sequence_remove; &sequence_set;
+&serialize; &serialize_to_UTF8_xml;
+&serv_queue_top; &ses_connect; &ses_disconnect;
+&ses_read_line; &ses_write; &set_row_count; &set_user_id; &set_identity_column; &sign; &signal;
+&sinv_create_key_mapping; &sinv_create_inverse; &sinv_drop_inverse;
+&smime_sign; &smime_verify; &smtp_send; &soap_box_xml_entity; &soap_dt_define;
+&soap_call; &soap_client; &soap_make_error; &soap_print_box; &soap_sdl;
+&soap_server; &soap_wsdl; &soap_wsdl_import; &soap_box_structure; &soap_current_url;
+&space; &split_decode; &sprintf;
+&sql_columns; &sql_data_sources; &sql_gettypeinfo; &sql_primary_keys;
+&sql_statistics; &sql_tables; &sql_special_columns; &sql_procedures;
+&sql_write_private_profile_string; &sql_get_private_profile_string;
+&sql_config_data_sources; &sql_get_installed_drivers;
+&sql_remove_dsn_from_ini; &sql_transact; &sql_write_file_dsn; &sql_driver_connect;
+&sqrt; &status; &strcasestr; &strchr; &stringdate; &stringtime; &string_output;
+&string_output_flush; &string_output_gz_compress; &string_output_string;
+&string_to_file; &strrchr; &strstr; &subseq; &substring; &sub_schedule;
+&system; &sys_db_stat; &sys_lockdown; &sys_stat; &sys_stat_analyze; &sys_stat_histogram;
+&table_set_policy; &table_drop_policy;
+
+&tcpip_gethostbyname; &tcpip_gethostbyaddr;
+
+&tmp_file_name; &tidy_html; &tidy_list_errors; &timezone; &trace_off; &trace_on;
+&trace_status; &tree_md5; &trigonometric; &trim; &txn_error; &txn_killall;
+
+&ucase; &uddi_delete_binding; &uddi_delete_business; &uddi_delete_service;
+&uddi_delete_tModel; &uddi_discard_authToken; &uddi_find_binding; &uddi_find_business;
+&uddi_find_service; &uddi_find_tModel; &uddi_get_authToken; &uddi_get_bindingDetail;
+&uddi_get_businessDetail; &uddi_get_businessDetailExt;
+&uddi_get_registeredInfo; &uddi_get_serviceDetail;
+&uddi_get_tModelDetail; &uddi_save_binding; &uddi_save_business; &uddi_save_service;
+&uddi_save_tModel; &udt_defines_field; &udt_get; &udt_implements_method;
+&udt_instance_of; &udt_set;
+&unimport_clr; &unimport_jar;
+&updateXML;
+&upper; &user_change_password; &user_create;
+&user_drop; &user_get_option; &user_grant_role; &user_revoke_role;
+&user_role_create; &user_role_drop; &user_set_qualifier; &user_set_option;
+&user_set_password; &username; &uudecode; &uuencode; &uuvalidate;
+
+&vad_check; &vad_check_installability; &vad_check_uninstallability; &vad_fail_check;
+&vad_install; &vad_load_file;	&vad_pack; &vad_safe_exec; &vad_uninstall;
+&vd_remote_data_source; &vd_remote_proc_wrapper; &vd_remote_table; &vd_statistics;
+&vdd_disconnect_data_source; &vdd_measure_rpc_time; &vector; &vector_concat;
+&vhost_define; &vhost_remove; &virtuoso_ini_path; &vsp_calculate_digest; &vt_batch;
+&vt_batch_d_id; &vt_batch_feed; &vt_batch_feed_offband; &vt_batch_update;
+&vt_create_text_index; &vt_drop_ftt; &vt_is_noise;
+
+&week; &wsdl_import_udt; &wst_cli;
+
+&dsig_template_ext; &x509_certificate_verify; &xenc_X509_certificate_serialize; &xenc_decrypt_soap;
+&xenc_delete_temp_keys; &xenc_encrypt; &xenc_get_key_algo; &xenc_get_key_identifier; &xenc_key_3DES_read;
+&xenc_key_3des_create; &xenc_key_3des_rand_create; &xenc_key_DSA_read; &xenc_key_RSA_read; &xenc_key_aes_create;
+&xenc_key_aes_rand_create; &xenc_key_create_cert; &xenc_key_dsa_create; &xenc_key_exists; &xenc_key_inst_create;
+&xenc_key_remove; &xenc_key_serialize; &xenc_set_primary_key;
+
+&xte_head; &xte_node; &xte_node_from_nodebld;
+&xte_nodebld_acc; &xte_nodebld_final; &xte_nodebld_init;
+&XMLAGG; &XMLATTRIBUTES; &XMLAddAttribute; &XMLAppendChildren; &XMLCONCAT; &XMLELEMENT; &XMLFOREST; &XMLInsertAfter; &XMLInsertBefore; &XMLReplace;
+&xml_auto; &xml_auto_dtd; &xml_auto_schema; &xml_create_tables_from_mapping_schema_decl;
+&xml_cut;
+&xml_doc_output_option;
+&xml_load_schema_decl; &xml_load_mapping_schema_decl;
+&xml_namespace_scope; &xml_path;
+&xml_persistent; &xml_template; &xml_tree; &xml_tree_doc; &xml_tree_doc_media_type;
+&xml_uri_get; &xml_validate_dtd; &xml_validate_schema; &xml_view_dtd;
+&xml_view_schema; &xmlsql_update; &xmlupdate; &xpath_eval; &xper_cut; &xper_doc;
+&xper_locate_words; &xper_navigation; &xpf_extension; &xpf_extension_remove;
+&xquery_eval; &xslt; &xslt_format_number;
+<!-- &xslt_profile_enable; --> &xslt_sheet;
+&xslt_stale; &xtree_doc;
+
+&xmlStorageSystem.registerUser; &xmlStorageSystem.mailPasswordToUser;
+&xmlStorageSystem.getServerCapabilities; &xmlStorageSystem.deleteMultipleFiles;
+&xmlStorageSystem.saveMultipleFiles;
+
+&XMLType.XMLType;
+&XMLType.createNonSchemaBasedXML;
+&XMLType.createSchemaBasedXML;
+&XMLType.createXML;
+&XMLType.existsNode;
+&XMLType.extract;
+&XMLType.getClobVal;
+&XMLType.getNamespace;
+&XMLType.getNumVal;
+&XMLType.getRootElement;
+&XMLType.getSchemaURL;
+&XMLType.getStringVal;
+&XMLType.isFragment;
+&XMLType.isSchemaBased;
+&XMLType.isSchemaValid;
+&XMLType.isSchemaValidated;
+&XMLType.schemaValidate;
+&XMLType.setSchemaValidated;
+&XMLType.toObject;
+&XMLType.transform;
+
+&xpfs;
+
+&bpel_compile_script;
+&bpel_copy_script;
+&bpel_get_partner_links;
+&bpel_instance_delete;
+&bpel_purge;
+&bpel_script_delete;
+&bpel_script_obsolete;
+&bpel_script_source_update;
+&bpel_script_upload;
+<!-- &bpel_script_version_cleanup; -->
+&bpel_wsdl_upload;
+&bpel_get_var;
+&bpel_set_var;
+&bpel_plink_get_option;
+&bpel_plink_set_option;
+&bpel_import_script;
+</chapter>

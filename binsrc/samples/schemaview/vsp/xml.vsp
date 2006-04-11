@@ -1,0 +1,58 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?include header.vsp?>
+
+<?vsp
+				FOR SELECT xt_text,xt_file FROM xml_text WHERE XT_ID=atoi(get_keyword('id',params)) DO
+				{
+				 declare xtext long varchar;	
+				 declare xtext_s any;
+				 declare line integer;
+				 declare linestr varchar;
+				 declare pos integer; 
+				 xtext_s:=string_output();
+				 http (xt_text, xtext_s);
+				 xtext:=string_output_string (xtext_s);
+				 http ('file: ','b');
+				 http_value (xt_file);
+				 line:=0;
+				 pos := strchr (xtext, '\n');
+				 http ('<pre>');
+whenever SQLSTATE '22011' goto loop_end;
+				 while (pos is not null)
+				 {
+				  line:=line+1;
+				  linestr:=substring(xtext, 0, pos);
+				  xtext:=subseq(xtext, pos+1, NULL);
+				  http_value(line);
+				  http_value(':\t|');
+				  http_value(concat(linestr,'\n'));
+				  pos:=strchr(xtext,'\n');
+				 };
+loop_end:
+				 http ('</pre>');
+				};
+?>
+
+
+<?include footer.vsp?>

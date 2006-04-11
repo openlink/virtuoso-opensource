@@ -1,0 +1,343 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1" ?><rss version="2.0">
+  <channel>
+    <title>Kingsley Idehen&#39;s Weblog</title>
+    <link>http://www.openlinksw.com:80/blog/~kidehen/</link>
+    <description>Knowledge, Information, and Data Dispatch Outlet</description>
+    <managingEditor>kidehen@openlinksw.com</managingEditor>
+    <pubDate>Fri, 17 Jun 2005 08:31:49 GMT</pubDate>
+    <generator>Virtuoso Universal Server 04.00.2804</generator>
+    <webMaster>kidehen@openlinksw.com</webMaster>
+    <image>
+      <title>Kingsley Idehen&#39;s Weblog</title>
+      <url>http://www.openlinksw.com:80/weblog/public/images/vbloglogo.gif</url>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/</link>
+      <description>Knowledge, Information, and Data Dispatch Outlet</description>
+      <width>88</width>
+      <height>31</height>
+    </image>
+    <cloud domain="localhost.localdomain" port="8889" path="/RPC2" registerProcedure="xmlStorageSystem.requestNotification" protocol="xml-rpc" />
+    <item>
+      <title>Wiki Introduction from CNET</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=854</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=854</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=854#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=854</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=854</n0:commentRss>
+      <pubDate>Thu, 16 Jun 2005 15:58:05 GMT</pubDate>
+      <content><div>
+News.com&#39;s Experience Edge has three short videos on <a href="http://news.com.com/1200-2-5741150.html">Evolving Collaboration</a>.
+</div><div>
+
+<p>
+
+</p><blockquote>
+<a href="http://news.com.com/1200-2-5741150.html"><img height="72" border="0" hspace="5" width="97" src="http://i.i.com.com/cnwk.1d/i/ne/bb/2005/06/0609wiki1.gif" align="left" /></a><a href="http://news.com.com/1200-2-5741150.html" class="storyhead">Wiki while you work </a>James Hilliard looks at the corporate wiki, an editable Web site designed for quick and easy group project management.
+<br />
+<br /><a href="http://news.com.com/1200-2-5741153.html"><img border="0" height="72" hspace="5" width="97" src="http://i.i.com.com/cnwk.1d/i/ne/bb/2005/06/0609wiki2.gif" align="left" /></a><a href="http://news.com.com/1200-2-5741153.html" class="storyhead">Getting &#39;wiki&#39; with the team  </a>Wiki users and experts offer insight on implementing a wiki at work, as well as on preparation for the learning and acceptance curve for both staff and management.
+<br />
+<br /><a href="http://news.com.com/1200-2-5741156.html"><img border="0" height="72" hspace="5" width="97" src="http://i.i.com.com/cnwk.1d/i/ne/bb/2005/06/0609wiki3split.gif" align="left" /></a><a href="http://news.com.com/1200-2-5741156.html" class="storyhead">Is business waking up to wiki? </a>John Seely Brown co-author of the recently released The Only Sustainable Edge and Socialtext CEO Ross Mayfield discuss the emerging role of the wiki in the evolution of corporate collaboration.
+</blockquote><div>
+The interviews provide explain wikis, their challenges and potential in a simple way.
+<p>
+
+</p><div>
+“
+</div><div>
+(Via <a href="http://ross.typepad.com/blog/">Ross Mayfield&#39;s Weblog</a>.)
+</div></div></div></content>
+    </item>
+    <item>
+      <title>Patent On Selling Information Revoked In The UK</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=852</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=852</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=852#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=852</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=852</n0:commentRss>
+      <pubDate>Thu, 09 Jun 2005 18:54:16 GMT</pubDate>
+      <content><p><a href="http://techdirt.com/articles/20050609/0711243_F.shtml">Patent On Selling Information Revoked In The UK</a>: &quot;We&#39;ve written about <a href="http://www.techdirt.com/search.pl?query=e-data">E-Data&#39;s patent claims</a> in the past.  They&#39;re the patent hoarding company that claims to have a patent (from 1985) on &#39;selling downloadable media&#39; that is transferred to a &#39;material object.&#39;  That, as you might imagine, is pretty broad, and has let them go after such companies as <a href="http://www.techdirt.com/articles/20040804/1743223_F.shtml">Amazon.com, the NY Times, American Greetings and Hallmark</a> for daring to &#39;sell downloadable media,&#39; when you&#39;d be hard pressed to prove that any of these companies got the idea for selling downloadable media from this particular patent.  They also went on to <a href="http://www.techdirt.com/articles/20031013/1957232_F.shtml">sue Microsoft for its music download service</a>.  While Microsoft actually <a href="http://www.techdirt.com/articles/20040120/1855251_F.shtml">paid up</a>, E-Data also went after Bill Gates&#39; <a href="http://www.techdirt.com/articles/20040504/1518211_F.shtml">Corbis</a> digital imaging company for violating their patents in Europe.  After all of this, a UK judge has now pointed out that the patent is ridiculous, <a href="http://www.internetnews.com/bus-news/article.php/3511351">throwing out the case <i>and the patent</i></a> in Europe.  The judge had a patent expert review this particular patent, and the guy noted that it&#39;s not at all clear what was being patented, since the patent: &#39;is lengthy, repetitive and somewhat confusing&#39; while using &#39;invented pseudo-technical terminology.&#39;  In fact, when you break down what the patent actually says: &#39;[it] comes close to being a patent for selling information.&#39;  It only took 20 years, countless lawsuits and a ton of wasted money on legal fees to figure that out.&quot;</p>
+
+<p>(Via <a href="http://www.techdirt.com/">Techdirt</a>.)</p></content>
+    </item>
+    <item>
+      <title>How Could Apple moving to Intel be viable</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=851</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=851</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=851#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=851</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=851</n0:commentRss>
+      <pubDate>Mon, 06 Jun 2005 16:47:24 GMT</pubDate>
+      <content><p>
+This post is part of an experiment to determine the conversational quality of Technorati vs Good old Usenet. We are approximately 30 minutes away from an announcement that will have profound impact on the computer industry (no matter how you look at it; even if nothing happens).
+</p><p>
+At the time of this post I decided to test the speculative conversational capabilities of Technorati vs Good old Usenet. My search keywords where: Apple Intel Transitive.
+</p><p>
+Here is what I got from Usenet via <a href="http://groups-beta.google.com/groups?q=transitive+apple+intel&amp;start=0&amp;scoring=d&amp;hl=en&amp;lr=&amp;">google</a> .
+</p><p>
+Here is what I got from <a href="http://www.technorati.com/cosmos/search.html?rank=&amp;url=transitive+apple+intel">Technorati</a>.
+</p><p>
+The beauty of the URIs above is that can use them to track speculative conversation about: Apple, Intel, and Transitive pre and post the 10.00 PST presentation by Steve Jobs.
+</p><p>
+Technorati (and similar services) overlap rather than integrate with the Usenet, and this experiment should at the very least test the value of services like Technorati for “Buzz Tracking” and “Buzz Research”.
+</p><p>
+BTW - This is why <a href="http://www.transitive.com/products.htm">Transitive</a> is so interesting today.
+</p></content>
+    </item>
+    <item>
+      <title>FireFox Semantic Web Extension: Piggy Bank 2.0 Beta</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=850</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=850</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=850#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=850</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=850</n0:commentRss>
+      <pubDate>Tue, 24 May 2005 18:37:20 GMT</pubDate>
+      <content><div align="left">I just found this interesting Semantic Web effort via</div></content>
+    </item>
+    <item>
+      <title>World Wide Web of Junk</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=849</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=849</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=849#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=849</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=849</n0:commentRss>
+      <pubDate>Fri, 20 May 2005 23:07:38 GMT</pubDate>
+      <content><div align="left">After digesting <a href="http://obliqueangle.blogspot.com/">Oblique Angle</a>&#39;s post titled: <a href="http://obliqueangle.blogspot.com/2005/05/world-wide-web-of-junk.html">World Wide Web of Junk</a>, it was nice to be reassured that I am not part of a shrinking minority of increasingly peturbed Web users. The post excerpt</div></content>
+    </item>
+    <item>
+      <title>When did Blogrolls Become Evil?</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=846</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=846</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=846#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=846</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=846</n0:commentRss>
+      <pubDate>Mon, 16 May 2005 18:34:33 GMT</pubDate>
+      <content><blockquote dir="ltr" style="MARGIN-RIGHT: 0px">
+<p>While I&#39;m still trying to figure this out, you should read Shelley&#39;s original post, <a href="http://weblog.burningbird.net/archives/2005/03/15/steve-levy-dave-sifrey-and-nz-bear-you-are-hurting-us/">Steve Levy, Dave Sifry, and NZ Bear: You are Hurting Us</a> and see whether you think the arguments against blogrolls are as wrong as I think they are. </p></blockquote>
+<div align="right">[via <a href="http://www.25hoursaday.com/weblog/">Dare Obasanjo aka Carnage4Life</a>]</div>
+<div align="left"> </div>
+<div align="left">Shelley&#39;s <a href="http://weblog.burningbird.net/archives/2005/03/15/steve-levy-dave-sifrey-and-nz-bear-you-are-hurting-us/">post</a> does bring attention to important issues relating to the blogosphere. It touches on how a simple matter can get complex very quickly. All of a sudden what was so simple, becomes pretty complex.</div>
+<div align="left"> </div>
+<div align="left">Blogrolls are completely ambiguous. We use them in a variety of ways, but the inherent ambiguity leads to misinterpretation, and in some cases it breeds dysfunctionality of the kind Shelley alludes to in this excerpt:</div>
+<blockquote dir="ltr" style="MARGIN-RIGHT: 0px">
+<div align="left">
+<p><em>&quot;..The Technorati Top 100 is too much like Google in that ânoiseâ becomes equated with âauthorityâ. Rather than provide a method to expose new voices, your list becomes nothing more than a way for those on top to further cement their positions. More, it can be easily manipulated with just the release of a piece of software..&quot;</em></p></div></blockquote>
+<div align="left"> </div>
+<div align="left">When blogrolls started to appear on blog home pages there was no blogosphere as we know it today (most viewing was browser as opposed to aggregator based). Blogrolls where a great way of bootstrapping a burgeoning blogosphere (a kind of &quot;look who&#39;s blogging now&quot; symbol). The issue of Blogrolls being dynamic, static, or genuinely meaningful was unimportant, unfortunately. In a sense they were simple, static, and in today&#39;s parlance: fashionably sloppy.</div>
+<div align="left"> </div>
+<div align="left">Today, we have a very extensive and lively blogosphere, it is now mainstream, and has basically become a data source in its own right; introducing challenges exemplified by our inability to clearly state the meaning and purpose of a blogroll.</div>
+<div align="left"> </div>
+<div align="left">The question of &quot;blogroll meaning&quot; may result in alternative use of &quot;<a href="http://developers.technorati.com/wiki/attentionxml">attention.xml</a>&quot; which has the prime goal of addressing challenges associated with tracking and reading posts from a large blog subscription pool. Why not use this as the basis for generating less ambiguous blogrolls?</div>
+<div align="left"> </div>
+<div align="left">The blogosphere has been an important catalyst for understanding the current Web 2.0 inflection as demonstrated by the transition from the Web Browsers to Feed Aggregators &amp; Readers for reading and tracking blogs (blog home pages are secondary aspects of the interaction with any given blog these days). Unfortunately, there is a general perception that Web 2.0 and the Semantic Web are mutually exclusive, primarily due to the perceived lofty goals of the latter (what&#39;s wrong with being challenged?). From my vantage point, I continue to see Web 2.0 as a necessary infrastructure component for the Semantic Web that will ultimately provide context for understanding why it&#39;s so important. </div>
+<div align="left"> </div>
+<div align="left">The Semantic Web will certainly aid in our ability to infer or deduce the meaning of a blog owner&#39;s published blogroll since it provides a vehicle for conveying such meaning in human and machine consumable forms. Until then, I remain stumped. I see where Shelley is coming from, but I don&#39;t know what to do with my blogroll right this moment :-) On the other hand I certainly know what I am planning to do with my real blogroll (not the snapshot you see today) in the not too distant future.</div>
+<div align="left"> </div></content>
+    </item>
+    <item>
+      <title>Planning the Software Industrial Revolution</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=841</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=841</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=841#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=841</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=841</n0:commentRss>
+      <pubDate>Fri, 13 May 2005 17:33:19 GMT</pubDate>
+      <content><p><a href="http://virtualschool.edu/cox/pub/PSIR/">Here</a> is another timeless article by Brad Cox titled: Planning The Software Industrial Revolution.</p>
+<p>Enjoy!</p></content>
+    </item>
+    <item>
+      <title>Social Construction of Reality</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=840</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=840</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=840#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=840</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=840</n0:commentRss>
+      <pubDate>Fri, 13 May 2005 11:31:42 GMT</pubDate>
+      <content><p>An interesting <a href="http://www.virtualschool.edu/mon/SocialConstruction/index.html">article</a> by <a href="http://www.virtualschool.edu/cox/">Brad Cox</a>. (inventor of <a href="http://en.wikipedia.org/wiki/Objective-C">Objective-C</a>) that&#39;s provides great foundation for a understanding number of issues that are relevant to social networking systems.</p></content>
+    </item>
+    <item>
+      <title>Bill Gates: Cell Phones Will Overtake MP3 Players, Calls iPod &#39;Unsustainable&#39;</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=837</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=837</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=837#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=837</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=837</n0:commentRss>
+      <pubDate>Fri, 13 May 2005 03:53:20 GMT</pubDate>
+      <content><blockquote dir="ltr" style="MARGIN-RIGHT: 0px">
+<p><a href="http://www.macobserver.com/article/2005/05/12.12.shtml">Bill Gates: Cell Phones Will Overtake MP3 Players, Calls iPod &#39;Unsustainable&#39;</a> Microsoft&#39;s chairman draws on computing history to make his proclamation that the iPod phenomenon won&#39;t... </p></blockquote>
+<div align="right">[via <a href="http://www.macobserver.com/">The Mac Observer</a>]</div>
+<div align="left">Hmm..!</div>
+<div align="left"> </div>
+<div align="left">I think this one speaks for itself! Kind of reminds me of the ominous round during the <a href="http://www.eastsideboxing.com/news.php?p=2100&amp;more=1">rumble in the jungle</a> when Ali asked Foreman: &quot;Is that all you got George!&quot;.</div>
+<div align="left"> </div>
+<div align="left">Again, Mac OS X vs Windows is a rendition of Ali vs Foreman (circa 1974) as stated in an earlier <a href="http://www.openlinksw.com/blog/kidehen@openlinksw.com/blog/index.vspx?id=793">post</a>; very much in line with the essence of the post fight analysis expressed below:</div>
+<blockquote dir="ltr" style="MARGIN-RIGHT: 0px">
+<div align="left">&quot;Why did Foreman lose to Ali? The fact is Ali beat Foreman because he was tougher and stronger than he&#39;s ever given credit for. Ali didn&#39;t box Foreman! He went to the ropes and allowed Foreman to hit on him, is that boxing? What if Foreman had knocked him out while he was stationary against the ropes. It would&#39;ve been said for the rest of time, why did Ali remain stationary letting Foreman get off on him? How come he didn&#39;t use the ring and box? Which is exactly what those watching the fight were thinking and saying during rounds two through eight. That&#39;s not boxing, that&#39;s being forced to fight because your opponent will not allow you to box.&quot;</div>
+<div align="left"> </div></blockquote>
+<div align="left" dir="ltr">The point I am trying to make here is simple: Bill&#39;s comments are more about hope than facts. The iPod does not define Apple, the company&#39;s future isn&#39;t inextricably linked to the iPod. The company&#39;s future (as I see it) isn&#39;t solely about Desktop Computing (the battle Microsoft won many years ago) or the use of the iPod to ramp up its future growth in this realm. Apple is clearly focused on &quot;Digital Life Style&quot;,  a broader incarnation of what Bill <a href="http://alia.org.au/advocacy/alw/1998/gates.response.html">described</a> as &quot;Web Life Style&quot; in the late 90&#39;s.</div>
+<div align="left" dir="ltr"> </div>
+<div align="left" dir="ltr">Apple clearly understands that the Internet is the new Operating System (OS). It also understands that this OS isn&#39;t solely about personal Desktop Computing. Most important of all, it understands that it cannot own this OS (so it won&#39;t repeat the fatal mistake of not licensing it to potential partners :-) ).  In a sense, the new OS protects Apple from itself (I see certainly understand Bill&#39;s <a href="http://www.openlinksw.com/blog/search.vspx?blogid=127&amp;q=apple+ipod%0D%0A%0D%0A&amp;type=text&amp;output=html">point</a> if Apple was just about the iPod).</div>
+<div align="left" dir="ltr"> </div>
+<div align="left" dir="ltr">Apple is using its significant prowess in technology, aesthetics and user experience innovation to provide great solutions (hardware and software) that empower users of this new OS. Tiger (nee. <a href="http://binarybonsai.com/archives/2005/01/29/jobs-nextstep-os/">OpenStep / NeXTSTEP OS</a>; the platform on which the first Web Browser was <a href="http://www.w3.org/People/Berners-Lee/WorldWideWeb.html">created</a>) is a great example, what a <a href="http://mlagazine.com/modules.php?op=modload&amp;name=News&amp;file=article&amp;sid=142">journey</a>! </div>
+<div align="left" dir="ltr"> </div></content>
+    </item>
+    <item>
+      <title>Standards Contempt Revisited</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=834</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=834</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=834#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=834</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=834</n0:commentRss>
+      <pubDate>Thu, 12 May 2005 15:11:14 GMT</pubDate>
+      <content><p>My entire time in the IT industry has been spent primarily trying to develop, architect, test, mentor, evangelize, and educate about one simple subject: Standards Appreciation!</p>
+<p>The trouble with &quot;Standards Appreciation&quot; is that vendors see standards from the following perspectives primarily:</p>
+<ol>
+<li>Yet another opportunity to lock-in the customer <br /></li>
+<li>If point 1. fails then undermine the standard vociferously (an activity that takes many covert forms; attack performance, security, and maturity)<br /></li>
+<li>Developers don&#39;t like standards (the real reason for this is to-do lists and timeframes in most cases)</li></ol>
+<p><a href="http://koranteng.blogspot.com">Korateng Ofusu-Amaah</a> provides insightful perspective on the issues above, in a recent &quot;must read&quot; <a href="http://koranteng.blogspot.com/2005/05/unloved-html-button-and-other.html">blog post</a> about how this dysfunctionality plays out today in the realm of HTML Buttons and Forms. Here are some notebable excerpts:</p>
+<blockquote dir="ltr" style="MARGIN-RIGHT: 0px">
+<p><em>&quot;Instead my discourse devolved into a case of I told you so, a kind of Old Testament view of things instead of the softer New Age stylings that are in vogue these days. Sure there was a little concern for the users that had been hurt by lost data, but there was almost no empathy for the developers who had to lose their weekends furiously reworking their applications to </em><a href="http://www.amazon.com/exec/obidos/ASIN/B00004XQMV/korantenstoli-20" /><em>do the right thing especially because it appeared that they would rather persist in trying to do the wrong thing. <br /><br />The sentiment behind that mini tempest-in-a-teapot however was a recognition of the fact that <span style="FONT-WEIGHT: bold">those who have been quietly evangelizing the web style were talking about the wrong thing and to the wrong people.&quot;</span> <br /><br />...</em></p>
+<p><em>&quot;..As application developers we should ask for better forms, we should be demanding of browser makers things like XForms or Web Forms 2.0 to make sure that we can go beyond the kind of stilted usability that we currently have. Our users would appreciate our efforts in that vein but for now, they know what to expect. Until then application developers should push back when we are told to &quot;do the wrong thing&quot;.</em></p></blockquote>
+<p>There is an unfortunate mindset trend at the current time that espouses: &quot;Sloppiness&quot; is good, and &quot;Simple&quot; justifies inadequacy at all times. Today, the real focus of most development endeavours is popularity first and coherance (backward compatibility, standards compliance, security, scalability etc.) a distant second, if you can simply make things popular then that justifies the sloppiness (acquisition, VC money, Blogosphere Juice etc.). Especially as someone else will ultimately have to deal with the predictable ramifications of the sloppiness. </p>
+<p>Standards are critical to the success of IT investment within any enterprise, but standards are difficult to design, write, implement, and then comprehend; due to the inherent requirement for abstraction - it&#39;s a top down, as opposed to bottom up, process.</p>
+<p>Vendors will never genuinely embrace standards, until IT decision makers demand standards compliance of them, by demonstrating a penchant for smelling out &quot;<a href="http://www.joelonsoftware.com/articles/LeakyAbstractions.html">leaky abstractions</a>&quot; embedded within product implementations. Naturally, this requires a fundamental change of mindset for most decision makers. It means moving away from the &quot;this analyst said...&quot;, &quot;I heard that company X is going to deliver....&quot;, &quot;I read that .....&quot;, &quot;I saw that demo...&quot; approach to product evaluation, to a more knowledgeable evaluation process that seeks out the What, Why, and How of any prospective IT solution.  </p>
+<p>Knowledge empowers all of the time. It&#39;s a gift that stands the test of time once you invest some time in its acquisition (unfortunately this gift isn&#39;t free!). Ignorance with all its superficial seduction (free and widely available!), is temporary bliss at best, and nothing but heartache over time. </p></content>
+    </item>
+    <item>
+      <title>A Collection of PHP and ODBC How-To Links</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=831</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=831</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=831#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=831</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=831</n0:commentRss>
+      <pubDate>Sun, 01 May 2005 15:46:45 GMT</pubDate>
+      <content><p>In 2005 I am somewhat surprised at the steady level of emails and commentary expressing confusion about the use of PHP and ODBC.</p>
+<p>Here are a few links that resolve any confusion about this matter:</p>
+<ol>
+<li>OpenLink&#39;s PHP and iODBC HOWTO doc: <a href="http://www.iodbc.org/index.php?page=languages/php/odbc-phpHOWTO">http://www.iodbc.org/index.php?page=languages/php/odbc-phpHOWTO</a><br /></li>
+<li>PHP Everywhere&#39;s guide: <a href="http://phplens.com/phpeverywhere/node/view/9">http://phplens.com/phpeverywhere/node/view/9</a><br /></li>
+<li>Zili Zhang&#39;s piece from 1999 (time flies!): <a href="http://www.tldp.org/HOWTO/MSSQL6-Openlink-PHP-ODBC.html">http://www.tldp.org/HOWTO/MSSQL6-Openlink-PHP-ODBC.html</a><br /></li>
+<li>Zend&#39;s ODBC Tutorial: <a href="http://www.zend.com/zend/tut/odbc.php">http://www.zend.com/zend/tut/odbc.php</a> </li></ol>
+<p>Or simple google on PHP and ODBC or PHP and iODBC ...</p></content>
+    </item>
+    <item>
+      <title>Point, Counterpoint: Mac OS X Is Great for Fortysomething Unix Hackers</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=828</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=828</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=828#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=828</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=828</n0:commentRss>
+      <pubDate>Sun, 01 May 2005 14:31:01 GMT</pubDate>
+      <content>There has been a lot of well deserved attention going the way of &quot;Mac OS X Tiger&quot;. A the current time, a lot of this attention tends to focus on the consumer constituency comprised of Aunt Milly et al, designers, and new media aficionados. The <a href="http://daringfireball.net/">Daring Fireball</a> posts an article titled: <a href="http://daringfireball.net/2005/04/point_counterpoint">Point, Counterpoint: Mac OS X Is Great for Fortysomething Unix Hackers</a> . This particular post applies to OpenLink Software in general across a myriad of fronts, especially the essence of this excerpt:
+<blockquote dir="ltr" style="MARGIN-RIGHT: 0px">
+<p>On the surface, Grahamâs piece seems like a nice pat on the back to the Mac platform. But thereâs an implication in his piece that the worldâs most prodigiously talented programmers are only now switching (or switching back) to the Mac, when in fact some of them have been here all along. GUI programming is hard, and for GUI programmers, the Mac has always been, <a href="http://www.shapeofdays.com/2005/01/interview_with_.html">in Brent Simmonsâs words</a>, âThe Showâ.</p>
+<p>I.e. the idea that by the mid-â90s the Mac user base had been whittled down to âgraphic designers and grandmasâ is demonstrably false â someone must have been writing the software the designers and grandmas were using, no? â but I donât think itâs worth pressing the point, because I suspect it wasnât really what Graham meant to imply. And the main thrust of his point is true: there is a certain class of hackers â your prototypical Unix nerds â who not only werenât using Macs a decade ago, but whose antipathy toward Macs was downright hostile. And it is remarkable that these hackers are now among Mac OS Xâs strongest adherents.</p>
+<p>Itâs another sign of Mac OS Xâs dual nature: from the perspective of your typical user (and particularly long-time Mac users), it is the Mac OS with a modern Unix architecture encapsulated under the hood; from the perspective of the hackers Graham writes of, it is Unix with a vastly superior GUI.</p></blockquote>
+<p dir="ltr"><a href="http://daringfireball.net/2005/04/point_counterpoint">Read on....</a></p></content>
+    </item>
+    <item>
+      <title>Ajax, Hard Facts, Brass Tacks ... and Bad Slacks</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=825</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=825</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=825#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=825</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=825</n0:commentRss>
+      <pubDate>Fri, 29 Apr 2005 20:11:22 GMT</pubDate>
+      <content><p>By <a href="http://internet-apps.blogspot.com/">Mark Bierbeck</a>:</p>
+<p><a href="http://internet-apps.blogspot.com/2005/04/ajax-hard-facts-brass-tacks-and-bad.html">Ajax, Hard Facts, Brass Tacks ... and Bad Slacks</a> </p>
+<n0:div xmlns:n0="http://www.w3.org/1999/xhtml">A number of people have contacted me recently about Ajax [<n0:a href="about:blank#20050426-1">1</n0:a>] -- a catchy name -- coined to provide an umbrella term for a particular group of technologies used to build web applications. The use of the word comes from Jesse James Garrett in a recent blog [<n0:a href="about:blank#20050426-2">2</n0:a>], and describes a class of internet applications written using JavaScript in a browser. By using JavaScript these apps have full access to the DOM, and as a consequence are able to make all sorts of changes to the page that the user is interacting with, without having to go back to the server.<n0:br /><n0:br />When the application <n0:em>does</n0:em> need to go back to the server -- to deliver some data and get a response -- the idea is to keep the DOM intact so that the user has a smooth experience. This means that all communication with the server needs to take place outside of the normal HTML form mechanism, since this would obviously replace the current page.<n0:br /><n0:br />Ajax addressed this, with what it calls &#39;asynchronous-JavaScript&#39; -- retrieve only the data you need, and then directly manipulate the DOM to get the effect you want. &#39;Asynchronous-JavaScript&#39; accounts for the first few letters of the name, with the remainder being the obligatory &#39;X&#39; for XML (although XML is not really key to this technology, and many of the applications that are often cited as Ajax-apps don&#39;t use XML as the data medium).<n0:br /><n0:br />
+<n0:h2>Buzzing</n0:h2>The response to Ajax has been pretty positive. In fact the only negatives have been either to suggest a change of name or to moan a little that &quot;I&#39;ve been doing this for years, why hasn&#39;t anyone noticed me?&quot; (I won&#39;t put any links to those sort of articles, since they are a little embarassing -- after all, <n0:em>everyone</n0:em> has been doing this for years!)<n0:br /><n0:br />Anyway, despite a couple of sour-pusses, the software community is almost universally excited, and the blog wires have glowed over the last few months with descriptions of Google Maps, GMail, and so on.<n0:br /><n0:br />Just about everyone who has asked me about Ajax has expected me to be disappointed. Surely, they say, this makes the case for XForms weaker? But my answer is the exact opposite -- XForms and standards-based web applications are in every way superior to the techniques described as Ajax, since the whole <n0:em>raison d&#39;Ãªtre</n0:em> of XForms and XHTML 2 is to address the very problems that Ajax-like techniques suffer from.<n0:br /><n0:br />That may come across as a little bold...so perhaps I should explain.<n0:br /><n0:br />
+<n0:h2>From Workaround to Feature</n0:h2>We&#39;ve all been using HTML mark-up for years now, and the language hasn&#39;t changed much in that time. As a consequence, the increasing demand for more complex web-pages has meant that the balance in our documents has shifted increasingly from vanilla mark-up to &#39;the workaround&#39;. <n0:br /><n0:br />Whether it&#39;s providing tooltips, dynamic/repeating data sections, or small portions of our page that change without having to request a new document, we&#39;ve generally had to dive into script. But the shift from mark-up to script has meant that the mark-up language itself has been relegated to a mere carrier for programs.<n0:br /><n0:br />Unfortunately this means that no-one gains -- it&#39;s annoying for the programmer to have to produce ever more convoluted spaghetti JavaScript to meet the demands of their audience, but it&#39;s also annoying for the non-programmer, who probably only wants a tooltip. And its particularly annoying for those who want to use documents on the web for more ambitious applications to find that most of the important stuff in a document is hidden away in script.<n0:br /><n0:br />All is not lost, however, since this collection of &#39;workarounds&#39; provides a rich source of real-life patterns that appear for authors and programmers, time and again. They may be workarounds, but they are much-needed ones.<n0:br /><n0:br />The aim of the new generation of languages like XForms and XHTML 2 is to take these &#39;common patterns&#39; and turn them into mark-up. Just like the HTML elements <n0:code>&lt;a&gt;</n0:code> and <n0:code>&lt;form&gt;</n0:code> pack an enormous amount of functionality into deceptively simple tags, so too can new declarative mark-up capture patterns that have emerged &#39;in the wild&#39;.<n0:br /><n0:br />(Note that this is the opposite of so-called folksonomies, where popular practice that occurs in the wild is left it the wild, and codification is regarded as a dirty word.)<n0:br /><n0:br />
+<n0:h2>The XML HTTP Request Object</n0:h2>Let&#39;s take the much talked about XML HTTP Request Object (XMLHttpRequest). If you are not familiar with it, it was originally part of Microsoft&#39;s XML parser, and allows you to send and receive data outside of the normal HTML form processing. Since it&#39;s a handy feature to have in a client, other browsers have followed suit and it&#39;s now becoming the &#39;standard&#39; way to communicate with servers without messing up your page. It&#39;s a corner-stone of Ajax. (A good summary with examples is on Jim Ley&#39;s jibbering.com site [<n0:a href="about:blank#20050426-3">3</n0:a>].)<n0:br /><n0:br />But...we need to be clear that we&#39;re using XMLHttpRequest to get round a weakness in HTML forms. The problem we have is that even if you know that a server is about to give you some data, and the <n0:em>server</n0:em> knows it&#39;s about to give you some data, there&#39;s no way to tell your <n0:em>form</n0:em> that -- instead your page will be wiped out and replaced with whatever the server sends back.<n0:br /><n0:br />Of course, constant round-tripping doesn&#39;t make it completely impossible to produce applications, and a lot of books and airline tickets are bought every day without the facility to get &#39;just the data&#39;. But we all know it would reduce network traffic and create a smoother user experience if we could just send a list of books or seats, rather than a whole new page.<n0:br /><n0:br />Over the years applications such as Microsoft&#39;s <n0:em>Outlook Web Access</n0:em> (OWA), have had to step around the HTML form to get just the data they need. But, whilst OWA considerably predates GMail, until the advent of XMLHttpRequest, the techniques used were quite difficult to manage. (Google Suggest is often cited as a good example of an Ajax-app, but interestingly merges old and new techniques; XMLHttpRequest is used to obtain a piece of JavaScript from a server, and this script contains a call to a client-side function, but using server-provided parameters. It&#39;s one of the techniques you might have used in the past with a hidden frame.)<n0:br /><n0:br />So as many have said on their blogs, XMLHttpRequest is not a newly devised technique, but rather a generally accepted replacement for a very old technique. But ultimately that technique is a workaround since the <n0:em>real</n0:em> problem is that HTML forms will always replace the current page.<n0:br /><n0:br /><n0:br />
+<n0:h2>Beyond HTML Forms</n0:h2>Whilst XMLHttpRequest gives us a way to get data to and from the server without losing our document, we&#39;ve unfortunately thrown the baby out with the bath-water; whatever the weaknesses of HTML forms, you have to acknowledge that they are pretty simple to use. Here&#39;s an abbreviated version of Google&#39;s search form (note that the mark-up is HTML, not XML):<n0:br /><n0:code><n0:pre><n0:br />&lt;form action=/search name=f&gt;<n0:br />  &lt;input type=hidden name=hl value=en&gt;<n0:br />  &lt;input maxLength=256 size=55 name=q value=&quot;&quot;&gt;<n0:br />  &lt;input type=submit value=&quot;Google Search&quot; name=btnG&gt;<n0:br />&lt;/form&gt;<n0:br />
+</n0:pre></n0:code><n0:br />As you can see, the simple problem with HTML forms is that we don&#39;t say anything about where the data should go when we&#39;ve received it from the server. The assumption in HTML of old is that we are just doing a kind of &#39;super-navigation&#39;, and no matter what we send to the server, it will only ever give us back a new web-page. (To put it a different way, you could say that <n0:code>&lt;a&gt;</n0:code> and <n0:code>&lt;form&gt;</n0:code> are pretty much the same thing.)<n0:br /><n0:br />To see how this problem is resolved, let&#39;s code the same Google search in XForms:<n0:br /><n0:code><n0:pre><n0:br />&lt;xf:submission id=&quot;sub-search&quot;<n0:br /> action=&quot;http://www.google.com/complete/search?hl=en&quot;<n0:br /> method=&quot;get&quot; separator=&quot;&amp;&quot;<n0:br /> replace=&quot;all&quot;<n0:br />/&gt;<n0:br />
+<n0:br />&lt;xf:input ref=&quot;q&quot;&gt;<n0:br />  &lt;xf:label&gt;Query:&lt;/xf:label&gt;<n0:br />&lt;/xf:input&gt;<n0:br />
+<n0:br />&lt;xf:submit submission=&quot;sub-search&quot;&gt;<n0:br />  &lt;xf:label&gt;Google Search&lt;/xf:label&gt;<n0:br />&lt;/xf:submit&gt;<n0:br />
+</n0:pre></n0:code><n0:br />Although it will do exactly the same -- right down to replacing the current page -- it&#39;s a little different to the HTML mark-up. But the changes in structure have given us some major benefits, from accessible labels on our form controls, to the possibility of many different submissions for the same data.<n0:br /><n0:br />But what it has also given us is the possibility of solving our data update problem. The <n0:code>replace</n0:code> attribute is actually optional in XForms, but I showed it in the previous mark-up so that you can compare it to this:<n0:br /><n0:code><n0:pre><n0:br />&lt;xf:submission id=&quot;sub-search&quot;<n0:br /> action=&quot;http://www.google.com/complete/search?hl=en&quot;<n0:br /> method=&quot;get&quot; separator=&quot;&amp;&quot;<n0:br /> replace=&quot;<n0:span style="COLOR: red">instance</n0:span>&quot;<n0:br />/&gt;<n0:br />
+</n0:pre></n0:code><n0:br />In this example the data returned from the server will just replace the instance that was sent, and our page will remain completely intact. (The <n0:code>replace</n0:code> attribute can take the values <n0:code>all</n0:code>, <n0:code>instance</n0:code>, or <n0:code>none</n0:code>.)<n0:br /><n0:br />I won&#39;t show the full equivalent using XMLHttpRequest since it&#39;s pretty large, but I&#39;ll give a flavour of it. (Jim Ley&#39;s page -- referenced earlier -- shows how to search Google with XMLHttpRequest.)<n0:br /><n0:br />
+<n0:h3>The Script Version</n0:h3>First we need to create an XMLHttpRequest object, but we need to do it in such a way that it will work on both Mozilla and IE:<n0:br /><n0:code><n0:pre><n0:br />var req;<n0:br />
+<n0:br />function loadXMLDoc(url) {<n0:br />    // native XMLHttpRequest object<n0:br />    if (window.XMLHttpRequest) {<n0:br />        req = new XMLHttpRequest();<n0:br />        req.onreadystatechange = readyStateChange;<n0:br />        req.open(&quot;GET&quot;, url, true);<n0:br />        req.send(null);<n0:br />    // IE/Windows ActiveX version<n0:br />    } else if (window.ActiveXObject) {<n0:br />        req = new ActiveXObject(&quot;Microsoft.XMLHTTP&quot;);<n0:br />        if (req) {<n0:br />            req.onreadystatechange = readyStateChange;<n0:br />            req.open(&quot;GET&quot;, url, true);<n0:br />            req.send();<n0:br />        }<n0:br />    }<n0:br />}<n0:br />
+</n0:pre></n0:code><n0:br />When a document is loaded via this function, the <n0:code>readyStateChange()</n0:code> method is invoked:<n0:br /><n0:code><n0:pre><n0:br />function readyStateChange() {<n0:br />    // &#39;4&#39; means document &quot;loaded&quot;<n0:br />    if (req.readyState == 4) {<n0:br />        // 200 means &quot;OK&quot;<n0:br />        if (req.status == 200) {<n0:br />            // do something here<n0:br />        } else {<n0:br />            // error processing here<n0:br />        }<n0:br />    }<n0:br />}<n0:br />
+</n0:pre></n0:code><n0:br />From a <n0:em>programming</n0:em> point of view, I guess you could say that there isn&#39;t a lot wrong with this, but then from a programming point of view there wasn&#39;t a lot wrong with Z80 or 6502 assembly languages -- I just wouldn&#39;t want to go back to them!<n0:br /><n0:br />But the most important issue is that we have lost the very thing that was responsible for HTML&#39;s success -- the use of simple, clear, declarative mark-up, in which we simply state our intent, without having to write a program to do it for us. After all, the web took off because authors only had to master <n0:code>&lt;a&gt;</n0:code> in order to enter the exciting new world of &#39;hypertext&#39; -- but XMLHttpRequest raises the bar again, and takes us right back into the heart of geek-world.<n0:br /><n0:br />
+<n0:h2>Beyond XMLHttpRequest</n0:h2>But in keeping with the principle that I outlined above -- that XForms and XHTML 2 try to provide mark-up for commonly existing design patterns -- let&#39;s see if there are any other patterns that XMLHttpRequest has thrown up.<n0:br /><n0:br />You will have noticed in the earlier script that we had tests for success and failure:<n0:br /><n0:code><n0:pre><n0:br />if (req.status == 200) {<n0:br />  // do something here<n0:br />} else {<n0:br />  // error processing here<n0:br />}<n0:br />
+</n0:pre></n0:code><n0:br />XForms provides the same functionality through the use of events -- on success do this, on failure do that. This is far more powerful, since it hides the protocol-specific aspects of this code (&quot;200&quot; may be &#39;success&#39; for HTTP, but it isn&#39;t &#39;success&#39; when saving data to the hard-drive or sending an email).<n0:br /><n0:br />XForms uses declarative mark-up to express those events, which again dramatically reduces coding:<n0:br /><n0:code><n0:pre><n0:br />&lt;xf:action ev:observer=&quot;sub-search&quot; ev:event=&quot;xforms-submit-error&quot;&gt;<n0:br />  &lt;xf:message level=&quot;modal&quot;&gt;<n0:br />    Submission failed<n0:br />  &lt;/xf:message&gt;<n0:br />&lt;/xf:action&gt;<n0:br />
+</n0:pre></n0:code><n0:br />But there&#39;s lots, lots more in the <n0:code>submission</n0:code> part of XForms:<n0:br />
+<n0:ul><n0:br />
+<n0:li>it can provide full XML Schema validation before submitting the data;</n0:li><n0:br />
+<n0:li>there is built in support for numerous types of serialisation, such as <n0:code>multipart/related</n0:code>;</n0:li><n0:br />
+<n0:li>abstract methods are used so the code is independent of protocol. For example, since <n0:code>put</n0:code> means the same thing whether the target URL begins <n0:code>http:</n0:code> or <n0:code>file:</n0:code>, a form with relative paths will run unchanged on a local machine or a web server;</n0:li><n0:br />
+<n0:li>it&#39;s extensible -- in formsPlayer 2.0 we have used the <n0:code>submission</n0:code> element to read and write from an ADO database, allowing programmers to convert forms from using the web to using a local database by doing nothing more than changing a single target URL. (Try doing that with XMLHttpRequest!)</n0:li><n0:br /></n0:ul><n0:br /><n0:br />The <n0:code>submission</n0:code> part of XForms is in fact so powerful that it will eventually form a separate specification, for use in other languages.<n0:br /><n0:br />
+<n0:h2>From Patterns to Mark-up</n0:h2>And there are plenty more patterns out there that were crying out to be turned into mark-up, and which are now incorporated into XForms and XHTML 2. Do you remember the days when if we wanted a tooltip that contained mark-up -- perhaps an image, or bold text -- we had to use a carefully placed <n0:code>&lt;div&gt;</n0:code>, a CSS <n0:code>display: none;</n0:code>, a <n0:code>mouseover</n0:code> event handler and a timer? Nowadays the programmer with better things to do than work with spaghetti-JavaScript just uses the XForms <n0:code>&lt;hint&gt;</n0:code> element, and for free they get platform independence (and therefore accessibility), as well as the ability to insert any mark-up.<n0:br /><n0:br />And what about the days when we had to write code to open up a text-to-speech engine, and then invoke the various methods on the object to get it to speak its mind? Nowadays who wouldn&#39;t just use a CSS property on their XForms&#39; <n0:code>message</n0:code>s?<n0:br /><n0:br />
+<n0:h3>Bad Slacks</n0:h3>And do you remember...I&#39;m sorry, this one always makes me laugh...do you remember how we used to write lots of JavaScript to recalculate the shopping-cart when a new item was added? I know it&#39;s hard to believe -- it&#39;s like looking at old photos of us all wearing flares. Anyway, thank God for straight trousers and the XForms dependency-engine.<n0:br /><n0:br /><n0:img border="1" src="http://www.npr.org/programs/morning/features/2004/sep/fashion_week/satfever_nano140.jpg" /> <n0:br />But enough of the good old days, the days of assembly language, C and JavaScript...let&#39;s stick with the new.<n0:br /><n0:br />
+<n0:h2>Do Try This at Home</n0:h2><n0:br />To round all of this off, we&#39;ll take a look at Google Suggest, and we&#39;ll use XForms to implement it. I&#39;ll walk through the demo in a separate blog [<n0:a href="about:blank#20050426-4">4</n0:a>] so that this one doesn&#39;t get too cluttered -- and hopefully by disecting this simple but useful application, we can show how declarative mark-up scores over scripting.<n0:br /><n0:br /><n0:br /><n0:a name="20050426-1">[1] Will AJAX help Google clean up?, c|net, <n0:a href="http://news.com.com/Will+AJAX+help+Google+clean+up/2100-1032_3-5621010.html">http://news.com.com/Will+AJAX+help+Google+clean+up/2100-1032_3-5621010.html</n0:a> <n0:br /><n0:br /><n0:a name="20050426-2">[2] Ajax: A New Approach to Web Applications, Jesse James Garrett, Adaptive Path blog, <n0:a href="http://www.adaptivepath.com/publications/essays/archives/000385.php">http://www.adaptivepath.com/publications/essays/archives/000385.php</n0:a> <n0:br /><n0:br /><n0:a name="20050426-3">[3] Using the XML HTTP Request object, <n0:a href="http://jibbering.com/2002/4/httprequest.html">http://jibbering.com/2002/4/httprequest.html</n0:a> <n0:br /><n0:br /><n0:a name="20050426-4">[4] &quot;Google Suggest&quot; Using XForms, <n0:a href="http://internet-apps.blogspot.com/2005/04/google-suggest-using-xforms.html">http://internet-apps.blogspot.com/2005/04/google-suggest-using-xforms.html</n0:a> <n0:br /><n0:br />Tags: <n0:a href="http://technorati.com/tag/xforms" rel="tag">xforms</n0:a> | <n0:a href="http://technorati.com/tag/xbl" rel="tag">xbl</n0:a> | <n0:a href="http://technorati.com/tag/webapps" rel="tag">webapps</n0:a> | <n0:a href="http://technorati.com/tag/ajax" rel="tag">ajax</n0:a> | <n0:a href="http://technorati.com/tag/javascript" rel="tag">javascript</n0:a> </n0:a></n0:a></n0:a></n0:a></n0:div>
+<div align="right">[via <a href="http://internet-apps.blogspot.com/">Internet Applications</a>]</div></content>
+    </item>
+    <item>
+      <title>Microsoft: Longhorn Is Great, XP Is Lame</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=822</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=822</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=822#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=822</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=822</n0:commentRss>
+      <pubDate>Fri, 29 Apr 2005 16:11:01 GMT</pubDate>
+      <content><a href="http://techdirt.com/articles/20050428/1051254_F.shtml">Microsoft: Longhorn Is Great, XP Is Lame</a> Software vendors walk a fine line when pushing upgrades -- tout the new version without slamming the old one. Microsoft threw that strategy aside in pumping Longhorn to the WinHEC faithful, as execs <a href="http://www.pcadvisor.co.uk/index.cfm?RSS&amp;moreover&amp;go=news.view&amp;news=4701">belittled Windows XP in the process</a>. One VP said that XP hadn&#39;t been thought through and at times &quot;failed to deliver.&quot; The surprising part is not that XP has major shortcomings -- early on its enhancements were recognized as little more than <a href="http://www.techdirt.com/articles/20010824/0856205_F.shtml">improved stability</a> and <a href="http://www.techdirt.com/articles/20011008/0111217_F.shtml">a bunch of bug fixes</a>. Rather, the interesting part is Microsoft actually admitting to drawbacks at all, even several years late. But Longhorn, now there&#39;s a <i>real</i> operating system!
+<div align="right">[via <a href="http://www.techdirt.com/">Techdirt</a>]</div></content>
+    </item>
+    <item>
+      <title>SAP, IBM Make Play for Oracle Database Customers With New DB2 Version</title>
+      <guid>http://www.openlinksw.com:80/blog/~kidehen/?id=819</guid>
+      <link>http://www.openlinksw.com:80/blog/~kidehen/?id=819</link>
+      <comments>http://www.openlinksw.com:80/blog/~kidehen/?id=819#comments</comments>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <n0:comment xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/mt-tb/Http/comments?id=819</n0:comment>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://www.openlinksw.com:80/blog/~kidehen/gems/rsscomment.xml?:id=819</n0:commentRss>
+      <pubDate>Thu, 28 Apr 2005 21:52:55 GMT</pubDate>
+      <content><font size="2">
+<p><a href="http://ct.enews.eweek.com/rd/cts?d=186-1965-11-96-81585-221904-0-0-0-1">CNET reports</a>:</p>
+<blockquote dir="ltr" style="MARGIN-RIGHT: 0px">
+<p>There are a whopping <u>44,000 SAP customers</u> running on Oracle databases, and IBM wants them. To get them, for the first time ever, it&#39;s optimized its enterprise database for a specific vendor&#39;s applications. The new version of DB, 8.2.2, will include a slew of SAP-optimized features, including self-tuning, self-configuration, silent install, dynamic storage allocation and more. </p></blockquote>
+<p dir="ltr">Wouldn&#39;t SAP be better served by simply making their application database independent via <a href="http://uda.openlinksw.com/odbc/">ODBC</a>? This process really could have commenced years ago and prevented today&#39;s dilema: Your Partner has become Your most aggressive Competitor! </p>
+<p dir="ltr">SAP tuned for specifically for DB2 or SAP tuned likewise for Microsoft SQL simply reeks of: &quot;Same Sh*t different Pile&quot;.  Microsoft and IBM will emulate Oracle in due course regarding their assault on SAP&#39;s market if DBMS specificity remains the SAP data access API strategy (this is a simple fact).</p>
+<p dir="ltr">SAP should be using its quest for DBMS independence to stimulate or contribute ODBC enhancements (should ODBC be lacking in areas critical to its application needs; it is available in <a href="http://www.iodbc.org">Open Source form</a> and across all major platforms). Should the ODBC API not be the problem, then it can push ODBC Driver vendors (DBMS vendors such as IBM included) to get their Drivers in shape (should they be lacking, I know <a href="http://uda.openlinksw.com/odbc ">our ODBC Drivers</a> are absolutely fine for this kind of task).</p>
+<p dir="ltr">Database specificity gets application vendors nowhere. You can only control your business development destiny by being database independent. When applications are database independent the intellectual capital that drives your applications is preserved. This is akin to building physical and logical firewalls around the ecosystem created by your products. This is much better that being a pseudo DBMS engine reseller for a future competitor.</p>
+<p dir="ltr"> </p>
+<p dir="ltr"> </p>
+<p dir="ltr"> </p></font></content>
+    </item>
+  </channel>
+</rss>

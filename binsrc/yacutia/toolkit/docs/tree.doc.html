@@ -1,0 +1,40 @@
+<h2>tree.js</h2>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<p>Converts &lt;ul&gt; into interactive tree.</p>
+<hr/>
+
+<h3>Functions</h3>
+<ul>
+	<li><a href="#assign">Tree.assign(div, dir, ext, reformat)</a></li>
+</ul>
+
+
+<hr/>
+
+<h3><a name="assign">Tree.assign(div, dir, ext, reformat)</a></h3>
+<p>This will do the thing. <em>Div</em> specifies a container in which your list lives. <em>Dir</em> 
+is a directory containing important images, <em>ext</em> is their extension and <em>reformat</em> is a boolean value, 
+specifying whether do you want to reformat (i.e. collapse all deep levels) the tree. Example:</p>
+
+<p class="code">Tree.assign("myDiv", "images", "png", true);</p>

@@ -1,0 +1,80 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare ses, res any;
+  if (isstring ({?'s'}) or isstring ({?'u'}))
+    {
+      ses := string_output ();
+      http ('<doc>', ses);
+      xml_auto ('SELECT  1 as Tag, NULL as Parent, OrderID as [id!1!OrderID], CustomerID as [cust!1!CustomerID], NULL as [oid!2!OrderID], NULL as [qty!2!Quantity], NULL as [prc!2!UnitPrice] from demo..orders where OrderId > 11010 and OrderID < 11021 union all select 2,1, o.orderid, NULL, ol.OrderID, ol.quantity, ol.unitprice from demo..orders o, demo..order_details ol where ol.OrderId > 11010 and ol.OrderID < 11021 and ol.Orderid = o.orderid order by [id!1!OrderID] for xml explicit'
+	  , vector (), ses);
+      http ('</doc>', ses);
+      ses := string_output_string (ses);
+      res := xslt (TUTORIAL_XSL_DIR () || '/tutorial/xmlsql/xs_u_1/xs_u_1.xsl', xml_tree_doc (ses));
+      if ({?'s'} = '1')
+	{
+	  http_header('Content-Type: text/xml\r\n');
+	  http (ses);
+	}
+      else if ({?'s'} = '2')
+	{
+	  http ('<html><body><pre>');
+	  http_value (ses);
+	  http ('</pre></body></html>');
+	}
+      else if ({?'u'} = '1')
+	{
+	  http_header('Content-Type: text/xml\r\n');
+	  http_value (res);
+	}
+      else if ({?'u'} = '2')
+	{
+	  declare ses1 any;
+          ses1 := string_output ();
+	  http_value (res, null, ses1);
+          ses1 := string_output_string (ses1);
+	  http ('<html><body><pre>');
+	  http_value (ses1);
+	  http ('</pre></body></html>');
+	}
+      return (0);
+    }
+?>
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+<table class="tableresult" cellspacing="7">
+<tr><th>Source</th><th colspan=2>View</th></tr>
+<tr>
+  <td>Order XML</td>
+  <td><a href="xs_u_1_view_src.vsp?s=2">XML as text</a></td>
+  <td><a href="xs_u_1_view_src.vsp?s=1">Raw XML</a></td>
+</tr>
+<tr>
+  <td>Updategram</td>
+  <td><a href="xs_u_1_view_src.vsp?u=2">XML as text</a></td>
+  <td><a href="xs_u_1_view_src.vsp?u=1">Raw XML</a></td>
+</tr>
+</table>
+</body>
+</html>

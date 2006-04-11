@@ -1,0 +1,56 @@
+-- Twister Workflow
+
+Main url: http://smartcomps.org/confluence/display/twister/Home
+Url for download: https://sourceforge.net/projects/wf-twister/
+
+The following workflow results are done upon Twister BPEL engine v0.2 distr twister-0.2.zip; twister-src-0.2.zip
+
+Requirements:
+- Ant       - downloaded jakarta-ant-1.5.1-bin.zip.
+- Tomcat    - downloaded jakarta-tomcat-5.0.25.zip file.
+- JDK 1.4.1 - downloaded j2sdk-1_4_2_04-windows-i586-p.exe
+- Hsql      - hsqldb_1_7_2_2.zip - the database for the Twister BPEL engine.
+               Also can be use other databases, see link:  http://smartcomps.org/confluence/display/twister/Installation+Guide#Installation+Guide-Setting+the+database
+- Axis      - downloaded axis-1_1-src.zip
+- JRE       - downloaded j2re-1_4_2_05-windows-i586-p.exe
+- JUNIt     - downloaded junit3.8.1.zip
+- JAF       - downloade jaf-1_0_2-upd.zip
+
+Additional links for the engine:
+- engine install: http://smartcomps.org/confluence/display/twister/Installation+Guide
+- user guide:    http://smartcomps.org/confluence/display/twister/User+Guide
+- Ugly Debbugger: http://localhost:8080/xindice/?/db
+- Twister-web: http://localhost:8080/twister-web. The username and password are: admin
+- Axis web: http://localhost:8080/axis/
+
+
+Samples:
+There are 3 main samples, take a look at it and try to deploy each process. There is nothing special, just follow the isntructions
+at http://smartcomps.org/confluence/display/twister/User+Guide.
+Also take a look at the samples at dir twister/tests.
+
+Forums:
+take a look at this thread: https://sourceforge.net/forum/forum.php?thread_id=1123137&forum_id=280271.
+
+Tpcc test:
+According to the thread above, Twister engine does not support activity 'import' for remote wsdl files.
+So, in this case we have two choices: other implement by ownself Client Api for including these wsdl files,
+or to put all the definitions for the tdservices.wsdl and dbservices.wsdl each respectively for the Test Driver and
+for the Database Driver. Taka a look at example2 from the samples - it is for invoking the Google Search Service.
+What the Twisters have been done? Well, first take a look at the wsdl for this service at the google url: http://api.google.com/GoogleSearch.wsdl.
+Here are defined different messages, described types, bindings, ports and the name of the service.
+At example2 dir take a look at the file wsdef.xml. ( assumed you have already familiar with it as deploying this process and sent the messaga
+from the messages dir throught the ws interface (http://localhost:8080/twister-web/).
+For our test to be run properly, is needed to be done the following:
+
+1. Put all the definition content at the new-def.xml file (this file at first pass is analogue to the Sut.wsdl from dir /bpel/tpcc
+   taking it out from the dbservices.wsdl ( from /bpel/tpcc ) and tdservices.wsdl (/bpel/tpcc).
+2. Suppose you have already successfully deployed from the Twister ws-web the 'new' process.
+   Now the question is what is the Endpoint for this process?
+   I suppose if you successfully run Axis under Tomcat, will find the endpoint of the serice something like this:
+   http://localhost:8080/axis/services/new?wsdl
+   and this endpoint must be used at the current procedures from the Test Driver and the Database Driver which are calling the SOAP client.
+3. What has to be the message which must be send to the 'new' service on Twister?
+   Note the file structure of the message each example have:
+   1. At the message is given the portname and the operation name, not in the wsdl.xml file!
+   2. What happens if the initiate message on first pass has elements from complex type? This should be examined.

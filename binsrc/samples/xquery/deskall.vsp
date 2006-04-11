@@ -1,0 +1,77 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _descr, _xquery, _etalon any;
+  declare _text varchar;
+  declare _lex_list any;
+  declare _lex_last_row integer;
+  declare _lex_ctr integer;
+  declare _lexem any;
+  declare _xq_res any;
+  declare _xq_expn, _xq_state, _xq_msg varchar;
+  declare _ms1, _ms2 integer;
+  declare _expected_text varchar;
+?>
+<HTML>
+<BODY TEXT="#000000" LINK="#0000CC" VISITED="#3300CC" BGCOLOR="#EEEEEE" TOPMARGIN=0>
+<P>
+<A HREF="main.vsp">Main page</A> (<A HREF="main.vsp?reset=Y">with data reloading</A>).
+</P>
+<?vsp
+  for select "NAME" as _case, "DESCR" as _descr, "XQUERY" as _xquery, "ETALON" as _etalon from "XQ"."XQ"."TEST_CASES" do
+    {
+      _text := cast (xpath_eval ('string(.)', _xquery) as varchar);
+      _descr := cast (xpath_eval ('string(.)', _descr) as varchar);
+      _text := replace (_text, '\x0D\x0A', '\x0A');
+      _text := replace (_text, '\x09', '\x20\x20\x20\x20\x20\x20\x20\x20');
+      _text := trim (_text, '\x0A\x20');
+      ?><H2>Sample query <?= _case ?></H2><P><B><?= _descr ?></B></P><?vsp
+      _expected_text := "XQ"."XQ"."INDENT_XML" ("XQ"."XQ"."XPER_TO_XTREE" (xpath_eval('./etalon/node()', _etalon, 0)));
+      _xq_state := '00000';
+      _xq_msg := 'OK';
+      _xq_expn := concat ('xquery_explain(',WS.WS.STR_SQL_APOS(_text),')');
+      _ms1 := msec_time();
+      _xq_res := exec (_xq_expn, _xq_state, _xq_msg);
+      _ms2 := msec_time();
+      if (_xq_msg <> 'OK')
+	{
+          ?><BR><B>Query compilation failed, SQLCODE<CODE><?= _xq_state ?></CODE>:</B><BR><CODE><XMP><?vsp http(_xq_msg); ?></XMP></CODE><?vsp
+	}
+      else
+	{
+          ?><BR><B>Query compiled successfully.</B> (<?= _ms2 - _ms1 ?> msec.)<BR><?vsp
+	  _xq_state := '00000';
+	  _xq_msg := 'OK';
+	  _xq_expn := concat ('"XQ"."XQ"."DESK_RUN"(', WS.WS.STR_SQL_APOS(_text), ',', cast ((_ms2-_ms1) as varchar) , ',', WS.WS.STR_SQL_APOS(_expected_text), ', 1)');
+	  exec (_xq_expn, _xq_state, _xq_msg);
+	  if (_xq_msg <> 'OK')
+	    {
+	      ?><B>Execution failed, SQLCODE <?= _xq_state ?>:</B><BR><CODE><XMP><?vsp http(_xq_msg); ?></XMP></CODE><?vsp
+	    }
+	}
+      ?><HR><?vsp
+    }
+?>
+</BODY>
+</HTML>
+

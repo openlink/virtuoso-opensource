@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_bpel_copy_script">
+  <refmeta>
+    <refentrytitle>BPEL.BPEL.copy_script</refentrytitle>
+    <refmiscinfo>bpel</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>BPEL.BPEL.copy_script</refname>
+    <refpurpose>Makes a copy of an existing script</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_copy_script">
+      <funcprototype id="fproto_copy_script">
+        <funcdef><function>BPEL.BPEL.copy_script</function></funcdef>
+        <paramdef>in <parameter>scp_id</parameter> int</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1 id="params_copy_script"><title>Parameters</title>
+    <refsect2><title>scp_id</title>
+	<para><type>int</type> the ID of the BPEL script to be copied</para>
+    </refsect2>
+  </refsect1>
+
+  <refsect1 id="ret_copy_script"><title>Return Types</title>
+      <para>returns a unique integer identifier for the script copy</para></refsect1>
+  <refsect1 id="desc_copy_script">
+    <title>Description</title>
+    <para><function>BPEL.BPEL.copy_script</function> makes a copy of an existing script and put it in edit mode.
+    </para>
+  </refsect1>
+  <refsect1 id="examples_copy_script"><title>Examples</title>
+    <example id="ex_copy_script"><title>Simple example</title>
+	<para>This will copy a script with identifier equal to 1, the copy have Id equal to 2</para>
+	<screen>
+	    SQL> select BPEL.BPEL.copy_script (1);
+	    unnamed
+	    INTEGER
+	    _______________________________________________________________________________
+
+	    2
+
+	    1 Rows. -- 1672 msec.
+      </screen>
+    </example>
+  </refsect1>
+</refentry>
+

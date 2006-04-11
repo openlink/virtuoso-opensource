@@ -1,0 +1,54 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!--! \brief Groups of radio buttons.
+The form contains two groups of radio buttons, three button in each group.
+-->
+<v:page name="radio_button__0" xmlns:v="http://www.openlinksw.com/vspx/">
+  <html>
+    <head>
+      <title>VSPX samples | v:radio-button</title>
+    </head>
+    <body>
+      <v:form name="form1" type="simple" action="" method="GET">
+	<input type="text" name="qq"/>
+        <table>
+          <tr>
+            <td>
+              <v:radio-button name="radio1" group-name="radio_group_A" value="--'A-one'" initial-checked="1"/>
+              <v:radio-button name="radio2" group-name="radio_group_A" value="--'A-two'"/>
+              <v:radio-button name="radio3" group-name="radio_group_A" value="--'A-three'"/>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <v:radio-button name="radio4" group-name="radio_group_B" value="--'B-one'" initial-checked="1"/>
+              <v:radio-button name="radio5" group-name="radio_group_B" value="--'B-two'"/>
+              <v:radio-button name="radio6" group-name="radio_group_B" value="--'B-three'"/>
+            </td>
+          </tr>
+        </table>
+	<v:button name="submit1" action="simple" style="image" xhtml:alt="A test button" value="--'../plus.gif'"/>
+      </v:form>
+    </body>
+  </html>
+</v:page>

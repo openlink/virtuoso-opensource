@@ -1,0 +1,124 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<process name="comp_test6" 
+  targetNamespace="urn:echo:echoService"
+  xmlns:tns="urn:echo:echoService"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:bpelv="http://www.openlinksw.com/virtuoso/bpel" 
+  xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/">
+
+  <partnerLinks>
+    <partnerLink name="caller" partnerLinkType="tns:echoSLT"/>
+  </partnerLinks>
+
+  <variables>
+    <variable name="request" messageType="tns:StringMessageType"/>
+    <variable name="res" messageType="tns:StringMessageType"/>
+    <variable name="inx" type="xsd:int"/>
+  </variables>
+
+  <sequence name="EchoSequence">
+
+    <receive partnerLink="caller" portType="tns:echoPT" 
+      operation="echo" variable="request"
+      createInstance="yes" name="EchoReceive"/>
+
+    <scope>
+      <faultHandlers>
+	<catch faultName="tns:invalidRequest" faultVariable="error">
+	  <bpelv:exec binding="SQL">
+	    dbg_obj_print ('error catched'); 
+	    insert into bpel..comp6_test (dt) values ('error catched');
+	  </bpelv:exec>
+	  <compensate scope="scope-2"/>	
+	</catch>
+      </faultHandlers>
+
+      <assign>
+	<copy>
+	  <from expression="0"/>
+	  <to variable="inx"/>
+	</copy>
+      </assign>
+      <assign>
+	  <copy>
+	      <from expression="'Comp6'"/>
+	      <to variable="res" part="echoString" query="/echoString"/>
+	  </copy>
+      </assign>
+
+
+      <scope name="scope-2">
+	<compensationHandler>
+	  <bpelv:exec binding="SQL">
+	    dbg_obj_print ('compensating scope-2;', BPEL.BPEL.getVariableData ('inx')); 
+	    insert into bpel..comp6_test (dt) values (sprintf ('compensating scope-2: %s', cast (BPEL.BPEL.getVariableData ('inx') as varchar)));
+	  </bpelv:exec>
+	  <assign>
+	    <copy>
+	      <from expression="'Request is invalid'"/>
+	      <to variable="res" part="echoString" query="/echoString"/>
+	    </copy>
+	  </assign>
+	</compensationHandler>
+	<assign>
+	  <copy>
+	    <from expression="1"/>
+	    <to variable="inx"/>
+	  </copy>
+	</assign>
+      </scope>
+      <scope name="scope-3">
+	<compensationHandler>
+	  <bpelv:exec binding="SQL">
+	    dbg_obj_print ('compensating scope-3;', BPEL.BPEL.getVariableData ('inx')); 
+	    insert into bpel..comp6_test (dt) values (sprintf ('compensating scope-3: %s', cast (BPEL.BPEL.getVariableData ('inx') as varchar)));
+	  </bpelv:exec>
+	  <assign>
+	    <copy>
+	      <from expression="'Request is invalid'"/>
+	      <to variable="res" part="echoString" query="/echoString"/>
+	    </copy>
+	  </assign>
+	</compensationHandler>
+	<assign>
+	  <copy>
+	    <from expression="11"/>
+	    <to variable="inx"/>
+	  </copy>
+	</assign>
+      </scope>
+      <throw faultName="tns:invalidRequest"/> 
+      <assign>
+	<copy>
+	  <from expression="2"/>
+	  <to variable="inx"/>
+	</copy>
+      </assign>
+    </scope>
+
+    <reply partnerLink="caller" portType="tns:echoPT" 
+      operation="echo" variable="res" name="EchoReply"/>
+
+  </sequence>
+
+</process>

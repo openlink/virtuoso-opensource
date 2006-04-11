@@ -1,0 +1,166 @@
+<?vsp                                        
+   declare shopping_id numeric(20);
+   shopping_id:=atoi(get_keyword('Shopping_Id',params,'0'));
+   declare cid numeric(10);
+   cid:=atoi(get_keyword('C_ID',params,'0'));
+   declare cctype varchar(10);
+   declare ccnumber numeric(16);
+   declare ccname varchar(31);
+   declare ccexpiry date;
+   declare discount          numeric(3,2);
+   declare shipping varchar(10);
+   declare street1          varchar (40);
+   declare street2          varchar (40);
+   declare zip              varchar (10);
+   declare city             varchar (30);
+   declare state            varchar (20);
+   declare country          varchar (50);
+   declare sub_total, total,tax,ship_cost, total numeric(15,2);
+   declare fname            varchar (15);
+   declare lname            varchar (15);
+   declare country          varchar (50);
+   declare _c_addr_id         numeric (10);
+   declare _o_id            numeric(10);
+   declare check_ship  varchar(32);
+   declare ship_passed integer;
+   declare _ol_id, _i_stock integer;
+   declare country_id integer;
+   declare address_id numeric(10);
+   declare auth_id character(15); --????
+
+    ship_passed:=0;
+    zip:=get_keyword('shipzip',params,'');
+    street1:=get_keyword('shipadd1',params,'');
+    street2:=get_keyword('shipadd2',params,'');
+    city:=get_keyword('shipcity',params,'');
+    state:=get_keyword('shipstate',params,'');
+    country:=get_keyword('shipcountry',params,'');
+    check_ship:=get_keyword('Ship_Inform',params,'');
+    if (check_ship<>md5(concat(street1,street2,city,state,zip,country)))
+	ship_passed:=1;
+    cctype:=get_keyword('cctype',params,'');
+    ccnumber:=atoi(get_keyword('ccnum',params,''));
+    ccname:=get_keyword('ccname',params,'');
+    ccexpiry:=stringdate(get_keyword('ccdate',params,'1.01.01'));
+    shipping:=get_keyword('shipmethod',params,'');
+    select  SC_SUB_TOTAL, SC_TAX, SC_SHIP_COST, SC_TOTAL 
+	into sub_total, tax, ship_cost, total
+        from CART where SC_SHOPPING_ID=shopping_id;
+    select C_FNAME, C_LNAME, C_DISCOUNT, C_ADDR_ID 
+	into fname, lname, discount, _c_addr_id  
+        from CUSTOMER where C_ID=cid;
+get_address:;
+    select CO_ID into country_id from COUNTRY where CO_NAME=country;
+    -- single database transaction  
+    if (ship_passed)
+    {
+        whenever not found goto insert_addr;
+	select ADDR_ID into address_id from ADDRESS
+	    where ADDR_STREET1=street1 and ADDR_STREET2=street2 and 
+    	    ADDR_CITY=city and ADDR_STATE=state and 
+	     ADDR_ZIP=zip and ADDR_CO_ID = country_id;
+	goto fill_order;
+insert_addr:;
+        address_id:=coalesce ((select max(ADDR_ID) from ADDRESS), 0) + 1;
+	insert into ADDRESS(ADDR_ID,ADDR_STREET1,ADDR_STREET2,ADDR_CITY,
+	    ADDR_STATE,ADDR_ZIP,ADDR_CO_ID)
+	    values(address_id,street1,street2,city,
+	    state,zip,country_id);
+	    COMMIT WORK;
+    }
+    -- end single database transaction
+fill_order:; 
+    -- <start atomic set>
+    -- <start transaction>
+    _o_id:=coalesce ((select max(O_ID) from ORDERS), 0) + 1;
+    if (ship_passed=0) address_id:=_c_addr_id;
+    insert into ORDERS(O_ID, O_C_ID, O_DATE, O_SUB_TOTAL, O_TAX, O_SHIP_TYPE,
+	O_SHIP_DATE, O_BILL_ADDR_ID, O_SHIP_ADDR_ID, O_STATUS)
+	values(_o_id, cid, now(), sub_total, tax, shipping,
+        dateadd('day', (rnd(7)+1),now()), _c_addr_id,
+	address_id, 'Pending');
+    for select SCL_I_ID, SCL_COST, SCL_QTY from CART_ITEM
+	where SCL_CART=shopping_id
+    do
+    {
+	_ol_id:=coalesce ((select max(OL_ID) from ORDER_LINE), 0) + 1;
+    	insert into ORDER_LINE(OL_ID,OL_O_ID,OL_I_ID, OL_QTY,OL_DISCOUNT,OL_COMMENTS)
+	    values(_ol_id,_o_id, SCL_I_ID, SCL_QTY, discount,a_string(20,100));
+	select I_STOCK into _i_stock from ITEM where I_ID=SCL_I_ID;
+  	_i_stock:=_i_stock-SCL_QTY;
+        if (_i_stock < 10)
+	    _i_stock:=_i_stock+21;
+        update ITEM set I_STOCK=_i_stock where I_ID=SCL_I_ID;
+    }
+    COMMIT WORK;
+    -- <start transaction>
+    insert into CC_XACTS(CX_O_ID, CX_TYPE, CX_NUM, CX_NAME, CX_EXPIRY,
+	CX_AUTH_ID, CX_XACT_AMT, CX_XACT_DATE, CX_CO_ID)
+	values(_o_id, cctype, ccnumber, ccname, ccexpiry,
+	auth_id, total, now(), country_id);
+    COMMIT WORK;
+    -- Clears all SCL_* items from the CART and updates SC_DATE to current date and time
+    -- delete from CART_ITEM where SCL_CART=shopping_id;
+    -- update CART set SC_DATE=now() where SC_SHOPPING_ID=shopping_id;
+    -- <end atomic set>
+?>
+<HTML>
+  <HEAD><TITLE>Buy Confirm Page</TITLE></HEAD>
+  <BODY BGCOLOR="#FFFFFF">
+  <H1 ALIGN="CENTER">TPC Web Commerce Benchmark (TPC-W)</H1>
+  <H2 ALIGN="CENTER">Buy Confirm Page</H2>
+  <BLOCKQUOTE>
+   <BLOCKQUOTE>
+    <BLOCKQUOTE>
+     <BLOCKQUOTE>
+       <H2 ALIGN="LEFT">Order Information:</H2>
+       <TABLE BORDER="1" CELLSPACING="0" CELLPADDING="0">
+        <TR>
+          <TD><B>Qty</B></TD>
+          <TD><B>Product</B></TD></TR>
+<?vsp
+    for select  SCL_ID, SCL_QTY, SCL_TITLE, SCL_BACKING, SCL_SRP, SCL_COST 
+	from CART_ITEM where SCL_CART=shopping_id
+    do
+    { 
+?>
+        <TR>
+          <TD VALIGN="TOP">1</TD>
+          <TD VALIGN="TOP"><I>Title: <?=SCL_TITLE?></I> -
+            Backing: <?=SCL_BACKING?><BR>
+            SRP. $<?=SCL_SRP?>, <FONT COLOR="#AA0000"><B>
+            Your Price: = $<?=SCL_COST?></B></FONT></TD></TR>
+<?vsp 
+    }
+    -- Clears all SCL_* items from the CART and updates SC_DATE to current date and time
+    delete from CART_ITEM where SCL_CART=shopping_id;
+    update CART set SC_DATE=now() where SC_SHOPPING_ID=shopping_id;
+    -- <end atomic set>	
+?>
+      </TABLE>
+      <H2 ALIGN="LEFT">Your Order has been processed.</H2>
+      <TABLE BORDER="1" CELLPADDING="5" CELLSPACING="0">
+        <TR>
+          <TD><H4>Subtotal with discount (<?=discount?>%):</H4></TD>
+          <TD><H4>$500.80</H4></TD></TR>
+        <TR>
+          <TD><H4>Tax (8.25%):</H4></TD>
+          <TD><H4>$<?=tax?></H4></TD></TR>
+        <TR>
+          <TD><H4>Shipping:</H4></TD>
+          <TD><H4>$<?=ship_cost?></H4></TD></TR>
+        <TR>
+          <TD><H4>Total:</H4></TD>
+          <TD><H4>$<?=total?></H4></TD></TR>
+      </TABLE>
+      <P><BR></P>
+      <H2>Order Number: <?=_o_id?></H2><H1>Thank you for shopping at TPC-W</H1>
+      <P></P>
+      <CENTER>
+       <A HREF="searchrequest.vsp?search&Session=1370&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>">
+         <IMG SRC="images/search.jpg" ALT="Search Item" BORDER="0" VSPACE="0" =HSPACE="0" WIDTH="120" HEIGHT="30"></A>
+       <A HREF="index.vsp?home&Session=1370&C_ID=<?/cid?>&Shopping_Id=<?/shopping_id?>">
+         <IMG SRC="images/home.jpg" ALT="Home Page" BORDER="0" VSPACE="0" = HSPACE="0" WIDTH="120" = HEIGHT="30">
+       </A>
+</CENTER></BLOCKQUOTE></BLOCKQUOTE></BLOCKQUOTE></BLOCKQUOTE>
+</BODY></HTML>

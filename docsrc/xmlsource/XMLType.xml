@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="xmltype"><title>XMLType</title>
+<para>
+XMLType is a predefined type for representing XML entities as UDT objects.
+This is compatible with Oracle9i and later.
+You can get better performance and flexibility by using use plain built-in functions
+that directly operate with XML entities.
+All predefined member functions of XMLType for extracting fragments from
+an XMLType are actually wrappers for <link linkend="fn_xpath_eval"><function>xpath_eval()</function></link> built-in function.
+You can declare a column of XMLType but the actual type of the created column will be &quot;LONG XML&quot;.
+Thus any XML-related feature that can be used for &quot;LONG XML&quot; column will work with XMLType.
+E.g. <link linkend="sqlrefcreattablewithschema">WITH SCHEMA constraint</link> allows you to force stored values
+to match a particular schema; <link linkend="usingxmlfreetext">XML free text index</link> can accelerate search for documents by content
+etc.
+</para>
+<para>
+XMLType behaves like any user-defined type, with the only difference in type conversion rules.
+If an XML entity is passed as an argument instead of an instance of XMLType, a new instence of
+XMLType is created by a constructor that takes the entity as an argument.
+Similarly, functions that accept XML entities as arguments can also accept an instance of
+XMLType as an actual value of argument.
+</para>
+<para>
+The following example creates a table with an XMLType column, put two records there
+and performs a simple search:</para>
+<screen><![CDATA[
+CREATE TABLE Xml_tab ( xmlval XMLType);
+
+INSERT INTO Xml_tab VALUES (
+   xmltype('<?xml version="1.0"?>
+               <EMP>
+                  <EMPNO>221</EMPNO>
+                  <ENAME>John</ENAME>
+               </EMP>'));
+
+INSERT INTO Xml_tab VALUES (
+   xmltype('<?xml version="1.0"?>
+               <PO>
+                  <PONO>331</PONO>
+                  <PONAME>PO_1</PONAME>
+               </PO>'));
+
+
+-- now extract the numerical values for the employee numbers
+
+SELECT e.xmlval.extract('//EMPNO/text()').getNumVal() as empno
+   FROM Xml_tab
+   WHERE e.xmlval.existsnode('/EMP/EMPNO')  = 1;
+]]></screen>
+<para>To create a new instance of XMLType, the constructor <link linkend="fn_XMLType.XMLType"><function>XMLType()</function></link>
+or a function <link linkend="fn_createXML"><function>createXML()</function></link> is used.
+</para>
+<para>
+Virtuoso can perform XPATH search in XMLType instances:
+<link linkend="fn_XMLType.extract"><function>extract()</function></link>
+and
+<link linkend="fn_XMLType.existsNode"><function>existsNode()</function></link>
+member functions are convenient for simple searches and any
+built-in XPATH functions like
+<link linkend="fn_xpath_eval"><function>xpath_eval()</function></link> or
+<link linkend="fn_xquery_eval"><function>xquery_eval()</function></link> can handle
+XMLType parameters instead of XML entity parameters.
+An application can use
+<link linkend="fn_XMLType.getStringVal"><function>getStringVal()</function></link>,
+<link linkend="fn_XMLType.getNumVal"><function>getNumVal()</function></link> and
+<link linkend="fn_XMLType.getClobVal"><function>getColbVal()</function></link>
+member functions to convert found node to strings, numbers or an XML source text of the node.
+</para>
+<para>Instances of the type can store the URL of the XML schema to which they  should conform.
+This URL can be specified when an instance is constructed;
+Once an instance is created, its schema URL cannot be changed but a modified copy can be created by
+<link linkend="fn_XMLType.createSchemaBasedXML"><function>createSchemaBasedXML()</function></link>
+and
+<link linkend="fn_XMLType.createNonSchemaBasedXML"><function>createNonSchemaBasedXML()</function></link>
+member functions;
+<link linkend="fn_XMLType.isSchemaBased"><function>isSchemaBased()</function></link>
+and <link linkend="fn_XMLType.getSchemaURL"><function>getSchemaURL()</function></link>
+member functions check whether the given instance is schema based or not and
+what particular schema is used.
+</para>
+<para>
+An schema based XMLType instance can be validated against its schema;
+If it has been validated against its schema once with no errors detected then
+a special &quot;VALIDATED&quot; flag is set
+in the instance indicating that there is no need to validate it again.
+<link linkend="fn_XMLType.schemaValidate"><function>schemaValidate()</function></link>
+member function performs the validation,
+<link linkend="fn_XMLType.isSchemaValidated"><function>isSchemaValidated()</function></link>
+queries the &quot;VALIDATED&quot; flag and
+<link linkend="fn_XMLType.setSchemaValidated"><function>setSchemaValidated()</function></link>
+changes the &quot;VALIDATED&quot; flag if application needs optimization tricks.
+</para>
+<para>
+In addition, any instance can be validated against an arbitrary schema via member function
+<link linkend="fn_XMLType.isSchemaValid"><function>isSchemaValid()</function></link>.
+Built-in function <link linkend="xml_validate_schema"><function>xml_validate_schema()</function></link>
+may accept instance of XMLType as its first argument, providing even more
+validation functionality.
+</para>
+</sect1>

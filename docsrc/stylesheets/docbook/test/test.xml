@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE book
+  PUBLIC "-//Norman Walsh//DTD DocBk XML V3.1.7//EN"
+  "http://nwalsh.com/docbook/xml/3.1.7/docbookx.dtd">
+<book id="book">
+<title>Book Title</title>
+
+<chapter id="ch1">
+<title>test</title>
+<para>How many <!--&deg; can you &copy; with &mdash;.--></para>
+<simplelist type="vert" columns="3">
+<member><ulink url="website.html">List item1</ulink></member>
+<member><ulink url="website.html">List item2</ulink></member>
+<member><ulink url="website.html">List item3</ulink></member>
+<member><ulink url="website.html">List item4</ulink></member>
+<member><ulink url="website.html">List item5</ulink></member>
+<member><ulink url="website.html">List item6</ulink></member>
+<member><ulink url="website.html">List item7</ulink></member>
+<member><ulink url="website.html">List item8</ulink></member>
+<member><ulink url="website.html">List item9</ulink></member>
+<member><ulink url="website.html">List item10</ulink></member>
+<member><ulink url="website.html">List item11</ulink></member>
+<member><ulink url="website.html">List item12</ulink></member>
+<member><ulink url="website.html">List item13</ulink></member>
+<member><ulink url="website.html">List item14</ulink></member>
+</simplelist>
+
+<para>
+test: <xref role="bib" linkend="mgxml" endterm="mgxmlab"/>
+test: <xref linkend="bib"/></para>
+
+<informaltable>
+<tgroup cols="3">
+<colspec colnum="1" colname="c1" colwidth="3*"/>
+<colspec colnum="2" colname="c1" colwidth="2in"/>
+<colspec colnum="3" colname="c2" colwidth="2*+1in"/>
+<tbody>
+<row>
+<entry align="left"><para>left</para></entry>
+<entry align="center"><para>center</para></entry>
+<entry align="right"><para>right</para></entry>
+</row>
+<row>
+<entry align="right"><para>right</para></entry>
+<entry align="center"><para>center</para></entry>
+<entry align="left"><para>left</para></entry>
+</row>
+</tbody>
+</tgroup>
+</informaltable>
+
+</chapter>
+
+<bibliography id="bib" xreflabel="FOO">
+<title>Références bibliographiques</title>
+<biblioentry id="mgxml">
+<abbrev id="mgxmlab">GOOS99</abbrev>
+<biblioset relation="article">
+<author>
+<firstname>Michel</firstname><surname>Goossens</surname>
+</author>
+</biblioset>
+</biblioentry>
+</bibliography>
+
+</book>

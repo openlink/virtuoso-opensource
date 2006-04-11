@@ -1,0 +1,144 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp 
+  declare search_word varchar;
+  declare sid, realm varchar;
+  declare _uid int;
+  declare _topic WV.WIKI.TOPICINFO;
+  declare _ctx any;
+  sid := coalesce({?'sid'}, '');
+  realm := coalesce({?'realm'}, '');
+  search_word := coalesce ({?'search_word'}, '');
+  _uid := WV.WIKI.VSPXGETUID (connection_get ('vspx_user'), realm, sid);
+  
+
+  _topic := WV.WIKI.TOPICINFO ();
+  _topic.ti_cluster_name := coalesce ({?'cluster'}, 'Main');
+  _topic.ti_fill_cluster_by_name();
+  _topic.ti_local_name := coalesce ({?'name'},
+  	WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_name, 'index-page', 'WelcomeVisitors'));
+  _topic.ti_find_id_by_local_name();
+  _topic.ti_find_metadata_by_id ();
+
+  _ctx := string_output ();
+   if (search_word <> '') {
+	declare exp1,exp varchar;
+	declare hit_words, vt, war any;
+	declare n,m varchar;
+	
+
+	search_word := trim (search_word);
+	exp1 := '';
+	exp := WV.WIKI.PARSE_SEARCH_STR  (search_word);
+	hit_words := vector();
+	vt := vt_batch ();
+	vt_batch_feed (vt, exp, 0, 0, 'x-ViDoc');
+	war := vt_batch_strings_array (vt);
+
+	m := length (war);
+	n := 0;
+	exp1 := exp;
+	while (n < m)
+	  {
+	     declare word1 varchar;
+	     if (war[n] <> 'AND' and war[n] <> 'NOT' and war[n] <> 'NEAR' and war[n] <> 'OR' and length (war[n]) > 1 and not vt_is_noise (war[n], 'utf-8', 'x-ViDoc'))
+	       {
+	         word1 := war[n];
+		 hit_words := vector_concat (hit_words, vector (word1));
+	       }
+		n := n + 2;
+	  }
+	declare _cluster_search int;
+	_cluster_search := case when {?'search_t'} = 'c' then 1 else 0 end;
+	if (_cluster_search)
+	  exp1 := WV.WIKI.ADD_SYSINFO (exp1, 'Cluster', _topic.ti_cluster_name, 1);
+	else
+	  exp1 := WV.WIKI.ADD_SYSINFO (exp1, 'Cluster', '', 1);
+	dbg_obj_print (exp1);
+
+   declare cr cursor for select RES_ID, RES_OWNER, RES_NAME, length (RES_CONTENT) as RES_LEN, WV.WIKI.DATEFORMAT(RES_CR_TIME) as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH
+                            from WS.WS.SYS_DAV_RES
+            where
+	      contains (RES_CONTENT, exp1);
+--   whenever sqlstate '37000' goto failed;
+	declare _idx any;
+	_idx := 0;
+	declare _res_id, _uid, _u_name, _res_name, _res_len, _cr_time, _perms, _full_path any;
+	open cr;
+	whenever not found goto endf;
+	http ('<div class="report"><![CDATA[Search result for "' || search_word || '":]]></div> <table class="search-result"><tr>
+			<th align="left" width="20%">Name</th>
+			<th align="left" width="10%">Size</th>
+			<th align="left" width="10%">Owner</th>
+			<th align="left" width="10%">Date</th></tr>', _ctx);
+ 	while (1=1) {
+	  fetch cr into _res_id, _uid, _res_name, _res_len, _cr_time, _perms, _full_path;
+	  dbg_obj_print (_res_name);
+	  _u_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _uid);
+	  _idx := _idx + 1;
+	  declare href varchar;
+	  href := WV.WIKI.MAKEHREFFROMRES (_res_id, _res_name, sid, realm) ;
+	  if (href is not null)
+	    {
+	      http ('<tr class="search-first-col">
+			<td align="left" width="20%">' || WV.WIKI.MAKEHREFFROMRES (_res_id, _res_name, sid, realm) || '</td>
+			<td align="left" width="10%">' || WV.WIKI.PRINTLENGTH(_res_len) || '</td>
+			<td align="left" width="10%">' || _u_name || '</td>
+			<td align="left" width="10%">' || _cr_time || '</td></tr>', _ctx);
+	      http ('<tr><td colspan="4">', _ctx);
+	      declare _text varchar;
+	      _text := serialize_to_UTF8_xml (xtree_doc (blob_to_string ( (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = _res_id)), 2));
+	  
+	      http (coalesce (search_excerpt (hit_words, _text, 200000, 90, 200, 'b', 1), ''), _ctx);
+	      http ('</td></tr>', _ctx);
+	    }
+
+	}
+endf:
+	close cr;
+	http ('</table>', _ctx);
+   	if (_idx = 0) {
+	failed:
+	  _ctx := string_output ();
+	  http('<div class="error"><![CDATA[No articles found for "' || search_word || '"]]></div>', _ctx);
+	}
+   }
+  else
+   {
+      http ('<a/>', _ctx);
+   }
+  WV.WIKI.VSPHEADER (path,params,lines,'Search');  
+  http_value (
+   WV.WIKI.VSPXSLT ('PostProcess.xslt',
+     WV.WIKI.VSPXSLT ('VspSearch.xslt',
+				xtree_doc (string_output_string (_ctx), 2),
+	 vector_concat ( vector ('uid', _uid, 'user', (select U_NAME from DB.DBA.SYS_USERS where U_ID = _uid), 'baseadjust', '../wiki/' , 'rnd', rand (999999999), 'attachments', xtree_doc ('<a/>')),
+	 _topic.ti_xslt_vector(),  
+			 vector ('sid', coalesce ({?'sid'}, ''), 
+				 'realm', coalesce ({?'realm'}, ''), 
+				 'search_t', coalesce ({?'search_t'}, ''), 
+				 'search_word', coalesce (search_word, '') ) )),
+		    _topic.ti_xslt_vector(), 'default'));
+   WV.WIKI.VSPFOOTER (path,params,lines);
+?>
+

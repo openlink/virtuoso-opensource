@@ -1,0 +1,851 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="sampleapps.xml" id="sampleapps">
+	<title>Sample ODBC &amp; JDBC Applications</title>
+	<abstract>
+<para>This chapter applies exclusively to the various commercial releases of Virtuoso.  If you are working with the open source version, please refer to the instructions on the web site where you obtained it.  
+</para>
+
+<para>The OpenLink Virtuoso Installation provides sample applications to help you get quick and easy results from you installation.  This chapter explains how to use these applications.
+</para></abstract>
+	<para>A number of sample applications are bundled
+    with your Virtuoso installation for the following purposes:</para>
+	<simplelist>
+		<member>
+			  To simplifying the process of getting
+        Virtuoso up and running
+		</member>
+		<member>
+			To accelerate the support case creation and
+        resolution process
+		</member>
+		<member>
+			To demonstrate Virtuoso&apos;s unique product
+        features highlighting the benefits it brings to your organization
+		</member>
+		<member>
+			To demonstrate application programming
+        techniques that can used to aid and assist your ODBC and JDBC programmers
+		</member>
+	</simplelist>
+	<para>Virtuoso&apos;s services are consumed primarily via
+    ODBC and JDBC applications (OLE-DB applications connect to Virtuoso via ODBC Data
+    Providers for OLE-DB), thus separate ODBC &amp; JDBC sample applications (including source
+    code) have been packaged and integrated into the Virtuoso installer. The current list of
+    sample applications include:</para>
+	<itemizedlist>
+		<listitem>
+			<formalpara>
+				<title>C++ Demo</title>
+				<para>an ODBC
+        based Interactive SQL processor written in C++. </para>
+			</formalpara>
+		</listitem>
+		<listitem>
+			<formalpara>
+				<title>ODBC Bench Test</title>
+				<para>a 32 Bit C++ program based on the industry standard TPC-A benchmark (we will be extending
+        this program to include the TPC-C and TPC-D benchmarks also). This program helps you
+        compare the performance of Virtuoso against other backend database engines as well as
+        compare the performance of various ODBC Drivers connecting to any ODBC compliant backend
+        database.</para>
+			</formalpara>
+		</listitem>
+		<listitem>
+			<formalpara>
+				<title>ODBCTEST</title>
+				<para>ODBC based Interactive SQL processor written in &apos;C&apos; for Linux &amp; UNIX</para>
+			</formalpara>
+		</listitem>
+	</itemizedlist>
+	<itemizedlist>
+		<listitem>
+			<formalpara>
+				<title>JDBCDemo</title>
+				<para>a JDBC sample application that demonstrates Virtuoso&apos;s SQL query.</para>
+			</formalpara>
+		</listitem>
+		<listitem>
+			<formalpara>
+				<title>ScrollDemo2</title>
+				<para>a JDBC 2.0 sample application that demonstrates Virtuoso&apos;s support of
+		Scrollable Cursors and its ability to perform scrollable cursor operations across heterogeneous
+		databases.</para>
+			</formalpara>
+		</listitem>
+		<listitem>
+			<formalpara>
+				<title>JBench</title>
+				<para>a Java and JDBC based adaptations of the industry standard TPC-A and TPC-C benchmarks.
+		This program helps you compare the performance of Virtuoso against other backend database
+        engines, it also helps you to compare the performance of various JDBC Drivers connecting
+        to any JDBC compliant backend database.</para>
+			</formalpara>
+		</listitem>
+		<listitem>
+			<formalpara>
+				<title>JTADemo</title>
+				<para>a sample based on the TPC-A benchmark as
+well but implemented as a J2EE application which shows the use of XA distributed
+transactions as defined in JDBC 3.0 and JTA 1.0 specifications.</para>
+			</formalpara>
+		</listitem>
+	</itemizedlist>
+
+	<sect1 id="binsrcloc">
+		<title>Binary &amp; Source File Locations</title>
+		<sect2 id="odbcdemos">
+			<title>ODBC Demonstration Applications</title>
+			<para>Windows 95/98/NT/2000, Linux &amp; UNIX:</para>
+			<para>The binary executables of these sample applications reside
+    under the following directory structure:</para>
+			<programlisting>&lt;VIRTUOSO_INSTALLATION_DIRECTORY&gt;\samples\odbc</programlisting>
+			<para>The source code of some of these sample applications, when
+    available, reside under the following directory structure, for example:</para>
+			<programlisting>&lt;VIRTUOSO_INSTALLATION_DIRECTORY&gt;\samples\odbc\cppdemo</programlisting>
+		</sect2>
+		<sect2 id="sampjdbcdemos">
+			<title>JDBC Demonstration Applications</title>
+			<para>Windows 95/98/NT/2000, Linux &amp; UNIX:</para>
+			<para>The binary executables (Java class files), and sources for
+    these sample applications reside under the following directory structure:</para>
+			<programlisting>&lt;VIRTUOSO_INSTALLATION_DIRECTORY&gt;\samples\jdbc\&lt;JDK_Version&gt;\&lt;Demo_name&gt;</programlisting>
+		</sect2>
+	</sect1>
+
+  <sect1 id="sampleodbcapps"><title>Sample ODBC Applications</title>
+	<sect2 id="macosxsamples">
+		<title>Mac OS X</title>
+
+		<sect3 id="odbctestmac">
+			<title>ODBCTEST:</title>
+			<para>This is a simple &apos;C&apos; based and ODBC compliant Interactive SQL processor. </para>
+			<orderedlist>
+				<listitem>
+					<para>Open a Terminal session, and start ODBCTEST by executing the following command:</para>
+					<programlisting>/Library/iodbc/bin/odbctest</programlisting>
+				</listitem>
+				<listitem>
+					<para>At the SQL command prompt enter &quot;?&quot; for a list of ODBC
+        DSNs on your machine or enter a valid ODBC Connect String.
+					If you have a DSN named &quot;Marketing&quot; you would enter:</para>
+					<programlisting>DSN=Marketing;UID=username;PWD=password</programlisting>
+					<para>Note: If there is no password, you must include a semicolon at the end:</para>
+					<programlisting>DSN=Marketing;UID=sa;PWD=;</programlisting>
+				</listitem>
+				<listitem>
+					<para>Any valid SQL or ODBC command may be executed through this interface. The following example
+					shows a connection to Microsoft SQL Server 2000, making a simple query against the sample Northwind database:</para>
+					<programlisting>
+[localhost:~] openlink% /Library/iodbc/bin/odbctest
+iODBC Demonstration program
+This program shows an interactive SQL processor
+
+
+Enter ODBC connect string (? shows list, or DSN=...): DSN=user_tthib_sql2k
+
+SQL&gt;select au_lname, au_fname, state from authors where au_id &lt; '333-33-3333'
+au_lname                                |au_fname            |state
+----------------------------------------+--------------------+-----
+White                                   |Johnson             |CA
+Green                                   |Marjorie            |CA
+Carson                                  |Cheryl              |CA
+O'Leary                                 |Michael             |CA
+Straight                                |Dean                |CA
+ 5 row(s) fetched.
+
+SQL>quit
+Again (y/n) ? n
+
+Have a nice day.
+[localhost:~] openlink%
+</programlisting>
+				</listitem>
+			</orderedlist>
+		</sect3>
+        </sect2>
+
+	<sect2 id="winodbcsamples">
+		<title>Windows 95/98/NT/2000</title>
+		<sect3 id="cppdemo32">
+			<title>C++ Demo</title>
+			<orderedlist>
+				<listitem>
+					<para>Go to the Virtuoso &quot;Start Menu&quot; item, then click on
+        the &quot;C++ Demo 32 Bit&quot; menu item.</para>
+					<figure id="sample001" float="1">
+						<title>C++ Demo</title>
+						<graphic fileref="sampl001.gif" width="456px" depth="337px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Follow the Environment-&gt;Open Connection menu path. Selecting the
+        &quot;Open Connection&quot; menu item results in the ODBC Driver Manager presenting you
+        with a list of ODBC DSNs on your machine as depicted by the screen capture below:</para>
+					<figure id="sample002" float="1">
+						<title>C++ Demo</title>
+						<graphic fileref="sampl004.gif" width="449px" depth="388px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Select the ODBC DSN that you want to be connecting to, in this case
+        &quot;Local Virtuoso Demo&quot; has been chosen since this will connect you to a sample
+        Virtuoso database that has been populated with data. </para>
+				</listitem>
+				<listitem>
+					<para>You are then presented with a Login Dialog by the Virtuoso driver
+        for ODBC, enter a valid user name and password (default being user: demo and password:
+        demo) into the appropriate fields.</para>
+					<figure id="sample003" float="1">
+						<title>C++ Demo</title>
+						<graphic fileref="sampl003.gif" width="354px" depth="287px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>At this point you will be connected to the Virtuoso demonstration
+        database, you can now use the SQL--&gt;Execute SQL menu path to open up the Interactive
+        SQL input dialog. Enter a valid SQL statement (see example in screen shot) and then click
+        on the &quot;OK&quot; button.</para>
+					<figure id="sample004" float="1">
+						<title>C++ Demo</title>
+						<graphic fileref="sampl006.gif" width="408px" depth="210px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>You will be presented with the results of your query.</para>
+					<figure id="sample004" float="1">
+						<title>C++ Demo</title>
+						<graphic fileref="sampl007.gif" width="525px" depth="346px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>You exit this demo by following the Environment--&gt;Close Connection menu path.</para>
+				</listitem>
+			</orderedlist>
+		</sect3>
+		<sect3 id="odbcbench32">
+			<title>ODBC Bench Test 32</title>
+			<orderedlist>
+				<listitem>
+					<para>Go to the Virtuoso &quot;Start Menu&quot; item, then click on the &quot;ODBC Bench
+        Test 32 Bit&quot; menu item. You will be presented with the &quot;Bench Test&quot;
+        interface.</para>
+					<figure id="sample005" float="1">
+						<title>ODBC Bench</title>
+						<graphic fileref="sampl008.gif" width="460px" depth="277px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Follow the File-Connect menu path which initializes the ODBC Driver Manager which in
+        turn presents you with a list of ODBC DSN&apos;s installed on your machine. Select the DSN that
+        you want to benchmark, remember that by benchmarking a DSN you are benchmarking the ODBC
+        Driver that serves the DSN in question and the backend database engine that serves the
+        ODBC Driver. Choose the &quot;Local Virtuoso Demo&quot; DSN if you want to benchmark
+        Virtuoso.</para>
+					<figure id="sample006" float="1">
+						<title>ODBC Bench</title>
+						<graphic fileref="sampl009.gif" width="449px" depth="388px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>You will then be presented with a Login Dialog by the Virtuoso driver for ODBC, enter a
+        valid user name and password (default being user: demo and password: demo for the Demo
+        database) into the appropriate fields.</para>
+					<figure id="sample007" float="1">
+						<title>ODBC Bench</title>
+						<graphic fileref="sampl010.gif" width="354px" depth="287px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Now follow the Bench--&gt;Load Tables menu path and you will be presented with a dialog
+        that enables you to configure key elements of your benchmark. Click the
+        &quot;Execute&quot; button to commence the process of setting up your database for the
+        benchmark tests.</para>
+					<figure id="sample008" float="1">
+						<title>ODBC Bench</title>
+						<graphic fileref="sampl011.gif" width="468px" depth="296px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>As the process of loading data occurs, all the way up to completion, the benchmark
+        program will provide status information into the benchmark output pane as shown below:</para>
+					<figure id="sample010" float="1">
+						<title>ODBC Bench</title>
+						<graphic fileref="sampl012.gif" width="400px" depth="325px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Now that all the benchmark data has been loaded into your database, follow the
+        Bench--&gt;Run Benchmark menu path and then configure your actual benchmark session
+        parameters:</para>
+					<para>These benchmark parameters fall into 3 categories, Timing Options, SQL Options, and
+        Execution Options.</para>
+					<figure id="sample011" float="1">
+						<title>ODBC Bench</title>
+						<graphic fileref="sampl013.gif" width="267px" depth="324px"/>
+					</figure>
+						<para><emphasis>Timing Options:</emphasis>
+						These setting allow you to configure the duration related aspects of this benchmark
+        program</para>
+						<para>
+        Minutes - this is the duration of each benchmark run</para>
+						<para>
+        Runs - this controls how many iterations of the benchmarks you actually run (the default
+        is one benchmark iteration with a duration of 5 minutes)</para>
+					<para><emphasis>SQL Options:</emphasis>
+        These setting allow you to configure how your benchmark&apos;s SQL instructions are actually
+        handled.</para>
+						<para>ExecDirect with SQL Text - this means that no form of repetitive SQL execution
+        optimization is being applied (SQL statements are prepared and executed repetitively)</para>
+						<para>Prepare/Execute Bound Params - this means that the Parameter Binding SQL execution
+        optimization is being applied (SQL is prepared once but executed many times without the
+        overhead of re-preparing statements prior to execution)</para>
+						<para>Use Stored Procedures - this means that the Stored Procedure SQL optimization is being
+        applied (benchmark instructions are stored within database being benchmarked)</para>
+						<para><emphasis>Execution Options:</emphasis>
+						These setting allow you to configure the tone of your benchmark, for instance it could
+        have Transaction scoping and a mix of record retrieval queries, or it could simply be
+        input and update intensive with a minimal amount of record retrieval queries (the case
+        when the 100 row query checkbox is unchecked a typical OLTP scenario) </para>
+						<para>Asynchronous - execute the benchmark instructions asynchronously</para>
+						<para>Use Transactions - make the benchmark use transaction control (instructions are scoped to
+        transaction blocks)</para>
+						<para>Do 100 row Query - perform a simulation of a 100 record retrieval as part of the benchmark
+        activity.</para>
+				</listitem>
+			</orderedlist>
+			<orderedlist>
+				<listitem>
+					<para>Click on the &quot;Run All&quot; button if you would like all the different benchmark
+        type combinations to be performed.</para>
+				</listitem>
+				<listitem>
+					<para>When benchmark run complete benchmark data is written to the benchmark program&apos;s output
+        pane.</para>
+					<figure id="sample012" float="1">
+						<title>ODBC Bench</title>
+						<graphic fileref="sampl014.gif" width="400px" depth="325px"/>
+					</figure>
+					<para>The key pieces of benchmark data that you need to look out for are:</para>
+					<para><emphasis>Total Transactions: </emphasis> total number of transactions completed during the
+        benchmark run</para>
+						<para><emphasis>Transactions Per Second</emphasis>
+            number of transaction completed per second for
+            the benchmark run</para>
+					<para>Information from this benchmark is automatically written to an Excel format CSV
+		(the file odbcbnch.csv) which makes it easy for you to graph
+        and pivot data collated from several benchmark runs. A later version of this demo will
+        actually write the benchmark data into an ODBC DSN that you provide thereby offering even
+        more flexibility and accessibility to benchmark data.</para>
+				</listitem>
+			</orderedlist>
+		</sect3>
+	</sect2>
+	<sect2 id="unixodbcsamp">
+		<title>Linux &amp; UNIX</title>
+		<sect3 id="odbctestnix">
+			<title>ODBCTEST:</title>
+			<para>This is a simple &apos;C&apos; based and ODBC compliant Interactive SQL processor. </para>
+			<orderedlist>
+				<listitem>
+					<para>Run the script virtuoso-enterprise.sh to set up your environment:</para>
+					<programlisting>. virtuoso-enterprise.sh</programlisting>
+				</listitem>
+				<listitem>
+					<para>Start ODBCTEST by executing the following command:</para>
+					<programlisting>odbctest</programlisting>
+				</listitem>
+				<listitem>
+					<para>At the SQL command prompt enter &quot;?&quot; for a list of ODBC
+        DSNs on your machine or enter a valid ODBC Connect String.
+					If you have a DSN named &quot;Marketing&quot; you would enter:</para>
+					<programlisting>DSN=Marketing;UID=username;PWD=password</programlisting>
+					<para>Note: If there is no password, you must include a semicolon at the end:</para>
+					<programlisting>DSN=Marketing;UID=sa;PWD=;</programlisting>
+				</listitem>
+				<listitem>
+					<para>Any valid SQL or ODBC command may be executed through this interface. The following example
+					shows a connection to Microsoft SQL Server 2000, making a simple query against the sample Northwind database:</para>
+					<programlisting>
+[localhost:~] openlink% odbctest
+iODBC Demonstration program
+This program shows an interactive SQL processor
+
+
+Enter ODBC connect string (? shows list, or DSN=...): DSN=test_sql2k
+
+SQL&gt;select au_lname, au_fname, state from authors where au_id &lt; '333-33-3333'
+au_lname                                |au_fname            |state
+----------------------------------------+--------------------+-----
+White                                   |Johnson             |CA
+Green                                   |Marjorie            |CA
+Carson                                  |Cheryl              |CA
+O'Leary                                 |Michael             |CA
+Straight                                |Dean                |CA
+ 5 row(s) fetched.
+
+SQL>quit
+Again (y/n) ? n
+
+Have a nice day.
+[localhost:~] openlink%
+</programlisting>
+				</listitem>
+			</orderedlist>
+		</sect3>
+	</sect2>
+	<sect2 id="MSDTCsample"> 
+	    <title> MS DTC ODBC Sample Application </title>
+	    <para>The MS DTC demo is located in the 
+	        <programlisting>&lt;VIRTUOSO_INSTALLATION_DIRECTORY&gt;\samples\odbc\MSDTCdemo1</programlisting>
+	        folder. This demo shows usage of  distributed transactions driven by MS DTC through the ODBC API.</para>
+	     <sect3 id="MSDTCdemo1Setup">
+	         <title> Setup </title>
+	         <para> The sample works with two instances of Virtuoso server. The running MS DTC service is needed. 
+	             The servers must be started with MS DTC support (see Virtuoso documentation). </para>
+	         <para> 
+	             First of all, edit the virt.odbc file. By default this file contains two connection strings of local Virtuoso servers running on port 1111 and port 1112,
+	             Each line begins with connection string to appropriate Virtuoso server. 
+	             Initially this file contains the following lines: </para>
+	             <programlisting>
+1111 dba dba 00.sql
+1112 dba dba 01.sql 
+	             </programlisting> 
+	         <para> where 1111, 1112 are ports of two Virtuoso servers. &quot;dba dba&quot; - user and password. </para>	                    
+	     </sect3>
+	     <sect3 id="MSDTCdemo1Init">
+	         <title> Initialization </title>
+	         <para> Start <programlisting> mtstest.exe +load </programlisting> in the <programlisting>&lt;VIRTUOSO_INSTALLATION_DIRECTORY&gt;\samples\odbc\MSDTCdemo1</programlisting>
+	        folder. This must check whether all needed servers are running, create and initialize  tables, procedures, etc.</para> 
+	     </sect3>
+	     <sect3 id="MSDTCdemo1Start">
+	         <title> Test </title>
+	         <para> Run the command in the demo's working directory: </para>
+	         <programlisting> 
+mtstest.exe   +exec N
+mtstest.exe   +exec 0
+	         </programlisting>
+	         <para> where N - is a number of test iterations. The second command checks logical consistency of the tables.</para>
+	     </sect3>
+	     <sect3 id="MSDTCdemo1Description">
+	         <title> Description </title>
+	         <para> The demo source is <programlisting>start.c</programlisting> file in the <programlisting>&lt;VIRTUOSO_INSTALLATION_DIRECTORY&gt;\samples\odbc\MSDTCdemo1</programlisting>
+	         directory. Several highlights of the most signficant
+	         parts of code are presented  below: </para>
+	         <programlisting>
+  ITransactionDispenser *disp;
+  ITransaction *transaction;
+  
+  ...
+  HRESULT hr =
+      DtcGetTransactionManagerC (0, 0, &amp;IID_ITransactionDispenser, 0, 0, 0,
+      &amp;, disp);
+	         </programlisting>
+	         <para>
+	             The code above creates Dispenser object which represents the local instance of MS DTC. If MS DTC is not avialabe 
+	             <programlisting>DtcGetTransactionManagerC</programlisting> 
+	            fails. The Dispenser is needed to create distributed transaction objects later.
+	         </para>
+	         <para>
+	             Begin new distributed transaction: </para>
+	         <programlisting>
+disp->lpVtbl->BeginTransaction (disp, 0, ISOLATIONLEVEL_ISOLATED,
+      0, 0, &amp;transaction);	             
+	         </programlisting>
+	         <para> Enlist connection in the transaction: </para>
+	         <programlisting>
+SQLSetConnectOption (hdbc, SQL_COPT_SS_ENLIST_IN_DTC,
+      (DWORD) transaction);
+	         </programlisting>
+	         <para> And, finally, commit the transaction: </para>
+	         <programlisting>
+transaction->lpVtbl->Commit (tran, 0, 0, 0);
+	         </programlisting>
+	     </sect3>	     
+	</sect2>
+	
+	<sect2 id="MSDTCsample2"> 
+	    <title> MS DTC OLE DB Sample Application </title>
+	    <para>The MS DTC OLE DB demo is located in the 
+	        <programlisting>&lt;VIRTUOSO_INSTALLATION_DIRECTORY&gt;\samples\odbc\MSDTCdemo2</programlisting>
+	        folder. This demo shows usage of  distributed transactions driven by MS DTC through OLE DB.</para>
+	     <sect3 id="MSDTCdemo2Setup">
+	         <title> Setup </title>
+	         <para> The sample works with two instances of Virtuoso server. Running MS DTC service is needed. 
+	             The servers must be started with MS DTC support (see Virtuoso documentation). </para>
+	         <para> 
+	             The test needs two Virtuoso server instances running on ports 1111 and 1112
+	         </para>	                    
+	     </sect3>
+	     <sect3 id="MSDTCdemoStart">
+	         <title> Run </title>
+	         <para> Run the command in the demo's working directory: </para>
+	         <programlisting> 
+voledbtest.exe
+	         </programlisting>
+	     </sect3>
+	     <sect3 id="MSDTCdemoDescription">
+	         <title> Description </title>
+	         <para> The demo source is <programlisting>voledbtest.cs</programlisting> file in the <programlisting>&lt;VIRTUOSO_INSTALLATION_DIRECTORY&gt;\samples\odbc\MSDTCdemo</programlisting>
+	         directory. Several highlights of the most signficant
+	         parts of code are presented  below: </para>
+	         <programlisting>
+[TransactionAttribute(TransactionOption.Required)]	             
+  	         </programlisting>
+	         <para>
+	             It is significant to set this attribute of class to enable automatic transaction initializaton.
+	         </para>
+	         <para> Create connections to appropriate servers: </para>
+	         <programlisting>
+string strConn = "Provider=VIRTOLEDB;Data Source=" + dsn1 
+    + ";User Id=dba;Password=dba;Initial Catalog=Demo;Prompt=NoPrompt;";
+string strConn2 = "Provider=VIRTOLEDB;Data Source=" + dsn2 + 
+    ";User Id=dba;Password=dba;Initial Catalog=Demo;Prompt=NoPrompt;";
+obj_conn = new OleDbConnection(strConn);
+obj_conn2 = new OleDbConnection(strConn2);
+	         </programlisting>
+	         <para> And, finally, execute the SQL code in the context of distributed transaction: </para>
+	         <programlisting>
+OleDbCommand sqlc = new OleDbCommand ("ODBC_BENCHMARK(" + idx + ",1,1,12.00,\'noone\')");
+sqlc.Connection = obj_conn;
+sqlc.ExecuteNonQuery();
+sqlc = new OleDbCommand ("ODBC_BENCHMARK(" + idx + ",1,1,-12.00,\'noone\')");
+sqlc.Connection = obj_conn2;
+sqlc.ExecuteNonQuery();
+	         </programlisting>
+	     </sect3>	     
+	</sect2>
+  </sect1>
+  <sect1 id="jdbcdemos">
+		<title>Sample JDBC Applications &amp; Applets</title>
+		<sect2 id="JDBCDemo">
+			<title>JDBCDemo Java Application</title>
+			<orderedlist>
+				<listitem>
+					<para>Go to the Virtuoso &quot;Start Menu&quot; program group and then follow the JDBC
+        Samples--&gt;JDBCDemo (JDK1.1&amp;1.2) menu path, this will execute a DOS batch program that
+        initializes the Java demo application. </para>
+					<figure id="vjdemo1" float="1">
+						<title>JDBC Demo</title>
+						<graphic fileref="vjdemo1.gif" width="343px" depth="216px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Set the JDBC Driver Name and URL settings for your connection to the Virtuoso
+        demonstration database. The &quot;Driver Name&quot; field identifies the Virtuoso Driver.
+        If it is left blank, then it defaults to &quot;virtuoso.jdbc.Driver&quot;, which is the
+        Virtuoso Driver for JDBC 1.0.  The &quot;Connection URL&quot; field requires a valid
+        Virtuoso JDBC URL.</para>
+					<figure id="vjdemo2" float="1">
+						<title>JDBC Demo</title>
+						<graphic fileref="vjdemo2.gif" width="358px" depth="177px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Enter a valid SQL statement and then click the &quot;Query&quot; button, the example
+        below uses a fully qualified Virtuoso SQL statement requesting all records from the
+        &quot;Demo&quot; database table &quot;Customers&quot; owned by the Virtuoso user
+        &quot;DBA&quot;.</para>
+					<figure id="vjdemo3" float="1">
+						<title>JDBC Demo</title>
+						<graphic fileref="vjdemo3.gif" width="435px" depth="344px"/>
+					</figure>
+				</listitem>
+			</orderedlist>
+		</sect2>
+		<sect2 id="ScrollDemo2">
+			<title>ScrollDemo2 Java Application</title>
+			<orderedlist>
+				<listitem>
+					<para>Go to the Virtuoso Lite &quot;Start Menu&quot; program group and then follow the JDBC
+        Samples--&gt;ScrollDemo2 (JDK1.2) menu path, this will execute a DOS batch program that
+        initializes the Java demo application. </para>
+					<figure id="sample013" float="1">
+						<title>Scroll Demo 2</title>
+						<graphic fileref="sampl015.gif" width="355px" depth="217px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Set the JDBC Driver Name and URL settings for your connection to the Virtuoso
+        demonstration database. The &quot;Driver Name&quot; field identifies the Virtuoso Driver.
+        If it is left blank, then it defaults to &quot;virtuoso.jdbc2.Driver&quot;, which is the
+        Virtuoso Driver for JDBC 2.0.  The &quot;Connection URL&quot; field requires a valid
+        Virtuoso JDBC URL.</para>
+					<figure id="sample014" float="1">
+						<title>Scroll Demo 2</title>
+						<graphic fileref="sampl016.gif" width="350px" depth="216px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Enter a valid SQL statement and then click the &quot;Query&quot; button, the example
+        below uses a fully qualified Virtuoso SQL statement requesting all records from the
+        &quot;Demo&quot; database table &quot;Customers&quot; owned by the Virtuoso user
+        &quot;DBA&quot;.</para>
+					<figure id="sample015" float="1">
+						<title>Scroll Demo 2</title>
+						<graphic fileref="sampl017.gif" width="400px" depth="244px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>You can now use the navigational buttons to Scroll backwards and forwards, each of these
+        navigational buttons highlights Virtuoso&apos;s full implementation of the JDBC 2.0 Scrollable
+        Cursors specifications.</para>
+				</listitem>
+			</orderedlist>
+		</sect2>
+		<sect2 id="ScrollDemo2Applet">
+			<title>ScrollDemo2 Java Applet</title>
+			<orderedlist>
+				<listitem>
+					<para>Start the Virtuoso Admin Assistant and then follow the Sample Applications--&gt;JDBC
+        Applet Demos menu path.</para>
+					<figure id="sample016" float="1">
+						<title>Scroll Demo 2</title>
+						<graphic fileref="sampl018.gif" width="400px" depth="265px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Click on the &quot;ScrollDemo2&quot; hyperlink which initializes the ScrollDemo2 applet,
+        if you do not have a Java 1.2 or Java 2.0 compliant browser you will not be able to run
+        this Applet demo. The other way to experience this demo is to run the Application version
+        which uses your operating systems Java Virtual Machine (JVM) instead of a JVM inherently
+        linked to a Web Browser.</para>
+				</listitem>
+			</orderedlist>
+		</sect2>
+		<sect2 id="JBenchApplication">
+			<title>JBench Application</title>
+			<orderedlist>
+				<listitem>
+					<para>Go to the Virtuoso &quot;Start Menu&quot; program group and then follow the JDBC
+        Samples--&gt;Jbench (JDK1.1) or Jbench (JDK1.2) menu path, depending on the JVM you have
+        installed. This will execute a DOS batch program that initializes the JBench application. </para>
+					<figure id="sample017" float="1">
+						<title>JBench</title>
+						<graphic fileref="sampl019.gif" width="355px" depth="237px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>The follow the File--&gt;Connect menu path to make your initial connection. You will
+        need to identify your JDBC Driver (by providing appropriate Driver Name values in the JDBC
+        Driver field) and then provide a valid JDBC URL for your specific JDBC Driver (Jbench uses
+        a valid Virtuoso Driver for JDBC URL that points to the demonstration database listening
+        at port 1112 as its default).</para>
+					<figure id="sample018" float="1">
+						<title>JBench</title>
+						<graphic fileref="sampl020.gif" width="400px" depth="106px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Follow the Results--&gt;Table URL menu path, this is how you identify (using a JDBC URL)
+        the location of the &quot;Results&quot; tables into which you will be storing your
+        benchmark data. The default URL is the current JDBC URL (the one used to establish your
+        initial connection), but this can be a totally different database to the one being
+        benchmarked.</para>
+				</listitem>
+				<listitem>
+					<para>Follow the Results--&gt;Create menu path, this is how you actually perform the
+        &quot;Results&quot; table creation in the database identified by the URL in the previous
+        step.</para>
+				</listitem>
+				<listitem>
+					<para>Follow the TPC-A--&gt;Load Tables menu path to prepare your database for the TPC-A
+        benchmark, select a database schema type that matches the database engine that you are
+        benchmarking. If your database is not listed ANSI should suffice (as long as this is an
+        ANSI SQL compliant database).</para>
+					<figure id="sample019" float="1">
+						<title>JBench</title>
+						<graphic fileref="sampl021.gif" width="400px" depth="232px"/>
+					</figure>
+				</listitem>
+				<listitem>
+					<para>Follow the TPC-A--&gt;Load Procedures menu path to Load the Virtuoso TPC-A stored
+        procedures.</para>
+				</listitem>
+				<listitem>
+					<para>Now that all the benchmark data and stored procedures have been loaded into your
+        database, follow the TPC-A--&gt;Run Benchmark menu path and then configure your actual
+        benchmark session parameters:</para>
+					<para>The benchmark parameters fall into 4 categories, Bench execution mode, Run Options, SQL
+        Options, and Execution Options.</para>
+					<figure id="sample020" float="1">
+						<title>JBench</title>
+						<graphic fileref="sampl022.gif" width="250px" depth="317px"/>
+					</figure>
+					<para><emphasis>Bench execution mode:</emphasis>
+						These setting allow you to configure the threads used for the benchmark.</para>
+						<para>Decide on a single or multiple threads test.</para>
+						<para>No. Threads - this is the number of concurrent threads to be used during the benchmark.</para>
+						<para><emphasis>Run Options:</emphasis>
+						These setting allow you to configure the duration related aspects of this benchmark program.</para>
+						<para>No. runs - this controls how many iterations of the benchmarks you actually run (the
+        default is 100 benchmark iterations).</para>
+						<para>Duration (mins.) - this is the duration in minutes of each benchmark run.</para>
+						<para><emphasis>SQL Options:</emphasis>
+						These setting allow you to configure how your benchmark&apos;s SQL instructions are actually handled.</para>
+						<para>ExecDirect with SQL Text - this means that no form of repetitive SQL execution
+        optimization is being applied (SQL statements are prepared and executed repetitively)</para>
+						<para>Prepare/Execute Bound Params - this means that the Parameter Binding SQL execution
+        optimization is being applied (SQL is prepared once but executed many times without the
+        overhead of re-preparing statements prior to execution)</para>
+						<para>Use Stored Procedures - this means that the Stored Procedure SQL optimization is being
+        applied (benchmark instructions are stored within database being benchmarked)</para>
+						<para>Run All - this implies you want to perform all of the above benchmarks</para>
+						<para><emphasis>Execution Options: </emphasis>
+						These setting allow you to configure the tone of your benchmark, for instance it could
+        have Transaction scoping and a mix of record retrieval queries, or it could simply be
+        input and update intensive with a minimal amount of record retrieval queries (the case
+        when the 100 row query checkbox is unchecked a typical OLTP scenario) </para>
+						<para>Use Transactions - make the benchmark use transaction control (instructions are scoped to
+        transaction blocks)</para>
+						<para>Do 100 row Query - perform a simulation of a 100 record retrieval as
+            part of the benchmark activity.</para>
+				</listitem>
+				<listitem>
+					<para>Run your TPC-A benchmark.</para>
+				</listitem>
+				<listitem>
+					<para>Follow the TPC-A--&gt;Cleanup menu path to clean up your database so that you can then
+        run other benchmarks (TPC-C like benchmark).</para>
+				</listitem>
+				<listitem>
+					<para>To run the TPC-C  benchmark simply follow the appropriate menu path, create the
+        benchmark tables &amp; stored procedures, load the benchmark data and then run the TPC-C
+        benchmark.</para>
+				</listitem>
+			</orderedlist>
+		</sect2>
+		<sect2 id="JTADemo">
+			<title>JTA Demo Application</title>
+			<para>The JTA demo is located in the
+<programlisting>&lt;VIRTUOSO_INSTALLATION_DIRECTORY&gt;\samples\jdbc\JTADemo</programlisting>
+folder.</para>
+			<sect3 id="JTADemoSetup">
+				<title>Software Setup</title>
+				<orderedlist>
+					<listitem>
+						<para>The sample requires
+2 or 3 Virtuoso instances and an instance of a J2EE 1.3.1 server properly
+set up and running on the same computer or on the network. To build the sample
+it's also necessary to have a J2SE 1.4 SDK installed.</para>
+					</listitem>
+					<listitem>
+						<para>The JAVA_HOME and
+J2EE_HOME environment variables must be set to the J2SE SDK and J2EE
+installation path respectively.</para>
+					</listitem>
+					<listitem>
+						<para>The virtjdbc3.jar file
+must be in the classpath of the J2EE server. The setting of the classpath
+differs across different J2EE servers. For J2EE Reference Implementation (RI)
+the J2EE_CLASSPATH variable might be set in %J2EE_HOME%\bin\userconfig.bat
+on Windows or $(J2EE_HOME)/bin/userconfig.sh on Unix.</para>
+<programlisting>
+    set J2EE_CLASSPATH=C:/Virtuoso/lib/virtjdbc3.jar
+</programlisting>
+or
+<programlisting>
+    J2EE_CLASSPATH=/home/login/virtuoso/lib/virtjdbc3.jar
+    export J2EE_CLASSPATH
+</programlisting>
+					</listitem>
+					<listitem>
+						<para>Add the Virtuoso
+XA datasources to J2EE server. For J2EE RI this is done like this:</para>
+<programlisting>
+    j2eeadmin -addJdbcXADatasource jdbc/Virtuoso1 virtuoso.jdbc3.VirtuosoXADataSource dba dba -props serverName=localhost portNumber=1111
+    j2eeadmin -addJdbcXADatasource jdbc/Virtuoso2 virtuoso.jdbc3.VirtuosoXADataSource dba dba -props serverName=localhost portNumber=2222
+    j2eeadmin -addJdbcXADatasource jdbc/Virtuoso3 virtuoso.jdbc3.VirtuosoXADataSource dba dba -props serverName=localhost portNumber=3333
+</programlisting>
+						<para>Please note that the
+newly added datasources take effect only after restart of the J2EE server.</para>
+					</listitem>
+				</orderedlist>
+			</sect3>
+			<sect3 id="JTADemoConfig">
+				<title>Configuration</title>
+				<para>The sample folder contains the
+jtademo.properties file which can be used to configure the sample aplication.
+The configuration options are described within the file.</para>
+			</sect3>
+			<sect3 id="JTADemo_Deploy">
+				<title>Building and Deployment</title>
+				<para>The sample folder contains
+build and deploy scripts (build.sh and deploy.sh for Linux and Unix and
+build.bat and deploy.bat for Windows).</para>
+				<para>Use the build script to build the
+sample application from the source files.</para>
+				<para>Deploy the application to the J2EE
+server. The deploy script performs this task for J2EE RI. Other J2EE application
+servers might provide different ways for application deployment.</para>
+			</sect3>
+			<sect3 id="JTADemoRun">
+				<title>Running the Sample</title>
+				<para>The sample folder contains
+the run scripts for Linux/Unix and Windows.</para>
+				<para>The run script accepts the
+following commands:</para>
+				<variablelist>
+					<varlistentry>
+					    <term>create</term>
+					    <listitem>Creates and populates
+the necessary tables.</listitem>
+					</varlistentry>
+					<varlistentry>
+					    <term>check</term>
+					    <listitem>Verifies data
+consistency.</listitem>
+					</varlistentry>
+					<varlistentry>
+					    <term>drop</term>
+					    <listitem>Removes data and
+tables from the databases.</listitem>
+					</varlistentry>
+					<varlistentry>
+					    <term>run</term>
+					    <listitem>Executes a number of
+transactions over database tables.</listitem>
+					</varlistentry>
+				</variablelist>
+				<para>The first action to do is to initialize
+the data with the create command. After this the command might be used
+one or more times. This executes a series of concurrent updates on the
+distributed data. The check command verifies that this updates left
+databases in the consistent state.</para>
+				<para>For instance, for Unix:</para>
+<programlisting>
+    run.sh create
+    run.sh run
+    run.sh check
+</programlisting>
+				<para>And for Windows:</para>
+<programlisting>
+    run.bat create
+    run.bat run
+    run.bat check
+</programlisting>
+			</sect3>
+		</sect2>
+	</sect1>
+</chapter>

@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_openxml">
+  <refmeta>
+    <refentrytitle>openxml</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>openxml</refname>
+    <refpurpose>Provides a rowset view over an XML document.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_openxml">
+      <funcprototype id="fproto_openxml">
+        <funcdef><function>openxml</function></funcdef>
+        <paramdef>in <parameter>idoc </parameter>integer</paramdef>
+        <paramdef>in <parameter>rowpattern </parameter>varchar</paramdef>
+        <paramdef><optional>in <parameter>flags </parameter>byte</optional></paramdef>
+	<LineAnnotation>[WITH (SchemaDeclaration | TableName)]</LineAnnotation>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1 id="desc">
+    <title>Description</title>
+    <para>Because OPENXML
+    is a rowset provider, OPENXML can be used in Transact-SQL statements in
+    which rowset providers such as a table, view, or the OPENROWSET function
+    can appear.</para>
+  </refsect1>
+  <refsect1 id="params">
+    <title>Parameters</title>
+    <refsect2>
+      <title>idoc</title>
+      <para>Is the document handle of the internal representation of an XML
+      document. The internal representation of an XML document is created by
+      calling sp_xml_preparedocument.</para>
+    </refsect2>
+    <refsect2>
+      <title>rowpattern</title>
+      <para>Is the XPath pattern used to identify the nodes (in the XML
+      document whose handle is passed in the idoc parameter) to be processed
+      as rows.</para>
+    </refsect2>
+    <refsect2>
+      <title>flags</title>
+      <para>Indicates the mapping that should be used between the XML data and
+      the relational rowset, and how the spill-over column should be filled.
+      flags is an optional input parameter, and can be one of these
+      values:</para>
+      <table><title>flags values</title>
+        <tgroup cols="2">
+        <thead>
+  	  <row><entry>Byte Value</entry><entry>Description</entry></row>
+        </thead>
+	<tbody>
+	  <row>
+	    <entry>0</entry>
+	    <entry>Defaults to attribute-centric mapping.</entry>
+	  </row>
+	  <row>
+	    <entry>1</entry>
+	    <entry>Use the attribute-centric mapping. Can be combined with
+	    XML_ELEMENTS; in which case, attribute-centric mapping is applied
+	    first, and then element-centric mapping is applied for all columns
+	    not yet dealt with.</entry>
+	  </row>
+	  <row>
+	    <entry>2</entry>
+	    <entry>Use the element-centric mapping. Can be combined with
+	    XML_ATTRIBUTES; in which case, attribute-centric mapping is
+	    applied first, and then element-centric mapping is applied for
+	    all columns not yet dealt with.</entry>
+	  </row>
+	  <row>
+	    <entry>8</entry>
+	    <entry>Can be combined (logical OR) with XML_ATTRIBUTES or
+	    XML_ELEMENTS. In context of retrieval, this flag indicates that
+	    the consumed data should not be copied to the overflow property
+	    <emphasis>@mp:xmltext</emphasis>.</entry>
+	  </row>
+	</tbody>
+	</tgroup>
+      </table>
+    </refsect2>
+    <refsect2>
+      <title>SchemaDeclaration</title>
+      <para>Is the schema definition of the form:</para>
+<programlisting>ColName ColType [ColPattern | MetaProperty]
+  [, ColName ColType [ColPattern | MetaProperty]...]</programlisting>
+
+<formalpara><title>ColName</title>
+<para>Is the column name in the rowset.</para>
+</formalpara>
+<formalpara><title>ColType</title>
+<para>Is the SQL data type of the column in the rowset. If the column types
+differ from the underlying XML data type of the attribute, type coercion
+occurs. If the column is of type <emphasis>timestamp</emphasis>, the present
+value in the XML document is disregarded when selecting from an OPENXML rowset,
+and the autofill values are returned.</para>
+</formalpara>
+<formalpara><title>ColPattern</title>
+<para>Is an optional, general XPath pattern that describes how the XML nodes
+should be mapped to the columns. If the ColPattern is not specified, the
+default mapping (attribute-centric or element-centric mapping as specified by
+flags) takes place.</para>
+<para>The XPath pattern specified as ColPattern is used to specify the special
+nature of the mapping (in case of attribute-centric and element-centric mapping)
+that overwrites or enhances the default mapping indicated by flags.</para>
+<para>The general XPath pattern specified as ColPattern also supports the
+metaproperties.</para>
+</formalpara>
+<formalpara><title>MetaProperty</title>
+<para>Is one of the metaproperties provided by OPENXML. If the metaproperty is
+specified, the column contains information provided by the metaproperty. The
+metaproperties allow you to extract information (such as relative position,
+namespace information) about XML nodes, which provides more information than
+is visible in the textual representation.</para>
+</formalpara>
+    </refsect2>
+
+    <refsect2>
+      <title>TableName</title>
+      <para>Is the table name that can be given (instead of SchemaDeclaration)
+      if a table with the desired schema already exists and no column patterns
+      are required.</para>
+
+<para>The WITH clause provides a rowset format (and additional mapping
+information as necessary) using either SchemaDeclaration or specifying an
+existing TableName. If the optional WITH clause is not specified, the results
+are returned in an <emphasis>edge table</emphasis> format. Edge
+tables represent the fine-grained XML document structure
+(e.g. element/attribute names, the document hierarchy, the namespaces,
+PIs etc.) in a single table.</para>
+
+<para>This table describes the structure of the edge table.</para>
+<table><title>edge table structure</title>
+ <tgroup cols="3">
+  <thead>
+   <row><entry>Column name</entry><entry>Data type</entry><entry>Description</entry></row>
+  </thead>
+ <tbody>
+  <row>
+   <entry>id</entry>
+   <entry>bigint</entry>
+   <entry>Is the unique ID of the document node. 
+The root element has an ID value 0. The negative ID values are reserved.</entry>
+  </row>
+  <row>
+   <entry>parentid</entry>
+   <entry>bigint</entry>
+   <entry>Identifies the parent of the node. The parent identified by this ID is not necessarily the parent element, but it depends on the NodeType of the node whose parent is identified by this ID. For example, if the node is a text node, the parent of it may be an attribute node. 
+If the node is at the top level in the XML document, it's ParentID is NULL.</entry>
+  </row>
+  <row>
+   <entry>nodetype</entry>
+   <entry>int</entry>
+   <entry>Identifies the node type. Is an integer that corresponds to the XML DOM node type numbering (see DOM for node information). 
+The node types are:
+
+1 = Element node
+2 = Attribute node
+3 = Text node
+</entry>
+  </row>
+  <row>
+   <entry>localname</entry>
+   <entry>nvarchar</entry>
+   <entry>Gives the local name of the element or attribute. Is NULL if the DOM object does not have a name.  
+</entry>
+  </row>
+  <row>
+   <entry>prefix</entry>
+   <entry>nvarchar</entry>
+   <entry>Is the namespace prefix of the node name.</entry>
+  </row>
+  <row>
+   <entry>namespaceuri</entry>
+   <entry>nvarchar</entry>
+   <entry>Is the namespace URI of the node. If the value is NULL, no namespace is present.</entry>
+  </row>
+  <row>
+   <entry>datatype</entry>
+   <entry>nvarchar</entry>
+   <entry>Is the actual data type of the element or attribute row and is NULL otherwise. The data type is inferred from the inline DTD or from the inline schema.</entry>
+  </row>
+  <row>
+   <entry>prev</entry>
+   <entry>bigint</entry>
+   <entry>Is the XML ID of the previous sibling element. Is NULL if there is no direct previous sibling.</entry>
+  </row>
+  <row>
+   <entry>text</entry>
+   <entry>ntext</entry>
+   <entry>Contains the attribute value or the element content in text form (or is NULL if the edge table entry does not need a value).</entry>
+  </row>
+ </tbody>
+ </tgroup>
+</table>
+    </refsect2>
+
+  </refsect1>
+  <refsect1 id="ret"><title>Return Values</title>
+      <para><function>openxml</function> returns a result set</para>
+  </refsect1>
+  <refsect1 id="errors"><title>Errors</title>
+    <table><title>Errors signalled by <function>openxml()</function></title>
+      <tgroup cols="3">
+       <thead><row><entry>SQL Code</entry><entry>Error Message</entry>
+         <entry>Virtuoso Code</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>42S22</errorcode></entry>
+	    <entry>The data column does not exist</entry>
+	    <entry>XV005</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42S01</errorcode></entry>
+	    <entry>The XML procedure view aready exists</entry>
+	    <entry>XV004</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry>The table does not exists and data is not valid XML</entry>
+	    <entry>XV001</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry>The metadata is not supplied</entry>
+	    <entry>XV002</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry>The metadata is not valid</entry>
+	    <entry>XV003</entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>22023</errorcode></entry>
+	    <entry>Bad datatype in metadata</entry>
+	    <entry>XV006</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_simple_select_openxml">
+      <title>Use a simple SELECT statement with OPENXML</title>
+      <para>This example creates an internal representation of the XML image
+      using sp_xml_preparedocument. A SELECT statement using an OPENXML rowset
+      provider is then executed against the internal representation of the XML
+      document.</para>
+      <para>The flag value is set to 1 indicating attribute-centric mapping.
+      Therefore, the XML attributes map to the columns in the rowset. The
+      rowpattern specified as /ROOT/Customers identifies the &lt;Customers&gt;
+      nodes to be processed.</para>
+      <para>The optional ColPattern (column pattern) is not specified because
+      the column name matches the XML attribute names.</para>
+      <para>The OPENXML rowset provider creates a two-column rowset (CustomerID
+      and ContactName) from which the SELECT statement retrieves the necessary
+      columns (in this case, all the columns).</para>
+      <programlisting>
+DECLARE @idoc int
+DECLARE @doc varchar(1000)
+SET @doc ='
+&lt;ROOT&gt;
+&lt;Customer CustomerID="VINET" ContactName="Paul Henriot"&gt;
+   &lt;Order CustomerID="VINET" EmployeeID="5" OrderDate="1996-07-04T00:00:00"&gt;
+      &lt;OrderDetail OrderID="10248" ProductID="11" Quantity="12"/&gt;
+      &lt;OrderDetail OrderID="10248" ProductID="42" Quantity="10"/&gt;
+   &lt;/Order&gt;
+&lt;/Customer&gt;
+&lt;Customer CustomerID="LILAS" ContactName="Carlos Gonzlez"&gt;
+   &lt;Order CustomerID="LILAS" EmployeeID="3" OrderDate="1996-08-16T00:00:00"&gt;
+      &lt;OrderDetail OrderID="10283" ProductID="72" Quantity="3"/&gt;
+   &lt;/Order&gt;
+&lt;/Customer&gt;
+&lt;/ROOT&gt;'
+--Create an internal representation of the XML document.
+EXEC sp_xml_preparedocument @idoc OUTPUT, @doc
+-- Execute a SELECT statement that uses the OPENXML rowset provider.
+SELECT    *
+FROM       OPENXML (@idoc, '/ROOT/Customer',1)
+            WITH (CustomerID  varchar(10),
+                  ContactName varchar(20))
+</programlisting>
+      <para>Here is the result set:</para>
+      <screen>
+CustomerID ContactName          
+---------- -------------------- 
+VINET      Paul Henriot
+LILAS      Carlos Gonzlez
+      </screen>
+<para>If the same SELECT statement is executed with flags set to 2, indicating
+element-centric mapping, the values of CustomerID and ContactName for both of
+the customers in the XML document are returned as NULL, because the
+&lt;Customers&gt; elements do not have any subelements.</para>
+
+<para>Here is the result set:</para>
+<screen>
+CustomerID ContactName
+---------- -----------
+NULL       NULL
+NULL       NULL
+</screen>
+    </example>
+
+    <example id="ex_colpattern_openxml">
+      <title>Specify ColPattern for mapping between columns and the XML attributes</title>
+      <para>This query returns customer ID, order date, product ID and quantity
+      attributes from the XML document. The rowpattern identifies the
+      &lt;OrderDetails&gt; elements. ProductID and Quantity are the attributes
+      of the &lt;OrderDetails&gt; element. However, the OrderID, CustomerID and
+      OrderDate are the attributes of the parent element (&lt;Orders&gt;).
+      </para>
+      <para>The optional ColPattern is specified, indicating that:</para>
+      <simplelist>
+        <member>The OrderID, CustomerID and OrderDate in the rowset map to the
+        attributes of the parent of the nodes identified by rowpattern in the
+        XML document.</member>
+        <member>The ProdID column in the rowset maps to the ProductID attribute,
+        and the Qty column in the rowset maps to the Quantity attribute of the
+        nodes identified in rowpattern.</member>
+      </simplelist>
+      <para>Although the element-centric mapping is
+      specified by the flags parameter, the mapping specified in ColPattern
+      overwrites this mapping.</para>
+      <programlisting>
+declare @idoc int
+declare @doc varchar(1000)
+set @doc ='
+&lt;ROOT&gt;
+&lt;Customer CustomerID="VINET" ContactName="Paul Henriot"&gt;
+   &lt;Order OrderID="10248" CustomerID="VINET" EmployeeID="5" 
+           OrderDate="1996-07-04T00:00:00"&gt;
+      &lt;OrderDetail ProductID="11" Quantity="12"/&gt;
+      &lt;OrderDetail ProductID="42" Quantity="10"/&gt;
+   &lt;/Order&gt;
+&lt;/Customer&gt;
+&lt;Customer CustomerID="LILAS" ContactName="Carlos Gonzlez"&gt;
+   &lt;Order OrderID="10283" CustomerID="LILAS" EmployeeID="3" 
+           OrderDate="1996-08-16T00:00:00"&gt;
+      &lt;OrderDetail ProductID="72" Quantity="3"/&gt;
+   &lt;/Order&gt;
+&lt;/Customer&gt;
+&lt;/ROOT&gt;'
+--Create an internal representation of the XML document.
+exec sp_xml_preparedocument @idoc OUTPUT, @doc
+-- SELECT stmt using OPENXML rowset provider
+SELECT *
+FROM   OPENXML (@idoc, '/ROOT/Customer/Order/OrderDetail',2)
+         WITH (OrderID       int         '../@OrderID',
+               CustomerID  varchar(10) '../@CustomerID',
+               OrderDate   datetime    '../@OrderDate',
+               ProdID      int         '@ProductID',
+               Qty         int         '@Quantity')
+</programlisting>
+      <para>This is the result:</para>
+      <screen>
+OrderID CustomerID           OrderDate         ProdID    Qty
+
+------------------------------------------------------------------------
+
+10248      VINET       1996-07-04 00:00:00.000   11      12
+10248      VINET       1996-07-04 00:00:00.000   42      10
+10283      LILAS       1996-08-16 00:00:00.000   72      3
+      </screen>
+    </example>
+
+    <example id="ex_edge_openxml">
+      <title>Obtain result in an edge table format</title>
+      <para>In this example, the WITH clause is not specified in the OPENXML
+      statement. As a result, the rowset generated by OPENXML has an edge table
+      format. The SELECT statement returns all the columns in the edge
+      table.</para>
+      <para>The sample XML document in the example consists of &lt;Customers&gt;,
+      &lt;Orders&gt;, and &lt;Order_0020_Details&gt; elements.</para>
+      <para>First sp_xml_preparedocument is called to obtain a document handle.
+      This document handle is passed to OPENXML.</para>
+      <para>In the OPENXML statement:</para>
+      <simplelist>
+        <member>The rowpattern (/ROOT/Customers) identifies the
+	&lt;Customers&gt; nodes to process.</member>
+	<member>The WITH clause is not provided. Therefore OPENXML returns the
+	rowset in an edge table format.</member>
+      </simplelist>
+      <para>Finally the SELECT statement retrieves all the columns in the edge
+      table.</para>
+      <programlisting>
+declare @idoc int
+declare @doc varchar(1000)
+set @doc ='
+&lt;ROOT&gt;
+&lt;Customers CustomerID="VINET" ContactName="Paul Henriot"&gt;
+   &lt;Orders CustomerID="VINET" EmployeeID="5" OrderDate=
+           "1996-07-04T00:00:00"&gt;
+      &lt;Order_x0020_Details OrderID="10248" ProductID="11" Quantity="12"/&gt;
+      &lt;Order_x0020_Details OrderID="10248" ProductID="42" Quantity="10"/&gt;
+   &lt;/Orders&gt;
+&lt;/Customers&gt;
+&lt;Customers CustomerID="LILAS" ContactName="Carlos Gonzlez"&gt;
+   &lt;Orders CustomerID="LILAS" EmployeeID="3" OrderDate=
+           "1996-08-16T00:00:00"&gt;
+      &lt;Order_x0020_Details OrderID="10283" ProductID="72" Quantity="3"/&gt;
+   &lt;/Orders&gt;
+&lt;/Customers&gt;
+&lt;/ROOT&gt;'
+--Create an internal representation of the XML document.
+exec sp_xml_preparedocument @idoc OUTPUT, @doc
+-- SELECT statement using OPENXML rowset provider
+SELECT    *
+FROM       OPENXML (@idoc, '/ROOT/Customers')
+EXEC sp_xml_removedocument @idoc
+</programlisting>
+      <para>The result is returned as an edge table.</para>
+    </example>
+
+  </refsect1>
+</refentry>

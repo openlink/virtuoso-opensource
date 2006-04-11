@@ -1,0 +1,59 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="SX-E-9">
+  <refmeta>
+    <refentrytitle>XML from Data Base Examples</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Making an XML element with the entity objects as parameters </refname>
+    <refpurpose>XML element with the entity objects as parameters</refpurpose>
+  </refnamediv>
+
+
+<refsect1 id="SX-E-9">
+<title>Example 9</title>
+<para>This example creates an &apos;FullAddress&apos; element with </para>
+<itemizedlist mark="bullet">
+  <listitem> four attributes, three of them (&apos;PostalCode&apos;, &apos;Address&apos;, &apos;City&apos;) are
+   produced by <function>XMLATTRIBUTES</function>, and the fourth attribute - &apos;country&apos; is calculated by 
+   <function>xquery_eval</function> </listitem>
+  <listitem>&apos;Region&apos; subelement, that is produced by <function>xtree_doc</function></listitem>
+  <listitem>text content, that is produced by <function>xpath_eval</function> </listitem>
+  <listitem>&apos;emp&apos; subelement with text content from the column "LastName", that is created by nested
+  <function>XMLELEMENT</function></listitem>
+</itemizedlist>
+<programlisting>
+<![CDATA[select XMLELEMENT ('FullAddress',
+                        XMLATTRIBUTES ( "PostalCode", "Address", "City"),
+                        xtree_doc ('<Region>WA</Region>'),
+                        xquery_eval('//@country', xtree_doc('<a country="USA"/>')),
+                        xpath_eval('//@Phone', xtree_doc('<a Phone="(206) 555-9857"/>')),
+                        XMLELEMENT('emp', "LastName"))
+from "Demo"."demo"."Employees" ]]>
+</programlisting>
+</refsect1>
+
+</refentry>
+

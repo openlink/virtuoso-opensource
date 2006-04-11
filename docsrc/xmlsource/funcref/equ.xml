@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_equ">
+  <refmeta>
+    <refentrytitle>equ</refentrytitle>
+    <refmiscinfo>number</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>lt</refname>
+    <refname>lte</refname>
+    <refname>gt</refname>
+    <refname>gte</refname>
+    <refname>equ</refname>
+    <refname>neq</refname>
+    <refpurpose>comparison functions</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_lt">
+      <funcprototype id="fproto_lt">
+        <funcdef><function>lt</function></funcdef>
+        <paramdef>in <parameter>arg1</parameter>any</paramdef>
+        <paramdef>in <parameter>arg2</parameter>any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_lte">
+      <funcprototype id="fproto_lte">
+        <funcdef> <function>lte</function> </funcdef>
+        <paramdef>in <parameter>arg1</parameter>any</paramdef>
+        <paramdef>in <parameter>arg2</parameter>any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_gt">
+      <funcprototype id="fproto_gt">
+        <funcdef> <function>gt</function> </funcdef>
+	<paramdef>in <parameter>arg1</parameter>any</paramdef>
+	<paramdef>in <parameter>arg2</parameter>any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_gte">
+      <funcprototype id="fproto_gte">
+        <funcdef><function>gte</function></funcdef>
+        <paramdef>in<parameter>arg1</parameter> any</paramdef>
+        <paramdef>in<parameter>arg2</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_equ">
+      <funcprototype id="fproto_equ">
+        <funcdef><function>equ</function></funcdef>
+        <paramdef><parameter>arg1</parameter> any</paramdef>
+        <paramdef><parameter>arg2</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_neq">
+      <funcprototype id="fproto_neq">
+	<funcdef><function>neq</function></funcdef>
+        <paramdef>in <parameter>arg1</parameter>any</paramdef>
+        <paramdef>in <parameter>arg2</parameter>any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params_equ"><title>Parameters</title>
+    <refsect2>
+      <title><parameter>arg1</parameter>, <parameter>arg2</parameter></title>
+      <para><type>integer</type>, <type>float</type>, <type>double
+      precision</type>, <type>varchar</type> or <type>NULL</type>.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_equ"><title>Return Values</title>
+    <para>An <type>integer</type> value of 1 or 0 is returned.</para>
+  </refsect1>
+  <refsect1 id="desc_equ"><title>Description</title>
+    <para>These functions return 1 if their first argument is less than (lt),
+    less than or equivalent (lte), greater than (gt), greater than or
+    equivalent (gte), equivalent (equ), or not equivalent (neq) to the
+    second argument, respectively. If the arguments are not of the same type,
+    then an appropriate type coercion is done for them before
+    comparison. </para>
+    <para>These functions correspond to SQL query operators &lt;, &lt;=, &gt;,
+    &gt;=, = and &lt;&gt; and are needed because the SQL syntax does not
+    allow these operators to be used on the left side of
+    <function>FROM</function> keyword in a <function>SELECT</function>
+    statement.</para>
+  </refsect1>
+  <refsect1 id="examples_equ"><title>Examples</title>
+    <example id="ex_equ"><title>Simple Example</title>
+      <screen>
+lt('pata','pato')  -&gt; 1 (Yes, 'pata' is less than 'pato')
+gt('barbar','bar')  -&gt; 1 (Yes, 'barbar' is greater than 'bar')
+equ(17,17)    -&gt; 1 (seventeen is seventeen)
+equ(17,17.0)    -&gt; 1 (regardless of number format)
+equ(atof('17.0'),17.0))  -&gt; 1 (as it seems be)
+equ(atof('17.1'),17.1))  -&gt; 0 (But not always! Beware!)
+gte(1234,NULL)    -&gt; 0 (No, 1234 is not "greater"
+        than or equal to NULL)
+lt(1234,NULL)    -&gt; 1 (Instead, it is "less" than NULL)
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_equ"><title>See Also</title>
+  <para></para>
+  </refsect1>
+</refentry>
+
+

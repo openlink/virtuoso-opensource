@@ -1,0 +1,306 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+<head>
+<title>
+eNews User Selections
+</title>
+<style>
+select.chn
+{
+  width: 300px
+}
+</style>
+</head>
+<body bgcolor="#FFFFFF" text="#000000">
+<?vsp
+  declare _uid, _cid, chCnt integer;
+  declare _done, _cancel, _pid varchar;
+  declare ix, Cat integer;
+  declare ChArr, CSpace varchar;
+  declare f, i, lastRec integer;
+
+ -- dbg_obj_print (params);
+  _uid := atoi(get_keyword('UID', params, '-1'));
+  _pid := (select pwd from eNews..registry where UID = _uid);
+  _done := get_keyword('done', params, '');
+  _cancel := get_keyword('cancel', params, '');
+  if (_cancel <> '')
+  {
+    _cid := (select top 1 CatID from eNews..newsInfo where UID = _uid order by Channel, Category);
+    http_request_status ('HTTP/1.1 302 Found');
+    http_header (sprintf('Location: newswatch.vsp?UID=%d&CAT=%d&P=%s\r\n', _uid, _cid, _pid));
+  }
+  else if (_uid <> -1 and _done = 'DONE')
+  {
+    while (ix < length(params))
+    {
+      if (aref(params, ix) = 'ChList')
+        chCnt := chCnt + 1;
+      ix := ix + 2;
+    }
+    if (chCnt = 0)
+      http('Please choose at least one category.<br />');
+    else
+    {
+      delete from eNews..UserNews where UID = _uid;
+      commit work;
+      ix := 0;
+      while (ix < length(params))
+      {
+        if (aref(params, ix) = 'ChList')
+        {
+          Cat := atoi(aref(params, ix + 1));
+          insert into eNews..UserNews(UID, CatID) values(_uid, Cat);
+        }
+        ix := ix + 2;
+      }
+      commit work;
+
+      _cid := (select top 1 Last_Viewed from eNews..registry where UID = _uid);
+
+      if (not exists(select 1 from eNews..UserNews where UID = _uid and CatID = _cid))
+      {
+        _cid := (select CatID from eNews..newsInfo where UID = _uid order by Channel, Category);
+        update eNews..registry set Last_Viewed = _cid where UID = _uid;
+      }
+      commit work;
+      http_request_status ('HTTP/1.1 302 Found');
+      http_header(sprintf('Location: newswatch.vsp?UID=%d&CAT=%d&P=%s\r\n', _uid, _cid, _pid));
+      return;
+    }
+  }
+
+  if (_uid = -1)
+  {
+    http_request_status('HTTP/1.1 302 Found');
+    http_header('Location: newslogin.vsp\r\n');
+  }
+
+  if (chCnt = 0)
+  {
+?>
+<script language="JavaScript1.2">
+function Channel(ChID, Chan)
+{
+  this.ChID = ChID;
+  this.Chan = Chan;
+}
+
+function Category(ChID, CatID, Cat, Chosen)
+{
+  this.ChID = ChID;
+  this.CatID = CatID;
+  this.Cat = Cat;
+  this.Chosen = Chosen;
+}
+
+
+<?vsp
+
+    lastRec := (select count(*) from eNews..newsChannels);
+
+    i := 0;
+    ChArr := 'var Channels = new Array(\n';
+    for (select ChID, Channel from eNews..newsChannels order by Channel) do
+    {
+      ChArr := sprintf('%s  new Channel(%d, "%s")', ChArr, ChID, Channel);
+      i := i + 1;
+      if (i <> lastRec)
+        ChArr := sprintf('%s,\n', ChArr);
+      else
+        ChArr := sprintf('%s);\n', ChArr);
+    }
+    http(ChArr);
+
+    lastRec := (select count(*) from eNews..newsCategories);
+    i := 0;
+    CSpace := '';
+    ChArr := 'var Categories = new Array(\n';
+    for (select ChID, CatID, Category from eNews..newsCategories order by Category) do
+    {
+      if (length(CSpace) < length(Category))
+        CSpace := Category;
+      Cat := CatID;
+      if (exists(select 1 from eNews..UserNews where UID = _uid and CatID = Cat))
+        f := 1;
+      else f := 0;
+      ChArr := sprintf('%s  new Category(%d, %d, "%s", %d)', ChArr, ChID, CatID, Category, f);
+      i := i + 1;
+      if (i <> lastRec)
+        ChArr := sprintf('%s,\n', ChArr);
+      else
+        ChArr := sprintf('%s);\n', ChArr);
+    }
+    http(ChArr);
+?>
+
+function setChoice(s, x)
+{
+  var i = 0;
+  for (i = 0; i < Categories.length; i ++)
+  {
+    if (Categories[i].CatID.toString() == s)
+      Categories[i].Chosen = x;
+  }
+}
+document.writeln('<p>Choose a Channel to make Category selections.<br />');
+document.writeln('Choose your selections from the Categories menu and click on the <b>ADD</b> button to add to User Selections.</p>');
+document.writeln('<form name="news" method="post" action="changeNews.vsp"><INPUT TYPE="hidden" name="UID" value="<?=_uid?>"><INPUT TYPE="hidden" name="P" value="<?=_pid?>">');
+document.writeln('<TABLE WIDTH="600"><TR><TD WIDTH="300">');
+document.writeln('<b>Available Channels</b>');
+document.writeln('<SELECT class="chn" name="ChanList" SIZE="15">');
+document.writeln('<OPTION><?=CSpace?>');
+document.writeln('</SELECT><BR /><BR />');
+document.writeln('<b>Available Categories Within Channel</b>');
+document.writeln('<SELECT class="chn" name="CatList" MULTIPLE SIZE="10">');
+document.writeln('<OPTION><?=CSpace?>');
+document.writeln('</SELECT><BR />');
+document.writeln('<INPUT TYPE="button" NAME="add" VALUE="ADD"><INPUT TYPE="button" NAME="selectaddall" VALUE="SELECT ALL"></TD>');
+
+document.writeln('<TD WIDTH="300">');
+document.writeln('<b>User Selected Categories</b>');
+document.writeln('<SELECT class="chn" name="ChList" MULTIPLE SIZE="26">');
+document.writeln('<OPTION><?=CSpace?>');
+document.writeln('</SELECT><BR />');
+document.writeln('<INPUT TYPE="button" NAME="remove" VALUE="REMOVE"><INPUT TYPE="button" NAME="selectRall" VALUE="SELECT ALL"><br /><INPUT TYPE="submit" NAME="done" VALUE="DONE"><INPUT TYPE="submit" NAME="cancel" VALUE="CANCEL"></TD>');
+document.writeln('</TR></TABLE>');
+
+document.writeln('</form>');
+
+function ChangeCat(selCh)
+{
+  var i, ctr;
+  var df = document.news;
+  df.CatList.length = 0;
+  ctr = 0;
+  for (i = 0; i < Categories.length; i ++)
+  {
+    if (Categories[i].ChID.toString() == selCh && Categories[i].Chosen == 0)
+    {
+      df.CatList.options[ctr] = new Option(Categories[i].Cat, Categories[i].CatID);
+      ctr ++ ;
+    }
+  }
+  return true;
+}
+
+function ChangeChoice()
+{
+  document.news.ChList.length = 0;
+  var i = 0;
+  var ctr = 0;
+  for (i = 0; i < Categories.length; i ++)
+  {
+    if (Categories[i].Chosen == 1)
+    {
+      document.news.ChList.options[ctr] = new Option(Categories[i].Cat, Categories[i].CatID);
+      ctr ++;
+    }
+  }
+}
+
+document.news.ChanList.length = 0;
+for (i = 0; i < Channels.length; i ++)
+{
+  document.news.ChanList.options[i] = new Option(Channels[i].Chan, Channels[i].ChID);
+}
+document.news.ChanList.options[0].selected = true;
+<?vsp
+    i := (select top 1 ChID from eNews..newsChannels order by Channel);
+?>
+ChangeCat('<?=i?>');
+
+ChangeChoice();
+document.news.ChanList.onchange = function()
+{
+  var i = document.news.ChanList.selectedIndex;
+  ChangeCat(document.news.ChanList.options[i].value);
+}
+
+document.news.add.onclick = function()
+{
+  var i = 0;
+  var df = document.news;
+  for (i = 0; i < df.CatList.length; i ++)
+  {
+    if (df.CatList.options[i].selected == true)
+    {
+      setChoice(df.CatList.options[i].value, 1);
+    }
+  }
+  ChangeCat(df.ChanList.options[df.ChanList.selectedIndex].value);
+  ChangeChoice();
+  return true;
+}
+
+document.news.selectaddall.onclick = function()
+{
+  var i = 0;
+  var df = document.news;
+  for (i = 0; i < df.CatList.length; i ++)
+    df.CatList.options[i].selected = true;
+  return true;
+}
+
+document.news.selectRall.onclick = function()
+{
+  var i = 0;
+  var df = document.news;
+  for (i = 0; i < df.ChList.length; i ++)
+    df.ChList.options[i].selected = true;
+  return true;
+}
+
+document.news.remove.onclick = function()
+{
+  var i = 0;
+  var df = document.news;
+  for (i = 0; i < df.ChList.length; i ++)
+  {
+    if (df.ChList.options[i].selected == true)
+      setChoice(df.ChList.options[i].value, 0);
+  }
+  ChangeCat(df.ChanList.options[df.ChanList.selectedIndex].value);
+  ChangeChoice();
+  return true;
+}
+
+document.news.done.onclick = function()
+{
+  var i = 0;
+  var df = document.news;
+  for (i = 0; i < df.ChList.length; i ++)
+  {
+    df.ChList.options[i].selected = true;
+  }
+  df.submit();
+  return true;
+}
+</script>
+
+</BODY>
+</HTML>
+<?vsp
+    }
+?>

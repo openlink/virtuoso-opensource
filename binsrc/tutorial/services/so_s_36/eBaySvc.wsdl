@@ -1,0 +1,658 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:ebl="urn:ebay:apis:eBLBaseComponents" xmlns:ns="urn:ebay:api:eBayAPI" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.xmlsoap.org/wsdl/" targetNamespace="urn:ebay:api:eBayAPI">
+  <wsdl:import  namespace="urn:ebay:apis:eBLBaseComponents" location="eBayTypes.wsdl"/>
+  <wsdl:types>
+    <schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:ebay:api:eBayAPI" elementFormDefault="qualified" attributeFormDefault="unqualified">
+      <xs:element name="RequesterCredentials" type="ebl:CustomSecurityHeaderType"/>
+      <xs:element name="RelistItemRequest" type="ns:RelistItemRequestType"/>
+      <xs:element name="RelistItemResponse" type="ns:RelistItemResponseType"/>
+      <xs:complexType name="RelistItemRequestType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractRequestType">
+            <xs:sequence>
+              <xs:element ref="ebl:Item">
+                
+              </xs:element>
+              <xs:element name="ModifiedFields" type="ebl:ModifiedFieldType" minOccurs="0" maxOccurs="unbounded">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:complexType name="RelistItemResponseType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractResponseType">
+            <xs:sequence>
+              <xs:element ref="ebl:ItemID" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:Fees" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="StartTime" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="EndTime" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:element name="VerifyAddItemRequest" type="ns:VerifyAddItemRequestType"/>
+      <xs:element name="VerifyAddItemResponse" type="ns:VerifyAddItemResponseType"/>
+      <xs:complexType name="VerifyAddItemRequestType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractRequestType">
+            <xs:sequence>
+              <xs:element ref="ebl:Item">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:complexType name="VerifyAddItemResponseType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractResponseType">
+            <xs:sequence>
+              <xs:element ref="ebl:ItemID" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:Fees" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:element name="AddItemRequest" type="ns:AddItemRequestType"/>
+      <xs:element name="AddItemResponse" type="ns:AddItemResponseType"/>
+      <xs:complexType name="AddItemRequestType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractRequestType">
+            <xs:sequence>
+              <xs:element ref="ebl:Item">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:complexType name="AddItemResponseType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractResponseType">
+            <xs:sequence>
+              <xs:element ref="ebl:ItemID" minOccurs="0"/>
+              <xs:element name="StartTime" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="EndTime" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:Fees" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:element name="GetItemRequest" type="ns:GetItemRequestType"/>
+      <xs:element name="GetItemResponse" type="ns:GetItemResponseType"/>
+      <xs:complexType name="GetItemRequestType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractRequestType">
+            <xs:sequence>
+              <xs:element ref="ebl:ItemID">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:complexType name="GetItemResponseType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractResponseType">
+            <xs:sequence>
+              <xs:element ref="ebl:Item" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:element name="GetUserRequest" type="ns:GetUserRequestType"/>
+      <xs:element name="GetUserResponse" type="ns:GetUserResponseType"/>
+      <xs:complexType name="GetUserRequestType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractRequestType">
+            <xs:sequence>
+              <xs:element ref="ebl:ItemID" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="UserID" type="xs:string">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:complexType name="GetUserResponseType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractResponseType">
+            <xs:sequence>
+              <xs:element ref="ebl:User" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:element name="GetSellerEventsRequest" type="ns:GetSellerEventsRequestType"/>
+      <xs:element name="GetSellerEventsResponse" type="ns:GetSellerEventsResponseType"/>
+      <xs:complexType name="GetSellerEventsRequestType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractRequestType">
+            <xs:sequence>
+              <xs:element ref="ebl:UserID"/>
+              <xs:element name="StartTimeFrom" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="StartTimeTo" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="EndTimeFrom" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="EndTimeTo" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="ModTimeFrom" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="ModTimeTo" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="NewItemFilter" type="xs:boolean" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:complexType name="GetSellerEventsResponseType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractResponseType">
+            <xs:sequence>
+              <xs:element name="TotalAvailable" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="TimeTo" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:ItemArray" maxOccurs="1" minOccurs="1">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:element name="GetSellerListRequest" type="ns:GetSellerListRequestType"/>
+      <xs:element name="GetSellerListResponse" type="ns:GetSellerListResponseType"/>
+      <xs:complexType name="GetSellerListRequestType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractRequestType">
+            <xs:sequence>
+              <xs:element ref="ebl:UserID">
+                
+              </xs:element>
+              <xs:element name="EndTimeFrom" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="EndTimeTo" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="Sort" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="StartTimeFrom" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="StartTimeTo" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:Pagination" maxOccurs="1" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:complexType name="GetSellerListResponseType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractResponseType">
+            <xs:sequence>
+              <xs:element ref="ebl:PaginationResult" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="HasMoreItems" type="xs:boolean" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:ItemArray" maxOccurs="1" minOccurs="1">
+                
+              </xs:element>
+              <xs:element name="ItemsPerPage" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="PageNumber" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="ReturnedItemCountActual" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:Seller" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:element name="GetItemTransactionsRequest" type="ns:GetItemTransactionsRequestType"/>
+      <xs:element name="GetItemTransactionsResponse" type="ns:GetItemTransactionsResponseType"/>
+      <xs:complexType name="GetItemTransactionsRequestType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractRequestType">
+            <xs:sequence>
+              <xs:element ref="ebl:ItemID" maxOccurs="1" minOccurs="1">
+                
+              </xs:element>
+              <xs:element name="ModTimeFrom" type="xs:dateTime" maxOccurs="1" minOccurs="1">
+                
+              </xs:element>
+              <xs:element name="ModTimeTo" type="xs:dateTime" maxOccurs="1" minOccurs="1">
+                
+              </xs:element>
+              <xs:element ref="ebl:TransactionID" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:Pagination" maxOccurs="1" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:complexType name="GetItemTransactionsResponseType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractResponseType">
+            <xs:sequence>
+              <xs:element ref="ebl:PaginationResult" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="HasMoreTransactions" type="xs:boolean" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="TransactionsPerPage" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="PageNumber" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="ReturnedTransactionCountActual" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:Item" maxOccurs="1" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:TransactionArray" maxOccurs="1" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="PayPalPreferred" type="xs:boolean" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:element name="GetSellerTransactionsRequest" type="ns:GetSellerTransactionsRequestType"/>
+      <xs:element name="GetSellerTransactionsResponse" type="ns:GetSellerTransactionsResponseType"/>
+      <xs:complexType name="GetSellerTransactionsRequestType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractRequestType">
+            <xs:sequence>
+              <xs:element name="ModTimeFrom" type="xs:dateTime" maxOccurs="1" minOccurs="1">
+                
+              </xs:element>
+              <xs:element name="ModTimeTo" type="xs:dateTime" maxOccurs="1" minOccurs="1">
+                
+              </xs:element>
+              <xs:element ref="ebl:Pagination" maxOccurs="1" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:complexType name="GetSellerTransactionsResponseType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractResponseType">
+            <xs:sequence>
+              <xs:element ref="ebl:PaginationResult" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="HasMoreTransactions" type="xs:boolean" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="TransactionsPerPage" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="PageNumber" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="ReturnedTransactionCountActual" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:Seller" minOccurs="0">
+                
+              </xs:element>
+              <xs:element ref="ebl:TransactionArray" maxOccurs="1" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="PayPalPreferred" type="xs:boolean" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:element name="GetCategoriesRequest" type="ns:GetCategoriesRequestType"/>
+      <xs:element name="GetCategoriesResponse" type="ns:GetCategoriesResponseType"/>
+      <xs:complexType name="GetCategoriesRequestType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractRequestType">
+            <xs:sequence>
+              <xs:element name="CategorySiteID" type="xs:string" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="CategoryParent" type="xs:string" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="LevelLimit" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="ViewAllNodes" type="xs:boolean" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+      <xs:complexType name="GetCategoriesResponseType">
+        <xs:complexContent>
+          <xs:extension base="ebl:AbstractResponseType">
+            <xs:sequence>
+              <xs:element ref="ebl:CategoryArray" maxOccurs="1" minOccurs="1">
+                
+              </xs:element>
+              <xs:element name="CategoryCount" type="xs:int" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="UpdateTime" type="xs:dateTime" minOccurs="0">
+                
+              </xs:element>
+              <xs:element name="CategoryVersion" type="xs:string" minOccurs="0">
+                
+              </xs:element>
+            </xs:sequence>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+    </schema>
+  </wsdl:types>
+  <wsdl:message name="RequesterCredentials">
+    <wsdl:part name="RequesterCredentials" element="ns:RequesterCredentials"/>
+  </wsdl:message>
+  <wsdl:message name="RelistItemResponse">
+    <wsdl:part name="RelistItemResponse" element="ns:RelistItemResponse"/>
+  </wsdl:message>
+  <wsdl:message name="RelistItemRequest">
+    <wsdl:part name="RelistItemRequest" element="ns:RelistItemRequest"/>
+  </wsdl:message>
+  <wsdl:message name="VerifyAddItemResponse">
+    <wsdl:part name="VerifyAddItemResponse" element="ns:VerifyAddItemResponse"/>
+  </wsdl:message>
+  <wsdl:message name="VerifyAddItemRequest">
+    <wsdl:part name="VerifyAddItemRequest" element="ns:VerifyAddItemRequest"/>
+  </wsdl:message>
+  <wsdl:message name="AddItemResponse">
+    <wsdl:part name="AddItemResponse" element="ns:AddItemResponse"/>
+  </wsdl:message>
+  <wsdl:message name="AddItemRequest">
+    <wsdl:part name="AddItemRequest" element="ns:AddItemRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetItemRequest">
+    <wsdl:part name="GetItemRequest" element="ns:GetItemRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetItemResponse">
+    <wsdl:part name="GetItemResponse" element="ns:GetItemResponse"/>
+  </wsdl:message>
+  <wsdl:message name="GetUserRequest">
+    <wsdl:part name="GetUserRequest" element="ns:GetUserRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetUserResponse">
+    <wsdl:part name="GetUserResponse" element="ns:GetUserResponse"/>
+  </wsdl:message>
+  <wsdl:message name="GetSellerEventsRequest">
+    <wsdl:part name="GetSellerEventsRequest" element="ns:GetSellerEventsRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetSellerEventsResponse">
+    <wsdl:part name="GetSellerEventsResponse" element="ns:GetSellerEventsResponse"/>
+  </wsdl:message>
+  <wsdl:message name="GetSellerListRequest">
+    <wsdl:part name="GetSellerListRequest" element="ns:GetSellerListRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetSellerListResponse">
+    <wsdl:part name="GetSellerListResponse" element="ns:GetSellerListResponse"/>
+  </wsdl:message>
+  <wsdl:message name="GetItemTransactionsRequest">
+    <wsdl:part name="GetItemTransactionsRequest" element="ns:GetItemTransactionsRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetItemTransactionsResponse">
+    <wsdl:part name="GetItemTransactionsResponse" element="ns:GetItemTransactionsResponse"/>
+  </wsdl:message>
+  <wsdl:message name="GetSellerTransactionsRequest">
+    <wsdl:part name="GetSellerTransactionsRequest" element="ns:GetSellerTransactionsRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetSellerTransactionsResponse">
+    <wsdl:part name="GetSellerTransactionsResponse" element="ns:GetSellerTransactionsResponse"/>
+  </wsdl:message>
+  <wsdl:message name="GetCategoriesRequest">
+    <wsdl:part name="GetCategoriesRequest" element="ns:GetCategoriesRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetCategoriesResponse">
+    <wsdl:part name="GetCategoriesResponse" element="ns:GetCategoriesResponse"/>
+  </wsdl:message>
+  <wsdl:portType name="eBayAPIInterface">
+    <wsdl:operation name="RelistItem">
+      <wsdl:input message="ns:RelistItemRequest"/>
+      <wsdl:output message="ns:RelistItemResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="VerifyAddItem">
+      <wsdl:input message="ns:VerifyAddItemRequest"/>
+      <wsdl:output message="ns:VerifyAddItemResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="AddItem">
+      <wsdl:input message="ns:AddItemRequest"/>
+      <wsdl:output message="ns:AddItemResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetItem">
+      <wsdl:input message="ns:GetItemRequest"/>
+      <wsdl:output message="ns:GetItemResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetUser">
+      <wsdl:input message="ns:GetUserRequest"/>
+      <wsdl:output message="ns:GetUserResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetSellerEvents">
+      <wsdl:input message="ns:GetSellerEventsRequest"/>
+      <wsdl:output message="ns:GetSellerEventsResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetSellerList">
+      <wsdl:input message="ns:GetSellerListRequest"/>
+      <wsdl:output message="ns:GetSellerListResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetItemTransactions">
+      <wsdl:input message="ns:GetItemTransactionsRequest"/>
+      <wsdl:output message="ns:GetItemTransactionsResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetSellerTransactions">
+      <wsdl:input message="ns:GetSellerTransactionsRequest"/>
+      <wsdl:output message="ns:GetSellerTransactionsResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetCategories">
+      <wsdl:input message="ns:GetCategoriesRequest"/>
+      <wsdl:output message="ns:GetCategoriesResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="eBayAPISoapBinding" type="ns:eBayAPIInterface">
+    <wsdlsoap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="RelistItem">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="VerifyAddItem">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddItem">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetItem">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetUser">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSellerEvents">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSellerList">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetItemTransactions">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetSellerTransactions">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetCategories">
+      <wsdlsoap:operation soapAction=""/>
+      <wsdl:input>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <wsdlsoap:header use="literal" message="ns:RequesterCredentials" part="RequesterCredentials"/>
+        <wsdlsoap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="eBayAPIInterfaceService">
+    <wsdl:port binding="ns:eBayAPISoapBinding" name="eBayAPI">
+      <wsdlsoap:address location="https://api.sandbox.ebay.com:443/wsapi"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

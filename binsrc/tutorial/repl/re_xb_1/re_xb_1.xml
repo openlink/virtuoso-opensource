@@ -1,0 +1,70 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="RE-XB-1">
+  <refmeta>
+    <refentrytitle>Bidirectional Transactional Replicaton Setup</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Creating a publication</refname>
+    <refpurpose>Creating a replication publication account</refpurpose>
+  </refnamediv>
+
+<refsect1 id="RE-XB-1a">
+<title>Preliminaries</title>
+<para>Virtuoso supports bidirectional transactional replication via mechanism
+of updateable subscriptions.</para>
+
+<itemizedlist mark="bullet">
+  <listitem>Every table has only one publisher.</listitem>
+  <listitem>Subscribers can update replicated tables on their side and then
+submit data back to publisher. Publisher performs conflict resolution
+and either accepts or rejects that data.</listitem>
+  <listitem>It is assumed that all the tables in publication with updateable
+subscriptions option have primary keys and that primary key columns are never
+modified.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="RE-XB-1b">
+<title>Example publication account setup</title>
+<orderedlist>
+  <listitem>Login to the Conductor UI using the dba account.</listitem>
+  <listitem>Go to the "Replication" tab, then go to the "Transactional" tab and then go the "Publications" sub-tab.</listitem>
+  <listitem>Press the "Create" button.</listitem>
+  <listitem>Enter publication name, check the "Updateable" checkbox and press the "Create" button.</listitem>
+</orderedlist>
+</refsect1>
+
+<refsect1 id="RE-XB-1c">
+<title>Equivalent SQL commands to above</title>
+<orderedlist>
+  <listitem>Connect to the Virtuoso server via ISQL utility as DBA user.</listitem>
+  <listitem>Create publication "repldemo" with log file "repldemo.log"
+  <programlisting>
+SQL&gt; repl_publish('repldemo', 'repldemo.log', 1);
+  </programlisting></listitem>
+</orderedlist>
+</refsect1>
+</refentry>

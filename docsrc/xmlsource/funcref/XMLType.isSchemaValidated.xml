@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_XMLType.isSchemaValidated">
+  <refmeta>
+    <refentrytitle>XMLType.isSchemaValidated</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XMLType.isSchemaValidated</refname>
+    <refpurpose>Returns 1 or 0 indicating if the XML entity has been validated against the associated schema.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_XMLType.isSchemaValidated">
+      <funcprototype id="fproto_XMLType.isSchemaValidated">
+        <funcdef><function>XMLType.isSchemaValidated</function></funcdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_XMLType.isSchemaValidated">
+    <title>Description</title>
+    <para>The function returns the value of a special internal &quot;is validated&quot; flag
+of the given XMLType instance.</para>
+  </refsect1>
+  <refsect1 id="ret_XMLType.isSchemaValidated"><title>Return Types</title>
+    <para>An integer value 1 or 0.</para>
+  </refsect1>
+  <refsect1 id="examples_XMLType.isSchemaValidated">
+    <title>Examples</title>
+    <example id="ex_XMLType.isSchemaValidated"><title>Sample use</title>
+      <para>These two calls demonstrate how the &quot;is validated&quot; flag can be
+set without making an actual validation in the call of XMLType constructor:</para>
+      <screen><![CDATA[
+-- Line 75: select XMLType('<bad />', 'file://xmlschema/test0001/clean.xsd').isSchemaValidated()
+callret
+INTEGER
+_______________________________________________________________________________
+
+0
+
+1 Rows. -- 00000 msec.
+
+-- Line 77: select XMLType('<bad />', 'file://xmlschema/test0001/clean.xsd'), 1).isSchemaValidated()
+callret
+INTEGER
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 00000 msec.
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_XMLType.isSchemaValidated">
+    <title>See Also</title>
+    <para><link linkend="fn_XMLType.setSchemaValidated"><function>XMLType.setSchemaValidated</function></link></para>
+    <para><link linkend="fn_XMLType.schemaValidate"><function>XMLType.schemaValidate</function></link></para>
+  </refsect1>
+</refentry>

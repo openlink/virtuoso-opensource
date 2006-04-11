@@ -1,0 +1,57 @@
+<!DOCTYPE xsd:schema SYSTEM
+  "XMLSchema.dtd" [
+
+<!ENTITY % p 'xsd:'>
+<!ENTITY % s ':xsd'>
+<!ENTITY % schemaAttrs "
+	xmlns:xsd	CDATA	#IMPLIED
+	xmlns:tbl	CDATA	#IMPLIED
+	xmlns:db	CDATA	#IMPLIED
+">
+]>
+<!-- Copyright 2000, Norman Walsh, Sun Microsystems.  Schema
+     derived from DocBook DTD Copyright 1992-2000 HaL Computer....  -->
+
+<xsd:schema xmlns:xsd='http://www.w3.org/2001/XMLSchema'
+  xmlns:tbl='http://www.oasis-open.org/tables/exchange/1.0'
+  targetNamespace='http://www.oasis-open.org/tables/exchange/1.0'
+  xmlns:db='http://www.oasis-open.org/docbook/xmlschema/4.1.2'
+  elementFormDefault='qualified'>
+
+  <xsd:import namespace='http://www.oasis-open.org/docbook/xmlschema/4.1.2'/>
+
+<!-- ...................................................................... -->
+<!-- DocBook XML Schema V4.1.2.3........................................... -->
+<!-- ...................................................................... -->
+<!-- Copyright 2000, Norman Walsh, Sun Microsystems.  Schema
+     derived from DocBook DTD Copyright 1992-2000 HaL Computer....  -->
+
+<!-- ...................................................................... -->
+<!-- The Table Model ...................................................... -->
+
+<xsd:redefine schemaLocation='soextblx.xsd'>
+  <!-- declare some extension attributes; these are referenced in -->
+  <!-- soextblx.xsd, but locally defined as empty -->
+  <!-- this doesn't work in xsv ... -->
+  <!--
+  <xsd:attributeGroup name='tbl.entry.att'>
+      <xsd:attribute ref='tbl.entry.att'/>
+    <xsd:attribute name='role' type='xsd:string'/>
+  </xsd:attributeGroup>
+  -->
+
+  <!-- re-declare the entryType type as an extension of the original -->
+  <!-- entryType declared in soextblx.xsd -->
+  <xsd:complexType name='entryType' mixed='true'>
+    <xsd:complexContent>
+      <xsd:extension base='tbl:entryType'>
+        <xsd:choice minOccurs='0' maxOccurs='unbounded'>
+          <xsd:group ref='db:para.char.mix'/>
+          <xsd:group ref='db:tabentry.mix'/>
+        </xsd:choice>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+</xsd:redefine>
+
+</xsd:schema>

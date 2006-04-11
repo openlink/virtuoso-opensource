@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_sprintf">
+  <refmeta>
+    <refentrytitle>sprintf</refentrytitle>
+    <refmiscinfo>string</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>sprintf</refname>
+    <refpurpose>returns a formatted string</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_sprintf">
+      <funcprototype id="fproto_sprintf">
+        <funcdef><function>sprintf</function></funcdef>
+        <paramdef><parameter>format</parameter> string</paramdef>
+        <paramdef><parameter>arg_1</parameter> any</paramdef>
+        <paramdef><parameter>...</parameter> </paramdef>
+        <paramdef><parameter>arg_x</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>sprintf returns a new string formed by "printing" a variable number
+    of arguments arg_1 - arg_x according to the format string format,
+    that is, exactly the same way as with the sprintf function of C language.
+    However the sprintf function enforces some additional limitations over the sprintf C function.
+    It does not allow for single value output to take more than 2000 characters.
+    It does support the following additional format characters:
+</para>
+<para>
+    diouxXeEfgcs - as in the C language printf
+</para>
+<para>
+    S - as 's' but escapes the single quotes by doubling them (as per SQL/92). This is suitable for
+    constructing dynamic SQL statements with string literals inline.
+</para>
+<screen>
+    sprintf ('insert into testit (data) values ('%S')', 'Test ''Real'' data')
+	-&gt; insert into testit (data) values ('Test ''Real'' data')
+</screen>
+<para>
+    I - as 's' but escapes the string value to form a valid identifier name (will double the double
+      quotes).  This is suitable for constructing dynamic SQL statements with identifiers inline.
+</para>
+<screen>
+    sprintf ('select * from "%I"', 'Big "Table" Name')
+	-&gt; select * from "Big ""Table"" Name"
+</screen>
+<para>
+    U - as 's' but escapes the string value as an HTTP URL (same as http_url() function). Useful for making
+      dynamic VSP content
+</para>
+<screen>
+    sprintf ('&lt;a href="%U"&gt;', 'day &amp; night')
+	-&gt; &lt;a href="day+%26+night"&gt;
+</screen>
+<para>
+    V - as 's' but escapes the string value as an HTTP Value (same as http_value). Useful for making
+      dynamic VSP content
+</para>
+<screen>
+    sprintf ('&lt;INPUT name="test" value="%V"&gt;', 'day &amp; night')
+	-&gt; &lt;INPUT name="test" value="day &amp;amp; night"&gt;
+</screen>
+<para>
+    Note that the sprintf format length and precision modifiers do not apply to the extension format characters
+</para>
+			<screen>sprintf('Int=%d/%o/%x, String=%s, Character=%c',
+    42798,42798,42798,'la cadena',65)
+ -&gt; 'Int=42798/123456/a72e, String=la cadena, Character=A'
+</screen>
+
+	</refsect1>
+</refentry>
+
+
+

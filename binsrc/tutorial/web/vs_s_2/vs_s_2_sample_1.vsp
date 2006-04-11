@@ -1,0 +1,74 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare err, thispath, parentpath varchar;
+  thispath := left(http_physical_path(),strrchr(http_physical_path(),'/'));
+  parentpath := left(thispath,strrchr(thispath,'/'));
+  err := null;
+
+  if ('Retrieve' = {?'get'})
+    {
+      declare url varchar;
+      url := {?'url'};
+      if (url not like 'http://%')
+	{
+         err := 'An invalid URL passed';
+	}
+      else
+	{
+	  declare exit handler for sqlstate '*' { err := concat (__SQL_STATE, ' ', __SQL_MESSAGE); goto err; };
+	  {
+	    declare body any;
+	    declare return_header any;
+	    body := http_get(url,return_header);
+	    http('<pre>');
+	    foreach(any hdr in return_header)do
+  	    http(hdr);
+	    http('</pre><hr/>');
+	    http(body);
+	  }
+	  return;
+	}
+    }
+err:
+?>
+<HTML>
+<head><link rel="stylesheet" type="text/css" href="<?=parentpath?>/demo.css"></head>
+<BODY>
+<?vsp
+   if (err is not null)
+     {
+       ?>
+<H3>The requested URL (<?= {?'url'} ?>) was not found</H3>
+      <?vsp
+       http (sprintf ('<p style="color: red"><b>Error: %s</b></p>', err));
+     }
+?>
+<form method="post" action="<?=http_path()?>">
+<table class="tableentry">
+<tr><td>1. Enter a URL to retrieve</td><td><input type="text" name="url" size="45" value="http://<?V DB.DBA.HTTP_GET_HOST() ?>/vs_s_2/"></td></tr>
+<tr><td>2. Press "Retrieve"</td><td><input type="submit" name="get" value="Retrieve"></td></tr>
+</table>
+</form>
+</BODY>
+</HTML>

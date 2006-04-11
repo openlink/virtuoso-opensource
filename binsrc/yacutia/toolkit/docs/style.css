@@ -1,0 +1,53 @@
+body {
+	font-family: verdana;
+	font-size: 90%;
+}
+
+pre {
+	font-size: 130%;
+}
+
+code, .code {
+	border: 1px dashed #aaa;
+	background-color: #ffe;
+	font-family: courier new;
+	font-size: 90%;
+}
+
+.link, a {
+	color: #00f;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+a:hover, span.link:hover {
+	text-decoration: underline;
+}
+
+#toc {
+	position: fixed;
+	left: 500px;
+	top: 10px;
+	font-size: 80%;
+	background-color: #eef;
+	border: 1px solid #000;
+	padding: 0.5em;
+}
+
+#toc h1 {
+	font-size: 140%;
+	margin: 0px;
+	padding: 0px;
+	border-bottom: 1px solid #000;
+}
+
+#toc ul {
+	padding-left: 1.5em;
+	margin-left: 0.5em;
+	height: 300px;
+	overflow: auto;
+}
+
+h3 {
+	margin-top: 2em;
+}

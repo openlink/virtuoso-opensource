@@ -1,0 +1,92 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?xml version="1.0"?><?vsp http_header ('Content-Type: text/xml\r\n'); ?>
+<definitions
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+ xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+ xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:dime="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+ xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+ xmlns:content="http://schemas.xmlsoap.org/ws/2002/04/content-type/"
+ xmlns:ref="http://schemas.xmlsoap.org/ws/2002/04/reference/"
+ xmlns:ns0="services.wsdl"
+ xmlns:dl="services.wsdl"
+ xmlns:tns="services.wsdl"
+ xmlns:plt="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
+ targetNamespace="services.wsdl"
+ name="VirtuosoSOAP" xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+	<types>
+	<schema targetNamespace="services.wsdl"
+	 xmlns="http://www.w3.org/2001/XMLSchema"
+	 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" >
+	 <element name='ssn' type='xsd:string' />
+	 <element name='error' type='xsd:string' />
+	 <element name='rating' type='xsd:int' />
+	</schema>
+	</types>
+	<message name="CreditRatingServiceRequestMessage">
+		<part element="dl:ssn" name="payload" />
+	</message>
+	<message name="CreditRatingServiceResponseMessage">
+		<part element="dl:rating" name="payload" />
+	</message>
+	<message name="CreditRatingServiceFaultMessage">
+		<part name="error" element="dl:error" />
+	</message>
+	<portType name="SOAPDocLiteralPortType">
+		<operation name="process">
+			<input message="tns:CreditRatingServiceRequestMessage" name="CreditRatingServiceRequestMessage" />
+			<output message="tns:CreditRatingServiceResponseMessage" name="CreditRatingServiceResponseMessage" />
+			<fault name="CreditRatingServiceFaultMessage" message="tns:CreditRatingServiceFaultMessage" />
+		</operation>
+	</portType>
+	<binding name="SOAPDocLiteralBinding" type="tns:SOAPDocLiteralPortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+		<operation name="process">
+			<soap:operation soapAction="http://openlinksw.com/virtuoso/soap/schema#process" style="document" />
+			<input name="CreditRatingServiceRequestMessage">
+				<soap:body use="literal" />
+			</input>
+			<output name="CreditRatingServiceResponseMessage">
+				<soap:body use="literal" />
+			</output>
+			<fault name="CreditRatingServiceFaultMessage">
+				<soap:fault name="CreditRatingServiceFaultMessage" use="literal" message="tns:CreditRatingServiceFaultMessage" part="error" />
+			</fault>
+		</operation>
+	</binding>
+	<service name="VirtuosoSOAP">
+		<documentation>Virtuoso SOAP services</documentation>
+		<port name="SOAPDocLiteralPort" binding="tns:SOAPDocLiteralBinding">
+		    <soap:address location="http://<?= http_request_header (lines, 'Host')?>/SecCreditRating" />
+		</port>
+	</service>
+      <plt:partnerLinkType name="CreditRatingService">
+	<plt:role name="CreditRatingServiceProvider">
+	  <plt:portType name="tns:SOAPDocLiteralPortType"/>
+	</plt:role>
+      </plt:partnerLinkType>
+</definitions>

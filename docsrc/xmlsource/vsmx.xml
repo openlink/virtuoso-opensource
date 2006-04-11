@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="vsmx"><title>Testing Web Published Web Services</title>
+  <para>Virtuoso provides a mechanism for testing SOAP messages instantly.  This 
+  mechanism is the Virtuoso Service Module for XML (VSMX) - an automatically 
+  generated test page for published web services.  The VSMX file is generated 
+  at the same time  the WSDL file is generated.  A VSMX file is a SOAP 
+  operations test page generated based on the descriptions of a WSDL file.  
+  The VSMX file  has the extension .vsmx, as opposed to the .wsdl 
+  extension of the WSDL file, and can be accessed similarly.</para>
+
+  <para>VSMX pages give instant access to published  SOAP services for 
+  testing.  Any newly created service will need testing which normally means 
+  writing more code to call the service, supply parameters, retrieve the result, 
+  display the results in some manor, etc.  The VSMX feature of Virtuoso 
+  eliminates this otherwise  repetitive process by automatically 
+  maintaining a test page for SOAP messages: the VSMX file.  This greatly 
+  speeds up the development and testing cycle.  The 
+  beauty of this is that this is automated, even Microsoft's ASMX file 
+  requires that you code the services descriptions before seeing the results.</para>
+
+  <para>Web Service developers would use VSMX to forego the test bed creation step 
+  in light of automatic test page generation.  Project managers can easily keep 
+  track of their developers progress by checking the test page periodically.</para>
+
+  <para>Since WSDL descriptions by themselves are not very pleasing to the human 
+  eye, the VSMX test page can be used to preview services available on a Virtuoso 
+  server, or from a remote source using <link linkend="importwsdl">SOAP/WSDL Proxying</link>. 
+  Even experienced developers will find these easier to read than WSDL files.</para>
+
+  <para>Each SOAP enabled virtual directory will have a WSDL and VSMX file available.  
+  The VSMX file is a test page for the SOAP operations.  This test page can be 
+  found as simply as the WSDL can be found.  From the WSDL chapter we have seen that 
+  for every SOAP enabled virtual directory you automatically get the file:</para>
+  <programlisting>http://[host:port]/[SOAP Virtual Directory]/services.wsdl</programlisting>
+  <para>likewise you also get:</para>
+  <programlisting>http://[host:port]/[SOAP Virtual Directory]/services.vsmx</programlisting>
+
+  <para>You simply point your web browser to this file for the test page.  The 
+  demo database contains samples that can be found as:</para>
+  
+  <programlisting>http://[host:port]/SOAP/services.vsmx</programlisting>
+
+    <figure float="0"><title>VSMX Test Page</title>
+      <graphic fileref="ui/vsmx001.jpg" width="482px" depth="566px"/></figure>
+
+  <para>The page shows all the operations that are available.  Click on 
+  the link that corresponds to the operation to test and the services details and test 
+  facilities will also appear, allowing you to supply input parameters making the SOAP call.</para>
+
+  <para>Once executed the result of SOAP call will be rendered using the Virtuoso 
+  XSLT processor and built-in style sheet, and appended to bottom of the 
+  services details.  </para>
+
+  <para>In addition to the simple types: numbers and strings, more complex 
+  types such as arrays and structures can be specified as input parameters.  
+  For an array, each value must be specified on a separate row in the input text 
+  field.  For structures the names of structure members will be displayed, 
+  following by the equals sign, the values of the structures members can then 
+  be input after the equals sign.  Arrays of arrays or structures of arrays 
+  cannot be used on the test page.</para>
+
+  <para>The first comment line of a stored procedure in the format:</para>
+  <programlisting>--## [comment]</programlisting>
+  <para>will be included in the WSDL description of the SOAP message 
+  for that procedure when generating the WSDL file.</para>
+
+</sect1>
+
+
+

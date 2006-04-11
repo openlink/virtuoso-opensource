@@ -1,0 +1,142 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="protocols">
+  <refnamediv>
+      <refname>WS protocols support</refname>
+      <refpurpose>WS protocols support</refpurpose>
+  </refnamediv>
+
+<refsect1 id="protocolsa">
+    <title>SOAP</title>
+    <para>
+	The SOAP version 1.1 is used in all interactions.
+      <itemizedlist>
+        <listitem>
+          <ulink url="http://www.w3.org/TR/2000/NOTE-SOAP-20000508/">http://www.w3.org/TR/2000/NOTE-SOAP-20000508/</ulink>
+        </listitem>
+        </itemizedlist>
+    </para>
+</refsect1>
+
+<refsect1 id="protocolsa">
+    <title>WSDL</title>
+    <para>
+      The WSDL version 1.0 is used to describe processes and partner services.
+      <itemizedlist>
+        <listitem>
+          <ulink url="http://www.w3.org/TR/wsdl">http://www.w3.org/TR/wsdl</ulink>
+        </listitem>
+      </itemizedlist>
+    </para>
+</refsect1>
+
+<refsect1 id="protocolsa">
+    <title>WS-Addressing</title>
+    <para>
+	The WS-Addressing is used to correlate
+	asyncronous messages (as in Loan Flow example).
+	Also it is used to determine the reply endpoint
+	URL when process is called by asyncronus way.
+      <itemizedlist>
+        <listitem>
+          <ulink url="http://www-106.ibm.com/developerworks/library/specification/ws-add/">WS-Addressing Specification</ulink>
+        </listitem>
+      </itemizedlist>
+    </para>
+    <para>
+	The required version is:
+      <itemizedlist>
+        <listitem>
+          <ulink url="http://schemas.xmlsoap.org/ws/2004/03/addressing">http://schemas.xmlsoap.org/ws/2004/03/addressing</ulink>
+        </listitem>
+      </itemizedlist>
+    </para>
+</refsect1>
+<refsect1 id="protocolsa">
+    <title>WS-Security</title>
+    <para>
+	The WS-Security is used in the example to encrypt and sign the
+	data when calling the partner services. Also it's used in secure
+	variant of the echo to make a secure reply to the caller.
+    </para>
+    <para>
+	The required version is OASIS WS-Security specification.
+       <itemizedlist>
+        <listitem>
+          <ulink url="http://www.oasis-open.org/specs/index.php#wssv1.0">http://www.oasis-open.org/specs/index.php#wssv1.0</ulink>
+        </listitem>
+      </itemizedlist>
+    </para>
+    <para>
+	The messages are signed using X.509 binary token and
+	encrypted with an AES 128 session key.
+	The asymetric RSA keys are used to make the signature and
+	session key encryption.
+    </para>
+    <para>
+	The certificates containing the RSA keys are same as
+	example certificates in Microsoft(R) WSE 2.0 toolkit.
+	Where 'server' certificate is used in partners and
+	'client' is used as process' certificate.
+    </para>
+    <para>View certificates:
+      <itemizedlist>
+        <listitem>
+          <ulink url="/SecLoan/ServerPrivate.pfx">ServerPrivate</ulink>
+        </listitem>
+      </itemizedlist>
+      <itemizedlist>
+        <listitem>
+          <ulink url="/SecLoan/ClientPrivate.pfx">ClientPrivate</ulink>
+        </listitem>
+      </itemizedlist>
+      <itemizedlist>
+        <listitem>
+          <ulink url="/SecLoan/ServerPublic.cer">ServerPublic with public key only</ulink>
+        </listitem>
+      </itemizedlist>
+      <itemizedlist>
+        <listitem>
+          <ulink url="/SecLoan/ClientPublic.cer">ClientPublic with public key only</ulink>
+        </listitem>
+      </itemizedlist>
+    </para>
+</refsect1>
+<refsect1 id="protocolsa">
+    <title>WS-ReliableMessaging</title>
+    <para>
+	The asyncronous operations with partners
+	are invoked via WS-RM protocol with policy
+	'Exacly Once'.
+    </para>
+    <para>
+	The required version is OASIS WS-RM protocol.
+      <itemizedlist>
+        <listitem>
+          <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnglobspec/html/WS-RM-exec-summary.asp">http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnglobspec/html/WS-RM-exec-summary.asp</ulink>
+        </listitem>
+      </itemizedlist>
+    </para>
+</refsect1>
+</refentry>

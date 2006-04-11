@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_acos">
+  <refmeta>
+    <refentrytitle>trigonometric</refentrytitle>
+    <refmiscinfo>number</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>acos</refname>
+    <refname>asin</refname>
+    <refname>atan</refname>
+    <refname>cos</refname>
+    <refname>sin</refname>
+    <refname>tan</refname>
+    <refname>cot</refname>
+    <refname>degrees</refname>
+    <refname>radians</refname>
+    <refname>atan2</refname>
+    <refname>pi</refname>
+    <refpurpose>trigonometric functions</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_acos">
+      <funcprototype id="fproto_acos">
+        <funcdef><function>acos</function></funcdef>
+        <paramdef>in <parameter>x</parameter> double precision</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_asin">
+      <funcprototype id="fproto_asin">
+        <funcdef><function>asin</function></funcdef>
+        <paramdef>in <parameter>x</parameter> double precision</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_atan">
+      <funcprototype id="fproto_atan">
+        <funcdef><function>atan</function></funcdef>
+        <paramdef>in <parameter>x</parameter> double precision</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_cos">
+      <funcprototype id="fproto_cos">
+        <funcdef><function>cos</function></funcdef>
+        <paramdef>in <parameter>x</parameter> double precision</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_sin">
+      <funcprototype id="fproto_sin">
+        <funcdef><function>sin</function></funcdef>
+        <paramdef>in <parameter>x</parameter> double precision</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_tan">
+      <funcprototype id="fproto_tan">
+        <funcdef><function>tan</function></funcdef>
+        <paramdef>in <parameter>x</parameter> double precision</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_cot">
+      <funcprototype id="fproto_cot">
+        <funcdef><function>cot</function></funcdef>
+        <paramdef>in <parameter>x</parameter> double precision</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_degrees">
+      <funcprototype id="fproto_degrees">
+        <funcdef><function>degrees</function></funcdef>
+        <paramdef>in <parameter>x</parameter> double precision</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_radians">
+      <funcprototype id="fproto_radians">
+        <funcdef><function>radians</function></funcdef>
+        <paramdef>in <parameter>x</parameter> double precision</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_atan2">
+      <funcprototype id="fproto_atan2">
+        <funcdef><function>atan2</function></funcdef>
+        <paramdef>in <parameter>x</parameter> double precision</paramdef>
+        <paramdef>in <parameter>y</parameter> double precision</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_pi">
+      <funcprototype id="fproto_pi">
+        <funcdef><function>pi</function></funcdef>
+        <paramdef />
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+			<para>
+All these functions work with double precision floating point numbers.
+They convert their argument to an IEEE 64-bit float and return a result of that
+type.
+	</para>
+					<programlisting>
+:  acos	arc cosine
+:  asin	arc sine
+:  atan	arc tangent
+:  cos	cosine
+:  sin	sine
+:  tan	tangent
+:  cot	cotangent
+:  degrees	  convert an angle in radians to degrees.
+:  radians	convert an angle in radians to degrees.
+:  atan2	arc tangent with x and y coordinates, can return an angle in any quadrant.
+:  pi	return pi.
+</programlisting>
+
+	</refsect1>
+</refentry>

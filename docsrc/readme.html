@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">
+<HTML>
+<HEAD>
+	<TITLE>Virtuoso Documenation Project Readme</TITLE>
+<LINK REL="stylesheet" TYPE="text/css" HREF="html/virtdoc.css">
+<STYLE>
+#contents {
+  FLOAT: left;
+  POSITION: relative;
+  MARGIN-RIGHT: 50px;
+  }
+
+#page { 
+  FLOAT: left;
+  POSITION: relative;
+  }
+</STYLE>
+</HEAD>
+<BODY>
+<DIV CLASS="chaphead"><H1>Virtuoso Documenation Project Readme</H1></DIV>
+<DIV ID="contents">
+<H2 CLASS="sect1head">Contents</H2>
+<DIV><A HREF="#desc">Archive Description</A></DIV>
+<DIV><A HREF="#keyfiles">Key XML/XSL Files</A></DIV>
+<DIV><A HREF="#instructions">Instructions for Win32</A></DIV>
+<DIV><A HREF="#chaps">Writing Chapters</A></DIV>
+<DIV><A HREF="#funcs">Writing Functions</A></DIV>
+<DIV><A HREF="#sects">Writing Sections</A></DIV>
+<DIV><A HREF="#gen">Writing General Content</A></DIV>
+</DIV>
+
+<DIV ID="page">
+<A NAME="desc" /><H2 CLASS="sect1head">Archive Description</H2>
+<TABLE CLASS="data">
+<TR><TH CLASS="data">Directory</TH><TH CLASS="data">Description</TH></TR>
+<TR>
+  <TD CLASS="data">asp</TD>
+  <TD CLASS="data">Contains various ASP samples for attempts to generate the XML Docs from MS IIS.</TD></TR>
+<TR>
+  <TD CLASS="data">bin</TD>
+  <TD CLASS="data">Executables and scripts for generating other formats from the XML sources.</TD></TR>
+<TR>
+  <TD CLASS="data">html</TD>
+  <TD CLASS="data">HTML output directory.  Generated HTML will be placed here.</TD></TR>
+<TR>
+  <TD CLASS="data">images</TD>
+  <TD CLASS="data"><DIV>All images pertenant to the Virtuoso documentation project.</DIV>
+    <DIV>All documentation images are contained in the root of images.  </DIV>
+	<DIV>Images for the navigation tree are in the images/tree directory.</DIV>
+	<DIV>Other images such as titles and bullet points are contained in the images/misc directory.</DIV></TD></TR>
+<TR>
+  <TD CLASS="data">pdf</TD>
+  <TD CLASS="data">Generated PDF goes here.</TD></TR>
+<TR>
+  <TD CLASS="data">ps</TD>
+  <TD CLASS="data">Generated PS goes here.</TD></TR>
+<TR>
+  <TD CLASS="data">stylesheets</TD>
+  <TD CLASS="data">Stylesheets used in the transformation from XML.  The DocBook 
+	sample is also contained in the stylesheets/docbook directory.  These are 
+	samples from the docbook maintainer.</TD></TR>
+<TR>
+  <TD CLASS="data">xmlsources</TD>
+  <TD CLASS="data">The XML source code for the Virtuoso Documentation project.</TD></TR>
+</TABLE>
+
+
+<A NAME="keyfiles" /><H2 CLASS="sect1head">Key XML/XSL Files</H2>
+<TABLE CLASS="data">
+<TR>
+	<TH CLASS="data">virtdocs.xml</TH>
+	<TH CLASS="data">Base XML file which includes other chapter/section/function 
+	files for document content.</TH></TR>
+<TR>
+	<TD CLASS="data">html_mp_book.xsl</TD>
+	<TD CLASS="data">root style sheet for producing HTML in multi page format 
+	from the XT program.  Takes parameters for selecting chapter.</TD></TR>
+<TR>
+	<TD CLASS="data">html_mp_chaptermenu.xsl</TD>
+	<TD CLASS="data">Current style sheet for producing left pane chapter menu 
+	with JavaScript for the multi page HTML.  Suitable for the XT program.</TD></TR>
+<TR>
+	<TD CLASS="data">html_xt_common.xsl</TD>
+	<TD CLASS="data">Included style sheet where most XSL work is done.</TD></TR>
+<TR>
+	<TD CLASS="data">html_functions.xsl</TD>
+	<TD CLASS="data">Contains code for rendering functions and refentries.</TD></TR>
+<TR>
+	<TD CLASS="data">html_no_toc_xt.xsl</TD>
+	<TD CLASS="data">modified html_xt to work better with PDF and PS generation.</TD></TR>
+<TR>
+	<TD CLASS="data">html_debug.xsl</TD>
+	<TD CLASS="data">debugging XSL.  When used will display key items with their 
+	labels, ids etc so they can be verified for completion and uniqueness.</TD></TR>
+</TABLE>
+
+
+<A NAME="instructions" /><H2 CLASS="sect1head">Intructions For Win32</H2>
+<P>The XML sources are contained in the xmlsource directory.  
+The top level document is virtdocs.xml.  This file must contain a reference for 
+all external files that are included in the documentation, this includes chapters,
+sections, and functions.  See the relevent section in this document for more 
+information about adding content to the documentation.</P>
+<P>The documentation can be built from the makehtml.bat script.  
+You will firstly need to configure your environment by editing the makehtml.bat 
+file and adding a necessary entry for your machine using the others lines as an 
+example.  The environment variables %COMPUTERNAME%, and %USERNAME% are 
+taken from the normal environment of a Win32 system and can be found by typing 
+set in a DOS box.  Multiple environments can be set here per machine/username 
+to avoid having to keep versions for different machines in sync.</P>
+<P>The batch file can then be run from the command line and 
+can take switches.  The more useful ones are:
+<PRE CLASS="programlisting">
+makehtml mp &lt;chapter_id&gt;
+eg: 
+makehtml mp quicktours</PRE>
+Which lets you render only a chapter of the multipage html output.  This can 
+save heaps of time for testing.
+</P>
+<P>The PDF (and PS) is generated using the HTMLDOC program.  The 
+PDF directory contains the file virtdocs_pdf.book which is a configuration file 
+that HTMLDOC should use for generating the PDF correctly.  </P>
+
+<A NAME="chaps" /><H2 CLASS="sect1head">Writing Chapters</H2>
+<P>New chapters must be included in two places to be made 
+visible to the documentation.  Firstly they must be included in the 
+virtdocs.xml file in the xmlsource directory, and in order for the new 
+chapter to be rendered an entry for the file must be made in the 
+chapter_list.txt file of the bin directory.  </P>
+<P>The file name and chapter label attribute of new chapters 
+must mach exactly.  The id attribute of the new chapter must be the same 
+as the label but without the extention.  The entry in the chapter_list.txt file 
+then must match the id attribute.  </P>
+<P>New chapters begin with the following template: 
+<PRE CLASS="programlisting">
+&lt;?xml version="1.0" encoding="ISO-8859-1"?&gt;
+&lt;!-- 
+  $Id$
+  (C)Copyright 2001 OpenLink Software
+--&gt;
+&lt;chapter label="TBD.xml" id="TBD"&gt;
+&lt;title&gt;TBD&lt;/title&gt;
+&lt;abstract&gt;
+	&lt;para&gt;TBD&lt;/para&gt;
+&lt;/abstract&gt;
+
+TBD!
+
+&lt;/chapter&gt;
+</PRE>
+Where all the TBD's need something.  Use other chapters for examples.
+</P>
+<P>You will find the entries for other chapters in the virtdocs.xml 
+file and chapter_list.txt file.  Use these as examples to add new chapters.  
+In the chapter_list.txt file you simply add a new line to the bottom of the list 
+with the name of the chapter.  For the virtdocs.xml file you have to add two lines.  
+The first line is in the DTD section.  The order of these is not important either, 
+so you can make a copy of an existing chapter definition changing the entity name 
+and filename reference as appropriate.  Now you need output this entity somewhere 
+in the documentation structure.  You will find at the bottom of the virtdocs.xml 
+file a list of the all the chapter entities, place yours where you see fit using 
+the appropriate "&amp;name;" markup.</P>
+
+<A NAME="funcs" /><H2 CLASS="sect1head">Writing Functions</H2>
+<P>There is a template.xml file in the xmlsource/funref 
+directory, USE IT!</P>
+<P>After a function has been successfully written it must be included 
+into the documentation.  You need an entry in the virtdocs.xml file and the 
+functions.xml file.  Use the existing entries in these files for examples and 
+please try and maintain alphabetical ordering.  Although not required, this just 
+makes life easier in the future.</P>
+
+<A NAME="sects" /><H2 CLASS="sect1head">Writing Sections</H2>
+<P>Adding text to an existing section is a no brainer, use the 
+existing document content for examples.  If you are adding new sections 
+(sect[12345]'s) it may be suitable to add a new file and include this in the 
+relevent chapter if the topic is long and isolated.  There are many examples of 
+this such as the wsdl.xml file, which is a section included in the webservices.xml 
+file.  Sections must have an entity definition in the virtdocs.xml file like 
+chapters do but the entity is not output in that file!  That means you include a:
+<PRE CLASS="programlisting">
+&lt;!ENTITY wsdl	 		SYSTEM "wsdl.xml"&gt;</PRE>
+line but the &amp;name; goes in the chapter, not the top level.</P>
+<P>Be very careful of correct nesting.  Make sure that if your 
+new section is a sect1, it must be output in a chapter.  Likewise a sect2 inside 
+a sect1...</P>
+
+<A NAME="gen" /><H2 CLASS="sect1head">Writing General Content</H2>
+<P>Try and stick to the 
+<A HREF="http://www.oasis-open.org/docbook/documentation/reference/html/docbook.html">DocBook</A> 
+DTD.</P>
+<P>RFC links should come from the authoritive location of: <BR />
+<STRONG>http://www.rfc-editor.org/rfc/rfc####.txt</STRONG></P>
+
+</DIV>
+</BODY>
+</HTML>

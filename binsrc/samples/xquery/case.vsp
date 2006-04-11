@@ -1,0 +1,101 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<HTML>
+<?vsp
+  declare _xpath varchar;
+  declare _case_xml any;
+  declare _xquery_text varchar;
+  declare _lex_list any;
+  declare _lex_last_row integer;
+  declare _lex_ctr integer;
+  declare _lexem any;
+  declare _xq_res any;
+  declare _xq_state varchar;
+  declare _xq_msg varchar;
+?>
+<HEAD>
+<TITLE>XQuery demo | Case <?= {? 'case'} ?> of <?= {? 'coll'} ?> </TITLE>
+</HEAD>
+<BODY>
+<P><A HREF="main.vsp">Main page of this demo<A></P>
+<?vsp
+  _xpath := concat ('//case[@id = "', {? 'case'}, '"]');
+  select use_case into _case_xml from "XQ"."XQ"."TEST_FILES" where "NAME"= {? 'coll'} and xpath_contains ("XPER", _xpath, use_case);
+  _xquery_text := cast (xpath_eval ('string(.//xquery)', _case_xml) as varchar);
+?>
+<XMP><?= _case_xml ?></XMP>
+<PRE><B>Case No:</B> <?= {? 'case'} ?> of <?= {? 'coll'} ?></PRE>
+<PRE><B>Question:</B> <?= xpath_eval ('.//descr', _case_xml) ?></PRE>
+<PRE><B>XQuery:</B><?= _xquery_text ?></PRE>
+<P><B>Expected result:</B><XMP><?= xpath_eval ('.//etalon', _case_xml) ?></XMP></P>
+<?vsp _lex_list := xquery_lex_analyze (_xquery_text); ?>
+<P><B>All lexems of XQuery:</B><TABLE>
+<?vsp
+  _lex_last_row := -1;
+  _lex_ctr := 0;
+  while (_lex_ctr < length (_lex_list))
+    {
+      _lexem := aref (_lex_list, _lex_ctr);
+      if (_lex_last_row <> aref (_lexem, 0))
+	{
+	  if (_lex_last_row > 0)
+	    {
+	      ?></TD></TR><?vsp
+	    }
+	  ?><TR><TD><?= aref (_lexem, 0) ?></TD><TD><?vsp
+	  _lex_last_row := aref (_lexem, 0);
+	  ?><FONT COLOR="#FFFF00"><?vsp
+	  http (repeat ('&nbsp;:&nbsp;', aref (_lexem, 1)));
+	  ?></FONT><?vsp
+	}
+      if (length(_lexem) > 3)
+	{
+	  ?><B><?= aref (_lexem, 2) ?></B><FONT SIZE=-2><?= aref (_lexem, 3) ?></FONT> <?vsp
+	}
+      else
+	{
+	  ?><B>??<?= aref (_lexem, 2) ?>??</B><?vsp
+	}
+      _lex_ctr := _lex_ctr + 1;
+    }
+  ?></TD></TR></TABLE><?vsp
+ ?>
+</P>
+<P><B>Execution plan:</B><BR><PRE>
+<?vsp
+  _xq_state := '00000';
+  _xq_msg := 'OK';
+  _xq_res := exec (concat ('http_value(xquery_explain(',WS.WS.STR_SQL_APOS(_xquery_text),'))'), _xq_state, _xq_msg);
+?>
+</PRE></P>
+<P><B>XQuery result:</B><BR><XMP>
+<?vsp
+  _xq_state := '00000';
+  _xq_msg := 'OK';
+  _xq_res := exec (concat ('http_value(xquery_eval(',WS.WS.STR_SQL_APOS(_xquery_text),',xper_doc(''<Q/>'')))'), _xq_state, _xq_msg);
+?>
+</XMP>
+<BR><?= _xq_state ?>: <?= _xq_msg ?>: <?= _xq_res ?></P>
+</BODY>
+</HTML>
+

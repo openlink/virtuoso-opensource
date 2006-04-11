@@ -1,0 +1,195 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare step integer;
+  declare idx integer;
+  declare len integer;
+  declare server varchar;
+  declare glen, gstart, gend varchar;
+  declare group_name varchar;
+  declare getmethod varchar;
+  declare err varchar;
+  declare list any;
+  declare _gr any;
+
+  err := '';
+  step := get_keyword ('step', params, '1');
+  glen := get_keyword ('glen', params, '');
+  gstart := get_keyword ('gstart', params, '0');
+  gend := get_keyword ('gend', params, '0');
+  server := get_keyword ('server_name', params, 'news.openlinksw.co.uk:119');
+  group_name := {?'group_name'};
+  getmethod := get_keyword ('getmethod', params, 'nntp_id_get');
+
+  declare exit handler for sqlstate '*' { err := __SQL_MESSAGE; };
+    {
+       if (step = '2')
+	    list :=  nntp_get (server, 'list');
+
+       if (step = '3')
+	 {
+	    _gr :=  nntp_get (server, 'group', group_name);
+
+	    glen := _gr [0];
+	    gstart := _gr [1];
+	    gend := _gr [2];
+	 }
+
+       if (step = '4')
+	 {
+	    declare gbegin integer;
+	    gbegin := atoi(gstart);
+	    if (atoi(glen) > 20)
+	      gbegin := atoi(gend) - 19;
+	    _gr :=  nntp_get (server, 'xover', group_name, gbegin, atoi(gend));
+	 }
+    }
+?>
+<HTML>
+<head><link rel="stylesheet" type="text/css" href="../demo.css">
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function setstep(n)
+{
+  document.nntp_get.step.value=n;
+  return true;
+}
+-->
+</script>
+</head>
+<BODY>
+<FORM method="POST"  name="nntp_get" action="nn_s_1_sample_1.vsp">
+<INPUT type="hidden" name="step" value="<?=step?>">
+<p style="color: red"><?=err?></p>
+<table class="tableentry" width="96%">
+  <tr>
+    <td>1. Enter NNTP server:</td>
+    <td><INPUT type="text" name="server_name" value="<?=server?>" size="35"></td>
+    <td><INPUT type="submit" name="get_gr1", value="Get group list" onclick="setstep(2)"></td>
+  </tr>
+  <tr>
+    <td>2. Select group:</td>
+<?vsp
+    if (step = '1')
+      http('<td>&nbsp;</td>');
+    if (step = '2')
+    {
+        http('<td><SELECT NAME="group_name">');
+        idx := 0;
+	len := length (list);
+	while (idx < len)
+	{
+	  group_name := aref (list [idx], 0);
+	  http (sprintf ('<OPTION VALUE="%s">%s</OPTION>', group_name, group_name));
+          idx := idx + 1;
+	}
+	http('</SELECT></td>');
+    }
+    if (step > '2')
+    {	?> <td><INPUT type="hidden" name="group_name" value="<?=group_name?>">
+    <INPUT type="hidden" name="glen" value="<?=glen?>">
+    <INPUT type="hidden" name="gstart" value="<?=gstart?>">
+    <INPUT type="hidden" name="gend" value="<?=gend?>">
+    <?=group_name?><br />Has <?=glen?> messages.</td>
+	<?vsp
+    }
+    if (step > '1')
+      http('<td><INPUT type="submit" name="get_gr2", value="Select Group" onclick="setstep(3)"></td></tr>');
+    else
+      http('<td>&nbsp;</td></tr>');
+
+    http('<tr><td nowrap>3. Message fetch method:</td>');
+    if (step > '2')
+    {
+      http('<td nowrap><INPUT TYPE=RADIO NAME=getmethod VALUE="nntp_id_get" ');
+      if (getmethod='nntp_id_get')
+        http(' checked');
+      http('>nntp_id_get()&nbsp;&nbsp;&nbsp;<INPUT TYPE=RADIO NAME=getmethod VALUE="nntp_get" ');
+      if (getmethod='nntp_get')
+        http(' checked');
+      http('>nntp_get()</td><td><INPUT type="submit" name="get_head", value="Get headers" onclick="setstep(4)"></td></tr>');
+    }
+    else
+      http('<td>&nbsp;</td><td>&nbsp;</td></tr>');
+
+
+    if (step = '4')
+    {
+?>
+    <tr><td colspan=3>4. Pick message from group: <?=group_name?> (Last 20 messages shown)</td></tr>
+    <tr><td colspan=3><TABLE width="100%" border="1">
+    <TR><TD><b>Subject</b></TD><TD><b>From</b></TD><TD><b>Date</b></TD></TR>
+<?vsp
+        idx := 0;
+	len := length (_gr);
+
+	while (idx < len)
+	  {
+	     list := _gr [idx];
+	     http (sprintf ('<TR><TD><a href="nn_s_1_sample_1.vsp?getmethod=%U&group_name=%U&server_name=%U&step=5&glen=%U&gstart=%U&gend=%U',
+		getmethod, group_name, server, glen, gstart, gend));
+	     if (getmethod = 'nntp_id_get')
+	     {
+	       http (sprintf ('&id=%U">', list[4]));
+	     }
+	     else
+	     {
+	       http (sprintf ('&id=%d">', list[0]));
+	     }
+	     http (sprintf ('%s</a></TD><TD>%s</TD><TD>%s</TD></TR>',list[1], list[2], list[3]));
+             idx := idx + 1;
+	  }
+	http('</table>');
+    }
+    http('</table>');
+
+    if (step = '5')
+    {
+       declare id varchar;
+       declare message any;
+
+       id := get_keyword ('id', params, '0');
+
+       http('<table class="tableresult" width="96%"><tr><td>');
+
+       if (getmethod = 'nntp_id_get')
+	 {
+	    http (sprintf ('nntp_id_get (\'%s\', \'article\', \'%V\') <BR />', server, id));
+            message := nntp_id_get (server, 'article', id);
+	 }
+       else
+         {
+	    idx := atoi (id);
+	    http (sprintf ('nntp_get (\'%s\', \'article\', \'%s\', %i) <BR />',
+		  server, group_name, idx));
+	    message := nntp_get (server, 'article', group_name, idx);
+	 }
+
+       http ('<TEXTAREA COLS="80" ROWS="17">');
+       http (aref (message [0], 1));
+       http ('</TEXTAREA></TD></TR></TABLE>');
+    }
+?>
+</FORM>
+</BODY>
+</HTML>

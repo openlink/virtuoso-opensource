@@ -1,0 +1,151 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<process name="Event"
+         targetNamespace="http://samples.otn.com"
+         suppressJoinFailure="yes"
+         xmlns:tns="http://samples.otn.com"
+         xmlns:services="http://services.otn.com"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	 xmlns:bpelv="http://www.openlinksw.com/virtuoso/bpel"        
+         xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/">
+  <!--
+    This process invokes the AsyncBPELService and uses eventHandlers
+    to get events while waiting for result. If the input LoanAmount is
+    more than 10000, the AsyncBPELService will generate events.
+    -->
+
+  <partnerLinks>
+    <partnerLink name="client"
+             partnerLinkType="tns:Event"
+             myRole="EventProvider"
+             />
+
+    <partnerLink name="AsyncBPELService"
+             partnerLinkType="services:AsyncBPELService"
+             myRole="AsyncBPELServiceRequester"
+             partnerRole="AsyncBPELServiceProvider"/>
+  </partnerLinks>
+
+  <variables>
+    <variable name="input" messageType="tns:EventRequestMessage"/>
+    <variable name="output" messageType="tns:EventResultMessage"/>
+
+    <variable name="request"
+              messageType="services:AsyncBPELServiceRequestMessage"/>
+    <variable name="event"
+              messageType="services:AsyncBPELServiceEventMessage"/>
+    <variable name="response"
+              messageType="services:AsyncBPELServiceResultMessage"/>
+    <variable name="notes" type="xsd:string"/>               
+  </variables>
+
+  <sequence>
+
+    <!-- receive input from requestor -->
+    <receive name="receiveInput" partnerLink="client"
+             portType="tns:Event"
+             operation="initiate" variable="input"
+             createInstance="yes"/>
+
+    <!-- initialize the input of AsyncBPELService -->
+    <assign>
+      <copy>
+        <from variable="input" part="payload"/>
+        <to variable="request" part="payload"/>
+
+      </copy>
+    </assign>
+
+    <!--  initiate the remote process -->
+    <invoke name="invokeAsyncService" 
+            partnerLink="AsyncBPELService"
+            portType="services:AsyncBPELService"
+            operation="initiate" inputVariable="request"/>
+
+
+    <!--  receive the result of the remote process -->
+    <scope name="handleEvents">
+
+      <eventHandlers>
+
+        <!-- wait for event callback -->
+        <onMessage partnerLink="AsyncBPELService"
+                   portType="services:AsyncBPELServiceCallback"
+                   operation="onEvent" variable="event">
+          <sequence>         
+            <assign>  
+              <copy>
+                <from expression="'Est processing time event received, est time remaining = 15 seconds'"/>
+                <to variable="notes"/>
+              </copy>
+            </assign>    
+	    <bpelv:exec binding="SQL"><![CDATA[
+		declare msg any;
+		msg := BPEL..getVariableData ('event', 'payload', '/event');
+		insert into db..event_test_1 (dt) values (msg);
+	    ]]></bpelv:exec>	               
+          </sequence>
+        </onMessage>
+
+        <!-- test alarm -->
+        <onAlarm for="PT10S">
+          <sequence>  
+            <assign>  
+              <copy>
+                <from expression="'Alarm timeout: no response from AsyncBPELService after 15 seconds'"/>
+                <to variable="notes"/>
+              </copy>
+            </assign>            
+	    <bpelv:exec binding="SQL"><![CDATA[
+		insert into db..event_test_2 (dt) values ('Alarm timeout: no response from AsyncBPELService after 15 seconds');
+	    ]]></bpelv:exec>	               
+          </sequence>
+        </onAlarm>
+      </eventHandlers>
+
+      <!-- wait for result callback -->
+      <sequence>
+        <receive name="receiveResponse"
+            partnerLink="AsyncBPELService"
+            portType="services:AsyncBPELServiceCallback"
+            operation="onResult" variable="response"/>
+
+        <assign>
+          <copy>
+            <from variable="response" part="payload"/>
+            <to variable="output" part="payload"/>
+          </copy>
+        </assign>
+
+      </sequence>
+    </scope>
+
+    <!-- respond output to requestor -->
+    <reply name="replyOutput" partnerLink="client"
+            portType="tns:Event"
+            operation="initiate" variable="output"/>
+
+  </sequence>
+
+</process>
+

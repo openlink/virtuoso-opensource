@@ -1,0 +1,155 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_page">
+<refmeta>
+  <refentrytitle>vspx_page</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_page</refname>
+  <refpurpose>Container of VSPX code</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_page">
+    <funcprototype id="proto_vspx_page">
+      <funcdef>
+        <function>page</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+      </attributes>
+      <childs>
+        <child>after-data-bind</child>
+        <child>after-data-bind-container</child>
+        <child>before-data-bind</child>
+        <child>before-data-bind-container</child>
+        <child>on-post</child>
+        <child>on-post-container</child>
+        <child>before-render</child>
+        <child>before-render-container</child>
+        <child>radio-button</child>
+        <child>button</child>
+        <child>check-box</child>
+        <child>select-list</child>
+        <child>textarea</child>
+        <child>text</child>
+        <child>update-field</child>
+        <child>key</child>
+        <child>variable</child>
+        <child>label</child>
+        <child>url</child>
+        <child>data-grid</child>
+        <child>data-set</child>
+        <child>data-list</child>
+        <child>tab</child>
+        <child>tree</child>
+        <child>include</child>
+        <child>error-summary</child>
+        <child>radio-button</child>
+        <child>button</child>
+        <child>check-box</child>
+        <child>select-list</child>
+        <child>textarea</child>
+        <child>text</child>
+        <child>update-field</child>
+        <child>key</child>
+        <child>node</child>
+        <child>form</child>
+        <child>template</child>
+        <child>login</child>
+        <child>login-form</child>
+      </childs>
+      <class>
+        <screen><![CDATA[
+				
+			    -- VSPX Page Class , from it must be derived all VSPX pages
+			    create type vspx_page under vspx_control
+			    as (
+				vc_view_state any,		   -- state of all controls under page
+				vc_is_postback int,		   -- true if posted back 	
+				vc_persisted_vars any,		   -- persisted session varaibales	
+				vc_event vspx_event,		   -- incoming event	
+				vc_is_valid int default 1,         -- set to 0 when first validator fails
+				vc_authenticated int default 0     -- is true if login control in the page suceeded
+				) temporary self as ref
+			    ;
+
+				
+			    ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_page">
+  <title>Description</title>
+  <para>
+    <function>vspx_page</function>The container for the rest of the vspx code.
+The page or a subclass of it will be the outermost element  on any VSPX page.
+Each .vspx file defines explicitly one custom page class derived from vspx_page.
+This element can enclose all HTML elements or can be incorporated in it&#39;s children on place apropriate for
+rendering the VSPX controls, but one VSPX page must contain only one vspx:page element. and no one VSPX-specific tag may appear outside the vspx:page. It can be placed in other HTML stuff or around it, doesnt&#39; matter, but VSP &amp; VSPX code must be inside it (the same applies to customized HTML attributes, i.e. containing &lt;?V &amp; &lt;?U shortcuts).
+</para>
+</refsect1>
+<refsect1 id="attrs_vspx_page">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>The name of subclass of vspx_page to be generated. The name of class will be prefixed with &#39;page_&#39; plus that name.
+</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_page">
+  <title>Children</title>
+  <refsect2>
+    <title>variable</title>
+    <para>A member of the UDT that is created for the page.
+This tag declares a data member  for the page subclass corresponding to the containing page.  The value will be preserved between consecutive postbacks. The value will be initialized to the default when the page is accessed from some other page.
+The attribute &quot;persist&quot; means to save its value to session table for inter-page usage, this can be done only when vspx:login control is included and authentication is performed.
+</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="examples_vspx_page">
+  <title>Examples</title>
+  <example id="ex_vspx_page">
+    <title>Simple example</title>
+    <para>
+			    simple VSPX page
+			    </para>
+    <screen><![CDATA[
+				
+			    <v:page name="page01" xmlns:v="http://www.openlinksw.com/vspx/">
+			    <html>
+			    <body>
+			    <p>
+			    <?vsp http ('<H3>Sample to demonstrate simple VSPX page</H3>'); ?>
+			    </p>
+			    </body>
+			    </html>
+			    </v:page>
+				
+			    ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="ftpservices"><title>FTP Services</title>
+
+<para>Virtuoso provides both FTP client and server functionality.  The Virtuoso FTP
+client functions allow for programmatic access to ftp servers from Virtuoso/ PL to list, submit and
+retrieve files from an FTP server.  The Virtuoso FTP server provides FTP access
+to the Virtuoso WebDAV repository using the same authentication
+and permissions system as WebDAV, and an configurable anonymous
+user access.</para>
+
+  <sect2 id="ftpservicesclient"><title>FTP Client</title>
+
+  <para>Virtuoso provides three functions that mimic their FTP command
+  counterparts.  These are:</para>
+
+  <simplelist>
+    <member><link linkend="fn_ftp_get"><function>ftp_get()</function></link> - to retrieve a file from an FTP server.</member>
+    <member><link linkend="fn_ftp_put"><function>ftp_put()</function></link> - to submit a file to an FTP server.</member>
+    <member><link linkend="fn_ftp_ls"><function>ftp_ls()</function></link> - list the contents of a directory on an FTP server.</member>
+  </simplelist>
+
+
+<para>The Virtuoso client uses free ports within the range 20000 - 30000 for
+active mode connections.  This is configurable using the parameters:
+<computeroutput>FTPServerMinFreePort</computeroutput> and
+<computeroutput>FTPServerMaxFreePort</computeroutput> in the
+<computeroutput>HTTPServer</computeroutput> section of the
+Virtuoso INI file.</para>
+  </sect2>
+
+  <sect2 id="ftpservicesserver"><title>FTP Server</title>
+
+  <para>Virtuoso can provide FTP access to its WebDAV repository. This
+  FTP server functionality relies on the same credentials and permissions that
+  WebDAV uses.  The server is enabled by listing the
+  <computeroutput>FTPServerPort</computeroutput> parameter in the
+  <computeroutput>HTTPServer</computeroutput> section of the Virtuoso INI
+  file.  This parameter must be accompanied by a port number to listen at.</para>
+
+  <programlisting><![CDATA[
+[HTTPServer]
+FTPServerPort = 21
+]]></programlisting>
+
+  <para>Will instruct Virtuoso to listen for FTP requests on the default FTP
+  port of 21.</para>
+
+  <programlisting><![CDATA[
+[HTTPServer]
+...
+FTPServerTimeout = 600
+...
+]]></programlisting>
+
+<para>To control timeout of connections use "FTPServerTimeout" ini parameter.
+The default time out is 600 sec. This is only for command connection.</para>
+
+  <para>The Virtuoso FTP server can be instructed to create a session log file
+  using the parameter:</para>
+
+  <programlisting><![CDATA[
+[HTTPServer]
+...
+FTPServerLogFile = ftpserver
+...
+]]></programlisting>
+
+<para>If specified Virtuoso will produce an FTP server log file with the date
+appended to the name given in the parameter and the files extention as ".log".
+The log file is rotated daily.  It will contain the following information:</para>
+
+<para><computeroutput>ftpserverDDMMYYYY.log</computeroutput> :-</para>
+<simplelist>
+  <member>Client Host Name</member>
+  <member>Authorized User</member>
+  <member>Time</member>
+  <member>User Command</member>
+  <member>Server Response Code</member>
+  <member>Bytes Transferred</member>
+</simplelist>
+
+<para>An example of which is:</para>
+<programlisting><![CDATA[
+hostname anonymous [22/Oct/2003:15:21:43 +0300] "PASS user@domain.com" 230 0
+hostname anonymous [22/Oct/2003:15:23:11 +0300] "LIST" 226 162
+hostname dav [22/Oct/2003:15:25:00 +0300] "PASS <hidden>" 230 0
+]]></programlisting>
+
+  <para>Virtuoso can allow special "anonymous" user access to the FTP Server
+  by supplying the following Virtuoso INI file parameter:</para>
+
+  <programlisting><![CDATA[
+[HTTPServer]
+...
+FTPServerAnonymousLogin = 0
+...
+]]></programlisting>
+
+<para>The anonymous user is not a real user, it has no SQL or DAV login ability.
+The anonymous user can only access collections or resources that are set to public.
+The password of the anonymous user is trivially checked to contain the "@" symbol
+and is shown in plain-text for the "PASS" command detailed in the log file.
+Valid DAV users passwords are never revealed in the FTP log file.
+By default anonymous login is denied.</para>
+
+<programlisting><![CDATA[
+[HTTPServer]
+...
+FTPServerAnonymousHome = /DAV/dir_name/
+...
+]]></programlisting>
+<para>You can control the anonymous user home dir by "FTPServerAnonymousHome" parameter in the ini fail.
+By default home dir for anonymous user is DAV root dir.</para>
+
+  <para>The Virtuoso server supports the usual variety of commands such as:</para>
+
+
+<programlisting><![CDATA[
+USER    PASS    CWD     CDUP    HELP
+QUIT    PORT    PASV    TYPE    NOOP
+STOR    RNFR    RNTO    MODE    RETR
+DELE    RMD     MKD     PWD     SYST
+SIZE    LIST    NLST    ABOR
+]]></programlisting>
+
+<para>
+By default the server uses free ports within the range 20000 - 30000 for passive
+mode connections.  This is configurable using the parameters:
+<computeroutput>FTPServerMinFreePort</computeroutput> and
+<computeroutput>FTPServerMaxFreePort</computeroutput> in the
+<computeroutput>HTTPServer</computeroutput> section of the
+Virtuoso INI file.</para>
+
+<para>The FTP server root directory is the home directory of the authenticated
+DAV user.</para>
+
+<!--
+ The FTP server is based on DAV api. (see dav_api.txt). The user can access all
+resorces (files), that DAV api allow.
+-->
+
+<tip><title>See Also:</title>
+  <para><ulink url="http://www.rfc-editor.org/rfc/rfc959.txt">RFC-959</ulink></para>
+  <para><ulink url="http://www.rfc-editor.org/rfc/rfc2389.txt">RFC-2389</ulink></para></tip>
+</sect2>
+</sect1>

@@ -1,0 +1,62 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare err varchar;
+  err := '';
+
+  if ({?'pwd1'} <> {?'pwd'})
+    err := 'Passwords do not matches';
+  else if ({?'accept'} is not null and {?'uid'} <> '' and {?'pwd'} <> '')
+    {
+      if (not exists (select * from APP_USER where AP_ID = {?'uid'}))
+	{
+	  declare exit handler for sqlstate '*' { err := concat (__SQL_STATE,' ',__SQL_MESSAGE); goto again; };
+	  insert into APP_USER (AP_ID, AP_PWD) values ({?'uid'}, {?'pwd'});
+	  COOKIE_SES_START (params, 'default.vsp');
+	  return 0;
+	}
+      err := 'User exists already';
+    }
+again:
+?>
+
+<HTML>
+  <head>
+    <title>Maintaining Session State in a VSP Application</title>
+    <meta name="DESCRIPTION" content="Cookie example">
+    <link rel="stylesheet" type="text/css" href="/tutorial/web/demo.css">
+  </head>
+  <BODY>
+   <H3>Cookie example</H3>
+   <H4>Registering new user</H4>
+   <FORM action="register.vsp" method="POST">
+   <table class="tableentry">
+   <tr><td colspan="2" style="color: red"><b><?=err?></b></td></tr>
+   <tr><td>Login name</td><td> <input type="text" name="uid" value="<?={?'uid'}?>"></td></tr>
+   <tr><td>Password</td><td> <input type="password" name="pwd" value=""></td></tr>
+   <tr><td>Password (verify)</td><td><input type="password" name="pwd1" value=""></td></tr>
+   <tr><td colspan="2"><input type="submit" name="accept" value="Accept"></td></tr>
+   </table>
+   </FORM>
+  </BODY>
+</HTML>

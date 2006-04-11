@@ -1,0 +1,983 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*-html-*- -->
+<?vsp adm_pre_page(lines);
+--no_c_escapes-
+declare _stmt, _res, _sty, _perms, _own, _root, _grp, _err_txt, _imd, _mxml varchar;
+declare _not_imd, _sch, _dtd, _dtd_sav, _sch_name, _descr varchar;
+declare _dtd_name, _dtd_content, _none, sql_type varchar;
+declare _intl, _own_id, _grp_id, one integer;
+declare _sys, _mod, _replace, _xmlt varchar;
+declare stat, err varchar;
+declare _p_stat any;
+stat := '00000'; err := '';
+declare exit handler for sqlstate '*' { stat := __SQL_STATE; err := __SQL_MESSAGE; goto err_exit; };
+one := ascii ('1');
+--dbg_obj_print ('admin_dav_xslt.vsp: ', params);
+if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+  {
+    adm_tell_unauth_dav (lines);
+    return (0);
+  }
+
+  _p_stat := get_keyword ('pstat', params, NULL);
+  if (not _p_stat is NULL)
+    {
+        params := vector_concat (params, deserialize (decode_base64 (_p_stat)));
+	_replace := '1';
+
+    }
+  else
+    _replace := 0;
+
+_stmt := get_keyword ('stmt', params, '');
+_own := get_keyword ('own', params, 'nobody');
+_mxml := get_keyword ('mxml', params, NULL);
+_grp := get_keyword ('grp', params, 'nogroup');
+_root := get_keyword ('root', params, 'document');
+_intl := atoi (get_keyword ('intl', params, '10'));
+
+_not_imd := ''; _none := ''; _xmlt := ''; _perms := ('permis', params, '');
+
+-- set default for persistent XML
+sql_type := 'text/xml';
+
+
+declare _current_uri, _show_browser, _disp_result, _defs, _dtd1 varchar;
+declare _dav_result any;
+_show_browser := null;
+_dav_result := null;
+_current_uri := 'admin_dav_xslt.vsp';
+_disp_result := 'yes';
+
+
+  if ('' <> get_keyword ('dav_resource', params, '')
+      or '' <> get_keyword ('dav_sty', params, ''))
+    {
+      _show_browser := 'yes';
+      _disp_result := 'no';
+    }
+
+?>
+<?include admin_dav_browse.vsp?>
+<?vsp
+  if (_show_browser is null)
+    {
+      --dbg_obj_print ('admin_dav_xslt.vsp :' , params);
+     _stmt := get_keyword ('stmt', params, '');
+     _own := get_keyword ('own', params, 'nobody');
+     _mxml := get_keyword ('mxml', params, NULL);
+     _grp := get_keyword ('grp', params, 'nogroup');
+     _root := get_keyword ('root', params, 'document');
+     _intl := atoi (get_keyword ('intl', params, '0'));
+     --_sch := get_keyword ('sch', params, '');
+     --_dtd := get_keyword ('dtd', params, '');
+     --_dtd_sav := get_keyword ('dtd_sav', params, '');
+     _defs := get_keyword ('defs', params, '');
+     _descr := get_keyword ('descr', params, '');
+     _sch := _dtd := _dtd1 := _dtd_sav := '';
+     if (_defs = 'sch')
+       {
+         _sch := 'on';
+         _dtd := '';
+         _dtd1 := 'on';
+         _dtd_sav := '';
+       }
+     else if (_defs = 'dtd')
+       {
+         _sch := '';
+         _dtd := 'on';
+         _dtd1 := 'on';
+         _dtd_sav := '';
+       }
+     else if (_defs = 'dtd_sav')
+       {
+         _sch := '';
+         _dtd := 'on';
+         _dtd1 := '';
+         _dtd_sav := 'on';
+       }
+     else
+       _none := 'checked';
+
+
+     if ('imd' = get_keyword ('imd', params, ''))
+       {
+         _imd := 'checked';
+         sql_type := 'sql/xml';
+       }
+
+     if ('xmlt' = get_keyword ('imd', params, ''))
+       {
+         _xmlt := 'checked';
+         sql_type := 'text/xml';
+       }
+
+      if (_dav_result is not null and '' <> get_keyword ('dav_sty', params, ''))
+         _sty := _dav_result;
+      else
+         _sty := get_keyword ('sty', params, '');
+
+      if ((_dav_result is not null and '' <> get_keyword ('dav_resource', params, ''))
+       or ('' <> get_keyword ('EDIT', params, '')))
+    {
+      declare _res_id, _stmt_old, _sty_old integer;
+      if ('' <> get_keyword ('EDIT', params, ''))
+        _res := get_keyword ('res', params, '');
+      else
+            _res := _dav_result;
+      _res_id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res), 0);
+      _own_id := coalesce ((select RES_OWNER from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res), 0);
+          if (_own_id > 0)
+            _own := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _own_id), '');
+      _grp_id := coalesce ((select RES_GROUP from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res), 0);
+          if (_grp_id > 0)
+            _grp := coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = _grp_id), '');
+      _perms := coalesce ((select RES_PERMS from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res), '');
+          if (_stmt = '')
+            _stmt := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R'
+               and PROP_PARENT_ID = _res_id
+               and PROP_NAME = 'xml-sql'), '');
+          if (_sch = '')
+            _sch := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R'
+               and PROP_PARENT_ID = _res_id
+               and PROP_NAME = 'xml-sql-schema'), '');
+          if (_dtd = '')
+            _dtd := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R'
+               and PROP_PARENT_ID = _res_id
+               and PROP_NAME = 'xml-sql-dtd'), '');
+      if (_dtd = 'on')
+        _dtd1 := 'on';
+
+      if (_dtd <> 'on' and _dtd <> '')
+        {
+          _dtd := 'on';
+          _dtd_sav := 'checked';
+        }
+
+
+      if (_sty = '')
+        {
+              _sty := coalesce ((select blob_to_string(PROP_VALUE) from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R'
+               and PROP_PARENT_ID = _res_id
+               and PROP_NAME = 'xml-stylesheet'), '');
+           if (length (_sty) > 51)
+                 _sty := subseq (_sty, 51, length (_sty));
+        }
+          _intl := coalesce ((select SE_INTERVAL from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = _res), _intl);
+
+          _root := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R'
+               and PROP_PARENT_ID = _res_id
+               and PROP_NAME = 'xml-sql-root'), 'document');
+
+          _xmlt := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R'
+               and PROP_PARENT_ID = _res_id
+               and PROP_NAME = 'xml-template'), '');
+
+          _descr := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R'
+               and PROP_PARENT_ID = _res_id
+               and PROP_NAME = 'xml-sql-description'), '');
+
+         if (_xmlt <> '')
+           _xmlt := 'checked';
+
+
+       declare res_len integer;
+           res_len := coalesce ((select length(RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res), null);
+       if (res_len = 0)
+             _imd := 'checked';
+      if (_dtd = 'on')
+        _dtd := 'checked';
+      if (_dtd1 = 'on')
+        _dtd1 := 'checked';
+      if (_sch <> '')
+        _sch := 'checked';
+
+      if (_dtd <> 'checked' and _dtd1 <> 'checked' and _sch <> 'checked')
+        _none := 'checked';
+      else
+        _none := '';
+
+    }
+      else if ((_dav_result is not null and '' <> get_keyword ('dav_resource', params, ''))
+       or ('' <> get_keyword ('DELETE', params, '')))
+    {
+           _res := get_keyword ('res', params, '');
+           delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res;
+           _res := '';
+    }
+      else
+	{
+	  declare _res_arr any;
+          _res := get_keyword ('res', params, '');
+          _res_arr := WS.WS.HREF_TO_ARRAY (_res, '');
+          if (length (_res_arr) > 1 and strchr (_res_arr[length(_res_arr)-1], '.') is null)
+            _res := concat (_res, '.xml');
+	}
+
+    if ('' <> get_keyword ('clear', params ,''))
+      {
+        _stmt := _res := _sty := _perms := _own := _grp := '';
+    _intl := 0;
+      }
+
+    if (_own <> '' and _own <> 'nobody')
+      {
+    _own_id := coalesce ((select U_ID from WS.WS.SYS_DAV_USER where U_NAME = _own), -1);
+      }
+    else if (_own = 'nobody')
+      _own_id := 0;
+
+    if (_grp <> '' and _grp <> 'nogroup')
+      {
+        _grp_id := coalesce ((select G_ID from WS.WS.SYS_DAV_GROUP where G_NAME = _grp), -1);
+      }
+    else if (_grp = 'nogroup')
+      _grp_id := 0;
+
+    if (_own_id = -1 or _grp_id = -1)
+      {
+    if (_own_id = -1)
+      _err_txt := concat ('No such WebDAV user (', _own, ')');
+    else
+      _err_txt := concat ('No such WebDAV group (', _grp, ')');
+        goto err_ret;
+      }
+
+    if ('xmlt' = get_keyword ('imd', params, '') and _own_id <> http_dav_uid () and {?'execute'} is not null)
+      {
+        _err_txt := concat ('The owner for XML tempalte must be WebDAV admin.');
+        goto err_ret;
+      }
+
+    if ('' <> get_keyword ('def_perms', params, '') and _own_id > 0)
+      select U_DEF_PERMS into _perms from WS.WS.SYS_DAV_USER where U_ID = _own_id;
+    else if ('' <> get_keyword ('def_perms', params, '') and _own_id = 0)
+      _perms := '110100100N';
+    else if ('' = get_keyword ('EDIT', params, ''))
+      {
+    _perms := adm_dav_users_get_perms (params);
+      }
+    --dbg_obj_print ('PERMS: ', _perms, ' params ', params);
+    if (length (_perms) < 9 or _perms = '000000000')
+      _perms := '110100100N';
+    if ('' <> get_keyword ('perm_tt', params, ''))
+      _perms := concat (_perms, 'R');
+    else
+      _perms := concat (_perms, 'N');
+    --dbg_obj_print (_sty, _res);
+    if ('' <> get_keyword ('execute', params, ''))
+      {
+    -- There is a main staff
+    declare ses any;
+    declare _col, _path, _col_name, _dtd_body, _sch_body varchar;
+    declare _col_id, _r_id, _p_id integer;
+
+
+    if (_stmt = '' and (_mxml = '' or _mxml = '<none>'))
+      {
+            _err_txt := 'Statement is empty';
+            goto err_ret;
+      }
+
+    if (_root = '' and (_dtd <> '' or _sch <> ''))
+      {
+            _err_txt := 'For DTD or schema generation top tag should be specified';
+            goto err_ret;
+      }
+
+    ses := string_output (http_strses_memory_size ());
+
+    declare _dotp, _slp integer;
+    _dotp := coalesce (strrchr (_res, '.'), 0);
+    _slp := coalesce (strrchr (_res, '/'), 0);
+    _sch_name := '';
+    _dtd_name := '';
+
+    if (_sch <> '')
+      {
+            _sch_body := xml_auto_schema (_stmt, _root);
+            if (_dotp > _slp and _dotp > 0)
+              _sch_name := concat (substring (_res, 1, _dotp), '.xsd');
+            else
+              _sch_name := concat (_res, '.xsd');
+      }
+    else
+      _sch_body := '';
+
+    if (_dtd <> '')
+      {
+         _dtd_body := xml_auto_dtd (_stmt, _root);
+         _dtd_content := _dtd_body;
+
+         if (_dotp > _slp and _dotp > 0)
+           _dtd_name := concat (substring (_res, 1, _dotp), '.dtd');
+         else
+           _dtd_name := concat (_res, '.dtd');
+
+         if (_dtd_sav = '')
+           {
+             _dtd_body := concat ('<!DOCTYPE ' , _root, ' [', _dtd_body, ']>\n');
+             _dtd_name := 'on';
+           }
+        else
+           _dtd_body := concat ('<!DOCTYPE ' , _root, ' SYSTEM ''', _dtd_name, '''>\n');
+      }
+    else
+      _dtd_body := '';
+
+    if (_mxml <> '<none>')
+       goto _auto;
+
+    if (not ('imd' = get_keyword ('imd', params, '') or 'xmlt' = get_keyword ('imd', params, '')))
+      {
+        WS.WS.XMLSQL_TO_STRSES (_stmt, _root, _sch_name, _dtd_name, _descr, ses);
+      }
+    else
+      exec_metadata (_stmt);
+
+    if ('imd' = get_keyword ('imd', params, ''))
+      {
+            ses := '';
+            _intl := 0;
+      }
+    else if ('xmlt' = get_keyword ('imd', params, ''))
+      {
+	declare sty_attr varchar;
+	if (_sty <> '')
+	  sty_attr := sprintf ('sql:xsl="%s"', _sty);
+        else
+          sty_attr := '';
+	if (_root = '' or not isstring (_root))
+	  _root := 'root';
+        ses := sprintf ('<%s xmlns:sql="urn:schemas-openlink-com:xml-sql" %s>\n<sql:query>%V</sql:query>\n</%s>',
+			  _root, sty_attr, _stmt, _root);
+         _intl := 0;
+      }
+
+_auto:;
+
+
+    if ('' = ltrim (_res))
+      {
+        _err_txt := concat ('The field ''Output file in DAV'' is required.');
+        goto err_ret;
+      }
+        _path := WS.WS.HREF_TO_ARRAY (_res, '');
+
+    if (WS.WS.ISCOL (_path))
+      {
+            _err_txt := concat ('Invalid WebDAV resource path (', _res, ')');
+        goto err_ret;
+      }
+    declare _depth, _coll_len, _nc_id integer;
+        declare _coll any;
+        _coll := WS.WS.PARENT_PATH (_path);
+        _coll_len := length (_coll);
+        _depth := WS.WS.FINDCOL (_coll, _col_id);
+--  dbg_obj_print (_depth);
+    if (_depth < 1)
+      {
+         _err_txt := concat ('Invalid WebDAV path (', _res, ')');
+         goto err_ret;
+      }
+        -- If new collection(s) requested
+    while (_depth < _coll_len)
+      {
+        _nc_id := WS.WS.GETID ('C');
+            insert into WS.WS.SYS_DAV_COL (COL_NAME, COL_ID, COL_PARENT, COL_OWNER, COL_GROUP, COL_PERMS,
+                                        COL_MOD_TIME, COL_CR_TIME)
+               values (aref (_coll, _depth), _nc_id, _col_id, _own_id, _grp_id, _perms, now (), now ());
+--       dbg_obj_print (ws..col_path (_nc_id));
+        _col_id := _nc_id;
+            _depth := _depth + 1;
+      }
+
+      if (_mxml <> '<none>')
+	{
+	  ses := adm_map_xml_build (_stmt, _root, _mxml);
+	   if (ses[0])
+	     {
+	        _err_txt := ses[1];
+		goto err_ret;
+	     }
+	   ses := ses [1];
+	}
+      else if (adm_xml_get_flag (_stmt) = 0)
+	{
+	   ses := adm_xml_make_xmlelement (_stmt, _root);
+	   if (ses[0])
+	     {
+	        _err_txt := ses[1];
+		goto err_ret;
+	     }
+	   ses := ses [1];
+	}
+
+    -- Should test _col_id and other stuff before process
+    if (not exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res)
+        and exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = _col_id))
+      {
+        _r_id := WS.WS.GETID ('R');
+        insert into WS.WS.SYS_DAV_RES
+                (RES_ID,
+             RES_NAME,
+             RES_COL,
+             RES_TYPE,
+             RES_CONTENT,
+             RES_CR_TIME,
+             RES_MOD_TIME,
+             RES_OWNER,
+             RES_GROUP,
+             RES_PERMS)
+                   values (_r_id,
+                   aref (_path, length (_path) - 1),
+               _col_id,
+               sql_type,
+               ses,
+               now (),
+               now (),
+               _own_id,
+               _grp_id,
+               _perms);
+            if (_sty <> '' and exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _sty))
+          insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+           values (WS.WS.GETID ('P'), 'xml-stylesheet', 'R', _r_id,
+               concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _sty));
+        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+           values (WS.WS.GETID ('P'), 'xml-sql', 'R', _r_id, _stmt);
+        if (_root <> '')
+          insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+           values (WS.WS.GETID ('P'), 'xml-sql-root', 'R', _r_id, _root);
+        if (_sch <> '')
+          insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+           values (WS.WS.GETID ('P'), 'xml-sql-schema', 'R', _r_id, _sch_name);
+        if (_dtd <> '')
+          {
+        declare _dtd_prop_val varchar;
+        _dtd_prop_val := 'on';
+            if (_dtd_sav <> '' and _dtd_name <> '')
+              _dtd_prop_val := _dtd_name;
+        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+            values (WS.WS.GETID ('P'), 'xml-sql-dtd', 'R', _r_id, _dtd_prop_val);
+          }
+
+	if (_xmlt <> '')
+        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+           values (WS.WS.GETID ('P'), 'xml-template', 'R', _r_id, 'execute');
+
+	if (_descr <> '')
+        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+           values (WS.WS.GETID ('P'), 'xml-sql-description', 'R', _r_id, _descr);
+
+        if (_sch <> '' and _root <> '')
+          {
+        declare _sch_path any;
+                _sch_path := WS.WS.HREF_TO_ARRAY (_sch_name, '');
+        insert into WS.WS.SYS_DAV_RES
+            (RES_ID, RES_NAME, RES_COL, RES_TYPE, RES_CONTENT, RES_CR_TIME,
+             RES_MOD_TIME, RES_OWNER, RES_GROUP, RES_PERMS)
+            values (WS.WS.GETID ('R'), aref (_sch_path, length (_sch_path) - 1), _col_id,
+            http_mime_type (_sch_name), _sch_body, now (), now (), _own_id, _grp_id, _perms);
+          }
+
+        if (_dtd <> '' and _dtd_sav <> '' and _root <> '' and _dtd_name <> '')
+          {
+        declare _dtd_path any;
+                _dtd_path := WS.WS.HREF_TO_ARRAY (_dtd_name, '');
+        insert into WS.WS.SYS_DAV_RES
+            (RES_ID, RES_NAME, RES_COL, RES_TYPE, RES_CONTENT, RES_CR_TIME,
+             RES_MOD_TIME, RES_OWNER, RES_GROUP, RES_PERMS)
+            values (WS.WS.GETID ('R'), aref (_dtd_path, length (_dtd_path) - 1), _col_id,
+            http_mime_type (_dtd_name), _dtd_content, now (), now (), _own_id, _grp_id, _perms);
+          }
+
+      }
+    else if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res)
+        and exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = _col_id))
+      {
+	if (_replace <> '1')
+	  _replace := '2';
+	else
+	  {
+            update WS.WS.SYS_DAV_RES set RES_CONTENT = ses,
+                                     RES_TYPE = sql_type,
+                     RES_OWNER = _own_id,
+                     RES_GROUP = _grp_id,
+                     RES_PERMS = _perms,
+                     RES_MOD_TIME = now ()
+                     where RES_FULL_PATH = _res;
+            select RES_ID into _r_id from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res;
+            _p_id := coalesce ((select PROP_ID from WS.WS.SYS_DAV_PROP where
+             PROP_NAME = 'xml-stylesheet'
+             and PROP_TYPE = 'R'
+             and PROP_PARENT_ID = _r_id), WS.WS.GETID ('P'));
+            if (_sty <> '' and exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _sty))
+          insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+           values (_p_id, 'xml-stylesheet', 'R', _r_id,
+               concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _sty));
+        else if (_sty <> '' and _sty not like 'http://local.virt/%' and not exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _sty))
+          {
+                _err_txt := concat ('The style sheet ', _sty , ' is not valid WebDAV resource');
+                goto err_ret;
+          }
+        else if (_sty = '')
+          delete from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xml-stylesheet' and PROP_TYPE = 'R'
+          and PROP_PARENT_ID = _r_id;
+            _p_id := coalesce ((select PROP_ID from WS.WS.SYS_DAV_PROP where
+             PROP_NAME = 'xml-sql'
+             and PROP_TYPE = 'R'
+             and PROP_PARENT_ID = _r_id), WS.WS.GETID ('P'));
+        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+           values (_p_id, 'xml-sql', 'R', _r_id, _stmt);
+        _p_id := coalesce ((select PROP_ID from WS.WS.SYS_DAV_PROP where
+             PROP_NAME = 'xml-sql-root'
+             and PROP_TYPE = 'R'
+             and PROP_PARENT_ID = _r_id), WS.WS.GETID ('P'));
+        if (_root <> '')
+          {
+        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+               values (_p_id, 'xml-sql-root', 'R', _r_id, _root);
+          }
+        else
+          {
+        delete from WS.WS.SYS_DAV_PROP where
+             PROP_NAME = 'xml-sql-root'
+             and PROP_TYPE = 'R'
+             and PROP_PARENT_ID = _r_id;
+          }
+	if (_xmlt <> '')
+        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+           values (WS.WS.GETID ('P'), 'xml-template', 'R', _r_id, 'execute');
+	else
+	  delete from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xml-template' and PROP_TYPE = 'R' and PROP_PARENT_ID = _r_id;
+	if (_descr <> '')
+        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+           values (WS.WS.GETID ('P'), 'xml-sql-description', 'R', _r_id, _descr);
+	else
+	  delete from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xml-sql-description' and PROP_TYPE = 'R' and PROP_PARENT_ID = _r_id;
+
+        if (_sch <> '' and _root <> '')
+          {
+        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+               values (_p_id, 'xml-sql-schema', 'R', _r_id, _sch_name);
+        if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _sch_name))
+          update WS.WS.SYS_DAV_RES set RES_CONTENT = _sch_body, RES_OWNER = _own_id, RES_GROUP = _grp_id,
+                                           RES_MOD_TIME = now (), RES_PERMS = _perms
+                        where RES_FULL_PATH = _sch_name;
+                else
+          {
+            declare _sch_path any;
+            _sch_path := WS.WS.HREF_TO_ARRAY (_sch_name, '');
+            insert into WS.WS.SYS_DAV_RES
+            (RES_ID, RES_NAME, RES_COL, RES_TYPE, RES_CONTENT, RES_CR_TIME,
+             RES_MOD_TIME, RES_OWNER, RES_GROUP, RES_PERMS)
+            values (WS.WS.GETID ('R'), aref (_sch_path, length (_sch_path) - 1), _col_id,
+                http_mime_type (_sch_name), _sch_body, now (), now (), _own_id, _grp_id, _perms);
+          }
+          }
+        else
+          {
+        delete from WS.WS.SYS_DAV_PROP where
+             PROP_NAME = 'xml-sql-schema' and PROP_TYPE = 'R' and PROP_PARENT_ID = _r_id;
+          }
+        if (_dtd <> '' and _root <> '')
+          {
+        declare _dtd_prop_val varchar;
+        _dtd_prop_val := 'on';
+            if (_dtd_sav <> '' and _dtd_name <> '')
+              _dtd_prop_val := _dtd_name;
+        insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+               values (_p_id, 'xml-sql-dtd', 'R', _r_id, _dtd_prop_val);
+        if (_dtd_sav <> '' and _dtd_name <> '')
+          {
+            if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _dtd_name))
+              update WS.WS.SYS_DAV_RES set RES_CONTENT = _dtd_content, RES_OWNER = _own_id,
+                           RES_GROUP = _grp_id,
+                           RES_MOD_TIME = now (), RES_PERMS = _perms
+                         where RES_FULL_PATH = _dtd_name;
+            else
+              {
+            declare _dtd_path any;
+            _dtd_path := WS.WS.HREF_TO_ARRAY (_dtd_name, '');
+            insert into WS.WS.SYS_DAV_RES
+                (RES_ID, RES_NAME, RES_COL, RES_TYPE, RES_CONTENT, RES_CR_TIME,
+                 RES_MOD_TIME, RES_OWNER, RES_GROUP, RES_PERMS)
+                values (WS.WS.GETID ('R'), aref (_dtd_path, length (_dtd_path) - 1), _col_id,
+                http_mime_type (_dtd_name), _dtd_content, now (), now (), _own_id, _grp_id, _perms);
+              }
+          }
+                else
+                  delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _dtd_name;
+          }
+        else
+          {
+        delete from WS.WS.SYS_DAV_PROP where
+             PROP_NAME = 'xml-sql-dtd' and PROP_TYPE = 'R' and PROP_PARENT_ID = _r_id;
+          }
+        }
+      }
+    else
+      {
+            _err_txt := concat ('Path does not exist (', _res, ') Please verify the correct path was given');
+        --dbg_obj_print ('Big error');
+        goto err_ret;
+      }
+        -- Add scheduled event
+    if (_intl > 0)
+          insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
+               values (_res, now (), sprintf ('WS.WS.XML_AUTO_SCHED (''%s'')', _res), _intl);
+    else
+      delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = _res;
+
+        _err_txt := sprintf ('WebDAV resource (%s) created successfully', _res);
+    goto ok_ret;
+      }
+    if (_imd <> 'checked' and _xmlt <> 'checked')
+      _not_imd := 'checked';
+
+    if ({?'permis'} is not null)
+      _perms := {?'permis'};
+
+?>
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+function chkbx(bx1, bx2)
+{
+  if (bx1.checked == true && bx2.checked == true)
+    {
+      bx2.checked = false;
+    }
+}
+
+function setPerms (ch)
+{
+   var i;
+   document.xslt.perm_ux.checked = ch;
+   document.xslt.perm_gx.checked = ch;
+   document.xslt.perm_ox.checked = ch;
+   for (i = 0;i < document.xslt.own.length;i++)
+     {
+       if (document.xslt.own.options[i].text == 'dav')
+	 {
+	   document.xslt.own.options[i].selected = ch;
+	 }
+       else
+	 {
+	   document.xslt.own.options[i].selected = false;
+	 }
+
+       if (ch == false && document.xslt.own.options[i].value == 'nobody')
+	 {
+	   document.xslt.own.options[i].selected = true;
+	 }
+
+     }
+}
+
+// -->
+</SCRIPT>
+<HTML>
+  <HEAD>
+    <LINK rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <META name="AUTHOR" content="OpenLink Software">
+    <META name="DESCRIPTION" content="SQL-&gt;XML Translation">
+    <title>SQL->XML Translation</title>
+  </head>
+<?vsp adm_page_header('SQL->XML Translation', 'sqlxmlstmts'); ?>
+<?include ../adm_js_check.vsp ?>
+
+  <FORM method="POST" action="admin_dav_xslt.vsp" name="xslt">
+<TABLE BORDER="0" CELLPADDING="5" CELLSPACING="0">
+<TR><TD COLSPAN="2">
+  <table border="0" class="statlist" cellpadding="0" cellspacing="2">
+  <TR><TD CLASS="statlistheadt">SQL Statement</TD></TR>
+  <TR><TD CLASS="AdmBorders"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+  <TR><TD><TEXTAREA rows="5" name="stmt" cols="70"><?=_stmt?></TEXTAREA></TD></TR>
+  </TABLE>
+</TD></TR>
+<TR><TD ALIGN="left" VALIGN="top">
+              <table border="0" class="statlist" cellpadding="0" cellspacing="2">
+                <tr>
+                  <td CLASS="statlistheadt" colspan=3>Creation</td>
+                </tr>
+                <TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+                <tr>
+                  <td nowrap CLASS="statlisthead">Root Element</td>
+                  <td><input type="text" name="root" size="20" value="<?=_root?>"></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td nowrap CLASS="statlisthead">Output file in DAV</td>
+                  <td><input type="text" name="res" size="20" value="<?=_res?>"></td>
+                  <td><input type="submit" value="Browse" name="dav_resource"></td>
+                </tr>
+                <tr>
+                  <td nowrap CLASS="statlisthead">Stylesheet for XSLT<BR /><SMALL>(optional)</SMALL></td>
+                  <td><input type="text" name="sty" value="<?=_sty?>" size="20"></td>
+                  <td><input type="submit" value="Browse" name="dav_sty"></td>
+                </tr>
+                <tr>
+                  <td nowrap CLASS="statlisthead">XML Template Description<BR /><SMALL>(optional)</SMALL></td>
+                  <td><input type="text" name="descr" value="<?=_descr?>" size="20"></td>
+                  <td>&nbsp;</td>
+                </tr>
+                <tr>
+                  <td nowrap CLASS="statlisthead">Map XML <BR /><SMALL>(optional)</SMALL></td>
+                  <td>
+		    <select name="mxml">
+                      <option value="&lt;none&gt;">&lt;none&gt;</option>
+                      <?vsp
+                        for (select V_NAME from DB.DBA.SYS_VIEWS                                                                                    where V_TEXT like '%xml_reload_mapping_schema_decl%' order by lower(V_NAME)) do
+                              http(sprintf('<option value="%s" %s>%s</option>\n', V_NAME, select_if(V_NAME, _mxml), V_NAME));
+                      ?>
+                    </select></td>
+		  </td>
+                  <td>&nbsp;</td>
+                </tr>
+              </table>
+</TD>
+<TD ALIGN="left" VALIGN="top">
+              <table border="0" class="statlist" cellpadding="0" cellspacing="2">
+                <tr><td CLASS="statlistheadt" colspan="10">Permissions</td></tr>
+                <TR><TD CLASS="AdmBorders" COLSPAN="10"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+                <tr>
+                  <td nowrap CLASS="statlisthead" colspan=6>WebDAV Owner</td>
+                  <td colspan="4">
+                    <select name="own">
+                      <option  value="nobody">&lt;none&gt;</option>
+                      <?vsp
+                        for (select U_NAME from WS.WS.SYS_DAV_USER order by lower(U_NAME)) do
+                          http(sprintf('<option value="%s" %s>%s</option>\n', U_NAME, select_if(U_NAME, _own), U_NAME));
+                      ?>
+                     </select></td>
+                </tr>
+                <tr>
+                  <td nowrap CLASS="statlisthead" colspan=6>WebDAV Group</td>
+                  <td colspan=4>
+                    <select name="grp">
+                      <option value="nogroup">&lt;none&gt;</option>
+                      <?vsp
+                        for (select G_NAME from WS.WS.SYS_DAV_GROUP order by lower(G_NAME)) do
+                          http(sprintf('<option value="%s" %s>%s</option>\n', G_NAME, select_if(G_NAME, _grp), G_NAME));
+                      ?>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <td CLASS="statlistheadt" colspan=3>Owner</td>
+                  <td CLASS="statlistheadt" colspan=3>Group</td>
+                  <td CLASS="statlistheadt" colspan=3>Other</td>
+                  <td CLASS="statlistheadt">Idx</td>
+                </tr>
+                <tr>
+                  <td CLASS="statlistheadt">r</td>
+                  <td CLASS="statlistheadt">w</td>
+                  <td CLASS="statlistheadt">x</td>
+                  <td CLASS="statlistheadt">r</td>
+                  <td CLASS="statlistheadt">w</td>
+                  <td CLASS="statlistheadt">x</td>
+                  <td CLASS="statlistheadt">r</td>
+                  <td CLASS="statlistheadt">w</td>
+                  <td CLASS="statlistheadt">x</td>
+                  <td CLASS="statlistheadt">t</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" name="perm_ur" <?vsp if (one = aref(_perms, 0)) { http('checked'); } ?> ></td>
+                  <td><input type="checkbox" name="perm_uw" <?vsp if (one = aref(_perms, 1)) { http('checked'); } ?> ></td>
+                  <td><input type="checkbox" name="perm_ux" <?vsp if (one = aref(_perms, 2)) { http('checked'); } ?> ></td>
+                  <td><input type="checkbox" name="perm_gr" <?vsp if (one = aref(_perms, 3)) { http('checked'); } ?> ></td>
+                  <td><input type="checkbox" name="perm_gw" <?vsp if (one = aref(_perms, 4)) { http('checked'); } ?> ></td>
+                  <td><input type="checkbox" name="perm_gx" <?vsp if (one = aref(_perms, 5)) { http('checked'); } ?> ></td>
+                  <td><input type="checkbox" name="perm_or" <?vsp if (one = aref(_perms, 6)) { http('checked'); } ?> ></td>
+                  <td><input type="checkbox" name="perm_ow" <?vsp if (one = aref(_perms, 7)) { http('checked'); } ?> ></td>
+                  <td><input type="checkbox" name="perm_ox" <?vsp if (one = aref(_perms, 8)) { http('checked'); } ?> ></td>
+                  <td><input type="checkbox" name="perm_tt" <?vsp if (ascii('R') = aref(_perms, 9)) { http('checked'); } ?>
+                  ></td>
+                </tr>
+              </table>
+</TD></TR>
+<TR><TD ALIGN="left" VALIGN="top">
+              <table border="0" class="statlist" cellpadding="0" cellspacing="2">
+                <tr><td CLASS="statlistheadt" colspan="3">Sensitivity To Database Changes</td></tr>
+                <TR><TD CLASS="AdmBorders" COLSPAN="3"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+                <tr>
+                  <TD><input type="radio" value="void_imd" name="imd" onClick="setPerms(false);" <?=_not_imd?>></TD>
+                  <TD CLASS="statlisthead">Persist XML Document</TD>
+                  <td style="PADDING-RIGHT: 2px; PADDING-LEFT: 2px; FONT-SIZE: 90%; FONT-FAMILY: Tahoma,Times; TEXT-ALIGN: left" nowrap>Update every
+                    <input size="5" value="<?=_intl?>" name="intl">
+                    minutes</td>
+                <tr>
+                  <TD><input type="radio" value="imd" name="imd" onClick="setPerms(false);" <?=_imd?>></TD>
+                  <TD CLASS="statlisthead">Create XML in Real Time</TD>
+                  <td></td>
+                </tr>
+                <tr>
+                  <TD><input type="radio" value="xmlt" name="imd" onClick="setPerms(true);" <?=_xmlt?>></TD>
+                  <TD CLASS="statlisthead">Create as XML template</TD>
+                  <td></td>
+                </tr>
+                <!--TR>
+                  <TD CLASS="statlisthead">Update Interval (minutes)</TD>
+                  <TD><input size="3" value="<?=_intl?>" name="intl"></TD>
+                </TR-->
+              </table>
+</TD>
+<TD ALIGN="left" VALIGN="top">
+              <table border="0" class="statlist" cellpadding="0" cellspacing="2">
+                <tr><td nowrap CLASS="statlistheadt" colspan="2">Document Definition</td></tr>
+                <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+                <tr>
+                  <td width="20"><input type="radio" name="defs" value="not_def" <?=_none?>></td>
+                  <td align="left" CLASS="statlistheadt">None</td>
+                </tr>
+                <tr>
+                  <td><input type="radio" name="defs" value="sch" <?=_sch?>></td>
+                  <td align="left" nowrap CLASS="statlistheadt">Create XML Schema</td>
+                </tr>
+                <tr>
+                  <td><input type="radio" name="defs" value="dtd" <?=_dtd1?>></td>
+                  <td align="left" nowrap CLASS="statlistheadt">Insert Inline DTD</td>
+                </tr>
+                <tr>
+                  <td><input type="radio" name="defs" value="dtd_sav" <?=_dtd_sav?>></td>
+                  <td align="left" nowrap CLASS="statlistheadt">Create External DTD</td>
+                </tr>
+              </table>
+</TD></TR>
+<TR><TD ALIGN="left" VALIGN="top" COLSPAN="2">
+              <table WIDTH="100%" border="0" CLASS="statlist">
+              <TR><TD ALIGN="center">
+                  <input size="12" type=reset name=clear value="Reset">
+                  <input type=submit name=execute value="Execute">
+              </TD></TR></TABLE>
+</TD></TR></TABLE>
+  </FORM>
+<BR />
+<TABLE CLASS="statlist" BORDER="0" CELLPADDING="0">
+    <TR><TD CLASS="stathead" COLSPAN="4">Saved XML Views</TD></TR>
+    <TR><TD CLASS="AdmBorders" COLSPAN="4"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+   <tr>
+    <th CLASS="statlistheadt">XML File</th>
+    <th CLASS="statlistheadt">Update Interval</th>
+    <th CLASS="statlistheadt" colspan=2>Actions</th>
+   </tr>
+<?vsp
+    declare rintl, rupd, fnd integer;
+    fnd := 0;
+    for select PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xml-sql' and PROP_TYPE = 'R' do {
+    for select RES_ID, RES_FULL_PATH, length (RES_CONTENT) as rlen from WS.WS.SYS_DAV_RES
+      where RES_ID = PROP_PARENT_ID do {
+    rintl := 0;
+    whenever not found goto nfi;
+    select SE_INTERVAL into rintl from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = RES_FULL_PATH;
+nfi:
+    if (exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xml-template' and PROP_TYPE = 'R' and PROP_PARENT_ID = RES_ID))
+      rupd := 'template';
+    else if (rlen > 0 and rintl is not null)
+      rupd := rintl;
+    else if (rlen = 0)
+      rupd := 'immediate';
+    else
+      rupd := 0;
+
+    fnd := 1;
+?>
+    <tr>
+      <td CLASS="statdata"><A HREF="<?=WS.WS.STR_TO_URI(RES_FULL_PATH)?>" TARGET="_blank"><?=RES_FULL_PATH?></A></td>
+      <td CLASS="statdata"><?=rupd?></td>
+      <td CLASS="statdata"><a class="tablelistaction" href="admin_dav_xslt.vsp?EDIT=1&res=<?=RES_FULL_PATH?>">Edit<a></td>
+      <td CLASS="statdata"><a class="tablelistaction" href="admin_dav_xslt.vsp?DELETE=1&res=<?=RES_FULL_PATH?>">Delete<a></td>
+    </tr>
+<?vsp
+    }
+    }
+    if (fnd = 0)
+      http ('<tr><td CLASS="statdata" colspan=4 align=center><b>*** No queries defined ***</b></td></tr>');
+?>
+   </table></center>
+  </td>
+</tr>
+
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD>
+</TABLE>
+<?include ../admin_footer.vsp ?>
+  </BODY>
+</HTML>
+<?vsp
+   return (0);
+err_ret:
+   rollback work;
+   _err_txt := concat ('Error:', _err_txt);
+   goto nxt;
+ok_ret:
+   if (_replace = '2')
+     {
+	_p_stat := encode_base64 (serialize (params));
+        _err_txt := concat ('Replace: ', _res, ' ? ');
+
+     }
+   else
+     _err_txt := concat ('Status: OK;  ', _err_txt, '');
+
+nxt:
+?>
+<HTML>
+  <HEAD>
+    <LINK rel="stylesheet" type="text/css" href="../admin_style.css">
+    <META name="AUTHOR" content="OpenLink Software">
+    <META name="DESCRIPTION" content="Publishing SQL/XML statements as WebDAV documents">
+    <title>Publishing SQL/XML statements as WebDAV documents</title>
+  </head>
+<?vsp adm_page_header('SQL->XML Translation', 'sqlxmlstmts'); ?>
+
+  <P><STRONG><?=_err_txt?></STRONG></P>
+
+<?vsp if (_replace = '2') { ?>
+<form method=POST action="admin_dav_xslt.vsp">
+ <input type=hidden name="pstat" value="<?= _p_stat ?>">
+ <input type=submit name="Replace" value="OK">
+</form>
+<?vsp } else { ?>
+<form method=POST action="admin_dav_xslt.vsp">
+ <input type=submit name="back" value="New definition">
+</form>
+<?vsp } ?>
+
+<?vsp adm_page_footer(); ?>
+</HTML>
+<?vsp }
+
+err_exit:
+
+if (stat <> '00000')
+  {
+    http_rewrite ();
+?>
+
+<?include error.vsp ?>
+
+<?vsp
+  }
+
+?>

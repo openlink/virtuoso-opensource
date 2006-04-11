@@ -1,0 +1,78 @@
+<?xml version='1.0'?>
+<?xml-stylesheet type="text/xsl" href="html.xsl" ?> 
+<!DOCTYPE book PUBLIC "-//Norman Walsh//DTD DocBk XML V3.1.4//EN" "DocBook/docbookx.dtd">
+<book>
+<docinfo>
+<copyright><YEAR>1999, </YEAR>
+<holder>OpenLink Software.</holder>
+</copyright>
+</docinfo>
+
+<title>Virtuoso V-DBMS documentation</title>
+
+<chapter>
+<title>User &amp; Group Maintenance</title>
+
+<sect1>
+<title>CREATE USER, DELETE USER, SET PASSWORD, SET USER GROUP statement</title>
+
+<example id="VDOCS-UGMAINT-01">
+<title>set_pass</title>
+SET PASSWORD NAME NAME
+</example>
+
+<example id="VDOCS-UGMAINT-02">
+<title>create_user_statement</title>
+CREATE USER user	
+</example>
+
+<example id="VDOCS-UGMAINT-03">
+<title>delete_user_statement</title>
+DELETE USER user	
+</example>
+
+<example id="VDOCS-UGMAINT-04">
+<title>set_group_stmt</title>
+SET USER GROUP user user
+</example>
+
+<para>
+These statements are used to manage user accounts. Their use 
+is limited to users with dba privileges, with the exception of SET PASSWORD.
+</para>
+<para>
+CREATE USER makes a new user account. The password defaults to the user name.
+DELETE USER deletes a user account. The account being dropped may not
+have privileges granted to it nor can it be the user group of any user except itself.
+SET USER GROUP assigns a group to a user.  By default a user belings to its own group. Changing 
+a user&apos;s group to be another user causes the member user&apos;s effective privileges to be those of
+the group plus those granted specifically to the member user.
+</para>
+<para>
+Privileges are only inherited from the immediate group, not from the group&apos;s group
+etc.
+</para>
+<para>
+Note that the user names and passwords are identifiers. This means that they can 
+be converted to upper case unless quoted in if the global CaseMode setting is 1.
+</para>
+
+<example id="VDOCS-UGMAINT-05">
+<title>Examples:</title>
+create user &quot;Accounting&quot;;
+create user &quot;AcctMgr&quot;;
+set user group &quot;AcctMgr&quot; &quot;Accounting&quot;;
+grant select on &quot;Orders&quot; to &quot;Accounting&quot;;
+grant select on &quot;Employees&quot; to &quot;Accounting&quot;;
+grant update (&quot;Salary&quot;) on &quot;Employee&quot; to &quot;AcctMgr&quot;;
+</example>
+
+<para>
+AcctMgr will have select privileges on &quot;Employee as a reuslt of
+belonging to the Accounting group and will have updte privileges on Salary by
+virtue of the direct grant.
+</para>
+</sect1>
+</chapter>
+</book>
+

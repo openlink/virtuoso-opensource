@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_smime_sign">
+  <refmeta>
+    <refentrytitle>smime_sign</refentrytitle>
+    <refmiscinfo>mail</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>smime_sign</refname>
+    <refpurpose>Converts a MIME message to a signed S/MIME message</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_smime_sign">
+      <funcprototype id="fproto_smime_sign">
+        <funcdef>varchar <function>smime_sign</function></funcdef>
+        <paramdef>in <parameter>msg_text</parameter> varchar</paramdef>
+        <paramdef>in <parameter>signer_cert</parameter> varchar</paramdef>
+        <paramdef><optional>in <parameter>private_key</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>private_key_pass</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>signer_CA_certs</parameter> any</optional></paramdef>
+        <paramdef><optional>in <parameter>flags</parameter> integer</optional></paramdef>
+     </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params_smime_sign"><title>Parameters</title>
+    <refsect2><title>msg_text</title>
+      <para>The text of the message</para></refsect2>
+     <refsect2><title>signer_cert</title>
+      <para>Signer certificate.</para></refsect2>
+    <refsect2><title>private_key</title>
+      <para>Private Key</para></refsect2>
+     <refsect2><title>private_key_pass</title>
+      <para>Private Key Pass</para></refsect2>
+    <refsect2><title>signer_CA_certs</title>
+      <para>Array of strings of CA Certificates</para></refsect2>
+   <refsect2><title>flags</title>
+     <table><title>Bits defined in <parameter>flags</parameter></title>
+       <tgroup cols="3">
+         <thead><row><entry>Mask</entry><entry>Name</entry><entry>Description</entry></row></thead>
+	 <tbody>
+	   <row>
+	     <entry>0x1</entry>
+	     <entry>PKCS7_TEXT</entry>
+	     <entry>add a text/plain content type MIME header</entry>
+	   </row>
+	   <row>
+	     <entry>0x2</entry>
+	     <entry>PKCS7_NOCERTS</entry>
+	     <entry>do not put the signer_CA_certs into the generated PKCS7 signature</entry>
+	   </row>
+	   <row>
+	     <entry>0x40</entry>
+	     <entry>PKCS7_DETACHED</entry>
+	     <entry>do multipart/signed message</entry>
+	   </row>
+	   <row>
+	     <entry>0x80</entry>
+	     <entry>PKCS7_BINARY</entry>
+	     <entry>do not canonize the line endings to CR/LF</entry>
+	   </row>
+	   <row>
+	     <entry>0x100</entry>
+	     <entry>PKCS7_NOATTR</entry>
+	     <entry>Do not include attributes (signing time, supported symmetric algorithms,
+             etc.)</entry>
+	   </row>
+	   <row>
+	     <entry>0x200</entry>
+	     <entry>PKCS7_NOSMIMECAP</entry>
+	     <entry>no SMIME capabilities attributes</entry>
+	   </row>
+	 </tbody>
+       </tgroup>
+     </table>
+   </refsect2>
+ </refsect1>
+  <refsect1 id="ret_smime_sign"><title>Return Types</title>
+    <para>This function takes a message and converts it to an S/MIME signed
+		message based on the flags value (if supplied - default PKCS7_DETACHED).
+		</para>
+</refsect1>
+<!--  <refsect1 id="errors_smime_sign"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>CR006</errorcode></entry>
+	    <entry><errorname>No CA certificates</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>CR007</errorcode></entry>
+	    <entry><errorname>Error reading the signer certificate. SSL error : &lt;error text&gt;</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>CR008</errorcode></entry>
+	    <entry><errorname>Error reading the signer private key. SSL error : &lt;error text&gt;</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>CR009</errorcode></entry>
+	    <entry><errorname>Can't generate PKCS7 signature. SSL error : &lt;error text&gt;</errorname></entry>
+	    <entry></entry>
+	  </row>
+	  <row>
+	    <entry><errorcode>42000</errorcode></entry>
+	    <entry><errorcode>CR010</errorcode></entry>
+	    <entry><errorname>Can't allocate output storage. SSL error : &lt;error text&gt;</errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+	-->
+  <refsect1 id="examples_smime_sign"><title>Examples</title>
+    <example id="ex_smime_verify"><title>Signing a MIME Message</title>
+<para>Example (where signed.eml contains the output from smime_sign.</para>
+<programlisting>
+select smime_sign ('just a test', file_to_string ('thwate_pub.pem'),
+  file_to_string ('thwate_pri.pem'), 'very_secret_password',
+	vector (file_to_string ('thwate_ca.pem')), 4*16 + 1);
+
+_______________________________________________________________________________
+
+MIME-Version: 1.0
+Content-Type: multipart/signed ; protocol="application/x-pkcs7-signature" ;
+  micalg=sha1 ; boundary="----23F1D9057532E126962121287FDB4793"
+
+This is an S/MIME signed message
+
+------23F1D9057532E126962121287FDB4793
+Content-Type: text/plain
+
+just a test
+------23F1D9057532E126962121287FDB4793
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+
+MIILaAYJKoZIhvcNAQcCoIILWTCCC1UCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
+DQEHAaCCCTswggLZMIICQqADAgECAgMD2DgwDQYJKoZIhvcNAQEEBQAwgZIxCzAJ
+BgNVBAYTAlpBMRUwEwYDVQQIEwxXZXN0ZXJuIENhcGUxEjAQBgNVBAcTCUNhcGUg
+VG93bjEPMA0GA1UEChMGVGhhd3RlMR0wGwYDVQQLExRDZXJ0aWZpY2F0ZSBTZXJ2
+aWNlczEoMCYGA1UEAxMfUGVyc29uYWwgRnJlZW1haWwgUlNBIDIwMDAuOC4zMDAe
+Fw0wMDEyMjIwODM1MjFaFw0wMTEyMjIwODM1MjFaMHkxHzAdBgNVBAMTFlRoYXd0
+ZSBGcmVlbWFpbCBNZW1iZXIxLjAsBgkqhkiG9w0BCQEWH2tnZW9yZ2VAcGxvdmRp
+di50ZWNobm8tbGluay5jb20xJjAkBgkqhkiG9w0BCQEWF2drb2Rpbm92QG9wZW5s
+aW5rLmNvLnVrMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDTOklS3QEDt2Pm
+vtNOK5Zi7PPn9U2EDmdjoCjKEHq8Zkyod+rATNBrqH24ewaoqCPWtRTb9GkwW9EM
+z+2pu+liAqiA4Es+sNpfgKvO4T4/bliyp3FAJ/03s9XfU0hyJT5JVFDt0hfBou0c
+wgG1spwuz/3Gtl/DQDS1AMZ1R8jacQIDAQABo1UwUzBDBgNVHREEPDA6gR9rZ2Vv
+cmdlQHBsb3ZkaXYudGVjaG5vLWxpbmsuY29tgRdna29kaW5vdkBvcGVubGluay5j
+by51azAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBBAUAA4GBAAArP5xEnmt5goAO
+2+8UE/8dd4CwfG0w/IO53psFgpjPlM/D9ePt/LPF/vhTtPHXubm54xJlNVi0MMPU
+g91BU3bPkX2rrEhv1plInRc0eaKIooy+qz8KPhz5DwZ0PfidOMn3G2/HkdODVqjK
+ZReIhcaU5pDamp0NCMjzi5isB2qfMIIDKTCCApKgAwIBAgIBDDANBgkqhkiG9w0B
+AQQFADCB0TELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTESMBAG
+A1UEBxMJQ2FwZSBUb3duMRowGAYDVQQKExFUaGF3dGUgQ29uc3VsdGluZzEoMCYG
+A1UECxMfQ2VydGlmaWNhdGlvbiBTZXJ2aWNlcyBEaXZpc2lvbjEkMCIGA1UEAxMb
+VGhhd3RlIFBlcnNvbmFsIEZyZWVtYWlsIENBMSswKQYJKoZIhvcNAQkBFhxwZXJz
+b25hbC1mcmVlbWFpbEB0aGF3dGUuY29tMB4XDTAwMDgzMDAwMDAwMFoXDTAyMDgy
+OTIzNTk1OVowgZIxCzAJBgNVBAYTAlpBMRUwEwYDVQQIEwxXZXN0ZXJuIENhcGUx
+EjAQBgNVBAcTCUNhcGUgVG93bjEPMA0GA1UEChMGVGhhd3Rl
+_______________________________________________________________________________
+</programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_smime_sign"><title>See Also</title>
+    <para><link linkend="fn_smime_sign">smime_verify</link></para>
+		<para><link linkend="fn_pem_certificates_to_array">pem_certificates_to_array</link></para>
+  </refsect1>
+</refentry>
+

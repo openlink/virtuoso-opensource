@@ -1,0 +1,190 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+
+declare seq, _from, _to, _reply_to, _fault_to, host, err, msg, _from1, refr any;
+
+host := http_request_header (lines, 'Host');
+
+err := null;
+
+refr := atoi (get_keyword ('refr', params, '0'));
+
+declare exit handler for sqlstate '*'
+{
+  rollback work;
+  err := __SQL_STATE;
+  msg := __SQL_MESSAGE;
+  goto errors;
+};
+
+if ({?'exec'} is not null)
+  {
+    declare req any;
+    req := xtree_doc (sprintf ('<loanApplication xmlns="http://www.autoloan.com/ns/autoloan"><SSN>%s</SSN><email>%s</email><customerName>%s</customerName><loanAmount>%s</loanAmount><carModel>%s</carModel><carYear>%s</carYear><creditRating></creditRating></loanApplication>'
+	, {?'ssn'}
+	, {?'email'}
+	, {?'cname'}
+	, {?'amount'}
+	, {?'model'}
+	, {?'year'})
+	);
+
+    -- invoking one-way operation to initiate the BPEL script execution
+    delete from BPEL..resonresult;
+    commit work;
+    db.dba.soap_client (
+	direction=>1,
+	url=>sprintf ('http://localhost:%s/LoanFlow', server_http_port()),
+	soap_action=>'initiate',
+	operation=>'initiate',
+	style=>1,
+	parameters =>  vector ('par1', req));
+        http_request_status ('HTTP/1.1 302 Found');
+        http_header (sprintf ('Location: %s?refr=1&ssn=%s&email=%s&cname=%s&amount=%s&model=%s&year=%s\r\n', http_path()
+	, {?'ssn'}
+	, {?'email'}
+	, {?'cname'}
+	, {?'amount'}
+	, {?'model'}
+	, {?'year'}
+		));
+        return;
+  }
+
+errors:;
+?>
+
+
+<html>
+<HEAD>
+	<link rel="stylesheet" type="text/css" href="/tutorial/services/demo.css" />
+<?vsp
+     if (refr) {
+?>
+	<META HTTP-EQUIV="REFRESH" CONTENT="1">
+<?vsp
+               }
+?>
+</HEAD>
+<body>
+<H3>BPEL Loan Flow demo</H3>
+
+  <?vsp
+    if (err is not null)
+     {
+       ?>
+	<table border="0">
+	  <tr><td class="heading">SQL State</td><td class="error"><?=err?></td></tr>
+	  <tr><td class="heading">SQL Message</td><td class="error"><?=msg?></td></tr>
+	</table>
+       <?vsp
+     }
+  ?>
+
+<div><a href="http://<?=host?>/LoanFlow?wsdl">WSDL definition</a></div>
+
+<form method="post" action="<?= http_path() ?>" name="mform">
+<table class="tableentry">
+<p>Change the SSN to
+<?vsp
+  if (atoi (get_keyword ('ssn' , params, '12345')) > 0)
+    http ('00000');
+  else
+    http ('11111');
+?>
+in order to get different loan offer</p>
+<tr>
+<td>1. SSN</td>
+<td><input type="text" name="ssn" value="<?= get_keyword ('ssn' , params, '12345') ?>" size="70"></td>
+</tr>
+<tr>
+<td>2. E-Mail</td>
+<td><input type="text" name="email" value="<?= get_keyword ('email' , params, 'user@dot.domain') ?>" size="70"></td>
+</tr>
+<tr>
+<td>3. Customer Name</td>
+<td><input type="text" name="cname" value="<?= get_keyword ('cname' , params, 'Joe Doe') ?>" size="70"></td>
+</tr>
+<tr>
+<td>4. Loan Amount</td>
+<td><input type="text" name="amount" value="<?= get_keyword ('amount' , params, '15000.00') ?>" size="70"></td>
+</tr>
+<tr>
+<td>5. Car Model</td>
+<td><input type="text" name="model" value="<?= get_keyword ('model' , params, 'BMW') ?>" size="70"></td>
+</tr>
+<tr>
+<td>6. Car Year</td>
+<td><input type="text" name="year" value="<?= get_keyword ('year' , params, '2004') ?>" size="70"></td>
+</tr>
+
+<tr><td>7. Call</td><td><input type="submit" name="exec" value="Execute"></td></tr>
+</table>
+
+<!--input type="submit" value="Refresh Result" name="refr" /-->
+
+<table class="tableresult">
+  <?vsp
+  declare arr, i, l any;
+  whenever not found goto endf;
+  select res into arr from BPEL..resonresult where id = 1;
+  ?>
+  <tr>
+  <td>Car Loan Applicant:</td><td> <?={?'cname'}?> <?={?'ssn'}?> <?={?'email'}?></td>
+  </tr>
+  <tr>
+  <td>Car Details:</td><td><?={?'model'}?> <?={?'year'}?></td>
+  </tr>
+  <tr>
+  <td>Loan Request Amount:</td><td><?={?'amount'}?></td>
+  </tr>
+  <tr><td>Loan Status:</td>
+  <td>
+   <table border="0">
+  <tr><td>Provider:</td><td><?=get_keyword ('providerName', arr)?></td></tr>
+  <tr><td>Approved:</td><td><?=case when get_keyword ('approved', arr) then 'true' else 'false' end?></td></tr>
+  <tr><td>Rate:</td><td><?=get_keyword ('APR', arr)?></td></tr>
+  <?vsp
+      if (refr)
+        {
+          http_request_status ('HTTP/1.1 302 Found');
+          http_header (sprintf ('Location: %s?ssn=%s&email=%s&cname=%s&amount=%s&model=%s&year=%s\r\n', http_path()
+	, {?'ssn'}
+	, {?'email'}
+	, {?'cname'}
+	, {?'amount'}
+	, {?'model'}
+	, {?'year'}
+		));
+        }
+  endf:
+  ?>
+  </td>
+  </tr>
+</table>
+
+</form>
+</body>
+</html>
+

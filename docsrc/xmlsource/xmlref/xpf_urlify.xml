@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_urlify">
+  <refmeta>
+    <refentrytitle>urlify</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>urlify</refname>
+    <refpurpose>Converts its argument to a string and returns it in URL encoding.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_urlify">
+      <funcprototype id="xpf_proto_urlify">
+        <funcdef>string <function>urlify</function></funcdef>
+	<paramdef><parameter>obj</parameter> string</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_urlify"><title>Description</title>
+    <para>The urlify() function encodes its argument string according to
+URI rules (i.e. whitespaces are replaced with plus signs and all special characters
+are replaced with '%XX' notation. This is especialy useful for stylesheets
+that compose dynamic HTML documents with calculateable values of
+attributes like &lt;A HREF=...&gt;.
+    </para>
+  </refsect1>
+  <refsect1 id="xpf_params_urlify"><title>Parameters</title>
+    <refsect2><title>obj</title><para>Value to be formatted as URI</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_urlify"><title>Return Types</title><para>String</para></refsect1>
+<!--
+  <refsect1 id="xpf_examples_urlify"><title>Examples</title>
+    <example id="xpf_ex_urlify"><title></title>
+      <para></para>
+      <screen>string(//title)</screen>
+    </example>
+  </refsect1>
+-->  
+  <refsect1 id="xpf_seealso_urlify"><title>See Also</title>
+    <para><link linkend="xpf_string">string()</link></para>
+    <para><link linkend="xpf_format_number">format_number()</link></para>
+    <para><link linkend="xpf_serialize">serialize()</link></para>
+    <para><link linkend="xpf_concat">concat()</link></para>
+  </refsect1>
+</refentry>
+

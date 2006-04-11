@@ -1,0 +1,366 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<rss version="2.0">
+  <channel>
+    <title>Michael Howard's Web Log</title>
+    <link>http://blogs.msdn.com/michael_howard/default.aspx</link>
+    <description>A Simple Software Security Guy at Microsoft!</description>
+    <dc:language xmlns:dc="http://purl.org/dc/elements/1.1/">en-US</dc:language>
+    <generator>CommunityServer 1.1 (Build: 1.1.0.50402)</generator>
+    <item>
+      <title>A Nice Source of 'Vintage' Security Papers</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/06/07/426365.aspx</link>
+      <pubDate>Tue, 07 Jun 2005 20:36:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:426365</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">2</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/426365.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=426365</n0:commentRss>
+      <content>
+        <p>A colleague (thanks, Chris!) sent me this URL, it's great resource for classic security papers, and a very worthy read. </p>
+        <font size="2">
+          <p>
+            <a href="http://csrc.nist.gov/publications/history/">
+              <u>
+                <font color="#0000ff" size="2">http://csrc.nist.gov/publications/history/</font>
+              </u>
+            </a>
+          </p>
+          <img src="http://blogs.msdn.com/aggbug.aspx?PostID=426365" width="1" height="1"/>
+        </font>
+      </content>
+    </item>
+    <item>
+      <title>The joy of netsh</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/06/02/424863.aspx</link>
+      <pubDate>Fri, 03 Jun 2005 01:24:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:424863</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">5</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/424863.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=424863</n0:commentRss>
+      <content>
+        <p>Ever notice there are REALLY useful tools that you totally overlook? Well I do. All the time! One such mega-useful tool in Windows is <font face="Courier New" size="2">netsh</font>, a tool for getting and setting network settings on a box.</p>
+        <p>I found it a "Godsend" just recently when I had to troubleshoot a Windows XP SP 2 firewall problem. If you run these commands in a batch file: </p>
+        <p>
+          <font face="Courier New" size="2">netsh firewall show state &gt; fw <br/></font>
+          <font face="Courier New" size="2">netsh firewall show allowedprogram &gt;&gt; fw <br/></font>
+          <font face="Courier New">
+            <font size="2">netsh firewall show logging &gt;&gt; fw</font>
+          </font>
+        </p>
+        <p>You'll see something like this: </p>
+        <p>
+          <font face="Courier New" size="2">Firewall status:<br/>-------------------------------------------------------------------<br/>Profile                           = Domain<br/>Operational mode                  = Enable<br/>Exception mode                    = Enable<br/>Multicast/broadcast response mode = Enable<br/>Notification mode                 = Enable<br/>Group policy version              = Windows Firewall<br/>Remote admin mode                 = Disable</font>
+        </p>
+        <p>
+          <font face="Courier New" size="2">Ports currently open on all network interfaces:<br/>Port   Protocol  Version  Program<br/>-------------------------------------------------------------------<br/>3389   TCP       Any      (null)<br/>4500   UDP       Any      C:\WINDOWS\system32\lsass.exe<br/>500    UDP       Any      C:\WINDOWS\system32\lsass.exe</font>
+        </p>
+        <p>
+          <br/>
+          <font face="Courier New" size="2">Allowed programs configuration for Domain profile:<br/>Mode     Name / Program<br/>-------------------------------------------------------------------<br/>Enable   MSN Messenger 7.0 / C:\Program Files\MSN Messenger\msnmsgr.exe</font>
+        </p>
+        <p>
+          <font face="Courier New" size="2">Allowed programs configuration for Standard profile:<br/>Mode     Name / Program<br/>-------------------------------------------------------------------<br/>Enable   Remote Assistance / C:\WINDOWS\system32\sessmgr.exe<br/>Enable   AcceptConnection / C:\Junk\AcceptConnection\Debug\AcceptConnection.exe<br/>Enable   MSN Messenger 7.0 / C:\Program Files\MSN Messenger\msnmsgr.exe</font>
+        </p>
+        <p>
+          <font face="Courier New" size="2"/>
+          <br/>
+          <font face="Courier New" size="2">Log configuration:<br/>-------------------------------------------------------------------<br/>File location   = C:\WINDOWS\pfirewall.log<br/>Max file size   = 24096 KB<br/>Dropped packets = Enable<br/>Connections     = Disable</font>
+        </p>
+        <p>Note, you can use the tool to set and get settings, it's not just a query tool. There's a good rundown of using <font face="Courier New" size="2">netsh</font> to diagnose firewall issues here <a href="http://support.microsoft.com/default.aspx?scid=kb;en-us;875357">http://support.microsoft.com/default.aspx?scid=kb;en-us;875357</a></p>
+        <p>Other useful things to spelunk include the IPv6 support:</p>
+        <p>The command installs IPv6 support:</p>
+        <p>
+          <font face="Courier New" size="2">netsh interface ipv6 install</font>
+        </p>
+        <p>And this command dumps all the IPv6 interface data, it's more detailed than <font face="Courier New" size="2">ipconfig</font>.</p>
+        <p>
+          <font face="Courier New" size="2">netsh interface ipv6 show address</font>
+        </p>
+        <p> </p>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=424863" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Hidden Message in Writing Secure Code 2nd Ed</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/05/19/420115.aspx</link>
+      <pubDate>Thu, 19 May 2005 18:56:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:420115</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">7</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/420115.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=420115</n0:commentRss>
+      <content>
+        <p>I've been meaning to write about this for a year or so, but for some reason I simply keep forgetting to do it! There's a hidden message in WSC 2nd ed.</p>
+        <p>Since the book's release, only one person has found it. Here's a clue: it's in plain sight :)</p>
+        <p> </p>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=420115" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>File Checksum Integrity Verifier utility</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/05/12/416741.aspx</link>
+      <pubDate>Thu, 12 May 2005 07:16:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:416741</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/416741.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=416741</n0:commentRss>
+      <content>
+        <p>Every once in a while I come across an old piece of email, or a document I archived that contains a little nugget; well, I just stumbled on one on a backup DVD. Last year, Microsoft made available a tool named the File Checksum Integrity Verifier (FCIV) to compute file hashes and perform comparisons against a baseline at a later date. It's simple and easy to use. And free.</p>
+        <p>
+          <a href="http://support.microsoft.com/default.aspx?scid=kb;en-us;841290">http://support.microsoft.com/default.aspx?scid=kb;en-us;841290</a>
+        </p>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=416741" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Writing Secure Web Browsers is Hard</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/05/11/416618.aspx</link>
+      <pubDate>Wed, 11 May 2005 23:45:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:416618</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">3</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/416618.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=416618</n0:commentRss>
+      <content>
+        <p>I'm not making excuses, just stating facts. In fact, I just read this from SANS... emphasis is mine.</p>
+        <font size="2">
+          <p>
+            <a href="http://www.sans.org/newsletters/newsbites/newsbites.php?vol=7&amp;issue=19">
+              <u>
+                <font color="#0000ff" size="2">http://www.sans.org/newsletters/newsbites/newsbites.php?vol=7&amp;issue=19</font>
+              </u>
+            </a>
+          </p>
+          <p>Fixes Not Yet Available for Firefox Vulnerabilities (9 May 2005)<br/>Two vulnerabilities in the Firefox web browser could allow attackers to gain control of users' computers just by getting them to visit a maliciously crafted web site. Mozilla is recommending that Firefox users disable Javascript or lock down the browser to prevent it from installing additional software. There is no a patch available, although information about the vulnerabilities and proof-of-concept exploit code have already been released. Mozilla plans to release an update, Firefox 1.0.4, as soon as possible. <br/>-<a href="http://informationweek.com/story/showArticle.jhtml?articleID=163100338"><u><font color="#0000ff">http://informationweek.com/story/showArticle.jhtml?articleID=163100338</font></u></a><br/>-<a href="http://www.vnunet.com/news/1162904"><u><font color="#0000ff">http://www.vnunet.com/news/1162904</font></u></a><br/>[Editor's Note (Schultz): <font color="#ff0000"><font><strong>The number of vulnerabilities in Firefox recently has been alarming. At first Firefox appeared to be an attractive alternative to Internet Explorer (IE) for security reasons, but IE is now looking better and better in comparison</strong>.</font><br/></font>(Shpantzer): There's so much hacking at the application layer, at some point we'll have to actually lock down configurations for all browsers, regardless of the security mythology that surrounds the project's code and architecture. If you have a supposedly 'secure' browser that's insecurely configured, well, it's not very secure. ]<br/><br/></p>
+          <img src="http://blogs.msdn.com/aggbug.aspx?PostID=416618" width="1" height="1"/>
+        </font>
+      </content>
+    </item>
+    <item>
+      <title>Microsoft unveils details of software security process</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/05/10/415927.aspx</link>
+      <pubDate>Tue, 10 May 2005 07:11:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:415927</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/415927.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=415927</n0:commentRss>
+      <content>My colleague, Window Snyder presented last week at CanSecWest about some of the 'fun' we had getting Windows XP SP2 out the door. You can read some of her comments and analysis at SecurityFocus. <a href="http://www.securityfocus.com/news/11115">http://www.securityfocus.com/news/11115</a><img src="http://blogs.msdn.com/aggbug.aspx?PostID=415927" width="1" height="1"/></content>
+    </item>
+    <item>
+      <title>Comments on recent Firefox security bugs</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/05/09/415804.aspx</link>
+      <pubDate>Mon, 09 May 2005 21:31:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:415804</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/415804.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=415804</n0:commentRss>
+      <content>
+        <p>As you are no doubt aware, a couple of pretty nasty security defects have been found in the latest FireFox bits that allow remote code execution. </p>
+        <p>The IE team has made some very gracious comments <a href="http://blogs.msdn.com/ie/archive/2005/05/09/415800.aspx">here</a> about the issue.</p>
+        <p>The official word about the bugs is from the Mozilla folks <a href="http://www.mozilla.org/security/announce/mfsa2005-42.html">http://www.mozilla.org/security/announce/mfsa2005-42.html</a>, and Secunia has marked this Extremely Critical <a href="http://secunia.com/advisories/15292/">http://secunia.com/advisories/15292/</a>.</p>
+        <p> </p>
+        <p> </p>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=415804" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Visio Connector for MBSA available</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/05/05/415046.aspx</link>
+      <pubDate>Thu, 05 May 2005 21:58:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:415046</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">2</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/415046.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=415046</n0:commentRss>
+      <content>
+        <p>This is kinda cool - a Visio connector that hooks up to the output from the Microsoft Baseline Security Analyzer (MBSA.) From the blurb:</p>
+        <p>
+</p>
+        <h4>At a glance, you'll be able to:</h4>
+        <li>Pinpoint vulnerabilities on the color-coded diagram.<br/>
+</li>
+        <li>Identify solutions in the detailed network diagram scan results.<br/>
+</li>
+        <li>Prioritize actions based on the results presented in the network diagram
+<p><a href="http://www.microsoft.com/technet/security/tools/mbsavisio.mspx">http://www.microsoft.com/technet/security/tools/mbsavisio.mspx</a></p></li>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=415046" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Microsoft Windows Security Resource Kit, Second Edition Released</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/05/03/414182.aspx</link>
+      <pubDate>Tue, 03 May 2005 07:42:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:414182</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/414182.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=414182</n0:commentRss>
+      <content>
+        <p>Just spotted this while catching up on (lots of) email. </p>
+        <p>So what's new in the Second Edition? In addition to the expected error correction and clarification that always accompanies new versions, coverage of Windows Server 2003, including SP1 and Windows XP Service Pack 2 has been added throughout the book. Coverage of Microsoft Office, including Office System 2003, has been greatly expanded and much of the book has been re-formatted for easier use as a reference text or academic text. </p>
+        <p>ISBN: <font size="2">0-7356-2174-8</font></p>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=414182" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>More Integer Overflow stuff</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/05/03/414178.aspx</link>
+      <pubDate>Tue, 03 May 2005 07:34:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:414178</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">1</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/414178.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=414178</n0:commentRss>
+      <content>
+        <p>I think I've said this a billion times, but I'll say it again. No-one has done more research into integer overflow (and underflow, and truncation and signed-ness) issues than my good friend and co-author, David LeBlanc. </p>
+        <p>So here's the great news - he's updated his very cool (and fast) C++ SafeInt class and written some more words of wisdom. </p>
+        <p>
+          <a href="http://msdn.microsoft.com/security/securecode/columns/default.aspx?pull=/library/en-us/dncode/html/secure05052005.asp">Here 'tis...</a>
+        </p>
+        <p> </p>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=414178" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Is Microsoft IIS 6.0 more secure than Apache HTTP Server 2.0?</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/05/02/414085.aspx</link>
+      <pubDate>Mon, 02 May 2005 22:42:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:414085</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/414085.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=414085</n0:commentRss>
+      <content>
+        <p>A couple of months ago I presented at an event called the "Microsoft Technology Summit" to some very smart folks who focus primarily on non-Microsoft technologies. I outlined the security process stuff we're doing here (Security Development Lifecycle etc) and some of the benefits we've seen from adopting and constantly fine-tuning the process. </p>
+        <p>During the presentation I threw out a few 'teasers' one was looking at the progress we've made in IIS6. </p>
+        <p>It's interesting to see attendees comment/blog about the event; one that got my attention was this:</p>
+        <h3>
+          <a href="http://rmh.blogs.com/weblog/2005/05/is_microsoft_ii.html">
+            <font size="3">Is Microsoft IIS 6.0 more secure than Apache HTTP Server 2.0?</font>
+          </a>
+        </h3>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=414085" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Security Management - Windows, Linux Security Notifications</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/04/27/412724.aspx</link>
+      <pubDate>Wed, 27 Apr 2005 23:17:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:412724</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">0</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/412724.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=412724</n0:commentRss>
+      <content>
+        <p>A colleague of mine at Microsoft, Jeff Jones, has written a thought provoking couple of articles on security patches/bulletins/errata and 'customer pain'. He does this primarily to help improve the security update experience for Microsoft customers, by analyzing issues and providing guidance on remedies to make the life a little easier for folks.</p>
+        <p>Have an open mind when you read these!</p>
+        <p>Security in Operation (Part 1 of 4): Windows, Linux and Security Notifications<br/><a href="http://www.microsoft.com/technet/community/columns/secmgmt/sm0305.mspx">http://www.microsoft.com/technet/community/columns/secmgmt/sm0305.mspx</a></p>
+        <p>Security in Operation (Part 2 of 4): When an Issue Affects Multiple Products<br/><a href="http://www.microsoft.com/technet/community/columns/secmgmt/sm0405_2.mspx">http://www.microsoft.com/technet/community/columns/secmgmt/sm0405_2.mspx</a></p>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=412724" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>A couple of good/upbeat news items - all this work is paying off!</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/04/25/411830.aspx</link>
+      <pubDate>Mon, 25 Apr 2005 19:56:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:411830</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">1</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/411830.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=411830</n0:commentRss>
+      <content>
+        <p>
+          <strong>Worm Lull, Windows XP SP2 Keeping Outbreaks At Bay</strong>
+        </p>
+        <p>
+          <a href="http://www.techweb.com/wire/security/161501182">http://www.techweb.com/wire/security/161501182</a>
+        </p>
+        <p>"It seems that a more secure Windows environment is one of the main reasons for the relative quiet during the first quarter of this year."</p>
+        <p>
+          <strong>Windows Server 2003 Service Pack 1</strong>
+        </p>
+        <p>
+          <a href="http://www.pcmag.com/article2/0,1759,1787561,00.asp">http://www.pcmag.com/article2/0,1759,1787561,00.asp</a>
+        </p>
+        <p>
+          <span class="summary_data">"With dozens of security and performance improvements, Service Pack 1 is a must-have upgrade for any enterprise running Windows Server 2003."</span>
+          <br/>
+        </p>
+        <p> </p>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=411830" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Office Smart Tags for CVE and Microsoft Security Bulletins</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/04/13/407967.aspx</link>
+      <pubDate>Thu, 14 Apr 2005 01:48:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:407967</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">1</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/407967.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=407967</n0:commentRss>
+      <content>
+        <p>While diddling around with Office Smart Tags, I decided to build a couple to handle MS bulletins and CVE/CAN vulnerability numbers.</p>
+        <p>Just save the two XML files below, and drop them into C:\Program Files\Common Files\Microsoft Shared\Smart Tag\LISTS and you should be good to go.</p>
+        <p>If you don't see a bulletin number (eg; MS05-011) or a CAN/CVE number (eg; CAN-2005-0001) highlighted with the Smart Tag thingy, go to:</p>
+        <p>Tools | AutoCorrect Options | Smart Tags </p>
+        <p>And make sure you have the MSRC Search and CVE Search tags enabled.</p>
+        <p>
+          <strong>Cve.Xml</strong>
+        </p>
+        <p>
+          <font face="Courier New">&lt;FL:smarttaglist xmlns:FL="urn:schemas-microsoft-com:smarttags:list"&gt;<br/> &lt;FL:name&gt;Mitre CVE Lookup&lt;/FL:name&gt;<br/> &lt;FL:lcid&gt;1033,0&lt;/FL:lcid&gt;<br/> &lt;FL:description&gt;Lookup up a CVE/CAN Vulnerability&lt;/FL:description&gt;<br/> &lt;FL:moreinfourl&gt;http://msdn.microsoft.com/msdnmag&lt;/FL:moreinfourl&gt;<br/> &lt;FL:updateable&gt;false&lt;/FL:updateable&gt;<br/> &lt;FL:autoupdate&gt;false&lt;/FL:autoupdate&gt;<br/> &lt;FL:lastcheckpoint&gt;0&lt;/FL:lastcheckpoint&gt;<br/> &lt;FL:lastupdate&gt;0&lt;/FL:lastupdate&gt;<br/> &lt;FL:updateurl&gt;&lt;/FL:updateurl&gt;<br/> &lt;FL:updatefrequency&gt;0&lt;/FL:updatefrequency&gt;<br/> &lt;FL:smarttag type="urn:schemas-microsoft-com:office:smarttags#cve"&gt;<br/>  &lt;FL:caption&gt;CVE Search&lt;/FL:caption&gt;<br/>  &lt;FL:re&gt;<br/>   &lt;FL:exp switches="i"&gt;\b(can|cve)-\d{4}-\d{4}\b&lt;/FL:exp&gt;<br/>  &lt;/FL:re&gt;<br/>  &lt;FL:actions&gt;<br/>   &lt;FL:action id="CAN"&gt;<br/>    &lt;FL:caption&gt;Find Vulnerability&lt;/FL:caption&gt;<br/>    &lt;FL:url&gt;http://cve.mitre.org/cgi-bin/cvename.cgi?name={TEXT}&lt;/FL:url&gt;<br/>   &lt;/FL:action&gt;<br/>  &lt;/FL:actions&gt;<br/> &lt;/FL:smarttag&gt;<br/>&lt;/FL:smarttaglist&gt;</font>
+        </p>
+        <p>
+          <strong>Msrc.Xml</strong>
+        </p>
+        <p>
+          <font face="Courier New">&lt;FL:smarttaglist xmlns:FL="urn:schemas-microsoft-com:smarttags:list"&gt;<br/> &lt;FL:name&gt;Microsoft Bulletin Lookup&lt;/FL:name&gt;<br/> &lt;FL:lcid&gt;1033,0&lt;/FL:lcid&gt;<br/> &lt;FL:description&gt;Lookup up a Microsot Security Bulletin&lt;/FL:description&gt;<br/> &lt;FL:moreinfourl&gt;http://msdn.microsoft.com/msdnmag&lt;/FL:moreinfourl&gt;<br/> &lt;FL:updateable&gt;false&lt;/FL:updateable&gt;<br/> &lt;FL:autoupdate&gt;false&lt;/FL:autoupdate&gt;<br/> &lt;FL:lastcheckpoint&gt;0&lt;/FL:lastcheckpoint&gt;<br/> &lt;FL:lastupdate&gt;0&lt;/FL:lastupdate&gt;<br/> &lt;FL:updateurl&gt;&lt;/FL:updateurl&gt;<br/> &lt;FL:updatefrequency&gt;0&lt;/FL:updatefrequency&gt;<br/> &lt;FL:smarttag type="urn:schemas-microsoft-com:office:smarttags#msft-msrc"&gt;<br/>  &lt;FL:caption&gt;MSRC Search&lt;/FL:caption&gt;<br/>  &lt;FL:re&gt;<br/>   &lt;FL:exp switches="i"&gt;\b(ms)\d{2}-\d{2,3}\b&lt;/FL:exp&gt;<br/>  &lt;/FL:re&gt;<br/>  &lt;FL:actions&gt;<br/>   &lt;FL:action id="MSRC"&gt;<br/>    &lt;FL:caption&gt;Find Vulnerability&lt;/FL:caption&gt;<br/>    &lt;FL:url&gt;http://www.microsoft.com/technet/security/Bulletin/{TEXT}.mspx&lt;/FL:url&gt;<br/>   &lt;/FL:action&gt;<br/>  &lt;/FL:actions&gt;<br/> &lt;/FL:smarttag&gt;<br/>&lt;/FL:smarttaglist&gt;</font>
+        </p>
+        <p> </p>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=407967" width="1" height="1"/>
+      </content>
+    </item>
+    <item>
+      <title>Hell Hath No Fury...</title>
+      <link>http://blogs.msdn.com/michael_howard/archive/2005/04/12/407691.aspx</link>
+      <pubDate>Tue, 12 Apr 2005 22:14:00 GMT</pubDate>
+      <guid isPermaLink="false">91d46819-8472-40ad-a661-2c78acb4018c:407691</guid>
+      <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">michael_HOWARD</dc:creator>
+      <n0:comments xmlns:n0="http://purl.org/rss/1.0/modules/slash/">4</n0:comments>
+      <comments>http://blogs.msdn.com/michael_howard/comments/407691.aspx</comments>
+      <n0:commentRss xmlns:n0="http://wellformedweb.org/CommentAPI/">http://blogs.msdn.com/michael_howard/commentrss.aspx?PostID=407691</n0:commentRss>
+      <content>
+        <p>I'm not sure if it's because my 20month old daughter kept me awake last night, or the lack of coffee today, but it's been a slow day. </p>
+        <p>Then I read this <a href="http://www.theinquirer.net/?article=22460">http://www.theinquirer.net/?article=22460</a>, and it made me giggle! </p>
+        <img src="http://blogs.msdn.com/aggbug.aspx?PostID=407691" width="1" height="1"/>
+      </content>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,146 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+   declare _user_name, _login_ok, _ok_to_add varchar;
+  declare _login_ok, _sid, _action, _to, _msg, _subj, _msg_id, _from, _msg1, _to_do, _folder, _new_folder varchar;
+  declare _err long varchar;
+  declare _counter1, _list integer;
+  declare _random1 integer;
+
+  _random1 := rnd(9999999);
+
+  _sid := '';
+  _ok_to_add := 'NO';
+  _sid := get_keyword('SESS', params);
+   _msg_id := get_keyword('MSG_ID', params);
+   _to_do := get_keyword('TO_DO', params);
+
+   _new_folder := get_keyword('NEWFOLDER', params);
+
+ _folder := (select _sess_folder from wapsession where sid = _sid);
+ _list := (select _sess_list from wapsession where sid = _sid);
+
+   _login_ok := 'NO';
+
+ if (_sid   <> '')
+ {
+  for select _username, _userpass from wapsession where sid = _sid  do
+  {
+   _login_ok := 'YES';
+   _user_name := _username;
+   update wapsession set _time_last_active = datestring ( now() ) where  sid = _sid;
+   if (not exists (select 1 from wapfolders where wap_username = _user_name and wap_folder = _new_folder))
+   {
+    insert into wapfolders (wap_username, wap_folder) values (_user_name, _new_folder);
+    _ok_to_add := 'YES';
+   }
+  }
+  }else{
+    _login_ok := 'NO';
+  }
+?>
+
+<?vsp
+if (_login_ok = 'YES' and _to_do = 'ADD' and _ok_to_add = 'YES')
+{ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+ <card id="main1" title="Folders">
+ <onevent type="onenterforward">
+          <refresh>
+   <setvar name="new_folder" value=""/>
+   <setvar name="new_folder1" value=""/>
+          </refresh>
+   </onevent>
+  <do type="accept" label="Continue">
+    <go href="checkmail.vsp?SESS=<?=_sid?>&amp;REF=<?vsp http(sprintf('%d',_random1));?>"/>
+   </do>
+  <do type="options" label="Options">
+    <go href="#opt"/>
+   </do>
+  <p> Folder <?=_new_folder?> Added.</p>
+ <p><a href="checkmail.vsp?SESS=<?=_sid?>&amp;REF=<?vsp http(sprintf('%d',_random1));?>">Mail Menu</a></p>
+ </card>
+
+ <card id="opt" title="Options">
+   <do type="options" label ="Exit">
+    <go href="#main1"/>
+ </do>
+     <p><a href="checkmail.vsp?SESS=<?=_sid?>&amp;REF=<?vsp http(sprintf('%d',_random1));?>">Mail Menu</a></p>
+   <p><a href="logout.vsp?SESS=<?=_sid?>">Logout</a></p>
+   <p><a href="#main1">Exit</a></p>
+   </card>
+
+</wml>
+<?vsp
+}
+?>
+<?vsp
+if (_login_ok = 'YES' and _to_do = 'ADD' and _ok_to_add = 'NO')
+{ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+ <card id="page1" title="Folders">
+ <onevent type="onenterforward">
+          <refresh>
+   <setvar name="new_folder1" value=""/>
+          </refresh>
+   </onevent>
+  <do type="options" label="Main Menu">
+    <go href="checkmail.vsp?SESS=<?=_sid?>"/>
+   </do>
+   <p> Folder <?=_new_folder?> already exists.</p>
+  <a href="checkmail.vsp?SESS=<?=_sid?>">Main Menu</a></p>
+ </card>
+</wml>
+<?vsp
+}
+if (_login_ok = 'NO' or _to_do <> 'ADD')
+{ http_rewrite(); http_header('Content-type: text/vnd.wap.wml\r\n');
+?><?xml version="1.0"?>
+<!DOCTYPE wml PUBLIC "-//WAPFORUM//DTD WML 1.1//EN" "http://www.wapforum.org/DTD/wml_1.1.xml">
+
+
+<wml>
+ <card id="page1" title="Folders">
+ <onevent type="onenterforward">
+          <refresh>
+   <setvar name="new_folder1" value=""/>
+          </refresh>
+   </onevent>
+  <do type="options" label="Main Menu">
+    <go href="checkmail.vsp?SESS=<?=_sid?>"/>
+   </do>
+   <p>Intrusion detected.</p>
+  <p><a href="checkmail.vsp?SESS=<?=_sid?>">Main Menu</a></p>
+ </card>
+</wml>
+<?vsp
+}
+?>

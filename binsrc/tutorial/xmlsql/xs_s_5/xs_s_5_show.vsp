@@ -1,0 +1,66 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare body varchar;
+  if ({?'org'} is not null)
+    {
+      select XT_TEXT into body from XML_TEXT2 where XT_FILE = {?'org'};
+      declare ses any;
+      ses := string_output ();
+      http ('<html><body>');
+      http_value (body, 'pre', ses);
+      http (string_output_string (ses));
+      http ('</body></html>');
+      return;
+    }
+  if ({?'trf'} is not null)
+    {
+      select TR_TEXT into body from XS_S_5 where TR_FILE = {?'trf'};
+      declare ses any;
+      ses := string_output ();
+      http ('<html><body>');
+      http_value (body, 'pre', ses);
+      http (string_output_string (ses));
+      http ('</body></html>');
+      return;
+    }
+?>
+
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+<table class="tableresult">
+<th>file name</th><th colspan=2>View</th>
+<?vsp
+   for select XT_FILE from XML_TEXT2 do
+    {
+?>
+    <tr>
+    <td><?=XT_FILE?></td>
+    <td><a href="xs_s_5_show.vsp?org=<?=XT_FILE?>">Original</a></td>
+    <td><a href="xs_s_5_show.vsp?trf=<?=XT_FILE?>">Transformed</a></td>
+    </tr>
+<?vsp } ?>
+</table>
+</body>
+</html>

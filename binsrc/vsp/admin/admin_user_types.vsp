@@ -1,0 +1,140 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+
+  declare _q varchar;
+  declare err_ret varchar;
+  declare idx integer;
+
+  if (not adm_check_auth (lines))
+    {
+      adm_tell_unauth(lines);
+      return (0);
+    }
+
+  _q := get_keyword ('q', params, '');
+
+  if ('' = _q)
+    _q := 'db';
+
+  if ({?'proceed'} = 'Drop')
+    {
+      declare vwname varchar;
+      declare idx integer;
+      declare _stmt varchar;
+      declare vw_cols varchar;
+      declare _qual varchar;
+      declare err_ret varchar;
+      declare old_view_text varchar;
+      while (vwname := adm_next_keyword ('udts', params, idx))
+    {
+      declare state, state1, msg, msg1 varchar;
+      state := '00000';
+      state1 := '00000';
+      exec (sprintf ('drop type "%I"', vwname), state, msg);
+      exec ('commit work', state1, msg1);
+      if (state <> '00000')
+        {
+          err_ret := concat (err_ret, '<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+          err_ret := concat (err_ret, sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Dropping UDT %V failed:</TD></TR>', vwname));
+          err_ret := concat (err_ret, '<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+          err_ret := concat (err_ret, sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (state, '')));
+          err_ret := concat (err_ret, sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gendata">%s</TD></TR>', coalesce (msg, '')));
+          if ('00000' <> state1)
+        {
+          err_ret := concat (err_ret, sprintf('<TR><TD CLASS="genlisthead">Txn SQL State</TD><TD CLASS="gendata">%V</TD></TR>', coalesce(state1, '')));
+          err_ret := concat (err_ret, sprintf('<TR><TD CLASS="genlisthead">Txn Error Message</TD><TD CLASS="gendata">%V</TD></TR>', coalesce(msg1, '')));
+        }
+        }
+      }
+    }
+
+?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <script language="javascript" src="admin_utils.js"></script>
+    <title>User Defined Types for <?= _q ?></title>
+  </head>
+  <BODY>
+<?vsp adm_page_header(concat('User Defined Types for ', _q), NULL);
+
+if (not is_empty_or_null (err_ret))
+  {
+    http (concat (err_ret, '</TABLE>'));
+  }
+?>
+<?include adm_js_check.vsp ?>
+    <form method="POST" action="admin_user_types_verify.vsp">
+    <input type="hidden" name="q" value="<?= _q ?>">
+
+	  <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+	    <tr>
+	      <td class="genlistheadt"><input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)"></td>
+	      <th class="genlistheadt">Type</th>
+	      <th class="genlistheadt">UDT Name</th>
+	    </tr>
+  <?vsp
+  declare cnt integer;
+  declare _ty any;
+
+  cnt := 0;
+  for select UT_NAME from DB.DBA.SYS_USER_TYPES where name_part (UT_NAME, 0) = _q do
+    {
+      cnt := cnt + 1;
+      _ty := coalesce ((select _type from defined_types where _class = UT_NAME), 'sql');
+   ?>
+      <tr><td CLASS="gendata"><input type="checkbox" name="CB_<?= UT_NAME ?>"></td>
+	<td CLASS="gendata"><?= _ty ?></td>
+	<td CLASS="gendata"><?= name_part (UT_NAME, 1) ?>.<?= name_part (UT_NAME, 2) ?></td>
+      </tr>
+   <?vsp
+    }
+  if (0 = cnt)
+    {
+  ?>
+      <tr><td colspan="3" CLASS="gendata">There are currently no user defined types defined for <?= _q ?></td></tr>
+  <?vsp
+    }
+   ?>
+            <TR ALIGN="right" >
+	     <TD COLSPAN="2" ALIGN="right">
+	      <input type="submit" name="drop" value="Drop Selected">
+	     </TD>
+            </TR>
+	  </table>
+	  <div style="text-align: left; margin-left: 5%; font-size: 90%;">
+	  Create User Type from:
+	  <ul>
+
+	  <li><a href="admin_dav/adm_wsdl_gen.vsp?qual=<?= _q ?>&page=<?/ http_path() ?>">WSDL</a></li>
+	  <li><a href="Hosted_Modules_select.vspx?qual=<?= _q ?>&page=<?/ http_path() ?>">.NET Assembly or Java Class Files</a></li>
+	  </ul>
+	  </div>
+    </form>
+
+<?vsp adm_page_footer(); ?>
+  </BODY>
+</html>

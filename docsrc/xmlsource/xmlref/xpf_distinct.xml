@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_distinct">
+  <refmeta> 
+    <refentrytitle>distinct</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>distinct</refname> 
+    <refpurpose>Removes double entities from the input sequence </refpurpose>
+  </refnamediv> 
+  <refsynopsisdiv> 
+    <funcsynopsis id="xpf_syn_distinct"> 
+      <funcprototype id="xpf_proto_distinct">
+        <funcdef>sequence <function>distinct</function></funcdef> 
+	<paramdef><parameter>input</parameter> sequence</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_distinct"><title>Description</title>
+<para>The function takes a single parameter which is sequense of XML entities (nodes or values) and 
+returns the sequence that results from removing from input sequence all but one of a set of elements 
+that are identical each other. If input sequence is the empty, the empty sequence is returned.
+</para>
+<para>
+Note that the <function>distinct</function> is not a part of XPATH 1.0
+or XQuery 1.0 standard library, it is rather a generalization of standard <function>distinct-nodes</function> and 
+<function>distinct-values</function> functions.
+</para>
+</refsect1>
+  <refsect1 id="xpf_params_distinct"><title>Parameters</title>
+    <refsect2><title>input</title>
+      <para>The sequence of XML entities </para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_distinct"><title>Return Types</title><para>Sequence</para></refsect1>
+
+  <refsect1 id="xpf_examples_distinct"><title>Examples</title>
+    <example id="xpf_ex_distinct"><title>Removing double entities</title>
+      <para>In the following example the file example.xml is </para>
+<screen>
+&lt;a&gt;
+&lt;b/&gt;
+&lt;b/&gt;
+&lt;/a&gt;
+</screen>
+<para>
+The result of the query
+</para>
+<screen>
+&lt;result&gt;
+   {
+   distinct(for $r in document("example.xml")//b return $r) 
+   }
+&lt;/result&gt;
+</screen>
+<para> 
+is only one 'b' element:
+</para>
+<screen>
+&lt;result&gt;
+&lt;b/&gt;
+&lt;/result&gt;
+</screen>
+    </example>
+  </refsect1>
+</refentry>
+

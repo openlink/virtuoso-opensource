@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_append">
+  <refmeta>
+    <refentrytitle>append</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>append</refname>
+    <refpurpose>Creates an sequence of all items from given sequences.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_append">
+      <funcprototype id="xpf_proto_append">
+        <funcdef>sequence <function>append</function></funcdef>
+	<paramdef><parameter>seq1</parameter> sequence</paramdef>
+	<paramdef><parameter>seq2</parameter> sequence</paramdef>
+	<paramdef><parameter>...</parameter></paramdef>
+	<paramdef><parameter>seqN</parameter> sequence</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_append"><title>Description</title>
+<para>
+This function calculates all given arguments from left to right,
+and creates a sequence which contains all items of the first calculated sequence,
+then all items of the second calculated sequence and so on, preserving
+the order of items from every sequence.
+The result is identical to the result of XQUERY &quot;comma operator&quot;.
+</para>
+<para>
+This function is not a part of XPATH 1.0 or XQUERY 1.0 libraries of standard functions.
+</para>
+  </refsect1>
+  <refsect1 id="xpf_params_append"><title>Parameters</title>
+    <refsect2><title>SeqI</title>
+      <para>The sequence of items to be placed into the resulting sequence</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_append"><title>Return Types</title><para>Sequence</para></refsect1>
+  <refsect1 id="xpf_examples_append"><title>Examples</title>
+    <example id="xpf_ex_append"><title></title>
+      <para></para>
+      <screen>append(/abstract, /chapter, /appendix/section)</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_append"><title>See Also</title>
+    <para><link linkend="xpf_tuple">tuple</link></para>
+  </refsect1>
+</refentry>
+

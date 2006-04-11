@@ -1,0 +1,98 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+<head><link rel="stylesheet" type="text/css" href="../demo.css"></head>
+<body>
+
+<?vsp
+
+if ({?'del'} = '1')
+  {
+    delete from DB.DBA.XML_TEXT2_XT_TEXT_QUERY where TT_ID = atoi({?'tt_id'});
+    delete from DB.DBA.XML_TEXT2_XT_TEXT_USER where TTU_T_ID = atoi({?'tt_id'});
+    delete from DB.DBA.XML_TEXT2_XT_TEXT_HIT where TTH_T_ID = atoi({?'tt_id'});
+  }
+else if ({?'add'} = 'Add')
+  {
+  	declare exit handler for sqlstate '*' {
+  		http('<pre style="color:red">');
+  		http(__SQL_STATE);
+  		http('\n');
+  		http(__SQL_MESSAGE);
+  		http('</pre>');
+  	};
+    DB.DBA."TT_QUERY_XML_TEXT2" ({?'query'}, 1, {?'comment'}, '');
+  }
+
+
+?>
+
+<form method=POST action="xs_t_1_trig.vsp" name=query_form>
+<TABLE class="tableentry">
+
+<tr><td>Comment</td><td><input type="text" name="comment" size="60%" value=""> </td><td>&nbsp;</td></tr>
+<tr><td>Query text</td><td><input type="text" name="query" size="60%" value=""> </td><td>&nbsp;</td></tr>
+<tr>
+	<td align="right" colspan="2">
+		<input type="submit" name="add" value="Add">
+		<input type="reset" name="clr" value="Clear">
+	 </td>
+	 <td>
+	</td>
+</tr>
+
+</table>
+</form>
+
+<table class="tableresult">
+<TR><TD COLSPAN="3"><b>Current triggers</b></TD></TR>
+<tr>
+  <td>Query</td>
+  <td>Comment</td>
+  <td>Actions</td>
+</tr>
+<?vsp
+      for select distinct TT_QUERY, TT_COMMENT, TT_ID from DB.DBA.XML_TEXT2_XT_TEXT_QUERY,
+                                                           DB.DBA.XML_TEXT2_XT_TEXT_USER
+				      where TTU_U_ID = 1 and TTU_T_ID = TT_ID
+				      order by TT_ID do
+         {
+?>
+  <tr>
+      <td><?=TT_QUERY?></td>
+      <td><?=TT_COMMENT?></td>
+       <td>
+         <table>
+	   <tr>
+            <td><a href="xs_t_1_trig.vsp?tt_id=<?=TT_ID?>&del=1">Remove</a></td>
+	   </tr>
+         </table>
+       </td>
+  </tr>
+  <?vsp
+	}
+  ?>
+</table>
+<p>Back to <a href="xs_t_1_list.vsp">main</a></p>
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<rss version="2.0">
+  <channel>
+    <title>FTPOnline</title>
+    <link>http://www.ftponline.com</link>
+    <description>Technical information for developers and IT professionals from the FTP family of publications and conferences.</description>
+    <language>en-us</language>
+    <item>
+      <title>Enable OWA 2003</title>
+      <content>You can't use Outlook Web Access 2003 until you upgrade your mailbox servers.</content>
+      <link>http://www.ftponline.com/dotnetmag/2003_10/magazine/columns/askpros/?q=rss</link>
+      <pubDate>Tue, 16 Sep 2003 16:57:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Build Reporting Into Apps</title>
+      <content>Discover the alternatives to assess your reporting needs and get the right reporting engine.</content>
+      <link>http://www.ftponline.com/javapro/2003_11/magazine/features/pvarhol/?q=rss</link>
+      <pubDate>Tue, 16 Sep 2003 11:47:46 GMT</pubDate>
+    </item>
+    <item>
+      <title>Visual Studio Gets its Modeling Together</title>
+      <content>Borland announced a new design and modeling environment for the .NET Framework at VSLive! this week. Read the details in an exclusive interview with Tony de la Llama, Vice President/General Manager of Borland's Together Business Unit.</content>
+      <link>http://www.ftponline.com/reports/vsliveor/2003/borland?q=rss</link>
+      <pubDate>Thu, 11 Sep 2003 16:35:38 GMT</pubDate>
+    </item>
+    <item>
+      <title>Boost Performance With Caching</title>
+      <content>Leverage ASP.NET's built-in page-caching and data-caching features to increase your Web applications' speed and scalability.</content>
+      <link>http://www.ftponline.com/vsm/2003_11/magazine/columns/aspnet/?q=rss</link>
+      <pubDate>Tue, 09 Sep 2003 14:36:04 GMT</pubDate>
+    </item>
+    <item>
+      <title>Create Mobile Database Applications</title>
+      <content>VS.NET 2003's enhanced support for mobile-application development lets you build enterprise-class Pocket PC and Windows CE apps that can access and update corporate databases.</content>
+      <link>http://www.ftponline.com/vsm/2003_10/magazine/features/thews/?q=rss</link>
+      <pubDate>Wed, 20 Aug 2003 12:24:26 GMT</pubDate>
+    </item>
+    <item>
+      <title>Microsoft Commits to ALM</title>
+      <content>Microsoft is filling out its support for full application lifecycle management, including useful hooks in the .NET IDE for ISV products to fill in Microsoft's ALM gaps.</content>
+      <link>http://www.ftponline.com/vsm/2003_09_14th/magazine/features/kiely/?q=rss</link>
+      <pubDate>Tue, 12 Aug 2003 12:39:10 GMT</pubDate>
+    </item>
+    <item>
+      <title>XML MetaData for Simplifying Web Development</title>
+      <content>Using XML to serve up your data provides business objects without properties, which speeds up code development and maintenance. Discover approaches that can reduce development time.</content>
+      <link>http://www.ftponline.com/javapro/2003_08/online/xml_gpieri_03_06_19/?q=rss</link>
+      <pubDate>Thu, 07 Aug 2003 16:32:55 GMT</pubDate>
+    </item>
+    <item>
+      <title>Optimize Performance</title>
+      <content>Vendors are competing to deliver information from all parts of the development life cycle to provide the Holy Grail in optimization: high performance in J2EE applications.</content>
+      <link>http://www.ftponline.com/javapro/2003_09/magazine/features/pvarhol/?q=rss</link>
+      <pubDate>Mon, 28 Jul 2003 10:53:37 GMT</pubDate>
+    </item>
+    <item>
+      <title>Merge XML Documents</title>
+      <content>Take advantage of the XMLDocument object to combine data files from multiple sources.
+</content>
+      <link>http://www.ftponline.com/vsm/2003_08/magazine/columns/gettingstarted/?q=rss</link>
+      <pubDate>Fri, 13 Jun 2003 17:08:50 GMT</pubDate>
+    </item>
+    <item>
+      <title>Luminaries Debate Issues, Opportunities</title>
+      <content>Ease of development and services integration took center stage as community technologists met in <i>Java Pro</i>'s annual Technology Roundtable event at JavaOne. Read highlights of the lively discussion moderated by Sun's Simon Phipps.</content>
+      <link>http://www.ftponline.com/reports/javaone/2003/roundtable?q=rss</link>
+      <pubDate>Wed, 11 Jun 2003 19:11:42 GMT</pubDate>
+    </item>
+    <item>
+      <title>New Strategy for Core Server OS</title>
+      <content>Microsoft has implemented a new strategy with Windows Server 2003: to release a core operating system that includes only essential server capabilities, and to supplement it with server add-ons.</content>
+      <link>http://www.ftponline.com/reports/tech-ed/2003/06_04_03/core/?q=rss</link>
+      <pubDate>Wed, 04 Jun 2003 17:39:41 GMT</pubDate>
+    </item>
+    <item>
+      <title>Inside Visual Studio .NET 2003</title>
+      <content>VS.NET 2003 isn't the revolutionary product the first one was, but it includes many mobility and productivity features that you will quickly learn to appreciate.</content>
+      <link>http://www.ftponline.com/vsm/2003_07/magazine/features/wagner/?q=rss</link>
+      <pubDate>Fri, 23 May 2003 10:42:57 GMT</pubDate>
+    </item>
+    <item>
+      <title>Drive Java Development Through Testing</title>
+      <content>You must test your app not only to assure quality, but also to ensure it meets user requirements and behaves as expected. This is more difficult than it sounds. Find out how to start with a good testing regime before you code.</content>
+      <link>http://www.ftponline.com/javapro/2002_12/magazine/columns/weblication/?q=rss</link>
+      <pubDate>Mon, 11 Nov 2002 13:09:56 GMT</pubDate>
+    </item>
+    <item>
+      <title>Gear Up for .NET 1.1 and Beyond</title>
+      <content>.NET's strict enforcement of version compatibility among application assemblies makes DLL Hell a thing of the past. However, you need to know the versioning ground rules to make your apps cope with multiple .NET versions.
+</content>
+      <link>http://www.ftponline.com/vsm/2002_12/magazine/columns/desktopdeveloper/?q=rss</link>
+      <pubDate>Wed, 06 Nov 2002 14:34:42 GMT</pubDate>
+    </item>
+    <item>
+      <title>Secure Your Organization's Mobile Devices</title>
+      <content>Don't let a stolen or lost mobile device result in a security breach. Take preventive steps to secure your company's laptops and PDAs.</content>
+      <link>http://www.ftponline.com/dotnetmag/2002_10/magazine/columns/wireless/?q=rss</link>
+      <pubDate>Fri, 20 Sep 2002 14:47:10 GMT</pubDate>
+    </item>
+    <item>
+      <title>Upgrade Legacy Apps to Web Services</title>
+      <content>When upgrading VB apps to .NET and Web services, you must address some implementation issues. Here are some tips to help you provide security, improve performance, and more.</content>
+      <link>http://www.ftponline.com/reports/vsliveor/2002/09_19_02/zoufaly?q=rss</link>
+      <pubDate>Wed, 18 Sep 2002 11:10:49 GMT</pubDate>
+    </item>
+    <item>
+      <title>Custom Web Dev</title>
+      <content>Download a sample app that gets you started using custom tag libraries.</content>
+      <link>http://www.ftponline.com/javapro/codepage.asp?loccode=jp0210bk&amp;q=rss</link>
+      <pubDate>Fri, 13 Sep 2002 10:14:05 GMT</pubDate>
+    </item>
+    <item>
+      <title>Restrict Access to Web Resources</title>
+      <content>Often, you don't want your resources getting invoked directly by the outside world. Here are several ways to protect them gracefully.</content>
+      <link>http://www.ftponline.com/javapro/2002_09/online/servletsjsp_bkurniawan_09_03_02/?q=rss</link>
+      <pubDate>Wed, 04 Sep 2002 13:03:38 GMT</pubDate>
+    </item>
+    <item>
+      <title>Navigate the Web Services Hype Cycle</title>
+      <content>Understand the Web services hype cycle, so you know when and where to integrate the services.
+
+</content>
+      <link>http://www.ftponline.com/dotnetmag/2002_09/magazine/columns/trends/?q=rss</link>
+      <pubDate>Tue, 27 Aug 2002 17:43:17 GMT</pubDate>
+    </item>
+    <item>
+      <title>Boost Performance When Parsing</title>
+      <content>External DTDs can be a performance nightmare if you don't know how to handle them. Try caching—it's a great way to handle DTDs when you're doing heavy-duty XML parsing.</content>
+      <link>http://www.ftponline.com/javapro/2002_08/online/xml_xyu_08_20_02/?q=rss</link>
+      <pubDate>Tue, 27 Aug 2002 17:27:02 GMT</pubDate>
+    </item>
+    <item>
+      <title>Log Banner Impressions Asynchronously</title>
+      <content>Create an ASP.NET application using XML to track ad impressions on Web sites without losing performance.</content>
+      <link>http://www.ftponline.com/vsm/2002_08/online/aspnet_jgoodyear_08_09_02/?q=rss</link>
+      <pubDate>Tue, 27 Aug 2002 13:36:53 GMT</pubDate>
+    </item>
+    <item>
+      <title>Delve Into Exchange 2000 SP3</title>
+      <content>Exchange 2000 Service Pack 3 fixes bugs and increases security on your Exchange 2000 Server. Here's what you need to know if you plan to install it.</content>
+      <link>http://www.ftponline.com/dotnetmag/2002_08/online/exchange_pcardoza_08_26_02/?q=rss</link>
+      <pubDate>Tue, 27 Aug 2002 13:33:28 GMT</pubDate>
+    </item>
+    <item>
+      <title>&lt;i&gt;VSM&lt;/i&gt; Salary Survey</title>
+      <content>Compare your salary and job experiences with those of other Visual Studio developers.</content>
+      <link>http://www.ftponline.com/vsm/2002_06/magazine/features/pfalzer/?q=rss</link>
+      <pubDate>Tue, 27 Aug 2002 13:09:37 GMT</pubDate>
+    </item>
+    <item>
+      <title>Alliance of Alliances</title>
+      <content>In June, six wireless standards bodies formed the Open Mobile Alliance (OMA) to create a common platform for handset manufacturers and wireless providers. Will OMA succeed where others have failed?</content>
+      <link>http://www.ftponline.com/wireless/nokiasb/?q=rss</link>
+      <pubDate>Thu, 15 Aug 2002 15:44:24 GMT</pubDate>
+    </item>
+    <item>
+      <title>Validate User Input with Filters</title>
+      <content>Filters can preprocess HTTP requests before they reach a servlet or JSP page, or responses before they go to a user. Learn how to use them to validate user input in the background.</content>
+      <link>http://www.ftponline.com/javapro/2002_08/online/servlets_08_13_02/?q=rss</link>
+      <pubDate>Thu, 15 Aug 2002 11:27:55 GMT</pubDate>
+    </item>
+    <item>
+      <title>Understanding the DOM</title>
+      <content>The Document Object Model API is an excellent way to read or manipulate XML documents, providing navigation through the documents' structure and complete editing functionality.</content>
+      <link>http://www.ftponline.com/xmlmag/2002_08/online/xml_dwahlin_08_14_02/?q=rss</link>
+      <pubDate>Wed, 14 Aug 2002 16:57:16 GMT</pubDate>
+    </item>
+    <item>
+      <title>Remember User Preferences</title>
+      <content>Download a sample app that shows how you can retain user preference data across apps.</content>
+      <link>http://www.ftponline.com/javapro/codepage.asp?loccode=jp0209jt&amp;q=rss</link>
+      <pubDate>Wed, 31 Jul 2002 10:26:43 GMT</pubDate>
+    </item>
+    <item>
+      <title>You Say You Want a Revolution?</title>
+      <content>Can XML turn our noble client/server applications into rich, message-driven networks where boundaries between process, server, and application cease to exist? After you find out, check out these related articles.</content>
+      <link>http://www.ftponline.com/xmlmag/2002_08/magazine/focus/kcagle/?q=rss</link>
+      <pubDate>Wed, 31 Jul 2002 09:58:35 GMT</pubDate>
+    </item>
+    <item>
+      <title>Pick Leaders Who Can Help You</title>
+      <content>Your leaders don't pick you. You pick them. Here's how to pick the right ones to lead you through the .NET vs. .NOT debates.</content>
+      <link>http://www.ftponline.com/vsm/2002_09/magazine/departments/guestop/?q=rss</link>
+      <pubDate>Fri, 26 Jul 2002 16:10:32 GMT</pubDate>
+    </item>
+    <item>
+      <title>Debug VS.NET Applications</title>
+      <content>Using VS.NET's debugging tools is only half the battle—you also need to apply problem-solving techniques. Here's how.</content>
+      <link>http://www.ftponline.com/vsm/2002_09/magazine/features/dollard/?q=rss</link>
+      <pubDate>Fri, 26 Jul 2002 16:10:24 GMT</pubDate>
+    </item>
+    <item>
+      <title>Application, Heal Thyself</title>
+      <content>The first Java debuggers interfered with the execution of the program being debugged. The Java
+Platform Debugger Architecture fixes this problem.</content>
+      <link>http://www.ftponline.com/javapro/2002_09/magazine/columns/proshop/?q=rss</link>
+      <pubDate>Thu, 25 Jul 2002 18:00:53 GMT</pubDate>
+    </item>
+    <item>
+      <title>The Future of XML in Wireless</title>
+      <content>Although some might argue that XML is too weighty for wireless devices, current and future
+standards efforts and technologies are paving the way for XML in the small arena.</content>
+      <link>http://www.ftponline.com/wireless/hillborg/?q=rss</link>
+      <pubDate>Tue, 23 Jul 2002 15:01:22 GMT</pubDate>
+    </item>
+    <item>
+      <title>Obfuscators Make .NET More Secure</title>
+      <content>Microsoft's decision not to ship an obfuscator product for .NET has opened the door for third-party companies.</content>
+      <link>http://www.ftponline.com/dotnetmag/2002_07/magazine/departments/guestop/?q=rss</link>
+      <pubDate>Fri, 19 Jul 2002 17:31:11 GMT</pubDate>
+    </item>
+    <item>
+      <title>Get a Handle on .NET Remoting</title>
+      <content>Find .NET remoting baffling? Download Juval Löwy's sample app to experiment with the different scenarios.
+</content>
+      <link>http://www.ftponline.com/vsm/2002_07/online/csharp_jlowy_07_15_02/?q=rss</link>
+      <pubDate>Fri, 19 Jul 2002 14:05:02 GMT</pubDate>
+    </item>
+    <item>
+      <title>.NET vs. J2EE: A Third-Party View</title>
+      <content>Infragistics CEO and President Dean Guida talked with <i>Visual Studio Magazine</i>'s Patrick Meader about how the .NET Framework stacks up against Java and J2EE. Plus, he gives the inside scoop on what you can do now about Web services, C#, VB.NET, and copy protection. And check out related reading from FTP.</content>
+      <link>http://www.ftponline.com/vsm/2002_08/online/meader/?q=rss</link>
+      <pubDate>Fri, 12 Jul 2002 14:49:50 GMT</pubDate>
+    </item>
+    <item>
+      <title>Stop Writing Those #@%&amp;!! Forms</title>
+      <content>Visual inheritance enforces consistency, shortens product cycle time, and drastically reduces an app's number of forms. Juval Löwy walks you through this powerful technique with a sample app.
+</content>
+      <link>http://www.ftponline.com/vsm/2002_06/online/online_eprods/csharp_jlowy_06_24_02/?q=rss</link>
+      <pubDate>Tue, 25 Jun 2002 15:11:34 GMT</pubDate>
+    </item>
+    <item>
+      <title>Speech I/O for the Wireless Web                                                                                                                                                                         </title>
+      <content>SALT provides a new speech technology approach to input and output on wireless devices.</content>
+      <link>http://www.ftponline.com/xmlmag/2002_06/magazine/columns/xmlunplugged/?q=rss</link>
+      <pubDate>Fri, 31 May 2002 13:33:23 GMT</pubDate>
+    </item>
+    <item>
+      <title>Integrate Java Cryptography With Windows                                                                                                                                                                </title>
+      <content>Learn how to integrate the native Microsoft Windows certificate and key stores with Java security to reduce management overhead and improve certificate validity checking.</content>
+      <link>http://www.ftponline.com/javapro/2002_07/magazine/features/bboyter/?q=rss</link>
+      <pubDate>Fri, 31 May 2002 11:44:10 GMT</pubDate>
+    </item>
+    <item>
+      <title>Snap Controls Together                                                                                                                                                                                  </title>
+      <content>.NETâ€™s full subclassing support lets you create new classes that inherit behavior from a base class. Learn to do this in VB.NET by building an owner-draw listbox, deriving your new class from the ListBox base class. Plus, check out these other essential articles on subclassing and control creation from <i>VSM</i>.</content>
+      <link>http://www.ftponline.com/vsm/2002_06/magazine/features/storage/?q=rss</link>
+      <pubDate>Mon, 29 Apr 2002 10:54:34 GMT</pubDate>
+    </item>
+    <item>
+      <title>4 Essential C# Tips                                                                                                                                                                                     </title>
+      <content>Here are Bill Wagner's favorite tips on using the C# language more effectively. He also has plenty of others to help you code better and faster with C#.</content>
+      <link>http://www.ftponline.com/vsm/2002_04/online/online_eprods/c_bwagner04_22_02/?q=rss</link>
+      <pubDate>Fri, 26 Apr 2002 11:46:53 GMT</pubDate>
+    </item>
+    <item>
+      <title>Build a Dynamic Module Subsystem                                                                                                                                                                        </title>
+      <content>Learn an open architecture for building modules in an encapsulated package, and give your Java programs flexibility that will make life easier for you and for your applications' users. And click on these links for more information on JAR files, which you'll base your module architecture on.</content>
+      <link>http://www.ftponline.com/javapro/2002_05/magazine/features/cduguay/?q=rss</link>
+      <pubDate>Thu, 25 Apr 2002 11:49:27 GMT</pubDate>
+    </item>
+    <item>
+      <title>Migrate Classic Apps to .NET                                                                                                                                                                            </title>
+      <content>Should you move your apps to .NET? If so, which ones? The debate might be raging in your development shop, but in the meantime you can learn some good strategies for migrating your classic applications to .NET.
+</content>
+      <link>http://www.ftponline.com/dotnetmag/2002_05/magazine/columns/architecting/?q=rss</link>
+      <pubDate>Tue, 23 Apr 2002 17:54:29 GMT</pubDate>
+    </item>
+    <item>
+      <title>Tips on Making ASP.NET Design Decisions                                                                                                                                                                 </title>
+      <content>User controls or server controls? Web services or remoting? Here's how to choose the right tool for the ASP.NET job. Plus, check out more tips from Jonathan Goodyear, as well as meaty discussions in our new ASP.NET forum.</content>
+      <link>http://www.ftponline.com/vsm/2002_04/online/online_eprods/aspnet_goodyear04_16/?q=rss</link>
+      <pubDate>Tue, 23 Apr 2002 16:44:44 GMT</pubDate>
+    </item>
+    <item>
+      <title>How to Choose Web Services                                                                                                                                                                              </title>
+      <content>Everyone's talking about <em>building</em> Web services, but that's only part of the picture. You need to know how to choose and consume them, too. How do you find a Web service that does what you want? How do you know if the provider is trustworthy? Get some answers, and check out our other recent Web services offerings.</content>
+      <link>http://www.ftponline.com/vsm/2002_04_BG/magazine/features/jgoodyear/?q=rss</link>
+      <pubDate>Thu, 18 Apr 2002 16:52:53 GMT</pubDate>
+    </item>
+    <item>
+      <title>Map Out Your Move to Windows .NET Server                                                                                                                                                                </title>
+      <content>Should you make the move to Windows .NET Server? Whether you're looking to launch Web service initiatives, or whether you're deploying Windows NT 4.0 vs. Windows 2000, your decision to migrate depends on how you use Windows now.</content>
+      <link>http://www.ftponline.com/dotnetmag/2002_05/magazine/features/jenck/default.asp?q=rss</link>
+      <pubDate>Thu, 18 Apr 2002 14:06:50 GMT</pubDate>
+    </item>
+    <item>
+      <title>Eclipse Your IDE                                                                                                                                                                                        </title>
+      <content>Take advantage of the open-source Eclipse project, which provides a powerful, extensible Java development environment. You can also use it to build HTML, JSP, XML, or other language-development systems. And you can do even more with open source.</content>
+      <link>http://www.fawcette.com/javapro/2002_05/magazine/columns/javatecture/?q=rss</link>
+      <pubDate>Wed, 17 Apr 2002 16:45:43 GMT</pubDate>
+    </item>
+    <item>
+      <title>Tips on Making ASP.NET Design Decisions                                                                                                                                                                 </title>
+      <content>User controls or server controls? Web services or remoting? Here's how to choose the right tool for the ASP.NET job. Plus, read even more ASP.NET advice from the experts.
+</content>
+      <link>http://www.fawcette.com/vsm/2002_04/online/online_eprods/aspnet_goodyear04_16/?q=rss</link>
+      <pubDate>Wed, 17 Apr 2002 12:28:38 GMT</pubDate>
+    </item>
+    <item>
+      <title>Target Devices With XSL                                                                                                                                                                                 </title>
+      <content>The eXtensible Stylesheet Language can provide flexibility for a variety of client device support.</content>
+      <link>http://www.fawcette.com/javapro/2002_02/online/online_eprods/wireless_sspielman2_11/?q=rss</link>
+      <pubDate>Tue, 16 Apr 2002 18:02:58 GMT</pubDate>
+    </item>
+    <item>
+      <title>Use RPC-Style Web Services With J2EE                                                                                                                                                                    </title>
+      <content>Use Web Services to build bridges between J2EE app components and other platforms. This free chapter from Sams' upcoming <i>Teach Yourself J2EE in 21 Days</i> shows you how.</content>
+      <link>http://www.fawcette.com/javapro/2002_03/online/online_eprods/j2ee_03_08/?q=rss</link>
+      <pubDate>Tue, 16 Apr 2002 18:00:51 GMT</pubDate>
+    </item>
+    <item>
+      <title>Simplify Web Services With JAX-RPC                                                                                                                                                                      </title>
+      <content>The Java API for XML-based remote procedure calls (JAX-RPC) simplifies building Web services. There's never been a better time to start implementing and calling SOAP-based Web services.</content>
+      <link>http://www.fawcette.com/javapro/2002_05/magazine/features/shorrell/?q=rss</link>
+      <pubDate>Tue, 16 Apr 2002 17:56:56 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

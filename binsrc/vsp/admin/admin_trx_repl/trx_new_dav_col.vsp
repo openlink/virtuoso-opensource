@@ -1,0 +1,83 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines);
+
+declare col, pcol, _idx integer;
+declare name, nname, pname, parent, _acct varchar;
+
+if (not adm_check_auth (lines)) {adm_tell_unauth(lines); return (0);}
+
+col := atoi (get_keyword('col', params, '1'));
+name := get_keyword('name', params, '/');
+_acct := get_keyword('acct', params, '');
+
+declare _crpage varchar;
+_crpage := get_keyword ('crpage', params, 'trx_repl_pub_items.vsp');
+
+if ('' = get_keyword ('dwn', params, ''))
+  {
+    pcol := atoi (get_keyword('pcol',params, '1'));
+    pname := get_keyword('pname',params,'/');
+  }
+else
+  {
+    select COL_PARENT into pcol from WS.WS.SYS_DAV_COL where COL_ID = col;
+    if (pcol = 0 or pcol is null)
+      pcol := 1;
+    if (name <> '/')
+      pname := subseq (name, 0, strrchr (subseq (name, 0, length (name) - 1), '/') + 1);
+    else
+      pname := '/';
+  }
+?>
+
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Transactional replication wizard - Web DAV create new col">
+<title>Create new collection</title>
+  </head>
+
+
+<?vsp adm_page_header('Create new collection', NULL); ?>
+<?include ../adm_js_check.vsp ?>
+
+<form action="<?=_crpage?>" method=post enctype="multipart/form-data" name="dir">
+<input type=hidden name=col value="<?=col?>">
+<input type=hidden name=pcol value="<?=pcol?>">
+<input type=hidden name=name value="<?=name?>">
+<input type=hidden name=pname value="<?=pname?>">
+<input type=hidden name=dwn value="">
+<input type=hidden name=acct value="<?=_acct?>">
+<input type="hidden" name="crpage" value="<?=_crpage?>">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<tr>
+	<td colspan="3" align="right"><input type=text name=col_name value=""></td>
+	<td colspan="3" align="right"><input type=submit name=davcol value="Add"></td>
+</tr>
+</table>
+</form>
+
+<?vsp adm_page_footer(); ?>
+</html>

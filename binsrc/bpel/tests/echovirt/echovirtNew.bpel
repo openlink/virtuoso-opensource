@@ -1,0 +1,41 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<process name="echovirt" targetNamespace="http://openlinksw.com" suppressJoinFailure="yes" xmlns:tns="http://openlinksw.com" xmlns="http://schemas.xmlsoap.org/ws/2003/03/business-process/" xmlns:bpelx="http://schemas.oracle.com/bpel/extension" xmlns:ora="http://schemas.oracle.com/xpath/extension" xmlns:bpws="http://schemas.xmlsoap.org/ws/2003/03/business-process/">
+  <partnerLinks>
+    <partnerLink name="client" partnerLinkType="tns:echovirt" myRole="echovirtProvider"/>
+  </partnerLinks>
+  <variables>
+    <variable name="input" messageType="tns:echovirtRequestMessage"/>
+    <variable name="output" messageType="tns:echovirtResponseMessage"/>
+  </variables>
+  <sequence name="main">
+    <receive name="receiveInput" partnerLink="client" portType="tns:echovirt" operation="process" variable="input" createInstance="yes"/>
+    <assign name="assignResult">
+      <copy>
+        <from expression="concat( 'Redefined: Hello ', bpws:getVariableData('input', 'payload', '/tns:echovirtRequest/tns:name'), ' ', bpws:getVariableData('input', 'payload', '/tns:echovirtRequest/tns:fname'))"/>
+        <to variable="output" part="payload" query="/tns:echovirtResponse/tns:result"/>
+      </copy>
+    </assign>
+    <reply name="replyOutput" partnerLink="client" portType="tns:echovirt" operation="process" variable="output"/>
+  </sequence>
+</process>

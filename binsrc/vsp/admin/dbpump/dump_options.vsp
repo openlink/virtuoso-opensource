@@ -1,0 +1,186 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  if (not adm_check_auth(lines))
+    {
+      adm_unauth_response ();
+      return(0);
+    }
+  declare oper_vector any;
+  oper_vector := "PUMP"."DBA"."RETRIEVE_HTTP_PARS" (params);
+?>
+
+<html>
+  <HEAD>
+    <LINK REL="stylesheet" TYPE="text/css" HREF="<?=adm_what_css()?>">
+    <title>OpenLink Interactive SQL (Virtuoso), DBPUMP version 0.1.: Dump Options</title>
+    <meta name="AUTHOR" content="OpenLink Software"> 
+    <META NAME="DESCRIPTION" CONTENT="Virtuoso DBPUMP">
+  </HEAD>
+<?vsp "PUMP"."DBA"."HTML_HEADER_OUT" (oper_vector, 'Dump Options',''); ?>
+<?vsp "PUMP"."DBA"."OUT_HIDDEN_PARS" (oper_vector, 'dump_options@dump_type@table_defs@triggers@stored_procs@constraints@fkconstraints@views@users@grants@table_data@text_flag@insert_mode@change_qualifier@change_owner@new_qualifier@new_owner@'); ?>
+<?vsp "PUMP"."DBA"."OUT_CHK_DFLT_PARS" ('table_defs@triggers@stored_procs@constraints@fkconstraints@views@users@grants@table_data@text_flag@insert_mode@change_qualifier@change_owner@new_qualifier@new_owner'); ?>
+
+<br>
+<table class="statdata" border="0" cellpadding="0">
+<tr><td>
+	<table class="genlist" border="0" cellpadding="0">
+	<tr><td colspan=2 class="genhead">
+	<?vsp "PUMP"."DBA"."__CHECK_HELP" ('dump_options', sprintf('&nbsp;%s&nbsp;', 'Advanced Dump Options')); ?>
+	</td></tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('dump_type', 'Dump Type'); ?>
+	</td>
+	<td CLASS="statdata">
+	<?vsp "PUMP"."DBA"."OUT_DUMP_TYPE" (oper_vector); ?>
+	</td>
+	</tr>
+
+	<tr></tr>
+
+	<tr><td CLASS="statlisthead" colspan=1 align="left">
+	</td>
+	<td align=center>
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('dump_objects', 'Dump Objects'); ?>
+	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('table_defs', 'Table Definitions'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_CHECKBOX_OUT" (oper_vector, 'table_defs', NULL, '',  NULL, NULL, NULL); ?>	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('triggers', 'Triggers'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_CHECKBOX_OUT" (oper_vector, 'triggers', NULL, '',  NULL, NULL, NULL); ?>	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('stored_procs', 'Stored Procedures'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_CHECKBOX_OUT" (oper_vector, 'stored_procs', NULL, '',  NULL, NULL, NULL); ?>	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('constraints', 'Constraints'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_CHECKBOX_OUT" (oper_vector, 'constraints', NULL, '',  NULL, NULL, NULL); ?>	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('fkconstraints', 'FK Constraints'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_CHECKBOX_OUT" (oper_vector, 'fkconstraints', NULL, '',  NULL, NULL, NULL); ?>	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('views', 'Views'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_CHECKBOX_OUT" (oper_vector, 'views', NULL, '',  NULL, NULL, NULL); ?>	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('users', 'Users'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_CHECKBOX_OUT" (oper_vector, 'users', NULL, '',  NULL, NULL, NULL); ?>	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('grants', 'Grants'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_CHECKBOX_OUT" (oper_vector, 'grants', NULL, '',  NULL, NULL, NULL); ?>	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('table_data', 'Table Data'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_CHECKBOX_OUT" (oper_vector, 'table_data', NULL, '',  NULL, NULL, NULL); ?>	</td>
+	</tr>
+
+	<tr></tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('text_flag', 'Dump Format'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_RADIO_OUT" (oper_vector, 'text_flag', 'SQL=SQL&Binary=Binary', NULL, NULL, NULL);  ?>
+	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('insert_mode', 'Insert Mode'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_SELECT_OUT" (oper_vector,  'insert_mode', NULL, '1=Regular&2=Soft&3=Replacing', NULL, NULL,NULL,20); ?>
+	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('new_qualifier', 'Change Qualifier'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_CHECKBOX_OUT" (oper_vector, 'change_qualifier', NULL, '',  NULL, NULL, NULL); ?>	
+	<?vsp "PUMP"."DBA"."HTML_EDIT_OUT" (oper_vector, 'new_qualifier', NULL, 'DB', NULL, NULL); ?>
+	</td>
+	</tr>
+
+	<tr><td CLASS="statlisthead">
+	<?vsp   "PUMP"."DBA"."__CHECK_HELP" ('new_owner', 'Change User'); ?>
+	</td>
+	<td CLASS="statdata" align=center>
+	<?vsp "PUMP"."DBA"."HTML_CHECKBOX_OUT" (oper_vector, 'change_owner', NULL, '',  NULL, NULL, NULL); ?>	
+	<?vsp "PUMP"."DBA"."HTML_EDIT_OUT" (oper_vector, 'new_owner', NULL, 'DBA', NULL, NULL); ?>
+	</td>
+	</tr>
+
+	<tr>
+	<td colspan=2 align=center>
+	<?vsp "PUMP"."DBA"."HTML_RESET_OUT" (oper_vector, '', 'Restore Defaults', NULL, NULL, ' style=\"width: 1.0in\"'); ?>
+	</td>
+	</tr>
+
+
+	</table>
+
+</td></tr>
+</table>
+<br>
+<?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Apply', 'if (!chk_dflt()){this.form.dump_type_value.value=\'0\';this.form.dump_type_value.options[3].selected=true;}this.form.action=\'dump_page.vsp\';this.form.submit();', NULL, ' style=\"width: 1in\"'); ?>
+<?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Cancel', 'history.go(-1);', NULL, ' style=\"width: 1in\"'); ?>
+<?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', '    Help    ', 'var w=window.open(\'dbhelp.vsp?topic=dump_options\',\'helpWindow\',\'toolbar=no,status=no,resizable=no,titlebar=no,height=200,width=400`\');w.focus();', NULL, ' style=\"width: 1in\"'); ?>
+
+<?vsp "PUMP"."DBA"."HTML_FOOTER_OUT" (oper_vector); ?>
+
+</html>

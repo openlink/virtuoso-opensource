@@ -1,0 +1,14 @@
+POST /vspx/custom_format.vspx HTTP/1.1
+User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1) Opera 7.11  [en]
+Host: duple:8440
+Accept: text/html, image/png, image/jpeg, image/gif, image/x-xbitmap, */*;q=0.1
+Accept-Language: en;q=1.0,ru;q=0.9
+Accept-Charset: windows-1252, utf-8, utf-16, iso-8859-1;q=0.6, *;q=0.1
+Accept-Encoding: deflate, gzip, x-gzip, identity, *;q=0
+Referer: http://duple:8440/vspx/custom_format.vspx
+Connection: Keep-Alive, TE
+TE: deflate, gzip, chunked, identity, trailers
+Content-type: application/x-www-form-urlencoded
+Content-length: 365
+
+page__vspx_custom__format_vspx_view_state=wbwGtR5wYWdlX192c3B4X2N1c3RvbV9fZm9ybWF0X3ZzcHjBvAS1CGVtcGxveWVltQZGdWxs%0D%0AZXK1BXJlYWxttQC1CWRhdGFfc2V0McG8B7UlwbwCwbwDvQAAKGO1BU1FUkVQvALBvAO9AAAo%0D%0AY7UFTUVSRVC8ArUBzLwKzLwBvAG8ALUSZGF0YV9zZXQxX2FkZF9mb3JtwbwBtQA%3D&sid=&realm=&data_set1_add_field_0=&data_set1_add_field_2=&data_set1_add_field_3=&data_set1_next=Next

@@ -1,0 +1,93 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+
+  declare server, en_name, r varchar;
+
+  r := '';
+  en_name := coalesce ({?'en_name'}, '%');
+  server := get_keyword ('server_name', params, sprintf ('http://localhost:%s/SOAP', server_http_port()));
+
+  if (get_keyword ('query2', params, '') <> '')
+    {
+   declare exit handler for sqlstate '*' { r := 'Unable to connect to remote host: Connection refused';
+                                           goto endf; };
+    {
+       http (demo2({?'server_name'},{?'en_name'}));
+    }
+       http_xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/ud_s_2/ud_s_2.xsl');
+       return;
+    }
+endf:;
+?>
+
+<HTML>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+  <BODY>
+  <H3>UDDI</H3>
+<?vsp
+  if (r <> '')
+    http_value (r,'pre');
+?>
+    <FORM method="POST"  name="nntp_get" action="ud_s_2_sample_1.vsp">
+    <TABLE class="tableentry">
+      <TR>
+        <TD>1. Enter the UDDI service URL</TD>
+	<TD><INPUT type="text" name="server_name" value="<?=server?>" size="35"></TD>
+      </TR>
+      <TR>
+        <TD>2. Enter the Name pattern (begin with)</TD>
+	<TD><INPUT type="text" name="en_name" value="<?=en_name?>" size="35"></TD>
+      </TR>
+      <TR>
+        <TD>3. View the UDDI request</TD>
+        <TD COLSPAN="1">
+	  <INPUT type="submit" name="query1", value="View">
+	</TD>
+      </TR>
+      <TR>
+        <TD>4. Get data from server</TD>
+        <TD COLSPAN="1">
+	  <INPUT type="submit" name="query2", value="Execute">
+	</TD>
+      </TR>
+    </TABLE>
+    </FORM>
+<?vsp
+  if (get_keyword ('query1', params, '') <> '')
+    {
+?>
+    <table class="tableresult">
+    <tr>
+    <td>
+    <pre>
+<?vsp
+      http_value (concat ('<find_business xmlns="urn:uddi-org:api" generic="1.0">\r\n\t<name>', {?'en_name'},'</name>\r\n</find_business>'));
+?>
+  </pre>
+  </td>
+  </tr>
+  </table>
+<?vsp } ?>
+  </BODY>
+</HTML>

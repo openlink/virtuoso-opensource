@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_checkpoint_interval">
+  <refmeta>
+    <refentrytitle>checkpoint_interval</refentrytitle>
+    <refmiscinfo>admin</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>checkpoint_interval</refname>
+    <refpurpose>Configure database checkpointing</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_checkpoint_interval">
+      <funcprototype id="fproto_checkpoint_interval">
+        <funcdef>integer <function>checkpoint_interval</function> </funcdef>
+        <paramdef>in <parameter>minutes</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="params_checkpoint_interval"><title>Parameters</title>
+    <refsect2><title>minutes</title>
+      <para><type>integer</type> number of minutes between checkpoints.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret_checkpoint_interval"><title>Return Types</title>
+    <para>Previous value of CheckpointInterval in the configuration file as an integer.</para>
+  </refsect1>
+  <refsect1 id="desc_checkpoint_interval">
+    <title>Description</title>
+      <para>This function changes the database checkpointing interval to the given
+      value in minutes. It may also be used to disable checkpointing in two
+      ways: By setting checkpoint interval to 0, the checkpoint will only be
+      performed after roll forward upon database startup. A setting of -1
+      will disable all checkpointing. Main use for this function is to
+      ensure a clean online backup of the database slices. Copying of the
+      database may take long and checkpointing would modify those files in
+      mid-copy, thus rendering the resulting copy unusable. In case the
+      system should, for some reason or another, become unstable, it is
+      sometimes better to disable checkpointing after a database restart
+      to resume backing up from where it was left prior to a system crash.
+      Disabling all checkpointing by giving checkpoint_interval the value
+      of -1 will do just that.</para>
+      <para>The interval setting will be saved in the server configuration
+      file as value of CheckpointInterval in section [Parameters], thus it
+      will persist over consecutive server shutdown/restart cycles. A
+      long checkpoint_interval setting will produce longer transaction
+      logs, which in turn prolongs the time it takes for the database to
+      perform a roll forward upon restart in case it was shut down without
+      making a checkpoint.</para>
+  </refsect1>
+  <refsect1 id="errors_checkpoint_interval"><title>Errors</title>
+    <para><link linkend="datatypeerror">Parameter data type checking errors</link></para>
+  </refsect1>
+  <refsect1 id="examples_checkpoint_interval"><title>Examples</title>
+    <example id="ex_checkpoint_interval"><title>Simple examples</title>
+      <para>Disable checkpoints:</para>
+      <screen>SQL> checkpoint_interval(-1);
+
+Done. -- 25 msec.
+</screen>
+      <para>Re-enable checkpoints (every 2 hrs):</para>
+      <screen>SQL> checkpoint_interval(120);
+callret
+VARCHAR
+______________________________________________________
+
+-1
+
+Done. -- 4 msec.
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_checkpoint_interval"><title>See Also</title>
+    <para><link linkend="fn_backup"><function>backup</function></link></para>
+    <para><link linkend="configsrvstupfiles">CheckpointInterval setting in Configuring Server Startup Files section</link></para>
+  </refsect1>
+</refentry>
+

@@ -1,0 +1,75 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version='1.0'?>
+<!DOCTYPE xs:schema PUBLIC "-//W3C//DTD XMLSCHEMA 200102//EN" "XMLSchema.dtd" >
+<xs:schema targetNamespace="http://www.w3.org/XML/1998/namespace"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xml:lang="en"
+	xml:xml="http://www.w3.org/XML/1998/namespace">
+
+ <xs:annotation>
+  <xs:documentation>This schema defines attributes and an attribute group
+        suitable for use by
+        schemas wishing to allow xml:lang or xml:space attributes
+        on elements they define.
+
+        To enable this, such a schema must import this schema
+        for the XML namespace, e.g. as follows:
+        &lt;schema . . .>
+         . . .
+         &lt;import namespace="http://www.w3.org/XML/1998/namespace"
+                    schemaLocation="http://www.w3.org/2001/03/xml.xsd"/>
+
+        Subsequently, qualified reference to either of the attributes
+        or the group defined below will have the desired effect, e.g.
+
+        &lt;type . . .>
+         . . .
+         &lt;attributeGroup ref="xml:specialAttrs"/>
+ 
+         will define a type which will schema-validate a instance
+         element with both xml:space and xml:lang attribute</xs:documentation>
+ </xs:annotation>
+
+ <xs:attribute name="lang" type="xs:language">
+  <xs:annotation>
+   <xs:documentation>In due course, we should install the relevant ISO 2- and 3-letter
+         codes as the enumerated possible values . . .</xs:documentation>
+  </xs:annotation>
+ </xs:attribute>
+
+ <xs:attribute name="space" default="preserve">
+  <xs:simpleType>
+   <xs:restriction base="xs:NCName">
+    <xs:enumeration value="default"/>
+    <xs:enumeration value="preserve"/>
+   </xs:restriction>
+  </xs:simpleType>
+ </xs:attribute>
+
+ <xs:attributeGroup name="specialAttrs">
+  <xs:attribute ref="xml:lang"/>
+  <xs:attribute ref="xml:space"/>
+ </xs:attributeGroup>
+
+</xs:schema>

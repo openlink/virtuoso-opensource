@@ -1,0 +1,825 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 label="cinterface.xml" id="cinterface">
+<title>Virtuoso Server Extension Interface (VSEI) (C Interface)</title>
+
+<sect2 id="writingsqlcallablecfuncs">
+	<title>Virtuoso Server Extension Interface (VSEI)</title>
+
+	<para>The Virtuoso Server Extension Interface allows Virtuoso functionality
+  to be extended by including new functions written in other languages
+  such as C.  These new functions are SQL callable.</para>
+
+  <para>These functions share the same C prototype and use
+  Virtuoso internal APIs to do the following:</para>
+
+<simplelist>
+ <member>Retrieve arguments.</member>
+ <member>Assign values to output parameters.</member>
+ <member>Compile and execute SQL/PL statements and fetch results.</member>
+ <member>Signal SQL errors.</member>
+ <member>Return values.</member>
+</simplelist>
+
+	<para>A SQL-callable C function is called a Virtuoso Server Extension (VSE).
+  These are external functions integrated into Virtuoso by linking their executable
+  produced with a Virtuoso server in library format, rather than executable.
+  VSEs were formally known as BIFs, which stood for Built-In Functions.
+  Such functions must be exported using the <function>bif_define()</function>
+  or <function>bif_define_typed()</function> C-functions when initializing the
+  extended Virtuoso server.</para>
+
+  <para>These functions will thereafter be invoked on server threads. The
+  functions should be re-entrant and comply to some simple memory management
+  conventions outlined below.</para>
+	<para>
+These functions may execute arbitrary C code and call arbitrary APIs,
+to the extent these are compatible with the host operating system's threading model.
+</para>
+	<para>
+Virtuoso VSEs can be debugged within the normal C debugger by either
+starting Virtuoso under the debugger in foreground mode or by attaching the
+debugger to a running process.
+</para>
+	<para>
+Stack consumption should not be excessive: threads normally have 100K of stack
+on 32 bit platforms.  The stack size may however be increased by settings in the virtuoso.ini file.
+</para>
+</sect2>
+
+<sect2 id="sqlruntimeobjects">
+	<title>SQL Run Time Objects</title>
+
+	<para>
+The Virtuoso Server Extension API introduces the following data types:
+</para>
+
+<variablelist>
+<varlistentry>
+<term>box</term>
+<listitem>
+This is a run-time-typed block of memory which represents any SQL data type,
+e.g.  number, string, array etc. Boxes have a type and length that are retrievable at run time
+and can be allocated, freed and otherwise manipulated by functions appropriate to each type of box.
+Boxes may form trees through use of heterogeneous arrays but should not form graphs.
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>query_t</term>
+<listitem>This is a compiled query, corresponding to a SQL statement or procedure compilation.
+The <parameter>query_t</parameter> is made from a SQL string and can thereafter be executed multiple times.
+This is a read-only object, not affected by execution on any number of threads, analogously
+to machine code not being affected by being executed.
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>query_instance_t</term>
+<listitem>This is a structure representing a query execution state. These are
+created when executing a <parameter>query_t</parameter>. This is analogous to
+a stack frame of a C function.  It holds all relevant query state, such as
+cursor positions, intermediate results, column values etc. This is passed to all
+VSEs so they can have access to environment information such as current
+transaction, current client etc. The query instance references the
+<parameter>query_t</parameter>.  As a rule, the query instance is specific to a thread.
+A query instance can be relatively long lived in the case of a cursor, which may
+live across multiple client-server message exchanges.</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>state_slot_t</term>
+<listitem>This is a part of <parameter>query_t</parameter> that specifies or describes
+a query time variable, column, parameter, intermediate result etc.  This is
+analogous to an offset in a stack frame, it actually indexes a position inside a
+query instance. Given the state slot and the instance, it is possible
+to read or to set a value in the query state. Arguments of VSEs are passed as an
+array of state.  Slots combined with the running query instance give the
+arguments values, and can be used to set output parameters.</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>local_cursor_t</term>
+<listitem>When executing a select statement, the local cursor structure is
+returned for accessing the result set rows. This is always a forward-only cursor.
+This can be advanced, column values may be accessed and the cursor may be closed.</listitem>
+</varlistentry>
+</variablelist>
+</sect2>
+
+<sect2 id="memmanrules">
+<title>Memory Management Rules</title>
+
+<para>
+All state slots in a query have distinct values.  With the exception of a reference
+parameter, no value is referenced twice.  All state slot values can therefore be
+recursively freed independently of each other.
+</para>
+<para>
+If a VSE returns data, this data must always be new, i.e. allocated inside the
+VSE and may not be a copy of or include any of the arguments as a substructure.
+All return values and arguments must be legitimate boxes and may not share a structure.
+</para>
+</sect2>
+
+<sect2 id="servermainfunction">
+<title>Server Main Function</title>
+
+<para>
+The server main function for a customized Virtuoso server has the following format:
+</para>
+
+<programlisting>
+static void (*old_ddl_hook) (client_connection_t *cli) = NULL;
+
+static void
+ddl_hook (client_connection_t *cli)
+{
+  if (old_ddl_hook)
+    old_ddl_hook (cli);
+
+  /* DDL code (depending on the server being fully initialized
+    (ex: create table) ) goes here */
+}
+
+static void
+init_func (void)
+{
+  old_ddl_hook = set_ddl_init_hook (ddl_hook);
+  /* initialization code (prerequisite for server initialization
+     (bif_define, unrelated init code) goes here */
+}
+
+int
+main (int argc, char *argv[])
+{
+  VirtuosoServerSetInitHook (init_func);
+  return VirtuosoServerMain (argc, argv);
+}
+</programlisting>
+
+<para>
+There are three phases to custom code initialization:
+</para>
+
+<simplelist>
+  <member>execution of the <function>main()</function> function</member>
+  <member>execution of the <function>init_func()</function> function</member>
+  <member>execution of the <function>ddl_hook()</function> function</member>
+</simplelist>
+
+<para>The <function>init_func()</function> function is called before any server
+initialization functions are called.  This is typically a place for defining new VSEs,
+allocation of synchronization objects (since the server does not have any threads yet),
+and/or custom code initialization not related to Virtuoso.  Here, the
+<function>set_ddl_init_hook()</function> should be called also, if it exists,
+to register the <function>ddl_hook()</function> callback function.
+</para>
+<note><title>Note:</title>
+<para>The <function>old_ddl_hook()</function> mechanism -
+this allows queuing of the ddl_hooks.</para></note>
+
+<para>The <function>ddl_hook()</function> function is called during normal
+startup just before the roll forward, but after the server's internal structure has
+been initialized.  This is typically a place to execute SQL statements to initialize
+the extension.  The variable <parameter>client_connection_t *</parameter>
+is passed to the function to provide the client connection that should
+be used for SQL execution.</para>
+
+<para>The <function>main()</function> function can call
+<function>VirtuosoServerSetInitHook()</function> if there is any
+Virtuoso-related initialization to be performed, and should then call the
+<function>VirtuosoServerMain()</function> function to start the
+Virtuoso server.  The <function>VirtuosoServerMain()</function> function
+will return control after the server has been shut down.</para>
+</sect2>
+
+<sect2 id="compilingandlinking">
+<title>Compiling &amp; Linking</title>
+
+<para>
+The files should be compiled for the multi-threaded environment appropriate to the
+operating system and should be linked accordingly e.g.
+<computeroutput>-lm</computeroutput>, <computeroutput>-ldl</computeroutput>.</para>
+
+<para>The Virtuoso distribution contains the following libraries/object files:</para>
+
+<itemizedlist>
+ <listitem><formalpara><title>libvirtuoso-* libraries/object files</title>
+  <para>The Virtuoso engine.  The suffix denotes the kind of remote and threading
+  support : -iodbc for iODBC, -udbc for UDBC, -t for native threads, -f for fiber
+  threads.</para></formalpara></listitem>
+
+ <listitem><formalpara><title>c_javavm object file</title>
+  <para>the Virtuoso Java VM Integration file (no main function). This is the
+  file to be linked in if the custom code executable needs to have Java VM
+  support. To initialize the Java VM integration the C function
+  <function>void bif_init_func_javavm (void)</function> should be called from the
+  <function>VirtuosoServerSetInitHook</function> hook.  This file references
+  the <computeroutput>libjvm</computeroutput> library from the Java JRE, hence,
+  should also be appended to your linker options.</para></formalpara></listitem>
+
+ <listitem><formalpara><title>c_bif_server_php object file</title>
+  <para>The Virtuoso PHP integration support library.  This is the file to be
+  linked in if the custom code executable needs to have the PHP support built
+  in.  To initialize the PHP engine integration the C++ function
+  <function>void init_func_php (void)</function> should be called from
+  the <function>VirtuosoServerSetInitHook</function> hook.  Note that this file
+  is a C++ object file and needs to be linked in accordingly.  This file
+  references the libphp4 library.</para></formalpara></listitem>
+
+ <listitem><formalpara><title>basec object file</title>
+  <para>The Virtuoso .NET CLR Integration file.  This is the file to be linked
+  in if the custom code executable needs to have the .NET CLR integration built
+  in.  This is a C file.</para></formalpara></listitem>
+
+ <listitem><formalpara><title>c_dotnet object file</title>
+  <para>The Virtuoso .NET CLR Integration file.  This is the file to be linked in
+  if the custom code executable needs to have the .NET CLR integration
+  (and nothing but) built in.  This is a C++ file.  Binaries using this file
+  should initialize the .NET CLR support by calling the C++ function
+  <function>void bif_init_func_clr (void)</function> (defined in the basec object
+  file) from the <function>VirtuosoServerSetInitHook</function> hook.  In order
+  for the .NET CLR support to work correctly the
+  <computeroutput>::CoInitialize</computeroutput> Win32 COM API should also be
+  called before the <function>VirtuosoServerMain</function> call.</para></formalpara></listitem>
+
+ <listitem><formalpara><title>sql_code_javavm object file</title>
+  <para>This contains the DDL definitions for the Java VM support.  Executables
+  using that binary should call the <function>sqls_define_javavm</function>
+  function in their DDL init hook.</para></formalpara></listitem>
+
+ <listitem><formalpara><title>sql_code_xslt object file</title>
+  <para>This contains the DDL definitions of the XSLT stylesheets used in the
+  Java VM &amp; CLI support.  Executables using that binary should call the
+  <function>sqls_define_xslt</function> function in their DDL init hook.</para>
+  </formalpara></listitem>
+
+ <listitem><formalpara><title>sql_code_clr object file</title>
+  <para>This contains the DDL definitions for the .NET CLR integration support.
+  Executables using that binary should call the <function>sqls_define_clr</function>
+  function in their DDL init hook.</para></formalpara></listitem>
+
+</itemizedlist>
+</sect2>
+
+<sect2 id="funcsbycat">
+<title>Functions by Category</title>
+
+<sect3 id="genboxfuncs">
+<title>General Box Functions</title>
+
+<para>The box, usually marked with the caddr_t data type is the basic representation
+of any SQL data in Virtuoso.  All boxes have a run time data type, with a name
+beginning with <computeroutput>DV_</computeroutput>.  All boxes have a 3 byte
+run time length which allows for up to 16 MB of contiguous array size in SQL data.</para>
+
+<para>The further interpretation of the content of the box is determined by the
+type tag.  The length is always an exact byte length, although the actual length
+is rounded up to the next suitably aligned value.  The length and tag of a box
+must never be changed while the box is allocated but the content is freely
+writable.  The tag and length reside immediately under the pointer of the box,
+so that a box, with the appropriate type cast will pass as a C array or string.</para>
+
+<para>Numbers are generally represented as boxes.  There is an exception for
+small integers, which are always distinguishable from pointers.  Thus the range
+from -10000 to 10000 are not allocated as boxes holding the value but can be
+passed directly.  This is hidden however and the programmer need not be
+concerned about this except sometimes when debugging.</para>
+
+<para>The byte order in boxes depends on the platform.</para>
+
+<para>The most important types are:</para>
+
+	<simplelist>
+		<member><emphasis>DV_SHORT_STRING</emphasis> -  The box contains a null
+    terminated string of char. The box length is 1 + the count of characters,
+    including the final 0 in the count.</member>
+
+    <member><emphasis>DV_LONG_STRING</emphasis> - same as DV_SHORT_STRING.</member>
+
+    <member><emphasis>DV_LONG_INT, TAG_BOX</emphasis> - The box is sizeof (long)
+    long, with the long as element 0, in the appropriate byte order.</member>
+
+    <member><emphasis>DV_SINGLE_FLOAT</emphasis> - sizeof (float) bytes,
+    containing the float.</member>
+
+    <member><emphasis>DV_DOUBLE_FLOAT</emphasis> - sizeof (double) bytes,
+    contains the double.</member>
+
+    <member><emphasis>DV_NUMERIC</emphasis> - opaque, contains a decimal floating
+    point. The <function>numeric_t</function> functions can be used, see
+    appropriate documentation.</member>
+
+		<member><emphasis>DV_BIN</emphasis> - Binary string, no terminating 0
+    counted in the length.</member>
+
+		<member><emphasis>DV_DATETIME</emphasis> - datetime, opaque, dt_ functions
+    can be used, see appropriate documentation.</member>
+
+		<member><emphasis>DV_BLOB_HANDLE</emphasis> - Blob handle, opaque but
+    convertible to string if short enough.</member>
+
+		<member><emphasis>DV_ARRAY_OF_POINTER</emphasis> - Heterogeneous array,
+    sizeof (caddr_t) * n_elements, first all elements are box pointers. The
+    length is in bytes, so divide by sizeof (caddr_t).</member>
+
+		<member><emphasis>DV_DB_NULL</emphasis> - a box of 0 bytes (header only),
+    represents the SQL NULL value.</member>
+
+  </simplelist>
+</sect3>
+
+<sect3 id="boxfunctions">
+<title>Box Functions</title>
+
+      <funcprototype id="fproto_dk_alloc_box">
+        <funcdef>box_t <function>dk_alloc_box</function></funcdef>
+        <paramdef>uint32 <parameter>bytes</parameter></paramdef>
+        <paramdef>int <parameter>tag</parameter></paramdef>
+      </funcprototype>
+
+<para><function>dk_alloc_box()</function> allocates a box of the given size
+and type.  The initial contents are undefined.</para>
+
+      <funcprototype id="fproto_dk_free_box">
+        <funcdef>int <function>dk_free_box</function></funcdef>
+       <paramdef>box_t <parameter>box</parameter></paramdef>
+      </funcprototype>
+
+<para><function>dk_free_box()</function> frees a box allocated by
+<function>dk_alloc_box()</function>.  The argument may not be any other pointer.</para>
+
+      <funcprototype id="fproto_dk_free_tree">
+        <funcdef>int <function>dk_free_tree</function></funcdef>
+       <paramdef>box_t <parameter>box</parameter></paramdef>
+      </funcprototype>
+
+<para><function>dk_free_tree()</function> is like <function>dk_free_box()</function>
+but will free recursively, following through DV_ARRAY_OF_POINTER boxes.</para>
+
+      <funcprototype id="fproto_box_length">
+        <funcdef>uint32 <function>box_length</function></funcdef>
+       <paramdef>box_t <parameter>box2</parameter></paramdef>
+      </funcprototype>
+
+<programlisting>
+#define box_tag(box) \
+	(*((dtp_t *) &amp;(((unsigned char *)(box))[-1])))
+</programlisting>
+
+<para>
+These return the length and the tag of a box.
+</para>
+
+      <funcprototype id="fproto_unbox">
+        <funcdef>long <function>unbox</function></funcdef>
+       <paramdef>box_t <parameter>n</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype id="fproto_box_num">
+        <funcdef>box_t <function>box_num</function></funcdef>
+       <paramdef>long <parameter>n</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype id="fproto_box_dv_short_string">
+        <funcdef>box_t <function>box_dv_short_string</function></funcdef>
+       <paramdef>char *<parameter>string</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype id="fproto_box_double">
+        <funcdef>box_t <function>box_double</function></funcdef>
+       <paramdef>double <parameter>d</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype id="fproto_box_float">
+        <funcdef>box_t <function>box_float</function></funcdef>
+       <paramdef>float <parameter>f</parameter></paramdef>
+      </funcprototype>
+
+<programlisting>
+#define unbox_num(n) unbox(n)
+#define unbox_float(f) (*((float *)f))
+#define unbox_double(f) (*((double *)f))
+#define unbox_string(s) ((char *)s)
+</programlisting>
+
+<para>The above functions and macros convert between C data types and boxes.
+<function>box_dv_short_string()</function> takes a
+<computeroutput>char *</computeroutput> to any null terminated string and
+allocates a string box of appropriate size.  This itself looks like a null
+terminated string but has the box header with the run time length and type
+under the pointer.</para>
+
+      <funcprototype id="fproto_box_copy">
+        <funcdef>box_t <function>box_copy</function></funcdef>
+       <paramdef>box_t <parameter>box</parameter></paramdef>
+      </funcprototype>
+
+<para><function>box_copy()</function> returns an identical size box with the
+same type and contents.</para>
+
+      <funcprototype id="fproto_box_copy_tree">
+        <funcdef>box_t <function>box_copy_tree</function></funcdef>
+       <paramdef>box_t <parameter>box</parameter></paramdef>
+      </funcprototype>
+
+<para><function>box_copy_tree()</function> performs a recursive copy, traversing
+<computeroutput>DV_ARRAY_OF_POINTER</computeroutput> references.</para>
+
+      <funcprototype id="fproto_box_equal">
+        <funcdef>int <function>box_equal</function></funcdef>
+       <paramdef>box_t <parameter>b1</parameter></paramdef>
+       <paramdef>box_t <parameter>b2</parameter></paramdef>
+      </funcprototype>
+
+<para>Given two arbitrary boxes, returns true if they are recursively equal.</para>
+</sect3>
+
+<example id="boxexamples">
+<title>Box Examples</title>
+
+<para>Below is the code for box_copy_tree:</para>
+
+<programlisting>
+box_t
+box_copy (box_t box)
+{
+  dtp_t tag;
+  uint32 len;
+  box_t copy;
+
+  if (!IS_BOX_POINTER (box))
+    return box;
+
+  tag = box_tag (box);
+  if (box_copier[tag])
+    return (box_copier[tag] (box));
+  len = box_length (box);
+  copy = dk_alloc_box (len, tag);
+  memcpy (copy, box, (uint32) len);
+  return copy;
+}
+</programlisting>
+
+<programlisting>
+box_t
+box_copy_tree (box_t box)
+{
+  box_t *copy;
+  dtp_t tag;
+
+  if (!IS_BOX_POINTER (box))
+    return box;
+
+  tag = box_tag (box);
+  copy = (box_t *) box_copy (box);
+  if (tag == DV_ARRAY_OF_POINTER || tag == DV_LIST_OF_POINTER)
+    {
+      uint32 inx, len = BOX_ELEMENTS (box);
+      for (inx = 0; inx &lt; len; inx++)
+	copy[inx] = box_copy_tree (((box_t *) box)[inx]);
+    }
+
+  return (box_t) copy;
+}
+</programlisting>
+</example>
+
+<note><title>Note:</title>
+<para>The <function>IS_BOX_POINTER</function> check at the start will detect
+the unboxed, &apos;bare&apos; small integers which are actually not allocated
+and can be returned by value.  Only then can box_tag be used to find the type.</para>
+
+<para>The DV_TYPE_OF macro should be used instead of box_tag when the type
+is unknown to avoid de-referencing a small integer.</para>
+
+<para>Also note <function>BOX_ELEMENTS</function>, which is
+box_length () / sizeof (caddr_t).  This is practical for iterating over arrays.</para>
+</note>
+
+<tip><title>See Also</title>
+<para>The <link linkend="bif_funcs">VSEI Functions</link>.</para></tip>
+
+</sect2>
+
+
+<sect2 id="bifdefs">
+<title>VSEI Definition</title>
+
+<programlisting>
+typedef caddr_t (*bif_t) (caddr_t *qst, caddr_t *error_return, state_slot_t ** arguments);
+void bif_define (char *name, bif_t bif);
+void bif_define_typed (char * name, bif_t bif, bif_type_t *bt);
+</programlisting>
+
+<para>
+These functions associate a function pointer to a VSE name.
+The typed variant allows associating a value type used when inferring SQL
+meta-data if the result is returned to a client.  The type can be one of the
+following externs:</para>
+
+<simplelist>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_varchar;</paramdef></member>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_any;</paramdef></member>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_integer;</paramdef></member>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_double;</paramdef></member>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_float;</paramdef></member>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_numeric;</paramdef></member>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_convert;</paramdef></member>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_timestamp;</paramdef></member>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_time;</paramdef></member>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_date;</paramdef></member>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_datetime;</paramdef></member>
+  <member><paramdef>extern <parameter>bif_type_t</parameter> bt_bin;</paramdef></member>
+</simplelist>
+
+<para>If a VSE accesses indexes either by its own internal code or by executing
+Virtuoso/PL statements, there becomes a potential for deadlocks.  To prevent
+deadlocks, the Virtuoso/PL compiler must be informed of potential index usage inside
+the VSE.  Special deadlock-safe code can be created for its needs.  The
+<function>bif_set_uses_index()</function> function should be used after
+<function>bif_define()</function> or <function>bif_define_typed()</function>
+in such cases.</para>
+
+<!-- programlisting>
+void bif_set_uses_index (bif_t bif);
+</programlisting -->
+
+<para>The potential for deadlocking is always present if the VSE
+executes Virtuoso/PL code or uses XPath/XSLT functions.  Other functions
+of Virtuoso's C interface are deadlock-safe since they perform no database access.</para>
+</sect2>
+
+<sect2 id="sqlexception">
+<title>SQL Exceptions</title>
+
+<programlisting>
+caddr_t srv_make_error (char *code, char *msg);
+void sqlr_error (char *code, char *msg,...);
+void sqlr_resignal (caddr_t err);
+</programlisting>
+
+	<para>
+An error object is a three element array of type
+<computeroutput>DV_ARRAY_OF_POINTER</computeroutput>, consisting of the number
+3, the SQL state and the message.
+The control flow in case of errors signaled inside VSEs is a longjmp to an outer context,
+typically that of the calling stored procedure or top level query.  The condition is there
+handled or sent to the next level up, ultimately to the ODBC, JDBC or Web client.
+Executing a SQL statement inside a VSE always returns and never exits the VSE by longjmp.
+Thus the VSE gets a first look at all SQL errors caused by statements executed by it.
+</para>
+	<para>
+sqlr_error is the normal function for signaling a SQL state.  It takes a 5 character
+SQL state, a printf format string and optional arguments, a la printf.
+</para>
+
+	<para>
+sqlr_resignal is used to throw a condition to the next level handler.
+This is typically done when executing a query which returns an error and
+the error is sent up to the caller of the VSE.
+</para>
+	<para>
+srv_make_error makes the error structure.  The expression
+</para>
+	<para>
+sqlr_resignal (srv_make_error ("12345", "message"));
+is equivalent to sqlr_error ("12345", "message");
+</para>
+
+	<note><title>Note</title>
+	<para>srv_make_error does not take the printf-type arguments.</para>
+</note>
+
+	<para>
+By convention a NULL pointer indicates no error.
+sqlr_resignal (NULL) is an error.
+</para>
+	<para>
+The macros:
+</para>
+<programlisting>
+#define ERR_STATE(err)  (((caddr_t*) err)[1])
+#define ERR_MESSAGE(err)  (((caddr_t*) err)[2])
+</programlisting>
+
+	<para>
+can be used to read an error returned by a statement.
+</para>
+</sect2>
+
+<sect2 id="execingsql">
+<title>Executing SQL</title>
+
+<programlisting>
+query_t * sql_compile (char *string2, client_connection_t * cli,
+				caddr_t * err, int store_procs);
+void qr_free (query_t * qr);
+
+client_connection_t * qi_client (caddr_t * qi);
+</programlisting>
+
+	<para>
+These functions allow executing SQL from VSEs.
+First the SQL statement needs to be compiled with sql_compile. The statement may take
+value parameters and may be a DDL or DML statement, including select, update,
+procedure call, table creation etc.
+</para>
+	<para>
+The query_t returned can be used multiple times on any number of simultaneous threads.
+if an application repeatedly performs
+the same queries the text can be compiled once and reused at infinitum.
+</para>
+	<para>
+qr_free will free a query returned by sql_compile.
+</para>
+
+<example>
+<title>Example</title>
+<programlisting>
+{
+  caddr_t err = NULL;
+  query_t * qr  = sql_compile (&quot;select * from SYS_USERS&quot;, qi_client (qst), &amp;err, 0);
+  ...
+  if (err)
+  exit (-1);
+  qr_free (qr);
+}
+</programlisting>
+</example>
+
+<programlisting>
+caddr_t qr_rec_exec (query_t * qr, client_connection_t * cli,
+    local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts,
+    long n_pars, ...);
+</programlisting>
+
+	<para>
+Once a query is compiled it can be executed and fetched.  This function executes
+a query in the context of a VSE.  The execution is on behalf of the same
+user and in the same transaction as the VSE.  This is only possible in the
+context of a VSE, not at top level in the main program, for example.
+</para>
+	<para>
+The first argument is the compiled query to execute.
+The second is the client connection, obtained by qi_client from the qst argument of the VSE.
+The lc_ret, if non NULL will get a be set to a newly allocated local_cursor_t * that allows
+fetching rows from the result set. This only applies to a select statement.
+The caller is the qst argument of the VSE,
+The opts can be NULL.
+The n_args is the count of query parameters, 0 if no parameters are passed.
+</para>
+	<para>
+The return value is an error, suitable for sqlr_resignal.  A NULL value means success.
+</para>
+	<para>
+It should be double-checked if the query access or potentially may access any tables or indexes.
+If it may do this, the VSE must be described as deadlock-unsafe by
+calling bif_set_uses_index() after bif_define() or bif_define_typed().
+If qr_rec_exec access any tables or views, and the call of VSE from Virtuoso/PL
+code is compiled as deadlock-safe, the whole server may be halted.
+</para>
+	<para>
+If parameters are passed, a group of 3 actual parameters follows for each ? in the
+query being executed.  In each such group the first is the name of the parameter, of
+the form &quot;:n&quot;, where n is the position of the parameter, starting at 0, so &quot;:0&quot;
+corresponds to the 1st ? and &quot;:11&quot; to the 12th.
+The second in the group of 3 is the value, usually a box pointer.
+The third is the type, one of QRP_INT, QRP_STRING or QRP_RAW.
+</para>
+	<para>
+QRP_INT means that the value will be converted to a box as by box_num.
+QRP_STRING means that the value will be converted to a string as by box_dv_short_string.
+In either case the value is allocated and freed as part of the execution.
+QRP_RAW means that an arbitrary box is passed as is.  If so, this box will be freed in the
+process and MUST NOT BE REFERENCED AGAIN in the VSE.
+if the statement is a select, lc_ret should be specified and should be the address of a
+local_cursor_t * variable, where the cursor can be returned.
+</para>
+	<programlisting>
+long lc_next (local_cursor_t * lc);
+caddr_t lc_nth_col (local_cursor_t * lc, int n);
+void lc_free (local_cursor_t * lc);
+</programlisting>
+	<para>
+These functions allow reading through a result set.
+The local_cursor_t * must have come from qr_rec_exec.
+</para>
+	<para>
+lc_next  will move the cursor one row forward.  The first call after the exec places the cursor
+on the first row. A 0 return value indicates that the cursor is at end.  if 0 is returned at the
+first call, the result set had zero rows.
+The data member lc_error may be set and should be checked after calls to this function.
+See examples. The value will be suitable for sqlr_resignal if copied (box_copy_tree).
+</para>
+	<para>
+The lc_nth_col returns the value of the nth column of the current row. The index is 0 based.
+The value is an arbitrary box pointer and is READ ONLY, to be copied (box_copy_tree) if the
+application needs to keep it around.  The value will stay readable until the next lc_next or
+lc_free.  Use DV_TYPE_OF et al to determine the type of the value.
+</para>
+	<para>
+lc_free frees the cursor and any resources associated to it.
+This has no effect on the transaction.
+</para>
+	<para>
+The bif_my_select function returns an array with one element for each row of the SYS_KEYS table.
+The rows are themselves arrays containing the column values.
+</para>
+</sect2>
+	<sect2 id="langfuncapi">
+		<title>Adding New Languages And Encodings Into Virtuoso</title>
+		<para>
+There are too many languages to be able to support them all by default so
+Virtuoso is user extensible in this respect.
+The built-in 'x-any' language supports most languages to a degree,
+but it is not the optimum solution for some specific languages or if
+you want to perform a words' normalization to make text search more effective.
+To make Virtuoso extensible,
+language-specific functions are organized into <emphasis>language handlers</emphasis>, and handlers are
+organized in hierarchical trees.  Every handler contains pointers to such functions as &quot;count
+words in given string&quot;, &quot;call given callback once for every word in the string&quot; etc.</para>
+		<para>
+XML documents and SQL procedures may identify languages by their
+names, for example by value of <emphasis>xml:lang</emphasis> attribute,
+<parameter>content_language</parameter> argument of
+built-in functions, or by <parameter>__lang</parameter> option etc...
+Every language handler defines up to two names of the language it supports, one matching ISO 639
+regulations (e.g. 'en'), and one matching RFC 1766 (e.g. 'en-UK').
+When Virtuoso finds a match to the language name specified, it searches through
+the an internal hash-table.  If the name is unknown, the 'x-any' handler
+will be returned as a default.</para>
+
+		<para>
+Custom language handlers should contain a pointer to a more generic handler, e.g. to the handler,
+Handler may have NULLs stored instead of pointers to required functions, these NULLs will be
+replaced with pointers to generic handler's functions automatically when the custom handler will be
+activated.</para>
+
+<tip><title>See Also:</title>
+ <para><link linkend="fn_lh_get_handler">lh_get_handler</link></para>
+ <para><link linkend="fn_lh_load_handler">lh_load_handler</link></para>
+</tip>
+
+		<para>
+There are two trees of language handlers in current version of Virtuoso. &quot;Main&quot;
+tree starts from 'x-any' root and contains handlers of languages used in documents,
+another tree starts from 'x-ftq-x-any' root contains handlers of
+Free Text query ('ftq') languages.  The difference is in handling of wildcard characters:
+query string 'hello, wo*ld' consists of two &quot;words&quot;, 'hello' and 'wo*ld', and
+'x-ftq-x-any' will properly locate them, but 'x-any' handler will report three words --
+'hello', 'wo' and 'ld', because it knows nothing about special meaning of '*' in query
+strings.  That is why every handler may contain a pointer to a handler of its own query language.</para>
+
+		<para>
+In addition to plain language handlers, it's possible to add handlers of &quot;encoded language&quot;
+They are useful if you have large number of documents in some particular encoding and speed of
+free text indexing is critical for your applications.  While usual handlers deal with Unicode data,
+and it requires data to be decoded before processing, functions of &quot;encoded language&quot;
+handler may accept buffers of encoded text, eliminating decoding.</para>
+
+<tip><title>See Also:</title>
+ <para><link linkend="fn_elh_get_handler">elh_get_handler</link></para>
+ <para><link linkend="fn_elh_load_handler">elh_load_handler</link></para>
+</tip>
+
+		<para>
+The OpenLink Virtuoso Server distribution contains sources of sample language handler for 'en-UK' language.
+The difference between 'x-any' handler and this one is in handling of abbreviations and numbers.
+'en-UK' handler will read phrase '$3.54 per sq.inch.' as the sequence of words '3.54', 'per' and 'sq.inch',
+instead of sequence '54', 'per', 'sq' and 'inch' that 'x-any' will read.  The generic 'x-any' handler
+has no specific rules for dealing with the &quot;decimal point&quot; because in many scripts
+&quot;decimal comma&quot; is used, thus '3.54' will be processed as pair of words '3' and '54',
+but '3' will be ignored in many cases as noise word due to its 1-character length.</para>
+		<para>
+In addition to the language extension interface, Virtuoso provides an <emphasis>eh_load_handler</emphasis> function
+to add new encodings, but it should be used solely for multi-character encodings which cannot be supported through
+the usual Virtuoso <link linkend="internationalization">International Character Support</link>.
+If an encoding was created by the <link linkend="fn_charset_define">CHARSET_DEFINE</link> function,
+Virtuoso can build special lookup tables for very fast text translation from Unicode to the
+encoding, thus you are not likely to gain in performance by writing your own C code, but some applications will
+know nothing about your encoding because they will check only the SYS_CHARSETS system table.</para>
+</sect2>
+</sect1>

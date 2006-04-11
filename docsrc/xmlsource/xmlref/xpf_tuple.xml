@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_tuple">
+  <refmeta>
+    <refentrytitle>tuple()</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>tuple()</refname>
+    <refpurpose>Selects the first item of every argument sequence and returns the sequence of the selected items</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_tuple">
+      <funcprototype id="xpf_proto_tuple">
+        <funcdef>sequence <function>tuple()</function></funcdef>
+	<paramdef><parameter>seq1</parameter> sequence</paramdef>
+	<paramdef><parameter>seq2</parameter> sequence</paramdef>
+	<paramdef><parameter>...</parameter></paramdef>
+	<paramdef><parameter>seqN</parameter> sequence</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_tuple"><title>Description</title>
+<para>
+This function calculates all given arguments from left to right,
+and creates a sequence which contains the first item of the first calculated sequence,
+then the first item of the second calculated sequence and so on.
+If the value of an argument is not a sequence, but a scalar,
+the scalar is treated as one-element sequence so it is added into the result.
+If the value of an argument is an empry sequence, the empty string is
+added into the result.
+</para>
+<para>
+This function is not a part of XPATH 1.0 or XQUERY 1.0 libraries of standard functions.
+</para>
+  </refsect1>
+  <refsect1 id="xpf_params_tuple"><title>Parameters</title>
+    <refsect2><title>SeqI</title>
+      <para>The sequence of items, first of its items will be used as I-tn item of the resulting sequence</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_tuple"><title>Return Types</title><para>Sequence</para></refsect1>
+  <refsect1 id="xpf_examples_tuple"><title>Examples</title>
+    <example id="xpf_ex_tuple"><title></title>
+      <para></para>
+      <screen>tuple(/title, /abstract, /intro)</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_tuple"><title>See Also</title>
+    <para><link linkend="xpf_append">append</link><link linkend="xpf_list">list</link></para>
+  </refsect1>
+</refentry>
+

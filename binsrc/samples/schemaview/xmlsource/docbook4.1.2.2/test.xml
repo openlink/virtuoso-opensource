@@ -1,0 +1,1084 @@
+<!DOCTYPE article
+  PUBLIC "-//Norman Walsh//DTD Simplified DocBook XML V4.1.2.4//EN"
+         "http://www.nwalsh.com/docbook/simple/4.1.2.4/sdocbook.dtd" [
+<!ENTITY % local.article.attrib
+"xmlns CDATA #IMPLIED
+xmlns:xsi CDATA #IMPLIED
+xmlns:tbl CDATA #IMPLIED
+xsi:schemaLocation CDATA #IMPLIED
+">
+<!ENTITY conduitzip "xmlconduit11.zip">
+<!ENTITY trade "(TM)">
+]>
+<article xmlns='http://www.oasis-open.org/docbook/xmlschema/4.1.2'
+	 xmlns:xsi='http://www.w3.org/2000/10/XMLSchema-instance'
+	 xmlns:tbl='http://www.oasis-open.org/tables/exchange/1.0'
+	 xsi:schemaLocation='
+	     http://www.oasis-open.org/docbook/xmlschema/4.1.2
+             docbook.xsd'>
+
+<!-- This article is included as a test case for the XML Schema -->
+
+<articleinfo>
+<title>XML From Your Palm</title>
+<pubdate>11 Oct 2000</pubdate>
+<releaseinfo role="meta">
+$Id$
+</releaseinfo>
+
+<revhistory>
+<revision>
+<revnumber>1.2</revnumber>
+<date>11 Oct 2000</date>
+<authorinitials>ndw</authorinitials>
+<revremark>Documented significant changes to the conduits.</revremark>
+</revision>
+<revision>
+<revnumber>1.1</revnumber>
+<date>15 Aug 2000</date>
+<authorinitials>ndw</authorinitials>
+<revremark>Fixed broken internal links.</revremark>
+</revision>
+<revision>
+<revnumber>1.0</revnumber>
+<date>15 Aug 2000</date>
+<authorinitials>ndw</authorinitials>
+<revremark>First public release.</revremark>
+</revision>
+<revision>
+<revnumber>0.4</revnumber>
+<date>15 Aug 2000</date>
+<authorinitials>ndw</authorinitials>
+<revremark>Added SyncXmlTD and SyncXmlMB</revremark>
+</revision>
+<revision>
+<revnumber>0.3</revnumber>
+<date>14 Aug 2000</date>
+<authorinitials>ndw</authorinitials>
+<revremark>Added link table</revremark>
+</revision>
+<revision>
+<revnumber>0.2</revnumber>
+<date>14 Aug 2000</date>
+<authorinitials>ndw</authorinitials>
+<revremark>A few revisions; spellcheck</revremark>
+</revision>
+<revision>
+<revnumber>0.1</revnumber>
+<date>08 Aug 2000</date>
+<authorinitials>ndw</authorinitials>
+<revremark>Initial draft</revremark>
+</revision>
+</revhistory>
+
+<author><firstname>Norman</firstname><surname>Walsh</surname>
+<affiliation>
+<jobtitle>Staff Engineer</jobtitle>
+<orgname>Sun Microsystems, XML Technology Center</orgname>
+</affiliation>
+<authorblurb>
+<para>Norman Walsh, a Staff Engineer in Sun's XML Technology Center,
+is chair of the OASIS DocBook Technical Committee and serves on a number
+of W3C Working Groups, including the XML Core, XSL, and XML Schema WGs.</para>
+</authorblurb>
+</author>
+
+<copyright>
+  <year>2000</year>
+  <holder>Sun Microsystems, Inc.</holder>
+</copyright>
+</articleinfo>
+
+<para>This article was updated on 11 Oct 2000 to reflect changes made
+in the version 1.1 conduits. For a quick summary of the changes in version
+1.1, see <xref linkend="app11"/>; for upgrading instructions see
+<xref linkend="upg11"/>.</para>
+
+<para>If you're like me, you rely on your Palm&trade; organizer to
+keep a semblance of order in your life. Without it, I wouldn't get to
+meetings on time, or remember to participate in telephone conference
+calls<footnote><para>Ok, it's definitely a mixed blessing, I see that,
+but... :-)</para></footnote>, or know how to reach my colleagues when
+I'm on the road.</para>
+
+<para>Unfortunately, for all its benefits, I still have some troubles
+with my Palm. Among them, the fact that I can't sync my Palm address
+book with other information management tools that are important to
+me (e.g., my
+<ulink role="linktable" url="http://bbdb.sourceforge.net/">BBDB</ulink><footnote><para>I have since been informed of
+<ulink url="http://home.rochester.rr.com/tsdeweese/SyncBBDB.html">SyncBBDB</ulink>,
+but I'm still working on other XML-based information management tools.</para>
+</footnote>
+in Emacs) or publish the calendar on the web so that I can share
+my calendar with my manager and colleagues.</para>
+
+<para>Now, I'm sure I could have gone out and found solutions for some
+of these problems, for example, one of the web calendar syncing tools,
+but when I hear a problem described that involves open-format information
+exchange and multiple output formats, one answer springs immediately to
+mind: XML.</para>
+
+<para>So, what I wanted was some way to sync my Palm to my desktop
+machine using XML so that I could transform the XML into other formats
+and sync it with other formats.</para>
+
+<section><title>Initial Forays</title>
+
+<para>This was very much a personal project, so the amount of time and
+energy that I had to spend on it was directly influenced by the number
+and priority of other projects that I had going on.</para>
+
+<para>Initially I looked into the possibility of reverse engineering
+the PDB file formats that the Palm Desktop application created when syncing
+my Palm. It didn't take me long to abandon that course. I'm sure it
+could be done, but how tedious!</para>
+
+<para>Using the gcc-based conduit tools, or buying one of the commercial
+conduit toolkits, crossed my mind. But that looked like a pretty steep
+learning curve, too.</para>
+
+<para>Next, I found the
+<ulink role="linktable" url="http://sourceforge.net/projects/pilot-link">pilot-link</ulink>
+package. This package included
+<command>pilot-file</command>, which produced a much more readable dump
+of a Palm database. Armed with this dump, I was able to reverse
+engineer the Datebook format well enough to produce an XML
+version. But that only solved half the problem because I couldn't see
+any way to rebuild the file header information that would be necessary
+to sync the database back into my Palm. Besides, when I looked at the
+<command>pilot-file</command> dump of the Addressbook, I was reminded
+of just how tedious it had been to reverse engineer the
+Datebook.</para>
+
+<para>Looking at the source for <command>pilot-xfer</command>
+convinced me that everything I needed was in there. The next logical
+step was to hack pilot-xfer so that it read/wrote XML instead of
+PDBs.</para>
+
+<para>That was back sometime in January or February. Before I got around
+to hacking on <command>pilot-xfer</command>, I started running Linux
+on my desktop and discovered
+<ulink role="linktable" url="http://www.moshpit.org/pilotmgr/">PilotManager</ulink>.
+<ulink url="http://www.moshpit.org/pilotmgr/">PilotManager</ulink> is
+essentially a Perl/TK interface wrapped around the
+<ulink url="http://sourceforge.net/projects/pilot-link">pilot-link</ulink>
+tools that provides a complete Palm syncing tool for Unix. More importantly,
+it provides an extensible framework for writing conduits of your own.
+</para>
+</section>
+
+<section><title>PilotManager</title>
+
+<para><xref linkend="pmfig"/> shows the PilotManager application after
+a sync operation. As you can see, I made a couple of changes to the
+Addressbook on the desktop (specifically by editing
+<filename>.xmlAddr</filename>) and updated my schedule on the Pilot.
+These changes were synced appropriately.</para>
+
+<figure id="pmfig"><title>The PilotManager Interface</title>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/pilot-manager.png"/>
+</imageobject>
+</mediaobject>
+</figure>
+
+<para>I should note at this point that the PilotManager application
+runs on Linux, Solaris, and presumably other Unixes, but does not
+run on Windows, as far as I know. The code that underlies PilotManager:
+Perl, Perl/Tk, and pilot-link have all been ported, so it's theoretically
+a simple matter of porting, but I haven't tried it.</para>
+
+</section>
+
+<section><title>PilotManager Conduits</title>
+
+<para>The PilotManager application includes several conduits. I
+modeled the SyncXml
+Conduits off the standard <filename>SyncAB</filename> conduit.</para>
+
+<para>In simplest terms, the PilotManager conduit interface is a set
+of hashes. A sync operation reads information from the Palm and returns
+each record as a hash. Appropriately constructed hashes can be passed
+back to update the Palm.</para>
+
+<para>If the conduit can provide enough information about each record
+(its fields and what fields constitute a match, etc.), as the
+Addressbook and Datebook conduits can, PilotManager takes care of most
+of the bookkeeping for us.</para>
+
+<section id="upg11"><title>Upgrading the Conduits</title>
+
+<para>If you have been using the version 1.0
+SyncXML Conduits, you are <emphasis>strongly
+encouraged</emphasis> to upgrade. In addition to a few new features,
+the version 1.1 conduits contain several bug fixes. Note, in
+particular, that the version 1.0 <filename>SyncXmlTB</filename>
+conduit is fundamentally broken; it does not preserve the due date of
+Todo items across a sync!</para>
+
+<para>Before you upgrade the conduits, make sure that you make a
+complete backup of your Palm using the <filename>Backup</filename>
+conduit or whatever method you normally use for full backups. This
+will allow you to recover in case of catastrophic error.</para>
+
+<para>Perform a sync operation using the version 1.0
+SyncXml Conduits.</para>
+
+<para>Examine the configuration of each conduit and record the
+location of the XML databases. Generally, these will be in
+<filename>~/.xmlAddr</filename>, <filename>~/.xmlDate</filename>,
+etc., but the conduits may have been configured differently.</para>
+
+<para>Download the
+<ulink url="&conduitzip;">SyncXml Conduits 1.1</ulink> package
+and unpack it somewhere.</para>
+
+<para>Install the version 1.1 conduits:</para>
+
+<itemizedlist>
+<listitem><para>Replace the version 1.0
+<filename>SyncXml{AB,DB,MB,TB}.pm</filename> files on your system with
+the version 1.1 files of the same name
+</para></listitem>
+<listitem><para>Install the <emphasis>new file</emphasis>
+<filename>SyncXml.pm</filename> in the same location.
+</para></listitem>
+<listitem><para>Install the new DTDs as well.
+</para></listitem>
+</itemizedlist>
+
+<para>Now <emphasis>delete the XML databases</emphasis>. In order to do this
+successfully, you must delete both the XML files (stored at the locations you
+recorded a moment ago) and the PilotManager binary
+databases. The binary databases are usually
+<filename>~/.pilotmgr/SyncXmlAB/addr.db</filename>,
+<filename>~/.pilotmgr/SyncXmlDB/date.db</filename>,
+<filename>~/.pilotmgr/SyncXmlMB/memo.db</filename>, and
+<filename>~/.pilotmgr/SyncXmlTB/todo.db</filename>. Naturally, if you
+configured PilotManager to use another directory, they will be elsewhere.
+Make sure you delete both the XML files and the binary files before you
+continue.</para>
+
+<para>Do not delete the <filename>SyncXml{AB,DB,MB,TB}</filename>
+directories. As near as I can tell, PilotManager only creates them
+when a new conduit is added.</para>
+
+<para>Now restart PilotManager and re-sync using the
+SyncXML Conduits. Because the local databases do
+not exist, the conduits will copy all of the data off your Palm and
+rebuild the local databases.</para>
+
+<para>The version 1.1 conduits have several new configuration options; you
+may want to examine the configuration of each new conduit.</para>
+
+<section><title>Installing the Conduits</title>
+
+<para>Before you begin, make sure that you make a complete backup of
+your Palm using whatever method you normally use for full
+backups. This will allow you to recover in case of catastrophic
+error.</para>
+
+<para>If you have not already done so, install
+<ulink url="http://www.moshpit.org/pilotmgr/">PilotManager</ulink> and make
+sure that it's working. This will guarantee that you have appropriate
+versions of Perl and other supporting tools in place.</para>
+
+<para>Get the Perl <literal>XML::Parser</literal> and
+<literal>XML::DOM</literal> modules from
+<ulink url="http://cpan.perl.com/">CPAN</ulink> and install them, if you do
+not already have them installed.</para>
+
+<para>Download the
+<ulink role="linktable" url="&conduitzip;">SyncXml Conduits</ulink> package
+and unpack it somewhere.</para>
+
+<para>Install the conduits by placing the
+<filename>SyncXml.pm</filename> and
+<filename>SyncXml{AB,DB,MB,TB}.pm</filename> files
+where PilotManager will find them. Exactly where that is depends on how
+you've installed PilotManager. On my system, that would be in
+<filename>/usr/lib/perl5/PilotMgr</filename> or in
+<filename>~/.pilotmgr</filename>.</para>
+
+<para>Install the DTDs by placing them where the SyncXml conduits will
+find them. I recommend that you install them in
+<filename>lib/schema</filename> under wherever you installed the
+conduits, but you can also put them directly in the conduits directory or in
+<filename>~/.pilotmgr/SyncXml{AB,DB,MB,TB}</filename>.
+</para>
+
+<para>When all the installation is complete, run
+<command>pilot-manager</command>. It will announce the discovery of the
+new conduits. Under the <literal>File/Properties...</literal> menu, add
+the new conduits to the list of active conduits and they'll get used the
+next time you sync.</para>
+</section>
+
+</section>
+
+<section><title>SyncXmlAB</title>
+
+<para>The SyncXmlAB conduit syncs your Palm AddressBook with your
+desktop.</para>
+
+<section><title>Customizing SyncXmlAB</title>
+
+<para>Configuring <literal>SyncXmlAB</literal> reveals the panel
+shown in <xref linkend="config-ab"/>:</para>
+
+<figure id="config-ab"><title>The SyncXmlAB Configuration Panel</title>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/config-ab.png"/>
+</imageobject>
+</mediaobject>
+</figure>
+
+<variablelist>
+<varlistentry><term>Enable user fields</term>
+<listitem><para>If this option is enabled, the <literal>Notes</literal>
+field of each Addressbook record is treated as structured text
+according to the conventions discussed in <xref linkend="userfields"/>.
+</para></listitem>
+</varlistentry>
+<varlistentry><term>XML file:</term>
+<listitem><para>Identifies the location where the XML Addressbook file
+is to be stored. This file is used to sync with the Palm. Changes to
+this file will be reflected in the Palm at the next sync, and changes
+in the Palm will be written back to this file.  </para></listitem>
+</varlistentry>
+<varlistentry><term>Validate:</term>
+<listitem><para>Identifies the location of the DTD to which the XML
+Addressbook file will refer. During first-time initialization, the
+conduit attempts to locate the DTD. If you subsequently move the DTD,
+or if you have installed it somewhere that the conduit does not look,
+you will have to update this value; otherwise, it's unlikely that
+you'll ever need to change this.</para></listitem>
+</varlistentry>
+</variablelist>
+
+</section>
+
+<section><title>Understanding the XML Address Book</title>
+
+<para>Syncing your Palm with the <literal>SyncXmlAB</literal> conduit,
+produces a single XML file, by default <filename>~/.xmlAddr</filename>.
+This file contains the complete Addressbook database. The PilotManager
+also keeps a binary representation of the database in
+<filename>~/.pilotmgr/SyncXmlAB/addr.db</filename>. If you want to delete
+the XML address book and resync from the Palm, delete both files.
+</para>
+
+<section><title>addressbook</title>
+
+<para>The root element of an Addressbook is <literal>addressbook</literal>.
+It identifies the version number of the XML file format and the name
+of the user. Attempts to sync the wrong user will generate a warning.
+If a future version of the conduit uses a different version number, the
+sync will abort so that you don't wind up with a horribly corrupted
+database.
+</para>
+</section>
+
+<section><title>categories, fields, and phones</title>
+
+<para>The Palm stores categories, field names, and phone number labels
+only once in the database, essentially as arrays. Each record in the
+database refers to the field name by offset into the appropriate array.
+</para>
+
+<para>Each of these label arrays is stored at the top of the XML file.
+If you change these labels, the effects will be global within the
+addressbook.</para>
+
+<para>Modify these fields with some caution because the conduit makes
+no effort to assure that the changes you've made are reasonable.</para>
+
+</section>
+
+<section><title>address</title>
+
+<para>Following the categories and other fields, each record appears
+in an <literal>&lt;address&gt;</literal> element. Each address is a fairly
+straightforward duplicate of the record from the Addressbook database.
+There are only a few issues to consider.
+</para>
+
+<section><title>Address IDs</title>
+
+<para>Internally, the Palm maintains a unique ID value for each
+record.  The Palm IDs are not stored in the XML file because there
+would be no way to generate a new one on the desktop in order to add a
+record to the XML address book. Instead, a mapping is maintained
+between the XML ID values and the Palm unique IDs.</para>
+
+<para>To add a new address to the XML file, simply construct a new XML
+ID value that is unique within the XML address book. You do not need
+to consider the Palm unique IDs.</para>
+</section>
+
+<section><title>Phone labels</title>
+
+<para>The label value on each phone number is expected to match one of
+the labels in the top-level <literal>&lt;phones&gt;</literal> list.
+The sync will fail if it does not.</para>
+
+<para>The phone number identified as <quote>primary</quote> will be the one
+displayed on the address book summary screen.</para>
+
+</section>
+
+<section><title>Custom labels</title>
+
+<para>Labels on the custom fields are just a convenience for stylesheets
+and other processing tools. The fields are actually inserted into each
+record in the order presented, without regard to the labels.</para>
+
+</section>
+
+<section><title>Category</title>
+
+<para>The category value  is expected to match one of
+the labels in the top-level <literal>&lt;categories&gt;</literal> list.
+The sync will fail if it does not.</para>
+
+</section>
+</section>
+</section>
+</section>
+
+<section><title>SyncXmlDB</title>
+
+<para>The SyncXmlDB conduit syncs your Palm DateBook with your
+desktop.</para>
+
+<section><title>Customizing SyncXmlDB</title>
+
+<para>Configuring <literal>SyncXmlDB</literal> reveals the panel
+shown in <xref linkend="config-db"/>:</para>
+
+<figure id="config-db"><title>The SyncXmlDB Configuration Panel</title>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/config-db.png"/>
+</imageobject>
+</mediaobject>
+</figure>
+
+<variablelist>
+<varlistentry><term>Enable user fields</term>
+<listitem><para>If this option is enabled, the <literal>Notes</literal>
+field of each Addressbook record is treated as structured text
+according to the conventions discussed in <xref linkend="userfields"/>.
+</para></listitem>
+</varlistentry>
+<varlistentry><term>Write Calendar</term>
+<listitem><para>If this option is enabled, the <literal>Calendar</literal>
+file will be written. The Calendar file is a write-only, linear representation
+of the Palm Datebook.
+</para></listitem>
+</varlistentry>
+<varlistentry><term>Enable DateBk4 extensions</term>
+<listitem><para>If this option is enabled, the conduit will attempt to
+decode the additional information stored in each appointment by
+the DateBk4 application. See <xref linkend="datebook-db4ext"/>.</para>
+</listitem>
+</varlistentry>
+<varlistentry><term>XML file:</term>
+<listitem><para>Identifies the location where the XML Datebook file
+is to be stored. This file is used to sync with the Palm. Changes to
+this file will be reflected in the Palm at the next sync, and changes
+in the Palm will be written back to this file.  </para></listitem>
+</varlistentry>
+<varlistentry><term>Val. XML:</term>
+<listitem><para>Identifies the location of the DTD to which the XML
+Datebook file will refer. During first-time initialization, the
+conduit attempts to locate the DTD. If you subsequently move the DTD,
+or if you have installed it somewhere that the conduit does not look,
+you will have to update this value; otherwise, it's unlikely that
+you'll ever need to change this.</para></listitem>
+</varlistentry>
+<varlistentry><term>Calendar:</term>
+<listitem><para>Identifies the location where the Calendar will be written,
+if the <quote>Write Calendar</quote> option is enabled. This file is
+write-only, it is updated by a sync operation, but is not consulted. Any
+local changes made to this file will be lost at each sync.</para></listitem>
+</varlistentry>
+<varlistentry><term>Val. Cal.:</term>
+<listitem><para>Identifies the location of the DTD to which the XML
+Calendar file will refer. During first-time initialization, the
+conduit attempts to locate the DTD. If you subsequently move the DTD,
+or if you have installed it somewhere that the conduit does not look,
+you will have to update this value; otherwise, it's unlikely that
+you'll ever need to change this.</para></listitem>
+</varlistentry>
+<varlistentry><term>Cal Weeks:</term>
+<listitem><para>Identifies the number of weeks (starting with the
+first week of the current month) that should be copied to the
+Calendar file.</para></listitem>
+</varlistentry>
+<varlistentry><term>Use dummy days</term>
+<listitem><para>If this option is enabled, each week in the Calendar
+file will contain exactly seven days. So, for example, if the first of
+the month occurs on a Wednesday, "dummy days" will be inserted before
+the first to pad the week to seven days. Similarly, the last week in
+each month may be padded.</para>
+<para>Dummy days are only inserted in the Calendar file (not the Datebook
+XML file). They may simplify the task of writing stylesheets and other
+software designed to display the calendar.</para>
+</listitem>
+</varlistentry>
+</variablelist>
+</section>
+
+<section id="unddb"><title>Understanding the XML Date Book</title>
+
+<para>Syncing your Palm with the <literal>SyncXmlDB</literal> conduit,
+produces one or two XML files. It always produces an XML version of
+the date book, by default <filename>~/.xmlDate</filename>. It may also
+produce a calendar, by default <filename>~/.xmlCalendar</filename>.
+</para>
+
+<para>The XML version of the date book contains the complete Datebook
+database. The PilotManager
+also keeps a binary representation of the database in
+<filename>~/.pilotmgr/SyncXmlDB/date.db</filename>. If you want to delete
+the XML date book and resync from the Palm, delete both files.
+</para>
+
+<para>The date book is a compact representation of your schedule.
+Each entry in your schedule appears once in the date book, with start
+and end dates, repeating information, and exceptions all represented
+compactly as properties of the event. The events do not even appear in
+chronological order, necessarily, with in the date book.</para>
+
+<para>While this compact representation is useful for syncing, it is
+difficult to produce your typical <quote>month at a glance</quote> or
+other traditional calendar view from it. Events must be sorted into
+proper chronological order, repeating events must be generated (with
+exceptions), etc.</para>
+
+<para>In order to make the problem of constructing a calendar view more
+tractable for stylesheets, the conduit can also produce a calendar file.
+In this file, every month, week, and day is represented in chronological
+order. The XSL stylesheet, <filename>calendar.xsl</filename>, distributed
+with the conduits demonstrates how this file may be transformed.</para>
+
+<section><title>datebook</title>
+
+<para>The root element of a Datebook is <literal>datebook</literal>.
+It identifies the version number of the XML file format, the name
+of the user, the day of the week that the user identifies as the
+start of the week, and the date that that the file was produced.</para>
+
+<para>Attempts to sync the wrong user will generate a warning.
+If a future version of the conduit uses a different version number, the
+sync will abort so that you don't wind up with a horribly corrupted
+database.
+</para>
+</section>
+
+<section><title>appointment</title>
+
+<para>Each record appears
+in an <literal>&lt;appointment&gt;</literal> element. Each appointment
+is a fairly
+straightforward duplicate of the record from the Addressbook database.
+There are only a few issues to consider.
+</para>
+
+<section><title>Appointment IDs</title>
+
+<para>Internally, the Palm maintains a unique ID value for each
+record.  The Palm IDs are not stored in the XML file because there
+would be no way to generate a new one on the desktop in order to add a
+record to the XML date book. Instead, a mapping is maintained
+between the XML ID values and the Palm unique IDs.</para>
+
+<para>To add a new appointment to the XML file, simply construct a new XML
+ID value that is unique within the XML date book. You do not need
+to consider the Palm unique IDs.</para>
+</section>
+
+<section><title>Category</title>
+
+<para>The builtin date book on the Palm (or at least, on some of the
+Palm devices) does not support categories on appointments. But in fact the
+database does contain them. Some applications allow you to edit the
+category values on the Palm. This is reflected in a category on each
+appointment.</para>
+
+<para>The category value is expected to match one of
+the labels in the top-level <literal>&lt;categories&gt;</literal> list.
+The sync will fail if it does not.</para>
+
+</section>
+
+<section id="datebook-db4ext"><title>DateBk4 Extensions</title>
+
+<para>The DateBk4 application from
+<ulink url="http://www.pimlicosoftware.com/">Pimlico Software</ulink> adds
+several useful features to the Palm datebook. In order to maintain
+complete compatibility with the built-in datebook database, these
+additional features are encoded in the Note field of each appointment.
+</para>
+
+<para>If you enable DateBk4 extensions, this information is decoded
+in the XML Datebook and Calendar files. This allows you to observe the
+icons, time zones, and other DateBk4 extensions. Note, however, that these
+are "read only" values in the XML file; if you change them, the changes
+will not be synced to the Palm.</para>
+</section>
+
+</section>
+</section>
+</section>
+
+<section><title>SyncXmlMB</title>
+
+<para>The SyncXmlMB conduit syncs your Palm Memos with your
+desktop.</para>
+
+<section><title>Customizing SyncXmlMB</title>
+
+<para>Configuring <literal>SyncXmlMB</literal> reveals the panel
+shown in <xref linkend="config-mb"/>:</para>
+
+<figure id="config-mb"><title>The SyncXmlMB Configuration Panel</title>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/config-mb.png"/>
+</imageobject>
+</mediaobject>
+</figure>
+
+<variablelist>
+<varlistentry><term>XML file:</term>
+<listitem><para>Identifies the location where the XML Memo file
+is to be stored. This file is used to sync with the Palm. Changes to
+this file will be reflected in the Palm at the next sync, and changes
+in the Palm will be written back to this file.</para></listitem>
+</varlistentry>
+<varlistentry><term>Validate:</term>
+<listitem><para>Identifies the location of the DTD to which the XML
+Memo file will refer. During first-time initialization, the
+conduit attempts to locate the DTD. If you subsequently move the DTD,
+or if you have installed it somewhere that the conduit does not look,
+you will have to update this value; otherwise, it's unlikely that
+you'll ever need to change this.</para></listitem>
+</varlistentry>
+</variablelist>
+</section>
+
+<section><title>Understanding the XML Memo List</title>
+
+<para>Syncing your Palm with the <literal>SyncXmlMB</literal> conduit,
+produces a single XML file, by default <filename>~/.xmlMemo</filename>.
+This file contains the complete Memo database. The PilotManager
+also keeps a binary representation of the database in
+<filename>~/.pilotmgr/SyncXmlMB/memo.db</filename>. If you want to delete
+the XML Memo list and resync from the Palm, delete both files.
+</para>
+
+<section><title>memobook</title>
+
+<para>The root element of an Memo list is <literal>memobook</literal>.
+It identifies the version number of the XML file format and the name
+of the user. Attempts to sync the wrong user will generate a warning.
+If a future version of the conduit uses a different version number, the
+sync will abort so that you don't wind up with a horribly corrupted
+database.
+</para>
+</section>
+
+<section><title>categories</title>
+
+<para>The Palm stores categories
+only once in the database, essentially as an array. Each record in the
+database refers to the category name by offset into this single array.
+</para>
+
+<para>The category label array is stored at the top of the XML file.
+If you change these labels, the effects will be global within the
+Memo list.</para>
+
+<para>Modify these fields with some caution because the conduit makes
+no effort to assure that the changes you've made are reasonable.</para>
+
+</section>
+
+<section><title>memo</title>
+
+<para>Following the categories, each record appears
+in a <literal>&lt;memo&gt;</literal> element. Each memo is a fairly
+straightforward duplicate of the record from the Memo database.
+There are only a few issues to consider.
+</para>
+
+<section><title>Memo IDs</title>
+
+<para>Internally, the Palm maintains a unique ID value for each
+record.  The Palm IDs are not stored in the XML file because there
+would be no way to generate a new one on the desktop in order to add a
+record to the XML memo list. Instead, a mapping is maintained
+between the XML ID values and the Palm unique IDs.</para>
+
+<para>To add a new memo to the XML file, simply construct a new XML
+ID value that is unique within the XML memobook. You do not need
+to consider the Palm unique IDs.</para>
+</section>
+
+<section><title>Category</title>
+
+<para>The category value is expected to match one of
+the labels in the top-level <literal>&lt;categories&gt;</literal> list.
+The sync will fail if it does not.</para>
+
+</section>
+</section>
+</section>
+</section>
+
+<section><title>SyncXmlTB</title>
+
+<para>The SyncXmlTB conduit syncs your Palm Todo list with your
+desktop.</para>
+
+<section><title>Customizing SyncXmlTB</title>
+
+<para>Configuring <literal>SyncXmlTB</literal> reveals the panel
+shown in <xref linkend="config-tb"/>:</para>
+
+<figure id="config-tb"><title>The SyncXmlTB Configuration Panel</title>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/config-tb.png"/>
+</imageobject>
+</mediaobject>
+</figure>
+
+<variablelist>
+<varlistentry><term>Enable user fields</term>
+<listitem><para>If this option is enabled, the <literal>Notes</literal>
+field of each Todo record is treated as structured text
+according to the conventions discussed in <xref linkend="userfields"/>.
+</para></listitem>
+</varlistentry>
+<varlistentry><term>Enable DateBk4 extensions</term>
+<listitem><para>If this option is enabled, the conduit will attempt to
+decode the additional information stored in each appointment by
+the DateBk4 application. See <xref linkend="todo-db4ext"/>.</para>
+</listitem>
+</varlistentry>
+<varlistentry><term>XML file:</term>
+<listitem><para>Identifies the location where the XML Memo file
+is to be stored. This file is used to sync with the Palm. Changes to
+this file will be reflected in the Palm at the next sync, and changes
+in the Palm will be written back to this file.</para></listitem>
+</varlistentry>
+<varlistentry><term>Validate:</term>
+<listitem><para>Identifies the location of the DTD to which the XML
+Todo file will refer. During first-time initialization, the
+conduit attempts to locate the DTD. If you subsequently move the DTD,
+or if you have installed it somewhere that the conduit does not look,
+you will have to update this value; otherwise, it's unlikely that
+you'll ever need to change this.</para></listitem>
+</varlistentry>
+</variablelist>
+</section>
+
+<section><title>Understanding the XML Todo List</title>
+
+<para>Syncing your Palm with the <literal>SyncXmlTB</literal> conduit,
+produces a single XML file, by default <filename>~/.xmlTodo</filename>.
+This file contains the complete Todo database. The PilotManager
+also keeps a binary representation of the database in
+<filename>~/.pilotmgr/SyncXmlTB/todo.db</filename>. If you want to delete
+the XML Todo list and resync from the Palm, delete both files.
+</para>
+
+<section><title>todobook</title>
+
+<para>The root element of an Todo list is <literal>todobook</literal>.
+It identifies the version number of the XML file format and the name
+of the user. Attempts to sync the wrong user will generate a warning.
+If a future version of the conduit uses a different version number, the
+sync will abort so that you don't wind up with a horribly corrupted
+database.
+</para>
+</section>
+
+<section><title>categories</title>
+
+<para>The Palm stores categories
+only once in the database, essentially as an array. Each record in the
+database refers to the category name by offset into this single array.
+</para>
+
+<para>The category label array is stored at the top of the XML file.
+If you change these labels, the effects will be global within the
+Todo list.</para>
+
+<para>Modify these fields with some caution because the conduit makes
+no effort to assure that the changes you've made are reasonable.</para>
+
+</section>
+
+<section><title>todo</title>
+
+<para>Following the categories, each record appears
+in a <literal>&lt;todo&gt;</literal> element. Each memo is a fairly
+straightforward duplicate of the record from the Memo database.
+There are only a few issues to consider.
+</para>
+
+<section><title>Todo IDs</title>
+
+<para>Internally, the Palm maintains a unique ID value for each
+record.  The Palm IDs are not stored in the XML file because there
+would be no way to generate a new one on the desktop in order to add a
+record to the XML todo list. Instead, a mapping is maintained
+between the XML ID values and the Palm unique IDs.</para>
+
+<para>To add a new todo to the XML file, simply construct a new XML
+ID value that is unique within the XML todobook. You do not need
+to consider the Palm unique IDs.</para>
+</section>
+
+<section><title>Category</title>
+
+<para>The category value is expected to match one of
+the labels in the top-level <literal>&lt;categories&gt;</literal> list.
+The sync will fail if it does not.</para>
+
+</section>
+
+<section id="todo-db4ext"><title>DateBk4 Extensions</title>
+
+<para>The DateBk4 application from
+<ulink url="http://www.pimlicosoftware.com/">Pimlico Software</ulink> adds
+several useful features to the Palm todo list. In order to maintain
+complete compatibility with the built-in todo database, these
+additional features are encoded in the Note field of each todo entry.
+</para>
+
+<para>If you enable DateBk4 extensions, this information is decoded
+in the XML Todo file. This allows you to observe the
+icons, alarm times, and other DateBk4 extensions. Note, however, that these
+are "read only" values in the XML file; if you change them, the changes
+will not be synced to the Palm.</para>
+</section>
+
+</section>
+</section>
+</section>
+
+<section id="userfields"><title>User Fields</title>
+
+<para>In order to store additional information in my Palm in a
+quasi-structured fashion, I've adopted a convention for the 'Note'
+field.</para>
+
+<para>If the <quote>Note</quote> field contains the line
+<quote>user-fields:</quote>, then all of the following lines that
+begin <quote>field-name:</quote> are <quote>user fields</quote>.  If
+you enable user fields, these are parsed into the XML.  For example, a
+DateBook entry with the following Note:</para>
+
+<programlisting>
+  user-fields:
+  loc: Bay Area
+  url: http://.../
+  type: business
+
+  other notes
+</programlisting>
+
+<para>will be parsed into the XML as:</para>
+
+<programlisting>
+<![CDATA[
+  <user-field name="loc">Bay Area</user-field>
+  <user-field name="url">http://.../</user-field>
+  <user-field name="type">business</user-field>
+  <note>user-fields:
+  loc: Bay Area
+  url: http://.../
+  type: business
+
+  other notes
+]]></programlisting>
+
+<para>Note that the user-fields are <quote>write-only</quote> in the
+database. If you want to change them on the desktop side, edit the value
+of the <quote>Note</quote> field directly.</para>
+
+<para>This is necessary because some applications, such as the <ulink
+role="linktable" url="http://www.pimlicosoftware.com/">Pimlico Software</ulink> DateBk*
+applications, also use the notes field in semantically important
+ways. Leading and trailing whitespace associated with removing the
+user-fields from the <quote>Note</quote>, often resulted in apparent
+changes that caused the Palm to appear out-of-sync in ways that made
+the syncing unreliable.</para>
+
+<section><title>Speaking of Pimlico...</title>
+
+<para>The enhanced DateBook application included in the HandSpring
+Visor&trade; is actually a licensed subset of Pimlico's DateBk3 application.
+This application, and its successor DateBk4, use structured values at
+the very beginning of the <quote>Note</quote>s field to hold information
+about semantics not included in the database proper (floating events, time
+zones, etc.).</para>
+
+<para>On the Palm, these values are invisible, but if you look in the
+XML database, you'll see them at the beginning of the <quote>Note</quote>
+of each augmented appointment.</para>
+
+<para>In order to preserve these characteristics, it is vital that you
+do not edit or delete these values, or insert notes before them.</para>
+</section>
+
+</section>
+
+<section><title>Making An HTML Calendar</title>
+
+<para>One of the benefits I touted at the beginning of this article
+was multiple output formats, for example the ability to publish my
+schedule for others to
+see. Included in the <ulink url="&conduitzip;">SyncXml Conduits</ulink> package
+is an XSL stylesheet that produces an HTML calendar from the
+<filename>.xmlCalendar</filename> file.</para>
+
+<para>After syncing, I run:</para>
+
+<programlisting>
+xt .xmlCalendar /projects/pilot/conduits/calendar.xsl sched.html
+</programlisting>
+
+<para>This produces a calendar like the one shown in
+<xref linkend="netscape"/>.</para>
+
+<figure id="netscape"><title>An HTML Schedule</title>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/netscape.png"/>
+</imageobject>
+</mediaobject>
+</figure>
+
+<section><title>User Fields and HTML</title>
+
+<para>The <filename>calendar.xsl</filename> stylesheet supports
+several user fields:</para>
+
+<itemizedlist>
+<listitem><para>The <literal>class</literal> and <literal>type</literal>
+user fields determine foreground and background colors on the month-view
+of the calendar.
+(Specifically, appointments with an <quote>undecided</quote> class are
+highlighted and appointments with <literal>type</literal>s of 
+<quote>business</quote>, <quote>personal</quote>, and
+<quote>holiday</quote> are colored differently.</para></listitem>
+<listitem><para>If the user field <literal>url</literal> is set, then the
+appointment will include a link to that URL.</para></listitem>
+<listitem><para>If the user field <literal>loc</literal> is set, then the
+location will appear parenthetically after the description.</para></listitem>
+<listitem><para>If the user field <literal>locurl</literal> is set, then
+the location will be a hypertext link to that URL.</para></listitem>
+</itemizedlist>
+
+<para>In addition, a few user fields are usually ignored. You can
+make them significant by setting the stylesheet parameter
+<literal>ignoreuserfields</literal> to 0. With these additional
+fields:</para>
+
+<itemizedlist>
+<listitem><para>Weekly appointments with the user field <literal>type</literal>
+set to <quote>personal</quote> are not displayed. (This prevents my weekly
+reminder to take out the garbage on Monday mornings from appearing on my
+web calendar!)</para></listitem>
+<listitem><para>Appointments that <emphasis>do not</emphasis> have a 
+user field of <literal>type</literal> are suppressed. This effectively
+makes untyped appointments <quote>personal</quote> by default.</para>
+</listitem>
+</itemizedlist>
+
+</section>
+</section>
+
+<section><title>Conclusion</title>
+
+<para>I'm by no means done hacking my XML address book and schedule.
+I still have to write the XML BBDB/Palm merging tool and I may decided
+to write a stylesheet for putting my address book online.</para>
+
+<para>I hope some of you find the SyncXml Conduits useful and feel
+inspired to introduce XML into your applications. Let me know!</para>
+
+</section>
+</section>
+
+<appendix id="app11"><title>What's New in Version 1.1</title>
+
+<para>The following significant changes were introduced in
+<ulink url="&conduitzip;">version 1.1</ulink>
+of the SyncXml conduits:</para>
+
+<itemizedlist>
+<listitem><para>Fixed a <emphasis>significant</emphasis> bug in
+<filename>SyncXmlTB</filename>. The version 1.0 conduit does not properly
+sync dated Todo items. The due date is lost!
+</para></listitem>
+
+<listitem><para>Fixed a significant bug in
+<filename>SyncXmlDB</filename>. The version 1.0 conduit does not properly
+sync items that repeat <literal>MonthlyByDay</literal> or
+<literal>MonthlyByDate</literal>.
+</para></listitem>
+
+<listitem><para>Fixed a significant bug in
+<filename>SyncXmlAB</filename>. The version 1.0 conduit sometimes syncs
+the "show in list" phone number incorrectly.
+</para></listitem>
+
+<listitem><para>Improved the encoding of international and XML markup
+characters. There were a few places in the version 1.0 conduits where
+markup characters were not escaped, leading to XML files that could not
+be loaded.
+</para>
+</listitem>
+
+<listitem><para>Added support for DateBk4 extensions to the Datebook and
+Todo databases.
+</para></listitem>
+
+<listitem><para>Provided user-interface configuration for previously
+"hidden" preferences.
+</para></listitem>
+
+<listitem><para>Added support for categories in the Datebook.
+</para></listitem>
+
+<listitem><para>Added <literal>sortByCompany</literal> and
+<literal>country</literal> attributes to the Addressbook.
+</para></listitem>
+
+<listitem><para>Added <literal>sortByAlpha</literal>
+attribute to the Memo file.
+</para></listitem>
+
+<listitem><para>Added <literal>sortByPriority</literal>
+attribute to the Todo file.
+</para></listitem>
+
+<listitem><para>Added support for DateBk4 icons to the Calendar
+stylesheet. The distribution also includes a simple-minded Perl
+script that can construct XPM icon files from the DateBk4 icon
+memo.
+</para></listitem>
+
+</itemizedlist>
+</appendix>
+
+</article>

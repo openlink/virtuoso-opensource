@@ -1,0 +1,155 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_tab">
+<refmeta>
+  <refentrytitle>vspx_tab</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_tab</refname>
+  <refpurpose>selects one of its children to be active at any one time</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_tab">
+    <funcprototype id="proto_vspx_tab">
+      <funcdef>
+        <function>tab</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>initial-active (optional) </attribute>
+        <attribute>style (optional) </attribute>
+      </attributes>
+      <childs>
+        <child>after-data-bind</child>
+        <child>after-data-bind-container</child>
+        <child>before-data-bind</child>
+        <child>before-data-bind-container</child>
+        <child>on-post</child>
+        <child>on-post-container</child>
+        <child>before-render</child>
+        <child>before-render-container</child>
+        <child>template</child>
+      </childs>
+      <class>
+        <screen><![CDATA[
+				
+				create type vspx_tab under vspx_form
+				as
+				(
+				 tb_active vspx_template,	-- active item
+				 tb_is_input int default 0,	-- internal use 
+				 tb_style varchar		-- style of switching element
+				)
+				temporary self as ref
+				constructor method vspx_tab (name varchar, parent vspx_control),
+				overriding method vc_render () returns any,
+				overriding method vc_view_state (stream any) returns any
+				;
+				
+			    ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_tab">
+  <title>Description</title>
+  <para>
+    <function>vspx_tab</function>
+A container that contains some number of pages and displays them one by one.
+This can be used for multi-page forms or Windows style tabbed decks or making multi-part forms, alternative visualizations of the same data etc.
+</para>
+</refsect1>
+<refsect1 id="attrs_vspx_tab">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-active</title>
+    <para>
+This is the name of the child template which is active at the time and
+which thus will be rendered.  Whether inactive templates are
+instantiated and keep state is controlled by is-input.  The active
+attribute initializes the tb_active member of the vspx_tab instance.
+This is preserved in the view state. Data bindable.
+			    </para>
+  </refsect2>
+  <refsect2>
+    <title>style</title>
+    <para>
+This determines what HTML control is used to select which child is shown.
+If unspecified, there will be no such control and the program logic is responsible for flipping the pages.  Otherwise  &quot;list&quot; means there is a HTML select control showing the titles  of the tabs.  &quot;radio&quot; means the titles of the tabs are shown as a radio group.  If there is a tab selector widget, it is always above the tabs.
+			    </para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_tab">
+  <title>Children</title>
+  <refsect2>
+    <title>template</title>
+    <para>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node represantation)</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="examples_vspx_tab">
+  <title>Examples</title>
+  <example id="ex_vspx_tab">
+    <title>Simple example</title>
+    <para>Simple example of switching of page content
+			    </para>
+    <screen><![CDATA[
+				
+				<html>
+				<body>
+				<v:page name="tab_demo" xmlns:v="http://www.openlinksw.com/vspx/">
+				    <v:tab name="tab" initial-active="template1" style="list" is-input="0" >
+					<v:template name="template1" type="simple">
+					This is a first template <br />
+					</v:template>
+					<v:template name="template2" type="simple">
+					This is a second template <br />
+					</v:template>
+					<v:template name="template3" type="simple">
+					This is a third template
+					</v:template>
+				    </v:tab>
+				</v:page>
+				</body>
+				</html>
+				
+			    ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_XMLType.isFragment">
+  <refmeta>
+    <refentrytitle>XMLType.isFragment</refentrytitle>
+    <refmiscinfo>xml</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>XMLType.isFragment</refname>
+    <refpurpose>The function returns 1 if the instance is an XML generic entity or 0 if it is a plain document.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_XMLType.isFragment">
+      <funcprototype id="fproto_XMLType.isFragment">
+        <funcdef><function>XMLType.isFragment</function></funcdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_XMLType.isFragment">
+    <title>Description</title>
+    <para>The function checks the number of children elements of the root of 
+	the document root of the given instance.  If there are no such documents or 
+	there are many of them then the document is not well-formed, for example it 
+	can not be fully validated against an XML schema.  However it can be used 
+	as a fragment of a larger document: it can be declared as an external 
+	generic entity and then referenced in a top-level document or in one of its 
+	subdocuments.  For example a book can be stored in XML as a root 
+	document that includes subdocuments, one or more chapter per 
+	subdocument.</para>
+    <para>
+The function returns 1 if the given XMLType instance is a fragment and returns 0 if it is a well-formed XML document.</para>
+  </refsect1>
+  <refsect1 id="ret_XMLType.isFragment"><title>Return Types</title>
+    <para>Integer value 1 or 0.</para>
+  </refsect1>
+  <refsect1 id="examples_XMLType.isFragment">
+    <title>Examples</title>
+    <example id="ex_XMLType.isFragment"><title>Basic test</title>
+      <para>The table DB.DBA.SYS_USERS always contains more than one user record so the call of XMLAGG
+that returns one element per record creates an valid generic entity but not a valid document.</para>
+      <screen><![CDATA[
+select XMLAGG (XMLELEMENT ("User",U_NAME)) from DB.DBA.SYS_USERS;
+callret
+VARCHAR
+_______________________________________________________________________________
+
+<User>BACKUP</User><User>SOAP</User><User>dba</User><User>demo</User>
+
+1 Rows. -- 00000 msec.
+select XMLType (XMLAGG (XMLELEMENT ("User",U_NAME))).isFragment() from DB.DBA.SYS_USERS;
+callret
+INTEGER
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 00000 msec.
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_XMLType.isFragment">
+    <title>See Also</title>
+    <para><link linkend="fn_XMLType.getRootElement"><function>XMLType.getRootElement()</function></link></para>
+  </refsect1>
+</refentry>

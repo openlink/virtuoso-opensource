@@ -1,0 +1,1861 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="freetext.xml" id="freetext">
+	<title>Free Text Search</title>
+  <abstract>
+		<para>
+Virtuoso provides a compact and efficient free text indexing capability
+for text and XML data.  A free text index can be created on any character
+column, including wide and long data.
+	</para>
+		<para>
+The <link linkend="containspredicate">contains</link> SQL predicate allows content
+based retrieval of textual data.
+This predicate takes a column and a text expression and is true if the
+pattern of words in the text
+expression occurs in the column value.  There must exist a previously
+created text index of the column.  The text expression can contain single words
+and phrases connected by boolean connectives or the proximity
+operator.  Words can contain wildcards but must begin with at least three
+non-wildcard characters if a wildcard is to be used.  While it is enough to
+declare a free text index on a column and then just use the contains predicate
+for many applications, Virtuoso offers a range of options for tailoring
+how the indexing works.
+	</para>
+		<para>
+If a certain application specific order of search results is desired more
+frequently than others, it is possible to specify a single or multipart key
+in the order of which hits will be returned from contains searches.  Both
+ascending and descending order of the key is supported.  To restart a search
+in the middle it is possible to specify a starting and ending key value.  This
+works if the results are generated in the order of the 
+<link linkend="appspecificdocid">application specific doc ID</link>.
+	</para>
+		<para>
+If non-text criteria are often used to filter or sort results of contains
+searches, it is possible to cluster these non-text data inside the free text
+index for faster retrieval.  It is often substantially faster to retrieve the
+extra data from inside the text index than to get them from the row referenced
+by the text index. Such data are called <link linkend="offbanddata">offband data</link>,
+since they are not actually text but are stored similarly to text.
+	</para>
+		<para>
+It is possible to pre-process the text before it is indexed or unindexed.
+This feature can be used for data normalization
+and/or for adding content from other than the primary text field being indexed
+into the index.  One example is adding the names of all newsgroups where an
+article appears to the index when indexing a news article.  Thus when retrieving
+articles based on text and newsgroup, group can be used to very efficiently
+filter out the hits that are not in the group, even if the text indexed does
+not itself contain the group name.  Another application of the same technique
+is adding text from multiple columns into the same index.
+	</para>
+		<para>
+If the column being indexed is XML data, this can be declared and enforced
+by the text index.  XML data will be indexed specially to support efficient
+XPATH predicate evaluation with the <link linkend="xcontainspredicate">xcontains</link> predicate.
+	</para>
+		<para>
+<link linkend="txttrig">Text Triggers</link> is a feature that allows the
+storage of a large body of free text queries and automatically generating hits
+when documents matching the criteria are added to the index.  This is useful
+for personalized data feeds, user profiles, content classification etc, which
+Virtuoso can send the results to in an email message.  The
+conditions can be either free text expressions or XPATH expressions for XML content.
+	</para>
+		<para>
+The text index can be kept synchronous with the data being indexed, so
+that the index is updated in the same transaction as the data.  The other
+possibility is to maintain the text index asynchronously as a scheduled task (batch mode),
+which can execute up to an order of magnitude faster.  The asynchronous
+mode of operation offers substantially higher performance if changes of multiple
+entries are processed in one batch index refresh.
+	</para>
+  </abstract>
+
+	<sect1 id="txtidxquickstart">
+		<title>Basic Concepts</title>
+  <para>
+A text index is created with the <link linkend="createtxtidxstmt">CREATE TEXT INDEX</link>
+statement.  This creates a number of stored procedures and triggers which will
+transparently manage the text index.  A text index is dropped by dropping the
+generated words table, called &lt;table&gt;_&lt;column&gt;_WORDS,
+where &lt;table&gt; and &lt;column&gt; are the table and column over which the
+index is made.
+	</para>
+
+		<example id="ex_quickstartfti">
+		<title>Creating a Text Index</title>
+  <programlisting>
+CREATE TABLE FTT (ID INTEGER, FILE varchar,  DT LONG VARCHAR );
+CREATE TEXT INDEX ON FTT (DT);
+</programlisting>
+  <para>
+This is the simplest case of making a text index.  This process will add an
+extra column to the table being indexed which it will use to reference rows
+from the new text index.  If there already exists an integer primary key
+then this will be used and no new column will be added.  Such a column may
+not be 0 or negative.
+</para>
+  <para>
+Once the index is made the contains query can be used to retrieve rows:
+</para>
+  <programlisting>
+insert into ftt (id, dt) values (1, 'foo');
+select from ftt where contains (dt, 'foo');
+</programlisting>
+</example>
+  <para>
+The contains predicate is a normal SQL predicate and can be used together
+with other predicates in the where clause.  Contains may however not figure
+inside an OR or NOT.  Hence:
+</para>
+  <programlisting>
+select * from ftt where contains (dt, 'foo or bar ');
+</programlisting>
+  <para>is OK but</para>
+  <programlisting>
+select * from ftt where contains (dt, 'foo ') or contains (dt, 'bar');
+</programlisting>
+  <para>is not.</para>
+</sect1>
+
+<!-- ############################################################### -->
+
+<sect1 id="creatingtxtidxs"><title>Creating Free Text Indexes</title>
+  <sect2 id="createtxtidxstmt"><title>The CREATE TEXT INDEX statement</title>
+
+	<para>
+Define and optionally initialize a text index on a column.
+</para>
+
+	<programlisting>
+create_freetext_index
+	: CREATE TEXT [XML] INDEX ON q_table_name '(' column ')'
+	[WITH KEY column]
+	[NOT INSERT]
+	[CLUSTERED WITH '(' column_commalist ')' ]
+	[USING FUNCTION]
+	[LANGUAGE STRING]
+  [ENCODING STRING]
+	;
+</programlisting>
+<para>
+<emphasis>XML</emphasis> - The XML keyword specifies that the data is to be indexed as XML, hence
+element names and attributes will be processed separately for use with the
+XCONTAINS predicate.
+</para>
+	<para>
+The <emphasis>q_table_name</emphasis> is a qualified table name on which the index is created.
+The generated procedures and auxiliary tables will be with the owner and
+qualifier of this table.
+</para>
+	<para>
+The <emphasis>column</emphasis> must be a column of the above table, of the VARCHAR, NVARCHAR,
+LONG VARCHAR, LONG NVARCHAR, LONG XML or XMLTYPE  data type.  The column may additionally have
+the IDENTIFIED BY option if the content is XML.  This will be used to
+provide a base URI for traversing relative references.  The XML option for the index has to be specified if the content is LONG XML or XMLTYPE.
+</para>
+	<para>
+<emphasis>WITH KEY column</emphasis> - This allows optionally specifying a uniquely identifying
+column which will be used as a foreign key for referencing the table from
+the text index.  If this is not specified and there is a single part integer
+primary key, this primary key is used as the key.
+If there is no suitable primary key and the option is not present, an
+integer  column is added and a sequence object is used to supply distinct
+values.
+</para>
+	<para>
+When specified, the column must be non-NULL and its run time value must
+either be an integer or a composite (See composite data type).
+The length of the values of this column is crucially important since it is
+repeated  for each distinct word of each  row.
+This column is called the free text document id column in the rest of this
+documentation.
+</para>
+	<para>
+<emphasis>NOT INSERT</emphasis> - If present, specifies that the index is not filled when
+created.  The VT_INDEX_&lt;table&gt; function is still created but not run.
+You can run this manually or scheduled at an appropriate time.  If batching is enabled
+then the index will be filled up at that time.
+</para>
+	<para>
+<emphasis>CLUSTERED WITH</emphasis> - The column list must consist of columns of the table.
+Their values are stored in the text index so that the values can be more
+efficiently located for filtering than if they had to be retrieved from the
+table itself.  The combined length of the columns should be relatively
+small, not much over 200 bytes for this to be effective.
+There is no hard upper limit but long blobs are
+not advisable.
+</para>
+	<para>
+<emphasis>USING FUNCTION</emphasis> - This allows specifying a hook function for indexing an
+unindexing a document.  The index hook is called before processing the words
+of the column to be indexed.  This can be used to index extra text in
+addition to the column value or to modify the text before indexing. If the
+hook function returns 1 the column is not additionally processed. If hook
+returns 0 the column is processed normally, in addition to the words the
+hook may have inserted. See the section on hook functions. The hook
+functions are always named &lt;table&gt;_&lt;column&gt;_INDEX_HOOK and
+&lt;table&gt;_&lt;column&gt;_UNINDEX_HOOK, in the owner and qualifier of the table,
+where &lt;table&gt; is the unqualified name of the table.</para>
+	<para>
+<emphasis>LANGUAGE</emphasis> - The string literal following this keyword may be a language name.
+See <link linkend="ftinternationalization">Internationalization</link> for details.
+</para>
+	<para>
+<emphasis>ENCODING</emphasis> - The string literal following this keyword may be an encoding name.
+</para>
+<para>
+Creating the text index may take a long time.  All this time is in 'atomic'
+mode, so no other database activity is allowed during it and no log is
+generated.  If there is an error, e.g. out of disk the created index is
+dropped and the error is reported.  A checkpoint should be made after the
+index is complete.  If the index should be created under a different
+qualifier or the generated tables altered after the index is created the NOT
+INSERT option should be used to delay filling the index.
+</para>
+	<para>
+The <link linkend="createtxtidxstmt">CREATE TEXT INDEX</link> statement
+will automatically make a unique index based
+on the free text document id, if this is not the PK of the table.  If one
+wishes to modify this index, it can be found and dropped with DROP INDEX and
+reconstructed, but make sure that the reference in SYS_VT_INDEX matches and
+that the new index has the same name as the previous version.
+</para>
+	<para>
+A freshly created text index is in synchronous mode. This means that that
+changes to the table are immediately reflected on the index as they occur.
+This is done through a set of automatically generated triggers.
+If large changes to data will be performed, the <link linkend="ftperformance">batch mode</link>
+is far more efficient.
+</para>
+<tip><title>See Also:</title>
+<para>Although it is recommended to use the methods described above, the
+<link linkend="fn_vt_create_text_index">vt_create_text_index</link> function
+can also be used</para>
+</tip>
+
+</sect2>
+
+	<sect2 id="appspecificdocid">
+		<title>Choosing An Application Specific Document ID</title>
+		<para>
+The free text index conceptually works by making an index entry for each
+distinct word of each indexed column value which references back to the row
+containing the data being indexed.
+Therefore the table must have a unique ID that will be stored in conjunction
+with each distinct word in the indexed column in the text index.  For space
+efficiency this should be as short as possible.  If nothing else is
+specified the <link linkend="createtxtidxstmt">CREATE TEXT INDEX</link> statement makes such a unique column and
+fills it automatically from a sequence producing unique numbers.  If a single
+part integer primary key exists then this key is used as the free text
+index document ID.  Note However that the values &lt;= 0 are prohibited.
+This is however not always optimal, hence the application may specify what
+column is used to identify the row for text indexing.  Such a unique column
+is referred to as the <emphasis>Free Text Document ID</emphasis>.
+	</para>
+		<para>
+Suppose that a table contains news articles that should most frequently be
+retrieved latest first, in descending order of a datetime field.  This can
+be achieved by just selecting the
+matching articles and sorting them with a SQL ORDER BY clause but this can
+be very inefficient.  The reason for this is that all hits will first have to be found, then
+sorted and only then can the first hit be returned to the user.  Further,
+the sort key will have to be retrieved from the table, causing a random
+access for each text hit.  The sorting can be totally avoided if the document ID that is used
+to refer to the table from the index is itself ordered by date.  This has
+several advantages:
+	</para>
+		<itemizedlist mark="bullet">
+		<listitem>
+To retrieve the n latest, one just takes the n first hits produced by the
+contains search, no sorting required.
+	</listitem>
+		<listitem>
+To get the next n hits, one repeats the search but now specifying that the
+start ID is the ID of the last row of the previous set.  No sorting and no
+scrollable cursors are required and the first hits can be returned before
+generating all hits.  This is specially useful if the search criteria match
+many articles.
+	</listitem>
+	</itemizedlist>
+		<para>
+This has a disadvantage in that a longer document ID will have to be
+stored for each distinct word of each distinct article.  This may result in
+a 60% increase in the index size but largely offsets the penalties of
+sorting.  One should however exercise the utmost care in making this ID as
+short as possible.  The maximum length of the ID is 30 bytes, but with this
+length the storage is extremely wasteful, so an ID with fields adding up to
+some 10 bytes is much better.
+	</para>
+		<para>
+We will note that the document ID can be an aggregate of several scalars.
+In the news article example, it could be a datetime, ID number pair.  This
+is so because the datetime typically would not be unique and the ID is
+required itself to be unique.
+	</para>
+		<para>
+However, rather than storing the datetime and an integer article number, it
+is advisable to compress the datetime into a number, e.g. a count of minutes
+after a given date.  This maintains the temporal order to within a minute
+and takes less than half the space taken by the datetime with all its
+fractions, time zones etc.
+	</para>
+		<para>
+For handling multi-part ID's like scalars there is a special data type,
+composite.  Thus, if an application specific document ID is not an integer, it must be a
+composite totalling less than 30 bytes of content divided among its members.
+	</para>
+
+</sect2>
+
+	<sect2 id="compositedatatype">
+		<title>The composite Data Type</title>
+		<para>
+A composite is like a heterogeneous array, except that it is limited in
+length, may be stored as a column value for a column declared as ANY, and
+may be a key part in a SQL index.  Thus, comparison is defined for
+composites as follows:
+	</para>
+	<itemizedlist mark="bullet">
+    <listitem>Composites are equal if all parts are equal.
+      </listitem>
+    <listitem>A composite is less than another if the first part of it which
+is not equal to the corresponding part of the other composite is less than that part.
+      </listitem>
+    <listitem>If a composite has less parts than another and all of its parts
+are equal to the corresponding parts of the longer composite, then the shorter
+is considered less.
+      </listitem>
+      </itemizedlist>
+  <para>
+The collation of composites is just like that of strings, except that in the place of
+characters, arbitrary run time typed scalars are compared.
+	</para>
+		<para>
+When strings are compared inside composites, they are compared as binary,
+without any specific collation.
+Normal numeric coercion applies to comparison of composites.
+Narrow and wide strings are compared with binary collation.
+If two elements are of different types, e.g. a number and a string and are
+compared, the data type will decide the outcome.  For example any integer is
+always less than any string.
+	</para>
+		<para>
+The composite SQL function makes a composite.  It takes a variable number of
+arguments and returns a composite.  The composite_ref function takes a
+composite and a zero based index and returns the value.  The serialized
+length of a composite is limited to 255 characters.  If a composite is used
+in a free text index it is limited to 30 characters.
+		</para>
+<itemizedlist>
+  <listitem><link linkend="fn_composite">composite()</link></listitem>
+  <listitem><link linkend="fn_composite_ref">composite_ref()</link></listitem>
+</itemizedlist>
+
+<tip><title>See Also:</title>
+<para>See the <link linkend="DataTypes">Data Types</link>
+section for the storage requirement of each data type.
+	</para></tip>
+
+</sect2>
+
+
+<sect2 id="fttexamples"><title>Free Text Index Examples</title>
+<programlisting>
+composite (1, 2) = composite (1, 2)  is true
+composite (1, 2) &lt; composite (1, 3) is true.
+composite (1, 0) &gt; composite (1) is true.
+</programlisting>
+<programlisting>
+composite_ref (composite (1, 2), 1) = 2
+</programlisting>
+<para>
+Example of a Composite Application Specific Document ID
+</para>
+<para>
+The below code creates a table for news articles and defines a text index
+with a composite document id.
+</para>
+
+<programlisting>
+create table article(author_name varchar(255),
+		     description long varchar,
+		     pub_date datetime,
+		     id integer,
+		     title varchar(255),
+		     dtid any not null,
+		     primary key(id));
+</programlisting>
+<programlisting>
+create text index on article (description)
+	with key dtid clustered with (pub_date, author_name);
+</programlisting>
+
+<note><title>Note:</title>
+<para>The dtid must be unique, non null and must be a composite  since
+it is used as a custom text index id.
+</para>
+</note>
+		<para>
+Next we define a mapping between dates and integers.  These will be minutes
+consecutive of 1990-1-1 0:00.  With 525600 minutes per 365 day year we will
+not run out of values for a long time, the positive integer limit being
+2**31.
+	</para>
+		<programlisting>
+create procedure date2short (in dt datetime)
+{
+  return (1440 * datediff ('day', {d'1990-1-1'}, dt)
+	+ hour (dt) * 60 + minute (dt));
+}
+	</programlisting>
+		<programlisting>
+create procedure short2date (in n integer)
+{
+  return (dateadd ('minute', mod (n, 1440),
+	dateadd ('day', n / 1440, {d'1990-1-1'})));
+}
+	</programlisting>
+		<para>
+Now we can insert an article:
+	</para>
+		<programlisting>
+insert into article (id, drtid, description, pub_date)
+	values (1, composite (date2short ({dt '2001-1-15 12:44'}), 1),
+		'sample news article', {dt '2001-1-15 12:44'});
+</programlisting>
+<note><title>Note:</title>
+<para>The composite is the date2short of the datetime and the id.  The
+dtid must be specified and
+cannot be generated by a trigger, since the free text index related triggers
+must have access to the value.
+</para>
+</note>
+		<para>
+The text index will be in synchronous mode by default so we can now query
+the data:
+	</para>
+		<programlisting>
+select id from article where contains (description, 'sample');
+select id from article where contains (description, 'sample', descending);
+	</programlisting>
+		<para>
+The first query will return the oldest hits first, the second the newest
+first.  Note that inserting in ascending order of the document ID is
+incomparably more efficient than in descending order.  There is no great
+speed difference between reading in ascending or descending order.
+	</para>
+		<para>
+If no application specific ID were specified the order would reflect the
+insertion order. Note that in this example articles do not have to be
+received in publication order, although insertions will naturally tend to
+follow this.
+	</para>
+		<para>
+Now since the ID has an application semantic, we can use it for filtering
+based on date:
+	</para>
+		<para>
+Consider:
+	</para>
+<programlisting>
+select id from article where contains (description, 'sample', descending,
+	start_id, composite (date2short ({dt'2001-1-5'})));
+</programlisting>
+
+		<para>
+Since the search goes in descending order of id and starts at an id
+beginning with the numeric value corresponding to 2001-1-5 0:00, we
+may only get hits where the id date component is less than this, newest
+first.
+	</para>
+		<para>
+There is no time penalty for the start_id option.  This is therefore
+incomparably faster than the query:
+	</para>
+
+		<programlisting>
+select id from article where contains (description, 'sample', descending)
+and pub_date &lt; {dt '2001-1-5'};
+	</programlisting>
+
+<tip><title>See Also:</title>
+<para>The reference section for <link linkend="containspredicate">contains</link>
+ for a definition of these options.</para></tip>
+</sect2>
+
+	<sect2 id="preprocessingandext">
+		<title>Pre-processing and Extending the Content Being Indexed</title>
+		<para>
+Let us consider the news application.
+Assume now a many to many relationship between articles and numbered news
+channels.
+	</para>
+		<programlisting>
+create table article_channel (
+	a_id integer references article,
+	c_id integer,
+	primary key (a_id, c_id);
+	</programlisting>
+		<para>
+Assume further that free text search criteria be combined to channel
+membership tests.
+	</para>
+		<para>
+This could be expressed as follows
+	</para>
+		<programlisting>
+select * from article
+	where contains (description, 'sample')
+	and exists
+		(select 1 from article_channel
+		where a_id = id and c_id = ?);
+	</programlisting>
+  <para>We have a random access per each hit to a table with at least the
+population of the article table for each hit. The situation is yet worse if
+there is an OR of multiple channel id's to which the article may belong.
+</para>
+		<para>
+To optimize this, we may choose to add an extra word for each channel in
+which the article appears.  Likewise, we may add the text of the title of the
+article to the text being index.
+	</para>
+		<para>
+This can be done with the index hook feature.
+	</para>
+		<programlisting>
+create text index on article (description)
+	with key dtid clustered with (pub_date, author_name)
+	using function ;
+	</programlisting>
+		<para>
+We then define the hook functions
+	</para>
+		<programlisting>
+create procedure
+	article_description_index_hook (inout vtb any, inout d_id any)
+{
+  for (select c_id from article_channel
+	where a_id = composite_ref (d_id, 0))
+  do
+    {
+      vt_batch_feed (vtb, sprintf ('ch%d', c_id), 0);
+    }
+  vt_batch_feed (vtb, coalesce ((select title from article
+	where dtid = d_id), ''), 0);
+  return 0;
+}
+	</programlisting>
+		<para>
+This function gets all channel id's where the article appears and adds the
+word ch&lt;nnnn&gt; where &lt;nnnnn&gt; is the channel id.  Thus to look for 'xx' on
+channel 1 or 10 one can use the text expression xx and (ch1 or ch10).
+Additionally, the text of the title is added to the text being indexed.
+Note that the d_id supplied is the free text document id and that the second
+part of it is the article id.
+	</para>
+		<para>
+To reverse the effect, the unindex function works as follows:
+	</para>
+	<programlisting>
+create procedure
+	article_description_unindex_hook (inout vtb any, inout d_id any)
+{
+  for (select c_id from article_channel
+	where a_id = composite_ref (d_id, 0))
+  do
+    {
+      vt_batch_feed (vtb, sprintf ('ch%d', c_id), 1);
+    }
+  vt_batch_feed (vtb, coalesce ((select title
+	from article where dtid = d_id), ''), 1);
+  return 0;
+}
+	</programlisting>
+
+		<para>
+These hooks accept 2 inout parameters, the so called vt batch and the free
+text document ID of the row at hand.
+	</para>
+		<para>
+The function returns 1 to indicate that it has processed all words of the
+row to be indexed and 0 to indicate that it expects the default text to be
+processed by the caller as normally.  Returning 1 is useful for example if
+extra word normalization is applied by the hook.
+	</para>
+If the resulting index is used by <function>xcontains()</function> special
+predicate then hook functions should not alter the indexing of XML documents.
+<function>xcontains()</function> reads both free-text index and the 
+actual document in order to locate particular fragments and it may miss
+search hits or get false hits if free-text index of a column does not match to the
+actual content of the column.
+It is still safe to call <function>vt_batch_feed</function> more than once
+during a single call of a hook function: first call for an
+unmodified XML document in the column plus calls for additional data.
+		<para>
+	</para>
+		<para>
+If offband columns are declared then any call of a hook function should
+either return 0 or call <function>vt_batch_feed_offband()</function>
+before returning a non-zero value. If this condition is violated for a document
+then NULL is retured instead of correct offband value for the document without
+signalling any error.
+	</para>
+		<para>
+The vt batch is an opaque data structure that accumulates  words that will
+be added to the text index entry for a given row.  The <function>vt_batch_feed</function>
+function adds words to the batch, the first argument is the vt batch, the
+second is the text and the third is a flag 0 for insert and 1 for delete.
+The text to be associated to the d_id in the index is the concatenation of
+all the text supplied by successive calls to <function>vt_batch_feed</function>. Word proximity
+is defined as if all text were a single string in the order of calling
+<function>vt_batch_feed</function>.
+	</para>
+		<para>
+It is possible to partially alter the rtext associated with an
+existing document.  This could be done when adding channels to an article
+which already exists.  This could be done with the procedure:
+</para>
+
+		<programlisting>
+create procedure
+	ch_add_article (in cid integer, in aid integer)
+{
+  declare vtb, _dtid, cname any;
+  if (exists (select 1 from article_channel
+	where c_id = cid and a_id = aid))
+    return;
+
+  insert into article_channel (c_id, a_id) values (cid, aid);
+  select dtid into _dtid from article where id = aid;
+
+  vtb := vt_batch (1);
+  vt_batch_d_id (vtb, _dtid);
+  vt_batch_feed (vtb, sprintf ('ch%d', cid), 0);
+  vt_batch_process_db_dba_article (vtb);
+}
+	</programlisting>
+		<para>
+This first checks if the article is already on the channel, and if not, it
+makes a vt batch, gets the free text document id of the article, associates
+it to the vt batch and then adds a single word, ch&lt;nnnn&gt;.  The vt batch is
+applied by calling the generated procedure vt_batch_process_&lt;table&gt;_&lt;column&gt;
+with the vt batch as only argument.
+	</para>
+		<para>
+If multiple documents should be processed in one batch, it is possible to
+call vt_batch_d_id multiple times to feed data about multiple documents.
+In this case the successive document ids must be given in ascending order.
+The batch can be processed (applied to the words table) by calling
+T_BATCH_PROCESS_&lt;table&gt;_&lt;column&gt;, generated by the index creation.
+	</para>
+	<para>
+The sensitive columns of the UPDATE trigger generated are the free text
+document id, the CLUSTERED WITH columns and the main text column.  If more
+columns are needed for hook functions etc., the triggers should be manually
+edited.
+</para>
+	<para>
+If an explicit integer document ID column is specified, its value may not be
+0 or negative.
+</para>
+<tip><title>See Also</title>
+<para><link linkend="fn_vt_batch">vt_batch</link>,
+<link linkend="fn_vt_batch_feed">vt_batch_feed</link>,
+<link linkend="fn_vt_batch_feed_offband">vt_batch_feed_offband</link>,
+<link linkend="fn_vt_batch_d_id">vt_batch_d_id</link>.
+</para>
+</tip>
+</sect2>
+<!--  &vt_batch_update; -->
+
+    <sect2 id="hitscores"><title>Hit Scores</title>
+      <para>
+When a document satisfies a text search expression a score is computed to
+reflect the closeness of the match. This is a positive integer, with a higher
+value meaning a closer match.  The scores are only comparable between results
+of the same query against the same database. Moreover, the scoring rules are
+different for different versions of Virtuoso server, due to the progress in
+information retrieval theory. Thus the only really safe thing to do with scores
+is to sort the list of hits by descending
+score to produce more relevant hits first.
+In addition, the CONTAINS predicate allows specifying
+a lower limit to the score of produced hits so a smart application can reduce
+a number of retrieved documents by filtering out the less relevant documents.
+	</para>
+			<para>
+While the real scoring rules of the server are too sophisticated to be listed here,
+the basic concept is simple: hits for restrictive terms are most important
+than hits for generic terms, frequent hits in same document are more important
+than occasional, hits that are probably concentrated in same sentence are more
+important than hits here and there in a long text:
+	</para>
+<simplelist>
+<member>
+The score of a single word term is proportional to the frequency of the word in
+the document.
+	</member>
+			<member>
+The score of a phrase is proportional to both the frequency of the phrase in
+the document and the number of words in the phrase.
+	</member>
+			<member>
+The score of a proximity term &apos;A NEAR B&apos; depends on the distance
+between A and B in words - greater distances result in smaller scores.
+E.g. the score is 100 for zero distance, 80 for 5 word distance,
+50 for distance 10, 20 for distance 20; then it slowly decreases to 1 for distance 100.
+If the distance is 100 words or greater then the condition A NEAR B is considered not to be satisfied.
+If the A-B pair occurs several times throughout the document the scores of each pair are added.
+Virtuoso searches for shortest possible pairs, so if there is more than one word A around B then
+the nearest A is selected for scoring.
+	</member>
+			<member>
+Score of a term like A AND B AND C... AND Z is a minimum of scores of A, B,... Z plus some
+bonuses. Longer list of AND&apos;ed terms get higher score. A special bonus for
+term A AND B is added if hits of subterm A are close to the hits of subterm B.
+	</member>
+			<member>
+Score of a term like A OR B OR C... OR Z is a maximum of scores of A, B,... Z, with some
+additional corrections. Longer list of OR&apos;ed terms get lower score.
+A special bonus for term A OR B is added if hits of subterm A are close to the hits of subterm B.
+	</member>
+			<member>
+Score of a term like A AND NOT B is equal to the score of subterm A. The subterm B is
+used for filtering out redundand hits but it does not affect the scoring.
+	</member>
+</simplelist>
+			<para>
+The xcCONTAINS predicate can also return scores. These scores are somewhat similar to scores
+made by CONTAINS but rules for them are too complicated to be explained here.
+	</para>
+</sect2>
+	<sect2 id="wordranges">
+		<title>Word Ranges</title>
+		<para>
+This feature allows returning the positions of matches of a query inside the
+indexed text.
+This is done by creating a virtual column which gets as its value an array
+of arrays, one array for each top level term of the text query expression.
+The component arrays in turn contain word positions, expressed as the
+ordinal number of the first and last word of each match of the term in
+question.  The ordinal numbers are counted from 0, skipping noise words.
+	</para>
+
+		<example><title>Word Ranges</title>
+
+		<programlisting>
+select dbg_obj_print (r), * from ftt
+	where contains (dt, 'foo', ranges, r);
+	</programlisting>
+
+		<para>
+Prints the array
+	</para>
+		<screen>
+(L(0 0 ) )
+	</screen>
+		<para>
+to the server standard output, indicating that the match starts and ends at
+the 0'th word, inclusive.
+	</para>
+	</example>
+
+		<para>
+This feature can be used to show specific portions of matching documents in
+applications.  This is internally used as part of the xcontains predicate
+for XML text.
+Also see the function search_excerpt ().
+	</para>
+</sect2>
+
+
+	<sect2 id="offbanddata">
+		<title>Using Offband Data for Faster Filtering</title>
+		<para>
+When evaluating a select where there is a contains predicate and filtering
+conditions on columns of the table on which the text index is defined
+it is useful to store the most frequently used columns in the free text
+index instead of the table itself.
+	</para>
+		<para>
+The rationale is that in order to access the filtering data the engine will
+do a merge join with the text index table instead of a nested loop join with
+the actual table.  Further note that if the columns to be accessed are not
+in the index that begins with the free text document id actually 2 random
+accesses will be needed: 1. to get the primary key based on the document id
+and 2. to get the filtering criterion based on the primary key.  It is
+vastly more efficient to do a merge join in the text index to get frequently
+needed non-text filtering or sorting keys.
+	</para>
+		<para>
+If the text index is maintained in background mode the offband data will
+also be maintained with a delay.  This should not be a problem however since
+this is no more delayed than the text data itself.
+	</para>
+		<para>
+If a select with a contains does not reference any columns from the indexed
+table besides the document id, then no access to the actual table will be
+generated in the compiled query.  Likewise, if only columns found in the
+index used to link the document id to the table are referenced, only that
+index will be accessed. A special case of the latter situation is where the
+document id is the primary key itself.  This will speed up
+retrieving the row for free text hits.
+	</para>
+		<para>
+Let us consider a query for getting articles where the author name is at a
+specific value:
+	</para>
+		<programlisting>
+select id from article where contains (description, 'sample')
+	and author_name = 'John Pumpkin';
+	</programlisting>
+		<para>
+This can be alternately written as
+	</para>
+		<programlisting>
+select id from article
+	where contains (description, 'sample', offband, author_name)
+	and author_name = 'John Pumpkin';
+	</programlisting>
+		<para>
+In the latter case the author_name will be retrieved from the text index,
+saving 2 random accesses, one to the index on dtid and the other to the
+table itself per each free text hit.
+	</para>
+		<para>
+The notation is different because the semantic is slightly different.  The
+author_name in the latter case is the name at the time of indexing the
+article and in the latter case it is the name at the time of evaluating the
+query. There can be a difference if the index is maintained with a delay.
+For most applications this is however irrelevant.  offband data should not
+be used for often changing, transactional data.
+	</para>
+		<para>
+Now consider
+	</para>
+		<programlisting>
+select * from (select top 10  dtid from article
+	where contains (description, 'sample', offband, author_name)
+	order by author_name) a, article b where a.dtid = b.dtid;
+	</programlisting>
+		<para>
+The derived table select the 10 first articles matching the text condition
+in order of author_name.  This does not itself access the article table at
+all.  The outer select will then select the full row for these 10 articles.
+This is possible since the inner select only references dtid, which is the
+free text index document id and author_name which is declared an offband
+column in the text index.
+	</para>
+		<para>
+This does less disk access than
+	</para>
+		<programlisting>
+select top 10 * from article
+	where contains (description, sample', offband, author_name)
+	order by author_name;
+	</programlisting>
+		<para>
+In this case, all matches are fetched, including the row in the article
+table and all are sorted and the top 10 are returned.
+This differs from the first by the fact that this accesses the article table
+for each of the text hits, not only the top 10.  This can easily make a 3x
+speed difference when running in memory and much greater when IO is
+involved, not to mention the adverse impact of more IO on the working set.
+	</para>
+	</sect2>
+
+
+	<sect2 id="orderofhits"><title>Order of Hits</title>
+<para>
+Rows from a select where there is a contains predicate and no exact match of the primary key of the
+table are produced in the order of the document id of the free text index if there is no ORDER BY.
+If there is an ORDER BY matching an index, the query is evaluated in the order of that index and each
+consecutive row in the order of the index is compared against the free text expression.  This is
+practically never desirable.
+</para>
+<para>
+If results are desired in the order of the free text document id, there MUST BE NO ORDER BY.  The
+DESCENDING option of contains should be used to produce the reverse order, see contains reference section.
+If another sorting order is desired, an ORDER BY can be used but to avoid using an index the ordering
+columns should be expressions or ordinal numbers of result columns.
+</para>
+  <para>
+Therefore:
+</para>
+  <programlisting>
+select * from article where contains (description, 'sample')
+  order by id;
+</programlisting>
+  <para>
+Will have the effect of traversing the table in the order of id and
+checking each row for free text match. This is practically NEVER good.
+</para>
+  <para>
+To produce the results in order of id instead of dtid it is better to write
+</para>
+  <programlisting>
+select id, * from article where contains (description, 'sample')
+  order by 1;
+</programlisting>
+  <para>or</para>
+  <programlisting>
+select * from article where contains (description, 'sample')
+  order by id + 0;
+</programlisting>
+</sect2>
+<sect2 id="noisewords"><title>Noise Words</title>
+	<para>
+Noise words are often occurring words which can be skipped to save space in
+the indexing, such as 'the', 'of', and' etc.  These are ignored when they
+occur in queries or documents to be indexed.  The set of noise words is
+configurable and is read from the noise.txt file, in the server&apos;s working
+directory, at server start up.
+Words mentioned in that file will be ignored for both indexing and
+querying.
+</para><para>
+The file noise.txt consists of control lines and text lines.
+A text line is just a string of one or more words to be declared as noise.
+Please keep them shorter than 1000 characters.
+</para><para>
+Control lines are those starting with  "Language:" or "Encoding:" (case is important)
+"Language: lang-id" tells the system to use rules for language "lang-id" for subsequent  text
+lines, until either another "Language:" control line or end of file.
+Similarly, "Encoding: enc-id" tells the system to use rules for encoding "enc-id".
+Control lines are always in plain ASCII, no matter which encoding is active
+for text lines.
+By default, the server default language and "UTF-8" encoding will be used.
+</para><para>
+The simplest way of composing noise.txt is to place every word on a separate line
+and save the file in UTF-8 encoding; this will work fine for most  European languages.
+</para>
+<example><title>Example</title>
+	<programlisting>
+AND
+OF
+THIS
+THE
+</programlisting>
+</example>
+<para>
+Noise words seem to be case-insensitive, but this is not so. If you
+enter a word on a text line, up to four noise words will be registered:</para>
+<simplelist>
+<member>the word exactly as it was entered;</member>
+<member>an uppercased form of this word, if it is defined for active language;</member>
+<member>an lowercased form of this word, if it is defined for active language;</member>
+<member>a capitalized form, with one (or more) first chars in upper case and the rest in lower case.</member>
+</simplelist>
+<para>
+  An error is signalled for a free text query consisting exclusively of noise words.
+</para>
+<para>
+It is important to understand that changes in noise.txt may invalidate
+free text indexes that were filled with the previous version of noise.txt.
+For example, if a text contains a phrase 'A B C' and after indexing the word
+'B' is added to the noise.txt then 'contains' predicate will properly search for
+words 'A' and 'C' but will fail to find the phrase 'A B C'
+or 'A C' due to differences in counting of word positions.
+The 'xcontains' predicate is even more sensitive to changes in word positions,
+because any change in word counting will corrupt the index for element names.
+In addition, &quot;persistent XML&quot; documents may contain pre-calculated
+word positions for all elements and these positions may become out of sync with positions in
+free text index, so it is best not to change noise.txt if the database
+contains any free text indexes on persistent XMLs.
+</para>
+</sect2>
+
+</sect1>
+
+<sect1 id="queryingftcols"><title>Querying Free Text Indexes</title>
+<sect2 id="containspredicate">
+<title>CONTAINS predicate</title>
+
+	<para>
+Returns TRUE if a free text indexed column matches a text expression.
+</para>
+	<para>
+Syntax
+</para>
+	<programlisting>
+contains_pred:
+	contains (column, expr, opt_or_value ....)
+
+opt_or_value:
+	  DESCENDING
+	  | START_ID ',' scalar_exp
+	  | END_ID ',' scalar_exp
+	  | SCORE_LIMIT ',' scalar_exp
+	  | RANGES ',' variable
+	  | OFFBAND column
+
+variable: IDENTIFIER
+</programlisting>
+
+	<para>
+The <emphasis>column</emphasis> must refer to a column for which there exists a free text index.
+The <emphasis>expr</emphasis> must be a narrow or wide string expression whose syntax matches the
+rules in 'Text Query Syntax'.
+The <emphasis>START_ID</emphasis> is the first allowed document ID to be selected by the
+expression in its traversal order, e.g. least or equal for ascending and
+greatest or equal for descending.
+<emphasis>END_ID</emphasis> is the last allowed ID in the traversal order.  For descending order
+the START_ID must be &gt;= END_ID for hits to be able to exist. For ascending
+order the START_ID must be &lt;= END_ID for hits to be able to exist.
+</para>
+	<para>
+<emphasis>DESCENDING</emphasis> specifies that the search will produce the hit with the greatest
+ID first, as defined by integer or composite collation.
+RANGES specifies that the query variable following the RANGES keyword will
+be bound to the word position ranges of the hits of the expression inside
+the document.  The variable is in scope inside the enclosing SELECT
+statement.
+</para>
+	<para>
+<emphasis>SCORE_LIMIT</emphasis> specifies a minimum score that hits must have or exceed  to be
+considered matches of the predicate.
+</para>
+	<para>
+<emphasis>OFFBAND</emphasis> specifies that the following column will be retrieved from the free
+text index instead of the actual table.  For this to be possible the column
+must have been declared as offband with the CLUSTERED WITH option of the
+<link linkend="createtxtidxstmt">CREATE TEXT INDEX</link> statement.
+</para>
+
+<tip><title>See Also:</title>
+<para><link linkend="fn_contains"><function>contains()</function></link></para>
+<para>The <link linkend="xcontainspredicate">XCONTAINS Predicate</link>.</para>
+</tip>
+</sect2>
+
+	<sect2 id="fttcomments">
+	<title>Comments</title>
+
+	<para>
+<emphasis>Order</emphasis> - If the select statement containing the contains predicate does not
+specify an exact match of the primary key of the table having the contains
+predicate, then the contains predicate will be the 'driving' condition,
+meaning that rows come in ascending or descending order of the free text
+document ID.
+		</para>
+	<para>
+The <emphasis>DESCENDING</emphasis> keyword specifies the descending order of the free text
+index document ID and has nothing to do with a possible ORDER BY of the
+enclosing statement.  Even if there is an ORDER BY in the enclosing
+statement the DESCENDING keyword of contains has an effect in the
+interpretation of the STRT_ID and END_ID contains options.
+		</para>
+	<para>
+If there is a full equality match of the primary key of the table, this will
+be the driving predicate and contains will only be used to check if the text
+expression matches the single row identified by the full match of the
+primary key.
+		</para>
+	<para>
+The contains predicate may not appear outside of a select statement and may
+only reference a column for which a free text index has been declared.  The
+first argument must be a column for which there is such an index.  The text
+expression may be variable and computed, although
+it must be constant during the evaluation of the select statement containing
+it.
+		</para>
+	<para>
+The contains predicate must be a part of the top level AND of the WHERE
+clause of the containing select.  It may not for example be a term of an OR
+predicate in the select but can be AND'ed with an OR expression.
+		</para>
+	</sect2>
+	<sect2 id="textexprsyntax">
+		<title>Text Expression Syntax</title>
+		<programlisting>
+expr ::= proximity_expr
+	expr AND expr
+	| expr OR expr
+	| expr AND NOT  expr
+	| &apos;(&apos; expr &apos;)&apos;
+
+word_expr ::=
+	  word
+	| &apos;&quot;&apos; phrase &apos;&quot;&apos;
+
+proximity_expr ::=
+	  word_expr
+	| proximity_expr NEAR word_expr
+
+word ::=
+	&lt;word char&gt;*
+
+phrase ::=
+	  word
+	| phrase &lt;whitespace&gt; word
+
+word_char ::=  alphanumeric characters, &apos;*&apos;,  ISO Latin accented characters.
+</programlisting>
+
+			<para>
+A word is a sequence of word characters.  A phrase is a sequence of words
+separated by white spaces and enclosed in double quotes.  If a word contains a wildcard
+character it must be quoted with double quotes.
+	</para>
+			<note>
+				<title>Note:</title>
+				<para>
+An expression may not consist of all negative terms, e.g. (not a) and (not
+b) is not a valid expression but &apos;c and not a and not b&apos; is a valid
+expression.
+</para>
+<para>
+Note that the NEAR connective may not be used between AND&apos;ed or
+OR&apos;ed terms. It can be used to combine words or phrases.
+	</para>
+			</note>
+
+			<example id="ex_qryfti">
+				<title>Querying Free Text Indexed Columns</title>
+				<programlisting>
+select count (*) from docs
+where contains (text, &apos;&quot;virtual database&quot;&apos;)
+</programlisting>
+				<para>returns the count of documents with one or more occurrences of
+&quot;virtual&quot; immediately
+followed by &quot;database&quot;.</para>
+<programlisting>
+&apos;performance and (tuning or optimization)&apos;
+</programlisting>
+			<para>
+specifies documents
+with performance and either &apos;tuning&apos; or optimization&apos; in any
+respective positions.
+	</para>
+<programlisting>
+&apos;graphics and not (graphics near user near interface)&apos;
+</programlisting>
+			<para>
+matches documents with the word graphics more than 100
+words away from &apos;user&apos; or &apos;interface&apos;.
+	</para>
+<programlisting>
+&apos;&quot;sql interfac*&quot;&apos;
+</programlisting>
+			<para>
+matches documents with SQL followed by a word beginning with &apos;interfac&apos;.
+	</para>
+<programlisting>
+&apos;&quot;dragon*&quot;
+</programlisting>
+			<para>
+and not &quot;once upon a time&quot;&apos; matches documents with words
+beginning with &apos;dragon&apos; and not containing the phrase
+&apos;once upon a time&apos;.
+	</para>
+			</example>
+</sect2>
+		</sect1>
+	<sect1 id="txttrig">
+		<title>Text Triggers</title>
+
+  <para>The text trigger mechanism allows implementing a broad range of content
+	tracking functionality.  The idea is storing free text or XPATH queries in
+	association to a text indexed column of a table.  When the content of the
+	table changes through inserts or updates, the new data is matched against a
+	base of stored queries and hits are marked into a separate table.  The data
+	being tracked may either be plain text or XML.  In the event of XML, both
+	free text and XPATH queries can be stored.</para>
+  <para>The benefit of the text trigger system as opposed to other forms of
+	periodic content tracking is that the incoming data itself indexes a base of
+	stored queries instead of a base of stored queries repeatedly indexing the
+	database.  This means that only the changes are compared to the stored queries
+	and that queries that could not even in principle match will not be tried.  This
+	results in a qualitatively better performance and scalability than repeatedly
+	running a batch of queries over updated data and thus makes possible
+	personalized information filtering applications that would be impractical with
+	other approaches.</para>
+
+  <sect2 id="createtxttrg"><title>Creating Text Triggers</title>
+	  <para>The <command>CREATE TEXT TRIGGER</command> statement creates a set of
+	  tables and procedures named after the table and column being watched.
+	  The <command>TT_QUERY_&lt;xx&gt;</command> table contains the set of queries,
+	  the <command>TT_HIT_&lt;xx&gt;</command> table records the matches and
+	  the TT_USER_&lt;xx&gt; table can be used to map stored queries to specific
+	  users that should be notified.</para>
+
+<para>
+Syntax:
+</para>
+<programlisting>
+CREATE TEXT TRIGGER ON &lt;table&gt; [(&lt;data_column&gt;)]
+DROP TEXT TRIGGER ON &lt;table&gt; [(&lt;data_column&gt;)]
+</programlisting>
+
+<para>
+The &lt;data_column&gt; is optional and must be a text indexed column.
+</para>
+
+   	<para>The table to be watched by a text trigger should have a free text indexed column. This
+		may or may not be XML data.</para>
+<para>
+The &lt;table&gt; must be text indexed before creating text trigger on it.
+</para>
+
+</sect2>
+
+<example id="ex_txttrg"><title>Creating a Text Trigger</title>
+<programlisting>
+create table ftt (id integer not null primary key, dt long varchar);
+create text xml index on ftt (dt);
+create text trigger on ftt;
+</programlisting>
+
+<para>Adding queries to the text trigger</para>
+
+<programlisting>
+TT_QUERY_ftt ('virtuoso and server and international',
+  1, 'Virtuoso international support', 'iam@foo.bar');
+</programlisting>
+
+<para>
+this adds a query which will filter only documents matching words 'virtuoso', 'server' and
+'international', named 'Virtuoso international support' of the user with Id equal to 1
+with e-mail notification.
+</para>
+
+<programlisting>
+TT_XPATH_QUERY_ftt ('/chapter[@label = ''XI'']',
+  2, 'Chapter XI changes', '');
+</programlisting>
+
+<para>
+this will add an XPATH query which will filter only XML documents matching Chapter XI,
+named 'Chapter XI changes' of the user with Id equal to 2 without e-mail notification.
+</para>
+
+<programlisting>
+insert into ftt values (1, 'virtuoso server international');
+insert into ftt values (2, 'virtuoso international');
+
+select TTH_D_ID, TTH_T_ID, TTH_U_ID, TTH_TS from ftt_dt_HIT;
+</programlisting>
+
+<para>
+will produce
+</para>
+
+<screen>
+TTH_U_ID    TTH_D_ID         TTH_T_ID    TTH_TS
+_____________________________________________
+
+1           1                1           2001-01-17 12:35:30
+</screen>
+
+<para>
+Meaning that row from 'ftt' with id equal to 1 matches query with TT_ID equal to 1
+defined for user with ID equal to 1. Also the hit is registered on '2001-01-17 12:35:30'.
+</para>
+</example>
+
+<sect2 id="createddbobjs"><title>Created Database Objects</title>
+
+<para>
+Text trigger hits table.  Text trigger stores hits on documents matching a condition within this table.
+</para>
+
+<programlisting>
+&lt;table_name&gt;_&lt;data_column&gt;_HIT (
+  TTH_U_ID INTEGER,   -- references User table TTU_U_ID
+  TTH_D_ID ANY,       -- references matching document id
+  TTH_T_ID INTEGER,   -- references matching query TT_ID
+  TTH_TITLE VARCHAR,  -- user application specific
+  TTH_URL VARCHAR,    -- user application specific
+  TTH_TS TIMESTAMP,   -- time of registering a hit
+  TTH_NOTIFY VARCHAR, -- e-mail address for notification
+  PRIMARY KEY (TTH_U_ID, TTH_TS, TTH_D_ID, TTH_T_ID)
+)
+</programlisting>
+
+<para>
+Text trigger queries table, where the query definition procedure stores the user specific queries.
+</para>
+
+<programlisting>
+&lt;table_name&gt;_&lt;data_column&gt;_QUERY (
+  TT_WORD VARCHAR,  -- the most effective word for searching
+  TT_ID INTEGER,    -- id of query
+  TT_QUERY VARCHAR, -- text of the query, in case of XPATH query this
+				-- column contains a serialized value
+  TT_CD VARCHAR,    -- user data
+  TT_COMMENT VARCHAR, -- Human readable label with general purpose
+  TT_XPATH VARCHAR,   -- text of XPATH query
+  TT_PREDICATE VARCHAR, -- Virtuoso/PL function hook
+  PRIMARY KEY (TT_WORD, TT_ID)
+)
+</programlisting>
+
+<para>
+One query can add one or more rows to the queries table.
+</para>
+
+<para>
+Text trigger users table, in it query definition procedure add a reference between query and user.
+</para>
+
+<programlisting>
+&lt;table_name&gt;_&lt;data_column&gt;_USER (
+  TTU_T_ID INTEGER, -- references text query TT_ID
+  TTU_U_ID INTEGER, -- references application specific users table ID
+  TTU_NOTIFY VARCHAR, -- e-mail address list for notification
+  TTU_COMMENT VARCHAR, -- Human readable label of query definition.
+  PRIMARY KEY (TTU_T_ID, TTU_U_ID)
+)
+</programlisting>
+
+<note><title>Note:</title>
+<para>In the case of e-mail notification to the main addresses the string passed as address
+list must be in the following format: '&lt;u1@foo.com&gt;, &lt;u2@foo.bar&gt;'.
+</para>
+</note>
+
+<para>
+Procedures that are used for adding text queries.
+</para>
+
+<programlisting>
+TT_QUERY_&lt;table_name&gt; (in query_text varchar, in user_id integer,
+  in label varchar, in notification_address varchar)
+</programlisting>
+<para>
+Used for adding XPATH queries.
+</para>
+
+<programlisting>
+TT_XPATH_QUERY_&lt;table_name&gt; (in xpath_query_text varchar , in user_id integer,
+in label varchar, in notification_address varchar)
+</programlisting>
+
+<para>
+Used to send notifications to the users.
+This procedure is usually called  by the server event scheduler.
+</para>
+
+<programlisting>
+TT_NOTIFY_&lt;table_name&gt; ();
+</programlisting>
+</sect2>
+</sect1>
+
+
+
+
+<sect1 id="tablesandinternals">
+<title>Generated Tables and Internals</title>
+
+		<sect2 id="gentabsaprocs">
+			<title>Generated Tables and Procedures </title>
+			<para>
+vt_create_text_index makes a separate table for storing the text index information and
+separate procedures and triggers for maintaining this data.  These are
+automatically dropped if the original table is dropped.
+</para>
+			<para>
+The updates to the indexed column are recorded in a separate update tracking table. This table, named
+VTLOG_&lt;qualifier&gt;_&lt;owner&gt;_&lt;table&gt; contains a row for each row in the indexed table that has been changed
+since the text index was last updated.
+</para>
+			<para>
+The text index is stored in a table named &lt;table&gt;_&lt;column&gt;_WORDS.
+The generated tables are made under the qualifier that is current at the time of their creation.
+The owner is the creating user.
+</para>
+		</sect2>
+		<sect2 id="procs">
+			<title>The procedures are:</title>
+			<programlisting>
+VT_INDEX_&lt;qualifier&gt;_&lt;owner&gt;_&lt;table&gt;  (in flag integer)
+</programlisting>
+			<para>
+This re-indexes the table. A flag of 0 makes the index, a flag of 1 deletes data found in
+the table from the index.
+</para>
+			<programlisting>
+VT_INC_INDEX_&lt;qualifier&gt;_&lt;owner&gt;_&lt;table&gt;  (in flag integer) ()
+</programlisting>
+			<para>
+This function refreshes the index using the change tracking information in the
+VTLOG_ table.
+</para>
+		</sect2>
+
+		<sect2 id="fttrigtblsandprocs">
+<title>Tables and Procedures Created By  Text Triggers</title>
+
+<programlisting>
+        - [TARGET_TABLE_NAME]_[DATA_COLUMN_NAME]_HIT
+
+	  columns
+
+	  TTH_D_ID         INTEGER   - document ID, references unique id of [TARGET_TABLE]
+	  TTH_T_ID         INTEGER   - query ID, references QUERY table
+	  TTH_U_ID         INTEGER   - user ID, references USER table
+	  TTH_TS           TIMESTAMP - date and time of retrieval
+	  TTH_NOTIFY       VARCHAR   - e-mail address of user for notification
+	  TTH_TITLE        VARCHAR   - not used (can be filled with user-defined trigger)
+	  TTH_URL          VARCHAR   - not used (can be filled with user-defined trigger)
+
+
+        - [TARGET_TABLE_NAME]_[DATA_COLUMN_NAME]_QUERY
+
+	  columns
+
+	  TT_ID            INTEGER   - Unique ID of query
+	  TT_QUERY         VARCHAR   - query text
+	  TT_WORD          VARCHAR   - the best word for query
+	  TT_COMMENT       VARCHAR   - Description
+	  TT_CD            VARCHAR   - user data (not used)
+	  TT_PREDICATE     VARCHAR   - not used
+	  TT_XPATH         VARCHAR   - XPATH expression.  If specified,
+						the test is this XPATH predicate,
+						see separate section.
+
+        - [TARGET_TABLE_NAME]_[DATA_COLUMN_NAME]_USER
+
+	  columns
+
+	  TTU_U_ID         INTEGER - unique user ID can reference SYS_USERS. 
+	  TTU_T_ID         INTEGER - query ID, references QUERY table
+	  TTU_COMMENT      VARCHAR - Description
+	  TTU_NOTIFY       VARCHAR - e-mail address of user for notification
+</programlisting>
+
+<para>Note that the queries are available given a table wide query identifier
+and an 'entry point' word.  Such a word is a word that must occur in the document
+in order for the query to have a possibility of matching the document,   The
+query text and other attributes are denormalized so that the primary key is the
+word, id pair when the id itself is unique.  Note that in the case of an AND of
+words, the least frequent of the words will be used as unique entry point of the
+query, so that it will not be tried on documents that do not contain this word.
+However, a query with OR'ed terms may have several such words, hence the
+possibility of multiple rows in the query table for the same query.</para>
+
+<para>The TT_USER_&lt;xx&gt; table maps from the query to a user.  The idea of
+this is to allow a single query to have multiple users.  Consider an application
+which allows creating personalized information filtering profiles.  It is to be
+expected that multiple users would store the same profiles.  Therefore the link
+between the user and the query is entitized as this table.  The user specific
+comment and notification mode are thus stored here, not with the query.  The
+notification mode itself is application dependent.  The user id is an application
+dependent id that can be used to reference application user entities.  Some
+applications may use this whereas other applications will have all queries on
+a single user.</para>
+
+<para>When a hit is noticed an entry is made into the TT_HIT_&lt;xx&gt; table.
+One row is inserted for each unique document id, query id, user id combination
+for which the document matches the query and there is a link to a user from the
+query through TT_USER_&lt;xx&gt;.  A query with no row in TT_USEER_&lt;xx&gt; is
+an integrity error.  The number of times the pattern is found in each document
+or its free text hit score has no effect on the hit insertion.</para>
+
+<para>One may note that defining application specific triggers on the hit table
+can be used to add immediate application reactions to incoming data.</para>
+
+<para>The free text triggers are matched against the new content immediately
+before the content is inserted into the free text index.  Therefore the batch
+mode setting affects the time of matching. In all situations, the matching takes
+place after the data is inserted but before the free text index is updated.  If
+text index maintenance is in synchronous (non-batched) mode, the text trigger
+match and hit generation is in the same transaction as the update to the content
+being watched.</para>
+<sect3 id="fttprocs">
+
+   <title>Procedures</title>
+
+	<para>For queries definition</para>
+        <programlisting>tt_query_[TARGET_TABLE_NAME] (
+	    in [query text] varchar, 		- query expression
+	    in [user_id] integer, 		- user id references SYS_USERS or SYS_DAV_USER
+	    in [comment] varchar,		- description
+	    in [e-mail or empty] varchar)	- e-mail address for user notification</programlisting>
+
+       <para>or hits registration (used inside text index procedures)</para>
+	<programlisting>vt_hits_[TARGET_TABLE_NAME] (inout [batch] any, inout [words array] any)</programlisting>
+</sect3>
+<sect3 id="ftttrigs">
+   <title>Triggers</title>
+       <para>for hits removal after document delete occurred</para>
+       <programlisting>[TARGET_TABLE_NAME]_FTT_D</programlisting>
+</sect3>
+<sect3 id="fttexamples">
+<title>Examples</title>
+
+<programlisting>
+-- create a table
+create table T1 (id integer, dt varchar, primary key (id));
+
+-- define text index
+create text index on T1 (dt);
+
+-- create text trigger
+create text trigger on T1;
+
+-- define an query
+tt_query_T1 ('xyz and abc', 1, 'This is a test query', null);
+
+-- do some inserts
+insert into T1 (id, dt) values (1, 'xyz');
+insert into T1 (id, dt) values (2, 'xyz abc');
+insert into T1 (id, dt) values (3, 'abc');
+update T1 set dt = 'xyz qwe abc' where id = 2;
+
+
+select TTH_TS, dt from T1, T1_dt_HIT where id = TTH_D_ID order by TTH_TS desc;
+-- produces following
+TTH_TS      dt
+BINARY      VARCHAR
+_______________________________________________________________________________
+
+2000-10-24 18:25:53  xyz qwe abc
+2000-10-24 18:25:53  xyz qwe abc
+</programlisting>
+</sect3>
+</sect2>
+
+</sect1>
+
+<sect1 id="droptxtindex">
+	<title>Removing A Text Index</title>
+
+	<para>
+A text index is dropped by dropping the words table with DROP TABLE.  This
+will drop all triggers, procedures and auxiliary tables. The words table is
+in the qualifier and owner of the indexed table and is named
+&lt;table&gt;_&lt;column&gt;_WORDS.
+</para>
+			<example>
+				<title>Example</title>
+				<programlisting>drop table DB.DBA.XML_TEXT_XT_TEXT_WORDS;</programlisting>
+				<para>-- drops the text index created in the vt_create_text_index  example</para>
+			</example>
+</sect1>
+
+
+<sect1 id="droptxttrig"><title>Removing A Text Trigger</title>
+
+<para>Used to drop text trigger definition on text indexed table.  The operation also drop all
+tables created by create text trigger statement.
+</para>
+
+<para>Syntax:</para>
+
+<programlisting>
+DROP TEXT TRIGGER ON &lt;table&gt; [(&lt;data_column&gt;)]
+</programlisting>
+
+<example><title>Removing A Text Trigger</title>
+
+<programlisting>
+drop text trigger on ftt;
+</programlisting>
+<para>
+will drop the text trigger definition from table ftt.
+</para>
+</example>
+   <para>Or using the stored procedure:</para>
+
+&vt_drop_ftt;
+
+</sect1>
+
+	<sect1 id="ftinternationalization">
+		<title>Internationalization &amp; Unicode</title>
+
+		<para>
+The text being indexed and the text query expression may both be wide
+strings.
+The word boundaries used to cut the text in words in both queries and index
+maintenance may depend on a language declared for the text index.
+	</para>
+		<para>
+The default language has white space and punctuation as word delimiters and
+will recognize Unicode ideographic characters as self standing.  A single
+non-ideographic character will always be considered noise and not indexed.
+	</para>
+		<para>
+Non-ASCII Unicode values are converted to UTF8 before being stored into the
+word table as narrow strings. Narrow 8 bit strings are stored in the words
+table as is.
+	</para>
+		<tip><title>See Also:</title>
+		<para>
+The LANGUAGE option in <link linkend="createtxtidxstmt">CREATE TEXT INDEX</link>.
+	</para></tip>
+
+</sect1>
+
+
+
+
+	<sect1 id="ftperformance">
+		<title>Performance</title>
+
+		<para>
+For indexing large volumes it is critical to run the indexing process over
+large volumes of data.  This is accomplished by using the batch update mode.
+This is activated with the VT_BATCH_UPDATE procedure.
+	</para>
+		<para>
+When this mode is on the index will be updated after a settable interval,
+doing all the updates accumulated since the last batch in a single go.  The
+size of a single batch is configurable in the virtuoso.ini file using the
+FreeTextBatchSize option.
+This is the number of bytes of text which will be processed as one sweep
+over the index.  A value of 1MB is often suitable.  Even All changes are
+processed in a batch at the set interval.
+If there are more characters of text to index / unindex than the batch size,
+the operation is broken into several transactions, each processing about
+FreeTextBatchSize bytes worth of text.  This improves concurrency and cuts
+down on locking.
+	</para>
+		<para>
+The command
+	</para>
+		<programlisting>
+DB.DBA.vt_batch_update ('DB.DBA.ARTICLE', 'ON', 1);
+	</programlisting>
+		<para>
+turns on the batch mode for the article table with a 1 minute delay between
+index refreshes.  The table name must be fully qualified and is case
+sensitive.  The correct case is seen in the administration interface tables
+list of the isql tables command etc.
+	</para>
+
+		<sect2 id="restrictions">
+		<title>Restrictions</title>
+
+		<para>
+If the free text document ID is an integer, which is encouraged for
+compactness, the values 0 and negative are reserved.
+	</para>
+</sect2>
+</sect1>
+
+
+<!-- ##################################################################### -->
+
+<sect1 id="fttfuncs"><title>Free Text Functions</title>
+
+&vt_batch;
+&vt_batch_d_id;
+&vt_batch_feed;
+&vt_batch_feed_offband;
+&vt_batch_update;
+&vt_is_noise;
+
+<para>
+Text index log table.  In case of batch update mode this table is used to
+store a log of actions over text indexed table.
+</para>
+
+<programlisting>
+VTLOG_&lt;table&gt; (
+  VTLOG_&lt;document_id_col&gt; ANY NOT NULL PRIMARY KEY,
+			-- references text indexed table by document id
+  SNAPTIME DATETIME,
+			-- time of insert/update/delete action
+  DMLTYPE VARCHAR (1),
+			-- type of log 'I' 'U' 'D' for insert, update or delete
+  VT_DISTINCT_WORDS LONG VARBINARY,
+			-- in case of update or delete are stored words which should be deleted
+  VT_OFFBAND_DATA LONG VARCHAR
+			-- in case of update or delete are stored offband data should be deleted
+)
+</programlisting>
+
+<para>
+Text index batch procedure. This procedure log, process and stores already filled _vt_batch,
+caused storing of words in index table.
+</para>
+
+<programlisting>
+VT_BATCH_PROCESS_&lt;table&gt; (inout _vt_batch any)
+</programlisting>
+
+<para>
+Text trigger hook function.  This function, for existing text trigger definition, applies the
+filtering queries (if defined) to the _strings, and if the _vt_batch matches any of them then
+add new record in HITS table (see Text trigger)
+</para>
+
+<programlisting>
+VT_HITS_&lt;table&gt; (inout _vt_batch any, inout _strings any);
+</programlisting>
+
+
+<para>
+Text index words table.  This table maintains distinct words collected from all documents from text indexed table.
+</para>
+
+<programlisting>
+&lt;table&gt;_&lt;column&gt;_WORDS (
+  VT_WORD VARCHAR,  -- distinct word
+  VT_D_ID ANY,  -- referencing the first matching
+			-- document id in text indexed table
+  VT_D_ID_2 ANY,  -- referencing the last matching document
+			-- id in text indexed table
+  VT_DATA VARCHAR,  -- string with document id's and word
+			-- positions where the word is matched
+  VT_LONG_DATA LONG VARCHAR, -- the same as VT_DATA but in a
+			-- case of large amount of data
+  PRIMARY KEY (VT_WORD, VT_D_ID)
+)
+</programlisting>
+
+<para>
+Text indexing procedure, using for clearing and creating the text index.
+If flag is equal to 1 then index data will be cleared, else if equal to 0 then index data will generated.
+Note that for  large tables generating the  index can run for a long time  and the server will  go into atomic mode.
+</para>
+
+<programlisting>
+VT_INDEX_&lt;table&gt; (in _flag integer)
+</programlisting>
+
+<para>
+Procedure for incremental update of text index.  In case of batch mode update this procedure
+must be called to process the entries in log table and refresh text index data.  Before calling
+this function the contains/xcontains predicate may not match the  newest inserted,
+updated or deleted documents.  This function is also registered for scheduled action if
+the vt_batch_update() function is called with refresh interval greater than zero. (See vt_batch_update function)
+</para>
+
+<programlisting>
+VT_INC_INDEX_&lt;table&gt; ()
+</programlisting>
+
+<para>
+
+
+Text indexing and unindexing hook procedures.  These are   user-defined
+procedure which can access additional related data and perform 
+preprocessing and call vt_batch_feed inside.  These procedures receive the free text id as argument and can use this to retrieve data related to the row being indexed.  If the text index is created
+with 'USING FUNCTION' clause then internally generated procedures and
+functions will include calls to these.   If these procedures return 1
+then the caller   will skip filling a vt_batch, assuming the hook function already filled it,  otherwise the caller will proceed as if there had been no hook.
+
+</para>
+  <para>
+The difference between these two functions is that ..._INDEX_HOOK will be called upon insertion of new data or after update, but .._UNINDEX_HOOK will be called after delete or before update on the text indexed table.
+</para>
+<note><title>Note:</title>
+<para>This function is USER-DEFINED, the user can create it before or after creating a text index.
+</para>
+</note>
+
+<para>
+In the second case the text index MUST be create with the 'NOT INSERT' option.  After the hook is defined, the index can be filled with   with 'VT_INDEX_&lt;table&gt;(0)' procedure.
+</para>
+
+<programlisting>
+&lt;table&gt;_&lt;column&gt;_INDEX_HOOK (inout _vt_batch any, inout d_id any)
+&lt;table&gt;_&lt;column&gt;_UNINDEX_HOOK (inout _vt_batch any, inout d_id any)
+</programlisting>
+
+<example><title>Free Text</title>
+
+<programlisting>
+create table fth (id integer not null primary key, dt varchar, c1 varchar);
+
+create procedure fth_dt_index_hook (inout vtb any, inout d_id integer)
+{
+  declare data any;
+  data := coalesce ((select concat (dt, ' ', c1)
+	from fth where id = d_id), null);
+  if (data is null)
+    return 0;
+  vt_batch_feed (vtb, data, 0);
+  return 1;
+}
+
+create procedure fth_dt_unindex_hook (inout vtb any, inout d_id integer)
+{
+  declare data any;
+  data := coalesce ((select concat (dt, ' ', c1)
+	from fth where id = d_id), null);
+  if (data is null)
+    return 0;
+  vt_batch_feed (vtb, data, 1);
+    return 1;
+}
+
+insert into fth values (1, 'abc', 'one');
+
+create text index on fth (dt) with key id using function;
+</programlisting>
+
+<para>
+test the text index:
+</para>
+
+<programlisting>
+select id from fth where contains (dt, 'abc');
+select id from fth where contains (dt, 'one');
+</programlisting>
+
+<para>
+Both select statements will return 1 because the content is concatenated with an additional column.
+</para>
+
+<para>
+Note that in the case of using additional columns, they should be added as offband data to the text index, otherwise update them  will not affect the index.
+</para>
+</example>
+
+<programlisting>
+&lt;table&gt;_&lt;column&gt;_QUERY table (see Text trigger definition)
+&lt;table&gt;_&lt;column&gt;_USER table (see Text trigger definition)
+&lt;table&gt;_&lt;column&gt;_HIT table (see Text trigger definition)
+TT_QUERY_&lt;table&gt;_&lt;column&gt; procedure (see Text trigger definition)
+</programlisting>
+
+<para>
+Table for text indexes system information
+</para>
+
+<programlisting>
+SYS_VT_INDEX (
+  VI_TABLE VARCHAR,  -- Fully qualified text indexed table name
+  VI_INDEX VARCHAR,  -- Index name
+  VI_COL VARCHAR,  -- Data column name
+  VI_ID_COL VARCHAR,  -- Document id column name
+  VI_INDEX_TABLE VARCHAR,  -- fully qualified name of table with words
+			-- (See: &lt;table&gt;_&lt;column&gt;_WORDS table)
+  VI_ID_IS_PK INTEGER,  -- if the document id is specified by user or
+			-- used primary key then it equal to 1
+  VI_ID_CONSTR VARCHAR,  -- serialized value with id column(s) names
+  VI_OFFBAND_COLS VARCHAR,  -- serialized value of offband data columns names
+  VI_OPTIONS VARCHAR,  -- reserved
+  VI_LANGUAGE VARCHAR,  -- language which applied to the document contents
+  PRIMARY KEY (VI_TABLE, VI_COL))
+</programlisting>
+
+</sect1>
+</chapter>

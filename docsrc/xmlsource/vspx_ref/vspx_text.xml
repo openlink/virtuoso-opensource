@@ -1,0 +1,138 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_text">
+<refmeta>
+  <refentrytitle>vspx_text</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_text</refname>
+  <refpurpose>Scriptable, data-bindable input control.</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_text">
+    <funcprototype id="proto_vspx_text">
+      <funcdef>
+        <function>text</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>default (optional) </attribute>
+        <attribute>value (optional) </attribute>
+        <attribute>style (optional) </attribute>
+      </attributes>
+      <childs>
+        <child>after-data-bind</child>
+        <child>after-data-bind-container</child>
+        <child>before-data-bind</child>
+        <child>before-data-bind-container</child>
+        <child>on-post</child>
+        <child>on-post-container</child>
+        <child>before-render</child>
+        <child>before-render-container</child>
+        <child>validator</child>
+      </childs>
+      <class>
+        <screen><![CDATA[
+				
+				create type vspx_text under vspx_field
+				as
+				 (
+				   tf_default varchar default '',	-- default value
+				   tf_style int default 0 		-- 0 is text, 1 is password, 2 is hidden
+				 )
+				temporary self as ref
+				  overriding method vc_render () returns any,
+				  overriding method vc_set_view_state (e vspx_event) returns any,
+				  constructor method vspx_text (name varchar, parent vspx_control),
+				  constructor method vspx_text (name varchar, def varchar, 
+				      pass int, parent vspx_control)
+				;
+
+				
+			    ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_text">
+  <title>Description</title>
+  <para>
+    <function>vspx_text</function>Text input, with scripts and validation options but no implied database binding. String input of the HTML form.</para>
+</refsect1>
+<refsect1 id="attrs_vspx_text">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>default</title>
+    <para>The default value of input field.</para>
+  </refsect2>
+  <refsect2>
+    <title>value</title>
+    <para>Data bindable value of control, represents value of HTML control to be drawn.</para>
+  </refsect2>
+  <refsect2>
+    <title>style</title>
+    <para>The style modifier: can be &#39;password&#39; or &#39;hidden&#39;. This allows to render it as password input or a hidden field. If isn&#39;t specified the visible input will be drawn.</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_text">
+  <title>Children</title>
+  <refsect2>
+    <title>validator</title>
+    <para>validator that is applied to user input.
+the validator objects are invoked when the element&#39;s control gets posted. the validator elements only make sense inside field or form types of controls.  the validators are invoked in the order given, and the first one to fail stops the invocation chain, so that no later ones are attempted.
+furthermore the vc_is_valid member of the containing page class will be reset to false (0) to stop further processing. see also error-summary element and error-glyph attribute of field element.
+</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="examples_vspx_text">
+  <title>Examples</title>
+  <example id="ex_vspx_text">
+    <title>Simple example</title>
+    <para>
+			    A simple input box
+			    </para>
+    <screen><![CDATA[
+				
+                                <v:text name="txt01" default="1200" />
+				
+			    ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

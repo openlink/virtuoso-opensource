@@ -1,0 +1,49 @@
+div.aux-info-area { 
+	position: absolute;
+	top: 11em;
+	left: 0px;
+	width: 15em;
+}
+
+.aux-info-area ul{
+	list-style: none;
+}
+
+div.working-area {
+	position: absolute;
+	top: 11em;
+	left: 15em;
+}
+
+div.login-area {
+	position: absolute;
+	top: 0em;
+	left: 50%;
+	height: 7em;
+	width: 50%;
+	text-align: right;
+}
+
+div.tools-area {
+	position: absolute;
+	top: 7em;
+	width: 50%;
+	height: 4em;
+	left: 41em;
+	float: right;
+	text-align: right;
+}
+
+.tools-area ul{
+	position: relative;
+	list-style: none;
+}
+
+.tools-area li{
+	display: inline;
+	overflow: visible;
+	background-color: yellow;
+}
+
+	
+

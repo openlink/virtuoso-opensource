@@ -1,0 +1,466 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+
+  declare _server, _match, _no_match, _step, _mess_a, _user, _pass varchar;
+  declare _port, idx, len, gr_name, _last, _mess, pos, idx2, _to_get integer;
+  declare _list, _row, _post, _group_d any;
+  declare serv varchar;
+  declare _u_id, _nserver_id integer;
+  declare own, _info varchar;
+  declare msg, stat, ec, em varchar;
+
+--  dbg_obj_print (params);
+  _u_id := db.dba.adm_dav_check_auth (lines, 1);
+  if (_u_id < 1)
+    {
+      http_request_status ('HTTP/1.1 401 Unauthorized');
+      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+            '<HTML><HEAD>',
+            '<TITLE>401 Unauthorized</TITLE>',
+            '</HEAD><BODY><H1>Unauthorized</H1>',
+            'Access to page is forbidden.</BODY></HTML>'));
+      return (0);
+    }
+  else
+    select U_NAME into own from WS.WS.SYS_DAV_USER where U_ID = _u_id;
+
+  _info := ''; ec := ''; em := '';
+
+  serv := get_keyword ('sel_serv', params, '');
+  _mess_a := 500;
+
+  _match := get_keyword ('match', params, '');
+  _no_match := get_keyword ('no_match', params, '10');
+
+  if (_match = '*') _match := '';
+
+if (serv = 'localhost' OR serv = '') -- define or edit localhost groups
+  {
+	_server := 'localhost';
+	_step := 'add_local_groups';
+	goto next;
+  }
+  else
+  {
+      	select "NS_SERVER", "NS_PORT", "NS_USER", "NS_PASS", "NS_ID"
+         		into _server, _port, _user, _pass, _nserver_id from "DB"."DBA"."NEWS_SERVERS"
+	   		where "NS_SERVER" = serv;
+  }
+
+if ('' <> get_keyword ('_attach', params, ''))  -- From list news page
+  {
+	declare current_item, _ng_name, _ng_desc, _ng_posting, _U varchar;
+	declare current_item_id, _ns_id, _ng_messes, _ng_first, _ng_last, _beg, _ng_post integer;
+
+	idx :=0;
+	_info := '<TABLE CLASS="genlist" CELLPADDING="0" CELLSPACING="2" BORDER="0"><TR><TD CLASS="genlistheadt">The following groups were added:</TD></TR>';
+
+	while (idx < length(params))
+	{
+		current_item_id := -1;
+		current_item := aref(params, idx);
+		if ('H_'  = left(current_item, 2)) current_item_id := atoi(ltrim(current_item, 'H_'));
+		if ('CH_' = left(current_item, 3)) current_item_id := atoi(ltrim(current_item, 'CH_'));
+
+		if (current_item_id >= 0 )
+		{
+		  	_to_get := 500;
+			_U := get_keyword(concat('U_', cast(current_item_id as varchar)), params, '');
+			if ('' = _U) _U := get_keyword(concat('UH_', cast(current_item_id as varchar)), params, '');
+
+			SELECT "NS_ID", "NAME", "DESCRIPTION", "FIRST", "LAST", "POSTING"
+				INTO _ns_id, _ng_name, _ng_desc, _ng_first, _ng_last, _ng_posting
+				FROM "DB"."DBA"."NEWS_GROUPS_AVAILABLE"
+				WHERE "NG_ID" = current_item_id;
+
+			_ng_messes := _ng_last - _ng_first;
+			_beg := _ng_first;
+
+			if (_ng_last is NULL)
+			  _ng_last := 0;
+
+			if (_U = 'last500')
+			{
+			    _beg := _ng_last - 500;
+			    if (_beg < 0)
+		      	      _beg := 0;
+			}
+
+			if (_U = 'new') _beg := _ng_last;
+
+			if (_U = 'last500' or _U = 'all')
+			    _to_get := 0;
+
+			if (_ng_posting = 'N') _ng_post := 0; else _ng_post := 1;
+
+			if (not exists (select 1 from "DB"."DBA"."NEWS_GROUPS" where NG_NAME = _ng_name))
+			  {
+			     INSERT  replacing "DB"."DBA"."NEWS_GROUPS"(
+				"NG_NEXT_NUM",
+				"NG_NAME",
+				"NG_DESC",
+				"NG_SERVER",
+
+				"NG_POST",
+				"NG_UP_TIME",
+				"NG_CREAT",
+
+				"NG_UP_INT",
+				"NG_PASS",
+				"NG_UP_MESS",
+
+				"NG_NUM",
+				"NG_FIRST",
+				"NG_LAST",
+				"NG_LAST_OUT",
+				"NG_CLEAR_INT")
+
+				VALUES(
+
+				0,
+				_ng_name,
+				_ng_desc,
+				_ns_id,
+
+				_ng_post,
+				now(),
+				now(),
+
+				30,
+				_to_get,
+				0,
+
+				0,			-- don't change !!!
+				0,			-- don't change !!!
+			       	0,			-- don't change !!!
+				_beg,
+				120);			-- days
+
+			        _info := sprintf('%s<TR><TD CLASS="gendata">%s</TD></TR>',
+				    coalesce(_info, ''), _ng_name);
+		            }
+		}
+		idx := idx + 2;
+	}
+   } -- attach
+
+next:
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <script language="javascript" src="../admin_utils.js"></script>
+    <title>Virtuoso News list</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Allows user to select newsgroups from a news server to be linked via Virtuoso, or define new localhost groups.">
+  </head>
+<?vsp adm_page_header('Add Newsgroups', 'nntpadminadd'); ?>
+<?include ../adm_js_check.vsp ?>
+
+<?vsp
+
+-- are we adding remote groups or adding/editing local groups?
+
+	if ( 'localhost' = _server) -- which server
+	{
+?>
+
+  <FORM method="POST"  name="news_server_form" action="newsgroups_add.vsp">
+	<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">
+	<TR><TD CLASS="genhead" COLSPAN ="2">Virtuoso "localhost" News Server</TD></TR>
+	<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+	<TR><TD CLASS="genlisthead">Newsgroup Name</TD>
+	  <TD><INPUT type="text" name="_lg_name" value="" size="25"></TD></TR>
+	<TR><TD CLASS="genlisthead">Description</TD>
+	  <TD><INPUT type="text" name="_lg_desc" value="" size="50">
+		<INPUT type="hidden" name="sel_serv" value="localhost" size="25"></TD></TR>
+	<TR><TD COLSPAN="2" ALIGN="right"><INPUT type="submit" name="add_lg" value="Add Group">
+    <INPUT type="button" name="_cancel", value="Back" onClick="document.location='news_server_list.vsp?expand=localhost';"></TD></TR>
+	</TABLE>
+
+<?vsp
+	if ('' <> get_keyword('add_lg', params, '') and '' <> get_keyword('_lg_name', params, ''))
+	  {
+	    declare new_name varchar;
+
+            new_name := get_keyword('_lg_name', params, NULL);
+	    if (exists (select 1 from "DB"."DBA"."NEWS_GROUPS" where "NG_NAME" = new_name))
+	      {
+		 http (concat ('<TABLE CLASS="genlist" CELLPADDING="0" CELLSPACING="2" BORDER="0"><TR><TD CLASS="genlistheadt">The group ', new_name, ' exist.</TD></TR></TABLE>'));
+	      }
+	    else
+	      {
+	      	if (new_name is not NULL)
+		  INSERT SOFT "DB"."DBA"."NEWS_GROUPS" ("NG_NAME", "NG_DESC", "NG_SERVER",
+		      "NG_POST", "NG_CREAT", "NG_LAST", "NG_FIRST", "NG_NUM", "NG_NEXT_NUM")
+			  VALUES (new_name, get_keyword('_lg_desc', params, ''),
+			      NULL, 1, now(), 0, 0, 0, 0);
+	      }
+	  }
+?>
+  </FORM>
+<?vsp
+	}
+	else
+	{
+?>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+  <FORM method="POST"  name="news_server_form" action="newsgroups_add.vsp">
+    <TR><TD CLASS="genhead" COLSPAN ="2">Remote Newsgroup Server Groups</TD></TR>
+    <TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+    <TR><TD CLASS="genlisthead">News Server</TD><TD CLASS="gendata"><?=_server?></TD></TR>
+    <TR><TD CLASS="genlisthead">Newsgroup Match</TD><TD><INPUT type="text" name="match" value="<?=_match?>" size="25"></TD></TR>
+    <TR><TD CLASS="genlisthead">Matches Per Page</TD><TD><INPUT type="text" name="no_match" value="<?=_no_match?>" size="5"></TD></TR>
+    <TR><TD COLSPAN="2" ALIGN="right">
+    	<INPUT type="button" name="_cancel", value="Back" onClick="document.location='news_server_list.vsp?expand=<?=_nserver_id?>';">
+      <INPUT type="submit" name="_Fetch" value="Fetch Groups">
+      <INPUT type="hidden" name="_Displayable" value="nexttime">
+      <INPUT type="hidden" name="sel_serv" value="<?=serv?>">
+    </TD></TR>
+  </FORM>
+</TABLE>
+
+</TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2">
+
+<?vsp
+
+	if ('' <> _info)
+	{
+		http(_info);
+	}
+
+  if ('' <> get_keyword('_Displayable', params, ''))
+     {
+	declare idx, _mess, page, total_found integer;
+	declare _U, _last_name, _first_name varchar;
+
+	declare cr_ng_id, cr_posting, _num, current_item_id integer;
+	declare cr_name, cr_desc, cr_first, cr_last, current_item varchar;
+
+	if (not exists (select 1 from "DB"."DBA"."NEWS_GROUPS_AVAILABLE" where NS_ID = _nserver_id))
+	  {
+	    declare exit handler for sqlstate '*' { ec := __SQL_STATE; em := __SQL_MESSAGE; goto _em;  };
+	    DB.DBA.populate_groups_available (_nserver_id);
+	    commit work;
+	  }
+_em:
+
+	set isolation = 'uncommitted';
+	total_found :=0;
+	_num := atoi(_no_match);
+
+	SELECT COUNT("NAME") INTO total_found
+		FROM "DB"."DBA"."NEWS_GROUPS_AVAILABLE"
+		WHERE matches_like("NAME", concat ('%', _match, '%')) AND NS_ID = _nserver_id
+		AND "NAME" NOT IN (SELECT NG_NAME FROM "DB"."DBA"."NEWS_GROUPS" WHERE NG_SERVER = _nserver_id );
+
+		_last_name := '';
+		_first_name := '';
+
+	page := atoi(get_keyword('_page', params, '0'));
+	if (page = '' or page is NULL) page:=0;
+	if ('' <> get_keyword('First', params, ''))
+	{	page := 0;
+	}
+	if ('' <> get_keyword('Prev', params, ''))
+	{	page := page - 1;
+		_last_name := get_keyword (concat('page',cast (page -1 as varchar)), params, '');
+	}
+	if ('' <> get_keyword('Next', params, ''))
+	{	page := page + 1;
+		_last_name := get_keyword ('last_name', params, '');
+	}
+	if (page < 0)
+	{	page:=0;
+	}
+
+	if (page*atoi(_no_match) > total_found) page := page -1;
+
+		DECLARE CR CURSOR FOR
+			SELECT top(_num) "NG_ID", "NAME", "DESCRIPTION", "FIRST", "LAST", "POSTING"
+			FROM "DB"."DBA"."NEWS_GROUPS_AVAILABLE"
+			WHERE "NAME" > _last_name
+			AND matches_like("NAME", concat ('%', _match, '%')) AND NS_ID = _nserver_id
+			AND "NAME" NOT IN (SELECT NG_NAME FROM "DB"."DBA"."NEWS_GROUPS" WHERE NG_SERVER = _nserver_id)
+			ORDER BY "NAME";
+?>
+<FORM method="POST" name="_list_news" action="newsgroups_add.vsp">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+    <TR><TD CLASS="genhead" COLSPAN ="5">External Groups (<?=(page*atoi(_no_match))+1?> to <?=(page+1)*atoi(_no_match)?> of <?=coalesce(total_found, 0)?>)</TD></TR>
+    <TR><TD CLASS="AdmBorders" COLSPAN="5"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+            <TR>
+            <TD CLASS="genlistheadt">Sel.</TD>
+            <TD CLASS="genlistheadt">Name</TD>
+            <TD CLASS="genlistheadt">Messages</TD>
+            <TD CLASS="genlistheadt">Get</TD>
+            <TD CLASS="genlistheadt">Posting</TD>
+            </TR>
+<?vsp
+	idx := 0;
+
+	-- persist old h then convert all previous chb to h
+--	while (idx < length(params))
+--	{
+--		current_item := aref(params, idx);
+--		if ('page'  = left(current_item, 4))
+--		{	current_item_id := atoi(ltrim(current_item, 'page'));
+--			http(sprintf('<INPUT type="hidden" name="page%i" value="%s">', current_item_id, aref(params, idx +1)));
+--		}
+--		if ('H_'  = left(current_item, 2))
+--		{	current_item_id := atoi(ltrim(current_item, 'H_'));
+--			http(sprintf('<INPUT type="hidden" name="H_%i" value="ON">', current_item_id));
+--		}
+--		if ('UH_'  = left(current_item, 3))
+--		{	current_item_id := atoi(ltrim(current_item, 'UH_'));
+--			http(sprintf('<INPUT type="hidden" name="UH_%i" value="%s">', current_item_id, aref(params, idx +1)));
+--		}
+--		if ('CH_' = left(current_item, 3))
+--		{	current_item_id := atoi(ltrim(current_item, 'CH_'));
+--			http(sprintf('<INPUT type="hidden" name="H_%i" value="ON">', current_item_id));
+--		}
+--		if ('U_'  = left(current_item, 2))
+--		{	current_item_id := atoi(ltrim(current_item, 'U_'));
+--			http(sprintf('<INPUT type="hidden" name="UH_%i" value="%s">', current_item_id, aref(params, idx +1)));
+--		}
+--		idx := idx + 2;
+--	}
+
+	idx := 0;
+
+	OPEN CR;
+	WHENEVER NOT FOUND GOTO NO_ROWS;
+	FETCH CR INTO cr_ng_id, cr_name, cr_desc, cr_first, cr_last, cr_posting;
+	http(sprintf('<INPUT type="hidden" name="first_name" value="%s">', cr_name));
+
+	while (idx < _num)
+	{
+			_mess := cr_last - cr_first;
+			if (_mess < 0)
+		   	  _mess := 0;
+			http('<TR><TD CLASS="gendata">');
+			http (sprintf ('<INPUT type="checkbox" name="CH_%i"', cr_ng_id));
+			if ('' <> get_keyword(concat('H_', cast(cr_ng_id as VARCHAR)), params, '')) http (' CHECKED');
+			http ('></TD>');
+
+			_U := get_keyword(concat('UH_', cast(cr_ng_id as VARCHAR)), params, '');
+
+?>
+		<TD CLASS="gendata"><?=cr_name?><INPUT type="hidden" name="OUT_NAME_<?=cr_ng_id?>", value="<?=cr_name?>"></TD>
+		<TD CLASS="gendata"><?=_mess?></TD>
+		<TD><SELECT NAME="U_<?=cr_ng_id?>">
+<?vsp
+			if ('' <> get_keyword(concat('H_', cast(cr_ng_id as VARCHAR)), params, '') AND '' <> _U)
+			{
+				http('<OPTION VALUE="all2" '); if (_U = 'all2') http('SELECTED'); http('>All (units of 500)</OPTION>');
+				http('<OPTION VALUE="all" '); if (_U = 'all') http('SELECTED'); http('>All</OPTION>');
+				http('<OPTION VALUE="last500" '); if (_U = 'last500') http('SELECTED'); http('>Recent 500</OPTION>');
+				http('<OPTION VALUE="new" '); if (_U = 'new') http('SELECTED'); http('>No Sync</OPTION></SELECT></TD>');
+			}
+			else
+			{
+				http('<OPTION VALUE="all2">All (units of 500)</OPTION>');
+				if (_mess < 500)
+				{
+					http('<OPTION VALUE="all" SELECTED>All</OPTION>');
+					http('<OPTION VALUE="last500">Recent 500</OPTION>');
+				}
+				else
+				{
+					http('<OPTION VALUE="all">All</OPTION>');
+					http('<OPTION VALUE="last500" SELECTED>Recent 500</OPTION>');
+				}
+				http('<OPTION VALUE="new">No Sync</OPTION></SELECT></TD>');
+			}
+			http(sprintf('<TD CLASS="gendata">%s</TD></TR>', cr_posting));
+			idx := idx +1;
+		FETCH CR INTO cr_ng_id, cr_name, cr_desc, cr_first, cr_last, cr_posting;
+	} -- end cursor loop here
+
+NO_ROWS: ;
+
+if (idx = 0 and ec = '')
+{ http ('<TR><TD COLSPAN="5" CLASS="gendata">No Newsgroups Available</TD></TR>');
+  if ((select "SE_LAST_COMPLETED" from "DB"."DBA"."SYS_SCHEDULED_EVENT"
+      where "SE_NAME" = concat('UPD_Avail_Grps_', serv)) is NULL)
+  { http ('<TR><TD COLSPAN="5" CLASS="gendata">Still fetching groups list from the remote server.</TD></TR>');
+    http ('<TR><TD COLSPAN="5" CLASS="gendata">Please try again later.</TD></TR>');
+  }
+}
+else if (idx = 0 and ec <> '')
+{
+  ?>
+<TR><TD COLSPAN="5" CLASS="gendata">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="errorhead" COLSPAN="2">ERROR</TD></TR>
+<TR><TD CLASS="genlisthead">SQL state</TD><TD CLASS="gendata"><?=ec?></TD></TR>
+<TR><TD CLASS="genlisthead">Message</TD><TD CLASS="gendata"><?=em?></TD></TR>
+</TABLE>
+</TD></TR>
+  <?vsp
+}
+else
+{
+?>
+<TR><TD COLSPAN="5" ALIGN="middle">
+	<INPUT type="hidden" name="last_name" value="<?=cr_name?>">
+	<INPUT type="hidden" name="page<?=page?>" value="<?=cr_name?>">
+	<INPUT TYPE="submit" <?vsp if (page = 0) http('DISABLED'); ?> NAME="First" Value="First">
+	<INPUT TYPE="submit" <?vsp if (page = 0) http('DISABLED'); ?> NAME="Prev" Value="&lt; Prev">
+	<INPUT TYPE="submit" <?vsp if ((page+1)*atoi(_no_match) >= total_found) http('DISABLED'); ?>  NAME="Next" VALUE="Next &gt;"></TD></TR>
+<?vsp
+}
+?>
+<TR><TD COLSPAN="5" ALIGN="right">
+    <INPUT type="button" name="selectall" value="Select All" onClick="selectAllCheckboxes(this.form, this)">
+    <INPUT type="submit" name="_attach", value="Add Groups">
+    <INPUT type="hidden" name="server" value="<?=_server?>">
+    <INPUT type="hidden" name="sel_serv" value="<?=serv?>">
+    <INPUT type="hidden" name="port" value="<?=_port?>">
+    <INPUT type="hidden" name="user" value="<?=_user?>">
+    <INPUT type="hidden" name="pass" value="<?=_pass?>">
+      <INPUT type="hidden" name="_Displayable" value="nexttime">
+    </TD></TR></TABLE>
+<INPUT TYPE="hidden" NAME="_page" VALUE="<?=page?>">
+<INPUT TYPE="hidden" NAME="match" VALUE="<?=_match?>">
+<INPUT TYPE="hidden" NAME="no_match" VALUE="<?=_no_match?>">
+    </FORM>
+
+<?vsp
+
+CLOSE CR;
+
+         }
+	} -- which server
+?>
+<?vsp adm_page_footer(); ?>
+</HTML>

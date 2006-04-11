@@ -1,0 +1,348 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+--no_c_escapes-
+  declare _id, _msg, _submit, _msg_attrs, _part, _own, _addr, _addr1, _msg_file, _msg_file_attrs, _msg_text_type varchar;
+  declare _u_id integer;
+  declare _mp_id integer;
+  declare output, inx, attr_name, attr_value varchar;
+  declare _count, _ix integer;
+  declare _mime_parts any;
+  declare _p_part, _p_type, _p_disp, _p_trf, _p_fname varchar;
+  declare __id, __part_text, __attr varchar;
+  declare _filename, _res varchar;
+  declare mc cursor for select MP_ID from MAIL_PARTS where MP_OWN = _own order by MP_OWN desc, MP_ID desc;
+  declare cr cursor for
+      select MP_ID,
+      blob_to_string (MP_PART),
+      deserialize (blob_to_string(MP_ATTRS))
+      from MAIL_PARTS where MP_OWN = _own;
+  declare _from, _to, _cc, _bcc, _subj, _server, _body, _sender, _rec, _msg_text varchar;
+  declare status, message varchar;
+  status := '00000'; message := '';
+  --  dbg_obj_print (params);
+    _from := get_keyword ('from', params, '');
+    _to := get_keyword ('to', params);
+    _cc := get_keyword ('cc', params);
+    _bcc := get_keyword ('bcc', params);
+    _subj := get_keyword ('subject', params);
+    _server := get_keyword ('server', params, '');
+    _res := get_keyword ('res', params, '');
+    if (_server = '')
+      _server := 'localhost:25';
+    _u_id := DB.DBA.adm_dav_check_auth (lines, 1);
+    if (_u_id < 1)
+      {
+        http_request_status ('HTTP/1.1 401 Unauthorized');
+        http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+                       '<HTML><HEAD>',
+                       '<TITLE>401 Unauthorized</TITLE>',
+                       '</HEAD><BODY><H1>Unauthorized</H1>',
+                       'Access to page is forbidden.</BODY></HTML>'));
+        return (0);
+      }
+    else
+      select U_NAME, U_E_MAIL into _own, _addr1 from WS.WS.SYS_DAV_USER where U_ID = _u_id;
+
+    if (_from <> '')
+      _addr := _from;
+    else
+      _addr := _addr1;
+
+
+    whenever not found goto cnf;
+    _count := coalesce ((select count (*) from MAIL_PARTS where MP_OWN = _own),0);
+cnf:
+  _id := get_keyword_ucase ('id', params);
+  _msg := get_keyword_ucase ('msg_text', params, '');
+  _msg_text_type := get_keyword_ucase ('msg_text_type', params, 'text/plain');
+  _msg_text := _msg;
+  _msg_attrs := vector ('Content-Type', get_keyword ('msg_text_type', params, 'text/plain')); --get_keyword_ucase ('attr-msg_text', params);
+  _part := get_keyword_ucase ('part', params);
+  _submit := get_keyword_ucase ('submit', params);
+  _msg_file := get_keyword_ucase ('msg_file', params, '');
+  _msg_file_attrs := get_keyword_ucase ('attr-msg_file', params);
+  if (_msg_file <> '' and _res <> '')
+   {
+     http ('<p><strong> Error: only one attachment must be added</strong></p>');
+     _msg := '';
+     _res := '';
+   }
+  if (_submit = 'Add' and _res <> '')
+    {
+      declare _rcont, _rtype, _r_name varchar;
+      select blob_to_string (RES_CONTENT), RES_TYPE, RES_NAME into _rcont, _rtype, _r_name from WS.WS.SYS_DAV_RES
+	  where RES_FULL_PATH = concat ('/DAV', _res);
+      _mp_id := 1;
+      whenever not found goto nfm1;
+      open mc;
+      fetch mc into _mp_id;
+      _mp_id := _mp_id + 1;
+nfm1:
+      insert into MAIL_PARTS (MP_ID, MP_OWN, MP_PART, MP_ATTRS)
+	      values (_mp_id, _own, _rcont, serialize (vector ('Content-Disposition', sprintf ('attachment; filename=%s', _r_name), 'Content-Type', _rtype, 'filename', _r_name)));
+      _count := _count + 1;
+    }
+  if (length (_submit) > 0 and length (_part) = 0 and _res = '')
+    {
+      if (_submit = 'Add' and length (_msg_file) > 0)
+	{
+          _filename := get_keyword_ucase ('filename', _msg_file_attrs);
+--          dbg_obj_print (_msg_file_attrs);
+          if (length (_id) = 0)
+            _id	:= _filename;
+          _mp_id := 1;
+          whenever not found goto nfm;
+	  open mc;
+	  fetch mc into _mp_id;
+          _mp_id := _mp_id + 1;
+nfm:
+	  insert into MAIL_PARTS (MP_ID, MP_OWN, MP_PART, MP_ATTRS)
+	      values (_mp_id, _own, _msg_file, serialize (_msg_file_attrs));
+          _count := _count + 1;
+	}
+      else if (_submit = 'Send')
+	{
+	  if (_msg_text <> '')
+	    _count := _count + 1;
+	  _mime_parts := make_array ( _count, 'any');
+          _ix := 0;
+	  if (_msg_text <> '')
+	    {
+              _p_part := mime_part (get_keyword ('msg_text_type', params, 'text/plain'), null, null, _msg_text);
+	      aset (_mime_parts, _ix, _p_part);
+              _ix := _ix + 1;
+	    }
+	  open cr;
+          whenever not found goto done;
+          while (1)
+	    {
+	      fetch cr into _mp_id, __part_text, __attr;
+              _p_type := get_keyword_ucase ('Content-Type' , __attr);
+              _p_disp := get_keyword_ucase ('Content-Disposition' , __attr);
+	      if (_p_disp <> '')
+		{
+                  _p_fname := get_keyword_ucase ('filename' , __attr);
+         	  if (_p_fname <> '')
+		    {
+		      declare lsl integer;
+		      if (_p_fname like '_:\%')
+			{
+                          lsl := strrchr (_p_fname, '\\');
+                          if (lsl is not null and lsl < length (_p_fname) - 1)
+                            _p_fname := substring (_p_fname, lsl + 2, length (_p_fname));
+			}
+	              _p_disp := concat ('attachment; filename=', _p_fname);
+		    }
+	        }
+              _p_trf := get_keyword_ucase ('Content-Transfer-Encoding' , __attr);
+              _p_part := mime_part (_p_type, _p_disp, _p_trf, __part_text);
+	      aset (_mime_parts, _ix, _p_part);
+              _ix := _ix + 1;
+	    }
+done:
+	  close cr;
+          output := mime_body (_mime_parts);
+	  _body := concat ('Subject: ', _subj, '\r\nFrom: ', _from, '\r\nTo: ', _to, '\r\n');
+          if (_from = '')
+            {
+              status := 'SM533';
+              message := 'No sender where specified. Please enter a sender in a "From" line.';
+	      goto dsp_err;
+	    }
+	  if (strchr (_from, '<') is null)
+	     _sender := concat ('<',trim (_from),'>');
+	  else
+	    _sender := _from;
+          if (_to = '')
+            {
+              status := 'SM533';
+              message := 'No recipients where specified. Please enter a recipient in a "To" line.';
+	      goto dsp_err;
+	    }
+	  if (strchr (_to, '<') is null)
+	     _rec := concat ('<',trim (_to),'>');
+	  else
+	    _rec := _to;
+	  if (_cc <> '')
+	    {
+	    if (strchr (_cc, '<') is null)
+	      _rec := concat (_rec, ' <',trim (_cc),'>');
+	      _body := concat (_body, 'Cc: ', _cc ,'\r\n');
+	    }
+
+	  if (_bcc <> '')
+	    {
+	      if (strchr (_bcc, '<') is null)
+	        _rec := concat (_rec, ' <',trim (_bcc),'>');
+	      _body := concat (_body, 'Bcc: ', _bcc ,'\r\n');
+	    }
+          _body := concat (_body, output);
+          if (_server <> 'NONE')
+	    {
+	      exec ('smtp_send (?,?,?,?)', status, message, vector (_server, _sender, _rec, _body));
+	    }
+	  else
+	    NEW_MAIL (_own, _body);
+	  if (status = '00000')
+	    {
+	      delete from MAIL_PARTS where MP_OWN = _own;
+	      _count := 0;
+	      _to := ''; _subj := ''; _cc :=''; _bcc := ''; _msg_text := '';
+	      http_rewrite ();
+?>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="../admin/admin_style.css">
+<meta name="AUTHOR" content="OpenLink Software">
+<meta name="DESCRIPTION" content="MIME messages">
+<title>Mail message sent</title>
+</head>
+<BODY CLASS="AdmPagesBody">
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING=0 CELLSPACING=0>
+<TR><TD CLASS="AdmPagesTitle" COLSPAN="2"><H2>Mail message status</H2></TD></TR>
+<TR CLASS="AdmBorders"><TD COLSPAN="2">
+<IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR CLASS="ctrlmain"><TD><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD>
+<TD ROWSPAN="2" align=left>
+<P style="margin-top: 5px">
+The mail message was sent. Click <A href="mime_compose.vsp"><b>here</b></A> to compose a new.</P>
+<P style="margin-bottom: 0px">
+</P>
+</TD></TR>
+<TR CLASS="ctrlmain"><TD COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD>
+</TABLE>
+<?include ../admin/admin_footer.vsp ?>
+</BODY>
+</HTML>
+<?vsp
+              return;
+	    }
+	}
+      else
+	{
+	  delete from MAIL_PARTS where MP_ID = atoi (_submit) and MP_OWN = _own;
+          _count := _count - 1;
+	}
+    }
+dsp_err:
+?>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" HREF="<?=adm_what_css()?>">
+<meta name="AUTHOR" content="OpenLink Software">
+<meta name="DESCRIPTION" content="MIME composition">
+<title>Messages List</title>
+</head>
+<?vsp adm_page_header('New MIME Message', 'mimecompose'); ?>
+
+  <!--BODY CLASS="admpagesbody">
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING=0 CELLSPACING=0>
+<TR><TD CLASS="admpagestitle" COLSPAN="2"><H2>New MIME Message</H2></TD></TR>
+<TR CLASS="adm_borders"><TD COLSPAN="2"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR CLASS="ctrlmain"><TD COLSPAN="2"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR CLASS="ctrlmain"><TD COLSPAN="2"-->
+    <!-- If we have any smtp error -->
+    <?vsp if (status <> '00000') { ?>
+    <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+    <TR CLASS="genheaderror"><TD COLSPAN="2">Error</TD></TR>
+    <TR><TD CLASS="genlisthead">SQL state</TD><TD CLASS="gendata"><?=status?></TD></TR>
+    <TR><TD CLASS="genlisthead">Message</TD><TD CLASS="gendata"><?=message?></TD></TR>
+    </TABLE>
+    <?vsp } ?>
+<FORM method="post" action="mime_compose.vsp" enctype="multipart/form-data" name="mime">
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="2">New Message</TD></TR>
+<TR CLASS="AdmBorders"><TD COLSPAN="2"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<tr><td CLASS="genlisthead">From</td><td><input type="text" name="from" value="<?= _addr ?>" size=60></td></tr>
+<tr><td CLASS="genlisthead">To</td><td><input type="text" name="to"  value="<?= _to ?>"size=60></td></tr>
+<tr><td CLASS="genlisthead">Cc</td><td><input type="text" name="cc" value="<?= _cc ?>" size=60></td></tr>
+<tr><td CLASS="genlisthead">Bcc</td><td><input type="text" name="bcc" value="<?= _bcc ?>" size=60></td></tr>
+<tr><td CLASS="genlisthead">Subject</td><td><input type="text" name="subject" value="<?= _subj ?>" size=60></td></tr>
+<tr><td CLASS="genlisthead" width="150">SMTP Server &amp; Port (NONE to store)</td><td><input type="text" name="server" value="<?= _server ?>" size=60></td></tr>
+<tr><td CLASS="genlisthead">Message Text</td><td><TEXTAREA name=msg_text rows=10 cols=50><?=_msg_text?></TEXTAREA></td></tr>
+<tr><td CLASS="genlisthead">Send message text as</td><td><select name=msg_text_type>
+                                                               <option value="text/plain" <?= select_if (_msg_text_type,'text/plain') ?>>Plain text</option>
+                                                               <option value="text/html" <?= select_if (_msg_text_type, 'text/html') ?>>HTML</option>
+						               </select>
+</td></tr>
+<tr><td CLASS="genlisthead" valign="top">MIME Message Parts</td>
+<td>
+
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<?vsp
+if (_count > 0)
+	{
+    http('<TR CLASS="AdmBorders"><TD COLSPAN="4"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+    http ('<tr><td CLASS="genlisthead">Part ID</td><td CLASS="genlisthead">File name</td><td CLASS="genlisthead">Content Type</td></td><td CLASS="genlisthead">Delete</td></tr>');
+	} else
+    http ('<tr><td class="gendata" colspan="4">*** No message parts entered ***</td></tr>');
+    declare lsl1 integer;
+    for select MP_ID, get_keyword_ucase ('Content-Type', deserialize (blob_to_string(MP_ATTRS))) as msg_type, get_keyword_ucase ('filename', deserialize (blob_to_string(MP_ATTRS))) as c_disp  from MAIL_PARTS do {
+
+
+		      if (c_disp like '_:\%')
+			{
+                          lsl1 := strrchr (c_disp, '\\');
+                          if (lsl1 is not null and lsl1 < length (c_disp) - 1)
+                            c_disp := substring (c_disp, lsl1 + 2, length (c_disp));
+			}
+?>
+       <tr>
+	   <td CLASS="gendata">
+	      <?vsp http (concat ('<A href=mime_compose.vsp?part=', cast (MP_ID as varchar), '>')); ?>
+              <?= MP_ID ?>
+              </A>
+	   </td>
+	   <td CLASS="gendata">
+	      <?= either (length (c_disp), c_disp, '---') ?>
+	   </td>
+	   <td CLASS="gendata">
+	      <?= either (length (msg_type), msg_type, 'text/plain') ?>
+	   </td>
+	   <td CLASS="gendata">
+	      <?vsp http (sprintf ('<INPUT type=\"submit\" value=\"%d\" name=\"submit\">', MP_ID)); ?>
+	   </td>
+       </tr>
+    <?vsp }?>
+</table>
+</td></tr>
+<tr><td colspan="2" align="right">
+<INPUT type=submit value="Send" name="submit">
+</td></tr>
+</table>
+<BR>
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="2">Add New Message Part</TD></TR>
+<TR CLASS="AdmBorders"><TD COLSPAN="2"><IMG SRC="../admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<tr><td CLASS="genlisthead">Message File</td><td><INPUT type=file size=55 name=msg_file></td></tr>
+<tr><td CLASS="genlisthead">WebDAV resource</td><td>
+	<input type="text" name="res" size=50><INPUT type=button name="DAV" value="WebDAV Resource" onclick="window.res = document.mime.res; window.open ('dav_res.vsp', 'window', 'scrollbars=yes, menubar=no, height=430, width=400')">
+</td></tr>
+<tr><td colspan="2" align="right">
+<INPUT type=submit value="Add" name="submit"></td></tr>
+</table>
+</FORM>
+<?vsp adm_page_footer(); ?>
+</html>

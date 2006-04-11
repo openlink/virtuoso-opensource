@@ -1,0 +1,430 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines);
+--no_c_escapes-
+declare _descr, _host, _url, _root, _newd, _flow, _dflow, _del, _idx, _opts, _img, _disabled, _dav varchar;
+declare _opage, _type, _add, _own, _oth, _auth_u, _auth_p, _auth, _n_desc varchar;
+declare _n_own, _nsites, _redir, _store integer;
+  _newd := '1900-01-01 00-00-00';
+  _idx := _del := _opage := _img := _disabled := _dav := _own := _oth :='';
+  _descr := _host := _url := _root := _flow := _dflow := _auth_u := _auth_p := '';
+  _type := 'submit';
+  _add := 'Add';
+  _n_desc := '';
+  _redir := atoi (get_keyword ('redir', params, '1'));
+  _store := atoi (get_keyword ('store', params, '1'));
+if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+  {
+    adm_tell_unauth_dav (lines);
+    return (0);
+  }
+
+if ('' <> get_keyword ('DELETE1', params, '')) goto conf_page;
+
+if ( get_keyword ('Clear', params) = 'Clear')
+  {
+    _descr := _host := _url := _root := _flow := _dflow := '';
+    _idx := _del := 'off';
+    _newd := '1900-01-01 00-00-00';
+    _opts := 'GET';
+  }
+else if (get_keyword('Add', params) = 'Add')
+  {
+    _descr := get_keyword ('descr', params);
+    _host := get_keyword ('host', params);
+    _url := get_keyword ('url', params);
+    _root := get_keyword ('root', params);
+    _newd := get_keyword ('newd', params);
+    _flow := get_keyword ('flow', params);
+    _dflow := get_keyword ('dflow', params);
+    _del := get_keyword ('del', params);
+    _opage := get_keyword ('opage', params);
+    _idx := get_keyword ('idx', params);
+    _opts := get_keyword ('opts', params);
+    _img := get_keyword ('img', params);
+    _dav := get_keyword ('dav', params);
+    _own := get_keyword ('own', params);
+    _auth_u := get_keyword ('auth_u', params, '');
+    _auth := _auth_u;
+    if (_auth_u <> '')
+      {
+        _auth_p := get_keyword ('auth_p', params, '');
+        _auth := concat (_auth_u, ':', _auth_p);
+      }
+    if (_opage = 'on') _opage := 'checked';
+    if (_del = 'on') _del := 'checked';
+    if (_idx = 'on') _idx := 'checked';
+    if (_img = 'on') _img := 'checked';
+    if (_dav = 'on') _dav := 'checked';
+    _oth := get_keyword ('oth', params);
+    if (_oth = 'on') _oth := 'checked';
+
+    if (WS.WS.isempty (_host) or WS.WS.isempty (_root) or WS.WS.isempty (_url))
+      {
+	http ('<strong>Error: Host, Target collection and Start path must be specified</strong>');
+	goto insert_end;
+      }
+    else if (aref (_url, 0) <> ascii ('/'))
+      {
+	http ('<strong>Error: Start path must begin from root</strong>');
+	goto insert_end;
+      }
+    else if (aref (_root, 0) = ascii ('/') or strstr (_root , '..') is not null)
+      {
+	http ('<strong>Error: The local collection/resource destination MUST be a relative path under WebDAV root collection/resource and cannot contain a ''..''.</strong>');
+	goto insert_end;
+      }
+
+
+
+    if (_opage = 'checked')
+      {
+	declare u_arr any;
+ 	declare target_page varchar;
+	if (_url not like '%/')
+	  {
+            u_arr := WS.WS.HREF_TO_ARRAY (_url, '');
+            target_page := u_arr [length (u_arr) - 1];
+	  }
+	else
+	  target_page := 'index.html';
+	-- we'll guess is the root is a collection or not
+        if (_root [length (_root) - 1] = ascii ('/'))
+          _root := concat (_root, target_page);
+      }
+
+    if (exists (select 1 from WS.WS.VFS_SITE where VS_ROOT = _root and VS_HOST = _host))
+      {
+	http ('<strong>Error: Target resource/collection already specified. <br/>
+	       Please do specify another target collection or resource</strong>');
+	goto insert_end;
+      }
+
+      {
+	declare hinf any;
+        hinf := WS.WS.PARSE_URI (_host);
+        if (lower(hinf[0]) = 'http' and hinf[1] <> '')
+          _host := hinf[1];
+	insert into WS.WS.VFS_SITE (VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN, VS_ROOT, VS_NEWER,
+	    VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, VS_OPAGE,
+		VS_REDIRECT, VS_STORE)
+	    values (_descr, _host, _url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = _own),
+	       	_root, stringdate(_newd), _del, _flow, _dflow, _img, _dav, _oth, _auth, _opage, _redir, _store);
+	insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT)
+	    values (_host, _url, now (), 'waiting', _root);
+        _n_desc := _descr;
+      }
+insert_end:;
+  }
+else if (get_keyword ('EDIT', params) <> '')
+  {
+    _disabled := 'disabled';
+    _type := 'hidden';
+    _add := '***';
+    _n_own := 0;
+    select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
+    VS_OPTIONS, VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE
+	into _descr, _host, _url, _idx, _root, _newd, _del,
+        _flow, _dflow, _opts, _img, _dav, _n_own, _oth, _opage, _redir, _store
+       	from WS.WS.VFS_SITE
+	where VS_HOST = get_keyword ('EDIT', params) and VS_ROOT = get_keyword ('root', params);
+    _auth := _opts;
+    if (not WS.WS.isempty (_n_own))
+      select U_NAME into _own from WS.WS.SYS_DAV_USER where U_ID = _n_own;
+    update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_ROOT = _root;
+    _newd := subseq (datestring (_newd), 0, 19);
+    if (isstring (_auth) and strchr (_auth, ':') is not null)
+      {
+        _auth_u := subseq (_auth, 0, strchr (_auth, ':'));
+        _auth_p := subseq (_auth, strchr (_auth, ':') + 1, length (_auth));
+      }
+  }
+else if (get_keyword ('DELETE', params) <> '' and (get_keyword ('proceed', params) = 'Delete'))
+  {
+    _host := get_keyword ('DELETE', params, '');
+    _root := get_keyword ('root', params, '');
+    delete from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+    delete from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root;
+    delete from WS.WS.VFS_URL where VU_HOST = _host and VU_ROOT = _root;
+    delete from SYS_SCHEDULED_EVENT
+	where SE_SQL = concat ('WS.WS.SERV_QUEUE_TOP (\'',_host,'\',\'',_root,'\', 1, 0, null, null)');
+    _host := '';
+    _root := '';
+  }
+else if (get_keyword ('Update', params) = 'Update')
+ {
+    declare _old_url varchar;
+    _descr := get_keyword ('descr', params);
+    _host := get_keyword ('host', params);
+    _url := get_keyword ('url', params);
+    _old_url := get_keyword ('oldurl', params, '');
+    _root := get_keyword ('root', params);
+    _newd := get_keyword ('newd', params);
+    _flow := get_keyword ('flow', params);
+    _dflow := get_keyword ('dflow', params);
+    _opage := get_keyword ('opage', params);
+    _del := get_keyword ('del', params);
+    _idx := get_keyword ('idx', params);
+    _opts := get_keyword ('opts', params);
+    _img := get_keyword ('img', params);
+    _dav := get_keyword ('dav', params);
+    _own := get_keyword ('own', params);
+    if (_opage = 'on') _opage := 'checked';
+    if (_del = 'on') _del := 'checked';
+    if (_idx = 'on') _idx := 'checked';
+    if (_img = 'on') _img := 'checked';
+    if (_dav = 'on') _dav := 'checked';
+    _oth := get_keyword ('oth', params);
+    if (_oth = 'on') _oth := 'checked';
+    _auth_u := get_keyword ('auth_u', params, '');
+    _auth := _auth_u;
+    if (_auth_u <> '')
+      {
+        _auth_p := get_keyword ('auth_p', params, '');
+        _auth := concat (_auth_u, ':', _auth_p);
+      }
+    update WS.WS.VFS_SITE set VS_DESCR = _descr,
+        VS_INX = _idx, VS_OWN = (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = _own),
+	VS_NEWER = stringdate (_newd),
+       	VS_DEL = _del, VS_FOLLOW = _flow, VS_NFOLLOW = _dflow , VS_SRC = _img, VS_OPAGE = _opage,
+       	VS_METHOD = _dav , VS_OTHER = _oth, VS_OPTIONS = _auth, VS_URL = _url,
+        VS_REDIRECT = _redir, VS_STORE = _store
+        where
+	    VS_HOST = _host and VS_ROOT = _root;
+    if (not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url))
+      update WS.WS.VFS_QUEUE set VQ_URL = _url where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _old_url;
+  _newd := '1900-01-01 00-00-00';
+  _idx := _del := _opage := _img := _disabled := _dav := _own := _oth :='';
+  _descr := _host := _url := _root := _flow := _dflow := _auth_u := _auth_p := '';
+  _type := 'submit';
+  _add := 'Add';
+  _n_desc := '';
+  _redir := 1;
+  _store := 1;
+ }
+?>
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Target Web site definition">
+<title>Web copy</title>
+</head>
+<?vsp
+      adm_page_header('Targets for Web Robot', 'webdataimportsexports');
+
+      if (_n_desc <> '')
+--    http (_n_desc);
+        {
+?>
+       <p>Target <description> added.  This retrieval has been added to</p>
+       <p>the Virtuoso scheduler queue.  To activate this retrieval you</p>
+       <p>should schedule it.</p>
+       <p><a href="admin_vfs_queue.vsp">Schedule target retrievals</a></p>
+       <p><a href="admin_vfs_site.vsp">Return to target descriptions</a></p>
+<?vsp
+           goto end_page;
+	}
+?>
+<!--A href="vfs.html"><img src="/images/home.gif"></A-->
+<form method=POST action="admin_vfs_site.vsp">
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="2">Target definition</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+<tr><td class="genlisthead">Target description</td>
+	<td class="geninput"><input type="text" name="descr" size="60%" value="<?= _descr ?>"> </td></tr>
+<tr><td class="genlisthead">Target host name</td>
+<?vsp if ('disabled' <> _disabled) { ?>
+	<td class="geninput"><input type="text" size="60%" <?= _disabled ?> name="host" value="<?= _host ?>"></td></tr>
+<?vsp } else { ?>
+	<td class="geninput"><b><?= _host ?></b><input type="hidden" name="host" value="<?= _host ?>"></td></tr>
+<?vsp } ?>
+
+<tr><td class="genlisthead">Start path in target</td>
+	<td class="geninput"><input type="text" size="60%" name="url" value="<?= _url ?>">
+	<input type="hidden" size="60%" name="oldurl" value="<?= _url ?>"></td></tr>
+<tr><td class="genlisthead">Login name on target</td>
+	<td class="geninput"><input type="text" name="auth_u" size="20" value="<?= _auth_u ?>"></td></tr>
+<tr><td class="genlisthead">Login password on target</td>
+	<td class="geninput"><input type="password" name="auth_p" size="20" value="<?= _auth_p ?>"></td></tr>
+<tr><td class="genlisthead">Copy to local DAV collection<br />
+	<small>(the collection name must have a trailing slash)</small></td>
+<?vsp if ('disabled' <> _disabled) { ?>
+	<td class="geninput"><input type="text" <?= _disabled ?> name="root" size="60%" value="<?= _root ?>"></td></tr>
+<?vsp } else { ?>
+	<td class="geninput"><b><?= _root ?></b><input type="hidden" name="root" value="<?= _root ?>"></td></tr>
+<?vsp } ?>
+<tr><td class="genlisthead">Single page download</td>
+<!--<td class="geninput"><input type="checkbox" size="30%" name="opage" < _opage ></td></tr>-->
+    <td class="geninput">
+    Yes<input type="radio" name="opage" value='checked' <?=check_if ('checked', _opage)?>>
+    No<input type="radio" name="opage" value="" <?vsp if (_opage is NULL or _opage ='') http ('checked'); ?>>
+    </td></tr>
+<tr><td class="genlisthead">Local resources owner</td>
+	<td class="geninput"><select name="own">
+<?vsp
+  for (select u_name from WS.WS.SYS_DAV_USER) do
+    {
+      http ('<option');
+      if (u_name = _own)
+	http (' selected>');
+      else
+	http ('>');
+      http (u_name);
+      http ('</option>');
+    }
+?>
+	</td></tr>
+<tr><td class="genlisthead">Download only newer than</td>
+	<td class="geninput"><input type="text" name="newd" size="60%" value="<?= _newd ?>"></td></tr>
+<tr><td class="genlisthead">Follow links matching<EM><br>(delimited with ;)</EM></td>
+	<td class="geninput"> <input type="text" name="flow" size="60%" value="<?= _flow ?>"></td></tr>
+<tr><td class="genlisthead">Do NOT follow links matching<EM><br>(delimited with ;)</EM></td>
+	<td class="geninput"> <input type="text" size="60%" name="dflow" value="<?= _dflow ?>"></td></tr>
+<tr><td class="genlisthead">Download images</td>
+    <td class="geninput">
+    Yes<input type="radio" name="img" value='checked' <?=check_if ('checked', _img)?>>
+    No<input type="radio" name="img" value="" <?vsp if (_img is NULL or _img ='') http ('checked'); ?>>
+    </td></tr>
+<tr><td class="genlisthead">Use WebDAV methods</td>
+    <td class="geninput">
+    Yes<input type="radio" name="dav" value='checked' <?=check_if ('checked', _dav)?>>
+    No<input type="radio" name="dav" value="" <?vsp if (_dav is NULL or _dav ='') http ('checked'); ?>>
+    </td></tr>
+<tr><td class="genlisthead">Delete If Remove On Remote Detected</td>
+    <td class="geninput">
+    Yes<input type="radio" name="del" value='checked' <?=check_if ('checked', _del)?>>
+    No<input type="radio" name="del" value="" <?vsp if (_del is NULL or _del ='') http ('checked'); ?>>
+    </td></tr>
+
+<tr><td class="genlisthead">Follow HTTP redirects</td>
+    <td class="geninput">
+    Yes<input type="radio" name="redir" value="1" <?vsp if (_redir <> 0 or _redir is null) http ('checked'); ?>>
+    No<input type="radio" name="redir" value="0" <?=check_if (0, _redir)?>>
+    </td></tr>
+<tr><td class="genlisthead">Store content locally</td>
+    <td class="geninput">
+    Yes<input type="radio" name="store" value="1" <?vsp if (_store <> 0 or _store is null) http ('checked'); ?>>
+    No<input type="radio" name="store" value="0" <?=check_if (0, _store)?>>
+    </td></tr>
+<!--tr><td class="genlisthead">Go to other sites</td>
+    <td class="geninput"><input type="checkbox" size="30%" name="oth" <?= _oth ?>></td></tr>
+<tr-->
+	<td colspan="2" align="center">
+		<input type=<?= _type ?> name=<?= _add ?> value="<?= _add ?>">
+<?vsp if ('disabled' = _disabled) { ?>
+		<input type="submit" name="Update" value="Update">
+<?vsp } ?>
+		<input type="submit" name="Clear" value="Clear"></td>
+</tr>
+</table>
+
+<BR />
+<TABLE class="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD class="genhead" COLSPAN="6">Current Targets</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="6"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+<tr><th class="genlistheadt">Description</th>
+<th class="genlistheadt">Host</th>
+<th class="genlistheadt">Start Path</th>
+<th class="genlistheadt">Target Collection</th>
+<th class="genlistheadt" colspan=2>Actions</th></tr>
+<?vsp
+declare _exs integer;
+_exs := 0;
+for select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE do {
+http (concat ('<tr><td class="gendata">', VS_DESCR, '</td><td class="gendata">', VS_HOST,
+      '</td><td class="gendata">', VS_URL,
+      '</td><td class="gendata">', VS_ROOT, '</td><td class="gendata">',
+      '<a class="tablelistaction" href="admin_vfs_site.vsp?EDIT=',VS_HOST));
+      http ('&url=');
+      http_url (VS_URL);
+      http ('&root=');
+      http_url (VS_ROOT);
+      http (concat ('">Edit</a>',
+      '</td><td class="gendata">',
+      '<a class="tablelistaction" href="admin_vfs_site.vsp?DELETE1=', VS_HOST));
+      http ('&url=');
+      http_url (VS_URL);
+      http ('&root=');
+      http_url (VS_ROOT);
+      http (concat ('">Remove</a>',
+      '</td></tr>\n'
+      ));
+_exs := 1;
+};
+if (_exs = 0)
+    http ('<tr><td class="gendata" colspan="6" align=center><strong>*** There are currently no Web site definitions ***</strong></td></tr>');
+?>
+</table>
+</form>
+<?vsp
+  end_page:
+  adm_page_footer();
+?>
+</html>
+
+<?vsp
+return;
+conf_page:;
+
+  declare _name varchar;
+
+  _host := get_keyword ('DELETE1', params);
+  _root := get_keyword ('root', params);
+  _url := get_keyword ('url', params);
+
+  select VS_DESCR into _name from WS.WS.VFS_SITE where VS_ROOT = _root and VS_HOST = _host;
+
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>Confirmation</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Deleting Web robot target">
+  </head>
+  <BODY>
+<?vsp adm_page_header(concat ('Deleting Web robot target ', _name), NULL); ?>
+    <form method="POST" action="admin_vfs_site.vsp" name="delete_site">
+    <table border="0" width="60%">
+      <tr><td class="genlistheadt"> You are about to delete the target <?= _name?>. This deletion cannot be undone. Do you wish to continue?</td></tr>
+      <input type="hidden" name="DELETE" value="<?= _host ?>">
+      <input type="hidden" name="root" value="<?= _root ?>">
+      <input type="hidden" name="url" value="<?= _url ?>">
+      <tr>
+      <td align="center">
+         <input type="submit" name="proceed" value="Delete">&nbsp;
+	 <input type="submit" name="proceed" value="Cancel"></td>
+      </tr>
+    </form>
+    </table>
+</TD></TR>
+<TR><TD CLASS="ctrlmain" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+</TABLE>
+<?include ../admin_footer.vsp ?>
+  </body>
+</html>
+

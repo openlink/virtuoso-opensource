@@ -1,0 +1,191 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<!-- -*- html -*- -->
+<?vsp
+  declare idx, len integer;
+  declare _driver, _type, _dsn_name, _dsn_name_old, _desc, _server, _database varchar;
+  declare _user, _pass, _host, _read_only, _no_log, _srv_options, _buff varchar;
+  declare _srv_type, _srv_type_text, _buff, _driver_e, _head, _dname varchar;
+  declare msg, state varchar;
+  declare con_str varchar;
+
+  _dsn_name := get_keyword ('dsn_name', params, '');
+  _dsn_name_old := get_keyword ('dsn_name_old', params, '');
+  _driver := get_keyword ('driver', params, '');
+  _driver_e := deserialize (decode_base64 (_driver));
+  _type := get_keyword ('type', params, '');
+  _desc := get_keyword ('desc', params, '');
+  _server := get_keyword ('server', params, '');
+  _database := get_keyword ('database', params, '');
+  _user := get_keyword ('user', params, '');
+  _pass := get_keyword ('pass', params, '');
+  _read_only := get_keyword ('read_only', params, '');
+  _no_log := get_keyword ('no_log', params, '');
+  _host := get_keyword ('host', params, '');
+  _srv_options := get_keyword ('srv_opt', params, '');
+  _srv_type := get_keyword ('srv_type', params, '');
+  _srv_type_text := get_keyword ('srv_type_text', params, '');
+  _buff := get_keyword ('buff', params, '');
+  _head := get_keyword ('head', params, '');
+
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<HTML>
+  <head>
+  <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <title>New OpenLink Data Sources</title>
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Link External DSN into Virtuoso using VSP">
+  </head>
+<?vsp
+  adm_page_header(_head, NULL);
+  if (is_empty_or_null (_dsn_name) and get_keyword ('test', params) = '')
+    {
+?>
+  <TR><TD COLSPAN="2" ALIGN="center">You must enter DSN name</TD></TR>
+  <FORM method="POST" action="admin_dsn_add_generic32_2.vsp">
+    <TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+    <TR><TD COLSPAN="2" ALIGN="center"><B> Name</B>: <input type="text" name="dsn_name" value="" size="10"></TD></TR>
+    <TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+    <TR><TD COLSPAN="2" ALIGN="center">
+    <INPUT type="hidden" name="type" value="<?=_type?>">
+    <INPUT type="hidden" name="driver" value="<?=_driver?>">
+    <INPUT type="hidden" name="desc" value="<?=_desc?>">
+    <INPUT type="hidden" name="server" value="<?=_server?>">
+    <INPUT type="hidden" name="database" value="<?=_database?>">
+    <INPUT type="hidden" name="user" value="<?=_user?>">
+    <INPUT type="hidden" name="read_only" value="<?=_read_only?>">
+    <INPUT type="hidden" name="no_log" value="<?=_no_log?>">
+    <INPUT type="hidden" name="host" value="<?=_host?>">
+    <INPUT type="hidden" name="srv_opt" value="<?=_srv_options?>">
+    <INPUT type="hidden" name="srv_type" value="<?=_srv_type?>">
+    <INPUT type="hidden" name="srv_type_text" value="<?=_srv_type_text?>">
+    <INPUT type="hidden" name="buff" value="<?=_buff?>">
+    <INPUT type="hidden" name="dsn_name_old" value="<?=_dsn_name_old?>">
+    <INPUT type="hidden" name="edit" value="1">
+    <INPUT type="hidden" name="head" value="<?=_head?>">
+    <INPUT type="submit" name="add" value="   OK   ">
+    </FORM>
+  </TD></TR>
+  <TR><TD COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="15"></TD></TR>
+
+<?vsp
+    }
+  else
+    {
+      if (is_empty_or_null (_dsn_name))
+	_dsn_name := '__temp__dsn__';
+
+      const_string_add_generic32 (params);
+      if (is_empty_or_null (get_keyword ('test', params)))
+	{
+	  if (is_empty_or_null (get_keyword ('edit', params)))
+	    {
+	       http ('<TR><TD CLASS="ctrlmain" COLSPAN="2" ALIGN="center">New Data Source Successfully Added.<BR /><BR /></TD></TR>');
+	       if (_type = 'file')
+	         http (sprintf ('<TR><TD CLASS="ctrlmain" COLSPAN="2" ALIGN="center">%V%V.dsn<BR /><BR /></TD></TR>', server_root (), _dsn_name));
+	    }
+	  else
+	    http ('<TR><TD CLASS="ctrlmain" COLSPAN="2" ALIGN="center">Data Source Successfully Updated<BR /><BR /></TD></TR>');
+?>
+  <TR><TD COLSPAN="2" ALIGN="center" CLASS="ctrlmain">
+    <FORM method="POST" action="admin_dsn.vsp">
+    <INPUT type="submit" name="add" value="OK">
+    </FORM>
+  </TD></TR>
+<?vsp
+	}
+      else
+	{
+
+--
+--        CONNECTION STRING
+--
+
+	  con_str := concat ('DSN=', _dsn_name, ';');
+	  con_str := concat (con_str, 'UID=', _user, ';');
+	  con_str := concat (con_str, 'PWD=', _pass, ';');
+
+          if (_read_only='on')
+	    con_str := concat (con_str, 'READONLY=1;');
+          else
+	    con_str := concat (con_str, 'READONLY=0;');
+
+	  con_str := concat (con_str, 'FBS=', _buff, ';');
+
+          if (_server <> '')
+            con_str := concat (con_str, 'SVT=', _server, ';');
+
+          if (_database <> '')
+	    con_str := concat (con_str, 'DATABASE=', _database);
+
+	  state := '00000';
+	  msg := '';
+
+	  exec ('sql_driver_connect (?)', state, msg, vector (con_str));
+
+	  if (msg = '' and state = '00000')
+	    {
+	      http ('<b>Connected successfully</b><BR /><BR />');
+	    }
+	  else
+	    {
+	       if (_dsn_name = '__temp__dsn__')
+		 _dname := '';
+	       else
+		 _dname := _dsn_name;
+
+	       http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
+	       http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Testing DSN %V failed:</TD></TR>', _dname));
+	       http ('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
+	       http (sprintf ('<TR><TD CLASS="genlisthead">SQL State</TD><TD CLASS="gen_data">%s</TD></TR>', coalesce (state, '')));
+	       http (sprintf ('<TR><TD CLASS="genlisthead">Error Message</TD><TD CLASS="gen_data">%s<BR /><BR /></TD></TR>', coalesce (msg, '')));
+	       http ('</TABLE>');
+	    }
+
+	  http ('</TD></TR>');
+
+?>
+  <TR><TD CLASS="ctrlmain" COLSPAN="2" ALIGN="center">
+    <FORM method="POST" action="admin_dsn_add_generic32.vsp">
+    <INPUT type="hidden" name="test" value="1">
+    <INPUT type="submit" name="after_test" value="OK">
+<?vsp
+    if ("LEFT" (_head, 3) = 'New')
+      http ('<INPUT type="hidden" name="mode" value="n">');
+?>
+    <INPUT type="hidden" name="edit" value="1">
+    <INPUT type="hidden" name="name" value="<?=_dsn_name?>">
+    <INPUT type="hidden" name="type" value="<?=_type?>">
+    <INPUT type="hidden" name="driver" value="<?=_driver?>">
+    </FORM>
+
+<?vsp
+	}
+    }
+
+  adm_page_footer();
+ ?>
+</HTML>

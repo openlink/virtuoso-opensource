@@ -1,0 +1,236 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="vspx_template">
+<refmeta>
+  <refentrytitle>vspx_template</refentrytitle>
+  <refmiscinfo>vspx_control</refmiscinfo>
+</refmeta>
+<refnamediv>
+  <refname>vspx_template</refname>
+  <refpurpose>container for controls or HTML code</refpurpose>
+</refnamediv>
+<refsynopsisdiv>
+  <funcsynopsis id="syn_vspx_template">
+    <funcprototype id="proto_vspx_template">
+      <funcdef>
+        <function>template</function>
+      </funcdef>
+      <attributes>
+        <attribute>name (required) </attribute>
+        <attribute>annotation (optional) </attribute>
+        <attribute>initial-enable (optional) </attribute>
+        <attribute>type (optional) </attribute>
+        <attribute>redirect (optional) </attribute>
+        <attribute>condition (optional) </attribute>
+        <attribute>name-to-remove (optional) </attribute>
+        <attribute>set-to-remove (optional) </attribute>
+      </attributes>
+      <childs>
+        <child>after-data-bind</child>
+        <child>after-data-bind-container</child>
+        <child>before-data-bind</child>
+        <child>before-data-bind-container</child>
+        <child>on-post</child>
+        <child>on-post-container</child>
+        <child>before-render</child>
+        <child>before-render-container</child>
+        <child>radio-button</child>
+        <child>button</child>
+        <child>check-box</child>
+        <child>select-list</child>
+        <child>textarea</child>
+        <child>text</child>
+        <child>update-field</child>
+        <child>key</child>
+        <child>variable</child>
+        <child>label</child>
+        <child>url</child>
+        <child>data-grid</child>
+        <child>data-set</child>
+        <child>data-list</child>
+        <child>tab</child>
+        <child>tree</child>
+        <child>include</child>
+        <child>error-summary</child>
+        <child>radio-button</child>
+        <child>button</child>
+        <child>check-box</child>
+        <child>select-list</child>
+        <child>textarea</child>
+        <child>text</child>
+        <child>update-field</child>
+        <child>key</child>
+        <child>node</child>
+        <child>form</child>
+        <child>template</child>
+        <child>login</child>
+        <child>login-form</child>
+      </childs>
+      <class>
+        <screen><![CDATA[
+				
+				create type vspx_template under vspx_control
+                                temporary self as ref
+                                constructor method vspx_template (name varchar, parent vspx_control)
+                                ;
+			    	-- repeatable version
+				create type vspx_row_template under vspx_control
+				as (
+				    te_rowset any, 		-- the row data, vector in order as in columns selected
+				    te_ctr int default 0,	-- index in result set
+				    te_editable int default 0	-- edit is enabled
+				   ) temporary self as ref
+				constructor method vspx_row_template (name varchar,rowset any, parent vspx_control, ctr int)
+				;
+				
+			    ]]>
+        </screen>
+      </class>
+    </funcprototype>
+  </funcsynopsis>
+</refsynopsisdiv>
+<refsect1 id="desc_vspx_template">
+  <title>Description</title>
+  <para>
+    <function>vspx_template</function>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node represantation)</para>
+</refsect1>
+<refsect1 id="attrs_vspx_template">
+  <title>Attributes</title>
+  <refsect2>
+    <title>name</title>
+    <para>A unique name identifying the control.</para>
+  </refsect2>
+  <refsect2>
+    <title>annotation</title>
+    <para>A human readable comment.</para>
+  </refsect2>
+  <refsect2>
+    <title>initial-enable</title>
+    <para>Designates is control visible or not initially. Could be data-bound to an SQL expression.</para>
+  </refsect2>
+  <refsect2>
+    <title>type</title>
+    <para>The behaviour of the template.</para>
+    <para>
+         &#39;row&#39; : A repeating row of v:data-set. The template of this type will be repeated for each row in the window of the data-set. It will be instantiated, data bound, rendered.  If the template contains forms and submits, they get the post method called as one would expect.
+On data binding, the parent of the template has its dg_current_row data member set to an array representing the selected row from left to right. 
+
+The controls under this template (such as text, label, button etc.) can access data in current row in order as columns are given by referencing te_rowset member of row template.
+
+(NOT IMPLEMENTED!!!: Also the method vc_get_field can be used on the data_grid to get a named column value for the current row for data binding a child of the template when instantiating the template.)
+    
+</para>
+    <para>
+         &#39;frame&#39; : 
+OBSOLETE! A non-repeating static content of v:data-grid.
+Content of this template represents view in page when rows are selected,
+position of scroll buttons, rowset and form for adding a record.
+</para>
+    <para>
+         &#39;if-exists&#39; : 
+Template that is enabled only if the resultset is not empty in v:data-set.
+</para>
+    <para>
+         &#39;if-not-exists&#39; : Template that is enabled only if the resultset is empty in v:data-set.</para>
+    <para>
+         &#39;add&#39; : Template that is enabled when user adds new record in the resultset in v:data-set (if the resultset is not read-only).
+Similarly to templates of type &#39;edit&#39;, the &#39;add&#39; template contains a vspx:form of type &#39;update&#39; that is used to allow adding of rows in table as specified.
+Usually this form is a update-form + update-fields constrained to columns and table selected in SQL expression of the parent vspx:data-set control with value of key attributes set to null. Please remember to set the &#39;if-not-exists&#39; attribute of the form to &#39;insert&#39;.</para>
+    <para>
+         &#39;edit&#39; : Template that is enabled when user edits an existing record in the resultset in v:data-set (if the resultset isnot read-only and if the &#39;edit&#39; attribute of v:data-set is set to &#39;true&#39;).
+The template of this type usually contains a vspx:form of type &#39;update&#39;;
+the &#39;table&#39; attribute of the form is the name of the table from &#39;sql&#39; attribute of the v:data-set where the &#39;edit&#39; template is located; controls of the form are usually constrained to columns of the SQL expression of that &#39;sql&#39; attribute.</para>
+    <para>
+         &#39;if-login&#39; : Template that is enabled when user is logged in (e.g. for use in v:login. If the login is valid, the contents of this child will be instantiated.  This can be for example a button with &#39;action&#39; attribute set to &#39;logout&#39;, a welcome message or such.  When using the vspx:login system, the user name is is obtained by connection_get (&#39;vspx_user&#39;).</para>
+    <para>
+         &#39;if-not-login&#39; : Template that is enabled when user is not yet logged in or is already logged out (e.g. for use in v:login.
+The template specifies what to do if there are no credentials with the page.
+If the &#39;redirect&#39; attribute is given, then the entire page containing
+this is not processed at all but instead the page specified in the url
+is processed instead, with the context being that of the invocation of
+this page.  The redirect page can thus ask for the login and having
+checked it return to this page, since it knows the url for this.  In
+this way it is possible to bookmark places of which the uri&#39;s may
+expire, and accessing an expired place will just prompt for the login
+before going to the page.
+
+
+If the redirect is not specified, the content of the template is instantiated and shown. The content can be arbitrary, e.g. the vspx:login-form control can appear here, providing a standard login form that prompts for a user name and password and has a submit button.</para>
+    <para>
+         &#39;tree-node&#39; : 
+Template for internal nodes of the tree in v:tree (i.e. for nodes with children).
+</para>
+    <para>
+         &#39;tree-leaf&#39; : 
+Template for terminal nodes of the tree in v:tree (i.e. for nodes without children).
+</para>
+  </refsect2>
+  <refsect2>
+    <title>redirect</title>
+    <para>The URL to be redirected user-agent if not authenticated, applicable only when type is &#39;if-no-login&#39;.</para>
+  </refsect2>
+  <refsect2>
+    <title>condition</title>
+    <para>This is a SQL expression to be tested for rendering the template</para>
+  </refsect2>
+  <refsect2>
+    <title>name-to-remove</title>
+    <para>This works together with set-to-remove, see next.</para>
+  </refsect2>
+  <refsect2>
+    <title>set-to-remove</title>
+    <para>This combined with name-to-remove gives posibility to remove a HTML elements from output.</para>
+    <para>
+         &#39;top&#39; : 
+The rendered output of the enclosing template should not contain the first opening tag whose name is equal to the value of &#39;name-to-remove&#39; attribute of the template.
+</para>
+    <para>
+         &#39;bottom&#39; : 
+The rendered output of the enclosing template should not contain the last closing tag whose name is equal to the value of &#39;name-to-remove&#39; attribute of the template.
+</para>
+    <para>
+         &#39;both&#39; : 
+The rendered output of the enclosing template should not contain the both the first opening tag and the last closing tag whose name is equal to the value of &#39;name-to-remove&#39; attribute of the template.
+</para>
+  </refsect2>
+</refsect1>
+<refsect1 id="childs_vspx_template">
+  <title>Children</title>
+</refsect1>
+<refsect1 id="examples_vspx_template">
+  <title>Examples</title>
+  <example id="ex_vspx_template">
+    <title>Simple example</title>
+    <para>Simple template, used in vspx:tab control
+			    </para>
+    <screen><![CDATA[
+				
+				<v:template name="template1" type="simple">
+				This is a first template <br />
+				</v:template>
+				
+			    ]]>
+    </screen>
+  </example>
+</refsect1>
+</refentry>

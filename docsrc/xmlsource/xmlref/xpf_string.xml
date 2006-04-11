@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_string">
+  <refmeta>
+    <refentrytitle>string</refentrytitle>
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>string</refname>
+    <refpurpose>Returns a string value of its argument.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_string">
+      <funcprototype id="xpf_proto_string">
+        <funcdef>string <function>string</function></funcdef>
+	<paramdef><optional><parameter>obj</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_string"><title>Description</title>
+    <para>The string() function converts an object to a string as follows:</para>
+    <itemizedlist mark="bullet" spacing="compact">
+      <listitem><para>An empty sequence is converted to an empty string.</para></listitem>
+      <listitem><para>
+A nonempty node-set is converted to a string by returning the string-value of the first node in the node-set.
+Note that the XPATH standard says that 'first' means 'first in document order' here, not 'first value returned'.
+For almost all queries, there is no difference between these two orders;
+it may be important only for node-sets calculated by so-called reverse-order axis.
+Moreover, the rure of standard is senseless if node-set contains nodes from more than one document.
+That is why the standard is violated here, intentionally.</para></listitem>
+      <listitem><para>
+A nonempty sequence which is not a node-set is converted to a string by returning the string-value of the first node in the sequence.</para></listitem>
+      <listitem><para>A NaN number is converted to the string 'NaN'.</para></listitem>
+      <listitem><para>Zero is converted to the string '0'.</para></listitem>
+      <listitem><para>Positive infinity is converted to the string 'Infinity'</para></listitem>
+      <listitem><para>Negative infinity is converted to the string '-Infinity'</para></listitem>
+      <listitem><para>Integer number is represented in decimal form with no decimal point and no leading zeros, preceded by a minus sign '-' if the number is negative.</para></listitem>
+      <listitem><para>
+Non-integer number is represented in decimal form including a decimal point with at least one digit before the decimal point and at least one digit after the decimal point, preceded by a minus sign '-' if the number is negative;
+there must be no leading zeros before the decimal point apart possibly from the one required digit immediately before the decimal point;
+beyond the one required digit after the decimal point there will be be as many, but only as many, more digits as are needed to uniquely distinguish the number from all other IEEE 754 numeric values.</para></listitem>
+      <listitem><para>The boolean false value is converted to the string 'false'. The boolean 'true' value is converted to the string 'true'.</para></listitem>
+      <listitem><para>An object of a type other than the listed above is converted to a string in a way that is dependent on that type.</para></listitem>
+    </itemizedlist>
+    <para>If the argument is omitted, context node is converted instead as if it is a node-set of one element.</para>
+  </refsect1>
+  <refsect1 id="xpf_params_string"><title>Parameters</title>
+    <refsect2><title>obj</title><para>Value to be converted into the string</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_string"><title>Return Types</title><para>String</para></refsect1>
+  <refsect1 id="xpf_errors_string"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  <refsect1 id="xpf_examples_string"><title>Examples</title>
+    <example id="xpf_ex_string"><title></title>
+      <para></para>
+      <screen>string(//title)</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="xpf_seealso_string"><title>See Also</title>
+    <para><link linkend="xpf_format_number">format_number()</link></para>
+    <para><link linkend="xpf_serialize">serialize()</link></para>
+    <para><link linkend="xpf_urlify">urlify()</link></para>
+    <para><link linkend="xpf_concat">concat()</link></para>
+  </refsect1>
+</refentry>
+

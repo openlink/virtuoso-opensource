@@ -1,0 +1,144 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="VS-S-1">
+  <refmeta>
+    <refentrytitle>Web Server Setup</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Mapping Requests to Resources</refname>
+    <refpurpose>General information about the virtual host/directory mechanism</refpurpose>
+  </refnamediv>
+
+<refsect1 id="VS-S-1a">
+<title>Listening Interface Concepts</title>
+<itemizedlist mark="bullet">
+  <listitem>A single Virtuoso server can accept HTTP requests on multiple interfaces.</listitem>
+  <listitem>Listening interfaces are defined via a virtual directory mechanism (not based on INI setting).</listitem>
+  <listitem>Virtual directory operation can be stopped or started without restarting the server engine.</listitem>
+  <listitem>The request accepted on a given interface can be processed in a separate Web space.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-S-1b">
+<title>Virtual Host</title>
+<itemizedlist mark="bullet">
+  <listitem>The term Virtual Host refers to the practice of maintaining more than one server on one machine, as differentiated
+by their apparent host name. For example, it is often desirable for companies sharing a web server to have their
+own domains, with web servers accessible as www.company1.com and www.company2.com, without requiring the user to
+know any extra path information. The Virtual host can be IP-based or non-IP.</listitem>
+  <listitem>The IP-based (named in this document as multihosting) refers to the practice of making one machine listen on
+different interfaces and respond with different pages.</listitem>
+  <listitem>The non-IP (named virtual hosting) refers to the practice where one machine is allocated more than one DNS
+alias. The web content served can then be based on the alias that the client contacted, as identified by the
+'Host' HTTP header field.</listitem>
+  <listitem>A single Virtuoso server can map requests into multiple spaces of web pages based on the interface to
+  which the requests come (multihosting) or on the Host HTTP/1.1 header (virtual hosting).</listitem>
+  <listitem>A single physical interface can map multiple virtual hosts.</listitem>
+  <listitem>The virtual host name must be defined also in Domain Name Server as an alias of the official host name.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-S-1c">
+<title>Attributes</title>
+<itemizedlist mark="bullet">
+  <listitem>Logical Path - The path part from URL which user-agent wants.</listitem>
+  <listitem>Mapped Path - Defacto location of requested Web resource.</listitem>
+  <listitem>Is in DAV - The Virtuoso server has space for Distributed Authoring &amp; Versioning (DAV see: rfc2518 for details) under "/DAV" URL. The logical path can me mapped in to this space.</listitem>
+  <listitem>Default page - The name of page or resource on Web server to show if a directory/folder is requested. It applies to the entire subdirectory tree.</listitem>
+  <listitem>Is browseable - If no default page specified or page does not exist, then show directory content. Warning: This setting can raise security problems, because all directory content will be shown.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-S-1d">
+<title>Security</title>
+<itemizedlist mark="bullet">
+  <listitem>The Web server has access to the file system directory (see ServerRoot INI setting) using the privileges
+	of the user who is running it.</listitem>
+  <listitem>Access to the WebDAV repository can be restricted to only special accounts, as each resource/folder can
+   have different permissions applied.</listitem>
+  <listitem>Execution in a mapped path can be enabled/disabled.</listitem>
+  <listitem>Basic and Digest HTTP authentication schemes can be used.</listitem>
+  <listitem>HTTPS listeners can be started.</listitem>
+  <listitem>User-agent's certificate can be requested and checked.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-S-1e">
+<title>Authentication Function</title>
+<itemizedlist mark="bullet">
+  <listitem>An application dependant PL function for HTTP authentication can be defined for each path mapping.</listitem>
+  <listitem>The authentication function can be used to restore session variables.</listitem>
+  <listitem>The built-in authentication functions can be used.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-S-1f">
+<title>Request Postprocessing Function</title>
+<itemizedlist mark="bullet">
+  <listitem>An application dependant PL function can be defined for each path mapping to store the session variables
+  (in session table).</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-S-1g">
+<title>Database User Accounts for execution of active content</title>
+<itemizedlist mark="bullet">
+  <listitem>Database User Account for VSP: For each path mapping, a different Database account can be supplied.
+  The VSP will be executed on behalf of this account.</listitem>
+  <listitem>Database user account for SOAP: For each path mapping, the SOAP calls can be assign to a different Database
+  account. The WSDL schema will show only PL procedures granted to this account.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="VS-S-1h">
+<title>Example Listen host &amp; Virtual host mappings</title>
+<para>It is possible to have a mapping in the file system /www1/ for  http://www.a.com/ requests.
+    In this case we will specify the listen host www.a.com (the port default is 80), logical path / and
+	physical location /www1/.</para>
+<para>In some cases more than one web server is needed on the same machine. A second DNS alias www.b.com can
+	be routed to the www.a.com. A mapping for this alias can then be: listen host is again www.a.com but virtual host is
+	www.b.com and physical location can be a /www2/ under HTTP root directory. When a User-Agent requests the
+	http://www.b.com/ it will send a 'Host' header field, in this field value will be 'www.b.com'. The web server will
+	find a second map and will try to process the pages under /www2/.</para>
+</refsect1>
+
+<refsect1 id="VS-S-1i">
+<title>Finding the closest applicable mapping</title>
+<para>Its possible to define more than one mapping for one virtual/listen host combination. In this case the closest
+match to the request is used. For example with the following mappings:</para>
+<table border="1">
+<tr><th>Logical Path</th><th>Physical Path</th></tr>
+<tr><td>www.a.com/</td><td>/www/a</td></tr>
+<tr><td>www.a.com/a</td><td>/www/b</td></tr>
+</table>
+<para>Gets the following mapping:</para>
+<table border="1">
+<tr><th>Request</th><th>Physical Path</th></tr>
+<tr><td>http://www.a.com/a/</td><td>/www/b</td></tr>
+<tr><td>http://www.a.com/other</td><td>/www/a/other</td></tr>
+</table>
+<para>The Web server will find the closest path match when processing the logical to physical mapping.</para>
+</refsect1>
+</refentry>

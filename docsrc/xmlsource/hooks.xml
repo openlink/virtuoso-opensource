@@ -1,0 +1,811 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<chapter label="hooks.xml" id="hooks">
+<title>Database Event Hooks</title>
+
+  <abstract>
+    <para>Virtuoso provides a number of hooks that enable you to traps events
+    within the database such as startup, shutdown, connection, disconnection and
+    SQL compilation events.</para>
+  </abstract>
+
+  <para>
+Virtuoso allows the dba to set hooks for various events, such as:
+</para>
+
+<simplelist>
+  <member>Startup</member>
+  <member>Shutdown</member>
+  <member>Client Connect</member>
+  <member>Client Disconnect</member>
+  <member>Compilation of a Dynamic SQL Statement</member>
+</simplelist>
+
+  <para>
+These events are intercepted by calling a SQL procedure if one is defined.
+</para>
+
+  <para>
+In the following we will examine each hook in the context of a simplified
+database security system.  The system will record all logins
+and logouts and will enforce custom security rules on reading a
+specific application table.
+</para>
+
+<sect1 id="fn_dbev_startup"><title>Database Startup</title>
+
+<para><function>DB.DBA.DBEV_STARTUP()</function></para>
+  <para>
+If defined, this is called after the server initialization, including
+roll forward of transaction logs, compilation of stored procedures, etc...,
+but before starting to listen for clients.  Hence this is guaranteed
+to run before any clients connect or any HTTP messages are serviced.
+</para>
+  <para>
+The procedure will run in its own transaction, which will be
+automatically committed upon return, regardless of run time errors.
+Result sets are not allowed and return values are discarded.
+All custom Virtuoso Server Extensions (VSEs) will be defined when calling this procedure.
+</para>
+
+<example><title>Sample Startup Procedure Hook</title>
+<programlisting>
+create procedure DB.DBA.DBEV_STARTUP ()
+{
+  dbg_obj_print (' server started ');
+}
+</programlisting>
+</example>
+
+</sect1>
+<sect1 id="fn_dbev_connect"><title>Database Connections</title>
+
+<para><function>DB.DBA.DBEV_CONNECT()</function></para>
+  <para>
+If defined, this hook is called for each successful ODBC
+or JDBC connection.  The hook is only called after password and
+license checks have passed.  The hook is called before the server acknowledges a
+successful connect and is therefore guaranteed to run before any other action
+by the connected client.
+</para>
+  <para>
+The function runs in its own transaction, which is automatically committed following
+successful return.  Result sets may not be generated and return values are discarded.
+The connection_id () and user are defined in the function.
+SQL states signalled inside this hook will be sent to the client and will cause the
+connection to be closed server side.
+</para>
+
+<example><title>Simple Connection Logging</title>
+<programlisting>
+create table security_log (
+  sl_user varchar,
+  sl_logged_in datetime,
+  sl_logged_out datetime,
+  primary key (sl_user, sl_logged_in)
+);
+</programlisting>
+<programlisting>
+create procedure DB.DBA.DBEV_CONNECT ()
+{
+  dbg_obj_print (user, ' connected');
+  if (user = 'NOGO')
+    signal ('EAUTH', '	External Authorization Failed');
+  insert into security_log (sl_user, sl_logged_in) values (user, curdatetime ());
+  connection_set ('login_time', curdatetime ());
+}
+</programlisting>
+
+  <para>
+This function will print a message to the server's standard output, check if
+the username of the logged in user is NOGO and disconnect the user if so,
+This will thereafter insert a row into the security_log table and set the
+connection variable 'login_time' to be the current time.
+This information will be used at disconnect time to identify which entry to
+mark closed.
+</para>
+</example>
+
+<para><function>DB.DBA.DBEV_DSN_LOGIN
+  <paramdef>inout <parameter>dsn</parameter> varchar</paramdef>
+  <paramdef>inout <parameter>user_id</parameter> varchar</paramdef>
+  <paramdef>inout <parameter>pwd</parameter> varchar</paramdef>
+  </function></para>
+
+<para>If defined this function is executed just before Virtuoso makes connections
+to remote data sources. It can change all of it's inout parameters depending on
+it's logic.</para>
+
+<example id="ex_dbev_dsn_login"><title>Remote Connection Hook</title>
+<para>
+This examples contains a sample DBEV_DSN_LOGIN hook that will be called
+just before the Virtual Database connection to a datasource is made.  The
+following parameters can be used in this function as demonstrated in this example:</para>
+<simplelist>
+  <member><emphasis>dsn</emphasis>: the dsn to connect to</member>
+  <member><emphasis>user_id</emphasis>: the user id used in connecting to the DSN</member>
+  <member><emphasis>pwd</emphasis>: the password used in connecting to the DSN</member>
+</simplelist>
+<programlisting>
+create procedure "DB"."DBA"."DBEV_DSN_LOGIN"
+(in dsn varchar,
+ inout user_id varchar,
+ inout pwd varchar)
+{
+  if (user_id = 'U1' and pwd = 'U1')
+    {
+      -- map U1 to U2
+      dbg_obj_print ('mapping U1 to U2');
+      user_id := 'U2';
+      pwd := 'U2';
+    }
+   dbg_obj_print (dsn, user_id, pwd);
+};
+</programlisting>
+</example>
+</sect1>
+
+<sect1 id="fn_logins"><title>Database Logins</title>
+<para><function>DB.DBA.DBEV_LOGIN
+    <paramdef>inout <parameter>user_name</parameter> varchar</paramdef>
+    <paramdef>in <parameter>digest</parameter> varchar</paramdef>
+    <paramdef>in <parameter>session_random</parameter> varchar</paramdef>
+    </function></para>
+
+<para>This function, if defined, will always be called by Virtuoso just before
+a client is authenticated against the Virtuoso Server.  Three parameters
+are available for audit purposes or any other pre-processing purpose totally
+user definable.</para>
+
+<simplelist>
+  <member><emphasis>user_name:</emphasis>
+    <simplelist>
+    <member><emphasis>IN</emphasis> : the user name from the login data</member>
+    <member><emphasis>OUT</emphasis> : the user name used by Virtuoso for this connection</member>
+    </simplelist></member>
+  <member><emphasis>digest</emphasis> : the password digest calculated by the client
+  (or the password itself for older clients)</member>
+  <member><emphasis>session_random</emphasis> : the random key used to
+  calculate the digest</member>
+</simplelist>
+
+<para>This hook can be used to control how Virtuoso proceeds with the client login
+by responding to 3 possible return values:</para>
+
+<simplelist>
+  <member>-1 - continue with normal verification</member>
+  <member>0 - reject the login</member>
+  <member>1 - allow the login (the user returned should be a valid Virtuoso local user name</member>
+</simplelist>
+
+<example id="ex_dbev_login"><title>Sample Database Login Hook</title>
+<programlisting><![CDATA[
+create procedure "DB"."DBA"."DBEV_LOGIN" (
+    inout user_name varchar,
+    in digest varchar,
+    in session_random varchar)
+{
+  -- the hook runs as DBA
+  dbg_obj_print ('user=', user);
+
+  -- and is compiled as DBA
+  declare uid_cnt integer;
+  uid_cnt := 0;
+  select count (*) into uid_cnt from SYS_USERS where U_NAME = user_name;
+  dbg_printf ('%ld local users found with this name', uid_cnt);
+
+  if (user_name = 'masterdba')
+    {
+      -- 'masterdba' is a valid remotely defined user
+      -- it's password is 'masterdbapwd'
+      -- we're going to check it's password and then map it to dba
+
+      declare md5_ctx any;
+      declare my_digest varchar;
+      declare pwd varchar;
+
+      -- this is our assumption for the user's password
+      -- this can come from an external source as well
+      pwd := 'masterdbapwd';
+
+      -- calculate the MD5 digest for checking the password that the client supplied.
+      -- note that it uses the 'masterdba'/'masterdbapwd' to calculate it since we
+      -- assume that these are the data the client supplied as user id and password
+      --
+      -- The way to calcutale this is FIXED.
+      -- The ONLY variables are the user id and the password
+
+      -- START of the FIXED digest calculation sequence
+      md5_ctx := md5_init();
+      md5_ctx := md5_update(md5_ctx, session_random);
+      md5_ctx := md5_update(md5_ctx, user_name);
+      md5_ctx := md5_update(md5_ctx, pwd);
+      -- the 0 parameter to the md5_final causes it to return the bytes
+      -- instead of representing it as hexidecimal characters
+      my_digest := md5_final (md5_ctx, 0);
+      -- END of the FIXED digest calculation sequence
+
+      -- now compare the calculated digest with the one supplied by the client
+      -- note the OR here - some older clients MAY supply the password in plain text
+      if (my_digest = digest or pwd = digest)
+        {
+	  -- the match says that the client indeed supplied 'masterdbapwd' as a password
+          dbg_obj_print ('masterdba validated');
+
+	  -- so map it to the local 'dba' user
+	  user_name := 'dba';
+
+          -- and skip further verification
+          return 1;
+	}
+      else
+	{
+	  -- the password is not the one that we verify against
+          dbg_obj_print ('masterdba pwd wrong');
+
+          -- not allow the login at all
+	  return 0;
+	}
+    }
+  else if (user_name = 'nobody')
+    {
+      -- the hook can signal :
+      -- this is equal to returning -1, but has the additional benefit of an error message printed into the log
+      signal ('28000', 'we don''t map nobody');
+    }
+  else if (user_name = 'attacker')
+    {
+      -- that's a way to print a message to the log and reject the login
+      log_message ('trying invalid user');
+      return 0;
+    }
+  else
+    {
+      -- all local user_name/pwd are subject to normal verification
+      dbg_obj_print (user_name);
+      return -1;
+    }
+  -- note that not returning value causes the Virtuoso to print an appropriate message to the log
+  -- and then continue with the normal verification
+  -- same happends if the value returned is not 0, -1 or 1
+};
+]]></programlisting>
+</example>
+
+<para><function>DB.DBA.USER_FIND
+    <paramdef>in <parameter>name</parameter> varchar</paramdef>
+    </function></para>
+
+<para>This is a user-defined PL function hook which, if it exists, will be
+executed before doing the SQL/ODBC login.  In this hook the user can find a
+user account from some other server and register it in the local database.  Or,
+this can be used to perform some pre-login actions.  It is similar to the
+DBEV_LOGIN, but it does not change any account validation rule, it is
+purely for pre-processing.</para>
+
+</sect1>
+
+<sect1 id="fn_disconnect"><title>Database Disconnections</title>
+<para><function>DB.DBA.DBEV_DISCONNECT()</function></para>
+  <para>
+If defined, this procedure is called after a connection
+has been found to be disconnected, either as a result of the client  process disconnecting,
+the client process terminating or the server deciding
+to disconnect, see <link linkend="fn_disconnect_user">disconnect_user()</link>.
+This will also be called if the DBEV_CONNECT hook signals an error, leading to the connection being closed
+during the connect sequence.
+</para>
+  <para>
+All activity on behalf of the disconnecting client is terminated by the time this
+function is called.  This function runs in its own transaction.
+Result sets are prohibited, return values discarded and errors are
+logged in the error log file but not otherwise processed.  The transaction is
+committed regardless of errors.  The user and connection_id and any connection variables are defined
+during this hook.
+</para>
+
+<example><title>Disconnect Interception</title>
+<programlisting>
+create procedure DB.DBA.DBEV_DISCONNECT ()
+{
+  declare ctime datetime;
+  dbg_obj_print (user, ' disconnected');
+  ctime := connection_get ('login_time');
+  update security_log set sl_logged_out = now () where
+    sl_user = user and sl_logged_in = ctime;
+  if (row_count () = 0)
+    signal ('ELOGO', 'Logout by user with no login record.  This occurs when DBEV_CONNECT denied permission');
+}
+</programlisting>
+<para>
+This function updates the row created by the connect hook to set the
+logout time.
+</para>
+</example>
+</sect1>
+
+<sect1 id="fn_dbev_shutdown"><title>Database Shutdown</title>
+<para><function>DB.DBA.DBEV_SHUTDOWN()</function></para>
+  <para>
+If defined, this function is called when shutting down the server,
+following disconnection of all clients and making a checkpoint.  When
+a disconnect occurs as a result of server shutdown the DBEV_DISCONNECT hook is not called
+and this function is expected to perform any logout processing.
+The rationale is that all disconnect hooks would be called at the same time,
+creating likely deadlocks, resource contention and there could be no
+guarantee of time consumed by them or of even whether
+they would terminate at all.
+</para>
+  <para>
+The shutdown will do a checkpoint before calling this hook.  This checkpoint
+will terminate all transactions with a deadlock state.  If transactions
+contain automatic retries, etc...,  we cannot guarantee that all activity would
+have terminated when this hook starts.  However, the hook function can try
+</para>
+
+<programlisting>
+txn_killall (6);
+rollback work;
+</programlisting>
+
+  <para>
+to signal an error on all other transactions to prompt them to
+terminate.  Again, this is not a sure-fire termination since this
+could be handled by procedures.
+</para>
+  <para>
+When this hook returns the server commits the transaction
+in which this was running and exits regardless of any lingering
+activity.  There is no hard time limit for this function.
+Killing the process during this function has no specific ill effect, besides losing
+uncommitted work by said function.
+</para>
+  <para>
+Result sets are prohibited, return values are discarded, errors are logged
+but not otherwise processed.
+</para>
+
+<example><title>The Shutdown Hook</title>
+<programlisting>
+create procedure DB.DBA.DBEV_SHUTDOWN ()
+{
+  dbg_obj_print (' server shut down.');
+  update security_log set sl_logged_out = now () where sl_logged_out is null;
+}
+</programlisting>
+<para>
+This just marks all open connections to be disconnected at the current time.
+</para>
+</example>
+</sect1>
+
+<sect1 id="fn_dbev_prepare"><title>SQL Statement Preparation</title>
+  <para>
+    <function>DB.DBA.DBEV_PREPARE(<parameter>inout tree any</parameter>)</function>
+</para>
+<programlisting>
+DB.DBA.DBEV_PREPARE (inout tree any)
+</programlisting>
+
+  <para>
+If defined, this function is called after parsing any dynamic SQL
+statements by any users.  The parse tree will be a
+syntactically correct SQL parse tree.  The user and connection variables are defined.
+The hook should not produce a result set and any return values are discarded.
+The function runs in the transaction which is current on the connection and
+the transaction is not automatically committed, so that the hook does not
+modify application transaction boundaries.
+</para>
+  <para>
+The tree may be modified by replacing it with any other correct parse tree
+or destructively splicing it.  The tree is a regular SQL heterogeneous array.
+If the tree is modified incorrectly, it is probable that the server will crash.
+</para>
+  <para>
+The parse tree manipulation is best written in C as a Virtuoso Server
+Extension  using the supplied SQL parse tree typedef and constants.
+</para>
+  <para>
+If an error occurs inside this hook the error is simply ignored and the unmodified parse tree is used.
+To signal an error to a user it is possible to change the parse tree into a call to the signal SQL function.
+</para>
+
+<example><title>SQL Prepare Hook</title>
+<programlisting>
+CREATE TABLE REPORT (
+  R_AUTHOR VARCHAR,
+  R_ID INTEGER IDENTITY,
+  R_CLASS INTEGER,
+  R_TEXT LONG VARCHAR,
+  PRIMARY KEY (R_ID)
+);
+
+CREATE TABLE NEED_TO_KNOW (
+  NK_CLASS INTEGER,
+  NK_USER INTEGER,
+  PRIMARY KEY (NK_CLASS, NK_USER)
+);
+
+grant select on REPORT to public;
+
+create procedure DB.DBA.DBEV_PREPARE (inout tree any)
+{
+  declare uid integer;
+  uid := (select U_ID from SYS_USERS where U_NAME = user);
+  need_to_know (uid, tree);
+  dbg_obj_print ('compiled by ', user, ': ', tree);
+}
+</programlisting>
+  <para>
+This example has a table of variously secret reports,  each having a class or
+compartment and different users having a need to know about a certain collection of compartments.
+The need_to_know table references U_ID in SYS_USERS and R_CLASS in REPORT.  Each select referencing
+REPORT is modified by the <function>need_to_know</function> VSE in order to add a check for the need to know.
+</para>
+  <para>
+For example,
+</para>
+<programlisting>
+select * from REPORT
+</programlisting>
+  <para>becomes</para>
+<programlisting>
+select * from REPORT
+  where exists (select 1 from NEED_TO_KNOW
+    where NK_CLASS = R_CLASS and NK_USER = &lt;user&gt;)
+</programlisting>
+  <para>
+where &lt;user&gt; is the id of the user preparing the query.
+</para>
+  <para>
+As a result, all queries referencing the REPORT table, no matter how they are phrased,
+will not access rows for which the user does not have a need to know.
+Note that the REPORT table can be granted to public, unauthorized users will just get an empty result.
+Further, note that the NEED_TO_KNOW table is not granted to anyone, hence the user does
+not even need to know the extent of his need to know let alone that of any other user.
+The expansion of the need to know test inserts the table reference as in a view expansion,
+where it's privileges are not those of the user but of the view owner, or in this case the
+procedure owner, which is always dba.
+</para>
+</example>
+</sect1>
+
+<sect1 id="sqlparsetree"><title>SQL Parse Tree</title>
+  <para>
+The SQL parse tree is composed of DV_ARRAY_OF_POINTER boxes.  Other types of
+boxes may occur as leaves, where they are interpreted as literals.  All nodes'
+first element (index 0) is the type of the node, one of the constants in sqlparext.h.
+</para>
+  <para>
+The nodes' various fields can be accessed through the data members of the
+sql_tree_t union.  Most data members are pointers to the same type.  Sometimes they
+are double pointers, denoting a variable length array of pointers to the struct.
+The caddr_t type is used to denote a terminal, like a string or other constant.
+The types are only for declarative value, the entire structure is a self describing,
+run time typed tree of boxes.
+</para>
+  <para>
+The correspondence of the tree to the SQL syntax is documented by the yacc grammar
+supplied as appendix.
+</para>
+
+<para>
+We will next examine the need to know example:
+</para>
+
+<programlisting>
+ST *
+nk_tree_and (ST* left, ST * right)
+{
+  if (left &amp;&amp; right)
+    return ((ST*) list (4, BOP_AND, left, right, NULL));
+  if (left)
+    return left;
+  return right;
+}
+</programlisting>
+
+  <para>
+This function adds anAND operation between 2 sub trees.  If either is NULL, the
+non-null one is returned.  The list function is used as a universal constructor of
+the parse tree, where the first argument is the count of arguments to follow.
+</para>
+  <para>
+The above could have been written as follows without list:
+</para>
+<programlisting>
+ST * r = (ST*) dk_alloc_box (4 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+r-&gt;type = BOP_AND;
+r-&gt;_.bin_exp.left = left;
+r-&gt;_.bin_exp.right = right;
+r-&gt;_.bin_exp.more = NULL;
+</programlisting>
+
+<para>
+We see that the list notation is more concise.
+</para>
+
+<programlisting>
+void
+nk_test_add (ST * outer_texp, char * corr_name, int uid)
+{
+  /* add a exists (select 1 from need_to_know where nk_class = &lt;corr_name&gt;.r_class) */
+  ST * sel, * exists, * texp, **from;
+  ST * where = (ST*) list (4, BOP_EQ, list (3, COL_DOTTED, NULL, box_string ("NK_CLASS")),
+			   list (3, COL_DOTTED, box_string (corr_name), box_string ("R_CLASS")), NULL);
+  where = nk_tree_and (where, listst (4, BOP_EQ, list (3, COL_DOTTED, NULL, box_string ("NK_USER")), box_num (uid), NULL));
+  from = (ST**)
+    list (1, list (3, TABLE_REF,
+		   list (5, TABLE_DOTTED,
+			 box_string ("DB.DBA.NEED_TO_KNOW"),
+			 NULL, box_num (0), box_num (0)),
+		   NULL));
+  texp = listst (7, TABLE_EXP, from,
+	       where, NULL, NULL, NULL, -1);
+  sel = listst (5, SELECT_STMT, NULL, list (1, box_num (1)), NULL, texp);
+  exists = (ST*) list (5, EXISTS_PRED, NULL, sel, NULL, NULL);
+  outer_texp-&gt;_.table_exp.where = nk_tree_and (outer_texp-&gt;_.table_exp.where, exists);
+}
+</programlisting>
+
+  <para>
+This function takes the table expression referencing the REPORT table and the correlation
+name used for the table and the user id of the querying user.  It adds the existence test for the
+need to know.  The logic is self evident when examined in the context of the yacc grammar.
+Note that the table in the FROM of the sub query is a TABLE_REF node with a TABLE_DOTTED
+node, which finally contains the table and correlation names.  Note that all strings must
+be allocated as string boxes.  This is because the tree may only reference other boxes.  Note
+that all numbers except for the types of the nodes are boxed with box_num.  This will make
+sure that numbers and pointers are always distinguishable.  The node types are distinguishable
+by definition due to their small absolute value.
+</para>
+
+<programlisting>
+caddr_t
+bif_need_to_know (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  unsigned inx;
+  caddr_t uid = (caddr_t) bif_long_arg (qst, args, 0, "need_to_know");
+  ST * tree = (ST*) bif_array_arg (qst, args, 1, "need_to_know");
+  if (ST_P (tree, SELECT_STMT))
+    {
+      ST * texp = tree-&gt;_.select_stmt.table_exp;
+      if (!texp)
+	return 0; /* select w/o a from */
+      for (inx = 0; inx &lt; BOX_ELEMENTS (texp-&gt;_.table_exp.from); inx++)
+	{
+	  ST * tref = texp-&gt;_.table_exp.from[inx];
+	  if (ST_P (tref, TABLE_REF))
+	    tref = tref-&gt;_.table_ref.table;
+	  if (ST_P (tref, TABLE_DOTTED))
+	    {
+	      char * corr_name;
+	      if (tref-&gt;_.table.prefix)
+		corr_name = tref-&gt;_.table.prefix;
+	      else
+		corr_name = tref-&gt;_.table.name;
+	      if (strstr (tref-&gt;_.table.name, "REPORT"))
+		nk_test_add (texp, corr_name, (int)uid);
+	    }
+	}
+    }
+  return 0;
+}
+</programlisting>
+  <para>
+This is the top level need to know function.  It first checks to see that the
+statement is a select, that it has a FROM clause (table expression).
+For each table in the FROM which has REPORT as part of its name the function adds an existence test
+to check the user's need to know.  Note that the correlation name is taken from the
+table and that the table name is used in the absence of a correlation name
+to disambiguate the reference.  Note that the table_exp.from is of type
+ST **, meaning a variable length array of boxes.  Note that BOX_ELEMENTS returns the length
+in pointer-size units.
+</para>
+  <para>
+Note that in this example the tree is spliced in place, only adding nodes.  There is
+no need to free data or to modify the top node.
+</para>
+
+<sect2 id="notesonspecialparsetree"><title>Notes on Special Features of the Parse Tree</title>
+  <para>
+The parse tree structure has a 1 to 1 correspondence with the yacc grammar.  The members
+of the union in sql_tree_t are mostly named after the syntactic element and the constant
+that identifies them.  There are however some points worth noting:
+</para>
+
+<simplelist>
+<member>Literals - All boxes whose tag is not DV_ARRAY_OF_POINTER are considered literals and
+may appear in all places where a literal is allowed.</member>
+<member>Identifier Case - The case conversion of identifiers is controlled by the CaseMode ini file setting.
+When introducing a constant name referencing a VSE, one should use sqlp_box_id_upcase to get the right case for all modes.</member>
+<member>The identifiers, once in the tree, are compared case sensitively in all modes case modes except 2.</member>
+<member>Hook functions should use the appropriate comparison functions for the desired case sensitivity.</member>
+<member>When generating references to names the case should be correct as defined by the case mode.</member>
+</simplelist>
+</sect2>
+
+<sect2 id="sqlsecandparsetrees"><title>SQL Security and Parse Trees</title>
+  <para>
+When compiling table access the access rights granted on the table are checked against
+the user and group marked on the table reference (TABLE_DOTTED) parse tree node.  When
+a user writes a table reference the user id and group of the user are marked in the
+parse tree and these are compared against the grants in effect.
+</para>
+  <para>
+When a table reference comes from a view the reference is annotated with the view owner's
+user id and group.  Hence a view may introduce references that would not otherwise be granted to a user.
+</para>
+  <para>
+This is used in the need to know example, marking the group and user of the reference to
+NEED_TO_KNOW to be 0, meaning dba.
+</para>
+  <para>
+There are no other security related features in the parse tree.  Procedure security is resolved
+exclusively at run time.
+</para>
+</sect2>
+
+<sect2 id="debuggingparsetree"><title>Debugging with Parse Trees</title>
+  <para>
+It is extremely easy to make errors when manipulating parse trees in code.
+A useful technique will be to print out the tree before and after the operation.  This
+can be conveniently done in the hook function with dbg_obj_print, as shown in the example.
+</para>
+  <para>
+Once the modified tree is returned to the SQL compilation, the
+system checks for it for absence of cycles, so that no two branches are the same.  There
+is an assertion failure if this happens.  Otherwise the tree is not checked.  Hence a
+malformed tree will in all likelihood crash the server during the compilation.
+</para>
+</sect2>
+</sect1>
+
+<sect1 id="fn_davlogins"><title>WebDAV Logins</title>
+<para><function>DB.DBA.DBEV_DAV_LOGIN
+    <paramdef>inout <parameter>user_name</parameter> varchar</paramdef>
+    <paramdef>in <parameter>password</parameter> varchar</paramdef>
+    <paramdef>in <parameter>http_auth</parameter> any</paramdef>
+    </function></para>
+
+<para>This function, if defined, will always be called by Virtuoso just before
+a HTTP client is authenticated against the WebDAV Server.  Three parameters
+are available for audit purposes or any other pre-processing purpose totally
+user definable.</para>
+
+<simplelist>
+  <member><emphasis>user_name:</emphasis>
+    <simplelist>
+    <member><emphasis>IN</emphasis> : the user name from the login data</member>
+    <member><emphasis>OUT</emphasis> : the user name used by WebDAV server for this request</member>
+    </simplelist></member>
+    <member><emphasis>password</emphasis> : the encrypted password that corresponding to the
+	<parameter>user_name</parameter>
+    </member>
+  <member><emphasis>http_auth</emphasis> : HTTP authentication information (see below)</member>
+</simplelist>
+
+<para>
+    The data structure of the <parameter>http_auth</parameter> is an array
+    containing name/value pairs as described below.
+</para>
+
+<para>
+    For HTTP Basic authentication:
+</para>
+
+<simplelist>
+    <member>method - HTTP method : GET/POST/PUT etc.</member>
+    <member>authtype - string 'Basic'</member>
+    <member>username - the same as <parameter>user_name</parameter> parameter</member>
+    <member>pass - the password (in case of basic authentication only)</member>
+</simplelist>
+
+<para>
+    For HTTP Digest authentication:
+</para>
+
+<simplelist>
+    <member>method - HTTP method : GET/POST/PUT etc.</member>
+    <member>authtype - string 'Digest'</member>
+    <member>username - the same as <parameter>user_name</parameter> parameter</member>
+    <member>realm - authentication realm</member>
+    <member>qop - Indicates what "quality of protection" the client has applied to the message</member>
+    <member>algorithm - hashing algorithm used to create the checksum or digest</member>
+    <member>uri - the URI from Request-URI of the Request-Line</member>
+    <member>nonce - data string which may be uniquely generated</member>
+    <member>nc - The nc-value is the hexadecimal count of the number of requests (including the current request)</member>
+    <member>cnonce - The cnonce-value is an opaque quoted string value provided by the client</member>
+    <member>opaque - string value provided by the server and returned by the client unchanged</member>
+    <member>response - string containing password hash as described in RFC 2617</member>
+</simplelist>
+
+<para>An example of the <parameter>http_auth</parameter> value:</para>
+<programlisting><![CDATA[
+    vector ('method', 'GET', 'authtype', 'basic', 'username', 'MyUser', 'pass', 'My!Secret')
+    ]]>
+</programlisting>
+
+<para>This hook can be used to control how Virtuoso proceeds with the WebDAV client login
+by responding to 3 possible return values:</para>
+
+<simplelist>
+  <member>-1 - continue with normal verification</member>
+  <member>0 - reject the login</member>
+  <member>1 - allow the login (the user returned should be a valid Virtuoso local user name)</member>
+</simplelist>
+
+<example id="ex_dbev_dav_login"><title>Sample WebDAV Login Hook</title>
+<programlisting><![CDATA[
+create procedure
+DB.DBA.DBEV_DAV_LOGIN (inout user_name varchar, in pwd any, in auth any)
+{
+  declare result any;
+
+  WHENEVER SQLSTATE '28000' GOTO validation_failure;
+
+  -- All accounts that are not WebDAV admin are going here
+  if (lcase(user_name) <> 'dav')
+    {
+      declare pass any;
+
+      -- use password from request if basic HTTP authentication is used
+      if (get_keyword ('authtype', auth) = 'basic')
+        pass := get_keyword ('pass', auth);
+      else -- or use the password from database if digest
+        pass := pwd_magic_calc (user_name, pwd, 1);
+
+      -- set appropriate LDAP protocol version
+      connection_set ('LDAP_VERSION', 2);
+      commit work;
+      result := LDAP_SEARCH('ldap://mail2.openlinksw.com:389',
+		0, 'ou=Accounts, o=OpenLink Software, c=US', sprintf ('(uid=%s)', user_name),
+		sprintf('uid=%s, ou=Accounts, o=OpenLink Software, c=US', user_name),
+                pass);
+      return 1;
+    }
+  -- normal authentication for WebDAV admin
+  return -1;
+
+  -- all accounts that are not authenticated by LDAP are rejected
+validation_failure:
+  return 0;
+};
+]]></programlisting>
+</example>
+
+</sect1>
+
+<sect1 id="assocauxdata"><title>Associating Auxiliary Data With A Connection</title>
+
+<para>The following functions allow you to set and retrieve connection variables:</para>
+
+<itemizedlist>
+  <listitem><link linkend="fn_connection_id">connection_id()</link></listitem>
+  <listitem><link linkend="fn_connection_set">connection_set()</link></listitem>
+  <listitem><link linkend="fn_connection_get">connection_get()</link></listitem>
+</itemizedlist>
+
+</sect1>
+</chapter>

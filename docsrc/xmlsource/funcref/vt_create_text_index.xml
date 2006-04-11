@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_vt_create_text_index">
+  <refmeta>
+    <refentrytitle>vt_create_text_index</refentrytitle>
+    <refmiscinfo>ft</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>vt_create_text_index</refname>
+    <refpurpose>Add text index to an existing table</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_vt_create_text_index"> 
+      <funcprototype id="fproto_vt_create_text_index">
+        <funcdef><function>vt_create_text_index</function></funcdef>
+        <paramdef>in <parameter>table</parameter> varchar</paramdef>
+        <paramdef>in <parameter>col</parameter> varchar</paramdef>
+        <paramdef>in <parameter>id_col</parameter> varchar</paramdef>
+        <paramdef>in <parameter>is_xml</parameter> integer</paramdef>
+        <paramdef>in <parameter>defer_generation</parameter> integer</paramdef>
+        <paramdef>in <parameter>clustered_columns</parameter> any</paramdef>
+        <paramdef>in <parameter>use_hook_function</parameter> integer</paramdef>
+        <paramdef><optional>in <parameter>language_name</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>encoding_name</parameter> integer</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>
+The vt_create_text_index procedure adds a text index to an existing table.
+There can at most be one text index per table, including super tables and
+subtables.
+  </para>
+    <para>
+The table argument is a string naming the table. The column is the name of the column
+to index. The id_col should be the name of a unique integer row identifier column.  If null,
+the system will either add such a column or use an existing integer primary key if one
+is available.  The is_xml argument, if non-0, specifies that the values of the indexed column
+should be checked for XML well formedness and that the XML structure should be taken into account in indexing the
+values.
+  </para>
+    <para>
+Use the CREATE TEXT INDEX statement as an alternative to the vt_create_text_index function.
+  </para>
+				<para>
+In order for a table to be referenced in a text index it must have
+a uniquely identifying integer key.  If the table in question has such a 
+key this can be used as the id column.  If there is no such column this 
+procedure makes one.  Using a previously existing identifier column saves 
+space and if that is the primary key of the table this also saves in 
+retrieval time.
+	</para>
+			<para>
+If the table being indexed has a single part integer primary key 
+vt_create_text_index will automatically use this as the identifier.  Note 
+that the zero and negative numbers may not be used as identifier values.
+	</para>
+			<para>
+Creating the index will read through the table&apos;s contents and generate 
+the index.  When the table is changed the index can either be updated after 
+each change or periodically, depending on the application needs.  The rationale 
+for background maintenance of the text index is that it is up to several times
+more efficient to maintain a text index in batches of several changed documents 
+than after each single document change.  The default maintenance mode is 
+synchronous, meaning that each insert, delete or update of the indexed column 
+will be immediately reflected in the index.  This mode can be set using 
+the <function>vt_batch_update()</function> procedure.
+The mode should be set to batch if there are 
+any massive operations on the table.
+	</para>
+			<para>
+It will create two additional tables:
+	</para>
+			<screen>
+ &lt;datatable&gt;_&lt;datacolumn&gt;_WORDS
+	</screen>
+			<para>
+ and
+	</para>
+			<screen>
+VTLOG_&lt;datatable_qualifieri&gt;_&lt;data_table_owner&gt;_&lt;data_table_name&gt;
+	</screen>
+			<para>
+ and two procedures:
+	</para>
+			<screen>
+ vt_index_&lt;datatable_qualifier&gt;_&lt;data_table_owner&gt;_&lt;data_table_name&gt; 
+		(in to_delete integer)
+	</screen>
+			<para>
+ and
+	</para>
+			<screen>
+ vt_inc_index&lt;datatable_qualifieri&gt;_&lt;data_table_owner&gt;_&lt;data_table_name&gt; ().
+</screen>
+			<para>
+The table &lt;datatable&gt;_&lt;datafield&gt;_WORDS contains the full text index data.
+</para>
+			<para>
+The table VTLOG_&lt;datatable&gt;_&lt;datafield&gt; is an update tracking table, similar to the snapshot log table but using the key column instead of the primary key.
+</para>
+
+    <note><title>Note:</title>
+      <para>in the transaction semantics section that there is the sync mode for the purpose of creating a text index.</para>
+	</note>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>table</title>
+      <para>the table containing the data to index.</para></refsect2>
+    <refsect2><title>col</title>
+      <para>the column in the data table containing the data to index (a long varchar column).</para></refsect2>
+    <refsect2><title>id_col</title>
+      <para>an integer unique indexed column used by the free text index as a key.  If Virtuoso tries  
+to choose such a column among the existing in the table and if it doesn&apos;t find a suitable column it 
+adds such a column with the name &lt;datacolumn&gt;_ID, fills that up and makes an unique index on it.</para></refsect2>
+    <refsect2><title>is_xml</title>
+      <para>if greater than 0 installs two additional triggers before insert and before update on the data table 
+to ensure the data being inserted into it are valid XML documents.</para></refsect2>
+    <refsect2><title>defer_generation</title>
+      <para>if nonzero then the free-text index will not be filled by actual data
+immediately after the creation. It will remain empty until explicit request for
+&quot;incremental indexing&quot;.</para></refsect2>
+    <refsect2><title>clustered_columns</title>
+      <para>a vector of names of &quot;clustered columns&quot; or NULL to not store such data in the index.</para></refsect2>
+    <refsect2><title>use_hook_function</title>
+      <para>if nonzero, two user-defined Virtuoso/PL functions will be
+called when free-text data are updated, not the default system routine.
+These functions are recognized by their special names:
+&lt;datatable&gt;_&lt;datafield&gt;_INDEX_HOOK will be called to index
+new documents and
+&lt;datatable&gt;_&lt;datafield&gt;_UNINDEX_HOOK will be called to
+remove obsolete index information about deleted documents.</para></refsect2>
+    <refsect2><title>language_name</title>
+      <para>the name of the language that is used for building the index.
+If the parameter is omitted or is equal to '*ini*' string, indexing routines
+will use the language specified in server's configuration.</para></refsect2>
+    <refsect2><title>encoding_name</title>
+      <para>the name of the encoding that is used by default to
+index source texts.
+If the parameter is omitted or is equal to '*ini*' string, indexing routines
+will use the encondig specified by charset of the RDBMS connection that is
+in use when the index is created.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret"><title>Return Types</title><para></para></refsect1>
+<!--
+  <refsect1 id="errors"><title>Errors</title>
+    <table><title>Errors signalled by</title>
+      <tgroup cols="4">
+       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
+	<tbody>
+	  <row>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorcode></errorcode></entry>
+	    <entry><errorname></errorname></entry>
+	    <entry></entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+  </refsect1>
+  -->
+  <refsect1 id="examples"><title>Examples</title>
+			<example id="ex_vt_create_text_index">
+				<title>Creating A Text Index Using FT functions</title>
+				<programlisting>
+create table xml_text (xt_id integer, xt_file varchar,
+			xt_text long varchar, primary key (xt_id));
+
+create index xt_file on xml_text (xt_file);
+
+vt_create_text_index (&apos;xml_text&apos;,
+			&apos;xt_text&apos;, null, 1);
+</programlisting>
+				<para>-- create a text index on xt_text with XML well formedness checking on</para>
+				<programlisting>
+VT_INDEX_DB_DBA_XML_TEXT (0);
+</programlisting>
+				<para>-- populate the text index based in the data in the table.</para>
+				<programlisting>
+VT_inc_INDEX_DB_DBA_XML_TEXT ();
+</programlisting>
+				<para>
+-- refresh the index to reflect changes to the data since the last call
+</para>
+				<para>-- to this function or the initial call to VT_INDEX_DB_DBA_XML_TEXT.
+</para>
+				<programlisting>
+vt_batch_update (&apos;DB.DBA.XML_TEXT&apos;, &apos;on&apos;, 10);
+</programlisting>
+				<para>-- sets the index maintenance to be asynchronous, refreshed at maximum intervals
+of 10 minutes or at every scheduler cycle if the latter is longer than 10 minutes.
+</para>
+				<programlisting>
+vt_batch_update (&apos;DB.DBA.XML_TEXT&apos;, &apos;off&apos;, null);
+</programlisting>
+				<para>
+-- sets the index maintenance to be synchronous, within the same transaction
+</para>
+				<para>
+-- as the operation changing the indexed data.
+</para>
+			</example>
+  </refsect1>
+<!--  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn"></link></para>
+  </refsect1> -->
+</refentry>
+
+
+

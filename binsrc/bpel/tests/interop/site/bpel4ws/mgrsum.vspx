@@ -1,0 +1,158 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="mgrsum_page" decor="interop_decor.vspx" style="interop_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>OpenLink BPEL Interoperability Features Summary</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:pagebody>
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" id="content">
+        <tr><th class="info">Details</th></tr>
+        <tr>
+          <td>
+              The <a href="/BPELGUI/">OpenLink BPEL Process Manager</a> provides
+              the ability to deploy and run business processes defined in BPEL 1.1.
+              The following features are included:
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <table width="100%" id="contentlist" cellpadding="0" cellspacing="0">
+              <tr>
+                <th>No</th>
+                <th>Feature</th>
+                <th>Description</th>
+              </tr>
+              <tr bgcolor="#fefefe">
+                <td><xsl:text>1.</xsl:text></td>
+                <td width="30%">
+                  <b>Robust BPEL Engine and Deployment Platform</b>
+                </td>
+                <td>
+                  <xsl:text>
+                    Virtuoso provides a fully featured native BPEL 1.1 engine that
+                    supports the invocation and deployment of BPEL scripts as well
+                    support for long-running and asynchronous business processes.
+                  </xsl:text>
+                </td>
+              </tr>
+              <tr bgcolor="#efefef">
+                <td><xsl:text>2.</xsl:text></td>
+                <td width="30%">
+                  <b>Business Activity Monitoring</b>
+                </td>
+                <td>
+                  <a href="/BPELGUI/">OpenLink BPEL Process Manager</a>
+                  <xsl:text> includes a web-based user Interface for testing,
+                    debugging, and monitoring deployed business process. This includes
+                    support for compensation, fault handling and event handling.
+                  </xsl:text>
+                </td>
+              </tr>
+              <tr bgcolor="#fefefe">
+                <td><xsl:text>3.</xsl:text></td>
+                <td width="30%">
+                  <b>WS-Reliable Messaging and Security</b>
+                </td>
+                <td>
+                  <xsl:text>
+                    Enterprises can now deploy business-critical transactions over
+                    the Internet using the WS-Reliable Messaging (WS-RM) specification.
+                    WS-RM support means that guaranteed (at-most-once, at-least-once,
+                    and exactly once) messaging is now possible over HTTP. Virtuoso
+                    BPEL implementation can also make use of Virtuoso full array of
+                    web service protocols including WS-Security.
+                  </xsl:text>
+                </td>
+              </tr>
+              <tr bgcolor="#efefef">
+                <td><xsl:text>4.</xsl:text></td>
+                <td width="30%">
+                  <b>Database, XML and Web Service Integration</b>
+                </td>
+                <td>
+                  <xsl:text>
+                    Virtuoso's extensive virtual database, XML and web services
+                    features provide for intelligent transformation for XML and
+                    non-XML applications and data. Virtuoso allows integration
+                    of databases into Service-Oriented Architectures (SOAs), by
+                    automating the creation of Web services from multiple tables
+                    in any ODBC, JDBC or ADO. Net-compliant database. BPEL processes
+                    can directly invoke locally hosted Java or .Net logic and access
+                    SQL data from resident in local and remote tables. This enables
+                    the rapid integration of that data with other services.
+                  </xsl:text>
+                </td>
+              </tr>
+              <tr bgcolor="#fefefe">
+                <td><xsl:text>5.</xsl:text></td>
+                <td width="30%">
+                  <b>Database, XML and Web Service Integration</b>
+                </td>
+                <td>
+                  <xsl:text>
+                    Virtuoso's extensive virtual database, XML and web services
+                    features provide for intelligent transformation for XML and
+                    non-XML applications and data. Virtuoso allows integration
+                    of databases into Service-Oriented Architectures (SOAs), by
+                    automating the creation of Web services from multiple tables
+                    in any ODBC, JDBC or ADO. Net-compliant database. BPEL processes
+                    can directly invoke locally hosted Java or .Net logic and access
+                    SQL data from resident in local and remote tables. This enables
+                    the rapid integration of that data with other services.
+                  </xsl:text>
+                </td>
+              </tr>
+              <tr bgcolor="#efefef">
+                <td><xsl:text>6.</xsl:text></td>
+                <td width="30%">
+                  <b>Import and Execution of any Standards-Based BPEL Business Processes</b>
+                </td>
+                <td>
+                  <a href="/BPELGUI/">OpenLink BPEL Process Manager</a>
+                  <xsl:text> supports standards compliant BPEL 1.1 scripts so that
+                    industry Standard Compliant BPEL processes can be developed in any of
+                    the BPEL modeling tools and deployed on the Virtuoso platform.
+                  </xsl:text>
+                </td>
+              </tr>
+              <tr bgcolor="#fefefe">
+                <td><xsl:text>7.</xsl:text></td>
+                <td width="30%">
+                  <b>Interoperability</b>
+                </td>
+                <td>
+                  <a href="/BPELGUI/">OpenLink BPEL Process Manager</a>
+                  <xsl:text>
+                     has gone through an extensive interoperability testing against Microsoft, Oracle, and
+                     other vendor's implementations. Through thorough testing of these processes, it validates the BPEL engine
+                     and ensures the rapid orchestration of existing Web services.
+                  </xsl:text>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>OpenLink Virtuoso Server Feature Demonstrations</title>
+    <meta name="description" content="OpenLink Virtuoso Server">
+	  <link rel="stylesheet" type="text/css" href="admin/admin_style.css">
+	  <style>
+	  .feature {border: solid 1px #ddddaa#;}
+	  .demo {border: solid 1px #88eeaa;}
+	  </style>
+  </head>
+  <BODY>
+<TABLE WIDTH="100%" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+<TR><TD CLASS="AdmPagesTitle" COLSPAN="2">
+      <H2 align="center">Virtuoso Features Demonstrations</H2>
+    </TD></TR>
+<TR CLASS="AdmBorders"><TD><IMG SRC="admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR CLASS="demomain"><TD><IMG SRC="admin/images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR CLASS="demomain"><TD>
+
+<TABLE BORDER="0" CELLPADDING="4" CELLSPACING="10">
+<TR><TD COLSPAN="2">
+  <P CLASS="featuretext">
+  OpenLink Virtuoso is a Universal Server. This new generation server product
+  implements multiple, industry-standard protocols in a single, cross-platform
+  product offering. Virtuoso's broad protocol support enables it to offer Web,
+  File, and Database server functionality alongside Native XML Storage, Universal
+  Data Access Middleware, and a Web Services Platform in a cohesive single server
+  solution.
+</P>
+</TD></TR>
+
+<TR>
+	<TD class="feature" WIDTH="65%" VALIGN="top">
+            <H3>Runtime Hosting</H3>
+<P CLASS="featuretext">This feature enables you to extend Virtuoso using
+Java, and any Microsoft .NET or Mono ECMA-CLI bound programming
+language. Thus, you can now create new  datatypes, functions, triggers,
+and SOAP compliant Web Services using programming languages such as
+C#, J#, Visual Basic, C/C++, Java, Cobol, and others. Prior to the
+implementation of runtime hosting within Virtuoso, Web Services programming
+was dependent on the Virtuoso native stored procedure language. </P>
+            <H3>Frameworks Hosting</H3>
+<P CLASS="featuretext">As a result of this feature the Virtuoso Server
+Page (VSP) language is no longer the sole mechanism for developing Virtuoso
+hosted dynamic web pages. You are now able to host ASP.NET, PHP4, and
+Java Server Pages in Virtuoso.  Thus, ASP.NET application development no
+longer mandates IIS based deployment, neither does it mandate a Windows
+hosted deployment, because this feature extends deployment to Linux
+via the Mono implementation of ASP.NET.</P>
+</TD>
+	<TD class="demo" VALIGN="top" width="35%">
+      <P CLASS="demodesc"><a href="http://demo.openlinksw.com:8890/tutorial/hosting/index.vsp?f=1" target="_blank">Click</a>
+       here to interact with a collection of live Runtime Hosting Demonstrations.</P></TD></TR>
+
+<TR>
+	<TD class="feature" VALIGN="top" width="65%" ROWSPAN="2">
+      <H3>Web Services</H3>
+      <P CLASS="featuretext">Virtuoso provides a cost-effective solution
+	  for developing, consuming, integrating, and hosting Web Services; it
+	  achieves this through its support of the entire collection of core Web
+	  Services standards (SOAP, WSDL, and UDDI). It also ensures that the
+	  Web Services that you publish are secure via a full implementation of
+	  the WS-Security standard. Native & 3rd party SQL Stored Procedures,
+          .NET, Mono, and Java based Objects can all be published as Web
+          Services without code re-writes.</P></TD>
+
+	<TD class="demo" VALIGN="top" width="35%">
+      <P CLASS="demodesc"><a href="http://demo.openlinksw.com:8890/tutorial/services/index.vsp?f=1" target="_blank">Click</a>
+	  here to interact with a collection of live Virtuoso based Web Services</P></TD></TR>
+  <TR>
+	<TD class="demo" VALIGN="top" width="35%">
+      <P CLASS="demodesc"><a href="http://demo.openlinksw.com/index.vsp?target=viewlet" target="_blank">Click</a> here to see SQL Stored Procedures exposed as SOAP-compliant XML Web Services.
+      </P>
+      </TD></TR>
+
+
+<!--TR><TD class="demo" VALIGN="top"><A CLASS="demolink" HREF="admin/admin_ixpath_main.vsp">XML Data Queries</A>
+	<P CLASS="demodesc">Query XML directly using XPATH.</P></TD></TR -->
+
+
+<TR>
+	<TD class="feature" VALIGN="top" width="65%">
+      <H3>WebDAV</H3>
+<P CLASS="featuretext">WebDAV support enables Virtuoso to act as the Web
+Content Store for all of your Web application data; this includes Text,
+Graphics and Multimedia files. WebDAV support also enables Virtuoso to play
+the familiar roles of a FILE & WEB SERVER, hosting entire Web sites within a
+single database file or across multiple database files. By using Virtuoso's
+WebDAV feature you can expose persistent Stored modules as Web Services,
+create Dynamic XML documents from ODBC or JDBC Data Sources, create HTTP
+Virtual Directories as well as import Web Data from other Web Sites in
+a standard formats such as XML, XHTML HTML, etc.</P>
+</TD>
+	<TD class="demo" VALIGN="top" width="35%">
+      <P CLASS="demodesc"><a href="http://demo.openlinksw.com/index.vsp?target=viewlet" target="_blank">Click</a>
+       here to see Virtuoso integrate with your local file system via WebDAV.
+</P></TD></TR>
+
+<TR>
+	<TD class="feature" VALIGN="top" width="65%">
+      <H3>Web Server</H3>
+<P CLASS="featuretext">Virtuoso 3.0 introduces the VSPX XML vocabulary for
+rapidly defining dynamic web pages. VSPX offers a web based set of data
+bound controls for browsing and updating SQL data, validating input, managing
+sessions and any other common functions of database driven web sites. </P>
+</TD>
+	<TD class="demo" VALIGN="top" width="35%">
+      <P CLASS="demodesc"><a href="http://demo.openlinksw.com:8890/tutorial/web/index.vsp?f=1#BasicVSPXprogramming" target="_blank">Click</a>
+	  here to interact with a collection of live VSPX Examples.</P></TD>
+</TR>
+
+<TR>
+	<TD class="feature" ROWSPAN="3" WIDTH="65%" VALIGN="top">
+            <H3>XML Services</H3>
+<P CLASS="featuretext">Virtuoso enables you to develop modern web
+solutions that use XML as a both a Data Source and Data Interchange format.
+Your XML Data documents can take the form of Pure XML Documents or
+documents that are transformed from SQL-XML on the fly. By Supporting
+the XQUERY and XPATH query languages, you are able to use an industry
+standard query language to query across collections of XML Documents or
+portions of XML Documents stored within Virtuoso. </P>
+</TD>
+	<TD class="demo" VALIGN="top" width="35%">
+      <P CLASS="demodesc"><a href="http://demo.openlinksw.com:8890/tutorial/xml/index.vsp?f=1" target="_blank">Click</a>
+        here to interact with a collection of live Virtuoso XML Services
+    demonstrations.</P></TD></TR>
+
+<TR>
+	<TD class="demo" VALIGN="top" width="35%">
+      <P CLASS="demodesc"><a href="http://demo.openlinksw.com:8890/xqdemo" target="_blank">Click</a>
+    here to see a live demonstration of Virtuoso's XQUERY implementation.</P></TD></TR>
+
+<TR>
+	<TD class="demo" VALIGN="top" width="35%">
+      <P CLASS="demodesc">
+  <a href="http://demo.openlinksw.com/index.vsp?target=viewlet" target="_blank">Click</a>
+   here to see live demonstrations of Virtuoso's XML capabilities.
+   Demonstrations include creation of Dynamic XML Documents--"on the fly"--using
+   homogeneous and heterogeneous data sources.
+</P></TD></TR>
+
+<TR>
+	<TD class="feature" VALIGN="top" width="65%">
+      <H3>Virtual Database</H3>
+<P CLASS="featuretext">This feature provides transparent access to
+disparate SQL and XML Data Sources implying the following:</P>
+<ul>
+ <li>Virtuoso data access drivers (ODBC, JDBC, OLE DB, and .NET Providers)
+provide transparent connectivity to 3rd-party SQL databases. Once connected,
+Virtuoso treats these 3rd-party databases, as though they were native to
+itself.</li>
+ <li>Valid or Well Formed XML documents can be generated on the fly
+ from heterogeneous connections to 3rd party databases.  </li>
+ <li>XML documents can be created from any combination of native or
+3rd-party SQL or XML data sources.</li>
+ <li>Database-oriented Web Services can access heterogeneous or
+homogenous SQL and XML data sources, in a simplified manner.</li>
+</ul>
+</TD>
+	<TD class="demo" VALIGN="top" width="35%">
+      <P CLASS="demodesc"><a href="http://demo.openlinksw.com/index.vsp?target=viewlet" target="_blank">Click</a>
+      here to see 3rd-party database tables linked into Virtuoso.
+      </P></TD></TR>
+
+<TR>
+	<TD class="feature" VALIGN="top" width="65%">
+      <H3>Data Access</H3>
+<P CLASS="featuretext">
+In addition to providing ODBC, OLE DB, and .NET providers, Virtuoso offers a
+lightweight, high-performance Driver for JDBC. This Driver is a JDBC 2.0 compliant,
+Type 4 JDBC driver. Consequently providing direct access to both Native
+Virtuoso data and data stored in 3rd party databases via a single, JDBC connection.</P>
+</TD>
+	<TD class="demo" VALIGN="top" width="35%">
+      <P CLASS="demodesc"><A href="jdbcdemo/index.htm" target="_blank">Click</A>
+       here to see a live demonstration of the features and functionality of
+      Virtuoso's Type 4 Driver for JDBC.</P></TD></TR>
+
+</TABLE>
+
+</TD></TR>
+<TR CLASS="demomain"><TD><IMG SRC="admin/images/1x1.gif" WIDTH="1" HEIGHT="15" ALT=""></TD></TR>
+<TR CLASS="CopyrightBorder"><TD><IMG SRC="/admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+<TR><TD>
+        <P CLASS="copyright">Virtuoso Universal Server
+          <!--(<?= sys_stat('st_dbms_ver') ?>)-->
+          Administration Interface - Copyright&copy; 1999-2005 OpenLink Software.
+        </P>
+      </TD></TR>
+</TABLE>
+<!--?include admin/admin_footer.vsp ?-->
+</html>

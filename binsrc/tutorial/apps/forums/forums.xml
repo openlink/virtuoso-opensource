@@ -1,0 +1,176 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="forums">
+  <refmeta>
+    <refentrytitle>Application "Forums"</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Application "Forums"</refname>
+    <refpurpose>Application "Forums"</refpurpose>
+  </refnamediv>
+
+<refsect1 id="forumsa">
+<title>Overview</title>
+<itemizedlist mark="bullet">
+<listitem>
+The "Forums" is a World Wide Web application for posting, reading and searching of messages.
+It is developed under Virtuoso VDBMS using Virtuoso Server Pages (VSP) and server-side XSL-T
+transformation.</listitem>
+<listitem>The messages are classified by interest to forums and sub-forums.</listitem>
+<listitem>The posting is allowed only for the registered users. The registration is done by registration form.</listitem>
+<listitem>Every registered user can create  a new theme, post messages to an existing theme or reply to a message.</listitem>
+<listitem>Unregistered users can search and browse and read the existing themes and messages.</listitem>
+<listitem>VSP is used to produce an XML document. This is then transformed to HTML using server side XSL-T transformation.</listitem>
+<listitem>The design and functionality of this application are separate. The design and appearance of the application depends only on the XSL-T style-sheets.</listitem>
+<listitem>Session management is based on URL (poisoning) and persistent HTTP session variables.</listitem>
+<listitem>The messages are stored in the Database as XML documents, with a text index over them.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="forumsb">
+<title>Application pages</title>
+<para>The application has the following pages:</para>
+<itemizedlist mark="bullet">
+<listitem><para>home.vsp - the main page:</para>
+<para>Shows the forums with the following information:</para>
+<itemizedlist mark="bullet">
+<listitem>Forums: name of the forum with link to the relevant sub-forums.</listitem>
+<listitem>Total: total of the messages for this forum;</listitem>
+<listitem>New: new messages for the current forum for the last one day;</listitem>
+<listitem>Last msg.: last inserted message to the forum;</listitem>
+<listitem>Total users: the count of all users at the current moment who are registered at the forums;</listitem>
+<listitem>Options: Login if the user is already registered in the forums;</listitem>
+<listitem>Registration: to add a new user;</listitem>
+<listitem>Search: to search in the messages;</listitem>
+</itemizedlist>
+</listitem>
+
+<listitem><para>subforums.vsp - Shows the sub-forums of the current forum with the following information:</para>
+
+<itemizedlist mark="bullet">
+<listitem>Subforum: name of the sub-forum with link to the relevant themes.</listitem>
+<listitem>Total: total of the messages for this forum;</listitem>
+<listitem>New: new messages for the current forum for the last one day;</listitem>
+<listitem>Last msg.: last inserted message to the forum;</listitem>
+<listitem>Options: Login if the user is already registered in the forums;</listitem>
+<listitem>Registration: to add a new user;</listitem>
+<listitem>Search: to search in the messages;</listitem>
+<listitem>Forums path: links to the home page and to the forum to which belong the current sub-forums;</listitem>
+</itemizedlist>
+</listitem>
+
+
+<listitem><para> forum.vsp - Shows themes of the current sub-forum with the following information:</para>
+
+<itemizedlist mark="bullet">
+<listitem>Theme: name of the theme with link to its messages.</listitem>
+<listitem>Total: total of the messages for this theme;</listitem>
+<listitem>New: new messages for the current theme for the last one day;</listitem>
+<listitem>Last msg.: last inserted message to the theme;</listitem>
+<listitem>Options: Login if the user is already registered in the forums;</listitem>
+<listitem>Registration: to add a new user;</listitem>
+<listitem>Search: to search in the messages;</listitem>
+<listitem>Forums path: links to the home page, to the forum and to the sub-forum to which belong the current themes;</listitem>
+</itemizedlist>
+</listitem>
+
+
+<listitem><para> thread.vsp - Shows the messages of the current theme with the following information:</para>
+
+<itemizedlist mark="bullet">
+<listitem>Message: name of the messages with link to its properties / text, author / and when the link is activated, the same page is present, but with the tree of the messages for which the current message is parent.</listitem>
+<listitem>Author: the name of the author, posted the current messages;</listitem>
+<listitem>Date of inserting: date of posting the messages; </listitem>
+<listitem>Options: Login if the user is already registered in the forums;</listitem>
+<listitem>Registration: to add a new user;</listitem>
+<listitem>Search: to search in the messages;</listitem>
+<listitem>Forums path: links to the home page, to the forum and to the sub-forum to which belong the current message, also for the current messages which is parent for the other messages, its name is only presented, and lower you go in the tree, you can go back using this path.</listitem>
+</itemizedlist>
+</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="forumsc">
+<title>Remarks</title>
+<itemizedlist mark="bullet">
+<listitem>If you are not logged in, you can go on all the pages of the site, but if you want to insert new theme, or new message, you have to login, and automatically the login page is displayed. When you are successfully login, you go directly   to the form for inserting messages/themes.</listitem>
+
+<listitem> If you aren't logged-in, the name anonymous is displayed, instead of your email, if you were logged in.</listitem>
+
+<listitem><para>When you use the search option, you can search in 3 main parts:</para>
+<orderedlist>
+ <listitem>Theme title: title of message which is title of theme;</listitem>
+ <listitem>Message title: title of message which has theme as parent theme;</listitem>
+ <listitem>Message body: body of the messages which has as a parent different themes;</listitem>
+</orderedlist></listitem>
+
+<listitem>When the search result is displayed, there info how many hits are found, and the result are displayed as following:</listitem>
+<listitem>Message title: the title of the current message / when you search in message body, its title is displayed /;</listitem>
+<listitem>Time: date of inserting of the message or theme;</listitem>
+<listitem>Author: the author of the message or the theme;</listitem>
+<listitem>Home: link to the home page;</listitem>
+<listitem>User info: if logged in, then the current email, otherwise anonymous.</listitem>
+</itemizedlist>
+</refsect1>
+
+<refsect1 id="forumsd">
+<title>Installation</title>
+<orderedlist>
+  <listitem>Copy /forums and /xslt to the HTTP ServerRoot</listitem>
+  <listitem><para>Execute def.sql script via isql tool with dba privileges. Example:</para>
+   <programlisting>
+   [isql tool directory]\isql [server ip or hostname]:[port] dba dba
+
+   Connected to OpenLink Virtuoso VDBMS
+   Driver: 02.10.2015 OpenLink Virtuoso ODBC Driver
+   OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+   Type HELP; for help and EXIT; to exit.
+   SQL&gt;load c:\temp\def.sql;
+   Done. -- 20 msec.
+   . . .
+   Done. -- 20 msec.
+   . . .
+   Done. -- 20 msec.
+   </programlisting>
+   <para>Important: Make sure there are no errors.</para>
+   </listitem>
+
+   <listitem><para>Execute func.sql script. Example:</para>
+  <programlisting>
+   SQL>load c:\temp\func.sql;
+   Done. -- 20 msec.
+   . . .
+   Done. -- 20 msec.
+   . . .
+   Done. -- 20 msec.
+ </programlisting>
+ <para>Important: Make sure there are no errors.</para></listitem>
+<listitem><para>Check the installation:</para>
+  <programlisting>
+   <ulink url="/forums/home.vsp">http://[server ip or hostname]:[port]/forums/home.vsp</ulink>
+  </programlisting></listitem>
+</orderedlist>
+</refsect1>
+</refentry>

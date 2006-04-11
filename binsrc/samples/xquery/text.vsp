@@ -1,0 +1,60 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+	<body>
+	<h3>Search:</h3>
+<?vsp
+ declare _q varchar;
+ _q := coalesce ({?'q'}, '');
+ if (_q <> '') {
+	declare _res any;
+	http ('<h3>Result:</h3>');	
+	_res := xquery_eval ('
+for \044d in collection ("http://local.virt/blogs/", ., 2) 
+	return 
+		<p>
+			<h4>{document-uri(\044d)}</h4>
+<ul> {
+for \044item in \044d//blog_item[contains (descendant::*,"' || _q || '")]
+let \044link :=  \044item/link_uri/string()
+let \044title := \044item/title/string()
+ return
+  <li>
+	<a href="{\044link}">
+ 	 {\044title}
+	</a>
+  </li>
+} </ul>
+		</p>', xtree_doc ('<stub/>'),0);
+		foreach (any x in _res) do {
+			http (serialize_to_UTF8_xml (x));
+		}
+ }
+ ?>
+ <form method="GET" action="text.vsp">
+	<input name="q" type="text" value="<?= _q ?>" />
+	<input name="submit" type="submit" value="Search" />
+ </form>
+
+</body>
+</html>

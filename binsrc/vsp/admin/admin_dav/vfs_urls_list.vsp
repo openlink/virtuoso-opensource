@@ -1,0 +1,132 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp adm_pre_page(lines); ?>
+<?vsp
+declare _host, _root, _url varchar;
+declare _inx, _to, _from, _lpp integer;
+_lpp := 10;
+_host := '';
+_root := '';
+_url := '';
+_inx := 0;
+_from := 0;
+_to := _lpp;
+if (DB.DBA.adm_dav_check_auth (lines) <> 1)
+  {
+    http_request_status ('HTTP/1.1 401 Unauthorized');
+    http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+	  '<HTML><HEAD>',
+	  '<TITLE>401 Unauthorized</TITLE>',
+	  '</HEAD><BODY><H1>Unauthorized</H1>',
+	  'Access to page is forbidden.</BODY></HTML>'));
+    return (0);
+  }
+
+if ('Next' = get_keyword ('Next', params))
+  {
+    _inx := atoi (get_keyword ('inx', params));
+    _from := _inx;
+    _to := _inx + _lpp;
+    _inx := 0;
+  }
+if ('' <> get_keyword ('host', params))
+  {
+    _host := get_keyword ('host', params);
+    _root := get_keyword ('root', params);
+  }
+if ('yes' = get_keyword ('DELETE', params))
+  {
+    _url := get_keyword ('url', params);
+    delete from WS.WS.VFS_URL where VU_HOST = _host and VU_ROOT = _root and VU_URL = _url;
+  }
+  set isolation='uncommitted';
+?>
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="<?=adm_what_css()?>">
+    <meta name="AUTHOR" content="OpenLink Software">
+    <meta name="DESCRIPTION" content="Web robot's retrieved links">
+<title>URL's list</title>
+</head>
+<?vsp adm_page_header('Current Download', 'webdataimportsexports'); ?>
+
+<!--A href="vfs_urls.vsp"><img src="/images/home.gif"></A-->
+<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+<TR><TD CLASS="genhead" COLSPAN="4">URL's List</TD></TR>
+<TR><TD CLASS="AdmBorders" COLSPAN="4"><IMG SRC="../images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
+
+<tr>
+<td CLASS="genlistheadt">URL</td>
+<td CLASS="genlistheadt">Etag</td>
+<td CLASS="genlistheadt">retrieved</td>
+<td CLASS="genlistheadt">Action</td>
+<td>
+
+<?vsp
+for select VU_URL, VU_ETAG, VU_CPTIME from WS.WS.VFS_URL where VU_HOST = _host and VU_ROOT = _root do {
+  if (_inx < _to and _inx > _from - 1)
+    {
+      http (concat (
+	    '<tr><td CLASS="gendata">',
+	    VU_URL,
+	    '</td><td CLASS="gendata">',
+	    VU_ETAG,
+	    '</td><td CLASS="gendata">',
+	    subseq (cast (VU_CPTIME as varchar),0, 19),
+	    '</td><td CLASS="gendata">',
+	    '<a  class="tablelistaction" href="vfs_urls_list.vsp?DELETE=yes&host=',_host,'&root='));
+	    http_url (_root);
+	    http ('&url=');
+	    http_url (VU_URL);
+	    http (concat ('">Remove</a>', '</td></tr>'));
+    }
+   _inx := _inx + 1;
+}
+    _from := _from - _lpp;
+?>
+</table>
+<br>
+<table width="70%">
+<tr>
+<?vsp
+if (_inx > _to)
+  {
+    http( concat ('<td><a class="tablelistaction" href="vfs_urls_list.vsp?Next=Next&host=', _host,
+                  '&root='));
+    http_url (_root);
+    http (concat ('&inx=', cast (_to as varchar), '">Next Page</a></td>'));
+  }
+if (_from > -1)
+  {
+    http( concat ('<td><a class="tablelistaction" href="vfs_urls_list.vsp?Next=Next&host=', _host,
+                  '&root='));
+    http_url (_root);
+    http (concat ('&inx=', cast (_from as varchar), '">Prev Page</a></td>'));
+  }
+?>
+</tr>
+</table>
+<?vsp adm_page_footer(); ?>
+</html>

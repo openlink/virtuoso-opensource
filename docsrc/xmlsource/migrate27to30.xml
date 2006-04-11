@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<sect1 id="migrxx">
+<sect2 id="migrate27to30"><title>Migration of Virtuoso from Version 2.7 to Version 3.0</title>
+
+  <para>The Virtuoso 3.0 database file format is not compatible with 
+  database files of previous versions.  If you have previous versions of 
+  Virtuoso installed you should perform &quot;data migration&quot;.  The 
+  migration routine connects to both old and newly installed Virtuoso servers 
+  to read all schema information, data, stored procedures and user 
+  accounts from the old server and inserts them into a new one.</para>
+
+  <para>Not all stored procedures will work after the migration exactly 
+  as they were in the original installation.  Applications than are portable 
+  across SQL-92 compatible servers are usually version-independent 
+  because both Virtuoso 2.7 and Virtuoso 3.0 are SQL-92 compatible.  Other 
+  applications may be sensitive to features that varied from version to version.  
+  Typical compatibility issues are discussed below.</para>
+
+  <sect3 id="migraroutine"><title>How Migration Processes Data</title>
+
+    <para>The migration utility takes the form of a script on Unix platforms, 
+    or a utility available via a short-cut from the Start/Programs menu on Windows. 
+    The behavior is identical in both cases.  
+    First of all, the utility asks for the location of two servers, source and
+destination and ensures that it can establish database connections to them.
+Then it checks the schema of the source database for critical errors, such as
+invalid data types in index columns, and subsequently calculates checksums 
+of the data within the source database for future integrity checking.  
+Next it reads data from the source database tables and inserts them into
+the destination database, creating the tables as necessary.  
+When all of the data is copied, the triggers and foreign keys are then added 
+to the schema of the destination server.  
+Then stored procedures are compiled on the destination server.
+At this point a checkpoint is made on the destination server, stabilizing server state.  
+Next the migration utility calculates the checksums of the migrated data in the
+destination database to compare with the source database, after verifying that 
+they are identical the free-text indexes are filled and the checksums are 
+calculated and compared once again.
+The final action is the shutdown of the destination server.</para>
+    <para>The utility will report all errors that may affect the result of the migration.
+When the migration is complete, please review the log.</para>
+    <para>The source and destination servers may reside on the same machine or on 
+two different machines; the migration utility can be started on the machine where
+one of databases resides or on a third machine. Migration works faster 
+started on the same server as one or other database.  If the source and 
+destination servers are on two different machines, migration works slightly 
+faster if the utility is on the source side.</para>
+  </sect3>
+  <sect3 id="migracompat">
+    <title>Typical Compatibility Issues</title>
+    <formalpara>
+      <title>User accounts get changed numeric IDs.</title>
+      <para>While names of database users and their access rights are 
+      identical in both databases, their numeric IDs may vary.
+It will cause problems if an application refers to these numeric IDs in its own tables.  
+Migration updates &quot;owner user&quot; and &quot;owner group&quot; IDs
+for DAV resources and collections, but not in application-specific tables.
+</para>
+    </formalpara>
+    <formalpara>
+      <title>A DAV user account can be renamed if there is in the source database a SQL account with the same name .</title>
+      <para>The suffix "_dav" will be added to the name of such a user.  This is because DAV accounts had their own namespace in 2.7 but are part of the SQL user account namespace in 3.0.</para>
+    </formalpara>
+    <formalpara>
+      <title>&quot;dav&quot; group is renamed to &quot;administrators&quot;.</title>
+      <para>Some applications may be affected by this change.</para>
+    </formalpara>
+    <formalpara>
+      <title>The row of a database table may store other amount of data than before</title>
+      <para>If an application causes SQL errors like "data truncated", its behavior may vary from
+version to version.
+The database page layout for Virtuoso 3.0 has been significantly changed.  It is 
+especially important for tables that have columns of both fixed and variable width 
+and the total width of fixed-width columns is close to the maximum allowed 
+length of the row.  In Virtuoso 3.0, the maximum allowed length of the row 
+has been doubled so an application may get a surprisingly long data row that 
+may have been truncated in the past.</para>
+    </formalpara>
+    <formalpara>
+      <title>Virtuoso 3.0 stores CHAR(n) columns differently</title>
+      <para>In Virtuoso 2.7, columns of types CHAR(n) and VARCHAR(n) were 
+      physically stored identically, as strings of variable (but limited) length.</para>
+    </formalpara>
+    <formalpara>
+      <title>Virtuoso 3.0 does not allow the use of LONG VARCHAR columns in comparison operators.</title>
+      <para>It is illegal to use LONG VARCHAR values for comparison operations, 
+so they may not appear in key columns of indexes.  However it has been 
+to &quot;inline&quot; very short LOBs and write them into table 
+rows as if they were short VARCHAR values.  Thus an application was able to 
+work fine if comparison arguments are very short LOBs.  Virtuoso 3.0 
+can &quot;inline&quot; LOBs too, but compile-time type checking is stricter 
+than before so some procedures and SQL statements may fail to compile.</para>
+    </formalpara>
+    <formalpara>
+      <title>Virtuoso 3.0 does not allow the use of LONG VARCHAR columns as key columns of indexes.</title>
+      <para>Building of an index assumes applying  comparison operators to  
+      values from key columns.  As noted above, Virtuoso 3.0 contains more checks 
+      against comparison of LOBs.
+Virtuoso 3.0 detects more schema errors when the declaration of an index is created,
+instead of signaling an error when a long value is added to the index.
+Migration will  fail to create such indexes and will  create a table with no primary key
+if LOB column is listed as a part of primary key of the table.</para>
+    </formalpara>
+    <formalpara>
+      <title>Error recovery is improved in the XML parser of the Virtuoso 3.0</title>
+      <para>If an application parses invalid XML or HTML texts, the parser may recover
+from parsing errors in a different way. It may affect free-text indexing of columns that
+contain invalid XMLs so the content of the free-text index may differ from version
+to version.</para>
+    </formalpara>
+  </sect3>
+  <sect3 id="migraprepare">
+    <title>Preparing to Migrate</title>
+    <formalpara>
+      <title>Install the Virtuoso 3.0 server</title>
+      <para>Please make sure that the disk space is sufficient  to store data from the source database
+plus the transaction log.
+The migrated database may be greater or smaller than the
+source one so providing at least 20% more space on the destination side is a good idea.</para>
+    </formalpara>
+    <formalpara>
+      <title>It is especially important to have &quot;CaseMode&quot; and &quot;Collation&quot; parameters identical on both sides.</title>
+      <para>Difference in &quot;CaseMode&quot; parameter may cause major schema errors and major problems in
+migration of stored procedures.
+Mismatch in &quot;Collation&quot; parameter may invalidate indexes.
+Please double-check these parameters in configuration files.
+If they were changed, please re-create the destination database.</para>
+    </formalpara>
+    <formalpara>
+      <title>Some other parameters should be the same too.</title>
+      <para>Many applications will depend on &quot;NullUnspecifiedParams&quot;, &quot;AllowOSCalls&quot;,
+&quot;DirsAllowed&quot; and &quot;DirsDenied&quot; parameters.
+In addition, free text indexes may use &quot;noise.txt&quot; file and files listed in &quot;[Ucms]&quot;
+section of the configuration file.  
+Please keep them synchronized and restart the destination server after changing them.</para>
+    </formalpara>
+    <formalpara>
+      <title>You should check port numbers, host names and database server names.</title>
+      <para>If both databases should work on the same machine, their port numbers should not conflict.
+E.g. If virtual hosts are defined, it is probable that the destination server will fail to listen on their
+ports after the migration because they are already be used by the source server 
+on the same machine.  Note that the destination server will fail to listen for multiple 
+web hosts if the listening addresses specify specific interfaces which do not exist or 
+are occupied on the machine in question.  </para>
+</formalpara>
+
+<formalpara><title>Replication server name conflicts</title>
+<para>You may need to set a temporary unique replication server name for  the 
+destination server, and set it to the name of the source server when the 
+migration is complete and the source server has been turned off.
+These problems are very common for any changes of the location of the database.</para>
+    </formalpara>
+    <formalpara>
+      <title>Check memory consumption.</title>
+      <para>If you use a configuration file of source server as a template for 
+      new server, please check if it matches the amount of available RAM on the  
+      destination machine.  Note that the sizes of cache pools are measured in 
+      database disk pages; one page was 4096 bytes in Virtuoso 2.7 but has been 
+      increased to 8192 bytes in Virtuoso 3.0 hence the same number of pages in 
+      the pool doubles the required amount of RAM.  If both source and destination 
+      servers are started on the same machine, please ensure that there is 
+      enough available memory to run them simultaneously without heavy 
+      swapping.</para>
+    </formalpara>
+    <formalpara>
+      <title>Check system clock accuracy and timezone settings.</title>
+      <para>If source and destination servers are located in different timezones (i.e.,
+their machines have different timezone settings),
+then errors may occur in some applications that uses datatime values with default timezones,
+because the timezone of datatime values will differ from the default (local) timezone.
+The time reported by the system clock may also be important if an application
+logs times of some events and expect that they are properly ordered.
+Time issues may be especially important to web applications that uses cookie variables, because
+cookies are time-sensitive.</para>
+    </formalpara>
+  </sect3>
+  <sect3 id="migrarun"><title>Performing the migration on Unix using migration shell script</title>
+    <para>The script expects that both source and destination servers are already started.
+It ensures that all required programs are available and then asks connection parameters of
+two servers (host names, ports, database user names and passwords).
+To make the migration successful, database users should have granted all privileges on their servers,
+so the use of DBA account is the best choice.
+The script will test connections to both source and destination database to check the 
+given parameteres are valid.</para>
+<para>If the source database resides on the machine where the migration script is started,
+the script may ask whether you want to use a special temporary server instance to perform the migration.
+It will shutdown your source server but will eliminate the risk of changing the data by third parties
+during the migration.
+If you want to use such a server, the effective OS user should have write permissions on
+directories and files of the source database, otherwise the processing will fail.</para>
+<para>If the original server is left running, please make sure that nobody else uses it
+and there are no scheduled tasks (e.g., replication tasks) that may change data in the database.
+</para>
+<para>
+In case of serious schema errors in the source database, the script may list them for review and
+ask if you agree to run a &quot;dirty migration&quot;. The result of such migration will
+contain the same data rows but the schema will be altered to eliminate the reported errors.  
+One such example is when you have a table with LONG VARCHAR primary key, the resultant 
+table will have all the fields copied, but the primary key will not be copied.
+</para>
+<para>
+To ensure that data are copied correctly, the script will calculate MD5 signatures of
+all columns of all migrated tables. The differences of two such signatures will indicate
+that data in some column were changed during the migration.
+Possible reasons are data truncation, typecasting of invalid values to the declared type of the column,
+difference in character sets or collations, transaction performed by other connections on source or
+destination servers during the migration.
+</para>
+  </sect3>
+</sect2>
+</sect1>
+
+
+

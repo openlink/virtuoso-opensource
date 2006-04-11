@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_connection_id">
+  <refmeta>
+    <refentrytitle>connection_id</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>connection_id</refname>
+    <refpurpose>get connection identifier</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_connection_id">
+      <funcprototype id="fproto_connection_id">
+        <funcdef><function>connection_id</function></funcdef>
+	<paramdef />
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_connection_id"><title>Description</title>
+    <para>This function returns a string uniquely identifying the connection
+    in this server instance. It is usually a combination of server's
+    port number and a serial number of the client.</para>
+    <note><para>The value returned is usually not useful in HTTP invocation
+    context (VSP or SOAP), since consecutive requests by the same client will
+    typically not be on the same connection the way the server sees
+    it.</para></note>
+  </refsect1>
+  <refsect1 id="ret_connection_id"><title>Return Values</title>
+    <para>A <type>VARCHAR</type> connection identifier.
+</para></refsect1>
+  <refsect1 id="examples_connection_id"><title>Examples</title>
+    <example id="ex_connection_id"><title>Return The Current Connection ID</title>
+      <screen>
+SQL> select connection_id();
+callret
+VARCHAR
+__________________________________
+
+1111:4
+</screen>
+    </example>
+  </refsect1>
+<!--
+  <refsect1 id="seealso_connection_id"><title>See Also</title>
+    <para><link linkend="fn"></link></para>
+  </refsect1>
+-->
+</refentry>
+

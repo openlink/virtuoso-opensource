@@ -1,0 +1,104 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+declare result any;
+declare a, b int;
+declare resp,inp,outp any;
+
+resp := null;
+if ({?'exec'} is not null)
+  {
+    a := atoi (get_keyword ('a', params, '0'));
+    b := atoi (get_keyword ('b', params, '0'));
+    resp := (
+      SOAP_CLIENT (
+	  url=>{?'url'},
+	  operation=>'AddInt',
+	  parameters=>vector (vector ('a', 'int'), a, vector ('b', 'int'), b),
+	  auth_type=>'key',
+	  security_type=>'sign',
+	  target_namespace=>'http://temp.uri/',
+	  soap_action=>'"http://temp.uri/#AddInt"',
+	  style=>6,
+	  template=>'[wss.pfx]'
+	  ));
+  }
+?>
+<html>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+<body>
+<H3>SOAP client</H3>
+<form method="post" action="<?= http_path() ?>" name="mform">
+<table class="tableentry">
+<tr><td>1. Enter the endpoint URL</td><td>
+<input type="text" name="url" size="100" value="http://localhost:<?=server_http_port()?>/SecureWebServices" />
+</td></tr>
+<tr><td>2. Enter a two numbers to calculate sum</td><td>
+<input type="text" name="a" size="15" value="0" />
+<input type="text" name="b" size="15" value="0" />
+</td></tr>
+<tr><td>3. Call the AddInt</td><td><input type="submit" name="exec" value="Calculate"></td></tr>
+</table>
+</form>
+<?vsp
+  if (resp is not null) {
+  declare inx, oux, atts any;
+  inp := resp[1];
+  outp := resp[2];
+  atts := resp[4];
+  inx := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (inp), vector ('body', 0));
+  oux := xslt (TUTORIAL_XSL_DIR () || '/tutorial/services/raw.xsl', xml_tree_doc (outp), vector ('body', 0));
+?>
+  <table>
+  <tr>
+    <td>
+    Request
+    </td>
+  </tr>
+  <tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (inx, null); ?>
+    </div>
+    </td>
+  </tr>
+  <tr>
+  <tr>
+    <td>
+    Response
+    </td>
+  </tr>
+    <td>
+    <div class="filelist">
+    <?vsp http_value (oux, null); ?>
+    </div>
+    </td>
+  </tr>
+  </table>
+<?vsp
+  }
+?>
+
+
+</body>
+</html>

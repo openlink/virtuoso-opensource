@@ -1,0 +1,586 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sect1 id="maildelivstore"><title>Mail Delivery &amp; Storage</title>
+
+  <sect2 id="smtpclient"><title>The SMTP Client</title>
+
+&smtp_send;
+
+<!--
+
+		<sect3 id="smtpcommands">
+			<title>Commands</title>
+			<programlisting>
+ - HELO - get information of client connection (client host name)
+ - MAIL FROM - sender&apos;s e-mail address
+ - RCPT TO - receiver&apos;s e-mail address
+ - DATA - begin of data block end with (.)
+ - QUIT - connection end
+</programlisting>
+		</sect3>
+		<sect3 id="smtptables">
+			<title>Tables</title>
+			<programlisting>
+ - Message queue
+ - Messages
+ - Local mail users
+ - Allowed relay domains
+</programlisting>
+		</sect3>
+<tip><title>See Also:</title>
+<para><link linkend="smtptabledesc">Mail system tables </para></tip>
+
+		<sect3 id="smtpparams">
+			<title>Parameters</title>
+			<programlisting>
+- Port number
+- Pooling interval (for mail queue)
+- Connection timeout
+</programlisting>
+		</sect3>
+-->
+
+  </sect2>
+
+  <sect2 id="pop3server"><title>POP3 Server</title>
+
+<para>The Virtuoso POP3 Server implementation supports the following commands
+as defined in RFC - 1939:</para>
+
+<simplelist>
+<member>DELE</member>
+<member>LIST</member>
+<member>NOOP</member>
+<member>PASS</member>
+<member>QUIT</member>
+<member>RETR</member>
+<member>RSET</member>
+<member>STAT</member>
+<member>TOP</member>
+<member>UIDL</member>
+<member>USER</member>
+</simplelist>
+
+<para>The POP3 Server listening port is configured in the HTTP section of the virtuoso.ini.</para>
+	<para>
+POP3Port = xxx, in HTTP section.
+</para>
+	<para>
+If the port is not defined in the configuration file then the POP3 server subsystem will be disabled.
+</para>
+	<para>
+Users and passwords of the POP3 Server are described in the system view
+WS.WS.SYS_DAV_USER over SYS_USERS. These users can be administered from the users section of the
+Virtuoso Administration User Interface.
+</para>
+	<para>
+The system table DB.DBA.MAIL_MESSAGE is used to stored the messages.
+</para>
+
+</sect2>
+
+<sect2 id="smtpreceipt">
+	<title>Storing Email in Virtuoso</title>
+
+    <para>
+A generic mail delivery driver enables SMTP servers to deliver email to be stored in either
+Virtuoso or non Virtuoso SQL database.
+</para>
+<para>
+Mail storage can occur in a number of ways:</para>
+<orderedlist>
+<listitem>Replacing the default generic SMTP mail handler ( the program  "procmail")</listitem>
+<listitem>Replacing the mail storage settings for individual users
+Replacing Default SMTP Mail Handler Sendmail</listitem>
+</orderedlist>
+
+  <sect3 id="unixsendmailinstall"><title>Replacing procmail As Default Mail Handler In Sendmail Configurations</title>
+<para>
+When this configuration is in use, the mails for all of your
+"sendmail" mail recipients are written to a SQL Database table.
+</para>
+
+<orderedlist>
+<listitem><para>Copy the file "odbc_mail.default.ini" to "/etc/odbc_mail.ini"</para>
+<para><important>Make sure that /etc/odbc_mail.ini is NOT GROUP/WORLD writable.  virt_mail
+will fail to run if it is.</important></para></listitem>
+<listitem><para>Copy or symbolically link the file "virt_mail" to "/usr/bin/virt_mail"</para></listitem>
+<listitem><para>Edit /etc/odbc_mail.ini and change the login settings to match your current database installation.</para>
+<para>Note: If you don't have or want to use procmail, comment out the "Fallback" setting in the "[Deliver]" section.</para>
+</listitem>
+<listitem><para>Edit the file "/etc/sendmail.cf" as described below:</para>
+<para>Change</para>
+<programlisting>
+Mlocal, P=/usr/bin/procmail, F=lsDFMAw5:/|@qSPfhn9, S=10/30,
+  R=20/40,T=DNS/RFC822/X-Unix, A=procmail -Y -a $h -d $u
+</programlisting>
+<para>
+To:
+</para>
+<programlisting>
+Mlocal, P=/usr/bin/virt_mail, F=lsDFMA5:/|@qSPhn9, S=10/30,
+  R=20/40, T=DNS/RFC822/X-Unix, A=virt_mail -c /etc/odbc_mail.ini -l $u -s $g
+</programlisting>
+<para>
+NOTE: The changes to the F= setting involves removing both the 'w' and 'f' flags.
+</para>
+<para>
+The removal of the 'w' flag affects lookups in /etc/passwd, which are no
+longer required if all mail delivery goes into a SQL Database.  The default
+ini file is set up to maildrop via procmail, which will perform the check correctly.
+</para>
+</listitem>
+</orderedlist>
+</sect3>
+
+<sect3 id="replacingmailsettings"><title>Replacing The Mail Storage Settings For Individual Users</title>
+
+<sect4 id="sendmail"><title>Using Sendmail</title>
+
+<orderedlist>
+<listitem><para>Copy odbc_mail.default.ini to ~the_user_name/odbc_mail.ini</para>
+<para><important>Make sure that /etc/odbc_mail.ini is NOT GROUP/WORLD writable.  virt_mail
+will fail to run if it is.</important></para></listitem>
+<listitem><para>At the end of the file ~the_user_name/.procmailrc put something like:
+</para>
+<programlisting>
+:0:
+| /usr/bin/virt_mail -c .odbc_mail.ini -l the_user_name
+</programlisting>
+<para>
+replacing the_user_name with the user you are setting up.
+</para>
+<para>
+Note: the '-l ..' parameter is used to relate the local recipient to
+the database user for which the maildrop is done.  See the remarks in
+the odbc_mail.default.ini file.
+</para>
+</listitem>
+<listitem>
+<para>Adjust the parameters in .odbc_mail.ini to match your configuration</para>
+<para><important>disable Fallback delivery in the .odbc_mail.ini file.</important>
+Comment out the "Fallback =" entry in the .odbc_mail.ini
+or set it to something that does not involve procmail.  This may lead to drop loops, otherwise.
+</para>
+</listitem>
+</orderedlist>
+</sect4>
+
+<sect4 id="qmail"><title>Using Qmail</title>
+<orderedlist>
+<listitem><para>Copy odbc_mail.default.ini to ~the_user_name/.odbc_mail.ini
+</para>
+<para><important>Make sure that the .odbc_mail.ini file is NOT GROUP/WORLD writable.
+virt_mail will fail to run if it is.</important></para></listitem>
+<listitem><para>If you are setting up a .qmail, you can simply do the following:
+</para>
+<programlisting>
+| /usr/bin/virt_mail -m qmail -c .odbc_mail.ini
+</programlisting>
+<para>
+If you are setting up .qmail-default or .qmail-&lt;some_alias_name&gt;,
+make sure you adjust the RemovePrefix accordingly in the odbc_mail.ini.
+</para>
+<para>
+This also works if a single user is receiving mail for an entire
+(virtual) domain.
+</para>
+<para>
+If you want to configure qmail so that user 'db' gets all mail for
+example.com, do the following:
+</para>
+<orderedlist>
+<listitem><para>create a new user db in /etc/passwd etc.</para></listitem>
+<listitem><para>remove example.com from /var/qmail/control/locals</para></listitem>
+<listitem><para>add to /var/qmail/controls/virtualdomains: </para>
+<programlisting>
+example.com:db
+</programlisting>
+</listitem>
+<listitem><para>adjust /var/qmail/users/assign accordingly:</para>
+<programlisting>
+=db:db:&lt;uid&gt;:&lt;gid&gt;:&lt;home&gt;:::
+</programlisting>
+<programlisting>
++db-:db:&lt;uid&gt;:&lt;gid&gt;:&lt;home&gt;:-::
+</programlisting>
+<para>or run qmail-pw2u &lt; /etc/passwd &gt; /var/qmail/users/assign
+  then run qmail-newu and restart qmail</para></listitem>
+<listitem><para>in ~db/.qmail-default, put:</para>
+<programlisting>
+| /usr/bin/virt_mail -m qmail -c .odbc_mail.ini
+</programlisting>
+</listitem>
+<listitem><para>in .odbc_mail.ini, set:</para>
+<programlisting>
+RemovePrefix=db-
+</programlisting>
+<para>
+Now, mail to info@example.com will be delivered to the qmail alias
+db-info@example.com and is stored into the database for user 'info'.
+</para></listitem></orderedlist>
+</listitem>
+<listitem>
+<para>Adjust the parameters in .odbc_mail.ini to match your configuration</para>
+</listitem>
+</orderedlist>
+</sect4>
+
+<sect4 id="courier"><title>Using Courier</title>
+<orderedlist>
+<listitem><para>Copy odbc_mail.default.ini to ~the_user_name/.odbc_mail.ini
+</para>
+<para><important>Make sure that the .odbc_mail.ini file is NOT GROUP/WORLD writable.
+virt_mail will fail to run if it is.</important></para></listitem>
+<listitem><para>If you are setting up a .courier, you can simply do the following:
+</para>
+<programlisting>| /usr/bin/virt_mail -mcourier -c .odbc_mail.ini</programlisting>
+  <para>
+If you are setting up .courier-default or .courier-&lt;some_alias_name&gt;,
+make sure you adjust the RemovePrefix accordingly in the .odbc_mail.ini.
+</para>
+<para>Note: although courier is very similar to qmail in this respect,
+it is different from qmail in how it handles exit codes.
+If you use -mqmail while running under courier, you'll get the wrong
+exit codes, so mail is bounced instead of retried.
+</para>
+<para>Note also that if delivering to multiple recipients in a .courier file,
+make sure the virt_mail is specified first.  This is because if the
+virt_mail fails with a temporary error, the other recipients will
+get another drop when courier re-attempts to deliver the mail.
+</para>
+<para>
+Right:
+</para>
+\w<programlisting>
+| /usr/bin/virt_mail -mcourier -c .odbc_mail.ini
+./Maildir
+</programlisting>
+<para>Wrong:</para>
+<programlisting>
+./Maildir
+| /usr/bin/virt_mail -mcourier -c .odbc_mail.ini
+</programlisting>
+</listitem>
+<listitem>
+Adjust the parameters in .odbc_mail.ini to match your configuration
+</listitem>
+</orderedlist>
+</sect4>
+
+<sect4 id="exim"><title>Using EXIM</title>
+
+<para>
+Here are code snippets for Exim that perform maildrops into the odbc database.
+</para>
+<programlisting>
+## IN TRANSPORT SECTION
+
+# Delivers into the database
+odbc:
+  driver = pipe
+  command = /usr/bin/virt_mail \
+	-c /etc/odbc_mail.ini \
+	-s "${if def:return_path{$return_path}{MAILER-DAEMON}}" \
+	-l "$local_part"
+  user = USERNAME
+  return_path_add
+  delivery_date_add
+  prefix =
+  suffix =
+  temp_errors = 73 : 74 : 75
+  return_fail_output
+
+# NOTE: Make sure the USERNAME in the 'user = USERNAME' setting matches
+# the owner of /etc/odbc_mail.ini, because this file must have mode 0600.
+# Consider creating a new user account for this delivery only.
+# You should specify 'user = root' here only if Fallback delivery is
+# configured in /etc/odbc_mail.ini (for procmail fallback delivery
+# for instance)
+
+
+## IN DIRECTORS SECTION
+
+# Attempts delivery of all mail into the database
+to_db:
+  driver = smartuser
+  transport = odbc
+  require_files = /etc/odbc_mail.ini
+  #
+  # uncomment line below to deliver all mail to db-XXX into the database, for any
+  # value of XXX. For this to work, set "RemovePrefix = db-" in
+  # the [Translate] section in /etc/odbc_mail.ini
+  #prefix = db-
+</programlisting>
+
+</sect4>
+</sect3>
+
+<sect3 id="mailsystables">
+<title>Mail System Tables</title>
+
+	<para>
+The electronic mail accounts are regular SQL accounts.
+</para>
+	<para>
+Id (MM_ID) of the message is unique per account/folder (folder can be 'Inbox' etc.)
+</para>
+
+<tip><title>See Also:</title><para><link linkend="smtptabledesc">Mail system tables</link></para></tip>
+
+</sect3>
+
+<sect3 id="pop3client">
+<title>Pop3 Client</title>
+
+<para>The Virtuoso POP3 Client implementation can retrieve messages from any POP3 server.</para>
+
+&pop3_get;
+
+<sect4 id="commands">
+<title>Commands</title>
+
+<para>UIDL - get only UIDL's of messages.</para>
+<para>DELETE - delete messages after downloading.</para>
+
+<example>
+<title>Examples</title>
+
+<para>
+1. To get 10 KB. messages from the server  'openlinksw.com' POP3 port 110, user name 'user_1', password  'pass_1'
+</para>
+<programlisting>
+	Pop3_get ('openlinksw.com:110', 'user_1', 'pass_1', 10000);
+</programlisting>
+<para>
+2. To get  and delete 5 KB. messages from the server  'openlinksw.com' POP3 port 110, user name 'user_1',  password  'pass_1'
+</para>
+<programlisting>
+	Pop3_get ('openlinksw.com:110', 'user_1', 'pass_1', 5000, 'DELETE');
+</programlisting>
+<para>
+3. To get  UIDL's of 100 kb. messages from the server  'openlinksw.com' POP3 port 110, user name 'user_1',  password  'pass_1'
+</para>
+<programlisting>
+	Pop3_get ('openlinksw.com:110', 'user_1', 'pass_1', 100000, 'UIDL');
+</programlisting>
+</example>
+		</sect4>
+	</sect3>
+	<sect3 id="mailsink">
+		<title>The Virtuoso Mail Sink</title>
+		<para>The Virtuoso Sink is used to store messages received by Windows 2000 IIS SMTP Service into the MAIL_MESSAGES
+table in Virtuoso.  It consists of an executable, run as a service, and a VBscript for registering a COM object with the IIS,
+interfacing it with the Virtuoso Sink</para>
+		<para>The User ID(s) in MAIL_MESSAGES to whom the message belongs to is determined by
+parsing the <command>To:</command> field in the mail message into a list of recipients.  For each entry in the list,
+if an @-sign is found, the user ID will consist of the characters to the left of it, otherwise the whole entry is used.</para>
+		<sect4>
+			<title>Registry Entries for the Virtuoso Sink.</title>
+			<programlisting>&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt; VirtuosoSink.reg
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\OpenLink Software\VirtuosoSink]
+"User"="dba"
+"Password"="dba"
+"DSN"="Virtuoso"
+"ConnectionCount"=dword:00000001
+&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; VirtuosoSink.reg</programlisting>
+
+			<para>These are the registry entries used by the Sink service.  ConnectionCount is the number of connections to Virtuoso to be pooled.</para>
+		</sect4>
+		<sect4>
+			<title>Installation</title>
+			<para>Use these commands to install the Virtuoso Sink:</para>
+			<simplelist>
+				<member><command>VirtuosoSink /RegServer</command> Registers the COM Object VirtuosoSink.SMTP into the registry</member>
+				<member><command>VirtuosoSink /Service</command> Creates the Service in Manual start mode</member>
+				<member><command>cscript smtpreg.vbs /add 1 OnArrival Virtuoso_SMTP_Sink VirtuosoSink.SMTP "mail from=*"</command> - Registers the COM Object as a mail sink with the IIS SMTP service.</member>
+			</simplelist>
+			<tip><title>See Also:</title><para><ulink url="http://msdn.microsoft.com/library/psdk/cdosys/_cdosys_implementing_sinks_with_scripting_languages.htm">The MSDN page</ulink> for more information about registering sinks.</para></tip>
+		</sect4>
+		<sect4>
+			<title>Sink Operation</title>
+			<para>When the service starts it opens a pool of connections to Virtuoso and
+      waits for a COM event. When the COM callback gets called, the service
+      invokes a stored procedure and passes the message text to it. The procedure
+      then stores the message into the database. In event of lost connection to
+      the database, the service would try once to re-establish it and re-execute
+      the stored procedure call. Errors and successful message routings are
+      entered into the Windows 2000 Application Log.</para>
+		</sect4>
+	</sect3>
+  </sect2>
+</sect1>
+
+<!-- ############################################################# -->
+
+<sect1 id="nntpnewsgroups"><title>NNTP Newsgroups</title>
+
+  <sect2 id="nntpclient"><title>NNTP Client</title>
+
+&nntp_get;
+
+    <sect3 id="commandsandexamples"><title>Commands and Examples</title>
+
+<para>
+If the requested messages don't exist, <function>nttp_get()</function>
+returns NULL.
+</para>
+
+<para>
+Get a list of all groups from the server 'news.openlinksw.com', port 119:
+</para>
+
+<example>
+<programlisting>
+nntp_get ('news.openlinksw.com:119', 'list');
+</programlisting>
+
+<para>
+This call returns an array of the form
+Array ((&lt;group 1&gt; varchar, &lt;last message&gt; integer, &lt;first message&gt; integer,
+	&lt;posting allowed&gt; varchar ) (&lt;group 2&gt; . . . . ) . . . )
+</para>
+<para>
+ARTICLE, HEAD, BODY, STAT
+To get the bodies of all messages in the group 'openlink.public.virtuoso':
+</para>
+
+<programlisting>
+nntp_get ('news.openlinksw.com:119', 'body', 'openlink.public.virtuoso');
+</programlisting>
+
+<para>
+This call returns an array of the form
+Array ((&lt;message number&gt; integer, &lt;body of message&gt; blob) . . . )
+</para>
+<para>
+To get the article (head + body) of messages numbered from 5 to 10 in the group 'openlink.public.virtuoso':
+</para>
+
+<programlisting>
+nntp_get ('news.openlinksw.com:119', 'article', 'openlink.public.virtuoso', 5, 10);
+</programlisting>
+
+<para>
+This call returns an array of the form
+Array ((&lt;message number&gt; integer, &lt;body of message&gt; blob) . . . )
+</para>
+<para>
+To get the headers of messages numbered from 7 to the end of the 'openlink.public.virtuoso' group:
+</para>
+<programlisting>
+nntp_get ('news.openlinksw.com:119', 'head', 'openlink.public.virtuoso', 7);
+</programlisting>
+<para>
+To get the status of all messages in the group 'openlink.public.virtuoso':
+</para>
+<programlisting>
+nntp_get ('news.openlinksw.com:119', 'stat', 'openlink.public.virtuoso',);
+</programlisting>
+<para>
+This call returns an array of the form
+Array ((&lt;message number&gt; integer, &lt;message ID&gt; varchar) . . . )
+</para>
+<para>
+To get the status of the 'openlink.public.virtuoso' group:
+</para>
+<programlisting>
+nntp_get ('news.openlinksw.com:119', 'group', 'openlink.public.virtuoso');
+</programlisting>
+<para>
+This call returns an array of the form
+Array (&lt;number of messages&gt; integer, &lt;first message&gt; integer, &lt;last message&gt; integer)
+</para>
+<!--
+<programlisting>
+nntp_post (in server varchar, in message blob)
+</programlisting>
+<para>
+The structure of the <parameter>message</parameter> must comply with RFC850 (Standard for Interchange of USENET Messages).
+</para>
+-->
+</example>
+</sect3>
+</sect2>
+
+
+<sect2 id="newsserver"><title>NNTP Server</title>
+  <sect3 id="newssrvenable"><title>Enabling the NNTP Server</title>
+    <para>The Virtuoso News Server listening port is configured in the HTTP section
+    of the virtuoso.ini file.</para>
+    <screen>[HTTPServer]
+NewsServerPort   = 119</screen>
+    <para>If the port is not defined Virtuoso will disable the News Server subsystem.</para>
+  </sect3>
+  <sect3 id="newssrvcmds"><title>NNTP Server Commands</title>
+    <para>The server supports the following commands:</para>
+    <simplelist>
+      <member>article [MessageID|Number]</member>
+      <member>body [Number]</member>
+      <member>group newsgroup</member>
+      <member>head [Number]</member>
+      <member>help</member>
+      <member>last</member>
+      <member>list</member>
+      <member>mode reader</member>
+      <member>newgroups yymmdd hhmmss</member>
+      <member>next</member>
+      <member>post</member>
+      <member>xover [range]</member>
+      <member>stat [MessageID|Number]</member>
+    </simplelist>
+  </sect3>
+
+<tip><title>See Also:</title><para><link linkend="newssrvtables">News System Tables</link></para></tip>
+
+  <sect3 id="newssrvadd"><title>Add Groups to NNTP Server</title>
+    <para>To add a new newsgroup you must insert a row into the table
+    DB.DBA.NEWS_GROUPS.  Below is an example of an insert statement that
+    you could use to do this:</para>
+<programlisting>
+insert into DB.DBA.NEWS_GROUPS (NG_NAME, NG_DESC, NG_UP_INT, NG_CLEAR_INT,
+	NG_POST, NG_UP_TIME, NG_OUT_GROUP, NG_NUM, NG_FIRST, NG_LAST,
+	NG_SERVER, NG_SERV_PORT, NG_CREAT, NG_UP_MESS, NG_PASS)
+values ('openlink.public.virtuoso', 'virtuoso news group' ,
+	update interval, clear interval, 1, now(), 'openlink.public.virtuoso',
+	0, 0, 0, 'news.openlinksw.com', 110, now(), 0, 0);
+</programlisting>
+
+    <para>If the group you want to add is local, change
+    <screen>news.openlinksw.com</screen> to <screen>localhost</screen>,
+    change the port to 0, and the <screen>external name</screen> to
+    <screen>''</screen> (that is, two single quotes).</para>
+<!--
+    <para>To update the group use the procedure <function>new_news (in group_id integer)</function>.</para>
+-->
+    <para>See also the <link linkend="newsgrpsadm">
+    Newsgroups Administration</link> section of the Visual Server
+    Administration Interface.</para>
+  </sect3>
+</sect2>
+
+</sect1>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="xpf_generate_id">
+  <refmeta> 
+    <refentrytitle>generate-id</refentrytitle> 
+    <refmiscinfo>XPATH</refmiscinfo>
+  </refmeta> 
+  <refnamediv> 
+    <refname>generate-id</refname>
+    <refpurpose>Returns a string that uniquely identifies the node.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="xpf_syn_generate_id">
+      <funcprototype id="xpf_proto_generate_id">
+        <funcdef>string <function>generate-id</function></funcdef>
+	<paramdef><parameter>place</parameter> node_set</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="xpf_desc_generate_id"><title>Description</title>
+<para>
+The function returns a string that uniquely identifies the first node in
+the <parameter>place</parameter> argument node-set.
+The unique identifier will consist of ASCII alphanumeric characters and will start with an alphabetic character.
+Thus, the string is syntactically an XML name.
+It always generates the same identifier for the same node.
+It always generates different identifiers from different nodes.
+This function is under no obligation to generate the same identifiers each time a document is transformed.
+There is no guarantee that a generated unique identifier will be distinct from any unique IDs specified in the source document.
+</para>
+<para>
+If the argument node-set is empty, the empty string is returned.
+</para>
+<para>
+If the argument is omitted, it defaults to the context node.
+</para>
+  </refsect1>
+  <refsect1 id="xpf_params_generate_id"><title>Parameters</title>
+    <refsect2><title>place</title>
+      <para>Node-set whose first node is used as a key to generate a resulting ID</para></refsect2>
+  </refsect1>
+  <refsect1 id="xpf_ret_generate_id"><title>Return Types</title><para>String which is syntactically an XML name.</para></refsect1>
+  <refsect1 id="xpf_examples_generate_id"><title>Examples</title>
+    <example id="xpf_ex_generate_id"><title></title>
+      <para></para>
+      <screen>generate_id(.)</screen>
+    </example>
+  </refsect1>
+</refentry>
+

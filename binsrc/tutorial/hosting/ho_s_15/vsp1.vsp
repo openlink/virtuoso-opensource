@@ -1,0 +1,109 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../demo.css">
+    <title>Calling COM Interface methods</title>
+  </head>
+  <body>
+<h2>Calling COM interface methods</h2>
+<?vsp
+  declare err_sqlstate, err_msg, err_sqlstate1, err_msg1 varchar;
+
+  err_sqlstate := '00000';
+  err_msg := 'none';
+  err_sqlstate1 := '00000';
+  err_msg1 := 'none';
+
+  declare _com_inst VirtCOMServer_CVirtCOMObjectClass;
+  declare _balance double precision;
+
+  _balance := 0.0;
+
+  commit work;
+  {
+     declare exit handler for sqlstate '*'
+       {
+         err_sqlstate := __SQL_STATE;
+         err_msg := __SQL_MESSAGE;
+       };
+
+     -- this is where the COM object is called
+
+     _com_inst := new VirtCOMServer_CVirtCOMObjectClass ();
+
+
+     _com_inst.Clear ();
+
+     _com_inst.AddAmount (12.20);
+     _com_inst.AddAmount (10);
+
+     _balance := _com_inst.get_balance ();
+
+     -- end of the COM object interaction
+  }
+
+  exec ('commit work', err_sqlstate1, err_msg1);
+
+  -- sending the results to the client
+  if ('00000' <> err_sqlstate)
+    {
+?>
+      <TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">
+      <TR>
+        <TD CLASS="errorhead" COLSPAN="2">Execution Error</TD>
+      </TR>
+      <TR>
+        <TD CLASS="genlisthead">SQL State</TD>
+        <TD CLASS="gendata"><?= err_sqlstate ?></TD>
+      </TR>
+      <TR>
+        <TD CLASS="genlisthead">Error Message</TD>
+        <TD CLASS="gendata"><?= err_msg ?></TD>
+      </TR>
+<?vsp
+      if ('00000' <> err_sqlstate1)
+        {
+?>
+          <TR>
+            <TD CLASS="genlisthead">Txn SQL State</TD>
+            <TD CLASS="gendata"><?= err_sqlstate1 ?></TD>
+          </TR>
+          <TR>
+            <TD CLASS="genlisthead">Txn Error Message</TD>
+            <TD CLASS="gendata"><?= err_msg1 ?></TD>
+          </TR>
+<?vsp
+        } ?>
+      </TABLE>
+<?vsp
+    }
+  else
+    {
+?>
+      <P>the result is <b><?= _balance ?></b></P>
+<?vsp
+    }
+?>
+</body>
+</html>
