@@ -18,7 +18,6 @@ SQLDescribeCol
 SQLDescribeParam
 SQLDisconnect
 SQLDriverConnect
-SQLDrivers
 SQLEndTran
 SQLError
 SQLExecDirect

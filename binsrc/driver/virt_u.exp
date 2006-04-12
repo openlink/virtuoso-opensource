@@ -25,7 +25,6 @@ SQLDescribeParam
 SQLDisconnect
 SQLDriverConnect
 SQLDriverConnectW
-SQLDrivers
 SQLEndTran
 SQLError
 SQLErrorW
