@@ -47,7 +47,7 @@ clntlibs = @clntlibs@ @LIBS@
 #
 VIRTODBC_CFLAGS	= $(base_cflags)
 
-VIRTODBC_LDFLAGS = -avoid-version -export-dynamic -no-undefined
+VIRTODBC_LDFLAGS = -avoid-version -export-dynamic #-no-undefined
 
 VIRTODBC_FIBER_LIBS = \
         $(top_srcdir)/libsrc/Thread/libthrs.la \
