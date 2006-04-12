@@ -31,6 +31,7 @@ im_la_CFLAGS  = @VIRT_AM_CFLAGS@
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
+im_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib 
