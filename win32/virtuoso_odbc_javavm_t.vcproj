@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<VisualStudioProject
+	ProjectType="Visual C++"
+	Version="7.10"
+	Name="virtuoso_odbc_javavm_t"
+	ProjectGUID="{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
+	RootNamespace="virtuoso_odbc_javavm_t"
+	Keyword="Win32Proj">
+	<Platforms>
+		<Platform
+			Name="Win32"/>
+	</Platforms>
+	<Configurations>
+		<Configuration
+			Name="Debug|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)\virtuoso_odbc_javavm_t"
+			ConfigurationType="1"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				OptimizeForProcessor="2"
+				AdditionalIncludeDirectories="C:\j2sdk1.4.1_01\include;..\libsrc\xml.new;..\libsrc;C:\j2sdk1.4.1_01\include\win32;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;."
+				PreprocessorDefinitions="WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE"
+				MinimalRebuild="FALSE"
+				ExceptionHandling="FALSE"
+				RuntimeLibrary="0"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderThrough=""
+				WarningLevel="3"
+				DebugInformationFormat="3"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="libvirtuoso-odbc-t.lib ws2_32.lib libeay32.lib ssleay32.lib C:\j2sdk1.4.1_01\lib\jvm.lib"
+				OutputFile="$(OutDir)/virtuoso-odbc-javavm-t.exe"
+				LinkIncremental="0"
+				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/virtuoso_odbc_javavm_t.pdb"
+				SubSystem="1"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)\virtuoso_odbc_javavm_t"
+			ConfigurationType="1"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				OptimizeForProcessor="2"
+				AdditionalIncludeDirectories="C:\j2sdk1.4.1_01\include;..\libsrc\xml.new;..\libsrc;C:\j2sdk1.4.1_01\include\win32;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;."
+				PreprocessorDefinitions="WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE"
+				MinimalRebuild="FALSE"
+				ExceptionHandling="FALSE"
+				RuntimeLibrary="0"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderThrough=""
+				WarningLevel="3"
+				DebugInformationFormat="0"
+				CompileAs="0"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="libvirtuoso-odbc-t.lib ws2_32.lib libeay32.lib ssleay32.lib C:\j2sdk1.4.1_01\lib\jvm.lib"
+				OutputFile="$(OutDir)/virtuoso-odbc-javavm-t.exe"
+				LinkIncremental="0"
+				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/virtuoso_odbc_javavm_t.pdb"
+				SubSystem="1"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+	</Configurations>
+	<References>
+	</References>
+	<Files>
+		<Filter
+			Name="Source Files"
+			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
+			<File
+				RelativePath="..\binsrc\tests\biftest\java_code.c">
+			</File>
+			<File
+				RelativePath="..\binsrc\tests\biftest\javavm.c">
+			</File>
+			<File
+				RelativePath="..\binsrc\tests\biftest\sql_code_clr.c">
+			</File>
+			<File
+				RelativePath="..\binsrc\tests\biftest\sql_code_javavm.c">
+			</File>
+			<File
+				RelativePath="..\binsrc\tests\biftest\sql_code_xslt.c">
+			</File>
+		</Filter>
+		<Filter
+			Name="Header Files"
+			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
+			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+		</Filter>
+		<Filter
+			Name="PreBuild"
+			Filter="">
+			<File
+				RelativePath="..\binsrc\tests\biftest\import_clr.sql">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)
+
+del sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_clr.c
+
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)\sql_code_clr.c"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)
+
+del sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_clr.c
+
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)\sql_code_clr.c"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\binsrc\tests\biftest\javavm_type.xsl">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)
+
+del sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_xslt.c
+
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)\sql_code_xslt.c"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)
+
+del sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG $(InputPath) &gt; sql_code_xslt.c
+
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)\sql_code_xslt.c"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\binsrc\tests\biftest\javavm_xml.sql">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)
+
+del sql_code_javavm.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_javavm pass_bootstrap_cli=1 pl_stats=PLDBG javavm_xml.sql &gt; sql_code_javavm.c
+
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)\sql_code_javavm.c"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)
+
+del sql_code_javavm.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_javavm pass_bootstrap_cli=1 pl_stats=PLDBG javavm_xml.sql &gt; sql_code_javavm.c
+
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)\sql_code_javavm.c"/>
+				</FileConfiguration>
+			</File>
+		</Filter>
+	</Files>
+	<Globals>
+	</Globals>
+</VisualStudioProject>
