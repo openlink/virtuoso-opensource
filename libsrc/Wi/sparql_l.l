@@ -459,6 +459,20 @@ SPAR_PARAMNAME	([A-Za-z_][A-Za-z0-9_]*)
     return DOLLAR_COLON_PARAMNAME;
   }
 
+<SPARQL>"??"	{
+    char buf[20]; sprintf (buf, ":%ld", sparp->sparp_sparqre->sparqre_param_ctr[0]);
+    sparp->sparp_sparqre->sparqre_param_ctr[0] += 1;
+    sparyylval.box = t_box_dv_uname_string (buf);
+    return QUEST_COLON_PARAMNUM;
+  }
+
+<SPARQL>"$?"{SPAR_PARAMNAME}	{
+    char buf[20]; sprintf (buf, ":%ld", sparp->sparp_sparqre->sparqre_param_ctr[0]);
+    sparp->sparp_sparqre->sparqre_param_ctr[0] += 1;
+    sparyylval.box = t_box_dv_uname_string (buf);
+    return DOLLAR_COLON_PARAMNUM;
+  }
+
 <SPARQL>"@"([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)	{
     sparyylval.box = t_box_dv_uname_nchars (sparyytext + 1, sparyyleng - 1);
     return LANGTAG;
@@ -573,7 +587,7 @@ spar_fill_lexem_bufs (sparp_t *sparp)
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
-      sparp->sparp_catched_error = thr_get_error_code (self);
+      sparp->sparp_sparqre->sparqre_catched_error = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
       /*no POP_QR_RESET*/;
     }

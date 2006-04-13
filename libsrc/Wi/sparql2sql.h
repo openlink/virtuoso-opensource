@@ -244,6 +244,8 @@ extern dk_set_t rdf_ds_find_appropriate (SPART *triple, SPART **sources, int ign
 /*! This searches for declaration of type by its name. NULL name result in NULL output, unknown name is an error */
 extern ssg_valmode_t ssg_find_valmode_by_name (ccaddr_t name);
 
+extern caddr_t ssg_find_formatter_by_name (ccaddr_t name);
+
 /*! Field is the expression that represents the value of a SPARQL variable. */
 typedef struct spar_sqlgen_var_s
 {

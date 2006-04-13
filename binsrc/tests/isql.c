@@ -4032,6 +4032,8 @@ parse_statement_for_special_parameters (UTCHAR * whole_statement,
 	      }			/* Not a true parameter. */
 	    if (isalpha (str[1]) || (':' == str[1]))
 	      break; /* ?name is SPARQL instruction. */
+	    if ('?' == str[1])
+	      break; /* This is the first of '??' in SPARQL, the second will be counted. */
 	    if (pars_found == maxpars)
 	      {
 		isql_printf (

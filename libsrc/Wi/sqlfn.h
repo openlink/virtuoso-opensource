@@ -41,6 +41,32 @@ typedef struct scn3_include_frag_s {
   int sif_saved_lexdepth;
 } scn3_include_frag_t;
 
+typedef struct spar_query_env_s
+{
+  scn3_include_frag_t *	sparqre_src;	/*!< This is not for use in the parser! This is for inliner inside scn3.l only */
+  int			sparqre_direct_client_call;	/*!< The result-set produced by the compiled query will go directly to the ODBC/JDBC client */
+  ptrlong		sparqre_start_lineno;
+  ptrlong *		sparqre_param_ctr;
+  const char *		sparqre_tail_sql_text;
+  int			sparqre_allow_sql_extensions;
+  caddr_t		sparqre_base_uri;
+#if 0
+  xp_node_t * sparqre_nsctx_xn;		/*!< Namespace context as xp_node_t * */
+  xml_entity_t *sparqre_nsctx_xe;	/*!< Namespace context as xml_entity_t * */
+#endif
+  query_instance_t *	sparqre_qi;		/*!< NULL if parsing is inside SQL compiler, current qi for runtime */
+  client_connection_t *	sparqre_cli;		/*!< Client connection, can be NULL or what sqlc_client() return */
+  wcharset_t *		sparqre_query_charset;
+  int			sparqre_query_charset_is_set;
+  dk_set_t *		sparqre_checked_functions;
+  dk_set_t *		sparqre_sql_columns;
+  int			sparqre_key_gen;
+  caddr_t		sparqre_compiled_text;
+  caddr_t		sparqre_catched_error;
+} spar_query_env_t;
+
+extern void sparp_compile_subselect (spar_query_env_t *sparqre);
+
 
 void ts_set_placeholder (table_source_t * ts, caddr_t * state,
     it_cursor_t *itc, buffer_desc_t * buf);

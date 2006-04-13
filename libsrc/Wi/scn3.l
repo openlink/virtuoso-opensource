@@ -98,8 +98,6 @@ scn3_include_fragment_t scn3_include_stack [MAX_INCLUDE_DEPTH];
 /*! Number of fragments that are started but not yet completed. It's zero while the whole text is in SQL */
 int scn3_include_depth = 0;
 
-extern void sparp_compile_subselect (caddr_t *compiled_text, scn3_include_frag_t *src, const char *tail_sql_text, caddr_t *err_ret);
-
 void scn3_pragma_line (char *text)
 {
 #ifdef DEBUG
@@ -241,6 +239,30 @@ scn3_set_file_line (char *file, int file_nchars, int line_no)
       sll->sll_pragma_lineno = line_no;
       sll->sll_pragma_file = t_box_dv_short_nchars (file, file_nchars);
     }
+}
+
+void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_text, scn3_include_fragment_t *outer)
+{
+   memset (sparqre, 0, sizeof (spar_query_env_t));
+   if (0 == scn3_lexdepth)
+     {
+       if (0 == sqlc_client()->cli_resultset_max_rows)
+         sparqre->sparqre_direct_client_call = 1;
+     }
+   sparqre->sparqre_src = &(outer->_);
+   sparqre->sparqre_tail_sql_text = tail_sql_text;
+   sparqre->sparqre_start_lineno = scn3_lineno;
+   sparqre->sparqre_param_ctr = &param_inx;
+   sparqre->sparqre_compiled_text = NULL;
+   sparqre->sparqre_catched_error = NULL;
+   sparp_compile_subselect (sparqre);
+   if (NULL != sparqre->sparqre_catched_error)
+     yyerror (ERR_MESSAGE (sparqre->sparqre_catched_error));
+   outer->sif_buffer = YY_CURRENT_BUFFER;
+   outer->_.sif_saved_lineno = scn3_lineno;
+   outer->_.sif_saved_plineno = scn3_plineno;
+   outer->_.sif_saved_lexdepth = scn3_lexdepth;
+   scn3_include_depth++; /* No stack overflow check. TBD later when we will be able to nest SQL into SPARQL and get, say, SQL inside SPARQL inside SQL ... */
 }
 
 /* macro to save the text of a SQL token */
@@ -408,6 +430,14 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SQL>"::"		TOK(DOUBLE_COLON)
 <SQL>":"		TOK(COLON)
 <SQL>"=>"		TOK(KWD_TAG)
+
+<SQL>":"[0-9]+ {
+  char tmp[20];
+  snprintf (tmp, sizeof (tmp), ":%d", atoi (yytext+1)); /* This sprintf(atoi()) is needed to normalize, say, ':012' into ':12' */
+  yylval.box = t_sym_string (tmp);
+  return PARAMETER_L;
+}
+
 <SQL>"?" {
   char tmp[20];
   snprintf (tmp, sizeof (tmp), ":%d", param_inx++);
@@ -814,18 +844,10 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
     scn3_include_fragment_t *outer = scn3_include_stack + scn3_include_depth;
     if (outer->_.sif_saved_lexdepth == scn3_lexdepth)
       {
-        caddr_t compiled_text = NULL;
-        caddr_t err = NULL;
+        spar_query_env_t sparqre;
         BEGIN(SQL);
-        sparp_compile_subselect (&compiled_text, &(outer->_), "\n)\n", &err);
-        if (NULL != err)
-          yyerror (ERR_MESSAGE (err));
-        outer->sif_buffer = YY_CURRENT_BUFFER;
-        outer->_.sif_saved_lineno = scn3_lineno;
-        outer->_.sif_saved_plineno = scn3_plineno;
-        outer->_.sif_saved_lexdepth = scn3_lexdepth;
-        scn3_include_depth++; /* No stack overflow check. TBD later when we will be able to nest SQL into SPARQL and get, say, SQL inside SPARQL inside SQL ... */
-        yy_scan_buffer (compiled_text, box_length (compiled_text) - 1);
+        scn3_sparp_inline_subselect (&sparqre, "\n)\n", outer);
+        yy_scan_buffer (sparqre.sparqre_compiled_text, box_length (sparqre.sparqre_compiled_text) - 1);
       }
     else
       {
@@ -837,18 +859,10 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
     scn3_include_fragment_t *outer = scn3_include_stack + scn3_include_depth;
     if (outer->_.sif_saved_lexdepth == scn3_lexdepth)
       {
-        caddr_t compiled_text = NULL;
-        caddr_t err = NULL;
+        spar_query_env_t sparqre;
         BEGIN(SQL);
-        sparp_compile_subselect (&compiled_text, &(outer->_), "\n;\n", &err);
-        if (NULL != err)
-          yyerror (ERR_MESSAGE (err));
-        outer->sif_buffer = YY_CURRENT_BUFFER;
-        outer->_.sif_saved_lineno = scn3_lineno;
-        outer->_.sif_saved_plineno = scn3_plineno;
-        outer->_.sif_saved_lexdepth = scn3_lexdepth;
-        scn3_include_depth++; /* No stack overflow check. TBD later when we will be able to nest SQL into SPARQL and get, say, SQL inside SPARQL inside SQL ... */
-        yy_scan_buffer (compiled_text, box_length (compiled_text) - 1);
+        scn3_sparp_inline_subselect (&sparqre, "\n;\n", outer);
+        yy_scan_buffer (sparqre.sparqre_compiled_text, box_length (sparqre.sparqre_compiled_text) - 1);
       }
     else
       {
@@ -895,18 +909,10 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SPARQL_SKIP>[^''""\\\n\r(){}\[\];]+ TOK_SKIP
 <SPARQL_SKIP><<EOF>>  {
     scn3_include_fragment_t *outer = scn3_include_stack + scn3_include_depth;
-    caddr_t compiled_text = NULL;
-    caddr_t err = NULL;
+    spar_query_env_t sparqre;
     BEGIN(SQL);
-    sparp_compile_subselect (&compiled_text, &(outer->_), "\n;\n", &err);
-    if (NULL != err)
-      yyerror (ERR_MESSAGE (err));
-    outer->sif_buffer = YY_CURRENT_BUFFER;
-    outer->_.sif_saved_lineno = scn3_lineno;
-    outer->_.sif_saved_plineno = scn3_plineno;
-    outer->_.sif_saved_lexdepth = scn3_lexdepth;
-    scn3_include_depth++; /* No stack overflow check. TBD later when we will be able to nest SQL into SPARQL and get, say, SQL inside SPARQL inside SQL ... */
-    yy_scan_buffer (compiled_text, box_length (compiled_text) - 1);
+    scn3_sparp_inline_subselect (&sparqre, "\n;\n", outer);
+    yy_scan_buffer (sparqre.sparqre_compiled_text, box_length (sparqre.sparqre_compiled_text) - 1);
   }
 
 <SPARQL_SKIP>{S_NL}	TOK_NL_SKIP

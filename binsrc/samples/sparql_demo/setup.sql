@@ -18,6 +18,11 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
+
+--  ! ! ! DEVELOPER WARNING ! ! !
+--  When you edit this file you must also edit binsrc/tutorial/setup_sparql_demo.sql.
+--  It conatins the data here modified to be installable vie tutorial vad.
+
 create user "RQ"
 ;
 

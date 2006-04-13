@@ -39,8 +39,10 @@ extern "C" {
 
 #ifdef DEBUG
 #define spar_sqlprint_error(x) do { ssg_putchar ('!'); ssg_puts ((x)); ssg_putchar ('!'); return; } while (0)
+#define spar_sqlprint_error2(x,v) do { ssg_putchar ('!'); ssg_puts ((x)); ssg_putchar ('!'); return (v); } while (0)
 #else
 #define spar_sqlprint_error(x) spar_internal_error (NULL, (x))
+#define spar_sqlprint_error2(x,v) spar_internal_error (NULL, (x))
 #endif
 
 /* Description of RDF datasources */
@@ -222,6 +224,29 @@ ssg_find_valmode_by_name (ccaddr_t name)
   return NULL; /* to keep compiler happy */
 }
 
+const char *ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype)
+{
+  if (NULL == name)
+    return NULL;
+  if (!strcmp (name, "RDF/XML"))
+    switch (subtype)
+      {
+      case SELECT_L: case DISTINCT_L: return "DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML";
+      case CONSTRUCT_L: case DESCRIBE_L: return "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML";
+      case ASK_L: return "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML";
+      default: return NULL;
+      }
+  if (!strcmp (name, "TURTLE") || !strcmp (name, "TTL"))
+    switch (subtype)
+      {
+      case SELECT_L: case DISTINCT_L: return "DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL";
+      case CONSTRUCT_L: case DESCRIBE_L: return "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL";
+      case ASK_L: return "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL";
+      default: return NULL;
+      }
+  spar_error (NULL, "Unsupported format name '%.30s', only 'RDF/XML' and 'TURTLE' are supported", name);
+  return NULL; /* to keep compiler happy */
+}
 
 /* Printer */
 
@@ -1035,7 +1060,7 @@ ssg_rettype_of_function (spar_sqlgen_t *ssg, caddr_t name)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
         return SSG_VALMODE_LONG; /* Fake but this works for use as 2-nd arg of 'LONG::bif:position' */
-      spar_sqlprint_error ("ssg_rettype_of_function(): unsupported SPECIAL");
+      spar_sqlprint_error2 ("ssg_rettype_of_function(): unsupported SPECIAL", SSG_VALMODE_SQLVAL);
     }
   return SSG_VALMODE_SQLVAL;
 }
@@ -1056,7 +1081,7 @@ ssg_argtype_of_function (spar_sqlgen_t *ssg, caddr_t name, int arg_idx)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
         return SSG_VALMODE_SQLVAL;
-      spar_sqlprint_error ("ssg_argtype_of_function(): unsupported SPECIAL");  
+      spar_sqlprint_error2 ("ssg_argtype_of_function(): unsupported SPECIAL", SSG_VALMODE_SQLVAL);
     }
   return SSG_VALMODE_SQLVAL;
 }
@@ -1152,6 +1177,11 @@ void ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t ne
       ssg_puts (" connection_get ('");
       ssg_puts (vname);
       ssg_puts ("')");
+      return;
+    }
+  else if (isdigit (vname[1])) /* Numbered parameter */
+    {
+      ssg_puts (vname);
       return;
     }
   ssg_puts (" connection_get ('");
@@ -2146,7 +2176,7 @@ void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, s
 
 
 void
-ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int flags, ssg_valmode_t needed)
+ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col_idx, int flags, ssg_valmode_t needed)
 {
   int printed;
   int eq_flags;
@@ -2158,6 +2188,12 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int fla
       if (SSG_VALMODE_AUTO == needed)
         spar_sqlprint_error ("ssg_print_retval_expn(): SSG_VALMODE_AUTO for not a variable");
       ssg_print_retval_simple_expn (ssg, gp, ret_column, needed);
+      if (flags & SSG_RETVAL_USES_ALIAS)
+        {
+          char buf[30];
+          sprintf (buf, "callret-%d", col_idx);
+          ssg_puts (" AS "); ssg_prin_id (ssg, buf);
+        }
       return;
     }
   eq_flags = SPARP_EQUIV_GET_NAMESAKES;
@@ -2176,6 +2212,32 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int fla
     }
 }
 
+void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART **retvals, ccaddr_t selid)
+{
+  int col_idx;
+  DO_BOX_FAST (SPART *, ret_column, col_idx, retvals)
+    {
+      caddr_t name = SPAP_NAME_OF_RET_COLUMN (ret_column);
+      if (NULL == name)
+        {
+          char buf[30];
+          sprintf (buf, "callret-%d", col_idx);
+          name = t_box_dv_short_string (buf);
+        }
+      if (0 < col_idx)
+        ssg_puts (", ");
+      if (NULL != selid)
+        {
+          ssg_prin_id (ssg, selid);
+          ssg_putchar ('.');
+          ssg_prin_id (ssg, name);
+        }
+      else
+        ssg_print_literal (ssg, NULL, (SPART *)name);
+    }
+  END_DO_BOX_FAST;
+}
+
 void
 ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int flags, ssg_valmode_t needed)
 {
@@ -2190,9 +2252,9 @@ ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int flags
       if (flags & SSG_RETVAL_USES_ALIAS)
         {
           if ((flags & SSG_RETVAL_TOPMOST) && (ASK_L == ssg->ssg_tree->_.req_top.subtype))
-            ssg_puts (" as __ask_retval");
+            ssg_puts (" AS __ask_retval");
           else
-            ssg_puts (" as __dummy_retval");
+            ssg_puts (" AS __dummy_retval");
         }
     }
   ssg->ssg_indent++;
@@ -2204,7 +2266,7 @@ ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int flags
           ssg_putchar (',');
           ssg_newline (1);
         }
-      ssg_print_retval_expn (ssg, gp, ret_column, flags, needed);
+      ssg_print_retval_expn (ssg, gp, ret_column, res_ctr, flags, needed);
     }
   ssg->ssg_indent--;
 }
@@ -2427,20 +2489,38 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
   int oby_ctr;
   long lim, ofs;
   SPART	*tree = ssg->ssg_tree;
+  ptrlong subtype = tree->_.req_top.subtype;
+  const char *formatter;
   ssg_valmode_t retvalmode;
-  const int top_retval_flags =
+  int top_retval_flags =
     SSG_RETVAL_TOPMOST |
     SSG_RETVAL_FROM_JOIN_MEMBER |
     SSG_RETVAL_FROM_FIRST_UNION_MEMBER |
     SSG_RETVAL_MUST_PRINT_SOMETHING |
     SSG_RETVAL_CAN_PRINT_NULL |
     SSG_RETVAL_USES_ALIAS ;
+  ccaddr_t top_selid = tree->_.req_top.pattern->_.gp.selid;
   ssg->ssg_equiv_count = tree->_.req_top.equiv_count;
   ssg->ssg_equivs = tree->_.req_top.equivs;
-  switch (tree->_.req_top.subtype)
+  formatter = ssg_find_formatter_by_name_and_subtype (tree->_.req_top.formatmode_name, tree->_.req_top.subtype);
+  retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
+  if ((NULL != formatter) && (NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
+    spar_sqlprint_error ("'output:valmode' declaration conflicts with 'output:format'");
+  switch (subtype)
     {
     case SELECT_L:
     case DISTINCT_L:
+      if (NULL != formatter)
+        {
+          ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
+          ssg_puts ("vector (");
+          ssg_print_retval_cols (ssg, tree->_.req_top.retvals, top_selid);
+          ssg_puts ("), vector (");
+          ssg_print_retval_cols (ssg, tree->_.req_top.retvals, NULL);
+          ssg_puts (")) AS \"callret-0\" LONG VARCHAR\nFROM (");
+          ssg->ssg_indent += 1;
+          ssg_newline (0);
+        }
       ssg_puts ("SELECT");
       lim = unbox (tree->_.req_top.limit);
       ofs = unbox (tree->_.req_top.offset);
@@ -2457,24 +2537,53 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         ssg_puts (" DISTINCT");
       retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
       if (NULL == retvalmode)
-        retvalmode = SSG_VALMODE_SQLVAL;
+        retvalmode = ((NULL != formatter) ? SSG_VALMODE_LONG : SSG_VALMODE_SQLVAL);
       ssg_print_retval_list (ssg, tree->_.req_top.pattern,
         tree->_.req_top.retvals, top_retval_flags, retvalmode );
       break;
     case CONSTRUCT_L:
     case DESCRIBE_L:
-    case ASK_L:
+      if ((NULL == formatter) && ssg->ssg_sparp->sparp_sparqre->sparqre_direct_client_call)
+        {
+          formatter = ssg_find_formatter_by_name_and_subtype ("TTL", subtype);
+          if ((NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
+            spar_sqlprint_error ("'output:valmode' declaration conflicts with TTL output format needed by database client connection'");
+        }
       ssg_puts ("SELECT TOP 1");
+      if (NULL != formatter)
+        {
+          ssg_puts (" ");
+          ssg_puts (formatter); ssg_puts (" (");
+          ssg->ssg_indent += 1;
+          ssg_newline (0);
+          top_retval_flags &= ~SSG_RETVAL_USES_ALIAS;
+        }
       retvalmode = SSG_VALMODE_SQLVAL;
       ssg_print_retval_list (ssg, tree->_.req_top.pattern,
         tree->_.req_top.retvals, top_retval_flags, retvalmode );
+      if (NULL != formatter)
+        {
+          ssg_puts (" ) AS \"callret-0\" LONG VARCHAR");
+          ssg->ssg_indent -= 1;
+          ssg_newline (0);
+        }
+      break;
+    case ASK_L:
+      if (NULL != formatter)
+        {
+          ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
+          ssg_prin_id (ssg, top_selid);
+          ssg_puts (".__ask_retval)\nFROM (");
+          ssg->ssg_indent += 1;
+        }
+      ssg_puts ("SELECT TOP 1 1 AS __ask_retval");
       break;
     default: spar_sqlprint_error ("ssg_make_sql_query_text(): unsupported type of tree");
     }
   ssg_print_union (ssg, tree->_.req_top.pattern, tree->_.req_top.retvals,
     SSG_PRINT_UNION_NOFIRSTHEAD | SSG_PRINT_UNION_NONEMPTY_STUB,
     top_retval_flags, retvalmode );
-  if (BOX_ELEMENTS_INT_0 (tree->_.req_top.order))
+  if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && (NULL == formatter))
     {
       ssg_newline (0);
       ssg_puts ("ORDER BY");
@@ -2489,4 +2598,17 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       ssg->ssg_indent--;
     }
    ssg_puts ("\nOPTION (QUIETCAST)");
+  if (NULL != formatter)
+    {
+      switch (tree->_.req_top.subtype)
+        {
+        case SELECT_L:
+        case DISTINCT_L:
+        case ASK_L:
+          ssg_puts (" ) AS ");
+          ssg_prin_id (ssg, top_selid);
+          ssg->ssg_indent--;
+          break;
+        }
+    }
 }

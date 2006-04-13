@@ -686,33 +686,34 @@ fi
 #
 # Sparql demo
 #
-rm -rf sparql_demo
-rm -rf sparql_dawg
-cp -r $HOME/binsrc/samples/sparql_demo .
-cat $HOME/binsrc/tests/rdf/demo_data/sparql_dawg.tar.gz | gunzip - > sparql_demo/sparql_dawg.tar
-tar -xvf sparql_demo/sparql_dawg.tar
-rm  sparql_demo/sparql_dawg/*.sql
-cat $HOME/binsrc/tests/rdf/demo_data/sparql_extensions.tar.gz | gunzip - > sparql_demo/sparql_extensions.tar
-tar -xvf sparql_demo/sparql_extensions.tar
-# No more need because this XSL is now in server executable
-#cp $HOME/binsrc/tests/rdf/rdf-exp-load.xsl sparql_demo/rdf-exp-load.xsl
+# This is part of tutorial vad now
+#rm -rf sparql_demo
+#rm -rf sparql_dawg
+#cp -r $HOME/binsrc/samples/sparql_demo .
+#cat $HOME/binsrc/tests/rdf/demo_data/sparql_dawg.tar.gz | gunzip - > sparql_demo/sparql_dawg.tar
+#tar -xvf sparql_demo/sparql_dawg.tar
+#rm  sparql_demo/sparql_dawg/*.sql
+#cat $HOME/binsrc/tests/rdf/demo_data/sparql_extensions.tar.gz | gunzip - > sparql_demo/sparql_extensions.tar
+#tar -xvf sparql_demo/sparql_extensions.tar
+## No more need because this XSL is now in server executable
+##cp $HOME/binsrc/tests/rdf/rdf-exp-load.xsl sparql_demo/rdf-exp-load.xsl
 
-echo "select DB.DBA.DAV_COL_CREATE ('/DAV/sparql_demo/', '110100100NN', 'dav','dav', 'dav', 'dav');" > $TEMPFILE
-for f in `find sparql_demo -name '*.vsp'` `find sparql_demo -name '*.xsl'`
-do
-   echo "select DB.DBA.DAV_RES_UPLOAD ('/DAV/$f', file_to_string ('$f'), '', '111101101NN', 'dav', 'dav', 'dav', 'dav');" >> $TEMPFILE
-done
-LOAD_SQL $TEMPFILE dba $DBPWD
+#echo "select DB.DBA.DAV_COL_CREATE ('/DAV/sparql_demo/', '110100100NN', 'dav','dav', 'dav', 'dav');" > $TEMPFILE
+#for f in `find sparql_demo -name '*.vsp'` `find sparql_demo -name '*.xsl'`
+#do
+#   echo "select DB.DBA.DAV_RES_UPLOAD ('/DAV/$f', file_to_string ('$f'), '', '111101101NN', 'dav', 'dav', 'dav', 'dav');" >> $TEMPFILE
+#done
+#LOAD_SQL $TEMPFILE dba $DBPWD
 
-# No more need because these these Virtuoso/PL texts are now in server executable
-#LOAD_SQL $HOME/binsrc/tests/rdf/rdf-exp.sql dba $DBPWD
-#LOAD_SQL $HOME/libsrc/Wi/sparql.sql dba $DBPWD
+## No more need because these these Virtuoso/PL texts are now in server executable
+##LOAD_SQL $HOME/binsrc/tests/rdf/rdf-exp.sql dba $DBPWD
+##LOAD_SQL $HOME/libsrc/Wi/sparql.sql dba $DBPWD
 
-LOAD_SQL sparql_demo/setup_demo_db.sql dba $DBPWD
-LOAD_SQL sparql_demo/setup.sql dba $DBPWD
+#LOAD_SQL sparql_demo/setup_demo_db.sql dba $DBPWD
+#LOAD_SQL sparql_demo/setup.sql dba $DBPWD
 
-rm -rf sparql_demo
-rm -rf sparql_dawg
+#rm -rf sparql_demo
+#rm -rf sparql_dawg
 
 #
 #  Checkpoint and shutdown the demo database

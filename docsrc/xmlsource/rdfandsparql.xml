@@ -3,12 +3,13 @@
  SQL API's, protocol support and standard compliance notes.
 </abstract>
 <sect1 id="rdfimplementationstatus"><title>Implementation Status</title>
-<para>Virtuoso's RDF support is at an experimental stage. The SPARQL language is fairly complete but none of the support functions such as data loading or triple storage are optimized. Many pieces of the present implementation that are written in Virtuoso/PL will be rewritten in C for performance.</para>
+
+<para>Virtuoso's RDF support is at an early implementation  stage. The SPARQL language is fairly complete but none of the support functions such as data loading or triple storage are optimized. Many pieces of the present implementation that are written in Virtuoso/PL will be rewritten in C for performance.</para>
 <para>Also, the triple store has no specific security model. Thus access rights of the tables and stored procedures involved in the process dictate who can access these features.</para>
 <para>All triples of all graphs are stored in a single default system table called
 <emphasis>DB.DBA.RDF_QUAD</emphasis>. This will change in the next release, where a complex meta-schema system will be introduced for allowing graphs to be stored in different tables, potentially having different index structures, optionally also full text index on long object values. The meta-schema support will also make it possible to map native
  SQL tables into the RDF SPARQL -queriable space, as well as introduce finer-grained security.</para>
-<para>Hence the RDF subsystem is offered for an early review but is not a productized whole. Benchmark results obtained with it are tentative and reflect a non-optimized state.</para>
+<para>Hence the RDF subsystem is offered for  review but is not a productized whole. Benchmark results obtained with it are tentative and reflect a non-optimized state.</para>
 </sect1>
 <sect1 id="rdfdatarepresentation"><title>Data Representation</title>
 <para>This section covers how Virtuoso stores RDF triples. The IRI_ID built-in data type is introduced, along with the default table structures used for triple persistency.</para>
@@ -22,7 +23,16 @@
 #i&lt;nnn&gt;, where nnn is up to 10 decimal digits.
 #i12345 is equal to iri_id_from_num (12345)
 </programlisting>
-<para>When received by a SQL client application, the ODBC driver or interactive SQL will bind an IRI_ID to a character buffer, producing the #innn syntax. When passing IRI_ID's from a client, one can pass an integer and use the iri_id_from_num () function in the statement to convert server side. A SQL client will normally not be exposed to IRI_ID's since the SPARQL implementation returns IRI's in their text form, not as internal id's. These will however be seen if reading the internal tables directly.</para>
+
+<para>When received by a SQL client application, the ODBC driver or
+interactive SQL will bind an IRI_ID to a character buffer, producing
+the #innn syntax. When passing IRI_ID's from a client, one can pass an
+integer and use the iri_id_from_num () function in the statement to
+convert server side. A SQL client will normally not be exposed to
+IRI_ID's since the SPARQL implementation returns IRI's in their text
+form, not as internal id's. These will however be seen if reading the
+internal tables directly.</para>
+
 </sect2>
 <sect2 id="rdftables"><title>RDF_QUAD and other tables</title>
 <para>The main tables of the default RDF storage system are:</para>
@@ -32,14 +42,14 @@ create table DB.DBA.RDF_QUAD (
   S IRI_ID,
   P IRI_ID,
   O any,
-  primary key (G,S,P,O) )
+  primary key (G,S,P,O) );
 create unique index RDF_QUAD_PGOS on DB.DBA.RDF_QUAD (P, G, O, S);
 </programlisting>
 <para>Each triple is represented by one row in RDF_QUAD. The columns represent the graph, subject, predicate and object. The IRI_ID type columns reference RDF_URL, which translates the internal id to the external name of the IRI. The O column is of type ANY. If the O value is a non-string scalar, such as a number or date or IRI, it is stored in its native binary representation. If it is a string, it will be stored in a 'short' form, meaning a packed binary string with fixed fields for the data type, language, the content and a possible reference to RDF_OBJ if the string is too long to be held in-line in this table.</para>
 <programlisting>
 create table DB.DBA.RDF_URL (
     RU_IID IRI_ID not null primary key,
-    RU_QNAME varchar )
+    RU_QNAME varchar );
 create unique index RU_QNAME on DB.DBA.RDF_URL (RU_QNAME);
 </programlisting>
 <para>This is simply a mapping between internal IRI id's and their external form.</para>
@@ -67,7 +77,7 @@ create table DB.DBA.RDF_LANGUAGE (
 <para>A short integer value can be used in both RDF_DATATYPE and RDF_LANGUAGE tables for two different purposes. E.g. an integer 257 is for 'unspecified datatype' as well as for 'unspecified language'.</para>
 </sect2>
 <sect2 id="rdfsqlmodes"><title>Short, Long and SQL Values</title>
-<para>When processing an O, the SPARQL implementation may have it in one of three formats. The below cases apply for strings:</para>
+<para>When processing an O, the SPARQL implementation may have it in one of three internal formats, called 'valmodes'. The below cases apply for strings:</para>
 <para>The short format is the format where an O is stored in RDF_QUAD.</para>
 <para>The long value is a SQL vector of five fields:</para>
 <itemizedlist mark="bullet" spacing="compact">
@@ -81,7 +91,17 @@ create table DB.DBA.RDF_LANGUAGE (
 <para>For all non-string, non-IRI types, the short, long and
  SQL values are the same SQL scalar of the appropriate native SQL type. A
  SQL host variable meant to receive an O should be of the ANY type.</para>
-<para>The SPARQL implementation will usually translate results to the SQL format before returning them. Internally, it uses the shortest possible form suited to the operation. For equalities and joining, the short form is always good. For range comparisons, the long form is needed etc. For arithmetic, all three forms will do since the arguments are expected to be numbers which are stored as their binary selves in O, thus the O column unaltered and uncast will do as an argument of arithmetic or numeric comparison with, say, SQL literal constsnt.</para>
+
+<para>The SPARQL implementation will usually translate results to the
+SQL format before returning them. Internally, it uses the shortest
+possible form suited to the operation. For equalities and joining, the
+short form is always good. For range comparisons, the long form is
+needed etc. For arithmetic, all three forms will do since the
+arguments are expected to be numbers which are stored as their binary
+selves in O, thus the O column unaltered and uncast will do as an
+argument of arithmetic or numeric comparison with, say, SQL literal
+constsnt.</para>
+
 </sect2>
 <sect2 id="rdfxmlschemacompat"><title>Special Cases and XML Schema Compatibility</title>
 <para>We note that since we store numbers as the equivalent SQL binary type, we do not preserve the distinction of byte, boolean etc. These all become integer. If preserving such detail is for some reason important, then storage as a typed string is possible but is not done at present for reasons of compactness and performance.</para>
@@ -115,12 +135,12 @@ processing of a number of TURTLE or RDF /XML descriptions of subgraphs
 that come from a common graph. Imagine a situation where  different
 descriptions actually refer to the same blank nodes of the original graph
 and, moreover, the application that generates these descriptions always
-generates the same blank node id string for same node. A reader of
+generates the same blank node id string for the same node. A reader of
 descriptions can properly join described subgraphs into one big
 subgraph by filling in a dictionary that contains blank node id strings
 as keys and IRI_ID's assigned to that strings as dependant data. As
 soon as all readers of an application share the same dictionary of
-nodes created before, no one blank node is created twice;</para>
+nodes created before, no blank node is created twice;</para>
 <sect2 id="rdfapi"><title>API Functions</title> <sect3
 id="rdfapidataimport"><title>Data Import</title>
 <programlisting>
@@ -128,7 +148,7 @@ id="rdfapidataimport"><title>Data Import</title>
 create procedure DB.DBA.TTLP (
     in strg varchar,  -- text of the resource
     in base varchar,  -- base IRI to resolve relative IRIs to absolute
-    in graph varchar) -- target garph IRI, parsed triples will appear in that graph.
+    in graph varchar) -- target graph IRI, parsed triples will appear in that graph.
 
 -- This does not load TTL content, instead it returns a dict of triples in 'long valmode'
 create function DB.DBA.RDF_TTL2HASH (
@@ -266,14 +286,68 @@ varchar
 #comment
 ...
 </programlisting>
+<para>
+It is possible to pass parameters to the SPARQL query via Virtuoso-specific syntax extension.
+'??' or '$?' indicates a positional parameter similar to '?' in plain SQL. '??' can be used in graph patterns as well as plain SPARQL variable name.
+The value of parameter should be passed in SQL form, i.e. this should be a number or a untyped string. An IRI ID can not be passed, but absolute IRI can.  Using this notation, any dynamic SQL client, whether ODBC, JDBC or other can execute parmetrized SPARQL queries, binding parametres just as for dynamic SQL. 
+</para>
+<programlisting><![CDATA[
+create function param_passing_demo ()
+{
+  declare stat, msg varchar;
+  declare mdata, rset any;
+  exec ('sparql select ?s where { graph ?g { ?s ?? ?? }}',
+    stat, msg,
+    vector ( -- Vector of two parameters
+      'http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#int1',
+      4 ),
+    10, -- Max no of rows
+    mdata, -- Variable to get metadata
+    rset ); -- Variable to get result-set
+  return rset[0][0];
+}
+
+
+Done. -- 00000 msec.
+
+
+-- Line 42: select param_passing_demo ()
+callret
+VARCHAR
+_______________________________________________________________________________
+
+http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#four
+
+1 Rows. -- 00000 msec.
+]]></programlisting>
+<para>SPARQL ASK query can be used as an argument of SQL EXISTS predicate.
+</para>
+<programlisting><![CDATA[
+create function sparql_ask_demo () returns varchar
+{
+  if (exists (sparql ask where { graph ?g { ?s ?p 4}}))
+    return 'YES';
+  else
+    return 'NO';
+}
+
+
+Done. -- 00000 msec.
+
+-- Line 52: select sparql_ask_demo ()
+_______________________________________________________________________________
+
+YES
+]]>
+</programlisting>
 <sect3 id="rdfcontrollingsparqloutputtypes"><title>Controlling SPARQL Output Data Types</title>
-<para>The compilation of a SPARQL query may depend on environment that is usually provided by SPARQL protocol, including name of default graph URI . Environment settings that come from protocol may override settings in the text of SPARQL query. To let an application configure the environment for a query,
+<para>The compilation of a SPARQL query may depend on environment that is usually provided by the SPARQL protocol, including name of default graph URI . Environment settings that come from protocol may override settings in the text of SPARQL query. To let an application configure the environment for a query,
  SPARQL syntax is extended with the 'define' clause:</para>
 <programlisting>
 define parameter-qname parameter-value
 </programlisting>
-<para>Supported parameters are</para>
-<para>'output:valmode' sets the format used for values in the result set. In most cases applications need SQL values to be returned by SPARQL . By default the query returns a result set of values in SQL format and behaves as a typical SQL select. To compose triple vectors in Virtuoso/PL code application may need data in 'long' format. If the query contains</para>
+<para>Supported parameters are 'output:valmode' and 'output:format'</para>
+<para>'output:valmode' sets the SQL representation used for values in the result set. In most cases applications need SQL values to be returned by SPARQL . By default the query returns a result set of values in SQL format and behaves as a typical SQL select. To compose triple vectors in Virtuoso/PL code application may need data in 'long' format. If the query contains a</para>
 <programlisting>
 define output:valmode 'LONG'
 </programlisting>
@@ -288,6 +362,164 @@ p
 #i1000006
 ...
 </programlisting>
+<para>'output:format' instruct SPARQL compiler that the result of the query should be serialized into an RDF document;
+that document will be returned as  a single column  of a single  row result set.
+'output:format' is especially useful if SPARQL CONSTRUCT or SPARQL DESCRIBE query is executed directly via ODBC or JDBC database connection
+and the client can not receive the resulting dictionary of triples (there's no way to transfer such an object via ODBC).
+Using this option, the  client can receive the document that contains the whole result set of a SELECT or the dictionary of triples of a CONSTRUCT/DESCRIBE, and parse it locally.
+</para>
+<para>
+Supported values for 'output:format' are 'RDF/XML' and 'TURTLE' (or 'TTL').
+If both 'output:valmode' and 'output:format' are specified, 'output:format' has higher priority; an error if 'output:valmode' is set to a value other than 'LONG'.
+</para>
+<para>
+When a SPARQL query is compiled, the compiler checks whether the result set is sent to the remote ODBC/JDBC client or used in some other way.
+The compiler will automatically define 'output:format' 'TURTLE' if compiling for execution by an SQL client.
+</para>
+<para>
+The example below demonstrates how different values of 'output:format' affect the result of SPARQL SELECT.
+Note 10 rows and 4 columns in the first result, and single LONG VARCHAR in two others.
+Using the ISQL  client, use 'set blobs on;' directive to fetch long texts without 'data truncated' warning.
+</para>
+<programlisting><![CDATA[
+SQL> sparql select * where {graph ?g { ?s ?p ?o }} limit 10;
+g                                            s                    p                              o
+VARCHAR                                      VARCHAR              VARCHAR                        VARCHAR
+______________________________________________________________________
+
+http://local.virt/DAV/bound/manifest.rdf     nodeID://1000000000  http://example.com/test#query  http://local.virt/DAV/bound/bound1.rq
+. . .
+http://local.virt/DAV/examples/manifest.rdf  nodeID://1000000019  http://example.com/test#query  http://local.virt/DAV/examples/ex11.2.3.1_1.rq
+
+10 Rows. -- 00000 msec.
+
+SQL> sparql define output:format "TTL" select * where {graph ?g { ?s ?p ?o }} limit 10;
+callret-0
+LONG VARCHAR
+_______________________________________________________________________________
+
+@prefix :rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+ @prefix :rs <http://www.w3.org/2005/sparql-results#> .
+ @prefix :xsd <http://www.w3.org/2001/XMLSchema#> .
+ [ rdf:type rs:results ;
+  rs:result [
+      rs:binding [ rs:name "g" ; rs:value <http://local.virt/DAV/bound/manifest.rdf> ] ;
+      rs:binding [ rs:name "s" ; rs:value _:nodeID1000000000 ] ;
+      rs:binding [ rs:name "p" ; rs:value <http://example.com/test#query> ] ;
+      rs:binding [ rs:name "o" ; rs:value <http://local.virt/DAV/bound/bound1.rq> ] ;
+      ] ;
+
+. . .
+
+  rs:result [
+      rs:binding [ rs:name "g" ; rs:value <http://local.virt/DAV/examples/manifest.rdf> ] ;
+      rs:binding [ rs:name "s" ; rs:value _:nodeID1000000019 ] ;
+      rs:binding [ rs:name "p" ; rs:value <http://example.com/test#query> ] ;
+      rs:binding [ rs:name "o" ; rs:value <http://local.virt/DAV/examples/ex11.2.3.1_1.rq> ] ;
+      ] ;
+    ] .
+
+1 Rows. -- 00000 msec.
+
+SQL> sparql define output:format "RDF/XML" select * where {graph ?g { ?s ?p ?o }} limit 10;
+callret-0
+LONG VARCHAR
+_______________________________________________________________________________
+
+<rdf:RDF
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rs="http://www.w3.org/2005/sparql-results#"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema#" >
+   <rs:results rdf:nodeID="rset">
+  <rs:result rdf:nodeID="sol206">
+   <rs:binding rdf:nodeID="sol206-0" rs:name="g"><rs:value rdf:resource="http://local.virt/DAV/bound/manifest.rdf"/></rs:binding>
+   <rs:binding rdf:nodeID="sol206-1" rs:name="s"><rs:value rdf:nodeID="1000000000"/></rs:binding>
+   <rs:binding rdf:nodeID="sol206-2" rs:name="p"><rs:value rdf:resource="http://example.com/test#query"/></rs:binding>
+   <rs:binding rdf:nodeID="sol206-3" rs:name="o"><rs:value rdf:resource="http://local.virt/DAV/bound/bound1.rq"/></rs:binding>
+  </rs:result>
+
+. . .
+
+  <rs:result rdf:nodeID="sol5737">
+   <rs:binding rdf:nodeID="sol5737-0" rs:name="g"><rs:value rdf:resource="http://local.virt/DAV/examples/manifest.rdf"/></rs:binding>
+   <rs:binding rdf:nodeID="sol5737-1" rs:name="s"><rs:value rdf:nodeID="1000000019"/></rs:binding>
+   <rs:binding rdf:nodeID="sol5737-2" rs:name="p"><rs:value rdf:resource="http://example.com/test#query"/></rs:binding>
+   <rs:binding rdf:nodeID="sol5737-3" rs:name="o"><rs:value rdf:resource="http://local.virt/DAV/examples/ex11.2.3.1_1.rq"/></rs:binding>
+  </rs:result>
+ </rs:results>
+</rdf:RDF>
+
+1 Rows. -- 00000 msec. 
+]]></programlisting>
+<para>SPARQL CONSTRUCT and SPARQL DESCRIBE results are serialized as one would expect:</para>
+<programlisting><![CDATA[
+SQL> sparql define output:format "TTL" construct { ?s ?p "004" } where {graph ?g { ?s ?p 4 }};
+callret-0
+LONG VARCHAR
+_______________________________________________________________________________
+
+<http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#four> <http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#int1> "004" .
+_:b1000000913 <http://www.w3.org/2001/sw/DataAccess/tests/result-set#index> "004" .
+
+
+1 Rows. -- 00000 msec.
+
+SQL> sparql define output:format "RDF/XML" construct { ?s ?p "004" } where {graph ?g { ?s ?p 4 }};
+callret-0
+LONG VARCHAR
+_______________________________________________________________________________
+
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<rdf:Description about="http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#four"><ns0pred:int1 xmlns:ns0pred="http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#">004</ns0pred:int1></rdf:Description>
+<rdf:Description rdf:nodeID="b1000000913"><ns0pred:index xmlns:ns0pred="http://www.w3.org/2001/sw/DataAccess/tests/result-set#">004</ns0pred:index></rdf:Description>
+</rdf:RDF>
+
+1 Rows. -- 00000 msec. 
+]]></programlisting>
+<para>SPARQL ASK returns a non-empty result set if the match is found for graph pattern, empty result-set otherwise. If 'output:format' is specified then the query makes a 'boolean result' document instead:</para>
+<programlisting><![CDATA[
+SQL> sparql ask where {graph ?g { ?s ?p 4 }};
+__ask_retval
+INTEGER
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 00000 msec.
+
+SQL> sparql ask where {graph ?g { ?s ?p "no such" }};
+__ask_retval
+INTEGER
+_______________________________________________________________________________
+
+
+0 Rows. -- 00000 msec.
+
+SQL> sparql define output:format "TTL" ask where {graph ?g { ?s ?p 4 }};
+callret
+VARCHAR
+_______________________________________________________________________________
+
+@prefix :rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+ @prefix :rs <http://www.w3.org/2005/sparql-results#> .
+[ rdf:type rs:results ; rs:boolean TRUE ]
+
+1 Rows. -- 00000 msec.
+
+SQL> sparql define output:format "RDF/XML" ask where {graph ?g { ?s ?p 4 }};
+callret
+VARCHAR
+_______________________________________________________________________________
+
+<rdf:RDF
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rs="http://www.w3.org/2005/sparql-results#"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema#" >
+   <rs:results rdf:nodeID="rset">
+    <rs:boolean rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">1</rs:boolean></results></rdf:RDF>
+
+1 Rows. -- 00000 msec.
+]]></programlisting>
 </sect3>
 </sect2>
 <sect2 id="rdfdefaultgraph"><title>Default Graph and Graph IRI's</title>
@@ -316,6 +548,16 @@ automatically add code for format conversion into the resulting SQL
 code so SQL functions can be used even if "define output:valmode
 'LONG'" forces the use of internal RDF representation in the
 result set.</para>
+
+<para>Similarly, the following will add a named graph to the list of allowed named graphs.</para>
+<programlisting>
+define input:named-graph-uri &lt;http://example.com&gt;
+</programlisting>
+<para>The query may contain many 'define input:named-graph-uri ...' definitions.</para>
+<para>If the query does not contain any declarations of default graph URI, the value of connection variable ':default_graph" is used.
+This  value  should be an absolute IRI string.</para>
+<para>If the query does not contain any declarations of named graph URIs, the value of connection variable ':named_graphs" is used.
+The value of this variable should be a vector of absolute IRI strings.</para>
 </sect2>
 <sect2 id="rdfinsertanddelete"><title>Insert/Delete of Query Result
 Graphs</title> 
@@ -337,7 +579,6 @@ create function DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any)
 <sect1 id="rdfsparqlimplementationextent"><title>SPARQL Implementation Extent</title>
 <para>The current implementation does not support some SPARQL features.</para>
 <itemizedlist mark="bullet" spacing="compact">
-<listitem>'FROM NAMED ...' clause of SPARQL language and 'named-graph-uris od SPARQL protocol are not supported.</listitem>
 <listitem>Unicode characters in names are not supported.</listitem>
 <listitem>Comments inside SPARQL query are not supported when   the query is inlined in SQL code.</listitem>
 </itemizedlist>

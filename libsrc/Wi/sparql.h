@@ -102,10 +102,13 @@ typedef struct spar_query_s
 typedef struct sparp_env_s
   {
     /*spar_query_t *	spare_sparqr;*/
+    ptrlong             spare_start_lineno;		/*!< The first line number of the query, may be nonzero if inlined into SQL */
+    ptrlong *           spare_param_counter_ptr;	/*!< Pointer to parameter counter used to convert '??' or '$?' to ':nnn' in the query */
     dk_set_t		spare_namespace_prefixes;	/*!< Pairs of ns prefixes and URIs */
     dk_set_t		spare_namespace_prefixes_outer;	/*!< Bookmark in xe_namespace_prefixes that points to the first inherited (not local) namespace */
     caddr_t		spare_base_uri;			/*!< Default base URI for fn:doc and fn:resolve-uri */
     caddr_t             spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
+    caddr_t             spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
     SPART *		spare_parent_env;		/*!< Pointer to parent env, this will be used when libraries of inference rules are introduced. */
     id_hash_t *		spare_fundefs;			/*!< In-scope function definitions */
     id_hash_t *		spare_vars;			/*!< Known variables as keys, equivs as values */
@@ -132,8 +135,7 @@ typedef struct sparp_env_s
 
 typedef struct sparp_s {
 /* Generic environment */
-  query_instance_t * sparp_qi;		/*!< NULL if parsing is inside SQL compiler, current qi for runtime */
-  client_connection_t *sparp_client;	/*!< Client of SQL compiler if parsing is inside SQL compiler, qi->qi_client for runtime */
+  spar_query_env_t *sparp_sparqre;	/*!< External environment of the query */
   caddr_t sparp_err_hdr;
   SPART * sparp_expr;
   encoding_handler_t *sparp_enc;
@@ -143,7 +145,6 @@ typedef struct sparp_s {
   int sparp_reject_extensions;		/*!< Reject Virtuoso-specific extensions */
   int sparp_save_pragmas;		/*!< This instructs the lexer to preserve pragmas for future use. This is not in use right now but may be used pretty soon */
   int sparp_key_gen;			/*!< 0 = do not fill xqr_key, 1 = save source text only, 2 = save source text and custom namespace decls */
-  caddr_t sparp_catched_error;
 #ifdef XPYYDEBUG
   int sparp_yydebug;
 #endif
@@ -158,7 +159,6 @@ typedef struct sparp_s {
 /* Environment of lex */
   size_t sparp_text_ofs;
   size_t sparp_text_len;
-  int sparp_param_inx;			/*!< Index of positional parameter */
   int sparp_lexlineno;			/*!< Source line number, starting from 1 */
   int sparp_lexdepth;			/*!< Lexical depth, it's equal to the current position in \c sparp_lexpars and \c sparp_lexstates */
   int sparp_lexpars[SPARP_MAX_LEXDEPTH+2];	/*!< Stack of not-yet-closed parenthesis */
@@ -272,6 +272,7 @@ typedef struct spar_tree_s
     struct {
       ptrlong subtype;
       caddr_t retvalmode_name;
+      caddr_t formatmode_name;
       SPART **retvals;
       caddr_t retselid;
       SPART **sources;
@@ -310,24 +311,7 @@ typedef unsigned char SPART_buf[sizeof (sparp_tree_t) + BOX_AUTO_OVERHEAD];
     ptr->type = t; \
     } while (0)
 
-typedef struct spar_query_env_s
-{
-  int sparqre_allow_sql_extensions;
-  caddr_t sparqre_base_uri;
-#if 0
-  xp_node_t * sparqre_nsctx_xn;		/*!< Namespace context as xp_node_t * */
-  xml_entity_t *sparqre_nsctx_xe;	/*!< Namespace context as xml_entity_t * */
-#endif
-  wcharset_t *sparqre_query_charset;
-  int sparqre_query_charset_is_set;
-  dk_set_t *sparqre_checked_functions;
-  dk_set_t *sparqre_sql_columns;
-  int sparqre_key_gen;
-} spar_query_env_t;
-
-extern spar_query_env_t sparqre_default;
-
-extern sparp_t * sparp_query_parse (query_instance_t * qi, client_connection_t *cli, char * str, spar_query_env_t *sparqre);
+extern sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre);
 extern int sparyyparse (void *sparp);
 
 extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, int hint);

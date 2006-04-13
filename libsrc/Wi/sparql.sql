@@ -1810,7 +1810,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
       else if (193 = __tag (obj))
         {
           http ('"', ses);
-          http (replace (replace (obj[1], '\\', '\\\\'), '"', '\\"'), ses);
+          http (replace (replace (obj[1], '\\', '\\\\'), '"', '\\"'), ses); -- " -- <== this double quote is to recover synt hightlight
           if (257 <> obj[0])
             {
               res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = obj[0]));
@@ -1984,6 +1984,288 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
 --  dump_large_text (txt);
 --}
 --;
+
+-----
+-- Export into external serializations for 'define output:format "..."'
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT (inout _env any)
+{
+  _env := string_output();
+  http ('@prefix :rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix :rs <http://www.w3.org/2005/sparql-results#> .
+@prefix :xsd <http://www.w3.org/2001/XMLSchema#> .
+[ rdf:type rs:results ;', _env);
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC (inout _env any, inout colvalues any, inout colnames any)
+{
+  declare col_ctr, col_count integer;
+  declare blank_ids any;
+  if (185 <> __tag(_env))
+    DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT (_env);
+  http ('\n  rs:result [', _env);
+  col_count := length (colnames);
+  for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
+    {
+      declare _name varchar;
+      declare _val any;
+      _name := colnames[col_ctr];
+      _val := colvalues[col_ctr];
+      if (_val is null)
+        goto end_of_binding;
+      http ('\n      rs:binding [ rs:name "', _env);
+      http_value (colnames[col_ctr], 0, _env);
+      http ('" ; rs:value ', _env);
+      if (isiri_id (_val))
+        {
+          if (_val >= #i1000000000)
+	    {
+	      http (sprintf ('_:nodeID%d ] ;', iri_id_num (_val)), _env);
+	    }
+	  else
+	    {
+              declare res varchar;
+              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = _val));
+              if (res is null)
+                res := sprintf ('bad://%d', iri_id_num (_val));
+	      http (sprintf ('<%V> ] ;', res), _env);
+	    }	    
+	}
+      else
+        {
+	  declare lang, dt varchar;
+	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val);
+	  dt := DB.DBA.RDF_DATATYPE_OF_LONG (_val);
+	  http_value (DB.DBA.RDF_SQLVAL_OF_LONG (_val), 0, _env);
+	  if (lang is not null)
+	    {
+	      if (dt is not null)
+                http (sprintf ('@"%V"^^<%V> ] ;',
+		    cast (lang as varchar), cast (dt as varchar)), _env);
+	      else
+                http (sprintf ('@"%V" ] ;',
+		    cast (lang as varchar)), _env);
+	    }
+	  else
+	    {
+	      if (dt is not null)
+                http (sprintf ('^^<%V> ] ;',
+		    cast (dt as varchar)), _env);
+	      else
+                http (sprintf (' ] ;'), _env);
+	    }
+        }
+end_of_binding: ;  
+      
+    }
+  http ('\n      ] ;', _env);
+}
+;
+
+create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN (inout _env any) returns long varchar
+{
+  if (185 <> __tag(_env))
+    DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT (_env);
+  
+  http ('\n    ] .', _env);
+  return string_output_string (_env);
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL (in colvalues any, in colnames any) returns long varchar
+from DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN
+;
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT (inout _env any)
+{
+  _env := string_output();
+  http ('<rdf:RDF
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+ xmlns:rs="http://www.w3.org/2005/sparql-results#"
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema#" >
+  <rs:results rdf:nodeID="rset">', _env);
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC (inout _env any, inout colvalues any, inout colnames any)
+{
+  declare sol_id varchar;
+  declare col_ctr, col_count integer;
+  declare blank_ids any;
+  if (185 <> __tag(_env))
+    DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT (_env);
+  sol_id := cast (length (_env) as varchar);
+  http ('\n  <rs:result rdf:nodeID="sol' || sol_id || '">', _env);
+  col_count := length (colnames);
+  for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
+    {
+      declare _name varchar;
+      declare _val any;
+      _name := colnames[col_ctr];
+      _val := colvalues[col_ctr];
+      if (_val is null)
+        goto end_of_binding;
+      http ('\n   <rs:binding rdf:nodeID="sol' || sol_id || '-' || cast (col_ctr as varchar) || '" rs:name="', _env);
+      http_value (colnames[col_ctr], 0, _env);
+      http ('"><rs:value', _env);
+      if (isiri_id (_val))
+        {
+          if (_val >= #i1000000000)
+	    {
+	      http (sprintf (' rdf:nodeID="%d"/></rs:binding>', iri_id_num (_val)), _env);
+	    }
+	  else
+	    {
+              declare res varchar;
+              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = _val));
+              if (res is null)
+                res := sprintf ('bad://%d', iri_id_num (_val));
+	      http (sprintf (' rdf:resource="%V"/></rs:binding>', res), _env);
+	    }	    
+	}
+      else
+        {
+	  declare lang, dt varchar;
+	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val);
+	  dt := DB.DBA.RDF_DATATYPE_OF_LONG (_val);
+	  if (lang is not null)
+	    {
+	      if (dt is not null)
+                http (sprintf (' xml:lang="%V" rdf:datatype="%V">',
+		    cast (lang as varchar), cast (dt as varchar)), _env);
+	      else
+                http (sprintf (' xml:lang="%V">',
+		    cast (lang as varchar)), _env);
+	    }
+	  else
+	    {
+	      if (dt is not null)
+                http (sprintf (' rdf:datatype="%V">',
+		    cast (dt as varchar)), _env);
+	      else
+                http (sprintf ('>'), _env);
+	    }
+	  http_value (DB.DBA.RDF_SQLVAL_OF_LONG (_val), 0, _env);
+          http ('</rs:value></rs:binding>', _env);
+        }
+end_of_binding: ;  
+      
+    }
+  http ('\n  </rs:result>', _env);
+}
+;
+
+create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN (inout _env any) returns long varchar
+{
+  if (185 <> __tag(_env))
+    DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT (_env);
+  
+  http ('\n </rs:results>\n</rdf:RDF>', _env);
+  return string_output_string (_env);
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML (in colvalues any, in colnames any) returns long varchar
+from DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, ses);
+  return ses;
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML_ACC (inout _env any, inout one any)
+{
+  _env := 1;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML_FIN (inout _env any) returns long varchar
+{
+  declare ses any;
+  declare ans varchar;
+  ses := string_output ();
+  if (isinteger (_env) and _env)
+    ans := '1';
+  else
+    ans := '0';
+  http ('<rdf:RDF
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+ xmlns:rs="http://www.w3.org/2005/sparql-results#"
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema#" >
+  <rs:results rdf:nodeID="rset">
+   <rs:boolean rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">' || ans || '</rs:boolean></results></rdf:RDF>', ses);
+  return ses;
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML (inout one any) returns long varchar
+from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML_ACC, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_RDF_XML_FIN
+;
+
+create procedure DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_ACC (inout _env any, inout one any)
+{
+  _env := 1;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_FIN (inout _env any) returns long varchar
+{
+  declare ses any;
+  declare ans varchar;
+  ses := string_output ();
+  if (isinteger (_env) and _env)
+    ans := 'TRUE';
+  else
+    ans := 'FALSE';
+  http ('@prefix :rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix :rs <http://www.w3.org/2005/sparql-results#> .\n', ses);
+  http (sprintf ('[ rdf:type rs:results ; rs:boolean %s ]', ans), ses);
+  return ses;
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL (inout one any) returns long varchar
+from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_ACC, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_FIN
+;
 
 -----
 -- Insert and delete operations for lists of triples

@@ -870,7 +870,7 @@ sparp_restr_of_union_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t 
       else
         {
           dk_set_t new_common_vars = NULL;
-          eq->e_restrictions &= sub_eq->e_restrictions;
+          eq->e_restrictions &= (sub_eq->e_restrictions | SPART_VARR_CONFLICT | SPART_VARR_EXPORTED | SPART_VARR_GLOBAL) ;
           eq->e_restrictions &= ~SPART_VARR_TYPED; /*!!!TBD: make a separate check for equal types*/
           DO_BOX_FAST (caddr_t, varname, varname_ctr, sub_eq->e_varnames)
             {
@@ -926,7 +926,7 @@ sparp_restr_of_join_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *
         {
           if ((SPART_VARR_FIXED & sub_eq->e_restrictions) &&
 	    !(SPART_VARR_FIXED & eq->e_restrictions) )
-            eq->e_fixedvalue = t_box_copy_tree (sub_eq->e_fixedvalue);
+            eq->e_fixedvalue = t_box_copy_tree ((caddr_t)(sub_eq->e_fixedvalue));
           if ((SPART_VARR_TYPED & sub_eq->e_restrictions) &&
 	    !(SPART_VARR_TYPED & eq->e_restrictions) )
             eq->e_datatype = t_box_copy_tree (sub_eq->e_datatype);
@@ -1002,7 +1002,7 @@ sparp_restr_of_eq_from_connected_receiver (sparp_t *sparp, sparp_equiv_t *sub_eq
     SPART_VARR_FIXED );
   if ((SPART_VARR_FIXED & eq->e_restrictions) &&
     !(SPART_VARR_FIXED & sub_eq->e_restrictions) )
-    sub_eq->e_fixedvalue = t_box_copy_tree (eq->e_fixedvalue);
+    sub_eq->e_fixedvalue = t_box_copy_tree ((caddr_t)(eq->e_fixedvalue));
   if ((SPART_VARR_TYPED & eq->e_restrictions) &&
     !(SPART_VARR_TYPED & sub_eq->e_restrictions) )
     sub_eq->e_datatype = t_box_copy_tree (eq->e_datatype);

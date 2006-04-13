@@ -174,6 +174,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token <box> DOLLAR_VARNAME	/*:: LITERAL("$%s"), SPAR, LAST("$2var_Name2") ::*/
 %token <box> QUEST_COLON_PARAMNAME	/*:: LITERAL("?:%s"), SPAR, LAST("?:var_Name1") ::*/
 %token <box> DOLLAR_COLON_PARAMNAME	/*:: LITERAL("$:%s"), SPAR, LAST("$:var_Name2") ::*/
+%token <box> QUEST_COLON_PARAMNUM	/*:: LITERAL("??"), SPAR, LAST("??") ::*/
+%token <box> DOLLAR_COLON_PARAMNUM	/*:: LITERAL("$?"), SPAR, LAST("$?") ::*/
 
 %token __SPAR_NONPUNCT_END	/* Delimiting value for syntax highlighting */
 
@@ -639,6 +641,8 @@ spar_var		/* [41]  	Var	  ::=  	VAR1 | VAR2	*/
 	| DOLLAR_VARNAME		{ $$ = spar_make_variable (sparp_arg, $1); }
 	| QUEST_COLON_PARAMNAME		{ $$ = spar_make_variable (sparp_arg, $1); }
 	| DOLLAR_COLON_PARAMNAME	{ $$ = spar_make_variable (sparp_arg, $1); }
+	| QUEST_COLON_PARAMNUM		{ $$ = spar_make_variable (sparp_arg, $1); }
+	| DOLLAR_COLON_PARAMNUM		{ $$ = spar_make_variable (sparp_arg, $1); }
 	;
 
 spar_graph_term		/* [42]  	GraphTerm	  ::=  	IRIref | RDFLiteral | ( '-' | '+' )? NumericLiteral | BooleanLiteral | BlankNode | NIL	*/

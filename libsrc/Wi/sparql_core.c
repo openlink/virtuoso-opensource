@@ -39,8 +39,6 @@ extern "C" {
 }
 #endif
 
-spar_query_env_t sparqre_default;
-
 #ifdef MALLOC_DEBUG
 const char *spartlist_impl_file="???";
 int spartlist_impl_line;
@@ -405,6 +403,11 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       sparp->sparp_env->spare_output_valmode_name = t_box_dv_uname_string (value);
       return;
     }
+  if (!strcmp (param, "output:format"))
+    {
+      sparp->sparp_env->spare_output_format_name = t_box_dv_uname_string (value);
+      return;
+    }
   if (!strcmp (param, "input:default-graph-uri"))
     {
       if (0 != sparp->sparp_env->spare_default_graph_locked)
@@ -726,8 +729,10 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
     }
   END_DO_SET()
   sources = (SPART **)t_revlist_to_array (src);
-  return spartlist (sparp, 12, SPAR_REQ_TOP, subtype,
-    sparp->sparp_env->spare_output_valmode_name, retvals, retselid,
+  return spartlist (sparp, 13, SPAR_REQ_TOP, subtype,
+    sparp->sparp_env->spare_output_valmode_name,
+    sparp->sparp_env->spare_output_format_name,
+    retvals, retselid,
     sources, pattern, order,
     limit, offset, NULL, 0L );
 }
@@ -851,7 +856,7 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
 
 do_sql_cast:
   tgt_dtp_tree = (sql_tree_tmp *)t_list (3, (ptrlong)tgt_dtp, 0, 0);
-  parsed_value = box_cast ((caddr_t *)(sparp->sparp_qi), strg, tgt_dtp_tree, DV_STRING);
+  parsed_value = box_cast ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), strg, tgt_dtp_tree, DV_STRING);
   res = spartlist (sparp, 4, SPAR_LIT, t_full_box_copy_tree (parsed_value), type, NULL);
   dk_free_tree (parsed_value);
   return res;
@@ -904,13 +909,18 @@ spar_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
     {
       dk_set_t lexems = NULL;
       caddr_t result_array;
+      ptrlong param_ctr = 0;
+      spar_query_env_t sparqre;
       sparp_t *sparp;
       sparp_env_t *se;
       MP_START ();
+      memset (&sparqre, 0, sizeof (spar_query_env_t));
       sparp = (sparp_t *)t_alloc (sizeof (sparp_t));
       memset (sparp, 0, sizeof (sparp_t));
       se = (sparp_env_t *)t_alloc (sizeof (sparp_env_t));
       memset (se, 0, sizeof (sparp_env_t));
+      sparqre.sparqre_param_ctr = &param_ctr;
+      sparp->sparp_sparqre = &sparqre;
       sparp->sparp_text = t_box_copy (str);
       sparp->sparp_env = se;
       sparp->sparp_synthighlight = 1;
@@ -954,12 +964,12 @@ spar_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
 	    }
 	}
       END_DO_SET();
-      if (NULL != sparp->sparp_catched_error)
+      if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
 	{
 	  dk_set_push (&lexems, list (3,
 		((NULL != sparp->sparp_curr_lexem) ? sparp->sparp_curr_lexem->sparl_lineno : (ptrlong)0),
 		sparp->sparp_lexdepth,
-		box_copy (ERR_MESSAGE (sparp->sparp_catched_error)) ) );
+		box_copy (ERR_MESSAGE (sparp->sparp_sparqre->sparqre_catched_error)) ) );
 	}
       sparp_free (sparp);
       MP_DONE ();
@@ -1235,6 +1245,8 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      SES_PRINT (ses, "):");
               if (NULL != tree->_.req_top.retvalmode_name)
 	        spart_dump (tree->_.req_top.retvalmode_name, ses, indent+2, "VALMODE FOR RETVALS", 0);
+              if (NULL != tree->_.req_top.formatmode_name)
+	        spart_dump (tree->_.req_top.formatmode_name, ses, indent+2, "SERIALIZATION FORMAT", 0);
 	      if (IS_BOX_POINTER(tree->_.req_top.retvals))
 	        spart_dump (tree->_.req_top.retvals, ses, indent+2, "RETVALS", -2);
 	      else
@@ -1473,19 +1485,20 @@ printed:
 }
 
 
-sparp_t * sparp_query_parse (query_instance_t * qi, client_connection_t *cli, char * str, spar_query_env_t *sparqre)
+sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre)
 {
   wcharset_t *query_charset = sparqre->sparqre_query_charset;
   t_NEW_VAR (sparp_t, sparp);
   t_NEW_VARZ (sparp_env_t, spare);
   memset (sparp, 0, sizeof (sparp_t));
-  sparp->sparp_qi = qi;
-  sparp->sparp_client = ((NULL != cli) ? cli : ((NULL != qi) ? qi->qi_client : NULL));
+  sparp->sparp_sparqre = sparqre;
+  if ((NULL == sparqre->sparqre_cli) && (NULL != sparqre->sparqre_qi))
+    sparqre->sparqre_cli = sparqre->sparqre_qi->qi_client;
   sparp->sparp_env = spare;
   sparp->sparp_err_hdr = t_box_dv_short_string ("SPARQL compiler");
   if ((NULL == query_charset) /*&& (!sparqre->xqre_query_charset_is_set)*/)
     {
-      query_charset = QST_CHARSET(qi);
+      query_charset = QST_CHARSET(sparqre->sparqre_qi);
       if (NULL == query_charset)
         query_charset = default_charset;
     }
@@ -1500,7 +1513,7 @@ sparp_t * sparp_query_parse (query_instance_t * qi, client_connection_t *cli, ch
   sparp->sparp_lang = server_default_lh;
   sparp->sparp_text = str;
   spar_fill_lexem_bufs (sparp);
-  if (NULL != sparp->sparp_catched_error)
+  if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
     return sparp;
   QR_RESET_CTX
     {
@@ -1511,7 +1524,7 @@ sparp_t * sparp_query_parse (query_instance_t * qi, client_connection_t *cli, ch
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
-      sparp->sparp_catched_error = thr_get_error_code (self);
+      sparp->sparp_sparqre->sparqre_catched_error = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
       POP_QR_RESET;
       return sparp; /* see below */
@@ -1525,23 +1538,19 @@ sparp_t * sparp_query_parse (query_instance_t * qi, client_connection_t *cli, ch
 }
 
 void
-sparp_compile_subselect (caddr_t *compiled_text, scn3_include_frag_t *src, const char *tail_sql_text, caddr_t *err_ret)
+sparp_compile_subselect (spar_query_env_t *sparqre)
 {
   sparp_t * sparp;
   spar_sqlgen_t ssg;
   sql_comp_t sc;
-  caddr_t str = strses_string (src->sif_skipped_part);
+  caddr_t str = strses_string (sparqre->sparqre_src->sif_skipped_part);
   caddr_t res;
-  compiled_text[0] = NULL;
-  strses_free (src->sif_skipped_part);
-  src->sif_skipped_part = NULL;
-  sparp = sparp_query_parse (NULL, sqlc_client(), str, &sparqre_default);
-  if (NULL != sparp->sparp_catched_error)
-    {
-      err_ret[0] = sparp->sparp_catched_error;
-      sparp->sparp_catched_error = NULL;
+  strses_free (sparqre->sparqre_src->sif_skipped_part);
+  sparqre->sparqre_src->sif_skipped_part = NULL;
+  sparqre->sparqre_cli = sqlc_client();
+  sparp = sparp_query_parse (str, sparqre);
+  if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
       return;
-    }
   memset (&ssg, 0, sizeof (spar_sqlgen_t));
   memset (&sc, 0, sizeof (sql_comp_t));
   sc.sc_client = sqlc_client();
@@ -1553,14 +1562,14 @@ sparp_compile_subselect (caddr_t *compiled_text, scn3_include_frag_t *src, const
   ssg.ssg_sys_ds = rdf_ds_sys_storage;
   /*ssg.ssg_fields = id_hash_allocate (61, sizeof (SPART *), sizeof (spar_sqlgen_var_t), spar_var_hash, spar_var_cmp);*/
   ssg_make_sql_query_text (&ssg);
-  session_buffered_write (ssg.ssg_out, tail_sql_text, strlen (tail_sql_text));
+  session_buffered_write (ssg.ssg_out, sparqre->sparqre_tail_sql_text, strlen (sparqre->sparqre_tail_sql_text));
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* First terminator */
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* Second terminator. Most of Lex-es need two! */
   res = strses_string (ssg.ssg_out);
   strses_free (ssg.ssg_out);
   ssg.ssg_out = NULL;
   /* ssg_free (ssg); */
-  compiled_text[0] = t_box_copy (res);
+  sparqre->sparqre_compiled_text = t_box_copy (res);
   dk_free_box (res);
 }
 
@@ -1568,18 +1577,21 @@ sparp_compile_subselect (caddr_t *compiled_text, scn3_include_frag_t *src, const
 caddr_t
 bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  ptrlong param_ctr = 0;
+  spar_query_env_t sparqre;
   sparp_t * sparp;
-  query_instance_t * qi = (query_instance_t *) qst;
   caddr_t str = bif_string_arg (qst, args, 0, "sparql_explain");
   dk_session_t *res;
   caddr_t err = NULL;
   MP_START ();
-  sparp = sparp_query_parse (qi, NULL, str, &sparqre_default);
-  if (NULL != sparp->sparp_catched_error)
+  memset (&sparqre, 0, sizeof (spar_query_env_t));
+  sparqre.sparqre_param_ctr = &param_ctr;
+  sparqre.sparqre_qi = (query_instance_t *) qst;
+  sparp = sparp_query_parse (str, &sparqre);
+  if (NULL != sparqre.sparqre_catched_error)
     {
-      caddr_t err = sparp->sparp_catched_error;
       MP_DONE ();
-      sqlr_resignal (err);
+      sqlr_resignal (sparqre.sparqre_catched_error);
     }
   res = strses_allocate ();
   spart_dump (sparp->sparp_expr, res, 0, "QUERY", -1);
@@ -1591,23 +1603,26 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  ptrlong param_ctr = 0;
+  spar_query_env_t sparqre;
   sparp_t * sparp;
-  query_instance_t * qi = (query_instance_t *) qst;
   caddr_t str = bif_string_arg (qst, args, 0, "sparql_to_sql_text");
   caddr_t err = NULL;
   spar_sqlgen_t ssg;
   sql_comp_t sc;
   MP_START ();
-  sparp = sparp_query_parse (qi, NULL, str, &sparqre_default);
-  if (NULL != sparp->sparp_catched_error)
+  memset (&sparqre, 0, sizeof (spar_query_env_t));
+  sparqre.sparqre_param_ctr = &param_ctr;
+  sparqre.sparqre_qi = (query_instance_t *) qst;
+  sparp = sparp_query_parse (str, &sparqre);
+  if (NULL != sparqre.sparqre_catched_error)
     {
-      caddr_t err = sparp->sparp_catched_error;
       MP_DONE ();
-      sqlr_resignal (err);
+      sqlr_resignal (sparqre.sparqre_catched_error);
     }
   memset (&ssg, 0, sizeof (spar_sqlgen_t));
   memset (&sc, 0, sizeof (sql_comp_t));
-  sc.sc_client = qi->qi_client;
+  sc.sc_client = sparqre.sparqre_qi->qi_client;
   ssg.ssg_out = strses_allocate ();
   ssg.ssg_sc = &sc;
   ssg.ssg_sparp = sparp;
@@ -1622,7 +1637,7 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
-      caddr_t *err = thr_get_error_code (self);
+      caddr_t err = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
       POP_QR_RESET;
       /* ssg_free (ssg); */

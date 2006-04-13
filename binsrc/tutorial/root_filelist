@@ -13,6 +13,7 @@ rss2rdf.xsl
 rss2xbel.xsl
 setup_tutorial.sql
 setup_search.sql
+setup_sparql_demo.sql
 tutorial.xml
 tutorial3.css
 xbel.vsp
