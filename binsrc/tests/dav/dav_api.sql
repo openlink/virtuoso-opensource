@@ -5869,7 +5869,13 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
     declare image_format varchar;
     image_format := "IM GetImageBlobFormat" (content, length(blob_to_string (content)));
     if (image_format is not null)
+		{
+			image_format := "IM GetImageBlobAttribute" (content, length(blob_to_string (content)), 'EXIF:Model');
+      if (image_format is not null and image_format <> '')
+	      return 'application/x-openlink-photo';
+			else
       return 'application/x-openlink-image';
+  }
   }
 
 no_op:
@@ -5951,6 +5957,42 @@ create function "DAV_EXTRACT_RDF_application/x-openlink-image" (in orig_res_name
     UNAME'N3P', 'http://www.openlinksw.com/schemas/Image#depth'), sprintf('%d', depth)));
   xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
     UNAME'N3P', 'http://www.openlinksw.com/schemas/Image#comments'), comments));
+  xte_nodebld_final(res, xte_head (UNAME' root'));
+  return xml_tree_doc (res);
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/x-openlink-photo" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+  declare doc, metas, res, content any;
+  whenever sqlstate '*' goto errexit;
+	content := blob_to_string (content1);
+  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlink-image (', orig_res_name, ',... )');
+  xte_nodebld_init(res);
+  declare image_size, xsize, ysize, depth integer; 
+  declare image_format, comments, xres, yres varchar;
+	image_format := "IM GetImageBlobFormat"(content, length(content));
+  image_size := length(content);
+  xsize := "IM GetImageBlobWidth"(content, length(content));
+	ysize := "IM GetImageBlobHeight"(content, length(content));
+  xres := "IM GetImageBlobAttribute"(content, length(content), 'EXIF:XResolution');
+  yres := "IM GetImageBlobAttribute"(content, length(content), 'EXIF:YResolution');
+  depth := "IM GetImageBlobDepth"(content, length(content));
+  comments := "IM GetImageBlobAttribute"(content, length(content), 'Comment');
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#type'), image_format));
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#size'), file_space_fmt(image_size)));
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#dimensions'), sprintf('%dx%d', xsize, ysize)));
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#resolutions'), sprintf('%s:%s', xres, yres)));
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#depth'), sprintf('%d', depth)));
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#comments'), comments));
   xte_nodebld_final(res, xte_head (UNAME' root'));
   return xml_tree_doc (res);
 errexit:
