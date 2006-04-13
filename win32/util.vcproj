@@ -265,7 +265,7 @@
 				RelativePath="..\libsrc\util\strxpect.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\util\syslog.c">
+				RelativePath="..\libsrc\util\win32\syslog.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\util\terminat.c">
