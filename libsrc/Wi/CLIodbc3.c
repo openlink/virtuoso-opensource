@@ -3028,3 +3028,18 @@ SQLFetchScroll (SQLHSTMT statementHandle,
     }
 }
 /**** */
+
+
+RETCODE SQL_API
+SQLCloseCursor (HSTMT hstmt)
+{
+  STMT (stmt, hstmt);
+
+  if (stmt->stmt_compilation && stmt->stmt_compilation->sc_is_select)
+    return virtodbc__SQLFreeStmt (hstmt, SQL_CLOSE);
+  else
+    {
+      set_error (&stmt->stmt_error, "24000", "CL097", "Invalid cursor state.");
+      return SQL_ERROR;
+    }
+}
