@@ -88,7 +88,6 @@ typedef struct xpp_s {
 /* Environment of lex */
   size_t xpp_text_ofs;
   size_t xpp_text_len;
-  int xpp_param_inx;			/*!< Index of positional parameter */
   int xpp_lexlineno;			/*!< Source line number, starting from 1 */
   int xpp_lexdepth;			/*!< Lexical depth, it's equal to the current position in \c xpp_lexpars and \c xpp_lexstates */
   int xpp_lexpars[XPP_MAX_LEXDEPTH+2];	/*!< Stack of not-yet-closed parenthesis */
