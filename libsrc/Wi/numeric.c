@@ -1730,7 +1730,7 @@ numeric_from_double (numeric_t n, double d)
   char buffer[64];
 
 #if defined (bsdi) || defined (__FreeBSD__) || defined (__APPLE__)
-  snprintf (buffer, sizeof (buffer), "%lf", d);
+  snprintf (buffer, sizeof (buffer), "%.15g", d);
 #else
   gcvt (d, 15, buffer);
 #endif
