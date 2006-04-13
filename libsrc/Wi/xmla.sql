@@ -38,12 +38,20 @@ method xmla_discover_keywords () returns any,
 method xmla_discover_literals () returns any,
 method xmla_dbschema_catalogs () returns any,
 method xmla_dbschema_columns () returns any,
+method xmla_dbschema_foreign_keys () returns any,
+method xmla_dbschema_primary_keys () returns any,
 method xmla_dbschema_provider_types () returns any,
 method xmla_dbschema_tables () returns any,
 method xmla_dbschema_tables_info () returns any,
 method xmla_get_restriction (pname varchar, deflt any) returns any,
 method xmla_get_property (pname varchar, deflt any) returns any,
 method xmla_command () returns any
+;
+
+call exec_quiet ('alter type xmla_discover add method xmla_dbschema_foreign_keys () returns any')
+;
+
+call exec_quiet ('alter type xmla_discover add method xmla_dbschema_primary_keys () returns any')
 ;
 
 create constructor method
@@ -207,7 +215,7 @@ xmla_make_codes (in code varchar) returns varchar
 
 create procedure
 "Discover" (in  "RequestType" varchar,
-    	    in  "Restrictions" any
+    	    in  "Restrictions" any := NULL
 	    --__soap_type 'http://openlinksw.com/virtuoso/xmla/types:Discover.Restrictions'
 	    , in  "Properties" any
     	    --__soap_type 'http://openlinksw.com/virtuoso/xmla/types:Discover.Properties'
@@ -321,7 +329,7 @@ create procedure
   if (not xmla_not_local_dsn (dsn))
     {
 	dta := NULL;
-	mxla_fk_pk_check_local (stmt, mdta, dta);
+--	mxla_fk_pk_check_local (stmt, mdta, dta);
 	tree := sql_parse (stmt);
 	if (tree [0] <> 100)
 	   signal ('00004', 'Only select statements are supported via XML for Analysis provider');
@@ -329,8 +337,8 @@ create procedure
 	if (dta is NULL)
 	   res := exec (stmt, state, msg, vector (), 0, mdta, dta);
 
-  	if (strstr (stmt, 'FROM DB.DBA.SYS_FOREIGN_KEYS'))
-    	   xmla_add_quot_to_table (dta);
+--  	if (strstr (stmt, 'FROM DB.DBA.SYS_FOREIGN_KEYS'))
+--    	   xmla_add_quot_to_table (dta);
 
 	blob_limit := atoi (xmla_get_property ("Properties", 'BLOBLimit', '0'));
 
@@ -340,7 +348,7 @@ create procedure
    else
      {
 	dta := NULL;
-	mxla_fk_pk_check (dsn, stmt, mdta, dta);
+--	mxla_fk_pk_check (dsn, stmt, mdta, dta);
 	dsn := xmla_get_dsn_name (dsn);
 
 	if (dta is NULL)
@@ -781,7 +789,6 @@ create method xmla_dbschema_columns () for xmla_discover
 
   dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
   dsn := xmla_get_dsn_name (dsn);
-  --cat := self.xmla_get_property ('Catalog', 'DB');
   cat := self.xmla_get_restriction ('TABLE_CATALOG', '%');
   sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
   tb := self.xmla_get_restriction ('TABLE_NAME', '%');
@@ -851,12 +858,110 @@ create method xmla_dbschema_columns () for xmla_discover
 	       'from DB.DBA.XMLA_VDD_DBSCHEMA_COLUMNS where cat = ? and tb = ? and col = ? and dsn = ?'
 		  , null, null, vector (cat, tb, col, dsn), 0, mdta, dta);
     }
---   signal ('00006', 'Unable to process the request, because the DataSourceInfo property was missing or not correctly specified');
+
   xmla_make_struct (mdta, dta);
   self.metadata := mdta;
   return dta;
 }
 ;
+
+
+create method xmla_dbschema_foreign_keys () for xmla_discover
+{
+  declare dta, mdta, stmt, state, msg any;
+  declare dsn, cat, tb, col, sch any;
+  declare uname, passwd, _tbl varchar;
+
+  dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
+  dsn := xmla_get_dsn_name (dsn);
+  cat := self.xmla_get_restriction ('PK_TABLE_CATALOG', '%');
+  sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
+  tb := self.xmla_get_restriction ('TABLE_NAME', '%');
+  cat := trim (cat, '"');
+  sch := trim (sch, '"');
+  tb := trim (tb, '"');
+  uname := self.xmla_get_property ('UserName', null);
+  passwd := self.xmla_get_property ('Password', null);
+  _tbl := cat || '.' || sch || '.' || tb;
+
+  if (uname is null or passwd is null)
+     signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+
+  if (not xmla_not_local_dsn (dsn))
+    {
+      set_user_id (uname, 1, passwd);
+      if (exists (select 1 from DB.DBA.SYS_REMOTE_TABLE where RT_NAME like _tbl))
+	{
+	    declare _dsn, r_name, _rt_name any;
+	    select RT_DSN, RT_REMOTE_NAME, RT_NAME into _dsn, r_name, _rt_name
+		from DB.DBA.SYS_REMOTE_TABLE where RT_NAME like _tbl;
+	    r_name := '%.' || r_name;
+       	    stmt := 'SELECT * FROM DB.DBA.SYS_FOREIGN_KEYS_VIEW WHERE PK_TABLE = ''' || r_name ||
+			''' AND FK_TABLE = ''' || _rt_name
+	       			|| ''' AND DSN = ''' || xmla_get_dsn_name (_dsn) || '''';
+	}
+      else
+        stmt := 'SELECT name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA,
+		 name_part (PK_TABLE, 2) as PK_TABLE_NAME, PKCOLUMN_NAME as PK_COLUMN_NAME,
+		 name_part (FK_TABLE, 1) as FK_TABLE_SCHEMA,
+		 name_part (FK_TABLE, 2) as FK_TABLE_NAME, FKCOLUMN_NAME AS FK_COLUMN_NAME,
+		 KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME
+		 FROM DB.DBA.SYS_FOREIGN_KEYS WHERE PK_TABLE like ''' || _tbl || ''' OR FK_TABLE like ''' || _tbl || '''';
+    }
+  else
+    {
+       dsn := xmla_get_dsn_name (dsn);
+       stmt := 'SELECT * FROM DB.DBA.SYS_FOREIGN_KEYS_VIEW WHERE PK_TABLE = ''' || _tbl || ''' AND FK_TABLE = ''' || _tbl
+	       || ''' AND DSN = ''' || dsn || '''';
+    }
+
+  exec (stmt, state, msg, vector (), 0, mdta, dta);
+  xmla_make_struct (mdta, dta);
+  self.metadata := mdta;
+  return dta;
+}
+;
+
+
+create method xmla_dbschema_primary_keys () for xmla_discover
+{
+  declare state, msg, dta, mdta, stmt any;
+  declare dsn, cat, tb, col, sch any;
+  declare uname, passwd, _tbl varchar;
+
+  dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
+  dsn := xmla_get_dsn_name (dsn);
+  cat := self.xmla_get_restriction ('TABLE_CATALOG', '%');
+  sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
+  tb := self.xmla_get_restriction ('TABLE_NAME', '%');
+  uname := self.xmla_get_property ('UserName', null);
+  passwd := self.xmla_get_property ('Password', null);
+  cat := trim (cat, '"');
+  sch := trim (sch, '"');
+  tb := trim (tb, '"');
+  _tbl := cat || '.' || sch || '.' || tb;
+
+  if (uname is null or passwd is null)
+     signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+
+  if (not xmla_not_local_dsn (dsn))
+    {
+      set_user_id (uname, 1, passwd);
+      stmt := sprintf ('SELECT COLUMN_NAME FROM %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS LEFT JOIN %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE ON %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.CONSTRAINT_NAME = %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE.CONSTRAINT_NAME WHERE  CONSTRAINT_TYPE = ''PRIMARY KEY'' AND %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.TABLE_NAME=''%s'' AND %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.TABLE_SCHEMA=''%s'' AND %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.CONSTRAINT_SCHEMA=''%s'' AND %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE.TABLE_SCHEMA=''%s'' AND %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE.CONSTRAINT_SCHEMA=''%s''', cat, cat, cat, cat, cat, tb, cat, sch, cat, sch, cat, sch, cat, sch);
+    }
+  else
+    {
+        dsn := xmla_get_dsn_name (dsn);
+	stmt := 'SELECT * FROM DB.DBA.SYS_PRIMARY_KEYS_VIEW WHERE PK_TABLE = ''' || _tbl || ''' AND DSN = ''' || dsn || '''';
+    }
+
+  exec (stmt, state, msg, vector (), 0, mdta, dta);
+  xmla_make_struct (mdta, dta);
+  self.metadata := mdta;
+  return dta;
+}
+;
+
 
 create method xmla_dbschema_provider_types () for xmla_discover
 {
@@ -932,7 +1037,6 @@ create method xmla_dbschema_provider_types () for xmla_discover
 		 from DB..XMLA_VDD_DBSCHEMA_PROVIDER_TYPES where tb = ? and cat = ? and dsn = ? ',
 	   null, null, vector (t, m, dsn), 0, mdta, dta);
     }
---    signal ('00007', 'Unable to process the request, because the DataSourceInfo property was missing or not correctly specified');
   xmla_make_struct (mdta, dta);
   self.metadata := mdta;
   return dta;
@@ -982,7 +1086,6 @@ create method xmla_dbschema_tables () for xmla_discover
 	  vector (tb, cat, dsn), 0, mdta, dta);
     }
 
---    signal ('00008', 'Unable to process the request, because the DataSourceInfo property was missing or not correctly specified');
   xmla_make_struct (mdta, dta);
   self.metadata := mdta;
   return dta;
@@ -1008,6 +1111,13 @@ xmla_get_schs ()
 	,''),
       vector ('DBSCHEMA_COLUMNS',
 	 soap_box_structure ('TABLE_CATALOG', '', 'TABLE_SCHEMA', '', 'TABLE_NAME', '', 'TABLE_TYPE', '', 'COLUMN_NAME', '')
+	,''),
+      vector ('DBSCHEMA_PRIMARY_KEYS',
+	 soap_box_structure ('TABLE_CATALOG', '', 'TABLE_SCHEMA', '', 'TABLE_NAME', '', 'TABLE_TYPE', '', 'COLUMN_NAME', '')
+	,''),
+      vector ('DBSCHEMA_FOREIGN_KEYS',
+	 soap_box_structure ('TABLE_CATALOG', 'TABLE_SCHEMA', 'TABLE_NAME', 'COLUMN_NAME',
+			     'TABLE_CATALOG', 'TABLE_SCHEMA', 'TABLE_NAME', 'COLUMN_NAME', '', '', '', '', '')
 	,''),
       vector ('DBSCHEMA_PROVIDER_TYPES',
 	 soap_box_structure ('DATA_TYPE', '', 'BEST_MATCH', '')
@@ -1244,7 +1354,7 @@ create procedure DB.DBA.xmla_vdd_dbschema_tables_rpoc (in tb varchar, in cat var
      {
 	declare _line any;
 	_line := _all[idx];
-	 result (_line[0], _line[1], _line[2], NULL, NULL, NULL, NULL, NULL, NULL);
+	 result (_line[0], _line[1], _line[2], 'TABLE', NULL, NULL, NULL, NULL, NULL);
      }
 
 }
@@ -1260,10 +1370,10 @@ create procedure DB.DBA.xmla_vdd_dbschema_columns_rpoc (in tb varchar, in cat va
    declare COLLATION_SCHEMA, COLLATION_NAME, DOMAIN_CATALOG, DOMAIN_SCHEMA, DOMAIN_NAME, DESCRIPTION nvarchar;
 
 
-   _all := sql_columns (dsn, tb, NULL, cat, NULL);
+   _all := DB.DBA.sql_columns (dsn, tb, NULL, cat, NULL);
 
    if (_all = vector ())
-     _all := sql_columns (dsn, NULL, NULL, cat, NULL);  -- Oracle
+     _all := DB.DBA.sql_columns (dsn, NULL, NULL, cat, NULL);  -- Oracle
 
    result_names (TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, COLUMN_GUID, COLUMN_PROPID,
 		 ORDINAL_POSITION, COLUMN_HASDEFAULT, COLUMN_DEFAULT, COLUMN_FLAGS, IS_NULLABLE,
@@ -1432,23 +1542,24 @@ create procedure mxla_fk_pk_check_local (inout stmt varchar, inout mdta any, ino
 --drop view DB.DBA.SYS_PRIMARY_KEYS_VIEW
 --;
 
-create procedure view DB.DBA.SYS_FOREIGN_KEYS_VIEW as XMLA_GET_FK (PK_TABLE, FK_TABLE, DSN)
-(PK_TABLE VARCHAR,
-PKCOLUMN_NAME VARCHAR,
-FK_TABLE VARCHAR,
-FKCOLUMN_NAME VARCHAR,
+create procedure view DB.DBA.SYS_FOREIGN_KEYS_VIEW as DB.DBA."XMLA_GET_FK" (PK_TABLE, FK_TABLE, DSN)
+(PK_TABLE_SCHEMA VARCHAR,
+PK_TABLE_NAME VARCHAR,
+PK_COLUMN_NAME VARCHAR,
+FK_TABLE_SCHEMA VARCHAR,
+FK_TABLE_NAME VARCHAR,
+FK_COLUMN_NAME VARCHAR,
 KEY_SEQ SMALLINT,
 UPDATE_RULE SMALLINT,
 DELETE_RULE SMALLINT,
-FK_NAME VARCHAR,
-PK_NAME VARCHAR)
+FK_NAME VARCHAR)
 ;
 
-create procedure view DB.DBA.SYS_PRIMARY_KEYS_VIEW as XMLA_GET_PK (PK_TABLE, DSN)
+create procedure view DB.DBA.SYS_PRIMARY_KEYS_VIEW as DB.DBA."XMLA_GET_PK" (PK_TABLE, DSN)
 (COLUMN_NAME VARCHAR)
 ;
 
-create procedure XMLA_GET_PK (in _pk_table varchar, in dsn varchar)
+create procedure DB.DBA."XMLA_GET_PK" (in _pk_table varchar, in dsn varchar)
 {
    declare COLUMN_NAME VARCHAR;
    declare pk_tables, _pk_tables, idx any;
@@ -1460,7 +1571,7 @@ create procedure XMLA_GET_PK (in _pk_table varchar, in dsn varchar)
 
    result_names (COLUMN_NAME);
 
-   pk_tables := sql_primary_keys (dsn, name_part (_pk_table, 0, null),
+   pk_tables := DB.DBA.sql_primary_keys (dsn, name_part (_pk_table, 0, null),
 				       name_part (_pk_table, 1, null),
 				       name_part (_pk_table, 2, null));
 
@@ -1473,19 +1584,20 @@ create procedure XMLA_GET_PK (in _pk_table varchar, in dsn varchar)
 }
 ;
 
-create procedure XMLA_GET_FK (in _pk_table varchar, in _fk_table varchar, in dsn varchar)
+create procedure DB.DBA."XMLA_GET_FK" (in _pk_table varchar, in _fk_table varchar, in dsn varchar)
 {
-   declare PK_TABLE VARCHAR;
-   declare PKCOLUMN_NAME VARCHAR;
-   declare FK_TABLE VARCHAR;
-   declare FKCOLUMN_NAME VARCHAR;
+   declare PK_TABLE_SCHEMA VARCHAR;
+   declare PK_TABLE_NAME VARCHAR;
+   declare PK_COLUMN_NAME VARCHAR;
+   declare FK_TABLE_SCHEMA VARCHAR;
+   declare FK_TABLE_NAME VARCHAR;
+   declare FK_COLUMN_NAME VARCHAR;
    declare KEY_SEQ SMALLINT;
    declare UPDATE_RULE SMALLINT;
    declare DELETE_RULE SMALLINT;
    declare FK_NAME VARCHAR;
-   declare PK_NAME VARCHAR;
 
-   declare fk_tables, _fk_tables, idx any;
+   declare fk_tables, _fk_tables, idx, _n1, _n2, _n3, _dsn any;
 
    declare exit handler for sqlstate '*VD052'
      {
@@ -1506,51 +1618,50 @@ create procedure XMLA_GET_FK (in _pk_table varchar, in _fk_table varchar, in dsn
 	return;
      };
 
-   result_names (PK_TABLE, PKCOLUMN_NAME, FK_TABLE, FKCOLUMN_NAME, KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME, PK_NAME);
+   result_names (PK_TABLE_SCHEMA, PK_TABLE_NAME, PK_COLUMN_NAME, FK_TABLE_SCHEMA, FK_TABLE_NAME, FK_COLUMN_NAME,
+		 KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME);
 
-   fk_tables := sql_foreign_keys (dsn, NULL, NULL, NULL, name_part (_pk_table, 0, null),
-							 name_part (_pk_table, 1, null),
-							 NULL);
+   _n1 := name_part (_pk_table, 0, null);
+   _n2 := name_part (_pk_table, 1, null);
+   _n3 := name_part (_pk_table, 2, null);
+   _dsn := dsn;
+   fk_tables := vector ();
 
+   for (select TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, DSN as LOC_DSN from DB.DBA.XMLA_VDD_DBSCHEMA_TABLES
+	where tb = _n3 and cat = _n1 and dsn = _dsn) do
+	  {
+             fk_tables := vector_concat (fk_tables, sql_foreign_keys
+		(_dsn, NULL, NULL, NULL, TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME));
+	  }
 
    for (idx := 0; idx < length (fk_tables); idx := idx + 1)
      {
 	_fk_tables := fk_tables [idx];
-	if (xmla_fk_my_table (_fk_tables, _pk_table))
-	   result (_fk_tables [0] || '.' || _fk_tables[1] || '.' || _fk_tables [2], _fk_tables[3], _pk_table, _fk_tables[7],
-		   _fk_tables[8], _fk_tables[9], _fk_tables[10], _fk_tables[11], _fk_tables[12]);
+	if (_pk_table <> _fk_table)
+	  result (name_part (_fk_table, 1, null), _fk_tables[2], _fk_tables[3],
+	 	  name_part (_fk_table, 1, null), _fk_tables[6], _fk_tables[7],
+		  _fk_tables[8], _fk_tables[9], _fk_tables[10], _fk_tables[11]);
+	else
+	  result (_fk_tables[1], _fk_tables[2], _fk_tables[3],
+	 	  _fk_tables[5], _fk_tables[6], _fk_tables[7],
+		  _fk_tables[8], _fk_tables[9], _fk_tables[10], _fk_tables[11]);
      }
 }
 ;
 
-create procedure xmla_fk_my_table (in _row any, in _o_table any)
-{
-   declare t1, t2 any;
-
-   t1 := _row[1] || '.' || _row[2];
-   t2 := _row[5] || '.' || _row[6];
-
-   if (t1 = _o_table) return 1;
-   if (t2 = _o_table) return 1;
-
-   return 0;
-}
-;
-
-
 create user "XMLA"
 ;
 
-user_set_qualifier ('XMLA', 'XMLA')
+DB.DBA.user_set_qualifier ('XMLA', 'XMLA')
 ;
 
-update SYS_USERS set U_ACCOUNT_DISABLED=1 where U_NAME = 'XMLA'
+update DB.DBA.SYS_USERS set U_ACCOUNT_DISABLED=1 where U_NAME = 'XMLA'
 ;
 
-VHOST_REMOVE (lpath=>'/XMLA')
+DB.DBA.VHOST_REMOVE (lpath=>'/XMLA')
 ;
 
-VHOST_DEFINE (lpath=>'/XMLA', ppath=>'/SOAP/', soap_user=>'XMLA',
+DB.DBA.VHOST_DEFINE (lpath=>'/XMLA', ppath=>'/SOAP/', soap_user=>'XMLA',
               soap_opts => vector ('ServiceName', 'XMLAnalysis', 'elementFormDefault', 'qualified'))
 ;
 
@@ -1669,29 +1780,5 @@ xmla_make_cursors_state (in _props any, inout _dta any)
 	   aset (_dta, len - idx - 1, line);
 	 }
     }
-}
-;
-
-
-create procedure
-xmla_add_quot_to_table (inout _dta any)
-{
-    declare idx, line, temp any;
-    for (idx := 0; idx < length (_dta); idx := idx + 1)
-      {
-	 line := _dta[idx];
-	 temp := xmla_process_table_name (line[0]);
-	 aset (line, 0, xmla_process_table_name (line[0]));
-	 aset (line, 1, xmla_process_table_name (line[1]));
-	 aset (_dta, idx, line);
-      }
-}
-;
-
-
-create procedure
-xmla_process_table_name (in name any)
-{
-    return '"' || replace (name, '.', '"."') || '"';
 }
 ;
