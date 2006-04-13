@@ -7716,11 +7716,13 @@ caddr_t
 bif_raw_exit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int f = 0;
-  caddr_t *qi = QST_INSTANCE (qst);
+  query_instance_t *qi = (query_instance_t *) qst;
   if (BOX_ELEMENTS (args) > 0)
   f = (int) bif_long_arg (qst, args, 0, "raw_exit");
-  if (!QI_IS_DBA (qi))
+  if (!QI_IS_DBA (qst))
   return 0;
+  if (qi->qi_client && qi->qi_client->cli_session)
+    session_flush (qi->qi_client->cli_session);
   if (!f)
     IN_CPT (((query_instance_t *) qst)->qi_trx); /* not during checkpoint */
   call_exit (0);
