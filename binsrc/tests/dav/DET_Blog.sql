@@ -738,7 +738,7 @@ create function "Blog_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in d
   declare cond_list, execmeta, execrows any;
   declare blog_id, blog_colname, post_id, condtext varchar;
   declare ownergid, owner_uid integer;
-  dbg_obj_princ ('Blog_DAV_DIR_FILTER (', detcol_id, path_parts, detcol_path, compilation, recursive, auth_uid, ')');
+  --dbg_obj_princ ('Blog_DAV_DIR_FILTER (', detcol_id, path_parts, detcol_path, compilation, recursive, auth_uid, ')');
   "Blog_ACCESS_PARAMS" (detcol_id, access, ownergid, owner_uid);
   vectorbld_init (res);
   blog_id := null;
@@ -746,7 +746,7 @@ create function "Blog_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in d
 
   if (((length (path_parts) <= 1) and (recursive <> 1)) or (length (path_parts) > 2))
   {
-	  dbg_obj_princ ('\r\nGoto skip_post_level\r\n');
+	  --dbg_obj_princ ('\r\nGoto skip_post_level\r\n');
     goto skip_post_level;
 	}
   if (length (path_parts) >= 2)
@@ -754,22 +754,22 @@ create function "Blog_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in d
       blog_id := coalesce ((select BI_BLOG_ID from BLOG.DBA.SYS_BLOG_OWNERS where U_ID = owner_uid and "Blog_FIXNAME" (WAI_NAME) = path_parts[0]));
       if (blog_id is null)
 			{
-				dbg_obj_princ ('\r\nGoto finalize\r\n');
+				--dbg_obj_princ ('\r\nGoto finalize\r\n');
         goto finalize;
     }
     }
   condtext := get_keyword ('Blog_POST', compilation);
-	dbg_obj_princ ('\r\ncondtext ', condtext, '\r\n');
+	--dbg_obj_princ ('\r\ncondtext ', condtext, '\r\n');
   if (condtext is null)
     {
       cond_list := get_keyword ('', compilation);
-			dbg_obj_princ ('\r\ncond_list ', cond_list, '\r\n');
+			--dbg_obj_princ ('\r\ncond_list ', cond_list, '\r\n');
       if (blog_id is not null)
         cond_list := vector_concat (cond_list, vector ( vector ('B_BLOG_ID', '=', blog_id)));
       condtext := "Blog_POST_DAV_FC_PRINT_WHERE" (cond_list, auth_uid);
-			dbg_obj_princ ('\r\ncondtext2 ', condtext, '\r\n');
+			--dbg_obj_princ ('\r\ncondtext2 ', condtext, '\r\n');
       compilation := vector_concat (compilation, vector ('Blog_POST', condtext));
-			dbg_obj_princ ('\r\ncompilation ', compilation, '\r\n');
+			--dbg_obj_princ ('\r\ncompilation ', compilation, '\r\n');
     }
   execstate := '00000';
   qry_text := 'select concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'', "Blog_COMPOSE_HTML_NAME" (B_TITLE, B_POST_ID)),
