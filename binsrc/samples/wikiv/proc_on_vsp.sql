@@ -160,10 +160,13 @@ ins:
       http_value (_xhtml); 
       return;
     }
+  declare _skin varchar;
+  dbg_obj_princ (params);
+  _skin := coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), 'default');
   _xhtml :=
     WV.WIKI.VSPXSLT ( 'PostProcess.xslt', _xhtml,
       _ext_params,
-      WV.WIKI.CLUSTERPARAM( _topic.ti_cluster_id , 'skin', 'default' ));
+      _skin );
   http_header ('Content-Type: text/html\r\n');
   http_value (_xhtml);
 --  http_value (temp);
@@ -1034,6 +1037,7 @@ create function WV.WIKI.LPATH_OFFSET (in lpath varchar)
 }
 ;
     
+--! \return "details" vector - dictionary of additional parameters
 create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out _cluster varchar, out _local_name varchar, out _attach varchar, out _base_adjust varchar, in lines any)
 {
   declare _startofs integer;
@@ -1051,18 +1055,26 @@ create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out 
   declare domain varchar;
   domain := http_map_get ('domain');
   declare cluster_id int;
-  cluster_id := (select ClusterId from WV.WIKI.CLUSTERSETTINGS where ParamName = 'home' and Value = domain);
-  if (cluster_id is not null)
-    {	
+  declare full_path, pattern varchar;
+  full_path := _host || '/' || WV.WIKI.STRJOIN ('/', path);
+
+  dbg_obj_print (full_path, domain);
+  
+whenever not found goto nf;
+  select DP_CLUSTER, DP_PATTERN into cluster_id, pattern  from WV.WIKI.DOMAIN_PATTERN_1 where domain like DP_PATTERN and _host like DP_HOST;
+  dbg_obj_princ (full_path, ' => ', pattern, ' ', _host);
+
       default_cluster := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = cluster_id);
       path := subseq (path, (length (split_and_decode (domain, 0, '\0\0/')) - 1));
-    }
-  else
+  dbg_obj_princ (path, split_and_decode (pattern, 0, '\0\0/'));
+  if (0)
     {
+nf:
       if (WV.WIKI.STRJOIN ('/', path) not like 'wiki/main/%')
         WV.WIKI.APPSIGNAL (11002, 'Path &url; to resource must start from "/wiki/main/"', vector('url', http_path()));
       path := subseq (path, 2);     
     }
+whenever not found default;
   _startofs := 0;
   if (_startofs < length (path))
     {
@@ -1076,7 +1088,7 @@ create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out 
       _local_name := path[_startofs];
       _startofs := _startofs + 1;
     }
-  if (_cluster is null or _cluster = '')
+  if (_cluster is null or _cluster = '' or _cluster = 'main.vsp')
     _cluster := default_cluster;
   if (_local_name is null or _local_name = '')
     _local_name := WV.WIKI.CLUSTERPARAM (_cluster, 'index-page', 'WelcomeVisitors');
@@ -1087,6 +1099,19 @@ create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out 
       _attach := concat (_attach, '/', aref (path, _idx));
       _idx := _idx + 1;
     }
+  declare _primary_skin, _second_skin varchar;
+  if (_cluster is not null)
+    _primary_skin := WV.WIKI.CLUSTERPARAM ( _cluster , 'skin', 'default' );
+  _second_skin := null;
+  declare skin2_regexp varchar;
+  skin2_regexp := WV.WIKI.CLUSTERPARAM ( _cluster, 'skin2-vhost-regexp', null);
+whenever sqlstate '2201B' goto next;
+  if (skin2_regexp is not null and
+      regexp_match (skin2_regexp, _host) is not null)
+    _second_skin := WV.WIKI.CLUSTERPARAM ( _cluster , 'skin2', 'default');  
+next:
+  return vector ('skin', _primary_skin,
+  	 	 'skin2', _second_skin);
 }
 ;
 
@@ -2304,5 +2329,20 @@ create function WV.WIKI.MOD_TIME (in _res_id int)
 create function WV.WIKI.WA_PPATH_URL (in resource varchar)
 {
    return 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/VAD/wa/comp/' || resource;
+}
+;
+
+
+create function WV.WIKI.BUILD_URL_PART (in params any)
+{
+  declare idx int; 
+  declare res any;
+  vectorbld_init (res);
+  for (idx := 0; idx < length (params); idx:=idx+2)
+    {
+       vectorbld_acc (res, sprintf ('%U', params[idx]) || '=' || sprintf ('%U', cast (params[idx+1] as varchar)));
+    }
+  vectorbld_final (res);
+  return WV.WIKI.STRJOIN ('&', res);
 }
 ;

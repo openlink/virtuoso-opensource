@@ -76,6 +76,12 @@ wa_exec_no_error(
 )
 ;
 
+wa_exec_no_error(
+  'alter type wa_wikiv add overriding method wa_addition_instance_urls (in _lpath varchar) returns any'
+)
+;
+
+
 insert soft WA_TYPES(WAT_NAME, WAT_DESCRIPTION, WAT_TYPE, WAT_REALM) values ('oWiki', 'oWiki', 'db.dba.wa_wikiv', 'wikiv')
 ;
 
@@ -426,11 +432,60 @@ create method wa_addition_urls () for wa_wikiv {
 }
 ;
 
+create method wa_addition_instance_urls (in _lpath varchar) for wa_wikiv
+{  
+  --! dirty hack
+  declare _vhost varchar;
+  _vhost := connection_get ('vhost');
+  dbg_obj_princ ('>>>>>>', _vhost);
+  if (_vhost is null or _vhost like '*ini*%')
+    _vhost := '%';
+  insert replacing WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER) 
+	values (_vhost, _lpath || '/%', self.cluster_id);
+  return vector ( 
+      vector (
+	null, null,
+	rtrim (_lpath, '/') || '/main',
+      	'/DAV/VAD/wiki/Root/main.vsp',		-- phys_path
+	1, -- is dav
+	0, -- is brws
+	null, -- def page
+	null, -- auth func
+	null, --		  realm=>cur_add_url[8],
+	null, --		  ppr_fn=>cur_add_url[9],
+	'Wiki', --		  vsp_user=>cur_add_url[10],
+	null, --		  soap_user=>cur_add_url[11],
+	null, --		  sec=>cur_add_url[12],
+	0, --	  ses_vars=>cur_add_url[13],
+	null, --	  soap_opts=>cur_add_url[14],
+	null, --	  auth_opts=>cur_add_url[15],
+	vector ('noinherit', 1, 'executable','yes'), -- opts
+	0),
+      vector (
+	null, null,
+	rtrim (_lpath, '/') || '/resources',
+      	'/DAV/VAD/wiki/Root/',		-- phys_path
+	1, -- is dav
+	0, -- is brws
+	null, -- def page
+	null, -- auth func
+	null, --		  realm=>cur_add_url[8],
+	null, --		  ppr_fn=>cur_add_url[9],
+	'Wiki', --		  vsp_user=>cur_add_url[10],
+	null, --		  soap_user=>cur_add_url[11],
+	null, --		  sec=>cur_add_url[12],
+	0, --	  ses_vars=>cur_add_url[13],
+	null, --	  soap_opts=>cur_add_url[14],
+	null, --	  auth_opts=>cur_add_url[15],
+	vector ('executable','yes'), -- opts
+	0));
+}
+;
 
 create method wa_vhost_options () for wa_wikiv {
   return vector(
       	'/DAV/VAD/wiki/Root/',		-- phys_path
-	'main.vsp', 			-- def_page
+	'redirect.vsp',
 	'Wiki',				-- user
 	0,				-- is brws
 	1,				-- is dav

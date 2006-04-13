@@ -462,6 +462,16 @@ create table WV.WIKI.EDIT_TEMP_STORAGE (
 ')	
 ;
 
+
+wiki_exec_no_error('create table WV.WIKI.DOMAIN_PATTERN_1 (
+	DP_HOST		varchar,
+	DP_PATTERN	varchar,
+	DP_CLUSTER	int references WV.WIKI.CLUSTERS (ClusterId),
+	primary key (DP_HOST, DP_PATTERN))
+')
+;
+
+
 wiki_exec_no_error('drop type WV.WIKI.CATEGORYINFO')
 ;
 wiki_exec_no_error('drop type WV.WIKI.TOPICINFO')

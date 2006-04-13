@@ -46,6 +46,7 @@
     <v:variable name="cluster" type="varchar" default="'Main'" param-name="cluster"/>
     <v:variable name="new_topic_template" type="varchar" default="''" persist="0"/>
     <v:variable name="new_category_template" type="varchar" default="''" persist="0"/>
+    <v:variable name="skin2_vhost_regexp" type="varchar" default="''" persist="0"/>
     <v:variable name="is_sync" type="integer" default="0"/>
     <v:variable name="sync_message" type="varchar" default="''"/>
     <v:variable name="enabled" type="varchar" defaullt="'1'"/>
@@ -75,7 +76,7 @@
       self.index_page := WV.WIKI.CLUSTERPARAM (self.cluster, 'index-page', 'WelcomeVisitors');
       self.new_topic_template := WV.WIKI.CLUSTERPARAM (self.cluster, 'new-topic-template', '');
       self.new_category_template := WV.WIKI.CLUSTERPARAM (self.cluster, 'new-category-template', '');
-	  
+      self.skin2_vhost_regexp := WV.WIKI.CLUSTERPARAM (self.cluster, 'skin2-vhost-regexp', '');
     ]]></v:before-data-bind>
     <v:after-data-bind>
       <![CDATA[
@@ -150,8 +151,13 @@
             WV.WIKI.SETCLUSTERPARAM (self.cluster, 'webmail_enabled', self.webmail_enable);
             WV.WIKI.SETCLUSTERPARAM (self.cluster, 'webmail_domain', self.webmail_domains.ufl_value);
             WV.WIKI.SETCLUSTERPARAM (self.cluster, 'skin', self.wiki_skin.ufl_value);
+            WV.WIKI.SETCLUSTERPARAM (self.cluster, 'skin2', self.wiki_skin_2.ufl_value);
 	    WV.WIKI.SETCLUSTERPARAM (self.cluster, 'new-topic-template', self.new_topic_template_text.ufl_value);
 	    WV.WIKI.SETCLUSTERPARAM (self.cluster, 'new-category-template', self.new_category_template_text.ufl_value);
+	    if (WV.WIKI.TRIM(self.skin2_vhost_regexp_text.ufl_value) = '')
+		WV.WIKI.SETCLUSTERPARAM (self.cluster, 'skin2-vhost-regexp', NULL);
+	    else 
+		WV.WIKI.SETCLUSTERPARAM (self.cluster, 'skin2-vhost-regexp', WV.WIKI.TRIM (self.skin2_vhost_regexp_text.ufl_value));
 	    if (self.is_sync)
 	      {
 	        WV.WIKI.DELICIOUSSYNC (cluster_id, self.vspx_user);
@@ -233,7 +239,7 @@
           </tr>
 	  <tr>
             <td>
-              <div class="wiki-settings-delicious">
+              <div class="wiki-settings-templates">
                 <h2>del.icio.us integration</h2>
                 <p>
                   <table width="100%">
@@ -325,11 +331,23 @@
 		<p>
 		  <table>
 		    <tr>
-		      <th>Skin:</th>
+		      <th>Primary Skin:</th>
 		      <td>
 			<v:data-list name="wiki_skin" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster, 'skin', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="."/>
 		      </td>
                     </tr>
+		    <tr>
+		      <th>Secondary Skin:</th>
+		      <td>
+			<v:data-list name="wiki_skin_2" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster, 'skin2', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="."/>
+		      </td>
+		    </tr>
+		    <tr>
+		      <th>VHost regular expression:</th>
+		      <td>
+                       <v:text name="skin2_vhost_regexp_text" value="--self.skin2_vhost_regexp"/>
+		     </td>
+		    </tr>
                   </table>
                 </p>
               </div>

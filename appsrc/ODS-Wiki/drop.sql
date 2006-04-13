@@ -70,6 +70,7 @@ WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_SYS_USERS');
 WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_WA_INSTANCE');
 
 
+WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.DOMAIN_PATTERN');
 WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.LockToken');
 WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.LOCKTOKEN');
 WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.HitCounter');
