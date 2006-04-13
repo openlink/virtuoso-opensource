@@ -19,8 +19,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+?><?vsp
 
   declare _TUT_XML any;
   declare _TUT_ROOT varchar;

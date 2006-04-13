@@ -19,8 +19,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?xml version="1.0"?><?vsp http_header ('Content-Type: text/xml\r\n'); ?>
+?><?xml version="1.0"?><?vsp http_header ('Content-Type: text/xml\r\n'); ?>
 <definitions
  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
  xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"

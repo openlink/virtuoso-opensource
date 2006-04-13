@@ -19,8 +19,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+?><?vsp
 
 declare seq, _from, _to, _reply_to, _fault_to, host, err, msg, _from1, refr any;
 
