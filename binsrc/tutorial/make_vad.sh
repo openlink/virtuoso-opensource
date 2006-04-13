@@ -72,7 +72,11 @@ virtuoso_start() {
   $myrm -f *.lck
   if [ "x$HOST_OS" != "x" ]
   then
+      if [ "z$BUILD" != "z" ] ; then
     $BUILD/../bin/virtuoso-odbc-t +foreground &
+  else
+	  virtuoso-odbc-t +foreground &
+      fi
   else
     virtuoso #+wait
   fi
@@ -107,7 +111,7 @@ do_command_safe () {
   shift
   shift
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*	>> $LOGFILE
-  if [ "x$HOST_OS" != "x" ]
+  if [ "x$HOST_OS" != "x" -a "z$BUILD" != "z" ]
 	then
 	  $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
 	else
@@ -189,16 +193,64 @@ directory_init() {
   # XXX: this is true only if bpel vad is done before running this script.
   # must be fixed to do not depend of bpel's make_vad script run
   mkdir vad_files/vsp/tutorial/bpeldemo
-  cd ../bpel/vad/vsp/bpeldemo
-  for dir in `find . -type d -print | LC_ALL=C sort | grep -v "^\.$" | grep -v CVS`
-  do
-    mkdir $LOGDIR/vad_files/vsp/tutorial/bpeldemo/$dir
-  done
+  mkdir vad_files/vsp/tutorial/bpeldemo/echo
+  mkdir vad_files/vsp/tutorial/bpeldemo/fi
+  mkdir vad_files/vsp/tutorial/bpeldemo/LoanFlow 		
+  mkdir vad_files/vsp/tutorial/bpeldemo/SecLoan
+  mkdir vad_files/vsp/tutorial/bpeldemo/RMLoan
+  mkdir vad_files/vsp/tutorial/bpeldemo/SecRMLoan
+  mkdir vad_files/vsp/tutorial/bpeldemo/sqlexec
+  mkdir vad_files/vsp/tutorial/bpeldemo/UseCases
+  mkdir vad_files/vsp/tutorial/bpeldemo/java_exec
+  mkdir vad_files/vsp/tutorial/bpeldemo/clr_exec
+  mkdir vad_files/vsp/tutorial/bpeldemo/processXSLT
+  mkdir vad_files/vsp/tutorial/bpeldemo/processXQuery
+  mkdir vad_files/vsp/tutorial/bpeldemo/processXSQL
 
-  for file in `find . -type f -print | LC_ALL=C sort | grep -v CVS`
-  do
-    cp $file $LOGDIR/vad_files/vsp/tutorial/bpeldemo/$file
-  done
+  cp ../bpel/tests/echo/echo.* vad_files/vsp/tutorial/bpeldemo/echo
+  cp ../bpel/tests/echo/bpel.xml vad_files/vsp/tutorial/bpeldemo/echo
+  cp ../bpel/tests/echo/options.xml vad_files/vsp/tutorial/bpeldemo/echo
+
+  cp ../bpel/tests/fi/fi.* vad_files/vsp/tutorial/bpeldemo/fi
+  cp ../bpel/tests/fi/fi_wsdl.vsp vad_files/vsp/tutorial/bpeldemo/fi
+  cp ../bpel/tests/fi/service.vsp vad_files/vsp/tutorial/bpeldemo/fi
+  cp ../bpel/tests/fi/options.xml vad_files/vsp/tutorial/bpeldemo/fi
+  cp ../bpel/tests/fi/bpel.xml vad_files/vsp/tutorial/bpeldemo/fi
+
+  cp -f ../bpel/tests/LoanFlow/* vad_files/vsp/tutorial/bpeldemo/LoanFlow 2>/dev/null
+  cp -f ../bpel/tests/interop/site/SecLoan/* vad_files/vsp/tutorial/bpeldemo/SecLoan 2>/dev/null
+  cp -f ../bpel/tests/interop/site/RMLoan/* vad_files/vsp/tutorial/bpeldemo/RMLoan 2>/dev/null
+  cp -f ../bpel/tests/interop/site/SecRMLoan/* vad_files/vsp/tutorial/bpeldemo/SecRMLoan 2>/dev/null
+  cp -f ../bpel/tests/sqlexec/* vad_files/vsp/tutorial/bpeldemo/sqlexec 2>/dev/null
+  cp ../bpel/tests/index.xml vad_files/vsp/tutorial/bpeldemo
+  cp -f ../bpel/tests/interop/UseCases/* vad_files/vsp/tutorial/bpeldemo/UseCases 2>/dev/null
+  cp ../bpel/tests/processXSLT/* vad_files/vsp/tutorial/bpeldemo/processXSLT 2>/dev/null
+  cp ../bpel/tests/processXSQL/* vad_files/vsp/tutorial/bpeldemo/processXSQL 2>/dev/null
+  cp ../bpel/tests/processXQuery/* vad_files/vsp/tutorial/bpeldemo/processXQuery 2>/dev/null
+
+  cp ../bpel/tests/fault1/java* vad_files/vsp/tutorial/bpeldemo/java_exec
+  cd vad_files/vsp/tutorial/bpeldemo/java_exec
+  mv java_exec_bpel.xml bpel.xml
+  mv java_exec.xml options.xml
+  mv java_exec_desc.xml java_exec.xml
+  cd $LOGDIR
+
+  cp ../bpel/tests/fault1/clr* vad_files/vsp/tutorial/bpeldemo/clr_exec
+  cd vad_files/vsp/tutorial/bpeldemo/clr_exec
+  mv clr_exec_bpel.xml bpel.xml
+  mv clr_exec.xml options.xml
+  mv clr_exec_desc.xml clr_exec.xml
+  cd $LOGDIR
+#  cd ../bpel/vad/vsp/bpeldemo
+#  for dir in `find . -type d -print | LC_ALL=C sort | grep -v "^\.$" | grep -v CVS`
+#  do
+#    mkdir $LOGDIR/vad_files/vsp/tutorial/bpeldemo/$dir
+#  done
+
+#  for file in `find . -type f -print | LC_ALL=C sort | grep -v CVS`
+#  do
+#    cp $file $LOGDIR/vad_files/vsp/tutorial/bpeldemo/$file
+#  done
   cd $LOGDIR
 
 #get xqdemo

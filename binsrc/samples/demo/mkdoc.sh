@@ -41,7 +41,7 @@ DEMODB=${DEMODB}
 LOGFILE=mkdoc.output
 LOGDIR=`pwd`
 ININAME=mkdemo.ini
-ISQL=isql
+ISQL=${ISQL-isql}
 
 #echo "log file is: $LOGFILE";
 
@@ -181,7 +181,7 @@ STOP_SERVER()
 {
     if [ "z$DEMODB" = "z" ]
     then
-	RUN isql $DSN dba dba '"EXEC=raw_exit();"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+	RUN $ISQL $DSN dba dba '"EXEC=raw_exit();"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
     fi
 }
 
@@ -191,7 +191,7 @@ DO_COMMAND()
   command=$1
   uid=${2-dba}
   passwd=${3-dba}
-  isql $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF "EXEC=$command" 	>> $LOGDIR/$LOGFILE
+  $ISQL $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF "EXEC=$command" 	>> $LOGDIR/$LOGFILE
   if test $? -ne 0
   then
     ECHO "***FAILED: $command"
@@ -259,7 +259,7 @@ LOAD_SQL()
   uid=${2-dba}
   passwd=${3-dba}
 
-  RUN isql $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF $sql
+  RUN $ISQL $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF $sql
   if test $? -ne 0
   then
     ECHO "***FAILED: LOAD $sql"
@@ -444,7 +444,7 @@ BANNER "CREATING DOC DATABASE (mkdoc.sh)"
 
 curpwd=`pwd`
 cd $HOME/binsrc/sqldoc
-vspx_doc.sh
+sh vspx_doc.sh
 cd "$curpwd"
 
 cat $ININAME | sed -e "s/1112/$PORT/g" | sed -e "s/1113/$HTTPPORT/g" | sed -e "s/demo\./doc\./g" > virtuoso.ini

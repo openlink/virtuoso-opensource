@@ -40,6 +40,7 @@ export DEMO LOGFILE
 SILENT=${SILENT-0}
 MAKEDOCS=${MAKEDOCS-0}
 HTMLDOCS=${HTMLDOCS-1}
+ISQL=${ISQL-isql}
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
 then
@@ -158,7 +159,7 @@ START_SERVER()
 
 STOP_SERVER()
 {
-    RUN isql $DSN dba dba '"EXEC=raw_exit();"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+    RUN $ISQL $DSN dba dba '"EXEC=raw_exit();"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
 }
 
 
@@ -167,7 +168,7 @@ DO_COMMAND()
   command=$1
   uid=${2-dba}
   passwd=${3-dba}
-  isql $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF "EXEC=$command" 	>> $DEMO/$LOGFILE
+  $ISQL $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF "EXEC=$command" 	>> $DEMO/$LOGFILE
   if test $? -ne 0
   then
     ECHO "***FAILED: $command"
@@ -207,7 +208,7 @@ LOAD_SQL()
   uid=${2-dba}
   passwd=${3-dba}
 
-  RUN isql $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF $sql
+  RUN $ISQL $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF $sql
   if test $? -ne 0
   then
     ECHO "***FAILED: LOAD $sql"
@@ -672,7 +673,7 @@ DO_COMMAND "delete from SYS_REPL_ACCOUNTS" dba dba
 #
 LOAD_SQL check_demo.sql dba dba
 
-RUN isql $DSN dba dba '"EXEC=status();"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
+RUN $ISQL $DSN dba dba '"EXEC=status();"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
 
 if test $STATUS -ne 0
 then

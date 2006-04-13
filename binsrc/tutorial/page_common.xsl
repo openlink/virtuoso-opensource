@@ -23,7 +23,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" >
   <xsl:param name="mount_point">/tutorial</xsl:param>
-  <xsl:param name="path" select="concat(/tutorial/section[1]/subsection[1]/@wwwpath,'/')"/>
+  <xsl:param name="path" select="concat(/tutorial/section[1]/subsection[2]/@wwwpath,'/')"/>
   <xsl:variable name="subsecpath">
     <xsl:choose>
       <xsl:when test="//example[@wwwpath = $path]">

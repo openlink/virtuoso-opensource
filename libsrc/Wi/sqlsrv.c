@@ -3588,8 +3588,6 @@ srv_global_init (char *mode)
   ddl_init_xml ();
   ddl_text_init ();
   local_commit (bootstrap_cli);
-#endif
-#ifndef WINDOWS
   rdf_core_init ();
   sparql_init ();
 #endif

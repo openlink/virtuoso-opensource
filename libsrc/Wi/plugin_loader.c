@@ -24,7 +24,10 @@
 #include "wi.h"
 #include "sqlver.h"
 #include <plugin.h>
+
+#ifndef WIN32
 #include <dirent.h>
+#endif
 
 #include "msdtc.h"
 

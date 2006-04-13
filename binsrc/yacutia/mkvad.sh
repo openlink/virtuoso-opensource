@@ -36,6 +36,7 @@ HOST=${HOST-localhost}
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_fs.xml"
 NEED_VERSION=04.00.2806
+ISQL=${ISQL-isql}
 
 DSN="$HOST:$PORT"
 LOGFILE=mkvad.output
@@ -166,7 +167,7 @@ START_SERVER()
 
 STOP_SERVER()
 {
-   isql $DSN dba dba '"EXEC=raw_exit();"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT >> $LOGFILE
+   $ISQL $DSN dba dba '"EXEC=raw_exit();"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT >> $LOGFILE
 }
 
 
@@ -175,7 +176,7 @@ DO_COMMAND()
   command=$1
   uid=${2-dba}
   passwd=${3-dba}
-  isql $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF "EXEC=$command" >> "${LOGFILE}.tmp"
+  $ISQL $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF "EXEC=$command" >> "${LOGFILE}.tmp"
   if test $? -ne 0
   then
     LOG "***FAILED: starting $command"
@@ -228,7 +229,7 @@ LOAD_SQL()
   uid=${2-dba}
   passwd=${3-dba}
 
-  RUN isql $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF $sql
+  RUN $ISQL $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF $sql
   if test $? -ne 0
   then
     ECHO "***FAILED: LOAD $sql"

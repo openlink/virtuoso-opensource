@@ -180,7 +180,6 @@ directory_init() {
   cp *.xsl vad/vsp/bpel4ws/1.0/
   cp *.gif vad/vsp/bpel4ws/1.0/
   cp *.jpg vad/vsp/bpel4ws/1.0/
-  cp *.png vad/vsp/bpel4ws/1.0/
   cp *.css vad/vsp/bpel4ws/1.0/
 
   # HELP

@@ -24,7 +24,11 @@ vspxxsd=${vspxxsd-$vspxdir/vspx.xsd}
 vspxmetadir=${vspxmetadir-$vspxdir/.vspxmeta}
 vspxmetasrc=${vspxmetasrc-$vspxdir/vspxmeta.xml}
 cutterdir="${HOME}/binsrc/sqldoc"
-cutter="${cutterdir}/cutter"
+if [ "z$CUTTER" != "z" ] ; then
+    cutter=$CUTTER
+else
+    cutter="${cutterdir}/cutter"
+fi
 pwddir=`pwd`
 cd "${cutterdir}"
 gmake
