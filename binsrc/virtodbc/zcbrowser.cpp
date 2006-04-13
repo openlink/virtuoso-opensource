@@ -76,7 +76,7 @@ safe_free (PTSTR str)
     free (str);
 }
 
-
+#ifdef _RENDEZVOUS
 void
 DNSNetworkAddressToString (const DNSNetworkAddress *inAddr, PTSTR outString)
 {
@@ -116,7 +116,7 @@ DNSNetworkAddressCompare (
 
   return i;
 }
-
+#endif
 
 TZCPublication::TZCPublication ()
 {
@@ -156,6 +156,7 @@ TZCPublication::Unref (void)
 void
 TZCBrowser::AddZCDomain (const char *szDomain)
 {
+#ifdef _RENDEZVOUS
   Lock ();
   if (m_activeCount == 0)
     {
@@ -169,6 +170,7 @@ TZCBrowser::AddZCDomain (const char *szDomain)
       kDNSBrowserFlagAutoResolve,
       OUR_RENDEZVOUS_TYPE,
       szDomain);
+#endif  
 }
 
 
@@ -254,6 +256,7 @@ TZCBrowser::AddZCPublication (TZCPublication *pItem)
       delete pItem;
       return;
     }
+#ifdef _RENDEZVOUS  
   if (pItem->eventType == kDNSBrowserEventTypeResolved &&
       (!pItem->szDomain || !pItem->szText))
     goto skip_it;
@@ -286,9 +289,10 @@ TZCBrowser::AddZCPublication (TZCPublication *pItem)
   pItem->next = m_pItems;
   m_pItems = pItem;
   Unlock ();
+#endif  
 }
 
-
+#ifdef _RENDEZVOUS
 /*
  *  This is the callback procedure that gets invoked from the browser
  *  thread. It wraps up all event information and posts it to the
@@ -326,12 +330,14 @@ BrowserCallBack (
 	  strcmp (inEvent->data.resolved->type, OUR_RENDEZVOUS_TYPE))
 	break;
       pItem = new TZCPublication;
-      pItem->eventType = inEvent->type;
       pItem->szName = safe_dup (inEvent->data.resolved->name);
       pItem->szType = safe_dup (inEvent->data.resolved->type);
       pItem->szDomain = safe_dup (inEvent->data.resolved->domain);
+#ifdef _RENDEZVOUS      
+      pItem->eventType = inEvent->type;
       pItem->address = inEvent->data.resolved->address;
       pItem->interfaceAddr = inEvent->data.resolved->interfaceAddr;
+#endif      
       pItem->szText = safe_dup (inEvent->data.resolved->textRecord);
       pBrowser->AddZCPublication (pItem);
       pBrowser->DoNotify ();
@@ -345,15 +351,18 @@ BrowserCallBack (
 	  strcmp (inEvent->data.addService.type, OUR_RENDEZVOUS_TYPE))
 	break;
       pItem = new TZCPublication;
-      pItem->eventType = inEvent->type;
       pItem->szName = safe_dup (inEvent->data.addService.name);
       pItem->szType = safe_dup (inEvent->data.addService.type);
       pItem->szDomain = safe_dup (inEvent->data.addService.domain);
+#ifdef _RENDEZVOUS      
+      pItem->eventType = inEvent->type;
       pItem->interfaceAddr = inEvent->data.addService.interfaceAddr;
+#endif      
       pBrowser->AddZCPublication (pItem);
       break;
     }
 }
+#endif
 
 
 TZCBrowser::TZCBrowser ()
@@ -371,15 +380,19 @@ TZCBrowser::~TZCBrowser ()
 {
   if (m_bInitDone)
     {
+#ifdef _RENDEZVOUS      
       StopBrowse ();
+#endif      
       FreeItems ();
+#ifdef _RENDEZVOUS      
       DNSBrowserRelease (m_DNS, 0);
       DNSServicesFinalize ();
+#endif      
     }
   DeleteCriticalSection (&m_csLock);
 }
 
-
+#ifdef _RENDEZVOUS
 void
 TZCBrowser::StartBrowse (void)
 {
@@ -417,7 +430,7 @@ TZCBrowser::StopBrowse (void)
   else
     Unlock ();
 }
-
+#endif
 
 void
 TZCBrowser::FreeItems (void)
@@ -457,6 +470,7 @@ TZCBrowser::Resolve (LPCTSTR szServer, DWORD dwTimeout)
     hEvent = NULL;
 
   pResolved = NULL;
+#ifdef _RENDEZVOUS  
   StartBrowse ();
   for (;;)
     {
@@ -486,7 +500,7 @@ TZCBrowser::Resolve (LPCTSTR szServer, DWORD dwTimeout)
       CloseHandle (hEvent);
     }
   StopBrowse ();
-
+#endif
   return pResolved;
 }
 

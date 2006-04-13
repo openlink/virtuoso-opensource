@@ -307,6 +307,7 @@ virtodbc_connect (
       bResolveRV = (_tcschr (szHost, ':') == NULL);
     }
 
+#ifdef _RENDEZVOUS 
   /* Now attempt to resolve the rendezvous name */
   if (bResolveRV)
     {
@@ -321,6 +322,7 @@ virtodbc_connect (
       DNSNetworkAddressToString (&p->address, szHost);
       p->Unref ();
     }
+#endif  
 
   mutex_enter (con->con_environment->env_mtx);
 

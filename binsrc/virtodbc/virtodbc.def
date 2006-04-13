@@ -136,4 +136,6 @@ EXPORTS
 
 	LoadByOrdinal			@199
 	DllMain				@200
+	DllRegisterServer		PRIVATE
+	DllUnregisterServer		PRIVATE
 	ConfigDSNW			@204

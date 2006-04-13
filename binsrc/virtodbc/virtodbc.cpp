@@ -1355,6 +1355,70 @@ DllMain (HINSTANCE hModule, DWORD fdReason, LPVOID lpvReserved)
 
   return TRUE;
 }
+
+STDAPI
+DllRegisterServer()
+{
+  HKEY hkey;
+  DWORD disposition;
+  LONG stat;
+  TCHAR buffer[1024] = TEXT("");
+  int size = 0;
+  TCHAR module_file_name[MAX_PATH + 1];
+
+  if (0 == GetModuleFileName(g_hInstance, module_file_name, sizeof module_file_name / sizeof (TCHAR)))
+    return E_FAIL;
+  
+  stat = RegCreateKeyEx(HKEY_LOCAL_MACHINE, TEXT ("SOFTWARE\\ODBC\\ODBCINST.INI\\Virtuoso (Open Source)"), 0, NULL, 
+      REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hkey, &disposition);
+
+  if (stat != ERROR_SUCCESS)
+    return E_FAIL;
+
+  _stprintf(buffer, TEXT ("%s"), module_file_name);
+  size = ( _tcslen(buffer) * sizeof (TCHAR) ) + 1;
+
+  stat = RegSetValueEx(hkey, TEXT ("Driver"), 0, REG_SZ, (BYTE*) buffer, size);
+  if (stat != ERROR_SUCCESS)
+    return E_FAIL;
+  stat = RegSetValueEx(hkey, TEXT ("Setup"), 0, REG_SZ, (BYTE*) buffer, size);
+  RegCloseKey(hkey);
+  if (stat != ERROR_SUCCESS)
+    return E_FAIL;
+
+  stat = RegCreateKeyEx(HKEY_LOCAL_MACHINE, TEXT ("SOFTWARE\\ODBC\\ODBCINST.INI\\ODBC Drivers"), 0, NULL, 
+      REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hkey, &disposition);
+  if (stat != ERROR_SUCCESS)
+    return E_FAIL;
+
+  _stprintf(buffer, TEXT ("%s"), TEXT ("Installed"));
+  size = ( _tcslen(buffer) * sizeof (TCHAR) ) + 1;
+  stat = RegSetValueEx(hkey, TEXT ("Virtuoso (Open Source)"), 0, REG_SZ, (BYTE*) buffer, size);
+  RegCloseKey(hkey);
+  if (stat != ERROR_SUCCESS)
+    return E_FAIL;
+  
+  return S_OK;
+}
+
+STDAPI
+DllUnregisterServer()
+{
+  HKEY hkey;
+  LONG stat = RegDeleteKey(HKEY_LOCAL_MACHINE, TEXT ("SOFTWARE\\ODBC\\ODBCINST.INI\\Virtuoso (Open Source)"));
+  if ((stat != ERROR_SUCCESS) && (stat != ERROR_FILE_NOT_FOUND))
+    return E_FAIL;
+
+  stat = RegOpenKeyEx (HKEY_LOCAL_MACHINE, TEXT ("SOFTWARE\\ODBC\\ODBCINST.INI\\ODBC Drivers"), 0, KEY_ALL_ACCESS, &hkey);
+  if (stat != ERROR_SUCCESS)
+    return E_FAIL;
+
+  stat = RegDeleteValue (hkey, TEXT ("Virtuoso (Open Source)"));
+  if (stat != ERROR_SUCCESS)
+    return E_FAIL;
+  
+  return S_OK;
+}
 #else
 extern "C" {
 void

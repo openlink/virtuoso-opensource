@@ -29,7 +29,10 @@
 #ifndef _ZCBROWSER_H
 #define _ZCBROWSER_H
 
+#ifdef _RENDEZVOUS
 #include "DNSServices.h"
+#else
+#endif
 
 #define OUR_RENDEZVOUS_TYPE	"_virtuoso._tcp."
 
@@ -37,9 +40,11 @@ struct TZCPublication
   {
     TZCPublication *		next;
     LONG			refCount;
+#ifdef _RENDEZVOUS    
     DNSBrowserEventType		eventType;
     DNSNetworkAddress		interfaceAddr;
     DNSNetworkAddress		address;
+#endif    
     PTSTR			szName;
     PTSTR			szType;
     PTSTR			szText;
@@ -65,7 +70,9 @@ struct TZCBrowser
   {
     LONG			m_activeCount;
     CRITICAL_SECTION		m_csLock;
+#ifdef _RENDEZVOUS    
     DNSBrowserRef		m_DNS;
+#endif    
     BOOL			m_bInitDone;
     BOOL			m_bBrowsing;
     TZCPublication *		m_pItems;
@@ -80,8 +87,10 @@ struct TZCBrowser
     ~TZCBrowser ();
     void Lock ();
     void Unlock ();
+#ifdef _RENDEZVOUS    
     void StartBrowse (void);
     void StopBrowse (void);
+#endif    
     void RegisterNotify (HWND hWnd, UINT uMsg, LPARAM lParam);
     void RegisterNotify (HANDLE hEvent);
     void UnregisterNotify (HANDLE h);
@@ -101,8 +110,10 @@ TZCBrowser::Unlock (void)
   LeaveCriticalSection (&m_csLock);
 }
 
+#ifdef _RENDEZVOUS
 void DNSNetworkAddressToString (
     const DNSNetworkAddress *inAddr,
     PTSTR outString);
+#endif
 
 #endif

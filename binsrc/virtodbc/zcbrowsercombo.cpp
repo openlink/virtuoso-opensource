@@ -36,7 +36,9 @@ TZCBrowserCombo::TZCBrowserCombo ()
 {
   m_pResolvedZC = NULL;
   m_hMsgWnd = NULL;
+#ifdef _RENDEZVOUS
   _zcbrowser.StartBrowse ();
+#endif  
 }
 
 
@@ -47,7 +49,9 @@ TZCBrowserCombo::~TZCBrowserCombo ()
   Clear ();
   if (m_hMsgWnd)
     _zcbrowser.UnregisterNotify (m_hMsgWnd);
+#ifdef _RENDEZVOUS  
   _zcbrowser.StopBrowse ();
+#endif  
 }
 
 
@@ -100,6 +104,7 @@ TZCBrowserCombo::OnCbnDropDown (void)
 
   Clear ();
 
+#ifdef _RENDEZVOUS  
   /* Add Items */
   _zcbrowser.Lock ();
   for (p = _zcbrowser.m_pItems; p; p = p->next)
@@ -114,6 +119,7 @@ TZCBrowserCombo::OnCbnDropDown (void)
 	}
     }
   _zcbrowser.Unlock ();
+#endif  
 }
 
 
@@ -206,11 +212,13 @@ TZCBrowserCombo::IsResolved (void)
 LPCTSTR
 TZCBrowserCombo::GetHost (void)
 {
+#ifdef _RENDEZVOUS
   if (m_pResolvedZC)
     {
       DNSNetworkAddressToString (&m_pResolvedZC->address, m_szText);
       return m_szText;
     }
+#endif  
   Text ();
   return _tcschr (m_szText, ':') ? m_szText : NULL;
 }
