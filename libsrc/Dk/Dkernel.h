@@ -674,6 +674,9 @@ void inpses_verify (dk_session_t *ses);
 #define SESSION_IS_INPROCESS(ses) (SESSION_IS_STRING (ses) && ses->dks_mtx != NULL)
 
 /* Dksesstr.c */
+
+typedef size_t strses_dump_callback_t (const void *ptr, size_t size, size_t nmemb, void *app_env);
+
 device_t *strdev_allocate (void);
 void strses_rewind (dk_session_t *ses);
 void strses_map (dk_session_t *ses, void (*func )(buffer_elt_t *e, caddr_t arg ), caddr_t arg);
@@ -684,7 +687,9 @@ long strses_chars_length (dk_session_t *ses);
 void strses_write_out (dk_session_t *ses, dk_session_t *out);
 void strses_to_array (dk_session_t *ses, char *buffer);
 size_t strses_fragment_to_array (dk_session_t *ses, char *buffer, size_t fragment_offset, size_t fragment_size);
-
+#if 0 /* No longer in use */
+extern void strses_read_by_callbacks (dk_session_t *ses, char *tmp_buf, size_t tmp_buf_len, strses_dump_callback_t *cbk, void *app_env);
+#endif
 
 int strses_is_ws_chunked_output (dk_session_t *ses);
 void strses_ws_chunked_state_set (dk_session_t *ses, dk_session_t *http_ses);

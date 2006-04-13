@@ -942,6 +942,52 @@ strses_to_array (dk_session_t *ses, char *buffer)
 }
 
 
+#if 0 /* No longer in use */
+void
+strses_read_by_callbacks (dk_session_t *ses, char *tmp_buf, size_t tmp_buf_len, strses_dump_callback_t *cbk, void *app_env)
+{
+  int fd = ses->dks_session->ses_file->ses_file_descriptor;
+  buffer_elt_t *elt = ses->dks_buffer_chain;
+  while (elt)
+    {
+      cbk (elt->data, elt->fill, 1, app_env);
+      elt = elt->next;
+    }
+  if (fd)
+    {
+      int rc, curr, end = lseek (fd, 0, SEEK_END);
+      if (end == -1)
+	{
+	  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
+	  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
+	  return;
+	}
+      if (-1 == lseek (fd, 0, SEEK_SET))
+	{
+	  log_error ("Can't seek in file %s", ses->dks_session->ses_file->ses_temp_file_name);
+	  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
+	  return;
+	}
+      for (curr = 0; curr < end; /* no step */)
+        {
+          int to_read = end - curr;
+          if (to_read > tmp_buf_len)
+            to_read = tmp_buf_len;
+          rc = read (fd, tmp_buf, to_read);
+          if (rc != to_read)
+            break;
+          curr += rc;
+          cbk (tmp_buf, to_read, 1, app_env);
+        }
+      if (curr != end)
+	log_error ("Can't read from file %s", ses->dks_session->ses_file->ses_temp_file_name);
+      if (rc == -1)
+	SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
+    }
+  cbk (ses->dks_out_buffer, ses->dks_out_fill, 1, app_env);
+}
+#endif
+
 size_t
 strses_fragment_to_array (dk_session_t *ses, char *buffer, size_t fragment_offset, size_t fragment_size)
 {
@@ -1562,10 +1608,20 @@ dk_session_t *strses_allocate (void) { return dbg_strses_allocate (__FILE__, __L
 caddr_t strses_string (dk_session_t * ses) { return dbg_strses_string (__FILE__, __LINE__, ses); }
 #endif
 
+caddr_t strses_fake_copy (caddr_t orig)
+{
+  dk_session_t swap_buf;
+  dk_session_t *res = strses_allocate ();
+  memcpy (&swap_buf, res, sizeof (dk_session_t));
+  memcpy (res, orig, sizeof (dk_session_t));
+  memcpy (orig, &swap_buf, sizeof (dk_session_t));
+  return (caddr_t) res;
+}
+
 void
 strses_mem_initalize (void)
 {
-  dk_mem_hooks (DV_STRING_SESSION, box_non_copiable, (box_free_f) strses_destroy);
+  dk_mem_hooks (DV_STRING_SESSION, strses_fake_copy, (box_free_f) strses_destroy);
 }
 
 
