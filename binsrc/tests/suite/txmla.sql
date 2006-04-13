@@ -177,9 +177,9 @@ xmla_check_result (
 		    'Properties', null
 	           ), style=>0)
     );
-ECHO BOTH $IF $EQU $LAST[1] 'DISCOVER_LITERALS' "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": DISCOVER_SCHEMA_ROWSETS : " $LAST[1] "\n";
+--ECHO BOTH $IF $EQU $LAST[1] 'DISCOVER_LITERALS' "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": DISCOVER_SCHEMA_ROWSETS : " $LAST[1] "\n";
 
 
 xmla_check_result (
