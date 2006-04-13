@@ -33,14 +33,6 @@
 #define DBG_MP_ALLOC_BOX(mp,len,tag) DBG_NAME(mp_alloc_box) (DBG_ARGS (mp), (len), (tag))
 #define DBG_T_ALLOC_BOX(len,tag) DBG_NAME(t_alloc_box) (DBG_ARGS (len), (tag))
 
-#ifdef VALGRIND
-#define LACERATED_POOL
-#endif
-#ifdef MALLOC_DEBUG
-#define LACERATED_POOL
-#endif
-
-
 #ifdef LACERATED_POOL
 
 struct mem_pool_s
@@ -180,7 +172,7 @@ caddr_t DBG_NAME(mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t d
 #else
   size_t len = ALIGN_4(len1+4);
 #endif
-  caddr_t new_alloc = dbg_mallocp (file, line, len, mp);
+  caddr_t new_alloc = DBG_NAME(mallocp) (DBG_ARGS len, mp);
   if (mp->mp_fill >= mp->mp_size)
     {
       caddr_t *newallocs;

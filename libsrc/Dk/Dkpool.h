@@ -36,6 +36,13 @@ typedef struct mem_pool_s mem_pool_t;
 
 void mp_free (mem_pool_t * mp);
 
+#ifdef VALGRIND
+#define LACERATED_POOL
+#endif
+#ifdef MALLOC_DEBUG
+#define LACERATED_POOL
+#endif
+
 #ifdef DEBUG /* Not MALLOC_DEBUG */
 extern mem_pool_t * dbg_mem_pool_alloc (const char *file, int line);
 #define mem_pool_alloc() dbg_mem_pool_alloc (__FILE__, __LINE__)
@@ -71,7 +78,7 @@ extern caddr_t mp_full_box_copy_tree (mem_pool_t * mp, caddr_t box);
 extern caddr_t mp_box_num (mem_pool_t * mp, ptrlong num);
 #endif
 
-#ifdef MALLOC_DEBUG
+#ifdef LACERATED_POOL
 void mp_alloc_box_assert (mem_pool_t * mp, caddr_t box);
 #else
 #define mp_alloc_box_assert(mp,box) ;
