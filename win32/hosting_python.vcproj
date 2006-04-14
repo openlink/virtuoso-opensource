@@ -2,8 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="virtodbc"
+	Name="hosting_python"
 	ProjectGUID="{A326A0DF-4F93-4DF6-813D-0B64F98B389F}"
+	RootNamespace="hosting_python"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
@@ -14,16 +15,17 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\virtodbc"
+			IntermediateDirectory="$(ConfigurationName)\hosting_python"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="$(PYTHON_CFLAGS)"
 				Optimization="2"
-				AdditionalIncludeDirectories="..\binsrc\driver;..\libsrc\Wi;..\libsrc\langfunc;..\libsrc\Xml.new;..\libsrc\plugin;..\libsrc\Dk;..\binsrc\driver\include;..\libsrc\util\win32;..\libsrc;openssl;."
-				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;BIF_XML;O12;NDEBUG"
+				AdditionalIncludeDirectories="..\binsrc\driver;..\libsrc\Wi;..\libsrc\langfunc;..\libsrc\Xml.new;..\libsrc\plugin;..\libsrc\Dk;..\binsrc\driver\include;..\libsrc\Xml.new;..\libsrc\util\win32;..\libsrc;openssl;."
+				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;O12;NDEBUG;_USRDLL"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
@@ -31,10 +33,10 @@
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="FALSE"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="$(ConfigurationName)\virtodbc/virtodbc.pch"
-				AssemblerListingLocation="$(ConfigurationName)\virtodbc/"
-				ObjectFile="$(ConfigurationName)\virtodbc/"
-				ProgramDataBaseFileName="$(ConfigurationName)\virtodbc/"
+				PrecompiledHeaderFile="$(ConfigurationName)\hosting_python/hosting_python.pch"
+				AssemblerListingLocation="$(ConfigurationName)\hosting_python/"
+				ObjectFile="$(ConfigurationName)\hosting_python/"
+				ProgramDataBaseFileName="$(ConfigurationName)\hosting_python/"
 				BrowseInformation="0"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -44,24 +46,24 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
+				AdditionalOptions="/MACHINE:I386 $(PYTHON_LDFLAGS)"
 				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				OutputFile="$(ConfigurationName)/virtodbc.dll"
+				OutputFile="$(ConfigurationName)/hosting_python.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
-				ModuleDefinitionFile="..\binsrc\virtodbc\virtodbc.def"
+				ModuleDefinitionFile="..\binsrc\hosting\python\hosting_python.def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)/virtodbc.pdb"
-				ImportLibrary="$(ConfigurationName)/virtodbc.lib"/>
+				ProgramDatabaseFile="$(ConfigurationName)/hosting_python.pdb"
+				ImportLibrary="$(ConfigurationName)/hosting_python.lib"/>
 			<Tool
 				Name="VCMIDLTool"
 				PreprocessorDefinitions=""
 				MkTypLibCompatible="TRUE"
 				SuppressStartupBanner="TRUE"
 				TargetEnvironment="1"
-				TypeLibraryName="$(ConfigurationName)/virtodbc.tlb"/>
+				TypeLibraryName="$(ConfigurationName)/hosting_python.tlb"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -87,26 +89,27 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\virtodbc"
+			IntermediateDirectory="$(ConfigurationName)\hosting_python"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="$(PYTHON_CFLAGS)"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\binsrc\driver,..\libsrc\Wi,..\libsrc\langfunc,..\libsrc\plugin,..\binsrc\driver\include..\libsrc\Dk,..\libsrc\util\win32,..\libsrc;openssl,."
-				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;BIF_XML;O12;NDEBUG"
+				AdditionalIncludeDirectories="..\binsrc\driver,..\libsrc\Wi,..\libsrc\langfunc,..\libsrc\plugin,..\binsrc\driver\include..\libsrc\Dk,..\libsrc\util\win32,..\libsrc;..\libsrc\Xml.new;openssl,."
+				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;O12;NDEBUG;_USRDLL"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\virtodbc/virtodbc.pch"
-				AssemblerListingLocation="$(ConfigurationName)\virtodbc/"
-				ObjectFile="$(ConfigurationName)\virtodbc/"
-				ProgramDataBaseFileName="$(ConfigurationName)\virtodbc/"
+				PrecompiledHeaderFile="$(ConfigurationName)\hosting_python/hosting_python.pch"
+				AssemblerListingLocation="$(ConfigurationName)\hosting_python/"
+				ObjectFile="$(ConfigurationName)\hosting_python/"
+				ProgramDataBaseFileName="$(ConfigurationName)\hosting_python/"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -116,24 +119,24 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
+				AdditionalOptions="/MACHINE:I386  $(PYTHON_LDFLAGS)"
 				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				OutputFile="$(ConfigurationName)/virtodbc.dll"
+				OutputFile="$(ConfigurationName)/hosting_python.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
-				ModuleDefinitionFile="..\binsrc\virtodbc\virtodbc.def"
+				ModuleDefinitionFile="..\binsrc\hosting\python\hosting_python.def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)/virtodbc.pdb"
-				ImportLibrary="$(ConfigurationName)/virtodbc.lib"/>
+				ProgramDatabaseFile="$(ConfigurationName)/hosting_python.pdb"
+				ImportLibrary="$(ConfigurationName)/hosting_python.lib"/>
 			<Tool
 				Name="VCMIDLTool"
 				PreprocessorDefinitions=""
 				MkTypLibCompatible="TRUE"
 				SuppressStartupBanner="TRUE"
 				TargetEnvironment="1"
-				TypeLibraryName="$(ConfigurationName)/virtodbc.tlb"/>
+				TypeLibraryName="$(ConfigurationName)/hosting_python.tlb"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -164,76 +167,10 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
-				RelativePath="..\libsrc\Wi\blobio.c">
+				RelativePath="..\binsrc\hosting\python\hosting_python.c">
 			</File>
 			<File
-				RelativePath="..\libsrc\Wi\CLIcr.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\CLIodbc3.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\CLIsql1.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\CLIsql2.c">
-			</File>
-			<File
-				RelativePath="..\binsrc\virtodbc\CLIsql3_w32.cpp">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\CLIuti.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\CLIw.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\datesupp.c">
-			</File>
-			<File
-				RelativePath="..\binsrc\virtodbc\dialog.cpp">
-			</File>
-			<File
-				RelativePath="..\libsrc\plugin\dlf.c">
-			</File>
-			<File
-				RelativePath="..\binsrc\virtodbc\kvlist.cpp">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\mts_client.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\multibyte.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\numeric.c">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\plugin_gate.c">
-			</File>
-			<File
-				RelativePath="..\binsrc\virtodbc\virtodbc.cpp">
-			</File>
-			<File
-				RelativePath="..\binsrc\virtodbc\virtodbc.def">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\wi_xid.c">
-			</File>
-			<File
-				RelativePath="..\binsrc\virtodbc\winctl.cpp">
-			</File>
-			<File
-				RelativePath="..\libsrc\Wi\wirpc.c">
-			</File>
-			<File
-				RelativePath="..\binsrc\virtodbc\wizard.cpp">
-			</File>
-			<File
-				RelativePath="..\binsrc\virtodbc\zcbrowser.cpp">
-			</File>
-			<File
-				RelativePath="..\binsrc\virtodbc\zcbrowsercombo.cpp">
+				RelativePath="..\binsrc\hosting\python\virt_handler.c">
 			</File>
 		</Filter>
 		<Filter
@@ -241,10 +178,36 @@
 			Filter="h;hpp;hxx;hm;inl">
 		</Filter>
 		<Filter
-			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+			Name="SqlFiles"
+			Filter="">
 			<File
-				RelativePath="..\binsrc\virtodbc\virtodbc.rc">
+				RelativePath="..\binsrc\hosting\python\py_to_c.awk">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="
+cd $(InputDir)
+gawk -f py_to_c.awk virt_handler.py &gt; virt_handler.c
+cd $(ProjectDir)
+
+"
+						AdditionalDependencies="$(InputDir)\virt_handler.pm"
+						Outputs="$(InputDir)\virt_handler.c"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="
+cd $(InputDir)
+gawk -f py_to_c.awk virt_handler.py &gt; virt_handler.c
+cd $(ProjectDir)
+
+"
+						AdditionalDependencies="$(InputDir)\virt_handler.pm"
+						Outputs="$(InputDir)\virt_handler.c"/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 	</Files>

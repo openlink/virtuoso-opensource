@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="virtuoso_odbc_t"
-	ProjectGUID="{F4E88BFA-FC96-439D-9E67-0A92AB541EE0}"
+	Name="blobs"
+	ProjectGUID="{9575BFE3-4BF8-4F9D-9BF2-5C4AF397B065}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
@@ -14,7 +14,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\virtuoso_odbc_t"
+			IntermediateDirectory="$(ConfigurationName)\blobs"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="FALSE"
@@ -22,19 +22,19 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200 "
-				Optimization="3"
-				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\plugin,..\libsrc\langfunc,..\libsrc\openssl, ."
-				PreprocessorDefinitions="_SSL;_CONSOLE;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,.\openssl"
+				PreprocessorDefinitions="_SSL,_CONSOLE,ODBC_ONLY,INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\virtuoso_odbc_t/virtuoso_odbc_t.pch"
-				AssemblerListingLocation="$(ConfigurationName)\virtuoso_odbc_t/"
-				ObjectFile="$(ConfigurationName)\virtuoso_odbc_t/"
-				ProgramDataBaseFileName="$(ConfigurationName)\virtuoso_odbc_t/"
+				PrecompiledHeaderFile="$(ConfigurationName)\blobs/blobs.pch"
+				AssemblerListingLocation="$(ConfigurationName)\blobs/"
+				ObjectFile="$(ConfigurationName)\blobs/"
+				ProgramDataBaseFileName="$(ConfigurationName)\blobs/"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -44,18 +44,18 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="threadw.lib wi.lib dksrv.lib util.lib xml.lib zlib.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				OutputFile="$(ConfigurationName)/virtuoso-odbc-t.exe"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="wic.lib threads.lib dk1t.lib ws2_32.lib libeay32.lib util.lib ssleay32.lib"
+				OutputFile="$(ConfigurationName)/blobs.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
-				IgnoreDefaultLibraryNames=""
+				AdditionalLibraryDirectories="$(ConfigurationName),openssl"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)/virtuoso_odbc_t.pdb"
+				ProgramDatabaseFile="$(ConfigurationName)/blobs.pdb"
 				SubSystem="1"/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName="$(ConfigurationName)/virtuoso_odbc_t.tlb"/>
+				TypeLibraryName="$(ConfigurationName)/blobs.tlb"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -64,9 +64,8 @@
 				Name="VCPreLinkEventTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1049"
-				AdditionalIncludeDirectories="..\openlink\include;..\xOs\stubs"/>
+				PreprocessorDefinitions=""
+				Culture="1049"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -81,7 +80,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\virtuoso_odbc_t"
+			IntermediateDirectory="$(ConfigurationName)\blobs"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="FALSE"
@@ -89,9 +88,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
-				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\plugin,..\libsrc\langfunc,..\libsrc\openssl, ."
-				PreprocessorDefinitions="_SSL;_CONSOLE;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG"
+				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,.\openssl"
+				PreprocessorDefinitions="_SSL,_CONSOLE,ODBC_ONLY,INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
@@ -99,31 +97,31 @@
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="FALSE"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="$(ConfigurationName)\virtuoso_odbc_t/virtuoso_odbc_t.pch"
-				AssemblerListingLocation="$(ConfigurationName)\virtuoso_odbc_t/"
-				ObjectFile="$(ConfigurationName)\virtuoso_odbc_t/"
-				ProgramDataBaseFileName="$(ConfigurationName)\virtuoso_odbc_t/"
+				PrecompiledHeaderFile="$(ConfigurationName)\blobs/blobs.pch"
+				AssemblerListingLocation="$(ConfigurationName)\blobs/"
+				ObjectFile="$(ConfigurationName)\blobs/"
+				ProgramDataBaseFileName="$(ConfigurationName)\blobs/"
 				BrowseInformation="0"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="threadw.lib wi.lib dksrv.lib util.lib xml.lib zlib.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				OutputFile="$(ConfigurationName)/virtuoso-odbc-t.exe"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="wic.lib threads.lib dk1t.lib ws2_32.lib libeay32.lib util.lib ssleay32.lib"
+				OutputFile="$(ConfigurationName)/blobs.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
-				IgnoreDefaultLibraryNames="LIBCMT"
+				AdditionalLibraryDirectories="$(ConfigurationName),openssl"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)/virtuoso_odbc_t.pdb"
+				ProgramDatabaseFile="$(ConfigurationName)/blobs.pdb"
 				SubSystem="1"/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName="$(ConfigurationName)/virtuoso_odbc_t.tlb"/>
+				TypeLibraryName="$(ConfigurationName)/blobs.tlb"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -132,8 +130,8 @@
 				Name="VCPreLinkEventTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				Culture="1049"
-				AdditionalIncludeDirectories="..\openlink\include;..\xOs\stubs"/>
+				PreprocessorDefinitions=""
+				Culture="1049"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -153,10 +151,10 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
-				RelativePath="..\binsrc\virtuoso\viconfig.c">
+				RelativePath="..\binsrc\tests\blobs.c">
 			</File>
 			<File
-				RelativePath="..\binsrc\virtuoso\viwin32.c">
+				RelativePath="..\binsrc\tests\time.c">
 			</File>
 		</Filter>
 		<Filter

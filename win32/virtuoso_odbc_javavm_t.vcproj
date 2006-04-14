@@ -21,8 +21,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="C:\j2sdk1.4.1_01\include;..\libsrc\xml.new;..\libsrc;C:\j2sdk1.4.1_01\include\win32;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;."
-				PreprocessorDefinitions="WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE"
+				AdditionalIncludeDirectories="&quot;$(JDK_PATH)\include&quot;;..\libsrc\xml.new;..\libsrc;&quot;$(JDK_PATH)\include\win32&quot;;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;."
+				PreprocessorDefinitions="INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
@@ -34,7 +34,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libvirtuoso-odbc-t.lib ws2_32.lib libeay32.lib ssleay32.lib C:\j2sdk1.4.1_01\lib\jvm.lib"
+				AdditionalDependencies="libvirtuoso-odbc-t.lib ws2_32.lib libeay32.lib ssleay32.lib $(JDK_PATH)\lib\jvm.lib"
 				OutputFile="$(OutDir)/virtuoso-odbc-javavm-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
@@ -73,8 +73,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="C:\j2sdk1.4.1_01\include;..\libsrc\xml.new;..\libsrc;C:\j2sdk1.4.1_01\include\win32;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;."
-				PreprocessorDefinitions="WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE"
+				AdditionalIncludeDirectories="&quot;$(JDK_PATH)\include&quot;;..\libsrc\xml.new;..\libsrc;&quot;$(JDK_PATH)\include\win32&quot;;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;."
+				PreprocessorDefinitions="INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
@@ -87,7 +87,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libvirtuoso-odbc-t.lib ws2_32.lib libeay32.lib ssleay32.lib C:\j2sdk1.4.1_01\lib\jvm.lib"
+				AdditionalDependencies="libvirtuoso-odbc-t.lib ws2_32.lib libeay32.lib ssleay32.lib $(JDK_PATH)\lib\jvm.lib"
 				OutputFile="$(OutDir)/virtuoso-odbc-javavm-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"

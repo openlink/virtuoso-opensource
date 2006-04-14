@@ -81,37 +81,6 @@
 	</References>
 	<Files>
 		<File
-			RelativePath="..\binsrc\tutorial\make_vad.sh">
-			<FileConfiguration
-				Name="Debug|Win32">
-				<Tool
-					Name="VCCustomBuildTool"
-					CommandLine="cd $(InputDir)
-set PATH=$(InputDir);$(TargetDir);%PATH%
-set HOME=$(ProjectDir)\..\
-set PORT=5555
-set ISQL=isql.exe
-bash make_vad.sh
-cd $(ProjectDir)
-"
-					Outputs="$(InputDir)\tutorial_dav.vad;$(InputDir)\tutorial_filesystem.vad"/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32">
-				<Tool
-					Name="VCCustomBuildTool"
-					CommandLine="cd $(InputDir)
-set PATH=$(InputDir);$(TargetDir);%PATH%
-set HOME=$(ProjectDir)\..\
-set PORT=5555
-set ISQL=isql.exe
-bash make_vad.sh
-cd $(ProjectDir)
-"
-					Outputs="$(InputDir)\tutorial_dav.vad;$(InputDir)\tutorial_filesystem.vad"/>
-			</FileConfiguration>
-		</File>
-		<File
 			RelativePath="..\binsrc\bpel\make_vad.sh">
 			<FileConfiguration
 				Name="Debug|Win32">
@@ -147,6 +116,38 @@ cd $(ProjectDir)
 			</FileConfiguration>
 		</File>
 		<File
+			RelativePath="..\binsrc\tutorial\make_vad.sh">
+			<FileConfiguration
+				Name="Debug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					CommandLine="cd $(InputDir)
+set PATH=$(InputDir);$(TargetDir);%PATH%
+set HOME=$(ProjectDir)\..\
+set PORT=5555
+set ISQL=isql.exe
+bash make_vad.sh
+cd $(ProjectDir)
+"
+					Outputs="$(InputDir)\tutorial_dav.vad;$(InputDir)\tutorial_filesystem.vad"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					CommandLine="cd $(InputDir)
+set PATH=$(InputDir);$(TargetDir);%PATH%
+set HOME=$(ProjectDir)\..\
+set PORT=5555
+set ISQL=isql.exe
+bash make_vad.sh
+cd $(ProjectDir)
+"
+					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-odbc-t.exe"
+					Outputs="$(InputDir)\tutorial_dav.vad;$(InputDir)\tutorial_filesystem.vad"/>
+			</FileConfiguration>
+		</File>
+		<File
 			RelativePath="..\binsrc\samples\demo\mkdemo.sh">
 			<FileConfiguration
 				Name="Debug|Win32">
@@ -177,7 +178,7 @@ set ISQL=isql.exe
 bash mkdemo.sh
 cd $(ProjectDir)
 "
-					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-odbc-t.exe;..\binsrc\bpel\bpel_dav.vad;..\binsrc\yacutia\conductor_dav.vad"
+					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-odbc-t.exe;..\binsrc\bpel\bpel_dav.vad;..\binsrc\yacutia\conductor_dav.vad;..\binsrc\samples\demo\doc_dav.vad"
 					Outputs="$(InputDir)\demo.db"/>
 			</FileConfiguration>
 		</File>
@@ -215,6 +216,7 @@ bash mkdoc.sh
 cd $(ProjectDir)
 
 "
+					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-odbc-t.exe"
 					Outputs="$(InputDir)\doc_dav.vad"/>
 			</FileConfiguration>
 		</File>
@@ -247,6 +249,7 @@ set ISQL=isql.exe
 bash mkvad.sh
 cd $(ProjectDir)
 "
+					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-odbc-t.exe"
 					Outputs="$(InputDir)\conductor_dav.vad;$(InputDir)\conductor_filesystem.vad"/>
 			</FileConfiguration>
 		</File>

@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="virtodbc"
+	Name="virtoledb"
 	ProjectGUID="{A326A0DF-4F93-4DF6-813D-0B64F98B389F}"
 	SccProjectName=""
 	SccLocalPath="">
@@ -14,7 +14,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\virtodbc"
+			IntermediateDirectory="$(ConfigurationName)\virtoledb"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="FALSE"
@@ -23,7 +23,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				AdditionalIncludeDirectories="..\binsrc\driver;..\libsrc\Wi;..\libsrc\langfunc;..\libsrc\Xml.new;..\libsrc\plugin;..\libsrc\Dk;..\binsrc\driver\include;..\libsrc\util\win32;..\libsrc;openssl;."
-				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;BIF_XML;O12;NDEBUG"
+				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;BIF_XML;O12;NDEBUG;VIRTOLEDB_CLI"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
@@ -31,10 +31,10 @@
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="FALSE"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="$(ConfigurationName)\virtodbc/virtodbc.pch"
-				AssemblerListingLocation="$(ConfigurationName)\virtodbc/"
-				ObjectFile="$(ConfigurationName)\virtodbc/"
-				ProgramDataBaseFileName="$(ConfigurationName)\virtodbc/"
+				PrecompiledHeaderFile="$(ConfigurationName)\virtoledb/virtoledb.pch"
+				AssemblerListingLocation="$(ConfigurationName)\virtoledb/"
+				ObjectFile="$(ConfigurationName)\virtoledb/"
+				ProgramDataBaseFileName="$(ConfigurationName)\virtoledb/"
 				BrowseInformation="0"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -45,23 +45,23 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				OutputFile="$(ConfigurationName)/virtodbc.dll"
+				AdditionalDependencies="ole32.lib oleaut32.lib odbccp32.lib rpcrt4.lib odbccp32.lib gdi32.lib comdlg32.lib threads.lib dk1t.lib util.lib odbc32.lib ws2_32.lib libeay32.lib ssleay32.lib"
+				OutputFile="$(ConfigurationName)/virtoledb.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
-				ModuleDefinitionFile="..\binsrc\virtodbc\virtodbc.def"
+				ModuleDefinitionFile="..\binsrc\virtoledb\virtoledb.def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)/virtodbc.pdb"
-				ImportLibrary="$(ConfigurationName)/virtodbc.lib"/>
+				ProgramDatabaseFile="$(ConfigurationName)/virtoledb.pdb"
+				ImportLibrary="$(ConfigurationName)/virtoledb.lib"/>
 			<Tool
 				Name="VCMIDLTool"
 				PreprocessorDefinitions=""
 				MkTypLibCompatible="TRUE"
 				SuppressStartupBanner="TRUE"
 				TargetEnvironment="1"
-				TypeLibraryName="$(ConfigurationName)/virtodbc.tlb"/>
+				TypeLibraryName="$(ConfigurationName)/virtoledb.tlb"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -87,7 +87,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\virtodbc"
+			IntermediateDirectory="$(ConfigurationName)\virtoledb"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="FALSE"
@@ -96,17 +96,17 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\binsrc\driver,..\libsrc\Wi,..\libsrc\langfunc,..\libsrc\plugin,..\binsrc\driver\include..\libsrc\Dk,..\libsrc\util\win32,..\libsrc;openssl,."
-				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;BIF_XML;O12;NDEBUG"
+				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;BIF_XML;O12;NDEBUG;VIRTOLEDB_CLI"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\virtodbc/virtodbc.pch"
-				AssemblerListingLocation="$(ConfigurationName)\virtodbc/"
-				ObjectFile="$(ConfigurationName)\virtodbc/"
-				ProgramDataBaseFileName="$(ConfigurationName)\virtodbc/"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile="$(ConfigurationName)\virtoledb/virtoledb.pch"
+				AssemblerListingLocation="$(ConfigurationName)\virtoledb/"
+				ObjectFile="$(ConfigurationName)\virtoledb/"
+				ProgramDataBaseFileName="$(ConfigurationName)\virtoledb/"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -117,23 +117,23 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				OutputFile="$(ConfigurationName)/virtodbc.dll"
+				AdditionalDependencies="ole32.lib oleaut32.lib odbccp32.lib rpcrt4.lib odbccp32.lib gdi32.lib comdlg32.lib threads.lib dk1t.lib util.lib odbc32.lib ws2_32.lib libeay32.lib ssleay32.lib"
+				OutputFile="$(ConfigurationName)/virtoledb.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
-				ModuleDefinitionFile="..\binsrc\virtodbc\virtodbc.def"
+				ModuleDefinitionFile="..\binsrc\virtoledb\virtoledb.def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)/virtodbc.pdb"
-				ImportLibrary="$(ConfigurationName)/virtodbc.lib"/>
+				ProgramDatabaseFile="$(ConfigurationName)/virtoledb.pdb"
+				ImportLibrary="$(ConfigurationName)/virtoledb.lib"/>
 			<Tool
 				Name="VCMIDLTool"
 				PreprocessorDefinitions=""
 				MkTypLibCompatible="TRUE"
 				SuppressStartupBanner="TRUE"
 				TargetEnvironment="1"
-				TypeLibraryName="$(ConfigurationName)/virtodbc.tlb"/>
+				TypeLibraryName="$(ConfigurationName)/virtoledb.tlb"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -163,6 +163,78 @@
 		<Filter
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			<File
+				RelativePath="..\binsrc\virtoledb\asserts.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\baseobj.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\command.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\connobj.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\data.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\datalink.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\dataobj.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\datasource.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\db.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\dllmodule.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\error.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\filedsn.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\globals.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\lobdata.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\mresults.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\paramdata.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\properties.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\refcounted.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\rowset.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\rowsetdata.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\rowsetprops.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\session.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\syncobj.cpp">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\util.cpp">
+			</File>
 			<File
 				RelativePath="..\libsrc\Wi\blobio.c">
 			</File>
@@ -239,12 +311,84 @@
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl">
+			<File
+				RelativePath="..\binsrc\virtoledb\asserts.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\baseobj.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\command.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\connobj.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\data.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\datalink.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\dataobj.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\db.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\dllmodule.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\error.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\filedsn.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\headers.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\lobdata.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\os.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\paramdata.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\properties.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\refcounted.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\resource.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\rowset.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\rowsetdata.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\rowsetprops.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\session.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\util.h">
+			</File>
+			<File
+				RelativePath="..\binsrc\virtoledb\virtoledb.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 			<File
-				RelativePath="..\binsrc\virtodbc\virtodbc.rc">
+				RelativePath="..\binsrc\virtoledb\virtoledb.rc">
 			</File>
 		</Filter>
 	</Files>

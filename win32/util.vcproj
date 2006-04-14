@@ -27,7 +27,7 @@
 				OmitFramePointers="FALSE"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="..\libsrc\Xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\langfunc;..\libsrc\plugin,."
-				PreprocessorDefinitions="DLDAPI_WINDOWS;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_SSL;YYTOKENTYPE;WIN32;WINDOWS;_Windows;_MBCS;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK"
+				PreprocessorDefinitions="DLDAPI_WINDOWS;_SSL;YYTOKENTYPE;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
@@ -82,7 +82,7 @@
 				AdditionalOptions="/Zm200 "
 				Optimization="3"
 				AdditionalIncludeDirectories="..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\zlib;..\binsrc\driver;..\libsrc\langfunc;..\libsrc\plugin,."
-				PreprocessorDefinitions="DLDAPI_WINDOWS;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_SSL;BIF_XML;_IMSG;O12;VAD;YYTOKENTYPE;WINDOWS;WIN32;WINDOWS;_Windows;_Windows;_MBCS;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK"
+				PreprocessorDefinitions="DLDAPI_WINDOWS;_SSL;BIF_XML;_IMSG;O12;VAD;YYTOKENTYPE;WINDOWS;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;_Windows;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -416,6 +416,15 @@
 				RelativePath="..\libsrc\plugin\gen_all_gates.sh">
 				<FileConfiguration
 					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)
+bash gen_all_gates.sh
+cd $(ProjectDir)"
+						Outputs="$(InputDir)\export_gate_virtuoso.c"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="cd $(InputDir)

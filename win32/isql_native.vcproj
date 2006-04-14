@@ -21,15 +21,15 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Zm200 "
+				AdditionalOptions=""
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libsrc;..\libsrc\Wi;..\libsrc\util\win32;."
-				PreprocessorDefinitions="_SSL;_CONSOLE;ODBC_ONLY;WIN32;WINDOWS;_Windows;PLDBG;_MBCS;YYTOKENTYPE"
-				MinimalRebuild="TRUE"
+				PreprocessorDefinitions="_SSL;_CONSOLE;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;PLDBG;YYTOKENTYPE"
+				MinimalRebuild="FALSE"
+				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile="$(ConfigurationName)\isql_native/isql_native.pch"
 				AssemblerListingLocation="$(ConfigurationName)\isql_native/"
@@ -51,6 +51,7 @@
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
 				IgnoreAllDefaultLibraries="FALSE"
+				IgnoreDefaultLibraryNames="LIBCMT"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(ConfigurationName)/isql_native.pdb"
 				SubSystem="1"/>
@@ -91,7 +92,7 @@
 				Optimization="3"
 				OptimizeForProcessor="2"
 				AdditionalIncludeDirectories="..\libsrc;..\libsrc\Wi;..\libsrc\util\win32;."
-				PreprocessorDefinitions="_SSL;_CONSOLE;ODBC_ONLY;WIN32;WINDOWS;_Windows;PLDBG;_MBCS;YYTOKENTYPE;NDEBUG"
+				PreprocessorDefinitions="_SSL;_CONSOLE;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;PLDBG;YYTOKENTYPE;NDEBUG"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
@@ -154,6 +155,9 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
 				RelativePath="..\binsrc\tests\isql.c">
+			</File>
+			<File
+				RelativePath="..\binsrc\tests\time.c">
 			</File>
 		</Filter>
 		<Filter

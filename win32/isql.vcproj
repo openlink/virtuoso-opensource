@@ -23,7 +23,7 @@
 				AdditionalOptions="/Zm200 "
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,.\openssl"
-				PreprocessorDefinitions="_SSL,_CONSOLE,ODBC_ONLY,WIN32;WINDOWS;_Windows"
+				PreprocessorDefinitions="_SSL,_CONSOLE,ODBC_ONLY,INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -88,7 +88,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,.\openssl"
-				PreprocessorDefinitions="_SSL,_CONSOLE,ODBC_ONLY,WIN32;WINDOWS;_Windows;NDEBUG"
+				PreprocessorDefinitions="_SSL,_CONSOLE,ODBC_ONLY,INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
@@ -151,6 +151,9 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
 				RelativePath="..\binsrc\tests\isql.c">
+			</File>
+			<File
+				RelativePath="..\binsrc\tests\time.c">
 			</File>
 		</Filter>
 		<Filter
