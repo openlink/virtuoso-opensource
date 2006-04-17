@@ -265,7 +265,7 @@ long _##len = (long) (len < 0 ? wcslen ((wchar_t *)wide) : len); \
       }
 
 #if 0
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLConnectW (
 	SQLHDBC hdbc,
 	SQLWCHAR * wszDSN,
@@ -277,7 +277,7 @@ SQLConnectW (
 {
   long len;
   CON_CHARSET(hdbc);
-  RETCODE rc;
+  SQLRETURN rc;
   DEFINE_INPUT_NARROW (DSN);
   DEFINE_INPUT_NARROW (UID);
   DEFINE_INPUT_NARROW (PWD);
@@ -297,7 +297,7 @@ SQLConnectW (
 #endif
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLBrowseConnectW (
       SQLHDBC hdbc,
       SQLWCHAR * szConnStrIn,
@@ -338,7 +338,7 @@ SQLRETURN SQL_API virtodbc__SQLColAttributesW(
 #endif
 	  {
 	    DEFINE_OUTPUT_NONCHAR_NARROW (rgbDesc, cbDescMax, pcbDesc, stmt->stmt_connection, SQLSMALLINT);
-	    RETCODE rc;
+	    SQLRETURN rc;
 
 	    MAKE_OUTPUT_NONCHAR_NARROW (rgbDesc, cbDescMax, stmt->stmt_connection);
 
@@ -381,7 +381,7 @@ SQLRETURN SQL_API SQLColAttributeW(
 #endif
 	)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   STMT_CHARSET (hstmt);
 
   DEFINE_OUTPUT_NONCHAR_NARROW (wszCharAttr, cbCharAttr, pcbCharAttr,
@@ -399,7 +399,7 @@ SQLRETURN SQL_API SQLColAttributeW(
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLColumnPrivilegesW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
@@ -412,7 +412,7 @@ SQLColumnPrivilegesW (
 	SQLSMALLINT cbColumnName)
 {
   size_t len;
-  RETCODE rc;
+  SQLRETURN rc;
   STMT_CHARSET (hstmt);
   DEFINE_INPUT_NARROW (TableQualifier);
   DEFINE_INPUT_NARROW (TableOwner);
@@ -439,7 +439,7 @@ SQLColumnPrivilegesW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLColumnsW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
@@ -452,7 +452,7 @@ SQLColumnsW (
 	SQLSMALLINT cbColumnName)
 {
   size_t len;
-  RETCODE rc;
+  SQLRETURN rc;
   STMT_CHARSET (hstmt);
   DEFINE_INPUT_NARROW (TableQualifier);
   DEFINE_INPUT_NARROW (TableOwner);
@@ -480,7 +480,7 @@ SQLColumnsW (
 
 #if 0
 void ParseOptions (char *s, int clean_up);
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLDriverConnectW (
     SQLHDBC hdbc,
     HWND hwnd,
@@ -491,7 +491,7 @@ SQLDriverConnectW (
     SQLSMALLINT * pcbConnStrOut,
     SQLUSMALLINT fDriverCompletion)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   long len;
   wcharset_t *charset = NULL;
   DEFINE_INPUT_NARROW (ConnStrIn);
@@ -510,7 +510,7 @@ SQLDriverConnectW (
 }
 #endif
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLDescribeColW (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT icol,
@@ -522,7 +522,7 @@ SQLDescribeColW (
 	SQLSMALLINT * pibScale,
 	SQLSMALLINT * pfNullable)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   STMT_CHARSET (hstmt);
   DEFINE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection, SQLSMALLINT);
 
@@ -536,7 +536,7 @@ SQLDescribeColW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLErrorW (
 	SQLHENV henv,
 	SQLHDBC hdbc,
@@ -552,7 +552,7 @@ SQLErrorW (
   /*ENV (env, henv);*/
   wcharset_t *charset = con ? con->con_charset : (stmt ? stmt->stmt_connection->con_charset : NULL);
   SQLCHAR szSqlState[6];
-  RETCODE rc;
+  SQLRETURN rc;
   if (con || stmt)
     {
       cli_connection_t *conn = con ? con : stmt->stmt_connection;
@@ -581,13 +581,13 @@ SQLErrorW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLExecDirectW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszSqlStr,
 	SQLINTEGER cbSqlStr)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   STMT_CHARSET (hstmt);
   DEFINE_INPUT_NARROW (SqlStr);
@@ -602,7 +602,7 @@ SQLExecDirectW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLForeignKeysW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszPkTableQualifier,
@@ -619,7 +619,7 @@ SQLForeignKeysW (
 	SQLSMALLINT cbFkTableName)
 {
   size_t len;
-  RETCODE rc;
+  SQLRETURN rc;
   STMT_CHARSET (hstmt);
   DEFINE_INPUT_NARROW (PkTableQualifier);
   DEFINE_INPUT_NARROW (PkTableOwner);
@@ -655,7 +655,7 @@ SQLForeignKeysW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetConnectAttrW (SQLHDBC connectionHandle,
     SQLINTEGER Attribute,
     SQLPOINTER ValuePtr,
@@ -671,7 +671,7 @@ SQLGetConnectAttrW (SQLHDBC connectionHandle,
       case SQL_CHARSET:
       case SQL_APPLICATION_NAME:
 	  {
-	    RETCODE rc;
+	    SQLRETURN rc;
 	    DEFINE_OUTPUT_NONCHAR_NARROW (ValuePtr, StringLength, StringLengthPtr, con, SQLINTEGER);
 
 	    MAKE_OUTPUT_NONCHAR_NARROW (ValuePtr, StringLength, con);
@@ -688,14 +688,14 @@ SQLGetConnectAttrW (SQLHDBC connectionHandle,
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetConnectOptionW (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fOption,
 	SQLPOINTER pvParam)
 {
   CON_CHARSET(hdbc);
-  RETCODE rc;
+  SQLRETURN rc;
 
   switch (fOption)
     {
@@ -718,14 +718,14 @@ SQLGetConnectOptionW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetCursorNameW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszCursor,
 	SQLSMALLINT cbCursor,
 	SQLSMALLINT * pcbCursor)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   STMT_CHARSET (hstmt);
   DEFINE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection, SQLSMALLINT);
 
@@ -739,7 +739,7 @@ SQLGetCursorNameW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetDescFieldW (SQLHDESC descriptorHandle,
     SQLSMALLINT RecNumber,
     SQLSMALLINT FieldIdentifier,
@@ -762,7 +762,7 @@ SQLGetDescFieldW (SQLHDESC descriptorHandle,
       case SQL_DESC_TYPE_NAME:
       case SQL_DESC_LOCAL_TYPE_NAME:
 	  {
-	    RETCODE rc;
+	    SQLRETURN rc;
 	    DEFINE_OUTPUT_NONCHAR_NARROW (ValuePtr, BufferLength, StringLengthPtr, desc->d_stmt->stmt_connection, SQLINTEGER);
 
 	    MAKE_OUTPUT_NONCHAR_NARROW (ValuePtr, BufferLength, desc->d_stmt->stmt_connection);
@@ -779,7 +779,7 @@ SQLGetDescFieldW (SQLHDESC descriptorHandle,
     }
 }
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetDescRecW (SQLHDESC descriptorHandle,
     SQLSMALLINT RecNumber,
     SQLWCHAR * wszName,
@@ -792,7 +792,7 @@ SQLGetDescRecW (SQLHDESC descriptorHandle,
     SQLSMALLINT * ScalePtr,
     SQLSMALLINT * NullablePtr)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   DESC_CHARSET1 (descriptorHandle);
   DEFINE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection, SQLSMALLINT);
 
@@ -807,7 +807,7 @@ SQLGetDescRecW (SQLHDESC descriptorHandle,
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetDiagFieldW (SQLSMALLINT nHandleType,
     SQLHANDLE Handle,
     SQLSMALLINT nRecNumber,
@@ -827,7 +827,7 @@ SQLGetDiagFieldW (SQLSMALLINT nHandleType,
       case SQL_DIAG_MESSAGE_TEXT:
       case SQL_DIAG_SQLSTATE:
 	  {
-	    RETCODE rc;
+	    SQLRETURN rc;
 	    cli_connection_t *conn = (nHandleType == SQL_HANDLE_DBC ? con :
 		( nHandleType == SQL_HANDLE_STMT ? stmt->stmt_connection :
 		  (nHandleType == SQL_HANDLE_DESC ? desc->d_stmt->stmt_connection : NULL)));
@@ -851,7 +851,7 @@ SQLGetDiagFieldW (SQLSMALLINT nHandleType,
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetDiagRecW (SQLSMALLINT HandleType,
     SQLHANDLE Handle,
     SQLSMALLINT RecNumber,
@@ -863,7 +863,7 @@ SQLGetDiagRecW (SQLSMALLINT HandleType,
 {
   DESC_CHARSET (Handle, HandleType);
   SQLCHAR szSqlState[6];
-  RETCODE rc;
+  SQLRETURN rc;
   cli_connection_t *conn = (HandleType == SQL_HANDLE_DBC ? con :
       ( HandleType == SQL_HANDLE_STMT ? stmt->stmt_connection :
 	(HandleType == SQL_HANDLE_DESC ? desc->d_stmt->stmt_connection : NULL)));
@@ -898,7 +898,7 @@ SQLGetDiagRecW (SQLSMALLINT HandleType,
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetInfoW (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fInfoType,
@@ -948,7 +948,7 @@ SQLGetInfoW (
     case SQL_DESCRIBE_PARAMETER:
     case SQL_XOPEN_CLI_YEAR:
 	  {
-	    RETCODE rc;
+	    SQLRETURN rc;
 	    DEFINE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, pcbInfoValue, con, SQLSMALLINT);
 
 	    MAKE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, con);
@@ -966,7 +966,7 @@ SQLGetInfoW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetStmtAttrW (SQLHSTMT statementHandle,
     SQLINTEGER Attribute,
     SQLPOINTER ValuePtr,
@@ -978,7 +978,7 @@ SQLGetStmtAttrW (SQLHSTMT statementHandle,
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLNativeSqlW (
 	SQLHDBC hdbc,
 	SQLWCHAR * wszSqlStrIn,
@@ -988,7 +988,7 @@ SQLNativeSqlW (
 	SQLINTEGER * pcbSqlStr)
 {
   CON_CHARSET (hdbc);
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   DEFINE_INPUT_NARROW (SqlStrIn);
   DEFINE_OUTPUT_CHAR_NARROW (SqlStr, con, SQLINTEGER);
@@ -1005,14 +1005,14 @@ SQLNativeSqlW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLPrepareW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszSqlStr,
 	SQLINTEGER cbSqlStr)
 {
   size_t len;
-  RETCODE rc;
+  SQLRETURN rc;
   STMT_CHARSET (hstmt);
   DEFINE_INPUT_NARROW (SqlStr);
 
@@ -1026,7 +1026,7 @@ SQLPrepareW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLPrimaryKeysW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
@@ -1037,7 +1037,7 @@ SQLPrimaryKeysW (
 	SQLSMALLINT cbTableName)
 {
   STMT_CHARSET (hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
 
   DEFINE_INPUT_NARROW (TableQualifier);
@@ -1061,7 +1061,7 @@ SQLPrimaryKeysW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLProcedureColumnsW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszProcQualifier,
@@ -1074,7 +1074,7 @@ SQLProcedureColumnsW (
 	SQLSMALLINT cbColumnName)
 {
   STMT_CHARSET (hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
 
   DEFINE_INPUT_NARROW (ProcQualifier);
@@ -1102,7 +1102,7 @@ SQLProcedureColumnsW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLProceduresW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszProcQualifier,
@@ -1113,7 +1113,7 @@ SQLProceduresW (
 	SQLSMALLINT cbProcName)
 {
   STMT_CHARSET (hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
 
   DEFINE_INPUT_NARROW (ProcQualifier);
@@ -1137,7 +1137,7 @@ SQLProceduresW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLSetConnectAttrW (SQLHDBC connectionHandle,
     SQLINTEGER Attribute,
     SQLPOINTER ValuePtr,
@@ -1150,7 +1150,7 @@ SQLSetConnectAttrW (SQLHDBC connectionHandle,
       case SQL_CHARSET:
       case SQL_APPLICATION_NAME:
 	  {
-	    RETCODE rc;
+	    SQLRETURN rc;
 	    DEFINE_INPUT_NONCHAR_NARROW (ValuePtr, StringLength);
 
 	    MAKE_INPUT_NONCHAR_NARROW (ValuePtr, StringLength, con);
@@ -1166,7 +1166,7 @@ SQLSetConnectAttrW (SQLHDBC connectionHandle,
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLSetConnectOptionW (
       SQLHDBC hdbc,
       SQLUSMALLINT fOption,
@@ -1177,7 +1177,7 @@ SQLSetConnectOptionW (
     {
       case SQL_CURRENT_QUALIFIER:
 	  {
-	    RETCODE rc;
+	    SQLRETURN rc;
 	    int StringLength = SQL_NTS;
 	    DEFINE_INPUT_NONCHAR_NARROW (vParam, StringLength);
 
@@ -1194,14 +1194,14 @@ SQLSetConnectOptionW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLSetCursorNameW (
       SQLHSTMT hstmt,
       SQLWCHAR * wszCursor,
       SQLSMALLINT cbCursor)
 {
   STMT_CHARSET (hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   DEFINE_INPUT_NARROW (Cursor);
 
@@ -1214,7 +1214,7 @@ SQLSetCursorNameW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLSetDescFieldW (SQLHDESC descriptorHandle,
     SQLSMALLINT RecNumber,
     SQLSMALLINT FieldIdentifier,
@@ -1234,7 +1234,7 @@ SQLSetDescFieldW (SQLHDESC descriptorHandle,
       case SQL_DESC_CONCISE_TYPE:
       case SQL_DESC_TYPE_NAME:
 	  {
-	    RETCODE rc;
+	    SQLRETURN rc;
 	    DEFINE_INPUT_NONCHAR_NARROW (ValuePtr, BufferLength);
 
 	    MAKE_INPUT_NONCHAR_NARROW (ValuePtr, BufferLength, desc->d_stmt->stmt_connection);
@@ -1250,7 +1250,7 @@ SQLSetDescFieldW (SQLHDESC descriptorHandle,
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLSetStmtAttrW (SQLHSTMT statementHandle,
     SQLINTEGER Attribute,
     SQLPOINTER ValuePtr,
@@ -1260,7 +1260,7 @@ SQLSetStmtAttrW (SQLHSTMT statementHandle,
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLSpecialColumnsW (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT fColType,
@@ -1273,7 +1273,7 @@ SQLSpecialColumnsW (
 	SQLUSMALLINT fScope,
 	SQLUSMALLINT fNullable)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   STMT_CHARSET (hstmt);
   DEFINE_INPUT_NARROW (TableQualifier);
@@ -1298,7 +1298,7 @@ SQLSpecialColumnsW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLStatisticsW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
@@ -1310,7 +1310,7 @@ SQLStatisticsW (
 	SQLUSMALLINT fUnique,
 	SQLUSMALLINT fAccuracy)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   STMT_CHARSET (hstmt);
   DEFINE_INPUT_NARROW (TableQualifier);
@@ -1335,7 +1335,7 @@ SQLStatisticsW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLTablePrivilegesW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
@@ -1345,7 +1345,7 @@ SQLTablePrivilegesW (
 	SQLWCHAR * wszTableName,
 	SQLSMALLINT cbTableName)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   STMT_CHARSET (hstmt);
   DEFINE_INPUT_NARROW (TableQualifier);
@@ -1369,7 +1369,7 @@ SQLTablePrivilegesW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLTablesW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
@@ -1381,7 +1381,7 @@ SQLTablesW (
 	SQLWCHAR * wszTableType,
 	SQLSMALLINT cbTableType)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   STMT_CHARSET (hstmt);
   DEFINE_INPUT_NARROW (TableQualifier);
@@ -1409,7 +1409,7 @@ SQLTablesW (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetTypeInfoW (
 	SQLHSTMT hstmt,
 	SQLSMALLINT fSqlType)

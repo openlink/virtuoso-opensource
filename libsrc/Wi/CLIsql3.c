@@ -123,7 +123,7 @@ typedef  char TCHAR;
 
 #define OPTION_TRUE(X)	((X) && (X) != 'N' && (X) != '0')
 
-static RETCODE SQL_API virtodbc__SQLDriverConnect (SQLHDBC hdbc,
+static SQLRETURN SQL_API virtodbc__SQLDriverConnect (SQLHDBC hdbc,
    HWND hwnd, SQLTCHAR * szConnStrIn, SQLSMALLINT cbConnStrIn,
     SQLTCHAR * szConnStrOut, SQLSMALLINT cbConnStrOutMax,
     SQLSMALLINT * pcbConnStrOutMax, SQLUSMALLINT fDriverCompletion);
@@ -520,7 +520,7 @@ FillUpLoginDatabaseCombo (HWND hDlg)
   TCHAR szMessage[512], szState[10], szHostW[1024], szUIDW[128], szPWDW[128], szMsg1[512];
   char *UID, *PWD, *HOST;
   short len;
-  RETCODE rc;
+  SQLRETURN rc;
 
   GetDlgItemText (hDlg, IDC_HOST, szHostW, sizeof (szHostW));
   if (!szHostW[0])
@@ -741,7 +741,7 @@ FDriverConnectProc(
 }
 
 
-static RETCODE
+static SQLRETURN
 DriverConnectDialog (void *hwnd)
 {
   int iRet;
@@ -760,7 +760,7 @@ DriverConnectDialog (void *hwnd)
 #else
 
 /* Don't know how to, or cannot have connection dialog */
-static RETCODE
+static SQLRETURN
 DriverConnectDialog (void *hwnd)
 {
   return SQL_SUCCESS;
@@ -808,7 +808,7 @@ stpcpyw (TCHAR *dst, const TCHAR *src)
   return --dst;
 }
 
-static RETCODE SQL_API
+static SQLRETURN SQL_API
 virtodbc__SQLDriverConnect (
     SQLHDBC hdbc,
     HWND hwnd,
@@ -842,7 +842,7 @@ virtodbc__SQLDriverConnect (
   TCHAR *PWDCLEARW;
 #endif
   TCHAR *DATABASEW;
-  RETCODE rc;
+  SQLRETURN rc;
   CON(con, hdbc);
 
   mutex_enter(con->con_environment->env_mtx);
@@ -1079,7 +1079,7 @@ virtodbc__SQLDriverConnect (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLDriverConnect (
     SQLHDBC hdbc,
 #ifdef WIN32
@@ -1108,7 +1108,7 @@ SQLDriverConnect (
 }
 */
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLConnect (
 	SQLHDBC hdbc,
 	SQLTCHAR * szDSN,

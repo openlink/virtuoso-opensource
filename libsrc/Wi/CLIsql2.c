@@ -94,7 +94,7 @@ dk_set_t d_trx_set = 0;
 
 char __virtodbc_dbms_name[512];
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLBrowseConnect (
       SQLHDBC hdbc,
       SQLCHAR * szConnStrIn,
@@ -286,7 +286,7 @@ char *sql_columnsw_text_casemode_0 =
 "order by KEY_TABLE, 17\n";
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLColumns (
 	SQLHSTMT hstmt,
 	SQLCHAR * szTableQualifier,
@@ -303,7 +303,7 @@ virtodbc__SQLColumns (
   SQLLEN cbqual = cbTableQualifier, cbown = cbTableOwner, cbtab = cbTableName;
   SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
-  RETCODE rc;
+  SQLRETURN rc;
   UDWORD isODBC3 = stmt->stmt_connection->con_environment->env_odbc_version >= 3;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
 	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
@@ -383,7 +383,7 @@ virtodbc__SQLColumns (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLColumns (
 	SQLHSTMT hstmt,
 	SQLCHAR * wszTableQualifier,
@@ -396,7 +396,7 @@ SQLColumns (
 	SQLSMALLINT cbColumnName)
 {
   size_t len;
-  RETCODE rc;
+  SQLRETURN rc;
   STMT (stmt, hstmt);
   NDEFINE_INPUT_NARROW (TableQualifier);
   NDEFINE_INPUT_NARROW (TableOwner);
@@ -569,7 +569,7 @@ char *sql_tables_textw_casemode_2 =
 " KEY_MIGRATE_TO is NULL "
 "order by KEY_TABLE";
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLTables (
 	SQLHSTMT hstmt,
 	SQLCHAR * szTableQualifier,
@@ -583,7 +583,7 @@ virtodbc__SQLTables (
 {
   STMT (stmt, hstmt);
   SQLLEN cbqual = cbTableQualifier, cbown = cbTableOwner, cbtab = cbTableName;
-  RETCODE rc;
+  SQLRETURN rc;
   SQLLEN cbtype = cbTableType;
   /*int maxtyplen;*/
   SQLCHAR *percent = (SQLCHAR *) "%";
@@ -914,7 +914,7 @@ virtodbc__SQLTables (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLTables (
 	SQLHSTMT hstmt,
 	SQLCHAR * wszTableQualifier,
@@ -926,7 +926,7 @@ SQLTables (
 	SQLCHAR * wszTableType,
 	SQLSMALLINT cbTableType)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   STMT (stmt, hstmt);
   NDEFINE_INPUT_NARROW (TableQualifier);
@@ -954,7 +954,7 @@ SQLTables (
 }
 
 
-RETCODE SQL_API SQLDataSources (
+SQLRETURN SQL_API SQLDataSources (
 	SQLHENV henv,
 	SQLUSMALLINT fDirection,
 	SQLCHAR * szDSN,
@@ -968,7 +968,7 @@ RETCODE SQL_API SQLDataSources (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLDescribeParam (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT ipar,
@@ -1015,14 +1015,14 @@ SQLDescribeParam (
       "SQLDescribeParam: BOX_ELEMENTS (sc) <= 3 or no sc_params");
 }
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetConnectOption (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fOption,
 	SQLPOINTER pvParam)
 {
   CON(con, hdbc);
-  RETCODE rc;
+  SQLRETURN rc;
 
   switch (fOption)
     {
@@ -1044,7 +1044,7 @@ SQLGetConnectOption (
     }
 }
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetConnectOption (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fOption,
@@ -1053,7 +1053,7 @@ virtodbc__SQLGetConnectOption (
 	UNALIGNED SQLINTEGER * StringLengthPtr)
 {
   CON (con, hdbc);
-  RETCODE rc = SQL_SUCCESS;
+  SQLRETURN rc = SQL_SUCCESS;
 
   switch (fOption)
     {
@@ -1122,7 +1122,7 @@ virtodbc__SQLGetConnectOption (
   return rc;
 }
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLSetConnectOption (
       SQLHDBC hdbc,
       SQLUSMALLINT fOption,
@@ -1133,7 +1133,7 @@ SQLSetConnectOption (
     {
       case SQL_CURRENT_QUALIFIER:
 	  {
-	    RETCODE rc;
+	    SQLRETURN rc;
 	    SQLLEN StringLength = SQL_NTS;
 	    NDEFINE_INPUT_NONCHAR_NARROW (vParam, StringLength);
 
@@ -1149,7 +1149,7 @@ SQLSetConnectOption (
     }
 }
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLSetConnectOption (
       SQLHDBC hdbc,
       SQLUSMALLINT fOption,
@@ -1181,7 +1181,7 @@ virtodbc__SQLSetConnectOption (
 	  if (con->con_qualifier && vParam && strcmp ((const char *) con->con_qualifier, (char *)vParam))
 	    {
 	      SQLHSTMT stmt;
-	      RETCODE rc = virtodbc__SQLAllocStmt (hdbc, &stmt);
+	      SQLRETURN rc = virtodbc__SQLAllocStmt (hdbc, &stmt);
 	      if (SQL_SUCCESS != rc)
 		return rc;
 	      rc = virtodbc__SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, 0, 0, (char *)vParam, SQL_NTS, NULL);
@@ -1204,7 +1204,7 @@ virtodbc__SQLSetConnectOption (
       if (CON_CONNECTED (con))
 	{
 	  SQLHSTMT stmt;
-	  RETCODE rc = virtodbc__SQLAllocStmt(hdbc, &stmt);
+	  SQLRETURN rc = virtodbc__SQLAllocStmt(hdbc, &stmt);
 	  if (SQL_SUCCESS != rc)
 	    return rc;
 	  con->con_defs.cdef_no_char_c_escape = ((int)vParam) != 0;
@@ -1219,7 +1219,7 @@ virtodbc__SQLSetConnectOption (
       if (CON_CONNECTED (con))
 	{
 	  SQLHSTMT stmt;
-	  RETCODE rc = virtodbc__SQLAllocStmt(hdbc, &stmt);
+	  SQLRETURN rc = virtodbc__SQLAllocStmt(hdbc, &stmt);
 	  wchar_t charset_table[256];
 	  char szCharsetName[50];
 	  SQLLEN nCharsetLen;
@@ -1297,7 +1297,7 @@ virtodbc__SQLSetConnectOption (
 #else
 	  virt_rcon_t* vbranch = (virt_rcon_t*) vParam;
 	  SQLHSTMT stmt;
-	  RETCODE rc;
+	  SQLRETURN rc;
 	  if (!vbranch || !vbranch->vtr_trx)
 	    {
 	      return SQL_ERROR;
@@ -1328,7 +1328,7 @@ virtodbc__SQLSetConnectOption (
 	  d_trx_info_t* trx_i = 0;
 	  int fail_pos = -1;
 	  int i;
-	  RETCODE rc = SQL_SUCCESS;
+	  SQLRETURN rc = SQL_SUCCESS;
 	  if (SQL_TP_ABORT != op)
 	    op = SQL_TP_PREPARE;
 	  DO_SET (d_trx_info_t* , info, &d_trx_set)
@@ -1404,7 +1404,7 @@ again:
 	return SQL_ERROR;
       if (CON_CONNECTED (con))
 	{
-	  RETCODE rc;
+	  SQLRETURN rc;
 	  if (!vParam)
 	    {
 	      caddr_t* res;
@@ -1600,7 +1600,7 @@ nc:
   return SQL_ERROR;
 }
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetStmtOption (
       SQLHSTMT hstmt,
       SQLUSMALLINT fOption,
@@ -1615,7 +1615,7 @@ SQLGetStmtOption (
 #endif
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetStmtOption (
       SQLHSTMT hstmt,
       SQLUSMALLINT fOption,
@@ -1718,7 +1718,7 @@ virtodbc__SQLGetStmtOption (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLSetStmtOption (
       SQLHSTMT hstmt,
       SQLUSMALLINT fOption,
@@ -1727,7 +1727,7 @@ SQLSetStmtOption (
 	return virtodbc__SQLSetStmtOption(hstmt, fOption, vParam);
 }
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLSetStmtOption (
       SQLHSTMT hstmt,
       SQLUSMALLINT fOption,
@@ -1813,7 +1813,7 @@ SQLSMALLINT functions3[SQL_API_ODBC3_ALL_FUNCTIONS_SIZE];
 #define F(n) functions[n]=1;
 #endif
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetFunctions (
       SQLHDBC hdbc,
       SQLUSMALLINT fFunction,
@@ -1941,7 +1941,7 @@ SQLGetFunctions (
 #define KUBL_ARBITRARY_MAX_VALUE1 0	/* We don't know. */
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetInfo (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fInfoType,
@@ -1952,7 +1952,7 @@ virtodbc__SQLGetInfo (
   CON (dbc, hdbc);
   char *strres = NULL;
   SQLLEN intres = 0;
-  RETCODE rc = SQL_SUCCESS;
+  SQLRETURN rc = SQL_SUCCESS;
   SQLUSMALLINT shortres = 0;
   int is_short = 0;
 
@@ -3247,7 +3247,7 @@ ret:
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetInfo (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fInfoType,
@@ -3297,7 +3297,7 @@ SQLGetInfo (
     case SQL_DESCRIBE_PARAMETER:
     case SQL_XOPEN_CLI_YEAR:
 	  {
-	    RETCODE rc;
+	    SQLRETURN rc;
 	    NDEFINE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, pcbInfoValue, con, SQLSMALLINT);
 
 	    NMAKE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, con);
@@ -3315,7 +3315,7 @@ SQLGetInfo (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetTypeInfo (
 	SQLHSTMT hstmt,
 	SQLSMALLINT fSqlType)
@@ -3323,14 +3323,14 @@ SQLGetTypeInfo (
 	return virtodbc__SQLGetTypeInfo(hstmt, fSqlType);
 }
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetTypeInfo (
 	SQLHSTMT hstmt,
 	SQLSMALLINT fSqlType)
 {
   STMT(stmt, hstmt);
   SQLLEN ii = fSqlType, iil = 4;
-  RETCODE rc;
+  SQLRETURN rc;
 
   virtodbc__SQLSetParam (hstmt, 1, SQL_C_LONG, SQL_INTEGER, 0, 0, &ii, &iil);
 
@@ -3532,7 +3532,7 @@ char *sql_special_columnsw2_casemode_2 =
       "order by \\TABLE, \\COL_ID";
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLSpecialColumns (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT fColType,
@@ -3546,7 +3546,7 @@ virtodbc__SQLSpecialColumns (
 	SQLUSMALLINT fNullable) /* SQL_NO_NULLS or SQL_NULLABLE. <- Ignored ^ */
 {
   STMT (stmt, hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   SQLLEN cbqual = cbTableQualifier, cbown = cbTableOwner, cbtab = cbTableName;
@@ -3651,7 +3651,7 @@ virtodbc__SQLSpecialColumns (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLSpecialColumns (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT fColType,
@@ -3664,7 +3664,7 @@ SQLSpecialColumns (
 	SQLUSMALLINT fScope, /* SQL_SCOPE_CURROW, _TRANSACTION or _SESSION */
 	SQLUSMALLINT fNullable) /* SQL_NO_NULLS or SQL_NULLABLE. <- Ignored ^ */
 {
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   STMT (stmt, hstmt);
   NDEFINE_INPUT_NARROW (TableQualifier);
@@ -4038,7 +4038,7 @@ char *sql_statistics_textw_casemode_2 =
 "  and SYS_KEYS.KEY_MIGRATE_TO is NULL\n"
 "order by 7,1,2,3,6,8";
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLStatistics (
 	SQLHSTMT hstmt,
 	SQLCHAR * szTableQualifier,
@@ -4051,7 +4051,7 @@ virtodbc__SQLStatistics (
 	SQLUSMALLINT fAccuracy) /* SQL_ENSURE or SQL_QUICK, currently ignored. */
 {
   STMT (stmt, hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   SQLSMALLINT uniques_only = (fUnique == SQL_INDEX_UNIQUE);	/* Either 1 or 0 */
@@ -4125,7 +4125,7 @@ virtodbc__SQLStatistics (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLStatistics (
 	SQLHSTMT hstmt,
 	SQLCHAR * wszTableQualifier,
@@ -4137,7 +4137,7 @@ SQLStatistics (
 	SQLUSMALLINT fUnique,/* Type of index SQL_INDEX_UNIQUE or SQL_INDEX_ALL */
 	SQLUSMALLINT fAccuracy) /* SQL_ENSURE or SQL_QUICK, currently ignored. */
 {
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   STMT (stmt, hstmt);
   NDEFINE_INPUT_NARROW (TableQualifier);
@@ -4162,7 +4162,7 @@ SQLStatistics (
 }
 
 #if 0
-RETCODE SQL_API SQLDrivers (
+SQLRETURN SQL_API SQLDrivers (
 	SQLHENV henv,
 	SQLUSMALLINT fDirection,
 	SQLCHAR * szDriverDesc,
@@ -4177,7 +4177,7 @@ RETCODE SQL_API SQLDrivers (
 #endif
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLExtendedFetch (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT fFetchType,
@@ -4294,7 +4294,7 @@ char * fk_textw_casemode_2 =
 
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLForeignKeys (
 	SQLHSTMT hstmt,
 	SQLCHAR * szPkTableQualifier,
@@ -4313,7 +4313,7 @@ virtodbc__SQLForeignKeys (
   STMT (stmt, hstmt);
   char * qual = (char *) stmt->stmt_connection->con_qualifier;
   SQLLEN l1, l2, l3, l4, l5, l6;
-  RETCODE rc;
+  SQLRETURN rc;
   char _szPkTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
 	  _szPkTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
 	_szPkTableName[KUBL_IDENTIFIER_MAX_LENGTH],
@@ -4357,7 +4357,7 @@ virtodbc__SQLForeignKeys (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLForeignKeys (
 	SQLHSTMT hstmt,
 	SQLCHAR * wszPkTableQualifier,
@@ -4374,7 +4374,7 @@ SQLForeignKeys (
 	SQLSMALLINT cbFkTableName)
 {
   size_t len;
-  RETCODE rc;
+  SQLRETURN rc;
   STMT (stmt, hstmt);
   NDEFINE_INPUT_NARROW (PkTableQualifier);
   NDEFINE_INPUT_NARROW (PkTableOwner);
@@ -4410,7 +4410,7 @@ SQLForeignKeys (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLMoreResults (
 	SQLHSTMT hstmt)
 {
@@ -4433,7 +4433,7 @@ SQLMoreResults (
   stmt->stmt_cols = NULL;
   while (!stmt->stmt_at_end)
     {
-      RETCODE ret = virtodbc__SQLFetch (hstmt, 0);
+      SQLRETURN ret = virtodbc__SQLFetch (hstmt, 0);
       if (ret == SQL_ERROR)
 	{
 	  stmt->stmt_cols = saved_cols;
@@ -4455,7 +4455,7 @@ SQLMoreResults (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLNativeSql (
     SQLHDBC hdbc,
     SQLCHAR * szSqlStrIn,
@@ -4491,7 +4491,7 @@ virtodbc__SQLNativeSql (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLNativeSql (
 	SQLHDBC hdbc,
 	SQLCHAR * wszSqlStrIn,
@@ -4501,7 +4501,7 @@ SQLNativeSql (
 	SQLINTEGER * pcbSqlStr)
 {
   CON (con, hdbc);
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   NDEFINE_INPUT_NARROW (SqlStrIn);
   NDEFINE_OUTPUT_CHAR_NARROW (SqlStr, con, SQLINTEGER);
@@ -4518,7 +4518,7 @@ SQLNativeSql (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLNumParams (
 	SQLHSTMT hstmt,
 	SQLSMALLINT * pcpar)
@@ -4680,7 +4680,7 @@ stmt_dae_value (cli_stmt_t * stmt)
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLParamData (
 	SQLHSTMT hstmt,
 	SQLPOINTER * prgbValue)
@@ -4688,7 +4688,7 @@ SQLParamData (
   /* when passing blobs with SQLPutData returns the number of the
      next blob to send or if all have been sent, the return code of the
      statement */
-  RETCODE rc;
+  SQLRETURN rc;
   STMT (stmt, hstmt);
   dk_session_t *ses = stmt->stmt_connection->con_session;
   SDWORD last = stmt->stmt_last_asked_param;
@@ -4774,7 +4774,7 @@ SQLParamData (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLPutData (
 	SQLHSTMT hstmt,
 	SQLPOINTER rgbValue,
@@ -4783,7 +4783,7 @@ SQLPutData (
   /* Send stuff. If called in the right place the server will be waiting
      for a string on the session */
   STMT (stmt, hstmt);
-  RETCODE rc = SQL_SUCCESS;
+  SQLRETURN rc = SQL_SUCCESS;
   dk_session_t *ses = stmt->stmt_connection->con_session;
   volatile SQLLEN newValue = (cbValue == SQL_NTS ?
       (stmt->stmt_next_putdata_dtp == DV_LONG_STRING ?
@@ -4985,7 +4985,7 @@ SQLPutData (
  */
 
 
-RETCODE
+SQLRETURN
 sql_get_bookmark (cli_stmt_t * stmt, caddr_t * row,
 		  SQLSMALLINT fCType,
 		  SQLPOINTER rgbValue,
@@ -5007,7 +5007,7 @@ sql_get_bookmark (cli_stmt_t * stmt, caddr_t * row,
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetData (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT icol,
@@ -5397,7 +5397,7 @@ virtodbc__SQLGetData (
     }
 }
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLGetData (
     SQLHSTMT hstmt,
     SQLUSMALLINT icol,
@@ -5444,7 +5444,7 @@ SQLGetData (
    into its pcbValue pointer argument.
  */
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLParamOptions (
 	SQLHSTMT hstmt,
 	SQLULEN crow,
@@ -5589,7 +5589,7 @@ char *sql_pk_textw_casemode_2 =
 "  and DB.DBA.SYS_COLS.\\COLUMN <> '_IDN' "
 "order by v1.KEY_TABLE, kp.KP_NTH";
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLPrimaryKeys (
 	SQLHSTMT hstmt,
 	SQLCHAR * szTableQualifier,
@@ -5600,7 +5600,7 @@ virtodbc__SQLPrimaryKeys (
 	SQLSMALLINT cbTableName)
 {
   STMT (stmt, hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
 /*  SQLCHAR *percent = (SQLCHAR *) "%"; */
   SQLLEN cbqual, cbown, cbname;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
@@ -5622,7 +5622,7 @@ virtodbc__SQLPrimaryKeys (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLPrimaryKeys (
 	SQLHSTMT hstmt,
 	SQLCHAR * wszTableQualifier,
@@ -5633,7 +5633,7 @@ SQLPrimaryKeys (
 	SQLSMALLINT cbTableName)
 {
   STMT (stmt, hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
 
   NDEFINE_INPUT_NARROW (TableQualifier);
@@ -5657,7 +5657,7 @@ SQLPrimaryKeys (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLProcedureColumns (
 	SQLHSTMT hstmt,
 	SQLCHAR * szProcQualifier,
@@ -5676,7 +5676,7 @@ virtodbc__SQLProcedureColumns (
 
 
   STMT (stmt, hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   SQLLEN cbqual = cbProcQualifier,
     cbown = cbProcOwner,
     cbname = cbProcName,
@@ -5714,7 +5714,7 @@ virtodbc__SQLProcedureColumns (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLProcedureColumns (
 	SQLHSTMT hstmt,
 	SQLCHAR * wszProcQualifier,
@@ -5727,7 +5727,7 @@ SQLProcedureColumns (
 	SQLSMALLINT cbColumnName)
 {
   STMT (stmt, hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
 
   NDEFINE_INPUT_NARROW (ProcQualifier);
@@ -5851,7 +5851,7 @@ char *sql_proceduresw_casemode_2 =
 "  and charset_recode (upper(charset_recode (name_part(\\P_NAME,0), 'UTF-8', '_WIDE_')), '_WIDE_', 'UTF-8') like charset_recode (upper(charset_recode (?, 'UTF-8', '_WIDE_')), '_WIDE_', 'UTF-8')"
 " order by \\P_NAME";
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLProcedures (
 	SQLHSTMT hstmt,
 	SQLCHAR * szProcQualifier,
@@ -5865,7 +5865,7 @@ virtodbc__SQLProcedures (
   SQLLEN cbqual = cbProcQualifier;
   SQLLEN cbowner = cbProcOwner;
   SQLLEN cbname = cbProcName;
-  RETCODE rc;
+  SQLRETURN rc;
   SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   char _szProcQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
@@ -5939,7 +5939,7 @@ virtodbc__SQLProcedures (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLProcedures (
 	SQLHSTMT hstmt,
 	SQLCHAR * wszProcQualifier,
@@ -5950,7 +5950,7 @@ SQLProcedures (
 	SQLSMALLINT cbProcName)
 {
   STMT (stmt, hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
 
   NDEFINE_INPUT_NARROW (ProcQualifier);
@@ -5974,7 +5974,7 @@ SQLProcedures (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLSetScrollOptions (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT fConcurrency,
@@ -5996,7 +5996,7 @@ SQLSetScrollOptions (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLTablePrivileges (
 	SQLHSTMT hstmt,
 	SQLCHAR * szTableQualifier,
@@ -6007,7 +6007,7 @@ virtodbc__SQLTablePrivileges (
 	SQLSMALLINT cbTableName)
 {
   STMT (stmt, hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   SQLLEN cbqual = cbTableQualifier;
   SQLLEN cbowner = cbTableOwner;
   SQLLEN cbname = cbTableName;
@@ -6069,7 +6069,7 @@ virtodbc__SQLTablePrivileges (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLTablePrivileges (
 	SQLHSTMT hstmt,
 	SQLCHAR * wszTableQualifier,
@@ -6079,7 +6079,7 @@ SQLTablePrivileges (
 	SQLCHAR * wszTableName,
 	SQLSMALLINT cbTableName)
 {
-  RETCODE rc;
+  SQLRETURN rc;
   size_t len;
   STMT (stmt, hstmt);
   NDEFINE_INPUT_NARROW (TableQualifier);
@@ -6103,7 +6103,7 @@ SQLTablePrivileges (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLColumnPrivileges (
 	SQLHSTMT hstmt,
 	SQLCHAR * szTableQualifier,
@@ -6116,7 +6116,7 @@ virtodbc__SQLColumnPrivileges (
 	SQLSMALLINT cbColumnName)
 {
   STMT (stmt, hstmt);
-  RETCODE rc;
+  SQLRETURN rc;
   SQLLEN cbqual = cbTableQualifier;
   SQLLEN cbowner = cbTableOwner;
   SQLLEN cbname = cbTableName;
@@ -6198,7 +6198,7 @@ virtodbc__SQLColumnPrivileges (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLColumnPrivileges (
 	SQLHSTMT hstmt,
 	SQLCHAR * wszTableQualifier,
@@ -6211,7 +6211,7 @@ SQLColumnPrivileges (
 	SQLSMALLINT cbColumnName)
 {
   size_t len;
-  RETCODE rc;
+  SQLRETURN rc;
   STMT (stmt, hstmt);
   NDEFINE_INPUT_NARROW (TableQualifier);
   NDEFINE_INPUT_NARROW (TableOwner);
@@ -6239,7 +6239,7 @@ SQLColumnPrivileges (
 
 #if 0
 /* Navigation Extensions prototypes */
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLBindKey (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT iKeyPart,
@@ -6254,7 +6254,7 @@ SQLBindKey (
 }
 
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 SQLOpenTable (
 	SQLHSTMT hstmt,
 	SQLCHAR * szQualifiedTable,

@@ -352,7 +352,7 @@ struct stmt_descriptor_s {
 # define VERIFY_INPROCESS_CLIENT(con)			\
   do							\
     {							\
-      RETCODE rc = verify_inprocess_client (con);	\
+      SQLRETURN rc = verify_inprocess_client (con);	\
       if (rc != SQL_SUCCESS)				\
         return rc;					\
     }							\
@@ -379,7 +379,7 @@ int internal_sql_connect (
 	SQLSMALLINT cbAuthStr);
 
 #ifdef INPROCESS_CLIENT
-RETCODE verify_inprocess_client (cli_connection_t *con);
+SQLRETURN verify_inprocess_client (cli_connection_t *con);
 #endif
 
 /* CLIuti.c */
@@ -395,9 +395,9 @@ sql_error_rec_t * cli_make_error (char * state, char *virt_state, char * msg, in
 void  err_queue_append (sql_error_rec_t ** q1, sql_error_rec_t ** q2);
 void set_success_info (sql_error_t * err, char *state, char *virt_state, char *message, int col);
 void set_data_truncated_success_info (cli_stmt_t *stmt, char *virt_state, SQLUSMALLINT icol);
-RETCODE stmt_seq_error (cli_stmt_t *stmt);
+SQLRETURN stmt_seq_error (cli_stmt_t *stmt);
 void stmt_set_proc_return (cli_stmt_t *stmt, caddr_t *res);
-RETCODE stmt_process_result (cli_stmt_t *stmt, int needs_evl);
+SQLRETURN stmt_process_result (cli_stmt_t *stmt, int needs_evl);
 #if 0
 void stmt_check_at_end (cli_stmt_t * stmt);
 #endif
@@ -405,7 +405,7 @@ cli_stmt_t *con_find_cursor (cli_connection_t *con, caddr_t id);
 caddr_t con_make_current_ofs (cli_connection_t *con, cli_stmt_t *stmt);
 void string_to_tm (struct tm *tm, int32 *usec_ret, char *tmp, SQLSMALLINT sql_type);
 caddr_t *stmt_collect_parms (cli_stmt_t *stmt);
-RETCODE str_box_to_buffer(char *box, char *buffer, int buffer_length, void *string_length_ptr, int length_is_long, sql_error_t *error);
+SQLRETURN str_box_to_buffer(char *box, char *buffer, int buffer_length, void *string_length_ptr, int length_is_long, sql_error_t *error);
 void str_box_to_place (char *box, char *place, int max, int *sz);
 int dv_to_sqlc_default (caddr_t xx);
 int vector_to_text (caddr_t vec, size_t box_len, dtp_t vectype, char *dest, size_t dest_size);
@@ -440,82 +440,82 @@ extern int isdts_mode;
 /*
  *  Added prototypes for internal functions
  */
-RETCODE SQL_API virtodbc__SQLCancel (SQLHSTMT hstmt);
+SQLRETURN SQL_API virtodbc__SQLCancel (SQLHSTMT hstmt);
 
-RETCODE SQL_API virtodbc__SQLDescribeCol (SQLHSTMT hstmt, SQLUSMALLINT icol,
+SQLRETURN SQL_API virtodbc__SQLDescribeCol (SQLHSTMT hstmt, SQLUSMALLINT icol,
     SQLCHAR * szColName, SQLSMALLINT cbColNameMax, SQLSMALLINT * pcbColName,
     SQLSMALLINT * pfSqlType, SQLULEN * pcbColDef, SQLSMALLINT * pibScale,
     SQLSMALLINT * pfNullable);
 
-RETCODE SQL_API virtodbc__SQLExecDirect (SQLHSTMT hstmt, SQLCHAR * szSqlStr,
+SQLRETURN SQL_API virtodbc__SQLExecDirect (SQLHSTMT hstmt, SQLCHAR * szSqlStr,
     SDWORD cbSqlStr);
 
-RETCODE SQL_API virtodbc__SQLFetch (SQLHSTMT hstmt, int preserve_rowset_at_end);
+SQLRETURN SQL_API virtodbc__SQLFetch (SQLHSTMT hstmt, int preserve_rowset_at_end);
 
-RETCODE SQL_API virtodbc__SQLSetParam (SQLHSTMT hstmt, SQLUSMALLINT ipar, SQLSMALLINT fCType,
+SQLRETURN SQL_API virtodbc__SQLSetParam (SQLHSTMT hstmt, SQLUSMALLINT ipar, SQLSMALLINT fCType,
     SQLSMALLINT fSqlType, SQLULEN cbColDef, SQLSMALLINT ibScale, SQLPOINTER rgbValue,
     SQLLEN * pcbValue);
 
-RETCODE SQL_API virtodbc__SQLGetData (SQLHSTMT hstmt, SQLUSMALLINT icol, SQLSMALLINT fCType,
+SQLRETURN SQL_API virtodbc__SQLGetData (SQLHSTMT hstmt, SQLUSMALLINT icol, SQLSMALLINT fCType,
     SQLPOINTER rgbValue, SQLLEN cbValueMax, SQLLEN * pcbValue);
 
-RETCODE SQL_API virtodbc__SQLAllocEnv (SQLHENV * phenv);
+SQLRETURN SQL_API virtodbc__SQLAllocEnv (SQLHENV * phenv);
 
-RETCODE SQL_API virtodbc__SQLAllocConnect (SQLHENV henv, SQLHDBC * phdbc);
+SQLRETURN SQL_API virtodbc__SQLAllocConnect (SQLHENV henv, SQLHDBC * phdbc);
 
-RETCODE SQL_API virtodbc__SQLAllocStmt (SQLHDBC hdbc, SQLHSTMT * phstmt);
+SQLRETURN SQL_API virtodbc__SQLAllocStmt (SQLHDBC hdbc, SQLHSTMT * phstmt);
 
-RETCODE SQL_API virtodbc__SQLFreeEnv (SQLHENV henv);
+SQLRETURN SQL_API virtodbc__SQLFreeEnv (SQLHENV henv);
 
-RETCODE SQL_API virtodbc__SQLFreeConnect (SQLHDBC hdbc);
+SQLRETURN SQL_API virtodbc__SQLFreeConnect (SQLHDBC hdbc);
 
-RETCODE SQL_API virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption);
+SQLRETURN SQL_API virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption);
 
-RETCODE SQL_API virtodbc__SQLError (SQLHENV henv, SQLHDBC hdbc, SQLHSTMT hstmt,
+SQLRETURN SQL_API virtodbc__SQLError (SQLHENV henv, SQLHDBC hdbc, SQLHSTMT hstmt,
 	SQLCHAR * szSqlState, SQLINTEGER * pfNativeError, SQLCHAR * szErrorMsg,
 	SQLSMALLINT cbErrorMsgMax, SQLSMALLINT * pcbErrorMsg, int bClearState);
 
-RETCODE SQL_API virtodbc__SQLGetStmtOption (SQLHSTMT hstmt, SQLUSMALLINT fOption, SQLPOINTER pvParam);
+SQLRETURN SQL_API virtodbc__SQLGetStmtOption (SQLHSTMT hstmt, SQLUSMALLINT fOption, SQLPOINTER pvParam);
 
-RETCODE SQL_API virtodbc__SQLSetStmtOption (SQLHSTMT hstmt, SQLUSMALLINT fOption, SQLULEN vParam);
+SQLRETURN SQL_API virtodbc__SQLSetStmtOption (SQLHSTMT hstmt, SQLUSMALLINT fOption, SQLULEN vParam);
 
-RETCODE SQL_API virtodbc__SQLSetConnectOption (SQLHDBC hdbc, SQLUSMALLINT fOption, SQLULEN vParam);
+SQLRETURN SQL_API virtodbc__SQLSetConnectOption (SQLHDBC hdbc, SQLUSMALLINT fOption, SQLULEN vParam);
 
-RETCODE SQL_API virtodbc__SQLGetConnectOption (SQLHDBC hdbc, SQLUSMALLINT fOption, SQLPOINTER pvParam, SQLINTEGER StringLength, UNALIGNED SQLINTEGER * StringLengthPtr);
+SQLRETURN SQL_API virtodbc__SQLGetConnectOption (SQLHDBC hdbc, SQLUSMALLINT fOption, SQLPOINTER pvParam, SQLINTEGER StringLength, UNALIGNED SQLINTEGER * StringLengthPtr);
 
-RETCODE SQL_API virtodbc__SQLGetTypeInfo (SQLHSTMT hstmt, SQLSMALLINT fSqlType);
+SQLRETURN SQL_API virtodbc__SQLGetTypeInfo (SQLHSTMT hstmt, SQLSMALLINT fSqlType);
 
-RETCODE SQL_API virtodbc__SQLAllocHandle (SQLSMALLINT handleType, SQLHANDLE inputHandle, SQLHANDLE * outputHandlePtr);
+SQLRETURN SQL_API virtodbc__SQLAllocHandle (SQLSMALLINT handleType, SQLHANDLE inputHandle, SQLHANDLE * outputHandlePtr);
 
-RETCODE SQL_API virtodbc__SQLFreeHandle (SQLSMALLINT handleType, SQLHANDLE handle);
+SQLRETURN SQL_API virtodbc__SQLFreeHandle (SQLSMALLINT handleType, SQLHANDLE handle);
 
-RETCODE SQL_API virtodbc__SQLExtendedFetch ( SQLHSTMT hstmt, SQLUSMALLINT fFetchType, SQLLEN irow, SQLULEN * pcrow,
+SQLRETURN SQL_API virtodbc__SQLExtendedFetch ( SQLHSTMT hstmt, SQLUSMALLINT fFetchType, SQLLEN irow, SQLULEN * pcrow,
 				    SQLUSMALLINT * rgfRowStatus, SQLLEN bookmark_offset);
 
-RETCODE SQL_API virtodbc__SQLTransact ( SQLHENV henv, SQLHDBC hdbc, SQLUSMALLINT fType);
+SQLRETURN SQL_API virtodbc__SQLTransact ( SQLHENV henv, SQLHDBC hdbc, SQLUSMALLINT fType);
 
-RETCODE SQL_API virtodbc__SQLPrepare (SQLHSTMT hstmt,SQLCHAR * szSqlStr, SQLINTEGER cbSqlStr);
+SQLRETURN SQL_API virtodbc__SQLPrepare (SQLHSTMT hstmt,SQLCHAR * szSqlStr, SQLINTEGER cbSqlStr);
 
 SQLRETURN SQL_API virtodbc__SQLSetPos ( SQLHSTMT hstmt, SQLSETPOSIROW irow, SQLUSMALLINT fOption, SQLUSMALLINT fLock);
 
-RETCODE SQL_API virtodbc__SQLColAttributes (SQLHSTMT hstmt,SQLUSMALLINT icol,SQLUSMALLINT fDescType, SQLPOINTER rgbDesc,SQLSMALLINT cbDescMax,SQLSMALLINT * pcbDesc, SQLLEN * pfDesc);
+SQLRETURN SQL_API virtodbc__SQLColAttributes (SQLHSTMT hstmt,SQLUSMALLINT icol,SQLUSMALLINT fDescType, SQLPOINTER rgbDesc,SQLSMALLINT cbDescMax,SQLSMALLINT * pcbDesc, SQLLEN * pfDesc);
 
-RETCODE SQL_API virtodbc__SQLNumResultCols (SQLHSTMT hstmt, SQLSMALLINT * pccol);
+SQLRETURN SQL_API virtodbc__SQLNumResultCols (SQLHSTMT hstmt, SQLSMALLINT * pccol);
 
-RETCODE SQL_API virtodbc__SQLBindParameter ( SQLHSTMT hstmt, SQLUSMALLINT ipar, SQLSMALLINT fParamType, SQLSMALLINT fCType,
+SQLRETURN SQL_API virtodbc__SQLBindParameter ( SQLHSTMT hstmt, SQLUSMALLINT ipar, SQLSMALLINT fParamType, SQLSMALLINT fCType,
     SQLSMALLINT fSqlType, SQLULEN cbColDef, SQLSMALLINT ibScale, SQLPOINTER rgbValue, SQLLEN cbValueMax, SQLLEN * pcbValue);
 
 
-RETCODE SQL_API virtodbc__SQLSpecialColumns ( SQLHSTMT hstmt, SQLUSMALLINT fColType, SQLCHAR * szTableQualifier,
+SQLRETURN SQL_API virtodbc__SQLSpecialColumns ( SQLHSTMT hstmt, SQLUSMALLINT fColType, SQLCHAR * szTableQualifier,
 	SQLSMALLINT cbTableQualifier, SQLCHAR * szTableOwner, SQLSMALLINT cbTableOwner, SQLCHAR * szTableName,
 	SQLSMALLINT cbTableName, SQLUSMALLINT fScope, SQLUSMALLINT fNullable);
 
-RETCODE SQL_API virtodbc__SQLStatistics ( SQLHSTMT hstmt, SQLCHAR * szTableQualifier, SQLSMALLINT cbTableQualifier,
+SQLRETURN SQL_API virtodbc__SQLStatistics ( SQLHSTMT hstmt, SQLCHAR * szTableQualifier, SQLSMALLINT cbTableQualifier,
 	SQLCHAR * szTableOwner, SQLSMALLINT cbTableOwner, SQLCHAR * szTableName, SQLSMALLINT cbTableName,
 	SQLUSMALLINT fUnique, SQLUSMALLINT fAccuracy);
 caddr_t stmt_parm_to_dv (parm_binding_t * pb, int nth, long bhid, cli_stmt_t *stmt);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLColumnPrivileges (
 	SQLHSTMT hstmt,
 	SQLCHAR * szTableQualifier,
@@ -527,7 +527,7 @@ virtodbc__SQLColumnPrivileges (
 	SQLCHAR * szColumnName,
 	SQLSMALLINT cbColumnName);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLColumns (
 	SQLHSTMT hstmt,
 	SQLCHAR * szTableQualifier,
@@ -539,7 +539,7 @@ virtodbc__SQLColumns (
 	SQLCHAR * szColumnName,
 	SQLSMALLINT cbColumnName);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLForeignKeys (
 	SQLHSTMT hstmt,
 	SQLCHAR * szPkTableQualifier,
@@ -555,14 +555,14 @@ virtodbc__SQLForeignKeys (
 	SQLCHAR * szFkTableName,
 	SQLSMALLINT cbFkTableName);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetCursorName (
 	SQLHSTMT hstmt,
 	SQLCHAR * szCursor,
 	SQLSMALLINT cbCursorMax,
 	SQLSMALLINT * pcbCursor);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetInfo (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fInfoType,
@@ -570,7 +570,7 @@ virtodbc__SQLGetInfo (
 	SQLSMALLINT cbInfoValueMax,
 	SQLSMALLINT * pcbInfoValue);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLNativeSql (
 	SQLHDBC hdbc,
 	SQLCHAR * szSqlStrIn,
@@ -579,7 +579,7 @@ virtodbc__SQLNativeSql (
 	SQLINTEGER cbSqlStrMax,
 	SQLINTEGER * pcbSqlStr);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLPrimaryKeys (
 	SQLHSTMT hstmt,
 	SQLCHAR * szTableQualifier,
@@ -589,7 +589,7 @@ virtodbc__SQLPrimaryKeys (
 	SQLCHAR * szTableName,
 	SQLSMALLINT cbTableName);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLProcedureColumns (
 	SQLHSTMT hstmt,
 	SQLCHAR * szProcQualifier,
@@ -601,7 +601,7 @@ virtodbc__SQLProcedureColumns (
 	SQLCHAR * szColumnName,
 	SQLSMALLINT cbColumnName);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLProcedures (
 	SQLHSTMT hstmt,
 	SQLCHAR * szProcQualifier,
@@ -611,13 +611,13 @@ virtodbc__SQLProcedures (
 	SQLCHAR * szProcName,
 	SQLSMALLINT cbProcName);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLSetCursorName (
       SQLHSTMT hstmt,
       SQLCHAR * szCursor,
       SQLSMALLINT cbCursor);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLTablePrivileges (
 	SQLHSTMT hstmt,
 	SQLCHAR * szTableQualifier,
@@ -627,7 +627,7 @@ virtodbc__SQLTablePrivileges (
 	SQLCHAR * szTableName,
 	SQLSMALLINT cbTableName);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLTables (
 	SQLHSTMT hstmt,
 	SQLCHAR * szTableQualifier,
@@ -647,14 +647,14 @@ int sql_fetch_scrollable (cli_stmt_t * stmt);
 
 
 #if ODBCVER >= 0x0300
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
     SQLINTEGER Attribute,
     SQLPOINTER ValuePtr,
     SQLINTEGER StringLength,
     UNALIGNED SQLINTEGER * StringLengthPtr);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetDescRec (SQLHDESC descriptorHandle,
     SQLSMALLINT RecNumber,
     SQLCHAR * Name,
@@ -667,7 +667,7 @@ virtodbc__SQLGetDescRec (SQLHDESC descriptorHandle,
     SQLSMALLINT * ScalePtr,
     SQLSMALLINT * NullablePtr);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
     SQLSMALLINT RecNumber,
     SQLSMALLINT FieldIdentifier,
@@ -675,20 +675,20 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
     SQLINTEGER BufferLength,
     SQLINTEGER * StringLengthPtr);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetStmtAttr (SQLHSTMT statementHandle,
     SQLINTEGER Attribute,
     SQLPOINTER ValuePtr,
     SQLINTEGER BufferLength,
     SQLINTEGER * StringLengthPtr);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
     SQLINTEGER Attribute,
     SQLPOINTER ValuePtr,
     SQLINTEGER StringLength);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
     SQLHANDLE Handle,
     SQLSMALLINT nRecNumber,
@@ -697,7 +697,7 @@ virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
     SQLSMALLINT nBufferLength,
     SQLSMALLINT * pnStringLengthPtr);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLGetDiagRec (SQLSMALLINT HandleType,
     SQLHANDLE Handle,
     SQLSMALLINT RecNumber,
@@ -707,20 +707,20 @@ virtodbc__SQLGetDiagRec (SQLSMALLINT HandleType,
     SQLSMALLINT BufferLength,
     SQLSMALLINT * TextLengthPtr);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLSetDescField (SQLHDESC descriptorHandle,
     SQLSMALLINT RecNumber,
     SQLSMALLINT FieldIdentifier,
     SQLPOINTER ValuePtr,
     SQLINTEGER BufferLength);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
     SQLINTEGER Attribute,
     SQLPOINTER ValuePtr,
     SQLINTEGER StringLength);
 
-RETCODE SQL_API
+SQLRETURN SQL_API
 virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
     SQLUSMALLINT ColumnNumber,
     SQLUSMALLINT FieldIdentifier,

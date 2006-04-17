@@ -770,7 +770,7 @@ DoSQLError (SQLHDBC hdbc, SQLHSTMT hstmt)
 
   SQLINTEGER fNativeError = 0;
   SQLSMALLINT cbErrorMsg = MSG_BUF_SIZE;
-  RETCODE rc;
+  SQLRETURN rc;
 
   rc = SQLError (henv,
       hdbc,

@@ -536,7 +536,7 @@ set_data_truncated_success_info (cli_stmt_t *stmt, char *virt_state, SQLUSMALLIN
 }
 
 
-RETCODE
+SQLRETURN
 stmt_seq_error (cli_stmt_t * stmt)
 {
   set_error (&stmt->stmt_error, "S1010", "CL063", "Async call in progress");
@@ -721,13 +721,13 @@ dbg_print_box (caddr_t object, FILE * out)
 #define STMT_IS_SELECT(stmt) \
 	((stmt)->stmt_compilation && (stmt)->stmt_compilation->sc_is_select == QT_SELECT)
 
-RETCODE
+SQLRETURN
 stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 {
 #if defined(PARAM_DEBUG)
   FILE *fo;
 #endif
-  RETCODE rc = SQL_SUCCESS;
+  SQLRETURN rc = SQL_SUCCESS;
   stmt->stmt_is_proc_returned = 0;
   while (1)
     {
@@ -939,7 +939,7 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 
 	  if (needs_evl)
 	    {
-	      RETCODE rc1 = stmt_process_result (stmt, 1);
+	      SQLRETURN rc1 = stmt_process_result (stmt, 1);
 	      return rc1 == SQL_SUCCESS ? rc : rc1;
 	    }
 	  set_error (&stmt->stmt_error, NULL, NULL, NULL);
@@ -1560,7 +1560,7 @@ stmt_collect_parms (cli_stmt_t * stmt)
   return ((caddr_t*)arr);
 }
 
-RETCODE
+SQLRETURN
 str_box_to_buffer (
   char *box,
   char *buffer,
