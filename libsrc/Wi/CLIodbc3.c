@@ -691,7 +691,7 @@ virtodbc__SQLGetDiagField (SQLSMALLINT nHandleType,
 	    else
 	      {
 		cli_connection_t *dest_conn = (nHandleType == SQL_HANDLE_DBC ? con : stmt->stmt_connection);
-		V_SET_ODBC_STR (dest_conn->con_dsn ? dest_conn->con_dsn : (UCHAR *) "",
+		V_SET_ODBC_STR (dest_conn->con_dsn ? dest_conn->con_dsn : (SQLCHAR *) "",
 		    pDiagInfoPtr, nBufferLength, pnStringLengthPtr, NULL);
 	      }
 	    break;

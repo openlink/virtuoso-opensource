@@ -104,11 +104,11 @@ typedef struct cli_connection_s
     long		con_isolation;
     int			con_is_read_only;
     id_hash_t *		con_cursors;
-    UCHAR *		con_user;
-    UCHAR *		con_dsn;
+    SQLCHAR *		con_user;
+    SQLCHAR *		con_dsn;
     SDWORD		con_access_mode;
-    UCHAR *		con_qualifier;
-    UCHAR *		con_db_ver;
+    SQLCHAR *		con_qualifier;
+    SQLCHAR *		con_db_ver;
     int 		con_db_casemode;
     int			con_db_gen; /* last 4 digits of con_db_ver */
     dk_hash_t *		con_bookmarks;
@@ -371,11 +371,11 @@ struct stmt_descriptor_s {
 /* CLIsql1.c */
 int internal_sql_connect (
 	SQLHDBC hdbc,
-	UCHAR * szDSN,
+	SQLCHAR * szDSN,
 	SWORD cbDSN,
-	UCHAR * szUID,
+	SQLCHAR * szUID,
 	SWORD cbUID,
-	UCHAR * szAuthStr,
+	SQLCHAR * szAuthStr,
 	SWORD cbAuthStr);
 
 #ifdef INPROCESS_CLIENT
@@ -386,7 +386,7 @@ RETCODE verify_inprocess_client (cli_connection_t *con);
 int sql_type_to_sqlc_default (int sqlt);
 int dv_to_sql_type (dtp_t dv, int cli_binary_timestamp);
 char *sql_type_to_sql_type_name (int type, char *resbuf, int maxbytes);
-caddr_t box_n_string (UCHAR *str, SQLLEN len);
+caddr_t box_n_string (SQLCHAR *str, SQLLEN len);
 caddr_t con_new_id (cli_connection_t *con);
 parm_binding_t *stmt_nth_parm (cli_stmt_t *stmt, int n);
 col_binding_t *stmt_nth_col (cli_stmt_t *stmt, int n);
@@ -417,9 +417,9 @@ void bin_dv_to_wstr_place (unsigned char *str, wchar_t *place, size_t nbytes);
 #endif
 void stmt_set_columns (cli_stmt_t *stmt, caddr_t *row, int nth_in_set);
 unsigned char *strncasestr (unsigned char *string1, unsigned char *string2, size_t maxbytes);
-UCHAR *stmt_convert_brace_escapes (UCHAR *statement_text, SQLINTEGER *newCB);
+SQLCHAR *stmt_convert_brace_escapes (SQLCHAR *statement_text, SQLINTEGER *newCB);
 char *get_next_keyword (char **str_ptr, char **start_ptr, char *result, int maxsize);
-UCHAR *stmt_correct_create_table_for_jdbc_test (UCHAR *statement_text);
+SQLCHAR *stmt_correct_create_table_for_jdbc_test (SQLCHAR *statement_text);
 void stmt_reset_getdata_status (cli_stmt_t * stmt, caddr_t * row);
 long stmt_row_bookmark (cli_stmt_t * stmt, caddr_t * row);
 void stmt_free_bookmarks (cli_stmt_t * stmt);
@@ -443,11 +443,11 @@ extern int isdts_mode;
 RETCODE SQL_API virtodbc__SQLCancel (SQLHSTMT hstmt);
 
 RETCODE SQL_API virtodbc__SQLDescribeCol (SQLHSTMT hstmt, UWORD icol,
-    UCHAR * szColName, SWORD cbColNameMax, SWORD * pcbColName,
+    SQLCHAR * szColName, SWORD cbColNameMax, SWORD * pcbColName,
     SWORD * pfSqlType, SQLULEN * pcbColDef, SWORD * pibScale,
     SWORD * pfNullable);
 
-RETCODE SQL_API virtodbc__SQLExecDirect (SQLHSTMT hstmt, UCHAR * szSqlStr,
+RETCODE SQL_API virtodbc__SQLExecDirect (SQLHSTMT hstmt, SQLCHAR * szSqlStr,
     SDWORD cbSqlStr);
 
 RETCODE SQL_API virtodbc__SQLFetch (SQLHSTMT hstmt, int preserve_rowset_at_end);
@@ -472,7 +472,7 @@ RETCODE SQL_API virtodbc__SQLFreeConnect (SQLHDBC hdbc);
 RETCODE SQL_API virtodbc__SQLFreeStmt (SQLHSTMT hstmt, UWORD fOption);
 
 RETCODE SQL_API virtodbc__SQLError (SQLHENV henv, SQLHDBC hdbc, SQLHSTMT hstmt,
-	UCHAR * szSqlState, SQLINTEGER * pfNativeError, UCHAR * szErrorMsg,
+	SQLCHAR * szSqlState, SQLINTEGER * pfNativeError, SQLCHAR * szErrorMsg,
 	SWORD cbErrorMsgMax, SWORD * pcbErrorMsg, int bClearState);
 
 RETCODE SQL_API virtodbc__SQLGetStmtOption (SQLHSTMT hstmt, UWORD fOption, PTR pvParam);
@@ -494,7 +494,7 @@ RETCODE SQL_API virtodbc__SQLExtendedFetch ( SQLHSTMT hstmt, UWORD fFetchType, S
 
 RETCODE SQL_API virtodbc__SQLTransact ( SQLHENV henv, SQLHDBC hdbc, UWORD fType);
 
-RETCODE SQL_API virtodbc__SQLPrepare (SQLHSTMT hstmt,UCHAR * szSqlStr, SQLINTEGER cbSqlStr);
+RETCODE SQL_API virtodbc__SQLPrepare (SQLHSTMT hstmt,SQLCHAR * szSqlStr, SQLINTEGER cbSqlStr);
 
 SQLRETURN SQL_API virtodbc__SQLSetPos ( SQLHSTMT hstmt, SQLSETPOSIROW irow, UWORD fOption, UWORD fLock);
 
@@ -506,59 +506,59 @@ RETCODE SQL_API virtodbc__SQLBindParameter ( SQLHSTMT hstmt, UWORD ipar, SWORD f
     SWORD fSqlType, SQLULEN cbColDef, SWORD ibScale, PTR rgbValue, SQLLEN cbValueMax, SQLLEN * pcbValue);
 
 
-RETCODE SQL_API virtodbc__SQLSpecialColumns ( SQLHSTMT hstmt, UWORD fColType, UCHAR * szTableQualifier,
-	SWORD cbTableQualifier, UCHAR * szTableOwner, SWORD cbTableOwner, UCHAR * szTableName,
+RETCODE SQL_API virtodbc__SQLSpecialColumns ( SQLHSTMT hstmt, UWORD fColType, SQLCHAR * szTableQualifier,
+	SWORD cbTableQualifier, SQLCHAR * szTableOwner, SWORD cbTableOwner, SQLCHAR * szTableName,
 	SWORD cbTableName, UWORD fScope, UWORD fNullable);
 
-RETCODE SQL_API virtodbc__SQLStatistics ( SQLHSTMT hstmt, UCHAR * szTableQualifier, SWORD cbTableQualifier,
-	UCHAR * szTableOwner, SWORD cbTableOwner, UCHAR * szTableName, SWORD cbTableName,
+RETCODE SQL_API virtodbc__SQLStatistics ( SQLHSTMT hstmt, SQLCHAR * szTableQualifier, SWORD cbTableQualifier,
+	SQLCHAR * szTableOwner, SWORD cbTableOwner, SQLCHAR * szTableName, SWORD cbTableName,
 	UWORD fUnique, UWORD fAccuracy);
 caddr_t stmt_parm_to_dv (parm_binding_t * pb, int nth, long bhid, cli_stmt_t *stmt);
 
 RETCODE SQL_API
 virtodbc__SQLColumnPrivileges (
 	SQLHSTMT hstmt,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName,
-	UCHAR * szColumnName,
+	SQLCHAR * szColumnName,
 	SWORD cbColumnName);
 
 RETCODE SQL_API
 virtodbc__SQLColumns (
 	SQLHSTMT hstmt,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName,
-	UCHAR * szColumnName,
+	SQLCHAR * szColumnName,
 	SWORD cbColumnName);
 
 RETCODE SQL_API
 virtodbc__SQLForeignKeys (
 	SQLHSTMT hstmt,
-	UCHAR * szPkTableQualifier,
+	SQLCHAR * szPkTableQualifier,
 	SWORD cbPkTableQualifier,
-	UCHAR * szPkTableOwner,
+	SQLCHAR * szPkTableOwner,
 	SWORD cbPkTableOwner,
-	UCHAR * szPkTableName,
+	SQLCHAR * szPkTableName,
 	SWORD cbPkTableName,
-	UCHAR * szFkTableQualifier,
+	SQLCHAR * szFkTableQualifier,
 	SWORD cbFkTableQualifier,
-	UCHAR * szFkTableOwner,
+	SQLCHAR * szFkTableOwner,
 	SWORD cbFkTableOwner,
-	UCHAR * szFkTableName,
+	SQLCHAR * szFkTableName,
 	SWORD cbFkTableName);
 
 RETCODE SQL_API
 virtodbc__SQLGetCursorName (
 	SQLHSTMT hstmt,
-	UCHAR * szCursor,
+	SQLCHAR * szCursor,
 	SWORD cbCursorMax,
 	SWORD * pcbCursor);
 
@@ -573,70 +573,70 @@ virtodbc__SQLGetInfo (
 RETCODE SQL_API
 virtodbc__SQLNativeSql (
 	SQLHDBC hdbc,
-	UCHAR * szSqlStrIn,
+	SQLCHAR * szSqlStrIn,
 	SQLINTEGER cbSqlStrIn,
-	UCHAR * szSqlStr,
+	SQLCHAR * szSqlStr,
 	SQLINTEGER cbSqlStrMax,
 	SQLINTEGER * pcbSqlStr);
 
 RETCODE SQL_API
 virtodbc__SQLPrimaryKeys (
 	SQLHSTMT hstmt,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName);
 
 RETCODE SQL_API
 virtodbc__SQLProcedureColumns (
 	SQLHSTMT hstmt,
-	UCHAR * szProcQualifier,
+	SQLCHAR * szProcQualifier,
 	SWORD cbProcQualifier,
-	UCHAR * szProcOwner,
+	SQLCHAR * szProcOwner,
 	SWORD cbProcOwner,
-	UCHAR * szProcName,
+	SQLCHAR * szProcName,
 	SWORD cbProcName,
-	UCHAR * szColumnName,
+	SQLCHAR * szColumnName,
 	SWORD cbColumnName);
 
 RETCODE SQL_API
 virtodbc__SQLProcedures (
 	SQLHSTMT hstmt,
-	UCHAR * szProcQualifier,
+	SQLCHAR * szProcQualifier,
 	SWORD cbProcQualifier,
-	UCHAR * szProcOwner,
+	SQLCHAR * szProcOwner,
 	SWORD cbProcOwner,
-	UCHAR * szProcName,
+	SQLCHAR * szProcName,
 	SWORD cbProcName);
 
 RETCODE SQL_API
 virtodbc__SQLSetCursorName (
       SQLHSTMT hstmt,
-      UCHAR * szCursor,
+      SQLCHAR * szCursor,
       SWORD cbCursor);
 
 RETCODE SQL_API
 virtodbc__SQLTablePrivileges (
 	SQLHSTMT hstmt,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName);
 
 RETCODE SQL_API
 virtodbc__SQLTables (
 	SQLHSTMT hstmt,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName,
-	UCHAR * szTableType,
+	SQLCHAR * szTableType,
 	SWORD cbTableType);
 
 int sql_fetch_scrollable (cli_stmt_t * stmt);
@@ -848,7 +848,7 @@ caddr_t cli_box_server_msg (char *msg);
     }
 
 #define NDEFINE_INPUT_NARROW(param) \
-  UCHAR *sz##param = NULL
+  SQLCHAR *sz##param = NULL
 
 #define NMAKE_INPUT_NARROW_N(param) \
 if (wsz##param) \
@@ -866,7 +866,7 @@ else \
   if (wsz##param && cb##param) \
     { \
       len = cb##param > 0 ? cb##param : strlen ((const char *) wsz##param); \
-      sz##param = (UCHAR *) dk_alloc_box (len * VIRT_MB_CUR_MAX + 1, DV_LONG_STRING); \
+      sz##param = (SQLCHAR *) dk_alloc_box (len * VIRT_MB_CUR_MAX + 1, DV_LONG_STRING); \
       cli_narrow_to_utf8 (con->con_charset, wsz##param, len, sz##param, len * VIRT_MB_CUR_MAX + 1); \
       cb##param = (SWORD) strlen ((const char *) sz##param); \
     } \
@@ -880,7 +880,7 @@ if (wsz##param && wsz##param != sz##param) \
 
 
 #define NDEFINE_OUTPUT_CHAR_NARROW(param, con, type) \
-  UCHAR *sz##param = NULL; \
+  SQLCHAR *sz##param = NULL; \
   type _vpcb##param, *_pcb##param = &_vpcb##param; \
   type _cb##param = cb##param * ((con)->con_defs.cdef_utf8_execs ? VIRT_MB_CUR_MAX : 1)
 
@@ -888,9 +888,9 @@ if (wsz##param && wsz##param != sz##param) \
 if (wsz##param) \
   { \
     if ((con)->con_defs.cdef_utf8_execs) \
-      sz##param = (UCHAR *) dk_alloc_box (cb##param * VIRT_MB_CUR_MAX, DV_LONG_STRING); \
+      sz##param = (SQLCHAR *) dk_alloc_box (cb##param * VIRT_MB_CUR_MAX, DV_LONG_STRING); \
     else \
-      sz##param = (UCHAR *) wsz##param; \
+      sz##param = (SQLCHAR *) wsz##param; \
   }
 
 #define NSET_AND_FREE_OUTPUT_CHAR_NARROW(param, con) \

@@ -287,7 +287,7 @@ sql_type_to_sql_type_name (int type, char *resbuf, int maxbytes)
 
 
 caddr_t
-box_n_string (UCHAR * str, SQLLEN len)
+box_n_string (SQLCHAR * str, SQLLEN len)
 {
   SQLLEN bytes = len == SQL_NTS
   ? strlen ((char *) str) + 1
@@ -313,7 +313,7 @@ box_n_wstring (wchar_t * str, SDWORD len)
 
 
 caddr_t
-box_numeric_string (UCHAR * str, SQLLEN len1)
+box_numeric_string (SQLCHAR * str, SQLLEN len1)
 {
   caddr_t box;
   SQLLEN cpy;
@@ -1013,7 +1013,7 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 	case QA_LOGIN:
 	  {
 	    cli_connection_t *con = stmt->stmt_connection;
-	    con->con_qualifier = (UCHAR *) res[LG_QUALIFIER];
+	    con->con_qualifier = (SQLCHAR *) res[LG_QUALIFIER];
 	    dk_free_box ((caddr_t) res);
 	  }
 	}
@@ -1276,7 +1276,7 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
 		    nlen = nlen > 100 ? 100 : nlen;
 		    cli_wide_to_narrow (err_stmt->stmt_connection->con_charset, 0,
 			(wchar_t *)place, nlen, (unsigned char *) temp, nlen, NULL, NULL);
-		    return box_numeric_string ((UCHAR *) temp, nlen);
+		    return box_numeric_string ((SQLCHAR *) temp, nlen);
 		  }
 	      case SQL_SMALLINT:
 	      case -7:
@@ -1357,7 +1357,7 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
 	case SQL_DECIMAL:
 	  {				/* E.g. SQL_C_CHAR, SQL_C_BINARY, any other. */
 
-	    return box_numeric_string ((UCHAR *) place, len ? *len : SQL_NTS);
+	    return box_numeric_string ((SQLCHAR *) place, len ? *len : SQL_NTS);
 	  }
 	case SQL_SMALLINT:
 	case -7:
@@ -1444,7 +1444,7 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
   	  return NULL;
 	}
       else
-        return box_n_string ((UCHAR *) place, len ? *len : SQL_NTS);
+        return box_n_string ((SQLCHAR *) place, len ? *len : SQL_NTS);
     }
 }
 
@@ -3263,13 +3263,13 @@ skip_blankos (char *str)
    will become unnecessary later.
  */
 
-UCHAR *
-stmt_convert_brace_escapes (UCHAR * statement_text, SQLINTEGER * newCB)
+SQLCHAR *
+stmt_convert_brace_escapes (SQLCHAR * statement_text, SQLINTEGER * newCB)
 {
-  UCHAR *ptr;
+  SQLCHAR *ptr;
 
   /* Skip all white spaces. */
-  ptr = (UCHAR *) skip_blankos ((char *) statement_text);
+  ptr = (SQLCHAR *) skip_blankos ((char *) statement_text);
 #if 0
   if ('{' == *ptr)		/* Left brace as first non-blank character? */
     {

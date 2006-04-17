@@ -43,7 +43,7 @@
 #endif
 
 #define DEFINE_INPUT_NARROW(param) \
-  UCHAR *sz##param = NULL
+  SQLCHAR *sz##param = NULL
 
 #define MAKE_INPUT_NARROW_N(param) \
 if (wsz##param) \
@@ -64,7 +64,7 @@ else \
   if (wsz##param) \
     { \
       len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
-      sz##param = (UCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+      sz##param = (SQLCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
     } \
 }
 
@@ -88,7 +88,7 @@ if (wsz##param) \
   else \
     { \
       len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
-      sz##param = (UCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+      sz##param = (SQLCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
     } \
 }
 
@@ -99,7 +99,7 @@ if (wsz##param) \
 }
 
 #define DEFINE_OUTPUT_CHAR_NARROW_N(param, type) \
-  UCHAR *sz##param = NULL; \
+  SQLCHAR *sz##param = NULL; \
   type _vpcb##param, *_pcb##param = &_vpcb##param; \
   type _cb##param = MAX_MESSAGE_LEN + cb##param / sizeof (wchar_t)
 
@@ -127,7 +127,7 @@ if (pcb##param) \
   *pcb##param = *_pcb##param * N_BYTES_PER_CHAR;
 
 #define DEFINE_OUTPUT_CHAR_NARROW(param, con, type) \
-  UCHAR *sz##param = NULL; \
+  SQLCHAR *sz##param = NULL; \
   type _vpcb##param, *_pcb##param = &_vpcb##param; \
   type _cb##param = MAX_MESSAGE_LEN + cb##param * ((con)->con_defs.cdef_utf8_execs ? VIRT_MB_CUR_MAX : 1)
 

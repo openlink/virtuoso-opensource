@@ -691,11 +691,11 @@ verify_inprocess_client (cli_connection_t * con)
 int
 internal_sql_connect (
 	SQLHDBC hdbc,
-	UCHAR * szDSN,
+	SQLCHAR * szDSN,
 	SWORD cbDSN,
-	UCHAR * szUID,
+	SQLCHAR * szUID,
 	SWORD cbUID,
-	UCHAR * szAuthStr,
+	SQLCHAR * szAuthStr,
 	SWORD cbAuthStr)
 {
   caddr_t pwd_box;
@@ -868,7 +868,7 @@ internal_sql_connect (
     }
 
   con->con_session = ses;
-  con->con_user = (UCHAR *) user;
+  con->con_user = (SQLCHAR *) user;
   if (IS_BOX_POINTER (login_res))
     {
       int flag = (int) unbox (login_res[0]);
@@ -883,8 +883,8 @@ internal_sql_connect (
 	  con->con_session = NULL;
 	  return SQL_ERROR;
 	}
-      con->con_qualifier = (UCHAR *) login_res[LG_QUALIFIER];
-      con->con_db_ver = (UCHAR *) login_res[LG_DB_VER];
+      con->con_qualifier = (SQLCHAR *) login_res[LG_QUALIFIER];
+      con->con_db_ver = (SQLCHAR *) login_res[LG_DB_VER];
       con->con_db_gen = ODBC_DRV_VER_G_NO ((char *) con->con_db_ver);
       if (con->con_db_gen < 2303)
 	{
@@ -948,7 +948,7 @@ internal_sql_connect (
 
   cdef_add_param (&ses->dks_caller_id_opts, "__SQL_CLIENT_VERSION", con->con_db_gen);
 
-  con->con_dsn = (UCHAR *) dsn;
+  con->con_dsn = (SQLCHAR *) dsn;
   dk_free_box (passwd);
   return rc;
 }
@@ -957,7 +957,7 @@ RETCODE SQL_API
 virtodbc__SQLDescribeCol (
 	SQLHSTMT hstmt,
 	UWORD icol,
-	UCHAR * szColName,
+	SQLCHAR * szColName,
 	SWORD cbColNameMax,
 	SWORD * pcbColName,
 	SWORD * pfSqlType,
@@ -1038,7 +1038,7 @@ RETCODE SQL_API
 SQLDescribeCol (
 	SQLHSTMT hstmt,
 	UWORD icol,
-	UCHAR * wszColName,
+	SQLCHAR * wszColName,
 	SWORD cbColName,
 	SWORD * pcbColName,
 	SWORD * pfSqlType,
@@ -1076,9 +1076,9 @@ SQLError (
 	SQLHENV henv,
 	SQLHDBC hdbc,
 	SQLHSTMT hstmt,
-	UCHAR * wszSqlState,
+	SQLCHAR * wszSqlState,
 	SQLINTEGER * pfNativeError,
-	UCHAR * wszErrorMsg,
+	SQLCHAR * wszErrorMsg,
 	SWORD cbErrorMsg,
 	SWORD * pcbErrorMsg)
 {
@@ -1114,9 +1114,9 @@ virtodbc__SQLError (
 	SQLHENV henv,
 	SQLHDBC hdbc,
 	SQLHSTMT hstmt,
-	UCHAR * szSqlState,
+	SQLCHAR * szSqlState,
 	SQLINTEGER * pfNativeError,
-	UCHAR * szErrorMsg,
+	SQLCHAR * szErrorMsg,
 	SWORD cbErrorMsgMax,
 	SWORD * pcbErrorMsg,
 	int bClearState)
@@ -1170,7 +1170,7 @@ stmt_free_current_rows (cli_stmt_t * stmt)
 RETCODE SQL_API
 virtodbc__SQLExecDirect (
 	SQLHSTMT hstmt,
-	UCHAR * szSqlStr,
+	SQLCHAR * szSqlStr,
 	SDWORD cbSqlStr)
 {
   int rc;
@@ -1359,7 +1359,7 @@ virtodbc__SQLExecDirect (
 RETCODE SQL_API
 SQLExecDirect (
 	SQLHSTMT hstmt,
-	UCHAR * wszSqlStr,
+	SQLCHAR * wszSqlStr,
 	SQLINTEGER cbSqlStr)
 {
   RETCODE rc;
@@ -1665,7 +1665,7 @@ SQLFreeStmt (
 RETCODE SQL_API
 virtodbc__SQLGetCursorName (
 	SQLHSTMT hstmt,
-	UCHAR * szCursor,
+	SQLCHAR * szCursor,
 	SWORD cbCursorMax,
 	SWORD * pcbCursor)
 {
@@ -1691,7 +1691,7 @@ virtodbc__SQLGetCursorName (
 RETCODE SQL_API
 SQLGetCursorName (
 	SQLHSTMT hstmt,
-	UCHAR * wszCursor,
+	SQLCHAR * wszCursor,
 	SWORD cbCursor,
 	SWORD * pcbCursor)
 {
@@ -1751,7 +1751,7 @@ virtodbc__SQLNumResultCols (
 RETCODE SQL_API
 virtodbc__SQLPrepare (
 	SQLHSTMT hstmt,
-	UCHAR * szSqlStr,
+	SQLCHAR * szSqlStr,
 	SQLINTEGER cbSqlStr)
 {
   caddr_t local_copy, text;
@@ -1759,7 +1759,7 @@ virtodbc__SQLPrepare (
 
   set_error (&stmt->stmt_error, NULL, NULL, NULL);
   local_copy = box_n_string(szSqlStr, cbSqlStr);
-  text = (caddr_t) stmt_convert_brace_escapes ((UCHAR *) local_copy, &cbSqlStr);
+  text = (caddr_t) stmt_convert_brace_escapes ((SQLCHAR *) local_copy, &cbSqlStr);
 
   cli_dbg_printf (("SQLPrepare (%s, %s)\n", stmt->stmt_id, text));
   VERIFY_INPROCESS_CLIENT (stmt->stmt_connection);
@@ -1778,7 +1778,7 @@ virtodbc__SQLPrepare (
 RETCODE SQL_API
 SQLPrepare (
 	SQLHSTMT hstmt,
-	UCHAR * wszSqlStr,
+	SQLCHAR * wszSqlStr,
 	SQLINTEGER cbSqlStr)
 {
   size_t len;
@@ -1810,7 +1810,7 @@ SQLRowCount (
 RETCODE SQL_API
 virtodbc__SQLSetCursorName (
       SQLHSTMT hstmt,
-      UCHAR * szCursor,
+      SQLCHAR * szCursor,
       SWORD cbCursor)
 {
   STMT (stmt, hstmt);
@@ -1826,7 +1826,7 @@ virtodbc__SQLSetCursorName (
 RETCODE SQL_API
 SQLSetCursorName (
       SQLHSTMT hstmt,
-      UCHAR * wszCursor,
+      SQLCHAR * wszCursor,
       SWORD _cbCursor)
 {
   STMT (stmt, hstmt);

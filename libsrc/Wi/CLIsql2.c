@@ -76,12 +76,12 @@ dk_set_t d_trx_set = 0;
     remove_search_escapes((char *) szname, _szname, sizeof (_szname), &cbtemp, cbname); \
   if (!szname) \
     { \
-      szname = (UCHAR *) "%"; \
+      szname = (SQLCHAR *) "%"; \
       _szname[0] = '%'; \
       _szname[1] = 0; \
       cbtemp = SQL_NTS; \
     } \
-  virtodbc__SQLSetParam (st, nth, SQL_C_CHAR, SQL_CHAR, 0, 0, (UCHAR *)_szname, &cbtemp);
+  virtodbc__SQLSetParam (st, nth, SQL_C_CHAR, SQL_CHAR, 0, 0, (SQLCHAR *)_szname, &cbtemp);
 
 #define DEFAULT_QUAL(stmt, qlen) \
   if (!szTableQualifier) \
@@ -97,9 +97,9 @@ char __virtodbc_dbms_name[512];
 RETCODE SQL_API
 SQLBrowseConnect (
       SQLHDBC hdbc,
-      UCHAR * szConnStrIn,
+      SQLCHAR * szConnStrIn,
       SWORD cbConnStrIn,
-      UCHAR * szConnStrOut,
+      SQLCHAR * szConnStrOut,
       SWORD cbConnStrOutMax,
       SWORD * pcbConnStrOut)
 {
@@ -289,19 +289,19 @@ char *sql_columnsw_text_casemode_0 =
 RETCODE SQL_API
 virtodbc__SQLColumns (
 	SQLHSTMT hstmt,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName,
-	UCHAR * szColumnName,
+	SQLCHAR * szColumnName,
 	SWORD cbColumnName)
 {
   STMT (stmt, hstmt);
   SQLLEN cbcol = cbColumnName;
   SQLLEN cbqual = cbTableQualifier, cbown = cbTableOwner, cbtab = cbTableName;
-  UCHAR *percent = (UCHAR *) "%";
+  SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   RETCODE rc;
   UDWORD isODBC3 = stmt->stmt_connection->con_environment->env_odbc_version >= 3;
@@ -356,23 +356,23 @@ virtodbc__SQLColumns (
       NULL);
 */
   virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      szTableQualifier ? (UCHAR *)_szTableQualifier : percent,
+      szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent,
       szTableQualifier ? &cbqual : &plen);
   virtodbc__SQLSetParam (hstmt, 4, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      szTableOwner ? (UCHAR *)_szTableOwner : percent,
+      szTableOwner ? (SQLCHAR *)_szTableOwner : percent,
       szTableOwner ? &cbown : &plen);
   virtodbc__SQLSetParam (hstmt, 5, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      szTableName ? (UCHAR *)_szTableName : percent,
+      szTableName ? (SQLCHAR *)_szTableName : percent,
       szTableName ? &cbtab : &plen);
   virtodbc__SQLSetParam (hstmt, 6, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      szColumnName ? (UCHAR *)_szColumnName : percent,
+      szColumnName ? (SQLCHAR *)_szColumnName : percent,
       szColumnName ? &cbcol : &plen);
 
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
-    rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *) (stmt->stmt_connection->con_db_casemode == 2
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) (stmt->stmt_connection->con_db_casemode == 2
 	  ? sql_columnsw_text_casemode_2 : sql_columnsw_text_casemode_0), SQL_NTS);
   else
-    rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *) (stmt->stmt_connection->con_db_casemode == 2
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) (stmt->stmt_connection->con_db_casemode == 2
 	  ? sql_columns_text_casemode_2 : sql_columns_text_casemode_0), SQL_NTS);
   /* With COL_ID returns columns in the same order as they were defined
      with create table. Without it they would be in alphabetical order. */
@@ -386,13 +386,13 @@ virtodbc__SQLColumns (
 RETCODE SQL_API
 SQLColumns (
 	SQLHSTMT hstmt,
-	UCHAR * wszTableQualifier,
+	SQLCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * wszTableOwner,
+	SQLCHAR * wszTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * wszTableName,
+	SQLCHAR * wszTableName,
 	SWORD cbTableName,
-	UCHAR * wszColumnName,
+	SQLCHAR * wszColumnName,
 	SWORD cbColumnName)
 {
   size_t len;
@@ -572,13 +572,13 @@ char *sql_tables_textw_casemode_2 =
 RETCODE SQL_API
 virtodbc__SQLTables (
 	SQLHSTMT hstmt,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName,
-	UCHAR * szTableType,
+	SQLCHAR * szTableType,
 	SWORD cbTableType)
 {
   STMT (stmt, hstmt);
@@ -586,22 +586,22 @@ virtodbc__SQLTables (
   RETCODE rc;
   SQLLEN cbtype = cbTableType;
   /*int maxtyplen;*/
-  UCHAR *percent = (UCHAR *) "%";
+  SQLCHAR *percent = (SQLCHAR *) "%";
   SDWORD odbc_ver = stmt->stmt_connection->con_environment->env_odbc_version >= 3 ? 1 : 0;
   SQLLEN odbc_ver_len = 4;
   SDWORD no_sys_tbs = stmt->stmt_connection->con_no_system_tables ? 1 : 0;
   SQLLEN no_sys_tbs_len = 4;
   char type_buffer[60], *type_ptr;
 
-/*  UCHAR *nada = (UCHAR *) "";*//* KEY_TABLE not like nada should match with all */
+/*  SQLCHAR *nada = (SQLCHAR *) "";*//* KEY_TABLE not like nada should match with all */
   SQLLEN plen = SQL_NTS;
 /*  int only_system_tables = 0, only_users_tables = 0;*/
   int QualEmpty = is_empty (szTableQualifier, cbTableQualifier);
   int OwnEmpty = is_empty (szTableOwner, cbTableOwner);
   int TabEmpty = is_empty (szTableName, cbTableName);
 
-  /*UCHAR *ptr1, *ptr2, *tab_typ_ptr;*/
-  UCHAR _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
+  /*SQLCHAR *ptr1, *ptr2, *tab_typ_ptr;*/
+  SQLCHAR _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
 	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
 	_szTableName[KUBL_IDENTIFIER_MAX_LENGTH],
 	_szTableType[KUBL_IDENTIFIER_MAX_LENGTH];
@@ -643,7 +643,7 @@ virtodbc__SQLTables (
     {
       /* Show valid table qualifiers, e.g. often just 'DB' */
       if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
-	rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    "select"
 	    " distinct charset_recode (name_part(KEY_TABLE,0), 'UTF-8', '_WIDE_') AS \\TABLE_QUALIFIER NVARCHAR(128),"
 	    " NULL AS \\TABLE_OWNER VARCHAR(128),"
@@ -652,7 +652,7 @@ virtodbc__SQLTables (
 	    " NULL AS \\REMARKS VARCHAR(254) "
 	    "from DB.DBA.SYS_KEYS", SQL_NTS);
       else
-	rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    "select"
 	    " distinct name_part(KEY_TABLE,0) AS \\TABLE_QUALIFIER VARCHAR(128),"
 	    " NULL AS \\TABLE_OWNER VARCHAR(128),"
@@ -665,7 +665,7 @@ virtodbc__SQLTables (
     {
       /* Show valid table owners, e.g. often just 'DBA' */
       if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
-	rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    "select distinct"
 	    " NULL AS \\TABLE_QUALIFIER VARCHAR(128),"
 	    " charset_recode (name_part(KEY_TABLE, 1), 'UTF-8', '_WIDE_') AS \\TABLE_OWNER NVARCHAR(128),"
@@ -674,7 +674,7 @@ virtodbc__SQLTables (
 	    " NULL AS \\REMARKS VARCHAR(254) "
 	    "from DB.DBA.SYS_KEYS", SQL_NTS);
       else
-	rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    "select distinct"
 	    " NULL AS \\TABLE_QUALIFIER VARCHAR(128),"
 	    " name_part(KEY_TABLE, 1) AS \\TABLE_OWNER VARCHAR(128),"
@@ -691,7 +691,7 @@ virtodbc__SQLTables (
 	 as well as some other system table with a different name, so the
 	 kludge below will produce two lines, one with SYSTEM TABLE
 	 and one just with TABLE in the fourth (TABLE_TYPE) column. */
-      rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+      rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	"select distinct"
 	" NULL AS \\TABLE_QUALIFIER VARCHAR(128),"
 	" NULL AS \\TABLE_OWNER VARCHAR(128),"
@@ -735,7 +735,7 @@ virtodbc__SQLTables (
 	{
 #if 0
 	  /* Actually it should be "SYSTEM TABLE" but we are tolerant. */
-	  if ((ptr1 = strncasestr (_szTableType, (UCHAR *) "SYSTEM", cbtype)))
+	  if ((ptr1 = strncasestr (_szTableType, (SQLCHAR *) "SYSTEM", cbtype)))
 	    {
 	      only_system_tables = 1;
 	    }
@@ -743,7 +743,7 @@ virtodbc__SQLTables (
 	  for (tab_typ_ptr = _szTableType, maxtyplen = cbtype;;)
 	    {
 	      if ((ptr2 = strncasestr (tab_typ_ptr,
-		  (UCHAR *) "TABLE", maxtyplen)))
+		  (SQLCHAR *) "TABLE", maxtyplen)))
 		{
 		  /* Check also that it is not part of "SYSTEM TABLE", i.e.
 		   either "TABLE" is in the beginning, or it's not preceded
@@ -844,24 +844,24 @@ virtodbc__SQLTables (
 
 
       virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-		   (szTableQualifier || odbc_ver == 2 ? (UCHAR *)_szTableQualifier : percent),
+		   (szTableQualifier || odbc_ver == 2 ? (SQLCHAR *)_szTableQualifier : percent),
 		   (szTableQualifier || odbc_ver == 2 ? &cbqual : &plen));
 
       virtodbc__SQLSetParam (hstmt, 4, SQL_C_CHAR, SQL_CHAR, 0, 0,
-		   (szTableQualifier || odbc_ver == 2 ? (UCHAR *)_szTableQualifier : percent),
+		   (szTableQualifier || odbc_ver == 2 ? (SQLCHAR *)_szTableQualifier : percent),
 		   (szTableQualifier || odbc_ver == 2 ? &cbqual : &plen));
 
 
 /* The second parameter is the pattern the user himself gave in
    szTableOwner, or just a single percent if the szTableOwner was NULL: */
       virtodbc__SQLSetParam (hstmt, 5, SQL_C_CHAR, SQL_CHAR, 0, 0,
-		   (szTableOwner ? (UCHAR *)_szTableOwner : percent),
+		   (szTableOwner ? (SQLCHAR *)_szTableOwner : percent),
 		   (szTableOwner ? &cbown : &plen));
 
 /* The third parameter is the pattern the user himself gave in szTableName,
    or just a single percent if the szTableName was NULL: */
       virtodbc__SQLSetParam (hstmt, 6, SQL_C_CHAR, SQL_CHAR, 0, 0,
-		   (szTableName ? (UCHAR *)_szTableName : percent),
+		   (szTableName ? (SQLCHAR *)_szTableName : percent),
 		   (szTableName ? &cbtab : &plen));
 
 /* this param is whether to threat system tables as user ones */
@@ -892,12 +892,12 @@ virtodbc__SQLTables (
 #endif
 
       if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
-	rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    (stmt->stmt_connection->con_db_casemode == 2 ?
 	     sql_tables_textw_casemode_2 :
 	     sql_tables_textw_casemode_0), SQL_NTS);
       else
-	rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    (stmt->stmt_connection->con_db_casemode == 2 ?
 	     sql_tables_text_casemode_2 :
 	     sql_tables_text_casemode_0), SQL_NTS);
@@ -917,13 +917,13 @@ virtodbc__SQLTables (
 RETCODE SQL_API
 SQLTables (
 	SQLHSTMT hstmt,
-	UCHAR * wszTableQualifier,
+	SQLCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * wszTableOwner,
+	SQLCHAR * wszTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * wszTableName,
+	SQLCHAR * wszTableName,
 	SWORD cbTableName,
-	UCHAR * wszTableType,
+	SQLCHAR * wszTableType,
 	SWORD cbTableType)
 {
   RETCODE rc;
@@ -957,10 +957,10 @@ SQLTables (
 RETCODE SQL_API SQLDataSources (
 	SQLHENV henv,
 	UWORD fDirection,
-	UCHAR * szDSN,
+	SQLCHAR * szDSN,
 	SWORD cbDSNMax,
 	SWORD * pcbDSN,
-	UCHAR * szDescription,
+	SQLCHAR * szDescription,
 	SWORD cbDescriptionMax,
 	SWORD * pcbDescription)
 {
@@ -1186,7 +1186,7 @@ virtodbc__SQLSetConnectOption (
 		return rc;
 	      rc = virtodbc__SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, 0, 0, (char *)vParam, SQL_NTS, NULL);
 	      if (SQL_SUCCESS == rc)
-		rc = virtodbc__SQLExecDirect (stmt, (UCHAR *) "set_qualifier(?)", SQL_NTS);
+		rc = virtodbc__SQLExecDirect (stmt, (SQLCHAR *) "set_qualifier(?)", SQL_NTS);
 
 	      virtodbc__SQLFreeStmt(stmt, SQL_DROP);
 	      return rc;
@@ -1196,7 +1196,7 @@ virtodbc__SQLSetConnectOption (
 	{
 	  if (con->con_qualifier)
 	    dk_free_box ((box_t) con->con_qualifier);
-	  con->con_qualifier = vParam ? (UCHAR *) box_string ((char *) vParam) : NULL;
+	  con->con_qualifier = vParam ? (SQLCHAR *) box_string ((char *) vParam) : NULL;
 	}
       break;
 
@@ -1208,7 +1208,7 @@ virtodbc__SQLSetConnectOption (
 	  if (SQL_SUCCESS != rc)
 	    return rc;
 	  con->con_defs.cdef_no_char_c_escape = ((int)vParam) != 0;
-	  rc = virtodbc__SQLExecDirect(stmt, (UCHAR *) (((int) vParam) ? "set NO_CHAR_C_ESCAPE OFF" : "set NO_CHAR_C_ESCAPE ON"), SQL_NTS);
+	  rc = virtodbc__SQLExecDirect(stmt, (SQLCHAR *) (((int) vParam) ? "set NO_CHAR_C_ESCAPE OFF" : "set NO_CHAR_C_ESCAPE ON"), SQL_NTS);
 	  virtodbc__SQLFreeStmt(stmt, SQL_DROP);
 	  return rc;
 	}
@@ -1243,7 +1243,7 @@ virtodbc__SQLSetConnectOption (
 	      SQL_C_CHAR, SQL_CHAR, 0, 0,
 	      (char *)charset_table, sizeof (charset_table), &nCharsetLen);
 	  if (rc == SQL_SUCCESS)
-	    rc = virtodbc__SQLExecDirect(stmt, (UCHAR *) "__set ('CHARSET', ?)", SQL_NTS);
+	    rc = virtodbc__SQLExecDirect(stmt, (SQLCHAR *) "__set ('CHARSET', ?)", SQL_NTS);
 	  if (rc == SQL_SUCCESS && nCharsetLen > 0)
 	    {
 	      if (con->con_charset)
@@ -1310,7 +1310,7 @@ virtodbc__SQLSetConnectOption (
 	      0, (char *) vbranch->vtr_trx->vtx_cookie,
 	      SQL_NTS, NULL);
 	  if (SQL_SUCCESS == rc)
-	    rc = virtodbc__SQLExecDirect (stmt, (UCHAR *) "_2PC.DBA.virt_tp_enlist_branch (?)", SQL_NTS);
+	    rc = virtodbc__SQLExecDirect (stmt, (SQLCHAR *) "_2PC.DBA.virt_tp_enlist_branch (?)", SQL_NTS);
 
 	  virtodbc__SQLFreeStmt(stmt, SQL_DROP);
 	  return rc;
@@ -3335,9 +3335,9 @@ virtodbc__SQLGetTypeInfo (
   virtodbc__SQLSetParam (hstmt, 1, SQL_C_LONG, SQL_INTEGER, 0, 0, &ii, &iil);
 
   if (stmt->stmt_connection->con_environment->env_odbc_version >= 3)
-	  rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *) "DB.DBA.gettypeinfo3 (?, 3)", SQL_NTS);
+	  rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) "DB.DBA.gettypeinfo3 (?, 3)", SQL_NTS);
   else
-	  rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *) "DB.DBA.gettypeinfo (?)", SQL_NTS);
+	  rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) "DB.DBA.gettypeinfo (?)", SQL_NTS);
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
 
   return rc;
@@ -3536,18 +3536,18 @@ RETCODE SQL_API
 virtodbc__SQLSpecialColumns (
 	SQLHSTMT hstmt,
 	UWORD fColType,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName,
 	UWORD fScope, /* SQL_SCOPE_CURROW, _TRANSACTION or _SESSION */
 	UWORD fNullable) /* SQL_NO_NULLS or SQL_NULLABLE. <- Ignored ^ */
 {
   STMT (stmt, hstmt);
   RETCODE rc;
-  UCHAR *percent = (UCHAR *) "%";
+  SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   SQLLEN cbqual = cbTableQualifier, cbown = cbTableOwner, cbtab = cbTableName;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
@@ -3582,13 +3582,13 @@ virtodbc__SQLSpecialColumns (
   DEFAULT_QUAL (stmt, cbqual);
 
   virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableQualifier ? (UCHAR *)_szTableQualifier : percent,
+	       szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent,
 	       szTableQualifier ? &cbqual : &plen);
   virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableOwner ? (UCHAR *)_szTableOwner : percent,
+	       szTableOwner ? (SQLCHAR *)_szTableOwner : percent,
 	       szTableOwner ? &cbown : &plen);
   virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableName ? (UCHAR *)_szTableName : percent,
+	       szTableName ? (SQLCHAR *)_szTableName : percent,
 	       szTableName ? &cbtab : &plen);
 
   if (SQL_ROWVER != fColType)
@@ -3611,12 +3611,12 @@ virtodbc__SQLSpecialColumns (
    (2 = SQL_SCOPE_SESSION)
  */
       if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
-	rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    (stmt->stmt_connection->con_db_casemode == 2 ?
 	     sql_special_columnsw1_casemode_2 :
 	     sql_special_columnsw1_casemode_0), SQL_NTS);
       else
-	rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    (stmt->stmt_connection->con_db_casemode == 2 ?
 	     sql_special_columns1_casemode_2 :
 	     sql_special_columns1_casemode_0), SQL_NTS);
@@ -3632,12 +3632,12 @@ virtodbc__SQLSpecialColumns (
    as in SQLBase ROWID or Sybase (and KUBL!) TIMESTAMP (= COL_DTP 128).
  */
       if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
-	rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    (stmt->stmt_connection->con_db_casemode == 2 ?
 	     sql_special_columnsw2_casemode_2 :
 	     sql_special_columnsw2_casemode_0), SQL_NTS);
       else
-	rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+	rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	    (stmt->stmt_connection->con_db_casemode == 2 ?
 	     sql_special_columns2_casemode_2 :
 	     sql_special_columns2_casemode_0), SQL_NTS);
@@ -3655,11 +3655,11 @@ RETCODE SQL_API
 SQLSpecialColumns (
 	SQLHSTMT hstmt,
 	UWORD fColType,
-	UCHAR * wszTableQualifier,
+	SQLCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * wszTableOwner,
+	SQLCHAR * wszTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * wszTableName,
+	SQLCHAR * wszTableName,
 	SWORD cbTableName,
 	UWORD fScope, /* SQL_SCOPE_CURROW, _TRANSACTION or _SESSION */
 	UWORD fNullable) /* SQL_NO_NULLS or SQL_NULLABLE. <- Ignored ^ */
@@ -4041,18 +4041,18 @@ char *sql_statistics_textw_casemode_2 =
 RETCODE SQL_API
 virtodbc__SQLStatistics (
 	SQLHSTMT hstmt,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName,
 	UWORD fUnique,/* Type of index SQL_INDEX_UNIQUE or SQL_INDEX_ALL */
 	UWORD fAccuracy) /* SQL_ENSURE or SQL_QUICK, currently ignored. */
 {
   STMT (stmt, hstmt);
   RETCODE rc;
-  UCHAR *percent = (UCHAR *) "%";
+  SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   SWORD uniques_only = (fUnique == SQL_INDEX_UNIQUE);	/* Either 1 or 0 */
   SQLLEN cb_uniques_only = 0;
@@ -4088,33 +4088,33 @@ virtodbc__SQLStatistics (
   DEFAULT_QUAL (stmt, cbqual);
 
   virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableQualifier ? (UCHAR *)_szTableQualifier : percent,
+	       szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent,
 	       szTableQualifier ? &cbqual : &plen);
   virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableOwner ? (UCHAR *)_szTableOwner : percent,
+	       szTableOwner ? (SQLCHAR *)_szTableOwner : percent,
 	       szTableOwner ? &cbown : &plen);
   virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableName ? (UCHAR *)_szTableName : percent,
+	       szTableName ? (SQLCHAR *)_szTableName : percent,
 	       szTableName ? &cbtab : &plen);
   virtodbc__SQLSetParam (hstmt, 4, SQL_C_SSHORT, SQL_INTEGER, 0, 0,
 	       &uniques_only, &cb_uniques_only);
   virtodbc__SQLSetParam (hstmt, 5, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableQualifier ? (UCHAR *)_szTableQualifier : percent,
+	       szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent,
 	       szTableQualifier ? &cbqual : &plen);
   virtodbc__SQLSetParam (hstmt, 6, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableOwner ? (UCHAR *)_szTableOwner : percent,
+	       szTableOwner ? (SQLCHAR *)_szTableOwner : percent,
 	       szTableOwner ? &cbown : &plen);
   virtodbc__SQLSetParam (hstmt, 7, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       szTableName ? (UCHAR *)_szTableName : percent,
+	       szTableName ? (SQLCHAR *)_szTableName : percent,
 	       szTableName ? &cbtab : &plen);
 
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
-    rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	(stmt->stmt_connection->con_db_casemode == 2 ?
 	 sql_statistics_textw_casemode_2 :
 	 sql_statistics_textw_casemode_0), SQL_NTS);
   else
-    rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	(stmt->stmt_connection->con_db_casemode == 2 ?
 	 sql_statistics_text_casemode_2 :
 	 sql_statistics_text_casemode_0), SQL_NTS);
@@ -4128,11 +4128,11 @@ virtodbc__SQLStatistics (
 RETCODE SQL_API
 SQLStatistics (
 	SQLHSTMT hstmt,
-	UCHAR * wszTableQualifier,
+	SQLCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * wszTableOwner,
+	SQLCHAR * wszTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * wszTableName,
+	SQLCHAR * wszTableName,
 	SWORD cbTableName,
 	UWORD fUnique,/* Type of index SQL_INDEX_UNIQUE or SQL_INDEX_ALL */
 	UWORD fAccuracy) /* SQL_ENSURE or SQL_QUICK, currently ignored. */
@@ -4165,10 +4165,10 @@ SQLStatistics (
 RETCODE SQL_API SQLDrivers (
 	SQLHENV henv,
 	UWORD fDirection,
-	UCHAR * szDriverDesc,
+	SQLCHAR * szDriverDesc,
 	SWORD cbDriverDescMax,
 	SWORD * pcbDriverDesc,
-	UCHAR * szDriverAttributes,
+	SQLCHAR * szDriverAttributes,
 	SWORD cbDrvrAttrMax,
 	SWORD * pcbDrvrAttr)
 {
@@ -4297,17 +4297,17 @@ char * fk_textw_casemode_2 =
 RETCODE SQL_API
 virtodbc__SQLForeignKeys (
 	SQLHSTMT hstmt,
-	UCHAR * szPkTableQualifier,
+	SQLCHAR * szPkTableQualifier,
 	SWORD cbPkTableQualifier,
-	UCHAR * szPkTableOwner,
+	SQLCHAR * szPkTableOwner,
 	SWORD cbPkTableOwner,
-	UCHAR * szPkTableName,
+	SQLCHAR * szPkTableName,
 	SWORD cbPkTableName,
-	UCHAR * szFkTableQualifier,
+	SQLCHAR * szFkTableQualifier,
 	SWORD cbFkTableQualifier,
-	UCHAR * szFkTableOwner,
+	SQLCHAR * szFkTableOwner,
 	SWORD cbFkTableOwner,
-	UCHAR * szFkTableName,
+	SQLCHAR * szFkTableName,
 	SWORD cbFkTableName)
 {
   STMT (stmt, hstmt);
@@ -4323,12 +4323,12 @@ virtodbc__SQLForeignKeys (
 
   if (!szFkTableQualifier)
     {
-      szFkTableQualifier = (UCHAR *) qual;
+      szFkTableQualifier = (SQLCHAR *) qual;
       cbFkTableQualifier = SQL_NTS;
     }
   if (!szPkTableQualifier)
     {
-      szPkTableQualifier = (UCHAR *) qual;
+      szPkTableQualifier = (SQLCHAR *) qual;
       cbPkTableQualifier = SQL_NTS;
     }
 
@@ -4342,12 +4342,12 @@ virtodbc__SQLForeignKeys (
 
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
     rc = virtodbc__SQLExecDirect (hstmt,
-	(UCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
+	(SQLCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
 		  fk_textw_casemode_2 : fk_textw_casemode_0),
 	SQL_NTS);
   else
     rc = virtodbc__SQLExecDirect (hstmt,
-	(UCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
+	(SQLCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
 		  fk_text_casemode_2 : fk_text_casemode_0),
 	SQL_NTS);
 
@@ -4360,17 +4360,17 @@ virtodbc__SQLForeignKeys (
 RETCODE SQL_API
 SQLForeignKeys (
 	SQLHSTMT hstmt,
-	UCHAR * wszPkTableQualifier,
+	SQLCHAR * wszPkTableQualifier,
 	SWORD cbPkTableQualifier,
-	UCHAR * wszPkTableOwner,
+	SQLCHAR * wszPkTableOwner,
 	SWORD cbPkTableOwner,
-	UCHAR * wszPkTableName,
+	SQLCHAR * wszPkTableName,
 	SWORD cbPkTableName,
-	UCHAR * wszFkTableQualifier,
+	SQLCHAR * wszFkTableQualifier,
 	SWORD cbFkTableQualifier,
-	UCHAR * wszFkTableOwner,
+	SQLCHAR * wszFkTableOwner,
 	SWORD cbFkTableOwner,
-	UCHAR * wszFkTableName,
+	SQLCHAR * wszFkTableName,
 	SWORD cbFkTableName)
 {
   size_t len;
@@ -4458,9 +4458,9 @@ SQLMoreResults (
 RETCODE SQL_API
 virtodbc__SQLNativeSql (
     SQLHDBC hdbc,
-    UCHAR * szSqlStrIn,
+    SQLCHAR * szSqlStrIn,
     SQLINTEGER cbSqlStrIn,
-    UCHAR * szSqlStr,
+    SQLCHAR * szSqlStr,
     SQLINTEGER cbSqlStrMax,
     SQLINTEGER * pcbSqlStr)
 {
@@ -4494,9 +4494,9 @@ virtodbc__SQLNativeSql (
 RETCODE SQL_API
 SQLNativeSql (
 	SQLHDBC hdbc,
-	UCHAR * wszSqlStrIn,
+	SQLCHAR * wszSqlStrIn,
 	SQLINTEGER cbSqlStrIn,
-	UCHAR * wszSqlStr,
+	SQLCHAR * wszSqlStr,
 	SQLINTEGER cbSqlStr,
 	SQLINTEGER * pcbSqlStr)
 {
@@ -4860,7 +4860,7 @@ SQLPutData (
 	  dae = (caddr_t) ses;
 	}
       else
-	dae = box_n_string ((UCHAR *) rgbValue, cbValue);
+	dae = box_n_string ((SQLCHAR *) rgbValue, cbValue);
       stmt->stmt_dae_fragments = dk_set_conc (stmt->stmt_dae_fragments, dk_set_cons ((void*) dae, NULL));
       return SQL_SUCCESS;
     }
@@ -5592,16 +5592,16 @@ char *sql_pk_textw_casemode_2 =
 RETCODE SQL_API
 virtodbc__SQLPrimaryKeys (
 	SQLHSTMT hstmt,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName)
 {
   STMT (stmt, hstmt);
   RETCODE rc;
-/*  UCHAR *percent = (UCHAR *) "%"; */
+/*  SQLCHAR *percent = (SQLCHAR *) "%"; */
   SQLLEN cbqual, cbown, cbname;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
 	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
@@ -5612,10 +5612,10 @@ virtodbc__SQLPrimaryKeys (
   BIND_NAME_PART (hstmt, 2, szTableOwner, _szTableOwner, cbTableOwner, cbown);
   BIND_NAME_PART (hstmt, 3, szTableName, _szTableName, cbTableName, cbname);
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
-    rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	(stmt->stmt_connection->con_db_casemode == 2 ? sql_pk_textw_casemode_2 : sql_pk_textw_casemode_0), SQL_NTS);
   else
-    rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *)
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *)
 	(stmt->stmt_connection->con_db_casemode == 2 ? sql_pk_text_casemode_2 : sql_pk_text_casemode_0), SQL_NTS);
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
   return rc;
@@ -5625,11 +5625,11 @@ virtodbc__SQLPrimaryKeys (
 RETCODE SQL_API
 SQLPrimaryKeys (
 	SQLHSTMT hstmt,
-	UCHAR * wszTableQualifier,
+	SQLCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * wszTableOwner,
+	SQLCHAR * wszTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * wszTableName,
+	SQLCHAR * wszTableName,
 	SWORD cbTableName)
 {
   STMT (stmt, hstmt);
@@ -5660,13 +5660,13 @@ SQLPrimaryKeys (
 RETCODE SQL_API
 virtodbc__SQLProcedureColumns (
 	SQLHSTMT hstmt,
-	UCHAR * szProcQualifier,
+	SQLCHAR * szProcQualifier,
 	SWORD cbProcQualifier,
-	UCHAR * szProcOwner,
+	SQLCHAR * szProcOwner,
 	SWORD cbProcOwner,
-	UCHAR * szProcName,
+	SQLCHAR * szProcName,
 	SWORD cbProcName,
-	UCHAR * szColumnName,
+	SQLCHAR * szColumnName,
 	SWORD cbColumnName)
 {
   static char *proc_cols_text =
@@ -5706,9 +5706,9 @@ virtodbc__SQLProcedureColumns (
   virtodbc__SQLSetParam (hstmt, 6, SQL_C_LONG, SQL_INTEGER, 0, 0,
       &isODBC3, &cbodbc3);
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
-    rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *) proc_cols_textw, SQL_NTS);
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) proc_cols_textw, SQL_NTS);
   else
-    rc = virtodbc__SQLExecDirect (hstmt, (UCHAR *) proc_cols_text, SQL_NTS);
+    rc = virtodbc__SQLExecDirect (hstmt, (SQLCHAR *) proc_cols_text, SQL_NTS);
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
   return rc;
 }
@@ -5717,13 +5717,13 @@ virtodbc__SQLProcedureColumns (
 RETCODE SQL_API
 SQLProcedureColumns (
 	SQLHSTMT hstmt,
-	UCHAR * wszProcQualifier,
+	SQLCHAR * wszProcQualifier,
 	SWORD cbProcQualifier,
-	UCHAR * wszProcOwner,
+	SQLCHAR * wszProcOwner,
 	SWORD cbProcOwner,
-	UCHAR * wszProcName,
+	SQLCHAR * wszProcName,
 	SWORD cbProcName,
-	UCHAR * wszColumnName,
+	SQLCHAR * wszColumnName,
 	SWORD cbColumnName)
 {
   STMT (stmt, hstmt);
@@ -5854,11 +5854,11 @@ char *sql_proceduresw_casemode_2 =
 RETCODE SQL_API
 virtodbc__SQLProcedures (
 	SQLHSTMT hstmt,
-	UCHAR * szProcQualifier,
+	SQLCHAR * szProcQualifier,
 	SWORD cbProcQualifier,
-	UCHAR * szProcOwner,
+	SQLCHAR * szProcOwner,
 	SWORD cbProcOwner,
-	UCHAR * szProcName,
+	SQLCHAR * szProcName,
 	SWORD cbProcName)
 {
   STMT (stmt, hstmt);
@@ -5866,7 +5866,7 @@ virtodbc__SQLProcedures (
   SQLLEN cbowner = cbProcOwner;
   SQLLEN cbname = cbProcName;
   RETCODE rc;
-  UCHAR *percent = (UCHAR *) "%";
+  SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   char _szProcQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
 	  _szProcOwner[KUBL_IDENTIFIER_MAX_LENGTH],
@@ -5910,27 +5910,27 @@ virtodbc__SQLProcedures (
     szProcQualifier, or just a single percent if the szProcQualifier
     was NULL: */
   virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      (szProcQualifier ? (UCHAR *)_szProcQualifier : percent),
+      (szProcQualifier ? (SQLCHAR *)_szProcQualifier : percent),
       (szProcQualifier ? &cbqual : &plen));
 
   /* Similarly with szProcOwner and szProcName parameters: */
   virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      (szProcOwner ? (UCHAR *)_szProcOwner : percent),
+      (szProcOwner ? (SQLCHAR *)_szProcOwner : percent),
       (szProcOwner ? &cbowner : &plen));
 
   virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0,
-      (szProcName ? (UCHAR *)_szProcName : percent),
+      (szProcName ? (SQLCHAR *)_szProcName : percent),
       (szProcName ? &cbname : &plen));
 
 
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
     rc = virtodbc__SQLExecDirect (hstmt,
-	(UCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
+	(SQLCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
 		  sql_proceduresw_casemode_2 :
 		  sql_proceduresw_casemode_0) , SQL_NTS);
   else
     rc = virtodbc__SQLExecDirect (hstmt,
-	(UCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
+	(SQLCHAR *)(stmt->stmt_connection->con_db_casemode == 2 ?
 		  sql_procedures_casemode_2 :
 		  sql_procedures_casemode_0) , SQL_NTS);
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
@@ -5942,11 +5942,11 @@ virtodbc__SQLProcedures (
 RETCODE SQL_API
 SQLProcedures (
 	SQLHSTMT hstmt,
-	UCHAR * wszProcQualifier,
+	SQLCHAR * wszProcQualifier,
 	SWORD cbProcQualifier,
-	UCHAR * wszProcOwner,
+	SQLCHAR * wszProcOwner,
 	SWORD cbProcOwner,
-	UCHAR * wszProcName,
+	SQLCHAR * wszProcName,
 	SWORD cbProcName)
 {
   STMT (stmt, hstmt);
@@ -5999,11 +5999,11 @@ SQLSetScrollOptions (
 RETCODE SQL_API
 virtodbc__SQLTablePrivileges (
 	SQLHSTMT hstmt,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName)
 {
   STMT (stmt, hstmt);
@@ -6011,7 +6011,7 @@ virtodbc__SQLTablePrivileges (
   SQLLEN cbqual = cbTableQualifier;
   SQLLEN cbowner = cbTableOwner;
   SQLLEN cbname = cbTableName;
-  UCHAR *percent = (UCHAR *) "%";
+  SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
 	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
@@ -6047,21 +6047,21 @@ virtodbc__SQLTablePrivileges (
 
   DEFAULT_QUAL (stmt, cbqual);
   virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableQualifier ? (UCHAR *)_szTableQualifier : percent),
+	       (szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent),
 	       (szTableQualifier ? &cbqual : &plen));
 
 /* Similarly with szTableOwner and szTableName parameters: */
   virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableOwner ? (UCHAR *)_szTableOwner : percent),
+	       (szTableOwner ? (SQLCHAR *)_szTableOwner : percent),
 	       (szTableOwner ? &cbowner : &plen));
 
   virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableName ? (UCHAR *)_szTableName : percent),
+	       (szTableName ? (SQLCHAR *)_szTableName : percent),
 	       (szTableName ? &cbname : &plen));
 
 
   rc = virtodbc__SQLExecDirect (hstmt,
-      (UCHAR *) "DB.DBA.table_privileges(?,?,?)", SQL_NTS);
+      (SQLCHAR *) "DB.DBA.table_privileges(?,?,?)", SQL_NTS);
 
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
 
@@ -6072,11 +6072,11 @@ virtodbc__SQLTablePrivileges (
 RETCODE SQL_API
 SQLTablePrivileges (
 	SQLHSTMT hstmt,
-	UCHAR * wszTableQualifier,
+	SQLCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * wszTableOwner,
+	SQLCHAR * wszTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * wszTableName,
+	SQLCHAR * wszTableName,
 	SWORD cbTableName)
 {
   RETCODE rc;
@@ -6106,13 +6106,13 @@ SQLTablePrivileges (
 RETCODE SQL_API
 virtodbc__SQLColumnPrivileges (
 	SQLHSTMT hstmt,
-	UCHAR * szTableQualifier,
+	SQLCHAR * szTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * szTableOwner,
+	SQLCHAR * szTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * szTableName,
+	SQLCHAR * szTableName,
 	SWORD cbTableName,
-	UCHAR * szColumnName,
+	SQLCHAR * szColumnName,
 	SWORD cbColumnName)
 {
   STMT (stmt, hstmt);
@@ -6121,7 +6121,7 @@ virtodbc__SQLColumnPrivileges (
   SQLLEN cbowner = cbTableOwner;
   SQLLEN cbname = cbTableName;
   SQLLEN cbcolnam = cbColumnName;
-  UCHAR *percent = (UCHAR *) "%";
+  SQLCHAR *percent = (SQLCHAR *) "%";
   SQLLEN plen = SQL_NTS;
   char _szTableQualifier[KUBL_IDENTIFIER_MAX_LENGTH],
 	  _szTableOwner[KUBL_IDENTIFIER_MAX_LENGTH],
@@ -6169,28 +6169,28 @@ virtodbc__SQLColumnPrivileges (
     szTableQualifier, or just a single percent if the szTableQualifier
     was NULL: */
   virtodbc__SQLSetParam (hstmt, 1, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableQualifier ? (UCHAR *)_szTableQualifier : percent),
+	       (szTableQualifier ? (SQLCHAR *)_szTableQualifier : percent),
 	       (szTableQualifier ? &cbqual : &plen));
 
 /* Similarly with szTableOwner, szTableName and szColumnName parameters: */
   virtodbc__SQLSetParam (hstmt, 2, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableOwner ? (UCHAR *)_szTableOwner : percent),
+	       (szTableOwner ? (SQLCHAR *)_szTableOwner : percent),
 	       (szTableOwner ? &cbowner : &plen));
 
   virtodbc__SQLSetParam (hstmt, 3, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szTableName ? (UCHAR *)_szTableName : percent),
+	       (szTableName ? (SQLCHAR *)_szTableName : percent),
 	       (szTableName ? &cbname : &plen));
 
   virtodbc__SQLSetParam (hstmt, 4, SQL_C_CHAR, SQL_CHAR, 0, 0,
-	       (szColumnName ? (UCHAR *)_szColumnName : percent),
+	       (szColumnName ? (SQLCHAR *)_szColumnName : percent),
 	       (szColumnName ? &cbcolnam : &plen));
 
   if (stmt->stmt_connection->con_defs.cdef_utf8_execs)
     rc = virtodbc__SQLExecDirect (hstmt,
-	(UCHAR *) "DB.DBA.column_privileges_utf8(?,?,?,?)", SQL_NTS);
+	(SQLCHAR *) "DB.DBA.column_privileges_utf8(?,?,?,?)", SQL_NTS);
   else
     rc = virtodbc__SQLExecDirect (hstmt,
-	(UCHAR *) "DB.DBA.column_privileges(?,?,?,?)", SQL_NTS);
+	(SQLCHAR *) "DB.DBA.column_privileges(?,?,?,?)", SQL_NTS);
 
   virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
 
@@ -6201,13 +6201,13 @@ virtodbc__SQLColumnPrivileges (
 RETCODE SQL_API
 SQLColumnPrivileges (
 	SQLHSTMT hstmt,
-	UCHAR * wszTableQualifier,
+	SQLCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
-	UCHAR * wszTableOwner,
+	SQLCHAR * wszTableOwner,
 	SWORD cbTableOwner,
-	UCHAR * wszTableName,
+	SQLCHAR * wszTableName,
 	SWORD cbTableName,
-	UCHAR * wszColumnName,
+	SQLCHAR * wszColumnName,
 	SWORD cbColumnName)
 {
   size_t len;
@@ -6257,9 +6257,9 @@ SQLBindKey (
 RETCODE SQL_API
 SQLOpenTable (
 	SQLHSTMT hstmt,
-	UCHAR * szQualifiedTable,
+	SQLCHAR * szQualifiedTable,
 	SWORD cbQualifiedTable,
-	UCHAR * szIndexList,
+	SQLCHAR * szIndexList,
 	SWORD cbIndexList)
 {
   NOT_IMPL_FUN (hstmt, "Function not supported: SQLOpenTable");

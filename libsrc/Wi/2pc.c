@@ -765,8 +765,8 @@ void
 DoSQLError (SQLHDBC hdbc, SQLHSTMT hstmt)
 {
 
-  UCHAR szSqlState[MSG_BUF_SIZE];
-  UCHAR szErrorMsg[MSG_BUF_SIZE];
+  SQLCHAR szSqlState[MSG_BUF_SIZE];
+  SQLCHAR szErrorMsg[MSG_BUF_SIZE];
 
   SQLINTEGER fNativeError = 0;
   SWORD cbErrorMsg = MSG_BUF_SIZE;

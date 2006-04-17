@@ -477,7 +477,7 @@ virtodbc__SQLSetPos (
   if (!stmt->stmt_set_pos_stmt)
     {
       virtodbc__SQLAllocStmt ((SQLHDBC) stmt->stmt_connection, (SQLHSTMT *) & stmt->stmt_set_pos_stmt);
-      virtodbc__SQLPrepare ((SQLHSTMT) stmt->stmt_set_pos_stmt, (UCHAR *) "__set_pos (?, ?, ?, ?)" , SQL_NTS);
+      virtodbc__SQLPrepare ((SQLHSTMT) stmt->stmt_set_pos_stmt, (SQLCHAR *) "__set_pos (?, ?, ?, ?)" , SQL_NTS);
     }
   sps = stmt->stmt_set_pos_stmt;
 

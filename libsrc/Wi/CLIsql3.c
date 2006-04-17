@@ -968,8 +968,8 @@ virtodbc__SQLDriverConnect (
   printf (_T ("CONNECT(%s,%s,%s)\n"), szHost, UID, PWD);
 #endif
 
-  rc = internal_sql_connect (hdbc, (UCHAR *) szHost, SQL_NTS, (UCHAR *) UID,
-      SQL_NTS, (UCHAR *) PWD, SQL_NTS);
+  rc = internal_sql_connect (hdbc, (SQLCHAR *) szHost, SQL_NTS, (SQLCHAR *) UID,
+      SQL_NTS, (SQLCHAR *) PWD, SQL_NTS);
 
   if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
     {
