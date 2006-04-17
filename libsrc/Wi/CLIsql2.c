@@ -1019,7 +1019,7 @@ RETCODE SQL_API
 SQLGetConnectOption (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fOption,
-	PTR pvParam)
+	SQLPOINTER pvParam)
 {
   CON(con, hdbc);
   RETCODE rc;
@@ -1048,7 +1048,7 @@ RETCODE SQL_API
 virtodbc__SQLGetConnectOption (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fOption,
-	PTR pvParam,
+	SQLPOINTER pvParam,
 	SQLINTEGER StringLength,
 	UNALIGNED SQLINTEGER * StringLengthPtr)
 {
@@ -1472,7 +1472,7 @@ again:
 		    {
 		      SQLINTEGER ret = 1;
 		      SQLLEN cols;
-		      rc = SQLBindCol(stmt,1,SQL_INTEGER,(PTR)&ret,0,&cols);
+		      rc = SQLBindCol(stmt,1,SQL_INTEGER,(SQLPOINTER)&ret,0,&cols);
 		      if (SQL_SUCCESS == rc)
 			{
 			  rc = virtodbc__SQLFetch(stmt, 0);
@@ -1604,7 +1604,7 @@ RETCODE SQL_API
 SQLGetStmtOption (
       SQLHSTMT hstmt,
       SQLUSMALLINT fOption,
-      PTR pvParam)
+      SQLPOINTER pvParam)
 {
 	  return virtodbc__SQLGetStmtOption(hstmt, fOption, pvParam);
 }
@@ -1619,7 +1619,7 @@ RETCODE SQL_API
 virtodbc__SQLGetStmtOption (
       SQLHSTMT hstmt,
       SQLUSMALLINT fOption,
-      PTR pvParam)
+      SQLPOINTER pvParam)
 {
   STMT (stmt, hstmt);
   stmt_options_t *so = stmt->stmt_opts;
@@ -1945,7 +1945,7 @@ RETCODE SQL_API
 virtodbc__SQLGetInfo (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fInfoType,
-	PTR rgbInfoValue,
+	SQLPOINTER rgbInfoValue,
 	SQLSMALLINT cbInfoValueMax,
 	SQLSMALLINT * pcbInfoValue)
 {
@@ -3251,7 +3251,7 @@ RETCODE SQL_API
 SQLGetInfo (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fInfoType,
-	PTR rgbInfoValue,
+	SQLPOINTER rgbInfoValue,
 	SQLSMALLINT cbInfoValueMax,
 	SQLSMALLINT * pcbInfoValue)
 {
@@ -4683,7 +4683,7 @@ stmt_dae_value (cli_stmt_t * stmt)
 RETCODE SQL_API
 SQLParamData (
 	SQLHSTMT hstmt,
-	PTR * prgbValue)
+	SQLPOINTER * prgbValue)
 {
   /* when passing blobs with SQLPutData returns the number of the
      next blob to send or if all have been sent, the return code of the
@@ -4777,7 +4777,7 @@ SQLParamData (
 RETCODE SQL_API
 SQLPutData (
 	SQLHSTMT hstmt,
-	PTR rgbValue,
+	SQLPOINTER rgbValue,
 	SQLLEN cbValue)
 {
   /* Send stuff. If called in the right place the server will be waiting
@@ -4988,7 +4988,7 @@ SQLPutData (
 RETCODE
 sql_get_bookmark (cli_stmt_t * stmt, caddr_t * row,
 		  SQLSMALLINT fCType,
-		  PTR rgbValue,
+		  SQLPOINTER rgbValue,
 		  SQLLEN cbValueMax,
 		  SQLLEN * pcbValue)
 {
@@ -5012,7 +5012,7 @@ virtodbc__SQLGetData (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT icol,
 	SQLSMALLINT fCType,
-	PTR rgbValue,
+	SQLPOINTER rgbValue,
 	SQLLEN cbValueMax,
 	SQLLEN * pcbValue)
 {
@@ -5402,7 +5402,7 @@ SQLGetData (
     SQLHSTMT hstmt,
     SQLUSMALLINT icol,
     SQLSMALLINT fCType,
-    PTR rgbValue,
+    SQLPOINTER rgbValue,
     SQLLEN cbValueMax,
     SQLLEN * pcbValue)
 {
@@ -6247,7 +6247,7 @@ SQLBindKey (
 	SQLSMALLINT fCType,
 	UDWORD cbPrecision,
 	SQLSMALLINT ibScale,
-	PTR rgbValue,
+	SQLPOINTER rgbValue,
 	SDWORD * pcbValue)
 {
   NOT_IMPL_FUN (hstmt, "Function not supported: SQLBindKey");

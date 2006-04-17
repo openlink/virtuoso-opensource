@@ -453,11 +453,11 @@ RETCODE SQL_API virtodbc__SQLExecDirect (SQLHSTMT hstmt, SQLCHAR * szSqlStr,
 RETCODE SQL_API virtodbc__SQLFetch (SQLHSTMT hstmt, int preserve_rowset_at_end);
 
 RETCODE SQL_API virtodbc__SQLSetParam (SQLHSTMT hstmt, SQLUSMALLINT ipar, SQLSMALLINT fCType,
-    SQLSMALLINT fSqlType, SQLULEN cbColDef, SQLSMALLINT ibScale, PTR rgbValue,
+    SQLSMALLINT fSqlType, SQLULEN cbColDef, SQLSMALLINT ibScale, SQLPOINTER rgbValue,
     SQLLEN * pcbValue);
 
 RETCODE SQL_API virtodbc__SQLGetData (SQLHSTMT hstmt, SQLUSMALLINT icol, SQLSMALLINT fCType,
-    PTR rgbValue, SQLLEN cbValueMax, SQLLEN * pcbValue);
+    SQLPOINTER rgbValue, SQLLEN cbValueMax, SQLLEN * pcbValue);
 
 RETCODE SQL_API virtodbc__SQLAllocEnv (SQLHENV * phenv);
 
@@ -475,13 +475,13 @@ RETCODE SQL_API virtodbc__SQLError (SQLHENV henv, SQLHDBC hdbc, SQLHSTMT hstmt,
 	SQLCHAR * szSqlState, SQLINTEGER * pfNativeError, SQLCHAR * szErrorMsg,
 	SQLSMALLINT cbErrorMsgMax, SQLSMALLINT * pcbErrorMsg, int bClearState);
 
-RETCODE SQL_API virtodbc__SQLGetStmtOption (SQLHSTMT hstmt, SQLUSMALLINT fOption, PTR pvParam);
+RETCODE SQL_API virtodbc__SQLGetStmtOption (SQLHSTMT hstmt, SQLUSMALLINT fOption, SQLPOINTER pvParam);
 
 RETCODE SQL_API virtodbc__SQLSetStmtOption (SQLHSTMT hstmt, SQLUSMALLINT fOption, SQLULEN vParam);
 
 RETCODE SQL_API virtodbc__SQLSetConnectOption (SQLHDBC hdbc, SQLUSMALLINT fOption, SQLULEN vParam);
 
-RETCODE SQL_API virtodbc__SQLGetConnectOption (SQLHDBC hdbc, SQLUSMALLINT fOption, PTR pvParam, SQLINTEGER StringLength, UNALIGNED SQLINTEGER * StringLengthPtr);
+RETCODE SQL_API virtodbc__SQLGetConnectOption (SQLHDBC hdbc, SQLUSMALLINT fOption, SQLPOINTER pvParam, SQLINTEGER StringLength, UNALIGNED SQLINTEGER * StringLengthPtr);
 
 RETCODE SQL_API virtodbc__SQLGetTypeInfo (SQLHSTMT hstmt, SQLSMALLINT fSqlType);
 
@@ -498,12 +498,12 @@ RETCODE SQL_API virtodbc__SQLPrepare (SQLHSTMT hstmt,SQLCHAR * szSqlStr, SQLINTE
 
 SQLRETURN SQL_API virtodbc__SQLSetPos ( SQLHSTMT hstmt, SQLSETPOSIROW irow, SQLUSMALLINT fOption, SQLUSMALLINT fLock);
 
-RETCODE SQL_API virtodbc__SQLColAttributes (SQLHSTMT hstmt,SQLUSMALLINT icol,SQLUSMALLINT fDescType, PTR rgbDesc,SQLSMALLINT cbDescMax,SQLSMALLINT * pcbDesc, SQLLEN * pfDesc);
+RETCODE SQL_API virtodbc__SQLColAttributes (SQLHSTMT hstmt,SQLUSMALLINT icol,SQLUSMALLINT fDescType, SQLPOINTER rgbDesc,SQLSMALLINT cbDescMax,SQLSMALLINT * pcbDesc, SQLLEN * pfDesc);
 
 RETCODE SQL_API virtodbc__SQLNumResultCols (SQLHSTMT hstmt, SQLSMALLINT * pccol);
 
 RETCODE SQL_API virtodbc__SQLBindParameter ( SQLHSTMT hstmt, SQLUSMALLINT ipar, SQLSMALLINT fParamType, SQLSMALLINT fCType,
-    SQLSMALLINT fSqlType, SQLULEN cbColDef, SQLSMALLINT ibScale, PTR rgbValue, SQLLEN cbValueMax, SQLLEN * pcbValue);
+    SQLSMALLINT fSqlType, SQLULEN cbColDef, SQLSMALLINT ibScale, SQLPOINTER rgbValue, SQLLEN cbValueMax, SQLLEN * pcbValue);
 
 
 RETCODE SQL_API virtodbc__SQLSpecialColumns ( SQLHSTMT hstmt, SQLUSMALLINT fColType, SQLCHAR * szTableQualifier,
@@ -566,7 +566,7 @@ RETCODE SQL_API
 virtodbc__SQLGetInfo (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fInfoType,
-	PTR rgbInfoValue,
+	SQLPOINTER rgbInfoValue,
 	SQLSMALLINT cbInfoValueMax,
 	SQLSMALLINT * pcbInfoValue);
 

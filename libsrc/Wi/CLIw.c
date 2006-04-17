@@ -692,7 +692,7 @@ RETCODE SQL_API
 SQLGetConnectOptionW (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fOption,
-	PTR pvParam)
+	SQLPOINTER pvParam)
 {
   CON_CHARSET(hdbc);
   RETCODE rc;
@@ -902,7 +902,7 @@ RETCODE SQL_API
 SQLGetInfoW (
 	SQLHDBC hdbc,
 	SQLUSMALLINT fInfoType,
-	PTR rgbInfoValue,
+	SQLPOINTER rgbInfoValue,
 	SQLSMALLINT cbInfoValueMax,
 	SQLSMALLINT * pcbInfoValue)
 {

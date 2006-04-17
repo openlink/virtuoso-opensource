@@ -1437,7 +1437,7 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLGetConnectAttr(...) mapped to SQLGetConnectOption(...)\n");
 #endif
-      return virtodbc__SQLGetConnectOption (connectionHandle, (SQLUSMALLINT) Attribute, (PTR) ValuePtr, StringLength, StringLengthPtr);
+      return virtodbc__SQLGetConnectOption (connectionHandle, (SQLUSMALLINT) Attribute, (SQLPOINTER) ValuePtr, StringLength, StringLengthPtr);
 
     default:
 #if defined(WIN32) && defined(DEBUG)

@@ -217,7 +217,7 @@ SQLColAttributes (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT icol,
 	SQLUSMALLINT fDescType,
-	PTR rgbDesc,
+	SQLPOINTER rgbDesc,
 	SQLSMALLINT cbDescMax,
 	SQLSMALLINT * pcbDesc,
 	SQLLEN * pfDesc)
@@ -272,7 +272,7 @@ virtodbc__SQLColAttributes (
 	SQLHSTMT hstmt,
 	SQLUSMALLINT icol,
 	SQLUSMALLINT fDescType,
-	PTR rgbDesc,
+	SQLPOINTER rgbDesc,
 	SQLSMALLINT cbDescMax,
 	SQLSMALLINT * pcbDesc,
 	SQLLEN * pfDesc)
@@ -1852,7 +1852,7 @@ virtodbc__SQLSetParam (
       SQLSMALLINT fSqlType,
       SQLULEN cbColDef,
       SQLSMALLINT ibScale,
-      PTR rgbValue,
+      SQLPOINTER rgbValue,
       SQLLEN * pcbValue)
 {
   STMT (stmt, hstmt);
@@ -1880,7 +1880,7 @@ SQLSetParam (
       SQLSMALLINT fSqlType,
       SQLULEN cbColDef,
       SQLSMALLINT ibScale,
-      PTR rgbValue,
+      SQLPOINTER rgbValue,
       SQLLEN * pcbValue)
 {
   return virtodbc__SQLSetParam (hstmt, ipar, fCType, fSqlType, cbColDef, ibScale,
@@ -1897,7 +1897,7 @@ virtodbc__SQLBindParameter (
 	SQLSMALLINT fSqlType,
 	SQLULEN cbColDef,
 	SQLSMALLINT ibScale,
-	PTR rgbValue,
+	SQLPOINTER rgbValue,
 	SQLLEN cbValueMax,
 	SQLLEN * pcbValue)
 {
@@ -1939,7 +1939,7 @@ SQLBindParameter (
     SQLSMALLINT fSqlType,
     SQLULEN cbColDef,
     SQLSMALLINT ibScale,
-    PTR rgbValue,
+    SQLPOINTER rgbValue,
     SQLLEN cbValueMax,
     SQLLEN * pcbValue)
 {

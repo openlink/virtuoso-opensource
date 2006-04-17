@@ -1451,7 +1451,7 @@ re_connect:
   if (SQL_SUCCESS == rc)
     {
       SQLLEN cols;
-      rc = SQLBindCol (rst->rst_hstmt, 1, SQL_INTEGER, (PTR) & ret, 0, &cols);
+      rc = SQLBindCol (rst->rst_hstmt, 1, SQL_INTEGER, (SQLPOINTER) & ret, 0, &cols);
       if (SQL_SUCCESS == rc)
 	{
 	  rc = SQLFetch (rst->rst_hstmt);
