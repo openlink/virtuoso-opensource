@@ -769,7 +769,7 @@ DoSQLError (SQLHDBC hdbc, SQLHSTMT hstmt)
   SQLCHAR szErrorMsg[MSG_BUF_SIZE];
 
   SQLINTEGER fNativeError = 0;
-  SWORD cbErrorMsg = MSG_BUF_SIZE;
+  SQLSMALLINT cbErrorMsg = MSG_BUF_SIZE;
   RETCODE rc;
 
   rc = SQLError (henv,
@@ -1159,7 +1159,7 @@ tp_trx_commit_1 (lock_trx_t * lt, int is_commit)
 #if UNIVERSE 
   virt_trx_t *vtrx = (virt_trx_t *) (lt->lt_2pc._2pc_info ?
       lt->lt_2pc._2pc_info->dtrx_info : NULL);
-  UWORD op = is_commit ? SQL_TP_PREPARE : SQL_TP_ABORT;
+  SQLUSMALLINT op = is_commit ? SQL_TP_PREPARE : SQL_TP_ABORT;
   if (!vtrx || lt->lt_2pc._2pc_invalid)
     {
       return LTE_DEADLOCK;
@@ -1218,7 +1218,7 @@ tp_trx_commit_2 (caddr_t distr_trx, int is_commit)
 {
 #if UNIVERSE
   virt_trx_t *vtrx = (virt_trx_t *) distr_trx;
-  UWORD op = is_commit ? SQL_TP_COMMIT : SQL_TP_ABORT;
+  SQLUSMALLINT op = is_commit ? SQL_TP_COMMIT : SQL_TP_ABORT;
   DO_SET (virt_rcon_t *, vbranch, &vtrx->vtx_cons)
   {
     if (!vbranch->vtr_is_finilized)

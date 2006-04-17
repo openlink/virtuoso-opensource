@@ -494,7 +494,7 @@ set_success_info (sql_error_t * err, char *state, char *virt_state, char *messag
 
 
 void
-set_data_truncated_success_info (cli_stmt_t *stmt, char *virt_state, UWORD icol)
+set_data_truncated_success_info (cli_stmt_t *stmt, char *virt_state, SQLUSMALLINT icol)
 {
   char *base_col;
   char icol_buf[30];
@@ -1602,7 +1602,7 @@ str_box_to_buffer (
 	  if (length_is_long)
 	    *(SDWORD*)string_length_ptr = len;
 	  else
-	    *(SWORD*)string_length_ptr = len;
+	    *(SQLSMALLINT*)string_length_ptr = len;
 	}
     }
   else
@@ -1622,7 +1622,7 @@ str_box_to_buffer (
 	  if (length_is_long)
 	    *(SDWORD*)string_length_ptr = 0;
 	  else
-	    *(SWORD*)string_length_ptr = 0;
+	    *(SQLSMALLINT*)string_length_ptr = 0;
 	}
     }
 
@@ -1982,7 +1982,7 @@ strses_cp_narrow_to_wide (void *dest_ptr, void *src_ptr, long src_ofs, long copy
 static SQLLEN
 dv_strses_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
     SQLLEN *len_ret, SQLLEN str_from_pos, cli_stmt_t * stmt, int nth_col,
-    SQLLEN box_len, int c_type, SWORD sql_type)
+    SQLLEN box_len, int c_type, SQLSMALLINT sql_type)
 {
   dk_session_t *ses = (dk_session_t *) it;
   long len, ses_len;
@@ -2101,7 +2101,7 @@ dv_strses_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 SQLLEN
 dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
     SQLLEN *len_ret, SQLLEN str_from_pos, cli_stmt_t * stmt, int nth_col,
-    SQLLEN box_len, int c_type, SWORD sql_type)
+    SQLLEN box_len, int c_type, SQLSMALLINT sql_type)
 {
   SQLLEN len = 0, piece_len = 0;
   char temp[500];		/* Enough? - greater than max length of numeric output by sprintf */
@@ -2129,11 +2129,11 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
       if (nth_col != -1)
 	{
 #ifndef MAP_DIRECT_BIN_CHAR
-	      virtodbc__SQLGetData ((SQLHSTMT) stmt, (UWORD) nth_col, (SWORD) (c_type == SQL_C_WCHAR ? SQL_C_WCHAR :
+	      virtodbc__SQLGetData ((SQLHSTMT) stmt, (SQLUSMALLINT) nth_col, (SQLSMALLINT) (c_type == SQL_C_WCHAR ? SQL_C_WCHAR :
 		  c_type == SQL_C_BINARY ? SQL_C_BINARY : SQL_C_CHAR),
 		  place, max, len_ret);
 #else
-	      virtodbc__SQLGetData ((SQLHSTMT) stmt, (UWORD) nth_col,
+	      virtodbc__SQLGetData ((SQLHSTMT) stmt, (SQLUSMALLINT) nth_col,
 		  c_type == SQL_C_WCHAR ? SQL_C_WCHAR : SQL_C_CHAR,
 		  place, max, len_ret);
 #endif
@@ -2216,7 +2216,7 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 	  dt_to_string (it, temp, sizeof (temp));
 
 	  if (!sql_type && nth_col != -1)
-	    virtodbc__SQLDescribeCol ((SQLHSTMT) stmt, (UWORD) nth_col, NULL, (SWORD) 0, NULL, &sql_type,
+	    virtodbc__SQLDescribeCol ((SQLHSTMT) stmt, (SQLUSMALLINT) nth_col, NULL, (SQLSMALLINT) 0, NULL, &sql_type,
 		NULL, NULL, NULL);
 	  switch (sql_type)
 	    {
@@ -2547,7 +2547,7 @@ void nt_to_numeric_struct (char * dt, SQL_NUMERIC_STRUCT * ons);
 SQLLEN
 dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
     int c_type,			/* cb->cb_c_type,     from SQLBindCol fCType */
-    SWORD sql_type,		/* pb->pb_sql_type from stmt_set_proc_return,
+    SQLSMALLINT sql_type,		/* pb->pb_sql_type from stmt_set_proc_return,
 				   0 elsewhere. New arg by AK 31-MAR-1997 */
     SQLLEN max,			/* cb->cb_max_length, from SQLBindCol cbValueMax */
     caddr_t place,		/* cb->cb_place,      from SQLBindCol rgbValue */
@@ -2564,9 +2564,9 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
     {
       if (nth_col != -1)
 	{
-	  SWORD sql_type;
-	  virtodbc__SQLDescribeCol ((SQLHSTMT) stmt, (UWORD) nth_col, NULL,
-	      (SWORD) 0, NULL, &sql_type, NULL, NULL, NULL);
+	  SQLSMALLINT sql_type;
+	  virtodbc__SQLDescribeCol ((SQLHSTMT) stmt, (SQLUSMALLINT) nth_col, NULL,
+	      (SQLSMALLINT) 0, NULL, &sql_type, NULL, NULL, NULL);
 	  c_type = sql_type_to_sqlc_default (sql_type);
 	}
       else
@@ -3018,7 +3018,7 @@ stmt_set_columns (cli_stmt_t * stmt, caddr_t * row, int nth_in_set)
 	  if (len)
 	    len = (SQLLEN*) (((char*)len) + l_offset + rebind_offset);
 	  stmt->stmt_current_row = row;
-	  virtodbc__SQLGetData ((SQLHSTMT) stmt, (UWORD) 0, (SWORD) cb->cb_c_type,
+	  virtodbc__SQLGetData ((SQLHSTMT) stmt, (SQLUSMALLINT) 0, (SQLSMALLINT) cb->cb_c_type,
 	      cb->cb_place + pl_offset + rebind_offset, cb->cb_max_length, len);
 	  stmt->stmt_current_row = old_curr_row;
 	}

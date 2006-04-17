@@ -151,7 +151,7 @@ stmt_process_rowset (cli_stmt_t * stmt, int ftype, SQLULEN * pcrow)
 
       stmt_set_columns (stmt, stmt->stmt_rowset[inx], inx);
       if (stmt->stmt_row_status)
-	stmt->stmt_row_status[inx] = (UWORD) rstat;
+	stmt->stmt_row_status[inx] = (SQLUSMALLINT) rstat;
     }
   if (pcrow)
     *pcrow = nth;
@@ -178,7 +178,7 @@ stmt_process_rowset (cli_stmt_t * stmt, int ftype, SQLULEN * pcrow)
 
 
 int
-sql_ext_fetch_fwd (SQLHSTMT hstmt, SQLULEN * pcrow, UWORD * rgfRowStatus)
+sql_ext_fetch_fwd (SQLHSTMT hstmt, SQLULEN * pcrow, SQLUSMALLINT * rgfRowStatus)
 {
   int rc = 0;
   int row_count = 0;
@@ -259,10 +259,10 @@ sql_fetch_scrollable (cli_stmt_t * stmt)
 RETCODE SQL_API
 virtodbc__SQLExtendedFetch (
 		     SQLHSTMT hstmt,
-		     UWORD fFetchType,
+		     SQLUSMALLINT fFetchType,
 		     SQLLEN irow,
 		     SQLULEN * pcrow,
-		     UWORD * rgfRowStatus,
+		     SQLUSMALLINT * rgfRowStatus,
 		     SQLLEN bookmark_offset)
 {
   caddr_t bookmark = NULL;
@@ -415,8 +415,8 @@ SQLRETURN SQL_API
 SQLSetPos (
 	    SQLHSTMT hstmt,
 	    SQLSETPOSIROW irow,
-	    UWORD fOption,
-	    UWORD fLock)
+	    SQLUSMALLINT fOption,
+	    SQLUSMALLINT fLock)
 {
   return virtodbc__SQLSetPos(hstmt, irow, fOption, fLock);
 }
@@ -425,8 +425,8 @@ SQLRETURN SQL_API
 virtodbc__SQLSetPos (
 	    SQLHSTMT hstmt,
 	    SQLSETPOSIROW _irow,
-	    UWORD fOption,
-	    UWORD fLock)
+	    SQLUSMALLINT fOption,
+	    SQLUSMALLINT fLock)
 {
   sql_error_rec_t *err_queue = NULL;
   int irow = (int) _irow;

@@ -90,7 +90,7 @@ typedef struct rds_connection_s
     struct _rstmtstruct *rc_first_rst;
     struct _rstmtstruct *rc_last_rst;
     int			rc_access_mode;
-    SWORD		rc_txn_capable;
+    SQLSMALLINT		rc_txn_capable;
     SQLSMALLINT		rc_commit_behavior;
     SQLSMALLINT		rc_rollback_behavior;
     int			rc_autocommit;

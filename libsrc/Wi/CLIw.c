@@ -114,7 +114,7 @@ if (wsz##param) \
   { \
     if (cb##param > 0) \
       { \
-	SWORD len1 = (SWORD) cli_narrow_to_wide (charset, 0, sz##param, *_pcb##param, WCHAR_CAST wsz##param, cb##param - 1); \
+	SQLSMALLINT len1 = (SQLSMALLINT) cli_narrow_to_wide (charset, 0, sz##param, *_pcb##param, WCHAR_CAST wsz##param, cb##param - 1); \
 	if (len1 >= 0) \
 	  (WCHAR_CAST wsz##param)[len1] = 0; \
 	else \
@@ -143,7 +143,7 @@ if (wsz##param) \
 #define SET_AND_FREE_OUTPUT_CHAR_NARROW(param, con) \
 if (wsz##param) \
   { \
-    SWORD len1; \
+    SQLSMALLINT len1; \
     if ((con)->con_defs.cdef_utf8_execs) \
       { \
 	virt_mbstate_t ps; \
@@ -151,7 +151,7 @@ if (wsz##param) \
 	memset (&ps, 0, sizeof (virt_mbstate_t)); \
 	if (cb##param > 0) \
 	  { \
-	    len1 = (SWORD) virt_mbsnrtowcs (WCHAR_CAST wsz##param, &src, *_pcb##param, cb##param - 1, &ps); \
+	    len1 = (SQLSMALLINT) virt_mbsnrtowcs (WCHAR_CAST wsz##param, &src, *_pcb##param, cb##param - 1, &ps); \
             if (len1 >= 0) \
 	      (WCHAR_CAST wsz##param)[len1] = 0; \
             else \
@@ -164,7 +164,7 @@ if (wsz##param) \
       { \
 	if (cb##param > 0) \
 	  { \
-	    len1 = (SWORD) cli_narrow_to_wide (charset, 0, sz##param, *_pcb##param, WCHAR_CAST wsz##param, cb##param - 1); \
+	    len1 = (SQLSMALLINT) cli_narrow_to_wide (charset, 0, sz##param, *_pcb##param, WCHAR_CAST wsz##param, cb##param - 1); \
             if (len1 >= 0) \
 	      (WCHAR_CAST wsz##param)[len1] = 0; \
 	    else \
@@ -200,10 +200,10 @@ if (pcb##param) \
       if ((con) && (con)->con_defs.cdef_utf8_execs) \
 	{ \
 	  virt_mbstate_t ps; \
-	  SWORD len1; \
+	  SQLSMALLINT len1; \
 	  unsigned char *src = (unsigned char *) _##wide; \
 	  memset (&ps, 0, sizeof (virt_mbstate_t)); \
-	  len1 = (SWORD) virt_mbsnrtowcs (WCHAR_CAST wide, &src, len2, len, &ps); \
+	  len1 = (SQLSMALLINT) virt_mbsnrtowcs (WCHAR_CAST wide, &src, len2, len, &ps); \
 	  if (len1 >= 0) \
 	    { \
 	      if (plen) \
@@ -221,14 +221,14 @@ if (pcb##param) \
 	  size_t len1 = cli_narrow_to_wide (charset, 0, (unsigned char *) _##wide, len2, WCHAR_CAST wide, len); \
 	  ((wchar_t *) wide)[len1] = 0; \
 	  if (plen) \
-	    *plen = (SWORD) len2 * /*N_BYTES_PER_CHAR */sizeof (wchar_t); \
+	    *plen = (SQLSMALLINT) len2 * /*N_BYTES_PER_CHAR */sizeof (wchar_t); \
 	} \
       dk_free_box (_##wide); \
     } \
   else \
     { \
       if (plen) \
-	*plen = (SWORD) *_##plen * /*N_BYTES_PER_CHAR */sizeof (wchar_t); \
+	*plen = (SQLSMALLINT) *_##plen * /*N_BYTES_PER_CHAR */sizeof (wchar_t); \
     }
 
 
@@ -269,11 +269,11 @@ RETCODE SQL_API
 SQLConnectW (
 	SQLHDBC hdbc,
 	SQLWCHAR * wszDSN,
-	SWORD cbDSN,
+	SQLSMALLINT cbDSN,
 	SQLWCHAR * wszUID,
-	SWORD cbUID,
+	SQLSMALLINT cbUID,
 	SQLWCHAR * wszPWD,
-	SWORD cbPWD)
+	SQLSMALLINT cbPWD)
 {
   long len;
   CON_CHARSET(hdbc);
@@ -301,10 +301,10 @@ RETCODE SQL_API
 SQLBrowseConnectW (
       SQLHDBC hdbc,
       SQLWCHAR * szConnStrIn,
-      SWORD cbConnStrIn,
+      SQLSMALLINT cbConnStrIn,
       SQLWCHAR * szConnStrOut,
-      SWORD cbConnStrOutMax,
-      SWORD * pcbConnStrOut)
+      SQLSMALLINT cbConnStrOutMax,
+      SQLSMALLINT * pcbConnStrOut)
 {
   NOT_IMPL_FUN (hdbc, "Function not supported: SQLBrowseConnect");
 }
@@ -337,7 +337,7 @@ SQLRETURN SQL_API virtodbc__SQLColAttributesW(
       case SQL_DESC_NAME:
 #endif
 	  {
-	    DEFINE_OUTPUT_NONCHAR_NARROW (rgbDesc, cbDescMax, pcbDesc, stmt->stmt_connection, SWORD);
+	    DEFINE_OUTPUT_NONCHAR_NARROW (rgbDesc, cbDescMax, pcbDesc, stmt->stmt_connection, SQLSMALLINT);
 	    RETCODE rc;
 
 	    MAKE_OUTPUT_NONCHAR_NARROW (rgbDesc, cbDescMax, stmt->stmt_connection);
@@ -403,13 +403,13 @@ RETCODE SQL_API
 SQLColumnPrivilegesW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
-	SWORD cbTableQualifier,
+	SQLSMALLINT cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
-	SWORD cbTableOwner,
+	SQLSMALLINT cbTableOwner,
 	SQLWCHAR * wszTableName,
-	SWORD cbTableName,
+	SQLSMALLINT cbTableName,
 	SQLWCHAR * wszColumnName,
-	SWORD cbColumnName)
+	SQLSMALLINT cbColumnName)
 {
   size_t len;
   RETCODE rc;
@@ -443,13 +443,13 @@ RETCODE SQL_API
 SQLColumnsW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
-	SWORD cbTableQualifier,
+	SQLSMALLINT cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
-	SWORD cbTableOwner,
+	SQLSMALLINT cbTableOwner,
 	SQLWCHAR * wszTableName,
-	SWORD cbTableName,
+	SQLSMALLINT cbTableName,
 	SQLWCHAR * wszColumnName,
-	SWORD cbColumnName)
+	SQLSMALLINT cbColumnName)
 {
   size_t len;
   RETCODE rc;
@@ -485,11 +485,11 @@ SQLDriverConnectW (
     SQLHDBC hdbc,
     HWND hwnd,
     SQLWCHAR * wszConnStrIn,
-    SWORD cbConnStrIn,
+    SQLSMALLINT cbConnStrIn,
     SQLWCHAR * wszConnStrOut,
-    SWORD cbConnStrOut,
-    SWORD * pcbConnStrOut,
-    UWORD fDriverCompletion)
+    SQLSMALLINT cbConnStrOut,
+    SQLSMALLINT * pcbConnStrOut,
+    SQLUSMALLINT fDriverCompletion)
 {
   RETCODE rc;
   long len;
@@ -513,18 +513,18 @@ SQLDriverConnectW (
 RETCODE SQL_API
 SQLDescribeColW (
 	SQLHSTMT hstmt,
-	UWORD icol,
+	SQLUSMALLINT icol,
 	SQLWCHAR * wszColName,
-	SWORD cbColName,
-	SWORD * pcbColName,
-	SWORD * pfSqlType,
+	SQLSMALLINT cbColName,
+	SQLSMALLINT * pcbColName,
+	SQLSMALLINT * pfSqlType,
 	SQLULEN * pcbColDef,
-	SWORD * pibScale,
-	SWORD * pfNullable)
+	SQLSMALLINT * pibScale,
+	SQLSMALLINT * pfNullable)
 {
   RETCODE rc;
   STMT_CHARSET (hstmt);
-  DEFINE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection, SWORD);
+  DEFINE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection, SQLSMALLINT);
 
   MAKE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection);
 
@@ -544,8 +544,8 @@ SQLErrorW (
 	SQLWCHAR * wszSqlState,
 	SQLINTEGER * pfNativeError,
 	SQLWCHAR * wszErrorMsg,
-	SWORD cbErrorMsg,
-	SWORD * pcbErrorMsg)
+	SQLSMALLINT cbErrorMsg,
+	SQLSMALLINT * pcbErrorMsg)
 {
   STMT (stmt, hstmt);
   CON (con, hdbc);
@@ -556,7 +556,7 @@ SQLErrorW (
   if (con || stmt)
     {
       cli_connection_t *conn = con ? con : stmt->stmt_connection;
-      DEFINE_OUTPUT_CHAR_NARROW (ErrorMsg, conn, SWORD);
+      DEFINE_OUTPUT_CHAR_NARROW (ErrorMsg, conn, SQLSMALLINT);
 
       MAKE_OUTPUT_CHAR_NARROW (ErrorMsg, conn);
 
@@ -566,7 +566,7 @@ SQLErrorW (
     }
   else
     {
-      DEFINE_OUTPUT_CHAR_NARROW_N (ErrorMsg, SWORD);
+      DEFINE_OUTPUT_CHAR_NARROW_N (ErrorMsg, SQLSMALLINT);
 
       MAKE_OUTPUT_CHAR_NARROW_N (ErrorMsg);
 
@@ -606,17 +606,17 @@ RETCODE SQL_API
 SQLForeignKeysW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszPkTableQualifier,
-	SWORD cbPkTableQualifier,
+	SQLSMALLINT cbPkTableQualifier,
 	SQLWCHAR * wszPkTableOwner,
-	SWORD cbPkTableOwner,
+	SQLSMALLINT cbPkTableOwner,
 	SQLWCHAR * wszPkTableName,
-	SWORD cbPkTableName,
+	SQLSMALLINT cbPkTableName,
 	SQLWCHAR * wszFkTableQualifier,
-	SWORD cbFkTableQualifier,
+	SQLSMALLINT cbFkTableQualifier,
 	SQLWCHAR * wszFkTableOwner,
-	SWORD cbFkTableOwner,
+	SQLSMALLINT cbFkTableOwner,
 	SQLWCHAR * wszFkTableName,
-	SWORD cbFkTableName)
+	SQLSMALLINT cbFkTableName)
 {
   size_t len;
   RETCODE rc;
@@ -691,7 +691,7 @@ SQLGetConnectAttrW (SQLHDBC connectionHandle,
 RETCODE SQL_API
 SQLGetConnectOptionW (
 	SQLHDBC hdbc,
-	UWORD fOption,
+	SQLUSMALLINT fOption,
 	PTR pvParam)
 {
   CON_CHARSET(hdbc);
@@ -722,12 +722,12 @@ RETCODE SQL_API
 SQLGetCursorNameW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszCursor,
-	SWORD cbCursor,
-	SWORD * pcbCursor)
+	SQLSMALLINT cbCursor,
+	SQLSMALLINT * pcbCursor)
 {
   RETCODE rc;
   STMT_CHARSET (hstmt);
-  DEFINE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection, SWORD);
+  DEFINE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection, SQLSMALLINT);
 
   MAKE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection);
 
@@ -901,10 +901,10 @@ SQLGetDiagRecW (SQLSMALLINT HandleType,
 RETCODE SQL_API
 SQLGetInfoW (
 	SQLHDBC hdbc,
-	UWORD fInfoType,
+	SQLUSMALLINT fInfoType,
 	PTR rgbInfoValue,
-	SWORD cbInfoValueMax,
-	SWORD * pcbInfoValue)
+	SQLSMALLINT cbInfoValueMax,
+	SQLSMALLINT * pcbInfoValue)
 {
   CON_CHARSET (hdbc);
   switch (fInfoType)
@@ -949,7 +949,7 @@ SQLGetInfoW (
     case SQL_XOPEN_CLI_YEAR:
 	  {
 	    RETCODE rc;
-	    DEFINE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, pcbInfoValue, con, SWORD);
+	    DEFINE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, pcbInfoValue, con, SQLSMALLINT);
 
 	    MAKE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, con);
 
@@ -1030,11 +1030,11 @@ RETCODE SQL_API
 SQLPrimaryKeysW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
-	SWORD cbTableQualifier,
+	SQLSMALLINT cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
-	SWORD cbTableOwner,
+	SQLSMALLINT cbTableOwner,
 	SQLWCHAR * wszTableName,
-	SWORD cbTableName)
+	SQLSMALLINT cbTableName)
 {
   STMT_CHARSET (hstmt);
   RETCODE rc;
@@ -1065,13 +1065,13 @@ RETCODE SQL_API
 SQLProcedureColumnsW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszProcQualifier,
-	SWORD cbProcQualifier,
+	SQLSMALLINT cbProcQualifier,
 	SQLWCHAR * wszProcOwner,
-	SWORD cbProcOwner,
+	SQLSMALLINT cbProcOwner,
 	SQLWCHAR * wszProcName,
-	SWORD cbProcName,
+	SQLSMALLINT cbProcName,
 	SQLWCHAR * wszColumnName,
-	SWORD cbColumnName)
+	SQLSMALLINT cbColumnName)
 {
   STMT_CHARSET (hstmt);
   RETCODE rc;
@@ -1106,11 +1106,11 @@ RETCODE SQL_API
 SQLProceduresW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszProcQualifier,
-	SWORD cbProcQualifier,
+	SQLSMALLINT cbProcQualifier,
 	SQLWCHAR * wszProcOwner,
-	SWORD cbProcOwner,
+	SQLSMALLINT cbProcOwner,
 	SQLWCHAR * wszProcName,
-	SWORD cbProcName)
+	SQLSMALLINT cbProcName)
 {
   STMT_CHARSET (hstmt);
   RETCODE rc;
@@ -1169,7 +1169,7 @@ SQLSetConnectAttrW (SQLHDBC connectionHandle,
 RETCODE SQL_API
 SQLSetConnectOptionW (
       SQLHDBC hdbc,
-      UWORD fOption,
+      SQLUSMALLINT fOption,
       SQLULEN vParam)
 {
   CON_CHARSET (hdbc);
@@ -1198,7 +1198,7 @@ RETCODE SQL_API
 SQLSetCursorNameW (
       SQLHSTMT hstmt,
       SQLWCHAR * wszCursor,
-      SWORD cbCursor)
+      SQLSMALLINT cbCursor)
 {
   STMT_CHARSET (hstmt);
   RETCODE rc;
@@ -1263,15 +1263,15 @@ SQLSetStmtAttrW (SQLHSTMT statementHandle,
 RETCODE SQL_API
 SQLSpecialColumnsW (
 	SQLHSTMT hstmt,
-	UWORD fColType,
+	SQLUSMALLINT fColType,
 	SQLWCHAR * wszTableQualifier,
-	SWORD cbTableQualifier,
+	SQLSMALLINT cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
-	SWORD cbTableOwner,
+	SQLSMALLINT cbTableOwner,
 	SQLWCHAR * wszTableName,
-	SWORD cbTableName,
-	UWORD fScope,
-	UWORD fNullable)
+	SQLSMALLINT cbTableName,
+	SQLUSMALLINT fScope,
+	SQLUSMALLINT fNullable)
 {
   RETCODE rc;
   size_t len;
@@ -1302,13 +1302,13 @@ RETCODE SQL_API
 SQLStatisticsW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
-	SWORD cbTableQualifier,
+	SQLSMALLINT cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
-	SWORD cbTableOwner,
+	SQLSMALLINT cbTableOwner,
 	SQLWCHAR * wszTableName,
-	SWORD cbTableName,
-	UWORD fUnique,
-	UWORD fAccuracy)
+	SQLSMALLINT cbTableName,
+	SQLUSMALLINT fUnique,
+	SQLUSMALLINT fAccuracy)
 {
   RETCODE rc;
   size_t len;
@@ -1339,11 +1339,11 @@ RETCODE SQL_API
 SQLTablePrivilegesW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
-	SWORD cbTableQualifier,
+	SQLSMALLINT cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
-	SWORD cbTableOwner,
+	SQLSMALLINT cbTableOwner,
 	SQLWCHAR * wszTableName,
-	SWORD cbTableName)
+	SQLSMALLINT cbTableName)
 {
   RETCODE rc;
   size_t len;
@@ -1373,13 +1373,13 @@ RETCODE SQL_API
 SQLTablesW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
-	SWORD cbTableQualifier,
+	SQLSMALLINT cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
-	SWORD cbTableOwner,
+	SQLSMALLINT cbTableOwner,
 	SQLWCHAR * wszTableName,
-	SWORD cbTableName,
+	SQLSMALLINT cbTableName,
 	SQLWCHAR * wszTableType,
-	SWORD cbTableType)
+	SQLSMALLINT cbTableType)
 {
   RETCODE rc;
   size_t len;
@@ -1412,7 +1412,7 @@ SQLTablesW (
 RETCODE SQL_API
 SQLGetTypeInfoW (
 	SQLHSTMT hstmt,
-	SWORD fSqlType)
+	SQLSMALLINT fSqlType)
 {
 	return virtodbc__SQLGetTypeInfo(hstmt, fSqlType);
 }

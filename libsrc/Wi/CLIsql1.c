@@ -167,8 +167,8 @@ SQLAllocStmt (
 RETCODE SQL_API
 SQLBindCol (
 	SQLHSTMT hstmt,
-	UWORD icol,
-	SWORD fCType,
+	SQLUSMALLINT icol,
+	SQLSMALLINT fCType,
 	SQLPOINTER rgbValue,
 	SQLLEN cbValueMax,
 	SQLLEN * pcbValue)
@@ -215,11 +215,11 @@ SQLCancel (
 RETCODE SQL_API
 SQLColAttributes (
 	SQLHSTMT hstmt,
-	UWORD icol,
-	UWORD fDescType,
+	SQLUSMALLINT icol,
+	SQLUSMALLINT fDescType,
 	PTR rgbDesc,
-	SWORD cbDescMax,
-	SWORD * pcbDesc,
+	SQLSMALLINT cbDescMax,
+	SQLSMALLINT * pcbDesc,
 	SQLLEN * pfDesc)
 {
   STMT (stmt, hstmt);
@@ -240,7 +240,7 @@ SQLColAttributes (
       case SQL_DESC_NAME:
 #endif
 	  {
-	    NDEFINE_OUTPUT_NONCHAR_NARROW (rgbDesc, cbDescMax, pcbDesc, stmt->stmt_connection, SWORD);
+	    NDEFINE_OUTPUT_NONCHAR_NARROW (rgbDesc, cbDescMax, pcbDesc, stmt->stmt_connection, SQLSMALLINT);
 	    RETCODE rc;
 
 	    NMAKE_OUTPUT_NONCHAR_NARROW (rgbDesc, cbDescMax, stmt->stmt_connection);
@@ -270,11 +270,11 @@ bm_info = {
 RETCODE SQL_API
 virtodbc__SQLColAttributes (
 	SQLHSTMT hstmt,
-	UWORD icol,
-	UWORD fDescType,
+	SQLUSMALLINT icol,
+	SQLUSMALLINT fDescType,
 	PTR rgbDesc,
-	SWORD cbDescMax,
-	SWORD * pcbDesc,
+	SQLSMALLINT cbDescMax,
+	SQLSMALLINT * pcbDesc,
 	SQLLEN * pfDesc)
 {
   col_desc_t *cd;
@@ -348,7 +348,7 @@ virtodbc__SQLColAttributes (
 	    ((char *) rgbDesc),
 	    cbDescMax);
       if (pcbDesc)
-	*pcbDesc = (SWORD) strlen ((char *) rgbDesc);
+	*pcbDesc = (SQLSMALLINT) strlen ((char *) rgbDesc);
       break;
 
 #if ODBCVER >= 0x0300
@@ -455,7 +455,7 @@ virtodbc__SQLColAttributes (
 	      icol + 1,
 	      fDescType, rgbDesc, cbDescMax, &data);
 	  if (pcbDesc)
-	    *pcbDesc = (SWORD) data;
+	    *pcbDesc = (SQLSMALLINT) data;
 	  return rc;
 	}
     case SQL_DESC_UNNAMED:
@@ -692,11 +692,11 @@ int
 internal_sql_connect (
 	SQLHDBC hdbc,
 	SQLCHAR * szDSN,
-	SWORD cbDSN,
+	SQLSMALLINT cbDSN,
 	SQLCHAR * szUID,
-	SWORD cbUID,
+	SQLSMALLINT cbUID,
 	SQLCHAR * szAuthStr,
-	SWORD cbAuthStr)
+	SQLSMALLINT cbAuthStr)
 {
   caddr_t pwd_box;
   caddr_t *login_res;
@@ -956,14 +956,14 @@ internal_sql_connect (
 RETCODE SQL_API
 virtodbc__SQLDescribeCol (
 	SQLHSTMT hstmt,
-	UWORD icol,
+	SQLUSMALLINT icol,
 	SQLCHAR * szColName,
-	SWORD cbColNameMax,
-	SWORD * pcbColName,
-	SWORD * pfSqlType,
+	SQLSMALLINT cbColNameMax,
+	SQLSMALLINT * pcbColName,
+	SQLSMALLINT * pfSqlType,
 	SQLULEN * pcbColDef,
-	SWORD * pibScale,
-	SWORD * pfNullable)
+	SQLSMALLINT * pibScale,
+	SQLSMALLINT * pfNullable)
 {
   col_desc_t *cd;
   int n_cols, was_bm_col = (icol == 0);
@@ -1008,15 +1008,15 @@ virtodbc__SQLDescribeCol (
 	  if (cbColNameMax > 0)
 		  szColName[cbColNameMax - 1] = 0;
       if (pcbColName)
-	*pcbColName = (SWORD) strlen ((char *) szColName);
+	*pcbColName = (SQLSMALLINT) strlen ((char *) szColName);
     }
 
   if (pibScale)
-    *pibScale = (SWORD) unbox (cd->cd_scale);
+    *pibScale = (SQLSMALLINT) unbox (cd->cd_scale);
   if (pcbColDef)
     *pcbColDef = (UDWORD) unbox (cd->cd_precision);
   if (pfNullable)
-    *pfNullable = (SWORD) cd->cd_nullable;
+    *pfNullable = (SQLSMALLINT) cd->cd_nullable;
   if (pfSqlType) {
     ENV(env, stmt->stmt_connection->con_environment);
     *pfSqlType = dv_to_sql_type ((dtp_t) cd->cd_dtp,
@@ -1037,18 +1037,18 @@ virtodbc__SQLDescribeCol (
 RETCODE SQL_API
 SQLDescribeCol (
 	SQLHSTMT hstmt,
-	UWORD icol,
+	SQLUSMALLINT icol,
 	SQLCHAR * wszColName,
-	SWORD cbColName,
-	SWORD * pcbColName,
-	SWORD * pfSqlType,
+	SQLSMALLINT cbColName,
+	SQLSMALLINT * pcbColName,
+	SQLSMALLINT * pfSqlType,
 	SQLULEN * pcbColDef,
-	SWORD * pibScale,
-	SWORD * pfNullable)
+	SQLSMALLINT * pibScale,
+	SQLSMALLINT * pfNullable)
 {
   RETCODE rc;
   STMT (stmt, hstmt);
-  NDEFINE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection, SWORD);
+  NDEFINE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection, SQLSMALLINT);
 
   NMAKE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection);
 
@@ -1079,8 +1079,8 @@ SQLError (
 	SQLCHAR * wszSqlState,
 	SQLINTEGER * pfNativeError,
 	SQLCHAR * wszErrorMsg,
-	SWORD cbErrorMsg,
-	SWORD * pcbErrorMsg)
+	SQLSMALLINT cbErrorMsg,
+	SQLSMALLINT * pcbErrorMsg)
 {
   STMT (stmt, hstmt);
   CON (con, hdbc);
@@ -1090,7 +1090,7 @@ SQLError (
   if (con || stmt)
     {
       cli_connection_t *conn = con ? con : stmt->stmt_connection;
-      NDEFINE_OUTPUT_CHAR_NARROW (ErrorMsg, conn, SWORD);
+      NDEFINE_OUTPUT_CHAR_NARROW (ErrorMsg, conn, SQLSMALLINT);
 
       NMAKE_OUTPUT_CHAR_NARROW (ErrorMsg, conn);
 
@@ -1117,8 +1117,8 @@ virtodbc__SQLError (
 	SQLCHAR * szSqlState,
 	SQLINTEGER * pfNativeError,
 	SQLCHAR * szErrorMsg,
-	SWORD cbErrorMsgMax,
-	SWORD * pcbErrorMsg,
+	SQLSMALLINT cbErrorMsgMax,
+	SQLSMALLINT * pcbErrorMsg,
 	int bClearState)
 {
   STMT (stmt, hstmt);
@@ -1128,7 +1128,7 @@ virtodbc__SQLError (
       (con ? &con->con_error : (env ? &env->env_error : NULL));
   sql_error_rec_t * rec = err->err_queue;
   RETCODE rc = SQL_SUCCESS;
-  SWORD * pcbSqlState = NULL;
+  SQLSMALLINT * pcbSqlState = NULL;
 
   if (!rec)
     {
@@ -1530,7 +1530,7 @@ virtodbc__SQLFreeEnv (
 RETCODE SQL_API
 virtodbc__SQLFreeStmt (
 	SQLHSTMT hstmt,
-	UWORD fOption)
+	SQLUSMALLINT fOption)
 {
   STMT (stmt, hstmt);
   future_t *f;
@@ -1656,7 +1656,7 @@ virtodbc__SQLFreeStmt (
 RETCODE SQL_API
 SQLFreeStmt (
 	SQLHSTMT hstmt,
-	UWORD fOption)
+	SQLUSMALLINT fOption)
 {
   return virtodbc__SQLFreeStmt (hstmt, fOption);
 }
@@ -1666,8 +1666,8 @@ RETCODE SQL_API
 virtodbc__SQLGetCursorName (
 	SQLHSTMT hstmt,
 	SQLCHAR * szCursor,
-	SWORD cbCursorMax,
-	SWORD * pcbCursor)
+	SQLSMALLINT cbCursorMax,
+	SQLSMALLINT * pcbCursor)
 {
   STMT (stmt, hstmt);
   char *cr_name = stmt->stmt_cursor_name;
@@ -1692,12 +1692,12 @@ RETCODE SQL_API
 SQLGetCursorName (
 	SQLHSTMT hstmt,
 	SQLCHAR * wszCursor,
-	SWORD cbCursor,
-	SWORD * pcbCursor)
+	SQLSMALLINT cbCursor,
+	SQLSMALLINT * pcbCursor)
 {
   RETCODE rc;
   STMT (stmt, hstmt);
-  NDEFINE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection, SWORD);
+  NDEFINE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection, SQLSMALLINT);
 
   NMAKE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection);
 
@@ -1712,7 +1712,7 @@ SQLGetCursorName (
 RETCODE SQL_API
 SQLNumResultCols (
       SQLHSTMT hstmt,
-      SWORD * pccol)
+      SQLSMALLINT * pccol)
 {
 	return virtodbc__SQLNumResultCols(hstmt, pccol);
 }
@@ -1720,7 +1720,7 @@ SQLNumResultCols (
 RETCODE SQL_API
 virtodbc__SQLNumResultCols (
       SQLHSTMT hstmt,
-      SWORD * pccol)
+      SQLSMALLINT * pccol)
 {
   STMT (stmt, hstmt);
   stmt_compilation_t *sc = stmt->stmt_compilation;
@@ -1732,7 +1732,7 @@ virtodbc__SQLNumResultCols (
   if (sc->sc_is_select == QT_PROC_CALL)
     {
       if (sc->sc_columns)
-	*pccol = (SWORD) BOX_ELEMENTS ((caddr_t) sc->sc_columns);
+	*pccol = (SQLSMALLINT) BOX_ELEMENTS ((caddr_t) sc->sc_columns);
       else
 	*pccol = 0;
       return SQL_SUCCESS;
@@ -1742,7 +1742,7 @@ virtodbc__SQLNumResultCols (
       *pccol = 0;
       return SQL_SUCCESS;
     }
-  *pccol = (SWORD) (box_length ((caddr_t) sc->sc_columns) / sizeof (caddr_t));
+  *pccol = (SQLSMALLINT) (box_length ((caddr_t) sc->sc_columns) / sizeof (caddr_t));
 
   return SQL_SUCCESS;
 }
@@ -1811,7 +1811,7 @@ RETCODE SQL_API
 virtodbc__SQLSetCursorName (
       SQLHSTMT hstmt,
       SQLCHAR * szCursor,
-      SWORD cbCursor)
+      SQLSMALLINT cbCursor)
 {
   STMT (stmt, hstmt);
   caddr_t name = box_n_string (szCursor, cbCursor);
@@ -1827,7 +1827,7 @@ RETCODE SQL_API
 SQLSetCursorName (
       SQLHSTMT hstmt,
       SQLCHAR * wszCursor,
-      SWORD _cbCursor)
+      SQLSMALLINT _cbCursor)
 {
   STMT (stmt, hstmt);
   RETCODE rc;
@@ -1837,7 +1837,7 @@ SQLSetCursorName (
 
   NMAKE_INPUT_NARROW (Cursor, stmt->stmt_connection);
 
-  rc = virtodbc__SQLSetCursorName (hstmt, szCursor, (SWORD) cbCursor);
+  rc = virtodbc__SQLSetCursorName (hstmt, szCursor, (SQLSMALLINT) cbCursor);
 
   NFREE_INPUT_NARROW (Cursor);
   return rc;
@@ -1847,11 +1847,11 @@ SQLSetCursorName (
 RETCODE SQL_API
 virtodbc__SQLSetParam (
       SQLHSTMT hstmt,
-      UWORD ipar,
-      SWORD fCType,
-      SWORD fSqlType,
+      SQLUSMALLINT ipar,
+      SQLSMALLINT fCType,
+      SQLSMALLINT fSqlType,
       SQLULEN cbColDef,
-      SWORD ibScale,
+      SQLSMALLINT ibScale,
       PTR rgbValue,
       SQLLEN * pcbValue)
 {
@@ -1875,11 +1875,11 @@ virtodbc__SQLSetParam (
 RETCODE SQL_API
 SQLSetParam (
       SQLHSTMT hstmt,
-      UWORD ipar,
-      SWORD fCType,
-      SWORD fSqlType,
+      SQLUSMALLINT ipar,
+      SQLSMALLINT fCType,
+      SQLSMALLINT fSqlType,
       SQLULEN cbColDef,
-      SWORD ibScale,
+      SQLSMALLINT ibScale,
       PTR rgbValue,
       SQLLEN * pcbValue)
 {
@@ -1891,12 +1891,12 @@ SQLSetParam (
 RETCODE SQL_API
 virtodbc__SQLBindParameter (
 	SQLHSTMT hstmt,
-	UWORD ipar,
-	SWORD fParamType,
-	SWORD fCType,
-	SWORD fSqlType,
+	SQLUSMALLINT ipar,
+	SQLSMALLINT fParamType,
+	SQLSMALLINT fCType,
+	SQLSMALLINT fSqlType,
 	SQLULEN cbColDef,
-	SWORD ibScale,
+	SQLSMALLINT ibScale,
 	PTR rgbValue,
 	SQLLEN cbValueMax,
 	SQLLEN * pcbValue)
@@ -1933,12 +1933,12 @@ virtodbc__SQLBindParameter (
 RETCODE SQL_API
 SQLBindParameter (
     SQLHSTMT hstmt,
-    UWORD ipar,
-    SWORD fParamType,
-    SWORD fCType,
-    SWORD fSqlType,
+    SQLUSMALLINT ipar,
+    SQLSMALLINT fParamType,
+    SQLSMALLINT fCType,
+    SQLSMALLINT fSqlType,
     SQLULEN cbColDef,
-    SWORD ibScale,
+    SQLSMALLINT ibScale,
     PTR rgbValue,
     SQLLEN cbValueMax,
     SQLLEN * pcbValue)
@@ -1951,7 +1951,7 @@ RETCODE SQL_API
 SQLTransact (
       SQLHENV henv,
       SQLHDBC hdbc,
-      UWORD fType)
+      SQLUSMALLINT fType)
 {
 	return virtodbc__SQLTransact(henv, hdbc, fType);
 }
@@ -1961,7 +1961,7 @@ RETCODE SQL_API
 virtodbc__SQLTransact (
       SQLHENV henv,
       SQLHDBC hdbc,
-      UWORD fType)
+      SQLUSMALLINT fType)
 {
   cli_dbg_printf ((stderr, "virtodbc__SQLTransact (henv=%p, hdbc=%p, fType=%u)\n",
       (void *) henv, (void *) hdbc, (unsigned) fType));

@@ -400,7 +400,7 @@ virtodbc__SQLGetDiagRec (SQLSMALLINT HandleType,
   sql_error_t *err;
   int nRecs;
   RETCODE rc;
-  UWORD pcbSqlstate;
+  SQLUSMALLINT pcbSqlstate;
 
   switch (HandleType)
     {
@@ -970,7 +970,7 @@ virtodbc__SQLGetStmtAttr (SQLHSTMT statementHandle,
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLGetStmtAttr(...) mapped to SQLGetStmtOption\n");
 #endif
-      return virtodbc__SQLGetStmtOption ((SQLHSTMT) stmt, (UWORD) Attribute, ValuePtr);
+      return virtodbc__SQLGetStmtOption ((SQLHSTMT) stmt, (SQLUSMALLINT) Attribute, ValuePtr);
 
     default:
 
@@ -1116,7 +1116,7 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLSetStmtAttr(..., PARAM_STATUS_PTR, ...) called\n");
 #endif
-      stmt->stmt_param_status = (UWORD *) ValuePtr;
+      stmt->stmt_param_status = (SQLUSMALLINT *) ValuePtr;
       break;
 
     case SQL_ATTR_PARAMS_PROCESSED_PTR:
@@ -1170,7 +1170,7 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLSetStmtAttr(..., ROW_STATUS_PTR, ...) called\n");
 #endif
-      stmt->stmt_row_status = (UWORD *) ValuePtr;
+      stmt->stmt_row_status = (SQLUSMALLINT *) ValuePtr;
       break;
 
     case SQL_ATTR_ROWS_FETCHED_PTR:
@@ -1207,7 +1207,7 @@ virtodbc__SQLSetStmtAttr (SQLHSTMT statementHandle,
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLSetStmtAttr(...) mapped to SQLSetStmtOption\n");
 #endif
-      return virtodbc__SQLSetStmtOption ((SQLHSTMT) stmt, (UWORD) Attribute, (SQLULEN) ValuePtr);
+      return virtodbc__SQLSetStmtOption ((SQLHSTMT) stmt, (SQLUSMALLINT) Attribute, (SQLULEN) ValuePtr);
 
     default:
 #if defined(WIN32) && defined(DEBUG)
@@ -1301,7 +1301,7 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLSetConnectAttr(...) mapped to SQLSetConnectOption(...)\n");
 #endif
-      return virtodbc__SQLSetConnectOption (connectionHandle, (UWORD) Attribute, (SQLULEN) ValuePtr);
+      return virtodbc__SQLSetConnectOption (connectionHandle, (SQLUSMALLINT) Attribute, (SQLULEN) ValuePtr);
 
     default:
 #if defined(WIN32) && defined(DEBUG)
@@ -1437,7 +1437,7 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLGetConnectAttr(...) mapped to SQLGetConnectOption(...)\n");
 #endif
-      return virtodbc__SQLGetConnectOption (connectionHandle, (UWORD) Attribute, (PTR) ValuePtr, StringLength, StringLengthPtr);
+      return virtodbc__SQLGetConnectOption (connectionHandle, (SQLUSMALLINT) Attribute, (PTR) ValuePtr, StringLength, StringLengthPtr);
 
     default:
 #if defined(WIN32) && defined(DEBUG)
@@ -1499,9 +1499,9 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
   char szDebugBuffer[256];
 #endif
   int bAppDesc = 0, bRowDesc = 0;
-  SWORD sqlType;
+  SQLSMALLINT sqlType;
   SQLULEN def;
-  SWORD scale;
+  SQLSMALLINT scale;
   RETCODE rc = SQL_SUCCESS;
   SQLSMALLINT desc_count = 0;
 
@@ -2011,7 +2011,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       if (!bAppDesc && bRowDesc)
 	{
 	  return virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt,
-	      RecNumber, NULL, 0, NULL, NULL, NULL, (SWORD *) ValuePtr, NULL);
+	      RecNumber, NULL, 0, NULL, NULL, NULL, (SQLSMALLINT *) ValuePtr, NULL);
 	}
       else
 	return (SQL_ERROR);
@@ -2097,7 +2097,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
       if (bRowDesc)
 	return virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt, RecNumber,
-	    NULL, 0, NULL, NULL, NULL, (SWORD *) ValuePtr, NULL);
+	    NULL, 0, NULL, NULL, NULL, (SQLSMALLINT *) ValuePtr, NULL);
 
       break;
 
@@ -2290,7 +2290,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
       if (bRowDesc && !bAppDesc)
 	return virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt,
-	    RecNumber, NULL, 0, NULL, NULL, NULL, NULL, (SWORD *) ValuePtr);
+	    RecNumber, NULL, 0, NULL, NULL, NULL, NULL, (SQLSMALLINT *) ValuePtr);
       else if (bAppDesc)
 	return (SQL_ERROR);
       if (StringLengthPtr)
@@ -2355,7 +2355,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	*StringLengthPtr = sizeof (SQLSMALLINT);
       if (bRowDesc)
 	return virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt,
-	    RecNumber, NULL, 0, NULL, (SWORD *) ValuePtr, NULL, NULL, NULL);
+	    RecNumber, NULL, 0, NULL, (SQLSMALLINT *) ValuePtr, NULL, NULL, NULL);
       break;
 
     case SQL_DESC_UNNAMED:

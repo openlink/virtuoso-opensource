@@ -124,9 +124,9 @@ typedef  char TCHAR;
 #define OPTION_TRUE(X)	((X) && (X) != 'N' && (X) != '0')
 
 static RETCODE SQL_API virtodbc__SQLDriverConnect (SQLHDBC hdbc,
-   HWND hwnd, SQLTCHAR * szConnStrIn, SWORD cbConnStrIn,
-    SQLTCHAR * szConnStrOut, SWORD cbConnStrOutMax,
-    SWORD * pcbConnStrOutMax, UWORD fDriverCompletion);
+   HWND hwnd, SQLTCHAR * szConnStrIn, SQLSMALLINT cbConnStrIn,
+    SQLTCHAR * szConnStrOut, SQLSMALLINT cbConnStrOutMax,
+    SQLSMALLINT * pcbConnStrOutMax, SQLUSMALLINT fDriverCompletion);
 
 #ifdef WIN32
 BOOL ConfigDSN_virt (
@@ -418,12 +418,12 @@ DumpOpts (TCHAR *connStr)
 
 
 static int
-StrCopyOut (TCHAR *inStr, SQLTCHAR *outStr, UWORD size, UWORD *result)
+StrCopyOut (TCHAR *inStr, SQLTCHAR *outStr, SQLUSMALLINT size, SQLUSMALLINT *result)
 {
   size_t length;
 
   if (inStr && result)
-    *result = (UWORD) _tcslen (inStr) * sizeof (TCHAR);
+    *result = (SQLUSMALLINT) _tcslen (inStr) * sizeof (TCHAR);
 
   if (!outStr || !inStr)
     return -1;
@@ -433,7 +433,7 @@ StrCopyOut (TCHAR *inStr, SQLTCHAR *outStr, UWORD size, UWORD *result)
     {
       memcpy (outStr, inStr, length + sizeof (TCHAR));
       if (result)
-        *result = (UWORD) length;
+        *result = (SQLUSMALLINT) length;
       return 0;
     }
   if (size > 0)
@@ -813,11 +813,11 @@ virtodbc__SQLDriverConnect (
     SQLHDBC hdbc,
     HWND hwnd,
     SQLTCHAR * szConnStrIn,
-    SWORD cbConnStrIn,
+    SQLSMALLINT cbConnStrIn,
     SQLTCHAR * szConnStrOut,
-    SWORD cbConnStrOutMax,
-    SWORD * pcbConnStrOutMax,
-    UWORD fDriverCompletion)
+    SQLSMALLINT cbConnStrOutMax,
+    SQLSMALLINT * pcbConnStrOutMax,
+    SQLUSMALLINT fDriverCompletion)
 {
   char tempHostName[1024];
   TCHAR cmd[2500];
@@ -1088,11 +1088,11 @@ SQLDriverConnect (
     void *hwnd,
 #endif
     SQLTCHAR * szConnStrIn,
-    SWORD cbConnStrIn,
+    SQLSMALLINT cbConnStrIn,
     SQLTCHAR * szConnStrOut,
-    SWORD cbConnStrOutMax,
-    SWORD * pcbConnStrOutMax,
-    UWORD fDriverCompletion)
+    SQLSMALLINT cbConnStrOutMax,
+    SQLSMALLINT * pcbConnStrOutMax,
+    SQLUSMALLINT fDriverCompletion)
 {
   return virtodbc__SQLDriverConnect (hdbc, hwnd, szConnStrIn, cbConnStrIn,
       szConnStrOut, cbConnStrOutMax, pcbConnStrOutMax, fDriverCompletion);
@@ -1112,11 +1112,11 @@ RETCODE SQL_API
 SQLConnect (
 	SQLHDBC hdbc,
 	SQLTCHAR * szDSN,
-	SWORD cbDSN,
+	SQLSMALLINT cbDSN,
 	SQLTCHAR * szUID,
-	SWORD cbUID,
+	SQLSMALLINT cbUID,
 	SQLTCHAR * szPWD,
-	SWORD cbPWD)
+	SQLSMALLINT cbPWD)
 {
 #ifndef DSN_TRANSLATION
   return internal_sql_connect (hdbc, szDSN, cbDSN, szUID, cbUID, szPWD, cbPWD);

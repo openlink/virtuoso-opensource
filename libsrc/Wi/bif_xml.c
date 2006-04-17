@@ -1017,8 +1017,8 @@ make_tree:
 
 typedef struct sqlgetdata_fwd_iter_s {
    SQLHSTMT sgdfi_hstmt;
-   UWORD sgdfi_inx;
-   SWORD sgdfi_c_type;
+   SQLUSMALLINT sgdfi_inx;
+   SQLSMALLINT sgdfi_c_type;
  } sqlgetdata_fwd_iter_t;
 
 #if UNIVERSE 
@@ -1083,8 +1083,8 @@ xml_tree_ent_t *rst_xml_result (remote_stmt_t * rst, int inx, caddr_t * qst, int
   XML_SetProcessingInstructionHandler (parser, (XML_ProcessingInstructionHandler) xp_pi);
   XML_SetCommentHandler (parser, (XML_CommentHandler) xp_comment);
   sgdfi.sgdfi_hstmt = rst->rst_hstmt;
-  sgdfi.sgdfi_inx = (UWORD) (inx + 1);
-  sgdfi.sgdfi_c_type = (SWORD) c_type;
+  sgdfi.sgdfi_inx = (SQLUSMALLINT) (inx + 1);
+  sgdfi.sgdfi_c_type = (SQLSMALLINT) c_type;
   XML_ParserInput (parser, sgdfi_read, &sgdfi);
   QR_RESET_CTX
     {
