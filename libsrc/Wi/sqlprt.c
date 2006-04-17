@@ -96,7 +96,7 @@ trset_printf (char *str, ...)
     {
       length = strlen (line);
       if (report_linebuf != line && length >= 0)
-	memcpy (report_linebuf, line, length);
+	memmove (report_linebuf, line, length);
     }
   else
     length = 0;
