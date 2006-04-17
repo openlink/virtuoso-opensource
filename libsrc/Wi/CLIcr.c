@@ -178,7 +178,7 @@ stmt_process_rowset (cli_stmt_t * stmt, int ftype, SQLULEN * pcrow)
 
 
 int
-sql_ext_fetch_fwd (HSTMT hstmt, SQLULEN * pcrow, UWORD * rgfRowStatus)
+sql_ext_fetch_fwd (SQLHSTMT hstmt, SQLULEN * pcrow, UWORD * rgfRowStatus)
 {
   int rc = 0;
   int row_count = 0;
@@ -236,7 +236,7 @@ sql_fetch_scrollable (cli_stmt_t * stmt)
       || stmt->stmt_current_of >= stmt->stmt_rowset_fill - 1)
     {
       col_binding_t *old_cb = stmt->stmt_cols;
-      rc = virtodbc__SQLExtendedFetch ((HSTMT) stmt, SQL_FETCH_NEXT, 0, &c, 0, 0);
+      rc = virtodbc__SQLExtendedFetch ((SQLHSTMT) stmt, SQL_FETCH_NEXT, 0, &c, 0, 0);
       stmt->stmt_cols = old_cb;
       if (SQL_ERROR == rc)
 	return rc;
@@ -258,7 +258,7 @@ sql_fetch_scrollable (cli_stmt_t * stmt)
 
 RETCODE SQL_API
 virtodbc__SQLExtendedFetch (
-		     HSTMT hstmt,
+		     SQLHSTMT hstmt,
 		     UWORD fFetchType,
 		     SQLLEN irow,
 		     SQLULEN FAR * pcrow,
@@ -413,7 +413,7 @@ set_pos_param_row (cli_stmt_t * stmt, int nth)
 
 SQLRETURN SQL_API
 SQLSetPos (
-	    HSTMT hstmt,
+	    SQLHSTMT hstmt,
 	    SQLSETPOSIROW irow,
 	    UWORD fOption,
 	    UWORD fLock)
@@ -423,7 +423,7 @@ SQLSetPos (
 
 SQLRETURN SQL_API
 virtodbc__SQLSetPos (
-	    HSTMT hstmt,
+	    SQLHSTMT hstmt,
 	    SQLSETPOSIROW _irow,
 	    UWORD fOption,
 	    UWORD fLock)
@@ -476,8 +476,8 @@ virtodbc__SQLSetPos (
     }
   if (!stmt->stmt_set_pos_stmt)
     {
-      virtodbc__SQLAllocStmt ((HDBC) stmt->stmt_connection, (HSTMT *) & stmt->stmt_set_pos_stmt);
-      virtodbc__SQLPrepare ((HSTMT) stmt->stmt_set_pos_stmt, (UCHAR FAR *) "__set_pos (?, ?, ?, ?)" , SQL_NTS);
+      virtodbc__SQLAllocStmt ((SQLHDBC) stmt->stmt_connection, (SQLHSTMT *) & stmt->stmt_set_pos_stmt);
+      virtodbc__SQLPrepare ((SQLHSTMT) stmt->stmt_set_pos_stmt, (UCHAR FAR *) "__set_pos (?, ?, ?, ?)" , SQL_NTS);
     }
   sps = stmt->stmt_set_pos_stmt;
 
@@ -520,12 +520,12 @@ virtodbc__SQLSetPos (
     }
   memset (&stmt->stmt_pending, 0, sizeof (pending_call_t));
 
-  virtodbc__SQLSetParam ((HSTMT) sps, 1, SQL_C_CHAR, SQL_VARCHAR, 0, 0, stmt->stmt_id, NULL);
-  virtodbc__SQLSetParam ((HSTMT) sps, 2, SQL_C_LONG, SQL_INTEGER, 0, 0, &op, NULL);
-  virtodbc__SQLSetParam ((HSTMT) sps, 3, SQL_C_LONG, SQL_INTEGER, 0, 0, &row_no, NULL);
-  virtodbc__SQLSetParam ((HSTMT) sps, 4, SQL_C_BOX, SQL_VARCHAR, 0, 0, &params, NULL);
+  virtodbc__SQLSetParam ((SQLHSTMT) sps, 1, SQL_C_CHAR, SQL_VARCHAR, 0, 0, stmt->stmt_id, NULL);
+  virtodbc__SQLSetParam ((SQLHSTMT) sps, 2, SQL_C_LONG, SQL_INTEGER, 0, 0, &op, NULL);
+  virtodbc__SQLSetParam ((SQLHSTMT) sps, 3, SQL_C_LONG, SQL_INTEGER, 0, 0, &row_no, NULL);
+  virtodbc__SQLSetParam ((SQLHSTMT) sps, 4, SQL_C_BOX, SQL_VARCHAR, 0, 0, &params, NULL);
   stmt->stmt_status = STS_SERVER_DAE;
-  rc = virtodbc__SQLExecDirect ((HSTMT) sps, NULL, 0);
+  rc = virtodbc__SQLExecDirect ((SQLHSTMT) sps, NULL, 0);
   dk_free_tree ((caddr_t) params);
   if (SQL_ERROR == rc)
     {

@@ -123,7 +123,7 @@ typedef  char TCHAR;
 
 #define OPTION_TRUE(X)	((X) && (X) != 'N' && (X) != '0')
 
-static RETCODE SQL_API virtodbc__SQLDriverConnect (HDBC hdbc,
+static RETCODE SQL_API virtodbc__SQLDriverConnect (SQLHDBC hdbc,
    HWND hwnd, SQLTCHAR FAR * szConnStrIn, SWORD cbConnStrIn,
     SQLTCHAR FAR * szConnStrOut, SWORD cbConnStrOutMax,
     SWORD FAR * pcbConnStrOutMax, UWORD fDriverCompletion);
@@ -452,7 +452,7 @@ StrCopyOut (TCHAR *inStr, SQLTCHAR *outStr, UWORD size, UWORD *result)
 
 extern HINSTANCE s_hModule;
 
-static HDBC driver_connect_dbc = NULL;
+static SQLHDBC driver_connect_dbc = NULL;
 
 extern void CenterDialog (HWND hDlg);
 
@@ -516,7 +516,7 @@ FillUpLoginDatabaseCombo (HWND hDlg)
   int selection_index;
   SDWORD data_len;
 
-  HSTMT stmt;
+  SQLHSTMT stmt;
   TCHAR szMessage[512], szState[10], szHostW[1024], szUIDW[128], szPWDW[128], szMsg1[512];
   char *UID, *PWD, *HOST;
   short len;
@@ -810,7 +810,7 @@ stpcpyw (TCHAR *dst, const TCHAR *src)
 
 static RETCODE SQL_API
 virtodbc__SQLDriverConnect (
-    HDBC hdbc,
+    SQLHDBC hdbc,
     HWND hwnd,
     SQLTCHAR FAR * szConnStrIn,
     SWORD cbConnStrIn,
@@ -1081,7 +1081,7 @@ virtodbc__SQLDriverConnect (
 
 RETCODE SQL_API
 SQLDriverConnect (
-    HDBC hdbc,
+    SQLHDBC hdbc,
 #ifdef WIN32
     HWND hwnd,
 #else
@@ -1110,7 +1110,7 @@ SQLDriverConnect (
 
 RETCODE SQL_API
 SQLConnect (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	SQLTCHAR FAR * szDSN,
 	SWORD cbDSN,
 	SQLTCHAR FAR * szUID,

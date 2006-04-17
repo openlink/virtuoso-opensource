@@ -26,7 +26,7 @@
 #include "CLI.h"
 #include "2pc.h"
 
-caddr_t exp_PrpcTPInvoke(HDBC hdbc,long op)
+caddr_t exp_PrpcTPInvoke(SQLHDBC hdbc,long op)
 {
   future_t* f;
   caddr_t res;

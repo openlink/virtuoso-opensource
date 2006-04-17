@@ -317,7 +317,7 @@ EXE_EXPORT (tp_message_t *, mq_create_message, (int type,
 tp_message_t *mq_create_xa_message (int type, void *enlistment, void *tpd);
 EXE_EXPORT (void, mq_add_message, (tp_queue_t * mq, void *message));
 EXE_EXPORT (tp_queue_t *, tp_get_main_queue, (void));
-EXE_EXPORT (void, DoSQLError, (HDBC hdbc, HSTMT hstmt));
+EXE_EXPORT (void, DoSQLError, (SQLHDBC hdbc, SQLHSTMT hstmt));
 
 #define _LOG_INFO   0
 #define _LOG_ERROR  1

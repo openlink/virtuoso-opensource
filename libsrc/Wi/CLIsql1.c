@@ -49,13 +49,13 @@
 
 RETCODE SQL_API
 virtodbc__SQLAllocConnect (
-	HENV henv,
-	HDBC FAR * phdbc)
+	SQLHENV henv,
+	SQLHDBC FAR * phdbc)
 {
   ENV (env, henv);
   NEW_VARZ (cli_connection_t, cli);
   dk_set_push (&env->env_connections, (void *) cli);
-  *phdbc = (HDBC) cli;
+  *phdbc = (SQLHDBC) cli;
   cli->con_environment = env;
   cli->con_access_mode = SQL_MODE_READ_WRITE;
   cli->con_db_casemode = 1;
@@ -74,15 +74,15 @@ virtodbc__SQLAllocConnect (
 
 RETCODE SQL_API
 SQLAllocConnect (
-	HENV henv,
-	HDBC FAR * phdbc)
+	SQLHENV henv,
+	SQLHDBC FAR * phdbc)
 {
 	return virtodbc__SQLAllocConnect(henv, phdbc);
 }
 
 RETCODE SQL_API
 virtodbc__SQLAllocEnv (
-	HENV FAR * phenv)
+	SQLHENV FAR * phenv)
 {
   cli_dbg_printf (("SQLAllocEnv called.\n"));
   PrpcInitialize ();
@@ -96,7 +96,7 @@ virtodbc__SQLAllocEnv (
 #endif
 	env->env_odbc_version = 2;
 	env->env_mtx = mutex_allocate ();
-    *phenv = (HENV) env;
+    *phenv = (SQLHENV) env;
 #if 0 /* too weird - pmn */
 #ifdef USING_TIKS
 #ifndef PREEMPT
@@ -117,22 +117,22 @@ virtodbc__SQLAllocEnv (
 
 RETCODE SQL_API
 SQLAllocEnv (
-	HENV FAR * phenv)
+	SQLHENV FAR * phenv)
 {
 	return virtodbc__SQLAllocEnv(phenv);
 }
 
 RETCODE SQL_API
 virtodbc__SQLAllocStmt (
-	HDBC hdbc,
-	HSTMT FAR * phstmt)
+	SQLHDBC hdbc,
+	SQLHSTMT FAR * phstmt)
 {
   CON (con, hdbc);
   stmt_options_t *opts = (stmt_options_t *)
   dk_alloc_box (sizeof (stmt_options_t), DV_ARRAY_OF_LONG_PACKED);
   NEW_VARZ (cli_stmt_t, stmt);
   memset (opts, 0, sizeof (stmt_options_t));
-  *phstmt = (HSTMT) stmt;
+  *phstmt = (SQLHSTMT) stmt;
   dk_set_push (&con->con_statements, (void *) stmt);
   stmt->stmt_opts = opts;
   stmt->stmt_is_deflt_rowset = 1;
@@ -158,15 +158,15 @@ virtodbc__SQLAllocStmt (
 
 RETCODE SQL_API
 SQLAllocStmt (
-	HDBC hdbc,
-	HSTMT FAR * phstmt)
+	SQLHDBC hdbc,
+	SQLHSTMT FAR * phstmt)
 {
 	return virtodbc__SQLAllocStmt(hdbc, phstmt);
 }
 
 RETCODE SQL_API
 SQLBindCol (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UWORD icol,
 	SWORD fCType,
 	SQLPOINTER rgbValue,
@@ -186,7 +186,7 @@ SQLBindCol (
 
 RETCODE SQL_API
 virtodbc__SQLCancel (
-    HSTMT hstmt)
+    SQLHSTMT hstmt)
 {
   STMT (stmt, hstmt);
   future_t *future;
@@ -207,14 +207,14 @@ virtodbc__SQLCancel (
 
 RETCODE SQL_API
 SQLCancel (
-    HSTMT hstmt)
+    SQLHSTMT hstmt)
 {
   return virtodbc__SQLCancel (hstmt);
 }
 
 RETCODE SQL_API
 SQLColAttributes (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UWORD icol,
 	UWORD fDescType,
 	PTR rgbDesc,
@@ -269,7 +269,7 @@ bm_info = {
 
 RETCODE SQL_API
 virtodbc__SQLColAttributes (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UWORD icol,
 	UWORD fDescType,
 	PTR rgbDesc,
@@ -690,7 +690,7 @@ verify_inprocess_client (cli_connection_t * con)
 /* This was SQLConnect */
 int
 internal_sql_connect (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	UCHAR FAR * szDSN,
 	SWORD cbDSN,
 	UCHAR FAR * szUID,
@@ -955,7 +955,7 @@ internal_sql_connect (
 
 RETCODE SQL_API
 virtodbc__SQLDescribeCol (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UWORD icol,
 	UCHAR FAR * szColName,
 	SWORD cbColNameMax,
@@ -1036,7 +1036,7 @@ virtodbc__SQLDescribeCol (
 
 RETCODE SQL_API
 SQLDescribeCol (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UWORD icol,
 	UCHAR FAR * wszColName,
 	SWORD cbColName,
@@ -1062,7 +1062,7 @@ SQLDescribeCol (
 
 RETCODE SQL_API
 SQLDisconnect (
-	HDBC hdbc)
+	SQLHDBC hdbc)
 {
   CON (con, hdbc);
   if (con->con_session)
@@ -1073,9 +1073,9 @@ SQLDisconnect (
 
 RETCODE SQL_API
 SQLError (
-	HENV henv,
-	HDBC hdbc,
-	HSTMT hstmt,
+	SQLHENV henv,
+	SQLHDBC hdbc,
+	SQLHSTMT hstmt,
 	UCHAR FAR * wszSqlState,
 	SQLINTEGER FAR * pfNativeError,
 	UCHAR FAR * wszErrorMsg,
@@ -1111,9 +1111,9 @@ SQLError (
 
 RETCODE SQL_API
 virtodbc__SQLError (
-	HENV henv,
-	HDBC hdbc,
-	HSTMT hstmt,
+	SQLHENV henv,
+	SQLHDBC hdbc,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szSqlState,
 	SQLINTEGER FAR * pfNativeError,
 	UCHAR FAR * szErrorMsg,
@@ -1169,7 +1169,7 @@ stmt_free_current_rows (cli_stmt_t * stmt)
 
 RETCODE SQL_API
 virtodbc__SQLExecDirect (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szSqlStr,
 	SDWORD cbSqlStr)
 {
@@ -1358,7 +1358,7 @@ virtodbc__SQLExecDirect (
 
 RETCODE SQL_API
 SQLExecDirect (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * wszSqlStr,
 	SQLINTEGER cbSqlStr)
 {
@@ -1379,7 +1379,7 @@ SQLExecDirect (
 
 RETCODE SQL_API
 SQLExecute (
-	HSTMT hstmt)
+	SQLHSTMT hstmt)
 {
   return virtodbc__SQLExecDirect (hstmt, NULL, 0);
 }
@@ -1387,7 +1387,7 @@ SQLExecute (
 
 RETCODE SQL_API
 virtodbc__SQLFetch (
-	HSTMT hstmt, int preserve_rowset_at_end)
+	SQLHSTMT hstmt, int preserve_rowset_at_end)
 {
   STMT (stmt, hstmt);
   int err;
@@ -1453,7 +1453,7 @@ virtodbc__SQLFetch (
 
 RETCODE SQL_API
 SQLFetch (
-	HSTMT hstmt)
+	SQLHSTMT hstmt)
 {
   STMT (stmt, hstmt);
 
@@ -1473,14 +1473,14 @@ SQLFetch (
 
 RETCODE SQL_API
 SQLFreeConnect (
-	HDBC hdbc)
+	SQLHDBC hdbc)
 {
 	return virtodbc__SQLFreeConnect(hdbc);
 }
 
 RETCODE SQL_API
 virtodbc__SQLFreeConnect (
-	HDBC hdbc)
+	SQLHDBC hdbc)
 {
   CON (con, hdbc);
   if (con->con_session)
@@ -1511,14 +1511,14 @@ virtodbc__SQLFreeConnect (
 
 RETCODE SQL_API
 SQLFreeEnv (
-	HENV henv)
+	SQLHENV henv)
 {
 	return virtodbc__SQLFreeEnv(henv);
 }
 
 RETCODE SQL_API
 virtodbc__SQLFreeEnv (
-	HENV henv)
+	SQLHENV henv)
 {
   ENV(env, henv);
   mutex_free (env->env_mtx);
@@ -1529,7 +1529,7 @@ virtodbc__SQLFreeEnv (
 
 RETCODE SQL_API
 virtodbc__SQLFreeStmt (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UWORD fOption)
 {
   STMT (stmt, hstmt);
@@ -1594,7 +1594,7 @@ virtodbc__SQLFreeStmt (
       virtodbc__SQLFreeStmt (hstmt, SQL_UNBIND);
       virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
       if (stmt->stmt_set_pos_stmt)
-	virtodbc__SQLFreeStmt ((HSTMT) stmt->stmt_set_pos_stmt, SQL_DROP);
+	virtodbc__SQLFreeStmt ((SQLHSTMT) stmt->stmt_set_pos_stmt, SQL_DROP);
 
       {
 #ifdef INPROCESS_CLIENT
@@ -1655,7 +1655,7 @@ virtodbc__SQLFreeStmt (
 
 RETCODE SQL_API
 SQLFreeStmt (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UWORD fOption)
 {
   return virtodbc__SQLFreeStmt (hstmt, fOption);
@@ -1664,7 +1664,7 @@ SQLFreeStmt (
 
 RETCODE SQL_API
 virtodbc__SQLGetCursorName (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szCursor,
 	SWORD cbCursorMax,
 	SWORD FAR * pcbCursor)
@@ -1690,7 +1690,7 @@ virtodbc__SQLGetCursorName (
 
 RETCODE SQL_API
 SQLGetCursorName (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * wszCursor,
 	SWORD cbCursor,
 	SWORD FAR * pcbCursor)
@@ -1711,7 +1711,7 @@ SQLGetCursorName (
 
 RETCODE SQL_API
 SQLNumResultCols (
-      HSTMT hstmt,
+      SQLHSTMT hstmt,
       SWORD FAR * pccol)
 {
 	return virtodbc__SQLNumResultCols(hstmt, pccol);
@@ -1719,7 +1719,7 @@ SQLNumResultCols (
 
 RETCODE SQL_API
 virtodbc__SQLNumResultCols (
-      HSTMT hstmt,
+      SQLHSTMT hstmt,
       SWORD FAR * pccol)
 {
   STMT (stmt, hstmt);
@@ -1750,7 +1750,7 @@ virtodbc__SQLNumResultCols (
 
 RETCODE SQL_API
 virtodbc__SQLPrepare (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szSqlStr,
 	SQLINTEGER cbSqlStr)
 {
@@ -1777,7 +1777,7 @@ virtodbc__SQLPrepare (
 
 RETCODE SQL_API
 SQLPrepare (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * wszSqlStr,
 	SQLINTEGER cbSqlStr)
 {
@@ -1797,7 +1797,7 @@ SQLPrepare (
 
 RETCODE SQL_API
 SQLRowCount (
-      HSTMT hstmt,
+      SQLHSTMT hstmt,
       SQLLEN FAR * pcrow)
 {
   STMT (stmt, hstmt);
@@ -1809,7 +1809,7 @@ SQLRowCount (
 
 RETCODE SQL_API
 virtodbc__SQLSetCursorName (
-      HSTMT hstmt,
+      SQLHSTMT hstmt,
       UCHAR FAR * szCursor,
       SWORD cbCursor)
 {
@@ -1825,7 +1825,7 @@ virtodbc__SQLSetCursorName (
 
 RETCODE SQL_API
 SQLSetCursorName (
-      HSTMT hstmt,
+      SQLHSTMT hstmt,
       UCHAR FAR * wszCursor,
       SWORD _cbCursor)
 {
@@ -1846,7 +1846,7 @@ SQLSetCursorName (
 
 RETCODE SQL_API
 virtodbc__SQLSetParam (
-      HSTMT hstmt,
+      SQLHSTMT hstmt,
       UWORD ipar,
       SWORD fCType,
       SWORD fSqlType,
@@ -1874,7 +1874,7 @@ virtodbc__SQLSetParam (
 
 RETCODE SQL_API
 SQLSetParam (
-      HSTMT hstmt,
+      SQLHSTMT hstmt,
       UWORD ipar,
       SWORD fCType,
       SWORD fSqlType,
@@ -1890,7 +1890,7 @@ SQLSetParam (
 
 RETCODE SQL_API
 virtodbc__SQLBindParameter (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UWORD ipar,
 	SWORD fParamType,
 	SWORD fCType,
@@ -1932,7 +1932,7 @@ virtodbc__SQLBindParameter (
 
 RETCODE SQL_API
 SQLBindParameter (
-    HSTMT hstmt,
+    SQLHSTMT hstmt,
     UWORD ipar,
     SWORD fParamType,
     SWORD fCType,
@@ -1949,8 +1949,8 @@ SQLBindParameter (
 
 RETCODE SQL_API
 SQLTransact (
-      HENV henv,
-      HDBC hdbc,
+      SQLHENV henv,
+      SQLHDBC hdbc,
       UWORD fType)
 {
 	return virtodbc__SQLTransact(henv, hdbc, fType);
@@ -1959,8 +1959,8 @@ SQLTransact (
 
 RETCODE SQL_API
 virtodbc__SQLTransact (
-      HENV henv,
-      HDBC hdbc,
+      SQLHENV henv,
+      SQLHDBC hdbc,
       UWORD fType)
 {
   cli_dbg_printf ((stderr, "virtodbc__SQLTransact (henv=%p, hdbc=%p, fType=%u)\n",
@@ -1972,7 +1972,7 @@ virtodbc__SQLTransact (
 		if (!env)
 			return (SQL_INVALID_HANDLE);
 		for (n = 0; ((uint32)n) < dk_set_length(env->env_connections); n++) {
-			rc = virtodbc__SQLTransact((HENV)NULL, (HDBC)dk_set_nth(env->env_connections, n), fType);
+			rc = virtodbc__SQLTransact(SQL_NULL_HENV, (SQLHDBC)dk_set_nth(env->env_connections, n), fType);
 			if (rc != SQL_SUCCESS)
 				return rc;
 		}
@@ -2021,7 +2021,7 @@ virtodbc__SQLTransact (
 #if 0
 RETCODE SQL_API
 SQLSync (
-	HSTMT hstmt)
+	SQLHSTMT hstmt)
 {
   STMT (stmt, hstmt);
 
@@ -2031,7 +2031,7 @@ SQLSync (
 
 RETCODE SQL_API
 SQLShutdown (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	char *new_log)
 {
   CON (dbc, hdbc);
@@ -2045,7 +2045,7 @@ SQLShutdown (
 
 RETCODE SQL_API
 SQLCheckpoint (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	char *new_log)
 {
   CON (dbc, hdbc);
@@ -2059,7 +2059,7 @@ SQLCheckpoint (
 
 RETCODE SQL_API
 SQLStatus (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	char *buffer,
 	int max)
 {

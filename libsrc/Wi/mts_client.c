@@ -152,8 +152,8 @@ mts_get_remote_rmcookie (cli_connection_t * con, cookie_t ** rmcookie)
 
   if (!*rmcookie)
     {
-      HSTMT stmt;
-      RETCODE rc = SQLAllocStmt ((HDBC) con, &stmt);
+      SQLHSTMT stmt;
+      RETCODE rc = SQLAllocStmt ((SQLHDBC) con, &stmt);
       if (SQL_SUCCESS == rc)
 	{
 	  rc = SQLExecDirect (stmt, "select mts_get_rmcookie()", SQL_NTS);

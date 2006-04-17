@@ -267,7 +267,7 @@ long _##len = (long) (len < 0 ? wcslen ((wchar_t *)wide) : len); \
 #if 0
 RETCODE SQL_API
 SQLConnectW (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	SQLWCHAR * wszDSN,
 	SWORD cbDSN,
 	SQLWCHAR * wszUID,
@@ -299,7 +299,7 @@ SQLConnectW (
 
 RETCODE SQL_API
 SQLBrowseConnectW (
-      HDBC hdbc,
+      SQLHDBC hdbc,
       SQLWCHAR FAR * szConnStrIn,
       SWORD cbConnStrIn,
       SQLWCHAR FAR * szConnStrOut,
@@ -401,7 +401,7 @@ SQLRETURN SQL_API SQLColAttributeW(
 
 RETCODE SQL_API
 SQLColumnPrivilegesW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR FAR * wszTableQualifier,
 	SWORD cbTableQualifier,
 	SQLWCHAR FAR * wszTableOwner,
@@ -441,7 +441,7 @@ SQLColumnPrivilegesW (
 
 RETCODE SQL_API
 SQLColumnsW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
@@ -482,7 +482,7 @@ SQLColumnsW (
 void ParseOptions (char *s, int clean_up);
 RETCODE SQL_API
 SQLDriverConnectW (
-    HDBC hdbc,
+    SQLHDBC hdbc,
     HWND hwnd,
     SQLWCHAR * wszConnStrIn,
     SWORD cbConnStrIn,
@@ -512,7 +512,7 @@ SQLDriverConnectW (
 
 RETCODE SQL_API
 SQLDescribeColW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UWORD icol,
 	SQLWCHAR * wszColName,
 	SWORD cbColName,
@@ -538,9 +538,9 @@ SQLDescribeColW (
 
 RETCODE SQL_API
 SQLErrorW (
-	HENV henv,
-	HDBC hdbc,
-	HSTMT hstmt,
+	SQLHENV henv,
+	SQLHDBC hdbc,
+	SQLHSTMT hstmt,
 	SQLWCHAR FAR * wszSqlState,
 	SQLINTEGER FAR * pfNativeError,
 	SQLWCHAR FAR * wszErrorMsg,
@@ -583,7 +583,7 @@ SQLErrorW (
 
 RETCODE SQL_API
 SQLExecDirectW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR * wszSqlStr,
 	SQLINTEGER cbSqlStr)
 {
@@ -604,7 +604,7 @@ SQLExecDirectW (
 
 RETCODE SQL_API
 SQLForeignKeysW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR * wszPkTableQualifier,
 	SWORD cbPkTableQualifier,
 	SQLWCHAR * wszPkTableOwner,
@@ -690,7 +690,7 @@ SQLGetConnectAttrW (SQLHDBC connectionHandle,
 
 RETCODE SQL_API
 SQLGetConnectOptionW (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	UWORD fOption,
 	PTR pvParam)
 {
@@ -720,7 +720,7 @@ SQLGetConnectOptionW (
 
 RETCODE SQL_API
 SQLGetCursorNameW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR * wszCursor,
 	SWORD cbCursor,
 	SWORD FAR * pcbCursor)
@@ -900,7 +900,7 @@ SQLGetDiagRecW (SQLSMALLINT HandleType,
 
 RETCODE SQL_API
 SQLGetInfoW (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	UWORD fInfoType,
 	PTR rgbInfoValue,
 	SWORD cbInfoValueMax,
@@ -980,7 +980,7 @@ SQLGetStmtAttrW (SQLHSTMT statementHandle,
 
 RETCODE SQL_API
 SQLNativeSqlW (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	SQLWCHAR * wszSqlStrIn,
 	SQLINTEGER cbSqlStrIn,
 	SQLWCHAR * wszSqlStr,
@@ -1007,7 +1007,7 @@ SQLNativeSqlW (
 
 RETCODE SQL_API
 SQLPrepareW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR * wszSqlStr,
 	SQLINTEGER cbSqlStr)
 {
@@ -1028,7 +1028,7 @@ SQLPrepareW (
 
 RETCODE SQL_API
 SQLPrimaryKeysW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
@@ -1063,7 +1063,7 @@ SQLPrimaryKeysW (
 
 RETCODE SQL_API
 SQLProcedureColumnsW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR * wszProcQualifier,
 	SWORD cbProcQualifier,
 	SQLWCHAR * wszProcOwner,
@@ -1104,7 +1104,7 @@ SQLProcedureColumnsW (
 
 RETCODE SQL_API
 SQLProceduresW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR * wszProcQualifier,
 	SWORD cbProcQualifier,
 	SQLWCHAR * wszProcOwner,
@@ -1168,7 +1168,7 @@ SQLSetConnectAttrW (SQLHDBC connectionHandle,
 
 RETCODE SQL_API
 SQLSetConnectOptionW (
-      HDBC hdbc,
+      SQLHDBC hdbc,
       UWORD fOption,
       SQLULEN vParam)
 {
@@ -1196,7 +1196,7 @@ SQLSetConnectOptionW (
 
 RETCODE SQL_API
 SQLSetCursorNameW (
-      HSTMT hstmt,
+      SQLHSTMT hstmt,
       SQLWCHAR * wszCursor,
       SWORD cbCursor)
 {
@@ -1262,7 +1262,7 @@ SQLSetStmtAttrW (SQLHSTMT statementHandle,
 
 RETCODE SQL_API
 SQLSpecialColumnsW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UWORD fColType,
 	SQLWCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
@@ -1300,7 +1300,7 @@ SQLSpecialColumnsW (
 
 RETCODE SQL_API
 SQLStatisticsW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
@@ -1337,7 +1337,7 @@ SQLStatisticsW (
 
 RETCODE SQL_API
 SQLTablePrivilegesW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
@@ -1371,7 +1371,7 @@ SQLTablePrivilegesW (
 
 RETCODE SQL_API
 SQLTablesW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SQLWCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
 	SQLWCHAR * wszTableOwner,
@@ -1411,7 +1411,7 @@ SQLTablesW (
 
 RETCODE SQL_API
 SQLGetTypeInfoW (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	SWORD fSqlType)
 {
 	return virtodbc__SQLGetTypeInfo(hstmt, fSqlType);

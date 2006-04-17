@@ -255,6 +255,6 @@ remote_table_source_input (remote_table_source_t * rts, caddr_t * inst,
 }
 
 void
-DoSQLError (HDBC hdbc, HSTMT hstmt)
+DoSQLError (SQLHDBC hdbc, SQLHSTMT hstmt)
 {
 }

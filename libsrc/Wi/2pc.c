@@ -88,7 +88,7 @@ int tp_trx_commit_2 (caddr_t distr_trx, int is_commit);
 int virt_recover_status (client_connection_t * cli, struct in_addr *addr,
     unsigned long port, unsigned long trx_id);
 static void global_xa_init ();
-void DoSQLError (HDBC hdbc, HSTMT hstmt);
+void DoSQLError (SQLHDBC hdbc, SQLHSTMT hstmt);
 char *virt_2pc_format_error_string (caddr_t err);
 
 caddr_t
@@ -762,7 +762,7 @@ tp_data_free (tp_data_t * tpd)
 
 #if UNIVERSE
 void
-DoSQLError (HDBC hdbc, HSTMT hstmt)
+DoSQLError (SQLHDBC hdbc, SQLHSTMT hstmt)
 {
 
   UCHAR szSqlState[MSG_BUF_SIZE];
@@ -827,7 +827,7 @@ bif_2pc_enlist_001 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 typedef tp_addr_t tp_srv_addr_t;
-typedef HDBC srv_connection_t;
+typedef SQLHDBC srv_connection_t;
 
 virt_tp_t *_2pc_dtp;
 
@@ -1188,7 +1188,7 @@ tp_trx_commit_1 (lock_trx_t * lt, int is_commit)
 	    else
 	      {
 		dk_free_tree (odbc_error (vbranch->vtr_branch_handle.l_rmt,
-			(HENV) NULL, (HDBC) dbc, (HSTMT) NULL, NULL));
+			SQL_NULL_HENV,  (SQLHDBC) dbc, SQL_NULL_HSTMT,  NULL));
 		_2pc_printf (("lost connection to branch at stage 1"));
 	      }
 	    vbranch->vtr_is_finilized = 1;
@@ -1243,7 +1243,7 @@ tp_trx_commit_2 (caddr_t distr_trx, int is_commit)
 	    else
 	      {
 		dk_free_tree (odbc_error (vbranch->vtr_branch_handle.l_rmt,
-			(HENV) NULL, (HDBC) dbc, (HSTMT) NULL, NULL));
+			SQL_NULL_HENV,  (SQLHDBC) dbc, SQL_NULL_HSTMT,  NULL));
 		_2pc_printf (("lost connection to branch at stage 2"));
 	      }
 	    vtrx->vtx_needs_recovery = 1;

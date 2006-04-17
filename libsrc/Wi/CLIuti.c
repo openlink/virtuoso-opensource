@@ -2129,11 +2129,11 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
       if (nth_col != -1)
 	{
 #ifndef MAP_DIRECT_BIN_CHAR
-	      virtodbc__SQLGetData ((HSTMT) stmt, (UWORD) nth_col, (SWORD) (c_type == SQL_C_WCHAR ? SQL_C_WCHAR :
+	      virtodbc__SQLGetData ((SQLHSTMT) stmt, (UWORD) nth_col, (SWORD) (c_type == SQL_C_WCHAR ? SQL_C_WCHAR :
 		  c_type == SQL_C_BINARY ? SQL_C_BINARY : SQL_C_CHAR),
 		  place, max, len_ret);
 #else
-	      virtodbc__SQLGetData ((HSTMT) stmt, (UWORD) nth_col,
+	      virtodbc__SQLGetData ((SQLHSTMT) stmt, (UWORD) nth_col,
 		  c_type == SQL_C_WCHAR ? SQL_C_WCHAR : SQL_C_CHAR,
 		  place, max, len_ret);
 #endif
@@ -2216,7 +2216,7 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 	  dt_to_string (it, temp, sizeof (temp));
 
 	  if (!sql_type && nth_col != -1)
-	    virtodbc__SQLDescribeCol ((HSTMT) stmt, (UWORD) nth_col, NULL, (SWORD) 0, NULL, &sql_type,
+	    virtodbc__SQLDescribeCol ((SQLHSTMT) stmt, (UWORD) nth_col, NULL, (SWORD) 0, NULL, &sql_type,
 		NULL, NULL, NULL);
 	  switch (sql_type)
 	    {
@@ -2565,7 +2565,7 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
       if (nth_col != -1)
 	{
 	  SWORD sql_type;
-	  virtodbc__SQLDescribeCol ((HSTMT) stmt, (UWORD) nth_col, NULL,
+	  virtodbc__SQLDescribeCol ((SQLHSTMT) stmt, (UWORD) nth_col, NULL,
 	      (SWORD) 0, NULL, &sql_type, NULL, NULL, NULL);
 	  c_type = sql_type_to_sqlc_default (sql_type);
 	}
@@ -3018,7 +3018,7 @@ stmt_set_columns (cli_stmt_t * stmt, caddr_t * row, int nth_in_set)
 	  if (len)
 	    len = (SQLLEN*) (((char*)len) + l_offset + rebind_offset);
 	  stmt->stmt_current_row = row;
-	  virtodbc__SQLGetData ((HSTMT) stmt, (UWORD) 0, (SWORD) cb->cb_c_type,
+	  virtodbc__SQLGetData ((SQLHSTMT) stmt, (UWORD) 0, (SWORD) cb->cb_c_type,
 	      cb->cb_place + pl_offset + rebind_offset, cb->cb_max_length, len);
 	  stmt->stmt_current_row = old_curr_row;
 	}

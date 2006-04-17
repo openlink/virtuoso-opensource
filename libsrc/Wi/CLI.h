@@ -189,7 +189,7 @@ typedef struct pending_call_s
     int		psp_irow;
     int		psp_toral_rows;
     int		psp_nth_row;
-    HSTMT	psp_st_stmt;
+    SQLHSTMT	psp_st_stmt;
     caddr_t	pex_text;
   } pending_call_t;
 
@@ -370,7 +370,7 @@ struct stmt_descriptor_s {
 
 /* CLIsql1.c */
 int internal_sql_connect (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	UCHAR FAR * szDSN,
 	SWORD cbDSN,
 	UCHAR FAR * szUID,
@@ -440,84 +440,84 @@ extern int isdts_mode;
 /*
  *  Added prototypes for internal functions
  */
-RETCODE SQL_API virtodbc__SQLCancel (HSTMT hstmt);
+RETCODE SQL_API virtodbc__SQLCancel (SQLHSTMT hstmt);
 
-RETCODE SQL_API virtodbc__SQLDescribeCol (HSTMT hstmt, UWORD icol,
+RETCODE SQL_API virtodbc__SQLDescribeCol (SQLHSTMT hstmt, UWORD icol,
     UCHAR FAR * szColName, SWORD cbColNameMax, SWORD FAR * pcbColName,
     SWORD FAR * pfSqlType, SQLULEN FAR * pcbColDef, SWORD FAR * pibScale,
     SWORD FAR * pfNullable);
 
-RETCODE SQL_API virtodbc__SQLExecDirect (HSTMT hstmt, UCHAR FAR * szSqlStr,
+RETCODE SQL_API virtodbc__SQLExecDirect (SQLHSTMT hstmt, UCHAR FAR * szSqlStr,
     SDWORD cbSqlStr);
 
-RETCODE SQL_API virtodbc__SQLFetch (HSTMT hstmt, int preserve_rowset_at_end);
+RETCODE SQL_API virtodbc__SQLFetch (SQLHSTMT hstmt, int preserve_rowset_at_end);
 
-RETCODE SQL_API virtodbc__SQLSetParam (HSTMT hstmt, UWORD ipar, SWORD fCType,
+RETCODE SQL_API virtodbc__SQLSetParam (SQLHSTMT hstmt, UWORD ipar, SWORD fCType,
     SWORD fSqlType, SQLULEN cbColDef, SWORD ibScale, PTR rgbValue,
     SQLLEN FAR * pcbValue);
 
-RETCODE SQL_API virtodbc__SQLGetData (HSTMT hstmt, UWORD icol, SWORD fCType,
+RETCODE SQL_API virtodbc__SQLGetData (SQLHSTMT hstmt, UWORD icol, SWORD fCType,
     PTR rgbValue, SQLLEN cbValueMax, SQLLEN FAR * pcbValue);
 
-RETCODE SQL_API virtodbc__SQLAllocEnv (HENV FAR * phenv);
+RETCODE SQL_API virtodbc__SQLAllocEnv (SQLHENV FAR * phenv);
 
-RETCODE SQL_API virtodbc__SQLAllocConnect (HENV henv, HDBC FAR * phdbc);
+RETCODE SQL_API virtodbc__SQLAllocConnect (SQLHENV henv, SQLHDBC FAR * phdbc);
 
-RETCODE SQL_API virtodbc__SQLAllocStmt (HDBC hdbc, HSTMT FAR * phstmt);
+RETCODE SQL_API virtodbc__SQLAllocStmt (SQLHDBC hdbc, SQLHSTMT FAR * phstmt);
 
-RETCODE SQL_API virtodbc__SQLFreeEnv (HENV henv);
+RETCODE SQL_API virtodbc__SQLFreeEnv (SQLHENV henv);
 
-RETCODE SQL_API virtodbc__SQLFreeConnect (HDBC hdbc);
+RETCODE SQL_API virtodbc__SQLFreeConnect (SQLHDBC hdbc);
 
-RETCODE SQL_API virtodbc__SQLFreeStmt (HSTMT hstmt, UWORD fOption);
+RETCODE SQL_API virtodbc__SQLFreeStmt (SQLHSTMT hstmt, UWORD fOption);
 
-RETCODE SQL_API virtodbc__SQLError (HENV henv, HDBC hdbc, HSTMT hstmt,
+RETCODE SQL_API virtodbc__SQLError (SQLHENV henv, SQLHDBC hdbc, SQLHSTMT hstmt,
 	UCHAR FAR * szSqlState, SQLINTEGER FAR * pfNativeError, UCHAR FAR * szErrorMsg,
 	SWORD cbErrorMsgMax, SWORD FAR * pcbErrorMsg, int bClearState);
 
-RETCODE SQL_API virtodbc__SQLGetStmtOption (HSTMT hstmt, UWORD fOption, PTR pvParam);
+RETCODE SQL_API virtodbc__SQLGetStmtOption (SQLHSTMT hstmt, UWORD fOption, PTR pvParam);
 
-RETCODE SQL_API virtodbc__SQLSetStmtOption (HSTMT hstmt, UWORD fOption, SQLULEN vParam);
+RETCODE SQL_API virtodbc__SQLSetStmtOption (SQLHSTMT hstmt, UWORD fOption, SQLULEN vParam);
 
-RETCODE SQL_API virtodbc__SQLSetConnectOption (HDBC hdbc, UWORD fOption, SQLULEN vParam);
+RETCODE SQL_API virtodbc__SQLSetConnectOption (SQLHDBC hdbc, UWORD fOption, SQLULEN vParam);
 
-RETCODE SQL_API virtodbc__SQLGetConnectOption (HDBC hdbc, UWORD fOption, PTR pvParam, SQLINTEGER StringLength, UNALIGNED SQLINTEGER * StringLengthPtr);
+RETCODE SQL_API virtodbc__SQLGetConnectOption (SQLHDBC hdbc, UWORD fOption, PTR pvParam, SQLINTEGER StringLength, UNALIGNED SQLINTEGER * StringLengthPtr);
 
-RETCODE SQL_API virtodbc__SQLGetTypeInfo (HSTMT hstmt, SWORD fSqlType);
+RETCODE SQL_API virtodbc__SQLGetTypeInfo (SQLHSTMT hstmt, SWORD fSqlType);
 
 RETCODE SQL_API virtodbc__SQLAllocHandle (SQLSMALLINT handleType, SQLHANDLE inputHandle, SQLHANDLE * outputHandlePtr);
 
 RETCODE SQL_API virtodbc__SQLFreeHandle (SQLSMALLINT handleType, SQLHANDLE handle);
 
-RETCODE SQL_API virtodbc__SQLExtendedFetch ( HSTMT hstmt, UWORD fFetchType, SQLLEN irow, SQLULEN FAR * pcrow,
+RETCODE SQL_API virtodbc__SQLExtendedFetch ( SQLHSTMT hstmt, UWORD fFetchType, SQLLEN irow, SQLULEN FAR * pcrow,
 				    UWORD FAR * rgfRowStatus, SQLLEN bookmark_offset);
 
-RETCODE SQL_API virtodbc__SQLTransact ( HENV henv, HDBC hdbc, UWORD fType);
+RETCODE SQL_API virtodbc__SQLTransact ( SQLHENV henv, SQLHDBC hdbc, UWORD fType);
 
-RETCODE SQL_API virtodbc__SQLPrepare (HSTMT hstmt,UCHAR FAR * szSqlStr, SQLINTEGER cbSqlStr);
+RETCODE SQL_API virtodbc__SQLPrepare (SQLHSTMT hstmt,UCHAR FAR * szSqlStr, SQLINTEGER cbSqlStr);
 
-SQLRETURN SQL_API virtodbc__SQLSetPos ( HSTMT hstmt, SQLSETPOSIROW irow, UWORD fOption, UWORD fLock);
+SQLRETURN SQL_API virtodbc__SQLSetPos ( SQLHSTMT hstmt, SQLSETPOSIROW irow, UWORD fOption, UWORD fLock);
 
-RETCODE SQL_API virtodbc__SQLColAttributes (HSTMT hstmt,UWORD icol,UWORD fDescType, PTR rgbDesc,SWORD cbDescMax,SWORD FAR * pcbDesc, SQLLEN FAR * pfDesc);
+RETCODE SQL_API virtodbc__SQLColAttributes (SQLHSTMT hstmt,UWORD icol,UWORD fDescType, PTR rgbDesc,SWORD cbDescMax,SWORD FAR * pcbDesc, SQLLEN FAR * pfDesc);
 
-RETCODE SQL_API virtodbc__SQLNumResultCols (HSTMT hstmt, SWORD FAR * pccol);
+RETCODE SQL_API virtodbc__SQLNumResultCols (SQLHSTMT hstmt, SWORD FAR * pccol);
 
-RETCODE SQL_API virtodbc__SQLBindParameter ( HSTMT hstmt, UWORD ipar, SWORD fParamType, SWORD fCType,
+RETCODE SQL_API virtodbc__SQLBindParameter ( SQLHSTMT hstmt, UWORD ipar, SWORD fParamType, SWORD fCType,
     SWORD fSqlType, SQLULEN cbColDef, SWORD ibScale, PTR rgbValue, SQLLEN cbValueMax, SQLLEN FAR * pcbValue);
 
 
-RETCODE SQL_API virtodbc__SQLSpecialColumns ( HSTMT hstmt, UWORD fColType, UCHAR FAR * szTableQualifier,
+RETCODE SQL_API virtodbc__SQLSpecialColumns ( SQLHSTMT hstmt, UWORD fColType, UCHAR FAR * szTableQualifier,
 	SWORD cbTableQualifier, UCHAR FAR * szTableOwner, SWORD cbTableOwner, UCHAR FAR * szTableName,
 	SWORD cbTableName, UWORD fScope, UWORD fNullable);
 
-RETCODE SQL_API virtodbc__SQLStatistics ( HSTMT hstmt, UCHAR FAR * szTableQualifier, SWORD cbTableQualifier,
+RETCODE SQL_API virtodbc__SQLStatistics ( SQLHSTMT hstmt, UCHAR FAR * szTableQualifier, SWORD cbTableQualifier,
 	UCHAR FAR * szTableOwner, SWORD cbTableOwner, UCHAR FAR * szTableName, SWORD cbTableName,
 	UWORD fUnique, UWORD fAccuracy);
 caddr_t stmt_parm_to_dv (parm_binding_t * pb, int nth, long bhid, cli_stmt_t *stmt);
 
 RETCODE SQL_API
 virtodbc__SQLColumnPrivileges (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szTableQualifier,
 	SWORD cbTableQualifier,
 	UCHAR FAR * szTableOwner,
@@ -529,7 +529,7 @@ virtodbc__SQLColumnPrivileges (
 
 RETCODE SQL_API
 virtodbc__SQLColumns (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szTableQualifier,
 	SWORD cbTableQualifier,
 	UCHAR FAR * szTableOwner,
@@ -541,7 +541,7 @@ virtodbc__SQLColumns (
 
 RETCODE SQL_API
 virtodbc__SQLForeignKeys (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szPkTableQualifier,
 	SWORD cbPkTableQualifier,
 	UCHAR FAR * szPkTableOwner,
@@ -557,14 +557,14 @@ virtodbc__SQLForeignKeys (
 
 RETCODE SQL_API
 virtodbc__SQLGetCursorName (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szCursor,
 	SWORD cbCursorMax,
 	SWORD FAR * pcbCursor);
 
 RETCODE SQL_API
 virtodbc__SQLGetInfo (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	UWORD fInfoType,
 	PTR rgbInfoValue,
 	SWORD cbInfoValueMax,
@@ -572,7 +572,7 @@ virtodbc__SQLGetInfo (
 
 RETCODE SQL_API
 virtodbc__SQLNativeSql (
-	HDBC hdbc,
+	SQLHDBC hdbc,
 	UCHAR FAR * szSqlStrIn,
 	SQLINTEGER cbSqlStrIn,
 	UCHAR FAR * szSqlStr,
@@ -581,7 +581,7 @@ virtodbc__SQLNativeSql (
 
 RETCODE SQL_API
 virtodbc__SQLPrimaryKeys (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szTableQualifier,
 	SWORD cbTableQualifier,
 	UCHAR FAR * szTableOwner,
@@ -591,7 +591,7 @@ virtodbc__SQLPrimaryKeys (
 
 RETCODE SQL_API
 virtodbc__SQLProcedureColumns (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szProcQualifier,
 	SWORD cbProcQualifier,
 	UCHAR FAR * szProcOwner,
@@ -603,7 +603,7 @@ virtodbc__SQLProcedureColumns (
 
 RETCODE SQL_API
 virtodbc__SQLProcedures (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szProcQualifier,
 	SWORD cbProcQualifier,
 	UCHAR FAR * szProcOwner,
@@ -613,13 +613,13 @@ virtodbc__SQLProcedures (
 
 RETCODE SQL_API
 virtodbc__SQLSetCursorName (
-      HSTMT hstmt,
+      SQLHSTMT hstmt,
       UCHAR FAR * szCursor,
       SWORD cbCursor);
 
 RETCODE SQL_API
 virtodbc__SQLTablePrivileges (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szTableQualifier,
 	SWORD cbTableQualifier,
 	UCHAR FAR * szTableOwner,
@@ -629,7 +629,7 @@ virtodbc__SQLTablePrivileges (
 
 RETCODE SQL_API
 virtodbc__SQLTables (
-	HSTMT hstmt,
+	SQLHSTMT hstmt,
 	UCHAR FAR * szTableQualifier,
 	SWORD cbTableQualifier,
 	UCHAR FAR * szTableOwner,

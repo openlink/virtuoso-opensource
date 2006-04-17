@@ -25,7 +25,7 @@
 */
 
 #ifdef WIN32
-caddr_t __declspec(dllimport) exp_PrpcTPInvoke(HDBC hdbc,long op);
+caddr_t __declspec(dllimport) exp_PrpcTPInvoke(SQLHDBC hdbc,long op);
 #else
-caddr_t exp_PrpcTPInvoke(HDBC hdbc,long op);
+caddr_t exp_PrpcTPInvoke(SQLHDBC hdbc,long op);
 #endif

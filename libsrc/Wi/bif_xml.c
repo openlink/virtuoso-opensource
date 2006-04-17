@@ -1016,7 +1016,7 @@ make_tree:
 }
 
 typedef struct sqlgetdata_fwd_iter_s {
-   HSTMT sgdfi_hstmt;
+   SQLHSTMT sgdfi_hstmt;
    UWORD sgdfi_inx;
    SWORD sgdfi_c_type;
  } sqlgetdata_fwd_iter_t;

@@ -78,7 +78,7 @@ typedef struct remote_proc_s
 typedef struct rds_connection_s
   {
     remote_ds_t *	rc_rds;
-    HDBC		rc_hdbc;
+    SQLHDBC		rc_hdbc;
     id_hash_t *		rc_stmts;
     int			rc_n_stmts_cached;
     long		rc_last_used;
