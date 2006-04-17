@@ -43,7 +43,7 @@
 #endif
 
 #define DEFINE_INPUT_NARROW(param) \
-  UCHAR FAR *sz##param = NULL
+  UCHAR *sz##param = NULL
 
 #define MAKE_INPUT_NARROW_N(param) \
 if (wsz##param) \
@@ -64,7 +64,7 @@ else \
   if (wsz##param) \
     { \
       len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
-      sz##param = (UCHAR FAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+      sz##param = (UCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
     } \
 }
 
@@ -88,7 +88,7 @@ if (wsz##param) \
   else \
     { \
       len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
-      sz##param = (UCHAR FAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+      sz##param = (UCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
     } \
 }
 
@@ -99,7 +99,7 @@ if (wsz##param) \
 }
 
 #define DEFINE_OUTPUT_CHAR_NARROW_N(param, type) \
-  UCHAR FAR *sz##param = NULL; \
+  UCHAR *sz##param = NULL; \
   type _vpcb##param, *_pcb##param = &_vpcb##param; \
   type _cb##param = MAX_MESSAGE_LEN + cb##param / sizeof (wchar_t)
 
@@ -127,7 +127,7 @@ if (pcb##param) \
   *pcb##param = *_pcb##param * N_BYTES_PER_CHAR;
 
 #define DEFINE_OUTPUT_CHAR_NARROW(param, con, type) \
-  UCHAR FAR *sz##param = NULL; \
+  UCHAR *sz##param = NULL; \
   type _vpcb##param, *_pcb##param = &_vpcb##param; \
   type _cb##param = MAX_MESSAGE_LEN + cb##param * ((con)->con_defs.cdef_utf8_execs ? VIRT_MB_CUR_MAX : 1)
 
@@ -300,11 +300,11 @@ SQLConnectW (
 RETCODE SQL_API
 SQLBrowseConnectW (
       SQLHDBC hdbc,
-      SQLWCHAR FAR * szConnStrIn,
+      SQLWCHAR * szConnStrIn,
       SWORD cbConnStrIn,
-      SQLWCHAR FAR * szConnStrOut,
+      SQLWCHAR * szConnStrOut,
       SWORD cbConnStrOutMax,
-      SWORD FAR * pcbConnStrOut)
+      SWORD * pcbConnStrOut)
 {
   NOT_IMPL_FUN (hdbc, "Function not supported: SQLBrowseConnect");
 }
@@ -402,13 +402,13 @@ SQLRETURN SQL_API SQLColAttributeW(
 RETCODE SQL_API
 SQLColumnPrivilegesW (
 	SQLHSTMT hstmt,
-	SQLWCHAR FAR * wszTableQualifier,
+	SQLWCHAR * wszTableQualifier,
 	SWORD cbTableQualifier,
-	SQLWCHAR FAR * wszTableOwner,
+	SQLWCHAR * wszTableOwner,
 	SWORD cbTableOwner,
-	SQLWCHAR FAR * wszTableName,
+	SQLWCHAR * wszTableName,
 	SWORD cbTableName,
-	SQLWCHAR FAR * wszColumnName,
+	SQLWCHAR * wszColumnName,
 	SWORD cbColumnName)
 {
   size_t len;
@@ -488,7 +488,7 @@ SQLDriverConnectW (
     SWORD cbConnStrIn,
     SQLWCHAR * wszConnStrOut,
     SWORD cbConnStrOut,
-    SWORD FAR * pcbConnStrOut,
+    SWORD * pcbConnStrOut,
     UWORD fDriverCompletion)
 {
   RETCODE rc;
@@ -516,11 +516,11 @@ SQLDescribeColW (
 	UWORD icol,
 	SQLWCHAR * wszColName,
 	SWORD cbColName,
-	SWORD FAR * pcbColName,
-	SWORD FAR * pfSqlType,
-	SQLULEN FAR * pcbColDef,
-	SWORD FAR * pibScale,
-	SWORD FAR * pfNullable)
+	SWORD * pcbColName,
+	SWORD * pfSqlType,
+	SQLULEN * pcbColDef,
+	SWORD * pibScale,
+	SWORD * pfNullable)
 {
   RETCODE rc;
   STMT_CHARSET (hstmt);
@@ -541,11 +541,11 @@ SQLErrorW (
 	SQLHENV henv,
 	SQLHDBC hdbc,
 	SQLHSTMT hstmt,
-	SQLWCHAR FAR * wszSqlState,
-	SQLINTEGER FAR * pfNativeError,
-	SQLWCHAR FAR * wszErrorMsg,
+	SQLWCHAR * wszSqlState,
+	SQLINTEGER * pfNativeError,
+	SQLWCHAR * wszErrorMsg,
 	SWORD cbErrorMsg,
-	SWORD FAR * pcbErrorMsg)
+	SWORD * pcbErrorMsg)
 {
   STMT (stmt, hstmt);
   CON (con, hdbc);
@@ -723,7 +723,7 @@ SQLGetCursorNameW (
 	SQLHSTMT hstmt,
 	SQLWCHAR * wszCursor,
 	SWORD cbCursor,
-	SWORD FAR * pcbCursor)
+	SWORD * pcbCursor)
 {
   RETCODE rc;
   STMT_CHARSET (hstmt);
@@ -904,7 +904,7 @@ SQLGetInfoW (
 	UWORD fInfoType,
 	PTR rgbInfoValue,
 	SWORD cbInfoValueMax,
-	SWORD FAR * pcbInfoValue)
+	SWORD * pcbInfoValue)
 {
   CON_CHARSET (hdbc);
   switch (fInfoType)
@@ -985,7 +985,7 @@ SQLNativeSqlW (
 	SQLINTEGER cbSqlStrIn,
 	SQLWCHAR * wszSqlStr,
 	SQLINTEGER cbSqlStr,
-	SQLINTEGER FAR * pcbSqlStr)
+	SQLINTEGER * pcbSqlStr)
 {
   CON_CHARSET (hdbc);
   RETCODE rc;

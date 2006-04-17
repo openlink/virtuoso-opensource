@@ -55,19 +55,19 @@ virtodbc__SQLAllocHandle (SQLSMALLINT handleType,
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLAllocHandle(ENV, ...) called\n");
 #endif
-      return virtodbc__SQLAllocEnv ((SQLHENV FAR *) outputHandlePtr);
+      return virtodbc__SQLAllocEnv ((SQLHENV *) outputHandlePtr);
 
     case SQL_HANDLE_DBC:
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLAllocHandle(DBC, ...) called\n");
 #endif
-      return virtodbc__SQLAllocConnect ((SQLHENV) inputHandle, (SQLHDBC FAR *) outputHandlePtr);
+      return virtodbc__SQLAllocConnect ((SQLHENV) inputHandle, (SQLHDBC *) outputHandlePtr);
 
     case SQL_HANDLE_STMT:
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLAllocHandle(STMT, ...) called\n");
 #endif
-      rc = virtodbc__SQLAllocStmt ((SQLHDBC) inputHandle, (SQLHSTMT FAR *) outputHandlePtr);
+      rc = virtodbc__SQLAllocStmt ((SQLHDBC) inputHandle, (SQLHSTMT *) outputHandlePtr);
       if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
 	{
 	  STMT (stmt, *outputHandlePtr);
@@ -2011,7 +2011,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
       if (!bAppDesc && bRowDesc)
 	{
 	  return virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt,
-	      RecNumber, NULL, 0, NULL, NULL, NULL, (SWORD FAR *) ValuePtr, NULL);
+	      RecNumber, NULL, 0, NULL, NULL, NULL, (SWORD *) ValuePtr, NULL);
 	}
       else
 	return (SQL_ERROR);
@@ -2290,7 +2290,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 
       if (bRowDesc && !bAppDesc)
 	return virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt,
-	    RecNumber, NULL, 0, NULL, NULL, NULL, NULL, (SWORD FAR *) ValuePtr);
+	    RecNumber, NULL, 0, NULL, NULL, NULL, NULL, (SWORD *) ValuePtr);
       else if (bAppDesc)
 	return (SQL_ERROR);
       if (StringLengthPtr)
@@ -2313,7 +2313,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	*StringLengthPtr = sizeof (SQLSMALLINT);
       if (bRowDesc && !bAppDesc)
 	return virtodbc__SQLColAttributes ((SQLHSTMT) desc->d_stmt,
-	    RecNumber, SQL_COLUMN_SEARCHABLE, NULL, 0, NULL, (SQLLEN FAR *) ValuePtr);
+	    RecNumber, SQL_COLUMN_SEARCHABLE, NULL, 0, NULL, (SQLLEN *) ValuePtr);
       else
 	return (SQL_ERROR);
       break;
@@ -2355,7 +2355,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	*StringLengthPtr = sizeof (SQLSMALLINT);
       if (bRowDesc)
 	return virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt,
-	    RecNumber, NULL, 0, NULL, (SWORD FAR *) ValuePtr, NULL, NULL, NULL);
+	    RecNumber, NULL, 0, NULL, (SWORD *) ValuePtr, NULL, NULL, NULL);
       break;
 
     case SQL_DESC_UNNAMED:
@@ -2771,7 +2771,7 @@ virtodbc__SQLGetDescRec (SQLHDESC descriptorHandle,
 
   if (bRowDesc)
     return virtodbc__SQLDescribeCol ((SQLHSTMT) desc->d_stmt, RecNumber, Name,
-	BufferLength, StringLengthPtr, TypePtr, (SQLULEN FAR *) LengthPtr, ScalePtr, NullablePtr);
+	BufferLength, StringLengthPtr, TypePtr, (SQLULEN *) LengthPtr, ScalePtr, NullablePtr);
   else
     return (SQL_SUCCESS);
 }
@@ -2932,7 +2932,7 @@ virtodbc__SQLColAttribute (SQLHSTMT statementHandle,
     }
 
   return (virtodbc__SQLColAttributes(statementHandle, ColumnNumber, FieldIdentifier,
-	CharacterAttributePtr, BufferLength, StringLengthPtr, (SQLLEN FAR *) NumericAttributePtr));
+	CharacterAttributePtr, BufferLength, StringLengthPtr, (SQLLEN *) NumericAttributePtr));
 }
 
 /* SQLEndTran */

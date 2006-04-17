@@ -124,9 +124,9 @@ typedef  char TCHAR;
 #define OPTION_TRUE(X)	((X) && (X) != 'N' && (X) != '0')
 
 static RETCODE SQL_API virtodbc__SQLDriverConnect (SQLHDBC hdbc,
-   HWND hwnd, SQLTCHAR FAR * szConnStrIn, SWORD cbConnStrIn,
-    SQLTCHAR FAR * szConnStrOut, SWORD cbConnStrOutMax,
-    SWORD FAR * pcbConnStrOutMax, UWORD fDriverCompletion);
+   HWND hwnd, SQLTCHAR * szConnStrIn, SWORD cbConnStrIn,
+    SQLTCHAR * szConnStrOut, SWORD cbConnStrOutMax,
+    SWORD * pcbConnStrOutMax, UWORD fDriverCompletion);
 
 #ifdef WIN32
 BOOL ConfigDSN_virt (
@@ -613,7 +613,7 @@ FillUpLoginDatabaseCombo (HWND hDlg)
   SQLDisconnect (driver_connect_dbc);
 }
 
-BOOL FAR PASCAL
+BOOL PASCAL
 FDriverConnectProc(
     HWND	hDlg,
     WORD	wMsg,
@@ -812,11 +812,11 @@ static RETCODE SQL_API
 virtodbc__SQLDriverConnect (
     SQLHDBC hdbc,
     HWND hwnd,
-    SQLTCHAR FAR * szConnStrIn,
+    SQLTCHAR * szConnStrIn,
     SWORD cbConnStrIn,
-    SQLTCHAR FAR * szConnStrOut,
+    SQLTCHAR * szConnStrOut,
     SWORD cbConnStrOutMax,
-    SWORD FAR * pcbConnStrOutMax,
+    SWORD * pcbConnStrOutMax,
     UWORD fDriverCompletion)
 {
   char tempHostName[1024];
@@ -968,8 +968,8 @@ virtodbc__SQLDriverConnect (
   printf (_T ("CONNECT(%s,%s,%s)\n"), szHost, UID, PWD);
 #endif
 
-  rc = internal_sql_connect (hdbc, (UCHAR FAR *) szHost, SQL_NTS, (UCHAR FAR *) UID,
-      SQL_NTS, (UCHAR FAR *) PWD, SQL_NTS);
+  rc = internal_sql_connect (hdbc, (UCHAR *) szHost, SQL_NTS, (UCHAR *) UID,
+      SQL_NTS, (UCHAR *) PWD, SQL_NTS);
 
   if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
     {
@@ -1087,11 +1087,11 @@ SQLDriverConnect (
 #else
     void *hwnd,
 #endif
-    SQLTCHAR FAR * szConnStrIn,
+    SQLTCHAR * szConnStrIn,
     SWORD cbConnStrIn,
-    SQLTCHAR FAR * szConnStrOut,
+    SQLTCHAR * szConnStrOut,
     SWORD cbConnStrOutMax,
-    SWORD FAR * pcbConnStrOutMax,
+    SWORD * pcbConnStrOutMax,
     UWORD fDriverCompletion)
 {
   return virtodbc__SQLDriverConnect (hdbc, hwnd, szConnStrIn, cbConnStrIn,
@@ -1111,11 +1111,11 @@ SQLDriverConnect (
 RETCODE SQL_API
 SQLConnect (
 	SQLHDBC hdbc,
-	SQLTCHAR FAR * szDSN,
+	SQLTCHAR * szDSN,
 	SWORD cbDSN,
-	SQLTCHAR FAR * szUID,
+	SQLTCHAR * szUID,
 	SWORD cbUID,
-	SQLTCHAR FAR * szPWD,
+	SQLTCHAR * szPWD,
 	SWORD cbPWD)
 {
 #ifndef DSN_TRANSLATION

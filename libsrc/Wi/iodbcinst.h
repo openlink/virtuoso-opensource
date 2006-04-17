@@ -238,11 +238,11 @@ BOOL INSTAPI SQLGetTranslator (
     HWND hwnd,
     LPSTR lpszName,
     WORD cbNameMax,
-    WORD FAR * pcbNameOut,
+    WORD * pcbNameOut,
     LPSTR lpszPath,
     WORD cbPathMax,
-    WORD FAR * pcbPathOut,
-    DWORD FAR * pvOption);
+    WORD * pcbPathOut,
+    DWORD * pvOption);
 
 /*  Low level APIs
  *  NOTE: The high-level APIs should always be used. These APIs
@@ -253,23 +253,23 @@ BOOL INSTAPI SQLInstallDriver (
     LPCSTR lpszDriver,
     LPSTR lpszPath,
     WORD cbPathMax,
-    WORD FAR * pcbPathOut);
+    WORD * pcbPathOut);
 
 BOOL INSTAPI SQLInstallDriverManager (
     LPSTR lpszPath,
     WORD cbPathMax,
-    WORD FAR * pcbPathOut);
+    WORD * pcbPathOut);
 
 BOOL INSTAPI SQLGetInstalledDrivers (
     LPSTR lpszBuf,
     WORD cbBufMax,
-    WORD FAR * pcbBufOut);
+    WORD * pcbBufOut);
 
 BOOL INSTAPI SQLGetAvailableDrivers (
     LPCSTR lpszInfFile,
     LPSTR lpszBuf,
     WORD cbBufMax,
-    WORD FAR * pcbBufOut);
+    WORD * pcbBufOut);
 
 BOOL INSTAPI SQLConfigDataSource (
     HWND hwndParent,
@@ -309,7 +309,7 @@ BOOL INSTAPI SQLInstallTranslator (
     LPCSTR lpszPathIn,
     LPSTR lpszPathOut,
     WORD cbPathOutMax,
-    WORD FAR * pcbPathOut,
+    WORD * pcbPathOut,
     WORD fRequest,
     LPDWORD lpdwUsageCount);
 
@@ -329,7 +329,7 @@ BOOL INSTAPI SQLConfigDriver (
     LPCSTR lpszArgs,
     LPSTR lpszMsg,
     WORD cbMsgMax,
-    WORD FAR * pcbMsgOut);
+    WORD * pcbMsgOut);
 
 /* Driver specific Setup APIs called by installer */
 
@@ -346,7 +346,7 @@ typedef BOOL INSTAPI (*pConfigDriverFunc) (
     LPCSTR lpszArgs,
     LPSTR lpszMsg,
     WORD cbMsgMax,
-    WORD FAR * pcbMsgOut);
+    WORD * pcbMsgOut);
 
 typedef BOOL INSTAPI (*pConfigTranslatorFunc) (
     HWND hwndParent,
@@ -359,7 +359,7 @@ BOOL INSTAPI ConfigDSN (
     LPCSTR lpszAttributes);
 
 BOOL INSTAPI ConfigTranslator (HWND hwndParent,
-    DWORD FAR * pvOption);
+    DWORD * pvOption);
 
 BOOL INSTAPI ConfigDriver (
     HWND hwndParent,
@@ -368,7 +368,7 @@ BOOL INSTAPI ConfigDriver (
     LPCSTR lpszArgs,
     LPSTR lpszMsg,
     WORD cbMsgMax,
-    WORD FAR * pcbMsgOut);
+    WORD * pcbMsgOut);
 
 #ifdef __cplusplus
 }

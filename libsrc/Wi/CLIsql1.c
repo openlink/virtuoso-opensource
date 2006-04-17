@@ -50,7 +50,7 @@
 RETCODE SQL_API
 virtodbc__SQLAllocConnect (
 	SQLHENV henv,
-	SQLHDBC FAR * phdbc)
+	SQLHDBC * phdbc)
 {
   ENV (env, henv);
   NEW_VARZ (cli_connection_t, cli);
@@ -75,14 +75,14 @@ virtodbc__SQLAllocConnect (
 RETCODE SQL_API
 SQLAllocConnect (
 	SQLHENV henv,
-	SQLHDBC FAR * phdbc)
+	SQLHDBC * phdbc)
 {
 	return virtodbc__SQLAllocConnect(henv, phdbc);
 }
 
 RETCODE SQL_API
 virtodbc__SQLAllocEnv (
-	SQLHENV FAR * phenv)
+	SQLHENV * phenv)
 {
   cli_dbg_printf (("SQLAllocEnv called.\n"));
   PrpcInitialize ();
@@ -117,7 +117,7 @@ virtodbc__SQLAllocEnv (
 
 RETCODE SQL_API
 SQLAllocEnv (
-	SQLHENV FAR * phenv)
+	SQLHENV * phenv)
 {
 	return virtodbc__SQLAllocEnv(phenv);
 }
@@ -125,7 +125,7 @@ SQLAllocEnv (
 RETCODE SQL_API
 virtodbc__SQLAllocStmt (
 	SQLHDBC hdbc,
-	SQLHSTMT FAR * phstmt)
+	SQLHSTMT * phstmt)
 {
   CON (con, hdbc);
   stmt_options_t *opts = (stmt_options_t *)
@@ -159,7 +159,7 @@ virtodbc__SQLAllocStmt (
 RETCODE SQL_API
 SQLAllocStmt (
 	SQLHDBC hdbc,
-	SQLHSTMT FAR * phstmt)
+	SQLHSTMT * phstmt)
 {
 	return virtodbc__SQLAllocStmt(hdbc, phstmt);
 }
@@ -171,7 +171,7 @@ SQLBindCol (
 	SWORD fCType,
 	SQLPOINTER rgbValue,
 	SQLLEN cbValueMax,
-	SQLLEN FAR * pcbValue)
+	SQLLEN * pcbValue)
 {
   STMT (stmt, hstmt);
   col_binding_t *col = stmt_nth_col (stmt, icol);
@@ -219,8 +219,8 @@ SQLColAttributes (
 	UWORD fDescType,
 	PTR rgbDesc,
 	SWORD cbDescMax,
-	SWORD FAR * pcbDesc,
-	SQLLEN FAR * pfDesc)
+	SWORD * pcbDesc,
+	SQLLEN * pfDesc)
 {
   STMT (stmt, hstmt);
   switch (fDescType)
@@ -274,8 +274,8 @@ virtodbc__SQLColAttributes (
 	UWORD fDescType,
 	PTR rgbDesc,
 	SWORD cbDescMax,
-	SWORD FAR * pcbDesc,
-	SQLLEN FAR * pfDesc)
+	SWORD * pcbDesc,
+	SQLLEN * pfDesc)
 {
   col_desc_t *cd;
   int n_cols, was_bm_col = (icol == 0);
@@ -691,11 +691,11 @@ verify_inprocess_client (cli_connection_t * con)
 int
 internal_sql_connect (
 	SQLHDBC hdbc,
-	UCHAR FAR * szDSN,
+	UCHAR * szDSN,
 	SWORD cbDSN,
-	UCHAR FAR * szUID,
+	UCHAR * szUID,
 	SWORD cbUID,
-	UCHAR FAR * szAuthStr,
+	UCHAR * szAuthStr,
 	SWORD cbAuthStr)
 {
   caddr_t pwd_box;
@@ -957,13 +957,13 @@ RETCODE SQL_API
 virtodbc__SQLDescribeCol (
 	SQLHSTMT hstmt,
 	UWORD icol,
-	UCHAR FAR * szColName,
+	UCHAR * szColName,
 	SWORD cbColNameMax,
-	SWORD FAR * pcbColName,
-	SWORD FAR * pfSqlType,
-	SQLULEN FAR * pcbColDef,
-	SWORD FAR * pibScale,
-	SWORD FAR * pfNullable)
+	SWORD * pcbColName,
+	SWORD * pfSqlType,
+	SQLULEN * pcbColDef,
+	SWORD * pibScale,
+	SWORD * pfNullable)
 {
   col_desc_t *cd;
   int n_cols, was_bm_col = (icol == 0);
@@ -1038,13 +1038,13 @@ RETCODE SQL_API
 SQLDescribeCol (
 	SQLHSTMT hstmt,
 	UWORD icol,
-	UCHAR FAR * wszColName,
+	UCHAR * wszColName,
 	SWORD cbColName,
-	SWORD FAR * pcbColName,
-	SWORD FAR * pfSqlType,
-	SQLULEN FAR * pcbColDef,
-	SWORD FAR * pibScale,
-	SWORD FAR * pfNullable)
+	SWORD * pcbColName,
+	SWORD * pfSqlType,
+	SQLULEN * pcbColDef,
+	SWORD * pibScale,
+	SWORD * pfNullable)
 {
   RETCODE rc;
   STMT (stmt, hstmt);
@@ -1076,11 +1076,11 @@ SQLError (
 	SQLHENV henv,
 	SQLHDBC hdbc,
 	SQLHSTMT hstmt,
-	UCHAR FAR * wszSqlState,
-	SQLINTEGER FAR * pfNativeError,
-	UCHAR FAR * wszErrorMsg,
+	UCHAR * wszSqlState,
+	SQLINTEGER * pfNativeError,
+	UCHAR * wszErrorMsg,
 	SWORD cbErrorMsg,
-	SWORD FAR * pcbErrorMsg)
+	SWORD * pcbErrorMsg)
 {
   STMT (stmt, hstmt);
   CON (con, hdbc);
@@ -1114,11 +1114,11 @@ virtodbc__SQLError (
 	SQLHENV henv,
 	SQLHDBC hdbc,
 	SQLHSTMT hstmt,
-	UCHAR FAR * szSqlState,
-	SQLINTEGER FAR * pfNativeError,
-	UCHAR FAR * szErrorMsg,
+	UCHAR * szSqlState,
+	SQLINTEGER * pfNativeError,
+	UCHAR * szErrorMsg,
 	SWORD cbErrorMsgMax,
-	SWORD FAR * pcbErrorMsg,
+	SWORD * pcbErrorMsg,
 	int bClearState)
 {
   STMT (stmt, hstmt);
@@ -1128,7 +1128,7 @@ virtodbc__SQLError (
       (con ? &con->con_error : (env ? &env->env_error : NULL));
   sql_error_rec_t * rec = err->err_queue;
   RETCODE rc = SQL_SUCCESS;
-  SWORD FAR * pcbSqlState = NULL;
+  SWORD * pcbSqlState = NULL;
 
   if (!rec)
     {
@@ -1170,7 +1170,7 @@ stmt_free_current_rows (cli_stmt_t * stmt)
 RETCODE SQL_API
 virtodbc__SQLExecDirect (
 	SQLHSTMT hstmt,
-	UCHAR FAR * szSqlStr,
+	UCHAR * szSqlStr,
 	SDWORD cbSqlStr)
 {
   int rc;
@@ -1359,7 +1359,7 @@ virtodbc__SQLExecDirect (
 RETCODE SQL_API
 SQLExecDirect (
 	SQLHSTMT hstmt,
-	UCHAR FAR * wszSqlStr,
+	UCHAR * wszSqlStr,
 	SQLINTEGER cbSqlStr)
 {
   RETCODE rc;
@@ -1665,9 +1665,9 @@ SQLFreeStmt (
 RETCODE SQL_API
 virtodbc__SQLGetCursorName (
 	SQLHSTMT hstmt,
-	UCHAR FAR * szCursor,
+	UCHAR * szCursor,
 	SWORD cbCursorMax,
-	SWORD FAR * pcbCursor)
+	SWORD * pcbCursor)
 {
   STMT (stmt, hstmt);
   char *cr_name = stmt->stmt_cursor_name;
@@ -1691,9 +1691,9 @@ virtodbc__SQLGetCursorName (
 RETCODE SQL_API
 SQLGetCursorName (
 	SQLHSTMT hstmt,
-	UCHAR FAR * wszCursor,
+	UCHAR * wszCursor,
 	SWORD cbCursor,
-	SWORD FAR * pcbCursor)
+	SWORD * pcbCursor)
 {
   RETCODE rc;
   STMT (stmt, hstmt);
@@ -1712,7 +1712,7 @@ SQLGetCursorName (
 RETCODE SQL_API
 SQLNumResultCols (
       SQLHSTMT hstmt,
-      SWORD FAR * pccol)
+      SWORD * pccol)
 {
 	return virtodbc__SQLNumResultCols(hstmt, pccol);
 }
@@ -1720,7 +1720,7 @@ SQLNumResultCols (
 RETCODE SQL_API
 virtodbc__SQLNumResultCols (
       SQLHSTMT hstmt,
-      SWORD FAR * pccol)
+      SWORD * pccol)
 {
   STMT (stmt, hstmt);
   stmt_compilation_t *sc = stmt->stmt_compilation;
@@ -1751,7 +1751,7 @@ virtodbc__SQLNumResultCols (
 RETCODE SQL_API
 virtodbc__SQLPrepare (
 	SQLHSTMT hstmt,
-	UCHAR FAR * szSqlStr,
+	UCHAR * szSqlStr,
 	SQLINTEGER cbSqlStr)
 {
   caddr_t local_copy, text;
@@ -1778,7 +1778,7 @@ virtodbc__SQLPrepare (
 RETCODE SQL_API
 SQLPrepare (
 	SQLHSTMT hstmt,
-	UCHAR FAR * wszSqlStr,
+	UCHAR * wszSqlStr,
 	SQLINTEGER cbSqlStr)
 {
   size_t len;
@@ -1798,7 +1798,7 @@ SQLPrepare (
 RETCODE SQL_API
 SQLRowCount (
       SQLHSTMT hstmt,
-      SQLLEN FAR * pcrow)
+      SQLLEN * pcrow)
 {
   STMT (stmt, hstmt);
   *pcrow = stmt->stmt_rows_affected;
@@ -1810,7 +1810,7 @@ SQLRowCount (
 RETCODE SQL_API
 virtodbc__SQLSetCursorName (
       SQLHSTMT hstmt,
-      UCHAR FAR * szCursor,
+      UCHAR * szCursor,
       SWORD cbCursor)
 {
   STMT (stmt, hstmt);
@@ -1826,7 +1826,7 @@ virtodbc__SQLSetCursorName (
 RETCODE SQL_API
 SQLSetCursorName (
       SQLHSTMT hstmt,
-      UCHAR FAR * wszCursor,
+      UCHAR * wszCursor,
       SWORD _cbCursor)
 {
   STMT (stmt, hstmt);
@@ -1853,7 +1853,7 @@ virtodbc__SQLSetParam (
       SQLULEN cbColDef,
       SWORD ibScale,
       PTR rgbValue,
-      SQLLEN FAR * pcbValue)
+      SQLLEN * pcbValue)
 {
   STMT (stmt, hstmt);
   parm_binding_t *pb = stmt_nth_parm (stmt, ipar);
@@ -1881,7 +1881,7 @@ SQLSetParam (
       SQLULEN cbColDef,
       SWORD ibScale,
       PTR rgbValue,
-      SQLLEN FAR * pcbValue)
+      SQLLEN * pcbValue)
 {
   return virtodbc__SQLSetParam (hstmt, ipar, fCType, fSqlType, cbColDef, ibScale,
       rgbValue, pcbValue);
@@ -1899,7 +1899,7 @@ virtodbc__SQLBindParameter (
 	SWORD ibScale,
 	PTR rgbValue,
 	SQLLEN cbValueMax,
-	SQLLEN FAR * pcbValue)
+	SQLLEN * pcbValue)
 {
   STMT (stmt, hstmt);
   parm_binding_t *pb;
@@ -1941,7 +1941,7 @@ SQLBindParameter (
     SWORD ibScale,
     PTR rgbValue,
     SQLLEN cbValueMax,
-    SQLLEN FAR * pcbValue)
+    SQLLEN * pcbValue)
 {
   return virtodbc__SQLBindParameter (hstmt, ipar, fParamType, fCType, fSqlType,
       cbColDef, ibScale, rgbValue, cbValueMax, pcbValue);

@@ -261,8 +261,8 @@ virtodbc__SQLExtendedFetch (
 		     SQLHSTMT hstmt,
 		     UWORD fFetchType,
 		     SQLLEN irow,
-		     SQLULEN FAR * pcrow,
-		     UWORD FAR * rgfRowStatus,
+		     SQLULEN * pcrow,
+		     UWORD * rgfRowStatus,
 		     SQLLEN bookmark_offset)
 {
   caddr_t bookmark = NULL;
@@ -477,7 +477,7 @@ virtodbc__SQLSetPos (
   if (!stmt->stmt_set_pos_stmt)
     {
       virtodbc__SQLAllocStmt ((SQLHDBC) stmt->stmt_connection, (SQLHSTMT *) & stmt->stmt_set_pos_stmt);
-      virtodbc__SQLPrepare ((SQLHSTMT) stmt->stmt_set_pos_stmt, (UCHAR FAR *) "__set_pos (?, ?, ?, ?)" , SQL_NTS);
+      virtodbc__SQLPrepare ((SQLHSTMT) stmt->stmt_set_pos_stmt, (UCHAR *) "__set_pos (?, ?, ?, ?)" , SQL_NTS);
     }
   sps = stmt->stmt_set_pos_stmt;
 

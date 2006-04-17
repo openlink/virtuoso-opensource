@@ -86,7 +86,7 @@ mts_client_init ()
 {
 #ifdef VIRTTP
   static int mts_client_inited = 0;
-  void FAR *dll;
+  void *dll;
 
   if (mts_client_inited)
     return;

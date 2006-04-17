@@ -631,7 +631,7 @@ SQLRemoveDSNFromIni (LPCSTR lpszDSN)
 
 
 BOOL INSTAPI
-SQLGetInstalledDrivers (LPSTR lpszBuf, WORD cbBufMax, WORD FAR * pcbBufOut)
+SQLGetInstalledDrivers (LPSTR lpszBuf, WORD cbBufMax, WORD * pcbBufOut)
 {
   int count;
 
