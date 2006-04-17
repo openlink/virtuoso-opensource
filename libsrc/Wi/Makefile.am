@@ -608,11 +608,14 @@ endif
 
 sqlwords.h: sqlwords.gperf
 if HAVE_GPERF
-	$(GPERF) -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ sqlwords.gperf -Nlex_hash_kw | sed -e 's/char \*keyword/char *keiiyword/g' >sqlwords.h
+	-rm -f sqlwords.h.tmp
+	$(GPERF) -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ sqlwords.gperf -Nlex_hash_kw | sed -e 's/char \*keyword/char *keiiyword/g' >sqlwords.h.tmp
+	-test -s sqlwords.h.tmp && mv sqlwords.h.tmp sqlwords.h
+	-rm -f sqlwords.h.tmp
 else
 	$(SHELL) $(top_srcdir)/binsrc/config/missing gperf -v
-	touch sqlwords.h
 endif
+	touch sqlwords.h
 
 sql3.c: sql3.y
 	$(YACC) -vd -osql3.c ../../libsrc/Wi/sql3.y
