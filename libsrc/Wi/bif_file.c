@@ -2125,9 +2125,8 @@ uuid_set (uuid_t * u)
 	{
 	  ustate->cs = true_random ();
 	  get_pseudo_node_identifier (&ustate->node);
-#ifdef VALGRIND
+
 	  memset (node, 0, sizeof (node));
-#endif
 	  memcpy (node, &ustate->node, sizeof (uuid_node_t));
 	  snprintf (p, sizeof (p), "%d %02X%02X%02X%02X%02X%02X", ustate->cs,
 	      (unsigned)(node[0]), (unsigned)(node[1]), (unsigned)(node[2]),
