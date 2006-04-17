@@ -369,7 +369,7 @@ struct stmt_descriptor_s {
 #endif
 
 /* CLIsql1.c */
-int internal_sql_connect (
+SQLRETURN internal_sql_connect (
 	SQLHDBC hdbc,
 	SQLCHAR * szDSN,
 	SQLSMALLINT cbDSN,
