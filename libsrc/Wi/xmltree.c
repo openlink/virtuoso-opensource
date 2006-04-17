@@ -7777,7 +7777,7 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
 caddr_t
 xn_init (xpath_node_t * xn, query_instance_t * qi)
 {
-  volatile int rc = SQL_NO_DATA_FOUND;
+  volatile SQLRETURN rc = SQL_NO_DATA_FOUND;
   xml_entity_t * ctx_xe;
   xp_instance_t * xqi = NULL;
   int save_xqi = 0;

@@ -688,7 +688,7 @@ verify_inprocess_client (cli_connection_t * con)
 
 
 /* This was SQLConnect */
-int
+SQLRETURN
 internal_sql_connect (
 	SQLHDBC hdbc,
 	SQLCHAR * szDSN,
@@ -708,7 +708,7 @@ internal_sql_connect (
   dk_session_t *ses;
   char addr[100 + 1];
   caddr_t *info = fill_login_info_array (con), x509_error = NULL;
-  int rc = SQL_SUCCESS;
+  SQLRETURN rc = SQL_SUCCESS;
 #if defined (_SSL) && !defined (WIN32)
   char tpass [VIRT_PASS_LEN];
 #endif
@@ -1598,7 +1598,7 @@ virtodbc__SQLFreeStmt (
 
       {
 #ifdef INPROCESS_CLIENT
-	int rc = SQL_SUCCESS;
+	SQLRETURN rc = SQL_SUCCESS;
 	if (SESSION_IS_INPROCESS (stmt->stmt_connection->con_session))
 	  rc = verify_inprocess_client (stmt->stmt_connection);
 	if (rc == SQL_SUCCESS)

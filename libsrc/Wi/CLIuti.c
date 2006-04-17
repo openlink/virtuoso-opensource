@@ -1570,7 +1570,7 @@ str_box_to_buffer (
   sql_error_t *error
 )
 {
-  int rc = SQL_SUCCESS;
+  SQLRETURN rc = SQL_SUCCESS;
 
   if (buffer_length < 0)
     {
