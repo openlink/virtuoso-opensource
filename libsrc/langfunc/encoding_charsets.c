@@ -301,7 +301,7 @@ encoding_handler_t *eh_duplicate_handler (encoding_handler_t *pattern, char *new
   res = (encoding_handler_t *)dk_alloc(sizeof(encoding_handler_t));
   memcpy (res, pattern, sizeof(encoding_handler_t));
   res->eh_names = (char **)dk_alloc((numofnames+1) * sizeof(char *));
-  dupe = dk_alloc (strlen (new_encoding_names)+1);
+  dupe = (char *) dk_alloc (strlen (new_encoding_names)+1);
   strcpy (dupe, new_encoding_names);
   tail = dupe;
   for (ctr = 0; ctr < numofnames; ctr++)

@@ -62,7 +62,7 @@ unichar eh_decode_char__widewrapper(__constcharptr *src_begin_ptr, const char *s
 	    return UNICHAR_BAD_ENCODING;
 	  (prefetch_end++)[0] = (unsigned char)wc;
 	}
-      res_uchar = inner_eh->eh_decode_char ((void *)(&prefetch_tail), (char *)prefetch_end, inner_eh, state_ptr);
+      res_uchar = inner_eh->eh_decode_char ((const char **)(&prefetch_tail), (char *)prefetch_end, inner_eh, state_ptr);
       src_begin_ptr[0] = (char *)(((wchar_t *)(src_begin_ptr[0])) + (prefetch_tail-prefetch));
       return res_uchar;
     }
@@ -113,7 +113,7 @@ int eh_decode_buffer__widewrapper (unichar *tgt_buf, int tgt_buf_len, __constcha
 	    return UNICHAR_BAD_ENCODING;
 	  (prefetch_end++)[0] = (unsigned char)wc;
 	}
-      res_uchar = inner_eh->eh_decode_char ((void *)(&prefetch_tail), (char *)prefetch_end, inner_eh, state_ptr);
+      res_uchar = inner_eh->eh_decode_char ((const char **)(&prefetch_tail), (char *)prefetch_end, inner_eh, state_ptr);
       switch (res_uchar)
 	{
 	case UNICHAR_BAD_ENCODING:
@@ -161,7 +161,7 @@ encoding_handler_t *eh_wide_from_narrow (encoding_handler_t *eh_narrow)
       cache = hash_table_allocate(31);
     }
   mutex_enter (mtx);
-  res = gethash (eh_narrow, cache);
+  res = (encoding_handler_t *) gethash (eh_narrow, cache);
   if (NULL != res)
     goto res_is_prepared;
 #endif

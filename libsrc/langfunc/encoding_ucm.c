@@ -328,7 +328,7 @@ encoding_handler_t * eh_create_ucm_handler (char *encoding_names, char *ucm_file
   fseek (ucm_file, 0, SEEK_END);
   ucm_file_len = ftell (ucm_file);
   fseek (ucm_file, 0, SEEK_SET);
-  ucm_file_text = dk_alloc (ucm_file_len+1);
+  ucm_file_text = (char *) dk_alloc (ucm_file_len+1);
   if (1 != fread (ucm_file_text, ucm_file_len, 1, ucm_file))
     {
       fclose (ucm_file);
@@ -354,7 +354,7 @@ encoding_handler_t * eh_create_ucm_handler (char *encoding_names, char *ucm_file
 	unsigned char *bytecode_buf, *bytecode_tail;
 	u2e_size = ucmp_get_u2e_bytecode_size (ucmp);
 	e2u_size = ucmp_get_e2u_bytecode_size (ucmp);
-	bytecode_tail = bytecode_buf = dk_alloc (sizeof(uint32) + e2u_size + u2e_size);
+	bytecode_tail = bytecode_buf = (unsigned char *) dk_alloc (sizeof(uint32) + e2u_size + u2e_size);
 	((uint32 *)(bytecode_tail))[0] = (uint32) (sizeof(uint32) + e2u_size);
 	bytecode_tail += sizeof (uint32);
 	ucmp_compile_e2u_bytecode (ucmp, (uint32 *)bytecode_tail);
@@ -374,7 +374,7 @@ encoding_handler_t * eh_create_ucm_handler (char *encoding_names, char *ucm_file
 	xlat_size = sizeof(uint32) * UBYTE_COUNT;
 	u2e_size = ucmp_get_u2e_bytecode_size (ucmp);
 	e2u_size = ucmp_get_e2u_bytecode_size (ucmp);
-	bytecode_tail = bytecode_buf = dk_alloc (sizeof(uint32) + xlat_size + e2u_size + u2e_size);
+	bytecode_tail = bytecode_buf = (unsigned char *) dk_alloc (sizeof(uint32) + xlat_size + e2u_size + u2e_size);
 	((uint32 *)(bytecode_tail))[0] = (uint32) (sizeof(uint32) + xlat_size + e2u_size);
 	bytecode_tail += sizeof (uint32);
 	memcpy (bytecode_tail, ucmp->ucmp_shift0_xlat, xlat_size);

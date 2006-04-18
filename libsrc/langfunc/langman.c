@@ -301,9 +301,9 @@ unit_version_t langfunc_version = {
 unit_version_t *langfunc_plugin_load (const char *plugin_dll_name, const char *plugin_load_path)
 {
   char *filename, *funname;
-  filename = dk_alloc (strlen (plugin_load_path) + 1 + strlen (plugin_dll_name) + 1);
+  filename = (char *) dk_alloc (strlen (plugin_load_path) + 1 + strlen (plugin_dll_name) + 1);
   snprintf (filename, sizeof (filename), "%s/%s", plugin_load_path, plugin_dll_name);
-  funname = dk_alloc (strlen (plugin_dll_name) + 6 /* == strlen ("_check") */ + 1);
+  funname = (char *) dk_alloc (strlen (plugin_dll_name) + 6 /* == strlen ("_check") */ + 1);
   snprintf (funname, sizeof (funname), "%s_check", plugin_dll_name);
   return uv_load_and_check_plugin (filename, funname, &langfunc_version, NULL);
 }
@@ -372,7 +372,7 @@ int lh_count_words (encoding_handler_t *eh, lang_handler_t *lh, const char *buf,
   if (NULL != elh)
     return elh->elh_count_words (buf, bufsize, check);
   unidatabuflen = (int) ((sizeof (unichar)*bufsize) / (eh->eh_minsize))|0xFF;
-  unidata = dk_alloc (unidatabuflen);
+  unidata = (unichar *) dk_alloc (unidatabuflen);
   tmp = buf;
   unidatalen = eh->eh_decode_buffer (unidata, unidatabuflen / sizeof (unichar), &tmp, buf+bufsize, eh, &eh_state);
   if (unidatalen < 0)
@@ -406,7 +406,7 @@ int lh_iterate_words (encoding_handler_t *eh, lang_handler_t *lh, const char *bu
       return 0;
     }
   unidatabuflen = (int) ((sizeof (unichar)*bufsize) / (eh->eh_minsize))|0xFF;
-  unidata = dk_alloc (unidatabuflen);
+  unidata = (unichar *) dk_alloc (unidatabuflen);
   tmp = buf;
   unidatalen = eh->eh_decode_buffer (unidata, unidatabuflen / sizeof (unichar), &tmp, buf+bufsize, eh, &eh_state);
   if (unidatalen < 0)
@@ -441,7 +441,7 @@ int lh_iterate_patched_words (encoding_handler_t *eh, lang_handler_t *lh, const 
       return 0;
     }
   unidatabuflen = (int) ((sizeof (unichar)*bufsize) / (eh->eh_minsize))|0xFF;
-  unidata = dk_alloc (unidatabuflen);
+  unidata = (unichar *) dk_alloc (unidatabuflen);
   tmp = buf;
   unidatalen = eh->eh_decode_buffer (unidata, unidatabuflen / sizeof (unichar), &tmp, buf+bufsize, eh, &eh_state);
   if (unidatalen < 0)

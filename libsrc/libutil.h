@@ -56,5 +56,10 @@ void StartNTApplication (void);
 #include "util/win32/syslog.h"
 #endif
 
+BEGIN_CPLUSPLUS
+
 void sec_login_digest (char *ses_name, char *user, char *pwd, unsigned char *digest);
+
+END_CPLUSPLUS
+
 #endif

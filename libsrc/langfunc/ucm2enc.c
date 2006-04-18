@@ -25,7 +25,7 @@
 
 ucm_block_t * ucmb_create (ucm_chain_t *chain, char fill_type, uint32 fill_ucode)
 {
-  ucm_block_t * res = dk_alloc (sizeof (ucm_block_t));
+  ucm_block_t * res = (ucm_block_t *) dk_alloc (sizeof (ucm_block_t));
   int unibyte;
   memset (res, 0, sizeof (ucm_block_t));
   for (unibyte = 0; unibyte < UBYTE_COUNT; unibyte++)
@@ -44,7 +44,7 @@ ucm_block_t * ucmb_create (ucm_chain_t *chain, char fill_type, uint32 fill_ucode
 
 ucm_parser_t * ucmp_create (void)
 {
-  ucm_parser_t *ucmp = dk_alloc (sizeof(ucm_parser_t));
+  ucm_parser_t *ucmp = (ucm_parser_t *) dk_alloc (sizeof(ucm_parser_t));
   memset (ucmp, 0, sizeof (ucm_parser_t));
   ucmp->ucmp_u2e.ucmc_first = ucmb_create (&(ucmp->ucmp_u2e), UCMB_ERROR, (uint32)UCMB_DEFAULT_SUBST_CHAR);
   ucmp->ucmp_e2u.ucmc_first = ucmb_create (&(ucmp->ucmp_e2u), UCMB_ERROR, 0);

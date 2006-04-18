@@ -807,7 +807,7 @@ int elh_iterate_patched_words__xany__UTF8(const char *buf, size_t bufsize, lh_wo
 	    }
 	  else
 	    {
-	      callback (word_begin, word_end-word_begin, userdata);
+	      callback ((utf8char *) word_begin, word_end-word_begin, userdata);
 	      goto done_word;
 	    }
 	  word_end = eh_encode_buffer__UTF8 (arg_begin, arg_begin+arg_length, word_buf, word_buf+BUFSIZEOF__UTF8_WORD);
@@ -821,7 +821,7 @@ int elh_iterate_patched_words__xany__UTF8(const char *buf, size_t bufsize, lh_wo
 	      if (hugeword_buf_size)
 		dk_free (hugeword_buf, hugeword_buf_size);
 	      hugeword_buf_size = word_length*MAX_UTF8_CHAR;
-	      hugeword_buf = dk_alloc (hugeword_buf_size);
+	      hugeword_buf = (char *) dk_alloc (hugeword_buf_size);
 	    }
 	  word_end = eh_encode_buffer__UTF8 (arg_begin, arg_begin+arg_length, hugeword_buf, hugeword_buf+hugeword_buf_size);
 	  callback ((utf8char *)(hugeword_buf), word_end-hugeword_buf, userdata);
@@ -844,7 +844,7 @@ proc_ideo:
 	    }
 	  else
 	    {
-	      callback (word_begin, curr-word_begin, userdata);
+	      callback ((utf8char *) word_begin, curr-word_begin, userdata);
 	      continue;
 	    }
 	  word_end = eh_encode_buffer__UTF8 (arg_begin, arg_begin+arg_length, word_buf, word_buf+BUFSIZEOF__UTF8_WORD);

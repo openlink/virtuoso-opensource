@@ -91,7 +91,7 @@ void LH_ITERATE_WORDS_NAME(const unichar *buf, size_t bufsize, lh_word_check_t *
 	      if (hugeword_buf_size)
 		dk_free (hugeword_buf, hugeword_buf_size);
 	      hugeword_buf_size = word_length*MAX_UTF8_CHAR;
-	      hugeword_buf = dk_alloc (hugeword_buf_size);
+	      hugeword_buf = (utf8char *) dk_alloc (hugeword_buf_size);
 	    }
 	  word_end = (utf8char *)eh_encode_buffer__UTF8 (buf+word_start, buf+pos, (char *)hugeword_buf, (char *)(hugeword_buf+hugeword_buf_size));
 	  callback (hugeword_buf, word_end-hugeword_buf, userdata);
@@ -167,7 +167,7 @@ void LH_ITERATE_PATCHED_WORDS_NAME(const unichar *buf, size_t bufsize, lh_word_c
 	      if (hugeword_buf_size)
 		dk_free (hugeword_buf, hugeword_buf_size);
 	      hugeword_buf_size = word_length*MAX_UTF8_CHAR;
-	      hugeword_buf = dk_alloc (hugeword_buf_size);
+	      hugeword_buf = (utf8char *) dk_alloc (hugeword_buf_size);
 	    }
 	  word_end = (utf8char *)eh_encode_buffer__UTF8 (arg_begin, arg_begin+arg_length, (char *)(hugeword_buf), (char *)(hugeword_buf+hugeword_buf_size));
 	  callback (hugeword_buf, word_end-hugeword_buf, userdata);
