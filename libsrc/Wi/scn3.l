@@ -53,8 +53,11 @@ typedef struct scn3_paren_s {
 } scn3_paren_t;
 
 int scn3_lineno = 1;	/*!< Throughout counter of lines in the source text */
-int scn3_plineno = 1;	/*!< physical counter of lines in the source text - used for the PL debugger */
+int scn3_plineno = 1;	/*!< Physical counter of lines in the source text - used for the PL debugger */
+int scn3_lineno_increment = 1;	/*!< This is zero for 'macroexpanded' fragments of SQL text, to prevent from confusing when a long text is inserted instead of a single line */
 int scn3_lexdepth = 0;	/*!< Number of opened parenthesis */
+
+dk_set_t scn3_namespaces = NULL; /*!< List of namespace prefixes and URIs */
 
 #define MAXLEXDEPTH 80	/*!< Maximum allowed number of opened parenthesis */
 scn3_paren_t scn3_parens[MAXLEXDEPTH];
@@ -253,6 +256,7 @@ void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_s
    sparqre->sparqre_tail_sql_text = tail_sql_text;
    sparqre->sparqre_start_lineno = scn3_lineno;
    sparqre->sparqre_param_ctr = &param_inx;
+   sparqre->sparqre_external_namespaces = scn3_namespaces;
    sparqre->sparqre_compiled_text = NULL;
    sparqre->sparqre_catched_error = NULL;
    sparp_compile_subselect (sparqre);
@@ -261,8 +265,10 @@ void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_s
    outer->sif_buffer = YY_CURRENT_BUFFER;
    outer->_.sif_saved_lineno = scn3_lineno;
    outer->_.sif_saved_plineno = scn3_plineno;
+   outer->_.sif_saved_lineno_increment = scn3_lineno_increment;
    outer->_.sif_saved_lexdepth = scn3_lexdepth;
    scn3_include_depth++; /* No stack overflow check. TBD later when we will be able to nest SQL into SPARQL and get, say, SQL inside SPARQL inside SQL ... */
+   scn3_lineno_increment = 0;
 }
 
 /* macro to save the text of a SQL token */
@@ -320,8 +326,8 @@ void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_s
   }
 
 #define TOK_NL_SKIP { \
-  scn3_lineno++; \
-  scn3_plineno++; \
+  scn3_lineno += scn3_lineno_increment; \
+  scn3_plineno += scn3_lineno_increment; \
   TOK_SKIP; \
   }
 
@@ -359,6 +365,9 @@ void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_s
 %x HTML
 %x COMMENT
 
+%x PRAGMA_PREFIX
+%x PRAGMA_PREFIX_2
+
 	/* Internals of single-quoted SPARQL string lit */
 %x MSSQL_XMLCOL
 
@@ -381,6 +390,14 @@ SPAR_SQ_PLAIN	([^\\''\r\n])
 SPAR_DQ_PLAIN	([^\\""\r\n])
 SPAR_ECHAR	([\\]([atbvnrf\\""'']|("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
 HEX		([0-9A-Fa-f])
+
+SPAR_NCCHAR1p	([A-Za-z])
+SPAR_NCCHAR1	([A-Za-z_])
+SPAR_VARNAME	([A-Za-z0-9_]+)
+SPAR_NCCHAR	([A-Za-z0-9_-])
+SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
+SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
+
 
 %%
 
@@ -479,6 +496,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
           outer = scn3_include_stack + scn3_include_depth;
           outer->_.sif_saved_lineno = scn3_lineno;
           outer->_.sif_saved_plineno = scn3_plineno;
+          outer->_.sif_saved_lineno_increment = scn3_lineno_increment;
           outer->_.sif_saved_lexdepth = scn3_lexdepth;
           outer->_.sif_skipped_part = strses_allocate ();
           BEGIN (SPARQL_SKIP);
@@ -615,7 +633,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 
 <HTML>[^<\r\n]+		{ yymore (); }
 <HTML>"<"		{ yymore (); }
-<HTML>{S_NL}		{ t_set_push (&html_lines, t_box_string (yytext)); scn3_lineno++; scn3_plineno++; }
+<HTML>{S_NL}		{ t_set_push (&html_lines, t_box_string (yytext)); scn3_lineno += scn3_lineno_increment; scn3_plineno += scn3_lineno_increment; }
 
 
 	/* strings */
@@ -715,17 +733,17 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 		 return national_char ? WSTRING : STRING;
 	       }
 
-<STRLIT,NO_ESC_STRLIT>{S_NL}     { scn3_lineno++; scn3_plineno++; yymore(); } /* { BEGIN(SQL); yyerror("Unterminated string"); } */
+<STRLIT,NO_ESC_STRLIT>{S_NL}     { scn3_lineno += scn3_lineno_increment; scn3_plineno += scn3_lineno_increment; yymore(); } /* { BEGIN(SQL); yyerror("Unterminated string"); } */
 
-<STRLIT>\\{S_NL}[^'\\\r\n]*  { scn3_lineno++; scn3_plineno++; yymore(); } /* Backslash + newline. */
+<STRLIT>\\{S_NL}[^''\\\r\n]*  { scn3_lineno += scn3_lineno_increment; scn3_plineno += scn3_lineno_increment; yymore(); } /* Backslash + newline. */
 
-<STRLIT>\\.[^'\\\r\n]* | /* Backslash + anything else (also another backslash) */
+<STRLIT>\\.[^''\\\r\n]* | /* Backslash + anything else (also another backslash) */
 
-<STRLIT>''[^'\\\r\n]*  { yymore(); } /* Doubled singlequotes (SQL-standard) */
-<STRLIT>[^'\\\r\n]+ { yymore(); } /* For everything else after beginning quote */
+<STRLIT>''[^''\\\r\n]*  { yymore(); } /* Doubled singlequotes (SQL-standard) */
+<STRLIT>[^''\\\r\n]+ { yymore(); } /* For everything else after beginning quote */
 
-<NO_ESC_STRLIT>''[^'\r\n]*  { yymore(); } /* Doubled singlequotes (SQL-standard) */
-<NO_ESC_STRLIT>[^'\r\n]+ { yymore(); } /* For everything else after beginning quote */
+<NO_ESC_STRLIT>''[^''\r\n]*  { yymore(); } /* Doubled singlequotes (SQL-standard) */
+<NO_ESC_STRLIT>[^''\r\n]+ { yymore(); } /* For everything else after beginning quote */
 	/* AK's string parsing part ends here. */
 
 	/* The following old incorrectly working piece commented out.
@@ -754,17 +772,38 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 
 	******	Commented piece ends here. */
 
-<SQL>{S_NL}	{ save_str(" "); scn3_lineno++; scn3_plineno++; }
+<SQL>{S_NL}	{ save_str(" "); scn3_lineno += scn3_lineno_increment; scn3_plineno += scn3_lineno_increment; }
 {S_NL}	{ yyerror ("unrecognized symbol"); /*scn3_lineno++; ECHO;*/ }
 
 <SQL>[ \t]+	save_str(" ");	/* white space */
 
 	/* Pragmas */
-<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+[0-9-]+([ \t]+\"[^"]+\")?[ \t]*("--".*)?{S_NL} { scn3_pragma_line (yytext); scn3_plineno++; }
-<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"push"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_push (); scn3_plineno++; }
-<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"pop"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_pop (); scn3_plineno++; }
-<SQL>"#"("pragma"[\ t]+)?"line"([ \t]+"reset")?[ \t]*("--".*)?{S_NL} { scn3_pragma_line_reset (); scn3_plineno++; }
+<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+[0-9-]+([ \t]+[""][^""]+[""])?[ \t]*("--".*)?{S_NL} { scn3_pragma_line (yytext); scn3_lineno_increment = 1; scn3_plineno++; }
+<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"push"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_push (); scn3_lineno_increment = 1; scn3_plineno++; }
+<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"pop"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_pop (); scn3_lineno_increment = 1; scn3_plineno++; }
+<SQL>"#"("pragma"[\ t]+)?"line"([ \t]+"reset")?[ \t]*("--".*)?{S_NL} { scn3_pragma_line_reset (); scn3_lineno_increment = 1; scn3_plineno++; }
 <SQL>"#"("pragma"[\ t]+)?"line" { yyerror ("Ill formed #line"); }
+
+<SQL>"#pragma"[ \t]+"prefix"[ \t]+	{
+	BEGIN(PRAGMA_PREFIX);
+	t_set_push (&scn3_namespaces, NULL);
+	t_set_push (&scn3_namespaces, NULL); }
+
+<PRAGMA_PREFIX>({SPAR_NCNAME_PREFIX}?)":"	{
+	BEGIN(PRAGMA_PREFIX_2);
+	scn3_namespaces->data = t_box_dv_uname_string (yytext); }
+
+<PRAGMA_PREFIX_2>[ \t+]"<"([^<>''{}|^`\001-\040])*">"	{
+	const char *langl = strchr (yytext, '<');
+	BEGIN(SQL);
+	scn3_namespaces->next->data = t_box_dv_uname_nchars (langl + 1, (yytext + yyleng - 2) - langl); }
+
+<PRAGMA_PREFIX>.	{ yyerror ("Ill formed namespace prefix in #pragma prefix"); }
+<PRAGMA_PREFIX><<EOF>>	{ yyerror ("Unexpected end of text in #pragma prefix"); }
+
+<PRAGMA_PREFIX_2>.		{ yyerror ("Ill formed namespace IRI in #pragma prefix"); }
+<PRAGMA_PREFIX_2><<EOF>>	{ yyerror ("Unexpected end of text in #pragma prefix"); }
+
 <SQL>"#pragma" { yyerror ("Ill formed #pragma"); }
 <SQL>"#" { yyerror ("Misused lattice sign ('#')"); }
 
@@ -773,12 +812,12 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SQL>"--"[ \t]*"utf8_execs=yes"[ \t]* { parse_utf8_execs = 1; }
 <SQL>"--"[ \t]*"utf8_execs=no"[ \t]* { parse_utf8_execs = 0; }
 <SQL>"--"[ \t]*"pl_debug+"[ \t]* { parse_pldbg = 1; }
-<SQL>"--src"[ \t]+[A-Za-z0-9_./\\-]+":"[0-9+-][0-9]*[ \t]*{S_NL} { sqlp_pl_file (yytext); scn3_plineno++; }
+<SQL>"--src"[ \t]+[A-Za-z0-9_./\\-]+":"[0-9+-][0-9]*[ \t]*{S_NL} { sqlp_pl_file (yytext); scn3_lineno_increment = 1; scn3_plineno++; }
 <SQL>"--"[^\r\n]*	;	/* comment */
 <SQL>"/\*"	{ BEGIN (COMMENT); }
 <COMMENT>"/\*"  { yyerror ("Nested C style comments not supported"); }
 <COMMENT>"\*/"	{ BEGIN (SQL); }
-<COMMENT>{S_NL}	{ scn3_lineno++; scn3_plineno++; }
+<COMMENT>{S_NL}	{ scn3_lineno += scn3_lineno_increment; scn3_plineno += scn3_lineno_increment; }
 <COMMENT>.	;
 
 	/* IvAn/Fix4AritmSql/000828 Invalid lexems should be handled explicitly */
@@ -830,6 +869,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
       yy_switch_to_buffer (outer->sif_buffer);
       scn3_lineno = outer->_.sif_saved_lineno;
       scn3_plineno = outer->_.sif_saved_plineno;
+      scn3_lineno_increment = outer->_.sif_saved_lineno_increment;
       /* No such assignment, because the fragment may have extra ')' at the end:
          scn3_lexdepth = outer->_.sif_saved_lexdepth; */
     }
@@ -928,7 +968,9 @@ sql_yy_reset (void)
   BEGIN SQL;
   scn3_lineno = 1;
   scn3_plineno = 1;
+  scn3_lineno_increment = 1;
   scn3_lexdepth = 0;
   scn3_include_depth = 0;
+  scn3_namespaces = NULL;
   scn3_pragma_line_reset ();
 }

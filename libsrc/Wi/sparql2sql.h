@@ -196,6 +196,7 @@ typedef struct rdf_ds_field_s
 #define SSG_VALMODE_LANGUAGE		((ssg_valmode_t)((ptrlong)(0x340)))
 #define SSG_VALMODE_AUTO		((ssg_valmode_t)((ptrlong)(0x350)))
 #define SSG_VALMODE_BOOL		((ssg_valmode_t)((ptrlong)(0x360)))
+#define SSG_VALMODE_SPECIAL		((ssg_valmode_t)((ptrlong)(0x370)))
 /* typedef struct rdf_ds_field_s *ssg_valmode_t; -- moved to sparql.h */
 
 extern ssg_valmode_t ssg_shortest_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
@@ -294,10 +295,11 @@ SPART *ssg_find_gp_by_alias (spar_sqlgen_t *ssg, caddr_t alias);
 SPART *ssg_find_gp_by_eq_idx (spar_sqlgen_t *ssg, ptrlong eq_idx);
 
 /*! Prints an SQL identifier. 'prin' instead of 'print' because it does not print whitespace or delim before the text */
-extern void ssg_prin_id (spar_sqlgen_t *ssg, ccaddr_t name);
+extern void ssg_prin_id (spar_sqlgen_t *ssg, const char *name);
 extern void ssg_print_literal (spar_sqlgen_t *ssg, caddr_t type, SPART *lit);
 extern void ssg_print_equiv (spar_sqlgen_t *ssg, caddr_t selectid, sparp_equiv_t *eq, caddr_t as_name);
 
+extern ssg_valmode_t ssg_rettype_of_global_param (spar_sqlgen_t *ssg, caddr_t name);
 extern ssg_valmode_t ssg_rettype_of_function (spar_sqlgen_t *ssg, caddr_t name);
 extern ssg_valmode_t ssg_argtype_of_function (spar_sqlgen_t *ssg, caddr_t name, int arg_idx);
 extern void ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name);
@@ -313,6 +315,7 @@ extern void ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree);
 #define SSG_RETVAL_FROM_JOIN_MEMBER		0x10
 #define SSG_RETVAL_FROM_FIRST_UNION_MEMBER	0x20
 #define SSG_RETVAL_TOPMOST			0x40
+#define SSG_RETVAL_NAME_INSTEAD_OF_TREE		0x80
 /* descend = 0 -- at level, can descend. 1 -- at sublevel, can't descend, -1 -- at level, can't descend */
 extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
   sparp_equiv_t *eq, int flags, caddr_t as_name, ssg_valmode_t needed );

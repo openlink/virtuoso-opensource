@@ -359,7 +359,8 @@ SPAR_VARNAME	([A-Za-z0-9_]+)
 SPAR_NCCHAR	([A-Za-z0-9_-])
 SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
 SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
-SPAR_PARAMNAME	([A-Za-z_][A-Za-z0-9_]*)
+SPAR_SQLNAME	(([A-Za-z_][A-Za-z0-9_]*)|([""]([^""\n]|([""][""]))*[""]))
+SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 
 %%
 
@@ -383,6 +384,7 @@ SPAR_PARAMNAME	([A-Za-z_][A-Za-z0-9_]*)
 <SPARQL>"*"		{ return _STAR; }
 
 <SPARQL>"a"				{ return a_L; }
+<SPARQL>{A}{S}				{ return AS_L; }
 <SPARQL>{A}{S}{C}			{ return ASC_L; }
 <SPARQL>{A}{S}{K}			{ return ASK_L; }
 <SPARQL>{B}{A}{S}{E}			{ return BASE_L; }

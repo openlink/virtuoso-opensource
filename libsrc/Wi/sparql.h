@@ -45,7 +45,8 @@ extern "C" {
 #define spar_dbg_printf(x)
 #endif
 
-#define SPAR_BLANK_NODE_LABEL	(ptrlong)1001
+#define SPAR_ALIAS		(ptrlong)1001
+#define SPAR_BLANK_NODE_LABEL	(ptrlong)1002
 #define SPAR_BUILT_IN_CALL	(ptrlong)1003
 #define SPAR_CONV		(ptrlong)1004	/*!< temporary use in SQL printer */
 #define SPAR_FUNCALL		(ptrlong)1005
@@ -60,9 +61,6 @@ extern "C" {
 
 #define SPAR_VARNAME_DEFAULT_GRAPH ":default_graph"	/*!< Parameter name to specify default graph URI in SPARQL runtime */
 #define SPAR_VARNAME_NAMED_GRAPHS ":named_graphs"	/*!< Parameter name to specify array of named graph URIs in SPARQL runtime */	
-
-#define t_box_dv_uname_string box_dv_uname_string
-#define t_box_dv_uname_nchars box_dv_uname_nchars
 
 #define SPARP_MAX_LEXDEPTH 16
 #define SPARP_MAX_SYNTDEPTH SPARP_MAX_LEXDEPTH+10
@@ -105,7 +103,7 @@ typedef struct sparp_env_s
     ptrlong             spare_start_lineno;		/*!< The first line number of the query, may be nonzero if inlined into SQL */
     ptrlong *           spare_param_counter_ptr;	/*!< Pointer to parameter counter used to convert '??' or '$?' to ':nnn' in the query */
     dk_set_t		spare_namespace_prefixes;	/*!< Pairs of ns prefixes and URIs */
-    dk_set_t		spare_namespace_prefixes_outer;	/*!< Bookmark in xe_namespace_prefixes that points to the first inherited (not local) namespace */
+    dk_set_t		spare_namespace_prefixes_outer;	/*!< Bookmark in spare_namespace_prefixes that points to the first inherited (not local) namespace */
     caddr_t		spare_base_uri;			/*!< Default base URI for fn:doc and fn:resolve-uri */
     caddr_t             spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
     caddr_t             spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
@@ -239,18 +237,22 @@ typedef struct spar_tree_s
   caddr_t	srcline;
   union {
     struct {
+        SPART *arg;
+        caddr_t aname;
+      } alias; /*!< only for use in top-level result-set list */
+    struct {
       SPART *left;
       SPART *right;
       } bin_exp;
+    struct {
+      ptrlong btype;
+      SPART **args;
+      } builtin;
     struct {
         SPART *arg;
         ssg_valmode_t native;
         ssg_valmode_t needed;
       } conv; /*!< temporary use in SQL printer */
-    struct {
-      ptrlong btype;
-      SPART **args;
-      } builtin;
     struct {
       caddr_t qname;
       ptrlong argcount;
@@ -327,12 +329,8 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 
 #define SPART_VARNAME_IS_GLOB(varname) (':' == (varname)[0])
 
-#define SPAP_NAME_OF_RET_COLUMN(ret_column) \
-  ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (ret_column)) ? \
-    ((SPAR_VARIABLE == ret_column->type) ? \
-      ret_column->_.var.vname : NULL ) : \
-    (((DV_STRING == DV_TYPE_OF (ret_column)) || (DV_UNAME == DV_TYPE_OF (ret_column))) ? \
-      (caddr_t)ret_column : NULL ) )
+extern caddr_t spar_var_name_of_ret_column (SPART *tree);
+extern caddr_t spar_alias_name_of_ret_column (SPART *tree);
 
 #ifdef MALLOC_DEBUG
 typedef SPART* spartlist_impl_t (sparp_t *sparp, ptrlong length, ptrlong type, ...);
@@ -381,6 +379,6 @@ extern void spar_copy_lexem_bufs (sparp_t *tgt_sparp, spar_lexbmk_t *begin, spar
 extern id_hashed_key_t spar_var_hash (caddr_t p_data);
 extern int spar_var_cmp (caddr_t p_data1, caddr_t p_data2);
 
-extern shuric_vtable_t shuric_vtable__sparqr;
+/*extern shuric_vtable_t shuric_vtable__sparqr;*/
 
 #endif

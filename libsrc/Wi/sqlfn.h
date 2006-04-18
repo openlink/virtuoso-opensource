@@ -38,6 +38,7 @@ typedef struct scn3_include_frag_s {
   dk_session_t *sif_skipped_part;
   int sif_saved_lineno;
   int sif_saved_plineno;
+  int sif_saved_lineno_increment;
   int sif_saved_lexdepth;
 } scn3_include_frag_t;
 
@@ -58,8 +59,9 @@ typedef struct spar_query_env_s
   client_connection_t *	sparqre_cli;		/*!< Client connection, can be NULL or what sqlc_client() return */
   wcharset_t *		sparqre_query_charset;
   int			sparqre_query_charset_is_set;
-  dk_set_t *		sparqre_checked_functions;
-  dk_set_t *		sparqre_sql_columns;
+  dk_set_t		sparqre_external_namespaces;
+  /*dk_set_t *		sparqre_checked_functions;*/
+  /*dk_set_t *		sparqre_sql_columns;*/
   int			sparqre_key_gen;
   caddr_t		sparqre_compiled_text;
   caddr_t		sparqre_catched_error;

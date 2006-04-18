@@ -116,6 +116,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token _STAR		/*:: PUNCT_SPAR_LAST("*") ::*/
 
 %token a_L		/*:: PUNCT_SPAR_LAST("a") ::*/
+%token AS_L		/*:: PUNCT_SPAR_LAST("AS") ::*/
 %token ASC_L		/*:: PUNCT_SPAR_LAST("ASC") ::*/
 %token ASK_L		/*:: PUNCT_SPAR_LAST("ASK") ::*/
 %token BASE_L		/*:: PUNCT_SPAR_LAST("BASE") ::*/
@@ -231,6 +232,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_var_or_blank_node_or_iriref
 %type <backstack> spar_rset_items
 %type <tree> spar_rset_item
+%type <tree> spar_rset_item_value
 %type <tree> spar_var
 %type <tree> spar_graph_term
 %type <backstack> spar_expns
@@ -629,9 +631,16 @@ spar_var_or_blank_node_or_iriref	/* [40]  	VarOrBlankNodeOrIRIref	  ::=  	Var | 
 spar_rset_items
 	: spar_rset_item			{ $$ = NULL; t_set_push (&($$), $1); }
 	| spar_rset_items spar_rset_item	{ $$ = $1; t_set_push (&($$), $2); }
+	| spar_rset_items _COMMA spar_rset_item	{ $$ = $1; t_set_push (&($$), $3); }
 	;
 
 spar_rset_item
+	: spar_rset_item_value					{ $$ = $1; }
+	| spar_rset_item_value AS_L QUEST_VARNAME		{ $$ = spartlist (sparp_arg, 3, SPAR_ALIAS, $1, $3); }
+	| spar_rset_item_value AS_L DOLLAR_VARNAME		{ $$ = spartlist (sparp_arg, 3, SPAR_ALIAS, $1, $3); }
+	;
+
+spar_rset_item_value
 	: spar_var
         | _LPAR spar_expn _RPAR	{ $$ = $2; }
 	;

@@ -380,7 +380,7 @@ void ssg_print_tmpl (struct spar_sqlgen_s *ssg, rdf_ds_field_t *field, ccaddr_t 
 
 
 void
-ssg_prin_id (spar_sqlgen_t *ssg, ccaddr_t name)
+ssg_prin_id (spar_sqlgen_t *ssg, const char *name)
 {
 #if 0
   char tmp[1000 + 1];
@@ -490,8 +490,10 @@ ssg_expn_native_valmode (spar_sqlgen_t *ssg, SPART *tree)
         return needed;
       }
     case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
-      if ((SPART_VARR_FIXED | SPART_VARR_GLOBAL) & tree->_.var.restrictions)
+      if (SPART_VARR_FIXED & tree->_.var.restrictions)
         return SSG_VALMODE_SQLVAL;
+      else if (SPART_VARR_GLOBAL & tree->_.var.restrictions)
+        return ssg_rettype_of_global_param (ssg, tree->_.var.vname);
       else
         {
           ptrlong eq_idx = tree->_.var.equiv_idx;
@@ -501,7 +503,7 @@ ssg_expn_native_valmode (spar_sqlgen_t *ssg, SPART *tree)
         }
     case SPAR_RETVAL:
       if (SPART_VARNAME_IS_GLOB (tree->_.var.vname))
-        return SSG_VALMODE_SQLVAL;
+        return ssg_rettype_of_global_param (ssg, tree->_.var.vname);
       else if (NULL != tree->_.var.tabid)
         return rdf_ds_field_tr_fields + tree->_.var.tr_idx; /* !!!TBD: smallest common (e.g. SSG_VALMODE_LONG) for triples that are unions, correct selection for non-default from hashtable */
       else
@@ -1052,22 +1054,8 @@ xqf_str_parser_desc_t *function_is_xqf_str_parser (caddr_t name)
   return xqf_str_parser_descs_ptr + desc_idx;
 }
 
-
-ssg_valmode_t
-ssg_rettype_of_function (spar_sqlgen_t *ssg, caddr_t name)
-{
-  if (!strncmp (name, "SPECIAL::", 9))
-    {
-      if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
-        return SSG_VALMODE_LONG; /* Fake but this works for use as 2-nd arg of 'LONG::bif:position' */
-      spar_sqlprint_error2 ("ssg_rettype_of_function(): unsupported SPECIAL", SSG_VALMODE_SQLVAL);
-    }
-  return SSG_VALMODE_SQLVAL;
-}
-
-
-ssg_valmode_t
-ssg_argtype_of_function (spar_sqlgen_t *ssg, caddr_t name, int arg_idx)
+static ssg_valmode_t
+ssg_find_valmode_by_name_prefix (spar_sqlgen_t *ssg, caddr_t name, ssg_valmode_t dflt)
 {
   if (!strncmp (name, "SQLVAL::", 8))
     return SSG_VALMODE_SQLVAL;
@@ -1078,12 +1066,45 @@ ssg_argtype_of_function (spar_sqlgen_t *ssg, caddr_t name, int arg_idx)
   if (!strncmp (name, "SHORT::", 7))
     return SSG_VALMODE_SHORT;
   if (!strncmp (name, "SPECIAL::", 9))
+    return SSG_VALMODE_SPECIAL;
+  if (NULL != strstr (name, "::"))
+    spar_sqlprint_error2 ("unsupported valmode", SSG_VALMODE_SQLVAL);
+  return dflt;
+}
+
+ssg_valmode_t
+ssg_rettype_of_global_param (spar_sqlgen_t *ssg, caddr_t name)
+{
+  ssg_valmode_t res = ssg_find_valmode_by_name_prefix (ssg, name+1, SSG_VALMODE_SQLVAL);
+  return res;
+}
+
+
+ssg_valmode_t
+ssg_rettype_of_function (spar_sqlgen_t *ssg, caddr_t name)
+{
+  ssg_valmode_t res = ssg_find_valmode_by_name_prefix (ssg, name, SSG_VALMODE_SQLVAL);
+  if (SSG_VALMODE_SPECIAL == res)
+    {
+      if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
+        return SSG_VALMODE_LONG; /* Fake but this works for use as 2-nd arg of 'LONG::bif:position' */
+      spar_sqlprint_error2 ("ssg_rettype_of_function(): unsupported SPECIAL", SSG_VALMODE_SQLVAL);
+    }
+  return SSG_VALMODE_SQLVAL /* not "return res" */;
+}
+
+
+ssg_valmode_t
+ssg_argtype_of_function (spar_sqlgen_t *ssg, caddr_t name, int arg_idx)
+{
+  ssg_valmode_t res = ssg_find_valmode_by_name_prefix (ssg, name, SSG_VALMODE_SQLVAL);
+  if (SSG_VALMODE_SPECIAL == res)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
         return SSG_VALMODE_SQLVAL;
       spar_sqlprint_error2 ("ssg_argtype_of_function(): unsupported SPECIAL", SSG_VALMODE_SQLVAL);
     }
-  return SSG_VALMODE_SQLVAL;
+  return res;
 }
 
 
@@ -1127,6 +1148,9 @@ void ssg_print_uri_list (spar_sqlgen_t *ssg, dk_set_t uris, ssg_valmode_t needed
 void ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t needed)
 { /* needed is always equal to native in this function */
   sparp_env_t *env = ssg->ssg_sparp->sparp_env;
+  const char *coloncolon = strstr (vname, "::");
+  if (NULL != coloncolon)
+    vname = coloncolon + 1;
   if (!strcmp (vname, SPAR_VARNAME_DEFAULT_GRAPH))
     {
       caddr_t defined_uri = env->spare_default_graph_uri;
@@ -1184,9 +1208,22 @@ void ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t ne
       ssg_puts (vname);
       return;
     }
+/*
+  else if (':' = vname[1])
+    {
   ssg_puts (" connection_get ('");
-  ssg_puts (vname);
+      ssg_puts (vname+1);
   ssg_puts ("')");
+    }
+*/
+  else
+    {
+      ssg_putchar (' ');
+      ssg_puts (vname+1);
+/* Quoted name is not a good idea due to case mode. Local vars are usually not escaped.
+      ssg_prin_id (ssg, vname+1);
+*/
+    }
 }
 
 
@@ -2180,33 +2217,45 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
 {
   int printed;
   int eq_flags;
-  caddr_t name;
+  caddr_t var_name, as_name;
   sparp_equiv_t *eq;
-  name = SPAP_NAME_OF_RET_COLUMN (ret_column);
-  if (NULL == name)
+  if (flags & SSG_RETVAL_NAME_INSTEAD_OF_TREE)
+    as_name = var_name = (caddr_t) ret_column;
+  else
+    {
+      as_name = spar_alias_name_of_ret_column (ret_column);
+      var_name = spar_var_name_of_ret_column (ret_column);
+      if (NULL == var_name)
     {
       if (SSG_VALMODE_AUTO == needed)
         spar_sqlprint_error ("ssg_print_retval_expn(): SSG_VALMODE_AUTO for not a variable");
       ssg_print_retval_simple_expn (ssg, gp, ret_column, needed);
       if (flags & SSG_RETVAL_USES_ALIAS)
         {
+              ssg_puts (" AS ");
+              if (NULL == as_name)
+                {
           char buf[30];
           sprintf (buf, "callret-%d", col_idx);
-          ssg_puts (" AS "); ssg_prin_id (ssg, buf);
+                  ssg_prin_id (ssg, buf);
+                }
+              else
+                ssg_prin_id (ssg, as_name);
         }
       return;
+    }
     }
   eq_flags = SPARP_EQUIV_GET_NAMESAKES;
   if (!(flags & SSG_RETVAL_CAN_PRINT_NULL))
     eq_flags |= SPARP_EQUIV_GET_ASSERT;
-  eq = sparp_equiv_get_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp, (SPART *)name, eq_flags);
+  eq = sparp_equiv_get_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp, (SPART *)var_name, eq_flags);
   if (SSG_VALMODE_AUTO == needed)
     needed = ssg_equiv_native_valmode (ssg, gp, eq);
-  printed = ssg_print_equiv_retval_expn (ssg, gp, eq, flags, name, needed);
+  printed = ssg_print_equiv_retval_expn (ssg, gp, eq, flags, as_name, needed);
   if (! printed)
     {
 #ifdef DEBUG
-      ssg_print_equiv_retval_expn (ssg, gp, eq, flags, name, needed);
+      ssg_print_equiv_retval_expn (ssg, gp, eq, flags, as_name, needed);
 #endif
       spar_sqlprint_error ("ssg_print_retval_expn(): can't print retval expn");
     }
@@ -2217,12 +2266,12 @@ void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART **retvals, ccaddr_t selid)
   int col_idx;
   DO_BOX_FAST (SPART *, ret_column, col_idx, retvals)
     {
-      caddr_t name = SPAP_NAME_OF_RET_COLUMN (ret_column);
-      if (NULL == name)
+      caddr_t as_name = spar_alias_name_of_ret_column (ret_column);
+      if (NULL == as_name)
         {
           char buf[30];
           sprintf (buf, "callret-%d", col_idx);
-          name = t_box_dv_short_string (buf);
+          as_name = t_box_dv_short_string (buf);
         }
       if (0 < col_idx)
         ssg_puts (", ");
@@ -2230,10 +2279,10 @@ void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART **retvals, ccaddr_t selid)
         {
           ssg_prin_id (ssg, selid);
           ssg_putchar ('.');
-          ssg_prin_id (ssg, name);
+          ssg_prin_id (ssg, as_name);
         }
       else
-        ssg_print_literal (ssg, NULL, (SPART *)name);
+        ssg_print_literal (ssg, NULL, (SPART *)as_name);
     }
   END_DO_BOX_FAST;
 }
@@ -2340,7 +2389,8 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *tree, int pass)
             ssg_puts (" (");
             ssg->ssg_indent++;
             ssg_print_union (ssg, tree, (SPART **)retlist, 0,
-              SSG_RETVAL_FROM_FIRST_UNION_MEMBER | SSG_RETVAL_FROM_JOIN_MEMBER | SSG_RETVAL_USES_ALIAS,
+              ( SSG_RETVAL_FROM_FIRST_UNION_MEMBER | SSG_RETVAL_FROM_JOIN_MEMBER |
+                SSG_RETVAL_USES_ALIAS | SSG_RETVAL_NAME_INSTEAD_OF_TREE ),
               SSG_VALMODE_AUTO );
             dk_free_box (retlist);
             ssg->ssg_indent--;

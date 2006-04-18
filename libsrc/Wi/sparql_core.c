@@ -1161,6 +1161,14 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	childrens = BOX_ELEMENTS (tree);
 	switch (tree->type)
 	  {
+	  case SPAR_ALIAS:
+	    {
+	      sprintf (buf, "ALIAS:");
+	      SES_PRINT (ses, buf);
+	      spart_dump (tree->_.alias.arg, ses, indent+2, "VALUE", 0);
+	      spart_dump (tree->_.alias.aname, ses, indent+2, "ALIAS NAME", 0);
+	      break;
+	    }
 	  case SPAR_BLANK_NODE_LABEL:
 	    {
 	      sprintf (buf, "BLANK NODE:");
@@ -1239,7 +1247,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	  case SPAR_REQ_TOP:
 	    {
               int eq_count, eq_ctr;
-	      sprintf (buf, "REQUEST TOP NODE type %ld (", tree->_.req_top.subtype);
+	      sprintf (buf, "REQUEST TOP NODE (");
 	      SES_PRINT (ses, buf);
 	      spart_dump_long ((void *)(tree->_.req_top.subtype), ses, 1);
 	      SES_PRINT (ses, "):");
@@ -1331,7 +1339,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	  case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
 	  case BOP_AND: case BOP_OR: case BOP_NOT:
 	    {
-	      sprintf (buf, "OPERATOR EXPRESSION of type %ld (", tree->type);
+	      sprintf (buf, "OPERATOR EXPRESSION (", tree->type);
 	      SES_PRINT (ses, buf);
 	      spart_dump_long ((void *)(tree->type), ses, 1);
 	      SES_PRINT (ses, "):");
@@ -1341,7 +1349,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	    }
           case ORDER_L:
             {
-	      sprintf (buf, "ORDERING of subtype %ld (", tree->_.oby.direction);
+	      sprintf (buf, "ORDERING (", tree->_.oby.direction);
 	      SES_PRINT (ses, buf);
 	      spart_dump_long ((void *)(tree->_.oby.direction), ses, 1);
 	      SES_PRINT (ses, "):");
@@ -1511,6 +1519,10 @@ sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre)
       sparp->sparp_enc = &eh__ISO8859_1;
     }
   sparp->sparp_lang = server_default_lh;
+  spare->spare_namespace_prefixes_outer = 
+    spare->spare_namespace_prefixes =
+      sparqre->sparqre_external_namespaces;
+
   sparp->sparp_text = str;
   spar_fill_lexem_bufs (sparp);
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)

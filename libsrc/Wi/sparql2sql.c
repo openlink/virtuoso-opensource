@@ -66,6 +66,13 @@ scan_for_children:
         tree_cat = 2;
         break;
       }
+    case SPAR_ALIAS:
+      {
+        tree_cat = 1;
+        sub_expns = &(tree->_.alias.arg);
+        sub_expn_count = 1;
+        break;
+      }
     case SPAR_BLANK_NODE_LABEL:
     case SPAR_VARIABLE:
       {
@@ -706,9 +713,10 @@ sparp_gp_trav_make_retval_aliases (sparp_t *sparp, SPART *curr, void **trav_env_
     {
       SPART *curr_retvar = retvars[retvar_ctr];
       sparp_equiv_t *curr_eq;
-      if (NULL == SPAP_NAME_OF_RET_COLUMN(curr_retvar))
+      caddr_t curr_varname = spar_var_name_of_ret_column (curr_retvar);
+      if (NULL == curr_varname)
         continue;
-      curr_eq = sparp_equiv_get (sparp, curr, curr_retvar, SPARP_EQUIV_GET_NAMESAKES);
+      curr_eq = sparp_equiv_get (sparp, curr, (SPART *)curr_varname, SPARP_EQUIV_GET_NAMESAKES);
       if (NULL != curr_eq)
         sparp_gp_add_chain_aliases (sparp, curr_retvar, curr_eq, (SPART **)trav_env_this, NULL);
     }
@@ -926,7 +934,7 @@ sparp_restr_of_join_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *
         {
           if ((SPART_VARR_FIXED & sub_eq->e_restrictions) &&
 	    !(SPART_VARR_FIXED & eq->e_restrictions) )
-            eq->e_fixedvalue = t_box_copy_tree ((caddr_t)(sub_eq->e_fixedvalue));
+            eq->e_fixedvalue = (SPART *)t_box_copy_tree ((caddr_t)(sub_eq->e_fixedvalue));
           if ((SPART_VARR_TYPED & sub_eq->e_restrictions) &&
 	    !(SPART_VARR_TYPED & eq->e_restrictions) )
             eq->e_datatype = t_box_copy_tree (sub_eq->e_datatype);
@@ -1002,7 +1010,7 @@ sparp_restr_of_eq_from_connected_receiver (sparp_t *sparp, sparp_equiv_t *sub_eq
     SPART_VARR_FIXED );
   if ((SPART_VARR_FIXED & eq->e_restrictions) &&
     !(SPART_VARR_FIXED & sub_eq->e_restrictions) )
-    sub_eq->e_fixedvalue = t_box_copy_tree ((caddr_t)(eq->e_fixedvalue));
+    sub_eq->e_fixedvalue = (SPART *)t_box_copy_tree ((caddr_t)(eq->e_fixedvalue));
   if ((SPART_VARR_TYPED & eq->e_restrictions) &&
     !(SPART_VARR_TYPED & sub_eq->e_restrictions) )
     sub_eq->e_datatype = t_box_copy_tree (eq->e_datatype);
@@ -1096,6 +1104,36 @@ sparp_eq_restr_to_vars (sparp_t *sparp)
 
 /* Aux functions */
 
+caddr_t
+spar_var_name_of_ret_column (SPART *tree)
+{
+  switch (DV_TYPE_OF (tree))
+    {
+    case DV_ARRAY_OF_POINTER:
+      switch (tree->type)
+        {
+        case SPAR_ALIAS: return spar_var_name_of_ret_column (tree->_.alias.arg); 
+        case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL: return tree->_.var.vname;
+        }
+      return NULL;
+/*
+    case DV_STRING: case DV_UNAME:
+      return (ccaddr_t)tree;
+*/
+    }
+  return NULL;
+}
+
+caddr_t
+spar_alias_name_of_ret_column (SPART *tree)
+{
+  if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree)) &&
+    (SPAR_ALIAS == tree->type) )
+    return tree->_.alias.aname;
+  return spar_var_name_of_ret_column (tree);
+}
+
+
 void 
 sparp_dbg_gp_print (sparp_t *sparp, SPART *tree)
 {
@@ -1170,7 +1208,7 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
 #endif
   needle_var_name = (
     ((DV_STRING == DV_TYPE_OF (needle_var)) || (DV_UNAME == DV_TYPE_OF (needle_var))) ?
-    ((caddr_t)(needle_var)) : needle_var->_.var.vname );
+    ((caddr_t)(needle_var)) : spar_var_name_of_ret_column (needle_var) );
 #ifndef NDEBUG
   if (!IS_BOX_POINTER (needle_var_name))
     GPF_T;
