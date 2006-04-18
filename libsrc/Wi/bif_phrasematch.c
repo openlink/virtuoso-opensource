@@ -211,8 +211,8 @@ extern ap_set_t *aps_get_byname (caddr_t name, int lock_mode /* 0 = none, 1 = rd
   } while (0)
 
 #define APB_ALLOC(apb) do { \
-    apb.apb_arrayX = dk_alloc (apb.apb_bufsize); \
-    apb.apb_arrayY = dk_alloc (apb.apb_bufsize); \
+    apb.apb_arrayX = (unsigned long *) dk_alloc (apb.apb_bufsize); \
+    apb.apb_arrayY = (unsigned long *) dk_alloc (apb.apb_bufsize); \
     APB_BLANK(apb); \
   } while (0)
 
@@ -311,7 +311,7 @@ ap_class_t *apc_register (query_instance_t *qst, ptrlong id, int allow_overwrite
   apc = (ap_class_t *) gethash ((void*)((ptrlong)id), ap_globals.apg_classes);
   if (NULL == apc)
     {
-      apc = dk_alloc (sizeof (ap_class_t));
+      apc = (ap_class_t *) dk_alloc (sizeof (ap_class_t));
       memcpy (apc, &apc_tmp, sizeof (ap_class_t));
       sethash ((void*)((ptrlong)id), ap_globals.apg_classes, apc);
       apc->apc_rwlock = rwlock_allocate ();
@@ -433,7 +433,7 @@ ap_set_t *aps_register (query_instance_t *qst, ptrlong id, int allow_overwrite)
     sqlr_new_error ("42000", "APS07", "Annotation phrase set #%ld refers to an language '%.300s' that has no accelerated UTF-8 support", (long)id, aps_tmp.aps_lh->lh_ISO639_id);
 /* Now aps_tmp is OK */
   mutex_enter (ap_globals.apg_mutex);
-  aps_tmp.aps_class = gethash ((void *)((ptrlong)apc_id), ap_globals.apg_classes);
+  aps_tmp.aps_class = (ap_class_t *) gethash ((void *)((ptrlong)apc_id), ap_globals.apg_classes);
   if (NULL == aps_tmp.aps_class)
     {
       mutex_leave (ap_globals.apg_mutex);
@@ -443,7 +443,7 @@ ap_set_t *aps_register (query_instance_t *qst, ptrlong id, int allow_overwrite)
   aps = (ap_set_t *) gethash ((void*)((ptrlong)id), ap_globals.apg_sets);
   if (NULL == aps)
     {
-      aps = dk_alloc (sizeof (ap_set_t));
+      aps = (ap_set_t *) dk_alloc (sizeof (ap_set_t));
       APB_ALLOC(aps_tmp.aps_bitarrays);
       memcpy (aps, &aps_tmp, sizeof (ap_set_t));
       sethash ((void*)((ptrlong)id), ap_globals.apg_sets, aps);
@@ -623,7 +623,7 @@ ap_set_t **aps_tryrdlock_array (caddr_t *set_ids, int load_phrases, query_instan
   ap_set_t **sets;
   int set_ctr, set_count;
   set_count = BOX_ELEMENTS (set_ids);
-  sets = dk_alloc (set_count * sizeof (ap_set_t *));
+  sets = (ap_set_t **) dk_alloc (set_count * sizeof (ap_set_t *));
   mutex_enter (ap_globals.apg_mutex);
   for (set_ctr = 0; set_ctr < set_count; set_ctr++)
     {
@@ -771,7 +771,7 @@ void aps_add_phrases (query_instance_t *qst, ap_set_t *aps, caddr_t **descrs)
   */
   aps_lh = aps->aps_lh;
   aps_elh__UTF8 = elh_get_handler (&eh__UTF8, aps_lh);
-  new_phrases = dk_alloc (ap_count * sizeof (ap_phrase_t));
+  new_phrases = (ap_phrase_t *) dk_alloc (ap_count * sizeof (ap_phrase_t));
   for (ctr = ap_count; ctr--; /* no step */)
     {
       ap_phrase_t *ap = new_phrases + ctr;

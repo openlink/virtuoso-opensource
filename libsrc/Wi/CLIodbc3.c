@@ -2265,7 +2265,7 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	      else
 		cd = (col_desc_t *) stmt->stmt_compilation->sc_columns[icol];
 
-	      type = DV_TYPE_TITLE (cd->cd_dtp);
+	      type = (char *) DV_TYPE_TITLE (cd->cd_dtp);
 	      if (cd->cd_flags && CDF_XMLTYPE)
 		type = "XMLType";
 	      V_SET_ODBC_STR (type, ValuePtr, BufferLength, StringLengthPtr,

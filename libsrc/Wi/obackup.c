@@ -1364,7 +1364,7 @@ bif_backup_dirs_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_backup_def_dirs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return box_copy_tree (backup_patha);
+  return box_copy_tree ((box_t) backup_patha);
 }
 
 
@@ -1898,7 +1898,7 @@ bif_backup_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   patha = (caddr_t*) list_to_array (dk_set_nreverse (paths));
   if (-1 == ob_foreach_dir (patha, prefix, &e_ctx, ob_check_file))
     {
-      dk_free_box (patha);
+      dk_free_box ((box_t) patha);
       sqlr_new_error ("42000", DIR_CLEARANCE_ERR_CODE, "directory %d contains backup file %s", e_ctx.oc_inx, e_ctx.oc_file);
     }
   return NEW_DB_NULL;
@@ -2406,12 +2406,12 @@ int ob_foreach_file (caddr_t dir, caddr_t ctx, ob_err_ctx_t* e_ctx, file_check_f
       if (-1 == (func)(elt, ctx, dir))
 	{
 	  strncpy (e_ctx->oc_file, elt, FILEN_BUFSIZ);
-	  dk_free_tree (files);
+	  dk_free_tree ((box_t) files);
 	  return -1;
 	}
     }
   END_DO_BOX;
-  dk_free_tree (files);
+  dk_free_tree ((box_t) files);
   return 0;
 }
 

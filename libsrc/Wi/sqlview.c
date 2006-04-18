@@ -386,7 +386,7 @@ sqlc_insert_view (sql_comp_t * sc, ST * view, ST * tree, dbe_table_t * tb)
       DO_SET (ST *, new_col, &new_cols)
 	{
 	  new_cols_box[inx] = new_col;
-	  new_vals_box[inx] = new_vals->data;
+	  new_vals_box[inx] = (ST *) new_vals->data;
 	  new_vals = new_vals->next;
 	  inx ++;
 	}
@@ -473,7 +473,7 @@ sqlc_update_view (sql_comp_t * sc, ST * view, ST * tree, dbe_table_t * tb)
       DO_SET (ST *, new_col, &new_cols)
 	{
 	  new_cols_box[inx] = new_col;
-	  new_vals_box[inx] = new_vals->data;
+	  new_vals_box[inx] = (ST *) new_vals->data;
 	  new_vals = new_vals->next;
 	  inx ++;
 	}

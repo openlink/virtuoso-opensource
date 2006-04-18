@@ -529,9 +529,9 @@ bif_hosting_http_handler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     }
   if (new_options)
     {
-      dk_free_box (new_options[0]);
-      dk_free_box (new_options[1]);
-      dk_free_box (new_options);
+      dk_free_box ((box_t) new_options[0]);
+      dk_free_box ((box_t) new_options[1]);
+      dk_free_box ((box_t) new_options);
     }
 
   return res;

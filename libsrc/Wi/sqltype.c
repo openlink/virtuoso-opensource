@@ -977,7 +977,7 @@ sch_drop_type (dbe_schema_t * sc, char *udt_name, sql_class_t *fresh_udt)
 	    }
 	  while (NULL != childs)
 	    {
-	      sql_class_t *child = dk_set_pop (&childs);
+	      sql_class_t *child = (sql_class_t *) dk_set_pop (&childs);
 	      sch_drop_type (sc, child->scl_name, NULL);
 	    }
 	}

@@ -63,8 +63,8 @@ static id_hash_t *sinv_func_hash = NULL;
 static void
 sinvm_free (sinv_map_t * map)
 {
-  dk_free_tree (map->sinvm_name);
-  dk_free_tree (map->sinvm_inverse);
+  dk_free_tree ((box_t) map->sinvm_name);
+  dk_free_tree ((box_t) map->sinvm_inverse);
   dk_free (map, sizeof (sinv_map_t));
 }
 
@@ -165,7 +165,7 @@ sinv_make_decoy_procs (client_connection_t * cli, sinv_map_t *map)
       strses_flush (ses);
     }
   END_DO_BOX;
-  dk_free_tree (ses);
+  dk_free_tree ((box_t) ses);
 }
 
 

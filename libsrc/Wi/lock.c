@@ -1616,8 +1616,8 @@ int srv_add_background_task (srv_background_task_t task, void *appdata)
       res = 0;
       goto leave;
     }
-  dk_set_push (&srv_background_task_queue, task);
-  dk_set_push (&srv_background_task_queue, appdata);
+  dk_set_push (&srv_background_task_queue, (void *)task);
+  dk_set_push (&srv_background_task_queue, (void *)appdata);
   res = 1;
 leave:
   mutex_leave (srv_background_task_queue_mtx);
@@ -1636,7 +1636,7 @@ static void srv_run_background_tasks (void)
   while (NULL != old_queue)
     {
       void *appdata = dk_set_pop (&old_queue);
-      srv_background_task_t task = dk_set_pop (&old_queue);
+      srv_background_task_t task = (srv_background_task_t) dk_set_pop (&old_queue);
       task (appdata);
     }
 }

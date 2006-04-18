@@ -105,7 +105,7 @@ ptrlong * LCS_Delta (ptrlong * X, ptrlong * Y)
 	    }
 	}
     }
-  dk_free_box (c);
+  dk_free_box ((box_t) c);
   return b;
 }
 
@@ -275,7 +275,7 @@ int parse_text_to_lines (caddr_t text, id_hash_t* lhash, ptrlong** res_array, pt
 	  ptrlong id;
 	  if (0 <= binstrchr (line))
 	    {
-	      dk_free_box (line);
+	      dk_free_box ((box_t) line);
 	      goto ret;
 	    }
 	  idptr = (ptrlong*) id_hash_get (lhash, (caddr_t) &line);
@@ -287,7 +287,7 @@ int parse_text_to_lines (caddr_t text, id_hash_t* lhash, ptrlong** res_array, pt
 	  else
 	    {
 	      id = idptr[0];
-	      dk_free_box (line); 
+	      dk_free_box ((box_t) line); 
 	    }
 	  dk_set_push (&res_set, (caddr_t)id);	    
 	}
@@ -493,7 +493,7 @@ void diff_apply_fill_text (caddr_t * curr_text, caddr_t end_text, int * curr_lin
 	  session_buffered_write (ses, line, strlen(line));
 /* 	  session_buffered_write_char ('\n', ses); */
 	  curr_line[0]++;
-	  dk_free_box (line);
+	  dk_free_box ((box_t) line);
 	}
       else
 	break;
@@ -505,7 +505,7 @@ void diff_apply_delete (caddr_t * curr_text, caddr_t end_text, int * curr_line)
 {
   caddr_t line = parse_text_to_lines_1 (curr_text, end_text, 0);
   curr_line[0]++;
-  dk_free_box (line);
+  dk_free_box ((box_t) line);
 }
   
 
@@ -540,7 +540,7 @@ caddr_t diff_apply (caddr_t text, caddr_t patch, ptrlong mode)
   el = cmds;
   while (el)
     {
-      caddr_t cmd_line = el->data;
+      caddr_t cmd_line = (caddr_t) el->data;
       if (cmd_line)
 	{
 	  diff_cmd_t cmd;
@@ -572,7 +572,7 @@ caddr_t diff_apply (caddr_t text, caddr_t patch, ptrlong mode)
 	    default:
 	      break;
 	    }
-	  dk_free_box (cmd_line);
+	  dk_free_box ((box_t) cmd_line);
 	}
       el = el->next;
     }
@@ -633,27 +633,27 @@ caddr_t bif_diff (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args)
   
   if (0 > parse_text_to_lines (source_doc, line_hash, &source_array, &currid, NULL))
     {
-      dk_free_box (source_array);
+      dk_free_box ((box_t) source_array);
       sqlr_new_error ("DF002", "SR480", "Source file is in binary format");
     }
   
   if (0 > parse_text_to_lines (dest_doc, line_hash, &dest_array, &currid, &line_array))
     {
-      dk_free_box (source_array);
-      dk_free_box (dest_array);
+      dk_free_box ((box_t) source_array);
+      dk_free_box ((box_t) dest_array);
       sqlr_new_error ("DF002", "SR481", "Destination file is in binary format");
     }
     
   LCS = LCS_Delta (source_array, dest_array);
   path = build_path_from_LCS (source_array, dest_array, LCS);
-  dk_free_box (source_array);
-  dk_free_box (dest_array);
-  dk_free_box (LCS);
+  dk_free_box ((box_t) source_array);
+  dk_free_box ((box_t) dest_array);
+  dk_free_box ((box_t) LCS);
   
   path_text = path_to_text (path, line_array, mode);
   id_hash_free (line_hash);
-  dk_free_tree (line_array);
-  dk_free_tree (path);
+  dk_free_tree ((box_t) line_array);
+  dk_free_tree ((box_t) path);
   return path_text;
 }
 
@@ -719,7 +719,7 @@ caddr_t bif_diff_reverse (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args)
 	      session_buffered_write (ses, tmp, strlen(tmp));
 	      session_buffered_write_char ('\n', ses);
 	    }
-	  dk_free_box (line);
+	  dk_free_box ((box_t) line);
 	}
       else
 	break;

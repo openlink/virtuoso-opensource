@@ -784,7 +784,7 @@ StrCopyInW (TCHAR **poutStr, TCHAR *inStr, short size)
     *poutStr = _tcsdup ((TCHAR *) inStr);
   else
     {
-    if ((outStr = malloc ((size + 1) * sizeof (TCHAR))) != NULL)
+    if ((outStr = (TCHAR *) malloc ((size + 1) * sizeof (TCHAR))) != NULL)
         {
           memcpy (outStr, inStr, size * sizeof(TCHAR));
 /*          memcpy (outStr, inStr, size);*/

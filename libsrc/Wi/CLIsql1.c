@@ -506,7 +506,7 @@ con_set_defaults (cli_connection_t * con, caddr_t * login_res)
       con->con_defs.cdef_no_char_c_escape = cdef_param (cdefs, "SQL_NO_CHAR_C_ESCAPE", 0);
       con->con_defs.cdef_utf8_execs = cdef_param (cdefs, "SQL_UTF8_EXECS", 0);
       con->con_defs.cdef_binary_timestamp = cdef_param (cdefs, "SQL_BINARY_TIMESTAMP", 1);
-      dk_free_tree (cdefs);
+      dk_free_tree ((box_t) cdefs);
     }
 }
 
@@ -1492,15 +1492,15 @@ virtodbc__SQLFreeConnect (
   if (con->con_charset)
     wide_charset_free (con->con_charset);
   if (con->con_user)
-    dk_free_box (con->con_user);
+    dk_free_box ((box_t) con->con_user);
   if (con->con_qualifier)
-    dk_free_box (con->con_qualifier);
+    dk_free_box ((box_t) con->con_qualifier);
   if (con->con_db_ver)
-    dk_free_box (con->con_db_ver);
+    dk_free_box ((box_t) con->con_db_ver);
   if (con->con_charset_name)
-    dk_free_box (con->con_charset_name);
+    dk_free_box ((box_t) con->con_charset_name);
   if (con->con_dsn)
-    dk_free_box (con->con_dsn);
+    dk_free_box ((box_t) con->con_dsn);
   mutex_free (con->con_mtx);
 
   dk_set_delete(&con->con_environment->env_connections, (void *)con);
@@ -1633,7 +1633,7 @@ virtodbc__SQLFreeStmt (
       stmt->stmt_opts = NULL;
       if (stmt->stmt_dae)
 	{
-	  dk_free_tree (dk_set_to_array (stmt->stmt_dae));
+	  dk_free_tree ((box_t) dk_set_to_array (stmt->stmt_dae));
 	  dk_set_free (stmt->stmt_dae);
 	}
       stmt->stmt_dae = NULL;
@@ -1641,7 +1641,7 @@ virtodbc__SQLFreeStmt (
       stmt->stmt_current_dae = NULL;
       dk_set_free (stmt->stmt_dae_fragments);
       stmt->stmt_dae_fragments = NULL;
-      dk_free_tree (stmt->stmt_param_array);
+      dk_free_tree ((box_t) stmt->stmt_param_array);
       stmt->stmt_param_array = NULL;
       dk_free_box (stmt->stmt_identity_value);
       dk_free ((caddr_t) stmt, sizeof (cli_stmt_t));

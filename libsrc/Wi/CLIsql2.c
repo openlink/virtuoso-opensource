@@ -4622,7 +4622,7 @@ stmt_dae_value (cli_stmt_t * stmt)
       (DV_TYPE_OF (stmt->stmt_dae_fragments->data) == DV_DB_NULL ||
        DV_TYPE_OF (stmt->stmt_dae_fragments->data) == DV_STRING_SESSION))
     {
-      v = stmt->stmt_dae_fragments->data;
+      v = (caddr_t) stmt->stmt_dae_fragments->data;
       dk_set_free (stmt->stmt_dae_fragments);
       stmt->stmt_dae_fragments = NULL;
     }
@@ -4831,7 +4831,7 @@ SQLPutData (
 
 	  ses = strses_allocate ();
 	  strses_set_utf8 (ses, 1);
-	  nbuffer = dk_alloc (65000);
+	  nbuffer = (char *) dk_alloc (65000);
 
 	  wptr = wValue;
 	  while (wptr - wValue < wlen)
@@ -4853,10 +4853,10 @@ SQLPutData (
 	  dae = (caddr_t) ses;
 	  dk_free (nbuffer, 65000);
 	}
-      else if (rgbValue && (len = (cbValue < 0) ? strlen (rgbValue) : cbValue) + 1 > MAX_READ_STRING)
+      else if (rgbValue && (len = (cbValue < 0) ? strlen ((const char *) rgbValue) : cbValue) + 1 > MAX_READ_STRING)
 	{ /* make a session if the buffer is larger then 10 MB as well */
 	  dk_session_t *ses = strses_allocate ();
-	  session_buffered_write (ses, rgbValue, len);
+	  session_buffered_write (ses, (const char *) rgbValue, len);
 	  dae = (caddr_t) ses;
 	}
       else

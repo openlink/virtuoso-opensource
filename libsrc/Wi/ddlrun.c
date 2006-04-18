@@ -2676,10 +2676,10 @@ ddl_index_def (query_instance_t * qi, caddr_t name, caddr_t table, caddr_t * col
   arr [0] = box_string (opts ? "__ddl_index_def (?,?,?,?)" : "__ddl_index_def (?,?,?)");
   arr [1] = box_string (name);
   arr [2] = box_string (table);
-  arr [3] = box_copy_tree (cols);
+  arr [3] = (caddr_t) box_copy_tree ((const char *) cols);
   if (opts)
     {
-      arr [4] = (caddr_t) box_copy_tree (opts);
+      arr [4] = (caddr_t) box_copy_tree ((const char *) opts);
     }
   log_text_array (qi->qi_trx, (caddr_t) arr);
   dk_free_tree ((box_t) arr);

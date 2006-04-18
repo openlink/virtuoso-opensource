@@ -5663,7 +5663,7 @@ bif_ses_read_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   FAILED
     {
-      dk_free_box (out);
+      dk_free_box ((box_t) out);
       if (to_throw)
 	*err_ret = srv_make_new_error ("08003", "HT033", "cannot read from session");
       if (!binary_mode)
@@ -5693,7 +5693,7 @@ bif_ses_read_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
       else
 	ret = strses_string (out);
-      dk_free_box (out);
+      dk_free_box ((box_t) out);
       return ret;
     }
   if (0 == line_mode)
@@ -7722,7 +7722,7 @@ int
 ws_cache_check (ws_connection_t * ws)
 {
   int rc = 0;
-  caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (void *) &(ws->ws_path_string));
+  caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (caddr_t) &(ws->ws_path_string));
   static query_t * check_qr = NULL;
   caddr_t err = NULL;
   local_cursor_t * lc = NULL;
@@ -7742,7 +7742,7 @@ ws_cache_check (ws_connection_t * ws)
         check_qr = qr_recompile (check_qr, NULL);
 
       pars[0] = (caddr_t) box_copy (ws->ws_path_string);
-      pars[1] = (caddr_t) box_copy_tree (ws->ws_lines);
+      pars[1] = (caddr_t) box_copy_tree ((box_t) ws->ws_lines);
       pars[2] = (caddr_t) box_copy (*place);
 
       err = qr_exec (ws->ws_cli, check_qr, CALLER_LOCAL, NULL, NULL, &lc, pars, NULL, 0);
@@ -7793,17 +7793,17 @@ bif_http_url_cache_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   static char * szMe = "http_url_cache_set";
   caddr_t url = bif_string_arg (qst, args, 0, szMe);
   caddr_t check = bif_string_arg (qst, args, 1, szMe);
-  caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (void *)&url);
+  caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (caddr_t)&url);
   caddr_t check_copy = box_copy (check);
   if (place)
     {
       dk_free_box (*place);
-      id_hash_set (http_url_cache, (void *) &url, (void *) &check_copy);
+      id_hash_set (http_url_cache, (caddr_t) &url, (caddr_t) &check_copy);
     }
   else
     {
       caddr_t url_copy = box_copy (url);
-      id_hash_set (http_url_cache, (void *) &url_copy, (void *) &check_copy);
+      id_hash_set (http_url_cache, (caddr_t) &url_copy, (caddr_t) &check_copy);
     }
   return NO_CADDR_T;
 }
@@ -7813,7 +7813,7 @@ bif_http_url_cache_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   static char * szMe = "http_url_cache_get";
   caddr_t url = bif_string_arg (qst, args, 0, szMe);
-  caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (void *)&url);
+  caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (caddr_t)&url);
   if (place)
     return box_copy (*place);
   return NEW_DB_NULL;
@@ -7824,12 +7824,12 @@ bif_http_url_cache_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 {
   static char * szMe = "http_url_cache_remove";
   caddr_t url = bif_string_arg (qst, args, 0, szMe);
-  caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (void *)&url);
+  caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (caddr_t)&url);
   if (place)
     {
-      caddr_t *pkey = (caddr_t *)id_hash_get_key (http_url_cache, (void *)&url);
+      caddr_t *pkey = (caddr_t *)id_hash_get_key (http_url_cache, (caddr_t)&url);
       caddr_t key = *pkey, data = *place;
-      id_hash_remove (http_url_cache, (void *)&url);
+      id_hash_remove (http_url_cache, (char *)&url);
       dk_free_box (key);
       dk_free_box (data);
     }
@@ -8077,7 +8077,7 @@ ws_serve_client_connection (ws_connection_t * ws)
   LEAVE_TXN;
 
 err_end:
-  dk_free_tree (args);
+  dk_free_tree ((box_t) args);
   if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
     {
       dk_free_tree (err);
@@ -8146,7 +8146,7 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (ses == NULL)
     sqlr_new_error ("22023", "HT000", "The http_on_message expects an open connection as 1-st argument");
   http_trace (("http_on_message ses=%p\n", ses));
-  DKS_DB_DATA (ses) = (void *) list (2, box_copy (func), box_copy_tree (cd));
+  DKS_DB_DATA (ses) = (client_connection_t *) list (2, box_copy (func), box_copy_tree (cd));
   PrpcSetPartnerDeadHook (ses, (io_action_func) http_on_message_ses_dropped);
   SESSION_SCH_DATA (ses)->sio_default_read_ready_action = (io_action_func) http_on_message_input_ready;
   PrpcCheckInAsync (ses);
@@ -8886,8 +8886,8 @@ soap_mime_tree_ctx (caddr_t ctype, caddr_t body, dk_set_t * set, caddr_t * err, 
 
   DO_SET (caddr_t *, line, &hdrs)
     {
-      if (!strnicmp ("Content-Type:", (char *) unbox (line), 13))
-	my_ctype = box_copy (line);
+      if (!strnicmp ("Content-Type:", (char *) unbox ((caddr_t)line), 13))
+	my_ctype = box_copy ((caddr_t)line);
     }
   END_DO_SET();
 

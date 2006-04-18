@@ -9551,7 +9551,7 @@ make_qr_exec_params(caddr_t *params, int named_pars)
     n_params = BOX_ELEMENTS(params);
 
   if (named_pars && 0 == (n_params % 2)) /* if named then params have te be a name/value */
-    return box_copy_tree (params);
+    return (caddr_t *) box_copy_tree ((box_t) params);
 
   /* if the params are not named or passed array is not name/value pairs */
   ret = (caddr_t *) dk_alloc_box(2 * n_params * sizeof(caddr_t), DV_ARRAY_OF_POINTER);
@@ -9560,7 +9560,7 @@ make_qr_exec_params(caddr_t *params, int named_pars)
   {
     snprintf (szName, sizeof (szName), ":%d", inx / 2);
     ret[inx] = box_string(szName);
-    ret[inx + 1] = box_copy_tree(params[inx/2]);
+    ret[inx + 1] = box_copy_tree((box_t) params[inx/2]);
   }
   return ret;
 }
@@ -10291,7 +10291,7 @@ bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       char err[2010];
       strcpy_ck (err, token_array[0][1]);
-      dk_free_tree (token_array);
+      dk_free_tree ((box_t) token_array);
       sqlr_new_error ("37000", "SQ201", "%s", err);
     }
   ses = strses_allocate ();
@@ -10341,7 +10341,7 @@ bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_set_push (&stmts, out);
     }
   dk_free_box ((box_t) ses);
-  dk_free_tree (token_array);
+  dk_free_tree ((box_t) token_array);
 
   result_array = revlist_to_array (stmts);
   return result_array;
@@ -10555,7 +10555,7 @@ caddr_t bif_v_bit_or (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       b1 = vb2;
       b2 = vb1;
     }
-  res = box_copy (b1);
+  res = (unsigned char *) box_copy ((box_t) b1);
   for (inx=1;inx<(BITARR_BYTE_LEN(b2)/sizeof(char));inx++)
     res[inx] |= b2[inx];
   return (caddr_t) res;
@@ -10585,7 +10585,7 @@ caddr_t bif_v_bit_and (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       b1 = vb1;
       b2 = vb2;
     }
-  res = box_copy (b1);
+  res = (unsigned char *) box_copy ((box_t) b1);
   for (inx=1;inx<(BITARR_BYTE_LEN(b1)/sizeof(char));inx++)
     res[inx] &= b2[inx];
   return (caddr_t) res;
@@ -10602,7 +10602,7 @@ caddr_t bif_v_bit_not (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   v_bit_print (b1);
 #endif
 
-  res = box_copy (b1);
+  res = (unsigned char *) box_copy ((box_t) b1);
   for (inx=1;inx<(BITARR_BYTE_LEN(b1)/sizeof(char));inx++)
     res[inx] = ~(res[inx]);
   if (res[0])
@@ -10613,9 +10613,9 @@ caddr_t bif_v_bit_not (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static
 caddr_t bif_v_bit_all_pos (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  unsigned char * res = box_copy (bif_bin_arg (qst, args, 0, "v_bit_all_pos"));
+  unsigned char * res = (unsigned char *) box_copy (bif_bin_arg (qst, args, 0, "v_bit_all_pos"));
   int idx = 1;
-  while (idx < box_length (res) / sizeof (unsigned char))
+  while (idx < box_length ((box_t) res) / sizeof (unsigned char))
     {
       res [idx++] = 0xFF;
     }
@@ -10715,9 +10715,9 @@ caddr_t bif_bit_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
   if ((bitn/BITS_IN_CHAR) >= (len/BITS_IN_CHAR))
-    res = dk_alloc_box (bitn/BITS_IN_CHAR + 2, DV_BIN);
+    res = (unsigned char *) dk_alloc_box (bitn/BITS_IN_CHAR + 2, DV_BIN);
   else
-    res = dk_alloc_box (BITARR_BYTE_LEN (bitarr), DV_BIN);
+    res = (unsigned char *) dk_alloc_box (BITARR_BYTE_LEN (bitarr), DV_BIN);
   memset (res, 0, BITARR_BYTE_LEN (res));
   memcpy (res, bitarr, BITARR_BYTE_LEN(bitarr));
   if (bitn >= len)
@@ -10763,7 +10763,7 @@ caddr_t bif_bit_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   v_bit_print (bitarr);
 #endif
 
-  res = box_copy (bitarr);
+  res = (unsigned char *) box_copy ((box_t) bitarr);
   if ((bitn/BITS_IN_CHAR) > (len/BITS_IN_CHAR))
     {
       return (caddr_t) res;
@@ -10911,7 +10911,7 @@ caddr_t search_excerpt_print (search_excerpt_t * se)
 
 void search_excerpt_push_hit_word (dk_set_t* set, char * start, char * end)
 {
-  caddr_t * pair = dk_alloc_box (2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  caddr_t * pair = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   pair [0] = box_num (1);
   pair [1] = box_dv_short_nchars (start, end - start);
   dk_set_push (set, pair);
@@ -11333,7 +11333,7 @@ caddr_t bif_search_excerpt (caddr_t *qst, caddr_t * err_ret, state_slot_t ** arg
     search_excerpt_tokenize_doc (&se);
     _result = search_excerpt_print (&se);
     /* dbg_print_box_dbx (se.se_sentences); */
-    dk_free_tree (se.se_sentences);
+    dk_free_tree ((caddr_t) se.se_sentences);
   }
 
   DO_BOX (caddr_t, seh, inx, hit_index)
@@ -11341,7 +11341,7 @@ caddr_t bif_search_excerpt (caddr_t *qst, caddr_t * err_ret, state_slot_t ** arg
       dk_free (seh, sizeof (se_hit_t));
     }
   END_DO_BOX;
-  dk_free_box (hit_index);
+  dk_free_box ((caddr_t)hit_index);
 
 fin:
   if (!_result)
@@ -11359,7 +11359,7 @@ fin:
       se.se_from_begin = 1;
       search_excerpt_tokenize_doc (&se);
       _result = search_excerpt_print (&se);
-      dk_free_tree (se.se_sentences);
+      dk_free_tree ((box_t) se.se_sentences);
     }
   if (text != original_text)
     dk_free_box (text);

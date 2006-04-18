@@ -415,7 +415,7 @@ sql_warnings_send_to_cli (void)
       warnings = dk_set_nreverse (warnings);
       while (warnings)
 	{
-	  caddr_t err = dk_set_pop (&warnings);
+	  caddr_t err = (caddr_t) dk_set_pop (&warnings);
 	  if (send_warnings)
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 0);
 	  else

@@ -433,10 +433,10 @@ sch_name_to_collation_1 (char *o_default, char *q, char *o, char *n)
   return NULL;
 }
 
-char *
-sch_skip_prefixes (char *str)
+const char *
+sch_skip_prefixes (const char *str)
 {
-  char *first = str;
+  const char *first = str;
   while (*str)
     {
       if (*str == NAME_SEPARATOR)

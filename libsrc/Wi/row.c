@@ -613,11 +613,11 @@ itc_qst_set_column (it_cursor_t * it, dbe_col_loc_t * cl,
       return;
     case DV_IRI_ID:
       ln1 = (iri_id_t) (unsigned long) LONG_REF ((row + FXO));
-      qst_set_bin_string (qst, target, (caddr_t) &ln1, sizeof (iri_id_t), DV_IRI_ID);
+      qst_set_bin_string (qst, target, (db_buf_t) &ln1, sizeof (iri_id_t), DV_IRI_ID);
       return;
     case DV_IRI_ID_8:
       ln1 = INT64_REF ((row + FXO));
-      qst_set_bin_string (qst, target, (caddr_t) &ln1, sizeof (iri_id_t), DV_IRI_ID);
+      qst_set_bin_string (qst, target, (db_buf_t) &ln1, sizeof (iri_id_t), DV_IRI_ID);
       return;
     case DV_OBJECT:
     case DV_ANY:

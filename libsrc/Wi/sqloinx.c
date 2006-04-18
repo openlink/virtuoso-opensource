@@ -211,7 +211,7 @@ sqlo_is_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val)
     return 0;
   DO_SET (df_elt_t *, eq, place)
     {
-      if (box_equal (val->dfe_tree, eq->dfe_tree))
+      if (box_equal ((box_t) val->dfe_tree, (box_t) eq->dfe_tree))
 	return 1;
     }
   END_DO_SET();

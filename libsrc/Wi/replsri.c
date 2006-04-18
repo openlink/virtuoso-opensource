@@ -631,14 +631,14 @@ trx_repl_log_ddl_index_def (query_instance_t * qi, caddr_t name, caddr_t table, 
   arr [0] = box_string (opts ? "__ddl_index_def (?,?,?,?)" : "__ddl_index_def (?,?,?)");
   arr [1] = box_string (name);
   arr [2] = box_string (table);
-  arr [3] = box_copy_tree (cols);
+  arr [3] = box_copy_tree ((box_t) cols);
   if (opts)
     {
-      arr [4] = (caddr_t) box_copy_tree (opts);
+      arr [4] = (caddr_t) box_copy_tree ((box_t) opts);
     }
   log_repl_text_array_all (table, 2, (caddr_t) arr, qi->qi_client, qi,
       LOG_REPL_TEXT_ARRAY_MASK_ALL);
-  dk_free_tree (arr);
+  dk_free_tree ((box_t) arr);
 }
 
 

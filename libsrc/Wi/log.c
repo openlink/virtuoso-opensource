@@ -116,7 +116,7 @@ log_set_byte_order_check(int in_txn)
       session_buffered_write (dbs->dbs_log_session, trx_string, strses_length (ses));
       dk_free_box (trx_string);
       strses_free (ses);
-      dk_free_tree ((caddr_t*) cbox);
+      dk_free_tree ((caddr_t) cbox);
     }
   END_WRITE_FAIL (dbs->dbs_log_session);
 }

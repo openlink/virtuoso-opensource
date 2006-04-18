@@ -810,7 +810,7 @@ caddr_t cli_box_server_msg (char *msg);
   if (wide && len > 0) \
     { \
       if ((con) && (con)->con_defs.cdef_utf8_execs) \
-	_##wide = dk_alloc_box (_##len * VIRT_MB_CUR_MAX, DV_LONG_STRING); \
+	_##wide = (caddr_t) dk_alloc_box (_##len * VIRT_MB_CUR_MAX, DV_LONG_STRING); \
       else \
 	_##wide = (caddr_t) dk_alloc_box (_##len, DV_LONG_STRING); \
     }
@@ -818,7 +818,7 @@ caddr_t cli_box_server_msg (char *msg);
 #define NSET_AND_FREE_OUTPUT_NONCHAR_NARROW_FREE(wide, len, plen, con) \
   if (wide && len >= 0) \
     { \
-      int len2 = (!_##plen || *_##plen == SQL_NTS) ? (int) strlen (_##wide) : *_##plen; \
+      int len2 = (!_##plen || *_##plen == SQL_NTS) ? (int) strlen ((char *) _##wide) : *_##plen; \
       if ((con) && len > 0 && (con)->con_defs.cdef_utf8_execs) \
 	{ \
 	  SQLSMALLINT len1; \
@@ -830,18 +830,18 @@ caddr_t cli_box_server_msg (char *msg);
 	    } \
 	  else \
 	    { \
-	      dk_free_box (_##wide); \
+	      dk_free_box ((box_t) _##wide); \
 	      return SQL_ERROR; \
 	    } \
-	  dk_free_box (_##wide); \
+	  dk_free_box ((box_t) _##wide); \
 	} \
       else \
 	{ \
 	  if (len2 > 0) \
- 	    strncpy (wide, _##wide, len2); \
+ 	    strncpy ((char *) wide, (char *) _##wide, len2); \
           else \
 	    ((SQLCHAR *)wide)[0] = 0; \
-          dk_free_box (_##wide); \
+          dk_free_box ((box_t) _##wide); \
 	  if (plen) \
 	    *plen = len2; \
 	} \

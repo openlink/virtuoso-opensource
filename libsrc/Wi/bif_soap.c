@@ -341,7 +341,7 @@ void mime_c_compose (soap_call_ctx_t ctx, caddr_t * input)
    if (!mime_call)
      mime_call = sql_compile ("DB.DBA.WS_MIME_RESP_C (?)", bootstrap_cli, &err, SQLC_DEFAULT);
 
-   arg = box_copy_tree (input);
+   arg = box_copy_tree ((box_t) input);
 
    err = qr_quick_exec (mime_call, bootstrap_cli, NULL, &lc, 1,
        ":0", arg, QRP_RAW);
@@ -379,7 +379,7 @@ void mime_compose (ws_connection_t * ws, caddr_t * input)
    if (!mime_call)
      mime_call = sql_compile ("DB.DBA.WS_MIME_RESP (?)", ws->ws_cli, &err, SQLC_DEFAULT);
 
-   arg = box_copy_tree (input);
+   arg = box_copy_tree ((box_t) input);
 
    err = qr_quick_exec (mime_call, ws->ws_cli, NULL, &lc, 1,
        ":0", arg, QRP_RAW);
@@ -9285,7 +9285,7 @@ soap_print_scalar_value (dtp_t proposed_type, caddr_t value, dk_session_t *ses, 
 		}
 	      FAILED
 		{
-		   dk_free_box (bh_ses);
+		   dk_free_box ((box_t) bh_ses);
 		   SOAP_VALIDATE_ERROR (("22023", "SV092", "Cannot encode a BLOB as base64 binary."));
 		}
 	      END_READ_FAIL (bh_ses);
@@ -9298,7 +9298,7 @@ soap_print_scalar_value (dtp_t proposed_type, caddr_t value, dk_session_t *ses, 
 		}
 	    } 
 	  while (to_read > 0);
-	  dk_free_box (bh_ses);
+	  dk_free_box ((box_t) bh_ses);
 	}
       else
 	{

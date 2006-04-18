@@ -84,9 +84,9 @@ extern void ttlp_free (ttlp_t *ttlp)
   id_hash_free (ttlp->ttlp_blank_node_ids);
   id_hash_free (ttlp->ttlp_cached_iids);
   while (NULL != ttlp->ttlp_namespaces)
-    dk_free_tree (dk_set_pop (&(ttlp->ttlp_namespaces)));
+    dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_namespaces)));
   while (NULL != ttlp->ttlp_saved_uris)
-    dk_free_tree (dk_set_pop (&(ttlp->ttlp_saved_uris)));
+    dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   dk_free_box (ttlp->ttlp_base_uri);
   dk_free_box (ttlp->ttlp_graph_uri);
   dk_free_box (ttlp->ttlp_subj_uri);
@@ -231,7 +231,7 @@ caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname
   lname++;
   ns_dict = ttlp_inst.ttlp_namespaces;
   ns_pref = box_dv_short_nchars (qname, lname - qname);
-  ns_uri = dk_set_get_keyword (ns_dict, ns_pref, NULL);
+  ns_uri = (caddr_t) dk_set_get_keyword (ns_dict, ns_pref, NULL);
   if (NULL == ns_uri)
     {
       if (!strcmp (ns_pref, "rdf:"))
@@ -283,7 +283,7 @@ caddr_t DBG_NAME (ttlp_bnode_iid) (DBG_PARAMS TTLP_PARAM const char *txt)
     unames_colon_number[1],
     box_copy_tree (ttlp_inst.ttlp_app_env) );
   err = qr_exec (ttlp_inst.ttlp_qi->qi_client, ttlp_inst.ttlp_queries[TTLP_EXEC_NEW_BLANK], ttlp_inst.ttlp_qi, NULL, NULL, &lc, params, NULL, 1);
-  dk_free_box (params);
+  dk_free_box ((box_t) params);
   if (NULL != err)
     {
       lc_free (lc);
@@ -329,7 +329,7 @@ caddr_t ttlp_get_iid (TTLP_PARAM caddr_t uri)
     unames_colon_number[2],
     box_copy_tree (ttlp_inst.ttlp_app_env) );
   err = qr_exec (ttlp_inst.ttlp_qi->qi_client, ttlp_inst.ttlp_queries[TTLP_EXEC_GET_IID], ttlp_inst.ttlp_qi, NULL, NULL, &lc, params, NULL, 1);
-  dk_free_box (params);
+  dk_free_box ((box_t) params);
   if (NULL != err)
     {
       lc_free (lc);
@@ -385,7 +385,7 @@ void ttlp_triple (TTLP_PARAM caddr_t o_uri)
     unames_colon_number[8], box_copy_tree (ttlp_inst.ttlp_app_env) );
   err = qr_exec (ttlp_inst.ttlp_qi->qi_client, ttlp_inst.ttlp_queries[TTLP_EXEC_TRIPLE], ttlp_inst.ttlp_qi, NULL, NULL, &lc, params, NULL, 1);
   lc_free (lc);
-  dk_free_box (params);
+  dk_free_box ((box_t) params);
   if (NULL != err)
     sqlr_resignal (err);
 }
@@ -425,7 +425,7 @@ void ttlp_triple_l (TTLP_PARAM caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t
     unames_colon_number[9], box_copy_tree (ttlp_inst.ttlp_app_env) );
   err = qr_exec (ttlp_inst.ttlp_qi->qi_client, ttlp_inst.ttlp_queries[TTLP_EXEC_TRIPLE_L], ttlp_inst.ttlp_qi, NULL, NULL, &lc, params, NULL, 1);
   lc_free (lc);
-  dk_free_box (params);
+  dk_free_box ((box_t) params);
   if (NULL != err)
     sqlr_resignal (err);
 }

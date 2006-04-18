@@ -1371,7 +1371,7 @@ int itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsign
 	  return DVC_MATCH;
 	}
       if (keys_on_stack)
-	hmk.hmk_data = box_copy_tree (hmk.hmk_data);
+	hmk.hmk_data = (caddr_t *) box_copy_tree ((caddr_t) hmk.hmk_data);
       hmk.hmk_var_len = var_len;
       deps = (caddr_t *)dk_alloc_box_zero (n_deps * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       for (inx = 0; inx < n_deps; inx++)

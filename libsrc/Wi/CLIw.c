@@ -49,7 +49,7 @@
 if (wsz##param) \
 { \
   len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
-  sz##param = dk_alloc_box (len + 1, DV_LONG_STRING); \
+  sz##param = (SQLCHAR *) dk_alloc_box (len + 1, DV_LONG_STRING); \
   cli_wide_to_narrow (charset, 0, WCHAR_CAST wsz##param, len, sz##param, len, NULL, NULL); \
   sz##param[len] = 0; \
 }
@@ -73,7 +73,7 @@ if (wsz##param) \
 { \
   unsigned out_len; \
   len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
-  sz##param = dk_alloc_box (len * 9 + 1, DV_LONG_STRING); \
+  sz##param = (SQLCHAR *) dk_alloc_box (len * 9 + 1, DV_LONG_STRING); \
   out_len = (unsigned) cli_wide_to_escaped (charset, 0, WCHAR_CAST wsz##param, len, sz##param, len * 9, NULL, NULL); \
   sz##param[out_len] = 0; \
 }
@@ -95,7 +95,7 @@ if (wsz##param) \
 #define FREE_INPUT_NARROW(param) \
 if (wsz##param) \
 { \
-  dk_free_box (sz##param); \
+  dk_free_box ((box_t) sz##param); \
 }
 
 #define DEFINE_OUTPUT_CHAR_NARROW_N(param, type) \
@@ -106,7 +106,7 @@ if (wsz##param) \
 #define MAKE_OUTPUT_CHAR_NARROW_N(param) \
 if (wsz##param) \
   { \
-    sz##param = dk_alloc_box (cb##param, DV_LONG_STRING); \
+    sz##param = (SQLCHAR *) dk_alloc_box (cb##param, DV_LONG_STRING); \
   }
 
 #define SET_AND_FREE_OUTPUT_CHAR_NARROW_N(param) \
@@ -121,7 +121,7 @@ if (wsz##param) \
 	  (WCHAR_CAST wsz##param)[0] = 0; \
 	*_pcb##param = len1; \
       } \
-    dk_free_box (sz##param); \
+    dk_free_box ((box_t) sz##param); \
   } \
 if (pcb##param) \
   *pcb##param = *_pcb##param * N_BYTES_PER_CHAR;
@@ -135,9 +135,9 @@ if (pcb##param) \
 if (wsz##param) \
   { \
     if ((con)->con_defs.cdef_utf8_execs) \
-      sz##param = dk_alloc_box (cb##param * VIRT_MB_CUR_MAX, DV_LONG_STRING); \
+      sz##param = (SQLCHAR *) dk_alloc_box (cb##param * VIRT_MB_CUR_MAX, DV_LONG_STRING); \
     else \
-      sz##param = dk_alloc_box (_cb##param, DV_LONG_STRING); \
+      sz##param = (SQLCHAR *) dk_alloc_box (_cb##param, DV_LONG_STRING); \
   }
 
 #define SET_AND_FREE_OUTPUT_CHAR_NARROW(param, con) \
@@ -172,7 +172,7 @@ if (wsz##param) \
 	    *_pcb##param = len1; \
           } \
       } \
-    dk_free_box (sz##param); \
+    dk_free_box ((box_t) sz##param); \
   } \
 if (pcb##param) \
   *pcb##param = *_pcb##param * N_BYTES_PER_CHAR;
@@ -188,9 +188,9 @@ if (pcb##param) \
   if (wide && len > 0) \
     { \
       if ((con) && (con)->con_defs.cdef_utf8_execs) \
-	_##wide = dk_alloc_box (_##len * VIRT_MB_CUR_MAX + 1, DV_LONG_STRING); \
+	_##wide = (char *) dk_alloc_box (_##len * VIRT_MB_CUR_MAX + 1, DV_LONG_STRING); \
       else \
-	_##wide = dk_alloc_box (_##len + 1, DV_LONG_STRING); \
+	_##wide = (char *) dk_alloc_box (_##len + 1, DV_LONG_STRING); \
     }
 
 #define SET_AND_FREE_OUTPUT_NONCHAR_NARROW(wide, len, plen, con) \
@@ -212,7 +212,7 @@ if (pcb##param) \
 	    } \
 	  else \
 	    { \
-	      dk_free_box (_##wide); \
+	      dk_free_box ((box_t) _##wide); \
 	      return SQL_ERROR; \
 	    } \
 	} \
@@ -223,7 +223,7 @@ if (pcb##param) \
 	  if (plen) \
 	    *plen = (SQLSMALLINT) len2 * /*N_BYTES_PER_CHAR */sizeof (wchar_t); \
 	} \
-      dk_free_box (_##wide); \
+      dk_free_box ((box_t) _##wide); \
     } \
   else \
     { \
@@ -261,7 +261,7 @@ long _##len = (long) (len < 0 ? wcslen ((wchar_t *)wide) : len); \
 #define FREE_INPUT_NONCHAR_NARROW(wide, len) \
     if (_##len > 0 && wide) \
       { \
-	dk_free_box (_##wide); \
+	dk_free_box ((box_t) _##wide); \
       }
 
 #if 0

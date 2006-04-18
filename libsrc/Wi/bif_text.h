@@ -107,7 +107,7 @@ typedef struct wb_pos_s
     { \
       if ((WBP).wbp_buf && (WBP).wbp_buf != WB_DELETED) \
 	{ \
-	  dk_free_box ((WBP).wbp_buf); \
+	  dk_free_box ((box_t)(WBP).wbp_buf); \
 	  (WBP).wbp_buf = NULL; \
 	} \
     } \

@@ -56,7 +56,7 @@ char* uuid_bin_encode (void* uuid)
   if (box_length (uuid) != sizeof(uuid_t))
     GPF_T1 ("wrong uuid object received");
 #endif
-  uuid_unparse ((struct uuid_s *)uuid, encoded_str);
+  uuid_unparse ((unsigned char *) uuid, encoded_str);
   return encoded_str;
 }
 
@@ -69,7 +69,7 @@ void* uuid_bin_decode (const char* uuid_str)
     GPF_T1 ("wrong uuid string received");
 #endif
 
-  if (0 == uuid_parse ((char*)uuid_str, (struct uuid_s *) xid))
+  if (0 == uuid_parse ((const char*)uuid_str, (unsigned char *) xid))
     return xid;
   dk_free_box ((box_t) xid);
   return 0;

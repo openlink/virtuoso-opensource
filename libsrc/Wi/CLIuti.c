@@ -1973,7 +1973,7 @@ bin_dv_to_wstr_place (unsigned char *str, wchar_t *place, size_t nbytes)
 static long
 strses_cp_narrow_to_wide (void *dest_ptr, void *src_ptr, long src_ofs, long copy_bytes, void *state_data)
 {
-  cli_narrow_to_wide (state_data, 0,
+  cli_narrow_to_wide ((wcharset_t *) state_data, 0,
       ((unsigned char *) (src_ptr)) + src_ofs, copy_bytes, (wchar_t *) dest_ptr, copy_bytes);
   return copy_bytes * sizeof (wchar_t);
 }
@@ -2002,7 +2002,7 @@ dv_strses_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 
 	  if (SQL_C_CHAR == c_type)
 	    { /* TODO: GK: bit of a hack for now, refine later */
-	      box = dk_alloc ((max + 1) * sizeof (wchar_t));
+	      box = (caddr_t) dk_alloc ((max + 1) * sizeof (wchar_t));
 	      wide_ptr = (wchar_t *) box;
 
 	      max *= sizeof (wchar_t);
@@ -2034,7 +2034,7 @@ dv_strses_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 	      cli_wide_to_narrow (stmt->stmt_connection->con_charset, 0,
 		  wide_ptr, piece_len, (unsigned char *) place, max, NULL, NULL);
 	      place[piece_len] = 0;
-	      dk_free (box, -1);
+	      dk_free (box, ((size_t) -1));
 	    }
 	  else
 	    piece_len *= sizeof (wchar_t);

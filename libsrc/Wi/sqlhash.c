@@ -64,7 +64,7 @@ key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl)
     col->col_sqt.sqt_precision = 0;
   col->col_id = dk_set_length (key->key_parts) + 1;
 
-  col->col_options = box_copy_tree (ssl->ssl_sqt.sqt_tree);
+  col->col_options = (caddr_t *) box_copy_tree ((box_t) ssl->ssl_sqt.sqt_tree);
   NCONCF1 (key->key_parts, col);
 }
 

@@ -46,6 +46,7 @@
 #include "wi.h"
 #include "sqlver.h"
 #include "sqlfn.h"
+#include "sqlbif.h"
 #include "srvstat.h"
 #include "recovery.h"
 
@@ -809,7 +810,7 @@ bp_make_buffer_list (int n)
   memset (bp->bp_bufs, 0, sizeof (buffer_desc_t) * n);
   bp->bp_sort_tmp = (buffer_desc_t **) dk_alloc (sizeof (caddr_t) * n);
 
-  buffers_space = malloc (ALIGN_VOIDP (PAGE_SZ) * n);
+  buffers_space = (unsigned char *) malloc (ALIGN_VOIDP (PAGE_SZ) * n);
   memset (buffers_space, 0, ALIGN_VOIDP (PAGE_SZ) * n);
   buf_ptr = buffers_space;
   for (c = 0; c < n; c++)
