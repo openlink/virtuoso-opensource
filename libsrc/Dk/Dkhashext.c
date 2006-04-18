@@ -324,7 +324,7 @@ caddr_t DBG_NAME(box_dv_dict_iterator) (DBG_PARAMS caddr_t ht)
 }
 
 
-caddr_t box_dict_hashtable_copy_hook(caddr_t orig_dict)
+caddr_t box_dict_hashtable_copy_hook (caddr_t orig_dict)
 {
 #ifdef MALLOC_DEBUG
   char *file = __FILE__;
@@ -358,7 +358,8 @@ caddr_t box_dict_hashtable_copy_hook(caddr_t orig_dict)
 }
 
 
-void box_dict_hashtable_free_hook(caddr_t dict)
+int
+box_dict_hashtable_destr_hook (caddr_t dict)
 {
 #ifdef MALLOC_DEBUG
   char *file = __FILE__;
@@ -374,6 +375,7 @@ void box_dict_hashtable_free_hook(caddr_t dict)
     }
   id_hash_clear ((id_hash_t *)(dict));
   ID_HASH_FREE_INTERNALS((id_hash_t *)(dict));
+  return 0;
 }
 
 
@@ -391,7 +393,8 @@ caddr_t box_dict_iterator_copy_hook (caddr_t orig_iter)
 }
 
 
-void box_dict_iterator_free_hook(caddr_t iter)
+int
+box_dict_iterator_destr_hook (caddr_t iter)
 {
   id_hash_iterator_t *hit = (id_hash_iterator_t *)iter;
   if (hit->hit_hash)
@@ -400,6 +403,7 @@ void box_dict_iterator_free_hook(caddr_t iter)
       if (0 == hit->hit_hash->ht_dict_refctr)
 	dk_free_box ((caddr_t)(hit->hit_hash));
     }
+  return 0;
 }
 
 

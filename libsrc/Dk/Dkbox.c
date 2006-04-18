@@ -336,8 +336,9 @@ dbg_dk_alloc_box_zero (DBG_PARAMS size_t bytes, dtp_t tag)
 #endif /* MALLOC_DEBUG */
 
 
-box_free_f box_destr[256];
+box_destr_f box_destr[256];
 box_copy_f box_copier[256];
+char box_can_appear_twice_in_tree[256];
 
 
 caddr_t
@@ -348,10 +349,11 @@ box_non_copiable (caddr_t b)
 
 
 void
-dk_mem_hooks (dtp_t tag, box_copy_f c, box_free_f d)
+dk_mem_hooks (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit)
 {
   box_destr[tag] = d;
   box_copier[tag] = c;
+  box_can_appear_twice_in_tree[tag] = bcatit;
 }
 
 
@@ -460,9 +462,6 @@ dk_free_box (box_t box)
       }
     case DV_REFERENCE:
       return 0;
-    case DV_XPATH_QUERY:
-      box_destr[tag] (box);
-      return 0;
 #ifndef NDEBUG
     case TAG_FREE:
       GPF_T1 ("Double free");
@@ -470,9 +469,10 @@ dk_free_box (box_t box)
       GPF_T1 ("free of box marked bad");
 #endif
     default:
-      len = ALIGN_4 (len);
       if (box_destr[tag])
-	box_destr[tag] (box);
+        if (0 != box_destr[tag] (box))
+          return 0;
+      len = ALIGN_4 (len);
     }
 
 #ifndef NDEBUG
@@ -536,9 +536,6 @@ dk_free_tree (box_t box)
       return 0;
     case DV_REFERENCE:
       return 0;
-    case DV_XPATH_QUERY:
-      box_destr[tag] (box);
-      return 0;
 #ifndef NDEBUG
     case TAG_FREE:
       GPF_T1 ("Double free");
@@ -546,9 +543,10 @@ dk_free_tree (box_t box)
       GPF_T1 ("Free of box marked bad");
 #endif
     default:
-      len = ALIGN_4 (len);
       if (box_destr[tag])
-	box_destr[tag] (box);
+        if (0 != box_destr[tag] (box))
+          return 0;
+      len = ALIGN_4 (len);
     }
 
 #ifndef NDEBUG
@@ -586,7 +584,6 @@ dk_check_tree_iter (box_t box, box_t parent, dk_hash_t *known)
 {
   uint32 count;
   dtp_t tag;
-  box_t other_parent;
   if (!IS_BOX_POINTER (box))
     return;
   dk_alloc_box_assert (box);
@@ -599,10 +596,13 @@ dk_check_tree_iter (box_t box, box_t parent, dk_hash_t *known)
   if (TAG_BAD == tag)
     GPF_T1 ("Tree contains a pointer to a box marked bad");
 #endif
-  other_parent = gethash (box, known);
+  if (!box_can_appear_twice_in_tree[tag])
+    {
+      box_t other_parent = gethash (box, known);
   if (NULL != other_parent)
     GPF_T;
   sethash (box, known, parent);
+    }
   if (IS_NONLEAF_DTP(tag))
     {
       box_t *obj = (box_t *) box;
@@ -1768,18 +1768,19 @@ caddr_t box_mem_wrapper_copy_hook (caddr_t mw_arg)
   return NULL;
 }
 
-void box_mem_wrapper_free_hook (caddr_t mw_arg)
+int box_mem_wrapper_destr_hook (caddr_t mw_arg)
 {
   dk_mem_wrapper_t *mw = (dk_mem_wrapper_t *)(mw_arg);
   if (mw->dmw_free)
     mw->dmw_free (mw->dmw_data[0]);
+  return 0;
 }
 
 caddr_t uname___empty;
 
 void dk_box_initialize(void)
 {
-  dk_mem_hooks (DV_MEM_WRAPPER, box_mem_wrapper_copy_hook, box_mem_wrapper_free_hook);
+  dk_mem_hooks (DV_MEM_WRAPPER, box_mem_wrapper_copy_hook, box_mem_wrapper_destr_hook, 0);
   uname_mutex = mutex_allocate ();
   if (NULL == uname_mutex)
     GPF_T;

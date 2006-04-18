@@ -212,6 +212,9 @@ void mp_check_tree (mem_pool_t * mp, box_t box);
 #define t_check_tree(box) ;
 #endif
 
+#define t_box_dv_uname_string box_dv_uname_string
+#define t_box_dv_uname_nchars box_dv_uname_nchars
+
 #ifdef _DKSYSTEM_H
 caddr_t t_box_vsprintf (size_t buflen_eval, const char *format, va_list tail);
 caddr_t t_box_sprintf (size_t buflen_eval, const char *format, ...);

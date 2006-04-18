@@ -57,6 +57,8 @@ struct dk_session_s
 
     dk_mutex_t *	dks_mtx;
 
+    int			dks_refcount;
+
     char *		dks_in_buffer;
     int			dks_in_length;
     int			dks_in_fill;

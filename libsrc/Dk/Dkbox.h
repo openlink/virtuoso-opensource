@@ -563,10 +563,13 @@ void dk_debug_dump_box (FILE *outfd, void *box, int lvl);
 void box_dv_uname_make_immortal (caddr_t tree);
 void box_dv_uname_make_immortal_all (void);
 
-typedef void (*box_free_f) (caddr_t box);
+/*! Type of function that destroys the box. It does not free the alloc of the box itself, it only destroys members.
+The function returns zero if the memory can be reused or freed, nonzero if the box is still in use (say, it contains refcount)
+*/
+typedef int (*box_destr_f) (caddr_t box);
 typedef caddr_t (*box_copy_f) (caddr_t box);
 caddr_t box_non_copiable (caddr_t b);
-void dk_mem_hooks (dtp_t dtp, box_copy_f, box_free_f);
+void dk_mem_hooks (dtp_t dtp, box_copy_f cpoier, box_destr_f destr, int can_appear_twice_in_tree);
 
 void box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp);
 

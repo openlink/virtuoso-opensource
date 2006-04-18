@@ -1100,15 +1100,23 @@ strses_free (dk_session_t *ses)
 }
 
 
-void
+int
 strses_destroy (dk_session_t *ses)
 {
+#ifndef NDEBUG
+  if (0 >= ses->dks_refcount)
+    GPF_T1 ("Invalid dks_refcount in strses_destroy()");
+#endif
+  ses->dks_refcount--;
+  if (ses->dks_refcount)
+    return 1;
   strses_flush (ses);
   dk_free (ses->dks_out_buffer, DKSES_OUT_BUFFER_LENGTH);
   if (ses->dks_in_buffer)
     dk_free (ses->dks_in_buffer, DKSES_IN_BUFFER_LENGTH);
   dk_free (SESSION_SCH_DATA (ses), sizeof (scheduler_io_data_t));
   session_free (ses->dks_session);
+  return 0;
 }
 
 
@@ -1506,6 +1514,7 @@ DBG_NAME(strses_allocate) (DBG_PARAMS_0)
 
   dk_ses->dks_buffer_chain = NULL;
 */
+  dk_ses->dks_refcount = 1;
   return (dk_ses);
 }
 
@@ -1610,18 +1619,27 @@ caddr_t strses_string (dk_session_t * ses) { return dbg_strses_string (__FILE__,
 
 caddr_t strses_fake_copy (caddr_t orig)
 {
+#if 0
   dk_session_t swap_buf;
   dk_session_t *res = strses_allocate ();
   memcpy (&swap_buf, res, sizeof (dk_session_t));
   memcpy (res, orig, sizeof (dk_session_t));
   memcpy (orig, &swap_buf, sizeof (dk_session_t));
   return (caddr_t) res;
+#else
+  dk_session_t *orig_ses = (dk_session_t *)orig;
+#ifndef NDEBUG
+  if (0 >= orig_ses->dks_refcount)
+    GPF_T1 ("Invalid dks_refcount in strses_fake_copy()");
+#endif
+  orig_ses->dks_refcount += 1;
+#endif
 }
 
 void
 strses_mem_initalize (void)
 {
-  dk_mem_hooks (DV_STRING_SESSION, strses_fake_copy, (box_free_f) strses_destroy);
+  dk_mem_hooks (DV_STRING_SESSION, strses_fake_copy, (box_destr_f) strses_destroy, 1);
 }
 
 

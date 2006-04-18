@@ -195,9 +195,9 @@ id_hash_t * t_id_tree_hash_create (id_hashed_key_t buckets);
 #endif
 
 caddr_t box_dict_hashtable_copy_hook(caddr_t orig_dict);
-void box_dict_hashtable_free_hook(caddr_t dict);
+int box_dict_hashtable_destr_hook(caddr_t dict);
 caddr_t box_dict_iterator_copy_hook(caddr_t orig_iter);
-void box_dict_iterator_free_hook(caddr_t iter);
+int box_dict_iterator_destr_hook(caddr_t iter);
 
 EXE_EXPORT (caddr_t, id_hash_get, (id_hash_t *ht, caddr_t key));
 EXE_EXPORT (caddr_t, id_hash_get_with_ctx, (id_hash_t *ht, caddr_t key, void *ctx));
