@@ -327,7 +327,7 @@ java_object_dv_alloc (JNIEnv * env, jobject obj)
 }
 
 
-static void
+static int
 java_object_dv_free (caddr_t box)
 {
   if (IS_JAVA_OBJ (box))
@@ -344,6 +344,7 @@ java_object_dv_free (caddr_t box)
       else
 	dk_free_tree (err);
     }
+  return 0;
 }
 
 
