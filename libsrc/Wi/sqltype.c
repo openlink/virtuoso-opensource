@@ -1972,12 +1972,13 @@ udt_instance_copy (caddr_t box)
 }
 
 
-void
-udt_instance_free (caddr_t * box)
+int
+udt_instance_destroy (caddr_t * box)
 {
   sql_class_t *udt = UDT_I_CLASS (box);
   if (udt && imp_map[udt->scl_ext_lang].scli_instance_free)
     imp_map[udt->scl_ext_lang].scli_instance_free (box);
+  return 0;
 }
 
 
@@ -3602,7 +3603,7 @@ udt_ses_init (void)
 {
   macro_char_func *rt = get_readtable ();
   dk_mem_hooks (DV_OBJECT, (box_copy_f) udt_instance_copy,
-      (box_free_f) udt_instance_free);
+      (box_destr_f) udt_instance_destroy, 0);
   PrpcSetWriter (DV_OBJECT, (ses_write_func) udt_serialize);
   rt[DV_OBJECT] = udt_deserialize;
   PrpcSetWriter (DV_REFERENCE, (ses_write_func) ref_serialize);

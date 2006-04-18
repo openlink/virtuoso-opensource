@@ -306,7 +306,7 @@ bif_smtp_send (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-static void
+static int
 type_connection_destroy (caddr_t box)
 {
   caddr_t *type = (caddr_t *)box;
@@ -314,7 +314,7 @@ type_connection_destroy (caddr_t box)
   ptrlong to_close = 1;
 
   if (!IS_BOX_POINTER(type))
-    return;
+    return -1;
 
   ses = (dk_session_t *) type[0];
 
@@ -326,6 +326,7 @@ type_connection_destroy (caddr_t box)
       PrpcDisconnect (ses);
       PrpcSessionFree (ses);
     }
+  return 0;
 }
 
 caddr_t
@@ -454,7 +455,7 @@ bif_ses_disconnect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_smtp_init (void)
 {
-  dk_mem_hooks (DV_CONNECTION, box_non_copiable, type_connection_destroy);
+  dk_mem_hooks (DV_CONNECTION, box_non_copiable, type_connection_destroy, 0);
   bif_define_typed ("smtp_send", bif_smtp_send, &bt_varchar);
   bif_define ("ses_connect", bif_ses_connect);
   bif_define ("ses_accept", bif_ses_accept);

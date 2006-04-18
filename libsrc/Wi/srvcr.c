@@ -2171,13 +2171,13 @@ bif_bookmark (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-void
+int
 pl_cursor_destroy (caddr_t box)
 {
   srv_stmt_t *stmt = (srv_stmt_t *)box;
-
   if (stmt->sst_cursor_state)
     stmt_scroll_close (stmt);
+  return 0;
 }
 
 int
@@ -2233,7 +2233,7 @@ bif_burst_mode_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_cursors_init (void)
 {
-  dk_mem_hooks (DV_PL_CURSOR, box_non_copiable, pl_cursor_destroy);
+  dk_mem_hooks (DV_PL_CURSOR, box_non_copiable, pl_cursor_destroy, 0);
   PrpcSetWriter (DV_PL_CURSOR, pl_cursor_serialize);
 
   bif_define ("__set_pos", bif_sql_set_pos);

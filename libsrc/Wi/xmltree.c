@@ -3349,7 +3349,7 @@ xqr_instance (xp_query_t * xqr, query_instance_t * qi)
 }
 
 
-void
+int
 xqi_destroy (caddr_t xx)
 {
   int inx;
@@ -3383,17 +3383,18 @@ xqi_destroy (caddr_t xx)
     }
   if ((NULL != xqi->xqi_doc_cache) && (&(xqi->xqi_doc_cache) == xqi->xqi_doc_cache->xdc_owner))
     xml_doc_cache_free (xqi->xqi_doc_cache);
+  return 0;
 }
 
 
-void
+int
 xqr_release (caddr_t xx)
 {
   xp_query_t * xqr = (xp_query_t *) xx;
   if (NULL != xqr->xqr_shuric)
     {
       shuric_release (xqr->xqr_shuric);
-      return;
+      return 1;
     }
   dk_set_free (xqr->xqr_state_map);
   dk_free_box ((caddr_t) xqr->xqr_slots);
@@ -3421,7 +3422,7 @@ xqr_release (caddr_t xx)
   dk_free_box (xqr->xqr_xdl.xdl_file);
 #endif
   box_tag_modify (xqr, DV_NULL);
-  dk_free_box (xqr);
+  return 0;
 }
 
 
@@ -7491,11 +7492,12 @@ bif_xml_tree_doc_encoding (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 }
 
 
-void
+int
 xe_destroy (caddr_t box)
 {
   xml_entity_t * xe = (xml_entity_t *) box;
   xe->_->xe_destroy (xe);
+  return 0;
 }
 
 
@@ -9665,9 +9667,9 @@ xml_tree_init (void)
   bif_define ("__xml_deserialize_packed", bif_xml_deserialize_packed);
   bif_define ("xml_get_logical_path", bif_xml_get_logical_path);
   bif_define ("xml_follow_logical_path", bif_xml_follow_logical_path);
-  dk_mem_hooks (DV_XML_ENTITY, xe_make_copy, xe_destroy);
-  dk_mem_hooks (DV_XQI, box_non_copiable, xqi_destroy);
-  dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release);
+  dk_mem_hooks (DV_XML_ENTITY, xe_make_copy, xe_destroy, 0);
+  dk_mem_hooks (DV_XQI, box_non_copiable, xqi_destroy, 0);
+  dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release, 0);
   PrpcSetWriter (DV_XML_ENTITY, (ses_write_func) xe_serialize);
   PrpcSetWriter (DV_XPATH_QUERY, (ses_write_func) xqr_serialize);
   xpf_init();

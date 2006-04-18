@@ -2959,7 +2959,7 @@ bif_vt_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-void
+int
 sst_destroy (search_stream_t * sst)
 {
   dk_free_box ((caddr_t) sst->sst_all_ranges);
@@ -3483,6 +3483,6 @@ text_init (void)
   bif_define ("vt_parse", bif_vt_parse);
   bif_define ("int_log2x16", bif_int_log2x16);
   bif_define ("vt_hit_dist_weight", bif_vt_hit_dist_weight);
-  dk_mem_hooks(DV_TEXT_SEARCH, box_non_copiable, (box_free_f) sst_destroy);
+  dk_mem_hooks(DV_TEXT_SEARCH, box_non_copiable, (box_destr_f) sst_destroy, 0);
 }
 

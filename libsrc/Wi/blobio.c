@@ -354,15 +354,16 @@ comp_copy (caddr_t comp)
   return ret;
 }
 
-static void
+static int
 comp_destroy (caddr_t comp)
 {
+  return 0;
 }
 
 
 /* Destruction and copy semantics for BLOB handlers */
 
-void
+int
 bh_destroy (caddr_t box)
 {
   blob_handle_t *bh = (blob_handle_t *) box;
@@ -381,6 +382,7 @@ bh_destroy (caddr_t box)
       dk_free_box (bh->bh_source_session);
       bh->bh_source_session = NULL;
     }
+  return 0;
 }
 
 
@@ -569,11 +571,11 @@ blobio_init (void)
   rt[DV_LONG_WIDE] = (macro_char_func) box_read_long_wide_string;
   rt[DV_COMPOSITE] = (macro_char_func) box_read_composite;
   PrpcSetWriter (DV_COMPOSITE, (ses_write_func) print_composite);
-  dk_mem_hooks (DV_COMPOSITE, comp_copy, comp_destroy);
+  dk_mem_hooks (DV_COMPOSITE, comp_copy, comp_destroy, 0);
   /* Hooks added for BLOB handlers to process page directories */
-  dk_mem_hooks (DV_BLOB_HANDLE, bh_copy, bh_destroy);
-  dk_mem_hooks (DV_BLOB_XPER_HANDLE, bh_copy, bh_destroy);
-  dk_mem_hooks (DV_BLOB_WIDE_HANDLE, bh_copy, bh_destroy);
+  dk_mem_hooks (DV_BLOB_HANDLE, bh_copy, bh_destroy, 0);
+  dk_mem_hooks (DV_BLOB_XPER_HANDLE, bh_copy, bh_destroy, 0);
+  dk_mem_hooks (DV_BLOB_WIDE_HANDLE, bh_copy, bh_destroy, 0);
 
   PrpcSetWriter (DV_SYMBOL, (ses_write_func) symbol_write);
   rt[DV_SYMBOL] = box_read_symbol;

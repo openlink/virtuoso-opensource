@@ -9566,7 +9566,7 @@ make_qr_exec_params(caddr_t *params, int named_pars)
 }
 
 
-static void
+static int
 type_lc_destroy (caddr_t box)
 {
   caddr_t *ret = (caddr_t *) box;
@@ -9574,7 +9574,7 @@ type_lc_destroy (caddr_t box)
   query_t *qr;
 
   if (!IS_BOX_POINTER(ret))
-    return;
+    return -1;
 
   qr = (query_t *) ret[0];
   lc = (local_cursor_t *) ret[1];
@@ -9590,7 +9590,7 @@ type_lc_destroy (caddr_t box)
     ret[0] = NULL;
   }
 
-  return;
+  return 0;
 }
 
 static caddr_t
@@ -9739,7 +9739,6 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  if (ssl_is_settable (args[7]))
 	    {
 	      caddr_t *ret = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t), DV_EXEC_CURSOR);
-	      dk_mem_hooks(DV_EXEC_CURSOR, box_non_copiable, type_lc_destroy);
 	      ret[0] = (caddr_t) qr;
 	      ret[1] = (caddr_t) lc;
 	      ret[2] = (caddr_t) (ptrlong) n_cols;
@@ -11378,6 +11377,7 @@ sql_bif_init (void)
   return;
   else
   bifs_initialized = 1;
+  dk_mem_hooks (DV_EXEC_CURSOR, box_non_copiable, type_lc_destroy, 0);
 
   ssl_constant_init ();
   bif_cursors_init();

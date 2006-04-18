@@ -2983,7 +2983,7 @@ blob_check (blob_handle_t * bh)
 	}
       if (!bh->bh_page_dir_complete && n > BL_DPS_ON_ROW)
 	n = BL_DPS_ON_ROW;
-      if (dp <0 || dp > it->it_storage->dbs_n_pages)
+      if (/* dp < 0 ||   -- just tell me how could it be? */ dp > it->it_storage->dbs_n_pages)
 	{
 	  error = 1;
 	  log_info ("Out of range  blob dir page refd start = %d L=%d ", bh->bh_page, dp);

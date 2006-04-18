@@ -1507,7 +1507,7 @@ bif_wb_apply (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-void
+int
 vtb_destroy (vt_batch_t * vtb)
 {
   if (vtb->vtb_words->ht_inserts)
@@ -1515,6 +1515,7 @@ vtb_destroy (vt_batch_t * vtb)
   id_hash_free (vtb->vtb_words);
   dk_free_box (vtb->vtb_min_word.lm_memblock);
   dk_free_box (vtb->vtb_max_word.lm_memblock);
+  return 0;
 }
 
 void
@@ -3029,7 +3030,7 @@ bif_text_init (void)
 
   bif_define_typed ("vt_is_noise", bif_vt_is_noise, &bt_integer);
   vt_noise_word_init ();
-  dk_mem_hooks(DV_TEXT_BATCH, box_non_copiable, (box_free_f) vtb_destroy);
+  dk_mem_hooks(DV_TEXT_BATCH, box_non_copiable, (box_destr_f) vtb_destroy, 0);
   PrpcSetWriter (DV_TEXT_BATCH, (ses_write_func) vtb_serialize);
 
   text_init ();

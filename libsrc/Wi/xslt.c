@@ -3188,8 +3188,8 @@ caddr_t xsltvar_uname_sheet;
 void
 xslt_init (void)
 {
-  dk_mem_hooks (DV_DICT_HASHTABLE, box_dict_hashtable_copy_hook, box_dict_hashtable_free_hook);
-  dk_mem_hooks (DV_DICT_ITERATOR, box_dict_iterator_copy_hook, box_dict_iterator_free_hook);
+  dk_mem_hooks (DV_DICT_HASHTABLE, box_dict_hashtable_copy_hook, box_dict_hashtable_destr_hook, 0);
+  dk_mem_hooks (DV_DICT_ITERATOR, box_dict_iterator_copy_hook, box_dict_iterator_destr_hook, 0);
   PrpcSetWriter (DV_DICT_ITERATOR, (ses_write_func) box_dict_iterator_serialize);
 
   xslt_meta_hash = id_str_hash_create (101);

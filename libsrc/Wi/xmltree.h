@@ -801,11 +801,11 @@ void xp_free (xparse_ctx_t * xp);
 #define xqi_free(q) dk_free_box ((caddr_t) q)
 
 
-void xe_destroy (caddr_t box);
+int xe_destroy (caddr_t box);
 void xe_sqlnarrow_string_value (xml_entity_t * xe, caddr_t * ret, dtp_t dtp);
 
 int xe_down_transit (xml_entity_t * xe);
-void xe_destroy (caddr_t box);
+int xe_destroy (caddr_t box);
 extern const char * xe_get_sysid (xml_entity_t *xe, const char *ref_name);
 extern const char * xe_get_sysid_base_uri(xml_entity_t *xe);
 

@@ -6565,10 +6565,11 @@ dtd_release (dtd_t * dtd)
 }
 
 
-void
+int
 xml_dtd_destroy (caddr_t box)
 {
   dtd_release (((dtd_t **) box)[0]);
+  return 0;
 }
 
 
@@ -6825,7 +6826,7 @@ void
 bif_xper_init (void)
 {
   dtd_refctr_mtx = mutex_allocate ();
-  dk_mem_hooks (DV_XML_DTD, xml_dtd_copy, xml_dtd_destroy);
+  dk_mem_hooks (DV_XML_DTD, xml_dtd_copy, xml_dtd_destroy, 0);
   PrpcSetWriter (DV_XML_DTD, (ses_write_func) dtd_ses_write_func);
 #ifdef MALLOC_DEBUG
   xec_xper_xe.dbg_xe_copy = dbg_xp_copy;
