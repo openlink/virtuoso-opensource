@@ -95,6 +95,7 @@ libutil_la_SOURCES = \
 
 
 BUILT_SOURCES = getdate.c
+CLEANFILES = getdate.c
 
 getdate.c: getdate.y
 	$(YACC) -ogetdate.c $(top_srcdir)/libsrc/util/getdate.y
