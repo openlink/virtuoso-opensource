@@ -232,6 +232,8 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
 	ppath=>'/DAV/VAD/wiki/Root/', 
 	vsp_user=>'Wiki', 
 	opts=>vector('executable','yes'));
+      insert into WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER)
+	values ('%', _home || '/main', self.cluster_id);
     }
   return (self as web_app).wa_new_inst(login);
 }
