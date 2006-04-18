@@ -5758,6 +5758,9 @@ create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns v
   if (position (orig_res_ext_upper,
     vector ('.XML', '.RDF', '.RSS', '.RSS2', '.XBEL', '.FOAF', '.OPML', '.WSDL', '.BPEL', '.VSPX', '.VSCX', '.XDDL') ) )
     return 'text/xml';
+  if (position (orig_res_ext_upper,
+    vector ('.TTL') ) )
+    return 'application/text+ttl';
   return null;
 }
 ;
@@ -5817,7 +5820,9 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
             }
         }
       -- dbg_obj_princ ('guessing ', html_start);
-      -- dbg_obj_princ ('based on ', content, 'dtp', __tag (content));
+    --dbg_obj_princ ('based on ', content, 'dtp', __tag (content));
+    if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] exists(/rdf:rdf/rdf:*)', html_start))
+      return 'application/rdf+xml';
       if (xpath_eval ('[xmlns:atom="http://purl.org/atom/ns#"] exists (/atom:feed[@version])', html_start))
         return 'application/atom+xml';
       if (xpath_eval ('[xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml"] exists (/w:worddocument)', html_start))
@@ -6213,6 +6218,37 @@ errexit:
 }
 ;
 
+create function "DAV_EXTRACT_RDF_application/rdf+xml" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas any;
+  dbg_obj_princ ('DAV_EXTRACT_RDF_application/rdf+xml (', orig_res_name, content, html_start, ')');
+  whenever sqlstate '*' goto errexit;
+  doc := xtree_doc (content, 0);
+  metas := vector (
+        'http://www.openlinksw.com/virtdav#dynRdfExtractor', '"application/rdf+xml"', NULL,
+        'http://www.openlinksw.com/schemas/RDF#format', '"RDF+XML"', 'RDF+XML'
+        );
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas);
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/text+ttl" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas any;
+  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/rdf+xml (', orig_res_name, content, html_start, ')');
+  whenever sqlstate '*' goto errexit;
+  doc := xtree_doc (content, 0);
+  metas := vector (
+        'http://www.openlinksw.com/virtdav#dynRdfExtractor', '"application/text+ttl"', NULL,
+        'http://www.openlinksw.com/schemas/RDF#format', '"TURTLE"', 'TURTLE'
+        );
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas);
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
 
 create function "DAV_EXTRACT_RDF_application/foaf+xml" (in orig_res_name varchar, inout content any, inout html_start any)
 {
