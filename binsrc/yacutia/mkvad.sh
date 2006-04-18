@@ -32,6 +32,7 @@ HTTPPORT=${HTTPPORT-$_HTTPPORT}
 #PORT=1311
 #HTTPPORT=8311
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
+SERVER=${SERVER-}
 HOST=${HOST-localhost}
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_fs.xml"
@@ -127,10 +128,10 @@ START_SERVER()
   timeout=60
 
   ECHO "Starting Virtuoso server ..."
-  if [ "x$HOST_OS" != "x" ]
-  then
-      if [ "x$BUILD" != "x" ]
-      then
+  if [ "z$SERVER" != "z" ] ; then
+      "$SERVER" +foreground &
+  elif [ "x$HOST_OS" != "x" ] ; then
+      if [ "x$BUILD" != "x" ] ; then
     $BUILD/../bin/virtuoso-odbc-t +foreground &
       else
     virtuoso-odbc-t +foreground &
@@ -179,6 +180,7 @@ DO_COMMAND()
   $ISQL $DSN $uid $passwd ERRORS=stdout VERBOSE=OFF PROMPT=OFF "EXEC=$command" >> "${LOGFILE}.tmp"
   if test $? -ne 0
   then
+    cat "${LOGFILE}.tmp" >> $LOGFILE
     LOG "***FAILED: starting $command"
   else
     if egrep '^\*\*\*' "${LOGFILE}.tmp" > /dev/null

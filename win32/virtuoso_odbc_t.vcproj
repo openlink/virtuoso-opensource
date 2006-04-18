@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="virtuoso_odbc_t"
+	Name="virtuoso_t"
 	ProjectGUID="{F4E88BFA-FC96-439D-9E67-0A92AB541EE0}"
 	SccProjectName=""
 	SccLocalPath="">
@@ -14,7 +14,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\virtuoso_odbc_t"
+			IntermediateDirectory="$(ConfigurationName)\virtuoso_t"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="FALSE"
@@ -31,10 +31,10 @@
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\virtuoso_odbc_t/virtuoso_odbc_t.pch"
-				AssemblerListingLocation="$(ConfigurationName)\virtuoso_odbc_t/"
-				ObjectFile="$(ConfigurationName)\virtuoso_odbc_t/"
-				ProgramDataBaseFileName="$(ConfigurationName)\virtuoso_odbc_t/"
+				PrecompiledHeaderFile="$(ConfigurationName)\virtuoso_t/virtuoso_t.pch"
+				AssemblerListingLocation="$(ConfigurationName)\virtuoso_t/"
+				ObjectFile="$(ConfigurationName)\virtuoso_t/"
+				ProgramDataBaseFileName="$(ConfigurationName)\virtuoso_t/"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -45,17 +45,17 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="threadw.lib wi.lib dksrv.lib util.lib xml.lib zlib.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				OutputFile="$(ConfigurationName)/virtuoso-odbc-t.exe"
+				OutputFile="$(ConfigurationName)/virtuoso-t.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)/virtuoso_odbc_t.pdb"
+				ProgramDatabaseFile="$(ConfigurationName)/virtuoso_t.pdb"
 				SubSystem="1"/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName="$(ConfigurationName)/virtuoso_odbc_t.tlb"/>
+				TypeLibraryName="$(ConfigurationName)/virtuoso_t.tlb"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -81,7 +81,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\virtuoso_odbc_t"
+			IntermediateDirectory="$(ConfigurationName)\virtuoso_t"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="FALSE"
@@ -99,10 +99,10 @@
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="FALSE"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="$(ConfigurationName)\virtuoso_odbc_t/virtuoso_odbc_t.pch"
-				AssemblerListingLocation="$(ConfigurationName)\virtuoso_odbc_t/"
-				ObjectFile="$(ConfigurationName)\virtuoso_odbc_t/"
-				ProgramDataBaseFileName="$(ConfigurationName)\virtuoso_odbc_t/"
+				PrecompiledHeaderFile="$(ConfigurationName)\virtuoso_t/virtuoso_t.pch"
+				AssemblerListingLocation="$(ConfigurationName)\virtuoso_t/"
+				ObjectFile="$(ConfigurationName)\virtuoso_t/"
+				ProgramDataBaseFileName="$(ConfigurationName)\virtuoso_t/"
 				BrowseInformation="0"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -113,17 +113,17 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="threadw.lib wi.lib dksrv.lib util.lib xml.lib zlib.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				OutputFile="$(ConfigurationName)/virtuoso-odbc-t.exe"
+				OutputFile="$(ConfigurationName)/virtuoso-t.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
 				IgnoreDefaultLibraryNames="LIBCMT"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)/virtuoso_odbc_t.pdb"
+				ProgramDatabaseFile="$(ConfigurationName)/virtuoso_t.pdb"
 				SubSystem="1"/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName="$(ConfigurationName)/virtuoso_odbc_t.tlb"/>
+				TypeLibraryName="$(ConfigurationName)/virtuoso_t.tlb"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool

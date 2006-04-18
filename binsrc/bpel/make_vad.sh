@@ -6,7 +6,7 @@ LOGFILE="${LOGDIR}/make_bpel_vad.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_fs.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
-SERVER=${SERVER-virtuoso}
+SERVER=${SERVER-}
 THOST=${THOST-localhost}
 TPORT=${TPORT-8445}
 PORT=${PORT-1940}
@@ -59,8 +59,9 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "x$HOST_OS" != "x" ]
-	then
+  if [ "z$SERVER" != "z" ] ; then
+      "$SERVER" +foreground &
+  elif [ "x$HOST_OS" != "x" ] ; then
 	  virtuoso-odbc-t.exe +foreground &
   else
 	  virtuoso +wait
@@ -234,7 +235,9 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "x$HOST_OS" != "x" ]
+  if [ "z$SERVER" != "z" ] ; then
+      "$SERVER" +foreground &
+  elif [ "x$HOST_OS" != "x" ]
 	then
 	  virtuoso-odbc-t.exe +foreground &
   else

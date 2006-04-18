@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="libvirtuoso_odbc_t"
+	Name="libvirtuoso_t"
 	ProjectGUID="{FB836C59-41E1-48EA-A59B-460AB56587EE}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -13,7 +13,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\libvirtuoso_odbc_t"
+			IntermediateDirectory="$(ConfigurationName)\libvirtuoso_t"
 			ConfigurationType="2"
 			CharacterSet="2">
 			<Tool
@@ -35,13 +35,13 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="threadw.lib wi.lib dksrv.lib util.lib xml.lib zlib.lib ws2_32.lib libeay32.lib ssleay32.lib tidy.lib"
-				OutputFile="$(OutDir)/libvirtuoso-odbc-t.dll"
+				OutputFile="$(OutDir)/libvirtuoso-t.dll"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;.\openssl"
 				IgnoreDefaultLibraryNames="LIBCMT"
 				ModuleDefinitionFile="..\binsrc\virtuoso\libviwin32.def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/libvirtuoso_odbc_t.pdb"
+				ProgramDatabaseFile="$(OutDir)/libvirtuoso_t.pdb"
 				SubSystem="2"
 				TargetMachine="1"
 				FixedBaseAddress="1"/>
@@ -69,7 +69,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\libvirtuoso_odbc_t"
+			IntermediateDirectory="$(ConfigurationName)\libvirtuoso_t"
 			ConfigurationType="2"
 			CharacterSet="2">
 			<Tool
@@ -94,13 +94,13 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="threadw.lib wi.lib dksrv.lib util.lib xml.lib zlib.lib ws2_32.lib libeay32.lib ssleay32.lib tidy.lib"
-				OutputFile="$(OutDir)/libvirtuoso-odbc-t.dll"
+				OutputFile="$(OutDir)/libvirtuoso-t.dll"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;.\openssl"
 				IgnoreDefaultLibraryNames="LIBCMT"
 				ModuleDefinitionFile="..\binsrc\virtuoso\libviwin32.def"
 				GenerateDebugInformation="FALSE"
-				ProgramDatabaseFile="$(OutDir)/libvirtuoso_odbc_t.pdb"
+				ProgramDatabaseFile="$(OutDir)/libvirtuoso_t.pdb"
 				SubSystem="2"
 				TargetMachine="1"
 				FixedBaseAddress="1"/>

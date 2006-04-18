@@ -32,6 +32,7 @@ HTTPPORT=${HTTPPORT-$_HTTPPORT}
 #PORT=1311
 #HTTPPORT=8311
 HOST=${HOST-localhost}
+SERVER=${SERVER-}
 
 DSN="$HOST:$PORT"
 LOGFILE=mkdemo.output
@@ -124,7 +125,10 @@ START_SERVER()
   timeout=180
 
   ECHO "Starting Virtuoso DEMO server ..."
-  if [ "x$HOST_OS" != "x" ]
+  if [ "z$SERVER" != "z" ] 
+  then
+      "$SERVER" +foreground &
+  elif [ "x$HOST_OS" != "x" ]
   then
   virtuoso-odbc-t +foreground &
   else

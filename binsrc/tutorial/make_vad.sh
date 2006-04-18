@@ -5,7 +5,7 @@ LOGFILE="${LOGDIR}/make_tutorial_vad.log"
 STICKER_DAV="${LOGDIR}/make_tutorial_dav_vad.xml"
 STICKER_FS="${LOGDIR}/make_tutorial_fs_vad.xml"
 
-SERVER=${SERVER-virtuoso}
+SERVER=${SERVER-}
 THOST=${THOST-localhost}
 TPORT=${TPORT-8440}
 PORT=${PORT-1940}
@@ -70,8 +70,9 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "x$HOST_OS" != "x" ]
-  then
+  if [ "z$SERVER" != "z" ] ; then
+      "$SERVER" +foreground &
+  elif [ "x$HOST_OS" != "x" ] ; then
       if [ "z$BUILD" != "z" ] ; then
     $BUILD/../bin/virtuoso-odbc-t +foreground &
   else

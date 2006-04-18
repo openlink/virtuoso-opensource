@@ -32,6 +32,7 @@ HTTPPORT=${HTTPPORT-$_HTTPPORT}
 #PORT=1311
 #HTTPPORT=8311
 HOST=${HOST-localhost}
+SERVER=${SERVER-}
 
 DSN=$HOST:$PORT
 SILENT=${SILENT-0}
@@ -142,8 +143,10 @@ START_SERVER()
    then
        timeout=180
 
-       ECHO "Starting Virtuoso DOC server ..."
-       if [ "x$HOST_OS" != "x" ]
+       ECHO "Starting Virtuoso server ..."
+       if [ "z$SERVER" != "z" ] ; then
+	   "$SERVER" +foreground &
+       elif [ "x$HOST_OS" != "x" ]
        then
            virtuoso-odbc-t +foreground &
        else

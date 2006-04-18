@@ -1,5 +1,5 @@
 Microsoft Visual Studio Solution File, Format Version 8.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_odbc_t", "Virtuoso_odbc_t.vcproj", "{69204472-6F3E-4D1F-B264-89AA58C523ED}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_t", "Virtuoso_odbc_t.vcproj", "{69204472-6F3E-4D1F-B264-89AA58C523ED}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B1C0F012-0314-491A-981C-FEC0C0E87B5E} = {B1C0F012-0314-491A-981C-FEC0C0E87B5E}
 		{41AE0C69-33A0-4683-AE2C-6E85E891E001} = {41AE0C69-33A0-4683-AE2C-6E85E891E001}
@@ -67,7 +67,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "isql", "isql_native.vcproj"
 		{DBD2BEFD-3539-4CAC-9F08-2A55E9E04396} = {DBD2BEFD-3539-4CAC-9F08-2A55E9E04396}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libvirtuoso_odbc_t", "libvirtuoso_odbc_t.vcproj", "{FB836C59-41E1-48EA-A59B-460AB56587EE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libvirtuoso_t", "libvirtuoso_odbc_t.vcproj", "{FB836C59-41E1-48EA-A59B-460AB56587EE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B1C0F012-0314-491A-981C-FEC0C0E87B5E} = {B1C0F012-0314-491A-981C-FEC0C0E87B5E}
 		{9322DB42-649D-4219-8D2B-A1B6B1DF3247} = {9322DB42-649D-4219-8D2B-A1B6B1DF3247}
@@ -80,7 +80,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libvirtuoso_odbc_t", "libvi
 		{DBD2BEFD-3539-4CAC-9F08-2A55E9E04396} = {DBD2BEFD-3539-4CAC-9F08-2A55E9E04396}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_odbc_sample_t", "virtuoso_odbc_sample_t.vcproj", "{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_sample_t", "virtuoso_odbc_sample_t.vcproj", "{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B1C0F012-0314-491A-981C-FEC0C0E87B5E} = {B1C0F012-0314-491A-981C-FEC0C0E87B5E}
 		{FB836C59-41E1-48EA-A59B-460AB56587EE} = {FB836C59-41E1-48EA-A59B-460AB56587EE}
@@ -93,12 +93,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_odbc_sample_t", "v
 		{4676C5FB-71DE-44C9-90DB-324C970D058D} = {4676C5FB-71DE-44C9-90DB-324C970D058D}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_odbc_javavm_t", "virtuoso_odbc_javavm_t.vcproj", "{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_javavm_t", "virtuoso_odbc_javavm_t.vcproj", "{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FB836C59-41E1-48EA-A59B-460AB56587EE} = {FB836C59-41E1-48EA-A59B-460AB56587EE}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_odbc_clr_t", "virtuoso_odbc_clr_t.vcproj", "{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_clr_t", "virtuoso_odbc_clr_t.vcproj", "{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FB836C59-41E1-48EA-A59B-460AB56587EE} = {FB836C59-41E1-48EA-A59B-460AB56587EE}
 	EndProjectSection
@@ -110,7 +110,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "demodb", "demodb.vcproj", "
 		{69204472-6F3E-4D1F-B264-89AA58C523ED} = {69204472-6F3E-4D1F-B264-89AA58C523ED}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_odbc_php_t", "virtuoso_odbc_php_t.vcproj", "{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_php_t", "virtuoso_odbc_php_t.vcproj", "{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FB836C59-41E1-48EA-A59B-460AB56587EE} = {FB836C59-41E1-48EA-A59B-460AB56587EE}
 	EndProjectSection
@@ -172,6 +172,15 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hosting_perl", "hosting_per
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hosting_python", "hosting_python.vcproj", "{A326A0DF-4F93-4DF6-813D-0B64F98B389F}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "im", "im.vcproj", "{A326A0DF-4F93-4DF6-813D-0B64F98B389F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{82BC51DB-BC68-4016-B477-F02CB908343E} = {82BC51DB-BC68-4016-B477-F02CB908343E}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VirtuosoClient.NET", "..\binsrc\VirtuosoClient.Net\VirtuosoClient.NET.csproj", "{50E2DD3F-5B5E-4E62-9206-A41824905CD7}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
@@ -250,7 +259,9 @@ Global
 		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Release.ActiveCfg = Release|Win32
 		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Release.Build.0 = Release|Win32
 		{CA03DBF1-2C7E-4732-8F41-65030876DDE7}.Debug.ActiveCfg = Debug|Win32
+		{CA03DBF1-2C7E-4732-8F41-65030876DDE7}.Debug.Build.0 = Debug|Win32
 		{CA03DBF1-2C7E-4732-8F41-65030876DDE7}.Release.ActiveCfg = Release|Win32
+		{CA03DBF1-2C7E-4732-8F41-65030876DDE7}.Release.Build.0 = Release|Win32
 		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Debug.ActiveCfg = Debug|Win32
 		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Debug.Build.0 = Debug|Win32
 		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Release.ActiveCfg = Release|Win32
@@ -315,6 +326,14 @@ Global
 		{A326A0DF-4F93-4DF6-813D-0B64F98B389F}.Debug.Build.0 = Debug|Win32
 		{A326A0DF-4F93-4DF6-813D-0B64F98B389F}.Release.ActiveCfg = Release|Win32
 		{A326A0DF-4F93-4DF6-813D-0B64F98B389F}.Release.Build.0 = Release|Win32
+		{A326A0DF-4F93-4DF6-813D-0B64F98B389F}.Debug.ActiveCfg = Debug|Win32
+		{A326A0DF-4F93-4DF6-813D-0B64F98B389F}.Debug.Build.0 = Debug|Win32
+		{A326A0DF-4F93-4DF6-813D-0B64F98B389F}.Release.ActiveCfg = Release|Win32
+		{A326A0DF-4F93-4DF6-813D-0B64F98B389F}.Release.Build.0 = Release|Win32
+		{50E2DD3F-5B5E-4E62-9206-A41824905CD7}.Debug.ActiveCfg = Debug|.NET
+		{50E2DD3F-5B5E-4E62-9206-A41824905CD7}.Debug.Build.0 = Debug|.NET
+		{50E2DD3F-5B5E-4E62-9206-A41824905CD7}.Release.ActiveCfg = Release|.NET
+		{50E2DD3F-5B5E-4E62-9206-A41824905CD7}.Release.Build.0 = Release|.NET
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

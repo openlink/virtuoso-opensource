@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="virtuoso_odbc_sample_t"
+	Name="virtuoso_sample_t"
 	ProjectGUID="{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -13,7 +13,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\virtuoso_odbc_sample_t"
+			IntermediateDirectory="$(ConfigurationName)\virtuoso_sample_t"
 			ConfigurationType="1"
 			CharacterSet="2">
 			<Tool
@@ -33,12 +33,12 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libvirtuoso-odbc-t.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				OutputFile="$(OutDir)/virtuoso-odbc-sample-t.exe"
+				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib"
+				OutputFile="$(OutDir)/virtuoso-sample-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/virtuoso_odbc_sample_t.pdb"
+				ProgramDatabaseFile="$(OutDir)/virtuoso_sample_t.pdb"
 				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
@@ -65,7 +65,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\virtuoso_odbc_sample_t"
+			IntermediateDirectory="$(ConfigurationName)\virtuoso_sample_t"
 			ConfigurationType="1"
 			CharacterSet="2">
 			<Tool
@@ -87,12 +87,12 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libvirtuoso-odbc-t.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				OutputFile="$(OutDir)/virtuoso-odbc-sample-t.exe"
+				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib"
+				OutputFile="$(OutDir)/virtuoso-sample-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/virtuoso_odbc_sample_t.pdb"
+				ProgramDatabaseFile="$(OutDir)/virtuoso_sample_t.pdb"
 				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
