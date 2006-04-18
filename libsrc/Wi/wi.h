@@ -73,7 +73,6 @@ typedef struct it_cursor_s	it_cursor_t;
 typedef struct page_map_s	page_map_t;
 typedef struct buffer_desc_s	buffer_desc_t;
 
-typedef int errcode;
 typedef struct remap_s remap_t;
 typedef struct buffer_pool_s buffer_pool_t;
 typedef struct hash_index_s hash_index_t;

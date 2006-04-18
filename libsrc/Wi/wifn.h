@@ -29,6 +29,7 @@
 #ifndef _WIFN_H
 #define _WIFN_H
 
+#include "wi.h"
 #include "widisk.h"
 #include "widd.h"
 #include "schspace.h"
@@ -223,8 +224,7 @@ void buf_untouch (buffer_desc_t * buf);
 #define BUF_BACKDATE(buf) (buf->bd_timestamp = buf->bd_pool->bp_ts - 2 * buf->bd_pool->bp_n_bufs)
 void buf_set_last (buffer_desc_t * buf);
 
-errcode buf_disk_read (buffer_desc_t * buf);
-errcode bufs_disk_read (buffer_desc_t **bufs, int n );
+int buf_disk_read (buffer_desc_t * buf);
 void buf_disk_write (buffer_desc_t * buf, dp_addr_t phy_dp_to);
 disk_stripe_t * dp_disk_locate (dbe_storage_t * dbs, dp_addr_t target, OFF_T * place);
 

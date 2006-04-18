@@ -969,7 +969,7 @@ long read_cum_time = 0;
 long write_cum_time = 0;
 int assertion_on_read_fail = 1;
 
-errcode
+int
 buf_disk_read (buffer_desc_t * buf)
 {
   long start;
