@@ -110,8 +110,8 @@
 #define _CONTEXT OPL_gd__CONTEXT
 #define CONTEXT  OPL_gd_CONTEXT
 
-static int yylex ();
-static int yyerror ();
+static int yylex (void *yylval, void *cookie);
+static int yyerror (char *s);
 
 #define EPOCH		1970
 #define HOUR(x)		((x) * 60)
@@ -647,16 +647,13 @@ static TABLE const MilitaryTable[] = {
 
 /* ARGSUSED */
 static int
-yyerror (s)
-     char *s ATTRIBUTE_UNUSED;
+yyerror (char *s)
 {
   return 0;
 }
 
 static int
-ToHour (Hours, Meridian)
-     int Hours;
-     MERIDIAN Meridian;
+ToHour (int Hours, MERIDIAN Meridian)
 {
   switch (Meridian)
     {
@@ -683,8 +680,7 @@ ToHour (Hours, Meridian)
 }
 
 static int
-ToYear (Year)
-     int Year;
+ToYear (int Year)
 {
   if (Year < 0)
     Year = -Year;
@@ -700,9 +696,7 @@ ToYear (Year)
 }
 
 static int
-LookupWord (yylval, buff)
-     YYSTYPE *yylval;
-     char *buff;
+LookupWord (YYSTYPE *yylval, char *buff)
 {
   register char *p;
   register char *q;
@@ -822,15 +816,14 @@ LookupWord (yylval, buff)
 }
 
 static int
-yylex (yylval, cookie)
-     YYSTYPE *yylval;
-     void *cookie;
+yylex (void *lval, void *cookie)
 {
   register unsigned char c;
   register char *p;
   char buff[20];
   int Count;
   int sign;
+  YYSTYPE *yylval = (YYSTYPE *) lval;
 
   for (;;)
     {
@@ -1043,9 +1036,7 @@ get_date (const char *p, const time_t *now)
 
 /* ARGSUSED */
 int
-main (ac, av)
-     int ac;
-     char *av[];
+main (int ac, char *av[])
 {
   char buff[MAX_BUFF_LEN + 1];
   time_t d;

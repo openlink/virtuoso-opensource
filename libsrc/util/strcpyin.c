@@ -41,7 +41,7 @@ StrCopyIn (char **poutStr, char *inStr, ssize_t size)
     *poutStr = strdup (inStr);
   else
     {
-      if ((outStr = malloc (size + 1)) != NULL)
+      if ((outStr = (char *) malloc (size + 1)) != NULL)
         {
           memcpy (outStr, inStr, size);
           outStr[size] = '\0';

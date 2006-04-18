@@ -48,7 +48,7 @@ strquote (char *s, ssize_t size, int quoteChr)
   if (size == SQL_NTS)
     size = strlen (s);
 
-  if ((pszOut = malloc (size + 3)) != NULL)
+  if ((pszOut = (char *) malloc (size + 3)) != NULL)
     {
       memcpy (&pszOut[1], s, size);
       pszOut[0] = quoteChr;
