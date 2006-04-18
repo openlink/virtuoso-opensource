@@ -1121,7 +1121,7 @@ mutex_enter (dk_mutex_t *mtx)
   else
     mtx->mtx_enters++;
 #else
-	rc = pthread_mutex_lock (mtx->mtx_handle);
+	rc = pthread_mutex_lock ((pthread_mutex_t*) mtx->mtx_handle);
 #endif
   CKRET (rc);
 #ifdef MTX_DEBUG
@@ -1155,7 +1155,7 @@ int
 mutex_try_enter (dk_mutex_t *mtx)
 {
 #ifndef MTX_DEBUG
-  return pthread_mutex_trylock (mtx->mtx_handle) == TRYLOCK_SUCCESS ? 1 : 0;
+  return pthread_mutex_trylock ((pthread_mutex_t *) mtx->mtx_handle) == TRYLOCK_SUCCESS ? 1 : 0;
 #else
   if (pthread_mutex_trylock ((pthread_mutex_t*) mtx->mtx_handle) == TRYLOCK_SUCCESS)
     {

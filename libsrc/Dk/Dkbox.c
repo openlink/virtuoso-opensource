@@ -844,7 +844,7 @@ DBG_NAME(box_copy) (DBG_PARAMS cbox_t box)
 #endif
     default:
       if (box_copier[tag])
-	return (box_copier[tag] (box));
+	return (box_copier[tag] ((caddr_t) box));
     }
   len = box_length (box);
   copy = DBG_NAME(dk_alloc_box) (DBG_ARGS len, tag);
@@ -889,7 +889,7 @@ DBG_NAME(box_copy_tree) (DBG_PARAMS cbox_t box)
 #endif
     default:
       if (box_copier[tag])
-	return (box_copier[tag] (box));
+	return (box_copier[tag] ((caddr_t) box));
     }
   len = box_length (box);
   copy = (box_t *) DBG_NAME(dk_alloc_box) (DBG_ARGS len, tag);

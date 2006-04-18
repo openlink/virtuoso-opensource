@@ -315,7 +315,7 @@ dk_set_position_of_string (dk_set_t set, const char *strg)
   int nth = 0;
   while (set)
     {
-      if (!strcmp (set->data, strg))
+      if (!strcmp ((const char *) set->data, strg))
 	return nth;
       nth++;
       set = set->next;
@@ -329,7 +329,7 @@ dk_set_get_keyword (dk_set_t set, const char *key_strg, void *dflt_val)
 {
   while (set)
     {
-      if (!strcmp (set->data, key_strg))
+      if (!strcmp ((const char *) set->data, key_strg))
 	return set->next->data;
       set = set->next->next;
     }

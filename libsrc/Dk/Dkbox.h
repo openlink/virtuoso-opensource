@@ -198,14 +198,14 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
     do { \
 	if (sizeof (area) - BOX_AUTO_OVERHEAD >= (n)) \
 	  { \
-	    ptr = (void *)(((char *) area) + BOX_AUTO_OVERHEAD); \
+	    ptr = (caddr_t)(((char *) area) + BOX_AUTO_OVERHEAD); \
 	    ((dtp_t *) &(area))[4] = (dtp_t) ((n) & 0xff); \
 	    ((dtp_t *) &(area))[5] = (dtp_t) ((n) >> 8); \
 	    ((dtp_t *) &(area))[6] = 0; \
 	    ((dtp_t *) &(area))[7] = (dtp_t) (dtp); \
 	  } \
 	else \
-	  ptr = (void *)(dk_alloc_box (n, dtp)); \
+	  ptr = (caddr_t)(dk_alloc_box (n, dtp)); \
       } while (0)
 
 #else /* DOUBLE_ALIGN */

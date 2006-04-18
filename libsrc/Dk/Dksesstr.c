@@ -168,8 +168,8 @@ int
 utf8_align_memcpy (void *dst, const void *src, size_t len, size_t *pnwc, int *space_exausted)
 {
   size_t ret = strdev_round_utf8_partial_string (
-      src, len,
-      dst, len,
+      (const unsigned char *) src, len,
+      (unsigned char *) dst, len,
       pnwc,
       space_exausted);
   if (ret == (size_t) -1)
@@ -875,7 +875,7 @@ strses_deserialize (dk_session_t * session, dtp_t macro)
       caddr_t str;
 
       /* WIRE PROTO: i-th segment */
-      str = scan_session_boxing (session);
+      str = (caddr_t) scan_session_boxing (session);
 
       if (str && DV_TYPE_OF (str) != DV_STRING)
 	{ /* being paranoic is a good thing */
@@ -885,7 +885,7 @@ strses_deserialize (dk_session_t * session, dtp_t macro)
 	}
 
       if (!str)
-	dk_free_tree (strses);
+	dk_free_tree ((box_t) strses);
 
       MARSH_CHECK_BOX (str);
 
