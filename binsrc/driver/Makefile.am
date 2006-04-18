@@ -86,7 +86,7 @@ libvirtodbc_la_SOURCES = \
 
 libvirtodbc_u_la_CFLAGS = $(VIRTODBC_CFLAGS)
 libvirtodbc_u_la_SOURCES = \
-	$(top_srcdir)/libsrc/Wi/CLIw.c
+	$(top_srcdir)/libsrc/Wi/CLIw.c \
 	$(top_srcdir)/libsrc/Wi/CLIsql3W.c
 
 
