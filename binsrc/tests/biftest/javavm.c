@@ -3287,7 +3287,7 @@ bif_init_func_javavm (void)
   sql_class_imp_t *imp_map = get_imp_map_ptr (UDT_LANG_JAVA);
   log_info ("Hosting Java VM %s", JAVAVM_VERSION);
   java_vm_mutex = mutex_allocate ();
-  dk_mem_hooks (DV_EXTENSION_OBJ, dv_extension_obj_copy, java_object_dv_free);
+  dk_mem_hooks (DV_EXTENSION_OBJ, dv_extension_obj_copy, java_object_dv_free, 0);
 
   bif_define ("java_load_class", bif_java_load_class);
   bif_define ("java_new_object", bif_java_new_object);
