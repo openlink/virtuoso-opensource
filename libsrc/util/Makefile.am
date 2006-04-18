@@ -94,6 +94,13 @@ libutil_la_SOURCES = \
 	pcrelib/study.c
 
 
+BUILT_SOURCES = getdate.c
+
+getdate.c: getdate.y
+	$(YACC) -ogetdate.c $(top_srcdir)/libsrc/util/getdate.y
+	
+
+
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute
