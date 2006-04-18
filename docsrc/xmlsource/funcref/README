@@ -1,1 +1,4 @@
 Please use template.xml when writing new refentries
+Or better use
+template.sh name_of_your_function
+to get a filled template.

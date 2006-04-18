@@ -1,16 +1,16 @@
 <chapter label="rdfandsparql.xml" id="rdfandsparql"><title>RDF Database and SPARQL</title>
-<abstract>This chapter discusses Virtuoso's RDF triple storage and query capabilities. This is divided into a discussion of the RDF data representation, the SPARQL and
- SQL API's, protocol support and standard compliance notes.
-</abstract>
-<sect1 id="rdfimplementationstatus"><title>Implementation Status</title>
+<abstract>
+<para>
+Starting with version4.5, Virtuoso provides built-in support for SPARQL, the standard query language for RDF and the semantic web.   
 
-<para>Virtuoso's RDF support is at an early implementation  stage. The SPARQL language is fairly complete but none of the support functions such as data loading or triple storage are optimized. Many pieces of the present implementation that are written in Virtuoso/PL will be rewritten in C for performance.</para>
-<para>Also, the triple store has no specific security model. Thus access rights of the tables and stored procedures involved in the process dictate who can access these features.</para>
-<para>All triples of all graphs are stored in a single default system table called
-<emphasis>DB.DBA.RDF_QUAD</emphasis>. This will change in the next release, where a complex meta-schema system will be introduced for allowing graphs to be stored in different tables, potentially having different index structures, optionally also full text index on long object values. The meta-schema support will also make it possible to map native
- SQL tables into the RDF SPARQL -queriable space, as well as introduce finer-grained security.</para>
-<para>Hence the RDF subsystem is offered for  review but is not a productized whole. Benchmark results obtained with it are tentative and reflect a non-optimized state.</para>
-</sect1>
+Adoption of SPARQL with Virtuoso is effortless, as any  existing SQL client applications and stored procedures can take advantage of SPARQL simply by using it in the place of or inside SQL queries.  Additionally, Virtuoso offers the standard SPARQL protocol to HTTP clients.
+</para>
+
+<para>
+This chapter discusses Virtuoso's RDF triple storage and query capabilities. This is divided into a discussion of the RDF data representation, the SPARQL and
+ SQL API's, protocol support and standard compliance notes.
+</para>
+</abstract>
 <sect1 id="rdfdatarepresentation"><title>Data Representation</title>
 <para>This section covers how Virtuoso stores RDF triples. The IRI_ID built-in data type is introduced, along with the default table structures used for triple persistency.</para>
 <sect2 id="rdfiriidtype"><title>IRI_ID Type</title>
@@ -289,10 +289,12 @@ varchar
 <para>
 It is possible to pass parameters to the SPARQL query via Virtuoso-specific syntax extension.
 '??' or '$?' indicates a positional parameter similar to '?' in plain SQL. '??' can be used in graph patterns as well as plain SPARQL variable name.
-The value of parameter should be passed in SQL form, i.e. this should be a number or a untyped string. An IRI ID can not be passed, but absolute IRI can.  Using this notation, any dynamic SQL client, whether ODBC, JDBC or other can execute parmetrized SPARQL queries, binding parametres just as for dynamic SQL. 
+The value of parameter should be passed in SQL form, i.e. this should be a number or a untyped string.
+An IRI ID can not be passed, but absolute IRI can.
+Using this notation, any dynamic SQL client, whether ODBC, JDBC or other can execute parmetrized SPARQL queries, binding parametres just as for dynamic SQL. 
 </para>
 <programlisting><![CDATA[
-create function param_passing_demo ()
+SQL> create function param_passing_demo ();
 {
   declare stat, msg varchar;
   declare mdata, rset any;
@@ -307,11 +309,7 @@ create function param_passing_demo ()
   return rset[0][0];
 }
 
-
-Done. -- 00000 msec.
-
-
--- Line 42: select param_passing_demo ()
+SQL> select param_passing_demo ();
 callret
 VARCHAR
 _______________________________________________________________________________
@@ -320,7 +318,48 @@ http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#four
 
 1 Rows. -- 00000 msec.
 ]]></programlisting>
-<para>SPARQL ASK query can be used as an argument of SQL EXISTS predicate.
+<para>An inline  SPARQL query can refer to SQL variables that are in scope in the SQL query or stored procedure containing it.
+Virtuoso extends the SPARQL syntax with a special notation to this effect. A reference to SQL variable X can be written as '?:X' or '$:X'.
+A reference to column C of table or sub-select with alias T can be written as '?:T.C' or '$:T.C'.
+Both notations can be used in any place where a variable name is allowed, except 'AS' clause described below.
+</para>
+<para>A column of a result set of a SPARQL SELECT can be used in SQL code inside a for statement just like any column from a SQL select.
+</para>
+<para>SQL rules about double-quoted names are applicable to variables that are passed to a SPARQL query or selected  from one.
+If a variable name contains unusual characters or should not be normalized according to SQL conventions then the
+name should use double quotes for escaping. E.g., the notation '?:"OrderLine"' will always refer to variable or column
+titled '"OrderLine"' whereas '?:OrderLine' can be converted to 'ORDERLINE' or 'orderline'.
+</para>
+<para>It is safer to avoid using variable names that conflict with column names of RDF system tables, esp. 'G', 'P', 'S' and 'O'.
+These names are not reserved now but they may cause subtle bugs when the SPARQL subquery is compiled into SQL code that refers to table columns of same names.
+Some of these names may be rejected as syntax errors by future Virtuoso versions.
+</para>
+<programlisting><![CDATA[
+SQL> create procedure sql_vars_demo ();
+{
+#pragma prefix sort0: <http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#>
+  declare RES varchar;
+  declare obj integer;
+  result_names (RES);
+  obj := 4;
+  for (sparql select ?subj where { graph ?g { ?subj sort0:int1 ?:obj } } ) do
+    result (RES);
+}
+
+SQL> sql_vars_demo ();
+RES
+VARCHAR
+_______________________________________________________________________________
+
+http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#four
+
+1 Rows. -- 00000 msec.
+]]></programlisting>
+<para>The example also demonstrates the Virtuoso/PL pragma line for procedure-wide declarations of namespace prefixes.
+This makes the code more readable and eliminates duplicate declarations of namespace prefixes when the procedure
+contains many SPARQL fragments that refer to a common set of namespaces.
+</para>
+<para>SPARQL ASK query can be used as an argument of the SQL EXISTS predicate.
 </para>
 <programlisting><![CDATA[
 create function sparql_ask_demo () returns varchar
@@ -331,10 +370,7 @@ create function sparql_ask_demo () returns varchar
     return 'NO';
 }
 
-
-Done. -- 00000 msec.
-
--- Line 52: select sparql_ask_demo ()
+SQL> select sparql_ask_demo ();
 _______________________________________________________________________________
 
 YES
@@ -347,7 +383,11 @@ YES
 define parameter-qname parameter-value
 </programlisting>
 <para>Supported parameters are 'output:valmode' and 'output:format'</para>
-<para>'output:valmode' sets the SQL representation used for values in the result set. In most cases applications need SQL values to be returned by SPARQL . By default the query returns a result set of values in SQL format and behaves as a typical SQL select. To compose triple vectors in Virtuoso/PL code application may need data in 'long' format. If the query contains a</para>
+<para>'output:valmode' sets the SQL representation used for values in the result set.
+In most cases applications need SQL values to be returned by SPARQL.
+By default the query returns a result set of values in SQL format and behaves as a typical SQL select.
+To compose triple vectors in Virtuoso/PL code application may need data in 'long' format.
+If the query contains a</para>
 <programlisting>
 define output:valmode 'LONG'
 </programlisting>
@@ -577,6 +617,16 @@ create function DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any)
 </sect2>
 </sect1>
 <sect1 id="rdfsparqlimplementationextent"><title>SPARQL Implementation Extent</title>
+
+
+<para>Virtuoso's RDF support is at an early implementation  stage. The SPARQL language is fairly complete but none of the support functions such as data loading or triple storage are optimized. Many pieces of the present implementation that are written in Virtuoso/PL will be rewritten in C for performance.</para>
+<para>Also, the triple store has no specific security model. Thus access rights of the tables and stored procedures involved in the process dictate who can access these features.</para>
+<para>All triples of all graphs are stored in a single default system table called
+<emphasis>DB.DBA.RDF_QUAD</emphasis>. This will change in the next release, where a complex meta-schema system will be introduced for allowing graphs to be stored in different tables, potentially having different index structures, optionally also full text index on long object values. The meta-schema support will also make it possible to map native
+ SQL tables into the RDF SPARQL -queriable space, as well as introduce finer-grained security.</para>
+<para>Hence the RDF subsystem is offered for  review but is not a productized whole. Benchmark results obtained with it are tentative and reflect a non-optimized state.</para>
+
+
 <para>The current implementation does not support some SPARQL features.</para>
 <itemizedlist mark="bullet" spacing="compact">
 <listitem>Unicode characters in names are not supported.</listitem>

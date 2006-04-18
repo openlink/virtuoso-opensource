@@ -195,7 +195,7 @@ Virtuoso configuration file, e.g., virtuoso.ini, can contain these names as para
 It should be either server name including domain name, or an IP address in standard notation, if the server does not have any name.
 If Virtuoso default HTTP port is not equal to 80 then the port should be mentioned, e.g. &quot;www.example.com:8088&quot;.</member>
 <member>&quot;LocalHostNames&quot; lists all names that can be used to access the server, such as server names with and without domain name,
-IP addresses in Internet and intranets etc. The list is comma-delimited string of names. If an URIQA can reside on server's box,
+IP addresses in Internet and intranets etc. The list is comma-delimited string of names. If an URIQA client can reside on server's box,
 e.g. for debugging purposes, then it may be worth to add names &quot;localhost, localhost.localdomain, 127.0.0.1&quot; to this list.
 </member>
 <member>&quot;LocalHostMasks&quot; is similar to &quot;LocalHostNames&quot; but it lists patterns for names in SQL &quot;like&quot; operator style.
@@ -308,7 +308,7 @@ The current version of Virtuoso supports the following names of matching operati
 <member>&quot;server =&quot; -- URI server name (including port, if specified) should be equal to UH_MATCH_ENV;</member>
 <member>&quot;server like&quot; -- URI server name (including port, if specified) should be &quot;like&quot; to UH_MATCH_ENV;</member>
 <member>&quot;server in&quot; -- URI server name (including port, if specified) should be member of UH_MATCH_ENV vector of strings;</member>
-<member>&quot;server like in&quot; -- URI server name (including port, if specified) should be &quot;like&quot; to one mof mebers of UH_MATCH_ENV vector of strings;</member>
+<member>&quot;server like in&quot; -- URI server name (including port, if specified) should be &quot;like&quot; to one of members of UH_MATCH_ENV vector of strings;</member>
 <member>&quot;default&quot; -- Any URI will match so any request is passed to the handler if not handled before.</member>
 </simplelist>
 </sect2>
