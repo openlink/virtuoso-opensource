@@ -40,7 +40,7 @@ create user SOAP_SO_S_11;
 
 create table countries (c_name varchar primary key, c_provinces long varchar, provinces_url varchar not null, c_id integer not null, c_info varchar);
 
-create table countries_xml (c_name varchar primary key, c_provinces long varchar, provinces_url varchar not null, c_id integer not null, c_info varchar);
+create table countries_xml (c_name varchar primary key, c_provinces long varchar, provinces_url varchar not null, c_id integer not null, c_info varchar, c_lat real, c_lng real);
 
 create unique index c_country_id on countries (c_id);
 
@@ -364,16 +364,33 @@ fill_cntrries_from_xml ()
   	select xml_tree_doc (blob_to_string (RES_CONTENT)) into tree from WS.WS.SYS_DAV_RES
 		where RES_FULL_PATH = '/DAV/factbook/factbook.xml';
 	}
-  cntr := xpath_eval ('/factbook/record/country', tree, 0);
+  cntr := xpath_eval ('/factbook/record', tree, 0);
   l := length (cntr);
   while (i < l)
     {
-      declare cname, prov varchar;
-      cname := cast (cntr[i] as varchar);
-      prov := xpath_eval ('translate(/factbook/record[country = "'||cname||'"]/*/administrative_divisions, "\r\n", ",,")', tree, 1);
+      declare cname, prov, lat_lng, tlat, tlng varchar;
+      declare lat, lng real;
+      lat_lng := cast (xpath_eval ('string (.//geographic_coordinates)', cntr[i]) as varchar);
+      cname := cast (xpath_eval ('string (country)', cntr[i]) as varchar);
+      prov := xpath_eval ('translate(.//administrative_divisions, "\r\n", ",,")', cntr[i]);
       prov := cast (prov as varchar);
-      insert into countries_xml (c_id, c_name, c_provinces, provinces_url)
-	values (sequence_next('c_country_id_xml'), cname, prov, '');
+      lat_lng := regexp_match ('[0-9 ]+[A-Z][, ]+[0-9 ]+[A-Z]', lat_lng);
+      if (lat_lng is not null)
+	{
+	  declare arr any;
+          tlat := trim(regexp_match ('[0-9 ]+[A-Z]', lat_lng));
+	  tlng := trim(regexp_match (',[ ]+[0-9 ]+[A-Z]', lat_lng), ', ');
+	  arr := split_and_decode (tlat, 0, '\0\0 ');
+	  lat := atoi(arr[0]) + (atoi(arr[1]) / 60.00);
+	  if (arr[2] = 'S')
+	    lat := lat * -1.0;
+	  arr := split_and_decode (tlng, 0, '\0\0 ');
+	  lng := atoi(arr[0]) + (atoi(arr[1]) / 60.00);
+	  if (arr[2] = 'W')
+	    lng := lng * -1.0;
+	}
+      insert into countries_xml (c_id, c_name, c_provinces, provinces_url, c_lat, c_lng)
+	values (sequence_next('c_country_id_xml'), cname, prov, '', lat, lng);
       fill_provinces_1 (cname);
       i := i + 1;
     }

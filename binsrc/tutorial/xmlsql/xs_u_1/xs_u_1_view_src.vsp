@@ -19,8 +19,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+?><?vsp
   declare ses, res any;
   if (isstring ({?'s'}) or isstring ({?'u'}))
     {

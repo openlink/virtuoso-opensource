@@ -28,6 +28,9 @@
   <xsl:template match="tutorial">
     <?vsp
 		  http_header ('Content-Type: text/xml\r\n');
+      declare _path,_domain varchar;
+      _domain := 'http://' || HTTP_GET_HOST();
+      _path := _domain || http_map_get('domain') || '/'; 
     ?>
 		<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
 		  <xsl:attribute name="dc" namespace="http://purl.org/dc/elements/1.1/"/>
@@ -42,7 +45,7 @@
 				    <xsl:otherwise>OpenLink Virtuoso Features Demonstrations and Tutorials</xsl:otherwise>
 				  </xsl:choose>
 				</title>
-				<link>http://<?V HTTP_GET_HOST() ?><?V http_map_get('domain') ?>/<xsl:value-of select="$subsecpath"/><xsl:if test="$subsecpath != ''">/</xsl:if></link>
+				<link><?V _path ?><xsl:value-of select="$subsecpath"/><xsl:if test="$subsecpath != ''">/</xsl:if></link>
 				<description/>
 				<managingEditor>support@openlinksw.com</managingEditor>
 				<pubDate><?V date_rfc1123(now())?></pubDate>
@@ -50,8 +53,8 @@
 				<webMaster>support@openlinksw.com</webMaster>
 				<image>
 					<title>OpenLink Virtuoso Features Demonstrations and Tutorials</title>
-					<url>http://<?V HTTP_GET_HOST() ?>/images/leftlogo.gif</url>
-					<link>http://<?V HTTP_GET_HOST() ?><?V http_map_get('domain') ?>/<xsl:value-of select="$subsecpath"/><xsl:if test="$subsecpath != ''">/</xsl:if></link>
+					<url><?V _domain ?>/images/leftlogo.gif</url>
+					<link><?V _path ?><xsl:value-of select="$subsecpath"/><xsl:if test="$subsecpath != ''">/</xsl:if></link>
 					<description/>
 					<width>137</width>
 					<height>35</height>
@@ -71,8 +74,8 @@
 	<xsl:template match="example">
 		<item>
 			<title><xsl:value-of select="normalize-space (refentry/refnamediv/refname)"/></title>
-			<guid>http://<?V HTTP_GET_HOST() ?><?V http_map_get('domain') ?>/<xsl:value-of select="@wwwpath"/></guid>
-			<link>http://<?V HTTP_GET_HOST() ?><?V http_map_get('domain') ?>/<xsl:value-of select="@wwwpath"/></link>
+			<guid><?V _path ?><xsl:value-of select="@wwwpath"/></guid>
+			<link><?V _path ?><xsl:value-of select="@wwwpath"/></link>
 			<pubDate><xsl:value-of select="@date"/></pubDate>
 			<description><xsl:value-of select="refentry/refnamediv/refpurpose"/></description>
 			<dc:subject><xsl:value-of select="refentry/refnamediv/refname"/></dc:subject>

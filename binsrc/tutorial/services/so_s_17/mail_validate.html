@@ -1,4 +1,3 @@
-<SCRIPT language="JavaScript">
 <!--
  -  
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -21,9 +20,15 @@
  -  
  -  
 -->
-var browsertype;
-if (document.implementation.createDocument)
-{ 
+<html>
+<head>
+  <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
+  <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=email_services/services.wsdl"></script>
+  <link rel="stylesheet" type="text/css" href="../demo.css" />
+  <script language="JavaScript">
+  var browsertype;
+  if (document.implementation.createDocument)
+  { 
     browsertype='Mozila';
    // Mozilla, create a new DOMParser 
    var parser = new DOMParser();
@@ -39,9 +44,9 @@ if (document.implementation.createDocument)
     xslDoc = parser.parseFromString(myXMLHTTPRequest.responseText, "text/xml");
     xsltProcessor.importStylesheet(xslDoc);
 
-}
-else if (window.ActiveXObject)
-{ 
+  }
+  else if (window.ActiveXObject)
+  { 
   browsertype='IE';
   var xslDoc = new ActiveXObject("Microsoft.XMLDOM");
   var xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
@@ -49,11 +54,11 @@ else if (window.ActiveXObject)
   xmlDoc.async = false;
   xslDoc.load("mail_validate.xsl");
 
-}
+  }
 
 
-function mResultsAjax(result)
-{   try
+  function mResultsAjax(result)
+  {   try
     	{
              if(browsertype=='IE')
              {
@@ -73,36 +78,51 @@ function mResultsAjax(result)
 	    {
 	        alert('Parser exception:'+e.description);
 	    }
-}
+  }
 
-function dWait(dowhat){
+  function dWait(dowhat){
   if(dowhat=='show'){
     document.getElementById('divWait').style.visibility='visible';
   }else{
     document.getElementById('divWait').style.visibility='hidden';
   }
-}
+  }
 
-</SCRIPT>
-
-<html>
-<HEAD>
-  <script language="JavaScript" src="../ajax_inc/ajax.js"></script>
-  <script language="JavaScript" src="../ajax_inc/proxy.vsp?wsdl_path=email_services/services.wsdl"></script>
-  <link rel="stylesheet" type="text/css" href="../demo.css" />
-</HEAD>
+  </script>
+</head>
 <body>
 <H3>SOAP client</H3>
 <form method="post" action="mail_validate.vsp">
 <table class="tableentry">
 <tr><td>1. Enter a mail server address</td><td>
-<input type=text name="servera" id="servera" value="mail.openlinksw.com" size="26">
+<input type=text name="servera" id="servera" value="mail.openlinksw.com" size="34">
+</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;or choose one of those:</td><td>
+<select name="chooseserver" style="width:170pt" onchange="this.form.servera.value = this[this.selectedIndex].value">
+  <option value="mail.openlinksw.com">mail.openlinksw.com (@openlinksw.com)</option>
+
+  <option value="mx1.mail.yahoo.com">mx1.mail.yahoo.com (@yahoo.com)</option>
+  <option value="mx2.mail.yahoo.com">mx2.mail.yahoo.com (@yahoo.com)</option>
+  <option value="mx3.mail.yahoo.com">mx3.mail.yahoo.com (@yahoo.com)</option>
+  <option value="mx4.mail.yahoo.com">mx4.mail.yahoo.com (@yahoo.com)</option>
+
+  <option value="gmail-smtp-in.l.google.com">gmail-smtp-in.l.google.com (@gmail.com)</option>
+  <option value="alt1.gmail-smtp-in.l.google.com">alt1.gmail-smtp-in.l.google.com (@gmail.com)</option>
+  <option value="alt2.gmail-smtp-in.l.google.com">alt2.gmail-smtp-in.l.google.com (@gmail.com)</option>
+  <option value="gsmtp163.google.com">gsmtp163.google.com (@gmail.com)</option>
+  <option value="gsmtp183.google.com">gsmtp183.google.com (@gmail.com)</option>
+
+  <option value="mx1.hotmail.com">mx1.hotmail.com (@hotmail.com</option>
+  <option value="mx2.hotmail.com">mx2.hotmail.com (@hotmail.com)</option>
+  <option value="mx3.hotmail.com">mx3.hotmail.com (@hotmail.com)</option>
+  <option value="mx4.hotmail.com">mx4.hotmail.com (@hotmail.com)</option>
+</select>
 </td></tr>
 <tr><td>2. Enter a mail server port number</td><td>
 <input type=text name="serverp" id="serverp" value="25" size="4">
 </td></tr>
 <tr><td>3. Enter an email address to Validate</td><td>
-<input type=text name="address" id="address" value="no-such-user@openlinksw.com" size="26">
+<input type=text name="address" id="address" value="no-such-user@openlinksw.com" size="34">
 </td></tr>
 <tr><td>4. Call emailValidate</td><td><input type="button" name="exec" value="Validate" onClick="ajax.Start(emailValidate,'')"></td></tr>
 </table>

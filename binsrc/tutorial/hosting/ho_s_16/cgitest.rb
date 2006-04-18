@@ -22,7 +22,7 @@
 require "cgi"
 
 # Required header that tells the browser how to render the HTML.
-#print "Content-Type: text/xml\n\n"
+print "Content-Type: text/xml\n\n"
 
 # Define function to generate HTML form.
 def generate_form()

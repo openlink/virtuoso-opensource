@@ -19,8 +19,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+?><?vsp
   declare ses any;
   ses := string_output();
   http (sprintf ('<?xml version="1.0" encoding="%s" ?>', current_charset()), ses);

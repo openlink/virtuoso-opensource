@@ -19,8 +19,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-?>
-<?vsp
+?><?vsp
    declare wsdl varchar;
    wsdl := http_get (sprintf ('http://localhost:%s/services/services.wsdl', server_http_port ()));
    http_header (sprintf ('Content-Type: text/xml; encoding="%s"\r\n', current_charset()));

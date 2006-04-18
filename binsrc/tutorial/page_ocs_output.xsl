@@ -30,8 +30,11 @@
   <xsl:template match="tutorial">
     <xsl:text disable-output-escaping="yes"><![CDATA[<?vsp
 		  http_header ('Content-Type: text/xml\r\n');
-		  declare _outlines any;
+      declare _path,_domain varchar;
+      _domain := 'http://' || HTTP_GET_HOST();
+      _path := _domain || http_map_get('domain') || '/'; 
 		  
+		  declare _outlines any;
 		  _outlines := vector();
 		]]></xsl:text>
 	  	<xsl:for-each select="//subsection[not(@ref)]">
@@ -49,7 +52,7 @@
 		  <xsl:attribute name="ocs" namespace="http://InternetAlchemy.org/ocs/directory#"/>
 		  <xsl:attribute name="dc" namespace="http://purl.org/metadata/dublin_core#"/>
   <xsl:text disable-output-escaping="yes"><![CDATA[
-    <ocs:directory rdf:about="http://<?V HTTP_GET_HOST() ?><?V http_map_get('domain') ?>/rdf.vsp">
+    <ocs:directory rdf:about="<?V _path ?>rdf.vsp">
       <dc:title>OpenLink Virtuoso Features Demonstrations and Tutorials</dc:title>
       <dc:description/>
       <ocs:channels>
@@ -57,7 +60,7 @@
           <?vsp
             for(declare i integer,i := 0; i < length(_outlines); i := i + 2){
           ?>
-          <rdf:li rdf:resource="http://<?V HTTP_GET_HOST() ?><?V http_map_get('domain') ?>/<?V _outlines[i + 1] ?>/index.vsp" />
+          <rdf:li rdf:resource="<?V _path ?><?V _outlines[i + 1] ?>/index.vsp" />
           <?vsp
               }
             ?>
@@ -67,13 +70,13 @@
   <?vsp
     for(declare i integer,i := 0; i < length(_outlines); i := i + 2){
   ?>
-    <ocs:channel about="http://<?V HTTP_GET_HOST() ?><?V http_map_get('domain') ?>/<?V _outlines[i + 1] ?>/index.vsp">
+    <ocs:channel about="<?V _path ?><?V _outlines[i + 1] ?>/index.vsp">
       <dc:title><?V _outlines[i] ?></dc:title>
       <dc:description/>
       <formats>
         <rdf:Alt>
           <rdf:li>
-            <rdf:Description rdf:about="http://<?V HTTP_GET_HOST() ?><?V http_map_get('domain') ?>/<?V _outlines[i + 1] ?>/rss.vsp">
+            <rdf:Description rdf:about="<?V _path ?><?V _outlines[i + 1] ?>/rss.vsp">
               <dc:language>en</dc:language>
               <format rdf:resource="http://purl.org/ocs/formats/#rss20" />
               <schedule rdf:resource="http://purl.org/ocs/schedules/#monthly" />

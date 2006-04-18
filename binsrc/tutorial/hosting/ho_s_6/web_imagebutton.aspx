@@ -35,7 +35,7 @@
 <body>
 <form runat="server">
 <asp:ImageButton id="imgButton" AlternateText="Image button" 
-OnClick="Clicked" ImageUrl="http://www.ximian.com/images/index/button-top.gif" 
+OnClick="Clicked" ImageUrl="http://virtuoso.openlinksw.com/images/openlink150.gif" 
 ImageAlign="left" runat="server"/>
 </form>
 </body>

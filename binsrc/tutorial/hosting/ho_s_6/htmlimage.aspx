@@ -25,8 +25,8 @@
 <title>HtmlImage</title>
 </head>
 <body>
-<img ID="myImage" src="http://www.ximian.com/images/index/button-top.gif"
-runat="server" alt="The Ximian dancing monkey logo" align="middle"/>
+<img ID="myImage" src="http://virtuoso.openlinksw.com/images/openlink150.gif"
+runat="server" alt="Openlink Software logo" align="middle"/>
 </body>
 </html>
 

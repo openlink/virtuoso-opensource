@@ -53,11 +53,11 @@ create procedure EMLV.EMLV.emailValidate (in server varchar, in address varchar)
     }
   str := concat (str, '<data>HELO Virtuoso_Web_Service</data>\n');
   str := concat (str, '<data type="in">', sprintf ('%V', r),'</data>\n');
-  ses_write (sprintf('MAIL FROM: %s\r\n', address),s);
-  str := concat (str, sprintf ('<data>MAIL FROM: %V</data>\n', address));
+  ses_write (sprintf('MAIL FROM: <%s>\r\n', address),s);
+  str := concat (str, sprintf ('<data>MAIL FROM: &lt;%V&gt;</data>\n', address));
   str := concat (str, '<data type="in">', sprintf ('%V', ses_read_line (s)),'</data>\n');
-  ses_write (sprintf('RCPT TO: %s\r\n', address),s);
-  str := concat (str, sprintf ('<data>RCPT TO: %V</data>\n', address));
+  ses_write (sprintf('RCPT TO: <%s>\r\n', address),s);
+  str := concat (str, sprintf ('<data>RCPT TO: &lt;%V&gt;</data>\n', address));
   r := ses_read_line (s);
   if (r like '2%')
     {

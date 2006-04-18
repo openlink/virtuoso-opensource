@@ -28,8 +28,11 @@
   <xsl:template match="tutorial">
     <xsl:text disable-output-escaping="yes"><![CDATA[<?vsp
 		  http_header ('Content-Type: text/xml\r\n');
-		  declare _outlines any;
+      declare _path,_domain varchar;
+      _domain := 'http://' || HTTP_GET_HOST();
+      _path := _domain || http_map_get('domain') || '/'; 
 		  
+		  declare _outlines any;
 		  _outlines := vector();
 		]]></xsl:text>
 	  	<xsl:for-each select="//subsection[not(@ref)]">
@@ -52,7 +55,7 @@
     for(declare i integer,i := 0; i < length(_outlines); i := i + 2){
   ?>
   <xsl:text disable-output-escaping="yes"><![CDATA[
-  <outline text="<?V _outlines[i] ?>" title="<?V _outlines[i] ?>" type="rss" htmlUrl="http://<?V HTTP_GET_HOST() ?><?V http_map_get('domain') ?>/<?V _outlines[i + 1] ?>/index.vsp" xmlUrl="http://<?V HTTP_GET_HOST() ?><?V http_map_get('domain') ?>/<?V _outlines[i + 1] ?>/rss.vsp"/>
+  <outline text="<?V _outlines[i] ?>" title="<?V _outlines[i] ?>" type="rss" htmlUrl="<?V _path ?><?V _outlines[i + 1] ?>/index.vsp" xmlUrl="<?V _path ?><?V _outlines[i + 1] ?>/rss.vsp"/>
   ]]></xsl:text><?vsp
     }
   ?>
