@@ -252,7 +252,10 @@ then
   touch inprocess.output
   touch tvspxex.output
   touch tsoap12.output
+  if [ ! -f ../../../autogen.sh ]
+  then
   ./treplh.sh
+  fi
 else  
     # XXX: until is fixed to enter and leave vdb properly  
   #./inprocess.sh

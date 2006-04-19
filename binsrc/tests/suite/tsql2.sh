@@ -25,6 +25,8 @@
 #  
 #  
 
+SCROLL=${SCROLL-../scroll}
+GETDATA=${GETDATA-../getdata}
 LOGFILE=tsql2.output
 export LOGFILE
 . ./test_fn.sh
@@ -155,7 +157,7 @@ then
     exit 1
 fi
 
-RUN ../scroll $DSN
+RUN $SCROLL $DSN
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tsql2.sh: scroll"
@@ -163,7 +165,7 @@ then
 fi
 
 
-RUN ../getdata $DSN dba dba
+RUN $GETDATA $DSN dba dba
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tsql2.sh: getdata"
@@ -171,7 +173,6 @@ then
 fi
 
 
-exit
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbunion.sql
 if test $STATUS -ne 0
 then

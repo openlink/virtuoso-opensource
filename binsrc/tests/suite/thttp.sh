@@ -771,7 +771,8 @@ case $1 in
 	   LOG "Create BLOG VAD Package"
 	   (cd "$SRC/binsrc/weblog2/" ; ./make_vad.sh)
 	   cp "$SRC/binsrc/weblog2/blog_dav.vad" .
-       else
+       elif [ ! -f ../../../../autogen.sh ]
+       then
 	   LOG "***ABORTED: Cannot build ODS & Blog2 VAD packages"
 	   exit 1
        fi
