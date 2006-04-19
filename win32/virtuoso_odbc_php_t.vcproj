@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="virtuoso_php_t"
-	ProjectGUID="{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
+	ProjectGUID="{08D454B6-CF7B-11DA-85E2-A4E5714C712A}"
 	RootNamespace="virtuoso_php_t"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -38,6 +38,7 @@
 				OutputFile="$(OutDir)/virtuoso-php-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;.\php4"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_php_t.pdb"
 				SubSystem="1"
@@ -91,6 +92,7 @@
 				OutputFile="$(OutDir)/virtuoso-php-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;.\php4"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_php_t.pdb"
 				SubSystem="1"

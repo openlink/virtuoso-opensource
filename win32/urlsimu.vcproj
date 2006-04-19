@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="urlsimu"
-	ProjectGUID="{9575BFE3-4BF8-4F9D-9BF2-5C4AF397B065}"
+	ProjectGUID="{EF98F42A-CF7A-11DA-85E2-A4E5714C712A}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
@@ -50,6 +50,7 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),openssl"
+				IgnoreDefaultLibraryNames="LIBCMT"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(ConfigurationName)/urlsimu.pdb"
 				SubSystem="1"/>
@@ -116,6 +117,7 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),openssl"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(ConfigurationName)/urlsimu.pdb"
 				SubSystem="1"/>
@@ -151,10 +153,10 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
-				RelativePath="..\binsrc\tests\urlsimu.c">
+				RelativePath="..\binsrc\tests\time.c">
 			</File>
 			<File
-				RelativePath="..\binsrc\tests\time.c">
+				RelativePath="..\binsrc\tests\urlsimu.c">
 			</File>
 		</Filter>
 		<Filter

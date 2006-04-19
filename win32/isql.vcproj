@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="isqlo"
+	ProjectGUID="{9FF2579E-CF7B-11DA-85E2-A4E5714C712A}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
@@ -49,6 +50,7 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),..\libsrc\openssl"
+				IgnoreDefaultLibraryNames="LIBCMT"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(ConfigurationName)/isql.pdb"
 				SubSystem="1"/>
@@ -115,6 +117,7 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),..\libsrc\openssl"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(ConfigurationName)/isql.pdb"
 				SubSystem="1"/>

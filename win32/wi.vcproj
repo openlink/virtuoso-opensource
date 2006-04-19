@@ -171,6 +171,19 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\bif_ldapcli.c">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						OptimizeForProcessor="0"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\bif_mts.c">
@@ -993,7 +1006,7 @@
 			<File
 				RelativePath="..\libsrc\Wi\scn3.l">
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1005,7 +1018,7 @@ cd $(ProjectDir)
 						Outputs="$(InputDir)scn3_vsnet.c"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1020,7 +1033,7 @@ cd $(ProjectDir)
 			<File
 				RelativePath="..\libsrc\Wi\sparql_l.l">
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1032,7 +1045,7 @@ cd $(ProjectDir)
 						Outputs="$(InputDir)sparql_l.c"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1047,7 +1060,7 @@ cd $(ProjectDir)
 			<File
 				RelativePath="..\libsrc\Wi\sparql_p.y">
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1060,7 +1073,7 @@ cd $(ProjectDir)
 						Outputs="$(InputDir)sparql_p.c;$(InputDir)sparql_p.h"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1076,7 +1089,7 @@ cd $(ProjectDir)
 			<File
 				RelativePath="..\libsrc\Wi\sql3.y">
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1089,7 +1102,7 @@ cd $(ProjectDir)
 						Outputs="$(InputDir)sql3.c;$(InputDir)sql3.h"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1105,7 +1118,7 @@ cd $(ProjectDir)
 			<File
 				RelativePath="..\libsrc\Wi\sql_to_c.awk">
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1117,7 +1130,7 @@ cd $(ProjectDir)
 						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1132,7 +1145,7 @@ cd $(ProjectDir)
 			<File
 				RelativePath="..\libsrc\Wi\turtle_l.l">
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1144,7 +1157,7 @@ cd $(ProjectDir)
 						Outputs="$(InputDir)turtle_l.c"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1159,7 +1172,7 @@ cd $(ProjectDir)
 			<File
 				RelativePath="..\libsrc\Wi\turtle_p.y">
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1172,7 +1185,7 @@ cd $(ProjectDir)
 						Outputs="$(InputDir)turtle_p.c;$(InputDir)turtle_p.h"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1188,7 +1201,7 @@ cd $(ProjectDir)
 			<File
 				RelativePath="..\libsrc\Wi\xpathp.y">
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1201,7 +1214,7 @@ cd $(ProjectDir)
 						Outputs="$(InputDir)xpathp.c;$(InputDir)xpathp.h"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1217,7 +1230,7 @@ cd $(ProjectDir)
 			<File
 				RelativePath="..\libsrc\Wi\xpscn.l">
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Release|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="
@@ -1229,7 +1242,7 @@ cd $(ProjectDir)
 						Outputs="$(InputDir)xpscn_vsnet.c"/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release|Win32">
+					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
 						CommandLine="

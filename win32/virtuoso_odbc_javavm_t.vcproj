@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="virtuoso_javavm_t"
-	ProjectGUID="{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
+	ProjectGUID="{02AD88A0-CF7B-11DA-85E2-A4E5714C712A}"
 	RootNamespace="virtuoso_javavm_t"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -34,10 +34,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib $(JDK_PATH)\lib\jvm.lib"
+				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib &quot;$(JDK_PATH)\lib\jvm.lib&quot;"
 				OutputFile="$(OutDir)/virtuoso-javavm-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_javavm_t.pdb"
 				SubSystem="1"
@@ -87,10 +88,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib $(JDK_PATH)\lib\jvm.lib"
+				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib &quot;$(JDK_PATH)\lib\jvm.lib&quot;"
 				OutputFile="$(OutDir)/virtuoso-javavm-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_javavm_t.pdb"
 				SubSystem="1"

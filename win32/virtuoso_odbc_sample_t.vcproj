@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="virtuoso_sample_t"
-	ProjectGUID="{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}"
+	ProjectGUID="{0E838FA8-CF7B-11DA-85E2-A4E5714C712A}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -37,6 +37,7 @@
 				OutputFile="$(OutDir)/virtuoso-sample-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_sample_t.pdb"
 				SubSystem="1"
@@ -91,6 +92,7 @@
 				OutputFile="$(OutDir)/virtuoso-sample-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_sample_t.pdb"
 				SubSystem="1"

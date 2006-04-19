@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="demodb"
-	ProjectGUID="{CA03DBF1-2C7E-4732-8F41-65030876DDE7}"
-	RootNamespace="demodb"
+	Name="conductor_vad"
+	ProjectGUID="{828BB6BA-CF7A-11DA-85E2-A4E5714C712A}"
+	RootNamespace="conductor_vad"
 	Keyword="MakeFileProj">
 	<Platforms>
 		<Platform
@@ -13,8 +13,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(ConfigurationName)\demodb"
-			IntermediateDirectory="$(ConfigurationName)\demodb"
+			OutputDirectory="$(ConfigurationName)\conductor_vad"
+			IntermediateDirectory="$(ConfigurationName)\conductor_vad"
 			ConfigurationType="1">
 			<Tool
 				Name="VCCLCompilerTool"/>
@@ -45,8 +45,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(ConfigurationName)\demodb"
-			IntermediateDirectory="$(ConfigurationName)\demodb"
+			OutputDirectory="$(ConfigurationName)\conductor_vad"
+			IntermediateDirectory="$(ConfigurationName)\conductor_vad"
 			ConfigurationType="1">
 			<Tool
 				Name="VCCLCompilerTool"/>
@@ -81,24 +81,22 @@
 	</References>
 	<Files>
 		<File
-			RelativePath="..\binsrc\samples\demo\mkdemo.sh">
+			RelativePath="..\binsrc\yacutia\mkvad.sh">
 			<FileConfiguration
 				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="cd $(InputDir)
+					CommandLine="
+cd $(InputDir)
 set PATH=$(InputDir);$(TargetDir)\..;%PATH%
-set SRC=$(ProjectDir)\..\
 set HOME=$(ProjectDir)\..\
 set PORT=5555
 set ISQL=isql.exe
 set SERVER=virtuoso-t.exe
-rmdir /S /Q docsrc
-bash mkdemo.sh
+bash mkvad.sh
 cd $(ProjectDir)
 "
-					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-t.exe;..\binsrc\bpel\bpel_dav.vad;..\binsrc\yacutia\conductor_dav.vad;..\binsrc\samples\demo\doc_dav.vad;..\binsrc\tutorial\tutorial_dav.vad"
-					Outputs="$(InputDir)\demo.db"/>
+					Outputs="$(InputDir)\conductor_dav.vad;$(InputDir)\conductor_filesystem.vad"/>
 			</FileConfiguration>
 			<FileConfiguration
 				Name="Release|Win32">
@@ -106,17 +104,15 @@ cd $(ProjectDir)
 					Name="VCCustomBuildTool"
 					CommandLine="cd $(InputDir)
 set PATH=$(InputDir);$(TargetDir)\..;%PATH%
-set SRC=$(ProjectDir)\..\
 set HOME=$(ProjectDir)\..\
 set PORT=5555
 set ISQL=isql.exe
 set SERVER=virtuoso-t.exe
-rmdir /S /Q docsrc
-bash mkdemo.sh
+bash mkvad.sh
 cd $(ProjectDir)
 "
-					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-t.exe;..\binsrc\bpel\bpel_dav.vad;..\binsrc\yacutia\conductor_dav.vad;..\binsrc\samples\demo\doc_dav.vad;..\binsrc\tutorial\tutorial_dav.vad"
-					Outputs="$(InputDir)\demo.db"/>
+					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-t.exe"
+					Outputs="$(InputDir)\conductor_dav.vad;$(InputDir)\conductor_filesystem.vad"/>
 			</FileConfiguration>
 		</File>
 	</Files>

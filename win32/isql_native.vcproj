@@ -120,6 +120,7 @@
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
 				IgnoreAllDefaultLibraries="FALSE"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(ConfigurationName)/isql_native.pdb"
 				SubSystem="1"/>

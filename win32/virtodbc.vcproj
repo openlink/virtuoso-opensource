@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="virtodbc"
-	ProjectGUID="{A326A0DF-4F93-4DF6-813D-0B64F98B389F}"
+	ProjectGUID="{3D1A94CE-CF7B-11DA-85E2-A4E5714C712A}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
@@ -122,7 +122,7 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
-				IgnoreDefaultLibraryNames="LIBCD.lib"
+				IgnoreDefaultLibraryNames="LIBCMT"
 				ModuleDefinitionFile="..\binsrc\virtodbc\virtodbc.def"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(ConfigurationName)/virtodbc.pdb"
