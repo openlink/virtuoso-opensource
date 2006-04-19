@@ -228,7 +228,7 @@ TKVList::FromDSN (LPCTSTR szIn)
       LPCTSTR key = index[i];
       PTSTR value;
 
-      if ((value = _tcschr (key, '=')) != NULL)
+      if ((value = (PTSTR)_tcschr (key, '=')) != NULL)
 	{
 	  *value = 0;
 	  value++;
