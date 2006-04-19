@@ -264,6 +264,15 @@ AC_PATH_PROG(RUBY,ruby)
 ##########################################################################
 AC_PROG_LIBTOOL
 
+#
+#  Use our own libtool so we can perform Universal builds
+#
+case $host in
+  *-darwin*)
+	LIBTOOL='$(SHELL) $(top_srcdir)/bin/libtool.macosx'
+	;;
+esac
+
 ##########################################################################
 ##									##
 ##  Check various headers						##
