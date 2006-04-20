@@ -2588,8 +2588,11 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
   storage_ver = atoi (cfg_page->db_generic);
   if (storage_ver > atoi (DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR))
     {
-      log_error ("Opening database in format v. %s with older server. Exiting.",
-		 storage_ver);
+      log_error ("The database you are opening was last closed with a server of version %d." , storage_ver);
+      log_error ("The present server is of version " DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR "."  
+	  " The database will contain data types");
+      log_error ("which are not recognized by this server.  Please use a newer server.");
+      log_error ("Exiting.");
       call_exit (-1);
     }
   if (cfg_page->db_byte_order != DB_ORDER_UNKNOWN && cfg_page->db_byte_order != DB_SYS_BYTE_ORDER)
