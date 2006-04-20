@@ -49,6 +49,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
     <keyword id="cursors">Cursor</keyword>
     <keyword id="time">Date &amp; Time Manipulation</keyword>
     <keyword id="debug">Debug</keyword>
+    <keyword id="dict">Dictionary Manipulation</keyword>
     <keyword id="encoding">Encoding &amp; Decoding</keyword>
     <keyword id="file">File Manipulation</keyword>
     <keyword id="ft">Free Text</keyword>
@@ -102,7 +103,10 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &dav_api_add; &dav_api_change; &dav_api_lock; &dav_api_search; &dav_api_user;
 &dav_exp; &dayname; &dayofmonth; &dayofweek; &dayofyear;
 &dbg_obj_print; &dbg_printf;
-&dbname; &delay; &disconnect_user; &dt_set_tz; &dvector;
+&dbname; &delay;
+&dict_duplicate; &dict_get; &dict_list_keys; &dict_new;
+&dict_put; &dict_remove; &dict_to_vector;
+&disconnect_user; &dt_set_tz; &dvector;
 
 &end_result; &either; &elh_get_handler; &elh_load_handler; &encode_base64;
 &equ; &exec; &exec_close; &exec_next; &exec_result; &exec_result_names;

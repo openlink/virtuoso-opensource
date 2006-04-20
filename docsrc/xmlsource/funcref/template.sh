@@ -32,22 +32,7 @@ cat > "${tgt}" <<EndOfTemplate
   with this program; if not, write to the Free Software Foundation, Inc.,
   51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
   
--->
-name="$1"
-miscinfo="$2"
-prefix="${3-fn}"
-#id=`echo "${name}" | sed 's/_/-/g'`
-id=`echo "${name}" | sed 's/-/_/g'`
-tgt="${name}.xml"
-if [ -f "${tgt}" ]
-then
-  echo "The destination file ${tgt} already exists and will remain unchanged!"
-else
-cat > "${tgt}" <<EndOfTemplate
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<!--
   $Id$
-  (C)Copyright 2001 OpenLink Software
 -->
 <refentry id="${prefix}_${id}">
   <refmeta>
