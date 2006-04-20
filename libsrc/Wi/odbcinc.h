@@ -109,6 +109,12 @@ typedef void * SQLHANDLE;
 #  define SQL_FN_CVT_CAST	0x00000002L
 #endif
 
+/* from iodbcext.h */
+#ifndef SQL_GETLASTSERIAL
+#define SQL_GETLASTSERIAL 1049L  
+#endif
+
+
 #ifndef WIN32
 #ifndef SQLLEN
 #define SQLLEN SDWORD

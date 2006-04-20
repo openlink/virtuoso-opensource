@@ -1610,11 +1610,6 @@ SQLGetStmtOption (
 }
 
 
-#ifndef SQL_GETLASTSERIAL
-#define SQL_GETLASTSERIAL 1049L  /* from iodbcext.h */
-#endif
-
-
 SQLRETURN SQL_API
 virtodbc__SQLGetStmtOption (
       SQLHSTMT hstmt,

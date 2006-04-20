@@ -966,6 +966,7 @@ virtodbc__SQLGetStmtAttr (SQLHSTMT statementHandle,
     case SQL_ATTR_USE_BOOKMARKS:
     case SQL_PREFETCH_SIZE:
     case SQL_UNIQUE_ROWS:
+    case SQL_GETLASTSERIAL:
 
 #if defined(WIN32) && defined(DEBUG)
       OutputDebugString ("SQLGetStmtAttr(...) mapped to SQLGetStmtOption\n");
