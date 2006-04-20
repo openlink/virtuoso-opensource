@@ -3195,14 +3195,17 @@ end_of_binding: ;
 --select -- dbg_obj_princ (soap_client (url=>'http://neo:6666/SPARQL', operation=>'querySoap', target_namespace=>'urn:FIXME', soap_action =>'urn:FIXME:querySoap', parameters=> vector ('Command', soap_box_structure ('Statement' , 'select TEST from DB.DBA.SPARQL_TABLE3'), 'Properties', soap_box_structure ('PropertyList', 'None' )), style=>2));
 
 
-create user "SPARQL"
+create procedure SPARQL_USER_INIT ()
+{
+  if (exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'SPARQL'))
+    return;
+  DB.DBA.USER_CREATE ('SPARQL', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'SPARQL'));
+}
 ;
 
-user_set_qualifier ('SPARQL', 'SPARQL')
+SPARQL_USER_INIT ()
 ;
 
-update SYS_USERS set U_ACCOUNT_DISABLED=1 where U_NAME = 'SPARQL'
-;
 
 VHOST_REMOVE (lpath=>'/SPARQL')
 ;

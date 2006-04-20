@@ -52,18 +52,18 @@ xslt_sheet ('http://local.virt/xmla_test', xml_tree_doc (
 </xsl:stylesheet>
 '));
 
-create user "XMLA"
-;
+--create user "XMLA"
+--;
 
-user_set_qualifier ('XMLA', 'XMLA')
-;
+--user_set_qualifier ('XMLA', 'XMLA')
+--;
 
-VHOST_REMOVE (lpath=>'/XMLA')
-;
+--VHOST_REMOVE (lpath=>'/XMLA')
+--;
 
-VHOST_DEFINE (lpath=>'/XMLA', ppath=>'/SOAP/', soap_user=>'XMLA',
-              soap_opts => vector ('ServiceName', 'XMLAnalysis', 'elementFormDefault', 'qualified'))
-;
+--VHOST_DEFINE (lpath=>'/XMLA', ppath=>'/SOAP/', soap_user=>'XMLA',
+--              soap_opts => vector ('ServiceName', 'XMLAnalysis', 'elementFormDefault', 'qualified'))
+--;
 
 grant execute on DB.."Discover" to "XMLA"
 ;
@@ -246,7 +246,7 @@ xmla_check_result (
 		      soap_box_structure ('TABLE_CATALOG', 'zzzzz')),
 		    'Properties',
 		    	soap_box_structure ('PropertyList',
-			  soap_box_structure ('DataSourceInfo', xmla_service_name (), 'UserName', 'XMLA', 'Password', 'XMLA'))
+			  soap_box_structure ('DataSourceInfo', xmla_service_name (), 'UserName', 'dba', 'Password', 'dba'))
 	           ), style=>0)
     );
 ECHO BOTH $IF $EQU $LAST[3] 'TEST1' "PASSED" "***FAILED";
@@ -264,7 +264,7 @@ xmla_check_result (
 		      soap_box_structure ('TABLE_CATALOG', 'zzzzz', 'TABLE_NAME', 'TEST1')),
 		    'Properties',
 		    	soap_box_structure ('PropertyList',
-			  soap_box_structure ('DataSourceInfo', xmla_service_name (), 'UserName', 'XMLA', 'Password', 'XMLA')
+			  soap_box_structure ('DataSourceInfo', xmla_service_name (), 'UserName', 'dba', 'Password', 'dba')
 			  )
 	           ), style=>0)
     );
@@ -278,7 +278,7 @@ xmla_check_result (
 	    vector ('RequestType', 'DBSCHEMA_COLUMNS',
 	            'Restrictions', soap_box_structure ('RestrictionList' , soap_box_structure ('TABLE_CATALOG', 'zzzzz', 'TABLE_NAME', 'TEST1')),
 		    'Properties', soap_box_structure ('PropertyList',
-			  soap_box_structure ('DataSourceInfo', xmla_service_name (), 'UserName', 'XMLA', 'Password', 'XMLA')
+			  soap_box_structure ('DataSourceInfo', xmla_service_name (), 'UserName', 'dba', 'Password', 'dba')
 		      )
 	           ), style=>0)
     );
@@ -340,7 +340,7 @@ xmla_check_result (
 	    vector ('Command', soap_box_structure ('Statement', 'select * from TEST1'),
 		    'Properties', soap_box_structure ('PropertyList',
 		      soap_box_structure ('DataSourceInfo', xmla_service_name (), 'Catalog', 'zzzzz',
-			'UserName', 'XMLA', 'Password', 'XMLA'))
+			'UserName', 'dba', 'Password', 'dba'))
 	           ), style=>0)
     );
 ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
@@ -360,7 +360,7 @@ ECHO BOTH ": Execute (data row) : " $LAST[1] "\n";
 --	 parameters=>
 --	    vector ('Command', soap_box_structure ('Statement', 'select * from TEST1'),
 --		    'Properties', soap_box_structure ('PropertyList',
---		      soap_box_structure ('DataSourceInfo', 'DSN=__local', 'Catalog', 'zzzzz', 'UserName', 'XMLA', 'Password', 'XMLA', 'Content', 'Data'))
+--		      soap_box_structure ('DataSourceInfo', 'DSN=__local', 'Catalog', 'zzzzz', 'UserName', 'dba', 'Password', 'dba', 'Content', 'Data'))
 --	           ), style=>0)
 --   );
 --ECHO BOTH $IF $EQU $LAST[1] '12345' "PASSED" "***FAILED";
@@ -375,7 +375,7 @@ xmla_check_result (
 	 parameters=>
 	    vector ('Command', soap_box_structure ('Statement', 'select * from TEST1'),
 		    'Properties', soap_box_structure ('PropertyList',
-		      soap_box_structure ('DataSourceInfo', xmla_service_name (), 'Catalog', 'zzzzz', 'UserName', 'XMLA', 'Password', 'XMLA', 'Content', 'Schema'))
+		      soap_box_structure ('DataSourceInfo', xmla_service_name (), 'Catalog', 'zzzzz', 'UserName', 'dba', 'Password', 'dba', 'Content', 'Schema'))
 	           ), style=>0)
     );
 ECHO BOTH $IF $EQU $LAST[1] 'ID' "PASSED" "***FAILED";

@@ -1649,13 +1649,15 @@ create procedure DB.DBA."XMLA_GET_FK" (in _pk_table varchar, in _fk_table varcha
 }
 ;
 
-create user "XMLA"
+create procedure XMLA_USER_INIT ()
+{
+  if (exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'XMLA'))
+    return;
+  DB.DBA.USER_CREATE ('XMLA', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'XMLA'));
+}
 ;
 
-DB.DBA.user_set_qualifier ('XMLA', 'XMLA')
-;
-
-update DB.DBA.SYS_USERS set U_ACCOUNT_DISABLED=1 where U_NAME = 'XMLA'
+XMLA_USER_INIT ()
 ;
 
 DB.DBA.VHOST_REMOVE (lpath=>'/XMLA')
