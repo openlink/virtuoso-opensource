@@ -1,0 +1,107 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _path,_file varchar;
+  _path := {?'path'};
+  _file := {?'file'};
+  if (_path is null or length(_path) < length(DB.DBA.SPARQL_DAV_DATA_PATH()) or substring(_path,1,length(DB.DBA.SPARQL_DAV_DATA_PATH())) <> DB.DBA.SPARQL_DAV_DATA_PATH())
+    _path := DB.DBA.SPARQL_DAV_DATA_PATH();
+?>
+<HTML> 
+ 	<TITLE>Directory listing of <?= _path ?></TITLE> 
+  <BODY TEXT="#000000" LINK="#0000CC" VISITED="#3300CC" BGCOLOR="#EEEEEE" TOPMARGIN="0">
+<?vsp
+  if (_file is not null and _file <> '')
+  {
+?>
+      <PRE><?= "RQ"."RQ"."URI_GET"('http://local.virt' || _path || _file) ?></PRE>
+<?vsp
+  } else {
+?>
+ 	<H4>Index of <?= _path ?></H4> 
+ 	  <TABLE> 
+ 	    <tr>
+ 	      <td colspan="2" align="center">Name</td> 
+ 	      <td align="center">Last modified</td>
+ 	      <td align="center">Size</td>
+ 	      <td align="center">Action</td>
+ 	    </tr> 
+ 	    <tr><td colspan="6"><HR /></td></tr> 
+ 	    <tr><td colspan="6"><a href="data_upload.vsp#">Upload</a></td></tr> 
+ 	    <tr><td colspan="6"><HR /></td></tr> 
+<?vsp
+    if (_path <> DB.DBA.SPARQL_DAV_DATA_PATH())
+    {
+?>
+     	<tr> 
+ 	      <td><img src="/images/dir.gif"></td> 
+ 	      <td><a href="?path=<?= substring(_path,1,strrchr(rtrim(_path,'/'),'/')+1)?>">..</a></td> 
+ 	      <td></td>
+ 	      <td align="right">-</td> 
+ 	      <td></td> 
+ 	    </tr> 
+<?vsp
+    }
+?>
+<?vsp
+    for(select COL_NAME, COL_MOD_TIME FROM WS.WS.SYS_DAV_COL WHERE COL_PARENT = DB.DBA.DAV_SEARCH_ID(_path,'C') )do
+    {
+?>
+     	<tr> 
+ 	      <td><img src="/images/dir.gif"></td> 
+ 	      <td><a href="?path=<?V concat(_path,COL_NAME) ?>/"><?= COL_NAME ?></a></td> 
+ 	      <td><?= substring(cast(COL_MOD_TIME as varchar),1,19) ?></td>
+ 	      <td align="right">-</td> 
+ 	      <td></td> 
+ 	    </tr> 
+<?vsp
+    }
+?>
+<?vsp
+    for(SELECT DR.RES_NAME, DR.RES_MOD_TIME, length(DR.RES_CONTENT) AS RES_SIZE, DR.RES_FULL_PATH, SU.SU_GRAPH
+          FROM WS.WS.SYS_DAV_RES DR
+          LEFT JOIN RQ.RQ.SPARQL_USER_UPLOADS SU on (SU.SU_DAV_FULL_PATH = DR.RES_FULL_PATH AND SU.SU_DELETED = 0)
+         WHERE RES_COL = DB.DBA.DAV_SEARCH_ID(_path,'C') )do
+    {
+?>
+  <tr> 
+ 	   <td><img src="/images/generic.gif"></td> 
+ 	   <td><a href="?path=<?V _path ?>&file=<?V RES_NAME ?>"><?V RES_NAME ?></a></td> 
+     <td><?= substring(cast(RES_MOD_TIME as varchar),1,19) ?></td>
+ 	   <td align="right"><?V case when RES_SIZE <= 1024 then cast(RES_SIZE as varchar) || ' b' 
+ 	                              when RES_SIZE > 1024 then cast(RES_SIZE/1024 as varchar) || ' K' 
+ 	                              when RES_SIZE > 1024 * 1024 then cast(RES_SIZE/(1024 * 1024)as varchar) || ' M'
+ 	                              when RES_SIZE > 1024 * 1024 * 1024 then cast(RES_SIZE/(1024 * 1024 * 1024) as varchar) || ' G'
+ 	                              when RES_SIZE > 1024 * 1024 * 1024 * 1024 then cast(RES_SIZE/(1024 * 1024 * 1024 * 1024) as varchar) || ' T'
+ 	                              else RES_SIZE || ' b' 
+ 	                              end ?></td> 
+     <td><a href="desk.vsp?case=custom_sparql&dflt_graph=<?V case when SU_GRAPH is null then 'http://local.virt' || RES_FULL_PATH else SU_GRAPH end ?>">query</a></td> 
+ 	</tr> 
+<?vsp
+    }
+  }
+?>
+ 	    <tr><td colspan=5><HR /></td></tr> 
+ 	  </TABLE> 
+ 	</BODY> 
+</HTML> 

@@ -63,6 +63,7 @@ WHERE {
     ?bn tm:result ?etalonuri 
     }
   }', DB.DBA.SPARQL_DAV_DATA_URI() || _item[2], 10000);
+  foreach(any __itm in _tcases)do
           foreach (any _tcase in _tcases) do
             {
               if (exists (select top 1 1 from DB.DBA.SPARQL_DAWG_STATUS where TEST_URI = _tcase[1] and TEST_STATUS = 'PASSED'))
@@ -97,11 +98,13 @@ WHERE {
 		  _descr := replace (_descr, '  ', ' ');
 		  if (_name = _case)
 		    {
-		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;(&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?= _name ?>" TITLE="<?= _descr ?>" TARGET="_top"><?= _name ?></A>&nbsp;)</CODE></NOBR><BR><?vsp
+		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;(&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?vsp http_url(_name); ?>" TITLE="<?vsp http(_descr); ?>" TARGET="_top"><?vsp http(_name); ?></A>&nbsp;)</CODE></NOBR><BR>
+		      <?vsp
 		    }
 		  else
 		    {
-		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?= _name ?>" TITLE="<?= _descr ?>" TARGET="_top"><?= _name ?></A></CODE></NOBR><BR><?vsp
+		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?vsp http_url(_name); ?>" TITLE="<?vsp http(_descr); ?>" TARGET="_top"><?vsp http(_name); ?></A></CODE></NOBR><BR>
+		      <?vsp
 		    }
 skip_failed_test: ;
 		}
@@ -116,11 +119,11 @@ skip_failed_test: ;
 		  _comment := replace (_comment, '  ', ' ');
 		  if (_name = _case)
 		    {
-		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;(&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?= _name ?>&desk=deskdata" TITLE="<?= _comment ?>" TARGET="_top"><?= _name ?></A>&nbsp;)</CODE></NOBR><BR><?vsp
+		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;(&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?vsp http_url(_name); ?>&desk=deskdata" TITLE="<?vsp http(_comment); ?>" TARGET="_top"><?vsp http(_name); ?></A>&nbsp;)</CODE></NOBR><BR><?vsp
 		    }
 		  else
 		    {
-		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?= _name ?>&desk=deskdata" TITLE="<?= _comment ?>" TARGET="_top"><?= _name ?></A></CODE></NOBR><BR><?vsp
+		      ?><NOBR><CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<A HREF="demo.vsp?list=<?= aref (_item, 1) ?>&case=<?vsp http_url(_name); ?>&desk=deskdata" TITLE="<?vsp http(_comment); ?>" TARGET="_top"><?vsp http(_name); ?></A></CODE></NOBR><BR><?vsp
 		    }
 		}
 	    }

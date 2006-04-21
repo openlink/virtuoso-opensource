@@ -60,8 +60,8 @@
 <FRAMESET ROWS="40,*" FRAMESPACING=0 FRAMEBORDER=0>
  <FRAME SRC="header.vsp" NAME="header" SCROLLING=NO />
  <FRAMESET COLS="210,*" FRAMESPACING=0 FRAMEBORDER=0>
-  <FRAME SRC="list.vsp?list=<?= _list ?>&case=<?= _case ?>" NAME="list" />
-  <FRAME SRC="<?= _deskname ?>?list=<?= _list ?><?= _listmetaonly ?>&case=<?= _case ?>&text=<?= _text ?>" NAME="desk" />
+  <FRAME SRC="list.vsp?list=<?= _list ?>&case=<?vsp http_url(_case); ?>" NAME="list" />
+  <FRAME SRC="<?= _deskname ?>?list=<?= _list ?><?= _listmetaonly ?>&case=<?vsp http_url(_case); ?>&text=<?= _text ?>" NAME="desk" />
  </FRAMESET>
 </FRAMESET>
 <NOFRAMES>

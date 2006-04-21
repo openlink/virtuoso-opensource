@@ -1,0 +1,283 @@
+<?vsp 
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  declare _source,_upload,_graph, _tempfile,_davpath varchar;
+  declare _file,_data,_data_xml any;
+  declare _rc,_error,_filelimit,i,_is_ttl, _is_xml, _overwrite,_show_overwrite integer;
+  _source := {?'source'};
+  _upload := {?'upload'};
+  _graph := trim({?'graph'},' ');
+  _file := {?'file'};
+  _error := 0;
+  _is_ttl := 0;
+  _is_xml := 0;
+  _show_overwrite := 0;
+  if ({?'overwrite'} = 'on')
+    _overwrite := 1;
+  else
+    _overwrite := 0;
+  
+  _filelimit := 3 * 1024 * 1024;
+  
+ if (_source is null or _source = '')
+   _source := 'upl';
+   
+?>
+<HTML> 
+  <head>
+ 	<TITLE>Upload file</TITLE> 
+ 	<script language="JavaScript">
+ 	  function change_file_input(obj)
+ 	  {
+ 	    inp = document.getElementById('file_input');
+ 	    if (obj.value == 'upl')
+ 	      inp.innerHTML = '<input type="file" name="file" size="100" id="file"/>';
+ 	    else if (obj.value == 'txt')
+ 	      inp.innerHTML = '<textarea name="file" cols="76" rows="20" id="file"></textarea>';
+ 	    else
+ 	      inp.innerHTML = '<input type="text" name="file" size="100" id="file"/>';
+ 	  }
+ 	</script>
+ 	</head>
+  <BODY TEXT="#000000" LINK="#0000CC" VISITED="#3300CC" BGCOLOR="#EEEEEE" TOPMARGIN="0">
+ 	  <form method="post" enctype="multipart/form-data">
+<?vsp
+  if (_upload is not null and _upload = 'Upload')
+  {
+    {
+      declare exit handler for sqlstate '*'{
+         _error := 1;
+          http('<p style="color:red;">');
+          http('There was an error, when we tried to load the file.<br/>');
+          http('Correct the error and try again. <br/>');
+          http('The error returned was:<pre>');
+          http(__SQL_MESSAGE);
+          http('</pre></p>');
+          goto _upload_form;
+      };
+      
+      if (_source = 'upl')
+      {
+        _data := _file;
+        _davpath := DB.DBA.SPARQL_DAV_USER_DATA_PATH() || http_client_ip() || '/' || get_keyword('filename',{?'attr-file'});
+      }
+      else if (_source = 'dav')
+      {
+        if (DB.DBA.DAV_SEARCH_ID(_file,'R') < 0)
+          signal('DAVNOTFOUND','DAV resource not found.');
+        _data := (SELECT RES_CONTENT FROM WS.WS.SYS_DAV_RES WHERE RES_FULL_PATH = _file);
+        _rc := strrchr(_file,'/');
+        _davpath := DB.DBA.SPARQL_DAV_USER_DATA_PATH() || http_client_ip() || '/' || substring(_file,_rc,length(_file) - _rc);
+      }
+      else if (_source = 'ext')
+      {
+        _data := "RQ"."RQ"."URI_GET" (_file);
+        _davpath := _file;
+        if (strstr(_davpath,'://'))
+          _davpath := substring(_davpath,strstr(_davpath,'://') + 3,length(_davpath));
+        _davpath := DB.DBA.SPARQL_DAV_USER_DATA_PATH() || _davpath;
+      }
+      else if (_source = 'txt')
+      {
+        _data := _file;
+        _davpath := _graph;
+        if (_davpath = '')
+        {
+          _davpath := DB.DBA.SPARQL_DAV_USER_DATA_PATH() || http_client_ip() || '/text_upload_';
+          i := 1;
+          while (DB.DBA.DAV_SEARCH_ID(_davpath || cast(i as varchar),'R') > 0)
+            i := i + 1;
+          _davpath := _davpath || cast(i as varchar);
+        }
+        else if (strstr(_davpath,'://') and not(_davpath like 'http://local.virt' || DB.DBA.SPARQL_DAV_USER_DATA_PATH() ||'%'))
+        {
+          _davpath := substring(_davpath,strstr(_davpath,'://') + 3,length(_davpath));
+          _davpath := DB.DBA.SPARQL_DAV_USER_DATA_PATH() || _davpath;
+        }
+        else if (_graph <> '' and not(strchr(_graph,'/')))
+          _davpath := DB.DBA.SPARQL_DAV_USER_DATA_PATH() || http_client_ip() || '/' || trim(_davpath,'/');
+      }
+  	  _davpath := replace(_davpath,'//','/');
+  	  if (_graph is null or _graph = '')
+  	    _graph := 'http://local.virt' || _davpath;
+      
+      if (10 < (select count(*) 
+                 from RQ.RQ.SPARQL_USER_UPLOADS 
+                where SU_UPLOAD_IP = http_client_ip() AND SU_UPLOAD_TIME > dateadd('minute', -1,now())))
+        signal('UPLIMIT','You have loaded more than 10 files in less than a minute. Please try again later.');
+      
+      if (length(_data) > _filelimit)
+        signal('LIMIT','File limit of ' || cast(_filelimit as varchar) || ' bytes exceeded.');
+
+      {
+        declare continue handler for SQLSTATE '*' {
+          _is_ttl := 0;
+        };
+        _is_ttl := 1;
+        DB.DBA.RDF_TTL2HASH(_data,_graph,_graph);
+      }
+      if (not(_is_ttl))
+      {
+        {
+          declare continue handler for SQLSTATE '*' {
+            _is_xml := 0;
+          };
+          _is_xml := 1;
+          _data_xml := xtree_doc (_data, 0, _graph);
+        }
+      }
+      if (_is_xml = 0 and _is_ttl = 0)
+        signal('INVALID','The file you''ve tried to upload was not recognized as valid XML RDF or TURTLE RDF');
+
+      if (0 < length(DB.DBA.SPARQL_EVAL_TO_ARRAY ('select * where {graph <'||_graph||'> { ?s ?p ?o }}',_graph,1)))
+      {
+        if (not(exists(SELECT 1 FROM RQ.RQ.SPARQL_USER_UPLOADS WHERE SU_GRAPH = _graph)))
+          signal('DATAEXISTS','Data for graph "'|| _graph ||'" already exists which can not be overwritten. Change your default graph.');
+        else {
+          if (not(_overwrite))
+          {
+            http('<p style="color:red;">');
+            http('Data for graph "'|| _graph ||'" was already loaded if you wish to overwrite it select the overwrite checkbox.');
+            http('</p>');
+            _show_overwrite := 1;
+            goto _upload_form;
+          }
+          else
+          {
+            declare _tmp_dav_path varchar;
+            _tmp_dav_path := (SELECT SU_DAV_FULL_PATH FROM RQ.RQ.SPARQL_USER_UPLOADS WHERE SU_GRAPH = _graph);
+            DELETE FROM DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (_graph);
+            DB.DBA.DAV_DELETE (_tmp_dav_path,
+               1, 
+               'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
+            UPDATE RQ.RQ.SPARQL_USER_UPLOADS SET SU_DELETED = 1 WHERE SU_GRAPH = _graph AND SU_DELETED = 0;
+          }
+        }
+      }
+        
+      if (_is_ttl)
+        DB.DBA.TTLP(_data,_graph,_graph);
+      else
+        DB.DBA.RDF_EXP_LOAD_RDFXML(_graph,_data_xml,0);
+  
+      DB.DBA.SPARQL_MKPATH (_davpath);
+      if (DB.DBA.DAV_SEARCH_ID(_davpath,'R') > 0)
+      {
+        i := 1;
+        while (DB.DBA.DAV_SEARCH_ID(_davpath || '.' || cast(i as varchar),'R') > 0)
+          i := i + 1;
+        _davpath := _davpath || '.' || cast(i as varchar);
+      }
+      DB.DBA.DAV_RES_UPLOAD (_davpath,
+                             _data,
+                             'application/rdf+xml',
+                             '110110110RR',
+                             http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));
+      INSERT INTO "RQ"."RQ"."SPARQL_USER_UPLOADS" (SU_DAV_FULL_PATH,SU_GRAPH, SU_UPLOAD_TIME, SU_UPLOAD_IP)
+        VALUES (_davpath,_graph,now(),http_client_ip());
+?>
+  <h3>File uploaded.</h3>
+  <table>
+    <tr>
+      <td colspan="3">
+        Saved as:<?= _davpath ?><br/>
+        Grapth: <?= _graph ?>
+      </td>
+    </tr>
+    <tr>
+      <td><a href="browse_data.vsp?path=<?V substring(_davpath,1,strrchr(_davpath,'/') + 1) ?>">list dir</a></td>
+      <td><a href="browse_data.vsp?path=<?V substring(_davpath,1,strrchr(_davpath,'/') + 1) ?>&file=<?V subseq(_davpath,strrchr(_davpath,'/') + 1) ?>">view file</a></td>
+      <td><a href="desk.vsp?case=custom_sparql&dflt_graph=<?V _graph ?>">query</a></td>
+    </tr>
+  </table>
+<?vsp      
+  	}
+  }
+  
+  if (_upload is null or _upload <> 'Upload' or _error)
+  {
+    _upload_form:;
+?>
+ 	<H4>Upload file</H4> 
+ 	  <TABLE> 
+ 	    <tr>
+ 	      <td><input type="radio" name="source" value="upl" id="s_upl" onchange="change_file_input(this)"<?vsp if (_source = 'upl') http(' checked="checked"'); ?>/></td> 
+ 	      <td><label for="s_upl">from local filesystem</label></td>
+ 	    </tr> 
+ 	    <tr>
+ 	      <td><input type="radio" name="source" value="dav" id="s_dav" onchange="change_file_input(this)"<?vsp if (_source = 'dav') http(' checked="checked"'); ?>/></td> 
+ 	      <td><label for="s_dav">from server WebDav</label></td>
+ 	    </tr> 
+ 	    <tr>
+ 	      <td><input type="radio" name="source" value="ext" id="s_ext" onchange="change_file_input(this)"<?vsp if (_source = 'ext') http(' checked="checked"'); ?>/></td> 
+ 	      <td><label for="s_ext">from external resource (link)</label></td>
+ 	    </tr> 
+ 	    <tr>
+ 	      <td><input type="radio" name="source" value="txt" id="s_txt" onchange="change_file_input(this)"<?vsp if (_source = 'txt') http(' checked="checked"'); ?>/></td> 
+ 	      <td><label for="s_txt">from text</label></td>
+ 	    </tr> 
+ 	    <tr>
+ 	      <td><label for="graph">Graph:</label></td> 
+ 	      <td><input type="text" name="graph" size="100" id="graph" value="<?V _graph ?>"/></td>
+ 	    </tr> 
+ 	    <tr>
+ 	      <td><label for="file_input">File:</label></td> 
+ 	      <td>
+ 	        <div id="file_input">
+ 	          <?vsp
+       	    if (_source = 'upl')
+       	      http('<input type="file" name="file" size="100" id="file"/>');
+       	    else if (_source = 'txt')
+       	    {
+       	      http('<textarea name="file" cols="76" rows="20" id="file">');
+       	      http_value(_data,null);
+       	      http('</textarea>');
+       	    }
+       	    else
+       	      http('<input type="text" name="file" size="100" id="file"/>');
+       	    ?>
+       	  </div>
+        </td>
+ 	    </tr> 
+ 	    <tr>
+ 	      <td colspan="2">
+ 	        <input type="submit" name="upload" value="Upload"/>
+ 	        <?vsp
+ 	          if (_show_overwrite)
+ 	          {
+ 	        ?>
+ 	        <input type="checkbox" name="overwrite" value="on" id="overwrite"/>
+ 	        <label for="overwrite">overwrite</label>
+ 	        <?vsp
+ 	        }
+ 	        ?>
+ 	      </td> 
+ 	    </tr> 
+ 	  </TABLE> 
+<?vsp
+  }
+  _end:;
+?>
+ 	  </form> 
+ 	</BODY> 
+</HTML> 

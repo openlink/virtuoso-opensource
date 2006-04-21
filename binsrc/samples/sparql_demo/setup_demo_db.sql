@@ -41,6 +41,12 @@ create function SPARQL_DAV_DATA_PATH() returns varchar
 }
 ;
 
+create function SPARQL_DAV_USER_DATA_PATH()
+{
+  return SPARQL_DAV_DATA_PATH() || 'user_data/';
+}
+;
+
 create function SPARQL_DAV_DATA_URI() returns varchar
 {
   return 'http://local.virt' || SPARQL_DAV_DATA_PATH();
@@ -244,6 +250,7 @@ create procedure SPARQL_DAWG_LOAD_MANIFESTS ()
 	  davuri := SPARQL_DAV_DATA_URI() || mfname;
 	  SPARQL_MKPATH (davpath);
 	  DB.DBA.DAV_DELETE (davpath, 1, 'dav', 'dav');
+    delete from RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (davuri);
 	  id := DB.DBA.DAV_RES_UPLOAD (davpath,
 	    file_to_string (filefullname),
 	    'application/rdf+xml',

@@ -40,6 +40,40 @@ DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/DAV/sparql_demo/', vsp_use
 --DB.DBA.VHOST_DEFINE (lpath=>'/sparql_demo/', ppath=>'/sparql_demo/', vsp_user=>'RQ')
 ;
 
+create procedure "RQ"."RQ"."sparql_exec_no_error"(in expr varchar)
+{
+  declare state, message, meta, result any;
+  exec(expr, state, message, vector(), 0, meta, result);
+}
+;
+
+"RQ"."RQ"."sparql_exec_no_error"('
+create table "RQ"."RQ"."SPARQL_USER_UPLOADS"(
+  SU_ID integer IDENTITY,
+  SU_DAV_FULL_PATH varchar not null,
+  SU_GRAPH varchar not null, 
+  SU_UPLOAD_TIME datetime not null, 
+  SU_UPLOAD_IP   varchar(15) not null, 
+  SU_DELETED integer not null default 0,
+  
+  primary key(SU_ID)
+)
+')
+;
+
+"RQ"."RQ"."sparql_exec_no_error"('
+create index SPARQL_USER_UPLOADS_SK01 on "RQ"."RQ"."SPARQL_USER_UPLOADS"(SU_DAV_FULL_PATH,SU_GRAPH,SU_DELETED);
+')
+;
+"RQ"."RQ"."sparql_exec_no_error"('
+create index SPARQL_USER_UPLOADS_SK02 on "RQ"."RQ"."SPARQL_USER_UPLOADS"(SU_UPLOAD_IP,SU_UPLOAD_TIME);
+')
+;
+"RQ"."RQ"."sparql_exec_no_error"('
+create index SPARQL_USER_UPLOADS_SK03 on "RQ"."RQ"."SPARQL_USER_UPLOADS"(SU_GRAPH,SU_DELETED);
+')
+;
+
 create procedure "RQ"."RQ"."LIST_MENU_ITEMS"() returns any
 {
   declare manifests any;
@@ -63,6 +97,8 @@ create procedure "RQ"."RQ"."LIST_MENU_ITEMS"() returns any
       vector (5, 'SPARQL Language', 'http://www.w3.org/TR/rdf-sparql-query/#modProjection'),
       vector (5, 'SPARQL Test Cases', 'http://www.w3.org/2001/sw/DataAccess/tests/'),
       vector (1),
+      vector (2, 'Browse loaded data','demo.vsp?desk=browse_data'),
+      vector (2, 'Custom Query','demo.vsp?desk=desk&case=custom_sparql'),
       vector (0, 'Test Cases') ),
     manifests,
     vector (
