@@ -83,4 +83,9 @@ EXTRA_DIST = \
 	autogen.sh \
 	bin/makever \
 	bin/libtool.macosx \
-	bin/installer/virtuoso.ini bin/installer/demo.ini
+	bin/installer/virtuoso.ini bin/installer/demo.ini \
+	win32/mkperlenv.pl \
+	win32/mkpythonenv.py \
+	win32/*.bat \
+	win32/*.vcproj \
+	win32/*.sln
