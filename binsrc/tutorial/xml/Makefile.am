@@ -27,6 +27,8 @@
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	*.css \
+	*.xml \
+	*.xsl \
 	rq_s_1/*.xml \
 	sx_e_0/*.xml \
 	sx_e_1/*.vsp \
@@ -53,7 +55,6 @@ EXTRA_DIST = \
 	sx_g_1/*.xml \
 	sx_h_1/*.vsp \
 	sx_h_1/*.xml \
-	*.xml \
 	xq_s_1/*.xml \
 	xq_s_2a/*.sql \
 	xq_s_2a/*.vsp \
@@ -70,4 +71,7 @@ EXTRA_DIST = \
 	xq_s_4/*.vsp \
 	xq_s_4/*.xml \
 	xq_s_4/*.xsl \
-	*.xsl
+	usecases/*.sql \
+	usecases/*.vsp \
+	usecases/*.xml \
+	usecases/*.xsd

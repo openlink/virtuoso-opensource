@@ -1,0 +1,45 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<Sales xmlns:sql="urn:schemas-openlink-com:xml-sql">
+    <sql:sqlx><![CDATA[  
+	select  XMLELEMENT ('Month', 
+             XMLATTRIBUTES (sub.year as "year", sub.month as "month"),
+                (select XMLAGG (        
+                         XMLELEMENT ('Category', XMLATTRIBUTES (sub2.CategoryName), XMLELEMENT ('Sales', sub2.volume)) 
+                       )
+                      from 
+                        (select
+                         cat.CategoryName as CategoryName, 
+                         sum (od.Quantity*od.UnitPrice*(1-od.Discount)) as volume 
+                         from Demo.demo.Orders o1, Demo.demo.Order_Details od, Demo.demo.Products p, Demo.demo.Categories cat 
+                         where od.OrderID = o1.OrderID and od.ProductID = p.ProductID and cat.CategoryID = p.CategoryID 
+                         and year(o1.OrderDate) = sub.year and month(o1.OrderDate) = sub.month
+                         group by 1 
+                        ) sub2
+                   )
+          )
+        as result from 
+        (select distinct year(o.OrderDate) as year, 
+                month(o.OrderDate) as month from Demo.demo.Orders o) sub
+	]]></sql:sqlx>
+</Sales>
