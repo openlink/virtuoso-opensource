@@ -211,6 +211,8 @@ extern "C" {
 #include "sqlcstate.h"
 #include "virtpwd.h"
 
+#define box_bool(n) ((caddr_t)((ptrlong)((n) ? 1 : 0)))
+
 id_hash_t *icc_locks;
 dk_mutex_t *icc_locks_mutex;
 
@@ -4290,14 +4292,8 @@ bif_isblob_handle (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_isentity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg1 = bif_arg (qst, args, 0, "isentity");
-  dtp_t dtp = DV_TYPE_OF (arg1);
-  switch (dtp)
-  {
-  case DV_XML_ENTITY:
-    return box_num (1);
-  }
-  return box_num (0);
+  caddr_t arg0 = bif_arg (qst, args, 0, "isentity");
+  return box_bool (DV_XML_ENTITY == DV_TYPE_OF (arg0));
 }
 
 
@@ -4365,125 +4361,40 @@ bif_isnumeric (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_isfloat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg1 = bif_arg (qst, args, 0, "isfloat");
-  int result;
-
-  dtp_t dtp = DV_TYPE_OF (arg1);
-  switch (dtp)
-  {
-  case DV_SINGLE_FLOAT:
-    {
-  result = 1;
-  break;
-    }
-  default:
-    {
-  result = 0;
-  break;
-    }
-  }
-
-  return (box_num (result));
+  caddr_t arg0 = bif_arg (qst, args, 0, "isfloat");
+  return box_bool (DV_SINGLE_FLOAT == DV_TYPE_OF (arg0));
 }
 
 /* Is arg a double? */
 caddr_t
 bif_isdouble (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg1 = bif_arg (qst, args, 0, "isdouble");
-  int result;
-
-  dtp_t dtp = DV_TYPE_OF (arg1);
-  switch (dtp)
-  {
-  case DV_DOUBLE_FLOAT:
-    {
-  result = 1;
-  break;
-    }
-  default:
-    {
-  result = 0;
-  break;
-    }
-  }
-
-  return (box_num (result));
+  caddr_t arg0 = bif_arg (qst, args, 0, "isdouble");
+  return box_bool (DV_DOUBLE_FLOAT == DV_TYPE_OF (arg0));
 }
 
 
 caddr_t
 bif_isnull (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg1 = bif_arg (qst, args, 0, "isnull");
-  int result;
-
-  dtp_t dtp = DV_TYPE_OF (arg1);
-  switch (dtp)
-  {
-  case DV_DB_NULL:
-    {
-  result = 1;
-  break;
-    }
-  default:
-    {
-  result = 0;
-  break;
-    }
-  }
-
-  return (box_num (result));
+  caddr_t arg0 = bif_arg (qst, args, 0, "isnull");
+  return box_bool (DV_DB_NULL == DV_TYPE_OF (arg0));
 }
 
 
 caddr_t
 bif_isstring (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg1 = bif_arg (qst, args, 0, "isstring");
-  int result;
-
-  dtp_t dtp = DV_TYPE_OF (arg1);
-  switch (dtp)
-  {
-  case DV_STRING:
-    {
-  result = 1;
-  break;
-    }
-  default:
-    {
-  result = 0;
-  break;
-    }
-  }
-
-  return (box_num (result));
+  caddr_t arg0 = bif_arg (qst, args, 0, "isstring");
+  return box_bool (DV_STRING == DV_TYPE_OF (arg0));
 }
 
 
 caddr_t
 bif_isbinary (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg1 = bif_arg (qst, args, 0, "isbinary");
-  int result;
-
-  dtp_t dtp = DV_TYPE_OF (arg1);
-  switch (dtp)
-  {
-  case DV_BIN:
-    {
-  result = 1;
-  break;
-    }
-  default:
-    {
-  result = 0;
-  break;
-    }
-  }
-
-  return (box_num (result));
+  caddr_t arg0 = bif_arg (qst, args, 0, "isbinary");
+  return box_bool (DV_BIN == DV_TYPE_OF (arg0));
 }
 
 
@@ -4516,16 +4427,19 @@ bif_isarray (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
-bif_isiri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_isuname (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg1 = bif_arg (qst, args, 0, "isiri_id");
-  dtp_t dtp = DV_TYPE_OF (arg1);
-  if (DV_IRI_ID == dtp)
-    return box_num (1);
-  else 
-    return box_num (0);
+  caddr_t arg0 = bif_arg (qst, args, 0, "isuname");
+  return box_bool (DV_UNAME == DV_TYPE_OF (arg0));
 }
 
+
+caddr_t
+bif_isiri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "isiri_id");
+  return box_bool (DV_IRI_ID == DV_TYPE_OF (arg0));
+}
 
 
 caddr_t
@@ -11478,6 +11392,7 @@ sql_bif_init (void)
   bif_define_typed ("isbinary", bif_isbinary, &bt_integer);
   bif_define_typed ("isarray", bif_isarray, &bt_integer);
   bif_define_typed ("isiri_id", bif_isiri_id, &bt_integer);
+  bif_define_typed ("isuname", bif_isuname, &bt_integer);
 
   bif_define_typed ("iri_id_num", bif_iri_id_num, &bt_integer);
   bif_define_typed ("iri_id_from_num", bif_iri_id_from_num, &bt_iri);
