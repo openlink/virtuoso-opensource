@@ -398,22 +398,34 @@ create procedure XML_URI_GET_STRING_OR_ENT (in base_uri varchar, in rel_uri varc
 create procedure XML_COLLECTION_DIR_LIST_LOCAL (in collection_uri varchar, in dav_path varchar, inout res any, in recursive int)
 {
   declare dir_list any;
+  declare r_dict, r_list any;
   -- dbg_obj_princ ('XML_COLLECTION_DIR_LIST_LOCAL (', collection_uri, dav_path, ', ...,', recursive, ')');
-  dir_list := DAV_DIR_LIST_INT (dav_path, 0, '%', null, null, http_dav_uid());
-  if (isarray (dir_list))
-    {
-      foreach (any uri_list in dir_list) do
+  dir_list := DAV_DIR_LIST_INT (dav_path, case recursive when 0 then 0 else 1 end, '%', null, null, http_dav_uid());
+  if (not isarray (dir_list))
+    return;
+  r_dict := dict_new (length (dir_list) + 13);
+  foreach (any dir_itm in dir_list) do
 	{
-	  if (aref (uri_list, 1) = 'R')
+      if ('R' = dir_itm[1])
 	    {
-	      xq_sequencebld_acc (res, subseq (collection_uri, 0, 22) || subseq (aref (uri_list, 0), 5));
-	    }
-	  else if (recursive = 1 and (aref (uri_list, 1) = 'C'))
+          declare res_id any;
+          declare res_path varchar;
+          res_id := dir_itm[4];
+          if (isarray (res_id))
 	    {
-	      XML_COLLECTION_DIR_LIST_LOCAL (collection_uri, aref (uri_list,0), res, 1);
+              res_path := DAV_SEARCH_PATH (res_id, 'R');
+              if (not isstring (res_path))
+                res_path := dir_itm[0];
 	    }
+          else
+            res_path := dir_itm[0];
+          dict_put (r_dict, res_path, 0);
 	}
     }
+  r_list := dict_list_keys (r_dict, 2);
+  gvector_sort (r_list, 1, 0, 1);
+  foreach (varchar r_path in r_list) do
+    xq_sequencebld_acc (res, subseq (collection_uri, 0, 22) || subseq (r_path, 5));
 }
 ;
 
