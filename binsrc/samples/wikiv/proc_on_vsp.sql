@@ -75,10 +75,10 @@ create function WV.WIKI.VSPTOPICVIEW (
   returns varchar
 {
   declare _uid int;
-  declare _base_adjust varchar;
+  declare _base_adjust, _output varchar;
   _uid := get_keyword ('uid', params);
   _base_adjust := get_keyword ('baseadjust', params);
-  dbg_obj_print (params);
+  _output := coalesce (get_keyword ('xmlraw', params), get_keyword ('command', params), 'wiki');
   declare _text, _is_hist varchar;  
   declare exit handler for sqlstate '42WV9' {
     --dbg_obj_princ ('WV.WIKI.VSPTOPICVIEW ', params);
@@ -151,14 +151,30 @@ ins:
   declare _ext_params any;
   _ext_params := vector_concat (_topic.ti_xslt_vector (params), 
   	vector ('is_hist', _is_hist, 'revision', _topic.ti_rev_id));
+  _xhtml := _topic.ti_get_entity(null, 1);
+  if (_output in ('wiki', 'xmlraw'))
   _xhtml := 
-    WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _topic.ti_get_entity (null,1),
+    WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _xhtml,
       _ext_params);
-  if (get_keyword('xmlraw', params) is not null)
+  if (_output = 'xmlraw')
     {
       http_rewrite ();
       http_value (_xhtml); 
-      return;
+      return 0;
+    }
+  else if (_output = 'docbook')
+	{
+	  _xhtml:= '<html xmlns="http://www.w3.org/1999/xhtml">
+		<head>
+	  <title>' || _topic.ti_local_name || '</title>
+	</head>
+	<body>' || serialize_to_UTF8_xml (_topic.ti_get_entity(null, 0)) || '</body>
+   </html>';
+	  http_rewrite ();
+	  http_header ('Content-Type: text/xml\r\n');
+	  http_value (WV.WIKI.VSPXSLT ('html2docbook.xsl', xtree_doc (_xhtml), _ext_params));
+
+	  return 0;
     }
   declare _skin varchar;
   dbg_obj_princ (params);
@@ -169,7 +185,7 @@ ins:
       _skin );
   http_header ('Content-Type: text/html\r\n');
   http_value (_xhtml);
---  http_value (temp);
+  return 1;
 }
 ;
 
@@ -2301,11 +2317,15 @@ create function WV.WIKI.MKDIR (
   declare parts any;
   declare res int;
   parts := split_and_decode (WV.WIKI.FIX_PATH (path), 0, '\0\0/');
+  dbg_obj_princ ('>', path);
   declare idx int;
   for (idx:=3; idx<=length(parts); idx := idx+1)
     {
        path := WV.WIKI.STRJOIN ('/', subseq (parts, 0, idx)) || '/';
+	   dbg_obj_princ ('=>', path, DB.DBA.DAV_SEARCH_ID (path, 'C'));
+	   if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'C')) is null)
        res := DB.DBA.DAV_COL_CREATE (path, '110100100NM', auth, grp, auth, passwd);
+       dbg_obj_princ (res);
     }
   return res;
 }

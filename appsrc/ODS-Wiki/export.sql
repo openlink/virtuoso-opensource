@@ -24,6 +24,33 @@
 
 -- export cluster functions
 
+create procedure WV.WIKI.TYPE_TRAITS ()
+{
+  return vector (
+		'html', 
+			vector ('extension', '.html',
+					'xslt', 'VspTopicView.xslt',
+					'mime-type', 'text/html',
+					'formatter', 'WV.WIKI.FORMATTER_HTML'),
+		'docbook',
+			vector ('extension', '.xml',
+					'xslt', 'html2docbook.xsl',
+					'mime-type', 'text/xml',
+					'formatter', 'WV.WIKI.FORMATTER_DOCBOOK')
+	);
+}
+;
+
+create procedure WV.WIKI.PROP(in _type varchar, in _prop_name varchar)
+{
+  declare _traits any;
+  _traits := get_keyword (_type, WV.WIKI.TYPE_TRAITS ());
+  if (_traits is null)
+	return null;
+  return get_keyword (_prop_name, _traits);
+}
+;
+		 	
 
 --* export attachment of the topic
 --* returns nothing
@@ -69,7 +96,8 @@ create procedure WV.WIKI.EXPORT_TOPIC (
 	in footer varchar, --* footer added to topic text
   	in _owner varchar, --* user id for authentication
 	in _passwd varchar, --* password
-	in _group varchar --* initial group of result file
+	in _group varchar, --* initial group of result file
+	in _type varchar := 'html'
 ) 
 {
   declare _topic WV.WIKI.TOPICINFO;
@@ -84,34 +112,44 @@ create procedure WV.WIKI.EXPORT_TOPIC (
 
   declare _params any;
   _params := _topic.ti_xslt_vector(vector ('export', 1, 'base', base_uri, 'baseadjust', '../', 'plain', 1));
-  _topic.ti_text := '<html>' || header || '\n' || cast (_topic.ti_text as varchar) || footer || '</html>';
 
   declare _xhtml any;
-  _xhtml := WV.WIKI.VSPXSLT ('VspTopicView.xslt', _topic.ti_get_entity (null,0),  _params);
+  declare _proc varchar;
+  _proc := WV.WIKI.PROP (_type, 'formatter');
+  if (__proc_exists (_proc))
+	_xhtml := call (_proc)(_topic, header, footer);
+  else
+    signal ('XXXXX', 'Formatter for [' || _type || ']{' || _proc || '} does not exists');
+
+  _xhtml := WV.WIKI.VSPXSLT (WV.WIKI.PROP(_type, 'xslt'), _xhtml, _params);
+  dbg_obj_princ (_xhtml);
   if (stylesheet is not null)
     _xhtml := xslt (stylesheet, _xhtml, _params);
   declare path, attachments_path varchar;
-  path := WV.WIKI.FIX_PATH (directory || '/' || _topic.ti_cluster_name || '/' || _topic.ti_local_name || '.html');
+  path := WV.WIKI.FIX_PATH (directory || '/' || _topic.ti_cluster_name || '/' || _topic.ti_local_name || WV.WIKI.PROP (_type, 'extension'));
   attachments_path := WV.WIKI.FIX_PATH (directory || '/' || _topic.ti_cluster_name || '/' || _topic.ti_local_name );
   declare res int; 
 
   declare text varchar;
+  if (_type = 'html')
   text := serialize_to_UTF8_xml (xpath_eval ('//html[position()=last()]', _xhtml)); 
+  else
+	text := serialize_to_UTF8_xml (_xhtml);
   res := DB.DBA.DAV_RES_UPLOAD (
      path,
      text,
-     'text/html',
+     WV.WIKI.PROP (_type, 'mime-type'),
      '110100100NM', 
      _owner,
      _group, 
      _owner, _passwd);
 
   -- upload attachments
-  declare _type, _path varchar;
+  declare _att_type, _path varchar;
   foreach (any _att in xpath_eval ('//Attach', _topic.ti_report_attachments(), 0)) do {
-    _type := cast (xpath_eval ('@Type', _att) as varchar);
+    _att_type := cast (xpath_eval ('@Type', _att) as varchar);
     _path := cast (xpath_eval ('@Path', _att) as varchar);
-    WV.WIKI.EXPORT_ATTACHMENT (attachments_path, _path, _type, _owner, _group, _passwd);
+    WV.WIKI.EXPORT_ATTACHMENT (attachments_path, _path, _att_type, _owner, _group, _passwd);
   }
   if (DAV_HIDE_ERROR(res) is null)
     signal ('WV100', 'Can not upload result file to DAV repository: ' ||  DAV_PERROR(res));
@@ -126,15 +164,16 @@ create function WV.WIKI.EXPORT_CLUSTER (
 	in footer varchar, --* footer added to topic text
   	in _owner varchar, --* user id for authentication
 	in _passwd varchar, --* password
-	in _group varchar --* initial group of result file
+	in _group varchar, --* initial group of result file
+	in _type varchar := 'html'
 ) returns integer 
 --r returns number of topics exported
 {
   declare res int;
   declare path varchar;
-  path := WV.WIKI.FIX_PATH (directory || '/' || cluster_name);
-  WV.WIKI.FIX_PATH (directory);
-  res := DAV_COL_CREATE (path || '/', '110100100NM', _owner, _group, _owner, _passwd);
+  path := WV.WIKI.FIX_PATH (directory || '/' || _type || '/' || cluster_name );
+  directory := WV.WIKI.FIX_PATH (directory);
+  res := WV.WIKI.MKDIR (path || '/', _owner, _group,_passwd);
   if (res <> -3 and DAV_HIDE_ERROR (res) is null)
     signal ('WV001', 'Can not create collection: ' || path || ' : ' || DAV_PERROR (res));
 
@@ -146,12 +185,14 @@ create function WV.WIKI.EXPORT_CLUSTER (
   do
     {
       result (LocalName);
-      WV.WIKI.EXPORT_TOPIC (TopicId, '', stylesheet, directory, header, footer, _owner, _passwd, _group); 
+      WV.WIKI.EXPORT_TOPIC (TopicId, '', stylesheet, directory || '/' || _type || '/', header, footer, _owner, _passwd, _group, _type); 
       _cnt := _cnt + 1;
     }
+  if (_type = 'html') 
+    {
   -- icons
   declare _resources varchar;
-  _resources :=  WV.WIKI.FIX_PATH (directory) || '/resources/';  
+	  _resources :=  WV.WIKI.FIX_PATH (directory) || '/' || _type || '/resources/';  
   WV.WIKI.MKDIR (_resources, _owner, _group, _passwd); 
   res := DAV_COPY ('/DAV/VAD/wiki/Root/images/', 
           _resources || 'images/',
@@ -160,12 +201,35 @@ create function WV.WIKI.EXPORT_CLUSTER (
 	  _owner, _group, _owner, _passwd);
   if (DAV_HIDE_ERROR (res) is null)
     signal ('WV202', 'Can not copy icons collection to ' || _resources || 'images/ : ' || DB.DBA.DAV_PERROR (res));
-
-
+    }
   return _cnt;
 }
 ;
 
 
+create function WV.WIKI.FORMATTER_HTML (inout _topic WV.WIKI.TOPICINFO, 
+	in _footer varchar,
+    in _header varchar)
+{
+  _topic.ti_text := '<html>' || _header || '\n' || cast (_topic.ti_text as varchar) || _footer || '</html>';
+  return _topic.ti_get_entity (null, 0);
+}
+;
+
+create function WV.WIKI.FORMATTER_DOCBOOK (inout _topic WV.WIKI.TOPICINFO, 
+	in _footer varchar,
+    in _header varchar)
+{
+  declare _xhtml any;
+  _xhtml := _topic.ti_get_entity (null, 0);
+  _xhtml:= '<html xmlns="http://www.w3.org/1999/xhtml">
+		<head>
+	  <title>' || _topic.ti_local_name || '</title>
+	</head>
+	<body>' || serialize_to_UTF8_xml (_topic.ti_get_entity(null, 0)) || '</body>
+   </html>';
+  return xtree_doc (_xhtml);
+}
+;
 
 	

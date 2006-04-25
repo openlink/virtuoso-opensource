@@ -471,6 +471,13 @@ wiki_exec_no_error('create table WV.WIKI.DOMAIN_PATTERN_1 (
 ')
 ;
 
+wiki_exec_no_error('create table WV.WIKI.DOCBOOK_IDS (	
+	DP_CLUSTER_ID int references WV.WIKI.CLUSTERS (ClusterId) on delete cascade,
+	DP_ID varchar,
+	DP_TOPIC_ID int references WV.WIKI.TOPIC (TopicId) on delete cascade,
+	primary key (DP_CLUSTER_ID, DP_ID))
+')
+;
 
 wiki_exec_no_error('drop type WV.WIKI.CATEGORYINFO')
 ;

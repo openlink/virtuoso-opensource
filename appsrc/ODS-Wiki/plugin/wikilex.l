@@ -126,6 +126,10 @@ extern int wlex_textbegin (void);
 
 #define COPYTEXT PRINTTEXT(yytext)
 
+#define COPY_WS_TEXT \
+  do { STARTPARA; PRINT (" "); PRINT ((yytext)); } while (0);
+
+
 #define LEXERROR(strg) \
   do { \
     PRINT("\n<!-- SyntError: "); \
@@ -553,7 +557,7 @@ INTERWIKI	({SITENAME}":"(({CLUSTERNAME}".")?){WIKIWORD})
 DEFTERM		([^ \t\r\n:]+)
 PROTOCOL	((("http")|("https")|("ftp")|("gopher")|("news")|("file")|("telnet"))"://")
 HOSTNAME	([A-Za-z](([A-Za-z0-9-]*[A-Za-z0-9])|([A-Za-z0-9]*)))
-DOMAINNAME	({HOSTNAME}(("."{HOSTNAME})+))
+DOMAINNAME	({HOSTNAME}(("."{HOSTNAME})*))
 LOCALRES	([A-Za-z0-9_.:|/?+%&-=]+)
 FRAG		("#"{LOCALRES})
 USERNAME	([A-Za-z]([A-Za-z0-9_-]*))
@@ -591,8 +595,8 @@ DOCTYPE		("<!DOCTYPE")([^>]*>)
 
 	/* Verbatim */
 <INITIAL>^({WS}?)"<verbatim>"{WS_NL}	{ BEGIN(VERBATIM); wlex_verbatim(1); }
-<VERBATIM>^({WS}?)"</verbatim>"{WSNLS}	{ BEGIN(INITIAL); wlex_verbatim(0); }
-<VERBATIM>"</verbatim>"{WSNLS}		{ BEGIN(INITIAL); wlex_verbatim(0); }
+<VERBATIM>^({WS}?)"</verbatim>"{WS_NL}	{ BEGIN(INITIAL); wlex_verbatim(0); }
+<VERBATIM>"</verbatim>"{WS_NL}		{ BEGIN(INITIAL); wlex_verbatim(0); }
 <VERBATIM>"<"				{ PRINT ("&lt;"); }
 <VERBATIM>">"				{ PRINT ("&gt;"); }
 <VERBATIM>[^<\r\n]*[\r\n]		{ PRINT (yytext); }
@@ -702,13 +706,6 @@ DOCTYPE		("<!DOCTYPE")([^>]*>)
 <INITIAL,TABLELINE>{NOTAWORDEND}"_"/{NOTAWORDSTART}	{ COPYTEXT; }
 <INITIAL,TABLELINE>{NOTAWORDEND}"="/{NOTAWORDSTART}	{ COPYTEXT; }
 
-<INITIAL,TABLELINE>"=="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_font (WLEX_FONT_BTT); else COPYTEXT; }
-<INITIAL,TABLELINE>"__"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_font (WLEX_FONT_BI); else COPYTEXT; }
-<INITIAL,TABLELINE>"*"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_font (WLEX_FONT_B); else COPYTEXT; }
-<TABLEHEADER>"*"		{ STATE(wlex_in_any_text) = 1; }
-<INITIAL,TABLELINE>"_"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_font (WLEX_FONT_I); else COPYTEXT; }
-<INITIAL,TABLELINE>"="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) wlex_font (WLEX_FONT_TT); else COPYTEXT; }
-
 <INITIAL,TABLELINE>"=="/{NOTAWORDSTART}	{
         if (WLEX_FONT_BTT == STATE(wlex_font))
 	  wlex_font (WLEX_FONT_DEFAULT);
@@ -735,6 +732,22 @@ DOCTYPE		("<!DOCTYPE")([^>]*>)
 <INITIAL,TABLELINE>"_"/{NOTAWORDSTART}	{ if (WLEX_FONT_I == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
 <INITIAL,TABLELINE>"="/{NOTAWORDSTART}	{ if (WLEX_FONT_TT == STATE(wlex_font)) wlex_font (WLEX_FONT_DEFAULT); else COPYTEXT;}
 
+<INITIAL,TABLELINE>{WS}"=="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BTT); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}"__"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BI); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}"*"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_B); } else COPYTEXT; }
+<TABLEHEADER>{WS}"*"		{ STATE(wlex_in_any_text) = 1; }
+<INITIAL,TABLELINE>{WS}"_"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
+<INITIAL,TABLELINE>{WS}"="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_TT); } else COPYTEXT; }
+
+<INITIAL,TABLELINE>^"=="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BTT); } else COPYTEXT; }
+<INITIAL,TABLELINE>^"__"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_BI); } else COPYTEXT; }
+<INITIAL,TABLELINE>^"*"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_B); } else COPYTEXT; }
+<TABLEHEADER>^"*"		{ STATE(wlex_in_any_text) = 1; }
+<INITIAL,TABLELINE>^"_"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
+<INITIAL,TABLELINE>^"="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_TT); } else COPYTEXT; }
+
+
+ 
 	/* Other formatting */
 <INITIAL,TABLELINE>^({WS}?)"---"			{ PRINT("<HR />"); }
 <INITIAL,TABLELINE>^({WS}?)"#"{WIKIWORD}	{

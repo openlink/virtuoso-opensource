@@ -511,13 +511,15 @@ create_or_view:
     }
   else
    {
-     WV.WIKI.VSPTOPICVIEW (path, lines, _topic,
+     if (WV.WIKI.VSPTOPICVIEW (path, lines, _topic,
 	 vector_concat (WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust),
 	 	-- NOTE: acs, sort, col can be specified in "params"
 		-- following parameter values took place when parameters are not specified
 		 vector ('acs', 1,
 		 	 'sort', 1,
-			 'col', -1)));
+				 'col', -1))))
+	   WV.WIKI.VSPFOOTER (path, params, lines);
+	 return;
    }
 make_footer:    
   WV.WIKI.VSPFOOTER (path,params,lines);

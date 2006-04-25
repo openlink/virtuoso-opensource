@@ -445,6 +445,14 @@
             </xsl:call-template>
           </div>
         </span>
+        <span>
+          <div class="wiki-source-type">
+            <xsl:call-template name="wikiref">
+              <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'docbook')"/></xsl:with-param>
+              <xsl:with-param name="wikiref_cont">[DOCBOOK]</xsl:with-param>
+            </xsl:call-template>
+          </div>
+        </span>
         <span id="top-mod-by"><xsl:value-of select="$ti_author"/></span>
         <span id="top-mod-time"><xsl:value-of select="wv:funcall1('WV.WIKI.MOD_TIME', $ti_res_id)"/></span>
       </div>
@@ -546,11 +554,17 @@
           Maintenance
         </a>
         <xsl:text> | </xsl:text>
+	    Publish to {
         <a>
           <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		
-          Publish to Web
+	      Web
         </a>
         <xsl:text> | </xsl:text>
+        <a>
+          <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id, 'type', 'docbook', 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		
+	      Docbook
+        </a>
+        <xsl:text>} | </xsl:text>
         <xsl:if test="$is_hist = 't'">
           <a>
             <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('history.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		

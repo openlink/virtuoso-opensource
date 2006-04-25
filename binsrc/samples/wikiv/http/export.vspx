@@ -35,6 +35,8 @@
 	  
       <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
       <v:variable name="id" type="integer" default="NULL" param-name="id"/>
+      <v:variable name="type" type="varchar" default="'html'" param-name="type"/>
+	  <v:variable name="is_html" type="integer" default="0"/>
       <v:variable name="allow_read" type="varchar" default="'@@hidden@@'"/>
 
       <v:variable name="topic" type="WV.WIKI.TOPICINFO" default="NULL"/>
@@ -51,6 +53,7 @@
 	_topic := WV.WIKI.TOPICINFO();
 	_topic.ti_id := self.id;
 	_topic.ti_find_metadata_by_id();	
+    self.is_html := case when self.type = 'html' then 1 else 0 end;
 	self.source_page := WV.WIKI.READONLYWIKIWORDLINK (_topic.ti_cluster_name,_topic.ti_local_name);
 	self.topic := _topic;
 
@@ -93,6 +96,8 @@
 		  <th>Header:</th>
 		  <td>
 <?vsp
+	if (self.is_html)
+ 	  {
 	http_value ('<html>');
 ?>
 		     <br/><v:textarea name="header" value="--WV.WIKI.CLUSTERPARAM(self.topic.ti_cluster_id, 'export-header-template', self.default_header)" xhtml_size="20" xhtml_class="textarea-box" xhtml_disabled="@@hidden@@"/></td>
@@ -102,6 +107,7 @@
 		  <td><v:textarea name="footer" value="--WV.WIKI.CLUSTERPARAM(self.topic.ti_cluster_id, 'export-footer-template', self.default_footer)" xhtml_size="20" xhtml_class="textarea-box" xhtml_disabled="@@hidden@@"/><br/>
 <?vsp
 	http_value ('</html>');
+      }
 ?>
 </td>
 		</tr>
@@ -112,6 +118,7 @@
 			declare exit handler for sqlstate '*' {
 		          self.vc_is_valid := 0;
 		 	  self.vc_error_message := split_and_decode (__SQL_MESSAGE, 0,'\0\0\n')[0];
+		 	  self.vc_error_message := __SQL_MESSAGE;
 		          return;
 			}
 			;
@@ -120,12 +127,12 @@
 			WV.WIKI.MKDIR (self.collection.ufl_value, self.vspx_user, 'WikiUser', _passwd);
 			WV.WIKI.SETCLUSTERPARAM(self.topic.ti_cluster_id, 'export-header-template', self.header.ufl_value);
 			WV.WIKI.SETCLUSTERPARAM(self.topic.ti_cluster_id, 'export-footer-template', self.footer.ufl_value);
-			wv.wiki.export_cluster (self.topic.ti_cluster_name, 
+			WV.WIKI.EXPORT_CLUSTER (self.topic.ti_cluster_name, 
 				'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/VAD/wiki/Root/export.xsl', 
 				self.collection.ufl_value, 
 				self.header.ufl_value, 
 				self.footer.ufl_value,
-				self.vspx_user, _passwd, 'WikiUser');
+				self.vspx_user, _passwd, 'WikiUser', self.type);
 		      ]]>
 		      </v:on-post>
 		    </v:button>	
