@@ -4863,7 +4863,11 @@ ssl_server_init ()
   RAND_bytes (tmp, sizeof(tmp));
   RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
 #endif
+# if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
+  SSL_library_init ();
+# else 
   SSLeay_add_all_algorithms();
+# endif
 #else
 #ifdef SSL_DK_ALLOC
   CRYPTO_set_mem_functions  (dk_ssl_alloc, dk_ssl_realloc, dk_ssl_free);
@@ -4876,7 +4880,11 @@ ssl_server_init ()
   RAND_bytes (tmp, sizeof(tmp));
   RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
 #endif
+# if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
+  SSL_library_init ();
+# else
   SSLeay_add_ssl_algorithms();
+# endif
   PKCS12_PBE_add ();
 #endif
 #ifdef NO_THREAD
