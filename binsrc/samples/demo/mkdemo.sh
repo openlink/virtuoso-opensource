@@ -743,8 +743,32 @@ DO_COMMAND checkpoint
 DO_COMMAND shutdown
 
 #
+# Dump and restore the db to remove the free pages
+#
+
+rm -f demo.trx 
+chmod 644 demo.db
+
+if [ "z$SERVER" = "z" ]
+then
+    if [ "x$HOST_OS" != "x" ]
+    then
+	SERVER=virtuoso-odbc-t
+    else
+	SERVER=virtuoso
+    fi
+fi
+
+$SERVER -b -f
+
+rm -f demo.db 
+
+$SERVER -R -f
+
+#
 #  Clean ups
 #
+
 rm -f demo.trx demo.log virtuoso.ini
 chmod 644 demo.db
 
