@@ -1617,7 +1617,8 @@ dk_session_t *strses_allocate (void) { return dbg_strses_allocate (__FILE__, __L
 caddr_t strses_string (dk_session_t * ses) { return dbg_strses_string (__FILE__, __LINE__, ses); }
 #endif
 
-caddr_t strses_fake_copy (caddr_t orig)
+caddr_t
+strses_fake_copy (caddr_t orig)
 {
 #if 0
   dk_session_t swap_buf;
@@ -1634,6 +1635,7 @@ caddr_t strses_fake_copy (caddr_t orig)
 #endif
   orig_ses->dks_refcount += 1;
 #endif
+  return orig;
 }
 
 void
