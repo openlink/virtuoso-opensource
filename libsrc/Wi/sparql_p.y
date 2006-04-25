@@ -707,7 +707,7 @@ spar_expn		/* [43]  	Expression	  ::=  	ConditionalOrExpression	*/
 		  else
 		    {
 		      SPART **args = (SPART **)(((dk_set_t)NIL_L == $2) ? NULL : t_revlist_to_array ($2));
-		      $$ = spartlist (sparp_arg, 4, SPAR_FUNCALL, $1->_.lit.val, BOX_ELEMENTS_0 (args), args);
+		      $$ = spartlist (sparp_arg, 4, SPAR_FUNCALL, $1->_.lit.val, (ptrlong)(BOX_ELEMENTS_0 (args)), args);
 		    } }
 	| spar_rdf_literal		{ $$ = (SPART *)($1); }
 	| spar_numeric_literal		{ $$ = (SPART *)($1); }
@@ -744,7 +744,7 @@ spar_built_in_call	/* [52]  	BuiltInCall	  ::= */
 spar_function_call	/* [54]  	FunctionCall	  ::=  	IRIref ArgList	*/
 	: spar_iriref spar_arg_list	{
                   SPART **args = (SPART **)(((dk_set_t)NIL_L == $2) ? NULL : t_revlist_to_array ($2));
-		  $$ = spartlist (sparp_arg, 4, SPAR_FUNCALL, $1->_.lit.val, BOX_ELEMENTS_0 (args), args); }
+		  $$ = spartlist (sparp_arg, 4, SPAR_FUNCALL, $1->_.lit.val, (ptrlong)(BOX_ELEMENTS_0 (args)), args); }
 	;
 
 spar_arg_list_opt

@@ -528,7 +528,7 @@ SPART * spar_gp_finalize (sparp_t *sparp)
     t_revlist_to_array (t_NCONC (opt_membs, req_membs)),
     t_revlist_to_array (filts),
     orig_selid,
-    NULL, 0 );
+    NULL, (ptrlong)(0) );
   spar_selid_pop (sparp);
   return res;
 }
@@ -595,7 +595,7 @@ SPART **spar_retvals_of_construct (sparp_t *sparp, SPART *ctor_gp)
       SPART *triple = ctor_gp->_.gp.members[triple_ctr];
       SPART **tvector_args = (SPART **)t_list (6, NULL, NULL, NULL, NULL, NULL, NULL);
       SPART *tvector_call = spartlist (sparp, 4, SPAR_FUNCALL,
-        box_dv_uname_string ("LONG::bif:vector"), 6, tvector_args );
+        box_dv_uname_string ("LONG::bif:vector"), (ptrlong)(6), tvector_args );
       int triple_is_const = 1;
       for (fld_ctr = 1; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         {
@@ -657,7 +657,7 @@ blank_added:
         t_set_push (&var_tvectors, tvector_call);
     }
   ctor_call = spartlist (sparp, 4, SPAR_FUNCALL,
-    box_dv_uname_string ("sql:sparql_construct"), 3,
+    box_dv_uname_string ("sql:sparql_construct"), (ptrlong)(3),
       t_list (3,
         spartlist (sparp, 4, SPAR_FUNCALL,
           box_dv_uname_string ("bif:vector"),
@@ -697,7 +697,7 @@ SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals)
         }
     }
   descr_call = spartlist (sparp, 4, SPAR_FUNCALL,
-    box_dv_uname_string ("sql:sparql_describe"), 3,
+    box_dv_uname_string ("sql:sparql_describe"), (ptrlong)(3),
       t_list (3,
         spartlist (sparp, 4, SPAR_FUNCALL,
           box_dv_uname_string ("LONG::bif:vector"),
@@ -734,7 +734,7 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
     sparp->sparp_env->spare_output_format_name,
     retvals, retselid,
     sources, pattern, order,
-    limit, offset, NULL, 0L );
+    limit, offset, NULL, (ptrlong)(0) );
 }
 
 
@@ -795,7 +795,8 @@ SPART *spar_make_variable (sparp_t *sparp, caddr_t name)
   return
     spartlist (sparp, 7,
       SPAR_VARIABLE, name,
-      env->spare_selids->data, NULL, varr_global, 0, SMALLEST_POSSIBLE_POINTER-1 );
+      env->spare_selids->data, NULL, varr_global,
+      (ptrlong)(0), (ptrlong)(SMALLEST_POSSIBLE_POINTER-1) );
 }
 
 SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed)
@@ -804,7 +805,8 @@ SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed)
   return
     spartlist (sparp, 7,
       SPAR_BLANK_NODE_LABEL, name,
-      env->spare_selids->data, NULL, /*SPART_VARR_IS_REF | SPART_VARR_IS_BLANK |*/ SPART_VARR_NOT_NULL, bracketed, SMALLEST_POSSIBLE_POINTER-1 );
+      env->spare_selids->data, NULL, /*SPART_VARR_IS_REF | SPART_VARR_IS_BLANK |*/ SPART_VARR_NOT_NULL,
+      (ptrlong)(bracketed), (ptrlong)(SMALLEST_POSSIBLE_POINTER-1) );
 }
 
 SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang)
@@ -1563,7 +1565,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   sparp = sparp_query_parse (str, sparqre);
   dk_free_box (str);
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
-      return;
+    return;
   memset (&ssg, 0, sizeof (spar_sqlgen_t));
   memset (&sc, 0, sizeof (sql_comp_t));
   sc.sc_client = sqlc_client();
@@ -1645,7 +1647,7 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /* ssg.ssg_fields = id_hash_allocate (61, sizeof (SPART *), sizeof (spar_sqlgen_var_t), spar_var_hash, spar_var_cmp); */
   QR_RESET_CTX
     {
-  ssg_make_sql_query_text (&ssg);
+      ssg_make_sql_query_text (&ssg);
     }
   QR_RESET_CODE
     {
