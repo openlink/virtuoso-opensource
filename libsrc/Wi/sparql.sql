@@ -571,7 +571,7 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any) returns any
   l := 20;
   len := length (shortobj);
   if (((len <> (l + 9)) and (len > (l + 5))) or (len < 5))
-    signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RQ_LANGUAGE_OF_OBJ, bad string "%s"', shortobj));
+    signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_LANGUAGE_OF_OBJ, bad string "%s"', shortobj));
   twobyte := shortobj[len-2] + 256 * (shortobj[len-1]);
   if (257 = twobyte)
     return null;
@@ -580,7 +580,7 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any) returns any
   return res;
 
 badtype:
-  signal ('RDFXX', sprintf ('Unknown language in DB.DBA.RQ_LANGUAGE_OF_OBJ, bad string "%s"', shortobj));
+  signal ('RDFXX', sprintf ('Unknown language in DB.DBA.RDF_LANGUAGE_OF_OBJ, bad string "%s"', shortobj));
 }
 ;
 
