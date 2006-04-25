@@ -1472,10 +1472,10 @@ xslt_format_number (numeric_t value, caddr_t format,
 	  int digit_total_count, effective_decimal_pos;
 
 	  positive_prefix =
-	      box_wide_as_utf8_char ((caddr_t) prefix, wcslen (prefix),
+	      box_wide_as_utf8_char ((ccaddr_t)prefix, wcslen (prefix),
 	      DV_SHORT_STRING);
 	  positive_suffix =
-	      box_wide_as_utf8_char ((caddr_t) suffix, wcslen (suffix),
+	      box_wide_as_utf8_char ((ccaddr_t)suffix, wcslen (suffix),
 	      DV_SHORT_STRING);
 	  negative_prefix = positive_prefix;	/* assume these for now */
 	  negative_suffix = positive_suffix;
@@ -1501,10 +1501,10 @@ xslt_format_number (numeric_t value, caddr_t format,
       else
 	{
 	  negative_prefix =
-	      box_wide_as_utf8_char ((caddr_t) prefix, wcslen (prefix),
+	      box_wide_as_utf8_char ((ccaddr_t)prefix, wcslen (prefix),
 	      DV_SHORT_STRING);
 	  negative_suffix =
-	      box_wide_as_utf8_char ((caddr_t) suffix, wcslen (suffix),
+	      box_wide_as_utf8_char ((ccaddr_t)suffix, wcslen (suffix),
 	      DV_SHORT_STRING);
 	  got_negative = 1;
 	}
