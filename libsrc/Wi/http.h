@@ -43,6 +43,7 @@
 #include <openssl/safestack.h>
 #include <openssl/bio.h>
 #include <openssl/asn1.h>
+#include <openssl/md5.h>
 #endif
 
 #ifndef _WI_STRLIKE_H
