@@ -1,0 +1,348 @@
+2006-04-25 14:55  source
+
+	* Change changelog window to 24 hours
+
+2006-04-25 14:50  source
+
+	* Updated version to 4.5.2-rc2
+
+2006-04-25 14:49  source
+
+	* Fixed main SPARSQL sample page
+
+2006-04-25 14:45  source
+
+	* Enable writing the source file & line from the PL code into the
+	  sql_code*.c files
+
+2006-04-25 14:44  source
+
+	* Added normalization of path strings of resources and results made
+	  repeatable by sorting the result.
+
+2006-04-25 14:42  source
+
+	* Fixed compiler warnings
+
+2006-04-25 14:42  source
+
+	* Added sorting of vector of groups of elements
+
+2006-04-25 14:29  source
+
+	* Simplified is<TYPE> functions
+	* Added isuname function
+
+2006-04-25 14:28  source
+
+	* Fixed memory leak
+
+2006-04-25 14:27  source
+
+	* Added missing include for OpenSSL 0.9.8
+
+2006-04-25 14:24  source
+
+	* Added missing include file
+
+2006-04-25 14:23  source
+
+	* Added more debugging functions for boxes
+
+2006-04-25 14:20  source
+
+	* Fixed missing return statement in function
+
+2006-04-25 14:18  source
+
+	* Fixed initialization problem with OpenSLL 0.9.8
+
+2006-04-25 14:15  source
+
+	* Merged latest version of dav
+
+2006-04-25 14:15  source
+
+	* Merged latest version of wikiv
+
+2006-04-25 14:14  source
+
+	* Perform backup/restore on demo database to remove all empty pages
+
+2006-04-21 21:43  source
+
+	* Added usecases tutorial
+
+2006-04-21 21:38  source
+
+	* Extended SPARQL demo
+
+2006-04-21 10:51  source
+
+	* Added win32 project files to distribution
+
+2006-04-20 19:10  source
+
+	* Updated documentation
+
+2006-04-20 18:01  source
+
+	* Added SQL_GETLASTSERIAL to SQLGetStmtAttr
+
+2006-04-20 15:28  source
+
+	* Updated package version to 4.5.2-rc1
+
+2006-04-20 15:25  source
+
+	* Updated version number
+
+2006-04-20 15:24  source
+
+	* Fixed error message when database is opened by server with different
+	  storage magic number
+
+2006-04-20 10:07  source
+
+	* Fixed security problem with XMLA and SPARQL user in new database
+
+2006-04-19 15:24  source
+
+	* Minor fix to compile with VS 2005
+
+2006-04-19 15:23  source
+
+	* Minor fixes in the ODBC driver code to compile with VS 2005
+
+2006-04-19 15:22  source
+
+	* Updated test scripts to pass windows binary names in order to run the
+	  tests under cygwin bash
+
+2006-04-19 15:21  source
+
+	* Split of the demo db project on separate vads and demo db
+	* Project GUIDs are changed to be unique to avoid mismatch in the
+	  project dependency.
+
+2006-04-19 09:47  source
+
+	* Added patched libtool.macosx for Universal builds
+
+2006-04-18 22:43  source
+
+	* Added check for strdup
+
+2006-04-18 19:52  source
+
+	* Removed getdate.c as it is regenerated from getdate.y
+
+2006-04-18 19:49  source
+
+	* Fixes for building with C++ compiler
+
+2006-04-18 19:32  source
+
+	* Added rule to make getdate.c from getdate.y
+
+2006-04-18 19:22  source
+
+	* Added support for external variables in SPARQL patterns and result sets
+	* Added '#pragma prefix'
+
+2006-04-18 19:15  source
+
+	* Replaced errcode type by int
+
+2006-04-18 18:58  source
+
+	* Changed logic in dk_free_box() and dk_free_tree(): destructors now
+	  return a flag whether the box should be deleted or left as is.
+
+2006-04-18 18:40  source
+
+	* Fixed problem with DD and DT tags
+
+2006-04-18 18:38  source
+
+	* Merged latest documentation updates
+
+2006-04-18 18:37  source
+
+	* Additional functions for RDF
+
+2006-04-18 18:36  source
+
+	* Fixed call to dk_mem_hooks
+
+2006-04-18 18:35  source
+
+	* Added correct pattern for new clusters
+
+2006-04-18 18:33  source
+
+	* Merged latest tutorial fixes
+
+2006-04-18 16:01  source
+
+	* Changed logic in dk_free_box() and dk_free_tree(); destructors now
+	  return a flag whether the box should be deleted or left as is.
+
+2006-04-18 13:38  source
+
+	* Fixed typo building unicode driver
+
+2006-04-18 12:52  source
+
+	* Merged fixes for Windows build
+
+2006-04-17 20:28  source
+
+	* Changed int to SQLRETURN to clarify usage of rc variable
+
+2006-04-17 20:24  source
+
+	* Changed old RETCODE into ODBC 3.x SQLRETURN
+
+2006-04-17 19:57  source
+
+	* Changed old PTR into ODBC 3.x SQLPOINTER
+
+2006-04-17 19:53  source
+
+	* Changed old SWORD/UWORD into ODBC 3.x SQLSMALLINT/SQLUSMALLINT
+
+2006-04-17 19:32  source
+
+	* Regenerated with gperf 3.0.1
+
+2006-04-17 19:20  source
+
+	* Changed old UCHAR into ODBC 3.x SQLCHAR
+
+2006-04-17 18:58  source
+
+	* Removed old ODBC 2.x keyword FAR as we are no longer on 16bit platforms
+
+2006-04-17 18:50  source
+
+	* Always clear node before use
+
+2006-04-17 18:50  source
+
+	* Fixed problem in gperf rule
+
+2006-04-17 18:50  source
+
+	* Fixed problem with possible memory overlap
+
+2006-04-17 18:50  source
+
+	* Changed old HENV/HDBC/HSTMT into ODBC 3.x SQLHENV, SQLHDBC and SQLHSTMT
+
+2006-04-14 16:45  source
+
+	* Merged latest fixes to win32 build environment
+
+2006-04-13 19:17  source
+
+	* Added additional information on porting to various platforms
+	* Added README.CVS with information for CVS users
+
+2006-04-13 18:59  source
+
+	* Moved syslog.c to libsrc/util/win32
+
+2006-04-13 18:58  source
+
+	* Initial build files for Windows port
+
+2006-04-13 18:48  source
+
+	* Added new files for Windows build
+
+2006-04-13 18:26  source
+
+	* Fixes for building and testing on Windows platform
+
+2006-04-13 18:25  source
+
+	* Removed bad test from testsuite
+
+2006-04-13 18:24  source
+
+	* Merged latest dav fixes
+
+2006-04-13 18:23  source
+
+	* Removed debugging statements
+
+2006-04-13 18:20  source
+
+	* Merged latest version of wikiv
+
+2006-04-13 18:16  source
+
+	* Added ifdef _RENDEZVOUS to fix compilation on windows
+	* Added register/unregister code in the virtuoso odbc driver, so it can be
+	  added in the registrey with regsrv32 on a windows plaform without the
+	  need for an installer
+
+2006-04-13 18:13  source
+
+	* Fixed bug introduced by legal notices
+
+2006-04-13 18:08  source
+
+	* Basic support for passing parameters into SPARQL query.
+
+2006-04-13 18:07  source
+
+	* flush the client connection before exit in raw_exit so that a possible
+	  error result set is shown before the disconnect
+
+2006-04-13 18:06  source
+
+	* Merged latest xmla code
+
+2006-04-13 18:02  source
+
+	* Added fake copying for string sessions.
+
+2006-04-13 18:00  source
+
+	* Fix to compile Dkpool with -DVALGRIND but without -DDEBUG.
+
+2006-04-13 17:56  source
+
+	* Merged latest version of sparql/rdf
+
+2006-04-13 17:45  source
+
+	* Fixed double to number conversion problem on BSD and Apple
+
+2006-04-13 17:43  source
+
+	* Added missing SQLCloseCursor function
+
+2006-04-12 14:55  source
+
+	* Commented out -no-undefined as some linkers take this a little
+	  to serious (pvk)
+
+2006-04-12 14:31  source
+
+	* Removed deprecated function from export file (pvk)
+
+2006-04-12 14:31  source
+
+	* Added missing odbcsdk/include directory (pvk)
+
+2006-04-11 14:04  source
+
+	Initial release of Virtuoso Open Source Edition
+
+2006-04-11 14:04  source
+
+	Initial revision
+
