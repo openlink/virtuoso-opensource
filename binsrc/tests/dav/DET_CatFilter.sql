@@ -1295,7 +1295,8 @@ create function "CatFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, i
             vectorbld_concat_acc (res,
               "CatFilter_DAV_DIR_LIST" (detcol_id,
                  vector_concat (subseq (path_parts, 0, length (path_parts) - 1), vector (sch[1], '')),
-                 subcol_fullpath, name_mask, recursive, auth_uid ) );
+                 detcol_path, -- not subcol_fullpath,
+                 name_mask, recursive, auth_uid ) );
         }
       goto final_res;
     }
@@ -1332,7 +1333,8 @@ create function "CatFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, i
             vectorbld_concat_acc (res,
               "CatFilter_DAV_DIR_LIST" (detcol_id,
                  vector_concat (subseq (path_parts, 0, length (path_parts) - 1), vector (val, '')),
-                 subcol_fullpath, name_mask, recursive, auth_uid ) );
+                 detcol_path, -- not subcol_fullpath,
+                 name_mask, recursive, auth_uid ) );
         }
       goto final_res;
     }
@@ -1350,6 +1352,11 @@ create function "CatFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, i
 	      vector (UNAME'CatFilter', detcol_id, null, schema_uri, filter_data),
 	      subcol_perms, 0, auth_uid, now (), 'dav/unix-directory', path_parts [depth - 2] ) );
         }
+-- The 'if' below disables infinite recursion.
+-- All resources will be displayed, but not all subcollections.
+-- This is the longest possible finite list CatFilter can offer to the application.
+      if (length (filter_data) >= 4)
+        recursive := 0;
       foreach (any prop in sch_props) do
         {
           declare subcol_fullpath varchar;
@@ -1362,7 +1369,8 @@ create function "CatFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, i
             vectorbld_concat_acc (res,
               "CatFilter_DAV_DIR_LIST" (detcol_id,
                  vector_concat (subseq (path_parts, 0, length (path_parts) - 1), vector (prop[1], '')),
-                 subcol_fullpath, name_mask, recursive, auth_uid ) );
+                 detcol_path, -- not subcol_fullpath,
+                 name_mask, recursive, auth_uid ) );
         }
     }
   -- dbg_obj_princ ('res = ', res);

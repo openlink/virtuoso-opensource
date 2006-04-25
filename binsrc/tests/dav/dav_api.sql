@@ -5821,6 +5821,8 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
         }
       -- dbg_obj_princ ('guessing ', html_start);
     --dbg_obj_princ ('based on ', content, 'dtp', __tag (content));
+    if (xpath_eval ('[xmlns="http://usefulinc.com/ns/doap#"] exists (/project)', html_start))
+      return 'application/doap+rdf';
     if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] exists(/rdf:rdf/rdf:*)', html_start))
       return 'application/rdf+xml';
       if (xpath_eval ('[xmlns:atom="http://purl.org/atom/ns#"] exists (/atom:feed[@version])', html_start))
@@ -6041,6 +6043,25 @@ create function "DAV_EXTRACT_RDF_application/xbrl+xml" (in orig_res_name varchar
         'http://www.openlinksw.com/schemas/xbrl#identifier', 'declare namespace xmlns="http://www.xbrl.org/2003/instance"; /xmlns:xbrl/xmlns:context/xmlns:entity/xmlns:identifier', '',
         'http://www.openlinksw.com/schemas/xbrl#startDate', 'declare namespace xmlns="http://www.xbrl.org/2003/instance"; /xmlns:xbrl/xmlns:context/xmlns:period/xmlns:startDate union /xmlns:xbrl/xmlns:context/xmlns:period/xmlns:instant', '',
         'http://www.openlinksw.com/schemas/xbrl#endDate', 'declare namespace xmlns="http://www.xbrl.org/2003/instance"; /xmlns:xbrl/xmlns:context/xmlns:period/xmlns:endDate union /xmlns:xbrl/xmlns:context/xmlns:period/xmlns:instant', ''
+        );
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas);
+
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/doap+rdf" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas any;
+  dbg_obj_princ ('DAV_EXTRACT_RDF_application/doap+rdf (', orig_res_name, ',... )');
+  whenever sqlstate '*' goto errexit;
+  doc := xtree_doc (content, 0);
+	  dbg_obj_princ (doc);
+  metas := vector (
+        'http://www.openlinksw.com/schemas/doap#title', 'declare namespace xmlns="http://usefulinc.com/ns/doap#"; /xmlns:Project/xmlns:name', '',
+        'http://www.openlinksw.com/schemas/doap#description', 'declare namespace xmlns="http://usefulinc.com/ns/doap#"; /xmlns:Project/xmlns:shortdesc', '',
+        'http://www.openlinksw.com/schemas/doap#creationDate', 'declare namespace xmlns="http://usefulinc.com/ns/doap#"; /xmlns:Project/xmlns:created', ''
         );
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas);
 
