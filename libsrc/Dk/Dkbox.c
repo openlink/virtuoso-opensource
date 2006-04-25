@@ -620,6 +620,46 @@ dk_check_tree (box_t box)
   dk_check_tree_iter (box, BADBEEF_BOX, known);
   hash_table_free (known);
 }
+
+
+void
+dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t *known)
+{
+  uint32 count;
+  dtp_t tag;
+  box_t other_parent;
+  if (!IS_BOX_POINTER (box))
+    return;
+  dk_alloc_box_assert (box);
+  tag = box_tag (box);
+  if ((DV_UNAME == tag) || (DV_REFERENCE == tag))
+    return;
+#ifndef NDEBUG
+  if (TAG_FREE == tag)
+    GPF_T1 ("Domain of connectivity contains a pointer to a freed box");
+  if (TAG_BAD == tag)
+    GPF_T1 ("Domain of connectivity contains a pointer to a box marked bad");
+#endif
+  if (IS_NONLEAF_DTP(tag))
+    {
+      box_t *obj = (box_t *) box;
+      for (count = box_length (box) / sizeof (box_t); count; count--)
+	dk_check_domain_of_connectivity_iter (*obj++, box, known);
+    }
+  other_parent = gethash (box, known);
+  if (NULL != other_parent)
+    return;
+  sethash (box, known, parent);
+  return;
+}
+
+void
+dk_check_domain_of_connectivity (box_t box)
+{
+  dk_hash_t *known = hash_table_allocate (4096);
+  dk_check_domain_of_connectivity_iter (box, BADBEEF_BOX, known);
+  hash_table_free (known);
+}
 #endif
 
 /*

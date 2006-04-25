@@ -525,8 +525,10 @@ void dk_alloc_box_assert (box_t box);
 EXE_EXPORT (int, dk_free_box, (box_t box));
 #ifdef DEBUG
 extern void dk_check_tree (box_t box);
+extern void dk_check_domain_of_connectivity (box_t box);
 #else
-#define dk_check_tree(box) ;
+#define dk_check_tree(box)
+#define dk_check_domain_of_connectivity(box)
 #endif
 EXE_EXPORT (int, dk_free_tree, (box_t box));
 EXE_EXPORT (int, dk_free_box_and_numbers, (box_t box));

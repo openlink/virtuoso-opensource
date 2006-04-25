@@ -101,8 +101,9 @@ void dk_hash_iterator (dk_hash_iterator_t *hit, dk_hash_t *ht);
 int dk_hit_next (dk_hash_iterator_t *hit, void **key, void **data);
 void dk_hash_set_rehash (dk_hash_t *ht, uint32 ov_per_bucket);
 
-#ifdef DEBUG
-void dk_check_tree_iter (box_t box, box_t parent, dk_hash_t *known);
+#ifdef DEBUG /* These definitions are here because they need dk_hash_t, otherwise they would be placed into Dkbox.h */
+extern void dk_check_tree_iter (box_t box, box_t parent, dk_hash_t *known);
+extern void dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t *known);
 #endif
 #endif /* _DKHASH_H */
 
