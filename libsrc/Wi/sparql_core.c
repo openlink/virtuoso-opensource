@@ -1561,6 +1561,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   sparqre->sparqre_src->sif_skipped_part = NULL;
   sparqre->sparqre_cli = sqlc_client();
   sparp = sparp_query_parse (str, sparqre);
+  dk_free_box (str);
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
       return;
   memset (&ssg, 0, sizeof (spar_sqlgen_t));
