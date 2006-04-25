@@ -877,6 +877,8 @@ AC_HELP_STRING([--disable-pldebug], [disable  the Virtuoso/PL debugger support])
 if test "$with_pldebug" = "yes"; then
     BUILD_OPTS="$BUILD_OPTS pldebug"
     AC_DEFINE(PLDBG, 1, [Virtuoso/PL debugger])
+    PLSTATS=PLDBG
+    AC_SUBST(PLSTATS)
 fi    
 
 
