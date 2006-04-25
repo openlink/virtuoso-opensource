@@ -34,6 +34,7 @@
 #include "../Dk/Dksession.h"
 #include "../Dk/Dkernel.h"
 #include "../Dk/Dkhashext.h"
+#include "../Dk/Dksets.h"
 #include "../Thread/Dkthread.h"
 #include "../Wi/wi.h"
 #include "../Wi/sqlnode.h"
