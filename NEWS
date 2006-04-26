@@ -1,13 +1,13 @@
-April XX 2006, V4.5.2:
+April 26 2006, V4.5.2:
   * Added project files and instructions to build on Windows
   * Added patched libtool.macosx for Mac OS X Universal builds
   * Added some extra debugging functions
   * Added support for OpenSSL 0.9.8
   * Updated support for SPARQL, Dav and Wikiv
   * Fixed security issue in XMLA and SPARQL
-  * Fixed building ODBC driver
-  * Replace old ODBC 2.x types with ODBC 3.x types
+  * Fixed building ODBC drivers
   * Portability fixes on Unix and Mac OS X
+  * Replace old ODBC 2.x types with ODBC 3.x types
   * Fixed compiler warnings
   * Reduced size of demo database
 

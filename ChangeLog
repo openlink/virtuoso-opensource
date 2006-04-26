@@ -1,3 +1,35 @@
+2006-04-26 09:18  source
+
+	* Set version number to 4.5.2
+
+2006-04-26 08:51  source
+
+	* Added README.WINDOWS with build instructions for win32 and win64
+
+2006-04-26 08:12  source
+
+	* Fixed CFLAGS for Mac OS X build instructions
+
+2006-04-25 21:37  source
+
+	* Updated version to 4.5.2-rc3
+
+2006-04-25 21:35  source
+
+	* Added stored procedure to reset RDF state
+
+2006-04-25 21:31  source
+
+	* Fixed function name in error message
+
+2006-04-25 21:24  source
+
+	* Fixes for WIN64 build
+
+2006-04-25 20:45  source
+
+	* Fixed compiler warning
+
 2006-04-25 14:55  source
 
 	* Change changelog window to 24 hours
