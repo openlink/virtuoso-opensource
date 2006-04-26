@@ -224,19 +224,19 @@ Linux 64-bit
 
 Mac OS X 10.2 and 10.3 PPC 32-bit
 -------------------------
-    CFLAGS="-O -m32"
+    CFLAGS="-O -m32 -mmacosx-version-min=10.2"
     export CFLAGS
     ./configure ...
 
 Mac OS X 10.4 PPC 32-bit
 -------------------------
-    CFLAGS="-O -m32"
+    CFLAGS="-O -m32 -mmacosx-version-min=10.2"
     export CFLAGS
     ./configure ...
 
 Mac OS X 10.4 PPC 64-bit
 -------------------------
-    CFLAGS="-O -m64"
+    CFLAGS="-O -m64 -mmacosx-version-min=10.4"
     export CFLAGS
     ./configure ...
 
