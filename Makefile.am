@@ -79,7 +79,7 @@ EXTRA_DIST = \
 	INSTALL \
 	LICENSE \
 	NEWS \
-	README \
+	README* \
 	autogen.sh \
 	bin/makever \
 	bin/libtool.macosx \
