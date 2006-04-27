@@ -1,7 +1,7 @@
 #!/bin/sh
 # $Id$
 LOGDIR=`pwd`
-LOGFILE="${LOGDIR}/make_tutorial_vad.log"
+LOGFILE="${LOGDIR}/make_tutorial_vad.output"
 STICKER_DAV="${LOGDIR}/make_tutorial_dav_vad.xml"
 STICKER_FS="${LOGDIR}/make_tutorial_fs_vad.xml"
 
@@ -41,6 +41,16 @@ else
   RM="rm -rf"
 fi
 
+if [ "z$SERVER" = "z" ]  
+then
+    if [ "x$HOST_OS" != "x" ]
+    then
+	SERVER=virtuoso-odbc-t.exe
+    else
+	SERVER=virtuoso
+    fi
+fi
+
 . $HOME/binsrc/tests/suite/test_fn.sh
 
 if [ -f /usr/xpg4/bin/rm ]
@@ -70,17 +80,12 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "z$SERVER" != "z" ] ; then
+  if [ "z$HOST_OS" != "z" ] 
+  then
       "$SERVER" +foreground &
-  elif [ "x$HOST_OS" != "x" ] ; then
-      if [ "z$BUILD" != "z" ] ; then
-    $BUILD/../bin/virtuoso-odbc-t +foreground &
   else
-	  virtuoso-odbc-t +foreground &
+      "$SERVER" +wait
       fi
-  else
-    virtuoso #+wait
-  fi
   stat="true"
   while true
   do
@@ -157,7 +162,6 @@ do_command() {
 directory_clean() {
 
   $myrm vad_files 2>/dev/null
-  $myrm make_tutorial_vad.log 2>/dev/null
   $myrm *.db 2>/dev/null
   $myrm *.trx 2>/dev/null
   $myrm *.tdb 2>/dev/null
@@ -555,9 +559,19 @@ generate_files() {
     fi
 }
 
-echo '----------------------'
-echo 'tutorial VAD create'
-echo '----------------------'
+$myrm "$LOGFILE" 2>/dev/null
+BANNER 'TUTORIAL VAD create'
+
+$ISQL -? 2>/dev/null 1>/dev/null 
+if [ $? -eq 127 ] ; then
+    LOG "***ABORTED: tutorial PACKAGING, isql is not available"
+    exit 1
+fi
+$SERVER -? 2>/dev/null 1>/dev/null 
+if [ $? -eq 127 ] ; then
+    LOG "***ABORTED: tutorial PACKAGING, server is not available"
+    exit 1
+fi
 
 if [ "x$DEV" = "x1" ]
 then 
@@ -581,5 +595,6 @@ else
 	directory_clean
 fi
 
-echo 'Successful create'
+CHECK_LOG
+BANNER "COMPLETED TUTORIAL PACKAGING"
 

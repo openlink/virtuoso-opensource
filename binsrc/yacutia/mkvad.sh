@@ -64,6 +64,16 @@ LN="ln -fs"
 RM="rm -f"
 fi
 
+if [ "z$SERVER" = "z" ]  
+then
+    if [ "x$HOST_OS" != "x" ]
+    then
+	SERVER=virtuoso-odbc-t.exe
+    else
+	SERVER=virtuoso
+    fi
+fi
+
 #==============================================================================
 #  Standard functions
 #==============================================================================
@@ -128,17 +138,12 @@ START_SERVER()
   timeout=60
 
   ECHO "Starting Virtuoso server ..."
-  if [ "z$SERVER" != "z" ] ; then
+  if [ "z$HOST_OS" != "z" ] 
+  then
       "$SERVER" +foreground &
-  elif [ "x$HOST_OS" != "x" ] ; then
-      if [ "x$BUILD" != "x" ] ; then
-    $BUILD/../bin/virtuoso-odbc-t +foreground &
       else
-    virtuoso-odbc-t +foreground &
+      "$SERVER" +wait
       fi
-  else
-  virtuoso +wait
-  fi
 
   starth=`date | cut -f 2 -d :`
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
@@ -347,6 +352,17 @@ rm -f $LOGFILE
 rm -f vad.db vad.trx vad.log virtuoso.ini virtuoso.tdb
 
 BANNER "CREATING VAD PACKAGE FOR VIRTUOSO CONDUCTOR (mkvad.sh)"
+
+$ISQL -? 2>/dev/null 1>/dev/null 
+if [ $? -eq 127 ] ; then
+    LOG "***ABORTED: CONDUCTOR PACKAGING, isql is not available"
+    exit 1
+fi
+$SERVER -? 2>/dev/null 1>/dev/null 
+if [ $? -eq 127 ] ; then
+    LOG "***ABORTED: CONDUCTOR PACKAGING, server is not available"
+    exit 1
+fi
 
 curpwd=`pwd`
 cd $curpwd

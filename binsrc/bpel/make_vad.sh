@@ -34,6 +34,16 @@ LN="ln -fs"
 RM="rm -f"
 fi
 
+if [ "z$SERVER" = "z" ]  
+then
+    if [ "x$HOST_OS" != "x" ]
+    then
+	SERVER=virtuoso-odbc-t.exe
+    else
+	SERVER=virtuoso
+    fi
+fi
+
 . $HOME/binsrc/tests/suite/test_fn.sh
 
 if [ -f /usr/xpg4/bin/rm ]
@@ -51,44 +61,6 @@ version_init()
   done
   VERSION=`cat version.tmp | awk ' BEGIN { cnt=9 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
   rm -f version.tmp
-}
-
-virtuoso_start() {
-  ddate=`date`
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-  timeout=600
-  $myrm -f *.lck
-  if [ "z$SERVER" != "z" ] ; then
-      "$SERVER" +foreground &
-  elif [ "x$HOST_OS" != "x" ] ; then
-	  virtuoso-odbc-t.exe +foreground &
-  else
-	  virtuoso +wait
-  fi
-  stat="true"
-  while true
-  do
-    sleep 4
-    echo "Waiting Virtuoso Server start on port $PORT..."
-    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN`
-    if [ "z$stat" != "z" ]
-		then
-      sleep 7
-      LOG "PASSED: Virtuoso Server successfully started on port $PORT"
-      return 0
-    fi
-    nowh=`date | cut -f 2 -d :`
-    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-    nowh=`expr $nowh - $starth`
-    nows=`expr $nows - $starts`
-    nows=`expr $nows + $nowh \*  60`
-    if test $nows -ge $timeout
-    then
-      LOG "***FAILED: Could not start Virtuoso Server within $timeout seconds"
-      exit 1
-    fi
-  done
 }
 
 
@@ -235,13 +207,11 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "z$SERVER" != "z" ] ; then
-      "$SERVER" +foreground &
-  elif [ "x$HOST_OS" != "x" ]
+  if [ "z$HOST_OS" != "z" ] 
 	then
-	  virtuoso-odbc-t.exe +foreground &
+      "$SERVER" +foreground &
   else
-	  virtuoso +wait
+      "$SERVER" +wait
   fi
   stat="true"
   while true
@@ -646,6 +616,18 @@ vad_check() {
 #vad_create $STICKER_DAV $VAD_NAME_RELEASE
 #exit
 BANNER "STARTED BPEL4WS PACKAGING"
+
+$ISQL -? 2>/dev/null 1>/dev/null 
+if [ $? -eq 127 ] ; then
+    LOG "***ABORTED: BPEL4WS PACKAGING, isql is not available"
+    exit 1
+fi
+$SERVER -? 2>/dev/null 1>/dev/null 
+if [ $? -eq 127 ] ; then
+    LOG "***ABORTED: BPEL4WS PACKAGING, server is not available"
+    exit 1
+fi
+    
 
 virtuoso_shutdown
 directory_clean

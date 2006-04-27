@@ -69,6 +69,16 @@ fi
 
 CP="cp -f"
 
+if [ "z$SERVER" = "z" ]  
+then
+    if [ "x$HOST_OS" != "x" ]
+    then
+	SERVER=virtuoso-odbc-t.exe
+    else
+	SERVER=virtuoso
+    fi
+fi
+
 #. $HOME/binsrc/tests/suite/test_fn.sh
 
 if [ -f /usr/xpg4/bin/rm ]
@@ -144,13 +154,11 @@ START_SERVER()
        timeout=180
 
        ECHO "Starting Virtuoso server ..."
-       if [ "z$SERVER" != "z" ] ; then
-	   "$SERVER" +foreground &
-       elif [ "x$HOST_OS" != "x" ]
+       if [ "z$HOST_OS" != "z" ] 
        then
-           virtuoso-odbc-t +foreground &
+	   "$SERVER" +foreground &
        else
-           virtuoso +wait
+	   "$SERVER" +wait
        fi
 
        starth=`date | cut -f 2 -d :`
@@ -444,6 +452,17 @@ if [ "z$DEMODB" = "z" ] ; then
 fi
 
 BANNER "CREATING DOC DATABASE (mkdoc.sh)"
+
+$ISQL -? 2>/dev/null 1>/dev/null 
+if [ $? -eq 127 ] ; then
+    LOG "***ABORTED: DOCUMENTATION PACKAGING, isql is not available"
+    exit 1
+fi
+$SERVER -? 2>/dev/null 1>/dev/null 
+if [ $? -eq 127 ] ; then
+    LOG "***ABORTED: DOCUMENTATION PACKAGING, server is not available"
+    exit 1
+fi
 
 curpwd=`pwd`
 cd $HOME/binsrc/sqldoc

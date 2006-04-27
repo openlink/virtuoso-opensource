@@ -56,6 +56,15 @@ RM="rm -f"
 fi
 BPEL=$HOME/binsrc/bpel/
 VOS=0
+if [ "z$SERVER" = "z" ]  
+then
+    if [ "x$HOST_OS" != "x" ]
+    then
+	SERVER=virtuoso-odbc-t.exe
+    else
+	SERVER=virtuoso
+    fi
+fi
 
 if [ -f ../../../autogen.sh ]
 then
@@ -125,14 +134,11 @@ START_SERVER()
   timeout=180
 
   ECHO "Starting Virtuoso DEMO server ..."
-  if [ "z$SERVER" != "z" ] 
+  if [ "z$HOST_OS" != "z" ] 
   then
       "$SERVER" +foreground &
-  elif [ "x$HOST_OS" != "x" ]
-  then
-  virtuoso-odbc-t +foreground &
   else
-  virtuoso +wait
+      "$SERVER" +wait
   fi
 
   starth=`date | cut -f 2 -d :`
@@ -337,11 +343,25 @@ rm -f demo.db demo.trx demo.log demo.lck mkdemo.output virtuoso.ini
 
 BANNER "CREATING DEMO DATABASE (mkdemo.sh)"
 
+$ISQL -? 2>/dev/null 1>/dev/null 
+if [ $? -eq 127 ] ; then
+    ECHO "***ABORTED: CREATING DEMO DATABASE, isql is not available"
+    exit 1
+fi
+$SERVER -? 2>/dev/null 1>/dev/null 
+if [ $? -eq 127 ] ; then
+    ECHO "***ABORTED: CREATING DEMO DATABASE, server is not available"
+    exit 1
+fi
+
 if [ $VOS -eq 1 ]
 then
+    if [ "x$HOST_OS" = "x" ]
+    then
     (cd $BPEL; make)
     (cd $HOME/binsrc/tutorial ; make)
     (cd $HOME/binsrc/yacutia ; make)
+    fi
 else
     (cd $BPEL; chmod +x make_vad.sh ; ./make_vad.sh)
     (chmod +x mkdoc.sh ; ./mkdoc.sh)
@@ -748,16 +768,6 @@ DO_COMMAND shutdown
 
 rm -f demo.trx 
 chmod 644 demo.db
-
-if [ "z$SERVER" = "z" ]
-then
-    if [ "x$HOST_OS" != "x" ]
-    then
-	SERVER=virtuoso-odbc-t
-    else
-	SERVER=virtuoso
-    fi
-fi
 
 $SERVER -b -f
 
