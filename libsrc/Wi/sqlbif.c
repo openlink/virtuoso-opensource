@@ -10942,7 +10942,7 @@ int search_excerpt_check_html_tag (char ** wpoint)
   return 0;
 }
 
-#define NOTWORDCHAR(c) ((!isalnum((c))\
+#define NOTWORDCHAR(c) ((!isalnum((unsigned char)(c))\
 			&& ((c) != '.')))
 
 
