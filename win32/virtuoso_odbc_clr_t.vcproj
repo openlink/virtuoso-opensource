@@ -19,8 +19,8 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="3"
-				OptimizeForProcessor="2"
+				Optimization="0"
+				OptimizeForProcessor="0"
 				AdditionalIncludeDirectories="..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;."
 				PreprocessorDefinitions="INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE"
 				MinimalRebuild="FALSE"
@@ -34,11 +34,13 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalOptions="/STACK:100000,50000"
 				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib advapi32.lib Mscoree.lib"
 				OutputFile="$(OutDir)/virtuoso-clr-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
 				IgnoreDefaultLibraryNames=""
+				ModuleDefinitionFile="..\binsrc\hosting\mono\clr.def"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_clr_t.pdb"
 				SubSystem="1"
@@ -89,11 +91,13 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalOptions="/STACK:100000,50000"
 				AdditionalDependencies="libvirtuoso-t.lib ws2_32.lib libeay32.lib ssleay32.lib advapi32.lib Mscoree.lib"
 				OutputFile="$(OutDir)/virtuoso-clr-t.exe"
 				LinkIncremental="0"
 				AdditionalLibraryDirectories="$(ConfigurationName);.\openssl;..\libsrc\openssl"
 				IgnoreDefaultLibraryNames=""
+				ModuleDefinitionFile="..\binsrc\hosting\mono\clr.def"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/virtuoso_clr_t.pdb"
 				SubSystem="1"
@@ -129,6 +133,13 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
 				RelativePath="..\binsrc\hosting\mono\basec.c">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						OptimizeForProcessor="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\binsrc\hosting\mono\dotnet.cpp">
