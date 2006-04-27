@@ -1020,6 +1020,7 @@ extern "C" {
 int virt_com_init ()
 {
   HRESULT hr;
+  wchar_t framework_ver[16];
   
   CComVariant				VntUnwrapped;
   CComPtr<IUnknown>			pUnk;
@@ -1052,8 +1053,11 @@ int virt_com_init ()
   sprintf (pid_dir, "%s%s\\%i\\", server_executable_dir, CLR_DISK_CACHE, getpid());
   _mkdir (pid_dir);
   
+
+  swprintf (framework_ver, sizeof (framework_ver), L"v%d.%d.%d", CLR_MAJOR_VERSION, CLR_MINOR_VERSION, CLR_BUILD_VERSION);
+  
   /* Retrieve a pointer to the ICorRuntimeHost interface */
-  hr = CorBindToRuntimeEx(NULL,   /* Retrieve latest version by default */
+  hr = CorBindToRuntimeEx((LPCWSTR)framework_ver,   /* Retrieve latest version by default */
   			  L"wks", /* Request a WorkStation build of the CLR */
 			  STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN | STARTUP_CONCURRENT_GC,
 			  CLSID_CorRuntimeHost,
