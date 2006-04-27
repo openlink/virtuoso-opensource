@@ -88,4 +88,6 @@ EXTRA_DIST = \
 	win32/mkpythonenv.py \
 	win32/*.bat \
 	win32/*.vcproj \
-	win32/*.sln
+	win32/*.sln \
+	win64/*.vcproj \
+	win64/*.sln
