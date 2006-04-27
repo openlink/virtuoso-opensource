@@ -44,16 +44,16 @@
     <!--<subsection Title="SQLX" fspath="xml">-->
       <group Title="XML Database">
         <group Title="XML Query (XQuery) Language">
-					<example id="XQ-S-1" fspath="xml/xq_s_1"></example>
+					<!--<example id="XQ-S-1" fspath="xml/xq_s_1"></example>-->
 					<example id="XQ-S-2" fspath="xml/xq_s_2"></example>
 					<example id="XQ-S-2A" fspath="xml/xq_s_2a"></example>
 					<example id="XQ-S-3" fspath="xml/xq_s_3"></example>
 					<example id="XQ-S-4" fspath="xml/xq_s_4"></example>
         </group>
-        <group Title="SPARQL Query Language">
+        <!--<group Title="SPARQL Query Language">
 					<example id="RQ-S-1" fspath="xml/rq_s_1"></example>
+        </group>-->
         </group>
-      </group>
       <group Title="SQLX"> 
 	      <group Title="XMLELEMENT, XMLAGG and other SQL-XML composing functions">
 					<example id="SX-E-0" fspath="xml/sx_e_0"></example>
