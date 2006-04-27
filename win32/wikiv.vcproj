@@ -195,7 +195,7 @@
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del maclex.c
+rm -f maclex.c
 flex -8 -Pmacyy -omaclex.c $(InputPath)
 cd $(ProjectDir)
 "
@@ -207,7 +207,7 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del maclex.c
+rm -f maclex.c
 flex -8 -Pmacyy -omaclex.c $(InputPath)
 cd $(ProjectDir)
 "
@@ -222,7 +222,7 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del wikilex.c
+rm -f wikilex.c
 flex -8 -Pwikiyy -owikilex.c $(InputPath)
 cd $(ProjectDir)
 "
@@ -234,7 +234,7 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del wikilex.c
+rm -f wikilex.c
 flex -8 -Pwikiyy -owikilex.c $(InputPath)
 cd $(ProjectDir)
 "

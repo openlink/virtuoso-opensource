@@ -4,6 +4,7 @@
 	Version="7.10"
 	Name="wi"
 	ProjectGUID="{93051962-7797-49F0-8958-BB1CE60FFE6F}"
+	RootNamespace="wi"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
@@ -1011,10 +1012,11 @@
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del scn3_vsnet.c
+rm -f scn3_vsnet.c
 flex -i -oscn3_vsnet.c $(InputPath)
 cd $(ProjectDir)
 "
+						AdditionalDependencies="$(InputDir)sql3.h"
 						Outputs="$(InputDir)scn3_vsnet.c"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1023,10 +1025,11 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del scn3_vsnet.c
+rm -f scn3_vsnet.c
 flex -i -oscn3_vsnet.c $(InputPath)
 cd $(ProjectDir)
 "
+						AdditionalDependencies="$(InputDir)sql3.h"
 						Outputs="$(InputDir)scn3_vsnet.c"/>
 				</FileConfiguration>
 			</File>
@@ -1038,10 +1041,11 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del sparql_l.c
+rm -f sparql_l.c
 flex -8 -Psparyy -osparql_l.c $(InputPath)
 cd $(ProjectDir)
 "
+						AdditionalDependencies="$(InputDir)sparql_p.h"
 						Outputs="$(InputDir)sparql_l.c"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1050,10 +1054,11 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del sparql_l.c
+rm -f sparql_l.c
 flex -8 -Psparyy -osparql_l.c $(InputPath)
 cd $(ProjectDir)
 "
+						AdditionalDependencies="$(InputDir)sparql_p.h"
 						Outputs="$(InputDir)sparql_l.c"/>
 				</FileConfiguration>
 			</File>
@@ -1065,8 +1070,8 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del sparql_p.c
-del sparql_p.h
+rm -f sparql_p.c
+rm -f sparql_p.h
 bison -y -vd -psparyy sparql_p.y -osparql_p.c
 cd $(ProjectDir)
 "
@@ -1078,8 +1083,8 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del sparql_p.c
-del sparql_p.h
+rm -f sparql_p.c
+rm -f sparql_p.h
 bison -y -vd -psparyy sparql_p.y -osparql_p.c
 cd $(ProjectDir)
 "
@@ -1094,8 +1099,8 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del sql3.c
-del sql3.h
+rm -f sql3.c
+rm -f sql3.h
 bison -y  -vd sql3.y -osql3.c
 cd $(ProjectDir)
 "
@@ -1107,8 +1112,8 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del sql3.c
-del sql3.h
+rm -f sql3.c
+rm -f sql3.h
 bison -y  -vd sql3.y -osql3.c
 cd $(ProjectDir)
 "
@@ -1150,10 +1155,11 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del turtle_l.c
+rm -f turtle_l.c
 flex -8 -Pttlyy -oturtle_l.c $(InputPath)
 cd $(ProjectDir)
 "
+						AdditionalDependencies="$(InputDir)turtle_p.h"
 						Outputs="$(InputDir)turtle_l.c"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1162,10 +1168,11 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del turtle_l.c
+rm -f turtle_l.c
 flex -8 -Pttlyy -oturtle_l.c $(InputPath)
 cd $(ProjectDir)
 "
+						AdditionalDependencies="$(InputDir)turtle_p.h"
 						Outputs="$(InputDir)turtle_l.c"/>
 				</FileConfiguration>
 			</File>
@@ -1177,8 +1184,8 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del turtle_p.c
-del turtle_p.h
+rm -f turtle_p.c
+rm -f turtle_p.h
 bison -y -vd -pttlyy turtle_p.y -oturtle_p.c
 cd $(ProjectDir)
 "
@@ -1190,8 +1197,8 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del turtle_p.c
-del turtle_p.h
+rm -f turtle_p.c
+rm -f turtle_p.h
 bison -y -vd -pttlyy turtle_p.y -oturtle_p.c
 cd $(ProjectDir)
 "
@@ -1206,8 +1213,8 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del xpathp.c
-del xpathp.h
+rm -f xpathp.c
+rm -f xpathp.h
 bison -y -vd -pxpyy xpathp.y -oxpathp.c
 cd $(ProjectDir)
 "
@@ -1219,8 +1226,8 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del xpathp.c
-del xpathp.h
+rm -f xpathp.c
+rm -f xpathp.h
 bison -y -vd -pxpyy xpathp.y -oxpathp.c
 cd $(ProjectDir)
 "
@@ -1235,10 +1242,11 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del xpscn_vsnet.c
+rm -f xpscn_vsnet.c
 flex -i -oxpscn_vsnet.c -Pxpyy $(InputPath)
 cd $(ProjectDir)
 "
+						AdditionalDependencies="$(InputDir)xpathp.h"
 						Outputs="$(InputDir)xpscn_vsnet.c"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -1247,10 +1255,11 @@ cd $(ProjectDir)
 						Name="VCCustomBuildTool"
 						CommandLine="
 cd $(InputDir)
-del xpscn_vsnet.c
+rm -f xpscn_vsnet.c
 flex -i -oxpscn_vsnet.c -Pxpyy $(InputPath)
 cd $(ProjectDir)
 "
+						AdditionalDependencies="$(InputDir)xpathp.h"
 						Outputs="$(InputDir)xpscn_vsnet.c"/>
 				</FileConfiguration>
 			</File>
