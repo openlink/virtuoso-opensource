@@ -2960,7 +2960,10 @@ PrpcSetSchedulerHook (sch_hook_func new_function)
 }
 
 
-int socket_buf_sz = 10240;
+/*
+ *  A value of 0 means leaving it to the OS to sort out send/receive sizes
+ */
+int socket_buf_sz = 0;
 
 
 #ifdef NOT
@@ -3702,7 +3705,7 @@ PrpcInitialize (void)
 #endif
 
   session_set_default_control (SC_MSGLEN, (char *) (&socket_buf_sz),
-      sizeof (int));
+    sizeof (int));
 
 #ifdef PMN_THREADS
   {

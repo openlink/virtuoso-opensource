@@ -143,7 +143,7 @@ struct session_s
 
 #define SDC_BLOCKING    1           /* 1=yes, 0=no */
 #define SDC_TIMEOUT     {0, 0}      /* sec, usec   */
-#define SDC_MSGLEN      512
+#define SDC_MSGLEN      0	    /* 0 = leave to OS */
 
 
 /*

@@ -1456,10 +1456,12 @@ tcpses_select (
  *
  *      SC_MSGLEN         int       for connectionless protocols:
  *                                    - max transaction (msg) length in bytes
+ * 					(Currently not in use)
  *                                  for connection oriented protocols:
  *                                    - hint for lower levels to reserve big
  *                                      enough communication buffers to achieve
  *                                      maximum performance
+ *					(0 = leave to OS)
  *
  * Output params: control fields of ses are updated
  *
@@ -1603,14 +1605,17 @@ tcpses_set_control (session_t *ses, int fieldtoset, char *p_value, int size)
 	  memcpy ((char *) &opt, p_value, size);
 	  /* opt = *(int *)p_value; */
 	}
-      dbg_printf_2 (("Setting recv bufsize to %d.", opt));
-      rc = setsockopt (s, SOL_SOCKET, SO_RCVBUF,
-	  (char *) &opt, sizeof (opt));
+      if (opt > 0)
+        {
+	  dbg_printf_2 (("Setting recv bufsize to %d.", opt));
+	  rc = setsockopt (s, SOL_SOCKET, SO_RCVBUF,
+	      (char *) &opt, sizeof (opt));
 
-      opt = *(int *) p_value;
-      dbg_printf_2 (("Setting send bufsize to %d.", opt));
-      rc = setsockopt (s, SOL_SOCKET, SO_SNDBUF,
-	  (char *) &opt, sizeof (opt));
+	  opt = *(int *) p_value;
+	  dbg_printf_2 (("Setting send bufsize to %d.", opt));
+	  rc = setsockopt (s, SOL_SOCKET, SO_SNDBUF,
+	      (char *) &opt, sizeof (opt));
+        }
       sescontrol->ctrl_msg_length = *(int *) p_value;
       rc = SER_SUCC;
       break;

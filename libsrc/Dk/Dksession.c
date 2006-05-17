@@ -466,10 +466,12 @@ session_select (
  *
  *    SC_MSGLEN         int       for connectionless protocols:
  *                                  - max transaction (msg) length in bytes
+ *                                    (Currently not in use)
  *                                for connection oriented protocols:
  *                                  - hint for lower levels to reserve big
  *                                    enough communication buffers to achieve
- *                                    maximum performance
+ *                                    maximum performance.
+ *                                    (0 = leave to OS)
  *
  * Output params: control field of ses is updated
  *
