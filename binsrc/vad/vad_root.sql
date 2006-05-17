@@ -38,6 +38,7 @@ create table  "VAD"."DBA"."VAD_REGISTRY" (
     "R_TYPE"  varchar not null,
     "R_VALUE" long varchar,
     primary key ("R_ID") )
+create index VAD_REGISTRY_CHDIR on "VAD"."DBA"."VAD_REGISTRY" (R_PRNT,R_SHKEY,R_TYPE)
 ;
 
 --drop table "VAD"."DBA"."VAD_LOG";
