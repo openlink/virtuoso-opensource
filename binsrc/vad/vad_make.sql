@@ -161,9 +161,8 @@ create procedure "VAD"."DBA"."VAD_MD5_FILE" (
     else
     {
       declare tmp any;
-      tmp := string_output();
-      "VAD"."DBA"."BLOB_2_STRING_OUTPUT"(fname, i, j, tmp);
-      data := cast(tmp as varchar);
+      select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = fname;
+      data := subseq (tmp,  i, j);
     }
       ctx := md5_update (ctx, data);
     i := i + 4096;
@@ -218,7 +217,7 @@ create procedure "VAD"."DBA"."VAD_OUT_CHAR" (
 ;
 
 create procedure "VAD"."DBA"."VAD_GET_CHAR" (
-  in ses varchar,
+  in fname varchar,
   inout pos integer,
   inout ctx varchar,
   in is_dav any )
@@ -228,15 +227,14 @@ create procedure "VAD"."DBA"."VAD_GET_CHAR" (
   s := ' ';
   declare c integer;
   if (is_dav = 0)
-    s := cast (file_to_string_output (ses, pos-1, pos) as varchar);
+    s := cast (file_to_string_output (fname, pos-1, pos) as varchar);
   else
   {
-    declare eee any;
-    eee := string_output();
-    "VAD"."DBA"."BLOB_2_STRING_OUTPUT"(ses, pos-1, pos, eee);
-    s := cast(eee as varchar);
+    declare tmp any;
+    select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = fname;
+    s := subseq (tmp,  pos-1, pos);
   }
-  c := aref(s, 0);
+  c := aref (s, 0);
   ctx := md5_update (ctx, s);
   return c;
 }
@@ -270,16 +268,40 @@ create procedure "VAD"."DBA"."VAD_OUT_LONG" (
 ;
 
 create procedure "VAD"."DBA"."VAD_GET_LONG" (
-  in ses varchar,
+  in fname varchar,
   inout pos integer,
   inout ctx varchar,
   in is_dav any )
 {
   declare v1, v2, v3, v4 integer;
-  v4 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
-  v3 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
-  v2 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
-  v1 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
+  declare tmp, str varchar;
+
+  if (is_dav = 0)
+    {
+      str := cast (file_to_string_output (fname, pos, pos+4) as varchar);
+    }
+  else
+    {
+      select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = fname;
+      str := subseq (tmp,  pos, pos + 4);
+    }
+
+  v4 := str[0];
+  v3 := str[1];
+  v2 := str[2];
+  v1 := str[3];
+
+  ctx := md5_update (ctx, chr (v4));
+  ctx := md5_update (ctx, chr (v3));
+  ctx := md5_update (ctx, chr (v2));
+  ctx := md5_update (ctx, chr (v1));
+
+  pos := pos + 4;
+
+  --v4 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
+  --v3 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
+  --v2 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
+  --v1 := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
   return v1 + 256 * ( v2 + 256 * ( v3 + 256 * ( v4 )));
 }
 ;
@@ -405,9 +427,8 @@ create procedure "VAD"."DBA"."VAD_GET_ROW" (
   else
   {
     declare tmp any;
-    tmp := string_output();
-    "VAD"."DBA"."BLOB_2_STRING_OUTPUT" (ses, pos, pos + _len, tmp);
-    name := cast(tmp as varchar);
+    select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
+    name := subseq (tmp, pos, pos + _len);
   }
   pos := pos + _len;
   val := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
@@ -419,9 +440,8 @@ create procedure "VAD"."DBA"."VAD_GET_ROW" (
   else
   {
     declare tmp any;
-    tmp := string_output();
-    "VAD"."DBA"."BLOB_2_STRING_OUTPUT"(ses, pos, pos + _len, tmp);
-    data := cast(tmp as varchar);
+    select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
+    data := subseq (tmp, pos, pos + _len);
   }
   pos := pos + _len;
   if (equ (name, 'MD5'))
@@ -450,9 +470,8 @@ create procedure "VAD"."DBA"."VAD_GET_ROW_FILE" (
   else
   {
     declare tmp any;
-    tmp := string_output();
-    "VAD"."DBA"."BLOB_2_STRING_OUTPUT" (ses, pos, pos + _len, tmp);
-    name := cast(tmp as varchar);
+    select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
+    name := subseq (tmp, pos, pos + _len);
   }
   pos := pos + _len;
   val := "VAD"."DBA"."VAD_GET_CHAR" (ses, pos, ctx, is_dav);
@@ -526,9 +545,8 @@ create procedure "VAD"."DBA"."VAD_GET_ROW_FILE" (
         else
         {
           declare tmp any;
-          tmp := string_output();
-          "VAD"."DBA"."BLOB_2_STRING_OUTPUT" (ses, i, j, tmp);
-          data := cast(tmp  as varchar);
+	  select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
+	  data := subseq (tmp,  i, j);
         }
         nctx := md5_update (nctx, data);
         i := i + 4096;
@@ -578,9 +596,8 @@ create procedure "VAD"."DBA"."VAD_GET_ROW_FILE" (
       else
       {
       declare tmp any;
-      tmp := string_output();
-        "VAD"."DBA"."BLOB_2_STRING_OUTPUT" (ses, i, j, tmp);
-        data := cast(tmp as varchar);
+	select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
+	data := subseq (tmp, i, j);
       }
       ctx := md5_update (ctx, data);
       string_to_file (s4, data, -1);
@@ -652,9 +669,8 @@ create procedure "VAD"."DBA"."VAD_GET_ROW_FILE" (
     else
     {
       declare tmp any;
-      tmp := string_output();
-      "VAD"."DBA"."BLOB_2_STRING_OUTPUT" (ses, pos - _len, pos, tmp);
-      data := cast(tmp as varchar);
+      select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = ses;
+      data := subseq (tmp, pos - _len, pos);
     }
     ctx := md5_update (ctx, data);
     if (val is not null and val > 0)
@@ -862,7 +878,7 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
         tid := "VAD"."DBA"."VAD_MKNODE" (parr, tid, s2, 'STRING', s3);
       }
       if (not "VAD"."DBA"."VAD_TEST_PACKAGE_LT" (parr, s2, s3))
-        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s lt(%s) hasn\'t yet installed', s2, s3));
+        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s with version less than %s hasn\'t yet installed', s2, s3));
     }
     s3 := cast (xpath_eval ('version/@package', aref (items, j)) as varchar);
     if (s2 is not null and length(s3))
@@ -873,7 +889,7 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
         tid := "VAD"."DBA"."VAD_MKNODE" (parr, tid, s2, 'STRING', s3);
       }
       if (not "VAD"."DBA"."VAD_TEST_PACKAGE_EQ" (parr, s2, s3))
-        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s eq(%s) hasn\'t yet installed', s2, s3));
+        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s with version equal to %s hasn\'t yet installed', s2, s3));
     }
     s3 := cast (xpath_eval ('versions_later/@package', aref (items, j)) as varchar);
     if (s2 is not null and length(s3))
@@ -884,7 +900,7 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
         tid := "VAD"."DBA"."VAD_MKNODE" (parr, tid, s2, 'STRING', s3);
       }
       if (not "VAD"."DBA"."VAD_TEST_PACKAGE_GT" (parr, s2, s3))
-        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s gt(%s) hasn\'t yet installed', s2, s3));
+        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s with version greater than %s hasn\'t yet installed', s2, s3));
     }
     j := j + 1;
   }
@@ -1173,8 +1189,11 @@ create procedure "VAD"."DBA"."VAD_READ" (
   proc_post_install_code,
   proc_pre_uninstall_code,
   proc_post_uninstall_code varchar;
+  declare pkg_name varchar;
+
   pos := 0;
   resources := vector();
+  pkg_name := null;
   if (iniarr is null)
     iniarr := "VAD"."DBA"."VAD_READ_INI" (iniarr);
   declare continue handler for sqlstate '39000' { goto error_nofile; };
@@ -1241,7 +1260,7 @@ create procedure "VAD"."DBA"."VAD_READ" (
       proc_post_install_code := NULL;
       proc_pre_uninstall_code := NULL;
       proc_post_uninstall_code := NULL;
-      declare pkg_name, pkg_vers, pkg_fullname, s2, s3, s4, s7, s8, s9 varchar;
+      declare pkg_vers, pkg_fullname, s2, s3, s4, s7, s8, s9 varchar;
       declare pkgid, tid, tid2 integer;
       declare docsid, filesid, ddls, docsid2, filesid2, ddls2  integer;
       docsid := "VAD"."DBA"."VAD_CHDIR" (parr, 0, '/DOCS');
@@ -1253,7 +1272,7 @@ create procedure "VAD"."DBA"."VAD_READ" (
       tree := xml_tree (data);
       doc := xml_tree_doc (tree);
       declare items any;
-      declare j, n integer;
+      declare j, n, ix integer;
       "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (parr, doc, pkg_name, pkg_vers, pkg_fullname, 0);
 
       items := xpath_eval ('/sticker/procedures/sql[@purpose=\'pre-install\']', doc, 0);
@@ -1357,7 +1376,9 @@ create procedure "VAD"."DBA"."VAD_READ" (
       tid := "VAD"."DBA"."VAD_MKDIR" (parr, tid2, 'data');
       items := xpath_eval ('/sticker/resources/file', doc, 0);
       n := length (items);
+      resources := make_array (n*2, 'any');
       j := 0;
+      ix := 0;
       while (j<n)
       {
         s2 := cast (xpath_eval ('@type', aref (items, j)) as varchar);
@@ -1373,8 +1394,10 @@ create procedure "VAD"."DBA"."VAD_READ" (
         if (0 = tid)
           "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('resource file %s has unknown type %s', s3, s2));
         tid := "VAD"."DBA"."VAD_MKNODE" (parr, tid, cast (j + 1 as varchar), 'STRING', s3);
-        resources := vector_concat (resources, vector (s3, vector (s2, s4, cast (xpath_eval ('@makepath', aref (items, j)) as varchar), s7, s8, s9)));
+	resources [ix] := s3;
+	resources [ix+1] := vector (s2, s4, cast (xpath_eval ('@makepath', aref (items, j)) as varchar), s7, s8, s9);
         j := j + 1;
+	ix := ix + 2;
       }
       items := xpath_eval ('/sticker/registry/record', doc, 0);
       tid2 := "VAD"."DBA"."VAD_MKDIR" (parr, pkgid, 'records');
@@ -1440,9 +1463,11 @@ create procedure "VAD"."DBA"."VAD_READ" (
   if (neq (md5_final(ctx), string_output_string(v2)))
     "VAD"."DBA"."VAD_FAIL_CHECK" ('VAD file corrupted');
   fin:
+--  dbg_obj_print (md5_final(ctx), string_output_string(v2));
   "VAD"."DBA"."VAD_EXEC" (ddl_post_install_code);
   "VAD"."DBA"."VAD_EXEC" (proc_post_install_code);
   "VAD"."DBA"."VAD_UPDATE_NODE" (statusid, 'Installed', 'Broken');
+  "DB"."DBA"."VAD_CLEAN_OLD_VERSIONS" (pkg_name);
   return 1;
   error_nofile:
   "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('VAD file1 (%s) problems:\n%s', fname, __SQL_MESSAGE));
@@ -1684,6 +1709,124 @@ create procedure "DB"."DBA"."VAD_CHECK_VERSION"(
 }
 ;
 
+create procedure "DB"."DBA"."VAD_CLEAN_OLD_VERSIONS" (in name varchar)
+{
+  declare parr any;
+  declare curdir, ret, tid integer;
+  declare res, lname, ltype, lval varchar;
+
+  parr := null;
+  curdir := "VAD"."DBA"."VAD_CHDIR"(parr, 0, '/VAD');
+  tid := "VAD"."DBA"."VAD_CHDIR"(parr, curdir, name);
+  if (not tid)
+    return null;
+  ret := "VAD"."DBA"."VAD_NODE_INFO_BY_NAME"(tid, 'CurrentVersion', lname, ltype, lval, 0);
+  if (not ret)
+    return null;
+  for select R_SHKEY as old_ver from VAD.DBA.VAD_REGISTRY
+    where R_TYPE = 'FOLDER' and R_KEY = '/VAD/'||name||'/' || R_SHKEY and R_SHKEY <> lval do
+    {
+      --dbg_printf ('removing old version %s', old_ver);
+      curdir := "VAD"."DBA"."VAD_CHDIR" (parr, tid, old_ver);
+      "VAD"."DBA"."VAD_DEL_SUBTREE" (curdir);
+    }
+  return lval;
+}
+;
+
+create procedure "DB"."DBA"."VAD_RENAME" (in name varchar, in new_name varchar)
+{
+  declare old_pkey, docs, files, ddls, ver varchar;
+
+  ver := "DB"."DBA"."VAD_CLEAN_OLD_VERSIONS" (name);
+
+  if (ver is null)
+    return;
+
+  old_pkey := '/VAD/'||name;
+  docs := '/DOCS/' || name;
+  files := '/FILES/' || name;
+  ddls := '/SCHEMA/' || name;
+
+  for select R_KEY as rkey, R_ID as rid from VAD.DBA.VAD_REGISTRY where R_KEY like old_pkey || '/%' or R_KEY = old_pkey
+   do
+     {
+       declare new_key varchar;
+       if (rkey <> old_pkey)
+	 {
+	   new_key := '/VAD/' || new_name || substring (rkey, length (old_pkey)+1, length (rkey));
+	   update VAD.DBA.VAD_REGISTRY set R_KEY = new_key where R_ID = rid;
+	 }
+       else
+	 {
+           new_key := '/VAD/' || new_name;
+           update VAD.DBA.VAD_REGISTRY set R_KEY = new_key, R_SHKEY = new_name where R_ID = rid;
+	 }
+     }
+
+   for select R_KEY as rkey, R_ID as rid, blob_to_string (R_VALUE) as val, R_TYPE as tp from VAD.DBA.VAD_REGISTRY
+     where
+	 R_KEY = docs
+	 or R_KEY = files
+	 or R_KEY = ddls
+	 or R_KEY = docs ||'/' || ver
+	 or R_KEY = files || '/' || ver
+	 or R_KEY = ddls ||'/' || ver
+	 do
+	   {
+	     declare new_key varchar;
+	     if (rkey like '/DOCS/%')
+	       {
+		 new_key := '/DOCS/'||new_name||substring (rkey, length (docs)+1, length (rkey));
+	       }
+	     else if (rkey like '/FILES/%')
+	       {
+		 new_key := '/FILES/'||new_name||substring (rkey, length (files)+1, length (rkey));
+	       }
+	     else if (rkey like '/SCHEMA/%')
+	       {
+		 new_key := '/SCHEMA/'||new_name||substring (rkey, length (ddls)+1, length (rkey));
+	       }
+
+	     --dbg_obj_print (tp, new_key, val);
+
+             if (tp = 'FOLDER')
+	       {
+		 update VAD.DBA.VAD_REGISTRY set R_KEY = new_key, R_SHKEY = new_name where R_ID = rid;
+	       }
+             else if (tp = 'KEY' and val like old_pkey || '/%')
+               {
+		 declare new_value varchar;
+		 new_value := '/VAD/'||new_name||substring (val, length (old_pkey)+1, length (val));
+		 --dbg_obj_print (new_value);
+		 update VAD.DBA.VAD_REGISTRY set R_KEY = new_key, R_VALUE = new_value where R_ID = rid;
+	       }
+	   }
+     for select R_KEY as rkey, R_ID as rid, R_SHKEY as shkey from VAD.DBA.VAD_REGISTRY where
+        R_KEY like '%/require/__/' || name and R_SHKEY = name do
+	  {
+	    declare new_key varchar;
+	    new_key := substring (rkey, 1, length (rkey) - length (name)) || new_name;
+	    update VAD.DBA.VAD_REGISTRY set R_KEY = new_key, R_SHKEY = new_name where R_ID = rid;
+	  }
+}
+;
+
+create procedure DB.DBA.VAD_LIST_PACKAGES ()
+{
+  declare pkgs any;
+  declare name, title, build_date, install_date, version varchar;
+
+  result_names (name, title, version, build_date, install_date);
+  pkgs := "VAD"."DBA"."VAD_GET_PACKAGES" ();
+  foreach (any elm in pkgs) do
+    {
+      result (elm[1], elm[5], elm[2], elm[3], elm[4]);
+    }
+
+}
+;
+
 -- uninstall by package name and version (name="package_name/package_version")
 create procedure "DB"."DBA"."VAD_UNINSTALL"(
   in name varchar) returns varchar
@@ -1715,22 +1858,22 @@ create procedure "VAD"."DBA"."VAD_PKG_DIFF" (
 {
   declare outarr any;
   outarr := vector();
-  "VAD"."DBA"."VAD_FULL_PATH" (parr, pkgid);
-  declare sname, lname, rname, oldval, newval varchar;
-  outarr := vector();
-  sname := concat ("VAD"."DBA"."VAD_FULL_PATH" (parr, pkgid), '%');
-  declare cr cursor for select distinct "L_KEY" from "VAD"."DBA"."VAD_LOG" where "L_KEY" like sname and ("L_ACT" = 'UPDNODE' or "L_ACT" = 'RMNODE') order by "L_TM";
-  open cr;
-  whenever not found goto fin;
-  while (1)
-  {
-    fetch cr into lname;
-    select "R_VALUE" into rname from "VAD"."DBA"."VAD_REGISTRY" where "R_KEY" = lname;
-    select top 1 "L_NVAL" into newval from "VAD"."DBA"."VAD_LOG" where "L_KEY" = lname and "L_ACT" = 'MKNODE' order by "L_TM";
-    outarr := vector_concat (outarr, vector (vector (lname, rname, newval)));
-    }
-  fin:
-  close cr;
+--  "VAD"."DBA"."VAD_FULL_PATH" (parr, pkgid);
+--  declare sname, lname, rname, oldval, newval varchar;
+--  outarr := vector();
+--  sname := concat ("VAD"."DBA"."VAD_FULL_PATH" (parr, pkgid), '%');
+--  declare cr cursor for select distinct "L_KEY" from "VAD"."DBA"."VAD_LOG" where "L_KEY" like sname and ("L_ACT" = 'UPDNODE' or "L_ACT" = 'RMNODE') order by "L_TM";
+--  open cr;
+--  whenever not found goto fin;
+--  while (1)
+--  {
+--    fetch cr into lname;
+--    select "R_VALUE" into rname from "VAD"."DBA"."VAD_REGISTRY" where "R_KEY" = lname;
+--    select top 1 "L_NVAL" into newval from "VAD"."DBA"."VAD_LOG" where "L_KEY" = lname and "L_ACT" = 'MKNODE' order by "L_TM";
+--    outarr := vector_concat (outarr, vector (vector (lname, rname, newval)));
+--    }
+--  fin:
+--  close cr;
   return outarr;
 }
 ;

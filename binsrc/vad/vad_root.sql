@@ -42,14 +42,14 @@ create index VAD_REGISTRY_CHDIR on "VAD"."DBA"."VAD_REGISTRY" (R_PRNT,R_SHKEY,R_
 ;
 
 --drop table "VAD"."DBA"."VAD_LOG";
-create table "VAD"."DBA"."VAD_LOG" (
-    "L_KEY" varchar not null,
-    "L_TM"  datetime not null,
-    "L_ACT" varchar not null,
-    "L_OVAL"  long varchar,
-    "L_NVAL"  long varchar
-)
-;
+--create table "VAD"."DBA"."VAD_LOG" (
+--    "L_KEY" varchar not null,
+--    "L_TM"  datetime not null,
+--    "L_ACT" varchar not null,
+--    "L_OVAL"  long varchar,
+--    "L_NVAL"  long varchar
+--)
+--;
 
 create procedure "VAD"."DBA"."VAD_READ_INI" (inout parr any) returns any
 {
@@ -327,7 +327,7 @@ fin2:
 ;
 
 
-create procedure "VAD"."DBA"."VAD_TEST_PARENT" (inout parr any, in curdir integer, in name varchar, inout rid int) 
+create procedure "VAD"."DBA"."VAD_TEST_PARENT" (inout parr any, in curdir integer, in name varchar, inout rid int)
 returns varchar
 {
   curdir := cast (curdir as integer);
@@ -379,7 +379,7 @@ create procedure "VAD"."DBA"."VAD_MKDIR" (inout parr any, in curdir integer, in 
   if (_id is null)
   _id := sequence_next('vad_id');
   insert replacing "VAD"."DBA"."VAD_REGISTRY" ("R_ID", "R_PRNT", "R_KEY", "R_SHKEY", "R_TYPE") values (_id, curdir, nname, name, 'FOLDER');
-  insert replacing "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT") values (nname, now(), 'MKDIR');
+  --insert replacing "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT") values (nname, now(), 'MKDIR');
 --  commit work;
   return _id;
 }
@@ -415,7 +415,7 @@ create procedure "VAD"."DBA"."VAD_RMDIR" (inout parr any, in curdir integer) ret
     "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Directory is not empty:%s', name));
   delete from "VAD"."DBA"."VAD_REGISTRY" where blob_to_string ("R_VALUE") = name and "R_TYPE" = 'KEY';
   delete from "VAD"."DBA"."VAD_REGISTRY" where "R_ID" = curdir;
-  insert into "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT") values (name, now(), 'RMDIR');
+  --insert into "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT") values (name, now(), 'RMDIR');
   if (parr is not null)
     "PUMP"."DBA"."CHANGE_VAL" (parr, 'reg_curdir', cast (id as varchar));
 
@@ -434,7 +434,7 @@ create procedure "VAD"."DBA"."VAD_RMNODE" (in id integer) returns integer
 
   delete from "VAD"."DBA"."VAD_REGISTRY" where blob_to_string ("R_VALUE") = skey and "R_TYPE" = 'KEY';
   delete from "VAD"."DBA"."VAD_REGISTRY" where "R_ID" = id;
-  insert into "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT") values (skey, now(), 'RMNODE');
+  --insert into "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT") values (skey, now(), 'RMNODE');
 
 --  commit work;
   return 1;
@@ -458,7 +458,7 @@ create procedure "VAD"."DBA"."VAD_MKNODE" (inout parr any, in curdir integer, in
   if (_id is null)
   _id := sequence_next('vad_id');
   insert replacing "VAD"."DBA"."VAD_REGISTRY" ("R_ID", "R_PRNT", "R_KEY", "R_SHKEY", "R_TYPE", "R_VALUE") values (_id, curdir, nname, name, type, val);
-  insert replacing "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT", "L_NVAL") values (nname, now(), 'MKNODE', val);
+  --insert replacing "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT", "L_NVAL") values (nname, now(), 'MKNODE', val);
 --  commit work;
   return _id;
 }
@@ -481,7 +481,7 @@ create procedure "VAD"."DBA"."VAD_UPDATE_NODE" (in curid integer, in val varchar
   update "VAD"."DBA"."VAD_REGISTRY" set "R_PRNT"=prnt, "R_KEY"=okey, "R_SHKEY"=name, "R_TYPE"=type, "R_VALUE"=val where "R_ID"=curid;
 --  insert into "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT", "L_OVAL", "L_NVAL") values (okey, now(), 'UPDNODE', oldval, val);
 --dbg_obj_print (okey, now());
-insert into "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT") values (okey, now(), 'UPDNODE');
+--insert into "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT") values (okey, now(), 'UPDNODE');
   return 1;
 
 err:
@@ -661,13 +661,14 @@ create procedure "VAD"."DBA"."VAD_GET_PACKAGES" ( ) returns any
       open cr2;
       while (1)
       {
-	declare build, inst, verid any;
+	declare build, inst, title, verid any;
         whenever not found goto fin2;
         fetch cr2 into tname2;
 	verid := "VAD"."DBA"."VAD_CHDIR"(tmparr, tid, tname2);
 	build := (select  "R_VALUE" from "VAD"."DBA"."VAD_REGISTRY" where "R_PRNT"=verid and "R_TYPE" = 'STRING' and R_SHKEY='Release Date');
 	inst := (select  "R_VALUE" from "VAD"."DBA"."VAD_REGISTRY" where "R_PRNT"=verid and "R_TYPE" = 'STRING' and R_SHKEY='Install Date');
-        retarr := vector_concat (retarr, vector (vector (tid2, tname, tname2, build, inst)));
+	title := (select  "R_VALUE" from "VAD"."DBA"."VAD_REGISTRY" where "R_PRNT"=verid and "R_TYPE" = 'STRING' and R_SHKEY='Title');
+        retarr := vector_concat (retarr, vector (vector (tid2, tname, tname2, build, inst, title)));
       }
 fin2:;
   }
@@ -756,7 +757,7 @@ create procedure "VAD"."DBA"."__vad_init"()
     "VAD"."DBA"."VAD_SET_ROOT" ( 'HTTP_ROOT', './vad/vsp');
     "VAD"."DBA"."VAD_SET_ROOT" ( 'CODE_ROOT', './vad/code');
     "VAD"."DBA"."VAD_SET_ROOT" ( 'DATA_ROOT', './vad/data');
-    "VAD"."DBA"."VAD_SET_ROOT" ( 'DAV_ROOT',  '/DAV/VAD');    
+    "VAD"."DBA"."VAD_SET_ROOT" ( 'DAV_ROOT',  '/DAV/VAD');
     "VAD"."DBA"."VAD_MKDIR" (parr, 1, 'DOCS');
     "VAD"."DBA"."VAD_MKDIR" (parr, 1, 'FILES');
     "VAD"."DBA"."VAD_MKDIR" (parr, 1, 'SCHEMA');
