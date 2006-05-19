@@ -1148,7 +1148,7 @@ void ssg_print_uri_list (spar_sqlgen_t *ssg, dk_set_t uris, ssg_valmode_t needed
 void ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t needed)
 { /* needed is always equal to native in this function */
   sparp_env_t *env = ssg->ssg_sparp->sparp_env;
-  const char *coloncolon = strstr (vname, "::");
+  char *coloncolon = strstr (vname, "::");
   if (NULL != coloncolon)
     vname = coloncolon + 1;
   if (!strcmp (vname, SPAR_VARNAME_DEFAULT_GRAPH))
@@ -1762,7 +1762,7 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
           goto write_assuffix;
         }
     }
-  if (flags & SSG_RETVAL_FROM_SELECTED)
+  if (flags & SSG_RETVAL_FROM_GOOD_SELECTED)
     {
       for (var_ctr = 0; var_ctr < var_count; var_ctr++)
         {
@@ -1784,7 +1784,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
           goto write_assuffix;
         }
       if ((0 == eq->e_var_count) &&
-        ((UNION_L == gp->_.gp.subtype) || (0 == gp->_.gp.subtype)) )
+        ((flags & SSG_RETVAL_FROM_ANY_SELECTED) ||
+          (UNION_L == gp->_.gp.subtype) || (0 == gp->_.gp.subtype)) )
         { /* Special case of an equiv used only to pass column of UNION to the next level, can print it always */
           SPART_buf rv_buf;
           SPART *rv;
@@ -1814,8 +1815,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
           goto try_write_null; /* see below */
         gp_member = gp->_.gp.members[0];
         subval = sparp_equiv_get_subvalue_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp_member, eq);
-        sub_flags = SSG_RETVAL_FROM_SELECTED |
-          (flags & (SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_CAN_PRINT_NULL | SSG_RETVAL_USES_ALIAS) );
+        sub_flags = SSG_RETVAL_FROM_GOOD_SELECTED |
+          (flags & (SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_FROM_ANY_SELECTED | SSG_RETVAL_CAN_PRINT_NULL | SSG_RETVAL_USES_ALIAS) );
         printed = ssg_print_equiv_retval_expn (ssg, gp_member, subval, sub_flags, as_name, needed);
         return printed;
       }
@@ -1837,8 +1838,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
             if (NULL != subval)
               break;
           }
-        sub_flags = SSG_RETVAL_FROM_SELECTED |
-          (flags & (SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_CAN_PRINT_NULL | SSG_RETVAL_USES_ALIAS) );
+        sub_flags = SSG_RETVAL_FROM_GOOD_SELECTED |
+          (flags & (SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_FROM_ANY_SELECTED | SSG_RETVAL_CAN_PRINT_NULL | SSG_RETVAL_USES_ALIAS) );
         printed = ssg_print_equiv_retval_expn (ssg, gp_member, subval, sub_flags, as_name, needed);
         return printed;
         break;
@@ -1846,6 +1847,10 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
     }
 
 try_write_null:
+  if ((flags & SSG_RETVAL_MUST_PRINT_SOMETHING) &&
+    (flags & SSG_RETVAL_FROM_GOOD_SELECTED) && !(flags & SSG_RETVAL_FROM_ANY_SELECTED) )
+    return 
+      ssg_print_equiv_retval_expn (ssg, gp, eq, flags | SSG_RETVAL_FROM_ANY_SELECTED, as_name, needed);
   if (!(flags & SSG_RETVAL_CAN_PRINT_NULL))
     {
       if (flags & SSG_RETVAL_MUST_PRINT_SOMETHING)
@@ -2003,7 +2008,7 @@ print_field_and_retval_equalities:
           ssg_print_where_or_and (ssg, "field and retval belong to same equiv");
           ssg_print_tr_var_expn (ssg, var, common_native);
           ssg_puts (" =");
-          ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, NULL, common_native);
+          ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, NULL, common_native);
         }
     }
   for (sub_ctr = 0; sub_ctr < BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr++)
@@ -2043,9 +2048,9 @@ print_field_and_retval_equalities:
           sub2_native = ssg_equiv_native_valmode (ssg, sub2_gp, sub2_eq);
           common_native = ssg_shortest_valmode (sub_native, sub2_native);
           ssg_print_where_or_and (ssg, "two retvals belong to same equiv");
-          ssg_print_equiv_retval_expn (ssg, sub_gp, sub_eq, SSG_RETVAL_FROM_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, NULL, common_native);
+          ssg_print_equiv_retval_expn (ssg, sub_gp, sub_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, NULL, common_native);
           ssg_puts (" =");
-          ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, NULL, common_native);
+          ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, NULL, common_native);
         }
     }
 }
@@ -2390,7 +2395,7 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *tree, int pass)
             ssg->ssg_indent++;
             ssg_print_union (ssg, tree, (SPART **)retlist, 0,
               ( SSG_RETVAL_FROM_FIRST_UNION_MEMBER | SSG_RETVAL_FROM_JOIN_MEMBER |
-                SSG_RETVAL_USES_ALIAS | SSG_RETVAL_NAME_INSTEAD_OF_TREE ),
+                SSG_RETVAL_USES_ALIAS | SSG_RETVAL_NAME_INSTEAD_OF_TREE | SSG_RETVAL_MUST_PRINT_SOMETHING ),
               SSG_VALMODE_AUTO );
             dk_free_box (retlist);
             ssg->ssg_indent--;
@@ -2631,7 +2636,7 @@ void ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     default: spar_sqlprint_error ("ssg_make_sql_query_text(): unsupported type of tree");
     }
   ssg_print_union (ssg, tree->_.req_top.pattern, tree->_.req_top.retvals,
-    SSG_PRINT_UNION_NOFIRSTHEAD | SSG_PRINT_UNION_NONEMPTY_STUB,
+    SSG_PRINT_UNION_NOFIRSTHEAD | SSG_PRINT_UNION_NONEMPTY_STUB | SSG_RETVAL_MUST_PRINT_SOMETHING,
     top_retval_flags, retvalmode );
   if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && (NULL == formatter))
     {

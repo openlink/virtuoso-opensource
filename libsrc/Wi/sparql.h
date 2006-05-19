@@ -308,7 +308,7 @@ typedef struct spar_tree_s
 typedef unsigned char SPART_buf[sizeof (sparp_tree_t) + BOX_AUTO_OVERHEAD];
 #define SPART_AUTO(ptr,buf,t) \
   do { \
-    BOX_AUTO(ptr,buf,sizeof(SPART),DV_ARRAY_OF_POINTER); \
+    BOX_AUTO_TYPED(SPART *,ptr,buf,sizeof(SPART),DV_ARRAY_OF_POINTER); \
     memset (ptr, 0, sizeof (SPART)); \
     ptr->type = t; \
     } while (0)

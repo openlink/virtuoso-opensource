@@ -308,14 +308,15 @@ extern void ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg
 extern void ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed);
 extern void ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree);
 
-#define SSG_RETVAL_USES_ALIAS			0x01
-#define SSG_RETVAL_MUST_PRINT_SOMETHING		0x02
-#define SSG_RETVAL_CAN_PRINT_NULL		0x04
-#define SSG_RETVAL_FROM_SELECTED		0x08
-#define SSG_RETVAL_FROM_JOIN_MEMBER		0x10
-#define SSG_RETVAL_FROM_FIRST_UNION_MEMBER	0x20
-#define SSG_RETVAL_TOPMOST			0x40
-#define SSG_RETVAL_NAME_INSTEAD_OF_TREE		0x80
+#define SSG_RETVAL_USES_ALIAS			0x01	/*!< Return value can be printed in form 'expn AS alias' if alias name is not NULL */
+#define SSG_RETVAL_MUST_PRINT_SOMETHING		0x02	/*!< The function signals an error instead of returning failure */
+#define SSG_RETVAL_CAN_PRINT_NULL		0x04	/*!< The function should print at least NULL but it can not return failure */
+#define SSG_RETVAL_FROM_GOOD_SELECTED		0x08	/*!< Use result-set columns from 'good' (non-optional) subqueries */
+#define SSG_RETVAL_FROM_ANY_SELECTED		0x10	/*!< Use result-set columns from any subqueries, including 'optional' that can make NULL */
+#define SSG_RETVAL_FROM_JOIN_MEMBER		0x20	/*!< The function can print expression like 'tablealias.colname' */
+#define SSG_RETVAL_FROM_FIRST_UNION_MEMBER	0x40
+#define SSG_RETVAL_TOPMOST			0x80
+#define SSG_RETVAL_NAME_INSTEAD_OF_TREE		0x100
 /* descend = 0 -- at level, can descend. 1 -- at sublevel, can't descend, -1 -- at level, can't descend */
 extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
   sparp_equiv_t *eq, int flags, caddr_t as_name, ssg_valmode_t needed );
