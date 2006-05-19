@@ -72,7 +72,7 @@ static char _ev_never;
 dk_mutex_t * all_mtxs_mtx;
 
 static void
-_pthread_call_failed (char *file, int line, int error)
+_pthread_call_failed (const char *file, int line, int error)
 {
   char msgbuf[200];
 
@@ -956,7 +956,7 @@ failed:
 
 #ifdef SEM_DEBUG
 void
-semaphore_leave_dbg (int ln, char *file, semaphore_t *sem)
+semaphore_leave_dbg (int ln, const char *file, semaphore_t *sem)
 #else
 void
 semaphore_leave (semaphore_t *sem)

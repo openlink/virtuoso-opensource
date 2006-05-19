@@ -652,7 +652,7 @@ semaphore_try_enter (semaphore_t *self)
 
 #ifdef SEM_DEBUG
 void
-semaphore_leave_dbg (int ln, char *file, semaphore_t *sem)
+semaphore_leave_dbg (int ln, const char *file, semaphore_t *sem)
 #else
 void
 semaphore_leave (semaphore_t *sem)
