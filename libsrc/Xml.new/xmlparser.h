@@ -38,6 +38,10 @@ typedef struct xml_parser_s xml_parser_t;
 /*				 012345678901234567890123456789012 */
 #define XMLSCHEMA_NS_URI	"http://www.w3.org/2001/XMLSchema"
 #define XMLSCHEMA_NS_URI_LEN	32
+/*				 0         1         2         3         4    */
+/*				 01234567890123456789012345678901234567890123 */
+#define RDF_NS_URI		"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+#define RDF_NS_URI_LEN		43
 /*				 0         1         2         3       */
 /*				 0123456789012345678901234567890123456 */
 #define XML_NS_URI		"http://www.w3.org/XML/1998/namespace"
