@@ -3482,7 +3482,7 @@ bif_like_max (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!ctr)
     return (box_copy (str));
   len = ctr - str;
-  if (0 == len || 0xff == ctr[0])
+  if (0 == len || 0xff == (unsigned char) ctr[0])
     {
       res = dk_alloc_box (5+len, DV_STRING);
       memcpy (res, str, len);
