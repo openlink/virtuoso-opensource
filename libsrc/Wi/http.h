@@ -303,17 +303,20 @@ extern dk_session_t *http_session_no_catch_arg (caddr_t * qst, state_slot_t ** a
 
 /* The order of the values in this enumeration should match
 the order of columns in dks_charclasses, file dks_esc.c */
-#define DKS_ESC_NONE		0x0
-#define DKS_ESC_PTEXT		0x1
-#define DKS_ESC_SQATTR		0x2
-#define DKS_ESC_DQATTR		0x3
-#define DKS_ESC_COMMENT		0x4
-#define DKS_ESC_CDATA		0x5
-#define DKS_ESC_URI		0x6
-#define DKS_ESC_DAV		0x7
-#define DKS_ESC_URI_RES		0x8
-#define DKS_ESC_URI_NRES	0x9
-#define COUNTOF__DKS_ESC	0xA
+#define DKS_ESC_NONE		0x00
+#define DKS_ESC_PTEXT		0x01
+#define DKS_ESC_SQATTR		0x02
+#define DKS_ESC_DQATTR		0x03
+#define DKS_ESC_COMMENT		0x04
+#define DKS_ESC_CDATA		0x05
+#define DKS_ESC_URI		0x06
+#define DKS_ESC_DAV		0x07
+#define DKS_ESC_URI_RES		0x08
+#define DKS_ESC_URI_NRES	0x09
+#define DKS_ESC_TTL_SQ		0x0A
+#define DKS_ESC_TTL_DQ		0x0B
+#define DKS_ESC_TTL_IRI		0x0C
+#define COUNTOF__DKS_ESC	0x0D
 
 #define DKS_ESC_COMPAT_HTML	0x100
 #define DKS_ESC_COMPAT_SOAP	0x200

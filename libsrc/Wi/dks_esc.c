@@ -36,7 +36,7 @@ unsigned char dks_esc_char_props[0x100] = {
 /* @   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O  */
   '@','@','@','@','@','@','@','@','@','@','@','@','@','@','@','@',
 /* P   Q   R   S   T   U   V   W   X   Y   Z   [   \   ]   ^   _  */
-  '@','@','@','@','@','@','@','@','@','@','@','@','@','@','@','@',
+  '@','@','@','@','@','@','@','@','@','@','@','@','Q','@','@','@',
 /* `   a   b   c   d   e   f   g   h   i   j   k   l   m   n   o  */
   '@','@','@','@','@','@','@','@','@','@','@','@','@','@','@','@',
 /* p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~      */
@@ -61,7 +61,7 @@ unsigned char dks_esc_char_props[0x100] = {
 
 #define ASIS	0
 #define LATTICE	'#'
-#define PERCENT	'%'
+#define PCT	'%'
 #define AMPATTR	'A'
 #define AMP	'&'
 #define GTATTR	'G'
@@ -74,33 +74,54 @@ unsigned char dks_esc_char_props[0x100] = {
 #define SOAPCR	's'
 #define COMMENT	'c'
 #define CDATA	'd'
+#define CDATA2	'D'
+#define BSLASHC	'\\'
+#define BSLASHU	'u'
 
 
 typedef unsigned char dks_charclass_props_t[COUNTOF__DKS_ESC];
 
-dks_charclass_props_t dks_charclasses['P'+1-'@'] = {
-/*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_RES	|URI_NRES*/
-/* letters   */	{0	,0	,0	,0	,0	,0	,0	,0	,0		,0},
-/* A 8-bit   */	{0	,0	,0	,0	,0	,0	,0	,PERCENT,PERCENT	,PERCENT},
-/* B < 0x20  */	{BAD	,LATTICE,LATTICE,LATTICE,0	,0	,PERCENT,0	,PERCENT	,PERCENT},
-/* C !       */	{0	,0	,0	,0	,0	,0	,PERCENT,0	,PERCENT	,PERCENT},
-/* D 0x09    */	{0	,0	,LATTICE,LATTICE,0	,0	,PERCENT,0	,PERCENT	,PERCENT},
-/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PERCENT,0	,PERCENT	,PERCENT},
-/* F 0x0D    */	{0	,SOAPCR	,LATTICE,LATTICE,0	,0	,PERCENT,0	,PERCENT	,PERCENT},
-/* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PERCENT,PERCENT,PERCENT	,PERCENT},
-/* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PERCENT,PERCENT,PERCENT	,0},
-/* I '       */	{0	,LATTICE,LATTICE,0	,0	,0	,PERCENT,0	,0		,0},
-/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PLUS	,PERCENT,PERCENT	,PERCENT},
-/* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PERCENT,PERCENT,PERCENT	,PERCENT},
-/* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PERCENT,PERCENT,PERCENT	,PERCENT},
-/* M %	     */	{0	,0	,0	,0	,0	,0	,PERCENT,0	,0		,0},
-/* N /	     */	{0	,0	,0	,0	,0	,0	,0	,0	,PERCENT	,0},
-/* O *	     */	{0	,0	,0	,0	,0	,0	,PERCENT,0	,0		,0},
-/* P punct-! */	{0	,0	,0	,0	,0	,0	,PERCENT,0	,PERCENT	,0} };
+dks_charclass_props_t dks_charclasses['Q'+1-'>'] = {
+/*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	*/
+/* > wide    */ {0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU},
+/* ? enc.miss*/ {BAD	,LATTICE,LATTICE,LATTICE,LATTICE,CDATA2	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU},
+/* @ letters */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* A 8-bit   */	{0	,0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU},
+/* B < 0x20  */	{BAD	,LATTICE,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU},
+/* C !       */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,PCT	,0	,0	,0	},
+/* D 0x09    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHC},
+/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHC},
+/* F 0x0D    */	{0	,SOAPCR	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHC},
+/* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,BSLASHC,0	},
+/* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PCT	,PCT	,PCT	,0	,0	,0	,0	},
+/* I '       */	{0	,LATTICE,LATTICE,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,0	,0	},
+/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PLUS	,PCT	,PCT	,PCT	,0	,0	,0	},
+/* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,0	},
+/* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHC},
+/* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	},
+/* N /	     */	{0	,0	,0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	},
+/* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	},
+/* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	},
+/* Q \	     */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,BSLASHC,BSLASHC,BSLASHC} };
 
-int dks_use_qmarks['L'+1-'@'] =
-/*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	*/
-		{1	,1	,1	,1	,1	,0	,0	,0	};
+unsigned char dks_esc_bslashc[0x80] = {
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+   0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,'t','n',0  ,0  ,'r',0  ,0 ,
+/* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
+   0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0 ,
+/*     !   "   #   $   %   &   '   (   )   *   +    ,  -   .   /  */
+   0  ,0  ,'"',0  ,0  ,0  ,0 ,'\'',0  ,0  ,0  ,0  ,0  ,0  ,0  ,0 ,
+/* 0   1   2   3   4   5   6   7   8   9   :   ;   <   =   >   ?  */
+   0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,'>',0 ,
+/* @   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O  */
+   0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0 ,
+/* P   Q   R   S   T   U   V   W   X   Y   Z   [   \   ]   ^   _  */
+   0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0 ,'\\',0  ,0  ,0 ,
+/* `   a   b   c   d   e   f   g   h   i   j   k   l   m   n   o  */
+   0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0 ,
+/* p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~      */
+   0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0 };
+
 
 #define CHARSET_WIDE (CHARSET_UTF8+1)
 
@@ -173,14 +194,15 @@ again:
     }
 
   if (wc & ~0xff)
-    goto out_byte_asis;
-  wc_class = dks_esc_char_props[wc] - '@';
+    wc_class = ('>' - '>');
+  else
+    wc_class = dks_esc_char_props[wc] - '>';
   action = dks_charclasses[wc_class][dks_esc_mode_base];
   switch (action)
     {
       case ASIS:	goto out_byte_asis;
       case LATTICE:	goto out_lattice;
-      case PERCENT:	goto out_percent;
+    case PCT:		goto out_percent;
       case AMPATTR:	if (dks_esc_mode & DKS_ESC_COMPAT_HTML) goto out_ampattr; /* no break */
       case AMP:		goto out_amp;
       case GTATTR:	if (dks_esc_mode & DKS_ESC_COMPAT_HTML) goto out_byte_asis; /* no break */
@@ -193,6 +215,35 @@ again:
       case SOAPCR:	if (dks_esc_mode & DKS_ESC_COMPAT_SOAP) goto out_lattice; goto out_byte_asis;
       case COMMENT:	goto out_comment;
       case CDATA:	goto out_cdata;
+    case CDATA2:
+      {
+        char tmp[40];
+        snprintf (tmp, sizeof (tmp), "]]>&#%lu;<![CDATA[", (unsigned long)wc);
+        OUT_TO_BUF (tmp, (int) strlen (tmp));
+        goto char_done;
+      }
+    case BSLASHC:	out_buf[out_buf_idx++] = '\\'; out_buf[out_buf_idx++] = dks_esc_bslashc[wc]; goto char_done;
+    case BSLASHU:
+      {
+        out_buf[out_buf_idx++] = '\\';
+        if (wc & ~0xffff)
+          {
+            out_buf[out_buf_idx++] = 'U';
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0xF0000000)>>28];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x0F000000)>>24];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x00F00000)>>20];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x000F0000)>>16];
+          }
+        else
+          {
+            out_buf[out_buf_idx++] = 'u';
+          }
+        out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x0000F000)>>12];
+        out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x00000F00)>>8];
+        out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x000000F0)>>4];
+        out_buf[out_buf_idx++] = "0123456789ABCDEF"[wc&0x0000000F];
+        goto char_done;
+      }
       default: GPF_T;
     }
 
@@ -274,7 +325,7 @@ char_done:
         return;
       goto flush_out_buf;
     }
-  if (out_buf_idx < (sizeof(out_buf) / sizeof(out_buf[0])) - 15)
+  if (out_buf_idx < (sizeof(out_buf) / sizeof(out_buf[0])) - 40)
     goto again;
 
 flush_out_buf:
@@ -306,16 +357,76 @@ flush_out_buf:
 	    session_buffered_write_char (wc, ses);
 	    continue;
 flush_bad_char:
-	    if (dks_use_qmarks[dks_esc_mode_base])
+            action = dks_charclasses['?'-'>'][dks_esc_mode_base];
+            switch (action)
+              {
+              case LATTICE:
 	      {
 		char tmp[20];
 		snprintf (tmp, sizeof (tmp), "&#%lu;", (unsigned long)wc);
 		session_buffered_write (ses, tmp, strlen(tmp));
 		continue;
 	      }
+	      case PCT:
+                {
+                  char temp[VIRT_MB_CUR_MAX];
+                  virt_mbstate_t st;
+                  size_t temp_len;
+                  memset (&st, 0, sizeof (st));
+                  temp_len = virt_wcrtomb ((unsigned char *) temp, wc, &st);
+                  if (((long)temp_len) > 0)
+                    {
+                      char pct[VIRT_MB_CUR_MAX];
+                      size_t ctr;
+                      char *pct_tail = pct;
+                      for (ctr = 0; ctr < temp_len; ctr++)
+                        {
+                          (pct_tail++)[0] = '%';
+                          (pct_tail++)[0] = "0123456789ABCDEF"[((temp[ctr])&0xF0)>>4];
+                          (pct_tail++)[0] = "0123456789ABCDEF"[(temp[ctr])&0x0F];
+                        }                      
+                      session_buffered_write (ses, pct, (pct_tail-pct));
+                    }
 	    else
 	      session_buffered_write_char ('?', ses);
 	    continue;
+	  }
+              case BAD:
+                session_buffered_write_char ('?', ses);
+                continue;
+              case CDATA2:
+                {
+                  char tmp[40];
+                  snprintf (tmp, sizeof (tmp), "]]>&#%lu;<![CDATA[", (unsigned long)wc);
+                  session_buffered_write (ses, tmp, strlen(tmp));
+                  continue;
+                }
+              case BSLASHU:
+                {
+                  char tmp[10];
+                  char *tail = tmp;
+                  (tail++)[0] = '\\';
+                  if (wc & ~0xffff)
+                    {
+                      (tail++)[0] = 'U';
+                      (tail++)[0] = "0123456789ABCDEF"[(wc&0xF0000000)>>28];
+                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x0F000000)>>24];
+                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x00F00000)>>20];
+                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x000F0000)>>16];
+                    }
+                  else
+                    {
+                      (tail++)[0] = 'u';
+                    }
+                  (tail++)[0] = "0123456789ABCDEF"[(wc&0x0000F000)>>12];
+                  (tail++)[0] = "0123456789ABCDEF"[(wc&0x00000F00)>>8];
+                  (tail++)[0] = "0123456789ABCDEF"[(wc&0x000000F0)>>4];
+                  (tail++)[0] = "0123456789ABCDEF"[wc&0x0000000F];
+                  session_buffered_write (ses, tmp, (tail-tmp));
+                  continue;
+                }
+              default: GPF_T;
+            }
 	  }
 	if (wc & ~0x7F)
 	  {
