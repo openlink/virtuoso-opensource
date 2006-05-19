@@ -1576,7 +1576,21 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
   ssg.ssg_sys_ds = rdf_ds_sys_storage;
   /*ssg.ssg_fields = id_hash_allocate (61, sizeof (SPART *), sizeof (spar_sqlgen_var_t), spar_var_hash, spar_var_cmp);*/
+  QR_RESET_CTX
+    {
   ssg_make_sql_query_text (&ssg);
+    }
+  QR_RESET_CODE
+    {
+      du_thread_t *self = THREAD_CURRENT_THREAD;
+      sparp->sparp_sparqre->sparqre_catched_error = thr_get_error_code (self);
+      thr_set_error_code (self, NULL);
+      POP_QR_RESET;
+      /* ssg_free (ssg); */
+      return;
+    }
+  END_QR_RESET
+  /* ssg_free (ssg); */
   session_buffered_write (ssg.ssg_out, sparqre->sparqre_tail_sql_text, strlen (sparqre->sparqre_tail_sql_text));
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* First terminator */
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* Second terminator. Most of Lex-es need two! */
