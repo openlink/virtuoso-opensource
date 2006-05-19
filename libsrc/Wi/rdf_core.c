@@ -25,6 +25,7 @@
 #include "sqlbif.h"
 #include "sqlparext.h"
 #include "bif_text.h"
+#include "bif_xper.h"
 #include "xmlparser.h"
 #include "xmltree.h"
 #include "numeric.h"
@@ -44,28 +45,23 @@ extern "C" {
 #define rdf_dbg_printf(x)
 #endif
 
-dk_mutex_t *ttl_lex_mtx = NULL;
-ttlp_t global_ttlp;
-
-ttlp_t *ttlp_alloc (void)
+triple_feed_t *
+tf_alloc (void)
 {
-#ifdef RE_ENTRANT_TTLYY
-  ttlp_t *ttlp = (ttlp_t *)dk_alloc (sizeof (ttlp_t));
-#else
-  ttlp_t *ttlp = &global_ttlp;
-#endif
-  memset (ttlp, 0, sizeof (ttlp_t));
-  ttlp->ttlp_blank_node_ids = id_hash_allocate (1021, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
-  ttlp->ttlp_cached_iids = id_hash_allocate (1021, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
-  return ttlp;
+  NEW_VARZ (triple_feed_t, tf);
+  tf->tf_blank_node_ids = id_hash_allocate (1021, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
+  tf->tf_cached_iids = id_hash_allocate (1021, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
+  return tf;
 }
 
-extern void ttlp_free (ttlp_t *ttlp)
+
+void
+tf_free (triple_feed_t *tf)
 {
   id_hash_t *dict;			/*!< Current dictionary to be zapped */
   id_hash_iterator_t dict_hit;		/*!< Iterator to zap dictionary */
   char **dict_key, **dict_val;		/*!< Current key to zap */
-  dict = ttlp->ttlp_blank_node_ids;
+  dict = tf->tf_blank_node_ids;
   for( id_hash_iterator (&dict_hit,dict);
     hit_next(&dict_hit, (char **)(&dict_key), (char **)(&dict_val));
     /*no step*/ )
@@ -73,7 +69,7 @@ extern void ttlp_free (ttlp_t *ttlp)
       dk_free_box (dict_key[0]);      
       dk_free_tree (dict_val[0]);
     }
-  dict = ttlp->ttlp_cached_iids;
+  dict = tf->tf_cached_iids;
   for( id_hash_iterator (&dict_hit,dict);
     hit_next(&dict_hit, (char **)(&dict_key), (char **)(&dict_val));
     /*no step*/ )
@@ -81,14 +77,234 @@ extern void ttlp_free (ttlp_t *ttlp)
       dk_free_box (dict_key[0]);
       dk_free_tree (dict_val[0]);
     }
-  id_hash_free (ttlp->ttlp_blank_node_ids);
-  id_hash_free (ttlp->ttlp_cached_iids);
+  id_hash_free (tf->tf_blank_node_ids);
+  id_hash_free (tf->tf_cached_iids);
+  dk_free (tf, sizeof (triple_feed_t));
+}
+
+
+void
+tf_set_stmt_texts (triple_feed_t *tf, const char **stmt_texts, caddr_t *err_ptr)
+{
+  int ctr;
+  caddr_t err = NULL;
+  for (ctr = 0; ctr < COUNTOF__TRIPLE_FEED; ctr++)
+    {
+      tf->tf_stmt_texts[ctr] = stmt_texts[ctr];
+      tf->tf_queries[ctr] = sql_compile (stmt_texts[ctr], tf->tf_qi->qi_client, &err, SQLC_DEFAULT);
+      if (NULL != err)
+        {
+          if (NULL == err_ptr)
+            sqlr_resignal (err);
+          err_ptr[0] = err;
+          return;
+        }
+    }
+}
+
+
+caddr_t
+tf_get_iid (triple_feed_t *tf, caddr_t uri)
+{
+  caddr_t *params;
+  local_cursor_t *lc = NULL;
+  dtp_t uri_dtp = DV_TYPE_OF (uri);
+  caddr_t *hit;
+  caddr_t err = NULL;
+  if ((DV_STRING != uri_dtp) && (DV_UNAME != uri_dtp))
+    return box_copy_tree (uri);
+  hit = (caddr_t *)id_hash_get (tf->tf_cached_iids, (caddr_t)(&(uri)));
+  if (NULL != hit)
+    return box_copy_tree (hit[0]);
+  params = (caddr_t *)list (6,
+    unames_colon_number[0],
+    box_copy (uri),
+    unames_colon_number[1],
+    box_copy (tf->tf_graph_uri),
+    unames_colon_number[2],
+    box_copy_tree (tf->tf_app_env) );
+  err = qr_exec (tf->tf_qi->qi_client, tf->tf_queries[TRIPLE_FEED_GET_IID], tf->tf_qi, NULL, NULL, &lc, params, NULL, 1);
+  dk_free_box ((box_t) params);
+  if (NULL != err)
+    {
+      lc_free (lc);
+      sqlr_resignal (err);
+    }
+  if (lc && lc_next (lc))
+    {
+      caddr_t iid = box_copy_tree (lc_nth_col (lc, 0));
+      caddr_t key = box_copy (uri);
+      id_hash_set (tf->tf_cached_iids, (caddr_t)(&key), (caddr_t)(&iid));      
+      lc_free (lc);
+      return box_copy_tree (iid);
+    }
+  lc_free (lc);
+  sqlr_new_error ("22023", "RDF02",
+    "RDF loader has failed to create ID for URI '%.100s' by '%.100s'",
+    uri, tf->tf_stmt_texts[TRIPLE_FEED_GET_IID] );
+  return NULL;
+}
+
+
+caddr_t
+bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t text_arg;
+  dtp_t dtp_of_text_arg;
+  int arg_is_wide = 0;
+  char * volatile enc = NULL;
+  lang_handler_t *volatile lh = server_default_lh;
+  /*caddr_t volatile dtd_config = NULL;*/
+  caddr_t base_uri = NULL;
+  caddr_t err = NULL;
+  /*xml_ns_2dict_t ns_2dict;*/
+  caddr_t graph_uri;
+  caddr_t *stmt_texts;
+  caddr_t app_env;
+  int omit_top_rdf = 0;
+  int n_args = BOX_ELEMENTS (args);
+  wcharset_t * volatile charset = QST_CHARSET (qst) ? QST_CHARSET (qst) : default_charset;
+  text_arg = bif_arg (qst, args, 0, "rdf_load_rdfxml");
+  omit_top_rdf = bif_long_arg (qst, args, 1, "rdf_load_rdfxml");
+  graph_uri = bif_string_arg (qst, args, 2, "rdf_load_rdfxml");
+  stmt_texts = bif_strict_type_array_arg (DV_STRING, qst, args, 3, "rdf_load_rdfxml");
+  app_env = bif_arg (qst, args, 4, "rdf_load_rdfxml");
+  if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (stmt_texts))
+    sqlr_new_error ("22023", "RDF01",
+      "The argument #4 of rdf_load_rdfxml() should be a vector of %d texts of SQL statements",
+      COUNTOF__TRIPLE_FEED );
+  dtp_of_text_arg = DV_TYPE_OF (text_arg);
+  /*ns_2dict.xn2_size = 0;*/
+  do
+    {
+      if ((dtp_of_text_arg == DV_SHORT_STRING) ||
+	  (dtp_of_text_arg == DV_LONG_STRING) ||
+	  (dtp_of_text_arg == DV_C_STRING) )
+	{ /* Note DV_TIMESTAMP_OBJ is not enumerated in if(...), unlike bif_string_arg)_ */
+	  break;
+	}
+      if (IS_WIDE_STRING_DTP (dtp_of_text_arg))
+	{
+	  arg_is_wide = 1;
+	  break;
+	}
+      if (dtp_of_text_arg == DV_STRING_SESSION)
+	{
+	  int ses_sort = looks_like_serialized_xml (((query_instance_t *)(qst)), text_arg);
+	  if (XE_XPER_SERIALIZATION == ses_sort)
+	    sqlr_error ("42000",
+	      "Function rdf_load_rdfxml() does not support loading from string session with persistent XML data");
+	  if (XE_XPACK_SERIALIZATION == ses_sort)
+	    {
+#if 1
+	    sqlr_error ("42000",
+	      "Function rdf_load_rdfxml() does not support loading from string session with packed XML data");
+#else
+	      caddr_t *tree_tmp = NULL; /* Solely to avoid dummy warning C4090: 'function' : different 'volatile' qualifiers */
+	      xte_deserialize_packed ((dk_session_t *)text_arg, &tree_tmp, dtd_ptr);
+	      tree = (caddr_t)tree_tmp;
+	      if (NULL != dtd)
+	        dtd_addref (dtd, 0);
+	      if ((NULL == tree) && (DEAD_HTML != (parser_mode & ~(FINE_XSLT | GE_XML | WEBIMPORT_HTML | FINE_XML_SRCPOS))))
+		sqlr_error ("42000", "The BLOB passed to a function rdf_load_rdfxml() contains corrupted packed XML serialization data");
+	      goto tree_complete; /* see below */
+#endif
+	    }
+	  break;
+	}
+      if (dtp_of_text_arg == DV_BLOB_XPER_HANDLE)
+	sqlr_error ("42000",
+	  "Function rdf_load_rdfxml() does not support loading from persistent XML objects");
+      if ((DV_BLOB_HANDLE == dtp_of_text_arg) || (DV_BLOB_WIDE_HANDLE == dtp_of_text_arg))
+	{
+	  int blob_sort = looks_like_serialized_xml (((query_instance_t *)(qst)), text_arg);
+	  if (XE_XPER_SERIALIZATION == blob_sort)
+	    sqlr_error ("42000",
+	      "Function rdf_load_rdfxml() does not support loading from BLOBs with persistent XML data");
+	  if (XE_XPACK_SERIALIZATION == blob_sort)
+	    {
+#if 1
+	    sqlr_error ("42000",
+	      "Function rdf_load_rdfxml() does not support loading from BLOBs with packed XML data");
+#else
+	      caddr_t *tree_tmp = NULL; /* Solely to avoid dummy warning C4090: 'function' : different 'volatile' qualifiers */
+	      dk_session_t *ses = blob_to_string_output (((query_instance_t *)(qst))->qi_trx, text_arg);
+	      xte_deserialize_packed (ses, &tree_tmp, dtd_ptr);
+	      tree = (caddr_t)tree_tmp;
+	      if (NULL != dtd)
+	        dtd_addref (dtd, 0);
+	      strses_free (ses);
+	      if ((NULL == tree) && (DEAD_HTML != (parser_mode & ~(FINE_XSLT | GE_XML | WEBIMPORT_HTML | FINE_XML_SRCPOS))))
+		sqlr_error ("42000", "The BLOB passed to a function rdf_load_rdfxml() contains corrupted packed XML serialization data");
+	      goto tree_complete; /* see below */
+#endif
+	    }
+	  arg_is_wide = (DV_BLOB_WIDE_HANDLE == dtp_of_text_arg) ? 1 : 0;
+	  break;
+	}
+      sqlr_error ("42000",
+	"Function rdf_load_rdfxml() needs a string or string session or BLOB as argument 1, not an arg of type %s (%d)",
+	dv_type_title (dtp_of_text_arg), dtp_of_text_arg);
+    } while (0);
+  /* Now we have \c text ready to process */
+
+/*
+  if (n_args < 3)
+    enc = CHARSET_NAME (charset, NULL);
+*/
+  switch (n_args)
+    {
+    default:
+/*    case 9:
+      dtd_config = bif_array_or_null_arg (qst, args, 8, "rdf_load_rdfxml");*/
+    case 8:
+      lh = lh_get_handler (bif_string_arg (qst, args, 7, "rdf_load_rdfxml"));
+    case 7:
+      enc = bif_string_arg (qst, args, 6, "rdf_load_rdfxml");
+    case 6:
+      base_uri = bif_string_arg (qst, args, 5, "rdf_load_rdfxml");
+    case 5:
+    case 4:
+    case 3:
+    case 2:
+    case 1:
+	  ;
+    }
+  rdfxml_parse ((query_instance_t *) qst, text_arg, (caddr_t *)&err, omit_top_rdf,
+    base_uri, graph_uri, stmt_texts, app_env, enc, lh
+    /*, caddr_t dtd_config, dtd_t **ret_dtd, id_hash_t **ret_id_cache, &ns2dict*/ );
+  if (NULL != err)
+    sqlr_resignal (err);
+  return NULL;
+}
+
+
+dk_mutex_t *ttl_lex_mtx = NULL;
+ttlp_t global_ttlp;
+
+ttlp_t *
+ttlp_alloc (void)
+{
+#ifdef RE_ENTRANT_TTLYY
+  ttlp_t *ttlp = (ttlp_t *)dk_alloc (sizeof (ttlp_t));
+#else
+  ttlp_t *ttlp = &global_ttlp;
+#endif
+  memset (ttlp, 0, sizeof (ttlp_t));
+  ttlp->ttlp_tf = tf_alloc();
+  return ttlp;
+}
+
+void
+ttlp_free (ttlp_t *ttlp)
+{
+  dk_free_box (ttlp->ttlp_tf->tf_graph_uri);
+  tf_free (ttlp->ttlp_tf);
   while (NULL != ttlp->ttlp_namespaces)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_namespaces)));
   while (NULL != ttlp->ttlp_saved_uris)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   dk_free_box (ttlp->ttlp_base_uri);
-  dk_free_box (ttlp->ttlp_graph_uri);
   dk_free_box (ttlp->ttlp_subj_uri);
   dk_free_box (ttlp->ttlp_pred_uri);
 #ifdef RE_ENTRANT_TTLYY
@@ -154,9 +370,9 @@ caddr_t ttlp_strliteral (TTLP_PARAM const char *strg, int strg_is_long, char del
 	{
 	case '\\':
           {
-	    const char *bs_src		= "abfnrtv\\\'\"uU";
-	    const char *bs_trans	= "\a\b\f\n\r\t\v\\\'\"\0\0";
-            const char *bs_lenghts	= "\2\2\2\2\2\2\2\2\2\2\6\012";
+	    const char *bs_src		= "abfnrtv\\\'\">uU";
+	    const char *bs_trans	= "\a\b\f\n\r\t\v\\\'\">\0\0";
+            const char *bs_lenghts	= "\2\2\2\2\2\2\2\2\2\2\2\6\012";
 	    const char *hit = strchr (bs_src, src_tail[1]);
 	    char bs_len, bs_tran;
 	    const char *nextchr;
@@ -264,115 +480,28 @@ caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname
 }
 
 
-#undef ttlp_bnode_iid
-caddr_t DBG_NAME (ttlp_bnode_iid) (DBG_PARAMS TTLP_PARAM const char *txt)
-{
-  caddr_t *params;
-  local_cursor_t *lc = NULL;
-  caddr_t *hit;
-  caddr_t err = NULL;
-  if (NULL != txt)
-    {
-      hit = (caddr_t *)id_hash_get (ttlp_inst.ttlp_blank_node_ids, (caddr_t)(&(txt)));
-      if (NULL != hit)
-        return box_copy_tree (hit[0]);
-    }
-  params = (caddr_t *)list (4,
-    unames_colon_number[0],
-    box_copy (ttlp_inst.ttlp_graph_uri),
-    unames_colon_number[1],
-    box_copy_tree (ttlp_inst.ttlp_app_env) );
-  err = qr_exec (ttlp_inst.ttlp_qi->qi_client, ttlp_inst.ttlp_queries[TTLP_EXEC_NEW_BLANK], ttlp_inst.ttlp_qi, NULL, NULL, &lc, params, NULL, 1);
-  dk_free_box ((box_t) params);
-  if (NULL != err)
-    {
-      lc_free (lc);
-      sqlr_resignal (err);
-    }
-  if (lc && lc_next (lc))
-    {
-      caddr_t iid = DBG_NAME (box_copy_tree) (DBG_ARGS lc_nth_col (lc, 0));
-      if (NULL != txt)
-        {
-          caddr_t key = box_dv_short_string (txt);
-          id_hash_set (ttlp_inst.ttlp_blank_node_ids, (caddr_t)(&key), (caddr_t)(&iid));
-          iid = DBG_NAME (box_copy_tree) (DBG_ARGS iid);
-        }
-      lc_free (lc);
-      return iid;
-    }
-  lc_free (lc);
-  sqlr_new_error ("22023", "RDF03",
-    "RDF loader has failed to create ID for blank node '%.100s' by '%.100s'",
-    ((NULL == txt) ? "[]" : txt), ttlp_inst.ttlp_stmt_texts[TTLP_EXEC_GET_IID] );
-  return NULL;
-}
-
-
-caddr_t ttlp_get_iid (TTLP_PARAM caddr_t uri)
-{
-  caddr_t *params;
-  local_cursor_t *lc = NULL;
-  dtp_t uri_dtp = DV_TYPE_OF (uri);
-  caddr_t *hit;
-  caddr_t err = NULL;
-  if ((DV_STRING != uri_dtp) && (DV_UNAME != uri_dtp))
-    return box_copy_tree (uri);
-  hit = (caddr_t *)id_hash_get (ttlp_inst.ttlp_cached_iids, (caddr_t)(&(uri)));
-  if (NULL != hit)
-    return box_copy_tree (hit[0]);
-  params = (caddr_t *)list (6,
-    unames_colon_number[0],
-    box_copy (uri),
-    unames_colon_number[1],
-    box_copy (ttlp_inst.ttlp_graph_uri),
-    unames_colon_number[2],
-    box_copy_tree (ttlp_inst.ttlp_app_env) );
-  err = qr_exec (ttlp_inst.ttlp_qi->qi_client, ttlp_inst.ttlp_queries[TTLP_EXEC_GET_IID], ttlp_inst.ttlp_qi, NULL, NULL, &lc, params, NULL, 1);
-  dk_free_box ((box_t) params);
-  if (NULL != err)
-    {
-      lc_free (lc);
-      sqlr_resignal (err);
-    }
-  if (lc && lc_next (lc))
-    {
-      caddr_t iid = box_copy_tree (lc_nth_col (lc, 0));
-      caddr_t key = box_copy (uri);
-      id_hash_set (ttlp_inst.ttlp_cached_iids, (caddr_t)(&key), (caddr_t)(&iid));      
-      lc_free (lc);
-      return box_copy_tree (iid);
-    }
-  lc_free (lc);
-  sqlr_new_error ("22023", "RDF02",
-    "RDF loader has failed to create ID for URI '%.100s' by '%.100s'",
-    uri, ttlp_inst.ttlp_stmt_texts[TTLP_EXEC_GET_IID] );
-  return NULL;
-}
-
-void ttlp_triple (TTLP_PARAM caddr_t o_uri)
+void
+tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri)
 {
   caddr_t *params;
   local_cursor_t *lc = NULL;
   caddr_t err;
-  caddr_t g_uri, s_uri, p_uri;
+  caddr_t g_uri;
   caddr_t g_iid, s_iid, p_iid, o_iid;
 #ifdef DEBUG
   switch (DV_TYPE_OF (o_uri))
     {
     case DV_LONG_INT:
-      rdf_dbg_printf (("\nttlp_triple (%ld)", (long)(o_uri)));
+      rdf_dbg_printf (("\ntf_triple (%ld)", (long)(o_uri)));
     case DV_STRING: case DV_UNAME:
-      rdf_dbg_printf (("\nttlp_triple (%s)", o_uri));
+      rdf_dbg_printf (("\ntf_triple (%s)", o_uri));
     }
 #endif
-  g_uri = box_copy (ttlp_inst.ttlp_graph_uri);
-  s_uri = box_copy (ttlp_inst.ttlp_subj_uri);
-  p_uri = box_copy (ttlp_inst.ttlp_pred_uri);
-  g_iid = ttlp_get_iid (TTLP_ARG g_uri);
-  s_iid = ttlp_get_iid (TTLP_ARG s_uri);
-  p_iid = ttlp_get_iid (TTLP_ARG p_uri);
-  o_iid = ttlp_get_iid (TTLP_ARG o_uri);
+  g_uri = box_copy (tf->tf_graph_uri);
+  g_iid = tf_get_iid (tf, g_uri);
+  s_iid = tf_get_iid (tf, s_uri);
+  p_iid = tf_get_iid (tf, p_uri);
+  o_iid = tf_get_iid (tf, o_uri);
   params = (caddr_t *)list (18,
     unames_colon_number[0], g_uri,
     unames_colon_number[1], g_iid,
@@ -382,36 +511,34 @@ void ttlp_triple (TTLP_PARAM caddr_t o_uri)
     unames_colon_number[5], p_iid,
     unames_colon_number[6], o_uri,
     unames_colon_number[7], o_iid,
-    unames_colon_number[8], box_copy_tree (ttlp_inst.ttlp_app_env) );
-  err = qr_exec (ttlp_inst.ttlp_qi->qi_client, ttlp_inst.ttlp_queries[TTLP_EXEC_TRIPLE], ttlp_inst.ttlp_qi, NULL, NULL, &lc, params, NULL, 1);
+    unames_colon_number[8], box_copy_tree (tf->tf_app_env) );
+  err = qr_exec (tf->tf_qi->qi_client, tf->tf_queries[TRIPLE_FEED_TRIPLE], tf->tf_qi, NULL, NULL, &lc, params, NULL, 1);
   lc_free (lc);
   dk_free_box ((box_t) params);
   if (NULL != err)
     sqlr_resignal (err);
 }
 
-void ttlp_triple_l (TTLP_PARAM caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language)
+void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language)
 {
   caddr_t *params;
   local_cursor_t *lc = NULL;
   caddr_t err;
-  caddr_t g_uri, s_uri, p_uri;
+  caddr_t g_uri;
   caddr_t g_iid, s_iid, p_iid;
   switch (DV_TYPE_OF (obj_sqlval))
     {
     case DV_LONG_INT:
-      rdf_dbg_printf (("\nttlp_triple_l (%ld)", (long)(obj_sqlval))); break;
+      rdf_dbg_printf (("\ntf_triple_l (%ld)", (long)(obj_sqlval))); break;
     case DV_STRING: case DV_UNAME:
-      rdf_dbg_printf (("\nttlp_triple_l (%s, %s, %s)", obj_sqlval, obj_datatype, obj_language)); break;
+      rdf_dbg_printf (("\ntf_triple_l (%s, %s, %s)", obj_sqlval, obj_datatype, obj_language)); break;
     default:
-      rdf_dbg_printf (("\nttlp_triple_l (..., %s, %s)", obj_datatype, obj_language)); break;
+      rdf_dbg_printf (("\ntf_triple_l (..., %s, %s)", obj_datatype, obj_language)); break;
     }
-  g_uri = box_copy (ttlp_inst.ttlp_graph_uri);
-  s_uri = box_copy (ttlp_inst.ttlp_subj_uri);
-  p_uri = box_copy (ttlp_inst.ttlp_pred_uri);
-  g_iid = ttlp_get_iid (TTLP_ARG g_uri);
-  s_iid = ttlp_get_iid (TTLP_ARG s_uri);
-  p_iid = ttlp_get_iid (TTLP_ARG p_uri);
+  g_uri = box_copy (tf->tf_graph_uri);
+  g_iid = tf_get_iid (tf, g_uri);
+  s_iid = tf_get_iid (tf, s_uri);
+  p_iid = tf_get_iid (tf, p_uri);
   params = (caddr_t *)list (20,
     unames_colon_number[0], g_uri,
     unames_colon_number[1], g_iid,
@@ -422,8 +549,8 @@ void ttlp_triple_l (TTLP_PARAM caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t
     unames_colon_number[6], obj_sqlval,
     unames_colon_number[7], obj_datatype,
     unames_colon_number[8], obj_language,
-    unames_colon_number[9], box_copy_tree (ttlp_inst.ttlp_app_env) );
-  err = qr_exec (ttlp_inst.ttlp_qi->qi_client, ttlp_inst.ttlp_queries[TTLP_EXEC_TRIPLE_L], ttlp_inst.ttlp_qi, NULL, NULL, &lc, params, NULL, 1);
+    unames_colon_number[9], box_copy_tree (tf->tf_app_env) );
+  err = qr_exec (tf->tf_qi->qi_client, tf->tf_queries[TRIPLE_FEED_TRIPLE_L], tf->tf_qi, NULL, NULL, &lc, params, NULL, 1);
   lc_free (lc);
   dk_free_box ((box_t) params);
   if (NULL != err)
@@ -438,10 +565,15 @@ rdf_load_turtle (
 {
   caddr_t res;
   ttlp_t *ttlp;
+  triple_feed_t *tf;
   if (!ttl_lex_mtx)
     ttl_lex_mtx = mutex_allocate ();
   mutex_enter (ttl_lex_mtx);
   ttlp = ttlp_alloc ();
+  tf = ttlp->ttlp_tf;
+  tf->tf_qi = qi;
+  tf->tf_graph_uri = box_copy (graph_uri);
+  tf->tf_app_env = app_env;
   if (DV_STRING_SESSION == DV_TYPE_OF (str))
     ttlp->ttlp_input = (dk_session_t *)str;
   else
@@ -460,21 +592,10 @@ rdf_load_turtle (
       if (NULL == ttlp->ttlp_enc)
         ttlp->ttlp_enc = &eh__ISO8859_1;
     }
-  ttlp->ttlp_qi = qi;
   ttlp->ttlp_base_uri = box_copy (base_uri);
-  ttlp->ttlp_graph_uri = box_copy (graph_uri);
-  ttlp->ttlp_app_env = app_env;
   QR_RESET_CTX
     {
-      int ctr;
-      for (ctr = 0; ctr < COUNTOF__TTLP_EXEC; ctr++)
-        {
-          caddr_t err = NULL;
-          ttlp->ttlp_stmt_texts[ctr] = stmt_texts[ctr];
-          ttlp->ttlp_queries[ctr] = sql_compile (stmt_texts[ctr], qi->qi_client, &err, SQLC_DEFAULT);
-          if (NULL != err)
-            sqlr_resignal (err);
-        }
+      tf_set_stmt_texts (tf, stmt_texts, NULL);
       ttlyyrestart (NULL);
       /*BEGIN TURTLE;*/
       ttlyyparse();
@@ -490,8 +611,8 @@ rdf_load_turtle (
   mutex_leave (ttl_lex_mtx);
   err_ret[0] = ttlp->ttlp_catched_error;
   ttlp->ttlp_catched_error = NULL;
-  res = ttlp->ttlp_graph_uri;
-  ttlp->ttlp_graph_uri = NULL;
+  res = ttlp->ttlp_tf->tf_graph_uri;
+  ttlp->ttlp_tf->tf_graph_uri = NULL;
   ttlp_free (ttlp);
   return res;
 }
@@ -506,10 +627,10 @@ bif_rdf_load_turtle (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t app_env = bif_arg (qst, args, 4, "rdf_load_turtle");
   caddr_t err = NULL;
   caddr_t res;
-  if (COUNTOF__TTLP_EXEC != BOX_ELEMENTS (stmt_texts))
+  if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (stmt_texts))
     sqlr_new_error ("22023", "RDF01",
       "The argument #4 of rdf_load_turtle() should be a vector of %d texts of SQL statements",
-      COUNTOF__TTLP_EXEC );
+      COUNTOF__TRIPLE_FEED );
   res = rdf_load_turtle (str, base_uri, graph_uri,
     stmt_texts, app_env,
     (query_instance_t *)qst, QST_CHARSET(qst), &err );
@@ -720,9 +841,57 @@ end_of_test:
 }
 #endif
 
+
+#undef tf_bnode_iid
+caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, const char *txt)
+{
+  caddr_t *params;
+  local_cursor_t *lc = NULL;
+  caddr_t *hit;
+  caddr_t err = NULL;
+  if (NULL != txt)
+    {
+      hit = (caddr_t *)id_hash_get (tf->tf_blank_node_ids, (caddr_t)(&(txt)));
+      if (NULL != hit)
+        return box_copy_tree (hit[0]);
+    }
+  params = (caddr_t *)list (4,
+    unames_colon_number[0],
+    box_copy (tf->tf_graph_uri),
+    unames_colon_number[1],
+    box_copy_tree (tf->tf_app_env) );
+  err = qr_exec (tf->tf_qi->qi_client, tf->tf_queries[TRIPLE_FEED_NEW_BLANK], tf->tf_qi, NULL, NULL, &lc, params, NULL, 1);
+  dk_free_box ((box_t) params);
+  if (NULL != err)
+    {
+      lc_free (lc);
+      sqlr_resignal (err);
+    }
+  if (lc && lc_next (lc))
+    {
+      caddr_t iid = DBG_NAME (box_copy_tree) (DBG_ARGS lc_nth_col (lc, 0));
+      if (NULL != txt)
+        {
+          caddr_t key = box_dv_short_string (txt);
+          id_hash_set (tf->tf_blank_node_ids, (caddr_t)(&key), (caddr_t)(&iid));
+          iid = DBG_NAME (box_copy_tree) (DBG_ARGS iid);
+        }
+      lc_free (lc);
+      return iid;
+    }
+  lc_free (lc);
+  sqlr_new_error ("22023", "RDF03",
+    "RDF loader has failed to create ID for blank node '%.100s' by '%.100s'",
+    ((NULL == txt) ? "[]" : txt), tf->tf_stmt_texts[TRIPLE_FEED_NEW_BLANK] );
+  return NULL;
+}
+
+
 void
 rdf_core_init (void)
 {
+  bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_xml_entity);
+  bif_set_uses_index (bif_rdf_load_rdfxml);
   bif_define ("rdf_load_turtle", bif_rdf_load_turtle);
   bif_set_uses_index (bif_rdf_load_turtle);
   bif_define ("turtle_lex_analyze", bif_turtle_lex_analyze);

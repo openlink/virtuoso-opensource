@@ -43,6 +43,12 @@ extern "C" {
 #endif
 */
 
+/*				 0         1         2         3         4 */
+/*				 0123456789012345678901234567890123456789012 */
+#define VIRTRDF_NS_URI		"http://www.openlinksw.com/schemas/virtrdf#"
+#define VIRTRDF_NS_URI_LEN	42
+
+
 #define MAX_XML_LNAME_LENGTH 100				/* for local names, namespace prefixes and namespace URIs */
 #define MAX_XML_QNAME_LENGTH (2*MAX_XML_LNAME_LENGTH + 1)	/* for qualified names (that have semicolons) */
 
@@ -598,17 +604,43 @@ caddr_t xp_box_number (caddr_t n);
 
 typedef struct xp_node_s
 {
-  int		xn_level;
-  int		xn_is_written;
   struct xp_node_s * xn_current_child;
   struct xp_node_s * xn_parent;
   caddr_t *	xn_attrs;
   dk_set_t	 xn_children;
   caddr_t *	xn_namespaces;
   struct xparse_ctx_s  *	xn_xp;
-  struct xslt_template_s *	xn_template;
 } xp_node_t;
 
+/*!< RDF/XML parser mode, i.e. what does the parser expect to read */
+#define XRL_PARSETYPE_TOP_LEVEL		0x01	/*!< Top-level element (rdf:RDF) */
+#define XRL_PARSETYPE_RESOURCE		0x02	/*!< Resource description */
+#define XRL_PARSETYPE_LITERAL		0x04	/*!< Literal value */
+#define XRL_PARSETYPE_RES_OR_LIT	0x06	/*!< Either resource description or a literal */
+#define XRL_PARSETYPE_PROPLIST		0x08	/*!< Sequence of properties of a resource */
+#define XRL_PARSETYPE_EMPTYPROP		0x10	/*!< Nothing but ending tag of property */
+#define XRL_PARSETYPE_COLLECTION	0x20	/*!< Collection */
+
+/*! Stack part of RDF/XML-specific context of XML parser.
+These are fields of quad to be created.
+On nesting increment, all fields (except incremented xrlc_level) are propagated from the parent. (Pointers are copied, strings are not copied)
+On nesting decrement, all fields not equal to fields of parent are freed. Equal fields are propagated before, not allocated */
+typedef struct xp_rdf_locals_s
+{
+  caddr_t	xrl_subject;		/*!< Subject (IRI of named node or blank node IRI_ID); subject is used for nested predicates */
+  caddr_t	xrl_predicate;		/*!< Preducate (IRI of named node or blank node IRI_ID) */
+  caddr_t	xrl_base;		/*!< Base to resolve relative URIs, inheritable */
+  caddr_t	xrl_language;		/*!< Language tag as string or NULL, inheritable */
+  caddr_t	xrl_datatype;		/*!< Object data type (named node IRI_ID), not inheritable */
+  int		xrl_parsetype;		/*!< Parse type (one of XRL_DATATYPE_NNN), not inheritable */
+  int		xrl_li_count;		/*!< Counter of used Parse type (one of XRL_DATATYPE_NNN), not inheritable */
+  xp_node_t *	xrl_xn;			/*!< Node whose not-yet-closed element corresponds to the given context */
+  struct xp_rdf_locals_s *xrl_parent;	/*!< Pointer to parent context */
+  char		xrl_subject_set:8;
+  char		xrl_base_set:8;
+  char		xrl_language_set:8;
+  char		xrl_datatype_set:8;
+} xp_rdf_locals_t;
 
 typedef struct xslt_template_uses_s
 {
@@ -730,8 +762,21 @@ typedef struct xparse_ctx_s
   caddr_t		xp_boxed_name;
   id_hash_t *		xp_namespaces;
   int			xp_namespaces_are_valid;
+  xp_rdf_locals_t *	xp_rdf_locals;
+  xp_rdf_locals_t *	xp_rdf_free_list;
+  struct triple_feed_s *xp_tf;
 } xparse_ctx_t;
 
+extern void xp_pop_rdf_locals (xparse_ctx_t *xp);
+extern xp_rdf_locals_t *xp_push_rdf_locals (xparse_ctx_t *xp);
+
+extern void xp_element (void *userdata, char * name, xml_parser_attrdata_t *attrdata);
+extern void xp_element_end (void *userdata, const char * name);
+extern void xp_id (void *userdata, char * name);
+extern void xp_character (xml_parser_t * parser,  char * s, int len);
+extern void xp_entity (xml_parser_t * parser, const char * refname, int reflen, int isparam, const xml_def_4_entity_t *edef);
+extern void xp_pi (xml_parser_t * parser, const char *target, const char *data);
+extern void xp_comment (xml_parser_t * parser, const char *text);
 
 #define XP_CTX_POS(xp, sz, pos) xp->xp_position = pos, xp->xp_size = sz
 #define XP_CTX_POS_GET(xp, sz, pos) pos = xp->xp_position, sz = xp->xp_size
@@ -867,7 +912,21 @@ extern caddr_t uname__txt;
 extern caddr_t uname__xslt;
 extern caddr_t uname_lang;
 extern caddr_t uname_nil;
+extern caddr_t uname_rdf_ns_uri;
+extern caddr_t uname_rdf_ns_uri_Description;
+extern caddr_t uname_rdf_ns_uri_ID;
+extern caddr_t uname_rdf_ns_uri_RDF;
+extern caddr_t uname_rdf_ns_uri_Seq;
+extern caddr_t uname_rdf_ns_uri_about;
+extern caddr_t uname_rdf_ns_uri_li;
+extern caddr_t uname_rdf_ns_uri_nodeID;
+extern caddr_t uname_rdf_ns_uri_resource;
+extern caddr_t uname_rdf_ns_uri_type;
+extern caddr_t uname_rdf_ns_uri_datatype;
+extern caddr_t uname_rdf_ns_uri_parseType;
 extern caddr_t uname_space;
+extern caddr_t uname_virtrdf_ns_uri;
+extern caddr_t uname_virtrdf_ns_uri_bitmask;
 extern caddr_t uname_xml;
 extern caddr_t uname_xmlns;
 extern caddr_t uname_xml_colon_base;
@@ -879,6 +938,7 @@ extern caddr_t uname_xml_ns_uri_colon_lang;
 extern caddr_t uname_xml_ns_uri_colon_space;
 extern caddr_t uname_xmlschema_ns_uri;
 extern caddr_t uname_xmlschema_ns_uri_hash;
+extern caddr_t uname_xmlschema_ns_uri_hash_any;
 extern caddr_t uname_xmlschema_ns_uri_hash_boolean;
 extern caddr_t uname_xmlschema_ns_uri_hash_dateTime;
 extern caddr_t uname_xmlschema_ns_uri_hash_decimal;
@@ -974,7 +1034,30 @@ extern caddr_t dbg_box_cast_to_UTF8 (DBG_PARAMS caddr_t * qst, caddr_t data);
 extern caddr_t box_cast_to_UTF8 (caddr_t * qst, caddr_t data);
 #endif
 
+extern caddr_t box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name);
+
 #define XQ_SQL_COLUMN_FORMAT "sql:column(%s)"
+
+#define BOX_DV_UNAME_CONCAT4(qname,nsuri,local,local_len) \
+  do { \
+    caddr_t _nsuri = (nsuri); \
+    int _nsuri_len = box_length_inline (_nsuri) - 1; \
+    caddr_t _local = (local); \
+    int _local_len = (local_len); \
+    int _qname_len = _nsuri_len + _local_len; \
+    caddr_t _qname = box_dv_ubuf (_qname_len); \
+    memcpy (_qname, _nsuri, _nsuri_len); \
+    memcpy (_qname + _nsuri_len, _local, _local_len); \
+    _qname[_qname_len] = '\0'; \
+    (qname) = box_dv_uname_from_ubuf (_qname); \
+  } while (0)
+
+#define BOX_DV_UNAME_CONCAT(qname,nsuri,local) \
+  do { \
+    caddr_t _local1 = (local); \
+    int _local1_len = box_length_inline (_local1) - 1; \
+    BOX_DV_UNAME_CONCAT4(qname,nsuri,_local1,_local1_len); \
+  } while (0)
 
 #define BOX_DV_UNAME_COLONCONCAT4(qname,nsuri,local,local_len) \
   do { \
@@ -1042,6 +1125,22 @@ typedef struct bh_from_disk_fwd_iter_s
 
 extern void bdfi_reset (bh_from_disk_fwd_iter_t * iter, blob_handle_t *bh, query_instance_t *qi);
 extern size_t bdfi_read (void *read_cd, char *buf, size_t bsize);
+
+typedef struct xml_read_iter_env_s
+{
+  bh_from_client_fwd_iter_t	xrie_bcfi;
+  bh_from_disk_fwd_iter_t	xrie_bdfi;
+  dk_session_fwd_iter_t		xrie_dsfi;
+  xml_read_func_t		xrie_iter;
+  xml_read_abend_func_t		xrie_iter_abend;
+  void *			xrie_iter_data;
+  s_size_t			xrie_text_len;
+  int				xrie_text_is_wide;
+}
+xml_read_iter_env_t;
+
+extern int xml_set_xml_read_iter (query_instance_t * qi, caddr_t text, xml_read_iter_env_t *xrie, const char **enc_ret);
+
 
 #define XDC_DOCUMENT 0		/*!< Storage type of dependant documents that are not external resources */
 #define XDC_COLLECTION 1	/*!< Storage type of lists of resources in collections */

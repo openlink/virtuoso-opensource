@@ -618,6 +618,7 @@ xp_free (xparse_ctx_t * xp)
 {
   dk_hash_iterator_t hit;
   caddr_t it, k;
+  xp_rdf_locals_t *xrl;
   xp_node_t * xn = xp->xp_top;
   dk_free_box (xp->xp_id);
   dk_free_box (xp->xp_error_msg);
@@ -693,6 +694,16 @@ xp_free (xparse_ctx_t * xp)
   dk_free_box (xp->xp_boxed_name);
   if ((NULL != xp->xp_doc_cache) && (&(xp->xp_doc_cache) == xp->xp_doc_cache->xdc_owner))
     xml_doc_cache_free (xp->xp_doc_cache);
+  while (NULL != xp->xp_rdf_locals)
+    xp_pop_rdf_locals (xp);
+  xrl = xp->xp_rdf_free_list;
+  while (NULL != xrl)
+    {
+      xp_rdf_locals_t *next_xrl = xrl->xrl_parent;
+      dk_free (xrl, sizeof (xp_rdf_locals_t));
+      xrl = next_xrl;
+    }
+  /* Note that xp_xf is intentionally left untouched. */
 }
 
 
@@ -1589,74 +1600,74 @@ xp_element_change (void *userdata, char * name, xml_parser_attrdata_t *attrdata)
 }
 /* URI is the current uri on host */
 
-
-caddr_t
-xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long html_mode, caddr_t uri, const char *enc, lang_handler_t *lh, caddr_t dtd_config, dtd_t **ret_dtd, id_hash_t **ret_id_cache, xml_ns_2dict_t *ret_ns_2dict)
+int
+xml_set_xml_read_iter (query_instance_t * qi, caddr_t text, xml_read_iter_env_t *xrie, const char **enc_ret)
 {
-  int dtp_of_text = box_tag(text);
-  int text_strg_is_wide = 0;
-  dk_set_t top;
-  caddr_t tree;
-  xml_parser_config_t config;
-  xml_parser_t * parser;
-  xparse_ctx_t context;
-  volatile s_size_t text_len = 0;
-  int rc;
-  bh_from_client_fwd_iter_t bcfi;
-  bh_from_disk_fwd_iter_t bdfi;
-  dk_session_fwd_iter_t dsfi;
-  xml_read_func_t iter = NULL;
-  xml_read_abend_func_t iter_abend = NULL;
-  void *iter_data = NULL;
-  xp_node_t *xn;
-  if (DV_BLOB_XPER_HANDLE == dtp_of_text)
-    sqlr_new_error ("42000", "XM021", "Unable to create XML tree from persistent XML object");
+  int dtp_of_text = box_tag (text);
   if ((DV_BLOB_HANDLE == dtp_of_text) || (DV_BLOB_WIDE_HANDLE == dtp_of_text))
     {
       blob_handle_t *bh = (blob_handle_t *) text;
       if (bh->bh_ask_from_client)
         {
-          bcfi_reset (&bcfi, bh, qi->qi_client);
-          iter = bcfi_read;
-          iter_abend = bcfi_abend;
-          iter_data = &bcfi;
+          bcfi_reset (&(xrie->xrie_bcfi), bh, qi->qi_client);
+          xrie->xrie_iter = bcfi_read;
+          xrie->xrie_iter_abend = bcfi_abend;
+          xrie->xrie_iter_data = &(xrie->xrie_bcfi);
 	  if (DV_BLOB_WIDE_HANDLE == dtp_of_text)
-	    enc = "UTF-8"; /* the bh_get_data_from_user() doesn't get wchar_t *, it's UTF-8 */
-	  goto make_tree;
+	    enc_ret[0] = "UTF-8"; /* the bh_get_data_from_user() doesn't get wchar_t *, it's UTF-8 */
+	  return 1;
         }
       else
         {
 	  /* There's no support of double encoding like UTF-8 -ed KOI.
 	    Hence LONG NVARCHAR disk iterator should convert such data to wide and use wide versions of narrow encodings */
-          text_strg_is_wide = ((DV_BLOB_WIDE_HANDLE == dtp_of_text) ? 1 : 0);
+          xrie->xrie_text_is_wide = ((DV_BLOB_WIDE_HANDLE == dtp_of_text) ? 1 : 0);
         }
-      bdfi_reset (&bdfi, bh, qi);
-      iter = bdfi_read;
-      iter_data = &bdfi;
-      goto make_tree;
+      bdfi_reset (&(xrie->xrie_bdfi), bh, qi);
+      xrie->xrie_iter = bdfi_read;
+      xrie->xrie_iter_data = &(xrie->xrie_bdfi);
+      return 1;
     }
   if (DV_STRING_SESSION == dtp_of_text)
     {
       dk_session_t *ses = (dk_session_t *) text;
-      dsfi_reset (&dsfi, ses);
-      iter = dsfi_read;
-      iter_data = &dsfi;
-      goto make_tree;
+      dsfi_reset (&(xrie->xrie_dsfi), ses);
+      xrie->xrie_iter = dsfi_read;
+      xrie->xrie_iter_data = &(xrie->xrie_dsfi);
+      return 1;
     }
    if (IS_WIDE_STRING_DTP (dtp_of_text))
     {
-      text_len = (s_size_t) (box_length(text)-sizeof(wchar_t));
-      text_strg_is_wide = 1;
-      goto make_tree;
+      xrie->xrie_text_len = (s_size_t) (box_length(text)-sizeof(wchar_t));
+      xrie->xrie_text_is_wide = 1;
+      return 1;
     }
   if (IS_STRING_DTP (dtp_of_text))
     {
-      text_len = (s_size_t) (box_length(text)-1);
-      goto make_tree;
+      xrie->xrie_text_len = (s_size_t) (box_length(text)-1);
+      return 1;
     }
+  return 0;
+}
+
+caddr_t
+xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long html_mode, caddr_t uri, const char *enc, lang_handler_t *lh, caddr_t dtd_config, dtd_t **ret_dtd, id_hash_t **ret_id_cache, xml_ns_2dict_t *ret_ns_2dict)
+{
+  int dtp_of_text = box_tag (text);
+  dk_set_t top;
+  caddr_t tree;
+  xml_parser_config_t config;
+  xml_parser_t * parser;
+  xparse_ctx_t context;
+  int rc;
+  xp_node_t *xn;
+  xml_read_iter_env_t xrie;
+  memset (&xrie, 0, sizeof (xml_read_iter_env_t));
+  if (DV_BLOB_XPER_HANDLE == dtp_of_text)
+    sqlr_new_error ("42000", "XM021", "Unable to create XML tree from persistent XML object");
+  if (!xml_set_xml_read_iter (qi, text, &xrie, &enc))
   sqlr_new_error ("42000", "XM024",
       "Unable to create XML tree from data of type %s (%d)", dv_type_title (dtp_of_text), dtp_of_text);
-make_tree:
   xn = (xp_node_t *) dk_alloc (sizeof (xp_node_t));
   memset (xn, 0, sizeof(xp_node_t));
   memset (&context, 0, sizeof (context));
@@ -1688,7 +1699,7 @@ make_tree:
 #endif
   html_mode &= ~WEBIMPORT_HTML;
   memset (&config, 0, sizeof(config));
-  config.input_is_wide = text_strg_is_wide;
+  config.input_is_wide = xrie.xrie_text_is_wide;
   config.input_is_ge = html_mode & GE_XML;
   config.input_is_html = html_mode & ~(FINE_XSLT | GE_XML | WEBIMPORT_HTML | FINE_XML_SRCPOS);
   config.input_is_xslt = html_mode & FINE_XSLT;
@@ -1733,14 +1744,14 @@ make_tree:
   XML_SetEntityRefHandler (parser, (XML_EntityRefHandler) xp_entity);
   XML_SetProcessingInstructionHandler (parser, (XML_ProcessingInstructionHandler) xp_pi);
   XML_SetCommentHandler (parser, (XML_CommentHandler) xp_comment);
-  if (NULL != iter)
+  if (NULL != xrie.xrie_iter)
     {
-      XML_ParserInput (parser, iter, iter_data);
+      XML_ParserInput (parser, xrie.xrie_iter, xrie.xrie_iter_data);
     }
   QR_RESET_CTX
     {
       if (0 == setjmp (context.xp_error_ctx))
-        rc = XML_Parse (parser, text, text_len);
+        rc = XML_Parse (parser, text, xrie.xrie_text_len);
       else
 	rc = 0;
     }
@@ -1751,8 +1762,8 @@ make_tree:
       POP_QR_RESET;
       xp_free (&context);
       XML_ParserDestroy (parser);
-      if (NULL != iter_abend)
-        iter_abend (iter_data);
+      if (NULL != xrie.xrie_iter_abend)
+        xrie.xrie_iter_abend (xrie.xrie_iter_data);
       if (err_ret)
 	*err_ret = err;
       else
@@ -1765,8 +1776,8 @@ make_tree:
       caddr_t rc_msg = XML_FullErrorMessage (parser);
       xp_free (&context);
       XML_ParserDestroy (parser);
-      if (NULL != iter_abend)
-        iter_abend (iter_data);
+      if (NULL != xrie.xrie_iter_abend)
+        xrie.xrie_iter_abend (xrie.xrie_iter_data);
       if (err_ret)
 	*err_ret = srv_make_new_error ("22007", "XM003", "%.1500s", rc_msg);
       dk_free_box (rc_msg);
@@ -4019,7 +4030,8 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 }
 
 
-caddr_t box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name)
+caddr_t
+box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name)
 {
   switch (DV_TYPE_OF (raw_name))
     {

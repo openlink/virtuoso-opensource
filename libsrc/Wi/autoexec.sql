@@ -100,5 +100,9 @@ DB.DBA.ddl_load_script_safe (_filename);
 ;
 
 --!AFTER
+DB.DBA.DAV_AUTO_REPLICATE_TO_RDF_QUAD ()
+;
+
+--!AFTER
 ddl_autoexec ('')
 ;

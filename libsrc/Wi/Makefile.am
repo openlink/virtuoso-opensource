@@ -191,7 +191,8 @@ libwi_la_SOURCES = \
 	sql_code_vad.c \
 	sql_code_dbp.c \
 	rendezvous.c \
-	rdf_core.c
+	rdf_core.c \
+	rdfxml_parser.c
 	
 libwi_odbc_la_SOURCES = \
         sql3.c \
@@ -296,7 +297,8 @@ libwi_odbc_la_SOURCES = \
 	sql_code_vad.c \
 	sql_code_dbp.c \
 	rendezvous.c \
-	rdf_core.c
+	rdf_core.c \
+	rdfxml_parser.c
 	
 # can make that conditional if need be SPARQL
 libwi_la_SOURCES += \
@@ -586,6 +588,7 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/tests/dav/DET_ResFilter.sql \
 	$(top_srcdir)/binsrc/tests/dav/DET_PropFilter.sql \
 	$(top_srcdir)/binsrc/tests/dav/Versioning/DET_Versioning.sql
+	$(top_srcdir)/binsrc/tests/dav/dav_rdf_quad.sql
 
 SQL_FILES_VAD		= \
 	$(top_srcdir)/binsrc/vad/vad_root.sql \
