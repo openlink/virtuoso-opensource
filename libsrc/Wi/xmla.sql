@@ -772,6 +772,9 @@ xmla_make_element (in mdta any, in dta any)
   while (i < l)
     {
       aset (res, i1, mdta[i][0]);
+      if (mdta[i][1] = 131 and not isblob(dta[i]))
+	 aset (res, i2, cast (dta[i] as varbinary));
+      else
       aset (res, i2, dta[i]);
       i := i + 1;
       i1 := i1 + 2;
@@ -1714,16 +1717,23 @@ create procedure
 xmla_cursor_stmt_change (in _props any, inout _stmt varchar)
 {
   declare _direction, new_stmpt, _left_str, _left_str_u varchar;
-  declare _skip, _n_rows, _return_bookmark integer;
+  declare _skip, _n_rows, _return_bookmark, _bookmark_from integer;
 
   _left_str := '';
 
   _direction := xmla_get_property (_props, 'direction', 'forward');
-  _skip := abs (atoi (xmla_get_property (_props, 'skip', '0')));
+  _bookmark_from := xmla_get_property (_props, 'bookmark-from', NULL);
+-- _direction := xmla_make_cursor_direction (xmla_get_property (_props, 'bookmark-from', _direction));
+
+  _skip := xmla_get_property (_props, 'skip', 0);
+  _skip := xmla_make_skip (_bookmark_from, _skip, 1);
+
   _n_rows := xmla_get_property (_props, 'n-rows', null);
   _return_bookmark := xmla_get_property (_props, 'return-bookmark', 0);
   new_stmpt := 'select ';
 
+  if (_direction = 'forward')
+    {
   if (_skip)
     {
       _skip := cast (_skip as varchar);
@@ -1734,6 +1744,7 @@ xmla_cursor_stmt_change (in _props any, inout _stmt varchar)
     }
   else if (_n_rows > 0)
       new_stmpt := new_stmpt || 'top ' || cast (_n_rows as varchar) || ' ';
+    }
 
   if (_return_bookmark)
     new_stmpt := new_stmpt || '''_dummy_'' AS BOOKMARK, ';
@@ -1754,23 +1765,21 @@ create procedure
 xmla_make_cursors_state (in _props any, inout _dta any)
 {
   declare _direction varchar;
-  declare _return_bookmark, _skip, idx, len integer;
-  declare line, temp any;
+  declare _return_bookmark, _skip, idx, idx2, len, _direc_save, _n_rows integer;
+  declare line, temp, _bookmark_from any;
+
+  _return_bookmark := xmla_get_property (_props, 'return-bookmark', 0);
+  _skip := xmla_get_property (_props, 'skip', 0);
+  _n_rows := xmla_get_property (_props, 'n-rows', null);
 
   _direction := xmla_get_property (_props, 'direction', 'forward');
-  _return_bookmark := xmla_get_property (_props, 'return-bookmark', 0);
-  _skip := cast (xmla_get_property (_props, 'skip', 0) as varchar);
-  len := length (_dta);
+  _bookmark_from := xmla_get_property (_props, 'bookmark-from', NULL);
+--  _direction := xmla_make_cursor_direction (xmla_get_property (_props, 'bookmark-from', _direction));
 
-  if (_return_bookmark)
-    {
-       for (idx := 0; idx < len; idx := idx + 1)
-	 {
-	   line := _dta[idx];
-	   aset (line, 0, encode_base64 (serialize (vector(_skip, idx))));
-	   aset (_dta, idx, line);
-	 }
-    }
+  len := length (_dta);
+  _direc_save := 0;
+  if (_direction = 'backward')
+    _direc_save := len;
 
   if (_direction = 'backward')
     {
@@ -1781,6 +1790,78 @@ xmla_make_cursors_state (in _props any, inout _dta any)
 	   aset (_dta, idx, temp);
 	   aset (_dta, len - idx - 1, line);
 	 }
+     }
+
+  if (_return_bookmark)
+    {
+       for (idx := 0; idx < len; idx := idx + 1)
+	 {
+	   line := _dta[idx];
+  	   if (_direction = 'backward')
+	     aset (line, 0, encode_base64 (serialize (vector(0, len - idx - 1, _direc_save))));
+	   else
+	     aset (line, 0, encode_base64 (serialize (vector(_skip, idx, _direc_save))));
+	   aset (_dta, idx, line);
+	 }
     }
+
+
+  if (_direction = 'backward')
+    {
+        declare _new_dta, _end any;
+
+        _skip := xmla_make_skip (_bookmark_from, _skip, 0);
+	_new_dta := vector ();
+	idx2 := 0;
+	_end := _n_rows + _skip;
+
+	if (_end > len)
+	  _end := len;
+
+       for (idx := _skip; idx < _end; idx := idx + 1)
+	 {
+	   line := _dta[idx];
+	   _new_dta := vector_concat (_new_dta, vector (line));
+	   idx2 := idx2 + 1;
+	 }
+
+	_dta := _new_dta;
+    }
+}
+;
+
+
+create procedure
+xmla_make_skip (in _skip any, in _add int, in _dir int)
+{
+   declare pos_vec, ret any;
+
+   ret := _add;
+
+   if (_skip is NULL)
+     return ret;
+
+   if (_skip <> '')
+     {
+	pos_vec := deserialize (decode_base64 (_skip));
+
+	if (not isarray (pos_vec))
+	   signal ('00006', 'Unable to process the bookmark, because the "bookmark-from" property is incorrect');
+	if (_dir)
+	  ret := pos_vec[0] + pos_vec[1] + _add;
+	else
+	  ret := pos_vec[2] - pos_vec[1] + _add - 1;
+    }
+   else
+     signal ('00007', 'Unable to process the bookmark, because the "bookmark-from" property is not set or incorrect');
+
+   return ret;
+}
+;
+
+create procedure
+xmla_get_version ()
+{
+   return '1.01';
 }
 ;
