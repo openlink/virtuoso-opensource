@@ -176,7 +176,7 @@ file.
     email a new license file for you evaluation.</para>
   </sect2>
 
-  <sect2 id="srvadmlicensing"><title>Server Logging - Detecting Errors</title>
+  <sect2 id="srvadmlogging"><title>Server Logging - Detecting Errors</title>
     <para>Virtuoso provides extensive log information for resolving problems.
     Should any problems arise Virtuoso logs should always be consulted.</para>
     <para>The Virtuoso server by default will send log information to two
