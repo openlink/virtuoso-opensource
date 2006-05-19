@@ -64,7 +64,7 @@ trset_start (caddr_t * qst)
 
 
 void
-trset_printf (char *str, ...)
+trset_printf (const char *str, ...)
 {
   char *report_linebuf;
   char *report_ptr;

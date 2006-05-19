@@ -52,7 +52,7 @@
 
 /* sqlprt.c */
 void trset_start (caddr_t *qst);
-void trset_printf (char *str, ...);
+void trset_printf (const char *str, ...);
 void trset_end (void);
 
 #define stmt_printf(a) trset_printf a

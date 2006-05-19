@@ -919,7 +919,7 @@ int32 safe_atoi (const char *data, caddr_t *err_ret);
 double safe_atof (const char *data, caddr_t *err_ret);
 caddr_t box_to_any (caddr_t data, caddr_t * err_ret);
 char* __get_column_name (oid_t col_id, dbe_key_t *key);
-void pl_bif_name_define (char *name);
+void pl_bif_name_define (const char *name);
 caddr_t find_pl_bif_name (caddr_t name);
 
 /* sqltype.c */

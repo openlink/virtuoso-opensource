@@ -277,7 +277,7 @@ void semaphore_free (semaphore_t *sem);
 int semaphore_enter (semaphore_t *sem);
 int semaphore_try_enter (semaphore_t *sem);
 #ifdef SEM_DEBUG
-void semaphore_leave_dbg (int ln, char *file, semaphore_t *sem);
+void semaphore_leave_dbg (int ln, const char *file, semaphore_t *sem);
 #define semaphore_leave(s) semaphore_leave_dbg (__LINE__, __FILE__, s)
 #else
 void semaphore_leave (semaphore_t *sem);

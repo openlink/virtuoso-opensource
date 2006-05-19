@@ -145,7 +145,7 @@ long tws_cached_connections;
 long vt_batch_size_limit = 1000000L;
 
 void trset_start (caddr_t * qst);
-void trset_printf (char *str, ...);
+void trset_printf (const char *str, ...);
 void trset_end ();
 
 #define rep_printf	trset_printf

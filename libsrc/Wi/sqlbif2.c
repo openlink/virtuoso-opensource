@@ -60,7 +60,7 @@ static id_hash_t *name_to_pl_name;
 
 
 void
-pl_bif_name_define (char *name)
+pl_bif_name_define (const char *name)
 {
   char buff[2 * MAX_NAME_LEN];
   caddr_t data;
