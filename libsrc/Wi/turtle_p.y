@@ -184,12 +184,12 @@ object
 	;
 
 blank
-	: BLANK_NODE_LABEL	{ $$ = ttlp_bnode_iid (TTLP_ARG $1); dk_free_box ($1); }
-	| _LSQBRA_RSQBRA	{ $$ = ttlp_bnode_iid (TTLP_ARG NULL); }
+	: BLANK_NODE_LABEL	{ $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1); dk_free_box ($1); }
+	| _LSQBRA_RSQBRA	{ $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL); }
         | _LSQBRA
 		{ dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
-		  ttlp_arg->ttlp_subj_uri = ttlp_bnode_iid (TTLP_ARG NULL);
+		  ttlp_arg->ttlp_subj_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
 		  ttlp_arg->ttlp_pred_uri = NULL; }
 		predicate_object_list _RSQBRA
 		{ $$ = ttlp_arg->ttlp_subj_uri;
@@ -197,7 +197,7 @@ blank
 		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); }
         | _LPAR	
-		{ caddr_t top_bnode = ttlp_bnode_iid (TTLP_ARG NULL);
+		{ caddr_t top_bnode = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), top_bnode); /* This is for retval */
@@ -218,7 +218,7 @@ blank
 items
 	: /*empty*/	{}
 	| items object
-		{ caddr_t next_bnode = ttlp_bnode_iid (TTLP_ARG NULL);
+		{ caddr_t next_bnode = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
                   caddr_t first_pred = ttlp_arg->ttlp_pred_uri;
 		  ttlp_arg->ttlp_pred_uri = box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#rest");
                   ttlp_triple (TTLP_ARG box_copy (next_bnode));
