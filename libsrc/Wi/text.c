@@ -2980,8 +2980,7 @@ sst_destroy (search_stream_t * sst)
       dk_free_box ((caddr_t) sst->sst_pos_array);
       if (!wst->wst_word_strings) /* if against db, not a set of word batch strings */
 	dk_free_box (sst->sst_buffer);
-
-      return;
+      return 0;
     }
   dk_free_box (sst->sst_buffer);
   dk_free_tree ((caddr_t) sst->sst_terms);
@@ -2992,6 +2991,7 @@ sst_destroy (search_stream_t * sst)
   END_DO_SET ();
   dk_set_free (sst->sst_not);
   dk_set_free (sst->sst_near_group_firsts);
+  return 0;
 }
 
 
