@@ -514,6 +514,34 @@ bif_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 
 
 iri_id_t
+bif_iri_id_or_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg = bif_arg (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (dtp == DV_SINGLE_FLOAT)
+    return ((iri_id_t) (uint32) unbox_float (arg));
+  if (dtp == DV_DOUBLE_FLOAT)
+    return ((iri_id_t) (uint32) unbox_double (arg));
+  if (dtp == DV_NUMERIC)
+    {
+      int32 tl;
+      numeric_to_int32 ((numeric_t) arg, &tl);
+      return (iri_id_t)(uint32) tl;
+    }
+  if (dtp == DV_IRI_ID)
+    return unbox_iri_id (arg);
+  if (dtp != DV_SHORT_INT && dtp != DV_LONG_INT)
+    {
+      sqlr_new_error ("22023", "SR008",
+      "Function %s needs an IRI_ID or an integer as argument %d, "
+      "not an arg of type %s (%d)",
+      func, nth + 1, dv_type_title (dtp), dtp);
+    }
+  return (iri_id_t) (uint32) (unbox (arg));
+}
+
+
+iri_id_t
 bif_iri_id_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   caddr_t arg = bif_arg (qst, args, nth, func);
@@ -4453,8 +4481,8 @@ bif_iri_id_num (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_iri_id_from_num (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  int64 iri_id = (iri_id_t) (unsigned long)bif_long_arg (qst, args, 0, "iri_id_from_num");
-  return box_iri_id (iri_id);
+  iri_id_t arg = bif_iri_id_or_long_arg (qst, args, 0, "iri_id_from_num");
+  return box_iri_id (arg);
 }
 
 
