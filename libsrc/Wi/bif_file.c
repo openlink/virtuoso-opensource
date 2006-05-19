@@ -99,6 +99,7 @@ dk_set_t d_dirs = NULL;
 dk_set_t safe_execs_set = NULL;
 dk_set_t dba_execs_set = NULL;
 static char www_abs_path[PATH_MAX + 1];	/* the max possible OS path */
+int spotlight_integration;
 
 char *rel_to_abs_path (char *p, const char *path, long len);
 
@@ -5172,6 +5173,12 @@ core_foundation_to_virt (CFTypeRef * source)
 }
 
 static caddr_t
+bif_spotlight_status (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_num (spotlight_integration);
+}
+
+static caddr_t
 bif_spotlight_metadata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int i = 0;
@@ -5179,6 +5186,9 @@ bif_spotlight_metadata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   CFStringRef path = NULL;
 
   sec_check_dba ((query_instance_t *) qst, "spotlight_metadata");
+
+  if (!spotlight_integration)
+    return NEW_DB_NULL;
 
   path = CFStringCreateWithCString((CFAllocatorRef)NULL, f_name, kCFStringEncodingASCII);
 
@@ -5308,6 +5318,7 @@ bif_file_init (void)
 #endif
 #if defined (__APPLE__) && defined(SPOTLIGHT)
   bif_define_typed ("spotlight_metadata", bif_spotlight_metadata, &bt_any);
+  bif_define_typed ("spotlight_status", bif_spotlight_status, &bt_any);
   init_file_acl_set ("/usr/bin/mdimport", &dba_execs_set);
 #endif
   set_ses_tmp_dir ();
