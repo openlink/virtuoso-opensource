@@ -194,18 +194,18 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define STATIC_DV_NULL {0,0,0,0,0,0,0,(char)DV_DB_NULL}
 #define BOX_AUTO_OVERHEAD 8
 
-# define BOX_AUTO(ptr, area, n, dtp) \
+# define BOX_AUTO_TYPED(ptrtype, ptr, area, n, dtp) \
     do { \
 	if (sizeof (area) - BOX_AUTO_OVERHEAD >= (n)) \
 	  { \
-	    ptr = (caddr_t)(((char *) area) + BOX_AUTO_OVERHEAD); \
+	    ptr = (ptrtype)(((char *) area) + BOX_AUTO_OVERHEAD); \
 	    ((dtp_t *) &(area))[4] = (dtp_t) ((n) & 0xff); \
 	    ((dtp_t *) &(area))[5] = (dtp_t) ((n) >> 8); \
 	    ((dtp_t *) &(area))[6] = 0; \
 	    ((dtp_t *) &(area))[7] = (dtp_t) (dtp); \
 	  } \
 	else \
-	  ptr = (caddr_t)(dk_alloc_box (n, dtp)); \
+	  ptr = (ptrtype)(dk_alloc_box (n, dtp)); \
       } while (0)
 
 #else /* DOUBLE_ALIGN */
@@ -213,22 +213,23 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define STATIC_DV_NULL {0,0,0,(char)DV_DB_NULL}
 #define BOX_AUTO_OVERHEAD 4
 
-# define BOX_AUTO(ptr, area, n, dtp) \
+# define BOX_AUTO_TYPED(ptrtype, ptr, area, n, dtp) \
     do { \
 	if (sizeof (area) - BOX_AUTO_OVERHEAD >= (n)) \
 	  { \
-	    ptr = (void *)(((char *) area) + BOX_AUTO_OVERHEAD); \
+	    ptr = (ptrtype)(((char *) area) + BOX_AUTO_OVERHEAD); \
 	    ((dtp_t *) &(area))[0] = (dtp_t) ((n) & 0xff); \
 	    ((dtp_t *) &(area))[1] = (dtp_t) ((n) >> 8); \
 	    ((dtp_t *) &(area))[2] = 0; \
 	    ((dtp_t *) &(area))[3] = (dtp_t) (dtp); \
 	  } \
 	else \
-	  ptr = (void *)dk_alloc_box (n, dtp); \
+	  ptr = (ptrtype)dk_alloc_box (n, dtp); \
       } while (0)
 
 #endif
 
+# define BOX_AUTO(ptr, area, n, dtp) BOX_AUTO_TYPED (caddr_t, ptr, area, n, dtp)
 # define BOX_IS_AUTO(ptr, area) ((char *)(ptr) != ((char *) &(area)) + BOX_AUTO_OVERHEAD)
 
 # define BOX_DONE(ptr, area) \
