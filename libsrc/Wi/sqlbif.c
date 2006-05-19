@@ -4429,7 +4429,7 @@ bif_isbinary (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_isarray (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg1 = bif_arg (qst, args, 0, "isstring");
+  caddr_t arg1 = bif_arg (qst, args, 0, "isarray");
   int result;
 
   dtp_t dtp = DV_TYPE_OF (arg1);
