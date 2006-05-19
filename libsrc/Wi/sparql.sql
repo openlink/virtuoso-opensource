@@ -157,6 +157,8 @@ create function DB.DBA.RDF_IID_OF_QNAME_SAFE (in qname varchar) returns IRI_ID
   set isolation='commited';
   if (__tag (qname) in (182, 217, 225, 230))
     return coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));  
+  if (isiri_id (qname))
+    return qname;
   return NULL;
 }
 ;
@@ -166,6 +168,8 @@ create function DB.DBA.RDF_IID_OF_QNAME (in qname varchar) returns IRI_ID
   set isolation='commited';
   if (__tag (qname) in (182, 217, 225, 230))
     return coalesce ((select RU_IID from DB.DBA.RDF_URL where RU_QNAME = qname));  
+  if (isiri_id (qname))
+    return qname;
   signal ('RDFXX', 'Wrong tag of argument in DB.DBA.RDF_IID_OF_QNAME()');
 }
 ;
@@ -279,7 +283,7 @@ create function DB.DBA.RQ_LONG_OF_O (in o_col any) returns any
       declare v2 varchar;
       declare id int;
       id := o_col[l+3] + 256 * (o_col [l+4] + 256 * (o_col [l+5] + 256 * o_col [l+6]));
-      v2 := coalesce ((select RO_VAL from DB.DBA.RDF_OBJ where RO_ID = id));
+      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
       if (v2 is null)
         signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RQ_LONG_OF_O, bad id %d', id));
       return vector (
@@ -322,7 +326,7 @@ create function DB.DBA.RQ_SQLVAL_OF_O (in o_col any) returns any
       declare v2 varchar;
       declare id int;
       id := o_col[l+3] + 256 * (o_col [l+4] + 256 * (o_col [l+5] + 256 * o_col [l+6]));
-      v2 := coalesce ((select RO_VAL from DB.DBA.RDF_OBJ where RO_ID = id));
+      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
       if (v2 is null)
         signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RQ_SQLVAL_OF_O, bad id %d', id));
       return v2;
@@ -392,6 +396,65 @@ create function DB.DBA.RQ_O_IS_LIT (in shortobj any) returns integer
 -----
 -- Conversions from and to values in short representation that may be not field values (may perform more validation checks)
 
+create function DB.DBA.RDF_MAKE_RO_ID_OF_STRING (in v varchar) returns integer
+{
+  declare llong, id int;
+  declare tridgell varchar;
+  llong := 1010;
+  if (length (v) > llong)
+    {
+      tridgell := tridgell32 (v, 1);
+      set isolation='commited';
+      id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = tridgell and blob_to_string (RO_LONG) = v);
+      if (id is null)
+        {
+          set isolation='serializable';
+          id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = tridgell and blob_to_string (RO_LONG) = v);
+          if (id is null)
+            {
+              id := sequence_next ('RDF_RO_ID');
+              insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG) values (id, tridgell, v);
+              commit work;
+            }
+        }
+    }
+  else
+    {
+      set isolation='commited';
+      id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v);
+      if (id is null)
+        {
+          set isolation='serializable';
+          id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v);
+          if (id is null)
+            {
+              id := sequence_next ('RDF_RO_ID');
+              insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL) values (id, v);
+              commit work;
+            }
+        }
+    }
+  return id;
+}
+;
+
+create function DB.DBA.RDF_FIND_RO_ID_OF_STRING (in v varchar) returns integer
+{
+  declare llong int;
+  declare tridgell varchar;
+  llong := 1010;
+  if (length (v) > llong)
+    {
+      tridgell := tridgell32 (v, 1);
+      return (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = tridgell and blob_to_string (RO_LONG) = v);
+    }
+  else
+    {
+      return (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v);
+    }
+}
+;
+
 create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (in v any) returns any
 {
   declare l, t int;
@@ -409,19 +472,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (in v any) returns any
     {
       declare v2 varchar;
       declare id int;
-      set isolation='commited';
-      id := coalesce ((select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v));
-      if (id is null)
-        {
-          set isolation='serializable';
-          id := coalesce ((select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v));
-          if (id is null)
-            {
-              id := sequence_next ('RDF_RO_ID');
-              insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL) values (id, v);
-	      commit work;
-	    }
-        }
+      id := DB.DBA.RDF_MAKE_RO_ID_OF_STRING (v);
       v2 := concat ('\001\001', subseq (v, 0, l), '\0ABCD\001\001');
       v2 [l+3] := bit_and (id, 255);
       v2 [l+4] := bit_and (bit_shift (id, -8), 255);
@@ -466,19 +517,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, 
     {
       declare v2 varchar;
       declare id int;
-      set isolation='commited';
-      id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v);
-      if (id is null)
-        {
-          set isolation='serializable';
-          id := coalesce ((select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v));
-          if (id is null)
-            {
-              id := sequence_next ('RDF_RO_ID');
-              insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL) values (id, v);
-	      commit work;
-	    }
-        }
+      id := DB.DBA.RDF_MAKE_RO_ID_OF_STRING (v);
       v2 := concat (dt_s, subseq (v, 0, l), '\0ABCD', lang_s);
       v2 [l+3] := bit_and (id, 255);
       v2 [l+4] := bit_and (bit_shift (id, -8), 255);
@@ -534,7 +573,7 @@ create function DB.DBA.RDF_LONG_OF_OBJ (in shortobj any) returns any
       declare v2 varchar;
       declare id int;
       id := shortobj[l+3] + 256 * (shortobj [l+4] + 256 * (shortobj [l+5] + 256 * shortobj [l+6]));
-      v2 := coalesce ((select RO_VAL from DB.DBA.RDF_OBJ where RO_ID = id));
+      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
       if (v2 is null)
         signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RQ_LONG_OF_OBJ, bad id %d', id));
       return vector (
@@ -628,7 +667,7 @@ create function DB.DBA.RDF_SQLVAL_OF_OBJ (in shortobj any) returns any
       declare v2 varchar;
       declare id int;
       id := shortobj[l+3] + 256 * (shortobj [l+4] + 256 * (shortobj [l+5] + 256 * shortobj [l+6]));
-      v2 := coalesce ((select RO_VAL from DB.DBA.RDF_OBJ where RO_ID = id));
+      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
       if (v2 is null)
         signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RQ_SQLVAL_OF_O, bad id %d', id));
       return v2;
@@ -732,7 +771,7 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any)
       declare v2 varchar;
       declare id int;
       id := shortobj[l+3] + 256 * (shortobj [l+4] + 256 * (shortobj [l+5] + 256 * shortobj [l+6]));
-      v2 := coalesce ((select RO_VAL from DB.DBA.RDF_OBJ where RO_ID = id));
+      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
       if (v2 is null)
         signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_STRSQLVAL_OF_OBJ, bad id %d', id));
       return v2;
@@ -746,9 +785,45 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any)
 
 create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
 {
-  if (193 = __tag(longobj))
-    return longobj[4];
+  if (193 <> __tag(longobj))
   return longobj;
+  if (isstring (longobj[4]))
+    return longobj[4];
+  if (length (longobj) > 5)
+    {
+      declare l, dt_twobyte, lang_twobyte int;
+      declare v, dt_s, lang_s varchar;
+      v := longobj[1];
+      dt_s := '\001\001';
+      if (257 <> longobj[0])
+        {
+          dt_twobyte := longobj[0];
+          dt_s[0] := bit_and (dt_twobyte, 255);
+          dt_s[1] := bit_and (bit_shift (dt_twobyte, -8), 255);
+        }
+      lang_s := '\001\001';
+      if (257 <> longobj[2])
+        {
+          lang_twobyte := longobj[2];
+          lang_s[0] := bit_and (lang_twobyte, 255);
+          lang_s[1] := bit_and (bit_shift (lang_twobyte, -8), 255);
+        }
+      l := 20;
+      if (length (v) > l)
+        {
+          declare v2 varchar;
+          declare id int;
+          id := DB.DBA.RDF_MAKE_RO_ID_OF_STRING (v);
+          v2 := concat (dt_s, subseq (v, 0, l), '\0ABCD', lang_s);
+          v2 [l+3] := bit_and (id, 255);
+          v2 [l+4] := bit_and (bit_shift (id, -8), 255);
+          v2 [l+5] := bit_and (bit_shift (id, -16), 255);
+          v2 [l+6] := bit_and (bit_shift (id, -24), 255);
+          return v2;
+        }
+      return concat (dt_s, v, '\0', lang_s);
+    }
+  return DB.DBA.RDF_OBJ_OF_SQLVAL (longobj[2]);
 }
 ;
 
@@ -768,7 +843,7 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any
     {
       declare v2 varchar;
       declare id int;
-      id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v);
+      id := DB.DBA.RDF_FIND_RO_ID_OF_STRING (v);
       if (id is null)
         return null;
       v2 := concat ('\001\001', subseq (v, 0, l), '\0ABCD\001\001');
@@ -803,19 +878,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
     {
       declare v2 varchar;
       declare id int;
-      set isolation='commited';
-      id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v);
-      if (id is null)
-        {
-          set isolation='serializable';
-          id := coalesce ((select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v));
-          if (id is null)
-            {
-              id := sequence_next ('RDF_RO_ID');
-              insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL) values (id, v);
-	      commit work;
-	    }
-        }
+      id := DB.DBA.RDF_MAKE_RO_ID_OF_STRING (v);
       v2 := concat ('\001\001', subseq (v, 0, l), '\0ABCD\001\001');
       v2 [l+3] := bit_and (id, 255);
       v2 [l+4] := bit_and (bit_shift (id, -8), 255);
@@ -864,19 +927,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
     {
       declare v2 varchar;
       declare id int;
-      set isolation='commited';
-      id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v);
-      if (id is null)
-        {
-          set isolation='serializable';
-          id := coalesce ((select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v));
-          if (id is null)
-            {
-              id := sequence_next ('RDF_RO_ID');
-              insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL) values (id, v);
-	      commit work;
-	    }
-        }
+      id := DB.DBA.RDF_MAKE_RO_ID_OF_STRING (v);
       v2 := concat (dt_s, subseq (v, 0, l), '\0ABCD', lang_s);
       v2 [l+3] := bit_and (id, 255);
       v2 [l+4] := bit_and (bit_shift (id, -8), 255);
@@ -936,7 +987,17 @@ create function DB.DBA.RDF_SQLVAL_OF_LONG (in longobj any) returns any
         }
     }
   if (193 = __tag (longobj))
+    {
+      declare v2 varchar;
+      if (isstring (longobj[1]))
     return longobj[1];
+      if (length (longobj) > 5)
+        return call (longobj[5] || '_SQLVAL_OF_LONG')(longobj);
+      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = longobj[3]);
+      if (v2 is null)
+        signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_SQLVAL_OF_LONG, bad id %d', longobj[3]));
+      return v2;
+    }
   return longobj;
 }
 ;
@@ -954,12 +1015,7 @@ create function DB.DBA.RDF_BOOL_OF_LONG (in longobj any) returns any
       return 0;
     }
   if (193 <> __tag (longobj))
-    {
-      longobj := longobj[1];
-      if (longobj is null)
-        return null;
       return neq (longobj, 0.0);
-    }
   declare dtqname any;
   if (257 = longobj[0])
     goto type_ok;
@@ -1024,7 +1080,15 @@ create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any)
   declare t, l, len integer;
   if (193 = __tag (longobj))
     {
+      declare v2 varchar;
+      if (isstring (longobj[1]))
       return longobj[1];
+      if (length (longobj) > 5)
+        return call (longobj[5] || '_STRSQLVAL_OF_LONG')(longobj);
+      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = longobj[3]);
+      if (v2 is null)
+        signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_STRSQLVAL_OF_LONG, bad id %d', longobj[3]));
+      return v2;
     }
   if (isiri_id (longobj))
     {
@@ -1064,9 +1128,9 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v any) returns any
     {
       declare v2 varchar;
       declare id int;
-      id := (select RO_ID from DB.DBA.RDF_OBJ where RO_VAL = v);
+      id := DB.DBA.RDF_FIND_RO_ID_OF_STRING (v);
       if (id is null)
-        return null;
+        return vector (257, v, 257, null, null);
       v2 := concat ('\001\001', subseq (v, 0, l), '\0ABCD\001\001');
       v2 [l+3] := bit_and (id, 255);
       v2 [l+4] := bit_and (bit_shift (id, -8), 255);
@@ -1482,6 +1546,8 @@ create function DB.DBA.RDF_EXP_XSLT_ADD_QUAD_L (
       p := DB.DBA.RDF_MAKE_IID_OF_QNAME (p);
   else
     p := iri_id_from_num (p);
+  if (v is null)
+    v := '';
   if (v_lang <> '')
     insert replacing DB.DBA.RDF_QUAD (G,S,P,O)
       values (iri_id_from_num(g), s, p, DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (v, null, v_lang));
@@ -1542,6 +1608,8 @@ create function DB.DBA.RDF_EXP_XSLT_ADD_QUAD_L_TYPED (
       dt := iri_id_from_num (dt);
       dtqname := DB.DBA.RDF_QNAME_OF_IID (dt);
     }
+  if (v is null)
+    v := '';
   if ('http://www.w3.org/2001/XMLSchema#boolean' = dtqname)
     {
       v := cast (v as varchar);
@@ -1660,6 +1728,8 @@ create function DB.DBA.RDF_EXP_XSLT_DICT_PUT_QUAD_L (
       p := DB.DBA.RDF_MAKE_IID_OF_QNAME (p);
   else
     p := iri_id_from_num (p);
+  if (v is null)
+    v := '';
   if (v_lang <> '')
     dict_put (connection_get ('DB.DBA.RDF_EXP_RDFXML2DICT'), vector (s, p, DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (v, null, v_lang)), 0);
   else
@@ -1713,6 +1783,8 @@ create function DB.DBA.RDF_EXP_XSLT_DICT_PUT_QUAD_L_TYPED (
       dt := iri_id_from_num (dt);
       dtqname := DB.DBA.RDF_QNAME_OF_IID (dt);
     }
+  if (v is null)
+    v := '';
   if ('http://www.w3.org/2001/XMLSchema#boolean' = dtqname)
     {
       v := cast (v as varchar);
@@ -1799,7 +1871,9 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
       else
         {
           res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = subj));
-          http ('<', ses); http (res, ses); http ('> ', ses);
+          http ('<', ses);
+          http_escape (res, 12, ses, 1, 1);
+	  http ('> ', ses);
         }
       if (not isiri_id (pred))
         {
@@ -1812,7 +1886,9 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
       else
         {
           res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = pred));
-          http ('<', ses); http (res, ses); http ('> ', ses);
+          http ('<', ses);
+          http_escape (res, 12, ses, 1, 1);
+          http ('> ', ses);
         }
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_TTL(): object is NULL');
@@ -1823,17 +1899,21 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
           else
             {
               res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = obj), sprintf ('_:bad_iid_%d', iri_id_num (obj)));
-              http ('<', ses); http (res, ses); http ('> ', ses);
+              http ('<', ses);
+              http_escape (res, 12, ses, 1, 1);
+	      http ('> ', ses);
             }
         }
       else if (193 = __tag (obj))
         {
           http ('"', ses);
-          http (replace (replace (obj[1], '\\', '\\\\'), '"', '\\"'), ses); -- " -- <== this double quote is to recover synt hightlight
+          http_escape (obj[1], 11, ses, 1, 1);
           if (257 <> obj[0])
             {
               res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = obj[0]));
-              http ('"^^<', ses); http (res, ses); http ('> ', ses);
+              http ('"^^<', ses);
+              http_escape (res, 12, ses, 1, 1);
+	      http ('> ', ses);
             }
           else if (257 <> obj[2])
             {
@@ -1846,16 +1926,16 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
       else if (182 = __tag (obj))
         {
           http ('"', ses);
-          http (replace (obj, '"', '\\"'), ses);
+          http (http_escape_to_string (11, 1, 1, obj), ses);
           http ('" ', ses);
         }
       else
         {
           http ('"', ses);
-          http (replace (DB.DBA.RDF_STRSQLVAL_OF_LONG (obj), '"', '\\"'), ses);
+          http_escape (DB.DBA.RDF_STRSQLVAL_OF_LONG (obj), 11, ses, 1, 1);
           http ('"^^<', ses);
-          http (cast (DB.DBA.RDF_DATATYPE_OF_TAG (__tag (obj)) as varchar), ses); http ('> ', ses);
-
+          http_escape (cast (DB.DBA.RDF_DATATYPE_OF_TAG (__tag (obj)) as varchar), 12, ses, 1, 1);
+          http ('> ', ses);
         }      
       http ('.\n', ses);
     }
@@ -2603,10 +2683,10 @@ create function DB.DBA.RDF_OBJ_CMP (in obj1 any, in obj2 any) returns integer
             }
           if (id1 = id2)
             return 0;
-          full1 := coalesce ((select RO_VAL from DB.DBA.RDF_OBJ where RO_ID = id1));
+          full1 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id1);
           if (full1 is null)
             signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_OBJ_CMP, bad id %d', id1));
-          full2 := coalesce ((select RO_VAL from DB.DBA.RDF_OBJ where RO_ID = id2));
+          full2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id2);
           if (full2 is null)
             signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_OBJ_CMP, bad id %d', id2));
           if (full1 <> full2)
