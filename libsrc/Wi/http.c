@@ -2760,7 +2760,7 @@ end_hack_block:
       ((is_dsl = !strcmp (ws->ws_p_path[1], "services.xml")) ||
        (is_wdsl = !strcmp (ws->ws_p_path[1], "services.wsdl")) ||
        (is_vsmx = !strcmp (ws->ws_p_path[1], "services.vsmx")))) ||
-      (BOX_ELEMENTS (ws->ws_p_path) == 3 &&
+      (BOX_ELEMENTS (ws->ws_p_path) > 2 &&
        !strcmp (ws->ws_p_path[0], "SOAP") &&
        (is_http_binding = !strcmp (ws->ws_p_path[1], "Http")))
       ))
@@ -4232,12 +4232,23 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 {
   query_instance_t * qi = (query_instance_t *) qst;
   caddr_t new_path = bif_string_arg (qst, args, 0, "http_internal_redirect");
+  caddr_t new_phy_path = NULL;
 
   if(NULL==qi->qi_client->cli_http_ses)
     sqlr_new_error ("42000", "HT067",
 	"http_internal_redirect() function allowed only inside HTTP request");
   dk_free_tree (qi->qi_client->cli_ws->ws_path_string);
   qi->qi_client->cli_ws->ws_path_string = box_copy (new_path);
+
+  if (BOX_ELEMENTS (args) > 1)
+    new_phy_path = bif_string_or_null_arg (qst, args, 1, "http_internal_redirect");
+
+  if (new_phy_path != NULL)
+    {
+      dk_free_tree (qi->qi_client->cli_ws->ws_p_path_string);
+      qi->qi_client->cli_ws->ws_p_path_string = box_copy (new_phy_path);
+    }
+  
   return (caddr_t) NULL;
 }
 
@@ -7059,7 +7070,7 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
 }
 
 static caddr_t
-ws_get_http_map (ws_connection_t * ws, int dir, caddr_t lpath)
+ws_get_http_map (ws_connection_t * ws, int dir, caddr_t lpath, int set_map)
 {
   caddr_t ppath = NULL, host_hf = NULL, host = NULL;
   char listen_host [128];
@@ -7067,7 +7078,8 @@ ws_get_http_map (ws_connection_t * ws, int dir, caddr_t lpath)
   char nif[100] = {0}; /* network interface address */
   int s;
   socklen_t len = sizeof (sa);
-  ws_http_map_t * map = NULL;
+  ws_http_map_t * pmap = NULL;
+  ws_http_map_t ** map = set_map ? &(ws->ws_map) : &pmap;
 
   if (!ws)
     return NULL;
@@ -7084,21 +7096,21 @@ ws_get_http_map (ws_connection_t * ws, int dir, caddr_t lpath)
   host = http_host_normalize (host_hf, 0);
 
   if (0 != nif[0])
-    ppath = get_http_map (&map, lpath, dir, host, nif); /* trying vhost & ip */
-  if (NULL == map)
+    ppath = get_http_map (map, lpath, dir, host, nif); /* trying vhost & ip */
+  if (NULL == *map)
     {
       dk_free_box (ppath); ppath = NULL;
-      ppath = get_http_map (&map, lpath, dir, host, listen_host); /* try virtual host */
+      ppath = get_http_map (map, lpath, dir, host, listen_host); /* try virtual host */
     }
-  if (listen_host[0] == ':' && NULL == map)
+  if (listen_host[0] == ':' && NULL == *map)
     {
       dk_free_box (ppath); ppath = NULL;
-      ppath = get_http_map (&map, lpath, dir, "*all*", listen_host);
+      ppath = get_http_map (map, lpath, dir, "*all*", listen_host);
     }
-  else if (listen_host[0] != ':' && NULL == map) /* try the default directory for listen NIF */
+  else if (listen_host[0] != ':' && NULL == *map) /* try the default directory for listen NIF */
     {
       dk_free_box (ppath); ppath = NULL;
-      ppath = get_http_map (&map, lpath, dir, listen_host, listen_host);
+      ppath = get_http_map (map, lpath, dir, listen_host, listen_host);
     }
   dk_free_box (host);
   dk_free_box (host_hf);
@@ -7115,9 +7127,12 @@ bif_http_physical_path_resolve (caddr_t *qst, caddr_t * err_ret, state_slot_t **
   if (qi->qi_client->cli_ws)
     {
       caddr_t ppath;
+      int set_map = 0;
       if (lpath && box_length(lpath) > 1 && '/' == lpath [box_length(lpath) - 2])
 	is_dir = 1;
-      ppath = ws_get_http_map (qi->qi_client->cli_ws, is_dir ? 1 : 0, lpath);
+      if (BOX_ELEMENTS (args) > 1)
+	set_map = bif_long_arg (qst, args, 1, "http_physical_path_resolve");
+      ppath = ws_get_http_map (qi->qi_client->cli_ws, is_dir ? 1 : 0, lpath, set_map);
       return ppath;
     }
   else

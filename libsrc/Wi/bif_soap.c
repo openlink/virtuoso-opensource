@@ -10927,8 +10927,8 @@ end:
 caddr_t
 ws_soap_http (ws_connection_t * ws)
 {
-  caddr_t *path = ws->ws_path, *params = ws->ws_params;
-  char *szMethod = BOX_ELEMENTS (path) == 3 ? path[2] : NULL;
+  caddr_t *path = ws->ws_p_path, *params = ws->ws_params;
+  char *szMethod = BOX_ELEMENTS (path) > 2 ? path[2] : NULL;
   char szFullProcName[2048], *usr_qual, mime_type[1024];
   const char *usr_own;
   client_connection_t * cli = ws->ws_cli;
