@@ -477,6 +477,12 @@ err_exit:
 }
 ;
 
+
+--!AFTER
+WS.WS.URIQA_VHOST_RESET()
+;
+
+
 -- This is called internally via WS..DEFAULT, to check ACL on proxy service
 create procedure
 HTTP_PROXY_ACCESS (in dst varchar)
