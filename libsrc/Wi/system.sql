@@ -4593,7 +4593,7 @@ create procedure FTI_MAKE_SEARCH_STRING_INNER (in exp varchar, inout words any)
        }
    }
 
- vt := vt_batch ();
+ vt := vt_batch (100, 'x-any', 'UTF-8');
  vt_batch_feed (vt, exp, 0, 0);
 
  war := vt_batch_strings_array (vt);
