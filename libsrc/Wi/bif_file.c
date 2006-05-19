@@ -2382,6 +2382,64 @@ bif_md5 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 }
 
+#define MOD_ADLER 65521
+#define ADLER_MAX_BLOCK_LEN 5550
+#define MOD_ADLER_WRAP(x) x = (x & 0xffff) | ((x >> 16) * (65536 - MOD_ADLER))
+static caddr_t
+bif_adler32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  unsigned char *data = (unsigned char *) bif_string_arg (qst, args, 0, "adler32");
+  size_t len = box_length (data) - 1;
+  unsigned lo = 1, hi = 0;
+  while (len)
+   {
+      size_t block_len = ((len > ADLER_MAX_BLOCK_LEN) ? ADLER_MAX_BLOCK_LEN : len);
+      len -= block_len;
+      while (block_len--)
+        {
+          lo += (data++)[0];
+          hi += lo;
+        }
+      MOD_ADLER_WRAP(lo);
+      MOD_ADLER_WRAP(hi);
+    }
+  MOD_ADLER_WRAP(hi); /* hi grows obviously faster than lo so it needs one more wrap */
+  if (lo >= MOD_ADLER)
+    lo -= MOD_ADLER;
+  if (hi >= MOD_ADLER)
+    hi -= MOD_ADLER;
+  return box_num ((hi << 16) | lo);
+}
+
+static caddr_t
+bif_tridgell32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  unsigned char *data = (unsigned char *) bif_string_arg (qst, args, 0, "tridgell32");
+  long make_varchar = (unsigned char *) bif_string_arg (qst, args, 0, "tridgell32");
+  size_t len = box_length (data) - 1;
+  unsigned lo = 0, hi = 0, res;
+  unsigned char *tail = data + len - 1;
+  for (tail = data + len - 1; tail >= data; tail--)
+   {
+     lo += tail[0];
+     hi += lo;
+   }
+  res = (hi << 16) | lo;
+  if (make_varchar)
+    {
+      unsigned char *buf = (unsigned char *)dk_alloc_box (7, DV_STRING);
+      buf[6] = '\0';
+      buf[5] = 64 + (res & 0x3F);
+      buf[4] = 64 + ((res >> 2) & 0x3F);
+      buf[3] = 64 + ((res >> 8) & 0x3F);
+      buf[2] = 64 + ((res >> 14) & 0x3F);
+      buf[1] = 64 + ((res >> 20) & 0x3F);
+      buf[0] = 64 + ((res >> 26) & 0x3F);
+      return buf;
+    }
+  return box_num (res);
+}
+
 int32 do_os_calls = 0;
 #ifdef WIN32
 char *command_cmd = NULL;
@@ -5267,6 +5325,8 @@ bif_file_init (void)
   bif_define_typed ("cfg_item_name", bif_cfg_item_name, &bt_varchar);
   bif_define_typed ("cfg_item_value", bif_cfg_item_value, &bt_varchar);
   bif_define ("cfg_write", bif_cfg_write);
+  bif_define_typed ("adler32", bif_adler32, &bt_integer);
+  bif_define ("tridgell32", bif_tridgell32);
   bif_define_typed ("md5", bif_md5, &bt_varchar);
   bif_define_typed ("md5_init", bif_md5_init, &bt_varchar);
   bif_define_typed ("md5_update", bif_md5_update, &bt_varchar);
