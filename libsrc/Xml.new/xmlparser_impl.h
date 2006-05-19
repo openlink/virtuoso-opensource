@@ -429,10 +429,7 @@ Returns 1 if really added or a duplicate detected, 0 if there's a conflict betwe
 extern int xml_ns_2dict_add (xml_ns_2dict_t *xn2, nsdecl_t *ns);
 /*! Adds all namespace declaration from \src into \c dest.
 Returns 1 if all declarations from \c src are really added or detected as duplicates,
-0 if there's at least one conflict between prefixes or URIs.
-Default namespace decl is silently and fully ignored if found in \c src.
-Default namespace decl is not ignored if resides in \c dest and can result in a conflict.
- */
+0 if there's at least one conflict between prefixes or URIs */
 extern int xml_ns_2dict_extend (xml_ns_2dict_t *dest, xml_ns_2dict_t *src);
 
 /*! Adds a message of \c errlevel importance into log of \c parser.

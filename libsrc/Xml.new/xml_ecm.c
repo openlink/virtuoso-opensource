@@ -44,7 +44,7 @@ unsigned char ecm_utf8props[0x100] = {
   'L','L','L','L','L','L','L','L','L','L','L',' ',' ',' ',' ','L',
 /* `   a   b   c   d   e   f   g   h   i   j   k   l   m   n   o  */
   ' ','L','L','L','L','L','L','L','L','L','L','L','L','L','L','L',
-/* p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~   ¦  */
+/* p   q   r   s   t   u   v   w   x   y   z   {   |   }  '~' '¦'  */
   'L','L','L','L','L','L','L','L','L','L','L',' ',' ',' ',' ',' ',
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
   'L','L','L','L','L','L','L','L','L','L','L','L','L','L','L','L',
