@@ -77,7 +77,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
 	  if (DVC_GREATER == res || DVC_MATCH == res)
 	    {
 	      /* we know that it is asc order and max of page > value sought.  The result is valid without a full lookup */
-	      res = itc_search (itc, buf_ret);
+	      res = itc_next (itc, buf_ret);
 	      (*n_hits)++; /* hit for purposes of locality whether data found or not */
 	      return res;
 	    }
@@ -86,7 +86,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
 	}
       else 
 	{
-	  res = itc_search (itc, buf_ret);
+	  res = itc_next (itc, buf_ret);
 	  if (DVC_MATCH == res)
 	    {
 	      (*n_hits)++;
@@ -100,7 +100,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
   if (itc == (it_cursor_t *) pl)
     itc_unregister (itc, INSIDE_MAP);
   *buf_ret = itc_reset (itc);
-  res = itc_search (itc, buf_ret);
+  res = itc_next (itc, buf_ret);
   return res;
 }
 
@@ -126,7 +126,7 @@ itc_il_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, caddr_t * qst,
   else 
     {
       *buf_ret = itc_reset (itc);
-      res = itc_search (itc, buf_ret);
+      res = itc_next (itc, buf_ret);
       if (itc->itc_page == QST_PLONG (qst, il->il_last_dp))
 	QST_PLONG (qst, il->il_n_hits)++;
       else 
