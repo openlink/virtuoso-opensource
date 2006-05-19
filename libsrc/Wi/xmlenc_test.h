@@ -26,7 +26,7 @@
 
 void breakpoint(void);
 void trset_start (caddr_t * qst);
-void trset_printf (char *str, ...);
+void trset_printf (const char *str, ...);
 void trset_end ();
 
 #define rep_printf	trset_printf
