@@ -1,0 +1,59 @@
+JSO_STRUCT_BEGIN qm_format virtrdf QuadMapFormat	--!< Description of single field where RDF data may come from.
+JSO_SCALAR qmfShortTmpl STRING REQUIRED			--!< 'short' value template, can be NULL
+JSO_SCALAR qmfLongTmpl STRING REQUIRED			--!< 'long' value template, can be NULL
+JSO_SCALAR qmfSqlvalTmpl STRING REQUIRED		--!< 'sqlval' value template, can be NULL
+JSO_SCALAR qmfBoolTmpl STRING REQUIRED			--!< Boolean value template, can be NULL
+-- Templates of booleans that tell whether the short is of some sort:
+JSO_SCALAR qmfIsrefOfShortTmpl STRING REQUIRED		--!< ... whether the short is ref
+JSO_SCALAR qmfIsuriOfShortTmpl STRING REQUIRED		--!< ... whether the short is uri
+JSO_SCALAR qmfIsblankOfShortTmpl STRING REQUIRED	--!< ... whether the short is blank node ref
+JSO_SCALAR qmfIslitOfShortTmpl STRING REQUIRED		--!< ... whether the short is literal
+-- Templates that convert short value into other types (can be applied to both field and not field expression)
+JSO_SCALAR qmfLongOfShortTmpl STRING REQUIRED		--!< ... long from short
+JSO_SCALAR qmfSqlvalOfShortTmpl STRING REQUIRED		--!< ... SQL value from short
+JSO_SCALAR qmfDatatypeOfShortTmpl STRING REQUIRED	--!< ... datatype IRI STRING from short
+JSO_SCALAR qmfLanguageOfShortTmpl STRING REQUIRED	--!< ... language ID STRING from short
+JSO_SCALAR qmfBoolOfShortTmpl STRING REQUIRED		--!< ... boolean value from short
+JSO_SCALAR qmfUriOfShortTmpl STRING REQUIRED		--!< ... URI STRING from short
+JSO_SCALAR qmfStrsqlvalOfShortTmpl STRING REQUIRED	--!< ... SQL representation of the STRING value of short
+-- Templates of expressions that make short values from other representations
+JSO_SCALAR qmfShortOfTypedsqlvalTmpl STRING REQUIRED	--!< ... makes short by SQL value with specified type and/or language
+JSO_SCALAR qmfShortOfSqlvalTmpl STRING REQUIRED		--!< ... makes short by sqlvalue with no language and a datatype specified by SQL type
+JSO_SCALAR qmfShortOfLongTmpl STRING REQUIRED		--!< ... makes short by long
+JSO_SCALAR qmfShortOf_uriTmpl STRING REQUIRED		--!< ... makes short by uri
+-- Misc
+JSO_SCALAR qmfCmpFuncName STRING REQUIRED		--!< Name of comparison function that acts like strcmp but args are of this type
+JSO_SCALAR qmfTypeminTmpl STRING REQUIRED		--!< Template of expn that returns the smallest value of the type of value of arg
+JSO_SCALAR qmfTypemaxTmpl STRING REQUIRED		--!< Template of expn that returns the biggest possible value of the type of value of arg
+-- Metadata about values that can be stored in this field
+JSO_SCALAR qmfOkForAnySqlvalue BOOLEAN REQUIRED		--!< Nonzero if the field format can store any possible SQL value (even if the field itself can not)
+JSO_SCALAR qmfRestrictions BITMASK OPTIONAL		--!< Natural restrictions on values stored at the field
+JSO_SCALAR qmfDatatype STRING OPTIONAL			--!< Datatype of stored values, if fixed
+JSO_SCALAR qmfLanguage STRING OPTIONAL			--!< Language, if fixed
+JSO_SCALAR qmfFixedValue ANY OPTIONAL			--!< Value of stored values, if fixed
+JSO_SCALAR qmfUriIdOffset INTEGER OPTIONAL		--!< The value that should be added to locally stored ref id in order to get portable ref id
+JSO_STRUCT_END
+
+JSO_STRUCT_BEGIN qm_column virtrdf QuadMapColumn	--!< Description of single source RDBMS column.
+JSO_SCALAR qmvcColumnName STRING REQUIRED
+JSO_SCALAR qmvcColumnFromIRI STRING OPTIONAL
+JSO_STRUCT_END
+
+JSO_STRUCT_BEGIN qm_value virtrdf QuadMapValue		--!< Description of one of four column patterns of a mapping pattern.
+JSO_SCALAR qmvTableName STRING REQUIRED
+JSO_SCALAR qmvColumns ANY REQUIRED
+JSO_SCALAR qmvFormat ANY REQUIRED
+JSO_SCALAR qmvIRIContains STRING OPTIONAL
+JSO_SCALAR qmvColumnsToIRI STRING OPTIONAL
+JSO_STRUCT_END
+
+JSO_STRUCT_BEGIN quad_map virtrdf QuadMap		--!< Description of single mapping pattern.
+JSO_SCALAR qmGraph STRING OPTIONAL
+JSO_SCALAR qmSubject STRING OPTIONAL
+JSO_SCALAR qmPredicate STRING OPTIONAL
+JSO_SCALAR qmObject ANY OPTIONAL
+JSO_SCALAR qmGraphMap ANY OPTIONAL
+JSO_SCALAR qmSubjectMap ANY OPTIONAL
+JSO_SCALAR qmPredicateMap ANY OPTIONAL
+JSO_SCALAR qmObjectMap ANY OPTIONAL
+JSO_STRUCT_END
