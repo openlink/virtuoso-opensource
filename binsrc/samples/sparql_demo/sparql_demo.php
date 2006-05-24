@@ -64,7 +64,7 @@ input{ font-size:11px; }
     if(isset($_POST['user']) && $_POST['user']<>"")
       $_user=$_POST['user'];
     else
-      $_user="dba";
+      $_user="RQ";
 
     if(isset($_POST['pass']) && $_POST['pass']<>"")
       $_pass=$_POST['pass'];
@@ -120,7 +120,7 @@ input{ font-size:11px; }
      $query=$_POST['q'];
     print "Results:\n";
     print "<p>Connecting... ";
-    $handle=odbc_connect ($dsn, $_user, $_pass);
+    $handle=odbc_connect ($_dsn, $_user, $_pass);
 
     if(!$handle)
     {
