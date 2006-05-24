@@ -129,6 +129,7 @@ extern char *c_ssl_server_cert;
 extern char *c_ssl_server_key;
 extern long ssl_server_verify;
 extern long ssl_server_verify_depth;
+extern int spotlight_integration;
 extern char *ssl_server_verify_file;
 #endif
 #ifdef BIF_XML
@@ -287,6 +288,7 @@ char *c_dav_root = 0;
 long c_vsp_in_dav_enabled = 0;
 long c_http_proxy_enabled = 0;
 long c_gzip_enabled = 0;
+long c_spotlight_integration = 0;
 long c_http_ses_size = 0;
 char *c_default_mail_server = 0;
 char *c_init_trace = 0;
@@ -765,6 +767,11 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "PLDebug", &c_pl_debug_all) == -1)
     c_pl_debug_all = 0;
+
+  if (cfg_getlong (pconfig, section, "MacSpotlight", &long_helper) == -1)
+    c_spotlight_integration = 0;
+  else
+    c_spotlight_integration = (long) long_helper;
 
   if (cfg_getstring (pconfig, section, "TestCoverage", &c_pl_debug_cov_file) == -1)
     c_pl_debug_cov_file = NULL;
@@ -1462,6 +1469,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   vsp_in_dav_enabled = c_vsp_in_dav_enabled;
   http_proxy_enabled = c_http_proxy_enabled;
   enable_gzip = c_gzip_enabled;
+  spotlight_integration = c_spotlight_integration;
   http_ses_size = c_http_ses_size;
   default_mail_server = c_default_mail_server;
   init_trace = c_init_trace;
