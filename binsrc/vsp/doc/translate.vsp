@@ -1,0 +1,14 @@
+<?vsp
+declare refer, lang, hl, uri varchar;
+refer := vsp_ua_match_hdr(lines, '%[Rr]eferer: %');
+lang := get_keyword('langpair', params, '');
+hl := get_keyword('hl', params, '');
+
+uri := 'http://translate.google.com/translate?u=' || refer || 
+  '&langpair=' || lang || '&hl=' || hl || '&ie=UTF-8&ie=UTF-8&oe=UTF-8&prev=%2Flanguage_tools';
+
+http_request_status ('HTTP/1.1 302 Found');
+http_header ('Location: ' || uri || '\r\n');
+
+?>
+

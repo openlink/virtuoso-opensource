@@ -1,4 +1,4 @@
-@import "html/doc.css";
+@import "doc.css";
 
 @media screen, print {
 
@@ -21,16 +21,71 @@ input, form {
   padding-right: 0.5em;
   font-size: 90%;
   }
+table {
+  border-collapse: collapse;
+  }
+.cp {
+  border: 1px solid silver;
+  color: red;
+  background: inherit;
+}
+#poweredby {
+  margin-left: 240px;
+}
+#searchbox {
+	width: 180px;
+	float: left;
+	padding: 10px;
+}
+.formdata td {
+  padding-bottom: 10px;
+}
+.results td {
+  padding-bottom: 5px;
+}
+.results td.text {
+  width: 550px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid silver;
+}
+.results td.score {
+  width: 100px;
+}
+td.controls {
+  padding: 15px;
+  padding-bottom: 30px;
+  border-top: 1px solid white;
+}
+.search_button {
+  border: 1px solid #666;
+  font-family: Tahoma, sans-serif;
+  font-size: 8pt;
+  padding: 0px;
+  width: 100px;
+  vertical-align: top;
+  background: silver;
+  color: #333;
+  margin: 0px;
+  margin-right: 20px;
+}
 #searchresults {
   text-align: center;
-  margin-left: 200px;
+  background: white;
+  color: black;
+  margin-left: 50px;
   margin-right: 5%;
   padding: 2em;
-  border-bottom: 1px silver solid;
+  border: 1px silver solid;
   }
-#searchresults td {
+#searchresults td, #searchresults th {
   font-size: 80%;
   padding-right: 1em;
+  }
+#searchresults th {
+  background: #eeeeee;
+  color: black;
+  border-bottom: 1px solid silver;
+  text-align: left;
   }
 #footer {
   margin-top: 10px;

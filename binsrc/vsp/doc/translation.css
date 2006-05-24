@@ -1,0 +1,49 @@
+div#machinetranslation {
+  float: right;
+  position: absolute;
+  top: 64px;
+  right: 280px;
+  left: auto;
+  width: 250px;
+  white-space: nowrap;
+  height: 18px;
+}
+
+div#machinetranslation h3 {
+  display: none;
+}
+
+div#machinetranslation ul, div#machinetranslation ul li {
+  xfloat: left;
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+  display: inline;
+}
+
+div#machinetranslation ul li {
+  margin-left: 0.3em;
+}
+div#machinetranslation a span {
+  display: none;
+}
+
+div#machinetranslation a {
+  text-decoration: none;  
+  color: white;
+  background: transparent;
+  font-family: Tahoma, Verdana, Arial, Sans-Serif; 
+  font-size: 0.85em;
+}
+
+div#machinetranslation a img {
+  position: relative;
+  top: 5px;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  border: 0px;
+  border-right: 1px solid #444;
+  border-bottom: 1px solid #444;
+}
+
