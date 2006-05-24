@@ -84,7 +84,7 @@ function mmLoadMenus() {
    mm_menu_0428193705_0.menuBorderBgColor='#99B3C5';
   window.mm_menu_0428193809_0 = new Menu("root",252,23,"Verdana, Arial, Helvetica, sans-serif",11,"#000000","#000000","#FFFFFF","#A4BFD5","center","middle",6,0,1000,-5,7,true,true,true,0,true,true);
   if (have_wa)
-    mm_menu_0428193809_0.addMenuItem("Virtuoso&nbsp;Based&nbsp;Applications","window.open('/wa/', '_self');");
+    mm_menu_0428193809_0.addMenuItem("Virtuoso&nbsp;Based&nbsp;Applications","window.open(wa_link, '_self');");
   mm_menu_0428193809_0.addMenuItem("Discussion,&nbsp;Mail,&nbsp;&&nbsp;Proxy&nbsp;Services","window.open('msg_news_conf.vspx?sid='+vsid+'&realm='+vrealm, '_self');");
    mm_menu_0428193809_0.hideOnMouseOut=true;
    mm_menu_0428193809_0.bgColor='#999999';

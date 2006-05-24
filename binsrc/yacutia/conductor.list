@@ -209,6 +209,8 @@ conductor/logging_page.vspx
 conductor/logging_prof.vspx
 conductor/logging_space.vspx
 conductor/logging_view.vspx
+conductor/logging_tab.vspx
+conductor/logging_tab.xsl
 conductor/main_tabs.vspx
 conductor/make.xsl
 conductor/mapped_schema_xml.vspx

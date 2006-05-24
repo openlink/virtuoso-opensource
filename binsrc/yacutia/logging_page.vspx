@@ -335,18 +335,19 @@
                   <table class="tab_page">
                     <tr>
                       <td>
-                	      <v:button style="image" action="simple" value="images/icons/ref_16.png" url="--'logging_page.vspx?page=' || self.page || '&autorefresh=' || self.autorefresh"
+                	      <!--<v:button style="image" action="simple" value="images/icons/ref_16.png" url="--'logging_page.vspx?page=' || self.page || '&autorefresh=' || self.autorefresh"
                                   xhtml_alt="Refresh page" xhtml_title="Refresh page"
                 			            xmlns:v="http://www.openlinksw.com/vspx/" text="&#160;Refresh"
-                			  />
-                			  <span style="font-weight: normal;">&#160;Page Refreshed</span> <?V substring (cast (now() as varchar), 1, 19) ?>
+                			  />-->
+                			  <span style="font-weight: normal;">&#160;Data Updated:</span> 
+                			  <span id="upd_time"><?V substring (cast (now() as varchar), 1, 19) ?></span>
                       </td>
                       <td align="right">
                 			  <form>
-                			  auto refresh interval:
+                			  auto update interval:
                 			  <input type="hidden" name="page" value="<?V self.page ?>"/>
                 			  <input size="2" name="autorefresh" id="autorefresh" value="<?V self.autorefresh ?>" /> sec
-                			  <input type="submit" name="set" value="set"/>
+                			  <input type="button" name="set" value="set" onclick="UpdateTab()"/>
                 			  </form>
                      </td>
                     </tr>
@@ -355,13 +356,15 @@
                         <script language="Javascript">
                           var autorefresh = document.getElementById('autorefresh');
                           var timer = null;
+                          var url = '';
                           if (autorefresh.value > 0)
                             setTimeout("UpdateTab()",autorefresh.value * 1000);
+                          var params = null;
 
                           function UpdateTab(){
-                            document.forms[document.forms.length - 1].submit();
-                          	return;
-                          	/*var cnt = document.getElementById('monitor_tab');
+                            /*document.forms[document.forms.length - 1].submit();
+                          	return;*/
+                          	var cnt = document.getElementById('monitor_tab');
                           	var xmlhttp = null;
                             try {
                               xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
@@ -375,7 +378,7 @@
                             
                             var page = '';
                             
-                            switch ('<?V get_keyword('page', control.vc_page.vc_event.ve_params) ?>') {
+                            /*switch ('<?V get_keyword('page', control.vc_page.vc_event.ve_params) ?>') {
                             case '2': page = '_db'; break;
                             case '3': page = '_disk'; document.forms[document.forms.length - 1].submit(); return; break;
                             case '4': page = '_index'; document.forms[document.forms.length - 1].submit(); return; break;
@@ -384,24 +387,34 @@
                             case '7': page = '_http'; break;
                             case '8': page = '_prof'; document.forms[document.forms.length - 1].submit(); return; break;
                             case '9': page = '_view'; document.forms[document.forms.length - 1].submit(); return; break;
-                          }
+                            }*/
                           
                             // Gecko / Mozilla / Firefox
                             if (xmlhttp == null)
                               xmlhttp = new XMLHttpRequest();
   
                             page = '_tab';
-                          	xmlhttp.open("GET", 'logging' + page + '.vspx?page=<?V get_keyword('page', control.vc_page.vc_event.ve_params) ?>&amp;sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>',false);
+                            url = 'logging' + page + '.vspx?page=<?V get_keyword('page', control.vc_page.vc_event.ve_params,'1') ?>&amp;sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>';
+                            if (params)
+                            {
+                              for(var i = 0;i &lt; params.length;i = i+2)
+                              {
+                                url += '&amp;' + params[i] + '=' + params[i + 1];
+                              }
+                            }
+                          	xmlhttp.open("GET", url,false);
                           	xmlhttp.setRequestHeader("Pragma", "no-cache");
                           	xmlhttp.send("");
                           	cnt.innerHTML = xmlhttp.responseText;
+                          	var upd_time = document.getElementById('upd_time');
+                          	var new_upd_time = document.getElementById('new_upd_time');
+                          	upd_time.innerHTML = new_upd_time.innerHTML;
                         		
                             if (autorefresh.value != '')
                         		  timer = setTimeout("UpdateTab()", autorefresh.value * 1000);
-                        		*/
+                        		
                           }
                         </script>
-                        <div id="monitor_tab">
                           <v:template name="template1" type="simple" instantiate="-- case when (get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
                             <v:include url="logging.vspx"/>
                           </v:template>
@@ -429,7 +442,6 @@
                           <v:template name="template9" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '9')">
                             <v:include url="logging_view.vspx"/>
                           </v:template>
-                        </div>
                       </td>
                     </tr>
                   </table>

@@ -179,6 +179,8 @@
         </tr>
         <tr>
           <td align="left">
+          <script language="JavaScript" src="admin_utils.js">
+          </script>
 	    <v:form name="caps_rows_form" type="simple" method="POST" action="caps_browser.vspx">
 	      <div class="listing_top_ctl_grp">
                     <v:button action="simple" name="cancel1" value="Cancel">
@@ -235,11 +237,11 @@
                     </th>
                   </tr>
                   <tr-->
-                     <th>Select</th>
-                     <th>Insert</th>
-                     <th>Update</th>
-                     <th>Delete</th>
-                     <th>Execute</th>
+                     <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_select_')"/>Select</th>
+                     <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_insert_')"/>Insert</th>
+                     <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_update_')"/>Update</th>
+                     <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_delete_')"/>Delete</th>
+                     <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_execute_')"/>Execute</th>
 		     <th>Action</th>
                   </tr>
                 </thead>

@@ -27,7 +27,8 @@
   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
   xmlns:vm="http://www.openlinksw.com/vspx/macro">
-      <table class="listing">
+    <div id="monitor_tab">
+      <table class="listing" showme="1">
         <tr class="listing_row_odd">
           <td class="listing_col_label">Connections</td>
 	  <td class="listing_col_num"><?V sys_stat('tws_connections') ?></td>
@@ -79,5 +80,6 @@
 	  <td width="50%"/>
         </tr>
       </table>
+    </div>
   <table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

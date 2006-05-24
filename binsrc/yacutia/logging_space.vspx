@@ -32,6 +32,16 @@
     <v:variable persist="0" name="browse_sch" type="varchar" default="'%'"/>
     <v:variable persist="0" name="browse_mask" type="varchar" default="'%'"/>
       <v:form name="space_filter_form" type="simple" method="POST" action="logging_page.vspx?page=6">
+      <v:on-init><![CDATA[
+        declare v_params any;
+        v_params := control.vc_page.vc_event.ve_params;
+        if (get_keyword('cat', v_params ,'') <> '')
+          self.browse_cat := get_keyword('cat', v_params ,'');
+        if (get_keyword('sch', v_params ,'') <> '')
+          self.browse_sch := get_keyword('sch', v_params ,'');
+        if (get_keyword('mask', v_params ,'') <> '')
+          self.browse_mask := get_keyword('mask', v_params ,'');
+    	]]></v:on-init>
         <v:on-post>
           <v:script>
             <![CDATA[
@@ -85,12 +95,16 @@
           <td>
             <v:button action="simple" name="apply_filter" value="Filter"/>
             <v:button action="simple" name="clear_filter" value="Clear"/>
+        	  <script language="JavaScript">
+        	    <?vsp http(sprintf('params = new Array(\'cat\',\'%U\',\'sch\',\'%U\',\'mask\',\'%U\');',self.browse_cat,self.browse_sch,self.browse_mask)); ?>
+        	  </script>
           </td>
         </tr>
       </table>
     </v:form>
     <div class="scroll_area">
-      <v:data-set name="data_set14" sql="select ISS_KEY_TABLE, ISS_KEY_NAME, ISS_NROWS, ISS_PAGES, ISS_ROW_PAGES, ISS_BLOB_PAGES, ISS_ROW_BYTES from DB.DBA.SYS_INDEX_SPACE_STATS WHERE upper(name_part(ISS_KEY_TABLE, 0)) LIKE upper(self.browse_cat) and upper(name_part(ISS_KEY_TABLE, 1)) LIKE upper(self.browse_sch) and upper(name_part(ISS_KEY_TABLE, 2)) like upper(self.browse_mask) order by ISS_PAGES desc" nrows="1000" scrollable="1" cursor-type="dynamic" edit="1">
+      <div id="monitor_tab">
+      <v:data-set name="data_set14" sql="select ISS_KEY_TABLE, ISS_KEY_NAME, ISS_NROWS, ISS_PAGES, ISS_ROW_PAGES, ISS_BLOB_PAGES, ISS_ROW_BYTES from DB.DBA.SYS_INDEX_SPACE_STATS WHERE upper(name_part(ISS_KEY_TABLE, 0)) LIKE upper(self.browse_cat) and upper(name_part(ISS_KEY_TABLE, 1)) LIKE upper(self.browse_sch) and upper(name_part(ISS_KEY_TABLE, 2)) like upper(self.browse_mask) order by ISS_PAGES desc" nrows="0" scrollable="0" cursor-type="static" edit="1">
         <input type="hidden" name="page" value="6"/>
         <v:column name="ISS_KEY_TABLE" />
         <v:column name="ISS_KEY_NAME" />
@@ -100,7 +114,7 @@
         <v:column name="ISS_BLOB_PAGES" />
         <v:column name="ISS_ROW_BYTES" />
         <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set14_header_template">
-          <table class="listing">
+          <table class="listing" showme="1">
             <tr class="listing_header_row">
               <th>Table</th>
               <th>Index name</th>
@@ -159,14 +173,15 @@
         </v:template>
         <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set14_footer_template">
           <table>
-            <tr>
+<!--            <tr>
               <td colspan="7" align="center"  class="listing_col_action">
 		<vm:ds-navigation data-set="data_set14"/>
               </td>
-            </tr>
+            </tr>-->
           </table>
         </v:template>
       </v:data-set>
+    </div>
     </div>
       <table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

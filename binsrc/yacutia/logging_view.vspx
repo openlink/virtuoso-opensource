@@ -30,20 +30,29 @@
     <v:variable persist="0" name="dday" type="varchar" default="null" />
     <v:variable persist="0" name="dmon" type="varchar" default="null" />
     <v:variable persist="0" name="dyear" type="varchar" default="null" />
-    <v:variable persist="0" name="dyears" type="any" default="null" />
+    <v:variable persist="1" name="dyears" type="any" default="null" />
     <v:variable persist="0" name="log_file" type="varchar" default="null" />
     <v:form type="simple" method="POST" name="lform" action="logging_page.vspx?page=9">
       <v:on-init><![CDATA[
+      declare v_params any;
+      v_params := control.vc_page.vc_event.ve_params;
 	self.log_file := cfg_item_value(virtuoso_ini_path(), 'Database', 'ErrorLogFile');
 	self.dday := sprintf ('%02d', dayofmonth (now()));
 	self.dmon := sprintf ('%03.03s', monthname (now()));
 	self.dyear := sprintf ('%04d', year (now()));
+  if (get_keyword('dday', v_params ,'') <> '')
+    self.dday := get_keyword('dday', v_params ,'');
+  if (get_keyword('dmon', v_params ,'') <> '')
+    self.dmon := get_keyword('dmon', v_params ,'');
+  if (get_keyword('dyear', v_params ,'') <> '')
+    self.dyear := get_keyword('dyear', v_params ,'');
 	]]></v:on-init>
       <v:before-data-bind><![CDATA[
 	declare ses any;
 	declare line, years, y any;
 
 	years := vector (cast (year (now()) as varchar));
+	if (self.dyears is null)
 	self.dyears := vector ();
 	if (self.log_file = 0)
 	  {
@@ -79,7 +88,7 @@
 	self.dyears := years;
 	noscan:;
 	]]></v:before-data-bind>
-      <table class="ctl_grp">
+      <table class="ctl_grp" id="control">
 	  <tr>
 	    <td colspan="2"><img src="images/icons/filter_32.png"/></td>
 	  </tr>
@@ -146,12 +155,16 @@
 	    </td>
 	    <td>
 	      <v:button name="filt" action="simple" value="Apply filter"/>
+    	  <script language="JavaScript">
+    	    <?vsp http(sprintf('var params = new Array(\'dday\',\'%U\',\'dmon\',\'%U\',\'dyear\',\'%U\');',self.dday1.ufl_value,self.dmon1.ufl_value,self.dyear1.ufl_value)); ?>
+    	  </script>
 	    </td>
 	  </tr>
       </table>
     </v:form>
     <v:template type="simple" name="rend" condition="not (self.log_file = 0)">
-      <table class="listing">
+      <div id="monitor_tab">
+      <table class="listing" showme="1">
 	<?vsp
 	declare ses, line, test any;
 	declare i, disp any;
@@ -202,6 +215,7 @@
 	endr:;
         ?>
       </table>
+      </div>
     </v:template>
   <table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

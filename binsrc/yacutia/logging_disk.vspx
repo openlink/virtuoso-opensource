@@ -31,7 +31,8 @@
     <v:variable persist="1" name="caption_str" type="varchar" default="'Disk Statistics (by Table)'"/>
     <v:variable persist="temp" name="r_count" type="integer" default="0"/>
     <div class="scroll_area">
-      <v:data-set name="data_set1" data='--disk_stat(3)' meta="--disk_stat_meta(self.sql_str)" nrows="1000" scrollable="1" cursor-type="dynamic" edit="0">
+      <div id="monitor_tab">
+      <v:data-set name="data_set1" data='--disk_stat(3)' meta="--disk_stat_meta(self.sql_str)" nrows="0" scrollable="0" cursor-type="static" edit="0">
         <input type="hidden" name="page" value="3"/>
         <v:column name="KEY_TABLE" />
         <v:column name="INDEX_NAME" />
@@ -39,7 +40,7 @@
         <v:column name="READS" />
         <v:column name="READ_PCT" />
         <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set1_header_template">
-          <table>
+          <table showme="1">
             <tr class="listing_header_row">
               <th>Table</th>
               <th>Index name</th>
@@ -90,14 +91,15 @@
         </v:template>
         <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set1_footer_template">
           <table>
-            <tr>
+<!--            <tr>
               <td colspan="5" align="center"  class="listing_col_action">
 		<vm:ds-navigation data-set="data_set1"/>
               </td>
-            </tr>
+            </tr>        -->
           </table>
         </v:template>
       </v:data-set>
+    </div>
     </div>
   <table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

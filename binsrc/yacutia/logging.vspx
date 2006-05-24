@@ -36,7 +36,8 @@
       ]]>
     </v:script>
   </v:before-data-bind>
-      <table class="page_main_listing">
+    <div id="monitor_tab">
+      <table class="page_main_listing" showme="1">
         <tr class="listing_row_odd">
           <td class="listing_col_label">Server</td>
           <td class="listing_col"><?V sys_stat('st_dbms_name') ?></td>
@@ -63,18 +64,26 @@
         </tr>
         <?vsp
           declare lown varchar;
+	  if (sys_stat('st_has_vdb') = 1)
           lown := sys_stat('st_lic_owner');
+	  else
+	    lown := null;
           if (lown = '')
           lown := 'Demo version';
+	  if (sys_stat('st_has_vdb') = 1)
+	    {
         ?>
         <tr class="listing_row_odd">
 	  <td class="listing_col_label">License owner</td>
           <td class="listing_col"><?V lown ?></td>
         </tr>
+	<?vsp } ?>
+	<?vsp if (sys_stat('st_has_vdb') = 1) { ?>
         <tr class="listing_row_even">
 	  <td class="listing_col_label">Maximum licensed client connections</td>
           <td class="listing_column"><?V sys_stat('st_lic_max_connections') ?> connections</td>
         </tr>
+	<?vsp } ?>
         <tr class="listing_row_odd">
 	  <td class="listing_col_label">Clients currently connected</td>
           <td class="listing_column"><?V sys_stat('st_cli_n_current_connections') ?></td>
@@ -96,5 +105,6 @@
           <td class="listing_column"><?V sys_stat('st_rpc_stat') ?></td>
         </tr>
       </table>
+    </div>
   <table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

@@ -29,12 +29,12 @@
   xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:vm="http://www.openlinksw.com/vspx/macro"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>Virtuoso Conductor: Web Applications Administrator Configuration</vm:pagetitle>
+  <vm:pagetitle>Virtuoso Conductor: Data Space Applications Administrator Configuration</vm:pagetitle>
   <vm:pagewrapper>
     <vm:menu>
       <vm:menuitem value="Virtuoso Application Deployment"/>
     </vm:menu>
-    <vm:header caption="Web Application (WA) Administrator Configuration"/>
+    <vm:header caption="ODS Administrator Configuration"/>
     <vm:variables>
       <v:variable name="inst" type="db.dba.web_app" default="null" persist="0" />
       <v:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
@@ -93,7 +93,7 @@
                   <v:template type="if-not-exists">
                     <tr class="listing_count">
                       <td class="listing_count" colspan="2">
-                        No Endpoints for Web Applications Administrator
+                        No Endpoints for Data Space Applications Administrator
                       </td>
                     </tr>
                   </v:template>
@@ -254,36 +254,6 @@
                 </v:template>
               </v:data-set>
             </table>
-	    <!--br/>
-	    XXX: the WA member model is per instance not a global setting
-            <v:form name="wa_form2" type="simple" method="POST" action="">
-              <table>
-                <tr>
-                  <th><label for="imodel1">Default Member model</label></th>
-                  <td>
-                    <v:data-list xhtml_id="imodel12" name="imodel12" sql="select * from WA_MEMBER_MODEL" key-column="WMM_ID" value-column="WMM_NAME" >
-                      <v:before-data-bind>
-                        declare imodel integer;
-                        imodel := (select WS_MEMBER_MODEL
-                        from WA_SETTINGS);
-                        control.ufl_value := imodel;
-                      </v:before-data-bind>
-                    </v:data-list>
-                    <v:button action="simple" name="accept1" value="Save" >
-                      <v:on-post>
-                        <![CDATA[
-                          update WA_SETTINGS
-                            set WS_MEMBER_MODEL = self.imodel12.ufl_value;
-                          commit work;
-                          http_request_status ('HTTP/1.1 302 Found');
-                          http_header (sprintf ('Location: vad_wa_config.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                </tr>
-              </table>
-            </v:form-->
       </v:template>
       <v:template name="main2" type="simple" condition="self.remove_mode = 1">
         <v:form name="event_form2" type="simple" method="POST" action="">

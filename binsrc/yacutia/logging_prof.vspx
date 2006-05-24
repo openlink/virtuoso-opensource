@@ -27,7 +27,8 @@
   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
   xmlns:vm="http://www.openlinksw.com/vspx/macro">
-      <v:form name="profiling_form" type="simple" method="POST" action="logging_page.vspx?page=8">
+    <div id="monitor_tab">
+      <v:form name="profiling_form" type="simple" method="POST" action="logging_page.vspx?page=8" xhtml_showme="1">
         <table border="0" cellspacing="0" cellpadding="5" class="ctl_ctr">
           <vm:attrs border="0" class="ctl_ctr" width="70%" cellspacing="0" cellpadding="5" align="center"/>
           <?vsp
@@ -77,7 +78,9 @@
               <tr><td colspan="2"><hr/></td></tr>
 	      <tr><th>Profiling information:</th></tr>
 
+              <tr><td colspan="2">
 	      <?vsp http(profiling_info); ?>
+              </td></tr>
               <tr><td colspan="2"><hr/></td></tr>
            <?vsp
             }
@@ -123,5 +126,6 @@
           ?>
         </table>
       </v:form>
+    </div>
   <table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

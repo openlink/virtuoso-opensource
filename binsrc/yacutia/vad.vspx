@@ -152,7 +152,7 @@
 		      >
                       <v:on-init>
                         <![CDATA[
-                          if ((control.vc_parent as vspx_row_template).te_rowset[1] <> 'wa')
+                          if ((control.vc_parent as vspx_row_template).te_rowset[1] <> 'Framework')
                             control.vc_enabled := 0;
                         ]]>
                       </v:on-init>

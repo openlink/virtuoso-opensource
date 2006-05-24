@@ -36,7 +36,8 @@
       ]]>
     </v:script>
   </v:before-data-bind>
-      <table class="main_page_area">
+    <div id="monitor_tab">
+      <table class="main_page_area" showme="1">
         <tr class="page_section_head">
           <td colspan="2">Server Status</td>
         </tr>
@@ -228,10 +229,12 @@
                 <td>Maximum concurrent clients since startup</td>
                 <td class="listing_col_num"><?V sys_stat('st_cli_max_connected') ?></td>
               </tr>
+	<?vsp if (sys_stat('st_has_vdb') = 1) { ?>
               <tr class="listing_row_even">
                 <td>Maximum licensed client connections</td>
                 <td class="listing_col_num"><?V sys_stat('st_lic_max_connections') ?></td>
               </tr>
+	<?vsp } ?>
               <!--tr class="listing_row_odd">
                 <td colspan="2">RPC statistics</td>
               </tr-->
@@ -243,5 +246,6 @@
           </td>
         </tr>
       </table>
+    </div>
   <table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>

@@ -22,12 +22,12 @@
 -->
 <?xml version="1.0" encoding="UTF-8"?>
 <v:page name="wa_site_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>Web Applications Default Site Administration</vm:pagetitle>
+  <vm:pagetitle>Data Space Applications Default Site Administration</vm:pagetitle>
   <vm:pagewrapper>
     <vm:menu>
-      <vm:menuitem name="wa" value="Web Applications Settings"/>
+      <vm:menuitem name="wa" value="Data Space Applications Settings"/>
     </vm:menu>
-    <vm:header caption="Web Applications Default Site Administration"/>
+    <vm:header caption="Data Space Applications Default Site Administration"/>
     <vm:pagebody>
       <div id="container">
         <div id="main">
@@ -38,7 +38,7 @@
               </div>
               <table>
                 <tr>
-                  <th><label for="ssetc1">Allow WA Default-Site Registrations</label></th>
+                  <th><label for="ssetc1">Allow ODS Default-Site Registrations</label></th>
                   <td>
                     <v:check-box name="ssetc1" value="1" initial-checked="--(select top 1 WS_REGISTER from WA_SETTINGS)" xhtml_id="ssetc1"/>
                   </td>
@@ -64,7 +64,7 @@
                   </td>
                 </tr>
                 <tr>
-                  <th>Available WA Site domains. Separate entries using commas(,)</th>
+                  <th>Available ODS Site domains. Separate entries using commas(,)</th>
                   <td>
                     <v:text name="t_domains" xhtml_size="40" error-glyph="*" value="--(select top 1 WS_DOMAINS from WA_SETTINGS)">
                     </v:text>
@@ -82,7 +82,7 @@
                   <td><?V coalesce(cfg_item_value(virtuoso_ini_path(), 'HTTPServer','DefaultMailServer'), 'No default server') ?></td>
                 </tr>
                 <tr>
-                  <th>SMTP Server for Web Applications</th>
+                  <th>SMTP Server for Data Space Applications</th>
                   <td>
                     <v:text name="t_smtp" xhtml_size="40" error-glyph="*" value="--(select top 1 WS_SMTP from WA_SETTINGS)">
                     </v:text>
@@ -139,7 +139,7 @@
                   </td>
                 </tr>
                 <tr><td colspan="2">
-                  <p>Emails regarding the default WA site will be sent to 
+                  <p>Emails regarding the default ODS site will be sent to
                   the Administator (DAV); you must ensure the administrators
                   email address is valid.</p></td>
                 </tr>               
@@ -183,7 +183,7 @@
                               return;
                             }
                             declare msg, aadr, smtp_server varchar;
-                            msg := 'Subject: Test message from Web Applications Default Site\r\nContent-Type: text/html\r\n';
+                            msg := 'Subject: Test message from Data Space Applications Default Site\r\nContent-Type: text/html\r\n';
                             msg := msg || '<br/>\r\nYour SMTP server ';
                             if (self.s_def.ufl_selected and cfg_item_value(virtuoso_ini_path(), 'HTTPServer','DefaultMailServer') <> 0)
                             {

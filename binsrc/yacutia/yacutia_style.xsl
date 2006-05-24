@@ -171,10 +171,10 @@
         </li>
           <?vsp
 	  }
-	  if (vad_check_version ('wa') is not null)
+	  if (vad_check_version ('Framework') is not null)
 	  {
           ?>
-	  <li><img src="images/vglobe_16.png" alt="WA" title="Web Applications" /><a href="/wa/">Web Applications</a>
+	  <li><img src="images/vglobe_16.png" alt="WA" title="Data Space Applications" /><a href="<?V wa_link () ?>">Data Space Applications</a>
 	  </li>
 	  <?vsp
 	  }
@@ -188,7 +188,8 @@
           <img src="images/icons/docs_16.png"
                alt="Documentation"
                title="Documentation" hspace="2"/>
-	    <a href="/doc/docs.vsp" target="_empty">Documentation</a></li>
+               <a href="/doc/html/" target="_empty">Documentation</a></li>
+        <!--<a href="/doc/docs.vsp" target="_empty">Documentation</a>-->
 	<li>
           <img src="images/icons/tour_16.png"
                alt="Tutorials"
@@ -926,7 +927,7 @@ http(sprintf('<xsl:for-each select="text">
 	<td><?V sys_stat ('st_build_opsys_id') ?></td>
     </tr>
   <?vsp } ?>
-  <?vsp if (isnull (self.pname) or bits[3] = ascii ('1')) { ?>
+  <?vsp if ((isnull (self.pname) or bits[3] = ascii ('1')) and sys_stat('st_has_vdb') = 1) { ?>
     <tr>
 	<?vsp
 	  if (isnull (self.pname))
@@ -946,7 +947,7 @@ http(sprintf('<xsl:for-each select="text">
 	<td><?V sys_stat ('st_build_date') ?></td>
     </tr>
   <?vsp } ?>
-  <?vsp if (isnull (self.pname) or bits[5] = ascii ('1')) { ?>
+  <?vsp if ((isnull (self.pname) or bits[5] = ascii ('1')) and sys_stat('st_has_vdb') = 1) { ?>
     <tr>
 	<?vsp
 	  if (isnull (self.pname))

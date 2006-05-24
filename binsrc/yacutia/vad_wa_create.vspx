@@ -29,12 +29,12 @@
   xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:vm="http://www.openlinksw.com/vspx/macro"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>Virtuoso Conductor: Web Applications Administrator Endpoint Configuration</vm:pagetitle>
+  <vm:pagetitle>Virtuoso Conductor: Data Space Applications Administrator Endpoint Configuration</vm:pagetitle>
   <vm:pagewrapper>
     <vm:menu>
       <vm:menuitem value="Virtuoso Application Deployment"/>
     </vm:menu>
-    <vm:header caption="New Web Application (WA) Administrator Endpoint"/>
+    <vm:header caption="New ODS Administrator Endpoint"/>
     <vm:variables>
       <v:variable name="inst" type="db.dba.web_app" default="null" persist="0" />
       <v:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
@@ -90,26 +90,6 @@
                 ?>
               </select>
 	      <v:url name="site_creatre_create_ref" format="%s" value="--'New HTTP Listener'" url="--'http_serv_mgmt.vspx'"/>
-	      <!-- currently via WA no listeneer can be created -->
-              <!--v:button action="simple" name="regbdf1" value="New Host->Listen Host Association" style="url">
-                <v:on-post>
-                  <![CDATA[
-                    declare sid varchar;
-                    sid := md5(concat(datestring(now()), http_client_ip(), http_path()));
-                    declare _expire any;
-                    _expire := coalesce((select top 1 WS_REGISTRATION_EMAIL_EXPIRY from WA_SETTINGS), 1);
-                    insert into
-                      VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
-                    values
-                      ('wa', sid, 'dav',
-                      serialize (vector ('vspx_user', 'dav')), dateadd ('hour', _expire, now()));
-                    http_rewrite();
-                    http_request_status('HTTP/1.1 302 Found');
-                    http_header(sprintf('Location: /wa/server.vspx?sid=%s&realm=wa\r\n', sid));
-                    return 0;
-                  ]]>
-                </v:on-post>
-              </v:button-->
             </td>
           </tr>
           <tr>
@@ -257,35 +237,8 @@
           ?>
           <tr>
             <td>
-                <b>There are no entries in Existing Hosted Domain list of WA Site Settings and no existing non-default HTTP listeners.</b><br/>
-		To create new domain first <!--two ways:
-                1. Add a new Host->Listen Host association to Existing Hosted Domains in WA
-              <v:button action="simple" name="regb1" value="Site Settings" style="url">
-                <v:on-post>
-                  <![CDATA[
-                    declare sid varchar;
-                    sid := md5(concat(datestring(now()), http_client_ip(), http_path()));
-                    declare _expire any;
-                    _expire := coalesce((select top 1 WS_REGISTRATION_EMAIL_EXPIRY from WA_SETTINGS), 1);
-                    insert into
-                      VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
-                    values
-                      ('wa', sid, 'dav',
-                      serialize (vector ('vspx_user', 'dav')), dateadd ('hour', _expire, now()));
-                    http_rewrite();
-                    http_request_status('HTTP/1.1 302 Found');
-                    http_header(sprintf('Location: /wa/server.vspx?sid=%s&realm=wa\r\n', sid));
-                    return 0;
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <?vsp
-                http('<br/>');
-                http('2. Create a new ');
-		?>
-	      -->
-	      <v:url name="site_creatre_create_ref" format="%s" value="--'HTTP Listener'" url="--'http_serv_mgmt.vspx'"/>
-	      must be created
+                <b>There are no entries in Existing Hosted Domain list of ODS Site Settings and no existing non-default HTTP listeners.</b><br/>
+		To create new domain first <v:url name="site_creatre_create_ref" format="%s" value="--'HTTP Listener'" url="--'http_serv_mgmt.vspx'"/> must be created
             </td>
           </tr>
           <tr>

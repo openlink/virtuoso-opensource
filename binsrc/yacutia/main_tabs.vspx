@@ -54,8 +54,16 @@
     <script language="JavaScript1.2" type="text/javascript">
       var vsid = '<?V self.sid ?>';
       var vrealm = '<?V self.realm ?>';
-      var have_wa = <?V check_package ('wa') ?>;
+      var have_wa = <?V check_package ('Framework') ?>;
       var have_bpel = <?V check_package ('bpel4ws') ?>;
+      <?vsp
+      if (check_package ('Framework'))
+        {
+      ?>
+      var wa_link = '<?V wa_link () ?>';
+      <?vsp
+	}
+      ?>
       mmLoadMenus();
     </script>
           <table width="500" border="0" align="center" cellpadding="0" cellspacing="0" id="img_group">

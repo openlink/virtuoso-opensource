@@ -63,6 +63,11 @@ TEMPFILE=/tmp/isql.$$
 LN="ln -fs"
 RM="rm -f"
 fi
+VOS=0
+if [ -f ../../autogen.sh ]
+then
+    VOS=1
+fi
 
 if [ "z$SERVER" = "z" ]  
 then
@@ -247,6 +252,16 @@ LOAD_SQL()
 
 VERSION_INIT()
 {
+  if [ $VOS -eq 1 ]
+  then
+      if [ -f vad_version ]
+      then
+	  VERSION=`cat vad_version`
+      else
+        LOG "The vad_version does not exist, please verify your checkout"	 
+	exit 1
+      fi
+  else  
   rm -f version.tmp
   for i in `find . -name 'Entries'`; do
         cat "$i" | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
@@ -255,6 +270,8 @@ VERSION_INIT()
   export LANG
   VERSION=`cat version.tmp | awk ' BEGIN { cnt=0 } { cnt = cnt + $1 } END { printf "1.0%01.04f", cnt/10000 }'`
   rm -f version.tmp
+      echo "$VERSION" > vad_version
+  fi
 }
 
 CREATE_STICKER()

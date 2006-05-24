@@ -97,7 +97,7 @@
 ?>
   <table>
   <tr>
-  <td>Welcome to OpenLink Virtuoso Conductor - the next generation system administration and configuration tool for OpenLink Virtuoso Universal Server. All system services are integrated into one comprehensive tool including Web and SOAP services management, HTTP services, XML and VDB databases, OpenLink Web Applications, as well as database and user administration.</td>
+  <td>Welcome to OpenLink Virtuoso Conductor - the next generation system administration and configuration tool for OpenLink Virtuoso Universal Server. All system services are integrated into one comprehensive tool including Web and SOAP services management, HTTP services, XML and VDB databases, OpenLink Data Space Applications, as well as database and user administration.</td>
   <td height="10" id="RB"><img src="images/conductor_lg.gif" width="300" height="300" align="left" /></td>
 </tr>
 </table>

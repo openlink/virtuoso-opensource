@@ -28,9 +28,10 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
   xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <div class="scroll_area">
+    <div id="monitor_tab">
       <!-- Temporary patch due to bug #10696, Just removed the where... We'll put it back later -->
       <!-- <v:data-set name="data_set13" sql="select KEY_TABLE, INDEX_NAME, LOCKS, WAITS, WAIT_PCT, DEADLOCKS, LOCK_ESC from DB.DBA.SYS_L_STAT where WAITS > 0 order by WAITS desc, KEY_TABLE, INDEX_NAME" nrows="1000" scrollable="1" cursor-type="dynamic" edit="0"> -->
-      <v:data-set name="data_set13" sql="select KEY_TABLE, INDEX_NAME, LOCKS, WAITS, WAIT_PCT, DEADLOCKS, LOCK_ESC from DB.DBA.SYS_L_STAT order by WAITS desc, KEY_TABLE, INDEX_NAME" nrows="1000" scrollable="1" cursor-type="dynamic" edit="0">
+      <v:data-set name="data_set13" sql="select KEY_TABLE, INDEX_NAME, LOCKS, WAITS, WAIT_PCT, DEADLOCKS, LOCK_ESC from DB.DBA.SYS_L_STAT order by WAITS desc, KEY_TABLE, INDEX_NAME" nrows="0" scrollable="0" cursor-type="static" edit="0">
         <input type="hidden" name="page" value="5"/>
         <v:column name="KEY_TABLE" />
         <v:column name="INDEX_NAME" />
@@ -40,7 +41,7 @@
         <v:column name="DEADLOCKS" />
         <v:column name="LOCK_ESC" />
         <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set13_header_template">
-          <table class="listing">
+          <table class="listing" showme="1">
             <tr class="listing_header_row">
               <th>Table</th>
               <th>Index name</th>
@@ -99,14 +100,15 @@
         </v:template>
         <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set13_footer_template">
           <table>
-            <tr class="browse_button_row">
+<!--            <tr class="browse_button_row">
 	      <td colspan="7" align="center"  class="listing_col_action">
 		<vm:ds-navigation data-set="data_set13"/>
               </td>
-            </tr>
+            </tr>-->
           </table>
         </v:template>
       </v:data-set>
+    </div>
     </div>
   <table style="display:none"><tr><td>$Id$</td></tr></table>
 </v:page>
