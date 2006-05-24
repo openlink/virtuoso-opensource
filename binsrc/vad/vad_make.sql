@@ -1727,8 +1727,10 @@ create procedure "DB"."DBA"."VAD_CLEAN_OLD_VERSIONS" (in name varchar)
     where R_TYPE = 'FOLDER' and R_KEY = '/VAD/'||name||'/' || R_SHKEY and R_SHKEY <> lval do
     {
       --dbg_printf ('removing old version %s', old_ver);
-      curdir := "VAD"."DBA"."VAD_CHDIR" (parr, tid, old_ver);
-      "VAD"."DBA"."VAD_DEL_SUBTREE" (curdir);
+      delete from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/'||name||'/'||old_ver||'/%';
+      delete from VAD.DBA.VAD_REGISTRY where R_KEY = '/VAD/'||name||'/'||old_ver;
+      --curdir := "VAD"."DBA"."VAD_CHDIR" (parr, tid, old_ver);
+      --"VAD"."DBA"."VAD_DEL_SUBTREE" (curdir);
     }
   return lval;
 }

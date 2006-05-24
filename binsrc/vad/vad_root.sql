@@ -39,6 +39,7 @@ create table  "VAD"."DBA"."VAD_REGISTRY" (
     "R_VALUE" long varchar,
     primary key ("R_ID") )
 create index VAD_REGISTRY_CHDIR on "VAD"."DBA"."VAD_REGISTRY" (R_PRNT,R_SHKEY,R_TYPE)
+create index VAD_REGISTRY_KEY on "VAD"."DBA"."VAD_REGISTRY" (R_KEY)
 ;
 
 --drop table "VAD"."DBA"."VAD_LOG";
@@ -433,6 +434,11 @@ create procedure "VAD"."DBA"."VAD_RMNODE" (in id integer) returns integer
   select "R_KEY" into skey from "VAD"."DBA"."VAD_REGISTRY" where "R_ID" = id and "R_TYPE" <> 'FOLDER';
 
   delete from "VAD"."DBA"."VAD_REGISTRY" where blob_to_string ("R_VALUE") = skey and "R_TYPE" = 'KEY';
+--  if (row_count())
+--    {
+--      dbg_obj_print ('skey=', skey, 'id=',id);
+--      dbg_obj_print ('deleted:', row_count());
+--    }
   delete from "VAD"."DBA"."VAD_REGISTRY" where "R_ID" = id;
   --insert into "VAD"."DBA"."VAD_LOG" ("L_KEY", "L_TM", "L_ACT") values (skey, now(), 'RMNODE');
 
