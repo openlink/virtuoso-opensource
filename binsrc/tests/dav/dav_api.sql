@@ -693,7 +693,7 @@ DAV_SEARCH_PATH (in id any, in what char (1)) returns any
 {
   declare res varchar;
   what := upper (what);
-  if (isarray(id))
+ if (isarray(id) and not isstring(id))
     return call (cast (id[0] as varchar) || '_DAV_SEARCH_PATH') (id, what);
   if (id <= 0)
     {
@@ -4671,7 +4671,7 @@ create function DAV_FC_PRINT_WHERE (inout filter any, in param_uid integer) retu
 }
 ;
 
-create function DAV_FC_PRINT_WHERE_INT (inout filter any, inout pred_metas any, inout cmp_metas any, inout table_metas any, inout used_tables any, in param_uid integer) returns varchar
+create function DAV_FC_PRINT_WHERE_INT (in filter any, inout pred_metas any, inout cmp_metas any, inout table_metas any, inout used_tables any, in param_uid integer) returns varchar
 {
 -- used_tables is get_keyword list of tables, get_keyword will return vector of
 -- [0] table name,
@@ -4695,7 +4695,7 @@ create function DAV_FC_PRINT_WHERE_INT (inout filter any, inout pred_metas any, 
     {
       declare pred, pred_meta, cmp_meta any;
       declare pred_table_key, optext, cmp_text, ftc_text, xc_text varchar;
-      declare used_table_pos integer;
+      declare join_with_prop_name, used_table_pos integer;
       pred := filter[pred_idx];
       pred_meta := get_keyword (pred[0], pred_metas);
       if (pred_meta is null)
@@ -4707,7 +4707,19 @@ create function DAV_FC_PRINT_WHERE_INT (inout filter any, inout pred_metas any, 
       cmp_meta := get_keyword (pred[1], cmp_metas);
       if (cmp_meta is null)
         signal ('.....', sprintf ('Invalid operation name ''%s'' in filter of DAV_DIR_FILTER', pred[1]));
+      join_with_prop_name := 0;
       if (('PROP_VALUE' = pred[0]) or ('RDF_PROP' = pred[0]) or ('RDF_VALUE' = pred[0]) or ('RDF_OBJ_VALUE' = pred[0]))
+        {
+          if (get_keyword (pred_meta[0], used_tables) is null)
+            join_with_prop_name := 1;
+          else
+            {
+              filter := vector_concat (filter, vector (vector ('PROP_NAME', '=', pred[3])));
+              table_of_pred := vector_concat (table_of_pred, vector (null));
+              pred_count := pred_count + 1;
+            }
+        }
+      if (join_with_prop_name)
         {
           if (not isstring (pred[3]))
 	    signal ('.....', sprintf ('The DAV property name in predicate of type ''%s'' is not a string in filter of DAV_DIR_FILTER', pred[0]));
@@ -4722,7 +4734,7 @@ create function DAV_FC_PRINT_WHERE_INT (inout filter any, inout pred_metas any, 
 	  declare new_alias varchar;
 	  used_table_pos := length (used_tables) + 1;
 	  new_alias := sprintf ('_sub%d', pred_idx);
-	  if (('PROP_VALUE' = pred[0]) or ('RDF_PROP' = pred[0]) or ('RDF_VALUE' = pred[0]) or ('RDF_OBJ_VALUE' = pred[0]))
+	  if (join_with_prop_name)
             cmp_checks := sprintf ('(%s.PROP_NAME = %s)', new_alias, WS.WS.STR_SQL_APOS (pred[3]));
           else
             cmp_checks := null;
@@ -5725,6 +5737,8 @@ create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns v
   else
     orig_res_ext := subseq (orig_res_name, dot_pos);
   orig_res_ext_upper := upper (orig_res_ext);
+  if (position (orig_res_ext_upper, vector ('.EML')))
+    return 'text/eml';
   if (position (orig_res_ext_upper, vector ('.HTM', '.HTML', '.XHTML')))
     return 'text/html';
   if (position (orig_res_ext_upper, vector ('.XSL', '.XSLT', '.XSD')))
@@ -5738,10 +5752,7 @@ create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns v
   if (position (orig_res_ext_upper, vector ('.VSP')))
     return 'application/x-openlinksw-vsp';
   if (position (orig_res_ext_upper, vector ('.LIC')))
-	{
-		--dbg_obj_princ('mega_lic');
     return 'application/x-openlink-license';
-  }
   if (position (orig_res_ext_upper, vector ('.XBRL')))
     return 'application/xbrl+xml';
   if (position (orig_res_ext_upper, vector ('.TXT')) and 
@@ -5820,7 +5831,7 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
             }
         }
       -- dbg_obj_princ ('guessing ', html_start);
-    --dbg_obj_princ ('based on ', content, 'dtp', __tag (content));
+    -- dbg_obj_princ ('based on ', content, 'dtp', __tag (content));
     if (xpath_eval ('[xmlns="http://usefulinc.com/ns/doap#"] exists (/project)', html_start))
       return 'application/doap+rdf';
     if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] exists(/rdf:rdf/rdf:*)', html_start))
@@ -5853,6 +5864,8 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
         return 'application/rss+xml';
       if (xpath_eval ('[xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"]exists (/wsdl:definitions)', html_start))
         return 'application/wsdl+xml';
+    if (xpath_eval ('[xmlns:gd="http://schemas.google.com/g/2005"] exists (/entry)', html_start))
+      return 'application/google-kinds+xml';
       if (xpath_eval ('[xmlns:bpel="http://schemas.xmlsoap.org/ws/2003/03/business-process/"]exists (/bpel:process)', html_start))
         return 'application/bpel+xml';
       if (xpath_eval ('[xmlns:v="http://www.openlinksw.com/vspx/"]exists (/v:*|//v:page)', html_start))
@@ -5878,7 +5891,7 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
     if (image_format is not null)
 		{
 			image_format := "IM GetImageBlobAttribute" (content, length(blob_to_string (content)), 'EXIF:Model');
-      if (image_format is not null and image_format <> '')
+      if (image_format is not null and image_format <> '' and image_format <> 'unknown' and image_format <> '.')
 	      return 'application/x-openlink-photo';
 			else
       return 'application/x-openlink-image';
@@ -6054,10 +6067,10 @@ errexit:
 create function "DAV_EXTRACT_RDF_application/doap+rdf" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   declare doc, metas any;
-  dbg_obj_princ ('DAV_EXTRACT_RDF_application/doap+rdf (', orig_res_name, ',... )');
+  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/doap+rdf (', orig_res_name, ',... )');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
-	  dbg_obj_princ (doc);
+	  -- dbg_obj_princ (doc);
   metas := vector (
         'http://www.openlinksw.com/schemas/doap#title', 'declare namespace xmlns="http://usefulinc.com/ns/doap#"; /xmlns:Project/xmlns:name', '',
         'http://www.openlinksw.com/schemas/doap#description', 'declare namespace xmlns="http://usefulinc.com/ns/doap#"; /xmlns:Project/xmlns:shortdesc', '',
@@ -6209,6 +6222,42 @@ errexit:
 }
 ;
 
+create function "DAV_EXTRACT_RDF_text/eml" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+  declare doc, metas, res, content any;
+  whenever sqlstate '*' goto errexit;
+	content := blob_to_string (content1);
+  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlink-image (', orig_res_name, ',... )');
+  xte_nodebld_init(res);
+	declare vec any;	
+  declare from_, subject_, date_ varchar;
+  vec := vector();
+	vec := split_and_decode(content, 1, '=_\n:');
+	declare i, l int;
+  i := 0;
+	l := length (vec);
+  while (i < l)
+  {
+  	if (vec[i] = 'FROM')
+    	from_ := trim(vec[i+1], '\r\n ');
+  	if (vec[i] = 'SUBJECT')
+    	subject_ := trim(vec[i+1], '\r\n ');
+  	if (vec[i] = 'DATE')
+    	date_ := trim(vec[i+1], '\r\n ');
+    i := i + 2;
+  }
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/Email#from'), from_));
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/Email#subject'), subject_));
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/Email#date'), date_));
+  xte_nodebld_final(res, xte_head (UNAME' root'));
+  return xml_tree_doc (res);
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
 
 create function "DAV_EXTRACT_RDF_application/xbel+xml" (in orig_res_name varchar, inout content any, inout html_start any)
 {
@@ -6242,7 +6291,7 @@ errexit:
 create function "DAV_EXTRACT_RDF_application/rdf+xml" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   declare doc, metas any;
-  dbg_obj_princ ('DAV_EXTRACT_RDF_application/rdf+xml (', orig_res_name, content, html_start, ')');
+  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/rdf+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
   metas := vector (
@@ -6405,14 +6454,14 @@ errexit:
 create function "DAV_EXTRACT_RDF_text/html" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   declare metas any;
-  --dbg_obj_princ ('DAV_EXTRACT_RDF_text/html (', orig_res_name, content, html_start, ')');
+  -- dbg_obj_princ ('DAV_EXTRACT_RDF_text/html (', orig_res_name, content, html_start, ')');
   if (html_start is null)
     html_start := xtree_doc (content, 18, 'http://localdav.virt' || orig_res_name, 'LATIN-1', 'x-any',
       'Validation=DISABLE Include=DISABLE BuildStandalone=DISABLE SchemaDecl=DISABLE' );
   if (html_start is null)
     goto errexit;
   whenever sqlstate '*' goto errexit;
-  --dbg_obj_princ ('head is ', html_start);
+  -- dbg_obj_princ ('head is ', html_start);
   metas := vector (
         'http://www.openlinksw.com/schemas/XHTML#title', '/*/head/title|/*/*:head/*:title', 'Untitled',
         'http://www.openlinksw.com/schemas/XHTML#description', '(/*/head/meta[@name="description" or @name="Description"]/@content) | (/*/*:head/*:meta[@name="description" or @name="Description"]/@content)', NULL,
@@ -6497,6 +6546,28 @@ create function "DAV_EXTRACT_RDF_application/bpel+xml" (in orig_res_name varchar
         );
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas);
 
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/google-kinds+xml" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas any;
+  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/google-kinds+xml (', orig_res_name, content, html_start, ')');
+  whenever sqlstate '*' goto errexit;
+  doc := xtree_doc (content, 0);
+  -- dbg_obj_princ ('doc is ', doc);
+  --version := xpath_eval ('number (/xbel/@version)', doc);
+  --if (version < 0.1)
+  --  goto final;
+  metas := vector (
+        'http://www.openlinksw.com/schemas/google-kinds#title', '/entry/title', 'Untitled OPML',
+        'http://www.openlinksw.com/schemas/google-kinds#published', '/entry/published', NULL,
+        'http://www.openlinksw.com/schemas/google-kinds#updated', '/entry/updated', NULL,
+        'http://www.openlinksw.com/schemas/google-kinds#author', '/entry/author/name', 'Unknown author'
+        );
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas);
 errexit:
   return xml_tree_doc (xte_node (xte_head (UNAME' root')));
 }
@@ -7198,6 +7269,9 @@ create function DAV_EXTRACT_SPOTLIGHT (in resname varchar, inout rescontent any)
 
   declare exit handler for sqlstate '*'
   { log_message ('SpotLight import fail: ' || __SQL_MESSAGE); return NULL; };
+
+  if (not spotlight_status ())
+    return;
 
   _reg := cast (registry_get ('VAD_is_run') as varchar);
   if (_reg <> '0')
