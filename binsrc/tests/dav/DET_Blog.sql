@@ -20,7 +20,7 @@ create function "Blog_FIXNAME" (in mailname any) returns varchar
           replace (
             replace (
               replace (
-                replace (mailname, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_');
+                replace (mailname, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_'); --"
 }
 ;
 
@@ -563,7 +563,7 @@ create procedure "Blog_POST_DAV_FC_PRED_METAS" (inout pred_metas any)
     'RES_ID_SERIALIZED',	vector ('SYS_BLOGS'	, 0, 'varchar'	, 'serialize (vector (UNAME_BLOG(), B_BLOG_ID, U_ID, B_POST_ID, null))'	),
     'RES_NAME',			vector ('SYS_BLOGS'		, 0, 'varchar'	, '"Blog_COMPOSE_HTML_NAME" (B_TITLE, B_POST_ID)'	),
     'RES_FULL_PATH',		vector ('SYS_BLOGS'	, 0, 'varchar'	, 'concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'', "Blog_COMPOSE_HTML_NAME" (B_TITLE, B_POST_ID))'	),
-    'RES_TYPE',			vector ('SYS_BLOGS'	, 0, 'varchar'	, '''text/html'''	),
+    'RES_TYPE',			vector ('SYS_BLOGS'	, 0, 'varchar'	, '(''text/plain'')'	),
     'RES_OWNER_ID',		vector ('SYS_BLOG_OWNERS'	, 0, 'integer'	, 'U_ID'	),
     'RES_OWNER_NAME',		vector ('SYS_BLOG_OWNERS'	, 0, 'varchar'	, 'U_NAME'	),
     'RES_GROUP_ID',		vector ('SYS_BLOGS'	, 0, 'integer'	, 'http_nogroup_gid()'	),
@@ -590,8 +590,8 @@ create procedure "Blog_POST_DAV_FC_PRED_METAS" (inout pred_metas any)
 create procedure "Blog_POST_DAV_FC_TABLE_METAS" (inout table_metas any)
 {
   table_metas := vector (
-    'SYS_BLOGS'		, vector (	''	,
-					''	,
+    'SYS_BLOGS'		, vector (	'\n  inner join BLOG.DBA.SYS_BLOGS as ^{alias}^ on ((^{alias}^.B_BLOG_ID = _top.B_BLOG_ID) and (^{alias}^.B_POST_ID = _top.B_POST_ID)^{andpredicates}^)'	,
+					'\n  exists (select 1 from BLOG.DBA.SYS_BLOGS as ^{alias}^ where (^{alias}^.B_BLOG_ID = _top.B_BLOG_ID) and (^{alias}^.B_POST_ID = _top.B_POST_ID)^{andpredicates}^)'	,
     						'B_CONTENT'	, 'B_CONTENT'	, '[__quiet] /'	),
     'SYS_BLOG_OWNERS'	, vector (	''	,
 					''	,
@@ -649,7 +649,7 @@ create procedure "Blog_COMMENT_DAV_FC_PRED_METAS" (inout pred_metas any)
     'RES_ID_SERIALIZED',	vector ('BLOG_COMMENTS'	, 0, 'varchar'	, 'serialize (vector (UNAME_BLOG(), B_BLOG_ID, U_ID, B_POST_ID, BM_ID))'	),
     'RES_NAME',			vector ('BLOG_COMMENTS'	, 0, 'varchar'	, '"Blog_COMPOSE_HTML_NAME" (BM_NAME, cast (BM_ID as varchar))'	),
     'RES_FULL_PATH',		vector ('BLOG_COMMENTS'	, 0, 'varchar'	, 'concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'', "Blog_COMPOSE_COMMENTS_NAME" (B_TITLE, B_POST_ID), ''/'', "Blog_COMPOSE_HTML_NAME" (BM_NAME, cast (BM_ID as varchar)))'	),
-    'RES_TYPE',			vector ('BLOG_COMMENTS'	, 0, 'varchar'	, '''text/html'''	),
+    'RES_TYPE',			vector ('BLOG_COMMENTS'	, 0, 'varchar'	, '(''text/plain'')'	),
     'RES_OWNER_ID',		vector ('SYS_BLOG_OWNERS'	, 0, 'integer'	, 'U_ID'	),
     'RES_OWNER_NAME',		vector ('SYS_BLOG_OWNERS'	, 0, 'varchar'	, 'U_NAME'	),
     'RES_GROUP_ID',		vector ('BLOG_COMMENTS'	, 0, 'integer'	, 'http_nogroup_gid()'	),
@@ -736,9 +736,9 @@ create function "Blog_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in d
   declare st, access, qry_text, execstate, execmessage varchar;
   declare res any;
   declare cond_list, execmeta, execrows any;
-  declare blog_id, blog_colname, post_id, condtext varchar;
+  declare blog_id, blog_colname, post_id, condtext, cond_key varchar;
   declare ownergid, owner_uid integer;
-  --dbg_obj_princ ('Blog_DAV_DIR_FILTER (', detcol_id, path_parts, detcol_path, compilation, recursive, auth_uid, ')');
+  -- dbg_obj_princ ('Blog_DAV_DIR_FILTER (', detcol_id, path_parts, detcol_path, compilation, recursive, auth_uid, ')');
   "Blog_ACCESS_PARAMS" (detcol_id, access, ownergid, owner_uid);
   vectorbld_init (res);
   blog_id := null;
@@ -746,7 +746,7 @@ create function "Blog_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in d
 
   if (((length (path_parts) <= 1) and (recursive <> 1)) or (length (path_parts) > 2))
   {
-	  --dbg_obj_princ ('\r\nGoto skip_post_level\r\n');
+      -- dbg_obj_princ ('\r\nGoto skip_post_level\r\n');
     goto skip_post_level;
 	}
   if (length (path_parts) >= 2)
@@ -754,22 +754,23 @@ create function "Blog_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in d
       blog_id := coalesce ((select BI_BLOG_ID from BLOG.DBA.SYS_BLOG_OWNERS where U_ID = owner_uid and "Blog_FIXNAME" (WAI_NAME) = path_parts[0]));
       if (blog_id is null)
 			{
-				--dbg_obj_princ ('\r\nGoto finalize\r\n');
+          -- dbg_obj_princ ('\r\nGoto finalize\r\n');
         goto finalize;
     }
     }
-  condtext := get_keyword ('Blog_POST', compilation);
-	--dbg_obj_princ ('\r\ncondtext ', condtext, '\r\n');
+  cond_key := sprintf ('Blog_POST&%V', coalesce (blog_id, ''));
+  condtext := get_keyword (cond_key, compilation);
+  -- dbg_obj_princ ('Cached condtext is ', condtext);
   if (condtext is null)
     {
       cond_list := get_keyword ('', compilation);
-			--dbg_obj_princ ('\r\ncond_list ', cond_list, '\r\n');
+      -- dbg_obj_princ ('cond_list is ', cond_list);
       if (blog_id is not null)
         cond_list := vector_concat (cond_list, vector ( vector ('B_BLOG_ID', '=', blog_id)));
       condtext := "Blog_POST_DAV_FC_PRINT_WHERE" (cond_list, auth_uid);
-			--dbg_obj_princ ('\r\ncondtext2 ', condtext, '\r\n');
-      compilation := vector_concat (compilation, vector ('Blog_POST', condtext));
-			--dbg_obj_princ ('\r\ncompilation ', compilation, '\r\n');
+      -- dbg_obj_princ ('\r\ncondtext2 ', condtext, '\r\n');
+      compilation := vector_concat (compilation, vector (cond_key, condtext));
+      -- dbg_obj_princ ('\r\ncompilation ', compilation, '\r\n');
     }
   execstate := '00000';
   qry_text := 'select concat (DAV_CONCAT_PATH (_param.detcolpath, "Blog_FIXNAME" (WAI_NAME)), ''/'', "Blog_COMPOSE_HTML_NAME" (B_TITLE, B_POST_ID)),
@@ -803,7 +804,8 @@ skip_post_level:
       if (not exists (select top 1 1 from BLOG.DBA.SYS_BLOGS where B_BLOG_ID = blog_id and B_POST_ID = post_id and B_TITLE like post_title_pattern))
         goto finalize;
     }
-  condtext := get_keyword ('Blog_COMMENT', compilation);
+  cond_key := sprintf ('Blog_COMMENT&%V&%V', coalesce (blog_id, ''), coalesce (post_id, ''));
+  condtext := get_keyword (cond_key, compilation);
   if (condtext is null)
     {
       cond_list := get_keyword ('', compilation);
@@ -812,7 +814,7 @@ skip_post_level:
       if (post_id is not null)
         cond_list := vector_concat (cond_list, vector ( vector ('BM_POST_ID', '=', post_id)));
       condtext := "Blog_COMMENT_DAV_FC_PRINT_WHERE" (cond_list, auth_uid);
-      compilation := vector_concat (compilation, vector ('Blog_COMMENT', condtext));
+      compilation := vector_concat (compilation, vector (cond_key, condtext));
     }
   execstate := '00000';
   qry_text := '

@@ -20,19 +20,6 @@
 --  
 -- $Id$
 
-DB.DBA.VHOST_REMOVE (lpath=>'/URIQA/')
-;
-DB.DBA.VHOST_REMOVE (lpath=>'/uriqa/')
-;
-DB.DBA.VHOST_REMOVE (lpath=>'/uriqa')
-;
-DB.DBA.VHOST_REMOVE (lpath=>'/URIQA')
-;
-DB.DBA.VHOST_DEFINE (lpath=>'/URIQA/', ppath=>'/!URIQA/', is_dav=>1, vsp_user=>'dba', opts=>vector('noinherit', 1))
-;
-DB.DBA.VHOST_DEFINE (lpath=>'/uriqa/', ppath=>'/!URIQA/', is_dav=>1, vsp_user=>'dba', opts=>vector('noinherit', 1))
-;
-
 
 create table WS.WS.URIQA_HANDLER
 (
@@ -695,5 +682,16 @@ Enter URI of a resource to get metadata: <input name="uri" type="text"><br/>
 }
 ;
 
-registry_set ('/!URIQA/', 'no_vsp_recompile')
+create procedure WS.WS.URIQA_VHOST_RESET()
+{
+  registry_set ('/!URIQA/', 'no_vsp_recompile');
+  DB.DBA.VHOST_REMOVE (lpath=>'/URIQA/');
+  DB.DBA.VHOST_REMOVE (lpath=>'/uriqa/');
+  DB.DBA.VHOST_REMOVE (lpath=>'/uriqa');
+  DB.DBA.VHOST_REMOVE (lpath=>'/URIQA');
+  DB.DBA.VHOST_DEFINE (lpath=>'/URIQA/', ppath=>'/!URIQA/', is_dav=>1, vsp_user=>'dba', opts=>vector('noinherit', 1));
+  DB.DBA.VHOST_DEFINE (lpath=>'/uriqa/', ppath=>'/!URIQA/', is_dav=>1, vsp_user=>'dba', opts=>vector('noinherit', 1));
+}
 ;
+  
+

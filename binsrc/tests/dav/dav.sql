@@ -1360,7 +1360,7 @@ create procedure WS.WS.STR_SQL_APOS (in str varchar)
       cascii := ascii(c);
       if (cascii < 32)
         {
-	  aset (tmp, inx1, ascii('\\'));
+	  aset (tmp, inx1, ascii('\\')); -- the quote is to recover synt.highlight: '
 	  aset (tmp, inx1 + 1, ascii('0'));
 	  aset (tmp, inx1 + 2, WS.WS.HEX_DIGIT (cascii / 8));
 	  aset (tmp, inx1 + 3, WS.WS.HEX_DIGIT (mod (cascii, 8)));
@@ -1368,7 +1368,7 @@ create procedure WS.WS.STR_SQL_APOS (in str varchar)
 	}
       else
         {
-	  if ((c = '''') or (c = '\\'))
+	  if ((c = '''') or (c = '\\')) -- the quote is to recover synt.highlight: '
 	    {
               aset (tmp, inx1, cascii);
               inx1 := inx1 + 1;
@@ -1405,9 +1405,9 @@ create procedure WS.WS.STR_FT_QUOT (in str varchar)
     {
       c := chr (aref (str, inx));
       cascii := ascii(c);
-      if ((cascii < 32) or ('''' = c) or ('\\' = c) or ('"' = c))
+      if ((cascii < 32) or ('''' = c) or ('\\' = c) or ('"' = c)) -- the quote is to recover synt.highlight: "
         {
-	  aset (tmp, inx1, ascii('\\'));
+	  aset (tmp, inx1, ascii('\\')); -- the quote is to recover synt.highlight: '
 	  aset (tmp, inx1 + 1, ascii('0'));
 	  aset (tmp, inx1 + 2, WS.WS.HEX_DIGIT (cascii / 8));
 	  aset (tmp, inx1 + 3, WS.WS.HEX_DIGIT (mod (cascii, 8)));
@@ -3150,6 +3150,7 @@ not_found:
     }
   -- end of urls removal
   WS.WS.DAV_VSP_DEF_REMOVE (O.RES_FULL_PATH);
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_U: set RES_FULL_PATH = ', full_path, ', triggers off');
   update WS.WS.SYS_DAV_RES set RES_FULL_PATH = full_path where RES_ID = res;
   N.RES_FULL_PATH := full_path;
   -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_U has updated full path.');
@@ -3336,8 +3337,8 @@ create procedure WS.WS.UPDCHILD (in col integer, in root_path varchar, in _pflag
     {
       WS.WS.DAV_VSP_DEF_REMOVE (RES_FULL_PATH);
     }
-
-  update WS.WS.SYS_DAV_RES set RES_FULL_PATH = concat (root_path, RES_NAME) where RES_COL = col;
+  -- dbg_obj_princ ('WS.WS.UPDCHILD (', col, root_path, _pflags, repl, ') updates RES_FULL_PATH');
+  update WS.WS.SYS_DAV_RES set RES_FULL_PATH = concat (root_path, RES_NAME) where RES_COL = col and ((RES_FULL_PATH <> concat (root_path, RES_NAME)) or RES_FULL_PATH is null);
   if (ascii ('R') = _pflags[9])
     update WS.WS.SYS_DAV_COL set COL_PERMS = DAV_PERMS_SET_CHAR (COL_PERMS, 'R', 9)
 	where COL_PARENT = col and ascii ('R') <> COL_PERMS[9];
