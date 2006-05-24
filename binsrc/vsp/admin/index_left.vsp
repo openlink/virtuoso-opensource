@@ -39,9 +39,9 @@
 
 again:
 
-  if (VAD_CHECK_VERSION ('conductor') is not null)
+  if (VAD_CHECK_VERSION ('conductor') is not null or exists (select 1 from HTTP_PATH where HP_LPATH = '/conductor'))
         have_cond := 1; 
-  if (VAD_CHECK_VERSION ('wa') is not null)  
+  if (VAD_CHECK_VERSION ('Framework') is not null)  
     have_wa := 1;
 
   if (exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE like 'Demo.demo.%'))
@@ -60,7 +60,7 @@ again:
 
       <?vsp if (have_wa) { ?>
       <ul class="left_nav">
-	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/wa/" target="_top">Web Applications</a></li>
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="<?V wa_link () ?>" target="_top">Web Applications</a></li>
       </ul>
       <?vsp } ?>
 
