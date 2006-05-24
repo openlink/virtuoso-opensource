@@ -1,0 +1,78 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="blog_home_page"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<vm:page>
+ <vm:variable name="base_url" type="varchar" default="''" persist="temp"/>
+ <vm:variable name="ufname" type="varchar" default="null" param-name="ufname"/>
+ <vm:variable name="uf_u_id" type="integer" default="null" persist="temp"/>
+ <v:on-init>
+  <![CDATA[
+    self.base_url := HTTP_REQUESTED_URL ();
+  ]]>
+ </v:on-init>
+ <v:after-data-bind>
+  <![CDATA[
+    if (is_empty_or_null (self.ufname))
+      {
+        self.ufname := self.u_name;
+        self.uf_u_id := self.u_id;
+      }
+    else
+      self.uf_u_id := coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = self.ufname), self.u_id);
+  ]]>
+ </v:after-data-bind>
+ <vm:header>
+  <vm:title>Users map</vm:title>
+    <vm:map-control
+	sql="sprintf ('select WAUI_LAT as _LAT, WAUI_LNG as _LNG, WAUI_U_ID as _KEY_VAL, WA_SEARCH_USER_GET_EXCERPT_HTML (%d, vector (), WAUI_U_ID, '''', WAUI_FULL_NAME, U_NAME, WAUI_PHOTO_URL, U_E_MAIL) as EXCERPT from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_LAT is not null and WAUI_LNG is not null and WAUI_U_ID = U_ID', coalesce (self.u_id, http_nobody_uid ()))"
+	baloon-inx="4"
+	lat-inx="1"
+	lng-inx="2"
+	key-name-inx="3"
+	key-val="self.uf_u_id"
+        div_id="google_map"
+        zoom="15"
+        base_url="self.base_url" />
+ </vm:header>
+ <vm:pagewrapper>
+  <vm:body>
+   <vm:login redirect="wa_maps.vspx"/>
+    <h1 class="page_title">Map of the users with public home addresses</h1>
+    <table>
+     <tr><td>
+      <div id="google_map" class="google_map" />
+     </td></tr><tr><td>
+      <div class="roll">
+       <?vsp http(sprintf('<a href="javascript:history.go(-1);">Back</a>'));?>
+      </div>
+     </td></tr>
+    </table>
+  </vm:body>
+ </vm:pagewrapper>
+</vm:page>
+</v:page>

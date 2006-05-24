@@ -1,0 +1,356 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="user_edit_home"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+  style="index.xsl"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:v="http://www.openlinksw.com/vspx/">
+
+    <v:variable persist="0" name="haddress1" type="varchar" default="''"/>
+    <v:variable persist="0" name="haddress2" type="varchar" default="''"/>
+    <v:variable persist="0" name="hcode" type="varchar" default="''"/>
+    <v:variable persist="0" name="hcity" type="varchar" default="''"/>
+    <v:variable persist="0" name="hstate" type="varchar" default="''"/>
+    <v:variable persist="0" name="hcountry" type="varchar" default="''"/>
+    <v:variable persist="0" name="htzone" type="varchar" default="''"/>
+    <v:variable persist="0" name="hphone" type="varchar" default="''"/>
+    <v:variable persist="0" name="hmobile" type="varchar" default="''"/>
+    <v:variable persist="0" name="lat" type="real" default="0.00"/>
+    <v:variable persist="0" name="lng" type="real" default="0.00"/>
+    <v:variable persist="0" name="hlatlng_def" type="int" default="1"/>
+
+    <v:variable name="sav15" type="varchar" default="'1'" />
+    <v:variable name="sav16" type="varchar" default="'1'" />
+    <v:variable name="sav17" type="varchar" default="'1'" />
+    <v:variable name="sav18" type="varchar" default="'1'" />
+    <v:variable name="sav39" type="varchar" default="'1'" />
+    <v:variable name="sav40" type="varchar" default="'1'" />
+
+    <v:before-data-bind>
+      <![CDATA[
+        declare _haddress1, _haddress2, _hcode, _hcity, _hstate, _hcountry, _htzone, _hphone, _hmobile varchar;
+
+        SELECT WAUI_HADDRESS1, WAUI_HADDRESS2, WAUI_HCODE, WAUI_HCITY, WAUI_HSTATE,
+               WAUI_HCOUNTRY, WAUI_HTZONE, WAUI_HPHONE, WAUI_HMOBILE, WAUI_LAT, WAUI_LNG, WAUI_LATLNG_HBDEF
+         INTO _haddress1, _haddress2, _hcode, _hcity, _hstate, _hcountry, _htzone, _hphone, _hmobile,
+              self.lat, self.lng,self.hlatlng_def
+         FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
+
+        self.haddress1 := wa_utf8_to_wide (_haddress1);
+        self.haddress2 := wa_utf8_to_wide (_haddress2);
+        self.hcode := _hcode;
+        self.hcity := wa_utf8_to_wide (_hcity);
+        self.hstate := _hstate;
+        self.hcountry := _hcountry;
+        self.htzone := _htzone;
+        self.hphone := _hphone;
+        self.hmobile := _hmobile;
+
+        declare tmp any;
+        tmp := WA_USER_VISIBILITY(self.u_name);
+        if (tmp is not null and length (tmp) >= 50 )
+        {
+          self.sav15 := tmp[15];
+          self.sav16 := tmp[16];
+          self.sav17 := tmp[17];
+          self.sav18 := tmp[18];
+          self.sav39 := tmp[39];
+          self.sav40 := tmp[40];
+        }
+      ]]>
+    </v:before-data-bind>
+
+    <v:form name="usr_home" type="simple" method="POST" action="uiedit.vspx?page=3">
+    <input type="hidden" name="page" value="3"/>
+    <input type="hidden" name="dirty_force_global" id="dirty_force_global" value="<?vsp http(get_keyword ('dirty_force_global',self.vc_event.ve_params,'false')); ?>"/>
+
+    <table class="ctl_grp">
+              <tr>
+                <th><label for="h_country">Country</label></th>
+                <td class="listing_col" nowrap="1">
+                  <v:data-list name="h_country" xhtml_id="regcountry" xhtml_style="width:216px" xhtml_tabindex="1" enabled="1"
+                    sql="select 'Not Specified' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="getElementById(''dirty_force_global'').value = ''true'' ; doAutoSubmit (this.form, this);" >
+		    <v:after-data-bind><![CDATA[
+		     if (not e.ve_is_post)
+		       {
+		         control.ufl_value := self.hcountry;
+		       }
+		     else if (e.ve_initiator = control)
+		       {
+		         control.ufl_value := get_keyword (control.vc_get_name(), e.ve_params);
+			 self.hstate := null;
+			 self.h_state.vc_data_bind (e);
+		       }
+		     if (self.lat is null and self.lng is null and (not e.ve_is_post or e.ve_initiator = control))
+		       {
+		         whenever not found goto nflat;
+		           select WC_LAT, WC_LNG into self.lat, self.lng
+		           from WA_COUNTRY where WC_NAME = control.ufl_value;
+		         nflat:;
+		       }
+		     control.vs_set_selected ();
+		       ]]></v:after-data-bind>
+                  </v:data-list>
+		  <vm:u-prop-select name="sel_16" value="self.sav16" />
+                  <!--v:label name ="lb2" format="%s" value="'* Refferes to State/Province, City/Town, Country'"/-->
+                </td>
+              </tr>
+              <tr>
+                <th><label for="h_state">State/Province</label></th>
+		<td class="listing_col" nowrap="1">
+		    <v:data-list name="h_state" value="--self.hstate" xhtml_tabindex="2"
+			sql="select * from WA_PROVINCE where WP_COUNTRY = self.h_country.ufl_value"
+			key-column="WP_PROVINCE"
+			value-column="WP_PROVINCE"
+			/>
+
+                  <!--v:text name="h_state"
+                          value="-#-self.hstate"
+                          xhtml_style="width:216px"
+                          xhtml_tabindex="4"/-->
+                </td>
+              </tr>
+              <tr>
+                <th><label for="h_city">City/Town</label></th>
+                <td class="listing_col" nowrap="1">
+                  <v:text name="h_city"
+                          value="--self.hcity"
+                          xhtml_style="width:216px"
+                          xhtml_tabindex="3"/>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="h_code">Zip/Postal Code</label></th>
+                <td class="listing_col" nowrap="1">
+                  <v:text name="h_code"
+                          value="--self.hcode"
+                          xhtml_style="width:216px"
+                          xhtml_tabindex="4"/>
+		      <vm:u-prop-select name="sel_15" value="self.sav15" />
+                  <!--v:label name ="lb1" format="%s" value="'* Refferes to Address1, Address2, Zip/Postal Code'"/-->
+                </td>
+              </tr>
+              <tr>
+                <th><label for="h_address1">Address1</label></th>
+                <td class="listing_col" nowrap="1">
+                  <v:text name="h_address1"
+                          value="--self.haddress1"
+                          xhtml_style="width:216px"
+                          xhtml_tabindex="5"/>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="h_address2">Address2</label></th>
+                <td class="listing_col" nowrap="1">
+                  <v:text name="h_address2"
+                          value="--self.haddress2"
+                          xhtml_style="width:216px"
+                          xhtml_tabindex="6"/>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="h_tzone">Time-Zone</label></th>
+                <td class="listing_col" nowrap="1">
+                  <v:select-list name="h_tzone" xhtml_id="regtz" xhtml_style="width:216px" xhtml_tabindex="7" enabled="1">
+                    <v:on-init>
+                      <![CDATA[
+                        {
+                           declare i,j int;
+                           declare x,y any;
+                           x := make_array (25, 'any');
+                           y := make_array (25, 'any');
+                           i := -12; j:= 0;
+                           while (i <= 12)
+                                 {
+                          x[j] := cast (i as varchar);
+                          y[j] := sprintf ('GMT %s%02d:00', case when i < 0 then '-' else '+' end,  abs(i));
+                          i := i + 1;
+                          j := j + 1;
+                                   }
+                           control.vsl_item_values := x;
+                           control.vsl_items := y;
+                           control.ufl_value := '0';
+                        }
+                      ]]>
+                    </v:on-init>
+                    <v:before-data-bind>
+                      control.ufl_value := self.htzone;
+                    </v:before-data-bind>
+                  </v:select-list>
+		  <vm:u-prop-select name="sel_17" value="self.sav17" />
+                </td>
+              </tr>
+              <tr>
+                <th><label for="h_lat">Latitude</label></th>
+		<td class="listing_col" nowrap="1" rowspan="2" valign="center">
+		  <table border="0" cellpadding="0" cellspacing="0">
+		    <tr>
+		      <td>
+			<v:text name="h_lat"
+			  value="--case when self.lat is not null then sprintf ('%.6f', coalesce (self.lat, 0.00)) else '' end"
+			  xhtml_style="width:216px; margin-right:3px;"
+			  xhtml_tabindex="8"/>
+		      </td>
+		      <td rowspan="2" valing="center">
+			<vm:u-prop-select name="sel_39" value="self.sav39" />
+			<v:button name="set_lat_long" action="simple" value="Lookup for geographical coordinates by address">
+			  <v:on-post>
+			 <![CDATA[
+			  declare lat, lng double precision;
+			  if (0 <> DB.DBA.WA_MAPS_ADDR_TO_COORDS (
+			        trim (coalesce (self.h_address1.ufl_value, '')),
+			        trim (coalesce (self.h_address2.ufl_value, '')),
+			        trim (coalesce (self.h_city.ufl_value, '')),
+			        trim (coalesce (self.h_state.ufl_value, '')),
+			        trim (coalesce (self.h_code.ufl_value, '')),
+			        trim (coalesce (self.h_country.ufl_value, '')),
+			      lat, lng
+			      ))
+			      {
+			      self.h_lat.ufl_value := lat;
+			      self.h_lng.ufl_value := lng;
+			    }
+			  ]]>
+		          </v:on-post>
+			</v:button>
+              <v:check-box name="set_hlatlng_def" initial-checked="0" value="-- case self.hlatlng_def when 1 then 0 else 1 end" xhtml_id="set_hlatlng_def" >
+                <v:after-data-bind>
+                    if (not e.ve_is_post){
+                      if(self.hlatlng_def=0){
+                         control.ufl_selected := 1;
+                      }else {
+                         control.ufl_selected := 0;
+                      }
+                    }
+                </v:after-data-bind>
+              </v:check-box>
+              <label for="set_hlatlng_def">Set home coordinates as my default map location</label>
+			
+		      </td>
+		    </tr>
+		    <tr>
+		      <td>
+			<v:text name="h_lng"
+			  value="--case when self.lng is not null then sprintf ('%.6f', coalesce (self.lng, 0.00)) else '' end"
+			  xhtml_style="width:216px; margin-right:3px;"
+			  xhtml_tabindex="9"/>
+		      </td>
+		    </tr>
+		  </table>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="h_long">Longitude</label></th>
+                <td class="listing_col" nowrap="1">
+                </td>
+              </tr>
+              <tr>
+                <th><label for="h_phone">Phone</label></th>
+                <td class="listing_col" nowrap="1">
+                  <v:text name="h_phone"
+                          value="--self.hphone"
+                          xhtml_style="width:216px"
+                          xhtml_tabindex="10"/>
+		    <vm:u-prop-select name="sel_18" value="self.sav18" />
+                  <!--v:label name ="lb3" format="%s" value="'* Refferes to Phone, Mobile'"/-->
+                </td>
+              </tr>
+              <tr>
+                <th><label for="h_mobile">Mobile</label></th>
+                <td class="listing_col" nowrap="1">
+                  <v:text name="h_mobile"
+                          value="--self.hmobile"
+                          xhtml_style="width:216px"
+                          xhtml_tabindex="11"/>
+                </td>
+              </tr>
+              <tr>
+		  <th><label for="set_all">Set All</label></th>
+		  <td class="ctrl">
+		      <v:select-list name="set_all3" value="0"
+			  xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
+			  <v:item name="*no change*"  value="0" />
+			  <v:item name="public"  value="1" />
+			  <v:item name="friends" value="2" />
+			  <v:item name="private" value="3" />
+		      </v:select-list>
+                  </td>
+              </tr>
+              <tr>
+                <td colspan="2" class="ctrl">
+		      <span class="fm_ctl_btn">
+		  <input type="reset" name="reset_btn" value="Cancel" />
+		  <v:button name="user_sset_home" value="Save" action="simple"  xhtml_tabindex="12">
+                    <v:on-post>
+                      <![CDATA[
+		        declare lat, lng any;
+
+                        if(self.vc_is_valid = 0) return;
+
+                        declare _arr any;
+                        _arr := WA_STR_PARAM(params,'sel_');
+			WA_USER_VISIBILITY (self.u_name, _arr, 2);
+
+
+			lat := lng := null;
+			if (length (self.h_lat.ufl_value) and length (self.h_lng.ufl_value))
+			  {
+			     lat := atof (self.h_lat.ufl_value);
+			     lng := atof (self.h_lng.ufl_value);
+			  }
+
+                        WA_USER_EDIT (self.u_name, 'WAUI_HADDRESS1', self.h_address1.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_HADDRESS2', self.h_address2.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_HCODE', self.h_code.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_HCITY', self.h_city.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_HSTATE', self.h_state.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_HCOUNTRY', self.h_country.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_HTZONE', self.h_tzone.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_HPHONE', self.h_phone.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_HMOBILE', self.h_mobile.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_LAT', lat);
+                        WA_USER_EDIT (self.u_name, 'WAUI_LNG', lng);
+
+                        dbg_obj_print('self.set_hlatlng_def.ufl_value',self.set_hlatlng_def.ufl_value);
+                        dbg_obj_print('self.set_hlatlng_def.ufl_selected',self.set_hlatlng_def.ufl_selected);
+
+                        WA_USER_EDIT (self.u_name, 'WAUI_LATLNG_HBDEF', (case when self.set_hlatlng_def.ufl_selected = 1 then 0 else 1 end) );
+
+                        -- change user_text data
+                        declare _hdata long varchar;
+                        _hdata := WA_GET_USER_INFO(0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1);
+                        WA_USER_TEXT_SET(self.u_id, _hdata);
+
+			self.vc_redirect ('uiedit.vspx?page=3');
+                      ]]>
+                    </v:on-post>
+		</v:button>
+	    </span>
+                </td>
+              </tr>
+    </table>
+    </v:form>
+</v:page>

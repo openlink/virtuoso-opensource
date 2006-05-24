@@ -2077,6 +2077,8 @@ AC_CONFIG_FILES([
 	libsrc/Wi/Makefile
 	libsrc/Xml.new/Makefile
 	libsrc/zlib/Makefile
+	appsrc/Makefile
+	appsrc/ODS-Framework/Makefile
 ])
 
 

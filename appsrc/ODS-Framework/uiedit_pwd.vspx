@@ -1,0 +1,202 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="user_edit_pwd"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+  style="index.xsl"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:v="http://www.openlinksw.com/vspx/">
+
+    <v:variable persist="0" name="secretq" type="varchar" default="''"/>
+    <v:variable persist="0" name="secreta" type="varchar" default="''"/>
+
+    <v:before-data-bind>
+      <![CDATA[
+        declare _secretq, _secreta varchar;
+        SELECT WAUI_SEC_QUESTION, WAUI_SEC_ANSWER
+          INTO _secretq, _secreta
+         FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
+
+         self.secretq := _secretq;
+         self.secreta := _secreta;
+      ]]>
+    </v:before-data-bind>
+
+    <v:form name="usr_pwd" type="simple" method="POST" action="uiedit.vspx?page=5">
+	<v:text type="hidden" name="page" value="5"/>
+    <table  class="ctl_grp">
+              <tr>
+                <td colspan="2" align="left">
+                  <h3>Password Settings</h3>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="opwd1">Old password</label></th>
+                <td>
+                  <v:text xhtml_id="opwd1" name="opwd1" value="" type="password" error-glyph="*"/>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="npwd1">New password</label></th>
+                <td>
+                  <v:text error-glyph="*" name="npwd1" value="" type="password"/>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="npwd2">Repeat password</label></th>
+                <td>
+                  <v:text error-glyph="*" name="npwd2" value="" type="password"/>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2" class="ctrl">
+		      <span class="fm_ctl_btn">
+                  <v:button name="user_pwd_change1111" value="Change" action="simple">
+                    <v:on-post>
+			<![CDATA[
+			declare pwd_match int;
+
+			if (self.vc_is_valid = 0) return;
+
+			declare exit handler for not found
+			{
+			  signal ('22023', 'Internal error, user does not exists');
+			};
+
+			select equ (pwd_magic_calc (U_NAME, U_PASSWORD, 1), self.opwd1.ufl_value) into pwd_match
+				from SYS_USERS where U_NAME = self.u_name and U_IS_ROLE = 0;
+
+
+			if (not pwd_match)
+			  {
+			    self.opwd1.vc_error_message :=
+			      sprintf ('The old password for "%s" was not correct.', self.u_name);
+			    self.opwd1.ufl_failed := 1;
+			    self.npwd1.ufl_failed := 1;
+			    self.npwd2.ufl_failed := 1;
+			    self.vc_is_valid := 0;
+			    self.npwd1.ufl_value := '';
+			    self.npwd2.ufl_value := '';
+			    self.opwd1.ufl_value := '';
+			    return;
+		          }
+
+                        if ( length(self.npwd1.ufl_value) < 1 or length(self.npwd1.ufl_value) > 255)
+                        {
+                          self.npwd1.vc_error_message := 'The password value cannot be empty or to be longer than 255 chars';
+                          self.vc_is_valid := 0;
+                          return;
+                        };
+
+                        if (self.npwd1.ufl_value = self.npwd2.ufl_value and length (self.npwd1.ufl_value))
+                        {
+			  USER_CHANGE_PASSWORD (self.u_name, self.opwd1.ufl_value, self.npwd1.ufl_value);
+			  self.msg_msg := 'The password was changed successfully';
+			  self.pwd_msg.vc_data_bind (e);
+                        }
+                        else
+                        {
+			  self.npwd2.vc_error_message :=
+			    'The new values for the password did not match.  Please re-enter all fields.';
+                          self.vc_is_valid := 0;
+			  self.npwd2.ufl_failed := 1;
+			  self.opwd1.ufl_failed := 1;
+			  self.npwd2.ufl_failed := 1;
+                        }
+		        self.npwd1.ufl_value := '';
+			self.npwd2.ufl_value := '';
+			self.opwd1.ufl_value := '';
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+		 </span>
+                </td>
+              </tr>
+
+              <tr>
+                <td colspan="2" align="left">
+                  <h3>Password Recovery</h3>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="sec_question">Secret question</label></th>
+                <td nowrap="nowrap">
+                  <v:text error-glyph="*" name="sec_question" xhtml_id="sec_qst" value="--self.secretq">
+                    <v:validator test="length" min="0" max="800" message="Security question cannot be longer then 800 chars" empty-alowed="1" name="vv_secq1"/>
+		    <v:validator test="sql" expression="length(trim(self.sec_question.ufl_value)) > 800"
+		      name="vv_secq2"
+                      message="Security question cannot be longer then 800 chars"/>
+                  </v:text>
+                  <script type="text/javascript">
+                      function setSecQuestion()
+                      {
+                        var S = document.getElementById('dummy_1233211_dummy');
+                        var V = S[S.selectedIndex].value;
+
+                        document.getElementById('sec_qst').value = V;
+                      }
+                  </script>
+                  <select name="dummy_1233211_dummy" id="dummy_1233211_dummy" onchange="setSecQuestion()">
+                    <option value="">~pick predefined~</option>
+                    <option VALUE="First Car">First Car</option>
+                    <option VALUE="Mothers Maiden Name">Mothers Maiden Name</option>
+                    <option VALUE="Favorite Pet">Favorite Pet</option>
+                    <option VALUE="Favorite Sports Team">Favorite Sports Team</option>
+                  </select>
+                  <div style="display:inline; color:red;"><v:error-summary match="sec_question" /></div>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="sec_answer">Secret answer</label></th>
+                <td nowrap="nowrap">
+                  <v:text error-glyph="*" xhtml_id="sec_answer" name="sec_answer" value="--self.secreta">
+		    <v:validator test="length" min="0" max="800" message="Security answer cannot be longer then 800 chars"
+		      name="vv_seca1"
+		      empty-alowed="1"/>
+                  </v:text>
+                  <div style="display:inline; color:red;"><v:error-summary match="sec_answer" /></div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2" class="ctrl">
+		      <span class="fm_ctl_btn">
+		  <input type="reset" name="reset_btn" value="Cancel" />
+                  <v:button name="user_sset" value="Save" action="simple">
+                    <v:on-post>
+                      <![CDATA[
+                        if(self.vc_is_valid = 0) return;
+
+                        WA_USER_EDIT (self.u_name, 'SEC_QUESTION', self.sec_question.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'SEC_ANSWER', self.sec_answer.ufl_value);
+			self.vc_redirect ('uiedit.vspx?page=5');
+                      ]]>
+                    </v:on-post>
+		</v:button>
+	    </span>
+                </td>
+              </tr>
+    </table>
+    </v:form>
+</v:page>

@@ -1,0 +1,538 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="blog-home-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+	style="index.xsl"
+	fast-render="1"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>My Applications</vm:title>
+    </vm:header>
+    <vm:pagewrapper>
+      <vm:variable persist="temp" name="own_list" type="integer" default="0"/>
+      <vm:variable  name="filt_app" type="varchar" default="'%'" persist="session" />
+      <vm:variable  name="filt_own" type="varchar" default="0" persist="session"/>
+      <vm:variable  name="filt_pattern" type="varchar" default="''" persist="session"/>
+      <vm:variable  name="app_sort_by" type="int" default="4" param-name="sort-by"/>
+      <vm:navigation on="settings"/>
+      <vm:navigation1 on="services"/>
+      <vm:subnavigation-new on="site"/>
+      
+      <vm:rawheader caption="My Applications"/>
+      <vm:body>
+        <vm:login redirect="index.vspx"/>
+        <div class="box">
+          <p>
+            Your applications and community can be controlled from this area. To modify
+            content or membership for your applications, click on the following links under
+            the headings below.
+          </p>
+          <div>
+  <v:button style="url" value="New Web Application" action="simple" name="new_instance_button" url="admin.vspx">
+    <v:after-data-bind>
+      <![CDATA[
+        control.ufl_value := '<img src="images/icons/go_16.png" border="0" alt="New Web Application" title="New Web Application"/>&#160;New Web Application';
+      ]]>
+    </v:after-data-bind>
+  </v:button>
+  <![CDATA[&nbsp;]]>
+  <v:button style="url" value="Content Tagging Settings" action="simple" name="cnt_tagging_button" url="tags.vspx">
+    <v:after-data-bind>
+      <![CDATA[
+        control.ufl_value := '<img src="images/icons/go_16.png" border="0" alt="Content Tagging Settings" title="Content Tagging Settings"/>&#160;Content Tagging Settings';
+      ]]>
+    </v:after-data-bind>
+  </v:button>
+  <br/>
+  <table class="ctl_grp">
+    <tr>
+      <td><img src="images/icons/filter_32.png"/></td>
+      <td valign="top">
+	<table border="0" cellpadding="0">
+	  <tr>
+	    <td>
+	      Search in
+	    </td>
+	    <td>
+	      <v:data-list name="howto" value="--self.filt_app"
+		sql="select '%' as WAT_NAME, 'Any' as WAT_LABEL from WA_SETTINGS union all select WAT_NAME, WA_GET_APP_NAME (WAT_NAME) as WAT_LABEL from WA_TYPES"
+		key-column="WAT_NAME" value-column="WAT_LABEL"
+		>
+	      </v:data-list>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      Membership
+	    </td>
+	    <td>
+	      <v:select-list name="filt_state1" value="--self.filt_own" auto-submit="0">
+		<v:item name="Any" value="0"/>
+		<v:item name="Owner" value="1" />
+		<v:item name="Member" value="2"/>
+		<v:on-post>
+		  if (e.ve_initiator = control)
+		  {
+		    self.filt_own := control.ufl_value;
+		  }
+		</v:on-post>
+	      </v:select-list>
+	    </td>
+	  </tr>
+	</table>
+      </td>
+      <td valign="top">
+	<v:text name="pattern_text" value="--self.filt_pattern"/>
+      </td>
+      <td valign="center">
+	<v:button name="submit1" action="simple" value="Filter">
+	  <v:on-post>
+	    <v:script>
+	      <![CDATA[
+	      self.filt_app := self.howto.ufl_value;
+	      self.filt_own := atoi(self.filt_state1.ufl_value);
+	      self.filt_pattern := self.pattern_text.ufl_value;
+	      self.mdss.vc_data_bind (e);
+	      self.membership.vc_reset ();
+	      self.membership.vc_data_bind (e);
+	      ]]>
+	    </v:script>
+	  </v:on-post>
+	</v:button>
+      </td>
+      <td valign="center">
+	<v:button name="reset" action="simple" value="Clear">
+	  <v:on-post>
+	    <v:script>
+	      <![CDATA[
+	      self.filt_app := '%';
+	      self.filt_own := 0;
+	      self.filt_pattern := '';
+	      self.mdss.vc_data_bind (e);
+	      self.membership.vc_reset ();
+	      self.membership.vc_data_bind (e);
+	      ]]>
+	    </v:script>
+	  </v:on-post>
+	</v:button>
+      </td>
+    </tr>
+  </table>
+  <v:data-source name="mdss" expression-type="sql" nrows="-1" initial-offset="0">
+    <v:expression></v:expression>
+    <v:before-data-bind><![CDATA[
+
+      declare cond, ord any;
+
+      control.ds_parameters := null;
+      cond := ' WAM_USER = ? and WAM_INST = WAI_NAME and WAM_STATUS <= 2 ';
+      control.add_parameter (self.u_id);
+
+      if (self.filt_app <> '%' and length (self.filt_app))
+        {
+	  cond := cond || ' and WAI_TYPE_NAME = ? ';
+	  control.add_parameter (self.filt_app);
+	}
+
+      if (self.filt_own = 1)
+        {
+	  cond := cond || ' and WAM_MEMBER_TYPE = 1 ';
+	}
+      if (self.filt_own = 2)
+        {
+	  cond := cond || ' and WAM_MEMBER_TYPE > 1 ';
+	}
+
+      if (self.filt_pattern <> '%' and length (self.filt_pattern))
+        {
+	  cond := cond || ' and WAI_NAME like ? ';
+	  control.add_parameter ('%'||self.filt_pattern||'%');
+	}
+
+      if (self.app_sort_by = 4)
+        ord := cast (self.app_sort_by as varchar);
+      else
+        ord := sprintf ('lower (%s)',
+            case self.app_sort_by when 2 then 'WAI_DESCRIPTION' when 3 then 'WAI_NAME' when 9 then 'WAI_APP_NAME' end);
+
+
+	control.ds_sql := 'select WAI_ID, WAI_DESCRIPTION, WAI_NAME, WAM_STATUS, WAI_INST, WAM_MEMBER_TYPE, WAI_TYPE_NAME, WAI_IS_FROZEN,
+        WA_GET_APP_NAME (WAI_TYPE_NAME) as WAI_APP_NAME
+        from WA_INSTANCE, WA_MEMBER where ' || cond ||
+	' order by ' || ord;
+
+
+    ]]></v:before-data-bind>
+    <v:column name="WAI_ID" label="Id" />
+    <v:column name="WAI_DESCRIPTION" label="Description" />
+    <v:column name="WAI_NAME" label="Name" />
+    <v:column name="WAM_STATUS" label="Type" />
+    <v:column name="WAI_INST" label="Inst" />
+    <v:column name="WAM_MEMBER_TYPE" label="DType" />
+    <v:column name="WAI_TYPE_NAME" label="DType" />
+    <v:column name="WAI_IS_FROZEN" label="isFrozen" />
+    <v:column name="WAI_APP_NAME" label="isFrozen" />
+  </v:data-source>
+  <vm:template type="simple" condition="(self.mdss.ds_rows_fetched = 0)">
+    <div>
+      <br/>
+      <b>You are not member of any application at this moment</b>
+    </div>
+  </vm:template>
+  <vm:template type="simple" condition="self.mdss.ds_rows_fetched">
+    <table class="listing">
+      <tr class="listing_header_row">
+	<th><v:url value="Name" url="services.vspx?sort-by=3" name="s1l" /></th>
+	<th><v:url value="Type" url="services.vspx?sort-by=9" name="s2l"/></th>
+	<th><v:url value="Description" url="services.vspx?sort-by=2" name="s3l" /></th>
+	<th><v:url value="Ownership" url="services.vspx?sort-by=4" name="s4l" /></th>
+        <th>Actions</th>
+        <th>Application Shortcuts</th>
+      </tr>
+      <v:data-set name="membership" scrollable="1" edit="0" data-source="self.mdss">
+        <vm:template type="repeat">
+          <vm:template type="browse">
+            <?vsp
+              declare test_head integer;
+              test_head := 0;
+              if (self.own_list = 0 and self.app_sort_by = 4)
+              {
+                self.own_list := 1;
+                if((control as vspx_row_template).te_rowset[3] = 1)
+                {
+                  test_head := 1;
+            ?>
+            <tr class="ctl_grp_title">
+              <td colspan="5">
+                My own:
+              </td>
+            </tr>
+            <?vsp
+                }
+              }
+              if (self.own_list = 1 and test_head = 0 and self.app_sort_by = 4)
+              {
+                if ((control as vspx_row_template).te_rowset[3] <> 1)
+                {
+                  self.own_list := 2;
+            ?>
+            <tr class="ctl_grp_title">
+              <td colspan="5">
+               You are member of:
+              </td>
+            </tr>
+            <?vsp
+                }
+              }
+            ?>
+	    <tr class="<?V case when mod(control.te_ctr,2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
+              <td>
+		<img src="images/icons/<?V wa_inst_type_icon (control.te_rowset[6]) ?>_16.png" border="0" alt="<?V WA_GET_APP_NAME (control.te_rowset[6]) ?>" title="<?V WA_GET_APP_NAME (control.te_rowset[6]) ?>" />
+                <v:button style="url" value="--coalesce((control.vc_parent as vspx_row_template).te_rowset[2], 'owner')" action="simple" name="membership_enter">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare h, id, ss any;
+                        declare inst web_app;
+                        inst := (control.vc_parent as vspx_row_template).te_rowset[4];
+                        ss := null;
+                        declare exit handler for sqlstate 'NOPAT'
+                        {
+                          self.vc_is_valid := 0;
+                          self.vc_error_message := regexp_match ('[^\r\n]*', __SQL_MESSAGE);
+                          return;
+                        };
+                        h := udt_implements_method(inst, 'wa_front_page');
+                        id := call (h) (inst, ss);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+              <td>
+                <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[8]" format="%s"/>
+              </td>
+              <td>
+                <v:label value="--coalesce((control.vc_parent as vspx_row_template).te_rowset[1], 'owner')" format="%s"/>
+              </td>
+              <td>
+                <vm:label value="" format="(%s)">
+                  <v:before-render>
+                    <v:script>
+                      <![CDATA[
+                        if ((control.vc_parent as vspx_row_template).te_rowset[3] = 1)
+                          control.ufl_value := 'owner';
+                        else
+                          control.ufl_value :=
+                          (select
+                           WMT_NAME
+                          from
+                            WA_MEMBER_TYPE
+                          where
+                            WMT_APP = (control.vc_parent as vspx_row_template).te_rowset[6] and
+                            WMT_ID = (control.vc_parent as vspx_row_template).te_rowset[5]);
+                      ]]>
+                    </v:script>
+                  </v:before-render>
+                </vm:label>
+              </td>
+              <td>
+                <v:button style="url" value="Terminate Membership" action="simple" name="membership_terminate">
+                  <v:after-data-bind>
+                    <![CDATA[
+                      control.ufl_value := '<img src="images/icons/close_16.png" border="0" alt="Terminate Membership" title="Terminate Membership"/>&#160;Terminate Membership';
+                    ]]>
+                  </v:after-data-bind>
+                  <v:before-data-bind>
+                    <v:script>
+                      <![CDATA[
+                        if ((control.vc_parent as vspx_row_template).te_rowset[3] = 1)
+                          control.vc_enabled := 0;
+                        else
+                          control.vc_enabled := 1;
+                      ]]>
+                    </v:script>
+                  </v:before-data-bind>
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare _wam_inst any;
+                        _wam_inst := (control.vc_parent as vspx_row_template).te_rowset[2];
+                        declare exit handler for sqlstate '*'
+                        {
+                          self.vc_is_valid := 0;
+                          declare _use_sys_errors, _sys_error, _error any;
+                          _sys_error := concat(__SQL_STATE,' ',__SQL_MESSAGE);
+                          _error := 'Due to a transient problem in the system, your termination could not be
+                              processed at the moment. The system administrators have been notified. Please
+                              try again later';
+                          _use_sys_errors := (select top 1 WS_SHOW_SYSTEM_ERRORS from WA_SETTINGS);
+                          if (_use_sys_errors)
+                            self.vc_error_message := _error || ' ' || _sys_error;
+                          else
+                            self.vc_error_message := _error;
+                          rollback work;
+                          return;
+                        };
+                        delete from WA_MEMBER where WAM_USER = self.u_id and WAM_INST = _wam_inst;
+                        http_request_status ('HTTP/1.1 302 Found');
+                        http_header(sprintf('Location: services.vspx?&sid=%s&realm=%s\r\n', self.sid, self.realm));
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <vm:url value="Delete"
+                        url="--sprintf('delete_inst.vspx?wai_id=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
+			active="--(case when (control.vc_parent as vspx_row_template).te_rowset[5] in (1,2) then 1 else 0 end)"
+			>
+                  <v:after-data-bind>
+                    <![CDATA[
+                      control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete the application" title="Delete the application"/>&#160;Delete';
+                    ]]>
+                  </v:after-data-bind>
+                  <v:before-data-bind>
+                    <v:script>
+                      <![CDATA[
+                        if ((control.vc_parent as vspx_row_template).te_rowset[3] = 1)
+                          control.vc_enabled := 1;
+                        else
+			control.vc_enabled := 0;
+
+                        declare freeze varchar;
+                        freeze := (control.vc_parent as vspx_row_template).te_rowset[7];
+                        if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+                          control.vc_enabled := 0;
+                      ]]>
+                    </v:script>
+                  </v:before-data-bind>
+                </vm:url>
+                <v:button value="Properties" style="url" action="simple" name="properties_app">
+                  <v:after-data-bind>
+                    <![CDATA[
+                      control.ufl_value := '<img src="images/icons/confg_16.png" border="0" alt="Edit" title="Edit"/>&#160;Edit';
+                    ]]>
+                  </v:after-data-bind>
+                  <v:before-data-bind>
+                    <v:script>
+                      <![CDATA[
+                        control.vc_enabled := (case when (control.vc_parent as vspx_row_template).te_rowset[5] in (1,2) then 1 else 0 end);
+                        if ((control.vc_parent as vspx_row_template).te_rowset[3] = 1)
+                          control.vc_enabled := 1;
+                        else
+                          control.vc_enabled := 0;
+                        declare freeze varchar;
+                        freeze := (control.vc_parent as vspx_row_template).te_rowset[7];
+                        if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+                          control.vc_enabled := 0;
+                      ]]>
+                    </v:script>
+                  </v:before-data-bind>
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare s,url,params varchar;
+                        declare h,t any;
+                        s := (control.vc_parent as vspx_row_template).te_rowset[4];
+                        h := udt_implements_method (s, 'wa_edit_instance_url');
+                        if (h = 0)
+                          url := 'edit_inst.vspx';
+                        else
+                          url := call(h)(s);
+                        params := sprintf('wai_id=%d', (control.vc_parent as vspx_row_template).te_rowset[0]);
+                        url := vspx_uri_add_parameters(url,params);
+                        declare freeze varchar;
+                        freeze := (control.vc_parent as vspx_row_template).te_rowset[7];
+                        if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+                        {
+                          http_request_status ('HTTP/1.1 302 Found');
+                          http_header(sprintf('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                        }
+                        else
+                        {
+                          http_request_status ('HTTP/1.1 302 Found');
+                          http_header(sprintf('Location: %s&sid=%s&realm=%s\r\n', url, self.sid, self.realm));
+                        }
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <v:button style="url" value="Members" action="simple" name="membership_app_membership" >
+                  <v:after-data-bind>
+                    <![CDATA[
+                      control.ufl_value := '<img src="images/icons/group_16.png" border="0" alt="Members (application)" title="Members (application)"/>&#160;Members';
+		      if ((control.vc_parent as vspx_row_template).te_rowset[7] = 1 or
+		        (control.vc_parent as vspx_row_template).te_rowset[6] in ('oDrive', 'oMail'))
+		        control.vc_enabled := 0;
+                    ]]>
+                  </v:after-data-bind>
+                  <v:before-data-bind>
+                    <v:script>
+                      <![CDATA[
+                        if ((control.vc_parent as vspx_row_template).te_rowset[3] = 1)
+                          control.vc_enabled := 1;
+                        else
+                          control.vc_enabled := 0;
+                      ]]>
+                    </v:script>
+                  </v:before-data-bind>
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare freeze varchar;
+			freeze := (control.vc_parent as vspx_row_template).te_rowset[7];
+                        if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+                        {
+                          http_request_status ('HTTP/1.1 302 Found');
+                          http_header(sprintf('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                          return;
+                        }
+
+                        --declare h, id, ss any;
+                        --declare inst web_app;
+                        --inst := (control.vc_parent as vspx_row_template).te_rowset[4];
+                        --ss := null;
+                        --h := udt_implements_method (inst, 'wa_membership_edit_form');
+			--id := call (h) (inst, ss);
+			self.vc_redirect (sprintf ('members.vspx?wai_id=%d',
+				(control.vc_parent as vspx_row_template).te_rowset[0]));
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+              <td>
+                <?vsp
+                  declare freeze varchar;
+                  freeze := (control as vspx_row_template).te_rowset[7];
+                  if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+                  {
+                ?>
+                <b><img src="images/icons/stop_16.png" border="0" alt="Application is frozen" title="Application is frozen"/> Application is frozen</b>
+                <?vsp
+                  }
+                  else
+                  {
+                ?>
+                <v:button style="url" value="Properties" action="simple" name="membership_app_prop">
+                  <v:after-data-bind>
+                    <![CDATA[
+                      control.ufl_value := '<img src="images/icons/prefs_16.png" border="0" alt="Properties (application)" title="Properties (application)"/>&#160;Properties';
+                    ]]>
+                  </v:after-data-bind>
+                  <v:before-data-bind>
+                    <v:script>
+                      <![CDATA[
+                        if ((control.vc_parent as vspx_row_template).te_rowset[3] = 1)
+                          control.vc_enabled := 1;
+                        else
+                          control.vc_enabled := 0;
+                      ]]>
+                    </v:script>
+                  </v:before-data-bind>
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare freeze varchar;
+                        freeze := (control.vc_parent as vspx_row_template).te_rowset[7];
+                        if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+                        {
+                          http_request_status ('HTTP/1.1 302 Found');
+                          http_header(sprintf('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                          return;
+                        }
+                        declare h, id, ss any;
+                        declare inst web_app;
+                        inst := (control.vc_parent as vspx_row_template).te_rowset[4];
+                        ss := null;
+                        declare exit handler for sqlstate 'NOPAT'
+                        {
+                          self.vc_is_valid := 0;
+                          self.vc_error_message := regexp_match ('[^\r\n]*', __SQL_MESSAGE);
+                          return;
+                        };
+                        h := udt_implements_method (inst, 'wa_state_edit_form');
+                        id := call (h) (inst, ss);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <?vsp
+                  }
+                ?>
+              </td>
+            </tr>
+          </vm:template>
+        </vm:template>
+      </v:data-set>
+    </table>
+  </vm:template>
+          </div>
+        </div>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+</v:page>

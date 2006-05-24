@@ -1,0 +1,116 @@
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="blog-home-page"
+  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  style="index.xsl"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<vm:page>
+  <vm:header>
+    <vm:title>Application Settings</vm:title>
+  </vm:header>
+  <vm:pagewrapper>
+    <vm:rawheader caption="Application Settings"/>
+    <vm:navigation-new on="settings"/>
+    <vm:subnavigation-new on="site"/>
+
+    <vm:body>
+      <vm:login redirect="index.vspx"/>
+      <table border="0" width="100%" height="100%" class="settings">
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl1" value="Applications" url="--sprintf ('services.vspx?l=%s', self.topmenu_level)" render-only="1" />
+	    <div>
+	      Change your applications.
+	    </div>
+	  </td>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl2" value="Endpoints" url="--sprintf ('vhost.vspx?l=%s', self.topmenu_level)" render-only="1" />
+	    <div>
+	      Add or remove URLs for accessing your applications.
+	    </div>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl5" value="Log and Statistics" url="--sprintf('stat.vspx?l=%s', self.topmenu_level)" render-only="1" />
+	    <div>
+	      View application activity and statistics.
+	    </div>
+	  </td>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl6" value="Content Tagging Settings" url="--sprintf('tags.vspx?l=%s', self.topmenu_level)" render-only="1" />
+	    <div>
+	      Define rules for tagging the application contents.
+	    </div>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl4" value="Application Administration" url="--sprintf ('admin.vspx?l=%s', self.topmenu_level)" render-only="1" />
+	    <div>
+	      Make a new application instance, join to an existing or invite someone to join.
+	    </div>
+	  </td>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl7" value="Home Page Template Selection" url="--sprintf ('user_template.vspx?l=%s', self.topmenu_level)" render-only="1" />
+	    <div>
+	      Edit the current template or pick new.
+	    </div>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl8" value="Edit Profile" url="--sprintf ('uiedit.vspx?l=%s', self.topmenu_level)" render-only="1" />
+	    <div>
+	      Edit your personal data.
+	    </div>
+	  </td>
+	  <td>
+    <?vsp
+	 if (wa_user_is_dba (self.u_name, self.u_group))
+	   {
+   ?>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl3" value="Site Security" url="--sprintf ('security.vspx?l=%s', self.topmenu_level)" render-only="1" />
+	    <div>
+	      Freeze, unfreeze, act on an application as user.
+	    </div>
+   <?vsp
+           }
+   ?>
+	  </td>
+	</tr>
+      </table>
+    </vm:body>
+  </vm:pagewrapper>
+</vm:page>
+</v:page>

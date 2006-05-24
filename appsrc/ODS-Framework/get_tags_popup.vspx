@@ -1,0 +1,190 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="blog-home-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>Suggest Tags</vm:title>
+    </vm:header>
+    <vm:pagewrapper>
+      <vm:rawheader caption="Import Tags"/>
+      <v:variable name="res" type="any" default="null"/>
+      <vm:body>
+      <script type="text/javascript">
+  <![CDATA[
+function selectAllCheckboxes (form, btn, txt)
+{
+  var i;
+  for (i =0; i < form.elements.length; i++)
+    {
+      var contr = form.elements[i];
+      if (contr != null && contr.type == "checkbox" && contr.name.indexOf (txt) != -1)
+        {
+    contr.focus();
+    if (btn.value == 'Select All')
+      contr.checked = true;
+    else
+            contr.checked = false;
+  }
+    }
+  if (btn.value == 'Select All')
+    btn.value = 'Unselect All';
+  else
+    btn.value = 'Select All';
+  btn.focus();
+}
+
+function retSelected (form, txt)
+{
+  var i, ret;
+  ret = '';
+  for (i = 0; i < form.elements.length; i++)
+    {
+      var contr = form.elements[i];
+      if (contr != null && contr.type == "checkbox" && contr.name.indexOf (txt) != -1 && contr.checked == true)
+        {
+          ret = ret + contr.value + ', ';
+        }
+    }
+  if (opener == null || opener.s_tag == null)
+    return;
+
+  if (opener.s_tag.value.length)
+    ret = ', ' + ret;
+
+  if (ret.length > 0)
+    opener.s_tag.value = opener.s_tag.value + ret;
+
+  opener.focus ();
+  close ();
+}
+
+]]>
+</script>
+	<vm:login redirect="index.vspx"/>
+         <a href="#" style="text-decoration:none;" onclick="if (opener != null) { opener.focus(); window.close (); } return false;"><img title="Close" alt="Close" src="images/icons/close_16.png" border="0" hspace="3" />Close</a>
+	 <v:form type="simple" method="POST" name="ldapf">
+	   <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+	     <tr valign='top'>
+	       <td>
+		 <table class="ctl_grp">
+		   <tr>
+		     <th>Ruleset definition file</th>
+		     <td>
+		       <v:text name="tagx" type="file" value="" xhtml_size="70" />
+		     </td>
+		   </tr>
+		   <tr>
+		     <td colspan="2" class="fm_ctl_btn">
+		       <span class="fm_ctl_btn">
+		       <v:button name="tags_bts" action="simple" value="Suggest" >
+			 <v:on-post><![CDATA[
+			   declare xt, xp, tag, new_tags, tags  any;
+
+			   declare exit handler for sqlstate '*'
+			   {
+			     self.vc_is_valid := 0;
+			     self.vc_error_message := 'The file has an invalid format.';
+			   };
+
+			   xt := xtree_doc (self.tagx.ufl_value);
+			   xp := xpath_eval ('//tags/text()', xt, 0);
+			   tag := '';
+			   foreach (any elm in xp) do
+			     {
+			       elm := cast (elm as varchar);
+			       tag := tag || ', ' || elm;
+			     }
+
+			   tag := WA_TAG_PREPARE (tag);
+			   tags := split_and_decode(tag, 0, '\0\0,');
+			   new_tags := vector ();
+			   foreach (any t in tags) do
+			     {
+			       t := trim (t);
+			       if (not position (t, new_tags) and length (t))
+			         new_tags := vector_concat (new_tags, vector (t));
+			     }
+			   self.res := new_tags;
+			    ]]></v:on-post>
+		       </v:button>
+		     </span>
+		     </td>
+		   </tr>
+		 </table>
+		 <?vsp if (length  (self.res)) { ?>
+		 <h2>Extracted Tags</h2>
+		 <table class="listing">
+		   <tr class="listing_header_row">
+		     <th>
+		       <input type="checkbox" value="Unselect All" onclick="selectAllCheckboxes(this.form, this, 'cb1')" checked="1"/>
+		       Tag
+		     </th>
+		   </tr>
+		   <?vsp
+		     declare i, l, j  int;
+		     declare elm, dta any;
+		     dta := self.res;
+		     l := length  (self.res);
+		     j := 0;
+		     for (i := 0; i < l; i := i + 1)
+		       {
+		         elm := dta[i];
+		   ?>
+		   <tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+		     <td>
+		       <input type="checkbox" name="cb1_<?V i ?>" value="<?V elm ?>" checked="1" />
+		       <?V elm ?>
+		     </td>
+		   </tr>
+		   <?vsp
+		       }
+	           ?>
+		 <tr>
+		   <td>
+		     <?vsp if (i > 0) { ?>
+		     <span class="fm_ctl_btn">
+		       <input type="button" name="ret_mail" value="Use selected" onclick="javascript: retSelected (this.form, 'cb1')"/>
+		     </span>
+		     <?vsp } else { ?>
+		     No results
+		     <?vsp } ?>
+		   </td>
+		 </tr>
+		 </table>
+		   <?vsp
+		   }
+	         ?>
+	       </td>
+	     </tr>
+	   </table>
+	 </v:form>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+</v:page>
+

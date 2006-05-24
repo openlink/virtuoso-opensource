@@ -1,0 +1,138 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="blog_home_page"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>Application Deletion</vm:title>
+    </vm:header>
+    <v:on-init>
+      <![CDATA[
+        select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_DESCRIPTION into
+        self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.idesc from
+        DB.DBA.WA_INSTANCE where WAI_ID = self.iid;
+        self.instance_descr := self.idesc;
+      ]]>
+    </v:on-init>
+    <v:after-data-bind>
+      <![CDATA[
+        declare freeze varchar;
+        freeze := (select WAI_IS_FROZEN from DB.DBA.WA_INSTANCE where WAI_ID = self.iid);
+        if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+        {
+          http_request_status('HTTP/1.1 302 Found');
+          if (self.redir = 'security')
+            http_header(sprintf('Location: security.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+          else
+            http_header(sprintf('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+          return;
+        }
+      ]]>
+    </v:after-data-bind>
+    <vm:pagewrapper>
+      <vm:navigation on="settings"/>
+      <vm:navigation1 on="services"/>
+      <vm:rawheader caption="Application Deletion"/>
+      <vm:variable name="inst" type="db.dba.web_app" default="null" persist="0" />
+      <vm:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
+      <vm:variable name="imodel" type="int" default="null" persist="0"/>
+      <vm:variable name="is_public" type="int" default="null" persist="0"/>
+      <vm:variable name="is_visible" type="int" default="null" persist="0"/>
+      <vm:variable name="iid" type="int" default="null" persist="0" param-name="wai_id"/>
+      <vm:variable name="redir" type="varchar" default="null" persist="0" param-name="redir"/>
+      <vm:variable name="iname" type="varchar" default="null" persist="0"/>
+      <vm:variable name="idesc" type="varchar" default="null" persist="0"/>
+      <vm:variable name="ihome" type="varchar" default="null" persist="0"/>
+      <vm:variable name="switch_adv" type="int" default="0" persist="0"/>
+      <vm:variable name="page_type" type="varchar" default="'del'" persist="0"/>
+      <v:variable name="instance_descr" type="varchar" default="null" persist="page" />
+      <vm:body>
+        <vm:login redirect="index.vspx"/>
+        <div class="box">
+          <v:form type="simple" method="POST" name="eform1">
+            <h3>You are about to delete application. This operation cannot be undone. Please confirm.</h3>
+	    <h2>Application Settings</h2>
+	     <table  class="ctl_grp">
+	       <vm:instance-settings readonly="yes"/>
+	       <tr>
+		 <td colspan="2">
+	    <span class="fm_ctl_btn">
+                  <v:button action="simple" name="cancel1" value="Cancel">
+                    <v:on-post>
+                      <![CDATA[
+                        http_request_status('HTTP/1.1 302 Found');
+                        if (self.redir = 'security')
+                          http_header(sprintf('Location: security.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                        else
+                          http_header(sprintf('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button action="simple" name="accept1" value="Delete">
+                    <v:on-post>
+                      <![CDATA[
+                        declare inst web_app;
+                        inst := self.inst;
+                        declare h, id any;
+                        declare freeze varchar;
+                        freeze := (select WAI_IS_FROZEN from DB.DBA.WA_INSTANCE where WAI_ID = self.iid);
+                        if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+                        {
+                          self.vc_error_message := 'Application is frozen';
+                          self.vc_is_valid := 0;
+                          goto aaa;
+                        }
+                        h := udt_implements_method(inst, 'wa_drop_instance');
+                        declare exit handler for sqlstate '*'
+                        {
+                          self.vc_error_message := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
+                          self.vc_is_valid := 0;
+                          rollback work;
+                          return;
+                        };
+                        commit work;
+                        id := call (h) (inst);
+                        aaa:;
+                        http_request_status('HTTP/1.1 302 Found');
+                        if (self.redir = 'security')
+                          http_header(sprintf('Location: security.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                        else
+                          http_header(sprintf('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+		</span>
+	      </td>
+	    </tr>
+	      </table>
+          </v:form>
+        </div>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+</v:page>
+

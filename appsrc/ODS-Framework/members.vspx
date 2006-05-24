@@ -1,0 +1,560 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="blog_home_page"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>Application Members</vm:title>
+    </vm:header>
+    <v:on-init>
+      <![CDATA[
+        select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION
+          into self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.wa_type, self.idesc
+          from WA_INSTANCE
+         where WAI_ID = self.iid;
+        if (self.instance_descr is null)
+          self.instance_descr := coalesce((select WAT_DESCRIPTION from WA_TYPES where WAT_NAME = get_keyword('wa_name', self.vc_event.ve_params)), (select WAT_DESCRIPTION from WA_TYPES, WA_INSTANCE where WAT_NAME = WAI_TYPE_NAME and WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), '');
+        if (self.instance_descr = 'Blog')
+          self.ihome := self.inst.wa_home_url();
+        if (self.wa_type in ('oMail'))
+        {
+          declare tmp varchar;
+
+          tmp := self.iname;
+          self.iname := subseq(tmp, 0, strstr(tmp, '@'));
+          self.wa_domain := subseq(tmp, strstr(tmp, '@'));
+        }
+      ]]>
+    </v:on-init>
+    <v:after-data-bind>
+      <![CDATA[
+        declare freeze varchar;
+        freeze := (select WAI_IS_FROZEN from DB.DBA.WA_INSTANCE where WAI_ID = self.iid);
+        if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+        {
+          http_request_status('HTTP/1.1 302 Found');
+          http_header(sprintf('Location: services.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+          return;
+        }
+      ]]>
+    </v:after-data-bind>
+    <vm:pagewrapper>
+      <vm:variable name="inst" type="db.dba.web_app" default="null" persist="0" />
+      <vm:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
+      <vm:variable name="wa_type" type="varchar" default="null" persist="0"/>
+      <vm:variable name="imodel" type="int" default="null" persist="0"/>
+      <vm:variable name="is_public" type="int" default="null" persist="0"/>
+      <vm:variable name="is_visible" type="int" default="null" persist="0"/>
+      <vm:variable name="iid" type="int" default="null" persist="0" param-name="wai_id"/>
+      <vm:variable name="iname" type="varchar" default="null" persist="0"/>
+      <vm:variable name="idesc" type="varchar" default="null" persist="0"/>
+      <vm:variable name="ihome" type="varchar" default="null" persist="0"/>
+      <vm:variable name="instance_descr" type="varchar" default="null" persist="0" />
+      <vm:variable name="wa_domain" type="varchar" default="null" persist="0"/>
+      <vm:variable name="domains" type="varchar" default="null" persist="0"/>
+      <vm:variable name="switch_adv" type="int" default="0" persist="0"/>
+      <vm:variable name="page_type" type="varchar" default="'edit'" persist="0"/>
+      <vm:variable name="member_filter" type="varchar" default="'%'" persist="0"/>
+      <vm:navigation on="settings"/>
+      <vm:navigation1 on="services"/>
+      <vm:rawheader>
+	<h1 class="page_title"><v:label render-only="1" value="--self.iname || ' Members'" name="rah1" /></h1>
+      </vm:rawheader>
+      <vm:body>
+        <vm:login redirect="login.vspx"/>
+        <?vsp
+          if (self.wa_type not in ('oDrive', 'oMail'))
+          {
+        ?>
+      <input type="hidden" name="page" value="membership"/>
+      <?vsp
+      if (self.wa_type in ('oWiki')
+        and self.imodel = 1)
+       {
+        ;
+       }
+      else
+       {
+      ?>
+      <div>
+      <?vsp
+      {
+        declare cnt, cnt1 int;
+	select count(*) into cnt from WA_INVITATIONS where WI_U_ID = self.u_id and WI_INSTANCE = self.iname;
+	select count(*) into cnt1 from WA_MEMBER where WAM_INST = self.iname and WAM_STATUS > 2;
+	cnt := cnt + cnt1;
+	if (cnt > 0)
+	  {
+      ?>
+
+      <img src="images/icons/go_16.png" border="0" alt="Sent Invitations" /> <v:url name="app_inv_url" url="--sprintf ('app_sent_inv.vspx?wai_name=%U&wai_id=%d', self.iname, self.iid)" value="--sprintf ('You have %d pending Invitation(s)', cnt)" render-only="1"/>
+      <?vsp
+          }
+      }
+      ?>
+      <img src="images/icons/go_16.png" border="0" alt="Invite" /> <v:url name="app_inv1_url" url="--sprintf ('members_inv.vspx?wai_id=%d', self.iid)" value="Invite someone to join" render-only="1"/>
+      </div>
+      <v:form name="regf2" method="POST" type="simple">
+	  <div class="ctl_grp">
+	      <img src="images/icons/filter_24.png" alt="Filter" hspace="3" border="0"/>Filter
+	      <v:text name="filt" value=""/>
+	      <v:button name="filt_bts" action="simple" value="Filter" >
+		  <v:on-post><![CDATA[
+		      self.member_filter := self.filt.ufl_value || '%';
+		      self.dss_members.ds_parameters := null;
+		      self.dss_members.vc_data_bind (e);
+		      self.ds_members.vc_data_bind (e);
+		      ]]></v:on-post>
+	      </v:button>
+	  </div>
+	  <div class="<?V case when self.dss_members.ds_rows_fetched &gt; 10 then 'scroll_area' else '' end ?>">
+	  <table class="listing">
+          <tr class="listing_header_row">
+            <th>User</th>
+            <th>Membership Type(status)</th>
+            <th>Member Specific Data</th>
+            <th>Action</th>
+          </tr>
+      <v:data-source name="dss_members" nrows="1000" scrollable="1" edit="0" expression-type="sql" initial-offset="0">
+	<v:expression>
+          <![CDATA[
+            select
+              U_NAME,
+              WMT_NAME,
+              WAM_USER,
+              WAM_MEMBER_TYPE,
+              WAM_STATUS
+            from
+              WA_MEMBER,
+              SYS_USERS,
+              WA_MEMBER_TYPE,
+              WA_TYPES
+            where
+              WMT_APP = WAM_APP_TYPE and
+              WAT_NAME = WMT_APP and
+              WMT_ID = WAM_MEMBER_TYPE and
+              U_ID = WAM_USER and
+              WAM_INST = ? and
+              WAM_STATUS <> 1 and U_NAME like ?
+          ]]>
+	</v:expression>
+        <v:column name="U_NAME" />
+        <v:column name="WMT_NAME" />
+        <v:column name="WAM_USER" />
+        <v:column name="WAM_MEMBER_TYPE" />
+	<v:column name="WAM_STATUS" />
+	<v:param name="iname" value="--self.iname"/>
+	<v:param name="member_filt" value="--self.member_filter"/>
+	<v:after-data-bind>
+	    control.ds_make_statistic ();
+	</v:after-data-bind>
+    </v:data-source>
+
+      <v:data-set name="ds_members" nrows="1000" scrollable="1" cursor-type="keyset" edit="1" data-source="self.dss_members">
+        <v:before-render>
+          control.vc_enabled := length((control as vspx_data_set).ds_rows_cache);
+        </v:before-render>
+        <v:template name="template2" type="repeat">
+	    <v:template name="template_ne4" type="if-not-exists">
+		<tr><td colspan="4">No matching records</td></tr>
+            </v:template>
+            <v:template name="template99" type="edit">
+              <v:form name="upf" type="update" method="POST"  table="WA_MEMBER" if-not-exists="nothing">
+                <v:key name="upd_WAM_USER" column="WAM_USER" value="--self.ds_members.ds_current_row.te_rowset[2]" default="null"/>
+                <v:key name="upd_WAM_INST" column="WAM_INST" value="--self.iname" default="null"/>
+                <v:template name="template6" type="simple">
+                    <tr>
+                      <td>
+                        <v:label format="%s" name="ds_members_update_label_0" value="--self.ds_members.ds_current_row.te_rowset[0]"/>
+                      </td>
+                      <td>
+                        <v:data-list
+                          xhtml_style="width:100%"
+                          name="membership_type1"
+                          sql="select * from WA_MEMBER_TYPE where WMT_APP = (select WAI_TYPE_NAME from WA_INSTANCE where WAI_NAME = self.iname) and WMT_ID <> 1 and WMT_ID <> -1"
+                          key-column="WMT_ID"
+                          value-column="WMT_NAME"
+                          column="WAM_MEMBER_TYPE"
+                        >
+                        </v:data-list>
+                      </td>
+                <td>
+                  <?vsp
+                    {
+                      declare _u_id, _u_name, _ss, _h any;
+                      declare _inst web_app;
+                      _inst := (select WAI_INST from WA_INSTANCE where WAI_NAME = self.iname);
+                      _u_name := self.ds_members.ds_current_row.te_rowset[0];
+                      _u_id := (select U_ID from SYS_USERS where U_NAME = _u_name);
+                      _ss := null;
+                      _h := udt_implements_method(_inst, 'wa_member_data');
+                      if(_h) {
+                        http (call (_h) (_inst, _u_id, _ss));
+                      }
+                    }
+                  ?>
+                </td>
+                      <td>
+                        <v:button name="ds_members_update_btn" action="submit" value="Update" style="url"/>
+                        <a href="#" onclick="javascript: doPostValue('page_form', 'ds_members_cancel', 'Cancel')">Cancel</a>
+                      </td>
+                    </tr>
+                </v:template>
+              </v:form>
+            </v:template>
+          <v:template name="template4" type="browse">
+              <tr>
+                <td nowrap="1" width="20%">
+                  <v:label name="ds_members_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                </td>
+                <td nowrap="1">
+                  <v:label name="ds_members_type" value="" format="%s" >
+                    <v:after-data-bind>
+                      <![CDATA[
+                        declare _type_name, _status any;
+                        _type_name := (control.vc_parent as vspx_row_template).te_rowset[1];
+                        _status := (control.vc_parent as vspx_row_template).te_rowset[4];
+                        if(_status > 2) {
+                          control.ufl_value := concat(_type_name, ' [', WA_STATUS_NAME(_status), ']');
+                        }
+                        else {
+                          control.ufl_value := _type_name;
+                        }
+                      ]]>
+                    </v:after-data-bind>
+                  </v:label>
+                </td>
+                <td nowrap="1">
+                  <?vsp
+                    {
+                      declare _u_id, _u_name, _ss, _h any;
+                      declare _inst web_app;
+                      _inst := (select WAI_INST from WA_INSTANCE where WAI_NAME = self.iname);
+                      _u_name := self.ds_members.ds_current_row.te_rowset[0];
+                      _u_id := (select U_ID from SYS_USERS where U_NAME = _u_name);
+                      _ss := null;
+                      _h := udt_implements_method(_inst, 'wa_member_data');
+                      if(_h) {
+                        http (call (_h) (_inst, _u_id, _ss));
+                      }
+                    }
+                  ?>
+                </td>
+                <td nowrap="1">
+                  <v:button style="url" name="ds_members_delete" action="simple" value="Terminate">
+                    <v:after-data-bind>
+                      <![CDATA[
+                        declare _status any;
+                        _status := (control.vc_parent as vspx_row_template).te_rowset[4];
+			if(_status <> 2 and _status <> 4) {
+                          control.vc_enabled := 0;
+                        }
+                      ]]>
+                    </v:after-data-bind>
+                    <v:on-post>
+                      <v:script>
+                        <![CDATA[
+                          {
+                            declare exit handler for sqlstate '*' {
+                              signal(__SQL_STATE, __SQL_MESSAGE);
+                              self.vc_error_message := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
+                              self.vc_is_valid := 0;
+                              rollback work;
+                              return;
+                            };
+                            -- delete member
+                            declare _u_id, _u_name, _wam_inst any;
+                            _u_name := self.ds_members.ds_current_row.te_rowset[0];
+                            _u_id := (select U_ID from SYS_USERS where U_NAME = _u_name);
+                            _wam_inst := self.iname;
+                            connection_set('action_reason', 'owner');
+                            delete
+                              from WA_MEMBER
+                            where
+                              WAM_USER = _u_id and
+                              WAM_INST = _wam_inst;
+                            -- refresh dataset
+			    self.dss_members.ds_parameters := null;
+			    self.dss_members.vc_data_bind (e);
+                            self.ds_members.vc_data_bind(e);
+                          }
+                        ]]>
+                      </v:script>
+                    </v:on-post>
+                  </v:button>
+                  <v:button style="url" name="ds_members_change" action="simple" value="Change Attributes">
+                    <v:before-render>
+                      <v:script>
+                        <![CDATA[
+                          declare _u_id, _ss any;
+                          _ss := null;
+                          _u_id := (select U_ID from SYS_USERS where U_NAME = (control.vc_parent as vspx_row_template).te_rowset[0]);
+                          declare _inst web_app;
+                          _inst := (select WAI_INST from WA_INSTANCE where WAI_NAME = self.iname);
+                          if('N/A' = _inst.wa_member_data(_u_id, _ss)) {
+                            control.vc_enabled := 0;
+                          }
+                        ]]>
+                      </v:script>
+                    </v:before-render>
+                    <v:on-post>
+                      <v:script>
+                        <![CDATA[
+                          {
+                            declare _u_id, _u_name, _ss, _h any;
+                            declare _inst web_app;
+                            _inst := (select WAI_INST from WA_INSTANCE where WAI_NAME = self.iname);
+                            _u_name := (control.vc_parent as vspx_row_template).te_rowset[0];
+                            _u_id := (select U_ID from SYS_USERS where U_NAME = _u_name);
+                            _ss := null;
+                            _h := udt_implements_method(_inst, 'wa_member_data_edit_form');
+                            if(_h) {
+                              call (_h) (_inst, _u_id, _ss);
+                            }
+                          }
+                        ]]>
+                      </v:script>
+                    </v:on-post>
+                  </v:button>
+                  <v:button action="simple" value="Edit" name="ds_members_edit" style="url" >
+                    <v:after-data-bind>
+                      <![CDATA[
+                        declare _status any;
+                        _status := (control.vc_parent as vspx_row_template).te_rowset[4];
+                        if(_status <> 2) {
+                          control.vc_enabled := 0;
+                        }
+                      ]]>
+                    </v:after-data-bind>
+                  </v:button>
+                  <v:button action="simple" name="ds_members_join_approval" style="url" value="Approve">
+                    <v:after-data-bind>
+                      <![CDATA[
+                        declare _status any;
+                        _status := (control.vc_parent as vspx_row_template).te_rowset[4];
+                        if(_status in (2,4)) {
+                          control.vc_enabled := 0;
+                        }
+                      ]]>
+                    </v:after-data-bind>
+                    <v:on-post>
+                      <v:script>
+                        <![CDATA[
+                          declare exit handler for sqlstate '*' {
+                            self.vc_error_message := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
+                            self.vc_is_valid := 0;
+                            rollback work;
+                            return;
+                          };
+                          update
+                            WA_MEMBER
+                          set
+                            WAM_STATUS = 2
+                          where
+                            WAM_USER = (control.vc_parent as vspx_row_template).te_rowset[2] and
+                            WAM_INST = self.iname;
+			  self.dss_members.ds_parameters := null;
+			  self.dss_members.vc_data_bind (e);
+                          self.ds_members.vc_data_bind(e);
+                        ]]>
+                      </v:script>
+                    </v:on-post>
+                  </v:button>
+                  <v:button action="simple" name="ds_members_join_reject" style="url" value="Reject">
+                    <v:after-data-bind>
+                      <![CDATA[
+                        declare _status any;
+                        _status := (control.vc_parent as vspx_row_template).te_rowset[4];
+                        if(_status in (2,4)) {
+                          control.vc_enabled := 0;
+                        }
+                      ]]>
+                    </v:after-data-bind>
+                    <v:on-post>
+                      <v:script>
+                        <![CDATA[
+                          declare exit handler for sqlstate '*' {
+                            self.vc_error_message := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
+                            self.vc_is_valid := 0;
+                            rollback work;
+                            return;
+                          };
+                          delete from
+                            WA_MEMBER
+                          where
+                            WAM_USER = (control.vc_parent as vspx_row_template).te_rowset[2] and
+                            WAM_INST = self.iname;
+			  self.dss_members.ds_parameters := null;
+			  self.dss_members.vc_data_bind (e);
+                          self.ds_members.vc_data_bind(e);
+                        ]]>
+                      </v:script>
+                    </v:on-post>
+                  </v:button>
+                </td>
+              </tr>
+          </v:template>
+        </v:template>
+        <v:template name="template3" type="simple">
+	    <tr>
+		<td colspan="4" class="ctrl">
+		    <vm:ds-navigation data-set="ds_members" />
+		</td>
+	    </tr>
+        </v:template>
+    </v:data-set>
+    </table>
+    </div>
+    <table class="listing">
+    <v:form type="simple" method="POST" name="add_form_1">
+    <tr>
+	<td width="20%">
+            <v:text xhtml_id="reguid" error-glyph="*" name="reguid" value="--get_keyword ('reguid', params)">
+              <v:validator test="length" min="1" max="80"/>
+            </v:text>
+	</td>
+	<td>
+            <v:data-list
+              xhtml_id="membership_type"
+              xhtml_style="width:100%"
+              name="membership_type"
+              sql="select WMT_NAME, WMT_ID from WA_MEMBER_TYPE where WMT_ID > 1 and WMT_APP = (select WAI_TYPE_NAME from WA_INSTANCE where WAI_NAME = self.iname)"
+              key-column="WMT_ID"
+              value-column="WMT_NAME"
+            >
+            </v:data-list>
+	</td>
+	<td colspan="4">
+	    <v:button action="simple" name="regb1" value="Add member">
+      <v:on-post>
+        <![CDATA[
+          self.current_member_model := (select WAI_MEMBER_MODEL from WA_INSTANCE where WAI_ID = self.iid);
+          -- check if user exists
+          declare _u_id, _u_name any;
+          declare model_type integer;
+          _u_name := trim(self.reguid.ufl_value);
+          model_type := self.membership_type.ufl_value;
+          if(_u_name is null or _u_name = '') {
+            self.vc_is_valid := 0;
+            self.vc_error_message := 'Login Name cannot be empty.';
+            return 0;
+          }
+          _u_id := (select U_ID from SYS_USERS where U_NAME = _u_name and U_DAV_ENABLE = 1 and U_IS_ROLE = 0);
+          if(_u_id is null) {
+            self.vc_is_valid := 0;
+            self.vc_error_message := 'Entered user does not exist.';
+            return 0;
+	  }
+
+	  if (_u_id = self.u_id)
+	    {
+              self.vc_is_valid := 0;
+              self.vc_error_message := 'You are owner of this application.';
+              return 0;
+	    }
+
+          if (exists(select 1 from WA_MEMBER where WAM_USER = _u_id and WAM_INST = self.iname and WAM_STATUS = 2))
+          {
+            self.vc_error_message := 'User is already member of application';
+            self.vc_is_valid := 0;
+            return;
+          }
+          if (exists(select 1 from WA_MEMBER where WAM_USER = _u_id and WAM_INST = self.iname and WAM_STATUS = 4))
+          {
+            self.vc_error_message := 'User is already pending';
+            self.vc_is_valid := 0;
+            return;
+          }
+          -- create session
+          declare _expire, _sid any;
+          if (self.current_member_model = 2)
+          {
+            _sid := md5 (concat(datestring(now()), http_client_ip(), http_path()));
+            _expire := coalesce((select top 1 WS_REGISTRATION_EMAIL_EXPIRY from WA_SETTINGS), 1);
+            insert into VSPX_SESSION ( VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
+            values ( 'wa', _sid, _u_name, serialize (vector ('vspx_user', _u_name)), dateadd ('hour', _expire, now()));
+            connection_set('__sid', _sid);
+          }
+          -- add member
+          declare exit handler for sqlstate '*' {
+            self.vc_error_message := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
+            self.vc_is_valid := 0;
+            rollback work;
+            return;
+          };
+          {
+            declare exit handler for sqlstate '*' {
+              self.vc_is_valid := 0;
+              declare _use_sys_errors, _sys_error, _error any;
+              _sys_error := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+              _error := 'Due to a transient problem in the system, your invitation could not be
+                  processed at the moment. The system administrators have been notified. Please
+                  try again later.';
+              _use_sys_errors := (select top 1 WS_SHOW_SYSTEM_ERRORS from WA_SETTINGS);
+              if(_use_sys_errors) {
+                self.vc_error_message := _error || ' ' || _sys_error;
+              }
+              else {
+                self.vc_error_message := _error;
+              }
+              rollback work;
+              return;
+            };
+            if (self.current_member_model = 2)
+            {
+              insert soft WA_MEMBER(WAM_USER, WAM_INST, WAM_MEMBER_TYPE, WAM_STATUS)
+                values(_u_id, self.iname, model_type, 4);
+            }
+            else
+            {
+              insert soft WA_MEMBER(WAM_USER, WAM_INST, WAM_MEMBER_TYPE, WAM_STATUS)
+                values(_u_id, self.iname, model_type, 2);
+            }
+          }
+          -- refresh dataset
+	  self.dss_members.ds_parameters := null;
+	  self.dss_members.vc_data_bind (e);
+	  self.ds_members.vc_data_bind(e);
+      ]]>
+      </v:on-post>
+            </v:button>
+	</td>
+    </tr>
+</v:form>
+      </table>
+      <vm:variable name="current_member_model" type="int" default="0" persist="0"/>
+  </v:form>
+    <?vsp
+      }
+    ?>
+        <?vsp
+          }
+        ?>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+</v:page>

@@ -1,0 +1,255 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="blog-home-page"
+  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  style="index.xsl"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<vm:page>
+  <vm:header>
+    <vm:title>Template Selection</vm:title>
+  </vm:header>
+  <vm:pagewrapper>
+    <vm:rawheader caption="Template Selection"/>
+    <vm:navigation-new on="settings"/>
+    <vm:body>
+      <vm:login redirect="index.vspx"/>
+	      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+		  <tr valign="top">
+		      <td>
+			  <table cellpadding="10" cellspacing="0" border="0" width="100%">
+			      <tr>
+				  <td>
+				      <table cellpadding="0" cellspacing="0" border="0">
+					  <colgroup>
+					      <col/>
+					      <col/>
+					      <col/>
+					      <col/>
+					      <col/>
+					      <col/>
+					  </colgroup>
+					  <tr>
+					      <td
+						  class="<?V case when
+						  get_keyword ('tmpl_tab', self.vc_event.ve_params, '1') in ('1','3','4','5','6')
+						  then 'page_tab_selected' else 'page_tab' end ?>"
+						  align="center" nowrap="1">
+						  <v:url name="b_url15" value="Edit Current"
+						      url="user_template.vspx?tmpl_tab=1"
+						      xhtml_class="button"/>
+					      </td>
+					      <td class="<?V case when get_keyword ('tmpl_tab', self.vc_event.ve_params, '1') = '2' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+						  <v:url name="b_url16" value="Pick New"
+						      url="user_template.vspx?tmpl_tab=2"
+						      xhtml_class="button"/>
+					      </td>
+					      <td class="page_tab_empty" align="center" width="100%">
+						  <table cellpadding="0" cellspacing="0">
+						      <tr>
+							  <td width="100%" >
+							  </td>
+						      </tr>
+						  </table>
+					      </td>
+					  </tr>
+				      </table>
+				      <table class="tab_page">
+					  <tr>
+					      <td valign="top">
+						  <v:template type="simple" name="edit_curr_tmpl"
+						      enabled="--position (get_keyword ('tmpl_tab', e.ve_params, '1') , vector ('1', '3', '4', '5', '6'))">
+						      <h3>
+							  Edit
+							  <?vsp
+							  if (self.current_template like registry_get('_wa_path_')||'%')
+							    {
+							      http ('built-in ');
+							      http (self.current_template_name);
+							    }
+							  else
+							    {
+							      http ('custom');
+							    }
+							   ?>
+							   template
+						      </h3>
+						      <table class="ctl_grp">
+							<tr>
+							  <td>
+							  <v:select-list
+							      name="tmpl_tab"
+							      value="--get_keyword ('tmpl_tab', e.ve_params, '1')"
+							      auto-submit="1" >
+							      <v:item name="Home" value="1"/>
+							      <v:item name="Style" value="5"/>
+							  </v:select-list>
+							</td>
+						      </tr>
+						      <tr>
+							<td>
+							  <v:textarea name="templ_src" xhtml_rows="20" xhtml_cols="100" value="">
+							      <v:before-render><![CDATA[
+			    declare file varchar;
+			    declare e vspx_event;
+                            e := self.vc_event;
+			    if ((not e.ve_is_post or e.ve_initiator = self.tmpl_tab)
+			    	and get_keyword ('tmpl_tab', e.ve_params, '1') <> '2')
+			      {
+			      	file := case get_keyword ('tmpl_tab', e.ve_params, '1') when '1'
+			      		then 'home.vspx'
+					when '5' then 'default.css'
+					else signal ('22023', 'Internal error: Incorrect template item') end;
+				control.ufl_value := wa_utf8_to_wide ((select blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.current_template||'/'||file));
+				if (not length(control.ufl_value))
+				  {
+				    control.ufl_value := wa_utf8_to_wide ((select blob_to_string (RES_CONTENT) from
+				    WS.WS.SYS_DAV_RES where RES_FULL_PATH = registry_get('_wa_path_') ||
+				    	'templates/default/'||file));
+				  }
+			      }
+			    else
+			      {
+			        control.ufl_value := wa_utf8_to_wide (control.ufl_value);
+		              }
+
+			      ]]></v:before-render>
+							  </v:textarea>
+							</td>
+						      </tr>
+						      <tr>
+							<td>
+						      <span class="fm_ctl_btn">
+		<v:button xhtml_class="real_button" value="Save Changes" action="simple" name="save_tmpl_chages">
+	         <v:on-post><![CDATA[
+	          declare custom varchar;
+		  declare file varchar;
+
+		  custom := self.u_home || 'wa/templates/custom';
+		  if (get_keyword ('tmpl_tab', e.ve_params, '1') = '2')
+		    {
+		      update WA_USER_INFO set WAUI_TEMPLATE = self.templates_list.ufl_value
+		      where WAUI_U_ID = self.u_id;
+		      return;
+		    }
+
+		  file := case get_keyword ('tmpl_tab', e.ve_params, '1') when '1' then 'home.vspx'
+		  when '5' then 'default.css' else signal ('22023', 'Internal error: Incorrect template item') end;
+		  if (self.current_template <> custom)
+		    {
+		      WA_TEMPLATE_COPY (self.current_template || '/', custom || '/',
+			   self.u_id, 1,
+			   '^((home.vspx)|(.*\.css))\$'
+			   );
+		      update WA_USER_INFO set WAUI_TEMPLATE = 'custom'
+		      where WAUI_U_ID = self.u_id;
+		    }
+		    declare src any;
+		    src := self.templ_src.ufl_value;
+
+		    if (file like '%.vspx')
+		    {
+		      declare xt, xs any;
+		      declare exit handler for sqlstate '*'
+		      {
+		        rollback work;
+		        self.vc_is_valid := 0;
+		        self.vc_error_message := regexp_match ('[^\r\n]*', __SQL_MESSAGE);
+		        return;
+		      };
+		      xt := xtree_doc (src, 256, DB.DBA.vspx_base_url (custom||'/'));
+		      -- XXX: do the check
+		      --xslt (BLOG..BLOG2_GET_PPATH_URL ('widgets/blog_template_check.xsl'), xt);
+		    }
+
+		    DAV_RES_UPLOAD_STRSES_INT (custom || '/' || file, src, '', '110100100N',
+		    	http_dav_uid(), http_admin_gid(), null, null, 0);
+
+
+							  ]]></v:on-post>
+						      </v:button>
+						    </span>
+							</td>
+						      </tr>
+						      </table>
+						  </v:template>
+						  <v:template type="simple" name="pick_new_tmpl"
+						      enabled="--equ(get_keyword ('tmpl_tab', e.ve_params, '1') , '2')">
+						      <input type="hidden"
+							  name="tmpl_tab"
+							  value="<?V get_keyword ('tmpl_tab', self.vc_event.ve_params, '1') ?>" />
+							<h3>Select template</h3>
+							<table class="ctl_grp">
+							  <tr>
+							    <td>
+							  <v:data-list
+							      xhtml_style="width:100%"
+							      name="templates_list"
+					      sql="select COL_NAME as KEYVAL, COL_NAME as NAME FROM WS.WS.SYS_DAV_COL
+					      WHERE WS..COL_PATH (COL_ID) like registry_get('_wa_path_') || 'templates/_*'
+					      union all select 'custom' as KEYVAL, 'custom' as NAME
+					      from SYS_USERS where U_ID = self.u_id and self.have_custom_template = 1"
+							      key-column="KEYVAL"
+							      value-column="NAME"
+							      xhtml_size="10">
+							      <v:after-data-bind>
+								  control.ufl_value := self.current_template_name;
+								  if (control.ufl_value is null)
+								    control.ufl_value := 'default';
+								  control.vs_set_selected ();
+							      </v:after-data-bind>
+							  </v:data-list>
+							</td>
+						      </tr>
+						      <tr>
+							<td>
+						      <span class="fm_ctl_btn">
+							<v:button xhtml_class="real_button"
+							  value="Use Selected Template" action="simple" name="use_selected_tmpl">
+							      <v:on-post><![CDATA[
+								update WA_USER_INFO set WAUI_TEMPLATE =
+									self.templates_list.ufl_value
+								where WAUI_U_ID = self.u_id;
+								commit work;
+								self.vc_redirect ('user_template.vspx?tmpl_tab=1');
+								  ]]></v:on-post>
+							      </v:button>
+							    </span>
+							</td>
+						      </tr>
+						      </table>
+						  </v:template>
+					      </td>
+					  </tr>
+				      </table>
+				  </td>
+			      </tr>
+			  </table>
+		      </td>
+		  </tr>
+	      </table>
+    </vm:body>
+  </vm:pagewrapper>
+</vm:page>
+</v:page>

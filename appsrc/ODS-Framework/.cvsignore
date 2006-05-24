@@ -1,0 +1,13 @@
+Makefile
+Makefile.in
+virtuoso.db
+virtuoso.ini
+virtuoso.lic
+virtuoso.log
+virtuoso.pxa
+virtuoso.tdb
+virtuoso.trx
+ods_dav.vad
+make_ods_vad.log
+make_ods_vad.xml
+vad

@@ -1,0 +1,127 @@
+<?vsp
+--   search_ajax.vsp
+--
+--   $Id$
+--
+--   AJAX Handler for the google map control
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+  declare _wmd_inst  integer;
+  declare _lat_min, _lat_max, _lng_min, _lng_max double precision; -- the bounds of the map
+  declare _lat_step, _lng_step double precision; -- the size of the single icon
+
+  declare exit handler for sqlstate '*' {
+      log_message (sprintf ('search_ajax.vsp AJAX Error : [%s] : %s', __SQL_STATE, __SQL_MESSAGE));
+      return;
+  };
+  commit work;
+  set isolation='uncommited';
+
+  _wmd_inst := cast (get_keyword ('inst', params, NULL) as integer);
+  _lat_min := cast (get_keyword ('al', params, NULL) as double precision);
+  _lat_max := cast (get_keyword ('ah', params, NULL) as double precision);
+  _lng_min := cast (get_keyword ('nl', params, NULL) as double precision);
+  _lng_max := cast (get_keyword ('nh', params, NULL) as double precision);
+  _lat_step := cast (get_keyword ('as', params, NULL) as double precision);
+  _lng_step := cast (get_keyword ('ns', params, NULL) as double precision);
+
+--  dbg_obj_print ('AJAX raw',
+--     'inst=', _wmd_inst,
+--     'lat_min=', _lat_min,
+--     'lat_max=', _lat_max,
+--     'lng_min=', _lng_min,
+--     'lng_max=', _lng_max,
+--     'lat_step=', _lat_step,
+--     'lng_step=', _lng_step);
+
+  if (_wmd_inst is null
+      or _lat_min is null or _lat_max is null or _lng_min is null or _lng_max is null
+      or _lat_step is null or _lng_step is null)
+    signal ('22023', 'Invalid parameters', 'WAS01');
+
+  if (_lat_min >= _lat_max or _lng_min >= _lng_max
+      or _lat_step < 0
+      or _lng_step < 0)
+    signal ('22023', 'Invalid parameters', 'WAS02');
+
+--  dbg_printf ('AJAX Calling : inst=%d lat (min:%f max:%f) lng (min:%f max:%f) step (lat:%f lng:%f)',
+--     _wmd_inst,
+--     _lat_min, _lat_max,
+--     _lng_min, _lng_max,
+--     _lat_step, _lng_step);
+
+  declare _wmd_sql varchar;
+  declare _wmd_ballon_inx smallint;
+  declare _wmd_lat_inx smallint;
+  declare _wmd_lng_inx smallint;
+  declare _wmd_key_name_inx smallint;
+  declare _wmd_key_val any;
+  declare _wmd_base_url varchar;
+  declare _wmd_vs_sid   varchar;
+  declare _wmd_vs_realm varchar;
+  declare _binding_nodes_count_inx smallint;
+
+  WA_MAPS_AJAX_GET_VALS_BY_ID (
+     _wmd_inst,
+
+     _wmd_sql,
+     _wmd_ballon_inx,
+     _wmd_lat_inx,
+     _wmd_lng_inx,
+     _wmd_key_name_inx,
+     _wmd_key_val,
+     _wmd_base_url,
+     _wmd_vs_sid,
+     _wmd_vs_realm);
+
+  if (isstring (_wmd_vs_sid) and _wmd_vs_sid <> '')
+    connection_set ('wa_sid', _wmd_vs_sid);
+  else
+    connection_set ('wa_sid', '');
+
+  commit work;
+
+--  dbg_obj_print ('AJAX found data : ',
+--	_wmd_sql, _wmd_ballon_inx, _wmd_lat_inx, _wmd_lng_inx,
+--        _wmd_key_name_inx, _wmd_key_val, _wmd_base_url);
+
+
+  _wmd_sql := WA_MAPS_CLIP_INVISIBLE (_wmd_sql, _lng_min, _lng_max, _lat_min, _lat_max);
+
+  _wmd_sql := WA_MAPS_BIND_MARKERS (_wmd_sql, _lng_min, _lat_min, _lng_step, _lat_step,
+                 _wmd_key_val);
+  -- fix the indices:
+  _wmd_lng_inx := 1;
+  _wmd_lat_inx := 2;
+  _wmd_key_name_inx := 3;
+  _wmd_ballon_inx := 4;
+  _binding_nodes_count_inx := 5;
+
+--  dbg_obj_print ('QRY:', _wmd_sql);
+  WA_MAPS_AJAX_SEND_RESPONSE (
+    _wmd_sql,
+    _wmd_ballon_inx,
+    _wmd_lat_inx,
+    _wmd_lng_inx,
+    _wmd_key_name_inx,
+    _wmd_key_val,
+    _binding_nodes_count_inx);
+?>

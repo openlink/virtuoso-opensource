@@ -1,0 +1,101 @@
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+create procedure wa_exec_no_error(in expr varchar) {
+  declare state, message, meta, result any;
+  exec(expr, state, message, vector(), 0, meta, result);
+}
+;
+
+wa_exec_no_error ('create table sn_source (
+    sns_id int,
+    sns_name varchar,
+    primary key (sns_id))');
+
+wa_exec_no_error('create table sn_entity (
+    sne_id int identity,
+    sne_name varchar unique,
+    sne_source int references sn_source,
+    sne_org_id any,
+    primary key (sne_id))');
+
+wa_exec_no_error ('create table sn_person (under sn_entity)');
+
+wa_exec_no_error('create table sn_group (under sn_entity)');
+
+wa_exec_no_error('create table sn_alias (
+    sna_alias int,
+    sna_entity varchar references sn_entity,
+    primary key (sna_alias))');
+
+wa_exec_no_error('create table sn_member (
+    snm_group int references sn_entity,
+    snm_entity int references sn_entity,
+    primary key (snm_group, snm_entity))');
+
+
+wa_exec_no_error('create table sn_related (
+    snr_from int references sn_entity,
+    snr_to int references sn_entity,
+    snr_since datetime,
+    snr_weight int,
+    snr_url varchar,
+    snr_serial int,
+    snr_source int references sn_source,
+    snr_confirmed int default 0,
+    primary key (snr_from, snr_to, snr_serial))');
+
+wa_exec_no_error('create index sn_related_from on sn_related (snr_from)');
+
+wa_exec_no_error('create index sn_related_to on sn_related (snr_to)');
+
+wa_exec_no_error('create table sn_invitation (
+    sni_from int references sn_entity,
+    sni_to varchar not null,		-- e-mail
+    sni_ts timestamp,
+    sni_status int,
+    primary key (sni_from, sni_to))');
+
+wa_exec_no_error('
+create view SN_FRENDS as
+select
+ sne_from.sne_name as FROM_U_NAME,
+ sne_to.sne_name as TO_U_NAME
+from
+ DB.DBA.sn_related, sn_entity sne_from, sn_entity sne_to
+where
+ snr_to = sne_to.sne_id
+ and snr_from = sne_from.sne_id')
+;
+
+
+create procedure wa_sn_user_ent_set ()
+{
+  if (registry_get ('__wa_sn_user_ent_set_done') = 'done')
+    return;
+  for select U_NAME, U_ID from SYS_USERS where U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and U_NAME <> 'nobody' do
+    {
+      if (not exists (select 1 from sn_person where sne_name = U_NAME))
+        insert soft sn_person (sne_name, sne_org_id) values (U_NAME, U_ID);
+    }
+  registry_set ('__wa_sn_user_ent_set_done', 'done');
+};
+
+wa_sn_user_ent_set ();

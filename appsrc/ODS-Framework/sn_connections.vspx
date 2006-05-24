@@ -1,0 +1,132 @@
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="blog-home-page" xmlns:vm="http://www.openlinksw.com/vspx/weblog/" xmlns:v="http://www.openlinksw.com/vspx/"
+	style="index.xsl"
+	doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+	doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>My Connections</vm:title>
+    </vm:header>
+    <vm:pagewrapper>
+      <vm:variable name="conn_num" type="int" default="0" />
+      <vm:variable name="sne_id" type="int" default="0" />
+      <vm:variable name="for_user" type="varchar" default="null"/>
+      <!--<vm:navigation on="home"/>-->
+      <!--<vm:navigation1 on="sn"/>-->
+      <vm:navigation-new on="home"/>
+      <vm:navigation2 on="sn_connections"/>
+      <vm:rawheader caption="My Connections"/>
+      <vm:body>
+	  <vm:login redirect="sn_connections.vspx"/>
+        <div id="container">
+	  <div>
+	      <v:local-variable name="lv1">
+		<v:after-data-bind>
+
+		  whenever not found goto nf;
+
+		  self.for_user := coalesce (self.fname, self.u_name);
+		  select sne_id into self.sne_id from sn_entity where sne_name = self.for_user;
+		  select count(*) into self.conn_num from sn_related where
+		  (snr_from = self.sne_id or snr_to = self.sne_id);
+
+		  nf:;
+
+		</v:after-data-bind>
+	      </v:local-variable>
+	      <v:button action="simple" style="image" name="u2" value="images/foaf.gif"
+			url="--sprintf ('ufoaf.xml?:sne=%d', self.sne_id)" />
+	      <?vsp
+	      if (self.fname is null or self.fname = self.u_name)
+                {
+	      ?>
+	      <p>You have <v:label name="lnc1" value="--self.conn_num" format="%d"/> connections</p>
+	      <table class="settings">
+		<tr>
+		  <td>
+		    <img src="images/mail_16.gif" border="0" alt="New Invitation" />
+		    <vm:button name="sn_send_new_inv" url="sn_make_inv.vspx">
+		      Send a New Invitation
+		    </vm:button>
+		  </td>
+		  <td>
+		    <img src="images/icons/go_16.png" border="0" alt="Sent Invitations" />
+		    <vm:button name="sn_sent_inv" url="sn_sent_inv.vspx?l=1">
+		      Sent Invitations
+		    </vm:button>
+		  </td>
+		  <td>
+		    <img src="images/icons/go_16.png" border="0" alt="Received Invitations" />
+		    <vm:button name="sn_rec_inv" url="sn_rec_inv.vspx?l=1">
+		      Received Invitations
+		    </vm:button>
+		  </td>
+		</tr>
+	      </table>
+	      <?vsp
+	         }
+	      ?>
+	      <table class="listing">
+		  <tr class="listing_header_row">
+		      <th>Name</th>
+		      <th>Action</th>
+		  </tr>
+	    <v:data-set
+		name="ds_conn"
+		sql="select sne_name, sne_org_id, u_full_name, u_id from sn_related, sn_entity, sys_users where snr_to = sne_id and snr_from = :uid and sne_name = u_name
+		     union all select sne_name, sne_org_id, u_full_name, u_id from sn_related, sn_entity, sys_users where snr_from = sne_id and snr_to = :uid and sne_name = u_name"
+		nrows="1000"
+		cursor-type="dynamic"
+		scrollable="1"
+		editable="1"
+		>
+		<v:param name="uid" value="--self.sne_id"/>
+		<v:template type="repeat" name="ds_conn_rep">
+		    <v:template name="ds_conn_no" type="if-not-exists">
+			<tr><td colspan="2">No connections available</td></tr>
+		    </v:template>
+		    <v:template type="browse" name="ds_conn_brows">
+			<tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
+			    <td>
+			      <v:url name="l1" value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[2], (control.vc_parent as vspx_row_template).te_rowset[0])"
+				url="--sprintf ('uhome.vspx?ufname=%U', (control.vc_parent as vspx_row_template).te_rowset[0])"
+				/>
+			    </td>
+			    <td>
+			      <v:url name="u1" value="vCard" xhtml_title="Download vCard"
+				url="--sprintf ('/INLINEFILE/%U.vcf?VSP=%s/sn_user_export.vspx&amp;ufname=%U&amp;ufid=%d', (control.vc_parent as vspx_row_template).te_rowset[0], wa_link (), (control.vc_parent as vspx_row_template).te_rowset[0], (control.vc_parent as vspx_row_template).te_rowset[3])" />
+			      <v:url name="del2" value="Remove" xhtml_title="Remove contact"
+			        url="--sprintf ('sn_delete.vspx?sn=%s&amp;l=1', (control.vc_parent as vspx_row_template).te_rowset[0])"	/>
+			    </td>
+			</tr>
+		    </v:template>
+		</v:template>
+	    </v:data-set>
+	  </table>
+          </div>
+        </div>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+</v:page>

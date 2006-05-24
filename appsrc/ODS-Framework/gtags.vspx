@@ -1,0 +1,150 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="blog-home-page"
+  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  style="index.xsl"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<vm:page>
+  <vm:header>
+    <vm:title>Global Tags</vm:title>
+  </vm:header>
+  <vm:pagewrapper>
+    <vm:navigation-new on="gtags"/>
+    <vm:subnavigation-new on="site"/>
+    <vm:body>
+      <v:method name="print_tag" arglist="in cmax any, in tag any, in cnt any"><![CDATA[
+	declare perc, ts_size, style any;
+
+	tag := trim (tag, ' \r\n');
+	if (tag <> '')
+	{
+	        perc := (100.00 * cnt) / cmax;
+	        ts_size := (1.5 * perc) + 90;
+
+	        style := '';
+		if (perc > 60)
+		  style := style || ' font-weight: bold;';
+
+		if (perc > 80)
+	          style := style || ' color: #9900CC;';
+		else if (perc > 60)
+	          style := style || ' color: #339933;';
+		else if (perc > 40)
+	          style := style || ' color: #CC3333;';
+		else if (perc > 30)
+	          style := style || ' color: #66CC99;';
+
+		http (sprintf ('<a href="#" onclick="javascript: doPostValueToSearch(\'%s\');" name="btn_%s" class="tag_link" style="font-size: %d%s; %s">%s</a>', tag, tag, ts_size, '%', style, tag));
+		http ('&nbsp; \n');
+	}
+	]]></v:method>
+      <vm:login redirect="gtags.vspx"/>
+      <script type="text/javascript">
+	function doPostValueToSearch (value)
+	 {
+	   var frm = document.forms["page_form"];
+	   frm.q_tags.value = value;
+	   frm.action="search.vspx";
+	   frm.submit ();
+	 }
+	function doPostValueToMe (value)
+	 {
+	   var frm = document.forms["page_form"];
+	   frm.sel_tfs_id.value = value;
+	   frm.action="gtags.vspx";
+	   frm.submit ();
+	 }
+      </script>
+      <table class="listing">
+	<input type="hidden" name="q" value=""/>
+	<input type="hidden" name="q_tags" value=""/>
+	<input type="hidden" name="sel_tfs_id" value=""/>
+	<tr><td>
+	    <?vsp
+		declare idx int;
+		declare TFS_TIME1, TFS_ID1 any;
+
+		idx := 0;
+	    	for select top 2 TFS_TIME, TFS_ID from TF_REPORT_SET order by TFS_USER desc, TFS_TIME desc do
+		  {
+		    if (idx = 0)
+		      {
+		        TFS_TIME1 := TFS_TIME;
+			TFS_ID1 := TFS_ID;
+		      }
+		    else if (idx = 1)
+		      {
+		      ?>
+		      <a href="#" onclick="javascript: doPostValueToMe('<?V TFS_ID1 ?>');" name="btn_<?V TFS_ID1 ?>">
+			<h2>Changes between <?V substring (datestring (TFS_TIME), 1, 16) ?>
+		      and <?V substring (datestring (TFS_TIME1), 1, 16) ?></h2></a>
+		    <?vsp
+		      }
+		    idx := idx + 1;
+		  }
+	    ?>
+	</td></tr>
+	<tr><td>
+	     <div class="tag_cloud">
+
+	<?vsp
+	   declare ts_max, ts_size, latest_tag_id, style integer;
+	   declare cmax, cmin, delta int;
+	   declare perc float;
+
+	   delta := get_keyword('sel_tfs_id', self.vc_event.ve_params, '');
+	   if (delta = '')
+	     {
+	       latest_tag_id := wa_get_last_tf_id ();
+
+	       select max(TF_COUNT) into cmax from TF_REPORT;
+
+	       for (select top 100 TF_TAG, TF_COUNT from TF_REPORT where TF_ID = latest_tag_id order by TF_COUNT desc) do
+		 {
+		    self.print_tag (cmax, TF_TAG, TF_COUNT);
+		 }
+	     }
+	   else
+	     {
+	       select max(TFD_DELTA) into cmax from TF_REPORT_DELTA;
+	       select min(TFD_DELTA) into cmin from TF_REPORT_DELTA;
+	       cmax := cmax + abs (cmin);
+	       if (not cmax)
+	         cmax := 1;
+	       for (select top 100 TFD_TAG, TFD_DELTA from TF_REPORT_DELTA where TFD_ID = atoi (delta)
+	       	   								order by TFD_DELTA desc) do
+	         {
+		    self.print_tag (cmax, TFD_TAG, TFD_DELTA);
+		 }
+
+	     }
+	?>
+            </div>
+	</td></tr>
+      </table>
+    </vm:body>
+  </vm:pagewrapper>
+</vm:page>
+</v:page>

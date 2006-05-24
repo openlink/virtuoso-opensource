@@ -1,0 +1,25 @@
+Dear %user%,
+
+I have set up a %app% which is hosted at %service% and wish to share
+it with you.
+
+You may start using it by pointing your browser here: 
+%app_action_url%. 
+This invitation will expire in %timeout_join% hours. By registering as a user at %service% you 
+can also create your own services, such as weblogs, wikis, file storage, et cetera, and share
+them with your friends, if you wish. 
+
+For more information, on all the services available at %service%, go here:
+%service_url%.
+
+Best wishes,
+
+%app_owner%
+
+--------------------------------------------------------------------------------
+
+Thank you for using Virtuoso Web Applications. 
+
+OpenLink Virtuoso Team
+
+-- Powered by Virtuoso -  http://www.openlinksw.com/virtuoso/

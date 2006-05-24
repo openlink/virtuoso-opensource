@@ -1,0 +1,23 @@
+Dear %app_owner%, 
+
+%user% has requested to join your %app_name% %app% application. 
+
+Please proceed to the following URL to accept or reject the application. 
+
+%app_action_url% 
+
+If no action is take the application will automatically expire in %timeout_join% hours. 
+
+
+
+--------------------------------------------------------------------------------
+
+If you require help or support at any time you may refer to the home page for links to documentation and support. 
+
+
+
+--------------------------------------------------------------------------------
+
+Thank you for using Virtuoso Web Applications. Virtuoso Team 
+
+-- Powered by Virtuoso http://www.openlinksw.com/virtuoso/

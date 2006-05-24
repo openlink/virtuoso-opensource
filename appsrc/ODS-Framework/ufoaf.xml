@@ -1,0 +1,103 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version ='1.0' encoding='UTF-8'?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+    xmlns:foaf="http://xmlns.com/foaf/0.1/" 
+    xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <sql:header xmlns:sql='urn:schemas-openlink-com:xml-sql'>
+	<sql:param name=":sne">-1</sql:param>
+    </sql:header>
+    <foaf:Person>
+    <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
+	select
+            xmlelement ('http://xmlns.com/foaf/0.1/:nick', wa_utf8_to_wide (u_name)),
+            xmlelement ('http://xmlns.com/foaf/0.1/:title', either( equ(WA_OPTION_IS_PUBLIC(u_name,0),1), WAUI_TITLE,'' )),
+            xmlelement ('http://xmlns.com/foaf/0.1/:firstName', either( equ(WA_OPTION_IS_PUBLIC(u_name,1),1), wa_utf8_to_wide (WAUI_FIRST_NAME),'')),
+            xmlelement ('http://xmlns.com/foaf/0.1/:family_name', either(equ(WA_OPTION_IS_PUBLIC(u_name,2),1), wa_utf8_to_wide (WAUI_LAST_NAME),'')),
+	    xmlelement ('http://xmlns.com/foaf/0.1/:name', wa_utf8_to_wide (u_full_name)),
+	    xmlelement ('http://xmlns.com/foaf/0.1/:mbox', xmlattributes ('mailto:'||either( equ(WA_OPTION_IS_PUBLIC(u_name,4),1), u_e_mail,'') as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')),
+            xmlelement ('http://xmlns.com/foaf/0.1/:gender', either( equ(WA_OPTION_IS_PUBLIC(u_name,5),1), WAUI_GENDER ,'')),
+            xmlelement ('http://xmlns.com/foaf/0.1/:icqChatID', either( equ(WA_OPTION_IS_PUBLIC(u_name,10),1), WAUI_ICQ,'')),
+            xmlelement ('http://xmlns.com/foaf/0.1/:msnChatID', either( equ(WA_OPTION_IS_PUBLIC(u_name,14),1), WAUI_MSN,'')),
+            xmlelement ('http://xmlns.com/foaf/0.1/:aimChatID', either( equ(WA_OPTION_IS_PUBLIC(u_name,12),1), WAUI_AIM,'')),
+	    xmlelement ('http://xmlns.com/foaf/0.1/:yahooChatID', either( equ(WA_OPTION_IS_PUBLIC(u_name,13),1), WAUI_YAHOO,'')),
+
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 37),1), 
+	    xmlelement ('http://xmlns.com/foaf/0.1/:img', 
+	         xmlattributes (WA_XPATH_EXPAND_URL (WAUI_PHOTO_URL) as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')
+	       ),
+	    null),
+	    
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 6), 1) * equ(isnull (WAUI_BIRTHDAY), 0),  
+	    xmlelement ('http://xmlns.com/foaf/0.1/:birthday', substring (datestring(coalesce (WAUI_BIRTHDAY, now())), 6, 5)),
+	    null ),
+	    
+	    either ( length (WA_USER_TAG_GET (u_name)),
+	    ( 
+	       select xmlagg (xmlelement ('http://xmlns.com/foaf/0.1/:interest', 
+	         xmlelement ('http://www.w3.org/1999/02/22-rdf-syntax-ns#:Description', 
+	           xmlattributes (U_TAG as 'http://www.w3.org/2000/01/rdf-schema#:label'))
+		)) 
+	       from WA_USER_TAG_GET_P (uname) (U_TAG varchar) P where uname = u_name 
+	    )  
+	    ,
+	    null),
+	    
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 20), 1), 
+	    xmlelement ('http://xmlns.com/foaf/0.1/:organization', WAUI_BORG),
+	    null),
+	    
+	    either ( equ(WA_OPTION_IS_PUBLIC (u_name, 18), 1), 
+	    xmlelement ('http://xmlns.com/foaf/0.1/:phone', 
+		   xmlattributes (
+		   'tel:' || case 
+		      when length (WAUI_HPHONE) then WAUI_HPHONE 
+		      when length (WAUI_HMOBILE) then WAUI_HMOBILE 
+		      else  WAUI_BPHONE end 
+		      as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource')
+	        ),
+	    null),
+	    
+	    xmlelement ('http://xmlns.com/foaf/0.1/:homepage',
+	    xmlattributes ( either( equ(WA_OPTION_IS_PUBLIC(u_name,7),1), WAUI_WEBPAGE,'') as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
+	    from sn_person, sys_users, WA_USER_INFO where sne_org_id = u_id and u_id = WAUI_U_ID
+	    and sne_id = :sne
+	    ]]></sql:sqlx>
+
+    <sql:sqlx xmlns:sql='urn:schemas-openlink-com:xml-sql'><![CDATA[
+	select xmlelement ('http://xmlns.com/foaf/0.1/:knows',
+	       xmlelement ('http://xmlns.com/foaf/0.1/:Person',
+			    xmlelement ('http://xmlns.com/foaf/0.1/:name', wa_utf8_to_wide (u_full_name)),
+			    xmlelement ('http://xmlns.com/foaf/0.1/:nick', wa_utf8_to_wide (u_name))
+			    ))
+			    from (
+			     select u_id,u_full_name,u_name from sn_person, sn_related, sys_users where sne_org_id = u_id
+			     and sne_id = snr_to and snr_from = :sne
+			     union
+			     select u_id,u_full_name,u_name from sn_person, sn_related, sys_users where sne_org_id = u_id
+			     and sne_id = snr_from and snr_to = :sne
+			     ) sub
+	]]></sql:sqlx>
+  </foaf:Person>
+</rdf:RDF>

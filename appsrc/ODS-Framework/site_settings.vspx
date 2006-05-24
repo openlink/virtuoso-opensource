@@ -1,0 +1,96 @@
+<v:page name="blog-home-page"
+  xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  style="index.xsl"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<vm:page>
+  <vm:header>
+    <vm:title>Site Settings</vm:title>
+  </vm:header>
+  <vm:pagewrapper>
+    <vm:rawheader caption="Site Settings"/>
+    <vm:navigation-new on="site_settings"/>
+    <vm:body>
+      <vm:login redirect="index.vspx"/>
+      <table border="0" width="100%" height="100%" class="settings">
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl1" value="Web Application Configuration" url="web_header.vspx" render-only="1" />
+	    <div>
+	      Change the site logo, copyright, welcome etc. messages.
+	    </div>
+	  </td>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl2" value="Mail" url="mail.vspx" render-only="1" />
+	    <div>
+	      Edit site mail settings.
+	    </div>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl3" value="Member Registration" url="member.vspx" render-only="1" />
+	    <div>
+	      Change the member registration settings.
+	    </div>
+	  </td>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl4" value="Server Settings" url="server.vspx" render-only="1" />
+	    <div>
+	      Error display settings, or act as an user.
+	    </div>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl5" value="Application Agreements" url="app.vspx" render-only="1" />
+	    <div>
+	      Upload the application aggreements.
+	    </div>
+	  </td>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl6" value="Admin Tools" url="/conductor/" render-only="1" />
+	    <div>
+	      Manage the server instance via OpenLink Virtuoso Conductor.
+	    </div>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl5" value="Mapping Services" url="map_svc.vspx" render-only="1" />
+	    <div>
+	      Mapping services providers.
+	    </div>
+	  </td>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl8" value="Application menu" url="app_menu_settings.vspx" render-only="1" />
+	    <div>
+	      Application menu settings
+	    </div>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl5" value="Users Administration" url="accounts.vspx" render-only="1" />
+	    <div>
+	     Enable or disable user accounts.
+	    </div>
+	  </td>
+	  <td>
+	  </td>
+	</tr>
+      </table>
+    </vm:body>
+  </vm:pagewrapper>
+</vm:page>
+</v:page>

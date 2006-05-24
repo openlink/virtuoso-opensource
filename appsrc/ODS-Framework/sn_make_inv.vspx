@@ -1,0 +1,225 @@
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="blog-home-page" xmlns:vm="http://www.openlinksw.com/vspx/weblog/" xmlns:v="http://www.openlinksw.com/vspx/" style="index.xsl"
+    doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>Send Invitation</vm:title>
+    </vm:header>
+    <vm:pagewrapper>
+      <vm:variable name="sne_id" type="int" default="0" />
+      <v:variable name="fmail" type="varchar" default="''" param-name="fmail"/>
+      <!--<vm:navigation on="home"/>
+      <vm:navigation1 on="sn"/>-->
+      <vm:navigation-new on="home"/>
+      <vm:navigation2 on="sn_sent_inv"/>
+      <vm:rawheader caption="Invite your Friends, Collegues and Family to <?V self.banner ?>"/>
+      <vm:body>
+        <vm:login redirect="index.vspx"/>
+        <div id="container">
+	      <v:local-variable name="lv1">
+		<v:after-data-bind>
+
+		  select sne_id into self.sne_id from sn_entity where sne_name = self.u_name;
+
+		</v:after-data-bind>
+	      </v:local-variable>
+	       <v:form name="invf" method="POST" type="simple">
+		  <?vsp
+		    declare sne_cnt int;
+		    select count(*) into sne_cnt from sn_invitation where sni_from = self.sne_id and sni_status = 0;
+	          ?>
+		  <table border="0" class="ctl_grp">
+		    <tr>
+		      <td colspan="3">
+			<div>Personalize your invitation to make it more inviting. Add a few words of your own
+			  to the standard invite and share a bit more of yourself.</div>
+		      </td>
+		    </tr>
+
+		    <tr>
+		      <th colspan="3">
+			Invitations
+		      </th>
+		    </tr>
+		    <tr>
+		      <td>
+		      </td>
+		      <td colspan="2">You currently have <?V sne_cnt ?> outstanding invites</td>
+		    </tr>
+		    <vm:if test="sne_cnt > 0">
+		      <tr>
+			<td>
+			</td>
+			<td colspan="2"><v:url value="View Past Invites" name="past_invit" url="sn_sent_inv.vspx"/></td>
+		      </tr>
+		    </vm:if>
+		    <tr>
+		      <th>From</th>
+		      <td colspan="2">
+			<v:label name="em_fr" value="--coalesce(self.u_e_mail, '')" />
+		      </td>
+		    </tr>
+		    <tr>
+		      <th colspan="3">To:</th>
+		    </tr>
+
+		    <tr>
+		      <td colspan="3">
+			<v:text name="em_to" value="--coalesce(self.fmail,'')" xhtml_size="90"/>
+			<?vsp
+			 if (exists (select 1 from SYS_LDAP_SERVERS)) {
+			?>
+			<v:button action="browse" name="ldapbt" value="Browse..." selector="ldap_search.vspx"
+			  child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=600"
+			  >
+			  <v:field name="em_to"/>
+			</v:button>
+			<?vsp } ?>
+			<br/>
+			<small>Separate email addresses with commas.</small>
+		      </td>
+		    </tr>
+			<tr>
+			  <th colspan="3">
+			    Add a Personal Message:
+			  </th>
+		      </tr>
+			<tr>
+			  <td colspan="3">
+			    <v:textarea name="txt2" value=""
+			      xhtml_rows="10" xhtml_cols="100"
+			      xhtml_class="fm_ctl_em"
+				/>
+			    </td>
+			  </tr>
+			  <tr>
+			    <td colspan="3">
+			      Send your friends this email and they will be automatically added to your
+			      friends list when they join.
+			    </td>
+			</tr>
+			<tr>
+			  <td colspan="3">
+			    <span class="fm_ctl_btn">
+			      <v:button action="simple" name="bt2" value="Cancel">
+				<v:on-post><![CDATA[
+				   self.vc_redirect ('sn_connections.vspx');
+				     ]]></v:on-post>
+			      </v:button>
+			      <v:button action="simple" name="bt1" value="Send Invitation">
+				<v:on-post><![CDATA[
+				  declare i, uids, sn_id, msg, tmpl_msg, url, txt1 any;
+				  declare copy varchar;
+
+				  {
+				      declare msg, url any;
+				      url := WS.WS.EXPAND_URL (HTTP_URL_HANDLER (), 'login.vspx?URL=sn_rec_inv.vspx');
+				      msg := WA_GET_EMAIL_TEMPLATE('SN_INV_TEMPLATE');
+				      msg := replace (msg, '%user%', wa_wide_to_utf8 (self.u_full_name));
+				      msg := replace (msg, '%app%', self.banner);
+				      msg := replace (msg, '%url%', url);
+				      tmpl_msg := msg;
+				  }
+
+				  --tmpl_msg := self.txt1.ufl_value;
+				  url := WS.WS.EXPAND_URL (HTTP_URL_HANDLER (), 'login.vspx?URL=sn_rec_inv.vspx');
+
+		                  copy := (select top 1 WS_WEB_TITLE from WA_SETTINGS);
+                	          if (copy = '' or copy is null)
+				    copy := sys_stat ('st_host_name');
+
+				  tmpl_msg := replace (tmpl_msg, '%app%', copy);
+				  tmpl_msg := replace (tmpl_msg, '%invitation%', self.txt2.ufl_value);
+
+				  uids := get_keyword ('em_to',  e.ve_params);
+
+				  uids := split_and_decode (uids, 0, '\0\0,');
+
+				  if (not length (uids))
+				    {
+				      self.vc_is_valid := 0;
+				      self.vc_error_message := 'Please enter at least one mail address';
+				      return;
+				    }
+
+				  i := 0;
+
+				  foreach (any mail in uids) do
+				    {
+				      mail := trim (mail);
+				      msg := replace (tmpl_msg, '%name%', mail);
+				      msg := replace (msg, '%url%', url);
+
+				      insert soft sn_invitation (sni_from, sni_to, sni_status)
+				      values (self.sne_id, mail, 0);
+
+				      if (row_count () > 0)
+				        {
+				          declare exit handler for sqlstate '*'
+					  {
+					    rollback work;
+					    self.vc_is_valid := 0;
+					    if (__SQL_STATE not like 'WA%')
+					      {
+					        self.vc_error_message :=
+					        'The e-mail address(es) is not valid and mail cannot be sent.' ||
+						'Please enter correct value and re-try.';
+					      }
+					    else
+					      self.vc_error_message := __SQL_MESSAGE;
+					    return;
+					  };
+					  WA_SEND_MAIL (self.u_e_mail,mail,'Join my network', msg);
+					  commit work;
+					  i := i + 1;
+					}
+				    }
+
+				   if (i <> length (uids))
+				     {
+				       self.vc_is_valid := 0;
+				       self.vc_error_message := 'Some of the e-mail addresses entered already have a pending invitation, the mail was not sent to he/she. Press Cancel to return to the previous page.';
+				       return;
+				     }
+
+				   self.vc_redirect ('sn_sent_inv.vspx');
+				     ]]></v:on-post>
+				 </v:button>
+
+				 <v:button action="browse" name="bt3" value="Preview Invitation" selector="mail_preview.vspx"
+				   child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=350,width=450"
+				   >
+				   <v:field name="em_to" />
+				   <v:field name="txt2" />
+				 </v:button>
+			    </span>
+			    </td>
+			</tr>
+		    </table>
+		</v:form>
+        </div>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+</v:page>

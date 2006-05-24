@@ -1,0 +1,33 @@
+Welcome %user%, to Virtuoso Web Service Applications. 
+
+This mail contains information about your new Web Service Application account, so you may want to keep this mail in safe place for future reference. 
+
+--------------------------------------------------------------------------------
+Registration 
+Your new account has been created by not yet activated. Before you can use the account you must confirmed you details by using the link below and completing the registration process: 
+
+%app_action_url% 
+
+You have %timeout_reg% hours to complete the process before the application expires. 
+
+
+
+--------------------------------------------------------------------------------
+Your Login Details 
+Upon completing your registration you may go directly to the Web Applications home page and log-in. 
+
+Home: %wa_home% Username: %username% Password: %password% 
+
+If you require help or support at any time you may refer to the home page for links to documentation and support. 
+
+Once logged in you can subscribe to applications provided by the Virtuoso Web Applications site. These are the services that are on offer: 
+
+%apps_available% 
+
+
+
+--------------------------------------------------------------------------------
+
+Thank you for using Virtuoso Web Applications. Virtuoso Team 
+
+-- Powered by Virtuoso http://www.openlinksw.com/virtuoso/
