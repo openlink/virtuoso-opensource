@@ -49,4 +49,3 @@ rm -f *.svr
 rm -f wierr.rep1 wierr.rep2 wierr.rep3
 rm -f noise.txt
 rm -f $SRVMSGLOGFILE
-rm -rf classlib

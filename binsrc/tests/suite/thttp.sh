@@ -937,6 +937,12 @@ case $1 in
       LOG "***ABORTED: txmla.sql"
       exit 1
    fi
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< txmla3.sql 
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: txmla3.sql"
+      exit 1
+   fi
   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tacl.sql 
    if test $STATUS -ne 0
    then

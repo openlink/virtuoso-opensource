@@ -18,7 +18,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-set echo off;
+--set echo on;
+
+--ECHO BOTH "Loading sample DAV files"
 
 create procedure passed_if_not_error (in msg varchar, in x any)
 {
@@ -32,14 +34,14 @@ create procedure passed_if_not_error (in msg varchar, in x any)
 
 create procedure TDAV_META_LOAD ()
 {
-  declare status varchar;
+  declare status,s,m varchar;
   result_names (status);
   passed_if_not_error ('add group HostFs_tdav_meta', DAV_ADD_GROUP ('HostFs_tdav_meta', 'dav', 'dav'));
   passed_if_not_error ('add group tdav_meta_grp', DAV_ADD_GROUP ('tdav_meta_grp', 'dav', 'dav'));
   passed_if_not_error ('add user tdav_meta',
     DAV_ADD_USER ('tdav_meta', 'tdav_meta_pwd', 'tdav_meta_grp', '110100000T', 0, '/DAV/tdav_meta_home/',
       'Sample user for binsrc/tests/suite/tdav_meta.sh', 'tdav_meta@localhost', 'dav', 'dav' ) );
-  exec ('grant "HostFs_tdav_meta" to "tdav_meta"');
+  exec ('grant "HostFs_tdav_meta" to "tdav_meta"',s,m);
   passed_if_not_error ('mkcol /DAV/mnt/', DAV_COL_CREATE ('/DAV/mnt/', '110110110R', 'dav', 'administrators', 'dav', 'dav'));
   passed_if_not_error ('mkcol /DAV/mnt/tdav_meta/', DAV_COL_CREATE ('/DAV/mnt/tdav_meta/', '110100000R', 'tdav_meta', 'HostFs_tdav_meta', 'dav', 'dav'));
   update WS.WS.SYS_DAV_COL set COL_DET='HostFs' where COL_NAME='tdav_meta';
@@ -117,9 +119,11 @@ create function TDAV_URIQA (in host varchar, in uri varchar, in method varchar, 
 TDAV_META_LOAD ();
 --TDAV_META_DUMP_CHECKS ();
 
+ECHO BOTH "Starting URIQA tests. In case of errors this may result a wait for timeout\n";
+
 select isnull (strstr (TDAV_URIQA ('$U{HOST}', '/DAV/tdav_meta_home/zip_samples/', 'MGET',''), 'Kingsley Idehen.foaf'));
 ECHO BOTH $IF $EQU $LAST[1] 0  "PASSED" "***FAILED";
-ECHO BOTH ": MGET on collection\n";
+ECHO BOTH $LAST[1] ": MGET on collection\n";
 
 select isnull (strstr (TDAV_URIQA ('$U{HOST}', '/DAV/tdav_meta_home/zip_samples/Kingsley%20Idehen.foaf', 'MGET',''), 'RDF'));
 ECHO BOTH $IF $EQU $LAST[1] 0  "PASSED" "***FAILED";
