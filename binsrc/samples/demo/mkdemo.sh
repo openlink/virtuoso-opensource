@@ -394,6 +394,7 @@ START_SERVER
 #
 BREAK
 LOAD_SQL mkdemo.sql dba dba
+LOAD_SQL countries.sql dba dba
 
 
 #
