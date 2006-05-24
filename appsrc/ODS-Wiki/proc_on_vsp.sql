@@ -20,6 +20,12 @@
 --  
 --$Id$
 
+create function WV.WIKI.GET_COMMAND (in params any)
+{
+  return coalesce (get_keyword ('xmlraw', params), get_keyword ('command', params), 'wiki');
+}
+;
+
 create function WV.WIKI.VSPTOPICCREATE (
   inout path any, 
   inout lines any,
@@ -75,10 +81,10 @@ create function WV.WIKI.VSPTOPICVIEW (
   returns varchar
 {
   declare _uid int;
-  declare _base_adjust, _output varchar;
+  declare _base_adjust, _command varchar;
   _uid := get_keyword ('uid', params);
   _base_adjust := get_keyword ('baseadjust', params);
-  _output := coalesce (get_keyword ('xmlraw', params), get_keyword ('command', params), 'wiki');
+  _command := WV.WIKI.GET_COMMAND(params);
   declare _text, _is_hist varchar;  
   declare exit handler for sqlstate '42WV9' {
     --dbg_obj_princ ('WV.WIKI.VSPTOPICVIEW ', params);
@@ -111,8 +117,6 @@ create function WV.WIKI.VSPTOPICVIEW (
   _topic.ti_base_adjust := _base_adjust;
   --dbg_obj_print (_topic.ti_rev_id);
   
-  dbg_obj_print ( _topic.ti_base_adjust );
-
   _is_hist := '';
   if (0 < DB.DBA.DAV_SEARCH_ID ( DB.DBA.DAV_SEARCH_PATH (_topic.ti_col_id, 'C') ||
   	'VVC/' || _topic.ti_local_name || '.txt/', 'C' ))
@@ -152,17 +156,17 @@ ins:
   _ext_params := vector_concat (_topic.ti_xslt_vector (params), 
   	vector ('is_hist', _is_hist, 'revision', _topic.ti_rev_id));
   _xhtml := _topic.ti_get_entity(null, 1);
-  if (_output in ('wiki', 'xmlraw'))
+  if (_command not in ('docbook'))
   _xhtml := 
     WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _xhtml,
       _ext_params);
-  if (_output = 'xmlraw')
+  if (_command = 'xmlraw')
     {
       http_rewrite ();
       http_value (_xhtml); 
       return 0;
     }
-  else if (_output = 'docbook')
+  else if (_command = 'docbook')
 	{
 	  _xhtml:= '<html xmlns="http://www.w3.org/1999/xhtml">
 		<head>
@@ -177,15 +181,17 @@ ins:
 	  return 0;
     }
   declare _skin varchar;
-  dbg_obj_princ (params);
   _skin := coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), 'default');
+  http_rewrite ();
+  http_header ('Content-Type: text/html\r\n');
+  dbg_obj_princ ('> ', _base_adjust); 
   _xhtml :=
     WV.WIKI.VSPXSLT ( 'PostProcess.xslt', _xhtml,
       _ext_params,
       _skin );
   http_header ('Content-Type: text/html\r\n');
   http_value (_xhtml);
-  return 1;
+  return 0;
 }
 ;
 
@@ -1987,8 +1993,11 @@ create procedure WV.WIKI.PARSE_SEARCH_STR (in _str varchar)
         _str_arr[idx] = 'OR' or
 	_str_arr[idx] = 'NEAR')
 	{
+	  if (not _keyword)
+	    {
 	  _keyword := 1;
 	  vectorbld_acc (res, _str_arr[idx]);
+	}
 	}
       else if (_keyword)
         {
@@ -2364,5 +2373,15 @@ create function WV.WIKI.BUILD_URL_PART (in params any)
     }
   vectorbld_final (res);
   return WV.WIKI.STRJOIN ('&', res);
+}
+;
+
+--* returns various information about user
+create function WV.WIKI.USER_DETAILS (in uid int, in field_name varchar)
+{
+   return get_keyword (field_name, (select 
+	vector ('name', U_NAME, 
+		'e-mail', U_E_MAIL) from DB.DBA.SYS_USERS 
+	where U_ID = uid));
 }
 ;

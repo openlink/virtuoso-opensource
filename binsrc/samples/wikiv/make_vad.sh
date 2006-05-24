@@ -175,8 +175,8 @@ sticker_init() {
   echo "<!DOCTYPE sticker SYSTEM \"vad_sticker.dtd\">" >> $STICKER
   echo "<sticker version=\"1.0.010505A\" xml:lang=\"en-UK\">" >> $STICKER
   echo "<caption>" >> $STICKER
-  echo "  <name package=\"wiki\">" >> $STICKER
-  echo "    <prop name=\"Title\" value=\"Wiki\"/>" >> $STICKER
+  echo "  <name package=\"Wiki\">" >> $STICKER
+  echo "    <prop name=\"Title\" value=\"ODS Wiki\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Copyright\" value=\"(C) 1999-2005 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/\"/>" >> $STICKER
@@ -189,13 +189,13 @@ sticker_init() {
   echo "</caption>" >> $STICKER
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
-  echo "    <name package=\"wa\"/>" >> $STICKER
+  echo "    <name package=\"Framework\"/>" >> $STICKER
   echo "  </require>" >> $STICKER
   echo "</dependencies>" >> $STICKER
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
-  echo "    <name package=\"wa\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.02.12\"/>" >> $STICKER
+  echo "    <name package=\"Framework\"/>" >> $STICKER
+  echo "    <versions_later package=\"1.21.16\"/>" >> $STICKER
   echo "  </require>" >> $STICKER
   echo "</dependencies>" >> $STICKER
   echo "<procedures uninstallation=\"supported\">" >> $STICKER
@@ -214,6 +214,17 @@ sticker_init() {
   echo "    passed:" >> $STICKER
   echo "    whenever sqlstate '22003' default;" >> $STICKER
   echo "    whenever sqlstate '42001' default;" >> $STICKER
+
+  echo "    if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) " >> $STICKER
+  echo "      { " >> $STICKER
+  echo "        result ('ERROR', 'The Wiki package requires server version $NEED_VERSION or greater'); " >> $STICKER
+  echo "	      signal ('FATAL', 'The Wiki package requires server version $NEED_VERSION or greater'); " >> $STICKER
+  echo "      } " >> $STICKER
+  echo "    if ((VAD_CHECK_VERSION ('wiki') is not null) and (VAD_CHECK_VERSION ('Wiki') is null)) " >> $STICKER
+  echo "      {" >> $STICKER
+  echo "        DB.DBA.VAD_RENAME ('wiki', 'Wiki');" >> $STICKER
+  echo "      }" >> $STICKER
+
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\"></sql>" >> $STICKER
   echo "</procedures>" >> $STICKER
@@ -232,6 +243,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/proc_tmp.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/webmail.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/export.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/conv.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/postinstall.sql', 1, 'report', 1);" >> $STICKER
   echo "      " >> $STICKER
   echo "    ]]>" >> $STICKER

@@ -90,7 +90,8 @@ WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.TOPICHISTORY');
 WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.COMMENT');
 WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.PREDICATE');
 WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.SEMANTIC_OBJ');
-
+WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.DOCBOOK_IDS');
+WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.DOMAIN_PATTERN_1');
 WV.WIKI.SILENT_EXEC ('drop table "WV"."Wiki"."Topic"');
 WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.TOPIC');
 WV.WIKI.SILENT_EXEC ('drop table "WV"."Wiki"."Cluster"');

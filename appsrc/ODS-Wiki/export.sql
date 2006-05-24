@@ -122,7 +122,7 @@ create procedure WV.WIKI.EXPORT_TOPIC (
     signal ('XXXXX', 'Formatter for [' || _type || ']{' || _proc || '} does not exists');
 
   _xhtml := WV.WIKI.VSPXSLT (WV.WIKI.PROP(_type, 'xslt'), _xhtml, _params);
-  dbg_obj_princ (_xhtml);
+  --dbg_obj_princ (_xhtml);
   if (stylesheet is not null)
     _xhtml := xslt (stylesheet, _xhtml, _params);
   declare path, attachments_path varchar;

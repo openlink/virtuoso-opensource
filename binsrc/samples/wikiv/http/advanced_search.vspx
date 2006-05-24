@@ -221,12 +221,12 @@
                             where
                              contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?))
                              and (RES_FULL_PATH like ''/DAV/VAD/wiki/%.txt''
-			     	  or RES_FULL_PATH like ''/DAV/home/wiki/%.txt'')';
+			     	  or RES_FULL_PATH like ''/DAV/home/%/wiki/%.txt'')';
 	cr_len_text := 'select count (*) from WS.WS.SYS_DAV_RES
                             where
                              contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?))
                              and (RES_FULL_PATH like ''/DAV/VAD/wiki/%.txt''
-			     	  or RES_FULL_PATH like ''/DAV/home/wiki/%.txt'')';
+			     	  or RES_FULL_PATH like ''/DAV/home/%/wiki/%.txt'')';
 	
 	declare exit handler for sqlstate '37000' {
 	  self.ds_data := vector ();
@@ -253,6 +253,7 @@
 	else -- needed to distinguish wiki topic from text files
 	  exp1 := WV.WIKI.ADD_SYSINFO (exp1, 'Cluster', '', 1);
 	  
+	  
 	vectorbld_acc (cr_params, exp1);
 	declare add_cr_text varchar;
 	add_cr_text := '';
@@ -275,13 +276,11 @@
 
 	cr_text := cr_text || add_cr_text;
 	cr_len_text := cr_len_text || add_cr_text;	
-	dbg_obj_print (cr_text);
 	
 	self.ds_len := 0;
 	whenever not found goto endf;
 	
 	vectorbld_final(cr_params);
-	dbg_obj_print (cr_params);
 	stat := '00000';
 	exec (cr_len_text, stat, msg, cr_params, 1, null, dta);
 	if (stat <> '00000')
@@ -544,7 +543,6 @@ endf:
  	declare author_id int;
 	author_id := (select AdminId from WV.WIKI.CLUSTERS where ClusterName = self.cluster);
 	author := (select U_NAME from DB.DBA.SYS_USERS where U_ID = author_id);
-	dbg_obj_print (self.pageno, self.rowcnt);
         http_rewrite();
 	declare dta any;
         dta := self.ds_data;

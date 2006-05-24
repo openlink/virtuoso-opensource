@@ -139,6 +139,13 @@ create index ClusterByColId on WV.WIKI.CLUSTERS (ColId)'
 )
 ;
 
+wiki_exec_no_error (
+'alter table WV.WIKI.CLUSTERS add C_NEWS_ID varchar' 
+)
+;
+
+
+
 -- Wiki topic.
 -- Actual HTML page rendered by Wiki can be composed from more than one topic,
 -- but even in this case what user edits is a topic.
@@ -185,6 +192,38 @@ alter table "WV"."Wiki"."Topic" drop foreign key ("LastEtrxId") references "WV".
 wiki_exec_no_error('
 alter table WV.WIKI.TOPIC drop LastEtrxId')
 ;
+
+
+wiki_exec_no_error (
+'alter table WV.WIKI.TOPIC add T_RFC_ID varchar' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.TOPIC add T_OWNER_ID int' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.TOPIC add T_CREATE_TIME datetime' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.TOPIC add T_RFC_HEADER varchar' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.TOPIC add T_NEWS_ID varchar' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.TOPIC add T_PUBLISHED int default 0' 
+)
+;
+
 
 -- Links from page to page.
 wiki_exec_no_error (
@@ -450,6 +489,51 @@ create table WV.WIKI.COMMENT (
 	C_DATE		datetime,
 	primary key (C_ID))
 ')	
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.COMMENT add C_RFC_ID varchar' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.COMMENT add C_OWNER_ID int' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.COMMENT add C_CREATE_TIME datetime' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.COMMENT add C_RFC_HEADER varchar' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.COMMENT add C_NEWS_ID varchar' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.COMMENT add C_SUBJECT varchar' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.COMMENT add C_PUBLISHED int default 0' 
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.COMMENT add C_PARENT_ID int'
+)
+;
+
+wiki_exec_no_error (
+'alter table WV.WIKI.COMMENT add C_REFS varchar'
+)
 ;
 
 wiki_exec_no_error('

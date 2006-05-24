@@ -65,6 +65,9 @@
 <xsl:param name="wikiref_params"/>
 <xsl:param name="wikiref_cont"/>
 
+<xsl:param name="realm"/>
+<xsl:param name="sid"/>
+
 <xsl:param name="dashboard">0</xsl:param>
 
 <xsl:variable name="hrefdisable">
@@ -396,14 +399,12 @@
       </xsl:if>
     </li>
     <li id="wiki-nstab-talks">
-      <xsl:call-template name="wikiref">
-        <xsl:with-param name="id">current-topic-talks</xsl:with-param>
-        <xsl:with-param name="wikiref_cont">Discussion</xsl:with-param>
-        <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('selected', 'talks')"/></xsl:with-param>
-      </xsl:call-template>
-      <xsl:if test="wv:params('selected', 'main') = 'talks'">
-        <xsl:attribute name="class">selected</xsl:attribute>
-      </xsl:if>
+	<a id="current-topic-talks"
+	  href="#"
+	  title="Conversation">
+	  <xsl:attribute name="onclick">javascript: window.open('<xsl:value-of select="wv:ResourceHREF2 ('conversation.vspx',$baseadjust,vector('fid',$ti_id, 'sid', $sid, 'realm', $realm))"/>', 'conversation', 'width=700,height=650,scrollbars=yes'); return false;</xsl:attribute>
+	       Conversation
+	</a>
     </li>
     <xsl:if test="$preview_mode != '1'">
       <div id="other-output-toolbar">

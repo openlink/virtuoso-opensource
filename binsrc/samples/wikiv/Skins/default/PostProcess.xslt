@@ -39,6 +39,15 @@
   <xsl:param name="baseadjust"/>
   <xsl:param name="sid"/>
   <xsl:param name="realm"/>
+<html>
+ <header>	
+  <title><xsl:value-of select="$ti_cluster_name"/>.<xsl:value-of select="$ti_local_name"/></title>
+  <link rel="stylesheet" href="{$baseadjust}../resources/Skins/default/default.css" type="text/css"></link>
+  <link rel="alternate" type="application/rss+xml" title="Changelog (RSS 2.0)" href="{$baseadjust}../resources/gems.vsp?cluster={$ti_cluster_name}&amp;type=rss20"></link>
+  <link rel="alternate" type="application/rss+xml" title="Changelog (ATOM)" href="{$baseadjust}../resources/gems.vsp?cluster={$ti_cluster_name}&amp;type=atom"></link>
+  <link rel="alternate" type="application/rss+xml" title="Changelog (RDF)" href="{$baseadjust}../gems.vsp?cluster={$ti_cluster_name}&amp;type=rdf"></link>
+ </header>
+ <body>
   <div id="page">
     <div id="header">
       <xsl:attribute name="style">background-image: url(<xsl:value-of select="wv:ResourceHREF ('images/wikibanner_sml.jpg', $baseadjust)"/>)</xsl:attribute>
@@ -146,6 +155,8 @@
     <xsl:apply-templates select="//div[@id='wiki-toolbar-container']"/>
   </div>
   </div> <!-- page -->
+ </body>
+</html>
 </xsl:template>
 
 

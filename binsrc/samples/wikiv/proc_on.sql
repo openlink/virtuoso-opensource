@@ -620,7 +620,7 @@ create method ti_revisions(in _res_is_vect int, in _total int) returns any for W
 	 	}
 	    }
 	}
-      dbg_obj_print (_max, _min);
+      --dbg_obj_print (_max, _min);
       if (_total and (_max - _min > WV.WIKI.MAX_REVS_IN_REPORT()))
 	{
 	  _min := _max - WV.WIKI.MAX_REVS_IN_REPORT();
@@ -897,6 +897,7 @@ create trigger "Wiki_ClusterDeleteContent" before delete on WV.WIKI.CLUSTERS ref
   DB.DBA.DAV_DELETE (WS.WS.COL_PATH(O.ColId), 1, 'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()));
   delete from WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and (WAI_INST as wa_wikiv).cluster_id = O.ClusterId;
   delete from WV.WIKI.CLUSTERSETTINGS where ClusterId = O.ClusterId;
+  delete from WA_MEMBER where WAM_APP_TYPE = 'oWiki' and WAM_INST = O.ClusterName;
   DB.DBA.USER_ROLE_DROP(O.ClusterName || 'Readers');
   DB.DBA.USER_ROLE_DROP(O.ClusterName || 'Writers');
   DB.DBA.VHOST_REMOVE(lpath=>'/wiki/' || O.ClusterName);
@@ -1610,8 +1611,8 @@ next:
   _attachcol := WV.WIKI.CREATEDAVCOLLECTION (_main, 'attach', _owner, _group);
   declare _cluster_id int;
   _cluster_id := WV.WIKI.NEWCLUSTERID();
-  insert into WV.WIKI.CLUSTERS (ClusterId, ClusterName, ColId, ColHistoryId, ColXmlId, ColAttachId, AdminId)
-    values (_cluster_id, _cname, _main, _histcol, _xmlcol, _attachcol, _owner);
+  insert into WV.WIKI.CLUSTERS (ClusterId, ClusterName, ColId, ColHistoryId, ColXmlId, ColAttachId, AdminId, C_NEWS_ID)
+    values (_cluster_id, _cname, _main, _histcol, _xmlcol, _attachcol, _owner, 'oWiki-' || _cname);
   for select RES_ID as _res_id, RES_FULL_PATH as _full_path,
     RES_CONTENT as _content,
     RES_COL as _col_id,
@@ -2823,7 +2824,6 @@ create procedure WV.WIKI.IMPORT (in cluster varchar,
 	}
      }
 
-dbg_obj_print ('test1');
 
   if (attachments_path is not null)
     dir_list := file_dirlist (attachments_path, 0);
@@ -2846,7 +2846,6 @@ dbg_obj_print ('test1');
 	      _topic.ti_fill_cluster_by_name();
 	  _topic.ti_local_name := file_spec;
 	      _topic.ti_find_id_by_local_name();
-dbg_obj_print ('test2');
 	      if (_topic.ti_id is not null 
 		  and _topic.ti_id > 0)
 		{

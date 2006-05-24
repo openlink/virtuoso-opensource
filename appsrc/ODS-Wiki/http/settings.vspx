@@ -52,6 +52,7 @@
     <v:variable name="enabled" type="varchar" defaullt="'1'"/>
     <!-- LDAP vars -->
     <v:variable name="ldap_enable" type="integer" persist="0"/>
+    <v:variable name="conv_enable" type="integer" persist="0"/>
     <v:variable name="ldap_address" type="varchar" default="''"/>
     <v:variable name="ldap_base" type="varchar" default="''"/>
     <v:variable name="ldap_bind" type="varchar" default="''"/>
@@ -105,6 +106,8 @@
                   self.delicious_enable := WV.WIKI.CLUSTERPARAM (self.cluster, 'delicious_enabled', 2);
                 if (self.webmail_enable is null)
                   self.webmail_enable := WV.WIKI.CLUSTERPARAM (self.cluster, 'webmail_enabled', 2);
+                if (self.conv_enable is null)
+                  self.conv_enable := WV.WIKI.CLUSTERPARAM (self.cluster, 'conv_enabled', 2);
                 if (self.ldap_enable is null)
                   self.ldap_enable := WV.WIKI.CLUSTERPARAM (self.cluster, 'ldap_enabled', 2);
                 if (self.host is null)
@@ -148,6 +151,8 @@
 		DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/webmail.sql', 1, 'report', 1);
 		WV.WIKI.SETCLUSTERPARAM (self.cluster, 'webmail_initialized', 1);
 	      }
+	    WV.WIKI.TOGGLE_CONVERSATION (self.cluster, 2 - self.conv_enable);
+	    WV.WIKI.SETCLUSTERPARAM (self.cluster, 'conv_enabled', self.conv_enable);
             WV.WIKI.SETCLUSTERPARAM (self.cluster, 'webmail_enabled', self.webmail_enable);
             WV.WIKI.SETCLUSTERPARAM (self.cluster, 'webmail_domain', self.webmail_domains.ufl_value);
             WV.WIKI.SETCLUSTERPARAM (self.cluster, 'skin', self.wiki_skin.ufl_value);
@@ -481,6 +486,32 @@
 		  </v:template>
                  </table>
                </p>
+	      </div>
+	    </td>
+	  </tr>
+          <tr>
+	    <td>
+	      <div class="wiki-settings-templates">
+		<h2>Conversations (NNTP integration)</h2>
+		<p>
+		  <table width="100%">
+		    <tr>
+		      <th width="50%">Conversation (NNTP integration)</th>
+		      <td>
+			<v:button name="conv_toggle" action="simple" xhtml_disabled="--self.enabled" 
+				value="--case when self.conv_enable = 1 then 'Turn Off' else 'Turn On' end">
+			  <v:on-post>
+                            <![CDATA[
+                              self.conv_enable := 3 - self.conv_enable;
+                              self.vc_data_bind (e);
+
+                              ]]>
+                          </v:on-post>
+                        </v:button>
+                      </td>
+		    </tr>
+		  </table>
+		</p>
 	      </div>
 	    </td>
 	  </tr>

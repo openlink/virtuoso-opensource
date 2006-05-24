@@ -857,13 +857,14 @@ create function WV.WIKI.MACRO_COMMENTS (inout _data varchar, inout _context any,
  _topic_id := atoi (get_keyword ('ti_id', _env));
  if (_op = 'Post' and _comment is not null and _comment <> '')
    {
-     insert into WV.WIKI.COMMENT (C_TOPIC_ID,C_AUTHOR,C_EMAIL,C_TEXT,C_DATE)
+     insert into WV.WIKI.COMMENT (C_TOPIC_ID,C_AUTHOR,C_EMAIL,C_TEXT,C_DATE,C_SUBJECT)
        values (
          _topic_id,
 	 get_keyword ('author', params),
 	 get_keyword ('email', params),
 	 _comment,
-	 now());
+	 now(),
+	 get_keyword ('subject', params));
      signal ('WVRLD', 'selected=talks'); 
     }
   else if (_op = 'Delete')
@@ -882,6 +883,7 @@ create function WV.WIKI.MACRO_COMMENTS (inout _data varchar, inout _context any,
         C_AUTHOR as "author",
 	C_ID as "id",
 	C_EMAIL as "email",
+	C_SUBJECT as "subject",
 	WV.WIKI.DATEFORMAT(C_DATE) as "date"),
       C_TEXT)))
     from WV.WIKI.COMMENT where C_TOPIC_ID = _topic_id order by C_DATE);
@@ -898,7 +900,12 @@ create function WV.WIKI.MACRO_COMMENTS (inout _data varchar, inout _context any,
     return 
       <tr>
        <td id="wiki{\044comment/@id/string()}">
-         <table width="100%" class="wikitable">
+         <table width="70%" class="wikitable">
+	  <tr>
+	   <td colspan="3">
+	    { \044comment/@subject/string() } 
+	   </td>
+	  </tr>
 	  <tr>
 	   <td colspan="3">
 	    { wv:expandWikiText(\044comment/text(), \044env) }
@@ -932,18 +939,23 @@ create function WV.WIKI.MACRO_COMMENTS (inout _data varchar, inout _context any,
   }
   </table>
   Post your comment:
-  <table class="wikitable">
+  <table class="discussion-table">
    <form method="POST" action="{concat (\044baseadjust, ''../main/'', wv:ReadOnlyWikiWordLink (\044ti_cluster_name, \044ti_local_name))}">
    <input name="sid" type="hidden" value="{\044sid}"/>
    <input name="realm" type="hidden" value="{\044realm}"/>
    <input name="selected" type="hidden" value="talks"/>
    <tr>
     <th>Author</th>
-    <td><input name="author" type="text" value="{\044auth}" size="100%"/></td>
+    <td><input name="author" type="text" value="{\044auth}" size="50%"/></td>
    </tr>
    <tr>
     <th>e-mail</th>
-    <td><input name="email" type="text" value="{\044email}" size="100%"/></td>
+    <td><input name="email" type="text" value="{\044email}" size="50%"/></td>
+   </tr>
+   <tr>
+    <td colspan="2">
+     <input name="subject" type="text" value="Re: { wv:NormalizeWikiWordLink (\044ti_cluster_name, \044ti_local_name) }" size="50%"/>
+    </td>
    </tr>
    <tr>
     <td colspan="2">
