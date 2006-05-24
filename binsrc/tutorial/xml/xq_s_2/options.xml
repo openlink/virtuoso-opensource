@@ -22,10 +22,10 @@
 -->
 <init>
 <src load_at_start="" load_to_clean="search.sql"/>
-<deps item="conductor" example="conductor.vad package" type="package" />
-<deps item="wa" example="wa.vad package" type="package" />
-<deps item="enews2" example="conductor.vad package" type="package" />
-<deps item="oDrive" example="conductor.vad package" type="package" />
-<deps item="blog2" example="conductor.vad package" type="package" />
+<deps item="conductor" example="conductor_dav.vad package" type="package" />
+<deps item="Framework" example="ods_dav.vad package" type="package" />
+<deps item="Feed Manager" example="feeds_dav.vad package" type="package" />
+<deps item="Briefcase" example="briefcase_dav.vad package" type="package" />
+<deps item="Weblog" example="blog_dav.vad package" type="package" />
 <auth req="1"/>
 </init>

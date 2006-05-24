@@ -23,6 +23,6 @@
 <init>
 <src load_at_start="" load_to_clean="blog_bridge.sql"/>
 <src start="blog.vspx" link="blog.vspx"/>
-<deps type="package" item="blog2" example="blog2"/>
+<deps item="Weblog" example="blog_dav.vad package" type="package" />
 <!--deps function="not_exists" expect="nothing" /-->
 </init>

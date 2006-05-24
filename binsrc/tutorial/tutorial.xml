@@ -110,6 +110,13 @@
 	      </group>
       </group>
     </subsection>
+    <subsection Title="RDF Database" fspath="rdf">
+      <group Title="RDF Database">
+        <group Title="PHP hosted">
+					<example id="RQ-S-2" fspath="rdf/rq_s_2"></example>
+        </group>
+      </group>
+    </subsection>
     <!-- We keep those because of the old implementation -->
     <subsection Title="SQL-XML" fspath="xmlsql" ref="xml"/>
     <!-- /We keep those because of the old implementation -->

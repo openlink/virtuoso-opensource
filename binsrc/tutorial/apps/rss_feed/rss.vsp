@@ -65,7 +65,7 @@ select
 	1,
 	null, null,
 	\'MyFeed\',
-        \'http://\'||BLOG_GET_HOST ()|| \'/wa/\',
+        \'http://\'||BLOG_GET_HOST ()|| \'/ods/\',
 	\'\',
 	U_E_MAIL,
 	date_rfc1123(now ()),

@@ -53,26 +53,26 @@
 	<para>This example needs the following VAD packages to be installed:</para>
 	<itemizedlist mark="bullet">
 	    <listitem>Conductor</listitem>
-	    <listitem>WA</listitem>
-	    <listitem>oDrive</listitem>
-	    <listitem>eNews</listitem>
-	    <listitem>Blog</listitem>
+	    <listitem>Framework</listitem>
+	    <listitem>Briefcase</listitem>
+	    <listitem>Feed Manager</listitem>
+	    <listitem>Weblog</listitem>
 	</itemizedlist>
 	<para>If you do not have permissions to install the above please ask the administrator.</para>
 	<para>The VAD installation can be done via Conductor (if it's installed) or via ISQL tool using vad_install() API function. 
 	    For more details on vad installation please read the user manual.</para>
 	<para>
-	    Important: before to run any of the actions bellow you need to setup a WA account (or use tutorial_demo with password secret).
-	    In both cases you will need to login in WA and create instances of the oDrive, eNews and Blog applications. 
+	    Important: before to run any of the actions bellow you need to setup a ODS account (or use tutorial_demo with password secret).
+	    In both cases you will need to login in ODS and create instances of the Briefcase, Feed Manager and Weblog applications. 
 	</para>
 	<para>
-	    Using the eNews you should subscribe to some news feeds in RSS, Atom or RDF format.
+	    Using the Feed Manager you should subscribe to some news feeds in RSS, Atom or RDF format.
 	</para>
 	<para>
-	    Using the oDrive you can upload some sample data in the account's home directory.
+	    Using the Briefcase you can upload some sample data in the account's home directory.
 	</para>
 	<para>
-	    Using the Blog, make few sample blog posts.
+	    Using the Weblog, make few sample blog posts.
 	</para>
     </refsect1>
 
@@ -89,9 +89,9 @@
     <refsect1 id="XQ-S-2c">
 	<title>Example Operation</title>
 	<itemizedlist mark="bullet">
-	    <listitem>Login into WA using the link bellow, after successfull authentication the WA login will redirect browser back to this page</listitem>
+	    <listitem>Login into ODS using the link bellow, after successfull authentication the ODS login will redirect browser back to this page</listitem>
 	    <listitem>Using the link 'Run' start the search.vsp</listitem>
-	    <listitem>Initially you will have the WA account's home directory set as a base, so you can change it using the browse button</listitem>
+	    <listitem>Initially you will have the ODS account's home directory set as a base, so you can change it using the browse button</listitem>
 	    <listitem>If you don't have initial data loaded or data which not satisfies the conditions, the query execution will be produce empty result.</listitem>
 	</itemizedlist>
     </refsect1>
@@ -104,10 +104,10 @@
     <refsect1 id="XQ-S-2d">
     <title>How to run the examples</title>
 	<itemizedlist mark="bullet">
-	    <listitem>In order to enter the initial data via WA you need to <ulink url="/wa/login.vspx">login and create</ulink> instances via WA. After entering the initial data, you will need to go back to this page. If you already done this just skip this step</listitem>
-	    <listitem>In order to run the examples, you need to <ulink url="/wa/login.vspx?URL=<?U http_path() ?>">login</ulink> in the Web Applications.</listitem>
+	    <listitem>In order to enter the initial data via ODS you need to <ulink url="/ods/login.vspx">login and create</ulink> instances via ODS. After entering the initial data, you will need to go back to this page. If you already done this just skip this step</listitem>
+	    <listitem>In order to run the examples, you need to <ulink url="/ods/login.vspx?URL=<?U http_path() ?>">login</ulink> in the Web Applications.</listitem>
 	    <listitem>To login you can use the already defined user "tutorial_demo" with password "secret" case sensitive. </listitem>
-	    <listitem>When you click the "Run" link of the search.vsp file the browser will be redirected to WA login page. After succefull login the browser will be redirected back to this page. </listitem>
+	    <listitem>When you click the "Run" link of the search.vsp file the browser will be redirected to ODS login page. After succefull login the browser will be redirected back to this page. </listitem>
 	</itemizedlist>
     </refsect1>
 

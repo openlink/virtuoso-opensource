@@ -594,7 +594,7 @@ create procedure "RQ"."RQ"."LIST_MENU_ITEMS"() returns any
       vector (1),
       vector (3, 'Interactive SPARQL','desk.vsp?case=custom_sparql'),
       vector (3, 'ISPARQL with Data Browsing','browse_data.vsp'),
-      vector (3, 'LAMP SPARQL demo','sparql_demo.php'),
+--      either(isnull(__proc_exists ('__http_handler_php', 2)),vector(100,'',''),vector (3, 'LAMP SPARQL demo','sparql_demo.php')),
       vector (0, 'About...'),
       vector (5, 'Openlink Software', 'http://www.openlinksw.com'),
       vector (5, 'Virtuoso Server', 'http://www.openlinksw.com/virtuoso'),

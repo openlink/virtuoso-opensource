@@ -76,7 +76,7 @@
         </v:form>
         <!-- END LOGIN -->
         <div>
-	  <a href="/wa/">Register as new</a>
+	  <a href="/ods/">Register as new</a>
         </div>
       </div>
     </v:page>
