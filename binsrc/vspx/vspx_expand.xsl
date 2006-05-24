@@ -362,7 +362,7 @@
         <xsl:if test="$opt-force"><xsl:message terminate="yes">render-only could not be specified when v:url have descendants</xsl:message></xsl:if>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:variable name="unsafe-attr" select="@*[not (name()='render-only' or name()='name' or name()='debug-srcfile' or name()='debug-srcline' or name()='format' or name() = 'value' or name() = 'url' or starts-with(name(), 'xhtml_'))][name() = local-name()]"/>
+        <xsl:variable name="unsafe-attr" select="@*[not (name()='render-only' or name()='name' or name()='debug-srcfile' or name()='debug-srcline' or name()='format' or name() = 'value' or name() = 'url' or name () = 'is-local' or starts-with(name(), 'xhtml_'))][name() = local-name()]"/>
         <xsl:choose>
           <xsl:when test="not(empty($unsafe-attr))">
            <xsl:if test="$opt-force"><xsl:message terminate="yes">render-only could not be specified when v:url have attribute '<xsl:value-of select="name($unsafe-attr[1])"/>'</xsl:message></xsl:if>
@@ -411,6 +411,12 @@
 	   , </xsl:otherwise></xsl:choose>
     </xsl:for-each>
   </xsl:variable>
+  <xsl:variable name="is-local">
+    <xsl:choose>
+      <xsl:when test="@is-local"><xsl:value-of select="@is-local"/></xsl:when>
+      <xsl:otherwise>0</xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
   <xsl:choose>
     <xsl:when test="$is-optimizable and not ($format = '' or $value = '' or $url='') and empty ($xhtml-attrs/unsafe)">
     <xsl:processing-instruction name="vsp">
@@ -426,7 +432,7 @@
       <xsl:value-of select="$format"/>
         , <xsl:value-of select="$value"/>
         , <xsl:value-of select="$url"/>
-        , self.sid, self.realm<xsl:if test="not (empty ($xhtml-attrs))">, vector (<xsl:value-of select="$xhtml-attrs"/> NULL)</xsl:if>
+	, self.sid, self.realm, <xsl:value-of select="$is-local"/><xsl:if test="not (empty ($xhtml-attrs))">, vector (<xsl:value-of select="$xhtml-attrs"/> NULL)</xsl:if>
       );
     }
     </xsl:processing-instruction>

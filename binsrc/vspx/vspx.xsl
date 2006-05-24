@@ -3334,6 +3334,9 @@ form init method
    control.vu_format := <xsl:apply-templates select="@format" mode="static_value"/>;
    </xsl:if>
    control.vu_url :=  <xsl:apply-templates select="@url" mode="static_value"/>;
+   <xsl:if test="@is-local = '1'">
+   control.vu_is_local := 1;
+   </xsl:if>
 </xsl:template>
 
 <xsl:template match="v:text|v:textarea|v:update-field" mode="init_method">

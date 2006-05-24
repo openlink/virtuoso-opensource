@@ -763,7 +763,8 @@ as
   (
     vu_format varchar default '%s',
     vu_url varchar default '',
-    vu_l_pars varchar default ''
+    vu_l_pars varchar default '',
+    vu_is_local int default 0
   )
 temporary self as ref
 overriding method vc_render () returns any,
@@ -2105,13 +2106,27 @@ text_split_complete:
     }
 
   declare i int;
+  declare isSparql int;
   i := 0;
   while( i < length(parsed_text) ) {
     aset(parsed_text, i, trim(parsed_text[i], '\r\n ') );
+    -- SPARQL checks should be removed or modified once sql_split_text is fixed to keep the roiginal query.
+    isSparql := 0;
+    if (upper(parsed_text[i]) like 'SPARQL%')
+      {
+        isSparql := 1;
+        aset(parsed_text, i, trim(subseq(parsed_text[i],6), '\r\n '));
+      }
     err_sqlstate := '00000'; err_msg := '';
    -- dbg_obj_print('self.isql_explain',self.isql_explain);
     result := null;
-    if( self.isql_explain )
+    -- Once sql_split_text is fixed we should eighter call sparql_explain here or exaplain directly if supported.
+    if( self.isql_explain and isSparql)
+      {
+        err_sqlstate := '22023';
+        err_msg := 'SPARQL explain is not supproted in interactive SQL control yet.';
+      }
+    else if( self.isql_explain )
       exec ( 'explain(?)', err_sqlstate, err_msg, vector(parsed_text[i]), _maxres, m_dta, result);
     else
     {
@@ -2126,12 +2141,14 @@ text_split_complete:
     }
     if( err_sqlstate <> '00000' )
     {
+      if( not(isSparql) )
       err_msg := err_msg || '\n' || parsed_text[i];
       rollback work;
     }
     self.vc_error_message := vector_concat( self.vc_error_message, vector(vector(err_sqlstate,err_msg)) );
     self.isql_mtd := vector_concat( self.isql_mtd, vector(m_dta) );
     self.isql_res := vector_concat( self.isql_res, vector(result) );
+    -- Once sql_split_text is fixed we should see how will this change.
     if (self.isql_chunked)
       {
 	declare stmt any;
@@ -3096,7 +3113,7 @@ create method vc_render () for vspx_url
   url := self.vu_url;
 
    -- if it's local reference and we have sid
-  if (uinfo[0] = '' and self.vu_l_pars <> '')
+  if ((uinfo[0] = '' or self.vu_is_local) and self.vu_l_pars <> '')
     {
       if (uinfo[4] = '')
         url := vspx_uri_add_parameters (self.vu_url, self.vu_l_pars);
@@ -5410,7 +5427,7 @@ create procedure vspx_load_sql (
 	      if (not is_drop)
 		{
 		  --log_message (sprintf ('VSPX: %s %s',stat, msg));
-		  dbg_obj_print (string_output_string (dbg));
+		  dbg_printf ('%s', string_output_string (dbg));
 		}
 	      if (not (stmt like 'drop %'))
 		signal (stat, concat (msg, '\nwhile executing the following statement:\n', stmt));
@@ -6528,13 +6545,13 @@ create procedure vspx_label_render (in fmt varchar, in val any)
 }
 ;
 
-create procedure vspx_url_render (in fmt varchar, in val any, in url any, in sid any, in realm any)
+create procedure vspx_url_render (in fmt varchar, in val any, in url any, in sid any, in realm any, in is_local any)
 {
   if (length (sid))
     {
       declare uinfo any;
       uinfo := WS.WS.PARSE_URI (url);
-      if (uinfo[0] = '')
+      if (uinfo[0] = '' or is_local = 1)
         url := vspx_uri_add_parameters (url, sprintf ('sid=%s&realm=%s', sid, realm));
     }
   http (sprintf ('<a href="%V">', url));
@@ -6546,14 +6563,14 @@ create procedure vspx_url_render (in fmt varchar, in val any, in url any, in sid
 }
 ;
 
-create procedure vspx_url_render_ex (in fmt varchar, in val any, in url any, in sid any, in realm any, in attrs any)
+create procedure vspx_url_render_ex (in fmt varchar, in val any, in url any, in sid any, in realm any, in is_local any, in attrs any)
 {
   declare i, l int;
   if (length (sid))
     {
       declare uinfo any;
       uinfo := WS.WS.PARSE_URI (url);
-      if (uinfo[0] = '')
+      if (uinfo[0] = '' or is_local = 1)
         url := vspx_uri_add_parameters (url, sprintf ('sid=%s&realm=%s', sid, realm));
     }
   http (sprintf ('<a href="%V"', url));
