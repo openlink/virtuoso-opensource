@@ -109,32 +109,34 @@
 <xsl:template match="Cluster">
   <xsl:choose>
     <xsl:when test="$dashboard = '1'">
-	    <xsl:variable name="ref"><a href="{@Key}.{wv:GetMainTopicName(@Key)}" style="qwikiword"><xsl:value-of select="Name"/></a></xsl:variable>
+	    <xsl:variable name="ref"><a href="{@KEY}.{wv:GetMainTopicName(@KEY)}" style="qwikiword"><xsl:value-of select="Name"/></a></xsl:variable>
       <tr>
-        <td><xsl:apply-templates select="$ref/node()" />{<xsl:value-of select="@Key"/>}</td>
+        <td><xsl:apply-templates select="$ref/node()" />{<xsl:value-of select="@KEY"/>}</td>
         <td>
           <xsl:call-template name="wikiref">
             <xsl:with-param name="wikiref_cont">Homepage</xsl:with-param>
-            <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@Key"/></xsl:with-param>
-	    <xsl:with-param name="ti_local_name"><xsl:value-of select="wv:GetMainTopicName(@Key)"/></xsl:with-param>
+            <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@KEY"/></xsl:with-param>
+	    <xsl:with-param name="ti_local_name"><xsl:value-of select="wv:GetMainTopicName(@KEY)"/></xsl:with-param>
           </xsl:call-template> /
           <xsl:call-template name="wikiref">
             <xsl:with-param name="wikiref_cont">ClusterSummary</xsl:with-param>
-            <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@Key"/></xsl:with-param>
+            <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@KEY"/></xsl:with-param>
             <xsl:with-param name="ti_local_name">ClusterSummary</xsl:with-param>
           </xsl:call-template> /
           <xsl:call-template name="wikiref">
             <xsl:with-param name="wikiref_cont">Pages</xsl:with-param>
             <xsl:with-param name="wikiref_params">command=index</xsl:with-param>
-            <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@Key"/></xsl:with-param>
-	    <xsl:with-param name="ti_local_name"><xsl:value-of select="wv:GetMainTopicName(@Key)"/></xsl:with-param>
+            <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@KEY"/></xsl:with-param>
+	    <xsl:with-param name="ti_local_name"><xsl:value-of select="wv:GetMainTopicName(@KEY)"/></xsl:with-param>
           </xsl:call-template>
         </td>
       </tr>
     </xsl:when>
     <xsl:otherwise>
-	    <xsl:variable name="ref"><a href="{@ClusterName}.{wv:GetMainTopicName(@ClusterName)}" style="qwikiword"><xsl:value-of select="@ClusterName"/></a></xsl:variable>
-      <tr><td><xsl:apply-templates select="$ref/node()" /></td><td><xsl:value-of select="@Abstract"/></td></tr>
+	    <xsl:variable name="ref"><a href="{@CLUSTERNAME}.{wv:GetMainTopicName(@CLUSTERNAME)}" style="qwikiword"><xsl:value-of select="@CLUSTERNAME"/></a></xsl:variable> 
+<!--	    <xsl:variable name="ref"><a href="{@CLUSTERNAME}.{wv:GetMainTopicName('Main')}" style="qwikiword"><xsl:value-of select="@CLUSTERNAME"/></a></xsl:variable> -->
+	
+      <tr><td><xsl:apply-templates select="$ref/node()" /></td><td><xsl:value-of select="@ABSTRACT"/></td></tr>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -270,22 +272,22 @@
 
 <xsl:template match="Parent">
   <xsl:choose>
-    <xsl:when test="@LocalName != ''">
+    <xsl:when test="@LOCALNAME != ''">
       /
       <xsl:call-template name="wikiref">
-        <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@ClusterName"/></xsl:with-param>
-        <xsl:with-param name="ti_local_name"><xsl:value-of select="@LocalName"/></xsl:with-param>
+        <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@CLUSTERNAME"/></xsl:with-param>
+        <xsl:with-param name="ti_local_name"><xsl:value-of select="@LOCALNAME"/></xsl:with-param>
         <xsl:with-param name="wikiref_params"></xsl:with-param>
-        <xsl:with-param name="wikiref_cont"><xsl:value-of select="@LocalName"/></xsl:with-param>
+        <xsl:with-param name="wikiref_cont"><xsl:value-of select="@LOCALNAME"/></xsl:with-param>
       </xsl:call-template>
     </xsl:when>
     <xsl:otherwise>
       /
       <xsl:call-template name="wikiref">
-        <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@ClusterName"/></xsl:with-param>
-        <xsl:with-param name="ti_local_name"><xsl:value-of select="@LocalName"/></xsl:with-param>
+        <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@CLUSTERNAME"/></xsl:with-param>
+        <xsl:with-param name="ti_local_name"><xsl:value-of select="@LOCALNAME"/></xsl:with-param>
         <xsl:with-param name="wikiref_params"></xsl:with-param>
-        <xsl:with-param name="wikiref_cont"><xsl:value-of select="@ClusterName"/></xsl:with-param>
+        <xsl:with-param name="wikiref_cont"><xsl:value-of select="@CLUSTERNAME"/></xsl:with-param>
       </xsl:call-template>
     </xsl:otherwise>
   </xsl:choose>
@@ -296,7 +298,7 @@
  <xsl:if test="$show_path = '1'">
    <div class="wiki-nav-container">
      <xsl:apply-templates select="Parent">
-       <xsl:sort select="@Depth" data-type = "number" order = "descending"/>
+       <xsl:sort select="@DEPTH" data-type = "number" order = "descending"/>
      </xsl:apply-templates>
    </div>
  </xsl:if>

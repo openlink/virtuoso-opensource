@@ -80,6 +80,7 @@ create function WV.WIKI.VSPTOPICVIEW (
   in params any)
   returns varchar
 {
+  dbg_obj_print (_topic);
   declare _uid int;
   declare _base_adjust, _command varchar;
   _uid := get_keyword ('uid', params);
@@ -156,6 +157,7 @@ ins:
   _ext_params := vector_concat (_topic.ti_xslt_vector (params), 
   	vector ('is_hist', _is_hist, 'revision', _topic.ti_rev_id));
   _xhtml := _topic.ti_get_entity(null, 1);
+  dbg_obj_princ ('>>>>>>' ,_xhtml);
   if (_command not in ('docbook'))
   _xhtml := 
     WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _xhtml,
@@ -413,11 +415,13 @@ create function WV.WIKI.VSPCLUSTERINDEX (
       select XMLELEMENT ('ClusterIndex',
         XMLAGG ( 
           XMLELEMENT ('Link',
-	    XMLATTRIBUTES (_topic.ti_cluster_name as ClusterName, n.LocalName, n.Abstract) ) ) )
+	    XMLATTRIBUTES (_topic.ti_cluster_name as CLUSTERNAME, n.LocalName as LOCALNAME, n.Abstract ABSTRACT) ) ) )
       from WV.WIKI.TOPIC n where n.ClusterId = _topic.ti_cluster_id ) );
   declare _ext_params any;
   _ext_params := vector_concat (_topic.ti_xslt_vector(params),
   	vector ('donotresolve', 1));
+
+  dbg_obj_print (_report);
   http_value (
     WV.WIKI.VSPXSLT ('PostProcess.xslt', 
 	   WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report,
@@ -480,7 +484,7 @@ create function WV.WIKI.AUTHENTICATE (in _user varchar, in _pwd varchar)
   for select (wai_inst as wa_wikiv).cluster_id as cluster_id
     from WA_INSTANCE join WA_MEMBER 
   	on (WAM_INST = WAI_NAME) 
-	where udt_instance_of (WAI_INST, 'DB.DBA.wa_wikiv') 
+	where udt_instance_of (WAI_INST, fix_identifier_case ('DB.DBA.wa_wikiv')) 
 	  and WAM_USER = _uid
   do {
         --dbg_obj_princ ('cluster: ', cluster_id);
@@ -1066,7 +1070,7 @@ create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out 
   declare _idx integer;
   path := subseq(split_and_decode(aref (WS.WS.PARSE_URI(http_path()), 2), 0, '\0\0/'), 1);
   declare _host varchar;
-  _host := http_request_header(lines, 'Host', null, '*ini*');
+  _host := DB.DBA.WA_GET_HOST();
 	  
   _cluster := NULL;
   _attach := NULL;
@@ -1092,7 +1096,11 @@ whenever not found goto nf;
   if (0)
     {
 nf:
-      if (WV.WIKI.STRJOIN ('/', path) not like 'wiki/main/%')
+      declare _jpath varchar;
+      _jpath := WV.WIKI.STRJOIN ('/', path);
+      dbg_obj_princ (_jpath);
+      if ( (_jpath not like 'wiki/main/%') and
+	   (_jpath <>  'wiki/Atom') )
         WV.WIKI.APPSIGNAL (11002, 'Path &url; to resource must start from "/wiki/main/"', vector('url', http_path()));
       path := subseq (path, 2);     
     }
@@ -1112,6 +1120,14 @@ whenever not found default;
     }
   if (_cluster is null or _cluster = '' or _cluster = 'main.vsp')
     _cluster := default_cluster;
+  if ( (select 1 from WV..CLUSTERS where ClusterName = _cluster) is null) 
+    {
+      _cluster := default_cluster; _local_name := WV.WIKI.CLUSTERPARAM (_cluster, 'index-page', 'WelcomeVisitors');
+      declare idx int; 
+      for (idx:=length (path); idx > 2; idx:=idx-1)
+	_base_adjust := _base_adjust || '../';
+      goto cont;
+    }
   if (_local_name is null or _local_name = '')
     _local_name := WV.WIKI.CLUSTERPARAM (_cluster, 'index-page', 'WelcomeVisitors');
   _idx := _startofs;
@@ -1122,6 +1138,7 @@ whenever not found default;
       _idx := _idx + 1;
     }
   declare _primary_skin, _second_skin varchar;
+cont:
   if (_cluster is not null)
     _primary_skin := WV.WIKI.CLUSTERPARAM ( _cluster , 'skin', 'default' );
   _second_skin := null;
@@ -1131,7 +1148,7 @@ whenever sqlstate '2201B' goto next;
   if (skin2_regexp is not null and
       regexp_match (skin2_regexp, _host) is not null)
     _second_skin := WV.WIKI.CLUSTERPARAM ( _cluster , 'skin2', 'default');  
-next:
+next: 
   return vector ('skin', _primary_skin,
   	 	 'skin2', _second_skin);
 }
@@ -2062,6 +2079,7 @@ create function WV.WIKI.DASHBOARD()
 
 create function WV.WIKI.FUNCALL0(in procname varchar)
 {
+  procname := fix_identifier_case (procname);
   if (__proc_exists (procname) or position ('.', procname) = 0)
     return call (procname) ();
   return NULL;
@@ -2069,6 +2087,7 @@ create function WV.WIKI.FUNCALL0(in procname varchar)
 ;
 create function WV.WIKI.FUNCALL1(in procname varchar, in v1 any)
 {
+  procname := fix_identifier_case (procname);
   if (__proc_exists (procname) or position ('.', procname) = 0)
     return call (procname) (v1);
   return NULL;
@@ -2076,6 +2095,7 @@ create function WV.WIKI.FUNCALL1(in procname varchar, in v1 any)
 ;
 create function WV.WIKI.FUNCALL2(in procname varchar, in v1 any, in v2 any)
 {
+  procname := fix_identifier_case (procname);
   if (__proc_exists (procname) or position ('.', procname) = 0)
     return call (procname) (v1,v2);
   return NULL;
@@ -2083,6 +2103,7 @@ create function WV.WIKI.FUNCALL2(in procname varchar, in v1 any, in v2 any)
 ;
 create function WV.WIKI.FUNCALL3(in procname varchar, in v1 any, in v2 any, in v3 any)
 {
+  procname := fix_identifier_case (procname);
   if (__proc_exists (procname) or position ('.', procname) = 0)
     return call (procname) (v1,v2,v3);
   return NULL;
@@ -2090,6 +2111,7 @@ create function WV.WIKI.FUNCALL3(in procname varchar, in v1 any, in v2 any, in v
 ;
 create function WV.WIKI.FUNCALL4(in procname varchar, in v1 any, in v2 any, in v3 any, in v4 any)
 {
+  procname := fix_identifier_case (procname);
   if (__proc_exists (procname) or position ('.', procname) = 0)
     return call (procname) (v1,v2,v3, v4);
   return NULL;

@@ -25,7 +25,7 @@ WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_CREATE (\'WikiAdmin\', 1)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_CREATE (\'WikiUser\', 1)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_CREATE (\'Wiki\', \'Wiki\', vector (\'DAV_ENABLE\', 1, \'SQL_ENABLE\', 1, \'LOGIN_QUALIFIER\', \'WV\'))');
 user_set_password ('Wiki', 'Wiki');
-grant all privileges to Wiki;
+grant all privileges to "Wiki";
 DB.DBA.USER_CREATE ('WikiGuest', '', vector ('DAV_ENABLE', 1, 'SQL_ENABLE', 0, 'LOGIN_QUALIFIER', 'WV'));
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_GRANT_ROLE (\'Wiki\', \'administrators\', 0)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_GRANT_ROLE (\'Wiki\', \'WikiAdmin\', 1)');

@@ -709,22 +709,22 @@ create procedure WV.WIKI.DOTREEPARENT (in _topic_id int, in _ent any, in depth i
   do {	       
     XMLAppendChildren (_ent, 
        XMLELEMENT ('Parent',
-	   XMLATTRIBUTES (ClusterName as ClusterName,
-			  LocalName as LocalName,
-			  depth as Depth)));
+	   XMLATTRIBUTES (ClusterName as CLUSTERNAME,
+			  LocalName as LOCALNAME,
+			  depth as DEPTH)));
     if (ParentId > 0) {
       WV.WIKI.DOTREEPARENT (ParentId, _ent, depth + 1);
     } else {
       XMLAppendChildren (_ent, 
 			 XMLELEMENT ('Parent',
-				     XMLATTRIBUTES (ClusterName as ClusterName,
-						    '' as LocalName,
-						    (depth + 1) as Depth)));
+				     XMLATTRIBUTES (ClusterName as CLUSTERNAME,
+						    '' as LOCALNAME,
+						    (depth + 1) as DEPTH)));
       XMLAppendChildren (_ent, 
 			 XMLELEMENT ('Parent',
-				     XMLATTRIBUTES ('Main' as ClusterName,
-						    WV.WIKI.DASHBOARD() as LocalName,
-						    (depth + 2) as Depth)));
+				     XMLATTRIBUTES ('Main' as CLUSTERNAME,
+						    WV.WIKI.DASHBOARD() as LOCALNAME,
+						    (depth + 2) as DEPTH)));
     }
   }
 }
@@ -733,7 +733,7 @@ create procedure WV.WIKI.DOTREEPARENT (in _topic_id int, in _ent any, in depth i
 create method ti_wiki_path () returns any for WV.WIKI.TOPICINFO
 {
   if (self.ti_local_name = WV.WIKI.DASHBOARD() and self.ti_cluster_name = 'Main')
-    return xtree_doc ('<WikiPath><Parent ClusterName="Main" LocalName="Dashboard"/></WikiPath>');
+    return xtree_doc ('<WikiPath><Parent CLUSTERNAME="Main" LOCALNAME="Dashboard"/></WikiPath>');
   declare _doc any;
   _doc := xtree_doc ('<WikiPath></WikiPath>');
   WV.WIKI.DOTREEPARENT (self.ti_id, xpath_eval ('/WikiPath', _doc), 0);
@@ -1139,7 +1139,7 @@ create function WV.WIKI.QUERYWIKIWORDLINK (
 grant execute on WV.WIKI.QUERYWIKIWORDLINK to public
 ;
 
-xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:QueryWikiWordLink', 'WV.Wiki.QueryWikiWordLink')
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:QueryWikiWordLink', 'WV.WIKI.QUERYWIKIWORDLINK')
 ;
 
 create function WV.WIKI.EXPANDMACRO (
@@ -1154,9 +1154,9 @@ create function WV.WIKI.EXPANDMACRO (
   }
   ;
 
-  _funname := concat ('MACRO_', replace (_name, ':', '_'));
-  if (exists (select 1 from DB.DBA.SYS_PROCEDURES where P_NAME=concat ('WV.Wiki.', _funname)))
-    _res := call ('WV.Wiki.' || _funname) (_data, _context, _env);
+  _funname := fix_identifier_case ('WV.Wiki.' || 'MACRO_' || replace (_name, ':', '_'));
+  if (exists (select 1 from DB.DBA.SYS_PROCEDURES where P_NAME= _funname))
+    _res := call (_funname) (_data, _context, _env);
   else _res := sprintf ('((The macro extension "%s" is not available on this server))', _name);
   if (not isentity (_res))
     _res := XMLELEMENT (cast (_funname as varchar), _res);
@@ -1167,7 +1167,7 @@ create function WV.WIKI.EXPANDMACRO (
 grant execute on WV.WIKI.EXPANDMACRO to public
 ;
 
-xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ExpandMacro', 'WV.Wiki.ExpandMacro')
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ExpandMacro', 'WV.WIKI.EXPANDMACRO')
 ;
 
 create function WV.WIKI.GETENV (in _name varchar, inout _env any) returns varchar
@@ -1186,7 +1186,7 @@ create function WV.WIKI.GETENV (in _name varchar, inout _env any) returns varcha
 grant execute on WV.WIKI.GETENV to public
 ;
 
-xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:GetEnv', 'WV.Wiki.GetEnv')
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:GetEnv', 'WV.WIKI.GETENV')
 ;
 
 -- Id allocators. They return new values of primary keys for their tables.
@@ -1852,11 +1852,11 @@ create function WV.WIKI.FILENAMETOWIKINAME (in _src varchar)
   _src_len := length (_src);
   if (_src_len < 4)
     return _src;
-  _suf := "right" (_src, 4);
+  _suf := right (_src, 4);
   if (_suf = '.txt')
-    return "left" (_src, _src_len - 4);
+    return left (_src, _src_len - 4);
   if (_suf = '.TXT')
-    return "left" (_src, _src_len - 4);
+    return left (_src, _src_len - 4);
   if (strchr (_src, '.'))
     WV.WIKI.APPSIGNAL (11001, 'Resource name "&ResName;" cannot be converted to Wiki page name (must have .txt extension or no extension at all)',
       vector ('ResName', _src) );
@@ -2256,7 +2256,7 @@ create function WV.WIKI.DIUCATEGORYLINK (
 grant execute on WV.WIKI.DIUCATEGORYLINK to public
 ;
 
-xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:DIUCategoryLink', 'WV.Wiki.DIUCategoryLink')
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:DIUCategoryLink', 'WV.WIKI.DIUCATEGORYLINK')
 ;
 
 

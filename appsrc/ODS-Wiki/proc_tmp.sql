@@ -36,7 +36,7 @@ create function WV.WIKI.COMPILEWIKIWORDLINK (
 grant execute on WV.WIKI.NORMALIZEWIKIWORDLINK to public
 ;
 
-xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:NormalizeWikiWordLink', 'WV.Wiki.NormalizeWikiWordLink')
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:NormalizeWikiWordLink', 'WV.WIKI.NORMALIZEWIKIWORDLINK')
 ;
 
 create function WV.WIKI.CONVERTTITLETOWIKIWORD (in _title varchar)

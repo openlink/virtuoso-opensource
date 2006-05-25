@@ -58,6 +58,7 @@
   _error := null;
   --dbg_obj_princ (http_path());
   _path_details := WV.WIKI.VSPDECODEWIKIPATH (path, _page, _cluster, _local_name, _attachment, _base_adjust, lines);
+  
   params := vector_concat (params, _path_details);
   -- WV.WIKI.VSPDECODEWIKIPATH2 (params, _cluster, _local_name, _attachment, lines);
   connection_set ('WIKIV BaseAdjust', _base_adjust);

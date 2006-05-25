@@ -232,7 +232,7 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
 	ppath=>'/DAV/VAD/wiki/Root/', 
 	vsp_user=>'Wiki', 
 	opts=>vector('executable','yes'));
-      insert into WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER)
+      insert soft WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER)
 	values ('%', _home || '/main', self.cluster_id);
     }
   return (self as web_app).wa_new_inst(login);
@@ -425,7 +425,7 @@ create method wa_front_page_as_user (inout stream any, in user_name varchar) for
 
 create method app_id () for wa_wikiv
 {
-  return (select wai_id from DB.DBA.WA_INSTANCE where udt_instance_of (WAI_INST, 'DB.DBA.wa_wikiv') and WAI_NAME = self.wa_name);
+  return (select wai_id from DB.DBA.WA_INSTANCE where udt_instance_of (WAI_INST, fix_identifier_case ('DB.DBA.wa_wikiv')) and WAI_NAME = self.wa_name);
 }
 ;
   
@@ -611,8 +611,11 @@ create procedure WV.WIKI.CREATEINSTANCE (in cluster_name varchar,
   inst := inst.wa_member_model := 2; -- approved based
 
   declare h, id any;
-  h := udt_implements_method (inst, 'wa_new_inst');
-  id := call (h) (inst, (select U_NAME from DB.DBA.SYS_USERS where U_ID = _owner));
+  h := udt_implements_method (inst, fix_identifier_case ('wa_new_inst'));
+  if (h)
+    id := call (h) (inst, (select U_NAME from DB.DBA.SYS_USERS where U_ID = _owner));
+  else 
+    return;
 
   update WA_INSTANCE
     set WAI_MEMBER_MODEL = 2,

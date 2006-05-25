@@ -23,6 +23,13 @@
 
 <?vsp
 WV.WIKI.VSPHEADER (path,params,lines, 'Login');	 
+
+declare _ods_home varchar;
+_ods_home := registry_get ('wa_home_link');
+ if (not isstring (_ods_home))
+   _ods_home := '/ods';
+
+
 if ({?'user'} is not null and {?'err'} is null) 
   {
     declare page varchar;
@@ -30,7 +37,7 @@ if ({?'user'} is not null and {?'err'} is null)
     if ({?'submit'} = 'Register')
       {
 	http_request_status ('HTTP/1.1 302 Found');
-	http_header('Location: /wa/register.vspx?reguid=' || {?'user'} || '\r\n');
+	http_header(sprintf ('Location: %s/register.vspx?reguid=' || {?'user'} || '\r\n', _ods_home));
 	return;
       }
     if (WV.WIKI.AUTHENTICATE ({?'user'}, {?'passwd'}) = 1)
@@ -84,7 +91,7 @@ else
       Invalid user name or password.
     </div>
 <?vsp
-    http (sprintf('<a href="/wa/pass_recovery.vspx?usr=%V">Forgot your password?</a>',
+    http (sprintf('<a href="%s/pass_recovery.vspx?usr=%V">Forgot your password?</a>', _ods_home,
     	{?'user'}));
       }
 ?>

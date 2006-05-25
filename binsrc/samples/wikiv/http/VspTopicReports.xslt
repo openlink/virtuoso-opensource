@@ -48,9 +48,9 @@
 <xsl:template match="Link">
 <li>
   <xsl:call-template name="wikiref">
-    <xsl:with-param name="ti_local_name"><xsl:value-of select="@LocalName"/></xsl:with-param>
-    <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@ClusterName"/></xsl:with-param>
-    <xsl:with-param name="wikiref_cont"><xsl:value-of select="@ClusterName"/>.<xsl:value-of select="@LocalName"/></xsl:with-param>
+    <xsl:with-param name="ti_local_name"><xsl:value-of select="@LOCALNAME"/></xsl:with-param>
+    <xsl:with-param name="ti_cluster_name"><xsl:value-of select="@CLUSTERNAME"/></xsl:with-param>
+    <xsl:with-param name="wikiref_cont"><xsl:value-of select="@CLUSTERNAME"/>.<xsl:value-of select="@LOCALNAME"/></xsl:with-param>
   </xsl:call-template>
 <xsl:if test="@Abstract"> -- <xsl:value-of select="@Abstract"/></xsl:if>
 </li>
@@ -71,7 +71,7 @@
 <h3>This is a list of all topics of the cluster "<xsl:value-of select="$ti_cluster_name"/>":</h3>
 <ul>
 <xsl:apply-templates select="Link">
-  <xsl:sort select="@LocalName"/>
+  <xsl:sort select="@LOCALNAME"/>
 </xsl:apply-templates>
 </ul>
 </xsl:template>

@@ -139,7 +139,10 @@
     <xsl:apply-templates select="//div[@id='content']"/>
     <xsl:apply-templates select="//div[@id='wiki-toolbar-container']"/>
   </div>
+ </body>
+</html> 
 </xsl:template>
+
 
 
 <xsl:template match="node()">
@@ -147,8 +150,6 @@
     <xsl:copy-of select="@*" />
     <xsl:apply-templates select="node()" />
   </xsl:copy>
- </body>>
-</html>
 </xsl:template>
 
 

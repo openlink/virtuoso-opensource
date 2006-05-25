@@ -119,9 +119,9 @@ create function WV.WIKI.MACRO_MAIN_TABLEOFCLUSTERS (inout _data varchar, inout _
       select XMLELEMENT ("MACRO_MAIN_TABLEOFCLUSTERS",
         XMLAGG ( 
           XMLELEMENT ('Cluster',
-	    XMLATTRIBUTES (c.ClusterName, c.Abstract) ) ) )
+	    XMLATTRIBUTES (c.ClusterName as "CLUSTERNAME", c.Abstract as "ABSTRACT") ) ) )
       from (
-	select coalesce (n2.Abstract, N'') as Abstract, c2.ClusterName
+	select coalesce (n2.Abstract, N'') as "ABSTRACT", c2.ClusterName as "CLUSTERNAME"
 	from 
 	WV.WIKI.TOPIC as n2 inner join WV.WIKI.CLUSTERS as c2 
 	  on (n2.ClusterId = c2.ClusterId)
@@ -283,7 +283,7 @@ create function WV.WIKI.MACRO_MAIN_DASHBOARD (inout _data varchar, inout _contex
       select XMLELEMENT ("MACRO_MAIN_DASHBOARD",
          XMLAGG(
             XMLELEMENT ('Cluster',
-                      XMLATTRIBUTES (cl_name as "Key"),
+                      XMLATTRIBUTES (cl_name as "KEY"),
                       XMLELEMENT (Name,
                         case
                           when (instance is null)

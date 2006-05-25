@@ -80,7 +80,8 @@
 	  <xsl:call-template name="wikiref">
            <xsl:with-param name="wikiref_cont"><xsl:value-of select="$ti_cluster_name"/> home page</xsl:with-param>
            <xsl:with-param name="ti_cluster_name"><xsl:value-of select="$ti_cluster_name"/></xsl:with-param>
-	   <xsl:with-param name="ti_local_name"><xsl:value-of select="wv:GetMainTopicName($ti_cluster_name)"/></xsl:with-param>
+<!--	   <xsl:with-param name="ti_local_name"><xsl:value-of select="wv:GetMainTopicName($ti_cluster_name)"/></xsl:with-param> -->
+	   <xsl:with-param name="ti_local_name"><xsl:value-of select="wv:GetMainTopicName('Main')"/></xsl:with-param> 
 	   <xsl:with-param name="wikiref_params"></xsl:with-param>
           </xsl:call-template> 
 	</xsl:if> 
