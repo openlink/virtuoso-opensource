@@ -587,7 +587,7 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/tests/dav/DET_HostFs.sql \
 	$(top_srcdir)/binsrc/tests/dav/DET_ResFilter.sql \
 	$(top_srcdir)/binsrc/tests/dav/DET_PropFilter.sql \
-	$(top_srcdir)/binsrc/tests/dav/Versioning/DET_Versioning.sql
+	$(top_srcdir)/binsrc/tests/dav/Versioning/DET_Versioning.sql \
 	$(top_srcdir)/binsrc/tests/dav/dav_rdf_quad.sql
 
 SQL_FILES_VAD		= \
