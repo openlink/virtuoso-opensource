@@ -499,6 +499,52 @@ maphash (maphash_func func, dk_hash_t *table)
 }
 
 
+#define HQ_CYCLE3(k, d, f, e) \
+  __k = k; \
+  __d = d; \
+  if (data_in_store) \
+    f (key_store, data_store, e); \
+  else \
+    data_in_store = 1; \
+  key_store = __k; \
+  data_store = __d;
+
+void
+maphash3 (maphash3_func func, dk_hash_t *table, void *env)
+{
+  void *key_store = NULL, *data_store = NULL, *__k, *__d;
+  int data_in_store = 0;
+  uint32 len = table->ht_actual_size;
+  uint32 inx;
+  uint32 init_count = table->ht_count;
+  /* int n_done =0; */
+  if (init_count == 0)
+    return;
+  for (inx = 0; inx < len; inx++)
+    {
+      hash_elt_t *elt = &table->ht_elements[inx];
+      hash_elt_t *next_elt = elt->next;
+      if (HASH_EMPTY == next_elt)
+	continue;
+
+      HQ_CYCLE3 (elt->key, elt->data, func, env);
+      /* n_done++;  if (n_done >= init_count) goto all_done; */
+      elt = next_elt;
+      while (elt)
+	{
+	  next_elt = elt->next;
+
+	  HQ_CYCLE3 (elt->key, elt->data, func, env);
+	  /* n_done++; if (n_done >= init_count) goto all_done; */
+
+	  elt = next_elt;
+	}
+    }
+
+  HQ_CYCLE3 (0, 0, func, env);
+}
+
+
 void
 maphash_no_remhash (maphash_func func, dk_hash_t * table)
 {
