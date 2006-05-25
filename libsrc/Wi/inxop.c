@@ -285,7 +285,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
 		  itc->itc_specs = iop->iop_ks_start_spec;
 		  itc->itc_is_on_row = 1;  /* force it to go one forward */
 		  rc2 = itc_next (itc, &buf);
-		  if (DVC_GREATER == rc2)
+		  if (DVC_GREATER == rc2 || DVC_INDEX_END == rc2)
 		    {
 		      itc_page_leave (itc, buf);
 		      return IOP_AT_END;
