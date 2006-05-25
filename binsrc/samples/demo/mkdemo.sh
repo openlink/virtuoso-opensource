@@ -386,6 +386,10 @@ cat $HOME/bin/installer/demo.ini | sed -e "s/DEMOSQLPORT/$DEMOSQLPORT/g" -e "s/D
 cat $HOME/bin/installer/virtuoso.ini | sed -e "s/DBSQLPORT/$DBSQLPORT/g" -e "s/DBHTTPPORT/$DBHTTPPORT/g" -e "s/HOSTNAMEREPLACEME/$HOSTNAME/g" -e "s/ZNAME/$HOSTNAME:$DBSQLPORT/g" -e "s/[A-Z]*SAFEREPLACEME/;/g" -e "s/\.\.\/bin\/hosting/$PLUGINDIR/g" -e "s/URIQAREPLACEME/$HOSTNAME:$DBHTTPPORT/g" > default.ini
 fi
 
+$RM -rf flags flags.tar
+cat flags.tar.gz | gunzip - > flags.tar
+tar -xf flags.tar
+
 STOP_SERVER
 START_SERVER
 
@@ -396,6 +400,7 @@ BREAK
 LOAD_SQL mkdemo.sql dba dba
 LOAD_SQL countries.sql dba dba
 
+$RM -rf flags flags.tar
 
 #
 #  Load MIME
