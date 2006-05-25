@@ -631,7 +631,7 @@ sql3.h: sql3.c
 	fi
 
 scn3.c: scn3.l sql3.c sqlwords.h
-	$(LEX) -i -oscn3.c ../../libsrc/Wi/scn3.l
+	$(LEX) -oscn3.c ../../libsrc/Wi/scn3.l
 
 sql_code_cache.c: ../../binsrc/cached_resources/cached_resources.c sql_code_cache_impl.c
 	@echo "#include \"sql_code_cache_impl.c\"" > $@
@@ -667,7 +667,7 @@ sparql_lex_props.c: list_lex_props.sh sparql_p.y
 	list_lex_props.sh sparql_p.y sparql_lex_props.c
 
 sparql_l.c: sparql_l.l sparql_p.h
-	$(LEX) -8 -Psparyy -osparql_l.c ../../libsrc/Wi/sparql_l.l
+	$(LEX) -Psparyy -osparql_l.c ../../libsrc/Wi/sparql_l.l
 
 turtle_p.c: turtle_p.y
 	$(YACC) -vd -oturtle_p.c -pttlyy ../../libsrc/Wi/turtle_p.y
@@ -683,7 +683,7 @@ turtle_lex_props.c: list_lex_props.sh turtle_p.y
 	list_lex_props.sh turtle_p.y turtle_lex_props.c
 
 turtle_l.c: turtle_l.l turtle_p.h
-	$(LEX) -8 -Pttlyy -oturtle_l.c ../../libsrc/Wi/turtle_l.l
+	$(LEX) -Pttlyy -oturtle_l.c ../../libsrc/Wi/turtle_l.l
 
 sql_code.c: $(SQL_FILES) $(AWK_FILES)
 	@echo "Generating sql_code.c"

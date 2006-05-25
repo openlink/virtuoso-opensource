@@ -1,3 +1,6 @@
+%option 8bit
+%option case-insensitive
+%option never-interactive
 %{
 /*
  *  scn3.l

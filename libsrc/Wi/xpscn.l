@@ -1,3 +1,6 @@
+%option 8bit
+%option case-sensitive
+%option never-interactive
 %{
 /*
  *  xpscn.l
