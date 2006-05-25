@@ -5765,7 +5765,9 @@ create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns v
     vector ('.BMP', '.DIB', '.RLE', '.CR2', '.CRW', '.EMF', '.EPS', '.IFF', '.LBM', '.JP2', '.JPX', '.JPK', '.J2K',
      '.JPC', '.J2C', '.JPE', '.JIF', '.JFIF', '.JPG', '.JPEG', '.GIF') ) )
     return 'application/x-openlink-image';
-  
+--  if (position (orig_res_ext_upper,
+--    vector ('.RDF', '.RDFS') ) )
+--    return 'application/rdf+xml';
   if (position (orig_res_ext_upper,
     vector ('.XML', '.RDF', '.RSS', '.RSS2', '.XBEL', '.FOAF', '.OPML', '.WSDL', '.BPEL', '.VSPX', '.VSCX', '.XDDL') ) )
     return 'text/xml';
@@ -5834,8 +5836,6 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
     -- dbg_obj_princ ('based on ', content, 'dtp', __tag (content));
     if (xpath_eval ('[xmlns="http://usefulinc.com/ns/doap#"] exists (/project)', html_start))
       return 'application/doap+rdf';
-    if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] exists(/rdf:rdf/rdf:*)', html_start))
-      return 'application/rdf+xml';
       if (xpath_eval ('[xmlns:atom="http://purl.org/atom/ns#"] exists (/atom:feed[@version])', html_start))
         return 'application/atom+xml';
       if (xpath_eval ('[xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml"] exists (/w:worddocument)', html_start))
@@ -5872,6 +5872,9 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
         return 'application/x-openlinksw-vspx+xml';
       if (xpath_eval ('[xmlns="http://www.xbrl.org/2003/instance"] exists (/xbrl)', html_start))
         return 'application/xbrl+xml';
+    -- rdf:rdf is lowercase, instead of proper rdf:RDF because dirty HTML mode converts names.
+    if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] exists(/rdf:rdf)', html_start))
+      return 'application/rdf+xml';
       return dflt_ret;
     }
   if (dflt_ret = 'application/x-openlink-license')
