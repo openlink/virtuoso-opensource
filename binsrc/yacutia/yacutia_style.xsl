@@ -188,7 +188,22 @@
           <img src="images/icons/docs_16.png"
                alt="Documentation"
                title="Documentation" hspace="2"/>
-               <a href="/doc/html/" target="_empty">Documentation</a></li>
+
+          <?vsp
+	  if (vad_check_version ('doc') is not null)
+	  {
+          ?>
+	  <a href="/doc/html/" target="_empty">Documentation</a>
+	  <?vsp
+	  }
+          else
+          {
+          ?>
+          <a href="http://docs.openlinksw.com/virtuoso/" target="_empty">Documentation</a>
+          <?vsp
+	  }
+          ?>
+        </li>
         <!--<a href="/doc/docs.vsp" target="_empty">Documentation</a>-->
 	<li>
           <img src="images/icons/tour_16.png"
