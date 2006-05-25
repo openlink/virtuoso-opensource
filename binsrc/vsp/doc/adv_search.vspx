@@ -21,10 +21,6 @@
  -  
 -->
 <html>
-  <head>
-    <title>Virtuoso Documentation Search</title>
-    <link rel="stylesheet" type="text/css" href="search.css"/>
-  </head>
   <v:page name="main" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
     <v:variable name="ds_data" type="any" default="null"/>
     <v:variable name="ds_meta" type="any" default="null"/>
@@ -39,11 +35,16 @@
     <v:variable name="osrch" type="int" default="0" param-name="OpenSearch" />
     <v:variable name="opensearch" type="varchar" default="null" param-name="OpenSearch"/>
     <v:variable name="pkwd" type="varchar" default="null" param-name="kwds"/>
+    <v:variable name="dst_row" type="varchar" default="''" param-name="dst_row"/>
+    <v:variable name="ds_row" type="varchar" default="''" param-name="ds_row"/>
     <v:on-init>
       <![CDATA[
+  	    self.ds_row := get_keyword('ds_row', params, '');
+	    self.dst_row := get_keyword('dst_row', params, '');
         set isolation = 'committed';
         set http_charset='utf-8';
         declare _cookie_vec any;
+        self.qry := get_keyword('q', self.vc_event.ve_params);
         _cookie_vec := vsp_ua_get_cookie_vec(lines);
         if (self.ds_data is null)
         {
@@ -237,7 +238,7 @@
           end_parse:;
           inx := 0;
           res1 := vector();
-          for (select "d_id" as id, "d_anch", "d_res_id", score
+          for (select top 49 "d_id" as id, "d_anch", "d_res_id", score
            from "DB"."DBA"."document_search"
            where contains (d_txt, concat ('[__lang ''x-ViDoc''] ',str))
             order by score desc)
@@ -291,7 +292,7 @@
           declare exit handler for sqlstate '42000'
           {
             self.vc_is_valid := 0;
-            self.vc_error_message := 'The query path or query document referenced in this query is non existent.';
+            self.vc_error_message := 'The query path or query document referenced in this query is non-existent.';
             return;
           };
           declare exit handler for sqlstate '37000'
@@ -358,11 +359,23 @@
         return;
       ]]>
     </v:method>
+  <head>
+    <title>Virtuoso Documentation Search</title>
+    <link rel="stylesheet" type="text/css" href="search.css"/>
+    <?vsp 
+    if ('' <> self.qurl)
+    { ?>
+    <link rel="alternate" type="application/rss+xml" title="OpenLink Documentation Search Results (RSS)" href="<?V 'http://'||self.get_host ()||'/'||self.qurl ?>xml" />
+    <link rel="alternate" type="application/atom+xml" title="OpenLink Documentation Search Results (ATOM)" href="<?V 'http://'||self.get_host ()||'/'||self.qurl ?>atom" />
+    <?vsp
+    }
+    ?>
+  </head>
     <body>
-      <DIV id="header">
+      <div id="header">
         <A name="search"></A><IMG src="images/misc/logo.jpg" alt=""/>
         <H1>Virtuoso Documentation Search</H1>
-      </DIV>
+      </div>
       <div id="navbartop">
         <div>
           <a href="html/index.html">Home</a> |
@@ -388,11 +401,8 @@
             }
           ]]>
         </v:on-post>
-        <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
-          <tr>
             <v:template name="leftt" type="simple" enabled="--case when self.sqry is null then 1 else 0 end">
-              <td class="box" id="left" valign="top">
-                <div class="box">
+                <div id="searchbox">
                   <b>Query Type</b>
                   <div class="roll">
                     <v:select-list name="qt" auto-submit="1">
@@ -452,9 +462,7 @@
                     </v:tab>
                   </div>
                 </div>
-              </td>
             </v:template>
-            <td id="texttd" align="left">
               <div id="text" align="left">
                 <v:template name="sboxt" type="simple" enabled="--case when self.sqry is null then 1 else 0 end">
                   <b>Search Expression</b>
@@ -484,26 +492,22 @@
                       </v:before-render>
                     </v:template>
                     <tr>
-                      <td COLSPAN="2">
-                        <v:button xhtml_class="real_button" action="simple" name="post" value="Execute" xhtml_title="Execute" xhtml_alt="Execute">
+                      <td COLSPAN="4">
+                        <v:button xhtml_class="search_button" action="simple" name="post" value="Search" xhtml_title="Search" xhtml_alt="Search">
                           <v:on-post>
                             <![CDATA[
                               self.do_search (e);
                             ]]>
                           </v:on-post>
                         </v:button>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td colspan="2">
                         <?vsp
                           if (length (self.ds_data))
                           {
                         ?>
                         <a href="<?V self.qurl ?>html"><img src="html401.gif" border="0" title="HTML" alt="HTML"/></a>
-                        <a href="<?V self.qurl ?>xml"><img src="rss201.gif" border="0" title="RSS" alt="RSS"/></a>
-                        <a href="<?V self.qurl ?>atom"><img src="atom10.gif" border="0" title="ATOM" alt="ATOM"/></a>
-                        <a href="<?V self.qurl ?>rdf"><img src="rdf.gif" border="0" title="RDF" alt="RDF"/></a>
+                        <a href="<?V self.qurl ?>xml"><img src="feed-icon-16x16.gif" border="0" title="RSS" alt="RSS"/></a>
+                        <a href="<?V self.qurl ?>atom"><img src="feed-icon-16x16-blue.gif" border="0" title="ATOM" alt="ATOM"/></a>
+                        <a href="<?V self.qurl ?>rdf"><img src="rdf_flyer-16.gif" border="0" title="RDF" alt="RDF"/></a>
                         <a href="<?V self.qurl ?>xbel"><img src="xbel01.gif" border="0" title="XBEL" alt="XBEL"/></a>
                         <a href="<?V sprintf ('adv_search.vspx?type=%s&kwds=%U&OpenSearch', self.qt.ufl_value, coalesce (self.expr.ufl_value, self.qry))  ?>"><img src="opensearch.gif" border="0"/></a>
                         <?vsp
@@ -517,9 +521,9 @@
                   <v:label name="ct1" value="--length (self.ds_data)" format=" (%d)"/>
                   <v:template name="rest" type="simple" condition="length (self.sqry)">
                     from search by "<?V self.qry ?>" <br />
-                    <a href="<?V self.qurl ?>xml"><img src="rss201.gif" border="0"/></a>
-                    <a href="<?V self.qurl ?>atom"><img src="atom10.gif" border="0"/></a>
-                    <a href="<?V self.qurl ?>rdf"><img src="rdf.gif" border="0"/></a>
+                    <a href="<?V self.qurl ?>xml"><img src="feed-icon-16x16.gif" border="0"/></a>
+                    <a href="<?V self.qurl ?>atom"><img src="feed-icon-16x16-blue.gif" border="0"/></a>
+                    <a href="<?V self.qurl ?>rdf"><img src="rdf_flyer-16.gif" border="0"/></a>
                     <a href="<?V self.qurl ?>xbel"><img src="xbel01.gif" border="0"/></a>
                     <a href="<?V sprintf ('adv_search.vspx?type=%s&kwds=%U&OpenSearch', self.qt.ufl_value, coalesce (self.expr.ufl_value, self.qry))  ?>"><img src="opensearch.gif" border="0"/></a>
                   </v:template>
@@ -545,28 +549,58 @@
                   <v:template name="tmpl3" type="simple">
                     <div align="center">
                       <v:button name="ds_first" action="simple" style="image"
-                                value="first_16.png"
+                                value="skipb_16.png"
                                 xhtml_alt="First"
                                 xhtml_title="First"/>
                       <v:button name="ds_prev" action="simple" style="image"
-                                value="previous_16.png"
+                                value="rewnd_16.png"
                                 xhtml_alt="Previous"
                                 xhtml_title="Previous"/>
-                      <v:button name="ds_next" action="simple" style="image"
-                                value="next_16.png"
+	  <input type="hidden" name="ds_row" value="" />
+
+<?vsp
+declare i, n, t, c integer;
+declare _class varchar;
+i := 0; n := (control.vc_parent as vspx_data_set).ds_nrows; t := (control.vc_parent as vspx_data_set).ds_rows_total;
+c := (control.vc_parent as vspx_data_set).ds_rows_offs/10;
+while (i < t/n)
+{
+	_class := case cast(c as integer) when i then 'cp' else 'pn' end;
+	?>
+	<a href="#" class="<?V _class ?>" onClick="javascript: document.form1.ds_row.value=<?V i*n?>;document.form1.submit();"><?V i + 1?></a>
+	<?vsp
+	i := i + 1;
+}
+?>
+		      
+		      <v:button name="ds_next" action="simple" style="image"
+                                value="fastf_16.png"
                                 xhtml_alt="Next"
                                 xhtml_title="Next"/>
                       <v:button name="ds_last" action="simple" style="image"
-                                       value="last_16.png"
+                                       value="skipf_16.png"
                                        xhtml_alt="Last"
                                        xhtml_title="Last"/>
+
+  	      <br />
+	      <span>
+	        <v:label name="s_page" 
+	      value="--(((control.vc_parent).vc_parent as vspx_data_set).ds_rows_offs/10) + 1" 
+	      format="(page %d)" enabled="--case when ((control.vc_parent).vc_parent as vspx_data_set).ds_rows_total < 10 then 0 else 1 end" />
+              </span>
+
+		    
                     </div>
                   </v:template>
                 </v:data-set>
-                <table>
+                <table class="results">
                   <v:data-set name="dst" data="--self.ds_data"
                     meta="--self.ds_meta"
                     nrows="10" scrollable="1" instantiate="--self.enable_it ('text', 1)">
+	<v:before-data-bind><![CDATA[
+	if ('' <> self.dst_row)
+		(control as vspx_data_set).ds_rows_offs := cast(self.dst_row as integer);
+	]]></v:before-data-bind>
                     <v:template name="tmplt1" type="repeat">
                       <v:template name="tmplt7" type="if-not-exists">
                         <tr><td class="message" colspan="4">No matches found</td></tr>
@@ -580,13 +614,13 @@
                             <v:url name="lt6" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
                             url="--sprintf('http://%s/doc/html/%s#%s', self.get_host (), (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[2])" render-only="1"/>
                           </td>
-                          <td>
+                          <td class="score">
                             <img src="score.gif" height="5" width="<?V control.te_rowset[3] ?>" xhtml_title="Score" xhtml_alt="Score"/>
                           </td>
                         </tr>
                         <tr>
                           <td/>
-                          <td>
+                          <td class="text">
                             <v:label name="descclt1" value="--(control.vc_parent as vspx_row_template).te_rowset[4]" format="%s"/>
                           </td>
                           <td/>
@@ -595,33 +629,61 @@
                     </v:template>
                     <v:template name="tmplt3" type="simple">
                       <tr>
-                        <td colspan="4" align="center">
+                        <td colspan="4" align="center" class="controls">
                         <v:button name="dst_first" action="simple" style="image"
-                                value="first_16.png"
+                                value="skipb_16.png"
                                 xhtml_alt="First"
                                 xhtml_title="First"/>
                         <v:button name="dst_prev" action="simple" style="image"
-                                value="previous_16.png"
+                                value="rewnd_16.png"
                                 xhtml_alt="Previous"
                                 xhtml_title="Previous"/>
-                        <v:button name="dst_next" action="simple" style="image"
-                                value="next_16.png"
+
+	  <input type="hidden" name="dst_row" value="" />
+
+<?vsp
+declare i, n, t, c integer;
+declare _class varchar;
+i := 0; 
+n := (control.vc_parent as vspx_data_set).ds_nrows; 
+t := (control.vc_parent as vspx_data_set).ds_rows_total;
+c := (control.vc_parent as vspx_data_set).ds_rows_offs/10;
+while (i < t/n)
+{
+	_class := case cast(c as integer) when i then 'cp' else 'pn' end;
+	?>
+	<a href="#" class="<?V _class ?>" onClick="javascript: document.form1.dst_row.value=<?V i*n?>;document.form1.submit();"><?V i + 1?></a>
+	<?vsp
+	i := i + 1;
+}
+?>
+
+			
+			<v:button name="dst_next" action="simple" style="image"
+                                value="fastf_16.png"
                                 xhtml_alt="Next"
                                 xhtml_title="Next"/>
                         <v:button name="dst_last" action="simple" style="image"
-                                          value="last_16.png"
+                                          value="skipf_16.png"
                                           xhtml_alt="Last"
                                           xhtml_title="Last"/>
-                        </td>
+
+  	      <br />
+  	      <span>
+	        <v:label name="s_page1" 
+	      value="--(((control.vc_parent).vc_parent as vspx_data_set).ds_rows_offs/10) + 1" 
+	      format="(page %d)" enabled="--case when ((control.vc_parent).vc_parent as vspx_data_set).ds_rows_total < 10 then 0 else 1 end" />
+              </span>
+
+			
+			</td>
                       </tr>
                     </v:template>
                   </v:data-set>
                 </table>
               </div>
-            </td>
-          </tr>
-        </table>
       </v:form>
+      <div id="poweredby"><img src="PoweredByVirtuoso.gif" width="137px" height="44px" alt="Powered by Virtuoso" /></div>
       <DIV id="footer"><DIV>&amp;copy;2005 OpenLink Software. All rights reserved.</DIV></DIV>
     </body>
     &lt;?vsp
