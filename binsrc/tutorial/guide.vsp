@@ -1,25 +1,25 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<?vsp 
---  
+<?vsp
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 ?>
 <html>
   <head>
@@ -77,28 +77,22 @@
       </li>
         <li class="lftmenu_info">Check out the latest technology buzz on the Virtuoso Blog</li>
       <li class="lftmenu1">
-       <a target="_blank" href="./atom.vsp"><img src="./images/atom10.gif" border="0" alt="ATOM" title="ATOM" />
-       </a>
+       <a target="_blank" href="./atom.vsp"><img src="./images/blue-icon-16.gif" border="0" alt="ATOM" title="ATOM" hspace="3"/>Atom</a>
       </li>
       <li class="lftmenu1">
-       <a target="_blank" href="./rss.vsp"><img src="./images/rss20.gif" border="0" alt="RSS" title="RSS" />
-       </a>
+       <a target="_blank" href="./rss.vsp"><img src="./images/rss-icon-16.gif" border="0" alt="RSS" title="RSS" hspace="3"/>RSS</a>
       </li>
       <li class="lftmenu1">
-       <a target="_blank" href="./rdf.vsp"><img src="./images/rdf.gif" border="0" alt="RDF" title="RDF" />
-       </a>
+       <a target="_blank" href="./rdf.vsp"><img src="./images/rdf-icon-16.gif" border="0" alt="RDF" title="RDF" hspace="3"/>RDF</a>
       </li>
       <li class="lftmenu1">
-       <a target="_blank" href="./ocs.vsp"><img src="./images/ocs0.5.gif" border="0" alt="OCS" title="OCS" />
-       </a>
+       <a target="_blank" href="./ocs.vsp"><img src="./images/blue-icon-16.gif" border="0" alt="OCS" title="OCS" hspace="3"/>OCS</a>
       </li>
       <li class="lftmenu1">
-       <a target="_blank" href="./opml.vsp"><img src="./images/opml.gif" border="0" alt="OPML" title="OPML" />
-       </a>
+       <a target="_blank" href="./opml.vsp"><img src="./images/blue-icon-16.gif" border="0" alt="OPML" title="OPML" hspace="3"/>OPML</a>
       </li>
       <li class="lftmenu1">
-       <a target="_blank" href="./xbel.vsp"><img src="./images/xbel01.gif" border="0" alt="XBEL" title="XBEL" />
-       </a>
+       <a target="_blank" href="./xbel.vsp"><img src="./images/blue-icon-16.gif" border="0" alt="XBEL" title="XBEL" hspace="3"/>XBEL</a>
       </li>
           </ul>
      <div class="lftmenu">
@@ -136,7 +130,7 @@
        </p>
        <p>
          Tutorials are grouped by functionality realm, covering the main concepts of each, introducing you to many useful
-         techniques and features. 
+         techniques and features.
        </p>
        <h1>Tutorial Layout and Navigation</h1>
        <p>

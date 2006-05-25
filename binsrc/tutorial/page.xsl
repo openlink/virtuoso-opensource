@@ -3,27 +3,27 @@
   <xsl:output method="xhtml" indent="yes" doctype-public="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"/>
   <xsl:include href="page_common.xsl"/>
   <xsl:template match="tutorial">
-    <xsl:text disable-output-escaping="yes"><![CDATA[<?vsp 
---  
+    <xsl:text disable-output-escaping="yes"><![CDATA[<?vsp
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 ?>]]></xsl:text>
     <html>
       <head>
@@ -113,22 +113,22 @@
                 </li>
                 <li class="lftmenu_info">Check out the latest technology buzz on the Virtuoso Blog</li>
                 <li class="lftmenu1">
-                  <a target="_blank" href="{concat($mount_point,'/atom.vsp')}"><img src="{concat($mount_point,'/images/atom10.gif')}" border="0" alt="ATOM" title="ATOM"/></a>
+                  <a target="_blank" href="{concat($mount_point,'/atom.vsp')}"><img src="{concat($mount_point,'/images/blue-icon-16.gif')}" border="0" alt="ATOM" title="ATOM" hspace="3"/>Atom</a>
                 </li>
                 <li class="lftmenu1">
-                  <a target="_blank" href="{concat($mount_point,'/rss.vsp')}"><img src="{concat($mount_point,'/images/rss20.gif')}" border="0" alt="RSS" title="RSS"/></a>
+                  <a target="_blank" href="{concat($mount_point,'/rss.vsp')}"><img src="{concat($mount_point,'/images/rss-icon-16.gif')}" border="0" alt="RSS" title="RSS" hspace="3"/>RSS</a>
                 </li>
                 <li class="lftmenu1">
-                  <a target="_blank" href="{concat($mount_point,'/rdf.vsp')}"><img src="{concat($mount_point,'/images/rdf.gif')}" border="0" alt="RDF" title="RDF"/></a>
+                  <a target="_blank" href="{concat($mount_point,'/rdf.vsp')}"><img src="{concat($mount_point,'/images/rdf-icon-16.gif')}" border="0" alt="RDF" title="RDF" hspace="3"/>RDF</a>
                 </li>
                 <li class="lftmenu1">
-                  <a target="_blank" href="{concat($mount_point,'/ocs.vsp')}"><img src="{concat($mount_point,'/images/ocs0.5.gif')}" border="0" alt="OCS" title="OCS"/></a>
+                  <a target="_blank" href="{concat($mount_point,'/ocs.vsp')}"><img src="{concat($mount_point,'/images/blue-icon-16.gif')}" border="0" alt="OCS" title="OCS" hspace="3"/>OCS</a>
                 </li>
                 <li class="lftmenu1">
-                  <a target="_blank" href="{concat($mount_point,'/opml.vsp')}"><img src="{concat($mount_point,'/images/opml.gif')}" border="0" alt="OPML" title="OPML"/></a>
+                  <a target="_blank" href="{concat($mount_point,'/opml.vsp')}"><img src="{concat($mount_point,'/images/blue-icon-16.gif')}" border="0" alt="OPML" title="OPML" hspace="3"/>OPML</a>
                 </li>
                 <li class="lftmenu1">
-                  <a target="_blank" href="{concat($mount_point,'/xbel.vsp')}"><img src="{concat($mount_point,'/images/xbel01.gif')}" border="0" alt="XBEL" title="XBEL"/></a>
+                  <a target="_blank" href="{concat($mount_point,'/xbel.vsp')}"><img src="{concat($mount_point,'/images/blue-icon-16.gif')}" border="0" alt="XBEL" title="XBEL" hspace="3"/>XBEL</a>
                 </li>
               </ul>
               <div class="lftmenu">
@@ -710,8 +710,8 @@
     if (sys_stat('st_has_vdb') = 0)
         dependa := concat (dependa,
          '<div>
-            <p style="color: red">This Virtual Database feature is available only in the commercial release of Virtuoso Universal Server.   
-            For more information on the commercial release of the Virtuoso Universal Server, 
+            <p style="color: red">This Virtual Database feature is available only in the commercial release of Virtuoso Universal Server.
+            For more information on the commercial release of the Virtuoso Universal Server,
             click on the following links to learn more:</p>
             <small>
             <a href="http://virtuoso.openlinksw.com/">Virtual Database Home Page</a><br/>
@@ -1444,12 +1444,12 @@
         if (all_res > 0) {
       ?>
       <h2>Results as:
-        <a href="<?V qurl ?>html"><img src="<?V http_map_get('domain') ?>/images/html401.gif" border="0" title="HTML" alt="HTML"/></a>
-        <a href="<?V qurl ?>xml"><img src="<?V http_map_get('domain') ?>/images/rss20.gif" border="0" title="RSS" alt="RSS"/></a>
-        <a href="<?V qurl ?>atom"><img src="<?V http_map_get('domain') ?>/images/atom10.gif" border="0" title="ATOM" alt="ATOM"/></a>
-        <a href="<?V qurl ?>rdf"><img src="<?V http_map_get('domain') ?>/images/rdf.gif" border="0" title="RDF" alt="RDF"/></a>
-        <a href="<?V qurl ?>xbel"><img src="<?V http_map_get('domain') ?>/images/xbel01.gif" border="0" title="XBEL" alt="XBEL"/></a>
-        <a href="<?V sprintf ('%s?kwds=%s&OpenSearch', http_path(), string_output_string (qes))  ?>"><img src="<?V http_map_get('domain') ?>/images/opensearch10.gif" border="0" title="OpenSearch" alt="OpenSearch"/></a>
+        <a href="<?V qurl ?>html"><img src="<?V http_map_get('domain') ?>/images/html401.gif" border="0" title="HTML" alt="HTML" hspace="3"/></a>
+        <a href="<?V qurl ?>xml"><img src="<?V http_map_get('domain') ?>/images/rss-icon-16.gif" border="0" title="RSS" alt="RSS" hspace="3"/>RSS</a>
+        <a href="<?V qurl ?>atom"><img src="<?V http_map_get('domain') ?>/images/blue-icon-16.gif" border="0" title="ATOM" alt="ATOM" hspace="3"/>Atom</a>
+        <a href="<?V qurl ?>rdf"><img src="<?V http_map_get('domain') ?>/images/rdf-icon-16.gif" border="0" title="RDF" alt="RDF" hspace="3"/>RDF</a>
+        <a href="<?V qurl ?>xbel"><img src="<?V http_map_get('domain') ?>/images/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL" hspace="3"/>XBEL</a>
+        <a href="<?V sprintf ('%s?kwds=%s&OpenSearch', http_path(), string_output_string (qes))  ?>"><img src="<?V http_map_get('domain') ?>/images/blue-icon-16.gif" border="0" title="OpenSearch" alt="OpenSearch" hspace="3"/>OpenSearch</a>
       </h2>
       <table>
         <tr>
