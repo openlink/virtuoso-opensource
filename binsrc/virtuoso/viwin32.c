@@ -1595,6 +1595,20 @@ usage (void)
 
       for (pCmd = service_commands; pCmd->cmdName; pCmd++)
 	fprintf (stderr, "  %-14.14s%s\n", pCmd->cmdName, pCmd->cmdHelp);
+
+      fprintf (stderr, 
+	  "\n\nTo create a windows service called \"MyService\" using the configuration "
+	  "file at c:\\database\\virtuoso.ini execute:\n" 
+	  "  %s +service create +instance MyService +configfile c:\\database\\virtuoso.ini\n"
+	  "\nTo start the service use:\n"
+	  "  %s +service start +instance MyService\n"
+	  "\nThe service will start to server working directory set to c:\\database, the directory of the INI file. "
+	  "To create a service, only a server executable and INI file are needed, "
+	  "to create and operate a service only a server exe.",
+	  program_info.program_name,
+	  program_info.program_name
+	  );
+
     }
 
   terminate (1);
