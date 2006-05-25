@@ -61,42 +61,17 @@ function write_standard_prefixes()
 
 function c_type_name (hjs_name)
 {
-  if (hjs_name == "ANY")
-    return "ccaddr_t"
-  if (hjs_name == "BOOLEAN")
-    return "ptrlong"
-  if (hjs_name == "BITMASK")
-    return "ptrlong"
-  if (hsj_name == "DOUBLE")
-    return "double"
-  if (hjs_name == "INTEGER")
-    return "ptrlong"
-  if (hjs_name == "STRING")
-    return "ccaddr_t"
-  if (hsj_name ~ "[a-z]*:.*/.*")
-    return hjs_name
-  report_error("Unknown type name '" hjs_name "', supported sclalar types are ANY, BOOLEAN, BITMASK, DOUBLE, INTEGER, STRING")
+  if (c_type_names[hjs_name])
+    return c_type_names[hjs_name]
+  report_error("Unknown type name '" hjs_name "', supported sclalar types are ANY, BOOLEAN, BITMASK, DOUBLE, INTEGER, STRING and names declared in the file")
   return hjs_name
 }
 
 function ttl_type_iri (hjs_name)
 {
-  if (hjs_name == "ANY")
-    return "xsd:any"
-  if (hjs_name == "BOOLEAN")
-    return "xsd:boolean"
-  if (hjs_name == "BITMASK")
-    return "xsd:unsignedInteger"
-  if (hsj_name == "DOUBLE")
-    return "xsd:double"
-  if (hjs_name == "INTEGER")
-    return "xsd:integer"
-  if (hjs_name == "STRING")
-    return "xsd:string"
-  if (hsj_name ~ "[a-z]*:.*/.*")
-    return ttl_esc(hjs_name)
-  report_error("Unknown type name '" hjs_name "', supported sclalar types are ANY, BOOLEAN, BITMASK, DOUBLE, INTEGER, STRING")
-  return hjs_name
+  if (ttl_type_iris[hjs_name])
+    return ttl_type_iris[hjs_name]
+  report_error("Unknown type name '" hjs_name "', supported sclalar types are ANY, BOOLEAN, BITMASK, DOUBLE, INTEGER, STRING and names declared in the file")
 }
 
 
@@ -121,7 +96,16 @@ function write_array_h (c_name, type_ns, type_local, el_c_name, el_ns, el_local,
   print ""
   if (cmt != "")
     print "/*! " cmt " */"
+  print "#define JSO_IRI_OF_" c_name " " c_esc(type_ns type_local)
   print "typedef " el_c_name " *" c_name "_t;"
+}
+
+function write_const_h (ns, c_name, expn, cmt)
+{
+  top_h()
+  if (cmt != "")
+    cmt = "\t/*! " cmt " */"
+  print "#define " c_name "\t" expn cmt
 }
 
 function write_struct_begin_h (cmt)
@@ -130,6 +114,7 @@ function write_struct_begin_h (cmt)
   print ""
   if (cmt != "")
     print "/*! " cmt " */"
+  print "#define JSO_IRI_OF_" struct_c_name " " c_esc(struct_type_ns struct_type_local)
   print "typedef struct " struct_c_name "_s"
   print "{"
 }
@@ -178,6 +163,12 @@ function write_array_c (c_name, type_ns, type_local, el_c_name, el_ns, el_local,
   post_init = post_init "\n  jso_define_class(&jso__" c_name ");"
 }
 
+function write_const_c (ns, c_name, expn, cmt)
+{
+  top_c()
+  post_init = post_init "\n  jso_define_const(" c_esc(ns c_name) ", " c_name ");"
+}
+
 function write_struct_begin_c (cmt, header_name)
 {
   top_c()
@@ -187,7 +178,7 @@ function write_struct_begin_c (cmt, header_name)
 
 function write_scalar_c (c_name, type, status, cmt)
 {
-  print "  { NULL\t," c_esc(c_name) "\t, JSO_" type "\t, JSO_" status "\t, JSO_FIELD_OFFSET(" struct_c_name "_t," c_name ")\t, NULL },"
+  print "  { NULL\t," c_esc(c_name) "\t, " type "\t, JSO_" status "\t, JSO_FIELD_OFFSET(" struct_c_name "_t," c_name ")\t, NULL },"
 }
 
 function write_struct_end_c ()
@@ -215,6 +206,16 @@ function write_array_ttl (c_name, type_ns, type_local, el_c_name, el_ns, el_loca
   print "\trdf:type rdfs:Class ;"
   if (cmt != "")
     print "\trdfs:comment " ttl_esc(cmt) " ;"
+  print "\t."
+}
+
+function write_const_ttl (ns, c_name, expn, cmt)
+{
+  print ttl_iri(ns c_name)
+  print "\trdf:type virtrdf:CDefine ;"
+  if (cmt != "")
+    print "\trdfs:comment " ttl_esc(expn " -- " cmt) " ;"
+  print "\t."
 }
 
 function write_struct_begin_ttl (cmt)
@@ -241,6 +242,7 @@ function write_scalar_ttl (c_name, type, status, cmt)
 function write_struct_end_ttl ()
 {
   print "# end of description of " struct_c_name
+  print ""
 }
 
 
@@ -270,6 +272,19 @@ function write_array (c_name, type_ns, type_local, el_c_name, el_ns, el_local, m
     el_ns = nsprefixes[el_ns];
   if ("MAX" == maxcount)
     maxcount = "(SMALLEST_POSSIBLE_POINTER-2)"
+  if (c_type_names[el_c_name])
+    {
+#      print "typedef " c_type_names[el_c_name] " *" c_name "_t;"
+      c_type_names[c_name] = c_type_names[el_c_name] " *"
+      c_type_names["JSO_IRI_OF_" c_name] = c_type_names[el_c_name] " *"
+    }
+  else
+    {
+#      print "typedef void * " c_name "_t;"
+      c_type_names[c_name] = c_name "_t"
+      c_type_names["JSO_IRI_OF_" c_name] = c_name "_t"
+    }
+  ttl_type_iris["JSO_IRI_OF_" c_name] = ttl_iri(type_ns type_local);
   if (output_mode == "h")
     write_array_h(c_name, type_ns, type_local, el_c_name, el_ns, el_local, mincount, maxcount, cmt)
   if (output_mode == "c")
@@ -280,6 +295,17 @@ function write_array (c_name, type_ns, type_local, el_c_name, el_ns, el_local, m
 #    write_array_ttlsample(c_name, type_ns, type_local, el_c_name, el_ns, el_local, mincount, maxcount, cmt)
 }
 
+function write_const (ns, c_name, expn, cmt)
+{
+  if (nsprefixes[ns])
+    ns = nsprefixes[ns];
+  if (output_mode == "h")
+    write_const_h(ns, c_name, expn, cmt)
+  if (output_mode == "c")
+    write_const_c(ns, c_name, expn, cmt)
+  if (output_mode == "ttl")
+    write_const_ttl(ns, c_name, expn, cmt)
+}
 
 function write_struct_begin (c_name, type_ns, type_local, cmt)
 {
@@ -291,6 +317,9 @@ function write_struct_begin (c_name, type_ns, type_local, cmt)
   struct_c_name = c_name
   struct_type_ns = type_ns
   struct_type_local = type_local
+  c_type_names[c_name] = "struct " c_name "_s *";
+  c_type_names["JSO_IRI_OF_" c_name] = "struct " c_name "_s *";
+  ttl_type_iris["JSO_IRI_OF_" c_name] = ttl_iri(type_ns type_local)
   if (output_mode == "h")
     write_struct_begin_h(cmt)
   if (output_mode == "c")
@@ -344,6 +373,18 @@ function write_plain_comment (cmt)
 
 
 BEGIN   {
+  c_type_names["JSO_ANY"] = "ccaddr_t"
+  c_type_names["JSO_BOOLEAN"] = "ptrlong"
+  c_type_names["JSO_BITMASK"] = "ptrlong"
+  c_type_names["JSO_DOUBLE"] = "double *"
+  c_type_names["JSO_INTEGER"] = "ptrlong"
+  c_type_names["JSO_STRING"] = "ccaddr_t"
+  ttl_type_iris["JSO_ANY"] = "xsd:any"
+  ttl_type_iris["JSO_BOOLEAN"] = "xsd:boolean"
+  ttl_type_iris["JSO_BITMASK"] = "xsd:unsignedInteger"
+  ttl_type_iris["JSO_DOUBLE"] = "xsd:double"
+  ttl_type_iris["JSO_INTEGER"] = "xsd:integer"
+  ttl_type_iris["JSO_STRING"] = "xsd:string"
   nsprefixes["virtrdf"] = "http://www.openlinksw.com/schemas/virtrdf#"
   struct_c_name = ""
   error_reported = 0
@@ -372,7 +413,7 @@ END 	{
   }
 
 #          1                      2---------------------- 3             4------------- 5             6-------------------- 7             8---------------------- 9             10------------ 11            12------------------- 13            14----- 15            16----------- 17                            18------- 
-match($0,"^(JSO_ARRAY[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]+)([0-9]+)([[:space:]]+)(([0-9]+)|MAX)([[:space:]]+--!<[[:space:]]*)([^\r\n]*)$",line)	{
+match($0,"^(JSO_ARRAY[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]+)([0-9]+)([[:space:]]+)(([0-9]+)|MAX)([[:space:]]*--!<[[:space:]]*)([^\r\n]*)$",line)	{
   write_array(line[2], line[4], line[6], line[8], line[10], line[12], line[14], line[16], line[18])
   next
   }
@@ -388,6 +429,29 @@ match($0,"^JSO_ARRAY.*$",line)	{
   next
   }
 
+#          1                      2------------- 3             4---------------------- 5             6-------------------- 7                             8-------- 
+match($0,"^(JSO_CONST[[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)((([^\n-])|(-[^\n]))+)([[:space:]]*--!<[[:space:]]*)([^\r\n]*)$",line)	{
+  write_const(line[2], line[4], line[6], line[8])
+  next
+  }
+
+#          1                      2------------- 3             4---------------------- 5             6-------------------- 7
+match($0,"^(JSO_CONST[[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)((([^\n-])|(-[^\n]))+)([[:space:]]*)$",line)	{
+  write_const(line[2], line[4], line[6], "")
+  next
+  }
+ 
+match($0,"^JSO_CONST.*$",line)	{
+  report_error("Invalid arguments of JSO_CONST")
+  next
+  }
+
+#          1                          2---------------------- 3             4------------- 7                             
+match($0,"^(JSO_NAMESPACE[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)(([[:space:]])(+--!<[[:space:]]*[^\r\n]*)?)$",line)	{
+  nsprefixes[line[2]] = line[6]
+  next
+  }
+
 #          1                          2---------------------- 3             4------------- 7                             
 match($0,"^(JSO_NAMESPACE[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)(([[:space:]])(+--!<[[:space:]]*[^\r\n]*)?)$",line)	{
   nsprefixes[line[2]] = line[6]
@@ -400,7 +464,7 @@ match($0,"^JSO_NAMESPACE.*$",line)	{
   }
 
 #          1                             2---------------------- 3             4------------- 5             6-------------------- 7                             8-------- 
-match($0,"^(JSO_STRUCT_BEGIN[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]+--!<[[:space:]]*)([^\r\n]*)$",line)	{
+match($0,"^(JSO_STRUCT_BEGIN[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([^[:space:]]+)([[:space:]]+)([a-zA-Z][a-zA-Z0-9]*)([[:space:]]*--!<[[:space:]]*)([^\r\n]*)$",line)	{
   write_struct_begin(line[2], line[4], line[6], line[8])
   next
   }
@@ -417,19 +481,36 @@ match($0,"^JSO_STRUCT_BEGIN.*$",line)	{
   }
 
 #          1                       2---------------------- 3             4---------------------- 5             6------- 7                             8-------- 
-match($0,"^(JSO_SCALAR[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([A-Z_]+)([[:space:]]+--!<[[:space:]]*)([^\r\n]*)$",line)	{
-  write_scalar(line[2], line[4], line[6], line[8])
+match($0,"^(JSO_SCALAR[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([A-Z_]+)([[:space:]]*--!<[[:space:]]*)([^\r\n]*)$",line)	{
+  write_scalar(line[2], "JSO_" line[4], line[6], line[8])
   next
   }
 
 #          1                       2---------------------- 3             4---------------------- 5             6------- 7
 match($0,"^(JSO_SCALAR[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([A-Z_]+)([[:space:]]*)$",line)	{
-  write_scalar(line[2], line[4], line[6], "")
+  write_scalar(line[2], "JSO_" line[4], line[6], "")
   next
   }
 
 match($0,"^JSO_SCALAR.*$",line)	{
   report_error("Invalid arguments of JSO_SCALAR")
+  next
+  }
+
+#          1                        2---------------------- 3             4---------------------- 5             6------- 7                             8-------- 
+match($0,"^(JSO_POINTER[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([A-Z_]+)([[:space:]]*--!<[[:space:]]*)([^\r\n]*)$",line)	{
+  write_scalar(line[2], "JSO_IRI_OF_" line[4], line[6], line[8])
+  next
+  }
+
+#          1                        2---------------------- 3             4---------------------- 5             6------- 7
+match($0,"^(JSO_POINTER[[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:space:]]+)([A-Z_]+)([[:space:]]*)$",line)	{
+  write_scalar(line[2], "JSO_IRI_OF_" line[4], line[6], "")
+  next
+  }
+
+match($0,"^JSO_POINTER.*$",line)	{
+  report_error("Invalid arguments of JSO_POINTER")
   next
   }
 

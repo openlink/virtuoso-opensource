@@ -42,6 +42,7 @@
 #define JSO_STRING	"http://www.w3.org/2001/XMLSchema#string"
 
 #define JSO_FIELD_OFFSET(dt,f) (((char *)(&(((dt *)NULL)->f)))-((char *)NULL))
+#define JSO_FIELD_PTR(inst,fldd) ((caddr_t *)(((char *)(inst)) + fldd->jsofd_byte_offset))
 
 typedef struct jso_field_descr_s {
   const char *	jsofd_property_iri;
@@ -94,7 +95,9 @@ typedef struct jso_rtti_s {
 } jso_rtti_t;
 
 extern void jso_init (void);
+extern void jso_define_const (const char *iri, ptrlong value);
 extern void jso_define_class (jso_class_descr_t *jsocd);
+extern dk_hash_t *jso_consts;
 extern dk_hash_t *jso_classes;
 extern dk_hash_t *jso_properties;
 extern dk_hash_t *jso_rttis;

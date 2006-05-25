@@ -27,6 +27,7 @@
 #include "jso.h"
 #include "sqlbif.h"
 
+dk_hash_t *jso_consts = NULL;
 dk_hash_t *jso_classes = NULL;
 dk_hash_t *jso_properties = NULL;
 dk_hash_t *jso_rttis = NULL;
@@ -71,10 +72,31 @@ jso_define_struct (jso_class_descr_t *cd)
     }
 }
 
+
+void
+jso_define_const (const char *iri, ptrlong value)
+{
+  caddr_t old_value;
+  iri = box_dv_uname_string (iri);  
+  old_value = gethash (iri, jso_consts);
+  if (NULL != old_value)
+    {
+      char buf[2000];
+      sprintf (buf, "JSO const IRI %s is defined before", iri);
+      GPF_T1 (buf);
+    }
+  sethash (iri, jso_consts, box_num_nonull (value));
+}
+
+
 void
 jso_define_class (jso_class_descr_t *cd)
 {
   jso_class_descr_t *old_cd;
+  cd->jsocd_c_typedef = box_dv_uname_string (cd->jsocd_c_typedef);
+  cd->jsocd_ns_uri = box_dv_uname_string (cd->jsocd_ns_uri);
+  cd->jsocd_local_name = box_dv_uname_string (cd->jsocd_local_name);
+  BOX_DV_UNAME_CONCAT(cd->jsocd_class_iri, cd->jsocd_ns_uri, cd->jsocd_local_name);
   old_cd = gethash (cd->jsocd_class_iri, jso_classes);
   if (NULL != old_cd)
     {
@@ -85,10 +107,6 @@ jso_define_class (jso_class_descr_t *cd)
       GPF_T1 (buf);
     }
   cd->jsocd_rttis = hash_table_allocate (97);
-  cd->jsocd_c_typedef = box_dv_uname_string (cd->jsocd_c_typedef);
-  cd->jsocd_ns_uri = box_dv_uname_string (cd->jsocd_ns_uri);
-  cd->jsocd_local_name = box_dv_uname_string (cd->jsocd_local_name);
-  BOX_DV_UNAME_CONCAT(cd->jsocd_class_iri, cd->jsocd_ns_uri, cd->jsocd_local_name);
   sethash (cd->jsocd_class_iri, jso_classes, cd);
   switch (cd->jsocd_cat)
     {
@@ -181,6 +199,8 @@ bif_jso_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   jclass = box_cast_to_UTF8_uname (qst, jclass);
   jinstance = box_cast_to_UTF8_uname (qst, jinstance);
   jso_get_cd_and_rtti (jclass, jinstance, &cd, &inst_rtti, quiet);
+  if (NULL == inst_rtti)
+    return jinstance;
   switch (cd->jsocd_cat)
     {
     case JSO_CAT_STRUCT: memset (inst_rtti->jrtti_self, 0, cd->_.sd.jsosd_sizeof); break;
@@ -271,7 +291,6 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
   caddr_t jclass = bif_string_or_wide_or_uname_arg (qst, args, 0, func_name);
   caddr_t jinstance = bif_string_or_wide_or_uname_arg (qst, args, 1, func_name);
   caddr_t jprop;
-  caddr_t jvalue = NULL;
   ccaddr_t dt = NULL;
   caddr_t *retval;
   jso_class_descr_t *cd;
@@ -320,7 +339,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
           sqlr_new_error ("22023", "SR496", "Property <%.500s> is not a field of %.500s, RDF class <%.500s>",
             jprop, cd->jsocd_c_typedef, jclass );
         }
-      fld_ptr = (caddr_t *)(((char *)(inst)) + fldd->jsofd_byte_offset);
+      fld_ptr = JSO_FIELD_PTR(inst,fldd);
       dt = fldd->jsofd_type;
       break;
     case JSO_CAT_ARRAY:
@@ -339,6 +358,12 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
               ('_' == jprop[RDF_NS_URI_LEN]) )
               {
                 idx = atol (jprop + RDF_NS_URI_LEN+1);
+                if (idx <= 0)
+                  {
+                    sqlr_new_error ("22023", "SR516", "Invalid index 'rdf:%s' specified for instance %.500s of RDF array class <%.500s>",
+                      jprop+RDF_NS_URI_LEN, jinstance, jclass);
+                  }
+                idx--;
               }
             else
               {
@@ -351,7 +376,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
             sqlr_new_error ("22023", "SR510", "Invalid index %ld specified for instance %.500s of RDF array class <%.500s>",
               (long)idx, jinstance, jclass);
           }
-        fldd_for_array.jsofd_byte_offset = 0;
+        fldd_for_array.jsofd_byte_offset = sizeof (caddr_t) * idx;
         fldd_for_array.jsofd_class = cd;
         fldd_for_array.jsofd_local_name = "(N-th array element)";
         fldd_for_array.jsofd_property_iri = "rdf:_NNN";
@@ -383,7 +408,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
     }
   if (do_set)
     {
-      if (NULL != fld_ptr[0])
+      if ((NULL != fld_ptr[0]) && (uname_virtrdf_ns_uri_bitmask != dt))
         sqlr_new_error ("22023", "SR497", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> has been set already",
           jprop, jinstance, jclass );
     }
@@ -401,44 +426,73 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
     {
       caddr_t arg = bif_arg (qst, args, 3, func_name);
       dtp_t arg_dtp = DV_TYPE_OF (arg);
+      caddr_t const_name, defarg = NULL;
+      dtp_t defarg_dtp = 0;
+      if ((DV_STRING == DV_TYPE_OF (arg)) || (DV_UNAME == DV_TYPE_OF (arg)))
+        {
+          caddr_t iri_uname = box_dv_uname_string (arg);
+          caddr_t boxed_const = gethash (iri_uname, jso_consts);
+          if (NULL != boxed_const)
+            {
+              const_name = arg;
+              defarg = arg = boxed_const;
+              defarg_dtp = arg_dtp = DV_TYPE_OF (arg);
+            }
+          dk_free_tree (iri_uname);
+        }
       if (uname_xmlschema_ns_uri_hash_any == dt)
         {
           fld_ptr[0] = ((NULL == arg) ? box_num_nonull (0) : arg);
         }
       else if (uname_xmlschema_ns_uri_hash_boolean == dt)
         {
+          if (defarg_dtp && (DV_LONG_INT != defarg_dtp))
+            sqlr_new_error ("22023", "SR517", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:boolean, can not set it to constant <%.500s> of type %s",
+              jprop, jinstance, jclass, const_name, defarg_dtp );
           if (!IS_NUM_DTP(arg_dtp))
             sqlr_new_error ("22023", "SR506", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:boolean, can not set it to %s",
               jprop, jinstance, jclass, dv_type_title (arg_dtp) );
-          fld_ptr[0] = box_num_nonull (bif_long_arg (qst, args, 3, func_name) ? 1 : 0);
+          fld_ptr[0] = box_num_nonull (defarg_dtp ? unbox(defarg) : bif_long_arg (qst, args, 3, func_name) ? 1 : 0);
         }
       else if (uname_virtrdf_ns_uri_bitmask == dt)
         {
+          if (defarg_dtp && (DV_LONG_INT != defarg_dtp))
+            sqlr_new_error ("22023", "SR517", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:bitmask, can not set it to constant <%.500s> of type %s",
+              jprop, jinstance, jclass, const_name, defarg_dtp );
           if (DV_LONG_INT != arg_dtp)
             sqlr_new_error ("22023", "SR506", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:bitmask, can not set it to %s",
               jprop, jinstance, jclass, dv_type_title (arg_dtp) );
-          fld_ptr[0] = box_num_nonull (bif_long_arg (qst, args, 3, func_name));
+          fld_ptr[0] = box_num_nonull (unbox (fld_ptr[0]) | unbox (defarg_dtp ? defarg : arg));
         }
       else if (uname_xmlschema_ns_uri_hash_double == dt)
         {
+          if (defarg_dtp && (DV_DOUBLE_FLOAT != defarg_dtp))
+            sqlr_new_error ("22023", "SR517", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:double, can not set it to constant <%.500s> of type %s",
+              jprop, jinstance, jclass, const_name, defarg_dtp );
           if (!IS_NUM_DTP(arg_dtp))
             sqlr_new_error ("22023", "SR507", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:double, can not set it to %s",
               jprop, jinstance, jclass, dv_type_title (arg_dtp) );
-          fld_ptr[0] = box_double (bif_double_arg (qst, args, 3, func_name));
+          fld_ptr[0] = box_double (defarg_dtp ? unbox_double (defarg) : bif_double_arg (qst, args, 3, func_name));
         }
       else if (uname_xmlschema_ns_uri_hash_integer == dt)
         {
+          if (defarg_dtp && (DV_LONG_INT != defarg_dtp))
+            sqlr_new_error ("22023", "SR517", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:integer, can not set it to constant <%.500s> of type %s",
+              jprop, jinstance, jclass, const_name, defarg_dtp );
           if (!IS_NUM_DTP(arg_dtp))
             sqlr_new_error ("22023", "SR505", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:integer, can not set it to %s",
               jprop, jinstance, jclass, dv_type_title (arg_dtp) );
-          fld_ptr[0] = box_num_nonull (bif_long_arg (qst, args, 3, func_name));
+          fld_ptr[0] = box_num_nonull (defarg_dtp ? unbox(defarg) : bif_long_arg (qst, args, 3, func_name));
         }
       else if (uname_xmlschema_ns_uri_hash_string == dt)
         {
+          if (defarg_dtp && (DV_STRING != defarg_dtp))
+            sqlr_new_error ("22023", "SR517", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:string, can not set it to constant <%.500s> of type %s",
+              jprop, jinstance, jclass, const_name, defarg_dtp );
           if (!IS_STRING_DTP(arg_dtp) && (DV_WIDE != arg_dtp))
             sqlr_new_error ("22023", "SR508", "Property <%.500s> of instance <%.500s> of RDF class <%.500s> is an xsd:string, can not set it to %s",
               jprop, jinstance, jclass, dv_type_title (arg_dtp) );
-          fld_ptr[0] = box_cast_to_UTF8 (qst, (bif_string_or_wide_or_uname_arg (qst, args, 3, func_name)));
+          fld_ptr[0] = (defarg_dtp ? box_copy (defarg) : box_cast_to_UTF8 (qst, (bif_string_or_wide_or_uname_arg (qst, args, 3, func_name))));
         }
       else
         {
@@ -451,7 +505,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
               sqlr_new_error ("22023", "SR499", "Property <%.500s> of JSO RDF class <%.500s> has unsupported type <%.500s>",
                 jprop, jclass, dt );
             }
-          value_iri = box_cast_to_UTF8 (qst, (bif_string_or_wide_or_uname_arg (qst, args, 3, func_name)));
+          value_iri = box_dv_uname_string (defarg_dtp ? box_copy (defarg) : box_cast_to_UTF8 (qst, (bif_string_or_wide_or_uname_arg (qst, args, 3, func_name))));
           value_rtti = gethash (value_iri, jso_rttis);
           if ((NULL == value_rtti) || (JSO_STATUS_DELETED == value_rtti->jrtti_status))
             {
@@ -497,8 +551,98 @@ bif_jso_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return bif_jso_set_impl (qst, err_ret, args, 0, "jso_get");
 }
 
+
+void
+jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *env)
+{
+  jso_class_descr_t *cd = rtti->jrtti_class;
+  if (JSO_STATUS_DELETED == rtti->jrtti_status)
+    return;
+  switch (cd->jsocd_cat)
+    {
+    case JSO_CAT_STRUCT:
+      {
+        int ctr;
+        for (ctr = cd->_.sd.jsosd_field_count; ctr--; /* no step */)
+          {
+            jso_field_descr_t * fldd = cd->_.sd.jsosd_field_list + ctr;
+            caddr_t * fld_ptr = JSO_FIELD_PTR(rtti->jrtti_self,fldd);
+            caddr_t val = fld_ptr[0];
+            if (NULL == val)
+              continue;
+            if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (val))
+              val = ((jso_rtti_t *)(val))->jrtti_inst_iri;
+            dk_set_push (env, list (3, box_copy (iri), box_copy (fldd->jsofd_property_iri), box_copy_tree (val)));
+          }
+        break;
+      }
+    case JSO_CAT_ARRAY:
+      {
+        int ctr;
+        DO_BOX_FAST (caddr_t, val, ctr, rtti->jrtti_self)
+          {
+            char buf[RDF_NS_URI_LEN + 20];
+            caddr_t propname;
+            if (NULL == val)
+              continue;
+            if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (val))
+              val = ((jso_rtti_t *)(val))->jrtti_inst_iri;
+            sprintf (buf, "%s_%d", RDF_NS_URI, ctr+1);
+            dk_set_push (env, list (3, box_copy (iri), box_dv_uname_string(buf), box_copy_tree (val)));
+          }
+        END_DO_BOX_FAST;
+        break;
+      }
+    default: GPF_T1("jso_rtti_proplist(): bad jsocd_cat");
+    }
+}
+
+
+void
+jso_class_proplist (caddr_t iri, jso_class_descr_t *cd, void *env)
+{
+  maphash3 (jso_rtti_proplist, cd->jsocd_rttis, env);
+}
+
+
+caddr_t
+bif_jso_proplist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_set_t acc_set = NULL;
+  dk_set_t *acc_set_ptr = &acc_set;
+  if (0 == BOX_ELEMENTS (args))
+    maphash3 (jso_class_proplist, jso_classes, acc_set_ptr);
+  else
+    {
+      caddr_t jclass = bif_string_or_wide_or_uname_arg (qst, args, 0, "jso_proplist");
+      jso_class_descr_t *cd;
+      jclass = box_cast_to_UTF8_uname (qst, jclass);
+      cd = gethash (jclass, jso_classes);
+      if (NULL == cd)
+        {
+          sqlr_new_error ("22023", "SR514", "Undefined JSO class IRI <%.500s>", jclass);
+        }
+      if (0 == BOX_ELEMENTS (args))
+        maphash3 (jso_rtti_proplist, cd->jsocd_rttis, acc_set_ptr);
+      else
+        {
+          caddr_t jinstance = bif_string_or_wide_or_uname_arg (qst, args, 1, "jso_proplist");
+          jso_rtti_t *inst_rtti;
+          jinstance = box_cast_to_UTF8_uname (qst, jinstance);
+          inst_rtti = gethash (jinstance, cd->jsocd_rttis);
+          if (NULL == inst_rtti)
+            {
+              sqlr_new_error ("22023", "SR515", "JSO instance IRI <%.500s> does not exists", jinstance);
+            }
+          jso_rtti_proplist (inst_rtti->jrtti_inst_iri, inst_rtti, acc_set_ptr);
+        }
+    }
+  return list_to_array (acc_set);
+}
+
 void jso_init()
 {
+  jso_consts = hash_table_allocate (61);
   jso_classes = hash_table_allocate (13);
   jso_properties = hash_table_allocate (97);
   jso_rttis = hash_table_allocate (251);
@@ -507,5 +651,5 @@ void jso_init()
   bif_define ("jso_pin", bif_jso_pin);
   bif_define ("jso_set", bif_jso_set);
   bif_define ("jso_get", bif_jso_get);
-  /*bif_define ("jso_list", bif_jso_list);*/
+  bif_define ("jso_proplist", bif_jso_proplist);
 }

@@ -1,4 +1,18 @@
+JSO_CONST virtrdf SPART_VARR_EXPORTED	0x001
+JSO_CONST virtrdf SPART_VARR_IS_REF	0x002
+JSO_CONST virtrdf SPART_VARR_IS_IRI	0x004
+JSO_CONST virtrdf SPART_VARR_IS_BLANK	0x008
+JSO_CONST virtrdf SPART_VARR_IRI_CALC	0x010
+JSO_CONST virtrdf SPART_VARR_IS_LIT	0x020
+JSO_CONST virtrdf SPART_VARR_TYPED	0x040
+JSO_CONST virtrdf SPART_VARR_FIXED	0x080
+JSO_CONST virtrdf SPART_VARR_NOT_NULL	0x100
+JSO_CONST virtrdf SPART_VARR_GLOBAL	0x200
+JSO_CONST virtrdf SPART_VARR_CONFLICT	0x400
+
 JSO_STRUCT_BEGIN qm_format virtrdf QuadMapFormat	--!< Description of single field where RDF data may come from.
+JSO_SCALAR qmfName STRING REQUIRED			--!< Name used for error messages and debugging
+-- Templates that convert raw column into other types (can be applied to both field and not field expression)
 JSO_SCALAR qmfShortTmpl STRING REQUIRED			--!< 'short' value template, can be NULL
 JSO_SCALAR qmfLongTmpl STRING REQUIRED			--!< 'long' value template, can be NULL
 JSO_SCALAR qmfSqlvalTmpl STRING REQUIRED		--!< 'sqlval' value template, can be NULL
@@ -41,8 +55,8 @@ JSO_STRUCT_END
 
 JSO_STRUCT_BEGIN qm_value virtrdf QuadMapValue		--!< Description of one of four column patterns of a mapping pattern.
 JSO_SCALAR qmvTableName STRING REQUIRED
-JSO_SCALAR qmvColumns ANY REQUIRED
-JSO_SCALAR qmvFormat ANY REQUIRED
+JSO_POINTER qmvColumns qm_column REQUIRED
+JSO_POINTER qmvFormat qm_format REQUIRED
 JSO_SCALAR qmvIRIContains STRING OPTIONAL
 JSO_SCALAR qmvColumnsToIRI STRING OPTIONAL
 JSO_STRUCT_END
@@ -52,8 +66,8 @@ JSO_SCALAR qmGraph STRING OPTIONAL
 JSO_SCALAR qmSubject STRING OPTIONAL
 JSO_SCALAR qmPredicate STRING OPTIONAL
 JSO_SCALAR qmObject ANY OPTIONAL
-JSO_SCALAR qmGraphMap ANY OPTIONAL
-JSO_SCALAR qmSubjectMap ANY OPTIONAL
-JSO_SCALAR qmPredicateMap ANY OPTIONAL
-JSO_SCALAR qmObjectMap ANY OPTIONAL
+JSO_POINTER qmGraphMap qm_value OPTIONAL
+JSO_POINTER qmSubjectMap qm_value OPTIONAL
+JSO_POINTER qmPredicateMap qm_value OPTIONAL
+JSO_POINTER qmObjectMap qm_value OPTIONAL
 JSO_STRUCT_END
