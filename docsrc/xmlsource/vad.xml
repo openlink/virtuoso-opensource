@@ -41,6 +41,38 @@ shared objects, installers or settings.  </para>
   <member>Uninstall a VAD package.</member>
 </simplelist>
 
+<sect2 id="vadsummary">
+<title>Summary of VAD Operations</title>
+<para>
+The following is what the dba needs to know about VAD packages.</para>
+
+<para>A VAD packge is installed from a file with the db..vad_install SQL
+function.  The first argument is the file path, which must be in a
+location that the server process can open, i.e. it is in the DirsAllowed list in the virtuoso.ini file.  The second argument is 0, meaning that we are installing from a file.</para>
+
+<para>SQL> vad_install ('conductor_dav.vad', 0);</para>
+
+<para>is an example.  If the package installation fails, the server exits
+and will have to be restarted.  No effects of a failed installation
+will remain in the database after restart. Contact the supplier of the
+VAD package for further instructions.</para>
+
+<para>To know what is installed, do:</para>
+
+<para>SQL> vad_list_packages ();</para>
+
+<para>VAD package installations are not recorded in the transaction log.
+Thus, if there is a backup followed by archived transaction logs
+produced if CheckpointAuditTrail is on in virtuoso.ini, the VAD install
+must be performed before replaying any logs that were made after the
+VAD installation.  The package installation must be just in the right
+place in the replay sequence.  In practice it is simplest to make an incremental backup after installing and packages, see backup_online () or the section on backing up.</para>
+
+<para>For any further information, including how to make VAD packages, see the rest of this chapter.
+</para>
+</sect2>
+
+
 <sect2 id="vadpackcomposition"><title>VAD Package Composition</title>
 
 <para>A VAD package has no developer tie-ins; it is built in a development environment 

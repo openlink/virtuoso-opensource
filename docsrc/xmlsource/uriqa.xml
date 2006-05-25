@@ -30,11 +30,11 @@ If the subject is not a resource but something else (physical entity, imaginary 
 be used to process metadata about the subject even if the subject itself can not be accessed via HTTP.</para>
 <para>
 URIQA-specific HTTP methods are called MGET (to retrieve existing metadata), MPUT (to add or update RDF triples) and
-MDELETE (to remove some or all triplets). A single URIQA request usually deals with a single subject that is specified by request URI.
+MDELETE (to remove some or all triples). A single URIQA request usually deals with a single subject that is specified by request URI.
 The MGET responce, however, can return metadata about more than one RDF subject, e.g., the request about a book can return both
 data about the book itself plus some data about persons who are known as authors of the book.</para>
 <para>
-In addition to URIQA-specific HTTP methods, Virtuoso implements a semantic web service interface that let plain HTTP clients access metadata using
+In addition to URIQA-specific HTTP methods, Virtuoso implements a semantic web service interface that allows  plain HTTP clients to access metadata using
 traditional GET or POST HTTP methods.
 </para>
 <para>
@@ -68,10 +68,10 @@ if one of equivalent URLs is replaces with some other. Unlike HTTP GET, HTTP PUT
 different URLs even if these URLs are equivalent for other methods. URIQA rules are very simple.
 </para>
 <simplelist>
-<member>If the URIQA requrest header contains 'URIQA-uri' parameter line then the value of this parameter is used and any other URI data are ignored.</member>
-<member>If the URIQA requrest header contains 'Host' parameter line then the URL from the first line of the request is patched to contain host name specified by 'Host' parameter, no matter whether the
+<member>If the URIQA request header contains 'URIQA-uri' parameter line then the value of this parameter is used and any other URI data are ignored.</member>
+<member>If the URIQA request header contains 'Host' parameter line then the URL from the first line of the request is patched to contain host name specified by 'Host' parameter, no matter whether the
 original URL contains host or what host name or network iterface or port is user by client to connect to the server.</member>
-<member>If the URIQA requrest header does not contain 'URIQA-uri' or 'Host' line then the URL from the first line of the request is used 'as is',
+<member>If the URIQA request header does not contain 'URIQA-uri' or 'Host' line then the URL from the first line of the request is used 'as is',
 extended by host name from 'DefaultHost' URIQA configuration parameter if needed.
 </member>
 </simplelist>
@@ -122,7 +122,7 @@ For Virtuoso DAV resources, MGET will need read permission on the subject resour
 MPUT request contains an HTTP header that describe a subject URI and contains Content-Length,
 and the body must be an RDF/XML that consist of triples that should be added.
 The server will try to add new RDF triples from the body to the description of the subject.
-In some cases, the server will replace obsolete triplets with triplets from the body,
+In some cases, the server will replace obsolete triples with triples from the body,
 e.g., if some RDF Schema is in use that states for a predicate that it can not have more than one value for any given subject.
 </para>
 <para>
@@ -163,8 +163,8 @@ because 'http://local.virt/DAV-RDF' property of the resource is first retrieved 
 </sect2>
 <sect2 id="uriqaws"><title>URIQA Web Service</title>
 <para>
-Virtuoso provides the '/uriqa/' web service for clients that does not support URIQA-specific methods.
-Instead of passing URI and method name in HTTP parameter lines, web service calls passes them as
+Virtuoso provides the '/uriqa/' web service for clients that do not support URIQA-specific methods.
+Instead of passing URI and method name in HTTP parameter lines, web service calls pass them as
 part of web service URI. The beginning of the path can be any, starting from '/uriqa/' or '/URIQA/'.
 The following two requests are to retrieve metadata about 'http://example.com/foo'.
 </para>
@@ -187,7 +187,7 @@ The value of the 'uri' parameter should be an absolute URI.
 <para>
 By default,the  Virtuoso server acts only as URIQA proxy, i.e. it redirects incoming requests to other servers without trying to return metadata about
 DAV resources or other data stored on the server itself.
-To let URIQA retrieve local metadata, Virtuoso server should know names that can be used by clients to access it.
+To let URIQA retrieve local metadata, the Virtuoso server should know names that can be used by clients to access it.
 Virtuoso configuration file, e.g., virtuoso.ini, can contain these names as parameters in &quot;[URIQA]&quot; section
 </para>
 <simplelist>
@@ -207,7 +207,7 @@ If Virtuoso listens at multiple ports and it is the only URIQA enabled service o
 It is an error if two servers have the same fingerprint string and one of them tries to redirect a URIQA request to another instead of prepare an
 response locally. Such behavior indicates configuration error, and the use of fingerprints help administrator to get a meaningful diagnostics,
 because suspicious URIQA requests become signed by all intermediate Virtuoso proxies. If this parameter is not specified then a random unique
-string is created and stored in the database, so you don&apos;t have to specify this paraemter for typical installations.
+string is created and stored in the database, so you don&apos;t have to specify this parameter for typical installations.
 </member>
 </simplelist>
 <para>
@@ -224,7 +224,7 @@ However complex applications may need from URIQA more than simple retrieval of m
 Like HTTP virtual hosts, URIQA may require different processing for different URIs, so Virtuoso offers appropriate tools.
 </para>
 <para>
-When the URIQA server gets an URI to process, it reads system table WS.WS.URIQA_HANDLER to find out the procedure that can access metadata about some range of URIs.
+When the URIQA server gets an URI to process, it reads the system table WS.WS.URIQA_HANDLER to find out the procedure that can access metadata about some range of URIs.
 This table is defined as follows:
 </para>
 <programlisting>
@@ -277,7 +277,7 @@ function WS.WS.URIQA_HANDLER_myexample (
   inout lines any,    -- vector of lines of HTTP request header;
   inout app_env any,  -- any application-specific data from UH_HANDLER_ENV;
   inout is_final integer -- status flag. Function sets the flag to 1 to report that the request responce is prepared.
-  ) returns any	      -- returns a status vector, see below.
+  ) re0turns any	      -- returns a status vector, see below.
 </programlisting>
 <para>
 Status vector describes either the reason why the request has failed, or the success status. It consists of four elements:

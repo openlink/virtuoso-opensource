@@ -468,6 +468,104 @@ members and collections underneath recursively.  New resources and collections
 acquire this setting from its parent collection.
 </para>
 </sect2>
+
+
+<sect2 id="davrdfmetadata">
+<title>DAV and RDF Metadata</title>
+
+
+<para>
+When a Virtuoso server has a URIQA default host setting, it will make
+metadata extracted from DAV resources available for querying via
+SPARQL.  All metadata for public readable DAV resources are stored in
+a system graph.  The graph IRI is composed from the DAV path of the
+resource and the URIQA default host name.</para>
+
+<para>
+
+see DefaultHost in the URIQA section of the virtuoso.ini file,
+described in the URIQA section of the documentation for details on
+configuration.</para>
+
+<para>
+The automatic maintenance of the SPARQL queriable metadata can be
+disabled and enable using the function
+DB.DBA.DAVREPLICATE_ALL_TO_RDF_QUAD.  An argument of 1 enables this
+and a 0 disables this. Te setting stays in effect until it is changed
+with the same function.  For new database, the feature is on by
+default.  Old databases are by default upgraded to have a SPARQL
+queriable DAV metadata graph upon startup if the URIQA default host
+name is defined.</para>
+
+<para>
+If the URIQA default host name changes, the RDF graph can be updated
+by simply re-enabling the feature.  This will adjust the graph and
+resource IRI's.</para>
+
+<para>
+If the URIQA default name of the host is localhost:1113, then, the
+graph will be http://localhost:1113/DAV/ .</para>
+
+<para>
+The IRI's of DAV resources will be  like http://localhost:1113/DAV/docsrc/XMLDOM.xml , meaning that these are directly usable from a user agent for accessing the resource.</para>
+
+<para>
+</para>
+
+<para>
+<programlisting>
+<![CDATA[
+SQL> sparql select ?s ?o from <http://localhost:1113/DAV/> where {?s <http://www.openlinksw.com/schemas/DAV#ownerUser> ?o};
+s                                                                                 o
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
+
+http://localhost:1113/DAV/docsrc/2pc.xml                                          mailto:somebody@example.domain
+http://localhost:1113/DAV/docsrc/Virtdocs.spp                                     mailto:somebody@example.domain
+
+
+SQL> sparql select ?p ?o from <http://localhost:1113/DAV/> where {<http://localhost:1113/DAV/docsrc/2pc.xml> ?p ?o};
+p                                                                                 o
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
+
+http://purl.org/dc/terms/created                                                  2006-05-23 15:10:32
+http://purl.org/dc/terms/modified                                                 2006-05-23 15:10:32
+http://www.openlinksw.com/schemas/DAV#ownerUser                                   mailto:somebody@example.domain
+03http://purl.org/dc/terms/extent                                                   7850
+]]>
+</programlisting>
+</para>
+
+<para>
+The examples above show how simple SPARQL queries can be used to retrieve information about DAV resources.</para>
+
+<para>
+</para>
+
+<para>
+The properties supported for all public readable resources are:uppotted </para>
+
+<para>
+http://purl.org/dc/terms/created  - The creation date as SQL datetime.</para>
+
+<para>
+http://purl.org/dc/terms/modified  - Modifiction time as SQL datetime.</para>
+
+<para>
+http://www.openlinksw.com/schemas/DAV#ownerUser  - The contents of u_e_mail  in sys_users for the SQL account owning the resource.  This has the protocol prefix mailto:, as in mailto:somebody@example.com.</para>
+
+<para>
+http://purl.org/dc/terms/extent                                                    The size of the resource in bytes as a SQL integer.</para>
+
+<para>
+http://www.openlinksw.com/schemas/DAV#tag - There is one triple  for each  public tag of the DAV resource.  The value is the string of the tag as a SQL string.</para>
+
+<para>
+Additional predicates may  exist as a result of resource type specific metadata extraction. </para>
+
+</sect2>
+
 <sect2 id="customattofwebres">
 <title>Special Attributes of Web Resources</title>
 <para>The Virtuoso WebDAV implementation provides a set of special attributes (properties)
