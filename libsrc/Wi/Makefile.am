@@ -56,6 +56,7 @@ noinst_HEADERS = \
 
 generated_code = \
 	scn3.c \
+	scn3split.c \
 	sparql_l.c \
 	sparql_p.c \
 	sparql_p.h \
@@ -633,6 +634,9 @@ sql3.h: sql3.c
 scn3.c: scn3.l sql3.c sqlwords.h
 	$(LEX) -oscn3.c ../../libsrc/Wi/scn3.l
 
+scn3split.c: scn3.l sql3.c sqlwords.h
+	$(LEX) -Pscn3splityy -oscn3split.c ../../libsrc/Wi/scn3.l
+
 sql_code_cache.c: ../../binsrc/cached_resources/cached_resources.c sql_code_cache_impl.c
 	@echo "#include \"sql_code_cache_impl.c\"" > $@
 	@echo "#include \"../../binsrc/cached_resources/cached_resources.c\"" >> $@
@@ -786,7 +790,7 @@ n3xml2uriqahtml.xsl: ../../binsrc/tests/dav/n3xml2uriqahtml.xsl
 
 .PHONY: generated
 generated: \
-	sqlwords.h sql3.c scn3.c \
+	sqlwords.h sql3.c scn3.c scn3split.c \
 	xpathp.c xpathp.h xpscn.c \
 	sparql_p.c sparql_p.h sparql_l.c \
 	turtle_p.c turtle_p.h turtle_l.c \

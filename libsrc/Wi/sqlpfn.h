@@ -203,9 +203,12 @@ extern char *scn3_get_file_name (void);
 extern char *yytext;
 #ifndef YY_DECL
 extern int yylex(void);
+extern int scn3splityylex(void);
 #endif
 void yyrestart (FILE * in);
+void scn3splityyrestart (FILE * in);
 void sql_yy_reset (void);
+void scn3split_yy_reset (void);
 void yyerror (const char *s);
 extern int yydebug;
 extern jmp_buf_splice parse_reset;

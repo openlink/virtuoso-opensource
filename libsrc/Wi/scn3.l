@@ -37,7 +37,12 @@
 #include "sqlpar.h"
 #include "sqlpfn.h"
 #include "sql3.h"
+#ifndef SCN3SPLIT
 #include "sqlwords.h"
+#else
+struct keyword { char *keiiyword; int token; };
+extern const struct keyword *lex_hash_kw (register const char *str, register unsigned int len);
+#endif
 #ifdef __BORLANDC__ /* Rogue Wave STL contains numeric.h */
 #include "G:\libsrc\Wi\numeric.h"
 #else
@@ -46,65 +51,25 @@
 #include "sqlcmps.h"
 #include "sqlcstate.h"
 
+#ifndef SCN3SPLIT
+
 int national_char = 0;
 int uname_strlit = 0;
-
-/* Place of an opened '(' or '{' */
-typedef struct scn3_paren_s {
-  int sp_open_line;	/*!< Line number where it has been opened */
-  char sp_close_paren;	/*!< The character that should be used to close it (e.g. '}' if '{' is opened */
-} scn3_paren_t;
-
-int scn3_lineno = 1;	/*!< Throughout counter of lines in the source text */
-int scn3_plineno = 1;	/*!< Physical counter of lines in the source text - used for the PL debugger */
-int scn3_lineno_increment = 1;	/*!< This is zero for 'macroexpanded' fragments of SQL text, to prevent from confusing when a long text is inserted instead of a single line */
-int scn3_lexdepth = 0;	/*!< Number of opened parenthesis */
-
-dk_set_t scn3_namespaces = NULL; /*!< List of namespace prefixes and URIs */
-
-#define MAXLEXDEPTH 80	/*!< Maximum allowed number of opened parenthesis */
+int scn3_lineno = 1;
+int scn3_plineno = 1;
+int scn3_lineno_increment = 1;
+int scn3_lexdepth = 0;
+dk_set_t scn3_namespaces = NULL;
 scn3_paren_t scn3_parens[MAXLEXDEPTH];
-
-
-#define MAX_PRAGMALINE_DEPTH 4	/*!< Maximum nesting of line locations (i.e. 1 + (max no of nested '#pragma line push')) */
-
-/*! Logical line location as it is set by #pragma line statements.
-See the body of scn3_sprint_curr_line_loc() to find out how to use such data
-to get a logical filename and line number for the currect position
-in the source text. */
-typedef struct scn3_line_loc_s {
-/*! The value of scn3_lineno at the beginning of #pragma line. */
-  int sll_start_lineno;
-/*! The value of scn3_lexdepth at the beginning of #pragma line.
-This is used to check that there are no cases when e.g. an '{' is
-opened in one file and pair '}' is closed in some other file. */
-  int sll_start_lexdepth;
-/*! Line number as it is written in the body of #pragma line. */
-  int sll_pragma_lineno;
-/*! File name as it is written in the body of #pragma line. */
-  caddr_t sll_pragma_file;
-} scn3_line_loc_t;
-
-/*! Stack of logical locations. */
 scn3_line_loc_t scn3_line_locs[MAX_PRAGMALINE_DEPTH];
-/*! This is the number of not-yet-popped '#pragma line push' directives. */
 int scn3_pragmaline_depth = 0;
-
-
-#define MAX_INCLUDE_DEPTH 4	/*!< Maximum nesting of includes or fragments in different languages. */
-
-/*! Fragment written on one language (say, in SPARQL) that is included into the text on other language (say, in SQL) */
-typedef struct scn3_include_fragment_s {
-  YY_BUFFER_STATE sif_buffer;
-  scn3_include_frag_t _;
-} scn3_include_fragment_t;
-
 scn3_include_fragment_t scn3_include_stack [MAX_INCLUDE_DEPTH];
-
-/*! Number of fragments that are started but not yet completed. It's zero while the whole text is in SQL */
 int scn3_include_depth = 0;
+dk_session_t *scn3split_ses = NULL;
 
-void scn3_pragma_line (char *text)
+
+void
+scn3_pragma_line (char *text)
 {
 #ifdef DEBUG
   char *full_text = text;
@@ -158,7 +123,8 @@ error:
   sll->sll_pragma_file = NULL;
 }
 
-void scn3_pragma_line_push (void)
+void
+scn3_pragma_line_push (void)
 {
   scn3_line_loc_t *sll = scn3_line_locs + scn3_pragmaline_depth;
   sll->sll_pragma_lineno += scn3_lineno - sll->sll_start_lineno;
@@ -172,7 +138,8 @@ void scn3_pragma_line_push (void)
   sll->sll_pragma_file = t_box_copy (sll[-1].sll_pragma_file);
 }
 
-void scn3_pragma_line_pop (void)
+void
+scn3_pragma_line_pop (void)
 {
   scn3_line_loc_t *sll;
   if (0 == scn3_pragmaline_depth)
@@ -188,7 +155,8 @@ void scn3_pragma_line_pop (void)
   sll->sll_start_lineno = scn3_lineno;
 }
 
-void scn3_pragma_line_reset (void)
+void
+scn3_pragma_line_reset (void)
 {
   scn3_pragmaline_depth = 0;
   scn3_line_locs[0].sll_start_lineno = 1;
@@ -197,7 +165,8 @@ void scn3_pragma_line_reset (void)
   scn3_line_locs[0].sll_pragma_file = NULL;
 }
 
-int scn3_sprint_curr_line_loc (char *buf, size_t max_buf)
+int
+scn3_sprint_curr_line_loc (char *buf, size_t max_buf)
 {
   int res = 0;
   int depthctr = scn3_pragmaline_depth;
@@ -247,7 +216,8 @@ scn3_set_file_line (char *file, int file_nchars, int line_no)
     }
 }
 
-void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_text, scn3_include_fragment_t *outer)
+void
+scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_text, scn3_include_fragment_t *outer)
 {
    memset (sparqre, 0, sizeof (spar_query_env_t));
    if (0 == scn3_lexdepth)
@@ -273,14 +243,35 @@ void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_s
    scn3_include_depth++; /* No stack overflow check. TBD later when we will be able to nest SQL into SPARQL and get, say, SQL inside SPARQL inside SQL ... */
    scn3_lineno_increment = 0;
 }
+#endif
+
+#ifdef SCN3SPLIT
+
+#define RETURN_CODE(c) do { \
+    session_buffered_write (scn3split_ses, yytext, yyleng); \
+    return (c); } \
+  while (0)
+
+#define RETURN_WS(c) do { \
+  session_buffered_write (scn3split_ses, yytext, yyleng); \
+    } \
+  while (0)
+
+#else
+
+#define RETURN_CODE(c) return (c)
+
+#define RETURN_WS(c) ;
+
+#endif
 
 /* macro to save the text of a SQL token */
 #define SV  yylval.strval = yytext
 
 /* macro to save the text and return a token */
-#define TOK(name) { SV; return name; }
+#define TOK(name) { SV; RETURN_CODE (name); }
 
-#define TOKOPEN_AUX(close) { \
+#define TOKOPEN_AUX(close) do { \
   if (scn3_lexdepth >= MAXLEXDEPTH) \
     { \
       if (MAXLEXDEPTH == scn3_lexdepth) \
@@ -291,9 +282,9 @@ void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_s
     GPF_T; \
   scn3_parens[scn3_lexdepth].sp_open_line = scn3_lineno; \
   scn3_parens[scn3_lexdepth].sp_close_paren = (close); \
-  scn3_lexdepth++; }
+  scn3_lexdepth++; } while (0)
 
-#define TOKCLOSE_AUX(name,close) { \
+#define TOKCLOSE_AUX(name,close) do { \
   if (scn3_lexdepth <= 0) \
     yyerror ("Too many closing parentheses"); \
   scn3_lexdepth--; \
@@ -306,55 +297,62 @@ void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_s
 	snprintf (yerror_tmp_buf,  sizeof (yerror_tmp_buf), "Mismatched parentheses ('%c' expected)", scn3_parens[scn3_lexdepth].sp_close_paren); \
       yyerror (yerror_tmp_buf); \
     } \
-  }
+  } while (0)
 
-#define TOKOPEN(name,close) { \
-  TOKOPEN_AUX(close) \
-  TOK(name); }
+#ifdef SCN3SPLIT
+#define TOK_SKIP RETURN_WS(WS_SPARQL_SKIP)
 
-#define TOKCLOSE(name,close) { \
-  TOKCLOSE_AUX(name,close); \
-  TOK(name); }
+#else
 
-#define TOKOPEN_SKIP(name,close) { \
-  TOKOPEN_AUX(close) \
-  TOK_SKIP; }
-
-#define TOKCLOSE_SKIP(name,close) { \
-  TOKCLOSE_AUX(name,close); \
-  TOK_SKIP; }
-
-#define TOK_SKIP { \
+#define TOK_SKIP do { \
   session_buffered_write (scn3_include_stack [scn3_include_depth]._.sif_skipped_part, yytext, yyleng); \
-  }
+  } while (0)
 
-#define TOK_NL_SKIP { \
+#endif
+
+#define TOKOPEN(name,close) do { \
+  TOKOPEN_AUX(close); \
+  TOK(name); } while (0)
+
+#define TOKCLOSE(name,close) do { \
+  TOKCLOSE_AUX(name,close); \
+  TOK(name); } while (0)
+
+#define TOKOPEN_SKIP(name,close) do { \
+  TOKOPEN_AUX(close); \
+  TOK_SKIP; } while (0)
+
+#define TOKCLOSE_SKIP(name,close) do { \
+  TOKCLOSE_AUX(name,close); \
+  TOK_SKIP; } while (0)
+
+#define TOK_NL_SKIP do { \
   scn3_lineno += scn3_lineno_increment; \
   scn3_plineno += scn3_lineno_increment; \
   TOK_SKIP; \
-  }
+  } while (0)
 
-#define SUBTOK(code, name) { SV; yylval.subtok = code; return name; }
+#define SUBTOK(code, name) do { SV; yylval.subtok = code; RETURN_CODE (name); } while (0)
 
 #define TOKBOX(n,name) \
-  { yylval.strval = t_sym_string (&yytext [n]); save_str(yytext); return (name); }
+  do { yylval.strval = t_sym_string (&yytext [n]); save_str(yytext); RETURN_CODE (name); } while (0)
 
 #define TOKBOX_TWOTRIMS(n1,n2,name) \
-  { yylval.strval = t_box_dv_short_nchars (yytext+n1, strlen(yytext)-(n1+n2)); \
+  do { yylval.strval = t_box_dv_short_nchars (yytext+n1, strlen(yytext)-(n1+n2)); \
     box_tag_modify(yylval.strval, DV_SYMBOL); \
-    save_str(yytext); return (name); }
+    save_str(yytext); RETURN_CODE (name); } while (0)
 
 #define TOKBOX_UPCASE(n,name) \
-  { yylval.strval = t_sqlp_box_id_upcase (&yytext [n]); \
+  do { yylval.strval = t_sqlp_box_id_upcase (&yytext [n]); \
     save_str(yytext); \
-    return (name); \
-  }
+    RETURN_CODE (name); \
+  } while (0)
 
 #define TOKBOX_QUOTED(n,name) \
-  { yylval.strval = t_sqlp_box_id_quoted (&yytext [n], 1); \
+  do { yylval.strval = t_sqlp_box_id_quoted (&yytext [n], 1); \
     save_str(yytext); \
-    return (name); \
-  }
+    RETURN_CODE (name); \
+  } while (0)
 
 #define YY_FATAL_ERROR(msg) yyerror (msg)
 
@@ -408,61 +406,61 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 
 	/* literal keyword tokens */
 
-<SQL>"{"		TOKOPEN(BEGINX,'}')
-<SQL>"{"[ \t\r]*"fn"/[^A-Za-z0-9_]	TOKOPEN(BEGIN_FN_X,'}')  /* was: "{"[ \t\r]*"fn", changed to avoid problems in '{ fname := ...' */
-<SQL>"{"[ \t\r]*"call"/[^A-Za-z0-9_]	TOKOPEN(BEGIN_CALL_X,'}') /* the same */
+<SQL>"{"		TOKOPEN(BEGINX,'}');
+<SQL>"{"[ \t\r]*"fn"/[^A-Za-z0-9_]	TOKOPEN(BEGIN_FN_X,'}');  /* was: "{"[ \t\r]*"fn", changed to avoid problems in '{ fname := ...' */
+<SQL>"{"[ \t\r]*"call"/[^A-Za-z0-9_]	TOKOPEN(BEGIN_CALL_X,'}'); /* the same */
 <SQL>"{"[ \t\r]*"?"[ \t\r]*"="[ \t\r]*"call"/[^A-Za-z0-9_]	{
   char tmp[20];
   snprintf (tmp, sizeof (tmp), ":%d", param_inx++);
   yylval.box = t_sym_string (tmp);
-  TOKOPEN_AUX('}')
-  return BEGIN_EQCALL_X;
+  TOKOPEN_AUX('}');
+  RETURN_CODE (BEGIN_EQCALL_X);
 } /* the same */
-<SQL>"{"[ \t\r]*"oj"/[^A-Za-z0-9_]	TOKOPEN(BEGIN_OJ_X,'}') /* the same */
-<SQL>"{?"		TOKOPEN(BEGIN_U_X,'}')
-<SQL>"}"		TOKCLOSE(ENDX,'}')
-<SQL>"||"		TOK(STRING_CONCAT_OPERATOR)
+<SQL>"{"[ \t\r]*"oj"/[^A-Za-z0-9_]	TOKOPEN(BEGIN_OJ_X,'}'); /* the same */
+<SQL>"{?"		TOKOPEN(BEGIN_U_X,'}');
+<SQL>"}"		TOKCLOSE(ENDX,'}');
+<SQL>"||"		TOK(STRING_CONCAT_OPERATOR);
 
-<SQL>avg		SUBTOK(AMMSC_AVG, AMMSC)
-<SQL>count		SUBTOK(AMMSC_COUNT, AMMSC)
-<SQL>max		SUBTOK(AMMSC_MAX, AMMSC)
-<SQL>min		SUBTOK(AMMSC_MIN, AMMSC)
-<SQL>sum		SUBTOK(AMMSC_SUM, AMMSC)
+<SQL>avg		SUBTOK(AMMSC_AVG, AMMSC);
+<SQL>count		SUBTOK(AMMSC_COUNT, AMMSC);
+<SQL>max		SUBTOK(AMMSC_MAX, AMMSC);
+<SQL>min		SUBTOK(AMMSC_MIN, AMMSC);
+<SQL>sum		SUBTOK(AMMSC_SUM, AMMSC);
 
-<SQL>timestampadd	SUBTOK(SQL_FN_TIMESTAMPADD, TIMESTAMP_FUNC)
-<SQL>timestampdiff	SUBTOK(SQL_FN_TIMESTAMPDIFF, TIMESTAMP_FUNC)
+<SQL>timestampadd	SUBTOK(SQL_FN_TIMESTAMPADD, TIMESTAMP_FUNC);
+<SQL>timestampdiff	SUBTOK(SQL_FN_TIMESTAMPDIFF, TIMESTAMP_FUNC);
 
-<SQL>SQL_TSI_SECOND	SUBTOK(SQL_TSI_SECOND, SQL_TSI)
-<SQL>SQL_TSI_MINUTE	SUBTOK(SQL_TSI_MINUTE, SQL_TSI)
-<SQL>SQL_TSI_HOUR	SUBTOK(SQL_TSI_HOUR, SQL_TSI)
-<SQL>SQL_TSI_DAY	SUBTOK(SQL_TSI_DAY, SQL_TSI)
-<SQL>SQL_TSI_MONTH	SUBTOK(SQL_TSI_MONTH, SQL_TSI)
-<SQL>SQL_TSI_YEAR	SUBTOK(SQL_TSI_YEAR, SQL_TSI)
+<SQL>SQL_TSI_SECOND	SUBTOK(SQL_TSI_SECOND, SQL_TSI);
+<SQL>SQL_TSI_MINUTE	SUBTOK(SQL_TSI_MINUTE, SQL_TSI);
+<SQL>SQL_TSI_HOUR	SUBTOK(SQL_TSI_HOUR, SQL_TSI);
+<SQL>SQL_TSI_DAY	SUBTOK(SQL_TSI_DAY, SQL_TSI);
+<SQL>SQL_TSI_MONTH	SUBTOK(SQL_TSI_MONTH, SQL_TSI);
+<SQL>SQL_TSI_YEAR	SUBTOK(SQL_TSI_YEAR, SQL_TSI);
 
 	/* punctuation */
-<SQL>"="		SUBTOK(BOP_EQ, COMPARISON)
-<SQL>"<>"		 SUBTOK(BOP_NEQ, COMPARISON)
-<SQL>"<"		SUBTOK(BOP_LT, COMPARISON)
-<SQL>">"		SUBTOK(BOP_GT, COMPARISON)
-<SQL>"<="		SUBTOK(BOP_LTE, COMPARISON)
-<SQL>">="		SUBTOK(BOP_GTE, COMPARISON)
-<SQL>":="		TOK(EQUALS)
-<SQL>"::"		TOK(DOUBLE_COLON)
-<SQL>":"		TOK(COLON)
-<SQL>"=>"		TOK(KWD_TAG)
+<SQL>"="		SUBTOK(BOP_EQ, COMPARISON);
+<SQL>"<>"		 SUBTOK(BOP_NEQ, COMPARISON);
+<SQL>"<"		SUBTOK(BOP_LT, COMPARISON);
+<SQL>">"		SUBTOK(BOP_GT, COMPARISON);
+<SQL>"<="		SUBTOK(BOP_LTE, COMPARISON);
+<SQL>">="		SUBTOK(BOP_GTE, COMPARISON);
+<SQL>":="		TOK(EQUALS);
+<SQL>"::"		TOK(DOUBLE_COLON);
+<SQL>":"		TOK(COLON);
+<SQL>"=>"		TOK(KWD_TAG);
 
 <SQL>":"[0-9]+ {
   char tmp[20];
   snprintf (tmp, sizeof (tmp), ":%d", atoi (yytext+1)); /* This sprintf(atoi()) is needed to normalize, say, ':012' into ':12' */
   yylval.box = t_sym_string (tmp);
-  return PARAMETER_L;
+  RETURN_CODE (PARAMETER_L);
 }
 
 <SQL>"?" {
   char tmp[20];
   snprintf (tmp, sizeof (tmp), ":%d", param_inx++);
   yylval.box = t_sym_string (tmp);
-  return PARAMETER_L;
+  RETURN_CODE (PARAMETER_L);
 }
 <SQL>[-+*/,.\!]	TOK(yytext[0])
 <SQL>";"	{
@@ -472,22 +470,23 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 	      yyerror ("Misplaced semicolon, check if square braces are balanced in expression");
 	    /* TBD: smart check for other combinations. */
 	  }
-	TOK(yytext[0]) }
+	TOK(yytext[0]); }
 
-<SQL>"("		TOKOPEN('(',')')
-<SQL>"["		TOKOPEN('[',']')
-<SQL>")"		TOKCLOSE(')',')')
-<SQL>"]"		TOKCLOSE(']',']')
+<SQL>"("		TOKOPEN('(',')');
+<SQL>"["		TOKOPEN('[',']');
+<SQL>")"		TOKCLOSE(')',')');
+<SQL>"]"		TOKCLOSE(']',']');
 
 	/* names */
-<SQL>"\\"[A-Za-z_\x80-\xFF][A-Za-z0-9_:\\\x80-\xFF]*	TOKBOX(1, NAME)
+<SQL>"\\"[A-Za-z_\x80-\xFF][A-Za-z0-9_:\\\x80-\xFF]*	TOKBOX(1, NAME);
 	/* the commented double-quote below is to cure syntax highlighting */
-<SQL>\"([^\"\n]|(\"\"))*\"	{ /*"*/ TOKBOX_QUOTED(1, NAME) }
+<SQL>\"([^\"\n]|(\"\"))*\"	{ /*"*/ TOKBOX_QUOTED(1, NAME); }
 	/*<SQL>\"[^\"\n]*\"	TOKBOX_QUOTED(1, NAME)*/
 <SQL>[A-Za-z_\x80-\xFF][A-Za-z0-9_@\x80-\xFF]* {
   const struct keyword *k;
-  char buf[MAX_WORD_LENGTH + 1], *cp, *sp;
-  for (cp = buf, sp = yytext; *sp && cp < &buf[MAX_WORD_LENGTH];)
+#define WORD_BUF_SIZE 30
+  char buf[WORD_BUF_SIZE+1], *cp, *sp;
+  for (cp = buf, sp = yytext; *sp && cp < buf + WORD_BUF_SIZE; /*no step*/)
     *cp++ = toupper (*sp++);
   *cp = 0;
   if ((k = lex_hash_kw (buf, cp - buf)) != NULL)
@@ -495,6 +494,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
       yylval.strval = k->keiiyword;
       if (SPARQL_L == k->token)
         {
+#ifndef SCN3SPILT
           scn3_include_fragment_t *outer;
           outer = scn3_include_stack + scn3_include_depth;
           outer->_.sif_saved_lineno = scn3_lineno;
@@ -502,11 +502,11 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
           outer->_.sif_saved_lineno_increment = scn3_lineno_increment;
           outer->_.sif_saved_lexdepth = scn3_lexdepth;
           outer->_.sif_skipped_part = strses_allocate ();
+#endif
           BEGIN (SPARQL_SKIP);
-          return SPARQL_L;
+          RETURN_CODE (SPARQL_L);
         }
-      else
-        return k->token;
+      RETURN_CODE (k->token);
     }
   TOKBOX_UPCASE (0, NAME);
 }
@@ -514,7 +514,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 	/* special names for MS SQL 'SELECT ... FOR XML EXPLICIT'  */
 <SQL>"["[A-Za-z][A-Za-z0-9:/._-]*"!"    { BEGIN (MSSQL_XMLCOL); TOKBOX_TWOTRIMS(1,1,MSSQL_XMLCOL_NAME1); }
 <SQL>"[\""[A-Za-z][A-Za-z0-9:/._-]*"\"!"    { BEGIN (MSSQL_XMLCOL); TOKBOX_TWOTRIMS(2,2,MSSQL_XMLCOL_NAME1); }
-<MSSQL_XMLCOL>0*[1-9][0-9]?[0-9]?   { yylval.box = box_num(atoi(yytext)); return MSSQL_XMLCOL_INTNUM; }
+<MSSQL_XMLCOL>0*[1-9][0-9]?[0-9]?   { yylval.box = box_num(atoi(yytext)); RETURN_CODE (MSSQL_XMLCOL_INTNUM); }
 <MSSQL_XMLCOL>[0-9]+		    { yyerror ("Invalid index in the description of XML column"); }
 <MSSQL_XMLCOL>"!"[A-Za-z][A-Za-z0-9:/._-]*		{ TOKBOX(1,MSSQL_XMLCOL_NAME); }
 <MSSQL_XMLCOL>"!\""[A-Za-z][A-Za-z0-9:/._-]*"\""	{ TOKBOX_TWOTRIMS(2,1,MSSQL_XMLCOL_NAME); }
@@ -527,7 +527,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 	/* parameters */
 <SQL>":"[A-Za-z][A-Za-z0-9_]* {
   yylval.strval = t_sym_string (yytext);
-  return NAMED_PARAMETER;
+  RETURN_CODE (NAMED_PARAMETER);
 }
 
 	/* numbers */
@@ -538,7 +538,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
   if (len < 10)
     {
       yylval.box = t_box_num_and_zero (atol (yytext));
-      return INTNUM;
+      RETURN_CODE (INTNUM);
     }
   acc_lo = 0; acc_hi = 0;
   for (ctr = 0; ctr < len; ctr++)
@@ -556,11 +556,11 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 	  numeric_t num = t_numeric_allocate ();
 	  int rc = numeric_from_string (num, yytext);
 	  yylval.box = (caddr_t) num;
-	  return (rc == NUMERIC_STS_SUCCESS ? APPROXNUM : NUM_ERROR);
+	  RETURN_CODE (rc == NUMERIC_STS_SUCCESS ? APPROXNUM : NUM_ERROR);
 	}
     }
   yylval.box = t_box_num_and_zero (atol (yytext));
-  return INTNUM;
+  RETURN_CODE (INTNUM);
 }
 
 <SQL>\#i[0-9]+ {
@@ -569,7 +569,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
   len = strlen (yytext);
     *box = atoi (&yytext[2]);
     yylval.box = (caddr_t) box;
-    return IRI_LIT;
+    RETURN_CODE (IRI_LIT);
 }
 
 
@@ -580,7 +580,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
   ctr = 4;
   while ((ctr < len) && ('0' == yytext[ctr])) ctr++;
   if ((len-ctr) > 8)
-    return NUM_ERROR; /* Too many significant digits */
+    RETURN_CODE (NUM_ERROR); /* Too many significant digits */
   res = 0;
   while (ctr < len)
     {
@@ -589,14 +589,14 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
       ctr ++;
     }
   yylval.box = t_box_num_and_zero (res);
-  return BINARYNUM;
+  RETURN_CODE (BINARYNUM);
 }
 
 <SQL>0x[0-9A-Fa-f]* {
             yylval.box = sqlp_hex_literal (yytext + 2, 0);
 	    if (!yylval.box)
-	      return NUM_ERROR;
-	    return BINARYNUM;
+	      RETURN_CODE (NUM_ERROR);
+	    RETURN_CODE (BINARYNUM);
 }
 
 <SQL>[0-9]+("."[0-9]*)* |
@@ -606,25 +606,25 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
   if (NUMERIC_STS_SUCCESS == rc)
     {
       yylval.box = (caddr_t) num;
-      return APPROXNUM;
+      RETURN_CODE (APPROXNUM);
     }
 /*  numeric_free (num);*/
   yylval.box = t_box_double (atof (yytext));
-  return APPROXNUM;
+  RETURN_CODE (APPROXNUM);
 }
 
 <SQL>[0-9]+[eE][+-]?[0-9]+	|
 <SQL>[0-9]+"."[0-9]+[eE][+-]?[0-9]+ |
 <SQL>"."[0-9]+[eE][+-]?[0-9]+	{
   yylval.box = t_box_double (atof (yytext));
-  return APPROXNUM;
+  RETURN_CODE (APPROXNUM);
 }
 
 	/* HTML */
 
 <SQL>"?>"		{ BEGIN (HTML); html_lines = NULL; }
 <HTML>"<?vsp"		{ yytext[strlen (yytext) - 5] = 0; t_set_push (&html_lines, t_box_string (yytext));
-			  yylval.box = sqlp_html_string (); BEGIN SQL; return HTMLSTR; }
+			  yylval.box = sqlp_html_string (); BEGIN SQL; RETURN_CODE (HTMLSTR); }
 
 <HTML>"<\?"[=/VU]	{ size_t len = strlen (yytext); char fl = yytext [len - 1]; yytext[len - 3] = 0;
                           if (fl == 'V')
@@ -632,7 +632,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 			  else if (fl == 'U')
 			    fl = '/';
 			t_set_push (&html_lines, t_box_string (yytext));
-			  yylval.box = sqlp_html_string (); BEGIN SQL; unput (fl); return HTMLSTR; }
+			  yylval.box = sqlp_html_string (); BEGIN SQL; unput (fl); RETURN_CODE (HTMLSTR); }
 
 <HTML>[^<\r\n]+		{ yymore (); }
 <HTML>"<"		{ yymore (); }
@@ -728,12 +728,12 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 		     caddr_t tmp = box_dv_uname_nchars (raw, box_length (raw) - 1);
 		     box_dv_uname_make_immortal (tmp);
 		     yylval.box = tmp;
-		     return UNAME_LITERAL;
+		     RETURN_CODE (UNAME_LITERAL);
 		   }
 		 yylval.box = national_char ? wideliteral (yytext) : t_strliteral (yytext);
 		 if (!yylval.box)
 		   yyerror (national_char ? "Invalid wide string literal" : "Invalid string literal");
-		 return national_char ? WSTRING : STRING;
+		 RETURN_CODE (national_char ? WSTRING : STRING);
 	       }
 
 <STRLIT,NO_ESC_STRLIT>{S_NL}     { scn3_lineno += scn3_lineno_increment; scn3_plineno += scn3_lineno_increment; yymore(); } /* { BEGIN(SQL); yyerror("Unterminated string"); } */
@@ -765,7 +765,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 	  if (c != '\'')
 	    {
 	      yylval.box = strliteral (yytext);
-	      return STRING;
+	      RETURN_CODE (STRING);
 	    }
 	  else
 	    yymore ();
@@ -775,31 +775,34 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 
 	******	Commented piece ends here. */
 
-<SQL>{S_NL}	{ save_str(" "); scn3_lineno += scn3_lineno_increment; scn3_plineno += scn3_lineno_increment; }
+<SQL>{S_NL}	{ save_str(" "); scn3_lineno += scn3_lineno_increment; scn3_plineno += scn3_lineno_increment; RETURN_WS (WS_WHITESPACE); }
 {S_NL}	{ yyerror ("unrecognized symbol"); /*scn3_lineno++; ECHO;*/ }
 
-<SQL>[ \t]+	save_str(" ");	/* white space */
+<SQL>[ \t]+	{ save_str(" "); RETURN_WS (WS_WHITESPACE); }
 
 	/* Pragmas */
-<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+[0-9-]+([ \t]+[""][^""]+[""])?[ \t]*("--".*)?{S_NL} { scn3_pragma_line (yytext); scn3_lineno_increment = 1; scn3_plineno++; }
-<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"push"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_push (); scn3_lineno_increment = 1; scn3_plineno++; }
-<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"pop"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_pop (); scn3_lineno_increment = 1; scn3_plineno++; }
-<SQL>"#"("pragma"[\ t]+)?"line"([ \t]+"reset")?[ \t]*("--".*)?{S_NL} { scn3_pragma_line_reset (); scn3_lineno_increment = 1; scn3_plineno++; }
+<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+[0-9-]+([ \t]+[""][^""]+[""])?[ \t]*("--".*)?{S_NL} { scn3_pragma_line (yytext); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); } 
+<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"push"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_push (); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
+<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"pop"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_pop (); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
+<SQL>"#"("pragma"[\ t]+)?"line"([ \t]+"reset")?[ \t]*("--".*)?{S_NL} { scn3_pragma_line_reset (); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
 <SQL>"#"("pragma"[\ t]+)?"line" { yyerror ("Ill formed #line"); }
 
 <SQL>"#pragma"[ \t]+"prefix"[ \t]+	{
 	BEGIN(PRAGMA_PREFIX);
 	t_set_push (&scn3_namespaces, NULL);
-	t_set_push (&scn3_namespaces, NULL); }
+	t_set_push (&scn3_namespaces, NULL);
+        RETURN_WS(WS_PRAGMA_PREFIX_1); }
 
 <PRAGMA_PREFIX>({SPAR_NCNAME_PREFIX}?)":"	{
 	BEGIN(PRAGMA_PREFIX_2);
-	scn3_namespaces->data = t_box_dv_uname_string (yytext); }
+	scn3_namespaces->data = t_box_dv_uname_string (yytext);
+	RETURN_WS(WS_PRAGMA_PREFIX_2); }
 
 <PRAGMA_PREFIX_2>[ \t+]"<"([^<>''{}|^`\001-\040])*">"	{
 	const char *langl = strchr (yytext, '<');
 	BEGIN(SQL);
-	scn3_namespaces->next->data = t_box_dv_uname_nchars (langl + 1, (yytext + yyleng - 2) - langl); }
+	scn3_namespaces->next->data = t_box_dv_uname_nchars (langl + 1, (yytext + yyleng - 2) - langl);
+        RETURN_WS(WS_PRAGMA_PREFIX_3); }
 
 <PRAGMA_PREFIX>.	{ yyerror ("Ill formed namespace prefix in #pragma prefix"); }
 <PRAGMA_PREFIX><<EOF>>	{ yyerror ("Unexpected end of text in #pragma prefix"); }
@@ -810,18 +813,18 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SQL>"#pragma" { yyerror ("Ill formed #pragma"); }
 <SQL>"#" { yyerror ("Misused lattice sign ('#')"); }
 
-<SQL>"--"[ \t]*"no_c_escapes+"[ \t]* { parse_not_char_c_escape = 1; }
-<SQL>"--"[ \t]*"no_c_escapes-"[ \t]* { parse_not_char_c_escape = 0; }
-<SQL>"--"[ \t]*"utf8_execs=yes"[ \t]* { parse_utf8_execs = 1; }
-<SQL>"--"[ \t]*"utf8_execs=no"[ \t]* { parse_utf8_execs = 0; }
-<SQL>"--"[ \t]*"pl_debug+"[ \t]* { parse_pldbg = 1; }
-<SQL>"--src"[ \t]+[A-Za-z0-9_./\\-]+":"[0-9+-][0-9]*[ \t]*{S_NL} { sqlp_pl_file (yytext); scn3_lineno_increment = 1; scn3_plineno++; }
-<SQL>"--"[^\r\n]*	;	/* comment */
-<SQL>"/\*"	{ BEGIN (COMMENT); }
+<SQL>"--"[ \t]*"no_c_escapes+"[ \t]* { parse_not_char_c_escape = 1; RETURN_WS(WS_PRAGMA_C_ESC); }
+<SQL>"--"[ \t]*"no_c_escapes-"[ \t]* { parse_not_char_c_escape = 0; RETURN_WS(WS_PRAGMA_C_ESC); }
+<SQL>"--"[ \t]*"utf8_execs=yes"[ \t]* { parse_utf8_execs = 1; RETURN_WS(WS_PRAGMA_UTF8_ESC); }
+<SQL>"--"[ \t]*"utf8_execs=no"[ \t]* { parse_utf8_execs = 0; RETURN_WS(WS_PRAGMA_UTF8_ESC); }
+<SQL>"--"[ \t]*"pl_debug+"[ \t]* { parse_pldbg = 1; RETURN_WS(WS_PRAGMA_PL_DEBUG); }
+<SQL>"--src"[ \t]+[A-Za-z0-9_./\\-]+":"[0-9+-][0-9]*[ \t]*{S_NL} { sqlp_pl_file (yytext); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_SRC); }
+<SQL>"--"[^\r\n]*	{ RETURN_WS(WS_COMMENT_EOL); }	/* comment */
+<SQL>"/\*"	{ BEGIN (COMMENT); RETURN_WS(WS_COMMENT_BEGIN); }
 <COMMENT>"/\*"  { yyerror ("Nested C style comments not supported"); }
-<COMMENT>"\*/"	{ BEGIN (SQL); }
-<COMMENT>{S_NL}	{ scn3_lineno += scn3_lineno_increment; scn3_plineno += scn3_lineno_increment; }
-<COMMENT>.	;
+<COMMENT>"\*/"	{ BEGIN (SQL); RETURN_WS(WS_COMMENT_END); }
+<COMMENT>{S_NL}	{ scn3_lineno += scn3_lineno_increment; scn3_plineno += scn3_lineno_increment; RETURN_WS(WS_COMMENT_LONG); }
+<COMMENT>.|((([^/\r\n*])|([*][^/\r\n*]))+)	{ RETURN_WS(WS_COMMENT_LONG); }
 
 	/* IvAn/Fix4AritmSql/000828 Invalid lexems should be handled explicitly */
 <SQL>([^A-Za-z0-9_'"+\-*/(){}<=>?.,:;# \t\r\n\[\]]+)		TOK(LEXICAL_ERROR)
@@ -838,8 +841,8 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
                   BEGIN (SQL);
 		  yylval.box = sqlp_hex_literal (yytext + 2, 1);
 		  if (!yylval.box)
-		    return NUM_ERROR;
-		  return BINARYNUM;
+		    RETURN_CODE (NUM_ERROR);
+		  RETURN_CODE (BINARYNUM);
                 }
 
 
@@ -855,8 +858,8 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
                   BEGIN (SQL);
 		  yylval.box = sqlp_bit_literal (yytext + 2, 1);
 		  if (!yylval.box)
-		    return NUM_ERROR;
-		  return BINARYNUM;
+		    RETURN_CODE (NUM_ERROR);
+		  RETURN_CODE (BINARYNUM);
                 }
 
 
@@ -878,23 +881,27 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
     }
   }
 
-<SQL>.		TOK(LEXICAL_ERROR)
+<SQL>.		TOK(LEXICAL_ERROR);
 
 	/* Correct skip of SPARQL */
 
-<SPARQL_SKIP>"("	TOKOPEN_SKIP ('(',')')
+<SPARQL_SKIP>"("	TOKOPEN_SKIP ('(',')');
 <SPARQL_SKIP>")"	{
     scn3_include_fragment_t *outer = scn3_include_stack + scn3_include_depth;
     if (outer->_.sif_saved_lexdepth == scn3_lexdepth)
       {
         spar_query_env_t sparqre;
         BEGIN(SQL);
+#ifndef SCN3SPLIT
         scn3_sparp_inline_subselect (&sparqre, "\n)\n", outer);
         yy_scan_buffer (sparqre.sparqre_compiled_text, box_length (sparqre.sparqre_compiled_text) - 1);
+#else
+        TOKCLOSE (')',')');
+#endif
       }
     else
       {
-        TOKCLOSE_SKIP (')',')')
+        TOKCLOSE_SKIP (')',')');
       }
   }
 
@@ -904,8 +911,12 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
       {
         spar_query_env_t sparqre;
         BEGIN(SQL);
+#ifndef SCN3SPLIT
         scn3_sparp_inline_subselect (&sparqre, "\n;\n", outer);
         yy_scan_buffer (sparqre.sparqre_compiled_text, box_length (sparqre.sparqre_compiled_text) - 1);
+#else
+        TOK (';');
+#endif
       }
     else
       {
@@ -913,19 +924,19 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
       }
   }
 
-<SPARQL_SKIP>"{"	TOKOPEN_SKIP ('{','}')
-<SPARQL_SKIP>"}"	TOKCLOSE_SKIP ('}','}')
-<SPARQL_SKIP>"["	TOKOPEN_SKIP ('[',']')
-<SPARQL_SKIP>"]"	TOKCLOSE_SKIP (']',']')
-<SPARQL_SKIP>"<"([^<>''{}|^`\001-\040])*">"		TOK_SKIP
-<SPARQL_SKIP>([""][^""\\\n]*[""])|([''][^''\\\n]*[''])	TOK_SKIP
+<SPARQL_SKIP>"{"	TOKOPEN_SKIP ('{','}');
+<SPARQL_SKIP>"}"	TOKCLOSE_SKIP ('}','}');
+<SPARQL_SKIP>"["	TOKOPEN_SKIP ('[',']');
+<SPARQL_SKIP>"]"	TOKCLOSE_SKIP (']',']');
+<SPARQL_SKIP>"<"([^<>''{}|^`\001-\040])*">"		{ TOK_SKIP; }
+<SPARQL_SKIP>([""][^""\\\n]*[""])|([''][^''\\\n]*[''])	{ TOK_SKIP; }
 
-<SPARQL_SKIP>['']['']['']		{ BEGIN(SPARQL_SSSQ_SKIP); TOK_SKIP }
-<SPARQL_SKIP>[""][""][""]		{ BEGIN(SPARQL_DDDQ_SKIP); TOK_SKIP }
-<SPARQL_SSSQ_SKIP>['']['']['']	{ BEGIN(SPARQL_SKIP); TOK_SKIP }
-<SPARQL_DDDQ_SKIP>[""][""][""]	{ BEGIN(SPARQL_SKIP); TOK_SKIP }
-<SPARQL_SSSQ_SKIP>(([''](['']?))?{S_NL})		TOK_NL_SKIP
-<SPARQL_DDDQ_SKIP>(([""]([""]?))?{S_NL})		TOK_NL_SKIP
+<SPARQL_SKIP>['']['']['']		{ BEGIN(SPARQL_SSSQ_SKIP); TOK_SKIP; }
+<SPARQL_SKIP>[""][""][""]		{ BEGIN(SPARQL_DDDQ_SKIP); TOK_SKIP; }
+<SPARQL_SSSQ_SKIP>['']['']['']	{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
+<SPARQL_DDDQ_SKIP>[""][""][""]	{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
+<SPARQL_SSSQ_SKIP>(([''](['']?))?{S_NL})		{ TOK_NL_SKIP; }
+<SPARQL_DDDQ_SKIP>(([""]([""]?))?{S_NL})		{ TOK_NL_SKIP; }
 <SPARQL_SSSQ_SKIP>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
 <SPARQL_DDDQ_SKIP>((([""]([""]?))?({SPAR_DQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
 <SPARQL_SSSQ_SKIP>[\\]		{ yyerror ("Bad escape sequence in a SPARQL long single-quoted string"); }
@@ -936,39 +947,50 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SPARQL_DDDQ_SKIP><<EOF>>		{ yyerror ("Unterminated SPARQL long double-quoted string"); }
 
 
-<SPARQL_SKIP>['']		{ BEGIN(SPARQL_SQ_SKIP); TOK_SKIP }
-<SPARQL_SKIP>[""]		{ BEGIN(SPARQL_DQ_SKIP); TOK_SKIP }
-<SPARQL_SQ_SKIP>['']		{ BEGIN(SPARQL_SKIP); TOK_SKIP }
-<SPARQL_DQ_SKIP>[""]		{ BEGIN(SPARQL_SKIP); TOK_SKIP }
+<SPARQL_SKIP>['']		{ BEGIN(SPARQL_SQ_SKIP); TOK_SKIP; }
+<SPARQL_SKIP>[""]		{ BEGIN(SPARQL_DQ_SKIP); TOK_SKIP; }
+<SPARQL_SQ_SKIP>['']		{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
+<SPARQL_DQ_SKIP>[""]		{ BEGIN(SPARQL_SKIP); TOK_SKIP; }
 <SPARQL_SQ_SKIP>{S_NL}	{ yyerror ("End-of-line in a SPARQL short single-quoted string"); }
 <SPARQL_DQ_SKIP>{S_NL}	{ yyerror ("End-of-line in a SPARQL short double-quoted string"); }
-<SPARQL_SQ_SKIP>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP
-<SPARQL_DQ_SKIP>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP
+<SPARQL_SQ_SKIP>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP;
+<SPARQL_DQ_SKIP>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		TOK_SKIP;
 <SPARQL_SQ_SKIP>[\\]		{ yyerror ("Bad escape sequence in a SPARQL short single-quoted string"); }
 <SPARQL_DQ_SKIP>[\\]		{ yyerror ("Bad escape sequence in a SPARQL short double-quoted string"); }
 <SPARQL_SQ_SKIP><<EOF>>		{ yyerror ("Unterminated SPARQL short single-quoted string"); }
 <SPARQL_DQ_SKIP><<EOF>>		{ yyerror ("Unterminated SPARQL short double-quoted string"); }
 
-<SPARQL_SKIP>[^''""\\\n\r(){}\[\];]+ TOK_SKIP
+<SPARQL_SKIP>[^''""\\\n\r(){}\[\];]+ TOK_SKIP;
 <SPARQL_SKIP><<EOF>>  {
+#ifndef SCN3SPLIT
     scn3_include_fragment_t *outer = scn3_include_stack + scn3_include_depth;
     spar_query_env_t sparqre;
     BEGIN(SQL);
     scn3_sparp_inline_subselect (&sparqre, "\n;\n", outer);
     yy_scan_buffer (sparqre.sparqre_compiled_text, box_length (sparqre.sparqre_compiled_text) - 1);
+#else
+    yyterminate();
+#endif
   }
 
-<SPARQL_SKIP>{S_NL}	TOK_NL_SKIP
+<SPARQL_SKIP>{S_NL}	TOK_NL_SKIP;
 <SPARQL_SKIP>.		TOK(LEXICAL_ERROR);	/* random non-SQL, non-HTML text */
 
 .		TOK(LEXICAL_ERROR);	/* random non-SQL, non-HTML text */
 %%
 
 
+#ifndef SCN3SPLIT
 void
 sql_yy_reset (void)
 {
   BEGIN SQL;
+#else
+void
+scn3split_yy_reset (void)
+{
+  BEGIN SQL;
+#endif
   scn3_lineno = 1;
   scn3_plineno = 1;
   scn3_lineno_increment = 1;
@@ -976,4 +998,6 @@ sql_yy_reset (void)
   scn3_include_depth = 0;
   scn3_namespaces = NULL;
   scn3_pragma_line_reset ();
+  dk_free_tree (scn3split_ses);
+  scn3split_ses = NULL;
 }

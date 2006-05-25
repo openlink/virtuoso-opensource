@@ -623,6 +623,19 @@
 
 /* set transaction isolation level */
 %token <box> TRANSACTION_L ISOLATION_L LEVEL_L READ_L COMMITTED_L UNCOMMITTED_L REPEATABLE_L SERIALIZABLE_L
+
+/* Skip and ws lexems for scn3split.c */
+%token WS_WHITESPACE /* This should be the first whitespace token */
+%token WS_SPARQL_SKIP
+%token WS_PRAGMA_LINE
+%token WS_PRAGMA_PREFIX_1 WS_PRAGMA_PREFIX_2 WS_PRAGMA_PREFIX_3
+%token WS_PRAGMA_C_ESC WS_PGRAGMA_UTF8_ESC WS_PRAGMA_PL_DEBUG WS_PRAGMA_SRC
+%token WS_COMMENT_EOL WS_COMMENT_BEGIN WS_COMMENT_END WS_COMMENT_LONG
+
+/* Important! Do NOT add meaningful SQL tokens at the end of this list!
+Instead, add them _before_ WS_WHITESPACE. Tokens after WS_WHITESPACE is
+treated as garbage by sql_split_text(). */
+
 %%
 
 /* IvAn/Fix4AritmSql/000828 Trailing semicolon should be trailing explicitly */

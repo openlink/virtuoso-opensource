@@ -2070,17 +2070,28 @@ bif_left (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	dv_type_title (dtp1), dtp1);
 
   if (NULL == str)
-  {
-    return (NEW_DB_NULL);
-  }
+    {
+      return (NEW_DB_NULL);
+    }
 
-  len = (box_length (str) / sizeof_char - 1); /* box_length returns a length + 1 */
+  if (dtp1 != DV_BIN  && dtp1 != DV_LONG_BIN)
+    len = (box_length (str) / sizeof_char - 1); /* box_length returns a length + 1 */
+  else
+    len = (box_length (str) / sizeof_char);
 
   to = MIN (to, len);
 
-  res = dk_alloc_box ((to + 1) * sizeof_char, (dtp_t)(IS_WIDE_STRING_DTP (dtp1) ? DV_WIDE : DV_LONG_STRING));
-  memcpy (res, str, to * sizeof_char);
-  memset (res + to * sizeof_char, 0, sizeof_char);
+  if (dtp1 != DV_BIN  && dtp1 != DV_LONG_BIN)
+    {
+      res = dk_alloc_box ((to + 1) * sizeof_char, (dtp_t)(IS_WIDE_STRING_DTP (dtp1) ? DV_WIDE : DV_LONG_STRING));
+      memcpy (res, str, to * sizeof_char);
+      memset (res + to * sizeof_char, 0, sizeof_char);
+    }
+  else
+    {
+      res = dk_alloc_box (to * sizeof_char, (dtp_t) DV_BIN);
+      memcpy (res, str, to * sizeof_char);
+    }
   return res;
 }
 
@@ -5428,6 +5439,283 @@ bif_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sec_check_dba ((query_instance_t *) qst, "check");
   db_check ((query_instance_t *) QST_INSTANCE (qst));
   return 0;
+}
+
+
+caddr_t
+sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strval)
+{
+  if (!str2)
+    {
+      return list (1, list (3, 0, 0, "SQL lex analyzer: input text is NULL, not a string"));
+    }
+  else
+    {
+      dk_set_t lexems = NULL;
+      sql_comp_t sc;
+      caddr_t result_array = NULL;
+      caddr_t str;
+      memset (&sc, 0, sizeof (sc));
+
+      if (!parse_sem)
+  parse_sem = semaphore_allocate (1);
+      MP_START();
+      semaphore_enter (parse_sem);
+      str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
+      snprintf (str, box_length (str), "EXEC SQL %s;", str2);
+
+
+      yy_string_input_init (str);
+      sql_err_state[0] = 0;
+      sql_err_native[0] = 0;
+      if (0 == setjmp_splice (&parse_reset))
+  {
+    int lextype, olex = -1;
+    long n_lexem;
+    sql_yy_reset ();
+    yyrestart (NULL);
+    for (n_lexem = 0;;)
+      {
+	caddr_t boxed_plineno, boxed_text, boxed_lextype;
+        lextype = yylex();
+        if (!lextype)
+	  break;
+        if (olex == lextype && lextype == ';')
+	  continue;
+        boxed_plineno = box_num (scn3_plineno);
+        boxed_text = use_strval ?
+	  box_dv_short_string (yylval.strval) :
+	  box_dv_short_nchars (yytext, yyleng);
+        boxed_lextype = box_num (lextype);
+        dk_set_push (&lexems, list (3, boxed_plineno, boxed_text, boxed_lextype));
+        olex = lextype;
+        if (max_lexems && (++n_lexem) >= max_lexems)
+	  break;
+      }
+    lexems = dk_set_nreverse (lexems);
+  }
+      else
+  {
+    char err[1000];
+    snprintf (err, sizeof (err), "SQL lex analyzer: %s ", sql_err_text);
+    lexems = dk_set_nreverse (lexems);
+    dk_set_push (&lexems, list (2,
+      scn3_plineno,
+      box_dv_short_string (err) ) );
+    goto cleanup;
+  }
+cleanup:
+      semaphore_leave (parse_sem);
+      MP_DONE();
+      sc_free (&sc);
+      result_array = (caddr_t)(dk_set_to_array (lexems));
+      dk_set_free (lexems);
+      return result_array;
+    }
+}
+
+
+static
+caddr_t
+bif_sql_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_arg (qst, args, 0, "sql_lex_analyze");
+  return sql_lex_analyze (str, qst, 0, 0);
+}
+
+#if 0
+static
+caddr_t
+bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_arg (qst, args, 0, "sql_split_text");
+  caddr_t **token_array = (caddr_t **)sql_lex_analyze (str, qst, 0, 0);
+  int level=0, i, line, oline = 1, n = BOX_ELEMENTS(token_array), last_semi;
+  dk_set_t stmts = NULL;
+  caddr_t result_array = NULL;
+
+  dk_session_t * ses = NULL;
+  if ((0 < n) && (2 == BOX_ELEMENTS (token_array[0])))
+    {
+      char err[2010];
+      strcpy_ck (err, token_array[0][1]);
+      dk_free_tree ((box_t) token_array);
+      sqlr_new_error ("37000", "SQ201", "%s", err);
+    }
+  ses = strses_allocate ();
+  last_semi = -1;
+  for (i=0; i<n; i++)
+  {
+    caddr_t *p = token_array[i];
+    caddr_t token = p[1];
+          line = (int) (ptrlong) p [0];
+    assert (NULL != token);
+
+    if (level || ';' != *token)
+    {
+        if (line != oline)
+          session_buffered_write (ses, "\n", 1);
+      session_buffered_write (ses, token, strlen(token));
+      session_buffered_write (ses, " ", 1);
+      switch (*token) {
+        case '{': level++; break;
+        case '}': level--; break;
+      }
+      oline = line;
+      continue;
+    }
+    if (i > (1 + last_semi))
+    {
+      int len = strses_length (ses);
+      char *out = (char *) dk_alloc_box (len + 1, DV_LONG_STRING);
+      strses_to_array (ses, out);
+      strses_flush (ses);
+      out[len] = 0;
+      dk_set_push (&stmts, out);
+    }
+    else
+      strses_flush (ses);
+    last_semi = i;
+    oline = line;
+  }
+
+    if (i > (1 + last_semi))
+    {
+      int len = strses_length (ses);
+      char *out = (char *) dk_alloc_box (len + 1, DV_LONG_STRING);
+      strses_to_array (ses, out);
+      strses_flush (ses);
+      out[len] = 0;
+      dk_set_push (&stmts, out);
+    }
+  dk_free_box ((box_t) ses);
+  dk_free_tree ((box_t) token_array);
+
+  result_array = revlist_to_array (stmts);
+  return result_array;
+}
+#endif
+
+#define SQL_SPLIT_TEXT_DEFAULT 0x0
+#define SQL_SPLIT_TEXT_KEEP_SEMICOLON 0x1
+#define SQL_SPLIT_TEXT_KEEP_EMPTY_STATEMENTS 0x2
+#define SQL_SPLIT_TEXT_VERBOSE 0x4
+
+extern dk_session_t *scn3split_ses_code;
+extern dk_session_t *scn3split_ses_tail;
+
+
+caddr_t
+sql_split_text (const char * str2, caddr_t * qst, int flags)
+{
+  dk_set_t res = NULL;
+  sql_comp_t sc;
+  caddr_t str;
+  caddr_t result_array = NULL;
+  caddr_t start_filename;
+  int has_useful_lexems;
+  int start_lineno;
+  int start_plineno;
+  memset (&sc, 0, sizeof (sc));
+
+  if (!parse_sem)
+    parse_sem = semaphore_allocate (1);
+  MP_START();
+  semaphore_enter (parse_sem);
+  str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
+  snprintf (str, box_length (str), "EXEC SQL %s", str2);
+  yy_string_input_init (str);
+  sql_err_state[0] = 0;
+  sql_err_native[0] = 0;
+  if (0 == setjmp_splice (&parse_reset))
+    {
+      int lextype = -1;
+      int trail_pline = -1;
+      long n_lexem = 0;
+      caddr_t full_text, descr;
+      size_t full_text_blen;
+      scn3split_yy_reset ();
+      scn3splityyrestart (NULL);
+      scn3split_ses = strses_allocate ();
+      has_useful_lexems = 0;
+      start_lineno = scn3_lineno;
+      start_plineno = scn3_plineno;
+      start_filename = box_dv_short_string (scn3_get_file_name ());
+      while (0 != lextype)
+        {
+          caddr_t end_filename;
+          lextype = scn3splityylex();
+          if (!lextype)
+	    goto commit_the_statement; /* see below */
+          if ((WS_WHITESPACE > lextype) && (';' != lextype))
+            has_useful_lexems = 1;
+          if (((';' == lextype) || ('}' == lextype)) && (0 == scn3_lexdepth))
+            {
+              trail_pline = scn3_plineno;
+              goto commit_the_statement; /* see below */
+            }
+          continue;
+
+commit_the_statement:
+          end_filename = box_dv_short_string (scn3_get_file_name ());
+          full_text = strses_string (scn3split_ses);
+          dk_free_tree (scn3split_ses);
+          scn3split_ses = strses_allocate ();
+          full_text_blen = box_length(full_text);
+          if (!has_useful_lexems && !(flags & SQL_SPLIT_TEXT_KEEP_EMPTY_STATEMENTS))
+            goto nothing_to_commit;
+          if (full_text_blen < 2)
+            goto nothing_to_commit;
+          if ((';' == full_text[full_text_blen-2]) && !(flags & SQL_SPLIT_TEXT_KEEP_SEMICOLON))
+            full_text[full_text_blen-2] = ' ';
+          if (flags & SQL_SPLIT_TEXT_VERBOSE)
+            {
+              descr = list (8,
+                full_text,
+                start_filename, box_num(start_lineno), box_num (start_plineno),
+                box_copy (end_filename), box_num (scn3_lineno), box_num (scn3_plineno),
+                box_num (param_inx) );
+            }
+          else
+            descr = full_text;
+          dk_set_push (&res, descr);
+nothing_to_commit:
+          has_useful_lexems = 0;
+          start_filename = end_filename;
+          start_lineno = scn3_lineno;
+          start_plineno = scn3_plineno;
+          param_inx = 0;
+          if (!lextype)
+	    break;
+        }
+    }
+  else
+    {
+      char err[1000];
+      snprintf (err, sizeof (err), "SQL lex splitter: %s ", sql_err_text);
+      dk_set_push (&res, list (2,
+        scn3_plineno,
+        box_dv_short_string (err) ) );
+      goto cleanup;
+    }
+cleanup:
+  semaphore_leave (parse_sem);
+  MP_DONE();
+  sc_free (&sc);
+  dk_free_box (scn3split_ses);
+  dk_free_box (start_filename);
+  scn3split_ses = NULL;
+  return revlist_to_array (res);
+}
+
+
+static
+caddr_t
+bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_arg (qst, args, 0, "sql_split_text");
+  ptrlong flags = ((BOX_ELEMENTS(args) > 1) ? bif_long_arg (qst, args, 1, "sql_split_text") : SQL_SPLIT_TEXT_DEFAULT);
+  return sql_split_text (str, qst, flags);
 }
 
 
@@ -10137,160 +10425,6 @@ bif_hic_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strval)
-{
-  if (!str2)
-    {
-      return list (1, list (3, 0, 0, "SQL lex analyzer: input text is NULL, not a string"));
-    }
-  else
-    {
-      dk_set_t lexems = NULL;
-      sql_comp_t sc;
-      caddr_t result_array = NULL;
-      caddr_t str;
-      memset (&sc, 0, sizeof (sc));
-
-      if (!parse_sem)
-  parse_sem = semaphore_allocate (1);
-      MP_START();
-      semaphore_enter (parse_sem);
-      str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
-      snprintf (str, box_length (str), "EXEC SQL %s;", str2);
-
-
-      yy_string_input_init (str);
-      sql_err_state[0] = 0;
-      sql_err_native[0] = 0;
-      if (0 == setjmp_splice (&parse_reset))
-  {
-    int lextype, olex = -1;
-    long n_lexem;
-    sql_yy_reset ();
-    yyrestart (NULL);
-    for (n_lexem = 0;;)
-      {
-	caddr_t boxed_plineno, boxed_text, boxed_lextype;
-        lextype = yylex();
-        if (!lextype)
-	  break;
-        if (olex == lextype && lextype == ';')
-	  continue;
-        boxed_plineno = box_num (scn3_plineno);
-        boxed_text = use_strval ?
-	  box_dv_short_string (yylval.strval) :
-	  box_dv_short_nchars (yytext, yyleng);
-        boxed_lextype = box_num (lextype);
-        dk_set_push (&lexems, list (3, boxed_plineno, boxed_text, boxed_lextype));
-        olex = lextype;
-        if (max_lexems && (++n_lexem) >= max_lexems)
-	  break;
-      }
-    lexems = dk_set_nreverse (lexems);
-  }
-      else
-  {
-    char err[1000];
-    snprintf (err, sizeof (err), "SQL lex analyzer: %s ", sql_err_text);
-    lexems = dk_set_nreverse (lexems);
-    dk_set_push (&lexems, list (2,
-      scn3_plineno,
-      box_dv_short_string (err) ) );
-    goto cleanup;
-  }
-cleanup:
-      semaphore_leave (parse_sem);
-      MP_DONE();
-      sc_free (&sc);
-      result_array = (caddr_t)(dk_set_to_array (lexems));
-      dk_set_free (lexems);
-      return result_array;
-    }
-}
-
-
-static
-caddr_t
-bif_sql_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t str = bif_string_arg (qst, args, 0, "sql_lex_analyze");
-  return sql_lex_analyze (str, qst, 0, 0);
-}
-
-
-static
-caddr_t
-bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t str = bif_string_arg (qst, args, 0, "sql_split_text");
-  caddr_t **token_array = (caddr_t **)sql_lex_analyze (str, qst, 0, 0);
-  int level=0, i, line, oline = 1, n = BOX_ELEMENTS(token_array), last_semi;
-  dk_set_t stmts = NULL;
-  caddr_t result_array = NULL;
-
-  dk_session_t * ses = NULL;
-  if ((0 < n) && (2 == BOX_ELEMENTS (token_array[0])))
-    {
-      char err[2010];
-      strcpy_ck (err, token_array[0][1]);
-      dk_free_tree ((box_t) token_array);
-      sqlr_new_error ("37000", "SQ201", "%s", err);
-    }
-  ses = strses_allocate ();
-  last_semi = -1;
-  for (i=0; i<n; i++)
-  {
-    caddr_t *p = token_array[i];
-    caddr_t token = p[1];
-          line = (int) (ptrlong) p [0];
-    assert (NULL != token);
-
-    if (level || ';' != *token)
-    {
-        if (line != oline)
-          session_buffered_write (ses, "\n", 1);
-      session_buffered_write (ses, token, strlen(token));
-      session_buffered_write (ses, " ", 1);
-      switch (*token) {
-        case '{': level++; break;
-        case '}': level--; break;
-      }
-      oline = line;
-      continue;
-    }
-    if (i > (1 + last_semi))
-    {
-      int len = strses_length (ses);
-      char *out = (char *) dk_alloc_box (len + 1, DV_LONG_STRING);
-      strses_to_array (ses, out);
-      strses_flush (ses);
-      out[len] = 0;
-      dk_set_push (&stmts, out);
-    }
-    else
-      strses_flush (ses);
-    last_semi = i;
-    oline = line;
-  }
-
-    if (i > (1 + last_semi))
-    {
-      int len = strses_length (ses);
-      char *out = (char *) dk_alloc_box (len + 1, DV_LONG_STRING);
-      strses_to_array (ses, out);
-      strses_flush (ses);
-      out[len] = 0;
-      dk_set_push (&stmts, out);
-    }
-  dk_free_box ((box_t) ses);
-  dk_free_tree ((box_t) token_array);
-
-  result_array = revlist_to_array (stmts);
-  return result_array;
-}
-
-
-caddr_t
 bif_bit_and (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   long x1 = (long) (0xffffffff & bif_long_arg (qst, args, 0, "bit_and"));
@@ -11918,3 +12052,10 @@ void bpel_init ()
   ddl_ensure_table ("do this always", bpel_check_proc);
   ddl_ensure_table ("do this always", bpel_run_check_proc);
 }
+
+/* This should stay the last part of the file */
+#define YY_INPUT(buf, res, max) \
+  res = yy_string_input (buf, max);
+
+#define SCN3SPLIT
+#include "../../libsrc/Wi/scn3split.c"

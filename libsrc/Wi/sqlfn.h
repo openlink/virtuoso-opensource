@@ -67,6 +67,75 @@ typedef struct spar_query_env_s
   caddr_t		sparqre_catched_error;
 } spar_query_env_t;
 
+extern int national_char;
+extern int uname_strlit;
+
+/* Place of an opened '(' or '{' */
+typedef struct scn3_paren_s {
+  int sp_open_line;	/*!< Line number where it has been opened */
+  char sp_close_paren;	/*!< The character that should be used to close it (e.g. '}' if '{' is opened */
+} scn3_paren_t;
+
+extern int scn3_lineno;	/*!< Throughout counter of lines in the source text */
+extern int scn3_plineno;	/*!< Physical counter of lines in the source text - used for the PL debugger */
+extern int scn3_lineno_increment;	/*!< This is zero for 'macroexpanded' fragments of SQL text, to prevent from confusing when a long text is inserted instead of a single line */
+extern int scn3_lexdepth;	/*!< Number of opened parenthesis */
+
+extern dk_set_t scn3_namespaces; /*!< List of namespace prefixes and URIs */
+
+#define MAXLEXDEPTH 80	/*!< Maximum allowed number of opened parenthesis */
+extern scn3_paren_t scn3_parens[MAXLEXDEPTH];
+
+
+#define MAX_PRAGMALINE_DEPTH 4	/*!< Maximum nesting of line locations (i.e. 1 + (max no of nested '#pragma line push')) */
+
+/*! Logical line location as it is set by #pragma line statements.
+See the body of scn3_sprint_curr_line_loc() to find out how to use such data
+to get a logical filename and line number for the currect position
+in the source text. */
+typedef struct scn3_line_loc_s {
+/*! The value of scn3_lineno at the beginning of #pragma line. */
+  int sll_start_lineno;
+/*! The value of scn3_lexdepth at the beginning of #pragma line.
+This is used to check that there are no cases when e.g. an '{' is
+opened in one file and pair '}' is closed in some other file. */
+  int sll_start_lexdepth;
+/*! Line number as it is written in the body of #pragma line. */
+  int sll_pragma_lineno;
+/*! File name as it is written in the body of #pragma line. */
+  caddr_t sll_pragma_file;
+} scn3_line_loc_t;
+
+/*! Stack of logical locations. */
+extern scn3_line_loc_t scn3_line_locs[MAX_PRAGMALINE_DEPTH];
+/*! This is the number of not-yet-popped '#pragma line push' directives. */
+extern int scn3_pragmaline_depth;
+
+
+#define MAX_INCLUDE_DEPTH 4	/*!< Maximum nesting of includes or fragments in different languages. */
+
+/*! Fragment written on one language (say, in SPARQL) that is included into the text on other language (say, in SQL) */
+typedef struct scn3_include_fragment_s {
+  struct yy_buffer_state *sif_buffer;
+  scn3_include_frag_t _;
+} scn3_include_fragment_t;
+
+extern scn3_include_fragment_t scn3_include_stack [MAX_INCLUDE_DEPTH];
+
+/*! Number of fragments that are started but not yet completed. It's zero while the whole text is in SQL */
+extern int scn3_include_depth;
+
+extern dk_session_t *scn3split_ses;
+
+extern void scn3_pragma_line (char *text);
+extern void scn3_pragma_line_push (void);
+extern void scn3_pragma_line_pop (void);
+extern void scn3_pragma_line_reset (void);
+extern int scn3_sprint_curr_line_loc (char *buf, size_t max_buf);
+extern int scn3_get_lineno (void);
+extern char *scn3_get_file_name (void);
+extern void scn3_set_file_line (char *file, int file_nchars, int line_no);
+extern void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_text, scn3_include_fragment_t *outer);
 extern void sparp_compile_subselect (spar_query_env_t *sparqre);
 
 

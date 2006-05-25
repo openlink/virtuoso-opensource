@@ -66,6 +66,12 @@ yywrap (void)
   return (1);
 }
 
+int
+scn3splityywrap (void)
+{
+  return (1);
+}
+
 
 caddr_t
 sym_string (const char *str)

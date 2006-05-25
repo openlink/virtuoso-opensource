@@ -500,13 +500,6 @@ void sqlc_union_constants (ST * sel);
 /* sqlcr.c */
 void sqlc_cursor (sql_comp_t * sc, ST ** ptree, int cr_type);
 
-#endif
-
-
-
-
-
-
 ST * sql_tree_and (ST * tree, ST * cond);
 ptrlong cmp_op_inverse (ptrlong op);
 caddr_t box_append_1 (caddr_t box, caddr_t elt);
@@ -556,6 +549,7 @@ void ks_ancestor_scan (sql_comp_t * sc, comp_table_t * ct, key_source_t * ks);
 ST * sqlc_embedded_xpath (sql_comp_t * sc, char * str2, caddr_t * err_ret);
 
 void ks_make_misc_accelerator (sql_comp_t * sc, comp_table_t * ct, key_source_t * ks);
+#endif
 
 /* sqlcr.c */
 query_t *
