@@ -5,26 +5,26 @@
 --  $Id$
 --
 --  Virtuoso VSPX core componets classes
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 --drop table VSPX_SESSION
 --;
@@ -2106,27 +2106,13 @@ text_split_complete:
     }
 
   declare i int;
-  declare isSparql int;
   i := 0;
   while( i < length(parsed_text) ) {
     aset(parsed_text, i, trim(parsed_text[i], '\r\n ') );
-    -- SPARQL checks should be removed or modified once sql_split_text is fixed to keep the roiginal query.
-    isSparql := 0;
-    if (upper(parsed_text[i]) like 'SPARQL%')
-      {
-        isSparql := 1;
-        aset(parsed_text, i, trim(subseq(parsed_text[i],6), '\r\n '));
-      }
     err_sqlstate := '00000'; err_msg := '';
    -- dbg_obj_print('self.isql_explain',self.isql_explain);
     result := null;
-    -- Once sql_split_text is fixed we should eighter call sparql_explain here or exaplain directly if supported.
-    if( self.isql_explain and isSparql)
-      {
-        err_sqlstate := '22023';
-        err_msg := 'SPARQL explain is not supproted in interactive SQL control yet.';
-      }
-    else if( self.isql_explain )
+    if( self.isql_explain )
       exec ( 'explain(?)', err_sqlstate, err_msg, vector(parsed_text[i]), _maxres, m_dta, result);
     else
     {
@@ -2141,7 +2127,6 @@ text_split_complete:
     }
     if( err_sqlstate <> '00000' )
     {
-      if( not(isSparql) )
       err_msg := err_msg || '\n' || parsed_text[i];
       rollback work;
     }
@@ -5163,7 +5148,7 @@ create function vspx_make_vspxm (
     {
       http (sprintf('The VSPX contains style URI %s\n', page_style), messages);
       xslt_style_uri := DB.DBA.XML_URI_RESOLVE_LIKE_GET (resource_base_uri, page_style);
-      xslt_macro_sheet_name := concat (xslt_style_uri, '-intetrnal-', cast (now() as varchar), ')');
+      xslt_macro_sheet_name := concat (xslt_style_uri, '-internal-', cast (now() as varchar), ')');
       http (sprintf('The style URI is resolved as %s\n', xslt_style_uri), messages);
       xslt_macro_sheet_text := concat (
   '<?xml version=''1.0''?>
