@@ -534,12 +534,17 @@
           <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'edit')"/></xsl:with-param>
           <xsl:with-param name="wikiref_cont">Edit</xsl:with-param>
         </xsl:call-template>
-        <xsl:text> | </xsl:text>
+        <xsl:text> | Ref-By (</xsl:text>
         <xsl:call-template name="wikiref">
           <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'refby')"/></xsl:with-param>
-          <xsl:with-param name="wikiref_cont">Ref-By</xsl:with-param>
+          <xsl:with-param name="wikiref_cont">Cluster</xsl:with-param>
         </xsl:call-template>
-        <xsl:text> | </xsl:text>
+        <xsl:text>|</xsl:text>
+        <xsl:call-template name="wikiref">
+          <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'refby-all')"/></xsl:with-param>
+          <xsl:with-param name="wikiref_cont">All</xsl:with-param>
+        </xsl:call-template>
+        <xsl:text>) | </xsl:text>
         <xsl:call-template name="wikiref">
           <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'index')"/></xsl:with-param>
           <xsl:with-param name="wikiref_cont">Index</xsl:with-param>
@@ -557,17 +562,15 @@
           Maintenance
         </a>
         <xsl:text> | </xsl:text>
-	    Publish to {
-        <a>
+	    Publish to (<a>
           <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		
 	      Web
         </a>
-        <xsl:text> | </xsl:text>
+	    <xsl:text>|</xsl:text>
         <a>
           <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id, 'type', 'docbook', 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		
 	      Docbook
-        </a>
-        <xsl:text>} | </xsl:text>
+        </a><xsl:text>) | </xsl:text>
         <xsl:if test="$is_hist = 't'">
           <a>
             <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('history.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', $realm))"/></xsl:attribute>		

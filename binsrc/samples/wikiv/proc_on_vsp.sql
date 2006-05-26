@@ -377,17 +377,37 @@ create function WV.WIKI.VSPTOPICREFERERS (
   declare _report any;
   declare _text varchar;
   -- _topic.ti_http_debug_print('VspTopicReferers: info about current topic');
-  _report := coalesce ((
-      select XMLELEMENT ('Referers',
-        XMLAGG ( 
-          XMLELEMENT ('Link',
-	    XMLATTRIBUTES (c.ClusterName, n.LocalName, n.Abstract) ) ) )
-      from (
-	select distinct n2.LocalName, n2.Abstract, n2.ClusterId
-	from WV.WIKI.LINK as l inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
-	where l.DestId = _topic.ti_id
-	) as n
-        inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId) ) );
+  if (get_keyword ('command', params) = 'refby') 
+    {
+      _report := (select XMLELEMENT ('Referers',
+				     XMLAGG ( 
+					     XMLELEMENT ('Link',
+							 XMLATTRIBUTES (c.ClusterName as "CLUSTERNAME",
+									n.LocalName as "LOCALNAME",
+									n.Abstract as "ABSTRACT") ) ) )
+		  from (
+			select distinct n2.LocalName, n2.Abstract, n2.ClusterId
+			from WV.WIKI.LINK as l inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
+			 where l.DestId = _topic.ti_id
+			 and n2.ClusterId = _topic.ti_cluster_id
+			) as n
+		  inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId) );
+    }
+  else
+    {
+      _report := (select XMLELEMENT ('Referers',
+				     XMLAGG ( 
+					     XMLELEMENT ('Link',
+							 XMLATTRIBUTES (c.ClusterName as "CLUSTERNAME",
+									n.LocalName as "LOCALNAME",
+									n.Abstract as "ABSTRACT") ) ) )
+		  from (
+			select distinct n2.LocalName, n2.Abstract, n2.ClusterId
+			from WV.WIKI.LINK as l inner join WV.WIKI.TOPIC as n2 on (l.OrigId = n2.TopicId)
+			 where l.DestId = _topic.ti_id 
+			) as n
+		  inner join WV.WIKI.CLUSTERS as c on (c.ClusterId = n.ClusterId) );
+    }
   declare _ext_params any;
   _ext_params := vector_concat (_topic.ti_xslt_vector(params),
   	vector ('donotresolve', 1));

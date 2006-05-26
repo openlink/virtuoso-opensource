@@ -488,7 +488,7 @@ content:
       WV.WIKI.VSPTOPICPREVIEW (path, lines, _topic.ti_id, _topic.ti_raw_title, _text, {?'is_new'}, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust), _cluster );
       goto make_footer;
     }
-  if (_cmd = 'refby')
+  if (_cmd like 'refby%')
     {
       WV.WIKI.VSPTOPICREFERERS (path, lines, _topic,
         WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
