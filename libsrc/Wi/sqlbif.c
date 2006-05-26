@@ -203,7 +203,10 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+#ifndef __SQL3_H
+#define __SQL3_H
 #include "sql3.h"
+#endif
 #include "repl.h"
 #include "replsr.h"
 #include "sqltype.h" /* for XMLTYPE_TO_ENTITY */

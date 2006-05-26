@@ -43,7 +43,10 @@
 #include "sqlo.h"
 #include "sqlofn.h"
 #include "sqltype.h"
+#ifndef __SQL3_H
+#define __SQL3_H
 #include "sql3.h"
+#endif
 #include "sqlcstate.h"
 
 sql_compile_state_t global_sqlc_st;

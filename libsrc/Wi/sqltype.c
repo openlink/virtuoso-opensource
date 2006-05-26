@@ -43,7 +43,10 @@
 #include "sqlbif.h"
 #include "sqlo.h"
 #include "sqlpfn.h"
+#ifndef __SQL3_H
+#define __SQL3_H
 #include "sql3.h"
+#endif
 #include "sqlcstate.h"
 #include "xmltree.h"
 

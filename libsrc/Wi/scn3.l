@@ -36,7 +36,10 @@
 #include "sqlfn.h"
 #include "sqlpar.h"
 #include "sqlpfn.h"
+#ifndef __SQL3_H
+#define __SQL3_H
 #include "sql3.h"
+#endif
 #ifndef SCN3SPLIT
 #include "sqlwords.h"
 #else
