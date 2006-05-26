@@ -2817,7 +2817,7 @@ create procedure WV.WIKI.IMPORT (in cluster varchar,
 	    {
 	      _topic.ti_find_metadata_by_id ();
       -- render page for set parents etc...      
-	dbg_obj_print ('CHECK TPC ', _topic.ti_local_name);
+--	dbg_obj_print ('CHECK TPC ', _topic.ti_local_name);
 	      WV.WIKI.CHECK_TOPIC (_topic, auth, pwd);
 	       commit work;
 	    }
@@ -2856,7 +2856,7 @@ create procedure WV.WIKI.IMPORT (in cluster varchar,
 		      declare res_id int;
 		  declare att_type varchar;
 		  declare att_content, att_content2 any;
-		  dbg_obj_princ ('get ', attachments_path || file_spec || '/' || att_spec);
+--		  dbg_obj_princ ('get ', attachments_path || file_spec || '/' || att_spec);
 	 	  att_content := file_to_string_output (attachments_path || file_spec || '/' || att_spec); 
 --		  att_content := string_output_string (att_content);
 		  att_type := DB.DBA.DAV_GUESS_MIME_TYPE_BY_NAME (att_spec);
@@ -2917,7 +2917,7 @@ create procedure WV.WIKI.CHECK_TOPIC (
   if (_topic.ti_local_name is null)
     return NULL;
   declare exit handler for sqlstate '*' {
-    dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+    --dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
     return NULL;
   }
   ;
@@ -3587,6 +3587,3 @@ create procedure WV.WIKI.DROP_ALL_MEMBERS ()
   }
 }
 ;
-   
-
-

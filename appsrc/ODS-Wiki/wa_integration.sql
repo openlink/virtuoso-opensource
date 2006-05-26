@@ -439,7 +439,7 @@ create method wa_addition_instance_urls (in _lpath varchar) for wa_wikiv
   --! dirty hack
   declare _vhost varchar;
   _vhost := connection_get ('vhost');
-  dbg_obj_princ ('>>>>>>', _vhost);
+--  dbg_obj_princ ('>>>>>>', _vhost);
   if (_vhost is null or _vhost like '*ini*%')
     _vhost := '%';
   insert replacing WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER) 
@@ -528,7 +528,7 @@ create procedure WV.WIKI.MAKE_DASHBOARD_ITEM
       '<uid><![CDATA[%s]]></uid>' ||
       '</post>'||
       '</wiki-db>', title, date_iso8601 (tim), url, uname);
-  dbg_obj_princ (ret);
+--  dbg_obj_princ (ret);
   return ret;
 }
 ;

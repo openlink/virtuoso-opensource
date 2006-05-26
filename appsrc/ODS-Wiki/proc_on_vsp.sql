@@ -80,7 +80,7 @@ create function WV.WIKI.VSPTOPICVIEW (
   in params any)
   returns varchar
 {
-  dbg_obj_print (_topic);
+--  dbg_obj_print (_topic);
   declare _uid int;
   declare _base_adjust, _command varchar;
   _uid := get_keyword ('uid', params);
@@ -157,7 +157,7 @@ ins:
   _ext_params := vector_concat (_topic.ti_xslt_vector (params), 
   	vector ('is_hist', _is_hist, 'revision', _topic.ti_rev_id));
   _xhtml := _topic.ti_get_entity(null, 1);
-  dbg_obj_princ ('>>>>>>' ,_xhtml);
+--  dbg_obj_princ ('>>>>>>' ,_xhtml);
   if (_command not in ('docbook'))
   _xhtml := 
     WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _xhtml,
@@ -186,7 +186,7 @@ ins:
   _skin := coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), 'default');
   http_rewrite ();
   http_header ('Content-Type: text/html\r\n');
-  dbg_obj_princ ('> ', _base_adjust); 
+--  dbg_obj_princ ('> ', _base_adjust); 
   _xhtml :=
     WV.WIKI.VSPXSLT ( 'PostProcess.xslt', _xhtml,
       _ext_params,
@@ -421,7 +421,7 @@ create function WV.WIKI.VSPCLUSTERINDEX (
   _ext_params := vector_concat (_topic.ti_xslt_vector(params),
   	vector ('donotresolve', 1));
 
-  dbg_obj_print (_report);
+--  dbg_obj_print (_report);
   http_value (
     WV.WIKI.VSPXSLT ('PostProcess.xslt', 
 	   WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report,
@@ -1627,7 +1627,7 @@ create procedure WV.WIKI.MAKE_PARAMS (
    if (isinteger (wa_home_title))
      wa_home_title := 'OPS Home';
    vv := vector_concat (vv, vector ('wa_home_title', wa_home_title));
-   dbg_obj_print (vv);
+--   dbg_obj_print (vv);
    return vv;
 	
 }
@@ -2371,7 +2371,7 @@ create function WV.WIKI.GET_WAI_ID (in cluster_name int)
 
 create function WV.WIKI.MOD_TIME (in _res_id int)
 {
-  dbg_obj_princ (_res_id);
+--  dbg_obj_princ (_res_id);
   return coalesce ( (select WV.WIKI.DATEFORMAT (RES_MOD_TIME, 'rfc1123') from WS.WS.SYS_DAV_RES where RES_ID = _res_id), '');
 }
 ;

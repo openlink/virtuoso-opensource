@@ -135,4 +135,3 @@ create procedure WV.WIKI.STRSQLAPOS (in str varchar)
   return trim(tmp);
 }
 ;
-

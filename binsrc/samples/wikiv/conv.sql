@@ -80,7 +80,7 @@ create procedure UPDATE_RFC_REFS (in _comment_id int)
   declare _refs varchar; 
   declare _parent_id, _topic_id int;
   select C_REFS, C_PARENT_ID,C_TOPIC_ID into _refs, _parent_id, _topic_id from COMMENT where C_ID = _comment_id;
-  dbg_obj_print ('refs:', _refs);
+  --dbg_obj_print ('refs:', _refs);
   if (_refs is not null)
     return;
   if (_parent_id is null)
@@ -373,7 +373,7 @@ create procedure CM_ROOT_NODE (
   declare root_id any;
   declare xt any;
 
-  dbg_obj_princ ('CM_ROOT_NODE: ', item_id);
+  --dbg_obj_princ ('CM_ROOT_NODE: ', item_id);
   item_id := cast (item_id as int); 
   return xpath_eval ('//node', xtree_doc (sprintf ('<node id="-1" name="-11" post="%d"/>', item_id)), 0);
 
@@ -382,8 +382,8 @@ create procedure CM_ROOT_NODE (
   xt := (select xmlagg (xmlelement ('node', xmlattributes (C_ID as id, C_ID as name, C_TOPIC_ID as post)))
   	      from COMMENT
   	     where C_TOPIC_ID = item_id and C_PARENT_ID = root_id order by C_DATE);
-  dbg_obj_princ ('CM_ROOT_NODE');
-  dbg_obj_print (xt);
+--  dbg_obj_princ ('CM_ROOT_NODE');
+--  dbg_obj_print (xt);
   return xpath_eval ('//node', xt, 0);
 }
 ;
@@ -397,10 +397,10 @@ create procedure CM_CHILD_NODE (
   declare parent_id int;
   declare xt any;
 
-  dbg_obj_princ ('CM_CHILD_NODE: ', item_id, node);
+--  dbg_obj_princ ('CM_CHILD_NODE: ', item_id, node);
   parent_id := xpath_eval ('number (@id)', node);
   item_id := xpath_eval ('@post', node);
-  dbg_obj_print (parent_id, item_id);
+--  dbg_obj_print (parent_id, item_id);
   if (parent_id < 0) 
 	  xt := (select xmlagg (xmlelement ('node', xmlattributes (C_ID as id, C_ID as name, C_TOPIC_ID as post)))
   	       from COMMENT
@@ -409,8 +409,8 @@ create procedure CM_CHILD_NODE (
 	  xt := (select xmlagg (xmlelement ('node', xmlattributes (C_ID as id, C_ID as name, C_TOPIC_ID as post)))
   	       from COMMENT
   	      where C_PARENT_ID = parent_id order by C_DATE);
-  dbg_obj_princ ('CM_CHILD_NODE: ', item_id);
-  dbg_obj_print (xt);
+--  dbg_obj_princ ('CM_CHILD_NODE: ', item_id);
+--  dbg_obj_print (xt);
   return xpath_eval ('//node', xt, 0);
 }
 ;
@@ -514,4 +514,3 @@ create procedure DB.DBA.oWiki_NEWS_MSG_I  (
 
 }
 ;
-

@@ -41,7 +41,7 @@ create function WV.WIKI.MAILBOXNEW (in box_owner varchar,
 {
   declare e_mail varchar;
   e_mail := box_name || '@' || domain_name;
-  dbg_obj_princ (box_owner);
+--  dbg_obj_princ (box_owner);
   declare exit handler for sqlstate '*' {
     --dbg_obj_princ ('error: ', __SQL_STATE, __SQL_MESSAGE);
     return e_mail;
@@ -159,5 +159,3 @@ create function WV.WIKI.MAIL_EXCERPT (in _user_id int, in _mail_id int)
   return '';
 }
 ;
-
-

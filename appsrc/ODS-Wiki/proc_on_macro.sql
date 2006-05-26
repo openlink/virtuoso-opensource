@@ -1178,14 +1178,3 @@ create function WV.WIKI.MACRO_NOW (inout _data varchar, inout _context any, inou
   return WV.WIKI.DATEFORMAT(now());
 }
 ;
-
-		      
-
-
-
-  
-		      
-
-
-
-  
