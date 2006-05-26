@@ -316,11 +316,17 @@
          if (get_keyword_ucase ('ret', params, '') <> '')
            self.ret_page := get_keyword_ucase ('ret', params);
          else if (self.wa_nameR is not null)
+	   {
+
 	   self.ret_page := 'new_inst.vspx';
+	    if (self.topmenu_level='1')
+	       self.ret_page := 'new_inst.vspx?l=1';
+	   }
 	 else if (length (self.url))
 	   self.ret_page := self.url;
          else
            self.ret_page := 'uhome.vspx';
+	 --dbg_obj_print ('self.ret_page=', self.ret_page);
          if (_mail_verify_on)
          {
            -- determine existings default mail server
@@ -372,14 +378,21 @@
          {
            if (self.managed_by_admin = 0)
            {
+	     declare delim varchar;
+
+	     delim := '?';
+
+	     if (strchr (self.ret_page, '?') is not null)
+	       delim := '&';
+
              http_rewrite ();
              http_request_status ('HTTP/1.1 302 Found');
              if (get_keyword_ucase ('ret', params, '') <> '' )
-               http_header (sprintf ('Location: %s?sid=%s&realm=wa\r\n', self.ret_page, sid));
+               http_header (sprintf ('Location: %s%ssid=%s&realm=wa\r\n', self.ret_page, delim, sid));
              else if (self.wa_nameR is not null)
-               http_header (sprintf ('Location: %s?sid=%s&realm=wa&wa_name=%s\r\n', self.ret_page, sid, self.wa_nameR));
+               http_header (sprintf ('Location: %s%ssid=%s&realm=wa&wa_name=%s\r\n', self.ret_page, delim, sid, self.wa_nameR));
              else
-               http_header (sprintf ('Location: %s?sid=%s&realm=wa&ufname=%s\r\n', self.ret_page, sid, u_name1));
+               http_header (sprintf ('Location: %s%ssid=%s&realm=wa&ufname=%s\r\n', self.ret_page, delim, sid, u_name1));
              return 0;
            }
          }

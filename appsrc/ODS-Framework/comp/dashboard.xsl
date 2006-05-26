@@ -266,32 +266,32 @@
      With OpenLink Data Spaces, you find the people and services you need through the people you know and trust, while you strengthen and extend your existing network.<br/>
      You also can manage your own blogs or to read blogs of other users, read news and post feeds, check you daily mail and send messages.
      </div>
-     <vm:if test="vad_check_version ('blog2') is not null">
+     <vm:if test="wa_vad_check ('blog2') is not null">
        <div class="sf_blurb">
-	 <vm:url value="Start blogging now!" url="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo" />
+	 <vm:url value="Start blogging now!" url="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo&amp;l=1" />
        </div>
      </vm:if>
-     <vm:if test="vad_check_version ('enews2') is not null">
+     <vm:if test="wa_vad_check ('enews2') is not null">
        <div class="sf_blurb">
-	 <vm:url value="Start your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo" />
+	 <vm:url value="Start your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo&amp;l=1" />
        </div>
      </vm:if>
-     <vm:if test="vad_check_version ('oDrive') is not null">
+     <vm:if test="wa_vad_check ('oDrive') is not null">
        <div class="sf_blurb">
 	 <vm:url
 	   value="--sprintf ('Did you know that %s allows you to share you documents ideas, goal, ideas with your colleagues?',
 	   self.banner)"
-	   url="index_inst.vspx?wa_name=oDrive&amp;fr=promo" />
+	   url="index_inst.vspx?wa_name=oDrive&amp;fr=promo&amp;l=1" />
        </div>
      </vm:if>
-     <vm:if test="vad_check_version ('wiki') is not null">
+     <vm:if test="wa_vad_check ('wiki') is not null">
        <div class="sf_blurb">
-	 <vm:url value="Create your wiki article now!" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo" />
+	 <vm:url value="Create your wiki article now!" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo&amp;l=1" />
        </div>
      </vm:if>
-     <vm:if test="vad_check_version ('oMail') is not null">
+     <vm:if test="wa_vad_check ('oMail') is not null">
        <div class="sf_blurb">
-	 <vm:url value="Write your message now!" url="index_inst.vspx?wa_name=oMail&amp;fr=promo" />
+	 <vm:url value="Write your message now!" url="index_inst.vspx?wa_name=oMail&amp;fr=promo&amp;l=1" />
        </div>
      </vm:if>
     </div>
@@ -423,7 +423,7 @@
       <?vsp
         declare has_no_appoftype int;
         has_no_appoftype:=1;
-        if (check_package('blog2') and
+        if (wa_check_package('blog2') and
             exists (select 1 from wa_member where WAM_APP_TYPE='WEBLOG2' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id) )
         {
               has_no_appoftype:=0;
@@ -432,11 +432,12 @@
 
       <p>
          <vm:if test="has_no_appoftype=0">
-              <img src="images/nav_arrrow1.gif" width="8" height="8" /> <a href="search.vspx?newest=blogs<?V self.login_pars ?>"><strong>More...</strong></a>
+              <img src="images/nav_arrrow1.gif" width="8" height="8" /> <a href="search.vspx?newest=blogs&l=1<?V self.login_pars ?>"><strong>More...</strong></a>
+
          </vm:if>
          <vm:if test="has_no_appoftype=1">
 	          <img src="images/nav_arrrow1.gif" width="8" height="8" />
-	          <vm:url value="Start blogging now!" url="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo" />
+	          <vm:url value="Start blogging now!" url="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo&amp;l=1" />
          </vm:if>
       </p>
     </div>
@@ -454,7 +455,7 @@
       <?vsp
         declare has_no_wiki int;
         has_no_wiki:=1;
-        if (check_package('wiki') and
+        if (wa_check_package('wiki') and
             exists (select 1 from wa_member where WAM_APP_TYPE='oWiki' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id) )
         {
               has_no_wiki:=0;
@@ -464,11 +465,11 @@
       </ul>
       <p>
          <vm:if test="has_no_wiki=0">
-              <img src="images/nav_arrrow1.gif" width="8" height="8" /> <a href="search.vspx?newest=news<?V self.login_pars ?>"><strong>More...</strong></a>
+              <img src="images/nav_arrrow1.gif" width="8" height="8" /> <a href="search.vspx?newest=news&l=1<?V self.login_pars ?>"><strong>More...</strong></a>
          </vm:if>
          <vm:if test="has_no_wiki=1">
             <img src="images/nav_arrrow1.gif" width="8" height="8" />
-            <vm:url value="Create your wiki article now!" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo" />
+            <vm:url value="Create your wiki article now!" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo&amp;l=1" />
          </vm:if>
       </p>
     </div>
@@ -481,13 +482,13 @@
        <ul>
         <xsl:call-template name="user-dashboard-my-item">
           <xsl:with-param name="app">eNews2</xsl:with-param>
-          <xsl:with-param name="noitems_msg">No messages</xsl:with-param>
+          <xsl:with-param name="noitems_msg">No posts</xsl:with-param>
         </xsl:call-template>
       </ul>
       <?vsp
         declare has_no_appoftype int;
         has_no_appoftype:=1;
-        if (check_package('enews2') and
+        if (wa_check_package('enews2') and
             exists (select 1 from wa_member where WAM_APP_TYPE='eNews2' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id) )
         {
               has_no_appoftype:=0;
@@ -496,11 +497,11 @@
 
       <p>
          <vm:if test="has_no_appoftype=0">
-              <img src="images/nav_arrrow1.gif" width="8" height="8" /> <a href="search.vspx?newest=blogs<?V self.login_pars ?>"><strong>More...</strong></a>
+              <img src="images/nav_arrrow1.gif" width="8" height="8" /> <a href="search.vspx?newest=news&l=1<?V self.login_pars ?>"><strong>More...</strong></a>
          </vm:if>
          <vm:if test="has_no_appoftype=1">
 	          <img src="images/nav_arrrow1.gif" width="8" height="8" />
-	          	 <vm:url value="Write your message now!" url="index_inst.vspx?wa_name=oMail&amp;fr=promo" />
+            	 <vm:url value="Start your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo&amp;l=1" />
          </vm:if>
       </p>
     </div>
@@ -588,7 +589,7 @@
                {
            ?>
            You have no connections. <br />
-           <v:url name="search_users_fr" value="Search for Friends" url="search.vspx?page=2" render-only="1"/>
+           <v:url name="search_users_fr" value="Search for Friends" url="search.vspx?page=2&l=1" render-only="1"/>
            <?vsp
                }else
                {
@@ -634,6 +635,7 @@
                         div_id="google_map"
                         zoom="15"
                         base_url="self.base_url"
+                        mapservice_name="GOOGLE"
                          />
                     <div id="google_map" style="margins:1px; width: 320px;height: 320px;" />
                 </td>
@@ -654,7 +656,7 @@
       <h2><img src="images/edit_16.gif" width="16" height="16" /> My Communities</h2>
       <ul>
       <?vsp
-        if (check_package('Community'))
+        if (wa_check_package('Community'))
         {
           if(exists (select 1 from wa_member where WAM_APP_TYPE='Community' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id) )
 
@@ -679,7 +681,9 @@
 	    ?>
 
       </ul>
-      <p><img src="images/nav_arrrow1.gif" width="8" height="8" /> <a href="search.vspx?newest=news<?V self.login_pars ?>"><strong>More...</strong></a></p>
+      <!--
+      <p><img src="images/nav_arrrow1.gif" width="8" height="8" /> <a href="search.vspx?newest=communities<?V self.login_pars ?>"><strong>More...</strong></a></p>
+      -->
     </div>
   </xsl:template>
 
@@ -687,7 +691,7 @@
     <div class="info_container">
       <h2><img src="images/icons/ogallery_16.png" width="16" height="16" /> My Photos</h2>
       <?vsp
-        if (check_package('oGallery'))
+        if (wa_check_package('oGallery'))
         {
          declare i,ii int;
 
@@ -696,7 +700,7 @@
 
          ogallery_id:=coalesce((select WAM_INST from wa_member
                                 where WAM_APP_TYPE='oGallery' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id)
-                                ,0);
+                                ,'');
 
            if ( ogallery_id<>'' ){
       ?>
@@ -776,7 +780,7 @@
 
   <xsl:template match="vm:dash-my-guestbook">
 
-    <vm:if test="vad_check_version ('enews2') is not null and exists (select 1 from wa_member where WAM_APP_TYPE='eNews2' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id)">
+    <vm:if test="wa_vad_check ('enews2') is not null and exists (select 1 from wa_member where WAM_APP_TYPE='eNews2' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id)">
       <div class="info_container">
         <h2><img src="images/icons/edit_16.png" width="16" height="16" /> My Guestbook</h2>
         <ul>

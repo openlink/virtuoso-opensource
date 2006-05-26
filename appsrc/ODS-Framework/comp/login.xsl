@@ -160,6 +160,8 @@
                 {
                   self.url := 'new_inst.vspx';
                   pars := sprintf('%s&wa_name=%s', pars, self.wa_name);
+   	            if(self.topmenu_level='1')
+   	              pars := sprintf('%s&wa_name=%s&l=1', pars, self.wa_name);
                 };
 		if (length (self.promo))
 		  pars := pars || '&fr=' || self.promo;

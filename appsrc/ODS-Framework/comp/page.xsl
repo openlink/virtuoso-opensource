@@ -43,7 +43,7 @@
 
     cookie_vec := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
     --dbg_obj_print ('cookie_vec=',cookie_vec);
-    if (get_keyword('sid', self.vc_event.ve_params) is null and get_keyword('sid', cookie_vec) is not null)
+    if (get_keyword('sid', self.vc_event.ve_params) is null and get_keyword('sid', cookie_vec) is not null and WA_IS_REGULAR_FEED ())
       {
         declare pars, pos any;
         pars := self.vc_event.ve_params;
@@ -72,7 +72,7 @@
 	 self.template_xml := xtree_doc (t_src);
        }
 
-      self.topmenu_level:=get_keyword('l',params,'0');
+--         self.topmenu_level:=get_keyword('l',self.vc_event.ve_params,'0');
 
       ]]></v:on-init>
   <v:method name="set_page_error" arglist="in err any">
@@ -114,7 +114,7 @@
     {
   ?>
   <xsl:text>Logged in as </xsl:text>
-  <v:url name="UserInfoEdit" value="--concat(self.u_name, ':')" url="uiedit.vspx" render-only="1"/>
+  <v:url name="UserInfoEdit" value="--concat(self.u_name, ':')" url="uiedit.vspx?l=1" render-only="1"/>
   <vm:logout>Logout</vm:logout>
   <?vsp
     };
@@ -125,7 +125,7 @@
 
 <xsl:template match="vm:user-info-edit-link">
   <xsl:variable name="title" select="@title"/>
-  <v:url name="user_info_edit_link" url="uiedit.vspx" render-only="1" value="{$title}"/>
+  <v:url name="user_info_edit_link" url="uiedit.vspx?l=1" render-only="1" value="{$title}"/>
 </xsl:template>
 
 
@@ -180,9 +180,13 @@
 </xsl:template>
 
 <xsl:template match="vm:settings-link">
-    <?vsp if (length (self.sid)) { ?>
-    <v:url name="app_settings_link" value="Settings" url="app_settings.vspx" render-only="1"/>
-    <?vsp } ?>
+    <?vsp if (length (self.sid))
+          {
+    ?>
+	     <v:url name="app_settings_link" value="Settings" url="--sprintf ('app_settings.vspx?l=%s', self.topmenu_level)" render-only="1"/>
+     <?vsp
+          }
+    ?>
   </xsl:template>
 
 <xsl:template match="vm:site-settings-link">
@@ -258,10 +262,11 @@
 			<xsl:apply-templates select="vm:navigation-new|vm:navigation"/>
 		    </tr>
 		</table>
-    <div id="submenu_block" style="<?V case when self.topmenu_level='1' then 'display:block' else 'display:none' end ?> ;">
+		<div id="submenu_block"
+		  style="<?V case when self.topmenu_level='1' then 'display:block' else 'display:none' end ?>;">
 		<table id="nav_bar" cellspacing="0" cellpadding="0">
 		    <tr>
-			<xsl:apply-templates select="vm:subnavigation-new|vm:subnavigation"/>
+			<vm:subnavigation />
 		    </tr>
 		</table>
 		</div>
@@ -548,8 +553,10 @@
     <xsl:if test="@on = 'gtags'"><xsl:attribute name="class">sel</xsl:attribute></xsl:if>
     <vm:gtags-link><xsl:if test="@on = 'gtags'"><xsl:attribute name="class">sel</xsl:attribute></xsl:if>Tags</vm:gtags-link>
   </td>
+  <?vsp if (length (self.sid) = 0) { ?>
   <td  class="filler">
   </td>
+  <?vsp } ?>
     <!--td>
       <xsl:if test="@on = 'settings'"><xsl:attribute name="class">sel</xsl:attribute></xsl:if>
 	<?vsp
@@ -577,7 +584,11 @@
   <xsl:apply-templates/>
 </xsl:template>
 
-<xsl:template match="vm:subnavigation-new|vm:subnavigation">
+<xsl:template match="vm:subnavigation-new"/>
+
+<xsl:template match="vm:subnavigation">
+  <!-- THE SECOND LEVEL -->
+  <?vsp if (length (self.sid)) { ?>
   <v:template name="subm_user_home" type="simple" condition="not isnull(self.u_name)">
     <td nowrap="1">
       <xsl:if test="@on = 'home'"><xsl:attribute name="class">sel</xsl:attribute></xsl:if>
@@ -601,9 +612,11 @@
 	</vm:applications_fmenu>
 	<?vsp
 	    }
+  }
 	?>
-
-  <xsl:apply-templates/>
+  <td  class="filler">
+  </td>
+  <!-- EOF SECOND LEVEL -->
 </xsl:template>
 
 <xsl:template match="vm:navigation-app">
@@ -828,7 +841,7 @@
     <v:variable name="disclaimer" type="any" default="null" persist="temp" />
     <v:variable name="maps_key" type="any" default="null" persist="temp" />
     <v:variable name="tab_pref" type="varchar" default="''" persist="temp" />
-    <v:variable name="topmenu_level" type="varchar" default="'0'" />
+    <v:variable name="topmenu_level" type="varchar" default="'0'" persist="pagestate" param-name="l"/>
 
     <xsl:for-each select="//vm:variable">
 	<v:variable>
@@ -2489,15 +2502,7 @@ if (i > 0)
       <xsl:attribute name="xhtml_class"><xsl:value-of select="@class" /></xsl:attribute>
     </xsl:if>
     <xsl:attribute name="value"><xsl:value-of select="."/></xsl:attribute>
-    <xsl:attribute name="xhtml_onClick"><![CDATA[
-           submenu_div=document.getElementById(''submenu_block'');
-           if (submenu_div.style.display==''none''){
-               submenu_div.style.display=''block''
-               document.getElementById(''myods_cell'').className=''sel'';
-           }else{
-               submenu_div.style.display=''none'';
-               document.getElementById(''myods_cell'').className='' '';
-           } ]]></xsl:attribute>
+    <xsl:attribute name="xhtml_onclick">javascript: submenuShowHide ()</xsl:attribute>
   </v:url>
 </xsl:template>
 
@@ -2546,7 +2551,7 @@ if (i > 0)
 	<xsl:attribute name="name">go_my_home_link</xsl:attribute>
     </xsl:if>
     <xsl:attribute name="value">--'My ' || WA_GET_APP_NAME ('Profile')</xsl:attribute>
-    <xsl:attribute name="url">--(case when self.external_home_url then coalesce (get_keyword_ucase ('ret', self.vc_event.ve_params), self.external_home_url) else sprintf ('uhome.vspx?ufname=%s', self.u_name) end)</xsl:attribute>
+    <xsl:attribute name="url">--(case when self.external_home_url then coalesce (get_keyword_ucase ('ret', self.vc_event.ve_params), self.external_home_url) else sprintf ('uhome.vspx?ufname=%s&amp;l=%s', self.u_name, self.topmenu_level) end)</xsl:attribute>
   </v:url>
 </xsl:template>
 
@@ -2559,7 +2564,7 @@ if (i > 0)
       if(e.ve_button.vc_name <> 'GO') {
           return;
         }
-      self.vc_redirect (sprintf ('search.vspx?q=%U', self.txt.ufl_value));
+      self.vc_redirect (sprintf ('search.vspx?q=%U&l=%s', self.txt.ufl_value, self.topmenu_level));
       return;
       ]]>
     </v:on-post>

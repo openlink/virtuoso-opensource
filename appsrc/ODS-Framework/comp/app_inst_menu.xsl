@@ -40,7 +40,7 @@
 
 			foreach (any app in arr) do
 			  {
-			    if (check_package (app[1]))
+			    if (wa_check_package (app[1]))
 			      {
 			?>
 	      <td>
@@ -58,6 +58,33 @@
 		      render-only="1"
 		   />
       </xsl:if>
+	      </td>
+	      <?vsp
+	                       }
+	                    }
+	      ?>
+<?vsp
+      }
+?>
+
+    <?vsp
+      {
+         declare arr_links any;
+	 arr_links := vector (
+	    -- package, url
+			vector ('nntpf','/nntpf/')
+			);
+
+			foreach (any app in arr_links) do
+			  {
+			    if (wa_check_package (app[0]))
+			      {
+			?>
+	      <td>
+ 		  <v:url name="slice1" url="--sprintf ('%s', app[1])"
+		      value="--WA_GET_APP_NAME (app[0])"
+		      render-only="1"
+		   />
 	      </td>
 	      <?vsp
 	                       }
@@ -86,7 +113,7 @@
 
 			foreach (any app in arr) do
 			  {
-			    if (check_package (app[1]))
+			    if (wa_check_package (app[1]))
 			      {
 			?>
 	      <td>

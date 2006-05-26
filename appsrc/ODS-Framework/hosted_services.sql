@@ -4706,7 +4706,13 @@ wa_exec_no_error('create procedure view WA_SYS_USERS as wa_get_users (mask, ord,
 /* similar to the blog ones. when blog is installed these are replaced */
 create procedure WA_XPATH_GET_HTTP_URL ()
 {
-  declare host, path, qstr any;
+  declare host, path, qstr, conn any;
+
+  conn := connection_get ('Atom_Self_URI');
+
+  if (conn is not null)
+    return conn;
+
   host := HTTP_GET_HOST ();
   path := http_path ();
   qstr := http_request_get ('QUERY_STRING');

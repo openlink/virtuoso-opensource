@@ -39,6 +39,10 @@ The ODS search page
  <vm:variable name="output" type="varchar" default="'html'" param-name="o"/>
  <vm:variable name="page" type="int" default="1" param-name="page"/>
  <vm:variable name="uids" type="any" default="null" persist="temp"/>
+ <vm:variable name="gurl" type="any" default="null" persist="pagestate"/>
+ <vm:variable name="s_tag_is_qry" type="int" defaut="0" param-name="tag-is-qry"/>
+ <vm:variable name="sapps" type="varchar" defaut="null" param-name="apps"/>
+ <vm:variable name="author" type="varchar" defaut="null" param-name="author"/>
  <v:on-init>
   <![CDATA[
   declare pars any;
@@ -47,8 +51,11 @@ The ODS search page
   set http_charset='utf-8';
   declare _cookie_vec any;
   _cookie_vec := vsp_ua_get_cookie_vec(lines);
+  if (WA_IS_REGULAR_FEED ())
+    {
   self.sid := coalesce(get_keyword('sid', params), get_keyword('sid', _cookie_vec));
   self.realm := get_keyword('realm', params, 'wa');
+    }
   pars := vector ();
 
   if (self.ds_data is null)
@@ -146,12 +153,31 @@ The ODS search page
   return s;
   ]]>
  </v:method>
+    <!-- the fti_make_search_string make ANDs -->
+    <v:method name="gdata_cat_str" arglist="inout arr any, inout ses any"><![CDATA[
+      if (isarray (arr) and length (arr) = 3 and arr[0] = 1)
+        {
+          http ('/', ses);
+	  http (arr[2], ses);
+          return;
+	}
+      else if (not isarray (arr))
+        {
+          return;
+	}
+
+      foreach (any elm in arr) do
+        {
+          self.gdata_cat_str (elm, ses);
+        }
+	return;
+    ]]></v:method>
  <v:method name="do_search" arglist="inout e vspx_event">
   <![CDATA[
   declare query varchar;
   declare res, meta, rel_tags_data, rel_tags_meta, tags_vector any;
 
---  dbg_obj_print ('do_search');
+  --dbg_obj_print ('do_search');
   tags_vector := vector ();
 
   query := null;
@@ -180,6 +206,39 @@ The ODS search page
     }
 
   _max_rows := cast (self.max_rows.ufl_value as integer);
+
+  if (length (self.sapps))
+    {
+      declare arr any;
+      arr := split_and_decode (self.sapps, 0, '\0\0,');
+      self.srch_people.ufl_selected := 0;
+      self.srch_blogs.ufl_selected := 0;
+      self.srch_wikis.ufl_selected := 0;
+      self.srch_dav.ufl_selected := 0;
+      self.srch_omail.ufl_selected := 0;
+      self.srch_news.ufl_selected := 0;
+      self.srch_bookmark.ufl_selected := 0;
+      self.srch_apps.ufl_selected := 0;
+      foreach (any app in arr) do
+    {
+	   if (lower (app) = 'people')
+	     self.srch_people.ufl_selected := 1;
+	   else if (lower (app) = 'feeds')
+             self.srch_news.ufl_selected := 1;
+	   else if (lower (app) = 'weblog')
+	     self.srch_blogs.ufl_selected := 1;
+	   else if (lower (app) = 'wiki')
+	     self.srch_wikis.ufl_selected := 1;
+	   else if (lower (app) = 'dav')
+	     self.srch_dav.ufl_selected := 1;
+	   else if (lower (app) = 'mail')
+	     self.srch_omail.ufl_selected := 1;
+	   else if (lower (app) = 'apps')
+             self.srch_apps.ufl_selected := 1;
+
+	}
+    }
+
     {
       if (self.srch_people.ufl_selected
 	    or self.srch_news.ufl_selected
@@ -209,16 +268,23 @@ The ODS search page
 		self.srch_omail.ufl_selected,
 		self.sort_by_score.ufl_selected,
 		_max_rows,
-		tags_vector);
+		self.s_tag_is_qry,
+		tags_vector
+		);
         }
     }
   if (query is not null)
     {
       if (self.output <> 'html')
+        {
+	  if (WA_IS_REGULAR_FEED ())
 	 connection_set ('WA_SEARCH_PATH', HTTP_REQUESTED_URL ());
       else
+            connection_set ('WA_SEARCH_PATH', wa_link (1));
+	}
+      else
 	 connection_set ('WA_SEARCH_PATH', '');
---      dbg_obj_print ('do_search query=', query);
+      --dbg_printf ('do_search query=%s', query);
       exec (query, NULL, NULL, vector (), 0, meta, res);
       --dbg_obj_print ('do_search res=', res);
       self.page_url := sprintf ('search.vspx?q=%U&q_tags=%U&r=%d&s=%d',
@@ -226,6 +292,50 @@ The ODS search page
 		  trim (coalesce (self.q_tags_expr.ufl_value, '')),
 		  case when _max_rows <= 0 then 100 else _max_rows end,
 		  case when is_empty_or_null (self.sort_by_score.ufl_selected) then 0 else 1 end);
+
+      if (WA_IS_REGULAR_FEED ())
+      {
+	self.gurl := '/dataspaces/Gdata/';
+
+	if (self.srch_people.ufl_selected)
+	  self.gurl := self.gurl || 'people,';
+	if (self.srch_news.ufl_selected)
+	  self.gurl := self.gurl || 'feeds,';
+	if (self.srch_blogs.ufl_selected)
+	  self.gurl := self.gurl || 'weblog,';
+	if (self.srch_wikis.ufl_selected)
+	  self.gurl := self.gurl || 'wiki,';
+	if (self.srch_dav.ufl_selected)
+	  self.gurl := self.gurl || 'dav,';
+	if (self.srch_apps.ufl_selected)
+	  self.gurl := self.gurl || 'apps,';
+	if (self.srch_omail.ufl_selected)
+	  self.gurl := self.gurl || 'mail,';
+
+	self.gurl := rtrim (self.gurl, ',');
+        if (self.gurl not like '%/')
+	  self.gurl := self.gurl || '/';
+
+	if (self.srch_people.ufl_selected and self.srch_news.ufl_selected and self.srch_blogs.ufl_selected and self.srch_wikis.ufl_selected and  self.srch_dav.ufl_selected and self.srch_apps.ufl_selected and self.srch_omail.ufl_selected)
+	  self.gurl := '/dataspaces/Gdata/';
+
+       if (length (self.q_tags_expr.ufl_value))
+	  {
+	    declare arr, ses, tag_str any;
+	    ses := string_output ();
+	    arr := vt_parse (self.q_tags_expr.ufl_value);
+	    self.gdata_cat_str (arr, ses);
+	    tag_str := string_output_string (ses);
+	    self.gurl := self.gurl || '-' || tag_str;
+	  }
+
+	if (length (self.expr.ufl_value))
+	  self.gurl := self.gurl || '?q=' || sprintf ('%U', self.expr.ufl_value);
+	}
+       else
+         {
+	   self.gurl := connection_get ('GData_URI');
+	 }
 
       if (length (res))
         {
@@ -328,7 +438,12 @@ The ODS search page
   if (query is not null)
     {
       if (self.output <> 'html')
+        {
+	  if (WA_IS_REGULAR_FEED ())
 	 connection_set ('WA_SEARCH_PATH', HTTP_REQUESTED_URL ());
+      else
+            connection_set ('WA_SEARCH_PATH', wa_link (1));
+	}
       else
 	 connection_set ('WA_SEARCH_PATH', '');
 --      dbg_obj_print ('do_users_search query=', query);
@@ -393,6 +508,26 @@ The ODS search page
       res := vector ();
       meta := vector ();
     }
+      if (WA_IS_REGULAR_FEED ())
+      {
+        self.gurl := '/dataspaces/Gdata/users/';
+        if (length (self.us_tags.ufl_value))
+	  {
+	    declare arr, ses, tag_str any;
+	    ses := string_output ();
+	    arr := vt_parse (self.us_tags.ufl_value);
+	    self.gdata_cat_str (arr, ses);
+	    tag_str := string_output_string (ses);
+	    self.gurl := self.gurl || '-' || tag_str;
+	  }
+
+	if (length (self.us_keywords.ufl_value))
+	  self.gurl := self.gurl || '?q=' || sprintf ('%U', self.us_keywords.ufl_value);
+	}
+       else
+         {
+	   self.gurl := connection_get ('GData_URI');
+	 }
   self.total := length (res);
   self.tag_with_expr_plate.vc_data_bind (e);
   self.ct1.vc_data_bind (e);
@@ -916,15 +1051,23 @@ The ODS search page
       <td colspan="3" align="left">
        <v:template name="search_rss_plate" type="simple" enabled="--self.plate_enabled">
 	<v:url name="rss_url" value="search.vspx" url="--self.page_url || '&o=xml'"
-	      format="<image src=''images/rss201.gif'' border=''0'' alt=''rss'' title=''rss''/>"/>
+	      format="<image src=''images/orange-icon-16.gif'' border=''0'' alt=''rss'' title=''rss''/>"/>
 	<v:url name="atom_url" value="search.vspx" url="--self.page_url || '&o=atom'"
-	      format="<image src=''images/atom10.gif'' border=''0'' alt=''atom'' title=''atom''/>"/>
+	      format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''atom'' title=''atom''/>"/>
 	<v:url name="rdf_url" value="search.vspx" url="--self.page_url || '&o=rdf'"
-	      format="<image src=''images/rdf.gif'' border=''0'' alt=''rdf'' title=''rdf''/>"/>
+	      format="<image src=''images/rdf-icon-16.gif'' border=''0'' alt=''rdf'' title=''rdf''/>"/>
 	<v:url name="xbel_url" value="search.vspx" url="--self.page_url || '&o=xbel'"
-	      format="<image src=''images/xbel01.png'' border=''0'' alt=''xbel'' title=''xbel''/>"/>
+	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''xbel'' title=''xbel''/> XBEL"/>
 	<v:url name="opensearch_url" value="search.vspx" url="--self.page_url || '&o=opensearch'"
-	  format="<image src=''images/opensearch.gif'' border=''0'' alt=''rss'' title=''opensearch''/>"/>
+	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''rss'' title=''opensearch''/> OpenSearch"/>
+	<?vsp
+	   {
+	   ?>
+	<v:url name="gdata_url" value="search.vspx" url="--self.gurl"
+	  format="<image src=''images/blue-icon-16.gif'' border=''0'' alt=''GData'' title=''Gdata''/> GData"/>
+	<?vsp
+	   }
+	?>
 	<?vsp
 	  if (self.u_id is not null and self.page = 2)
 	    {
@@ -1068,7 +1211,14 @@ The ODS search page
 		|| trim (coalesce ( self.qry_tags, self.q_tags_expr.ufl_value, '')));
       http ('</title>');
       http ('<link>');
+        if (WA_IS_REGULAR_FEED ())
+	  {
       http (DB.DBA.WA_LINK (1)); http_value ('/' || self.page_url);
+	  }
+	else
+	  {
+	    http (connection_get ('GData_URI'));
+	  }
       http ('</link>');
       http ('<description>About ');
       if (self.page = 2)

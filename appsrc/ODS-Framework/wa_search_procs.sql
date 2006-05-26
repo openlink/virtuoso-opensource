@@ -273,7 +273,7 @@ create function WA_SEARCH_WORDS_TO_VECTOR_CALL (in _words any) returns varchar
 ;
 
 
-create procedure WA_SEARCH_PROCESS_PARAMS (in nqry nvarchar, in ntags_list nvarchar,
+create procedure WA_SEARCH_PROCESS_PARAMS (in nqry nvarchar, in ntags_list nvarchar, in tag_is_qry int,
   out str varchar, out tags_str varchar, out _words_vector varchar, out tags_vector any)
 {
   declare qry, tags_list any;
@@ -306,8 +306,13 @@ create procedure WA_SEARCH_PROCESS_PARAMS (in nqry nvarchar, in ntags_list nvarc
   if (length (tags_list) >= 2)
     {
       declare new_tv any;
+      if (tag_is_qry = 0)
+	{
       tags_str := WS.WS.DAV_TAG_NORMALIZE (tags_list);
       tags_str := FTI_MAKE_SEARCH_STRING (tags_str);
+        }
+      else
+	tags_str := tags_list;
       tags_vector := split_and_decode (tags_str, 0, '\0\0 ');
       new_tv := vector ();
       foreach (varchar _tag in tags_vector) do
@@ -795,7 +800,7 @@ create function WA_SEARCH_ENEWS (in max_rows integer, in current_user_id integer
 	'   contains (EFI_DESCRIPTION, ''[__lang "x-any" __enc "UTF-8"] %S'',descending \n' ||
 	'--,OFFBAND,EFI_ID,OFFBAND,EFI_FEED_ID\n' ||
 	'   ) \n' ||
-	'   and EFI_FEED_ID = EFD.EFD_FEED_ID option (order)',
+	'   and EFI_FEED_ID = EFD.EFD_FEED_ID ',
 	str);
 
       if (tags_str is not null)
@@ -810,6 +815,7 @@ create function WA_SEARCH_ENEWS (in max_rows integer, in current_user_id integer
 	  tags_str,
 	  current_user_id,
           http_nobody_uid());
+      ret := ret || ' option (order) ';
     }
 
   ret := sprintf (
@@ -1069,7 +1075,7 @@ create function WA_SEARCH_OMAIL (in max_rows integer, in current_user_id integer
 create procedure WA_SEARCH_CONSTRUCT_QUERY (in current_user_id integer, in qry nvarchar, in q_tags nvarchar,
 	in search_people integer, in search_news integer, in search_blogs integer, in search_wikis integer,
         in search_dav integer, in search_apps integer, in search_omail integer, in sort_by_score integer,
-        in max_rows integer, out tags_vector any)
+        in max_rows integer, in tag_is_qry int, out tags_vector any)
 returns varchar
 {
   declare ret varchar;
@@ -1082,7 +1088,7 @@ returns varchar
 
 --  dbg_obj_print ('max_rows=', max_rows);
 
-  WA_SEARCH_PROCESS_PARAMS (qry, q_tags,
+  WA_SEARCH_PROCESS_PARAMS (qry, q_tags, tag_is_qry,
 	str, tags_str, _words_vector, tags_vector);
 
   if (search_people)
@@ -1385,7 +1391,7 @@ create function WA_SEARCH_CONTACTS (
   if (current_user_id is null)
     current_user_id := http_nobody_uid ();
 
-  WA_SEARCH_PROCESS_PARAMS (nqry, nq_tags,
+  WA_SEARCH_PROCESS_PARAMS (nqry, nq_tags, 0,
 	str, tags_str, _words_vector, tags_vector);
 
   if (within_distance_lat is not null and within_distance_lng is not null and within_distance_unit is not null)
