@@ -36,9 +36,17 @@ ECHO BOTH "Loading Demo Database\n";
 -- DROP TABLE Shippers;
 -- DROP TABLE Categories;
 
+create procedure ensure_demo_user ()
+{
+  if (exists (select 1 from SYS_USERS where U_NAME = 'demo'))
+    return;
+  exec ('create user "demo"');
+  DB.DBA.user_set_qualifier ('demo', 'Demo');
+};
 
-create user "demo";
-DB.DBA.user_set_qualifier ('demo', 'Demo');
+ensure_demo_user ();
+
+drop procedure ensure_demo_user;
 
 -- load dropdemo.sql;
 
