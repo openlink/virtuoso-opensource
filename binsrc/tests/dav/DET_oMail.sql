@@ -657,10 +657,10 @@ create procedure "oMail_DAV_FC_PRED_METAS" (inout pred_metas any)
 {
   pred_metas := vector (
     'DOMAIN_ID',		vector ('MESSAGES'	, 0, 'integer'	, 'DOMAIN_ID'	),
-    'MSG_ID',		vector ('MESSAGES'	, 0, 'integer'	, 'MSG_ID'	),
-    'RES_NAME',			vector ('MESSAGES'		, 0, 'varchar'	, 'concat("oMail_COMPOSE_NAME" (NULL, RCV_DATE, SND_DATE, PRIORITY, ADDRESS, SUBJECT), ''.eml'')'	),
+    'MSG_ID',			vector ('MESSAGES'	, 0, 'integer'	, 'MSG_ID'	),
+    'RES_NAME',			vector ('MESSAGES'	, 0, 'varchar'	, 'concat("oMail_COMPOSE_NAME" (NULL, RCV_DATE, SND_DATE, PRIORITY, ADDRESS, SUBJECT), ''.eml'')'	),
     'RES_FULL_PATH',		vector ('MESSAGES'	, 0, 'varchar'	, 'concat (_param.detcolpath, "oMail_COMPOSE_NAME" (NULL, RCV_DATE, SND_DATE, PRIORITY, ADDRESS, SUBJECT), ''.eml'')'	),
-    'RES_TYPE',			vector ('MESSAGES'	, 0, 'varchar'	, '''text/html'''	),
+    'RES_TYPE',			vector ('MESSAGES'	, 0, 'varchar'	, '(''text/html'')'	),
     'RES_OWNER_ID',		vector ('SYS_USERS'	, 0, 'integer'	, 'U_ID'	),
     'RES_OWNER_NAME',		vector ('SYS_USERS'	, 0, 'varchar'	, 'U_NAME'	),
     'RES_GROUP_ID',		vector ('MESSAGES'	, 0, 'integer'	, 'http_nogroup_gid()'	),
@@ -671,8 +671,8 @@ create procedure "oMail_DAV_FC_PRED_METAS" (inout pred_metas any)
     'RES_MOD_TIME',		vector ('MESSAGES'	, 0, 'datetime'	, NULL  ),
     'RES_PERMS',		vector ('MESSAGES'	, 0, 'varchar'	, '(''110000000RR'')'	),
     'RES_CONTENT',		vector ('MSG_PARTS'	, 0, 'text'	, 'TDATA'	),
-    'PROP_NAME',		vector ('MESSAGES'	, 0, 'varchar'	, '(''Content'')'	),
-    'PROP_VALUE',		vector ('MESSAGES'	, 1, 'text'	, NULL	),
+    'PROP_NAME',		vector ('MSG_PARTS'	, 0, 'varchar'	, '(''Content'')'	),
+    'PROP_VALUE',		vector ('MSG_PARTS'	, 1, 'text'	, 'TDATA'	),
     'RES_TAGS',			vector ('MESSAGES'	, 0, 'varchar'  , '('''')'	), -- 'varchar', not 'text-tag' because there's no free-text on union
     'RES_PUBLIC_TAGS',		vector ('MESSAGES'	, 0, 'varchar'	, '('''')'	),
     'RES_PRIVATE_TAGS',		vector ('MESSAGES'	, 0, 'varchar'	, '('''')'	),
@@ -686,9 +686,11 @@ create procedure "oMail_DAV_FC_PRED_METAS" (inout pred_metas any)
 create procedure "oMail_DAV_FC_TABLE_METAS" (inout table_metas any)
 {
   table_metas := vector (
-    'MESSAGES', 	vector('', '', 'ADDRESS', 'ADDRESS', '[__quiet] /'),
-    'SYS_USERS', 	vector('', '', NULL, NULL, NULL),
-		'MSG_PARTS', 	vector('', '', 'TDATA', 'TDATA', '[__quiet] /')
+    'MESSAGES', 	vector (	'', '', 'ADDRESS', 'ADDRESS', '[__quiet] /'),
+    'SYS_USERS', 	vector (	'', '', NULL, NULL, NULL),
+    'MSG_PARTS', 	vector (	'\n  inner join OMAIL.WA.MSG_PARTS as ^{alias}^ on ((^{alias}^.DOMAIN_ID = _top.DOMAIN_ID) and (^{alias}^.USER_ID = _top.USER_ID) and (^{alias}^.MSG_ID = _top.MSG_ID)^{andpredicates}^)',
+					'\n  exists (select 1 from OMAIL.WA.MSG_PARTS as ^{alias}^ where (^{alias}^.DOMAIN_ID = _top.DOMAIN_ID) and (^{alias}^.USER_ID = _top.USER_ID) and (^{alias}^.MSG_ID = _top.MSG_ID)^{andpredicates}^)',
+					'TDATA', 'TDATA', '[__quiet] /')
     );
 }
 ;
@@ -705,7 +707,7 @@ create function "oMail_DAV_FC_PRINT_WHERE" (inout filter any, in param_uid integ
   used_tables := vector (
     'MESSAGES', vector ('MESSAGES', '_top', null, vector (), vector (), vector ()),
     'SYS_USERS', vector ('SYS_USERS', '_owners', null, vector (), vector (), vector ()),
-    'MSG_PARTS', vector ('MSG_PARTS', '_top2', null, vector (), vector (), vector ())
+    'MSG_PARTS', vector ('MSG_PARTS', '_parts', null, vector (), vector (), vector ())
     );
   return DAV_FC_PRINT_WHERE_INT (filter, pred_metas, cmp_metas, table_metas, used_tables, param_uid);
 }
@@ -757,7 +759,7 @@ create function "oMail_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in 
   (select top 1 ? as detcolpath from WS.WS.SYS_DAV_COL) as _param,
   OMAIL.WA.MESSAGES as _top
 	join DB.DBA.SYS_USERS as _owners on (USER_ID = ? and USER_ID = U_ID and FOLDER_ID = ?) 
-  join OMAIL.WA.MSG_PARTS as _top2 on (_top2.MSG_ID = _top.MSG_ID and _top2.USER_ID = U_ID)
+  join OMAIL.WA.MSG_PARTS as _parts on (_parts.MSG_ID = _top.MSG_ID and _parts.USER_ID = U_ID)
   ' || condtext;
   --dbg_obj_princ ('\r\nCollection of messages: ', qry_text, '\r\n');
   
