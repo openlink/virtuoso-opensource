@@ -359,6 +359,7 @@ create procedure
     signal (state, msg);
 
   -- data needs to be re-organized
+  xmla_format_mdta (mdta);
   xmla_make_cursors_state ("Properties", dta);
   xmla_make_struct (mdta, dta);
   "ws_xmla_xsd" := vector_concat (vector (xmla_result_xsd ('return', 'root', 'root')) , DB.DBA.SOAP_LOAD_SCH (mdta, NULL, 1));
@@ -1865,3 +1866,25 @@ xmla_get_version ()
    return '1.01';
 }
 ;
+
+
+create procedure
+xmla_format_mdta (inout mdta any)
+{
+   declare idx, _line, _name, temp any;
+
+   temp := mdta[0];
+
+   for (idx := 0; idx < length (temp); idx := idx + 1)
+     {
+	_line := temp[idx];
+	_name := temp[idx][0];
+	_name := replace (_name, ' ', '_');
+	aset (_line, 0, _name);
+	aset (temp, idx, _line);
+     }
+
+    aset (mdta, 0, temp);
+}
+;
+
