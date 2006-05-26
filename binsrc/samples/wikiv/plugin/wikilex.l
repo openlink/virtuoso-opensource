@@ -581,6 +581,9 @@ THROW		("|"({WS}*"*"{THEADCELL}"*"{WS}*"|")*){WS_NL}
 PREDICATE	([A-Za-z][A-Za-z0-9 ]*)
 HTML		(("<html"({WS}+)"xmlns=\"http://www.w3.org/1999/xhtml\">")|("<html"({WS}+)"xmlns=\'http://www.w3.org/1999/xhtml\'>"))
 DOCTYPE		("<!DOCTYPE")([^>]*>)
+MFONTMOD	("\*"|"=="|"__")
+MFONTMODNEXT	([\*=_])
+MFONTMODS	({MFONTMOD}{MFONTMODNEXT}+)
 %%
 
 	/* WikiLinks. This is the core :) They are of highest possible priority */
@@ -688,6 +691,9 @@ DOCTYPE		("<!DOCTYPE")([^>]*>)
 <INITIAL,TABLELINE>^([\t])+{DEFTERM}":"{WS}		{ BEGIN(INITIAL); wlex_list (strnonws(yytext) - yytext, WLEX_LIST_DL, yytext); }
 
 	/* Font processing */
+<INITIAL,TABLELINE>{WS}*{MFONTMODS}		{ COPYTEXT; }
+
+
 <INITIAL,TABLELINE>^"=="/{NOTAWORDSTART}	{ COPYTEXT; }
 <INITIAL,TABLELINE>^"__"/{NOTAWORDSTART}	{ COPYTEXT; }
 <INITIAL,TABLELINE>^"*"/{NOTAWORDSTART}		{ COPYTEXT; }
@@ -745,6 +751,8 @@ DOCTYPE		("<!DOCTYPE")([^>]*>)
 <TABLEHEADER>^"*"		{ STATE(wlex_in_any_text) = 1; }
 <INITIAL,TABLELINE>^"_"		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_I); } else COPYTEXT; }
 <INITIAL,TABLELINE>^"="		{ if (WLEX_FONT_DEFAULT == STATE(wlex_font)) { PRINT(" "); wlex_font (WLEX_FONT_TT); } else COPYTEXT; }
+
+
 
 
  
