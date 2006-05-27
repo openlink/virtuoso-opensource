@@ -1,0 +1,60 @@
+<!-- 
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="Content-Style-Type" content="text/css">
+    <meta http-equiv="Content-Script-Type" content="text/javascript">
+    <style type="text/css">
+    body
+    {
+      margin: 0;
+      background-color: #fff;
+    }
+    </style>
+  </head>
+  <body>
+    <div>
+      <script type="text/javascript">
+        var arrSmiley = [ '/weblog/public/images/smileys/01.gif', '/weblog/public/images/smileys/02.gif', '/weblog/public/images/smileys/03.gif', '/weblog/public/images/smileys/04.gif', '/weblog/public/images/smileys/05.gif', '/weblog/public/images/smileys/06.gif', '/weblog/public/images/smileys/07.gif', '/weblog/public/images/smileys/08.gif', '/weblog/public/images/smileys/09.gif', '/weblog/public/images/smileys/10.gif', '/weblog/public/images/smileys/11.gif', '/weblog/public/images/smileys/12.gif', '/weblog/public/images/smileys/13.gif', '/weblog/public/images/smileys/14.gif', '/weblog/public/images/smileys/15.gif', '/weblog/public/images/smileys/16.gif', '/weblog/public/images/smileys/17.gif', '/weblog/public/images/smileys/18.gif', '/weblog/public/images/smileys/19.gif', '/weblog/public/images/smileys/20.gif', '/weblog/public/images/smileys/21.gif', '/weblog/public/images/smileys/22.gif', '/weblog/public/images/smileys/23.gif', '/weblog/public/images/smileys/24.gif', '/weblog/public/images/smileys/25.gif', '/weblog/public/images/smileys/26.gif', '/weblog/public/images/smileys/27.gif', '/weblog/public/images/smileys/28.gif', '/weblog/public/images/smileys/29.gif', '/weblog/public/images/smileys/30.gif', '/weblog/public/images/smileys/31.gif', '/weblog/public/images/smileys/32.gif', '/weblog/public/images/smileys/33.gif', '/weblog/public/images/smileys/34.gif', '/weblog/public/images/smileys/35.gif', '/weblog/public/images/smileys/37.gif', '/weblog/public/images/smileys/39.gif', '/weblog/public/images/smileys/40.gif', '/weblog/public/images/smileys/47.gif', '/weblog/public/images/smileys/50.gif' ];
+        function selectSmiley(src)
+        {
+          self.parent.setEmotion(src);  
+        }
+        html = "<table border=0 cellspacing=0 cellpadding=0>";
+        for (i=0; i<8; i++)
+        {
+          html += "<tr>";
+          for (ii=0; ii<5; ii++)
+          {
+            html += "<td valign=top width=22 height=22 window.status=window.defaultStatus;\'><a href=javascript:selectSmiley('"+arrSmiley[i*5+ii]+"');void(0);><img src="+arrSmiley[i*5+ii]+" width=18 height=18 border=0 style='border:1px solid white;' onmouseover='this.style.border=\"1px inset black\";return true;' onmouseout='this.style.border=\"1px solid white\";' onclick=\"\"></a></td>";
+          }
+          html += "</tr>";
+        }
+        html += "</table>";
+        document.write(html);
+      </script>
+    </div>
+  </body>
+</html>

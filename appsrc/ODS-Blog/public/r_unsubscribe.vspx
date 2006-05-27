@@ -1,0 +1,128 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="main" xmlns:v="http://www.openlinksw.com/vspx/"
+    doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+    <v:variable name="bv_email" type="varchar" default="''"/>
+    <v:variable name="bv_email_url" type="varchar" default="''"/>
+    <v:variable name="b_title" type="varchar" default="''"/>
+    <v:variable name="b_home" type="varchar" default="''"/>
+    <v:variable name="p_title" type="varchar" default="''"/>
+    <v:variable name="p_url" type="varchar" default="''"/>
+    <v:variable name="p_err" type="varchar" default="''"/>
+    <v:on-init><![CDATA[
+      {
+	declare exit handler for sqlstate '*', not found
+	  {
+	    rollback work;
+	    self.p_err := 'Invalid or duplicated unsubscribe request';
+	  };
+
+	self.bv_email := {?'e'};
+	declare cr cursor for
+	select BV_E_MAIL from BLOG..SYS_BLOG_VISITORS where BV_BLOG_ID = {?'b'} and BV_POST_ID = {?'p'} and BV_E_MAIL = {?'e'} and
+		BV_NOTIFY = 1;
+
+	open cr (exclusive, prefetch 1);
+	fetch cr into self.bv_email;
+
+	if (isstring ({?'p'}) and length ({?'p'}) > 0)
+	  {
+	    select B_TITLE into self.p_title
+	    from BLOG..SYS_BLOGS where B_BLOG_ID = {?'b'} and B_POST_ID = {?'p'};
+	  }
+
+	select BI_TITLE, BI_HOME into self.b_title, self.b_home
+	from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = {?'b'};
+
+	update BLOG..SYS_BLOG_VISITORS set BV_NOTIFY = 0 where current of cr;
+	close cr;
+	if (isstring ({?'p'}) and length ({?'p'}) > 0)
+	  self.p_url := concat (self.b_home, '?id=', {?'p'});
+	self.bv_email_url := concat ('mailto:', self.bv_email);
+	self.p_err := '';
+      }
+	]]>
+    </v:on-init>
+    <html>
+	<head>
+	    <title>Unsubscribe from notification e-mails</title>
+	    <link rel="stylesheet" type="text/css" href="/weblog/public/css/default.css"/>
+	</head>
+	<body>
+      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
+        <tr>
+           <td colspan="3">
+             <div id="header">
+               <h1><v:label name="tit1" value="Unsubscribe from notification e-mails"/></h1>
+               <h2><v:label name="tit2" value="--self.bv_email"/></h2>
+             </div>
+             <div id="navbartop"><div>&#160;</div></div>
+          </td></tr>
+		<tr>
+		    <td class="box" id="left">
+			<div class="box">
+			    <div class="roll" style="border: none; border">
+				<div align="center" style="margin-bottom: 3px;">
+				    <v:url name="home1" value="Home page" url="--self.b_home"/>
+				</div>
+			    </div>
+			</div>
+		    </td>
+		    <td id="texttd">
+			<div id="text">
+			    <div>
+				<v:template type="simple" name="terr" enabled="--length (self.p_err)">
+				    <v:label name="l_err" value="--self.p_err" />
+				</v:template>
+				<v:template type="simple" name="tok" enabled="--either (length (self.p_err), 0, 1)" >
+				    <p>Successfully unsubscribed
+				    <v:url name="email_url" url="--concat ('mailto:', self.bv_email)"
+					value="--self.bv_email" />
+				        <v:template type="simple" name="has_pid" enabled="--length (get_keyword ('p', e.ve_params))">
+					    from post
+					    <v:url name="weblog_post" url="--self.p_url"
+						value="--self.p_title" />
+					    in weblog
+					</v:template>
+					<v:template type="simple" name="no_pid" enabled="--either (length (get_keyword ('p', e.ve_params)), 0, 1)">
+					    from weblog
+					</v:template>
+					<v:url name="weblog_url" url="--self.b_home"
+					value="--self.b_title" />
+				    </p>
+				</v:template>
+			    </div>
+			</div>
+		    </td>
+		</tr>
+        <tr><td colspan="3">
+      <div id="powered">
+        <a href="http://www.openlinksw.com/virtuoso">
+          <img src="/weblog/public/images/PoweredByVirtuoso.gif" border="0" alt="poweredby"/>
+        </a>
+      </div>
+        </td></tr>
+      </table>
+	</body>
+    </html>
+</v:page>

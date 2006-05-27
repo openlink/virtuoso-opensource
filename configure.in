@@ -2079,6 +2079,7 @@ AC_CONFIG_FILES([
 	libsrc/zlib/Makefile
 	appsrc/Makefile
 	appsrc/ODS-Framework/Makefile
+	appsrc/ODS-Blog/Makefile
 ])
 
 

@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="/DAV/VAD/blog2/widgets/main.xsl"
+        name="home"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <vm:page id="">
+    <vm:header>
+      <vm:page-title title="Weblog home page"/>
+      <vm:disco-rss-link/>
+      <vm:disco-pingback-link/>
+      <vm:disco-comments-link/>
+      <vm:disco-foaf-link/>
+      <vm:disco-rsd-link/>
+      <vm:disco-opml-link/>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:meta-keywords/>
+      <vm:custom-style />
+    </vm:header>
+    <vm:body xhtml_style="text-align: center;">
+      <div id="header">
+        <div id="h2">
+          <div id="h3">
+            <table>
+              <tr><td>
+                <a href="" id="logo" title="Virtuoso Blog">              
+                  <vm:blog-title/>
+                </a>
+              </td></tr>
+              <tr><td>
+                <vm:welcome-message show-once="no"/>
+              </td></tr>
+            </table>
+          </div>            
+        </div>
+      </div>
+      <div id="error">
+        <v:error-summary />
+      </div>
+      <div id="body">        
+        <div id="sidebar">
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+                <h2>
+                  <vm:blog-about/>
+                  <vm:login-info format_string="Logged in as %s."/>
+                </h2>
+                <div id="selector">
+                  <vm:home-url />
+                </div>
+                <div id="selector">
+                  <vm:cmds-menu/>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+                <h2>Personal Details</h2>
+                <div>
+                  <vm:about-me/>                
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+                <div id="selector">
+                  <vm:calendar vm:url="index.vspx" />                  
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+                <div id="selector">
+                  <vm:rss-feeds />
+                  <vm:if test="ocs">
+                    <h2><vm:ocs-div-title/></h2>
+                    <div class="roll">
+                      <vm:ocs/>
+                    </div>
+                  </vm:if>
+                  <vm:if test="opml">
+                    <h2><vm:opml-div-title/></h2>
+                    <div class="roll">
+                      <vm:opml/>
+                    </div>
+                  </vm:if>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+                <h2>Syndicate This Blog</h2>
+                <div id="selector">
+                  <vm:atom-link/>
+                  <vm:foaf-link/>
+                  <vm:ocs-link/>
+                  <vm:opml-link/>
+                  <vm:rdf-link/>
+                  <vm:rss-link/>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+                <h2>Keyword Search</h2>
+                <div id="selector">
+                  <vm:search/>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+              <h2>Post Categories</h2>
+                <div id="selector">
+                  <vm:categories/>
+                </div>
+              </div>
+            </div>
+          </div>
+          <vm:if test="subscribe">
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+                <h2>Subscribe</h2>
+                <div id="selector">
+                  <vm:subscribe/>
+                </div>
+              </div>
+            </div>
+          </div>
+          </vm:if>
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+                <h2>Recent Articles</h2>
+                <div id="selector">
+                  <vm:last-messages/>
+                </div>
+              </div>
+            </div>
+          </div>
+          <vm:if test="have_community">
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+                <h2>Community Member Blogs</h2>
+                <div class="roll">
+                   <vm:bloggers />
+                </div>
+              </div>
+            </div>
+          </div>
+          </vm:if>
+          <vm:if test="browse_posts">
+            <div class="mod">
+              <div class="mod2">
+                <div class="mod3">
+                  <h2>Display Settings</h2>
+                  <div id="selector">
+                    <vm:sort-options />
+                  </div>          
+                </div>
+              </div>
+            </div>
+          </vm:if>
+          <vm:if test="fish">
+            <div class="mod">
+              <div class="mod2">
+                <div class="mod3">
+                  <h2>Translate</h2>
+                  <div id="selector">
+                    <vm:babel-fish />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </vm:if>
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+                <div>
+                  <vm:amazon-wishlist-display/>
+                </div>
+                <div>
+                  <vm:google-ads/>
+                </div>
+                <div>
+                  <vm:etray-ads/>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mod">
+            <div class="mod2">
+              <div class="mod3">
+                <div id="powered">
+                  <vm:powered-by/>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="main-wrap">
+          <div id="main">
+            <div id="m2">
+              <div id="m3">
+                <vm:posts trackback="discovery" />
+                <div id="text">
+                  <vm:comments-view>
+                    <vm:trackbacks />
+                    <vm:referrals />
+                    <vm:comments />
+                    <vm:post-comment />
+                  </vm:comments-view>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="footer">
+          <div>
+            <hr> <p> <vm:disclaimer/> | <vm:copyright/> </p> </hr>
+          </div>
+        </div>
+      </div>      
+    </vm:body>
+  </vm:page>
+</v:page>

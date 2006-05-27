@@ -1,0 +1,192 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="main" xmlns:v="http://www.openlinksw.com/vspx/"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:variable name="blog_access" type="int" default="0" />
+  <v:variable name="blogid" type="varchar" default="''" param-name="blogid"/>
+  <v:variable name="postid" type="varchar" default="''" param-name="postid"/>
+  <v:variable name="commentid" type="varchar" default="''" param-name="commentid"/>
+  <v:variable name="action" type="varchar" default="'ask'" param-name="action"/>
+  <v:variable name="home" type="varchar" default="null" />
+  <v:variable name="visitor" type="varchar" default="null" />
+  <v:variable name="ip" type="varchar" default="null" />
+  <v:variable name="post_title" type="varchar" default="null" />
+  <v:variable name="comment" type="varchar" default="null" />
+  <v:variable name="visitor_email" type="varchar" default="null" />
+  <v:variable name="done" type="int" default="0" />
+    <v:on-init><![CDATA[
+        declare _minutes int;
+        declare phome, host, lpath any;
+	declare exit handler for sqlstate '*', not found
+	  {
+	    rollback work;
+	    self.vc_error_message := 'Invalid request';
+	    self.vc_is_valid := 0;
+	    return;
+	  };
+        _minutes := 30;
+	self.blog_access := BLOG2_GET_ACCESS (self.blogid, self.sid, self.realm, _minutes);
+	select BI_HOME, BI_P_HOME into self.home, phome from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = self.blogid;
+	host := http_request_header (lines, 'Host');
+	-- if we have a host, we try to resolve
+	if (host is not null)
+	  {
+	    if (host not like '%:%')
+	      host := host || ':80';
+	    lpath := null;
+	    lpath := (select top 1 HP_LPATH from HTTP_PATH where HP_HOST = host and HP_PPATH = phome);
+	    if (lpath is not null)
+	      self.home := lpath;
+	  }
+	]]>
+    </v:on-init>
+    <html>
+	<head>
+	    <title>Confirm Comment</title>
+	    <link rel="stylesheet" type="text/css" href="/weblog/public/css/default.css"/>
+	</head>
+	<body>
+      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
+        <tr>
+           <td colspan="3">
+             <div id="header">
+               <h1><v:label name="tit1" value="Confirm Post Comment"/></h1>
+               <h2></h2>
+             </div>
+             <div id="navbartop"><div>&#160;</div></div>
+	      <div id="error">
+		  <v:error-summary />
+	      </div>
+          </td></tr>
+		<tr>
+		    <td class="box" id="left">
+			<div class="box">
+			    <div class="roll" style="border: none; border">
+				<div align="center" style="margin-bottom: 3px;">
+				    <v:url name="home1" value="Home page" url="--self.home"/>
+				</div>
+			    </div>
+			</div>
+		    </td>
+		    <td id="texttd">
+			<div id="text">
+			    <div>
+			      <v:login realm="wa" mode="url" name="login1">
+				<v:template name="ifnotlogin1" type="if-no-login" redirect="--concat (self.home, 'index.vspx?page=login')" />
+				<v:after-data-bind><![CDATA[
+	  if (length (self.sid) and self.vc_authenticated and self.blog_access <> 0)
+	    {
+	      if (self.action = 'delete')
+	        {
+	  	  delete from BLOG..BLOG_COMMENTS where BM_BLOG_ID = self.blogid
+		    and BM_POST_ID = self.postid and BM_ID = self.commentid;
+		  self.done := row_count ();
+	        }
+ 	      else if (self.action = 'accept')
+	       {
+	         update BLOG..BLOG_COMMENTS set BM_IS_PUB = 1, BM_IS_SPAM = 0 where BM_BLOG_ID = self.blogid
+	          and BM_POST_ID = self.postid and BM_ID = self.commentid;
+		 self.done := row_count ();
+	       }
+	    }
+				    ]]></v:after-data-bind>
+			      </v:login>
+			      <v:template type="simple" name="tok" enabled="--equ (self.action, 'ask')" >
+				<v:before-data-bind><![CDATA[
+
+        if (length (self.sid) = 0)
+           return 1;
+
+	declare exit handler for sqlstate '*', not found
+	  {
+	    rollback work;
+	    self.vc_error_message := 'Invalid request';
+	    self.vc_is_valid := 0;
+	    return;
+	  };
+
+	  select BM_COMMENT, BM_NAME, BM_E_MAIL, BM_ADDRESS, B_TITLE
+	  into self.comment, self.visitor, self.visitor_email, self.ip, self.post_title
+	  from BLOG..BLOG_COMMENTS, BLOG..SYS_BLOGS where BM_BLOG_ID = self.blogid and BM_POST_ID = self.postid
+	  and BM_ID = self.commentid and B_BLOG_ID = BM_BLOG_ID and B_POST_ID = BM_POST_ID;
+
+	  ]]></v:before-data-bind>
+
+	<v:form name="conf" type="simple" method="POST" enabled="--self.vc_is_valid">
+	  <div>
+	    Please confirm the comment to your post "<?V BLOG..blog_utf2wide (self.post_title) ?>".
+	  </div>
+	  <h2>Comment from "<v:url render-only="1" value="--BLOG..blog_utf2wide(self.visitor)" name="l1" url="--'mailto:'||self.visitor_email" />"</h2>
+	  <div>
+	    <?vsp
+	      http (self.comment);
+	    ?>
+	  </div>
+	  <br />
+	  <div>
+	    <v:button name="acc1" value="Publish" action="simple" xhtml_class="real_button">
+	      <v:on-post><![CDATA[
+		if (self.blog_access <> 0)
+		  {
+		    update BLOG..BLOG_COMMENTS set BM_IS_PUB = 1, BM_IS_SPAM = 0 where BM_BLOG_ID = self.blogid
+		    and BM_POST_ID = self.postid and BM_ID = self.commentid;
+		    self.vc_redirect (self.home);
+		  }
+		  ]]></v:on-post>
+	    </v:button>
+	    <v:button name="rej1" value="Reject" action="simple" xhtml_class="real_button">
+	      <v:on-post><![CDATA[
+		if (self.blog_access <> 0)
+		  {
+		    delete from BLOG..BLOG_COMMENTS where BM_BLOG_ID = self.blogid
+		    and BM_POST_ID = self.postid and BM_ID = self.commentid;
+		    self.vc_redirect (self.home);
+		  }
+	     ]]></v:on-post>
+	    </v:button>
+	  </div>
+	</v:form>
+      </v:template>
+      <v:template name="res" type="simple" enabled="--self.done">
+	<div>
+	  The comment was <?V case when self.action = 'delete' then 'deleted' when self.action = 'accept' then 'published' else 'not modified' end ?>.
+	</div>
+	<div>
+	  <v:url name="login_info_logout" value="Logout" url="--self.home || 'index.vspx?page=logout'" />
+	</div>
+      </v:template>
+			    </div>
+			</div>
+		    </td>
+		</tr>
+        <tr><td colspan="3">
+      <div id="powered">
+        <a href="http://www.openlinksw.com/virtuoso">
+          <img src="/weblog/public/images/PoweredByVirtuoso.gif" border="0" alt="poweredby"/>
+        </a>
+      </div>
+        </td></tr>
+      </table>
+	</body>
+    </html>
+</v:page>

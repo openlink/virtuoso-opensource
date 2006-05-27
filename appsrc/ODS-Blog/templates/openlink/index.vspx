@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="/DAV/VAD/blog2/widgets/main.xsl"
+        name="home"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <vm:page>
+    <vm:header id="header">
+      <title><vm:blog-title url=""/></title>
+      <vm:disco-rss-link/>
+      <vm:disco-atom-link/>
+      <vm:disco-pingback-link/>
+      <vm:disco-comments-link/>
+      <vm:disco-foaf-link/>
+      <vm:disco-rsd-link/>
+      <vm:disco-opml-link/>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:meta-keywords/>
+      <vm:custom-style />
+      <!-- add your custom JavaScript code here -->
+      <!-- end -->
+    </vm:header>
+    <vm:body>
+      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
+        <tr>
+	    <td colspan="3">
+		<table id="header" cellpadding="0" cellspacing="0">
+		    <tr>
+			<td>
+			    <h1><vm:blog-title url="index.vspx" /></h1>
+			</td>
+			<td class="right">
+			    <vm:login-info format_string="%s"/>
+			</td>
+		    </tr>
+		    <tr>
+			<td>
+			    <h2>
+				<vm:welcome-message show-once="no"/>
+			    </h2>
+
+			</td>
+			<td class="right">
+			    <vm:weblog-button/> | <vm:linkblog-button/> | <vm:summary-button/>
+			    | <vm:archive-url />
+			    <vm:settings-link title="| Settings "/>
+			    <vm:new-post-link title="| New Post" />
+			    <vm:if test="login">
+		 	    | <vm:wa-link />
+			    </vm:if>
+			    | <vm:advanced-search-link title="Search"/>
+			    <vm:search/>
+			</td>
+		    </tr>
+		</table>
+	      <div id="navbartop">
+		  <div>Entries: [ <vm:entry-list /> ]</div>
+	      </div>
+	      <div id="error">
+		  <v:error-summary />
+	      </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="box" id="left">
+            <div class="box">
+              <h2>Personal Details</h2>
+              <div class="roll">
+                <vm:about-me/>
+              </div>
+              <h2>Subscribe</h2>
+              <div class="roll">
+		  <vm:atom-link>Atom</vm:atom-link>
+		  <vm:rss-link>RSS</vm:rss-link>
+		  <vm:rdf-link>RDF</vm:rdf-link>
+		  <vm:ocs-link>OCS</vm:ocs-link>
+		  <vm:opml-link>OPML</vm:opml-link>
+		  <vm:xbel-link>XBEL</vm:xbel-link>
+		  <vm:podcast-link>Podcast</vm:podcast-link>
+		  <vm:mrss-link>mRSS</vm:mrss-link>
+		  <vm:gdata-link>GData</vm:gdata-link>
+              </div>
+	    <div class="box">
+	      <h2>Tag Cloud
+		  <vm:if test="tagid">
+		      <span>
+			  <a href="gems/rss_tag_arch.xml?:tag=&lt;?V BLOG..blog_utf2wide (self.tagid) ?>&amp;amp;:bid=&lt;?V self.blogid ?>"  class="inlinelink"><img src="/weblog/public/images/rss-icon-16.gif" border="0" alt="RSS" title="RSS"/></a>
+			  <a href="gems/atom_tag_arch.xml?:tag=&lt;?V BLOG..blog_utf2wide (self.tagid) ?>&amp;amp;:bid=&lt;?V self.blogid ?>"  class="inlinelink"><img src="/weblog/public/images/atom-icon-16.gif" border="0" alt="Atom" title="Atom"/></a>
+			  <a href="gems/rdf_tag_arch.xml?:tag=&lt;?V BLOG..blog_utf2wide (self.tagid) ?>&amp;amp;:bid=&lt;?V self.blogid ?>" class="inlinelink"><img src="/weblog/public/images/rdf-icon-16.gif" border="0" alt="RDF" title="RDF"/></a>
+		      </span>
+		  </vm:if>
+	      </h2>
+	      <vm:tags top="100"/>
+	    </div>
+              <div class="roll">
+                <vm:amazon-search/>
+              </div>
+              <h2>Post Categories</h2>
+              <div class="roll">
+                <vm:categories/>
+              </div>
+              <vm:if test="subscribe">
+                <h2>Subscribe</h2>
+                <div class="roll">
+                  <vm:subscribe/>
+                </div>
+              </vm:if>
+              <h2>Recent Articles</h2>
+              <div class="roll">
+                <vm:last-messages/>
+              </div>
+              <vm:if test="have_community">
+                <h2>Community Member Blogs</h2>
+                <div class="roll">
+                   <vm:bloggers/>
+                </div>
+              </vm:if>
+              <vm:if test="browse_posts">
+                <h2>Display Settings</h2>
+                <div class="roll">
+                  <vm:sort-options />
+                </div>
+              </vm:if>
+              <vm:if test="fish">
+                <h2>Translate</h2>
+                <div class="roll">
+                  <vm:babel-fish/>
+                </div>
+              </vm:if>
+            </div>
+          </td>
+          <td id="texttd">
+	      <vm:posts>
+		  <div class="message">
+		      <div class="post-title">
+			  <vm:post-enclosure title=""/>
+			  <vm:post-title />
+			  <vm:if test="have_community">
+			      [<small><vm:post-author format="" /></small>]
+			  </vm:if>
+		      </div>
+		      <div class="post-content">
+			  <vm:trackback-discovery/>
+			  <vm:post-body />
+		      </div>
+		      <vm:if test="summary-post-view">
+			  <vm:if test="have_tags">
+			      <div class="tags">
+				  <vm:post-tags delimiter=" | " title="Tags: " />
+			      </div>
+			  </vm:if>
+			  <div class="spread_links">
+			      <vm:post-technorati-link title="Find related stories via Technorati">related</vm:post-technorati-link>
+			      <vm:post-delicious-link title="Post to del.icio.us">bookmark it!</vm:post-delicious-link>
+			      <vm:post-diggit-link title="submit digg.com">digg it!</vm:post-diggit-link>
+			      <vm:post-reddit-link title="post reddit">reddit!</vm:post-reddit-link>
+			  </div>
+			  <div class="post-actions">
+			      <vm:post-anchor title="#" />
+			      <vm:post-link title="PermaLink" />
+			      <vm:post-comments title="" format="Comments [%d]"/>
+			      <vm:post-trackbacks title="" format="TrackBack [%d]" />
+			      <vm:post-actions />
+			  </div>
+			  <div class="pubdate">
+			      <table cellpadding="0" cellspacing="0" width="100%">
+				  <tr>
+				      <td>
+					  <vm:post-date/>
+					  <vm:post-state format="[%s]"/>
+				      </td>
+				      <td align="right" colspan="3">
+					  <vm:post-modification-date title="Modified:"/>
+				      </td>
+				  </tr>
+			      </table>
+			  </div>
+		      </vm:if>
+		      <vm:if test="post-view">
+		      <div id="individual">
+			  <p><b>About this entry:</b></p>
+			  <p>
+			      Author: <vm:post-author format=""/><br />
+			      <vm:if test="blog_author">
+			      Post Status: <vm:post-state format="%s"/><br />
+			      </vm:if>
+			      Published: <vm:post-date /><br />
+			      <vm:post-modification-date title="Modified: "><br /></vm:post-modification-date>
+			      <vm:post-tags title="Tags: " delimiter=", "><br /></vm:post-tags>
+			      <vm:post-categories title="Categories: " delimiter=", "><br /></vm:post-categories>
+			      <vm:post-comments title="Comment Status: " format="%d Comments"><br /></vm:post-comments>
+			      <vm:post-trackbacks title="TrackBack Status: " format="%d Trackbacks"><br /></vm:post-trackbacks>
+			      <vm:post-enclosure title="Enclosure: "><br /></vm:post-enclosure>
+			  </p>
+		      </div>
+		      <div class="spread_links">
+			  <vm:post-technorati-link title="Find related stories via Technorati">related</vm:post-technorati-link>
+			  <vm:post-delicious-link title="Post to del.icio.us">bookmark it!</vm:post-delicious-link>
+			  <vm:post-diggit-link title="submit digg.com">digg it!</vm:post-diggit-link>
+			  <vm:post-reddit-link title="post reddit">reddit!</vm:post-reddit-link>
+		      </div>
+		      <div class="post-actions">
+			  <vm:post-actions />
+		      </div>
+		      </vm:if>
+		  </div>
+	      </vm:posts>
+	      <vm:if test="post-view">
+		      <vm:if test="trackbacks">
+			  <div class="trackbacks-ctr">
+			      <a name="trackback"><h2>TrackBacks</h2></a>
+			      <div class="tb-url">
+				  TrackBack URL for this entry:
+				  <span class="url">
+				      <vm:trackback-url type="text" />
+				      <!-- Use <vm:trackback-url type="anchor">this url</vm:trackback-url> for trackbacks. -->
+				  </span>
+			      </div>
+			      <div class="tb-url">
+				  PingBack URL for this entry:
+				  <span class="url">
+				      <vm:pingback-url type="text" />
+				  </span>
+			      </div>
+			      <vm:trackbacks-list/>
+			  </div>
+		      </vm:if>
+		      <vm:if test="referral">
+			  <div class="referrals-ctr">
+			      <a name="referral" /><h2>Referrals</h2>
+			      <vm:referrals-list/>
+			  </div>
+		      </vm:if>
+		      <vm:if test="comments-or-enabled">
+			  <div class="comments-ctr">
+			      <a name="comments"><h2>Comments</h2></a>
+
+			      <vm:comments-tree />
+
+			      <vm:if test="comments">
+				  <div class="tb-url">Comments URL for this entry:
+				      <span class="url">
+					  <vm:comment-url type="text"/>
+				      </span>
+				  </div>
+
+				  <br/>
+			      </vm:if>
+			  </div>
+		      </vm:if>
+		      <vm:if test="comments">
+			  <vm:post-comment />
+		      </vm:if>
+		  </vm:if>
+          </td>
+          <td class="box" id="right">
+            <div class="box">
+              <vm:calendar vm:url="index.vspx" />
+	      <vm:foaf-link/>
+              <vm:rss-feeds />
+              <vm:if test="ocs">
+                <b><vm:ocs-div-title/></b>
+                <div class="roll">
+                  <vm:ocs/>
+                </div>
+              </vm:if>
+              <vm:if test="opml">
+                <b><vm:opml-div-title/></b>
+                <div class="roll">
+                  <vm:opml/>
+                </div>
+              </vm:if>
+            </div>
+            <div class="box">
+	      <vm:top-10-search/>
+              <vm:if test="amazon">
+                <div>
+                  <vm:amazon-wishlist-display/>
+                </div>
+              </vm:if>
+              <vm:if test="google">
+                <div>
+                  <vm:google-ads/>
+                </div>
+              </vm:if>
+              <vm:if test="ebay">
+                <div>
+                  <vm:etray-ads/>
+                </div>
+              </vm:if>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="3">
+            <div id="powered"><vm:powered-by/></div>
+            <div id="copy"><vm:copyright/></div>
+            <div id="disclaimer"><vm:disclaimer/></div>
+          </td>
+        </tr>
+      </table>
+    </vm:body>
+  </vm:page>
+</v:page>

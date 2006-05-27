@@ -1,0 +1,1299 @@
+<html>
+  <head>
+    <title>Weblogs Advanced Search</title>
+    <link rel="stylesheet" type="text/css" href="/weblog/public/css/default.css"/>
+  </head>
+  <v:page name="main" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" style="/DAV/VAD/blog2/widgets/main.xsl" xmlns:vm="http://www.openlinksw.com/vspx/weblog/">
+    <v:variable name="blogid" type="varchar" default="null" param-name="blogid"/>
+    <v:variable name="title" type="varchar" default="''"/>
+    <v:variable name="copy" type="varchar" default="''"/>
+    <v:variable name="disc" type="varchar" default="''"/>
+    <v:variable name="email" type="varchar" default="''"/>
+    <v:variable name="owner" type="varchar" default="''"/>
+    <v:variable name="about" type="varchar" default="''"/>
+    <v:variable name="home" type="varchar" default="''"/>
+    <v:variable name="phome" type="varchar" default="''"/>
+    <v:variable name="ds_data" type="any" default="null"/>
+    <v:variable name="ds_meta" type="any" default="null"/>
+    <v:variable name="opts" type="any" default="null"/>
+    <v:variable name="output" type="varchar" default="'html'" param-name="output"/>
+    <v:variable name="qry" type="varchar" default="null" param-name="q"/>
+    <v:variable name="postid" type="varchar" default="null" param-name="postid"/>
+    <v:variable name="sqry" type="varchar" default="null" param-name="output"/>
+    <v:variable name="qtype" type="varchar" default="'text'" param-name="type"/>
+    <v:variable name="qurl" type="any" default="''"/>
+    <v:variable name="gurl" type="any" default="''"/>
+    <v:variable name="details" type="int" default="1" param-name="details"/>
+    <v:variable name="rowcnt" type="int" default="10" param-name="cnt"/>
+    <v:variable name="pageno" type="int" default="1" param-name="page"/>
+    <v:variable name="start_offset" type="int" default="null" param-name="start-index"/>
+    <v:variable name="total" type="int" default="0" />
+    <v:variable name="osrch" type="int" default="0" param-name="OpenSearch" />
+    <v:variable name="opensearch" type="varchar" default="null" param-name="OpenSearch"/>
+    <v:variable name="kwds" type="varchar" default="''"/>
+    <v:variable name="author" type="varchar" default="''"/>
+    <v:variable name="pkwd" type="varchar" default="null" param-name="kwds"/>
+    <v:variable name="hit_words" type="any" default="null"/>
+    <v:variable name="have_comunity_blog" type="any" default="null" />
+    <v:variable name="filt" type="varchar" default="'*default*'"/>
+    <v:variable name="d_before" type="datetime" default="null" param-name="from" />
+    <v:variable name="d_after" type="datetime" default="null" param-name="to" />
+    <v:variable name="s_cat" type="varchar" default="null" param-name="cat" />
+    <v:variable name="s_tag" type="varchar" default="null" param-name="tags" />
+    <v:variable name="upar" type="varchar" default="''" persist="temp" />
+    <v:variable name="atomver" type="varchar" default="'0.3'" persist="temp" />
+    <v:variable name="refpage" type="varchar" default="''"  />
+    <v:variable name="backlink" type="varchar" default="''" />
+    <v:variable name="stock_img_loc" type="varchar" default="'/weblog/public/images/'"/>
+    <v:variable name="custom_img_loc" type="varchar" default="null"/>
+    <v:variable name="last_date" type="date" default="null" persist="temp"/>
+    <v:variable name="score_ratio" type="float" defaut="1" />
+    <v:variable name="s_tag_is_qry" type="int" defaut="0" param-name="tag-is-qry"/>
+    <v:before-render>
+      <![CDATA[
+      if (length (self.sid) and BLOG.DBA.IS_REGULAR_FEED ())
+        {
+	  declare vars any;
+	  vars := coalesce ((select deserialize (blob_to_string(VS_STATE)) from VSPX_SESSION where VS_SID = self.sid), NULL);
+	  --dbg_obj_print ('connection_vars_set', self.sid);
+	  connection_vars_set (vars);
+	  connection_set('uid', connection_get('vspx_user'));
+        }
+      ]]>
+    </v:before-render>
+    <v:on-init>
+      <![CDATA[
+        declare refr, ht, pars any;
+
+        set isolation = 'committed';
+        set http_charset='utf-8';
+        declare _cookie_vec any;
+        _cookie_vec := vsp_ua_get_cookie_vec(lines);
+        self.sid := coalesce(get_keyword('sid', params), get_keyword('sid', _cookie_vec));
+        self.realm := get_keyword('realm', params, 'wa');
+
+	refr := http_request_header (lines, 'Referer');
+	if (refr <> 0)
+	  {
+	    ht := WS.WS.PARSE_URI (refr);
+	    if (not e.ve_is_post)
+	      self.refpage := ht[2];
+	    pars := split_and_decode (ht[4]);
+	    if (not isarray (pars))
+	      pars := vector ();
+	    self.backlink := get_keyword ('page', pars, 'index');
+	  }
+
+        whenever not found goto nfi;
+        select  BI_TITLE,
+          BI_HOME,
+          BI_P_HOME,
+          coalesce(BI_COPYRIGHTS,''),
+          coalesce(BI_DISCLAIMER,''),
+          coalesce(BI_ABOUT, ''),
+          coalesce (BI_E_MAIL, U_E_MAIL),
+          deserialize (blob_to_string (BI_OPTIONS)),
+          BI_OWNER,
+    BI_KEYWORDS,
+    U_FULL_NAME,
+    BI_FILTER,
+    BI_HAVE_COMUNITY_BLOG
+          into
+          self.title,
+          self.home,
+          self.phome,
+          self.copy,
+          self.disc,
+          self.about,
+          self.email,
+          self.opts,
+          self.owner,
+    self.kwds,
+    self.author,
+    self.filt,
+    self.have_comunity_blog
+          from BLOG.DBA.SYS_BLOG_INFO, DB.DBA.SYS_USERS
+          where BI_BLOG_ID = self.blogid and U_ID = BI_OWNER
+          with (prefetch 1);
+        goto runit;
+        nfi:;
+        signal ('22023', 'The selected blog does not exists');
+        runit:;
+        if (self.opts is null)
+          self.opts := vector ();
+        if (self.ds_data is null)
+        {
+          self.ds_data := vector ();
+          self.ds_meta := vector ();
+          self.qt.ufl_value := self.qtype;
+        }
+    self.atomver := get_keyword ('AtomFeedVer', self.opts, '0.3');
+      ]]>
+    </v:on-init>
+    <v:after-data-bind>
+      <![CDATA[
+        if (self.qry is null)
+          return;
+        self.expr.ufl_value := self.qry;
+        self.qt.ufl_value := self.qtype;
+        if (not e.ve_is_post)
+          self.do_search (e);
+      ]]>
+    </v:after-data-bind>
+    <v:method name="enable_it" arglist="in what varchar, in flag int">
+      <![CDATA[
+        declare rc int;
+        if ((self.qry is null and self.qt.ufl_value = what) or (self.qry is not null and self.qtype = what))
+          rc := flag;
+        else if (self.qry is null and self.qt.ufl_value is null
+          and get_keyword ('type', self.vc_event.ve_params) = what)
+          rc := flag;
+        else
+          rc := case when flag then 0 else 1 end;
+        return rc;
+      ]]>
+    </v:method>
+    <v:method name="score_to_length" arglist="in s numeric">
+      <![CDATA[
+        s := s * self.score_ratio;
+        if (s > 300)
+          return 300;
+        if (s < 0)
+          return 0;
+        return s;
+      ]]>
+    </v:method>
+    <v:method name="do_search" arglist="inout e vspx_event">
+      <![CDATA[
+        declare xmldoc, ses, arr, res, qes, ftcond, tag_qry any;
+        declare i, l, max1 int;
+        declare url any;
+	declare inx, s_off, e_off int;
+        declare d1, d2, cats, tags, qry, stat, msg, dta, mdta, h, pars, dexp, catw, atb, twhere any;
+
+	tag_qry := null;
+        max1 := atoi (self.maxhit.ufl_value);
+	s_off := (self.pageno - 1) * self.rowcnt;
+
+	if (self.start_offset is not null and isinteger (self.start_offset) and self.start_offset > 0)
+	  s_off := self.start_offset - 1;
+
+        e_off := s_off + self.rowcnt;
+        declare exit handler for sqlstate '*'
+        {
+          self.vc_is_valid := 0;
+          self.vc_error_message := __SQL_MESSAGE;
+          return;
+	};
+
+	if (self.sqry is not null)
+	  {
+	    d1 := self.d_before;
+	    d2 := self.d_after;
+	    catw := self.s_cat;
+	    tags := self.s_tag;
+	    if (d1 is not null)
+	      self.upar := self.upar||sprintf ('&from=%d-%d-%d', year (d1), month (d1), dayofmonth (d1));
+	    if (d2 is not null)
+	      self.upar := self.upar||sprintf ('&to=%d-%d-%d', year (d2), month (d2), dayofmonth (d2));
+	  }
+	else
+	  {
+	    d1 := null;
+	    d2 := null;
+	    catw := trim (self.catw.ufl_value);
+	    tags := trim (self.tagw.ufl_value);
+	  }
+	if (length (self.dataad.ufl_value))
+	  {
+	    declare exit handler for sqlstate '22007'
+	    {
+	      self.vc_is_valid := 0;
+	      self.vc_error_message := 'Please specify correct date for date before.';
+	      return;
+	    };
+	    d1 := stringdate (self.dataay.ufl_value||'-'||self.dataam.ufl_value||'-'||self.dataad.ufl_value);
+	    self.upar := self.upar||sprintf ('&from=%s-%s-%s',self.dataay.ufl_value,self.dataam.ufl_value, self.dataad.ufl_value);
+	  }
+	if (length (self.databd.ufl_value))
+	  {
+	    declare exit handler for sqlstate '22007'
+	    {
+	      self.vc_is_valid := 0;
+	      self.vc_error_message := 'Please specify correct date for date after.';
+	      return;
+	    };
+	    d2 := stringdate (self.databy.ufl_value||'-'||self.databm.ufl_value||'-'||self.databd.ufl_value);
+	    self.upar := self.upar||sprintf ('&to=%s-%s-%s',self.databy.ufl_value,self.databm.ufl_value, self.databd.ufl_value);
+	  }
+	if (length (catw))
+	  self.upar := self.upar||sprintf ('&cat=%U',catw);
+	if (length (tags))
+	  self.upar := self.upar||sprintf ('&tags=%U',tags);
+
+        self.ds_data := vector ();
+        if (length (self.expr.ufl_value) < 2 and 0 = length (catw) and 0 = length (tags) and d1 is null and d2 is null and self.postid is null)
+        {
+          self.expr.vc_error_message := 'No expression entered';
+          self.vc_is_valid := 0;
+          return;
+        }
+        res := vector ();
+        if (self.qt.ufl_value = 'text' or length (self.expr.ufl_value) = 0)
+        {
+	  declare str varchar;
+	  declare vt, war, word2 any;
+
+	  self.qt.ufl_value := 'text';
+
+
+	  self.hit_words := vector ();
+	  pars := vector (self.home, self.blogid, self.blogid);
+	  ftcond := '';
+	  if (length (self.expr.ufl_value))
+	    {
+	      vt := vt_batch ();
+	      vt_batch_feed (vt, self.expr.ufl_value, 0, 0, 'x-any');
+	      war := vt_batch_strings_array (vt);
+	      foreach (any word1 in war) do
+		{
+		  if (isstring (word1) and word1 not in ('AND','NOT','NEAR','OR') and not vt_is_noise (word1, 'utf-8', 'x-any'))
+		    self.hit_words := vector_concat (self.hit_words, vector (word1));
+		}
+	      if (length (self.hit_words) > 9)
+		self.hit_words := subseq (self.hit_words, 0, 9);
+              str := FTI_MAKE_SEARCH_STRING (self.expr.ufl_value);
+	      {
+	        declare exit handler for sqlstate '*'
+		{
+		   self.vc_is_valid := 0;
+		   self.vc_error_message := 'Invalid keyword string entered';
+		   return;
+		};
+	        vt_parse ('[__lang \'x-any\' __enc \'UTF-8\'] ' || str);
+	      }
+	      ftcond := ' and contains (B_CONTENT, ?) ';
+	      pars := vector_concat (pars, vector (
+	      concat (
+	      		'[__lang \'x-any\' __enc \'UTF-8\'] ',
+			str)
+		     ));
+	    }
+	  inx := 0;
+
+	  dexp := '';
+	  if (d1 is not null)
+	    {
+	      dexp := ' and B_TS >= ? ';
+	      pars := vector_concat (pars, vector (d1));
+	    }
+	  if (d2 is not null)
+	    {
+	      dexp := dexp || ' and B_TS <= ? ';
+	      pars := vector_concat (pars, vector (d2));
+	    }
+	  if (length (catw))
+	    {
+	      dexp := dexp || ' and exists (select 1 from BLOG..MTYPE_BLOG_CATEGORY, BLOG..MTYPE_CATEGORIES
+	      where MTB_CID = MTC_ID and MTC_BLOG_ID = MTB_BLOG_ID and MTB_POST_ID = B_POST_ID and
+	      strcasestr (MTC_NAME, ?) is not null)';
+	      pars := vector_concat (pars, vector (catw));
+	    }
+	  if (length (self.postid))
+	    {
+	      dexp := dexp || ' and B_POST_ID = ? ';
+	      pars := vector_concat (pars, vector (self.postid));
+	    }
+	  atb := '';
+	  twhere := '';
+	  if (length (tags))
+	    {
+	      declare blog_cond any;
+	      if (self.have_comunity_blog is null or self.have_comunity_blog = 0)
+  	        blog_cond := 'and b'||replace(self.blogid, '-', '_');
+	      else
+	        blog_cond := '';
+
+              if (self.s_tag_is_qry)
+	        tag_qry := tags;
+	      else
+	        tag_qry := FTI_MAKE_SEARCH_STRING (tags);
+
+	      atb := ' BLOG..BLOG_TAG a, ';
+	      twhere := sprintf (' contains (BT_TAGS, ''[__lang "x-ViDoc"] %s %s'', offband, BT_POST_ID) and BT_POST_ID = B_POST_ID and BT_BLOG_ID = BA_C_BLOG_ID and ', tag_qry, blog_cond);
+	    }
+
+	  qry := 'select top 1000 NULL, concat (?,\'?id=\', B_POST_ID), B_TITLE,
+	  	B_USER_ID, B_TS, B_MODIFIED, ' || case when ftcond = '' then '0' else  'b.SCORE' end || ', B_POST_ID, B_VER
+	    from ' || atb || ' BLOG..SYS_BLOGS b,
+	    (select BI_BLOG_ID as BA_C_BLOG_ID, BI_BLOG_ID as BA_M_BLOG_ID
+	    	from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = ? union all
+		select * from (select BA_C_BLOG_ID, BA_M_BLOG_ID
+		from BLOG.DBA.SYS_BLOG_ATTACHES where BA_M_BLOG_ID = ?) name1) name2
+	    where ' || twhere || 'B_BLOG_ID = BA_C_BLOG_ID ' || ftcond || dexp || '
+	    order by ';
+
+	  if (self.date_ord.ufl_selected or ftcond = '')
+	    {
+	      qry := qry || ' b.B_TS ' || case when self.ord_type.ufl_selected = 0 then 'asc' else 'desc' end;
+	      self.date_ord.ufl_selected := 1;
+	    }
+	  else
+            {
+	      qry := qry || ' b.SCORE '|| case when self.ord_type.ufl_selected = 0 then 'asc' else 'desc' end;
+            }
+
+	  --dbg_obj_print (qry, pars);
+	  stat := '00000';
+	  exec (qry, stat, msg, pars, 0, null, null, h);
+	  if (stat <> '00000')
+	    signal (stat, msg);
+	  while (0 = exec_next (h, null, null, dta))
+          {
+            if (not self.osrch)
+              goto addit;
+            if (inx >= e_off)
+              ;
+            else if (inx >= s_off)
+            {
+              addit:
+              res := vector_concat (res, vector (dta));
+            }
+            inx := inx + 1;
+          }
+	  exec_close (h);
+
+          self.total := inx;
+          goto retres1;
+        }
+
+        if (self.qt.ufl_value not in ('xpath', 'xquery'))
+        {
+          self.vc_is_valid := 0;
+          self.vc_error_message := 'Invalid query type.';
+          return;
+        }
+        if (get_keyword ('XtendedSearchMax', self.opts, -1) > 0 and max1 > get_keyword ('XtendedSearchMax', self.opts, -1))
+        {
+          self.maxhit.vc_error_message := 'Maximum results setting is too large (must be <' ||
+            cast(get_keyword ('XtendedSearchMax', self.opts, -1) as varchar) || ')';
+          self.vc_is_valid := 0;
+          return;
+        }
+        inx := 0;
+
+	qry := sprintf ('select B_CONTENT, B_TITLE, B_POST_ID, B_USER_ID, B_TS, B_MODIFIED
+	 from BLOG..SYS_BLOGS, (select BI_BLOG_ID as BA_C_BLOG_ID, BI_BLOG_ID as BA_M_BLOG_ID from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = ? union all select * from (select BA_C_BLOG_ID, BA_M_BLOG_ID from BLOG.DBA.SYS_BLOG_ATTACHES where BA_M_BLOG_ID = ?) name1) name2 where B_BLOG_ID = BA_C_BLOG_ID');
+
+	pars := vector (self.blogid, self.blogid);
+	  dexp := '';
+	  if (d1 is not null)
+	    {
+	      dexp := ' and B_TS >= ? ';
+	      pars := vector_concat (pars, vector (d1));
+	    }
+	  if (d2 is not null)
+	    {
+	      dexp := dexp || ' and B_TS <= ? ';
+	      pars := vector_concat (pars, vector (d2));
+	    }
+	  if (length (catw))
+	    {
+	      dexp := dexp || ' and exists (select 1 from BLOG..MTYPE_BLOG_CATEGORY, BLOG..MTYPE_CATEGORIES
+	      where MTB_CID = MTC_ID and MTC_BLOG_ID = MTB_BLOG_ID and MTB_POST_ID = B_POST_ID and
+	      strcasestr (MTC_NAME, ?) is not null)';
+	      pars := vector_concat (pars, vector (catw));
+	    }
+
+	  qry := qry || dexp;
+
+	if (self.date_ord.ufl_selected)
+	    {
+	      qry := qry || ' order by B_TS ' || case when self.ord_type.ufl_selected = 0 then 'asc' else 'desc' end;
+	      self.date_ord.ufl_selected := 1;
+	    }
+
+	exec (qry, stat, msg, pars, 0, null, null, h);
+
+	if (isstring (stat) and stat <> '00000')
+	  signal (stat, msg);
+	while (0 = exec_next (h, null, null, dta))
+        {
+	  declare xp, postid, modified, posted, userid, title any;
+
+	  xp := xtree_doc (dta[0], 2, '', 'UTF-8');
+	  title := dta[1];
+	  postid := dta[2];
+	  userid := dta[3];
+	  posted := dta[4];
+	  modified := dta[5];
+
+          url := concat (self.home,'?id=',postid);
+          declare exit handler for sqlstate '42000'
+          {
+            self.vc_is_valid := 0;
+            self.vc_error_message := 'The query path or query document referenced in this query is non existent.';
+            return;
+          };
+          declare exit handler for sqlstate '37000'
+          {
+            self.vc_is_valid := 0;
+            self.vc_error_message := 'Invalid query expression.';
+            return;
+          };
+          if (self.qt.ufl_value = 'xpath')
+            arr := xpath_eval (self.expr.ufl_value, xp, 0);
+          else if (self.qt.ufl_value = 'xquery')
+          {
+            arr := xquery_eval (self.expr.ufl_value, xp);
+            if (isentity (arr))
+              arr := vector  (arr);
+          }
+          if (isarray(arr))
+          {
+            i := 0;
+            l := length (arr);
+            while (i < l)
+            {
+              if (not isinteger (arr[i]))
+              {
+                if (not self.osrch)
+                  goto addit1;
+                if (inx >= e_off)
+                     ;
+                else if (inx >= s_off)
+                {
+                  addit1:
+                  res := vector_concat (res, vector (vector (serialize_to_UTF8_xml (arr[i]),
+                   url, title, userid, posted, modified, 0, postid)));
+                }
+                max1 := max1 - 1;
+                inx := inx + 1;
+                self.total := inx;
+                if (max1 <= 0)
+                {
+                  goto retres;
+                }
+              }
+              i := i + 1;
+            }
+          }
+	  nextr:;
+        }
+        retres:
+	exec_close (h);
+        retres1:
+        --if (self.output1.ufl_value in ('xml', 'rdf' , 'atom', 'xbel'))
+	--  self.output := self.output1.ufl_value;
+	qes := string_output ();
+	http_escape (self.expr.ufl_value, 8, qes);
+	qes := string_output_string (qes);
+        self.qurl := sprintf ('/weblog/public/search.vspx?blogid=%s&q=%s&type=%s%s&output=', self.blogid, qes, self.qt.ufl_value, self.upar);
+
+	if (BLOG.DBA.IS_REGULAR_FEED ())
+	  {
+	    self.gurl := sprintf ('/GData/%U/', self.blogid);
+	    if (length (tag_qry))
+	      {
+		declare arr, ses, tag_str any;
+		ses := string_output ();
+		arr := vt_parse (tag_qry);
+		self.gdata_cat_str (arr, ses);
+		tag_str := string_output_string (ses);
+		self.gurl := self.gurl || '-' || tag_str;
+	      }
+
+	    if (length (self.expr.ufl_value))
+	      {
+		self.gurl := self.gurl || sprintf ('?q=%s', qes);
+	      }
+	  }
+	else
+	  {
+	    self.gurl := connection_get ('GData_URI');
+          }
+
+        self.ds_data := res;
+        if (self.output in ('xml' , 'rdf' , 'atom', 'xbel'))
+           return;
+
+        if (self.qt.ufl_value = 'text')
+        {
+          self.dst.vc_enabled := 1;
+          self.dst.vc_data_bind (e);
+          self.dst.vc_enabled := 1;
+        }
+        else
+        {
+          self.ds.vc_enabled := 1;
+	  self.ds.vc_data_bind (e);
+          self.ds.vc_enabled := 1;
+        }
+        return;
+      ]]>
+    </v:method>
+    <!-- the fti_make_search_string make ANDs -->
+    <v:method name="gdata_cat_str" arglist="inout arr any, inout ses any"><![CDATA[
+      if (isarray (arr) and length (arr) = 3 and arr[0] = 1)
+        {
+          http ('/', ses);
+	  http (arr[2], ses);
+          return;
+	}
+      else if (not isarray (arr))
+        {
+          return;
+	}
+
+      foreach (any elm in arr) do
+        {
+          self.gdata_cat_str (elm, ses);
+        }
+	return;
+    ]]></v:method>
+    <body>
+      <script type="text/javascript">
+	function show_hide_order (f, fl)
+	{
+           var o = f['ord_type'];
+	   if (fl.checked == true)
+	     o.disabled = false;
+	   else
+	     o.disabled = true;
+	}
+      </script>
+      <v:form name="form1" type="simple" method="POST">
+        <v:on-post>
+          <![CDATA[
+            declare tab vspx_tab;
+            declare tmpl vspx_control;
+            tab := self.help1;
+            tmpl := tab.vc_find_control(self.qt.ufl_value||'_help');
+            tab.tb_active := tmpl;
+            if (e.ve_button = control)
+            {
+              self.expr.ufl_value := '';
+              self.ds_data := vector ();
+              self.ds.ds_rows_offs := 0;
+              self.ds.vc_enabled := 0;
+              self.dst.vc_enabled := 0;
+            }
+          ]]>
+        </v:on-post>
+        <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
+          <tr>
+            <td colspan="3">
+              <div id="header">
+                <h1>
+		  <v:url name="tit1" value="--self.title" url="--self.home" xhtml_class="title_link"/>
+                </h1>
+                <h2>
+                  <v:label name="tit2" value="Advanced Search (XQuery, XPath, Free Text)"/>
+                </h2>
+              </div>
+              <div id="navbartop">
+                <div>&#160;</div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <v:template name="leftt" type="simple" enabled="--case when self.sqry is null then 1 else 0 end">
+              <td class="box" id="left">
+                <div class="box">
+                  <h2>Query Type</h2>
+                  <div class="roll">
+                    <v:select-list name="qt" auto-submit="1">
+                      <v:item name="Text" value="text"/>
+                      <v:item name="XPath" value="xpath"/>
+                      <v:item name="XQuery" value="xquery"/>
+                      <v:after-data-bind>
+                        <![CDATA[
+                          if (not get_keyword ('EnableXtendedSearch',self.opts, 1))
+                          {
+                            control.vsl_items := vector ('Text');
+                            control.vsl_item_values := vector ('text');
+                          }
+                        ]]>
+                      </v:after-data-bind>
+                    </v:select-list>
+                  </div>
+                  <!--h2>Results As</h2>
+                  <div class="roll">
+                    <v:select-list name="output1">
+                      <v:item name="HTML" value="html"/>
+                      <v:item name="XML - RSS 2.0" value="xml"/>
+                      <v:item name="XML - Atom" value="atom"/>
+                      <v:item name="XML - RDF" value="rdf"/>
+                      <v:item name="XML - XBEL" value="xbel"/>
+                    </v:select-list>
+                  </div-->
+                  <h2>Example</h2>
+                  <div class="roll">
+                    <v:tab name="help1" initial-active="text_help">
+                      <v:template name="text_help" type="simple">
+                        To perform Full-Text search,<br/>
+                        enter a word or phrase:<br/>
+                        <b>ODBC DRIVER</b><br/>
+                        or<br/>
+                        <b>"exact phrase"</b>
+                      </v:template>
+                      <v:template name="xpath_help" type="simple">
+                        <v:select-list name="xp" xhtml_onchange="javascript: document.form1.expr.value = this.value">
+                          <v:item value="" name="* select an example *"/>
+                          <v:item value="//p[a]" name="paragraph with link(s)"/>
+                          <v:item value="//p[contains(.,\'Virtuoso\')]" name="about Virtuoso"/>
+                          <v:item value="//a[@href]/@href" name="link targets"/>
+                          <v:item value="//a/text()" name="link titles"/>
+                          <v:item value="//a[@name or @id]" name="link references"/>
+                          <v:item value="//b" name="text in bold"/>
+                          <v:item value="//i" name="text in italic"/>
+                          <v:item value="//p[b or i or u or s or small or big]/*" name="formatting"/>
+                          <v:item value="//p[b or i or u or s or small or big]/ancestor::*" name="section with formatting"/>
+                          <v:item value="//*[@class]" name="css formated sections"/>
+                          <v:item value="//table[.//tr/td]" name="tables"/>
+                          <v:item value="//img[@src]" name="images"/>
+                          <v:item value="//p[img[@src]]" name="sections with images"/>
+                          <v:item value="//p[a/@href[contains(.,\'.xml\')]]" name="about XML"/>
+                        </v:select-list>
+                      </v:template>
+                      <v:template name="xquery_help" type="simple">
+                        <v:select-list name="xq" xhtml_onchange="javascript: document.form1.expr.value = this.value">
+                          <v:item value="" name="* select an example *"/>
+                          <v:item value="for $i in node()//table return $i" name="all tables"/>
+                          <v:item value="for $t in node()//table return <ul> {for $i in $t//tr return <li>{$i/td/text()}</li> }</ul>" name="table to list"/>
+                          <v:item value="for $i in node()//a return <p>{ string($i/@href) }</p>" name="list of links"/>
+                          <v:item value="for $i in node() return <p>{ .//text() }</p>" name="text nodes"/>
+                          <v:item value="for $i in node()//p[contains(.,\'Virtuoso\')] return <p>{ string($i) }</p>" name="about Virtuoso"/>
+                        </v:select-list>
+                      </v:template>
+                    </v:tab>
+                  </div>
+                  <div class="roll">
+                    <v:url name="home1" value="Back" url="--sprintf('%sindex.vspx?page=%s&sid=%s&realm=%s', self.home, self.backlink, self.sid, self.realm)"/>
+                  </div>
+                </div>
+              </td>
+            </v:template>
+            <td id="texttd">
+	      <?vsp if (self.refpage = '/weblog/public/search.vspx') { ?>
+	      <div>
+		<a href="javascript: void(0)" value="Close" onclick="if (opener != null) { opener.focus (); window.close() }"><img src="/weblog/public/images/close_16.gif" hspace="1" border="0" />Close</a>
+	      </div>
+	      <?vsp } ?>
+              <div id="text">
+                <v:template name="sboxt" type="simple" enabled="--case when self.sqry is null then 1 else 0 end">
+                  <h1>Search Expression</h1>
+                  <div id="error_left"><v:error-summary /></div>
+                  <table class="formdata">
+                    <tr>
+                      <td colspan="2">
+                        <div>
+			  <v:textarea name="expr" value="" xhtml_rows="15" xhtml_cols="70" error-glyph="*">
+			    <v:before-render>
+			      control.ufl_value := charset_recode (control.ufl_value, 'UTF-8', '_WIDE_');
+			    </v:before-render>
+			  </v:textarea>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+		      <td><label for="catw">Category has word(s)</label></td>
+		      <td>
+			<v:text name="catw" xhtml_id="catw" value="" xhtml_size="20" xhtml_class="textbox" />
+		      </td>
+                    </tr>
+                    <tr>
+		      <td><label for="tagw">With tags</label></td>
+		      <td>
+			<v:text name="tagw" xhtml_id="tagw" value="" xhtml_size="20" xhtml_class="textbox" />
+		      </td>
+                    </tr>
+                    <tr>
+		      <td><label for="dataad">Date after</label></td>
+		      <td>
+			<v:text name="dataad" value="" xhtml_size="2" xhtml_class="textbox" xhtml_id="dataad"/>.
+			<v:text name="dataam" value="" xhtml_size="2" xhtml_class="textbox" />.
+			<v:text name="dataay" value="" xhtml_size="4" xhtml_class="textbox" /> (DD-MM-YYYY)
+		      </td>
+                    </tr>
+                    <tr>
+		      <td><label for="databd">Date before</label></td>
+		      <td>
+			<v:text name="databd" value="" xhtml_size="2" xhtml_class="textbox" xhtml_id="databd" />.
+			<v:text name="databm" value="" xhtml_size="2" xhtml_class="textbox" />.
+			<v:text name="databy" value="" xhtml_size="4" xhtml_class="textbox" /> (DD-MM-YYYY)
+		      </td>
+                    </tr>
+                    <v:template type="simple">
+                      <tr>
+                        <td colspan="2">
+			  <div><label for="maxhit">Max results</label>
+                            <v:text name="maxhit" default_value="100" xhtml_size="5" error-glyph="*" xhtml_id="maxhit">
+                              <v:validator name="vvnum1" test="regexp" regexp="^[0-9]+$" message="Only digits are allowed for setting &quot;Max results&quot;" runat="client"/>
+                            </v:text>
+                          </div>
+                        </td>
+                      </tr>
+                      <v:before-render>
+                        <![CDATA[
+                          control.vc_enabled := case when self.qt.ufl_value = 'text' or self.qt.ufl_value is null then 0 else 1 end;
+                        ]]>
+                      </v:before-render>
+                    </v:template>
+                    <tr>
+		      <td colspan="2">
+			<v:check-box name="date_ord" value="1" xhtml_id="date_ord" xhtml_onclick="javascript: show_hide_order (this.form, this)">
+			  <v:before-render>
+			    if (length (self.expr.ufl_value) = 0
+			        and (length (self.catw.ufl_value) or length (self.tagw.ufl_value)
+			             or length (self.databd.ufl_value) or length (self.dataad.ufl_value)
+			       ))
+ 			      control.ufl_selected := 1;
+			  </v:before-render>
+			</v:check-box>
+		        <label for="date_ord">Order by date</label></td>
+		    </tr>
+                    <tr>
+		      <td colspan="2">
+			<v:check-box name="ord_type" value="1" xhtml_id="ord_type" initial-checked="1">
+			  <v:before-render>
+			    if (self.date_ord.ufl_selected = 0)
+ 			      control.vc_add_attribute ('disabled', '1');
+			  </v:before-render>
+			</v:check-box>
+		      <label for="ord_type">Newest first</label></td>
+		    </tr>
+                    <tr>
+                      <td COLSPAN="2">
+                        <v:button xhtml_class="real_button" action="simple" name="post" value="Execute" xhtml_title="Execute" xhtml_alt="Execute">
+                          <v:on-post>
+			    <![CDATA[
+			      self.ds.vc_reset ();
+			      self.dst.vc_reset ();
+                              self.do_search (e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="2">
+                        <?vsp
+                          if (length (self.ds_data))
+                          {
+                        ?>
+			<a href="<?V self.qurl ?>html" target="_blank"><img src="/weblog/public/images/html401.gif" border="0" title="HTML" alt="HTML"/></a>
+                        <a href="<?V self.qurl ?>xml" target="_blank"><img src="/weblog/public/images/rss-icon-16.gif" border="0" title="RSS" alt="RSS"/></a>
+			<a href="<?V self.qurl ?>atom" target="_blank"><img src="/weblog/public/images/atom-icon-16.gif" border="0" title="ATOM" alt="ATOM"/></a>
+                        <a href="<?V self.qurl ?>rdf" target="_blank"><img src="/weblog/public/images/rdf-icon-16.gif" border="0" title="RDF" alt="RDF"/></a>
+                        <a href="<?V self.qurl ?>xbel" target="_blank"><img src="/weblog/public/images/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL" hspace="3"/>XBEL</a>
+			<a href="<?V sprintf ('search.vspx?blogid=%U&type=%s&kwds=%U&OpenSearch', self.blogid, self.qt.ufl_value, coalesce (self.expr.ufl_value, self.qry))  ?>" target="_blank"><img src="/weblog/public/images/blue-icon-16.gif" border="0" hspace="3"/>OpenSearch</a>
+                        <a href="<?V self.gurl ?>" target="_blank"><img src="/weblog/public/images/blue-icon-16.gif" border="0" title="GData" alt="GData" hspace="3"/>GData</a>
+                        <?vsp
+                          }
+                        ?>
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+                <h2>Results
+                  <v:label name="ct1" value="--length (self.ds_data)" format=" (%d)" render-only="1"/>
+                  <v:template name="rest" type="simple" condition="length (self.sqry)">
+                    from search by "<?V BLOG..blog_utf2wide(self.qry) ?>" <br />
+                    <a href="<?V self.qurl ?>xml"><img src="/weblog/public/images/rss-icon-16.gif" border="0"/></a>
+		    <a href="<?V self.qurl ?>atom"><img src="/weblog/public/images/atom-icon-16.gif" border="0"/></a>
+                    <a href="<?V self.qurl ?>rdf"><img src="/weblog/public/images/rdf-icon-16.gif" border="0"/></a>
+		    <a href="<?V self.qurl ?>xbel"><img src="/weblog/public/images/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL" hspace="3"/>XBEL</a>
+        <a href="<?V sprintf ('search.vspx?blogid=%U&type=%s&kwds=%U&OpenSearch', self.blogid, self.qt.ufl_value, coalesce (self.expr.ufl_value, self.qry))  ?>"><img src="/weblog/public/images/blue-icon-16.gif" border="0" hspace="3"/>OpenSearch</a>
+                  </v:template>
+                </h2>
+                <br />
+		<v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="10" scrollable="1" instantiate="--self.enable_it ('text', 0)">
+                  <v:template name="tmpl1" type="repeat">
+                    <v:template name="tmpl7" type="if-not-exists">
+                      <div class="message">No matches found</div>
+                    </v:template>
+                    <v:template name="tmpl4" type="browse">
+                      <div class="message">
+                        <div>
+                          <span class="message_title">
+                            <v:url name="l6" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" url="--(control.vc_parent as vspx_row_template).te_rowset[1]" render-only="1" format="%s"/>
+                            <?vsp
+                              if (self.sid is not null and self.realm is not null)
+                              {
+                            ?>
+			    <v:url name="l7" value="--'[Edit]'" url="--concat(self.home, 'index.vspx?page=edit_post&',  'editid=', (control.vc_parent as vspx_row_template).te_rowset[7])" render-only="0">
+			    </v:url>
+                            <?vsp
+                              }
+                            ?>
+                          </span>
+                          <v:label value="" format="%s">
+                            <v:before-render>
+                              <![CDATA[
+
+                                set isolation = 'uncommitted';
+                                declare tit, author, ref1, email, a_name any;
+                                author := '';
+                                ref1 := '';
+                                whenever not found goto nfuser;
+                                select U_FULL_NAME, BI_E_MAIL, BI_HOME, U_NAME into author, email, ref1, a_name
+                                  from BLOG.DBA.SYS_BLOG_INFO, SYS_USERS where
+                                  BI_OWNER = (control.vc_parent as vspx_row_template).te_rowset[3]
+                                  and U_ID = BI_OWNER;
+                                if (author = '' or author is null)
+				  author := email;
+				if (self.have_comunity_blog and length (self.sid))
+				  {
+				    declare url vspx_url;
+				    url := control.vc_parent.vc_find_control ('l7');
+				    url.vu_url := replace (url.vu_url, self.home, ref1);
+				    if (a_name <> coalesce (connection_get ('vspx_user'), ''))
+				      {
+				        url.vc_enabled := 0;
+				      }
+				  }
+                                nfuser:
+
+				if (length (self.sid))
+				  {
+				    ref1 := ref1 || sprintf ('?sid=%U&realm=%U', self.sid, self.realm);
+				  }
+
+                                if (author <> '')
+                                  control.ufl_value := ' [<a href="' || ref1 || '">' || sprintf('%s', author) || '</a>]';
+                                else
+                                  control.ufl_value := '';
+                              ]]>
+                            </v:before-render>
+                          </v:label>
+                          <img src="/weblog/public/images/score.gif" height="5" width="<?V self.score_to_length (control.te_rowset[6]) ?>" />
+                        </div>
+                        <div class="desc">
+			  <?vsp
+			  http (control.te_rowset[0]);
+			  ?>
+                        </div>
+                        <div class="pubdate">posted on
+                          <v:label value="--BLOG..blog_date_fmt ((control.vc_parent as vspx_row_template).te_rowset[4])" format="%s" render-only="1"/>
+                          <v:label value="--BLOG..blog_date_fmt ((control.vc_parent as vspx_row_template).te_rowset[5])"
+                            format=', modified on <span class="modified">%s</span>'
+                            enabled="--datediff('second', (control.vc_parent as vspx_row_template).te_rowset[4], (control.vc_parent as vspx_row_template).te_rowset[5])"/>
+                        </div>
+                      </div>
+                    </v:template>
+                  </v:template>
+                  <v:template name="tmpl3" type="simple">
+                    <div align="center">
+                      <vm:ds-navigation data-set="ds"/>
+                    </div>
+                  </v:template>
+                </v:data-set>
+                <table class="search_result">
+                  <v:data-set name="dst" data="--self.ds_data"
+                    meta="--self.ds_meta"
+                    nrows="10" scrollable="1" instantiate="--self.enable_it ('text', 1)">
+		    <v:before-render><![CDATA[
+		    declare _max int;
+		    declare len any;
+		    len := length (self.ds_data);
+		    _max := 0;
+		    if (len > 0)
+		      {
+		        if (self.date_ord.ufl_selected)
+			  {
+			    declare data any;
+			    data := self.ds_data;
+			    foreach (any d in data) do
+			      {
+			        if (d[6] > _max)
+				  _max := d[6];
+			      }
+			  }
+			else
+			  {
+			    _max := self.ds_data[0][6];
+			  }
+		      }
+		    if (_max > 300)
+		      {
+		         self.score_ratio := cast ( ( 300.0 / _max ) as float);
+		      }
+		    ]]></v:before-render>
+                    <v:template name="tmplth1" type="simple">
+                      <tr class="search_result_header">
+                        <th>No</th>
+			<th>Title</th>
+			<?vsp if (self.have_comunity_blog) { ?>
+			<th>Author</th>
+			<?vsp } ?>
+                        <th>Score</th>
+                      </tr>
+                    </v:template>
+                    <v:template name="tmplt1" type="repeat">
+                      <v:template name="tmplt7" type="if-not-exists">
+                        <tr><td class="message" colspan="4">No matches found</td></tr>
+                      </v:template>
+		      <v:template name="tmplt4" type="browse">
+			<?vsp
+			  declare curt any;
+			  curt := control.te_rowset[4];
+			  if (self.date_ord.ufl_selected and (self.last_date is null or BLOG..not_same_month (self.last_date, curt)))
+			    {
+			      self.last_date := curt;
+			      http (sprintf ('<tr><td class="date_separator" colspan="3">%s, %d</td></tr>',
+			      	monthname (curt), year (curt)));
+			    }
+			?>
+                        <tr>
+                          <td>
+                            <v:label render-only="1" name="clt1" value="--(control.vc_parent as vspx_row_template).te_ctr+ self.dst.ds_rows_offs + 1" format="%d."/>
+                          </td>
+                          <td>
+                            <v:url name="lt6" value="--BLOG..blog_utf2wide ((control.vc_parent as vspx_row_template).te_rowset[2])"
+                            url="--(control.vc_parent as vspx_row_template).te_rowset[1]" render-only="1"/>
+                            <?vsp
+                              if (self.sid is not null and self.realm is not null)
+                              {
+                            ?>
+			    <v:url name="l27" value="--'[Edit]'" url="--concat(self.home, 'index.vspx?page=edit_post&',  'editid=', (control.vc_parent as vspx_row_template).te_rowset[7])" render-only="0">
+			    </v:url>
+                            <?vsp
+                              }
+                            ?>
+			  </td>
+			  <?vsp if (self.have_comunity_blog) { ?>
+                          <td>
+                            <v:label value="" format="%s">
+                              <v:before-render>
+                                <![CDATA[
+                                  set isolation = 'uncommitted';
+                                  declare tit, author, ref1, email, a_name any;
+                                  author := ''; ref1 := '';
+                                  whenever not found goto nfuser;
+                                  select U_FULL_NAME, BI_E_MAIL, BI_HOME, U_NAME into author, email, ref1, a_name
+                                  from BLOG.DBA.SYS_BLOG_INFO, SYS_USERS where
+                                  BI_OWNER = (control.vc_parent as vspx_row_template).te_rowset[3]
+                                  and U_ID = BI_OWNER;
+                                  if (author = '' or author is null)
+                                    author := email;
+				  if (self.have_comunity_blog and length (self.sid))
+				    {
+				      declare url vspx_url;
+				      url := control.vc_parent.vc_find_control ('l27');
+				      url.vu_url := replace (url.vu_url, self.home, ref1);
+				      if (a_name <> coalesce (connection_get ('vspx_user'), ''))
+					{
+					  url.vc_enabled := 0;
+					}
+				    }
+				  if (length (self.sid))
+				    {
+				      ref1 := ref1 || sprintf ('?sid=%U&realm=%U', self.sid, self.realm);
+				    }
+                                  nfuser:
+                                  if (author <> '')
+                                    control.ufl_value := ' [<a href="' || ref1 || '">' || sprintf('%s', author) || '</a>]';
+                                  else
+                                    control.ufl_value := '';
+                                ]]>
+                              </v:before-render>
+                            </v:label>
+			  </td>
+			  <?vsp } ?>
+                          <td>
+                            <img src="/weblog/public/images/score.gif" height="5" width="<?V self.score_to_length (control.te_rowset[6]) ?>" xhtml_title="Score" xhtml_alt="Score"/>
+                          </td>
+			</tr>
+			<tr>
+			  <td colspan="<?V case when self.have_comunity_blog = 1 then 4 else 3 end ?>"><![CDATA[
+			    <?vsp
+			    if (length (self.hit_words) > 0)
+			      {
+			        declare post any;
+				post := (select blob_to_string (B_CONTENT) from BLOG..SYS_BLOGS where B_POST_ID = control.te_rowset[7]);
+			        declare excerpt_samples any;
+				excerpt_samples := coalesce (search_excerpt (self.hit_words, post), '');
+				http (excerpt_samples);
+			      }
+		            ?>]]>
+			  </td>
+			</tr>
+                      </v:template>
+                    </v:template>
+                    <v:template name="tmplt3" type="simple">
+                      <tr>
+                        <td colspan="<?V case when self.have_comunity_blog = 1 then 4 else 3 end ?>" align="center">
+    &lt;?vsp
+     {
+      declare _prev, _next, _last, _first vspx_button;
+      declare d_prev, d_next, d_last, d_first, index_arr int;
+      d_prev := d_next := d_last := d_first := index_arr := 0;
+      _first := control.vc_find_control ('dst_first');
+      _last := control.vc_find_control ('dst_last');
+      _next := control.vc_find_control ('dst_next');
+      _prev := control.vc_find_control ('dst_prev');
+      if (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)
+        goto skipit;
+      index_arr := 1;
+      if (_next is not null and not _next.vc_enabled)
+      {
+        d_next := 1;
+      }
+      if (_prev is not null and not _prev.vc_enabled)
+      {
+        d_prev := 1;
+      }
+      skipit:;
+    ?&gt;
+    <?vsp
+      http('&#160;');
+      if (d_prev)
+      {
+        http ('<a href="#">&lt;&lt;</a>');
+      }
+    ?>
+    <v:button name="dst_prev" action="simple" style="url" value="&lt;&lt;"
+      xhtml_alt="Previous" xhtml_title="Previous" text="&nbsp;Previous">
+    </v:button>
+      <![CDATA[&nbsp;]]>
+      <![CDATA[&nbsp;]]>
+    <!-- an version of page numbering -->
+    <xsl:if test="not(@type) or @type = 'set'">
+      <v:text name="dst_offs" type="hidden" value="0" />
+      <?vsp
+      if (index_arr)
+      {
+        declare dsname, idx_offs, frm_name any;
+        declare frm vspx_control;
+  frm := control.vc_find_parent_form (control);
+  frm_name := '';
+  if (frm is not null)
+    frm_name := frm.vc_name;
+        -- this button is just to trigger the post, no render at all
+        if (0)
+    {
+      ?>
+            <v:button name="dst_idx" action="simple" style="url" value="Submit">
+    <v:on-post><![CDATA[
+        declare ds vspx_data_set;
+        declare dss vspx_data_source;
+        declare offs int;
+        offs := atoi(get_keyword (replace (control.vc_name, '_idx', '_offs'), e.ve_params, '0'));
+        ds := control.vc_find_parent (control, 'vspx_data_set');
+          {
+	    ds.ds_rows_offs := ds.ds_nrows * offs;
+	    ds.vc_data_bind (e);
+          }
+        ]]></v:on-post>
+      </v:button>
+      <?vsp
+          }
+      dsname := 'dst';
+      declare i, n, t, c, total_pages, to_page integer;
+      declare _class varchar;
+      declare dss vspx_data_source;
+      declare ds vspx_data_set;
+      ds := control.vc_parent;
+      dss := null;
+      i := 0;
+
+      -- rec. per page
+      n := ds.ds_nrows;  -- 10
+
+      -- total rows
+      t := length (self.ds_data); -- ~1000
+
+      -- starting page no.
+      c := ds.ds_rows_offs / n;    -- 0, 1, 2
+
+      --dbg_obj_print ('n=',n, ' t=',t,' c=', c);
+
+      total_pages := t/n;
+
+      if (c > 10)
+        i := c - 10;
+
+      to_page := c + 11;
+      if (to_page > total_pages)
+        to_page := total_pages;
+
+      while (t and i < to_page)
+         {
+      ?>
+      | <a href="#" onclick="javascript: document.forms['<?V frm_name ?>'].<?V dsname ?>_offs.value = <?V i ?>; doPost ('<?V frm_name ?>', '<?V dsname ?>_idx'); return false"><?vsp http_value (i + 1, case when c = i then 'b' else null end); ?></a>
+      <?vsp
+          i := i + 1;
+  }
+  if (t and i > 0)
+    http (' | ');
+      }
+      ?>
+    </xsl:if>
+      <![CDATA[&nbsp;]]>
+      <![CDATA[&nbsp;]]>
+    <?vsp
+      if (d_next)
+      {
+      http ('<a href="#">&gt;&gt;</a>');
+      }
+    ?>
+    <v:button name="dst_next" action="simple" style="url" value="&gt;&gt;"
+      xhtml_alt="Next" xhtml_title="Next" text="&nbsp;Next">
+    </v:button>
+    <?vsp
+      }
+    ?>
+                        </td>
+                      </tr>
+                    </v:template>
+                  </v:data-set>
+                </table>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="3">
+        <div id="powered"><vm:powered-by/></div>
+        <div id="copy"><vm:copyright/></div>
+        <div id="disclaimer"><vm:disclaimer/></div>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+    </body>
+    &lt;?vsp<![CDATA[
+      if (self.output = 'xml' or self.output = 'rdf' or self.output = 'xbel' or self.output = 'atom')
+      {
+        declare dta any;
+        declare _u_f_name, _u_name, _u_e_mail varchar;
+        dta := self.ds_data;
+        http_rewrite ();
+        http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+	http ('<rss version="2.0" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:vi="http://www.openlinksw.com/weblog/">\r\n<channel>\r\n');
+        http ('<title>');
+        http (self.title);
+	http ('</title>');
+        http ('<link>');
+        if (BLOG.DBA.IS_REGULAR_FEED ())
+	  {
+	    http ('http://'); http(BLOG.DBA.BLOG_GET_HOST ()); http_value (self.qurl || 'html');
+	  }
+	else
+	  {
+	    http (self.gurl);
+	  }
+        http ('</link>');
+        http ('<pubDate>');
+	http_value (BLOG..date_rfc1123 (now ()));
+	http ('</pubDate>');
+        http ('<managingEditor>');
+	http_value (BLOG..blog_utf2wide (self.author));
+	http_value (sprintf ('<%s>', self.email));
+	http ('</managingEditor>');
+	http ('<description>About ');
+	http (trim(coalesce (self.qry, self.expr.ufl_value), ''' "'));
+        http ('</description>');
+	http (sprintf ('<openSearch:totalResults>%d</openSearch:totalResults>\r\n', self.total));
+	http (sprintf ('<openSearch:startIndex>%d</openSearch:startIndex>\r\n', ((self.pageno - 1)*self.rowcnt + 1)));
+	http (sprintf ('<openSearch:itemsPerPage>%d</openSearch:itemsPerPage>\r\n', self.rowcnt));
+        foreach (any elm in dta) do
+        {
+          http ('<item>');
+	  if (self.details)
+	    {
+	      http ('<description>');
+	      if (elm[0] is null)
+		{
+		    declare post any;
+		    post := (select blob_to_string (B_CONTENT) from BLOG..SYS_BLOGS where B_POST_ID = elm[7]);
+		    http (sprintf ('<![%s[', 'CDATA'));
+		    http (BLOG..BLOG2_POST_RENDER (post, self.filt));
+		    http (']]' || '>');
+		}
+	      else
+		http_value (elm[0]);
+	      http ('</description>');
+	    }
+          http ('<title>');
+          http_value (BLOG..blog_utf2wide(elm[2]));
+          http ('</title>');
+          http (sprintf ('<link>http://%s', BLOG.DBA.BLOG_GET_HOST ()));
+          http_value (elm[1]);
+          http ('</link>');
+          http ('<pubDate>');
+          http_value (BLOG..date_rfc1123 (elm[5]));
+	  http ('</pubDate>');
+	  if (length (elm) > 8)
+	    {
+	    http ('<vi:version>');
+	    http_value (elm[8]);
+	    http ('</vi:version>');
+	    }
+          http ('<vi:modified>');
+          http_value (BLOG..date_iso8601 (elm[5]));
+	  http ('</vi:modified>');
+	  {
+	    declare exit handler for not found;
+	    select U_FULL_NAME, U_NAME, U_E_MAIL into _u_f_name, _u_name, _u_e_mail from SYS_USERS where U_ID = elm[3];
+	    if (not length (_u_f_name))
+	      _u_f_name := _u_name;
+	    http ('<author>');
+	    http (BLOG..blog_wide2utf (_u_f_name));
+	    http (sprintf (' &lt;%V&gt;', _u_e_mail));
+	    http ('</author>');
+	  }
+          http ('</item>');
+        }
+        http ('</channel></rss>');
+        if (self.output = 'rdf')
+  	  http_xslt (BLOG..BLOG2_GET_PPATH_URL ('widgets/rss2rdf.xsl'));
+        else if (self.output = 'xbel')
+  	  http_xslt (BLOG..BLOG2_GET_PPATH_URL ('widgets/rss2xbel.xsl'));
+	else if (self.output = 'atom')
+	  {
+	    declare xsl any;
+	    if (self.atomver = '1.0')
+	      xsl := 'rss2atom.xsl';
+	    else
+	      xsl := 'rss2atom03.xsl';
+	    --dbg_printf ('Atom_Self_URI=%s', connection_get ('Atom_Self_URI'));
+  	    http_xslt (BLOG..BLOG2_GET_PPATH_URL ('widgets/'||xsl), vector ('httpUrl', BLOG.DBA.GET_HTTP_URL (), 'isRegularFeed', BLOG.DBA.IS_REGULAR_FEED ()));
+	  }
+        return;
+      }
+   if (self.opensearch is not null)
+     {
+        declare sho varchar;
+        if (not length (self.about))
+    self.about := self.title;
+  sho := regexp_match ('[[:alnum:]_]+', self.about);
+  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+  declare host, title, about, copyr, home, name, descr, mail, author, discl, kwds, bid, welk, opts any;
+  bid := self.blogid;
+  welk := get_keyword ('WelcomeMessage', self.opts, '');
+  host := http_request_header (lines, 'Host');
+  if (self.pkwd is not null)
+    self.kwds := self.pkwd;
+  http_rewrite ();
+  http ('<?xml version="1.0" ?>');  ]]>
+?&gt;&lt;OpenSearchDescription xmlns="http://a9.com/-/spec/opensearchdescription/1.0/"&gt;
+  <Url>http://<?V host ?>/weblog/public/search.vspx?blogid=<?V bid ?><?V sprintf ('&q={searchTerms}&cnt={count}&page={startPage}&type=%s&output=xml&OpenSearch=1', self.qt.ufl_value) ?></Url>
+  <Format>http://a9.com/-/spec/opensearchrss/1.0/</Format>
+  <ShortName><?V sho ?></ShortName>
+  <LongName><?V BLOG..blog_utf2wide (self.title) ?></LongName>
+  <Description>About: <?V trim(self.kwds, ''' "') ?></Description>
+  <Tags><?V trim(self.kwds, ''' "') ?></Tags>
+  <Image>http://<?V host ?>/weblog/public/images/vbloglogo1.gif</Image>
+  <SampleSearch><?V self.kwds ?></SampleSearch>
+  <Developer><?V BLOG..blog_utf2wide (self.author) ?></Developer>
+  <Contact><?V self.email ?></Contact>
+  <Attribution><?V BLOG..blog_utf2wide (self.copy) ?></Attribution>
+  <SyndicationRight>open</SyndicationRight>
+  <AdultContent>false</AdultContent>
+&lt;/OpenSearchDescription&gt;<?vsp
+        return;
+  }
+  ?>
+  </v:page>
+</html>

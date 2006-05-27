@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="/DAV/VAD/blog2/widgets/main.xsl"
+        name="home"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <vm:page>
+    <vm:header>
+      <vm:page-title title="Weblog home page"/>
+      <vm:disco-rss-link/>
+      <vm:disco-pingback-link/>
+      <vm:disco-comments-link/>
+      <vm:disco-foaf-link/>
+      <vm:disco-rsd-link/>
+      <vm:disco-opml-link/>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:meta-keywords/>
+      <vm:custom-style />
+    </vm:header>
+    <vm:body>
+      <div class="topline">
+        <div class="shdrbg">
+          <table cellspacing="0" class="shdrbg">
+            <tr>
+              <td>
+                <table cellspacing="0" class="shdr">
+                  <tr>
+                    <td rowspan="2" nowrap="nowrap" width="126"></td>
+                    <td width="100%">
+                      <table class="fixedTable">
+                        <tr>
+                          <td class="ellipse spaceTitle shdr" nowrap="nowrap"><vm:blog-title /></td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td width="100%">
+                      <table class="fixedTable">
+                        <tr>
+                          <td class="ellipse spaceTag shdr" nowrap="nowrap"><vm:welcome-message show-once="no"/></td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td height="8"></td>
+                  </tr>
+                </table>                 
+              </td>
+            </tr>
+          </table>                 
+        </div>
+      </div>
+      <table width="779" cellspacing="0" height="22" class="mainnav" border="0">
+        <tr><td colspan="5" height="2"></td></tr>
+      </table>
+      <table width="779" height="28" cellspacing="0" class="mainbody" border="0">
+        <tr>
+          <td>
+            <table width="770" height="600" cellspacing="0">
+              <tr>
+                <td valign="top" width="570">
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap">Blog</td>
+                          </tr>
+                        </table>       
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table>
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div class="roll">
+                          <vm:posts trackback="discovery" />
+                          <vm:comments-view>
+                            <vm:trackbacks />
+                            <vm:referrals />
+                            <vm:if test="comments">
+                              <vm:comments />
+                              <vm:post-comment />
+                            </vm:if>
+                          </vm:comments-view>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td width="180" valign="top" nowrap="nowrap">
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap">Personal Details</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table>                  
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div  class="roll">
+                          <div>
+                            <vm:about-me/>                
+                          </div>
+                        </div>
+                        <div class="roll">
+                          <vm:login-info format_string="Logged in as %s."/>
+                        </div>                        
+                        <div class="roll">
+                          <vm:cmds-menu/>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap"></td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table>                  
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div class="roll">
+                          <vm:calendar vm:url="index.vspx" />
+                          <vm:rss-feeds />
+                          <vm:if test="ocs">
+                            <h2><vm:ocs-div-title/></h2>
+                            <div class="roll">
+                              <vm:ocs/>
+                            </div>
+                          </vm:if>
+                          <vm:if test="opml">
+                            <h2><vm:opml-div-title/></h2>
+                            <div class="roll">
+                              <vm:opml/>
+                            </div>
+                          </vm:if>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap">Syndicate This Blog</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table>                  
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div class="roll">
+                          <vm:atom-link/>
+                          <vm:foaf-link/>
+                          <vm:ocs-link/>
+                          <vm:opml-link/>
+                          <vm:rdf-link/>
+                          <vm:rss-link/>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap">Keyword Search</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table>                  
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div class="roll">
+                          <vm:search/>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap">Post Categories</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table>                  
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div class="roll">
+                          <vm:categories/>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  <vm:if test="subscribe">
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap">Subscribe</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table>                  
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div class="roll">
+                          <vm:subscribe/>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  </vm:if>
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap">Recent Articles</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table>                  
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div class="roll">
+                          <vm:last-messages/>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  <vm:if test="have_community">
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap">Community Member Blogs</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table> 
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div class="roll">
+                          <vm:bloggers />
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  </vm:if>
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap">Display Settings</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table>                  
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div class="roll">
+                          <vm:sort-options />
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  <vm:if test="fish">
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap">Translate</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table>                  
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div class="roll">
+                          <vm:babel-fish />
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                  </vm:if>
+                  <table cellspacing="0" class="pheader" border="0" height="22">
+                    <tr>
+                      <td class="mod_tlc" width="6" nowrap="nowrap">&nbsp;</td>
+                      <td width="100%" class="modhead">
+                        <table cellspacing="0" width="100%" class="fixedTable partheader">
+                          <tr>
+                            <td class="bold ellipse spaceTag" nowrap="nowrap"></td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="mod_trc" width="6" nowrap="nowrap">&nbsp;</td>
+                    </tr>
+                  </table>                  
+                  <table cellspacing="0" border="0" class="partsmb">
+                    <tr>
+                      <td class="bvBody">
+                        <div class="roll">
+                          <div>
+                            <vm:amazon-wishlist-display/>
+                          </div>
+                          <div>
+                            <vm:google-ads/>
+                          </div>
+                          <div>
+                            <vm:etray-ads/>
+                          </div>                          
+                        </div>
+                      </td>
+                    </tr>
+                  </table>                  
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <div class="gptop">
+        <div class="nsf">
+            <div id="powered"><vm:powered-by/></div>
+            <div id="copy"><vm:copyright/></div>
+            <div id="disclaimer"><vm:disclaimer/></div>
+        </div>
+      </div>
+    </vm:body>
+  </vm:page>
+</v:page>

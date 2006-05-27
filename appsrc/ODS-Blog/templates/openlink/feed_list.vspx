@@ -1,0 +1,168 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<v:page name="blog_left_page"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="/DAV/VAD/blog2/widgets/main.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <vm:page>
+    <vm:wa_header>
+      <vm:wa_title>Web Applications</vm:wa_title>
+    </vm:wa_header>
+    <v:variable name="mode1" type="varchar" default="'feed'" persist="1"/>
+    <v:variable name="mode2" type="varchar" default="'read'" persist="1"/>
+    <v:variable name="ch" type="varchar" default="null"/>
+    <v:variable name="ch_name" type="varchar" default="null"/>
+    <v:variable name="ch_home" type="varchar" default="''"/>
+    <body class="sub_page">
+      <![CDATA[
+        <script type="text/javascript">
+          function loadIframe(iframeName, url)
+          {
+            if ( window.top.frames[iframeName] )
+            {
+              window.top.frames[iframeName].location = url;   
+            }
+            return false;
+          }
+          function loadIframe2(url, left, right)
+          {
+            if (window.top.frames['right_frm'])
+            {
+              window.top.frames['right_frm'].location = url+right;
+              if (window.top.frames['ifrm'])
+              {
+                window.top.frames['ifrm'].location = url+left;
+              }
+            }
+            return false;
+          }
+          function loadIframe4(url)
+          {
+            if (window.top.frames['right_frm'])
+            {
+              if (window.top.frames['right_frm'].frames['right_frm2'])
+              {
+                window.top.frames['right_frm'].frames['right_frm2'].location = url;
+              }
+            }
+            return false;
+          }
+        </script>
+      ]]>
+      <v:form name="formdfsdf" method="POST" type="simple" action="index.vspx?page=feed_list">
+        <?vsp
+          declare _ch, ch_name, ch_home any;
+          declare cnt, unread any;
+          _ch := get_keyword('ch', self.vc_event.ve_params);
+          if(_ch is not null)
+          {
+            self.ch := _ch;
+            self.ch_home := _ch;
+            select BCD_TITLE, BCD_HOME_URI into ch_name, ch_home from BLOG.DBA.SYS_BLOG_CHANNEL_INFO
+              where BCD_CHANNEL_URI= _ch;
+            if (ch_name is not null)
+              self.ch_name := ch_name;
+            if (ch_home is not null)
+              self.ch_home := ch_home;
+          }
+          if (self.ch_name)
+          {            
+            select count(*) into cnt from BLOG.DBA.SYS_BLOG_CHANNEL_FEEDS where CF_CHANNEL_URI = self.ch;
+            select count(*) into unread from BLOG.DBA.SYS_BLOG_CHANNEL_FEEDS where CF_CHANNEL_URI = self.ch and CF_READ = 1;
+            unread := cnt - unread;
+            http(sprintf('<table width="100%%"><tr><td align="left"><a href="%s" target="_blank"><h3>%s</h3></a></td><td align="right"><h3>Total (%d)  Unread (%d)</h3></td></tr></table>', self.ch_home, self.ch_name, cnt, unread));
+          }
+          else
+            http('<h3>Select a blog on the left panel</h3>');
+        ?>
+        <table class="listing">
+          <tr class="listing_header_row">
+            <th>Headline</th>
+            <th>Received</th>
+          </tr>
+          <?vsp            
+            if (cnt = 0)
+            {
+          ?>
+          <tr>
+            <th colspan="2">
+              No fetched posts
+            </th>
+          </tr>
+          <?vsp
+            }
+            for select
+                CF_ID,
+                coalesce (CF_TITLE, '') as CF_TITLE,
+                coalesce (CF_DESCRIPTION, '') as CF_DESCRIPTION,
+                CF_LINK,
+                CF_GUID,
+                CF_COMMENT_API,
+                CF_PUBDATE,
+                CF_READ
+              from
+                BLOG.DBA.SYS_BLOG_CHANNEL_FEEDS
+              where
+                CF_CHANNEL_URI = self.ch order by CF_PUBDATE desc do
+            {
+              self.r_count := self.r_count + 1;
+              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+          ?>
+          <td>
+            <?vsp
+              declare title varchar;
+              if (CF_TITLE = '' or CF_TITLE is null)
+                title := '...';
+              else
+                title := CF_TITLE;                
+              if (CF_READ is null or CF_READ = 0)
+                http('<b>');
+                http(sprintf('<a href="index.vspx?page=feed_view&sid=%s&realm=%s&cf_id=%d&cf_uri=%s" onclick="return loadIframe4(this.href)">%s</a>', self.sid, self.realm, CF_ID, self.ch, title));
+              if (CF_READ is null or CF_READ = 0)
+                http('</b>');
+            ?>
+          </td>
+          <td>
+            <?vsp
+              if (CF_READ is null or CF_READ = 0)
+                http('<b>');
+            ?>
+            <?V left(datestring(CF_PUBDATE), 19) ?>
+            <?vsp
+              if (CF_READ is null or CF_READ = 0)
+                http('</b>');
+            ?>
+          </td>
+          <?vsp
+            http ('</tr>');
+            }
+          ?>
+        </table>
+      </v:form>
+    </body>
+  </vm:page>
+</v:page>
+

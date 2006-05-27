@@ -1,0 +1,813 @@
+/* default.css for round_the_corner template */
+
+body {
+  font-family: arial, helvetica, sans-serif;
+  background: white;
+  color: #b0b0b0;
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  font-size: 9pt;
+  color: black;
+}
+
+form {
+  display: inline;
+  width: 0px;
+  padding: 0px;
+  margin: 0px;
+}
+
+#blog-top {
+  padding: 0px;
+  margin: 0px;
+  margin-left: 4px;
+}
+
+#blog-top h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: normal;
+    color: #763030;
+    margin-top: 0px;
+    margin-bottom: -8px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    font-size: 30pt;
+}
+
+#blog-header {
+  float: left;
+  clear: both;
+  background: #f0f0f0;
+  padding-top: 2px;
+  background-image: url(images/round_border_top.gif);
+  background-position: top right;
+  background-repeat: no-repeat;
+}
+
+#blog_view_switch {
+  text-align: right;
+  padding-right: 10px;
+  font-size: 12pt;
+}
+
+#blog_view_switch a {
+  font-size: 12pt;
+  text-decoration: none;
+}
+
+#breadcrumbs {
+  float: left;
+}
+
+#entry-list-ctr {
+  float: right;
+  padding-right: 10px;
+  background-color: transparent;
+}
+
+div.blog-header img {
+  float: left;
+  margin: 0px;
+  padding: 0px;
+  height: 65px;
+}
+
+#navbartop {
+  margin-right: 5px;
+  padding-right: 3px;
+}
+
+#navbartop * {
+  text-align: right;
+  margin: 0px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  width: 100%;
+}
+
+/* XXX Deprecated see below */
+.button {
+  border: none;
+  padding: 2px 2px;
+  margin: 3px 0px;
+  font-weight: normal;
+  cursor: pointer;
+  color: black;
+  background-color: transparent;
+  font-family: arial, helvetica, sans-serif;
+  text-decoration: none;
+}
+
+.button:hover {
+  color: black;
+  background-color: white;
+}
+
+/* When bug#9149 is fixed,
+Replaces .button above for commands */
+
+ul.cmds-menu {
+  padding: 0px;
+}
+
+ul.cmds-menu li {
+  padding: 0px;
+  list-style-type: none;
+}
+
+ul.cmds-menu li a {
+  text-decoration: none;
+}
+
+input.real_button {
+  border: 1px solid #191970;
+  color: black;
+  background-color: white;
+}
+
+select {
+  border: 1px solid #191970;
+  color: black;
+  background-color: white;
+}
+
+textarea {
+  border: 1px solid #191970;
+  color: black;
+  background-color: white;
+}
+
+/* Generic block class */
+
+#left-column div.block {
+  border-top: 1px solid #d0d0d0;
+  border-right: 1px solid #d0d0d0;
+  border-bottom: 1px solid #d0d0d0;
+  background-color: #f0f0f0;
+  margin: 4px 0px 4px ;
+  padding: 0px 5px;
+  color: white;
+  text-align: left;
+}
+
+#right-column div.block {
+  border-top: 1px solid #d0d0d0;
+  border-left: 1px solid #d0d0d0;
+  border-bottom: 1px solid #d0d0d0;
+  background-color: #f0f0f0;
+  margin: 0px 0px 4px;
+  padding: 0px;
+  color: white;
+  text-align: left;
+}
+
+div.block div {
+  margin: 3px;
+}
+
+div.block h3 {
+  border: none;
+  margin: 0px;
+  padding-left: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  color: #202020;
+  letter-spacing: 2px;
+  text-align: left;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* Individual blocks */
+
+#details-block {
+}
+
+#syndicate-block {
+}
+
+#cmds-block {
+  padding-left: 8px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+/* XXX: Needs be modified when 
+ bug#9149 is fixed */
+
+#cmds-block a {
+  text-decoration: none;
+  padding-left: 2px;
+}
+
+#cmds-block a:hover {
+  background-color: white;
+}
+
+ul.cmds_menu li
+{
+  margin-left: 0px;
+}
+
+ul.cmds_menu
+{
+  margin-left: -10px;
+  padding-left: 0px;
+}
+
+#recent-block {
+}
+
+#cal-block {
+}
+
+#search-block {
+}
+
+#sort-block {
+}
+
+#categories-block {
+}
+
+#translate-block {
+  text-align: center;
+}
+
+#translate-block img {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+input.button {
+  height: 17px;
+}
+
+/* 3 Column layout */
+
+/* Container to make right border */
+#center-wide {
+  margin-top: 0px;
+  padding-top: 4px;
+  border-right: 3px solid #763030;
+}
+
+#left-column {
+  float: left;
+  left: 0px;
+  width: 180px;
+}
+
+#center-column {
+  width: auto;
+  padding-left: 180px;
+  padding-right: 220px;
+}
+
+#right-column {
+  float: right;
+  right: 0px;
+  width: 210px;
+  border-right: 3px solid #763030;
+  margin-right: -3px;
+}
+
+#footer {
+  float: left;
+  clear: both;
+  padding-top: 30px;
+  padding-bottom: 20px;
+  width: 100%;
+  background-image: url('images/round_border_bottom.gif');
+  background-position: top right;
+  background-repeat: no-repeat;
+  background-color: #763030;
+}
+
+#calendar {
+  font-size: 80%;
+  text-align: center;
+  margin: auto;
+}
+#calendar td, #calendar th { 
+}
+.calactive {
+   background-position: center;
+   color: white;
+ }
+.calactive a {
+   color: white;
+ }
+.calnotactive a {
+   color: black;
+   text-decoration: none;
+ }
+.caltoday {
+   color: black;
+   border:1px dotted #304030;
+ }
+.caltoday a {
+   color: black;
+   font-weight: bold;
+ }
+
+label.button {
+  display: block;
+  width: 100%;
+}
+
+a:active.smallfeedlink,
+a:visited.smallfeedlink,
+a:link.smallfeedlink {
+  font-size: 6pt;
+  background: #ff6800;
+  font-weight: bold;
+  color: white;
+  border-top: 1px solid white;
+  border-left: 1px solid white;
+  border-right: 1px solid darkred;
+  border-bottom: 1px solid darkred;
+  padding: 0px;
+  padding-left: 2px;
+  padding-right: 2px;
+  margin: 0px;
+  text-decoration: none;
+}
+
+#error {
+  color: red;
+  font-weight: bold;
+  background-color: white;
+  padding: 3px 0px;
+  margin: 2px;
+}
+
+div.page-container {
+  text-align: left;
+  padding: 6px;
+  margin: auto;
+  padding-left: 180px;
+  padding-right: 220px;
+}
+
+/* XXX should be renamed as post-container */
+div.message {
+  border-top: 1px solid #303030;
+  margin-bottom: 4px;
+}
+
+div.pubdate {
+  font-size: 90%;
+  color: black;
+  margin: 3px;
+  margin-left: 20px;
+  margin-right: 20px;
+  display: block;
+  position: relative;
+  top: 0px;
+  padding: 3px;
+}
+
+/* XXX: shouldn't be a table there */
+div.pubdate table td {
+  font-size: 90%
+}
+
+span.modified-date {
+  font-size: 90%;
+}
+
+.state-mark {
+  padding-left: 6px;
+  font-weight: normal;
+}
+
+.modified-date {
+  color: black;
+  font-weight: normal;
+}
+
+span.modified-date:before {
+  content: "[ "
+}
+
+span.modified-date:after {
+  content: " ]"
+}
+
+span.replacing {
+  margin: 0;
+  padding: 2px;
+  color: red;
+  border: 1px solid red;
+}
+
+div.post-title {
+  padding: 6px;
+  text-align: left;
+  font-weight: bold;
+  color: #406090;
+  position: relative;
+  font-size: 14pt;
+}
+
+div.post-content {
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+}
+
+div.post-actions {
+  font-size: 90%;
+  margin: 3px;
+  margin-left: 20px;
+  margin-right: 20px;
+  padding: 3px;
+  text-align: right;
+}
+
+div.post-actions a
+{
+  font-size: 90%;
+  margin-left: 3px;
+  padding-left: 2px;
+  padding-right: 2px;
+  padding-bottom: 1px;
+  padding-top: 1px;
+}
+
+div.post-actions a:hover
+{
+}
+/* XXX: Should be renamed */
+
+div.posts-title {
+  font-size: smaller;
+  text-align: right;
+  margin-bottom: 6px;
+}
+
+div.posts-title a {
+  font-size: 90%;
+  text-decoration: none;
+}
+
+div.trackbacks-ctr {
+  font-size: 80%;
+  border: none;
+  display: block;
+  text-align: left;
+  padding: 4px;
+}
+
+div.tb-url {
+  font-size: 90%;
+} 
+
+/* Woohoo */
+div.tb-url .url {
+  font-size: 100%;
+}
+
+div.pingback-title {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: 140%;
+  font-weight: bold;
+}
+
+div.pingback-contents {
+  background-color: #E5E5EE;
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  margin-left: 24px;
+}
+
+div.referrals-ctr {
+  border: none;
+  display: block;
+  text-align: left;
+  padding: 4px;
+}
+
+div.comments-ctr {
+  border: none;
+  display: block;
+  text-align: left;
+  padding: 4px;
+}
+
+/* Single comment container */
+
+div.comment-ctr {
+}
+
+/* The comment message container */
+
+div.comment-msg-ctr {
+  font-size: 90%;
+  background-color: white;
+  padding: 6px;
+  margin: 6px;
+  border: 1px solid #E5E5EE;
+  margin-top: 30px;
+  margin-bottom: 5px;
+  margin-left: 0px;
+  display: block;
+}
+
+/* Comment actions - delete etc */
+div.comment-actions-ctr {
+  text-align: right;
+  margin-top: 4px;
+  margin-right: 3px;
+}
+
+/* Deprecated. See Bug#9292 */
+
+div.comment {
+  margin-top: 4px;
+  margin-right: 3px;
+  text-align: right;
+}
+
+div.comments-ctr a.button {
+  text-decoration: underline;
+  text-align: right;
+}
+
+div.comment-actions-ctr a {
+  text-decoration: underline;
+  text-align: right;
+}
+
+div.comment-actions a:hover {
+}
+
+div.comment-pubdate {
+  font-size: 90%;
+  background-color: #B0C4DE;
+  color: black;
+  margin: 3px;
+  border: 1px solid #E5E5EE;
+  margin-left: 20px;
+  margin-right: 20px;
+  display: block;
+  position: relative;
+  top: -20px;
+  padding: 3px;
+}
+
+/* Remove the ugly "help" text */
+
+div.note {
+  display: none;
+  font-size: 90%;
+}
+
+#syndicate-block ul {
+  margin: 0;
+  padding: 0;
+}
+ 
+#syndicate-block ul li {
+  padding-left: 0px;
+  margin-left: 0px;
+  list-style-type: none;
+}
+
+#recent-block ul {
+  margin: 0;
+  padding: 0;
+}
+
+#recent-block ul li
+{
+  list-style-type: none;
+}
+
+/* XXX: Tmp fix - see bug 9294 */
+div.block ul.last-messages {
+  margin: 0;
+  padding: 0;
+}
+
+div.block ul.last-messages {
+  margin: 0;
+  padding: 0;
+}
+
+table#channels {
+  border: 2px solid #191970;
+  margin-bottom: 10px;
+  background-color: #E5E5EE;
+  width: 100%;
+}
+
+table#channels th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#channels td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#channel-posts {
+  border: 2px solid #191970;
+  margin-bottom: 10px;
+  background-color: #E5E5EE;
+  width: 100%;
+}
+
+table#channel-posts th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#channel-posts td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#channel-posts td#content {
+  background-color: white;
+}
+
+table#channel-posts a {
+  margin-right: 12px;
+}
+
+table#upstreamings {
+  border: 2px solid #191970;
+  margin-bottom: 10px;
+  background-color: #E5E5EE;
+  width: 100%;
+}
+
+table#upstreamings th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#upstreamings td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#community {
+  border: 2px solid #191970;
+  margin-bottom: 10px;
+  background-color: #E5E5EE;
+  width: 100%;
+}
+
+table#community th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#community td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#members {
+  border: 2px solid #191970;
+  margin-bottom: 10px;
+  background-color: #E5E5EE;
+  width: 100%;
+}
+
+table#members th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#members td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#categories {
+  border: 2px solid #191970;
+  margin-bottom: 10px;
+  background-color: #E5E5EE;
+  width: 100%;
+}
+
+table#categories th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#categories td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+div#subtitle {
+  font-weight: bold;
+  font-style: italic; 
+  color: #191970;
+}
+
+table#moblogs {
+  border: 2px solid #191970;
+  margin-bottom: 10px;
+  background-color: #E5E5EE;
+  width: 100%;
+}
+
+table#moblogs th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#moblogs td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+#powered_by
+{
+  color: white;
+  text-align: center;
+  font-size: x-small;
+}
+
+div.disclaimer
+{
+  color: white;
+  text-align: center;
+  font-size: x-small;
+}
+
+div.copy
+{
+  color: white;
+  text-align: center;
+  font-size: x-small;
+}
+
+/* Tabbed page - begin */
+.tab_page
+{
+    font-size: 10pt;
+    border-left: solid 1px black;
+    border-right: solid 1px black;
+    border-bottom: solid 1px black;
+    background-color: white;
+    padding-left: 10px;
+    padding-right: 10px;
+    color: black;
+    width: 100%;
+}
+.page_tab
+{
+    font-size: 10pt;
+    background-color: #eaeaea;
+    text-align: left;
+    white-space: nowrap;
+    padding: 2px;
+    border: 1px solid black;
+}
+.page_tab_empty 
+{
+    white-space: nowrap;
+    border-bottom:1px solid black;
+    border-left:1px solid black;
+    border-right:0;
+    border-top:0;
+}
+.page_tab_selected
+{
+    white-space: nowrap;
+    font-size: 10pt;
+    background-color: white;
+    text-align: left;
+    padding: 2px;
+    border-top:1px solid black;
+    border-left:1px solid black;
+    border-right:1px solid black;
+    border-bottom:0
+}
+.page_tab a
+{
+  color: black;
+  text-decoration: none;
+}
+.page_tab a:hover
+{
+  color: black;
+  text-decoration: underline;
+}
+/* Tabbed page - end */

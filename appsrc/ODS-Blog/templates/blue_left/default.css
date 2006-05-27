@@ -1,0 +1,804 @@
+body {
+  font-family: geneva, arial, helvetica, sans-serif;
+  margin:20px 20px 20px 20px;
+  text-align: center;
+  background:#FFF;
+}
+
+a     { color: #003366; }
+a:link    { color: #003366;  }
+a:visited { color: #003366; }
+a:active  { color: #999999;  }
+a:hover   { color: #3399CC;  }
+
+
+a img {
+ border: none;
+}
+
+h1 {
+  font-size: 185%;
+}
+
+h2 {
+  font-size: 110%;
+  font-style: italic; 
+}
+
+form {
+  display: inline;
+  width: 0px;
+  padding: 0px;
+  margin: 0px;
+}
+
+#page {
+  width: 750px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+  text-align: center; /* Takes care of horizontal alignment in Internet Explorer */
+  position: relative; /* Needed for Safari */
+        margin: auto; /* Takes care of horizontal alignment in standards compliant browsers */
+}
+
+#header {
+  width: 750px;
+  text-align: center;
+  position: relative; /* Needed for Safari */
+  margin: auto; /* Takes care of horizontal alignment in standards compliant browsers */
+  margin-bottom: 20px;
+}
+
+#header img {
+  position: relative;
+  top: 10px;
+  margin: 0px;
+  padding: 0px;
+}
+
+#header h1, h2 {
+  position: relative;
+  top: 0px;
+  margin: 0px;
+  padding: 0px;
+  color: black;
+}
+
+#navbartop {
+  position: relative;
+  left: 15px;
+}
+
+#navbartop * {
+  text-align: left;
+  color: black;
+  margin: 0px;
+  padding-top: 1px;
+  padding-bottom: 1px;
+  width: 100%;
+}
+
+.button {
+  border: none;
+  padding: 2px 2px;
+  margin: 3px 0px;
+  font-weight: normal;
+  cursor: pointer;
+  color: blue;
+  background-color: transparent;
+  font-family: arial, helvetica, sans-serif;
+  text-decoration: none;
+}
+
+.button:hover {
+  color: #003366;
+}
+
+.real_button
+{
+  font-family: arial, helvetica, sans-serif;
+  font-size: 9px;
+  border: 1px solid #AAAAAA;
+  background-color: #CCD4E0;
+}
+
+
+input {  
+  border: 1px solid #191970;
+  color: black;
+  background-color: white;
+  align: left;
+}
+
+select {
+  border: 1px solid #191970;
+  color: black;
+  background-color: white;
+}
+
+textarea {
+  border: 1px solid #191970;
+  color: black;
+  background-color: white;
+}
+
+div.block {
+  text-align: left;
+}
+
+div.block div {
+  margin: 3px;
+}
+
+div.block div#welcome {
+  color: white;
+  background-color:#3399cc;
+  border-bottom:2px solid #EDF5F9;
+  padding-bottom:10px;
+  text-align: left;
+  font-weight: normal;
+  padding: 2px;
+  font-size: x-small;
+  voice-family: "\"}\"", inherit;
+  font-size: small;
+}
+
+
+div.block div#title {
+  color:white;
+  background-color:#3399cc;
+  border-bottom:2px solid #EDF5F9;
+  padding-bottom:10px;
+  text-align: left;
+  font-weight: normal;
+  padding: 2px;
+  font-size: x-small;
+  voice-family: "\"}\"", inherit;
+  font-size: small;
+}
+
+input.button {
+  height: 17px;
+}
+
+div.nav-column {
+  width: 128px;
+  float: left;
+  overflow: hidden;
+  margin-left: 12px;
+}
+
+div.content-column {
+  width: auto;
+  padding 6px;
+  padding-left: 0px;
+  padding-right: 250px;
+  text-align: center;
+}
+
+#selector div {
+  font-size: x-small;
+  voice-family: "\"}\"", inherit;
+  /* All below here hidden from IE 5 PC */
+  font-size: small; 
+}
+
+#selector td{
+  font-size: x-small;
+  voice-family: "\"}\"", inherit;  
+  /* All below here hidden from IE 5 PC */
+}
+
+#selector .button {
+  text-decoration: none;
+  margin: 0px;
+  padding-left: 5px;
+  text-align: left;
+  margin: 0px;
+  padding-left: 0px;
+  list-style-type: none;
+  padding-bottom:1px;  
+  voice-family: "\"}\"", inherit;
+  /* All below here hidden from IE 5 PC */
+  font-size: x-small; 
+}
+
+#separated * {
+  display: block;
+  padding: 0px;
+  margin: 0px;
+  border-bottom: 1px solid #191970;
+}
+
+#selector .button#inline {
+  display: inline;
+}
+
+#inline {
+  display: inline;
+}
+
+div.info-column {
+  background-color:#EDF5F9;
+  float: left;
+  overflow: hidden;
+  margin-right: 12px;
+  margin-left: 32px;
+  width:180px; 
+  voice-family:inherit;
+}
+
+#calendar {
+  font-size: 50%;
+  text-align: center;
+  margin: auto;
+}
+#calendar td, #calendar th { padding: 1px;}
+.calactive {
+   background: url("/weblog/public/images/blog-active.png");
+   background-repeat: no-repeat;
+   background-position: center;
+   color: white;
+ }
+.calactive a {
+   color: white;
+ }
+.calnotactive a {
+   text-decoration: none;
+ }
+.caltoday {
+   background: url("/weblog/public/images/blog-today.png");
+   background-repeat: no-repeat;
+   background-position: center;
+   color: white;
+ }
+.caltoday a {
+   color: white;
+ }
+.calselected {
+   color: white;
+   border:1px solid #000000;
+ }
+.calselected a {
+   color: white;
+ }
+.tb-url, .tb-url a {
+  font-family:georgia, verdana, arial, sans-serif;
+  color:#666;
+  font-size:1em;
+  font-weight:normal;
+  background:inherit;
+  width: 100%;
+}
+.tb-url .url {
+  color: #065;
+  background: inherit;
+  position: absolute;
+  width: 100%;
+}
+
+label.button {
+  text-decoration: none;
+  margin: 0px;
+  padding-left: 5px;
+  text-align: left;
+  margin: 0px;
+  padding-left: 0px;
+  list-style-type: none;
+  padding-bottom:1px;  
+  voice-family: "\"}\"", inherit;
+  /* All below here hidden from IE 5 PC */
+  font-size: x-small; 
+}
+
+.smallfeedlink {
+  font-size: 6pt;
+  background: #ff6800;
+  font-weight: bold;
+  color: white;
+  border-top: 1px solid white;
+  border-left: 1px solid white;
+  border-right: 1px solid darkred;
+  border-bottom: 1px solid darkred;
+  padding: 0px;
+  padding-left: 2px;
+  padding-right: 2px;
+  margin: 0px;
+  text-decoration: none;
+}
+
+#error {
+  color: red;
+  font-weight: bold;
+  background-color: white;
+  padding 3px 0px;
+  margin 2px;
+  text-align: center;
+  voice-family: "\"}\"", inherit;
+  /* All below here hidden from IE 5 PC */
+  font-size: x-small; 
+}
+
+div.page-container {
+  width: 360px;
+  float: left;
+  overflow: hidden;
+  text-align: left;
+  voice-family: "\"}\"", inherit;
+  /* All below here hidden from IE 5 PC */
+  font-size: small; 
+}
+
+div.page-container2 {
+  width: 510px;
+  float: left;
+  text-align: left;
+  voice-family: "\"}\"", inherit;
+  /* All below here hidden from IE 5 PC */
+  font-size: small; 
+}
+
+div.message {
+  background:#FFF;
+  border: 1px dotted gray;
+  font-weight:normal;
+  padding:5px;
+  font-size: x-small;
+  voice-family: "\"}\"", inherit;
+  /* All below here hidden from IE 5 PC */
+  font-size: small; 
+}
+
+.state-mark {
+  padding-left: 6px;
+  color: darkred;
+  font-weight: normal;
+}
+
+.modified-date {
+  color: darkred;
+  font-weight: bold;
+}
+
+span.modified-date:before {
+  content: "[ "
+}
+
+span.modified-date:after {
+  content: " ]"
+}
+
+span.replacing {
+  margin: 0;
+  padding: 2px;
+  color: red;
+  border: 1px solid red;
+}
+
+div.pubdate {
+  color:gray;
+  voice-family: "\"}\"", inherit;
+  /* All below here hidden from IE 5 PC */
+  font-size: x-small; 
+}
+
+div.post-title {
+  background-color: white;
+  border: none;
+  display: block;
+  text-align: left;
+  font-weight: bold;
+  font-size: 110%;
+}
+
+div.post-content {
+  background-color: white;
+  border: none;
+  display: block;
+  text-align: left;
+  font-size: 100%;
+}
+
+div.post-actions {
+  background-color: white;
+  border: none;
+  margin-left: 20px;
+  margin-right: 20px;
+  text-align: left;
+  voice-family: "\"}\"", inherit;
+  /* All below here hidden from IE 5 PC */
+  font-size: x-small; 
+}
+
+div.posts-title {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  font-size: 110%;
+  font-weight: bold;
+}
+
+div.posts-info {
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+div.trackback-title {
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: 110%;
+  font-weight: bold;
+}
+
+div.trackback-contents {
+  background-color: white;
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  margin-left: 24px;
+}
+
+div.pingback-title {
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: 110%;
+  font-weight: bold;
+}
+
+div.pingback-contents {
+  background-color: white;
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  margin-left: 24px;
+}
+
+div.referrals-title {
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: 110%;
+  font-weight: bold;
+}
+
+div.referrals-contents {
+  background-color: white;
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 0px;
+  text-align: left;
+  margin-left: 0px;
+}
+
+div.comments-title {
+  margin-left: 0px;
+  margin-right: 0px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  font-size: 100%;
+  font-weight: bold;
+}
+
+div.comments-contents {
+  background-color: white;
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  margin-left: 5px;
+}
+
+div.comment-message {
+  font-size: 90%;
+  background-color: white;
+  padding: 6px;
+  margin: 6px;
+  border: none;
+  margin-top: 30px;
+  margin-bottom: 5px;
+  margin-left: 0px;
+  display: block;
+}
+
+div.comment-pubdate {
+  font-size: 100%;
+  background-color: white;
+  color: black;
+  margin: 3px;
+  border: none;
+  margin-left: 20px;
+  margin-right: 20px;
+  display: block;
+  position: relative;
+  top: -30px;
+  padding: 3px;
+}
+
+div.comment-actions {
+  font-size: 90%;
+  background-color: white;
+  margin: 3px;
+  border: none;
+  margin-left: 20px;
+  margin-right: 20px;
+  padding: 3px;
+  text-align: left;
+}
+
+div.comment-content {
+  background-color: white;
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  font-size: 80%;
+  position: relative;
+  top: -30px;
+  margin-bottom: -5 px;
+  margin-left: 20px;
+}
+
+div.comment-title {
+  background-color: white;
+  margin: 3px;
+  border: none;
+  margin-left: 20px;
+  margin-right: 20px;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  font-weight: bold;
+  font-style: italic;
+  font-size: 140%;
+  position: relative;
+  top: -30px;
+}
+
+table#channels {
+  border: 1px solid #191970;
+  margin-bottom: 10px;
+  background-color: white;
+  width: 100%;
+}
+
+table#channels th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#channels td {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+table#channel-posts {
+  border: 1px solid #191970;
+  margin-bottom: 10px;
+  background-color: white;
+  width: 100%;
+}
+
+table#channel-posts th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#channel-posts td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#channel-posts td#content {
+  background-color: white;
+}
+
+table#channel-posts a {
+  margin-right: 12px;
+}
+
+table#upstreamings {
+  border: 1px solid #191970;
+  margin-bottom: 10px;
+  background-color: white;
+  width: 97%;
+}
+
+table#upstreamings th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#upstreamings td {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+table#community {
+  border: 2px solid #191970;
+  margin-bottom: 10px;
+  background-color: white;
+  width: 100%;
+}
+
+table#community th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#community td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#members {
+  border: 1px solid #191970;
+  margin-bottom: 10px;
+  background-color: white;
+  width: 100%;
+}
+
+table#members th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#members td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#categories {
+  border: 1px solid #191970;
+  background-color: white;
+  width: 100%;
+}
+
+table#categories th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#categories td {
+}
+
+div#subtitle {
+  font-weight: bold;
+  font-style: italic; 
+  color: #191970;
+}
+
+table#moblogs {
+  border: 1px solid #191970;
+  margin-bottom: 10px;
+  background-color: white;
+  width: 100%;
+}
+
+table#moblogs th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#moblogs td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+#text {
+  width: 510px;
+  text-align: left;
+  position: relative; /* Needed for Safari */
+  margin: auto; /* Takes care of horizontal alignment in standards compliant browsers */
+  voice-family: "\"}\"", inherit;
+  font-size: x-small;
+}
+
+#text table{
+  background-color: white;
+  width: 99%;
+}
+
+#text h1, h2 {
+  position: relative;
+  top: 0px;
+  margin: 0px;
+  padding: 0px;
+  color: black;
+}
+
+#text input {
+  padding: 0px;
+  margin: 0px;
+  text-align: left;
+  color: #003366;;
+  font-family: arial, helvetica, sans-serif;
+  voice-family: "\"}\"", inherit;
+  font-size: x-small;
+}
+
+div.form1 {
+  width: 510px;
+  text-align: left;
+  position: relative; /* Needed for Safari */
+  margin: auto; /* Takes care of horizontal alignment in standards compliant browsers */
+  voice-family: "\"}\"", inherit;
+  font-size: x-small;
+}
+
+.postcomment table {
+  margin-bottom: 1em;
+ }
+.postcomment th {
+  text-align: right;
+ }
+.postcomment .note {
+  padding: 0.3em;
+  font-size: 1em;
+  font-family: Tahoma, sans-serif;
+}
+
+/* Tabbed page - begin */
+.tab_page
+{
+    font-size: 10pt;
+    border-left: solid 1px black;
+    border-right: solid 1px black;
+    border-bottom: solid 1px black;
+    background-color: white;
+    padding-left: 10px;
+    padding-right: 10px;
+    color: black;
+    width: 100%;
+}
+.page_tab
+{
+    font-size: 10pt;
+    background-color: #eaeaea;
+    text-align: left;
+    white-space: nowrap;
+    padding: 2px;
+    border: 1px solid black;
+}
+.page_tab_empty 
+{
+    white-space: nowrap;
+    border-bottom:1px solid black;
+    border-left:1px solid black;
+    border-right:0;
+    border-top:0;
+}
+.page_tab_selected
+{
+    white-space: nowrap;
+    font-size: 10pt;
+    background-color: white;
+    text-align: left;
+    padding: 2px;
+    border-top:1px solid black;
+    border-left:1px solid black;
+    border-right:1px solid black;
+    border-bottom:0
+}
+.page_tab a
+{
+  color: black;
+  text-decoration: none;
+}
+.page_tab a:hover
+{
+  color: black;
+  text-decoration: underline;
+}
+/* Tabbed page - end */

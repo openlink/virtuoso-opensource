@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="/DAV/VAD/blog2/widgets/main.xsl"
+        name="home"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <vm:page>
+    <vm:header id="header">
+      <title><vm:blog-title /></title>
+      <vm:disco-rss-link/>
+      <vm:disco-pingback-link/>
+      <vm:disco-comments-link/>
+      <vm:disco-foaf-link/>
+      <vm:disco-rsd-link/>
+      <vm:disco-opml-link/>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:meta-keywords/>
+      <vm:custom-style />
+    </vm:header>
+    <vm:body>
+      <div class="blog-header">
+        <h1>
+          <vm:blog-title url="index.vspx"/>
+        </h1>
+        <h2 class="blog-about">
+          <vm:blog-about/>
+        </h2>
+        <div id="login-box">
+          <vm:login-info format_string="%s"/>
+        </div>
+        <h3 class="welcome-message">
+          <vm:welcome-message show-once="no"/>
+        </h3>
+        <div id="blog-view-switch">
+          <vm:weblog-button/>
+          <vm:linkblog-button/>
+          <vm:summary-button/>
+          <vm:archive-url title="Archive"/>
+          <vm:settings-link title="Settings"/>
+          <vm:new-post-link title="New Post"/>
+	  <span id="search-combo">
+            <vm:advanced-search-link title="Search"/>
+            <vm:search/>
+          </span>
+        </div>
+      </div> <!-- .blog-header -->
+      <div id="navbartop">
+        <div>Entries: [ <vm:entry-list/> ]</div>
+      </div>
+      <div id="error">
+        <v:error-summary/>
+      </div>
+      <div class="archive-page-container">
+        <vm:archive/>
+        <vm:posts mode="archive" />
+        <div id="disclaimer">
+          <vm:disclaimer/>
+        </div>
+        <div id="copyright">
+          <vm:copyright/>
+        </div>
+      </div>
+    </vm:body>
+  </vm:page>
+</v:page>

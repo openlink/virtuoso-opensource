@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="/DAV/VAD/blog2/widgets/main.xsl"
+        name="templates"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <vm:page>
+    <vm:header>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:meta-keywords/>
+      <vm:page-title title="Moblog Messages"/>
+      <vm:style url="/weblog/public/css/default.css"/>
+    </vm:header>
+    <vm:body>
+      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
+        <tr>
+          <td colspan="3">
+		<table id="header" cellpadding="0" cellspacing="0">
+		    <tr>
+			<td>
+			    <h1><vm:blog-title url="index.vspx" /></h1>
+			</td>
+			<td class="right">
+			    <vm:login-info format_string="%s"/>
+			</td>
+		    </tr>
+		    <tr>
+			<td>
+			    <h2>
+				<vm:welcome-message show-once="no"/>
+			    </h2>
+
+			</td>
+			<td class="right">
+			    <vm:blog-view-switch/>
+			    | <vm:archive-url />
+			    <vm:settings-link title="| Settings "/>
+			    <vm:new-post-link title="| New Post" />
+			    <vm:if test="login">
+		 	    | <vm:wa-link />
+			    </vm:if>
+			    | <vm:advanced-search-link title="Search"/>
+			    <vm:search/>
+			</td>
+		    </tr>
+		</table>
+            <div id="navbartop">
+              <div> </div>
+            </div>
+            <div id="error">
+              <v:error-summary />
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="box" id="left">
+            <div class="box">
+              <div class="roll">
+                <vm:home-url/>
+              </div>
+              <div class="roll">
+                <vm:cmds-menu/>
+              </div>
+            </div>
+          </td>
+          <td id="texttd">
+	      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+		  <tr valign="top">
+		      <td>
+			  <table cellpadding="10" cellspacing="0" border="0" width="100%">
+			      <tr>
+				  <td>
+				      <table cellpadding="0" cellspacing="0" border="0">
+					  <colgroup>
+					      <col/>
+					      <col/>
+					      <col/>
+					  </colgroup>
+					  <tr>
+					      <td class="page_tab" align="center" nowrap="1">
+						  <v:url name="b_url16" value="New Post" url="index.vspx?page=edit_post" xhtml_class="button"/>
+					      </td>
+					      <td class="page_tab_selected" align="center" nowrap="1">Moblog Messages
+					      </td>
+					      <td class="page_tab_empty" align="center" width="100%">
+						  <table cellpadding="0" cellspacing="0">
+						      <tr>
+							  <td width="100%" >
+							  </td>
+						      </tr>
+						  </table>
+					      </td>
+					  </tr>
+				      </table>
+				      <table class="tab_page">
+					  <tr>
+					      <td valign="top">
+						  <vm:moblog-msg/>
+					      </td>
+					  </tr>
+				      </table>
+				  </td>
+			      </tr>
+			  </table>
+		      </td>
+		  </tr>
+	      </table>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="3">
+            <div id="powered"><vm:powered-by/></div>
+            <div id="copy"><vm:copyright/></div>
+            <div id="disclaimer"><vm:disclaimer/></div>
+          </td>
+        </tr>
+      </table>
+    </vm:body>
+  </vm:page>
+</v:page>

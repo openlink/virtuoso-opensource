@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="/DAV/VAD/blog2/widgets/main.xsl"
+        name="about"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <vm:page id="">
+    <vm:header>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:meta-keywords/>
+      <vm:page-title title="OpenLink Weblog Platform"/>
+      <vm:style url="/weblog/public/css/default.css"/>
+    </vm:header>
+    <vm:body>
+      <table id="pagecontainer" cellspacing="0" cellpadding="0" width="100%">
+        <tr>
+          <td colspan="2">
+            <div id="header">
+              <h1><vm:blog-title url="index.vspx"/></h1>
+              <h2><vm:welcome-message show-once="no"/></h2>
+            </div>
+            <div class="error_msg">
+              <v:error-summary />
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="box" id="left">
+            <div class="box">
+              <div class="roll">
+                <vm:photo width="140"/>
+              </div>
+              <div>
+                <vm:audio/>
+              </div>
+            </div>
+          </td>
+          <td id="texttd">
+            <h2>Weblog Owner Information</h2>
+            <div>
+              <?vsp
+                if (self.owner_name is not null)
+                {
+                  http('<b>User Name: </b>');
+                  http(self.owner_name);
+                }
+              ?>
+            </div>
+            <div>
+              <vm:if test="name">
+                <?vsp
+                  declare f_name, l_name varchar;
+                  f_name := USER_GET_OPTION(self.owner_name, 'FIRST_NAME');
+                  l_name := USER_GET_OPTION(self.owner_name, 'LAST_NAME');
+                  if ((f_name and f_name <> '') or (l_name and l_name <> ''))
+                  {
+                    http('<b>Full Name: </b>');
+                    if (f_name and f_name <> '')
+                      http(f_name);
+                    if (l_name and l_name <> '')
+                    {
+                      if (f_name and f_name <> '')
+                        http(' ');
+                      http(l_name);
+                    }
+                  }
+                ?>
+              </vm:if>
+            </div>
+            <vm:if test="loc">
+              <div>
+                <?vsp
+                  declare a1, a2, s, t, c, z varchar;
+                  a1 := USER_GET_OPTION(self.owner_name, 'ADDR1');
+                  a2 := USER_GET_OPTION(self.owner_name, 'ADDR2');
+                  s := USER_GET_OPTION(self.owner_name, 'STATE');
+                  t := USER_GET_OPTION(self.owner_name, 'CITY');
+                  c := USER_GET_OPTION(self.owner_name, 'COUNTRY');
+                  z := USER_GET_OPTION(self.owner_name, 'ZIP');
+                  if ((c and c <> '' and c <> 'Not Specified') or (t and t <> ''))
+                  {
+                    http('<b>Home Address:</b>');
+                    http('<br/>');
+                    if (a1 and a1 <> '')
+                    {
+                      http(a1);
+                      http('<br/>');
+                    }
+                    if (a2 and a2 <> '')
+                    {
+                      http(a2);
+                      http('<br/>');
+                    }
+                    if (s and s <> '')
+                    {
+                      http(s);
+                      http('<br/>');
+                    }
+                    if (t and t <> '')
+                    {
+                      http(t);
+                      http('<br/>');
+                    }
+                    if (c and c <> '' and c <> 'Not Specified')
+                    {
+                      http(c);
+                      http('<br/>');
+                    }
+                    if (z and z <> '')
+                    {
+                      http(z);
+                    }
+                  }
+                ?>
+              </div>
+            </vm:if>
+            <div>
+              <?vsp
+                declare o, j varchar;
+                o := USER_GET_OPTION(self.owner_name, 'ORGANIZATION');
+                j := USER_GET_OPTION(self.owner_name, 'JOB');
+                if ((j and j <> '') or (o and o <>''))
+                {
+                  http('<b>Work Information:</b>');
+                  http('<br/>');
+                  if (o and o <> '')
+                  {
+                    http(o);
+                    http('<br/>');
+                  }
+                  if (j and j <> '')
+                    http(j);
+                }
+              ?>
+            </div>
+            <vm:if test="bio">
+              <div>
+                <?vsp
+                  declare b varchar;
+                  b := get_keyword('Biography', self.opts);
+                  if (b and b <> '')
+                  {
+                    http('<b>Biography:</b>');
+                    http('<br/>');
+                    http(b);
+                    http('<br/>');
+                  }
+                ?>
+              </div>
+            </vm:if>
+            <vm:if test="int">
+              <div>
+                <?vsp
+                  declare i, b, m, m2 varchar;
+                  i := get_keyword('Interests', self.opts, '');
+                  b := get_keyword('Books', self.opts, '');
+                  m := get_keyword('Music', self.opts, '');
+                  m2 := get_keyword('Movies', self.opts, '');
+                  if (i and i <> '')
+                  {
+                    http('<b>Interests: </b>');http(i);http('<br/>');
+                  }
+                  if (b and i <> '')
+                  {  http('<b>Favourite Books: </b>');http(b);http('<br/>'); }
+                  if (m and m <> '')
+                  {  http('<b>Favourite Music: </b>');http(m);http('<br/>'); }
+                  if (m2 and m2 <> '')
+                  {  http('<b>Favourite Movies: </b>');http(m2);http('<br/>'); }
+                ?>
+              </div>
+            </vm:if>
+            <div>
+              <vm:e-mail/>
+            </div>
+            <div>
+              <vm:amazon-wishlist/>
+            </div>
+            <div>
+              <vm:home-url/>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2">
+            <div id="powered"><vm:powered-by/></div>
+            <div id="copy"><vm:copyright/></div>
+            <div id="disclaimer"><vm:disclaimer/></div>
+          </td>
+        </tr>
+      </table>
+    </vm:body>
+  </vm:page>
+</v:page>

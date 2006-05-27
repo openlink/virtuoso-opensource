@@ -1,0 +1,700 @@
+/*
+darkest: #191970;
+dark: #6495ED;
+semidark: #B0C4DE;
+light: #D5D5DE;
+red: #FF0000;
+semired: #FF6464;
+gray: gray;
+lightred: #FFB6B0;
+lightest: #E5E5EE;
+brown: #CC0000;
+*/
+
+body {
+  font-size:13px;
+  background: #EBD194 url(/weblog/public/images/sLBG.jpg) top right repeat-y;
+  margin:0px 0px 0px 0px;
+}
+A {
+  text-decoration: none;
+  font-weight:bold;
+  } 
+A:link {
+  color: #680104;
+  text-decoration: underline;
+  font-weight:bold;
+  } 
+A:visited {
+  color: #721D5C; text-decoration: underline;
+  } 
+A:active {
+  color: #5E2EA5;
+  } 
+A:hover {
+  text-decoration: underline;
+  color: #000;
+  }
+
+h1 {
+  margin-top: 10px; margin-bottom: 5px; margin-right: 3em;
+  font-size: 185%;
+}
+
+h2 {
+  margin-top: 10px; margin-bottom: 5px; margin-right: 5em;
+  font-size: 125%;
+  font-style: italic; 
+}
+
+form {
+  display: inline;
+  width: 0px;
+  padding: 0px;
+  margin: 0px;
+}
+
+#header {
+  position: relative;
+  margin: 0px;
+  text-align: right;
+  width: 100%;
+  height: 65px;
+  right: 100px;
+}
+
+#header img {
+  position: relative;
+  top: 10px;
+  right: 120px;
+  float: right;
+  margin: 0px;
+  padding: 1px;
+}
+
+#header h1 {
+  position: relative;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  padding-top: 15px;
+  color: black;
+  right: 60px;
+}
+
+#header h2 {
+  position: relative;
+  right: 60px;
+  color: black;
+}
+
+#navbartop {
+  position: relative;
+  left: 15px;
+}
+
+#navbartop * {
+  text-align: left;
+  color: black;
+  margin: 0px;
+  padding-top: 1px;
+  padding-bottom: 1px;
+  width: 100%;
+}
+
+.button {
+  font-family: Georgia, Times New Roman, Times, serif; 
+  border: none;
+  padding: 2px 2px;
+  color: blue;
+  font-weight: normal;
+  cursor: pointer;
+  background-color: transparent;
+  text-decoration: none;
+}
+
+.real_button
+{
+  background-color: #6666cc;
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+input {
+  border: 1px solid #191970;
+  color: black;
+}
+
+select {
+  border: 1px solid #191970;
+  color: black;
+}
+
+textarea {
+  border: 1px solid #191970;
+  color: black;
+}
+
+div.block {
+  border: none;
+  margin: 5px 5px;
+  padding: 5px;
+  color: black;
+  text-align: left;
+  font-weight: bold;
+}
+
+div.block div {
+  margin: 3px;
+}
+
+div.block div#welcome {
+  margin-top: 10px;
+  font-size: 120%;
+  border: none;
+  padding: 0px;
+  text-align: left;
+  font-weight: bold;
+}
+
+
+div.block div#title {
+  margin-top: 10px;
+  font-size: 120%;
+  border: none;
+  padding: 0px;
+  text-align: left;
+  font-weight: bold;
+}
+
+input.button {
+  height: 17px;
+}
+
+div.nav-column {
+  position: absolute;
+  left: 0px;
+  width: 160px;
+  padding 6px;
+}
+
+div.content-column {
+  width: auto;
+  padding 6px;
+  padding-left: 0px;
+  padding-right: 250px;
+  text-align: center;
+}
+
+#selector div {
+  width: 100%;
+  padding: 0px;
+  margin: 0px;
+  display: block;
+}
+
+#selector .button {
+  display: block;
+  padding: 0px;
+  margin: 0px;
+}
+
+#separated * {
+  display: block;
+  padding: 0px;
+  margin: 0px;
+  border-bottom: 1px solid #191970;
+}
+
+#selector .button#inline {
+  display: inline;
+}
+
+#inline {
+  display: inline;
+}
+
+div.info-column {
+  position: absolute;
+  right: 0px;
+  width: 200px;
+  top: 5px;
+  padding 0px;
+}
+
+#calendar {
+  font-size: 80%;
+  text-align: center;
+  margin: auto;
+}
+#calendar td, #calendar th { padding: 1px;}
+.calactive {
+   background: url("/weblog/public/images/blog-active.png");
+   background-repeat: no-repeat;
+   background-position: center;
+   color: white;
+ }
+.calactive a {
+   color: white;
+ }
+.calnotactive a {
+   text-decoration: none;
+ }
+.caltoday {
+   background: url("/weblog/public/images/blog-today.png");
+   background-repeat: no-repeat;
+   background-position: center;
+   color: white;
+ }
+.caltoday a {
+   color: white;
+ }
+.calselected {
+   color: white;
+   border:1px solid #000000;
+ }
+.calselected a {
+   color: white;
+ }
+label.button {
+  display: block;
+  width: 100%;
+}
+
+.smallfeedlink {
+  font-size: 6pt;
+  background: #ff6800;
+  font-weight: bold;
+  border-top: 1px solid white;
+  border-left: 1px solid white;
+  border-right: 1px solid darkred;
+  border-bottom: 1px solid darkred;
+  padding: 0px;
+  padding-left: 2px;
+  padding-right: 2px;
+  margin: 0px;
+  text-decoration: none;
+}
+
+#error {
+  color: red;
+  font-weight: bold;
+  background-color: white;
+  padding 3px 0px;
+  margin 2px;
+  text-align: center;
+}
+
+div.page-container {
+  position: absolute;
+  left: 0px;
+  padding-left: 10px;
+  text-align: left;
+  padding: 6px;
+  margin: auto;
+  padding-right: 255px;
+}
+
+div.message {
+  padding: 6px;
+  margin: 6px;
+  margin-top: 30px;
+  margin-bottom: 5px;
+  margin-left: 0px;
+  display: block;
+  border-bottom:1px solid black;
+}
+
+.state-mark {
+  padding-left: 6px;
+  color: darkred;
+  font-weight: normal;
+}
+
+.modified-date {
+  color: darkred;
+  font-weight: bold;
+}
+
+span.modified-date:before {
+  content: "[ "
+}
+
+span.modified-date:after {
+  content: " ]"
+}
+
+span.replacing {
+  margin: 0;
+  padding: 2px;
+  color: red;
+  border: 1px solid red;
+}
+
+div.pubdate {
+  font-family: Georgia, Times New Roman, Times, serif; 
+  margin: 3px;
+  border: none;
+  margin-left: 20px;
+  margin-right: 20px;
+  display: block;
+  padding: 0px;
+  text-align: left;
+  font-weight: bold;
+  position: relative;
+  top: 0px;
+}
+
+div.post-title {
+  font-family: Georgia, Times New Roman, Times, serif; 
+  font-size: 18px; 
+  line-height:100%;
+  font-weight:bold; 
+  text-align:left;
+  color: #000; 
+  padding-bottom:15px;
+}
+
+div.post-content {
+  padding: 10px 10px 5px 15px;
+  margin-bottom:25px;
+  border-bottom:1px solid #CEAA52;
+}
+
+div.post-actions {
+  font-size: 90%;
+  border: none;
+  margin-left: 20px;
+  margin-right: 20px;
+  text-align: left;
+}
+
+div.posts-title {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  font-size: 120%;
+  font-weight: bold;
+  border-bottom:1px solid black;
+}
+
+div.posts-info {
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+div.trackback-title {
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: 110%;
+  font-weight: bold;
+}
+
+div.trackback-contents {
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  margin-left: 24px;
+}
+
+div.pingback-title {
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: 110%;
+  font-weight: bold;
+}
+
+div.pingback-contents {
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  margin-left: 24px;
+}
+
+div.referrals-title {
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: 110%;
+  font-weight: bold;
+}
+
+div.referrals-contents {
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  margin-left: 24px;
+}
+
+div.comments-title {
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: 110%;
+  font-weight: bold;
+}
+
+div.comments-contents {
+  background-color: white;
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  margin-left: 24px;
+}
+
+div.comment-message {
+  font-size: 90%;
+  background-color: white;
+  padding: 6px;
+  margin: 6px;
+  border: none;
+  margin-top: 30px;
+  margin-bottom: 5px;
+  margin-left: 0px;
+  display: block;
+}
+
+div.comment-pubdate {
+  font-size: 100%;
+  background-color: white;
+  color: black;
+  margin: 3px;
+  border: none;
+  margin-left: 20px;
+  margin-right: 20px;
+  display: block;
+  position: relative;
+  top: -30px;
+  padding: 3px;
+}
+
+div.comment-actions {
+  font-size: 90%;
+  background-color: white;
+  margin: 3px;
+  border: none;
+  margin-left: 20px;
+  margin-right: 20px;
+  padding: 3px;
+  text-align: left;
+}
+
+div.comment-content {
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  font-size: 80%;
+  position: relative;
+  top: -30px;
+  margin-bottom: -5 px;
+  margin-left: 20px;
+}
+
+div.comment-title {
+  margin: 3px;
+  border: none;
+  margin-left: 20px;
+  margin-right: 20px;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  font-weight: bold;
+  font-style: italic;
+  font-size: 140%;
+  position: relative;
+  top: -30px;
+}
+
+table#channels {
+  border: 1px solid #191970;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+table#channels th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#channels td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#channel-posts {
+  border: 1px solid #191970;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+table#channel-posts th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#channel-posts td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#channel-posts td#content {
+}
+
+table#channel-posts a {
+  margin-right: 12px;
+}
+
+table#upstreamings {
+  border: 2px solid #191970;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+table#upstreamings th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#upstreamings td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#community {
+  border: 2px solid #191970;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+table#community th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#community td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#members {
+  border: 1px solid #191970;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+table#members th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#members td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+table#categories {
+  border: 1px solid #191970;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+table#categories th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#categories td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+div#subtitle {
+  font-weight: bold;
+  font-style: italic; 
+  color: #191970;
+}
+
+table#moblogs {
+  border: 1px solid #191970;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+table#moblogs th {
+  border-bottom: 1px solid #191970;
+  text-align: center;
+}
+
+table#moblogs td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+/* Tabbed page - begin */
+.tab_page
+{
+    font-size: 10pt;
+    border-left: solid 1px black;
+    border-right: solid 1px black;
+    border-bottom: solid 1px black;
+    background-color: white;
+    padding-left: 10px;
+    padding-right: 10px;
+    color: black;
+    width: 100%;
+}
+.page_tab
+{
+    font-size: 10pt;
+    background-color: #eaeaea;
+    text-align: left;
+    white-space: nowrap;
+    padding: 2px;
+    border: 1px solid black;
+}
+.page_tab_empty 
+{
+    white-space: nowrap;
+    border-bottom:1px solid black;
+    border-left:1px solid black;
+    border-right:0;
+    border-top:0;
+}
+.page_tab_selected
+{
+    white-space: nowrap;
+    font-size: 10pt;
+    background-color: white;
+    text-align: left;
+    padding: 2px;
+    border-top:1px solid black;
+    border-left:1px solid black;
+    border-right:1px solid black;
+    border-bottom:0
+}
+.page_tab a
+{
+  color: black;
+  text-decoration: none;
+}
+.page_tab a:hover
+{
+  color: black;
+  text-decoration: underline;
+}
+/* Tabbed page - end */

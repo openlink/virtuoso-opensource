@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="/DAV/VAD/blog2/widgets/main.xsl"
+        name="home"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <vm:page>
+    <vm:header>
+      <vm:page-title title="Weblog home page"/>
+      <vm:disco-rss-link/>
+      <vm:disco-pingback-link/>
+      <vm:disco-comments-link/>
+      <vm:disco-foaf-link/>
+      <vm:disco-rsd-link/>
+      <vm:disco-opml-link/>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:meta-keywords/>
+      <vm:custom-style />
+    </vm:header>
+    <vm:body>
+      <div id="header">
+        <h1>
+          <vm:blog-title/>
+        </h1>
+        <h2>
+          <vm:welcome-message show-once="no"/>
+        </h2>
+      </div>
+      <div id="navbartop">
+        <div>Entries: [ <vm:entry-list /> ]</div>
+      </div>
+      <div id="error">
+        <v:error-summary />
+      </div>
+      <div class="nav-column">
+        <div class="block">
+          <vm:login-info format_string="Logged in as %s."/>
+          <vm:blog-about/>
+        </div>
+        <div class="block" id="details-block">
+          <h3>
+            Personal Details
+          </h3>
+          <div>
+            <vm:about-me/>                
+          </div>
+        </div>
+        <div class="block">
+          <vm:home-url />
+          <vm:cmds-menu/>
+        </div>
+        <div class="block" id="syndicate-block">
+          <h3>
+            Syndicate This Blog
+          </h3>
+          <ul>
+            <li>
+              <vm:atom-link/>
+            </li>
+            <li>
+              <vm:foaf-link/>
+            </li>
+            <li>
+              <vm:ocs-link/>
+            </li>
+            <li>
+              <vm:opml-link/>
+            </li>
+            <li>
+              <vm:rdf-link/>
+            </li>
+            <li>
+              <vm:rss-link/>
+            </li>
+          </ul>
+        </div>
+        <div class="block">
+          <h3>
+            Post Categories
+          </h3>
+          <vm:categories/>
+        </div>
+        <div class="block" id="recent-block">
+          <h3>
+            Recent Articles
+          </h3>
+          <vm:last-messages />
+        </div>
+        <div class="block" id="style-switch-block">
+          <h3>
+            Style switcher
+          </h3>
+          <vm:stylesheet-switcher sticky="ask" ask-text="Save as default"/>
+        </div>
+        <vm:if test="fish">
+          <div class="block" id="translate-block">
+            <h3>
+              Translate
+            </h3>
+            <vm:babel-fish />
+          </div>
+        </vm:if>
+        <div id="powered">
+          <vm:powered-by/>
+        </div>
+        <div class="disclaimer">
+          <vm:disclaimer/>
+        </div>
+        <div class="copy">
+          <vm:copyright/>
+        </div>
+      </div>
+      <div class="info-column">
+        <div class="block" id="cal_block">
+          <vm:calendar/>
+          <vm:rss-feeds/>
+          <vm:if test="ocs">
+            <div class="subtitle">
+              <vm:ocs-div-title/>
+            </div>
+            <vm:ocs/>
+          </vm:if>
+          <vm:if test="opml">
+            <div class="subtitle">
+              <vm:opml-div-title/>
+            </div>
+            <vm:opml/>
+          </vm:if>
+        </div>
+        <div class="block" id="search-block">
+          <h3>
+            Keyword search
+          </h3>
+          <vm:search/>
+        </div>
+        <vm:if test="browse_posts">
+        <div class="block" id="sort_block">
+          <h3>
+            Sort options
+          </h3>
+          <vm:sort-options/>
+        </div>
+        </vm:if>
+        <vm:if test="have_community">
+        <div class="block" id="community-block">
+          <h3>
+            Community Member Blogs
+          </h3>
+          <vm:bloggers/>
+        </div>
+        </vm:if>
+        <vm:if test="subscribe">
+        <div class="block" id="subscribe-block">
+          <h3>
+            Subscribe
+          </h3>
+          <vm:subscribe/>
+        </div>
+        </vm:if>
+        <div>
+          <div>
+            <vm:amazon-wishlist-display/>
+          </div>
+          <div>
+            <vm:google-ads/>
+          </div>
+          <div>
+            <vm:etray-ads/>
+          </div>
+        </div>
+      </div>
+      <div class="page-container">
+        <vm:posts trackback="discovery"/>
+        <vm:comments-view>
+          <vm:trackbacks />
+          <vm:referrals />
+          <vm:comments />
+          <vm:post-comment />
+        </vm:comments-view>
+      </div>
+    </vm:body>
+  </vm:page>
+</v:page>

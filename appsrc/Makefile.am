@@ -19,4 +19,4 @@
 #  
 #  
 
-SUBDIRS = ODS-Framework
+SUBDIRS = ODS-Framework ODS-Blog

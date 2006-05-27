@@ -1,0 +1,135 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="moblog_mime_select"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        on-deadlock-retry="5">
+<?vsp
+  declare types, mime1, arr, arr2 any;
+  declare i, l int;
+  mime1 := {?'mime1'};
+  arr2 := split_and_decode (mime1, 0, '\0\0,');
+  if (not isarray (arr2))
+    arr2 := vector ();
+  if (strstr (mime1, 'image/%') is null)
+    mime1 := mime1 || ', image/%';
+  if (strstr (mime1, 'video/%') is null)
+    mime1 := mime1 || ', video/%';
+  if (strstr (mime1, 'audio/%') is null)
+    mime1 := mime1 || ', audio/%';
+  arr := split_and_decode (mime1, 0, '\0\0,');
+  l := length (arr); i := 0; types := vector ();
+  while (i < l)
+  {
+    declare elm any;
+    elm := trim (arr[i]);
+    if (elm <> '') types := vector_concat (types, vector (elm));
+    i := i + 1;
+  }
+?>
+<html>
+  <head>
+   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+   <title>Choose MIME pattern(s)</title>
+   <link rel="stylesheet" type="text/css" href="/weblog/public/css/default.css"/>
+  </head>
+  <body>
+    <script language="Javascript">
+      function return_mime (form)
+      {
+        var selection;
+        if (opener == null) return;
+        this.mime1 = opener.mime1;
+        selection = '';
+        for (i =0; i &lt; form.elements.length; i++) {
+          var contr = form.elements[i];
+          if (contr != null &amp;&amp; contr.type == "checkbox" &amp;&amp; contr.checked) {
+            selection = selection + contr.value + ',';
+          }
+        }
+        if (selection == '') selection = 'image/%';
+        if (mime1 != null) mime1.value = selection;
+        opener.focus();
+        close();
+      }
+    </script>
+    <form method="POST" action="">
+      <input type="hidden" name="mime1" value="<?V mime1 ?>"/>
+      <table border="0" style="blank" width="100%">
+        <tr>
+          <th colspan="2">
+            <h3>Choose MIME pattern(s)</h3>
+          </th>
+        </tr>
+        <?vsp
+          l := length (types);
+          i := 0;
+          while (i < l)
+          {
+            declare elm, sel varchar;
+            elm := types[i];
+            sel := '';
+            if (position (elm, arr2))
+              sel := 'CHECKED';
+        ?>
+        <tr>
+          <td>
+            <?vsp
+              if (length(sel) = 0)
+              {
+            ?>
+            <input type="checkbox" name="cb" value="<?vsp http(elm); ?>" />
+            <?vsp
+              }
+              else
+              {
+            ?>
+            <input type="checkbox" name="cb" value="<?vsp http(elm); ?>" checked="checked" />
+            <?vsp
+              }
+            ?>
+          </td>
+          <td>
+            <?vsp
+              http(elm);
+            ?>
+          </td>
+        </tr>
+        <?vsp
+            i := i + 1;
+          }
+        ?>
+        <tr>
+          <td>
+            <input type="button" class="real_button" value="Cancel" onclick="window.close();"/>
+          </td>
+          <td>
+            <input type="button" class="real_button" value="Set" onclick="return_mime(this.form);"/>
+          </td>
+        </tr>
+      </table>
+    </form>
+  </body>
+</html>
+</v:page>

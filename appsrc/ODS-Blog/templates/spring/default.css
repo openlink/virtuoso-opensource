@@ -1,0 +1,680 @@
+
+html { 
+  min-width: 742px;
+   }
+
+
+  /* Helpers and base rules */
+
+img {
+  border: 0;
+  }
+
+p.access  {
+  display: none;
+  }
+
+img.counter {
+  display: inline;
+  margin-left: 5px;
+  }
+
+
+
+  /* Primary layout divisions */
+
+body  {
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  border: 0;  
+  background: #ddb url(/weblog/public/images/holder.gif) top center repeat-y;
+  color: #663;
+  font: small/1.4 "Lucida Grande", "Trebuchet MS", "Bitstream Vera Sans", Verdana, Helvetica, sans-serif;
+  }
+
+div#wrapper {
+  color: #663;
+  background: transparent url(/weblog/public/images/wrapinner.gif) top left repeat-y;
+  width: 742px;
+  margin: 0 auto;
+  padding: 0;
+  text-align: left;
+  }
+
+div#maincontent   {
+  float: left;
+  width: 440px;
+  padding: 0;
+  border: 0;
+  margin: 0;
+  /* False margin value for all versions of IE Win, including 6.0 */  
+  margin-left: 6px;
+  }
+
+html>body div#maincontent {
+  /* Correct value for browsers that don't suffer from IE Win's bugs */
+  margin-left: 12px;
+  min-height: 200px;
+  }
+
+div#sidebar {
+  margin: 0 0 0 472px;
+  padding: 0;
+  width: 230px;
+  border: 0;
+  }
+
+div#footer  {
+  clear: both;
+  border: 0;
+  border-top: 10px solid #eed;
+  background: #cc9 url(/weblog/public/images/footshadow.gif) top left repeat-x;
+  color: #663;
+  width: 700px;
+  padding: 5px 0;
+  margin: 10px 0 10px 12px;
+  }
+
+  
+div#footer p  {
+  font-size: 11px;
+  line-height: 18px;
+  margin: 0;
+  padding: 0 0 0 50px;
+  }
+
+h1  {
+  text-indent: -9999px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  }
+  
+h1 a:link, h1 a:visited {
+  display: block; 
+  width: 700px;
+  height: 50px;
+  margin: 0 0 0 12px;
+  padding: 0;
+  border: 0;
+  }
+  
+h1 a:hover  {
+  }
+    
+    
+  /* Primary nav  */
+
+div#globalnav {
+  color: #663;
+  height: 60px;
+  width: 700px;
+  margin: 0 0 0 12px;
+  padding: 0;
+  border: 0;
+  background: #eed;
+  }
+
+div#globalnav ul#menu {
+  height: 30px;
+  width: 700px;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  }
+
+div#globalnav ul#menu li {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  position: absolute;
+  top: 0;
+  }
+  
+ul#menu li, ul#menu a {
+  height: 30px;
+  display: block;
+  }
+  
+div#globalnav ul#menu li a {
+  text-indent: -9999px;
+  text-decoration: none;
+  }
+  
+#dailymenu  {left: 0; width: 138px;}
+#dwwsmenu {left: 139px; width: 248px;}
+#glammenu {left: 385px; width: 153px;}
+#classicsmenu {left: 538px; width: 97px;}
+#aboutmenu  {left: 634px; width: 67px;}
+
+
+  /* You are here - subnav */
+  
+body#bookhome dd#dwws a,
+body#colophonpage dd#colophon a,
+body#lopez dd#contact a,
+body#contrastpage dd#contrast a,
+body#verbal dd#pubs a,
+body#travel dd#tour a,
+body#toys dd#tools a,
+body#outsider dd#externals a,
+body#pleasurepage dd#pleasure a,
+body#syndicate dd#xmlfeed a,
+body#oldposts dd#essentials a   {
+  color: #530;
+  background: transparent;
+  }
+
+
+  /* Default links  */
+
+a:link, a:visited {
+  font-weight : bold; 
+  text-decoration : none;
+  color: #785;
+  background: transparent; 
+  }
+
+a:hover {
+  font-weight : bold; 
+  text-decoration : none;
+  color: #530;
+  background: transparent; 
+  }
+
+a:active {
+  font-weight : bold; 
+  text-decoration : none;
+  color: #785;
+  background: transparent;  
+  }
+
+div#maincontent p a:link, div#maincontent p a:visited {
+  text-decoration: underline;
+  } 
+
+div#maincontent p a:hover {
+  text-decoration: none;
+  } 
+
+
+  /* Typography   */
+  
+h2, h3, h4  {
+  font-weight: bold;
+  line-height: 1.2em;
+  margin: 15px 0 0 0;
+  }
+
+p {
+  margin: 0 0 1em 0;
+  line-height: 140%;
+  }
+  
+div#maincontent h2  {
+  font-size: 18px;
+  }
+
+body#home div#maincontent h2  {
+  margin-top: 25px;
+  }
+
+body#home div#maincontent h2.follow {
+  margin-top: 5px;
+  }
+
+div#maincontent h3  {
+  font-size: 14px;
+  }
+
+blockquote  {
+  padding: 0;
+  padding-left: 10px;
+  margin-left: 10px;
+  border: 0;
+  border-left: 1px dotted #785;
+  }
+
+blockquote p  {
+  font-weight: normal;
+  font-family: Georgia, "New Century Schoolbook", "Bitstream Vera Serif", Utopia, "Times New Roman", times, serif;
+  text-align: justify;
+  line-height: 150%;
+  font-size: small;
+  }
+
+code, pre {
+  font-family: monaco, "Bitstream Vera Sans Mono", "Courier New", courier, monospace;
+  font-weight: normal;
+  font-size: small;
+  }
+
+  
+  /* Purely decorative, redolent of spring */
+  
+div.timestamp { 
+  margin: 10px 0 0 0;
+  padding: 0;
+  }
+  
+div.timestamp h3  {
+  font-size: 10px;
+  margin: 0;
+  padding: 0;
+  }
+
+div.timestamp h3 a:link, div.timestamp h3 a:visited {
+  margin: 0 10px 0 0;
+  padding: 0 0 0 30px;
+  }
+
+div.timestamp h3 a:hover {
+  }
+  
+div#maincontent h2 a:link, div#maincontent h2 a:visited {
+  padding: 0 0 0 40px;
+  }
+
+  /* Forms follow function */
+  
+div#searchui  {
+  margin: 10px 0 10px 0;
+  padding: 0;
+  }
+  
+#searchui label {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 11px;
+  color: #ffe;
+  }
+
+#searchui input.butt  {
+  color: #663;
+  background: #bc9;
+  font-size: x-small;
+  }
+
+input.hun {
+  margin: 0 2px;
+  width: 100px;
+  font-size: x-small;
+  }
+
+
+  /*   Sidebar navs and links   */
+  
+#sidebar dd, #sidebar dt {
+  margin-left: 0;
+  padding-left: 0;
+  line-height: 18px;
+  margin-bottom: 3px;
+  }
+
+body #sidebar dt  {
+  text-transform: uppercase;
+  letter-spacing: 5px;
+  margin-top: 25px;
+  background: transparent;
+  color: #ffe;
+  padding: 2px 5px;
+  background: #ab8;
+  text-shadow: 2px 3px 3px #896;
+  }
+
+#sidebar dd a:link, #sidebar dd a:visited {
+  font-weight : normal; 
+  }
+
+
+
+/* Sidebar banners */
+
+div#banners {
+  margin: 0;
+  padding: 13px 0 0 0;
+  }
+  
+div#banners h5  {
+  margin: 0 0 10px 0;
+  padding: 0;
+  }
+
+div#banners h5#alaban {
+  margin: 0;
+  padding: 0;
+  text-indent: -9999px;
+  width: 230px;
+  height: 28px;
+  }
+
+div#banners h5#alaban a {
+  display: block;
+  margin: 3px 0 0 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  }
+
+div#banners h5#hcban  {
+  margin: 10px 0 0 0;
+  padding: 0;
+  text-indent: -9999px;
+  width: 230px;
+  height: 45px;
+  }
+
+div#banners h5#hcban a  {
+  display: block;
+  margin: 3px 0 0 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  }
+
+  /* Previous Reports */
+  
+p.button  {
+  margin: 25px 0;
+  font-size: medium;
+  }
+  
+
+  /* Cover one's butt */
+  
+form#buttski  {
+  text-align: center;
+  padding: 0;
+  margin: 10px auto;
+  }
+
+.real_button {
+  color: #663; 
+  background: #eed; 
+  padding: 2px;
+  }
+
+
+
+  /*  List frippery */
+
+div#maincontent ul  {
+  margin: 3px 0;
+  padding: 0 0 5px 0;
+  }
+  
+div#maincontent ol li   {
+  list-style: decimal outside;
+  line-height: 140%;
+  margin: 0 5px 5px 0;
+  padding: 0 0 0 5px;
+  }
+
+div#maincontent ul li {
+  line-height: 140%;
+  margin-bottom: 5px;
+  padding-bottom: 0;
+  padding-left: 5px;
+  margin-left: 5px;
+  list-style:square inside;
+  }
+  
+div#maincontent ul ul li {
+  margin-top: 10px;
+  list-style: square inside;
+  }
+
+div#maincontent ul.inlinelist {
+  padding: 0;
+  margin: 0;
+  }
+
+div#maincontent .inlinelist li  {
+  display: inline;
+  padding: 0 5px 0 0;
+  margin: 0;
+  border: 0;
+  } 
+
+div#maincontent dl  {
+  margin-top: 5px;
+  padding-top: 0;
+  }
+  
+div#maincontent dl dt {
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+  border: 0;
+  border-bottom: 1px solid #cca;
+  line-height: 140%;
+  }
+  
+div#maincontent dl dd {
+  margin: 0 10px 15px 10px;
+  padding: 0;
+  text-align: justify;
+  }
+  
+div#maincontent dl#sockdrawer dd  {
+  font-size: x-small;
+  text-align: left;
+  padding: 0;
+  margin: 0 0 5px 0;
+  }
+
+/* Haxies */
+
+.floattenr  {
+  float: left; 
+  margin: 0 10px 0 0;
+  }
+  
+/* Contrast-o-meter switchable headline */
+
+body#contrastpage h2.contrast {
+  text-indent: -9999px;
+  margin-top: 0;
+  }
+  
+body#contrastpage h2.contrast a:link, body#contrastpage h2.contrast a:visited {
+  display: block;
+  width: 440px;
+  height: 35px;
+  margin: 10px 0 5px 0;
+  padding: 0;
+  border: 0;
+  } 
+
+/* Rotation border */
+
+img.rotc  {
+  border: 2px solid #ccb;
+  background: transparent url(/weblog/public/images/bg0432.gif) top left repeat;
+  }
+
+#calendar {
+ margin-top: 2em;
+ font-size: 0.9em;
+ font-family: Tahoma, sans-serif;
+ text-align: center;
+ border-collapse: collapse;
+ }
+#calendar td, #calendar th { padding: 1px;}
+.calactive {
+   background: url("/weblog/public/images/blog-active.png");
+   background-repeat: no-repeat;
+   background-position: center;
+   color: white;
+ }
+.calactive a {
+   color: white;
+ }
+.calnotactive a {
+   text-decoration: none;
+ }
+.caltoday {
+   background: url("/weblog/public/images/blog-today.png");
+   background-repeat: no-repeat;
+   background-position: center;
+   color: white;
+ }
+.caltoday a {
+   color: white;
+ }
+.calselected {
+   color: white;
+   border:1px solid #000000;
+ }
+.calselected a {
+   color: white;
+ }
+
+div.pubdate {
+  margin: 0 10px 0 0;
+  padding: 0 0 0 30px;
+}
+
+div.message {
+  padding: 6px;
+  margin: 6px;
+  margin-top: 30px;
+  margin-bottom: 5px;
+  margin-left: 0px;
+  display: block;
+}
+
+div.post-title {
+  font-size: 18px; 
+}
+
+.tb-url, .tb-url a {
+  color:#666;
+  font-size: 9px;
+  font-weight:normal;
+  background:inherit;
+  width: 100%;
+}
+.tb-url .url {
+  font-size: 9px;
+  color: #065;
+  background: inherit;
+  width: 100%;
+}
+
+.textbox, textarea, select
+{
+  font-family: Verdana, Geneva, Arial, Sans-Serif;
+  font-size: 10px;
+  padding: 0px;
+  margin: 0px;
+}
+
+.postcomment table {
+  margin-bottom: 1em;
+ }
+.postcomment th {
+  text-align: right;
+ }
+.postcomment .note {
+  font-size: 9px;
+  font-family: Tahoma, sans-serif;
+}
+.note {
+  width: 100px;
+  }
+/* Tabbed page - begin */
+.tab_page
+{
+    font-size: 10pt;
+    border-left: solid 1px black;
+    border-right: solid 1px black;
+    border-bottom: solid 1px black;
+    background-color: white;
+    padding-left: 10px;
+    padding-right: 10px;
+    color: black;
+    width: 100%;
+}
+.page_tab
+{
+    font-size: 10pt;
+    background-color: #eaeaea;
+    text-align: left;
+    white-space: nowrap;
+    padding: 2px;
+    border: 1px solid black;
+}
+.page_tab_empty 
+{
+    white-space: nowrap;
+    border-bottom:1px solid black;
+    border-left:1px solid black;
+    border-right:0;
+    border-top:0;
+}
+.page_tab_selected
+{
+    white-space: nowrap;
+    font-size: 10pt;
+    background-color: white;
+    text-align: left;
+    padding: 2px;
+    border-top:1px solid black;
+    border-left:1px solid black;
+    border-right:1px solid black;
+    border-bottom:0
+}
+.page_tab a
+{
+  color: black;
+  text-decoration: none;
+}
+.page_tab a:hover
+{
+  color: black;
+  text-decoration: underline;
+}
+/* Tabbed page - end */
+
+a:active.feedlink,
+a:visited.feedlink,
+a:link.feedlink,
+#left a:active.feedlink,
+#left a:visited.feedlink,
+#left a:link.feedlink,
+a:active.smallfeedlink,
+a:visited.smallfeedlink,
+a:link.smallfeedlink,
+#left a:active.smallfeedlink,
+#left a:visited.smallfeedlink,
+#left a:link.smallfeedlink
+  {
+  font-size: 1em;
+  background: #ff6800;
+  font-weight: bold;
+  color: white;
+  border-top: 1px outset white;
+  border-left: 1px outset white;
+  border-right: 1px outset black;
+  border-bottom: 1px outset black;
+  padding: 0px;
+  padding-left: 2px;
+  padding-right: 2px;
+  margin: 0px;
+  text-align: center;
+  display: inline;
+}
+a:active.smallfeedlink,
+a:visited.smallfeedlink,
+a:link.smallfeedlink,
+#left a:active.smallfeedlink,
+#left a:visited.smallfeedlink,
+#left a:link.smallfeedlink
+  {
+  font-size: 0.7em;
+  background: #ff6800;
+  width: 1.5em;
+} 

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page style="/DAV/VAD/blog2/widgets/main.xsl"
+        name="home"
+        xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+        on-deadlock-retry="5">
+  <vm:page>
+    <vm:header>
+      <vm:page-title title="Weblog home page"/>
+      <vm:disco-rss-link/>
+      <vm:disco-pingback-link/>
+      <vm:disco-comments-link/>
+      <vm:disco-foaf-link/>
+      <vm:disco-rsd-link/>
+      <vm:disco-opml-link/>
+      <vm:meta-owner/>
+      <vm:meta-authors/>
+      <vm:meta-description/>
+      <vm:meta-keywords/>
+      <vm:custom-style />
+    </vm:header>
+    <vm:body xhtml_style="text-align: center;">
+      <div id="page" style="text-align: left;">
+      <div id="header">
+        <h1>
+          <vm:blog-title/>
+        </h1>
+        <h2>
+          <vm:welcome-message show-once="no"/>
+        </h2>
+      </div>
+      <div class="info-column">
+        <div class="block">
+          <div id="welcome">
+            <vm:blog-about/>
+          </div>
+          <div>
+            <vm:about-me/>                
+          </div>
+          <div>
+            <vm:login-info format_string="Logged in as %s."/>
+          </div>
+          <div>
+            <vm:cmds-menu/>
+          </div>
+          <div>Syndicate This Blog</div>
+          <div>
+            <vm:atom-link/>
+            <vm:foaf-link/>
+            <vm:ocs-link/>
+            <vm:opml-link/>
+            <vm:rdf-link/>
+            <vm:rss-link/>
+          </div>
+          <div>
+            <vm:home-url />
+          </div>
+          <div id="selector">
+            <vm:calendar vm:url="index.vspx" />
+            <vm:rss-feeds />
+            <vm:if test="ocs">
+              <h2><vm:ocs-div-title/></h2>
+              <div class="roll">
+                <vm:ocs/>
+              </div>
+            </vm:if>
+            <vm:if test="opml">
+              <h2><vm:opml-div-title/></h2>
+              <div class="roll">
+                <vm:opml/>
+              </div>
+            </vm:if>
+          </div>          
+          <div>
+            Search
+          </div>
+          <div>
+            <vm:search />
+          </div>
+          <div>
+            Post Categories
+          </div>
+          <div>
+            <vm:categories/>
+          </div>
+          <div>
+            Subscribe
+          </div>
+          <div>
+            <vm:subscribe/>
+          </div>
+          <div>
+            Recent Articles
+          </div>
+          <div>
+            <vm:last-messages/>
+          </div>
+          <vm:if test="have_community">
+          <div>
+            Community Member Blogs
+          </div>
+          <div>
+            <vm:bloggers/>
+          </div>
+          </vm:if>
+          <vm:if test="browse_posts">
+            <div>
+              Sort options
+            </div>
+            <div>
+              <vm:sort-options />
+            </div>          
+          </vm:if>
+          <vm:if test="fish">
+          <div>
+            Translate
+          </div>
+          <div>
+            <vm:babel-fish/>
+          </div>
+          </vm:if>
+          <div>
+            <vm:amazon-wishlist-display/>
+          </div>
+          <div>
+            <vm:google-ads/>
+          </div>
+          <div>
+            <vm:etray-ads/>
+          </div>
+          <div id="powered">
+            <vm:powered-by/>
+          </div>
+          <div id="copy"><vm:copyright/></div>
+          <div id="disclaimer"><vm:disclaimer/></div>
+        </div>
+      </div>
+      <div id="error">
+        <v:error-summary />
+      </div>
+      <div class="page-container2">
+        <vm:posts trackback="discovery" />
+        <div>
+        <vm:comments-view>
+          <vm:trackbacks />
+          <vm:referrals />
+          <vm:comments />
+          <vm:post-comment />
+        </vm:comments-view>
+        </div>
+      </div>      
+      </div>
+    </vm:body>
+  </vm:page>
+</v:page>
