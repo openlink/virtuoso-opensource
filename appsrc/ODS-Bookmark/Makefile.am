@@ -19,4 +19,38 @@
 #  
 #  
 
-SUBDIRS = ODS-Framework ODS-Bookmark ODS-Blog ODS-Briefcase ODS-FeedManager ODS-Wiki
+TOP=@TOP@
+
+nodist_vad_DATA = ods_bookmark_dav.vad
+
+CLEANFILES = \
+	make_bookmark_vad.log \
+	make_bookmark_vad.xml \
+	ods_bookmark_dav.vad \
+	virtuoso.db \
+	virtuoso.ini \
+	virtuoso.lck \
+	virtuoso.log \
+	virtuoso.pxa \
+	virtuoso.tdb \
+	virtuoso.trx
+
+ods_bookmark_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
+
+EXTRA_DIST = \
+	make_vad.sh \
+	sql/*.sql \
+	www/*.vsp \
+	www/*.vspx \
+	www/css/*.css \
+	www/image/*.gif \
+	www/image/*.jpg \
+	www/image/*.png \
+	www/js/*.js \
+	www/template/*.vspx \
+	www/template/*.xsl \
+	xslt/*.xsl

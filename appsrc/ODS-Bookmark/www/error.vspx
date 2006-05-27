@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="error_page" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Error</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header caption="Error"/>
+    <vm:variables>
+      <v:variable name="page_name" type="varchar" default="''" param-name="__PAGE" persist="0"/>
+      <v:variable name="code" type="varchar" default="''" param-name="__SQL_STATE" persist="temp"/>
+      <v:variable name="msg" type="varchar" default="''" param-name="__SQL_MESSAGE" persist="0"/>
+    </vm:variables>
+    <vm:pagebody>
+      <div class="form-header">
+        <img class="dialog_icon" src="image/stop_16.png" alt="Stop" title="Stop"/>
+        An error has occured during processing of the "<?V self.page_name ?>" page.
+      </div>
+      <div class="error" style="text-align: left;">
+        <table>
+          <tr>
+            <td valign="top">SQL State </td>
+            <td>
+              <?V self.code ?>
+            </td>
+          </tr>
+          <tr>
+            <td valign="top">SQL Message </td>
+            <td>
+              <pre>
+                <?V self.msg ?>
+              </pre>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="form-footer">
+        <v:button action="simple" name="cancel" value="Go back" xhtml_onclick="javascript:history.back(); return false;"/>
+      </div>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

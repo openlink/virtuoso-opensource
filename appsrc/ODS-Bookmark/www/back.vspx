@@ -1,0 +1,11 @@
+<v:page name="download" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/">
+  <table width="100%">
+    <tr>
+      <td style="background-color: #d9eddd;">
+        <v:form name="form_back" type="simple" method="POST" action="">
+          <v:button action="simple" name="cancel" value="Go back" xhtml_onclick="javascript:history.back();return false;"/>
+        </v:form>
+      </td>
+    </tr>
+  </table>
+</v:page>

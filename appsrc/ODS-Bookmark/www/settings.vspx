@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v:page name="preferences" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:before-data-bind>
+    <![CDATA[
+	    declare exit handler for not found { goto _end; };
+
+      if (isnull(get_keyword('f_rows', self.vc_page.vc_event.ve_params))) {
+        self.v_settings := BMK.WA.settings(self.account_id);
+  			return;
+  		}
+
+		_end:
+		  if (isnull(self.v_settings))
+        self.v_settings := vector();
+      return;
+    ]]>
+  </v:before-data-bind>
+  <vm:pagetitle>Preferences</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header/>
+    <vm:variables>
+      <v:variable name="v_settings" persist="0" type="varchar" default="null"/>
+    </vm:variables>
+    <vm:pagebody>
+      <div class="new-form-header">
+        Preferences
+      </div>
+      <div class="new-form-body">
+        <table cellspacing="0">
+          <tr>
+            <th width="30%">
+              <v:label for="f_chars" value="Limit of the names to"/>
+            </th>
+            <td>
+              <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.v_settings, '60')" /> (0 = no limit)
+            </td>
+          </tr>
+          <tr>
+            <th>
+              <v:label for="f_rows" value="Rows per page"/>
+            </th>
+            <td>
+              <v:text name="f_rows" value="--get_keyword('rows', self.v_settings, '10')" xhtml_class="field-text"/>
+            </td>
+          </tr>
+          <tr>
+            <th width="30%"/>
+            <td>
+              <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.v_settings, '1') as integer)" />
+              <vm:label for="f_tbLabels" value="Show toolbar labels"/>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              Atom File Version
+            </th>
+            <td>
+              <v:select-list name="f_atomVersion">
+                <v:item value="0.3" name="0.3"/>
+                <v:item value="1.0" name="1.0"/>
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ufl_value := get_keyword('atomVersion', self.v_settings, '0.3');
+                  ]]>
+                </v:before-data-bind>
+              </v:select-list>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="new-form-footer">
+        <v:button action="simple" value="Save" xhtml_class="form-button">
+          <v:on-post>
+            <![CDATA[
+              declare rows, chars any;
+
+              rows := trim(self.f_rows.ufl_value);
+              chars := trim(self.f_chars.ufl_value);
+
+              BMK.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
+              BMK.WA.test(chars, vector('name', 'Max name lenght', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
+
+              self.v_settings := BMK.WA.set_keyword('chars', self.v_settings, cast(cast(chars as integer) as varchar));
+              self.v_settings := BMK.WA.set_keyword('rows', self.v_settings, cast(cast(rows as integer) as varchar));
+              self.v_settings := BMK.WA.set_keyword('tbLabels', self.v_settings, self.f_tbLabels.ufl_selected);
+              self.v_settings := BMK.WA.set_keyword('atomVersion', self.v_settings, self.f_atomVersion.ufl_value);
+
+              insert replacing BMK.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.v_settings));
+              commit work;
+
+              BMK.WA.domain_gems_create(self.domain_id, self.account_id);
+
+              self.vc_redirect('bookmarks.vspx');
+      	    ]]>
+      	  </v:on-post>
+        </v:button>
+        <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:on-post>
+            <![CDATA[
+              self.vc_redirect('bookmarks.vspx');
+      	    ]]>
+      	  </v:on-post>
+        </v:button>
+      </div>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

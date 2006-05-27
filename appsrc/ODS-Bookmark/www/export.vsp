@@ -1,0 +1,27 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<?vsp
+  declare did, aid, output any;
+  did := get_keyword ('did', params, '');
+  aid := get_keyword ('aid', params, '');
+  output := get_keyword ('output', params, '');
+?>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>Browser</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  </head>
+  <frameset rows="13%,*" frameborder="NO" border="0" framespacing="0">
+    <frame name="file_list" src="back.vspx" />
+    <frame name="bottom_frame" scrolling="YES" noresize="noresize" src="export.vspx?did=<?/did?>&aid=<?/aid?>&output=<?/output?>" />
+  </frameset>
+  <noframes>
+    <body>
+      <h1>No frames support</h1>
+      <p>This application uses frames. Unfortunately your browser does not support them.
+         The application is designed run on <a href="http://www.mozilla.org">Mozilla</a> %gt; 0.9,
+         <a href="http://www.netscape.com">Netscape</a> &gt; 4 and
+         <a href="http://www.microsoft.com">Microsoft</a> Internet Explorer &gt; 4.
+      </p>
+    </body>
+  </noframes>
+</html>

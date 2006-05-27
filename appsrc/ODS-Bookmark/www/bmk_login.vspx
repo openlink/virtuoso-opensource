@@ -1,0 +1,20 @@
+<v:login name="bmk_login" realm="wa" mode="url" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <v:template name='inl' type='if-no-login'/>
+  <v:after-data-bind>
+    <![CDATA[
+      declare page_name varchar;
+
+      set_qualifier ('DB');
+      page_name := BMK.WA.page_name ();
+      if (page_name = 'error.vspx')
+        return;
+      if ((page_name = 'bookmarks.vspx') and (get_keyword('URL', self.vc_page.vc_event.ve_params, '') <> '')) {
+        self.vc_redirect(sprintf('%slogin.vspx?URL=%U', BMK.WA.wa_home_link (), sprintf('%s?URI=%s&TITLE=%V', HTTP_REQUESTED_URL(), get_keyword('URL', self.vc_page.vc_event.ve_params, ''), get_keyword('TITLE', self.vc_page.vc_event.ve_params, ''))));
+        return;
+      }
+      if (BMK.WA.check_grants2(self.account_role, page_name))
+        return;
+      self.vc_redirect('bookmarks.vspx');
+    ]]>
+  </v:after-data-bind>
+</v:login>
