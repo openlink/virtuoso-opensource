@@ -21,7 +21,7 @@
 
 AUTOMAKE_OPTIONS	= gnu 1.5
 
-SUBDIRS = . docsrc libsrc binsrc
+SUBDIRS = . docsrc libsrc binsrc appsrc
 
 
 # ----------------------------------------------------------------------
