@@ -2018,8 +2018,6 @@ AC_CONFIG_FILES([
 	binsrc/samples/sparql_demo/Makefile
 	binsrc/samples/TPC-W/Makefile
 	binsrc/samples/webapp/Makefile
-	binsrc/samples/wikiv/Makefile
-	binsrc/samples/wikiv/plugin/Makefile
 	binsrc/samples/xpath/Makefile
 	binsrc/samples/xquery/Makefile
 	binsrc/sqldoc/Makefile
@@ -2082,6 +2080,8 @@ AC_CONFIG_FILES([
 	appsrc/ODS-Blog/Makefile
 	appsrc/ODS-Briefcase/Makefile
 	appsrc/ODS-FeedManager/Makefile
+	appsrc/ODS-Wiki/Makefile
+	appsrc/ODS-Wiki/plugin/Makefile
 ])
 
 

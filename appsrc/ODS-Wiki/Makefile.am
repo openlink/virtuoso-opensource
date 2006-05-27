@@ -18,7 +18,31 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
+
+TOP=@TOP@
+
 SUBDIRS = plugin
+
+
+nodist_vad_DATA = ods_wiki_dav.vad
+
+CLEANFILES = \
+	make_wiki_vad.log \
+	make_wiki_vad.xml \
+	ods_wiki_dav.vad \
+	virtuoso.db \
+	virtuoso.ini \
+	virtuoso.lck \
+	virtuoso.log \
+	virtuoso.pxa \
+	virtuoso.tdb \
+	virtuoso.trx
+
+ods_wiki_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
 
 
 # ----------------------------------------------------------------------

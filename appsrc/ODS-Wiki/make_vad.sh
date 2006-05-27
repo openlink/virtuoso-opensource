@@ -413,14 +413,14 @@ vad_create() {
   cd $HOME/binsrc/vad
   do_command_safe $DSN "load vad_make.sql"
   cd $mydir
-  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER_NAME', '.', 'wiki_dav.vad')"
+  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER_NAME', '.', 'ods_wiki_dav.vad')"
   do_command_safe $DSN "commit work"
   do_command_safe $DSN "checkpoint"
 }
 
 vad_check() {
   LOG "VAD installation check..."
-  do_command_safe $DSN "VAD_INSTALL('wiki_dav.vad', 0);"    
+  do_command_safe $DSN "VAD_INSTALL('ods_wiki_dav.vad', 0);"    
   LOG "VAD uninstallation check..."
   do_command_safe $DSN "VAD_UNINSTALL('wiki/$VERSION');"    
 }
@@ -434,7 +434,7 @@ sticker_init
 vad_create
 virtuoso_shutdown
 echo `pwd`
-chmod 644 wiki_dav.vad
+chmod 644 ods_wiki_dav.vad
 #directory_clean
 #virtuoso_init
 #vad_check

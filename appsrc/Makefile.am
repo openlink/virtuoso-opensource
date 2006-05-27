@@ -19,4 +19,4 @@
 #  
 #  
 
-SUBDIRS = ODS-Framework ODS-Blog ODS-Briefcase ODS-FeedManager
+SUBDIRS = ODS-Framework ODS-Blog ODS-Briefcase ODS-FeedManager ODS-Wiki

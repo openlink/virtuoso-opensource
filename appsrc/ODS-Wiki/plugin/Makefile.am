@@ -44,13 +44,13 @@ CLEANFILES = maclex.c wikilex.c
 
 
 maclex.c: maclex.l
-	echo "$(LEX) -8 -Pmacyy ../../wikiv/plugin/maclex.l failed" > lex.macyy.c
-	$(LEX) -8 -Pmacyy ../../wikiv/plugin/maclex.l
+	echo "$(LEX) -8 -Pmacyy $(srcdir)/maclex.l failed" > lex.macyy.c
+	$(LEX) -8 -Pmacyy $(srcdir)/maclex.l
 	mv lex.macyy.c maclex.c
 
 wikilex.c: wikilex.l
-	echo "$(LEX) -8 -Pwikiyy ../../wikiv/plugin/wikilex.l failed" > lex.wikiyy.c
-	$(LEX)  -8 -Pwikiyy ../../wikiv/plugin/wikilex.l
+	echo "$(LEX) -8 -Pwikiyy $(srcdir)/wikilex.l failed" > lex.wikiyy.c
+	$(LEX)  -8 -Pwikiyy $(srcdir)/wikilex.l
 	mv lex.wikiyy.c wikilex.c
 
 # ----------------------------------------------------------------------
