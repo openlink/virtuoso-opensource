@@ -1,3 +1,0 @@
-LIBRARY WIKIV
-EXPORTS
-  wikiv_check @1

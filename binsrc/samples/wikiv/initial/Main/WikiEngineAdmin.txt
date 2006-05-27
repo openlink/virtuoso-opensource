@@ -1,3 +1,0 @@
-WikiEngineAdmin is the chief administrator of this Doc.WikiV site. There may be more than one administrator if the site is big, but only WikiEngineAdmin can promote other users to the administrator rank or modify the Doc.WikiEngine itself, not only its configuration.
-
-To ask WikiEngineAdmin a question regarding this site, mail to mailto:%WIKIWEBMASTER%.

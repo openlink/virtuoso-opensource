@@ -1,9 +1,0 @@
-<table class="cluster-summary"> <tr> <td valign="top">
-| Key: | %CLUSTER% | 
-| Name: | %CLUSTER:NAME% |
-| Owner: | %CLUSTER:OWNER% |
-| Members: | %CLUSTER:MEMBERS% |
-| Description: | %CLUSTER:DESCRIPTION% |
-</td> <td valign="top">
-%CHANGELOG{local="1" skip="0" rows="30"}%
-</table>
