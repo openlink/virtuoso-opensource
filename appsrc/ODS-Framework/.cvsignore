@@ -7,6 +7,7 @@ virtuoso.log
 virtuoso.pxa
 virtuoso.tdb
 virtuoso.trx
+virtuoso.lck
 ods_dav.vad
 make_ods_vad.log
 make_ods_vad.xml

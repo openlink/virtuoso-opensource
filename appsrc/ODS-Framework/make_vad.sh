@@ -190,7 +190,6 @@ directory_init() {
   cp *.html vad/data/wa
   cp *.sql vad/data/wa
   cp *.js vad/data/wa
-  cp $HOME/binsrc/tags/phrasematch.sql vad/data/wa
   cp comp/*.xsl vad/data/wa/comp
   cp comp/*.js vad/data/wa/comp
   #cp images/dav_browser/*.gif vad/data/wa/images/dav_browser
@@ -199,7 +198,6 @@ directory_init() {
   cp images/*.gif vad/data/wa/images
   cp images/*.jpg vad/data/wa/images
   cp images/*.png vad/data/wa/images
-  cp $HOME/binsrc/weblog2/public/images/foaf.gif vad/data/wa/images
   cp icons/*.gif vad/data/wa/images/icons
   #cp icons/*.jpg vad/data/wa/images/icons
   cp icons/*.png vad/data/wa/images/icons

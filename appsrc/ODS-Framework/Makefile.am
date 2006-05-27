@@ -1,3 +1,24 @@
+#  
+#  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+#  project.
+#  
+#  Copyright (C) 1998-2006 OpenLink Software
+#  
+#  This project is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by the
+#  Free Software Foundation; only version 2 of the License, dated June 1991.
+#  
+#  This program is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#  General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+#  
+#  
+
 TOP=@TOP@
 
 nodist_vad_DATA = ods_dav.vad
@@ -14,7 +35,7 @@ CLEANFILES =  \
 	virtuoso.tdb \
 	virtuoso.trx
 
-ods_dav.vad: make_vad.sh *.sql *.vspx *.xsl comp/*.xsl
+ods_dav.vad: $(EXTRA_DIST)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
 
 clean-local:
@@ -29,11 +50,11 @@ EXTRA_DIST = \
 	*.vspx \
 	*.xml \
 	*.xsl \
+	make_vad.sh \
+	vad_version \
 	comp/*.js \
 	comp/*.xml \
 	comp/*.xsl \
-	doc/*.png \
-	doc/*.vsd \
 	icons/*.gif \
 	icons/*.png \
 	images/*.gif \
@@ -42,8 +63,6 @@ EXTRA_DIST = \
 	images/*.png \
 	images/dav_browser/*.png \
 	images/yac_banner.jfif \
-	make_vad.sh \
-	readme.txt \
 	tmpl/SN_INV_TEMPLATE \
 	tmpl/WS_APPROVE_BY_USER_TEMPLATE \
 	tmpl/WS_CHANGE_BY_OWNER_TEMPLATE \
@@ -55,5 +74,4 @@ EXTRA_DIST = \
 	tmpl/WS_REG_TEMPLATE \
 	tmpl/WS_REJECT_BY_USER_TEMPLATE \
 	tmpl/WS_TERM_BY_OWNER_TEMPLATE \
-	tmpl/WS_TERM_BY_USER_TEMPLATE \
-	vad_version
+	tmpl/WS_TERM_BY_USER_TEMPLATE
